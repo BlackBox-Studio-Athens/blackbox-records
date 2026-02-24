@@ -1,0 +1,38 @@
+:root {
+  --ct-404-font-family: "Nunito Sans", "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
+
+  --ct-404-bg: #f7f8ff;
+  --ct-404-surface: #ffffff;
+  --ct-404-text: #0e0620;
+  --ct-404-muted: #3f3755;
+
+  --ct-404-primary: #2ccf6d;
+  --ct-404-primary-contrast: #ffffff;
+  --ct-404-primary-soft: rgba(44, 207, 109, 0.2);
+
+  --ct-404-accent: #8cffbb;
+  --ct-404-accent-soft: rgba(140, 255, 187, 0.16);
+
+  --ct-404-border: #cfcde0;
+  --ct-404-button-ghost-bg: rgba(255, 255, 255, 0.72);
+  --ct-404-shadow-color: rgba(14, 6, 32, 0.16);
+
+  --ct-404-gradient-start: #fbfbff;
+  --ct-404-gradient-end: #eceefe;
+
+  --ct-404-menu-surface: var(--ct-404-primary);
+  --ct-404-menu-text: var(--ct-404-text);
+  --ct-404-menu-hover: var(--ct-404-primary-contrast);
+
+  --ct-404-illustration-stroke: var(--ct-404-text);
+  --ct-404-illustration-fill: var(--ct-404-surface);
+  --ct-404-illustration-dot: var(--ct-404-text);
+
+  --ct-404-radius-card: 24px;
+  --ct-404-radius-pill: 999px;
+  --ct-404-space-1: 0.5rem;
+  --ct-404-space-2: 0.75rem;
+  --ct-404-space-3: 1rem;
+  --ct-404-space-4: 1.5rem;
+  --ct-404-space-5: 2rem;
+}

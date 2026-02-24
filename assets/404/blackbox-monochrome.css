@@ -1,0 +1,30 @@
+:root {
+  --ct-404-font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+
+  --ct-404-bg: #0d0d0d;
+  --ct-404-surface: #141414;
+  --ct-404-text: #f5f5f5;
+  --ct-404-muted: #b3b3b3;
+
+  --ct-404-primary: #f5f5f5;
+  --ct-404-primary-contrast: #0d0d0d;
+  --ct-404-primary-soft: rgba(245, 245, 245, 0.16);
+
+  --ct-404-accent: #8a8a8a;
+  --ct-404-accent-soft: rgba(138, 138, 138, 0.22);
+
+  --ct-404-border: #2b2b2b;
+  --ct-404-button-ghost-bg: rgba(20, 20, 20, 0.86);
+  --ct-404-shadow-color: rgba(0, 0, 0, 0.42);
+
+  --ct-404-gradient-start: #0d0d0d;
+  --ct-404-gradient-end: #181818;
+
+  --ct-404-menu-surface: var(--ct-404-primary);
+  --ct-404-menu-text: var(--ct-404-primary-contrast);
+  --ct-404-menu-hover: var(--ct-404-accent);
+
+  --ct-404-illustration-stroke: var(--ct-404-text);
+  --ct-404-illustration-fill: var(--ct-404-surface);
+  --ct-404-illustration-dot: var(--ct-404-text);
+}
