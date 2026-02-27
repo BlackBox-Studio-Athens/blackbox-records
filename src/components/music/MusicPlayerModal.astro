@@ -1,0 +1,61 @@
+---
+import { createProjectRelativeUrl } from '@/config/site';
+---
+
+<div class="music-streaming-service-embedded-player-modal-overlay" data-music-streaming-service-embedded-player-modal hidden>
+  <div
+    aria-labelledby="music-streaming-service-embedded-player-modal-title"
+    aria-modal="true"
+    class="music-streaming-service-embedded-player-modal-card"
+    role="dialog"
+    data-music-streaming-service-embedded-player-panel
+  >
+    <button
+      aria-label="Close player"
+      class="music-streaming-service-embedded-player-modal-close-button"
+      data-music-streaming-service-embedded-player-close
+      type="button"
+    >
+      Close
+    </button>
+    <h3 class="music-streaming-service-embedded-player-modal-title-text" id="music-streaming-service-embedded-player-modal-title"></h3>
+    <div class="music-streaming-service-embedded-player-provider-switcher" data-music-streaming-service-embedded-player-switcher hidden>
+      <button
+        class="music-streaming-service-embedded-player-provider-button music-streaming-service-embedded-player-provider-button--has-logo"
+        type="button"
+        data-music-streaming-service-embedded-player-provider="bandcamp"
+        aria-label="Bandcamp"
+      >
+        <img
+          class="music-streaming-service-embedded-player-provider-button-logo"
+          src={createProjectRelativeUrl('/assets/images/brand/bandcamp-button-black.png')}
+          alt=""
+          aria-hidden="true"
+        />
+        <span class="accessibility-visually-hidden-text">Bandcamp</span>
+      </button>
+      <button
+        class="music-streaming-service-embedded-player-provider-button music-streaming-service-embedded-player-provider-button--has-logo"
+        type="button"
+        data-music-streaming-service-embedded-player-provider="tidal"
+        aria-label="Tidal"
+      >
+        <img
+          class="music-streaming-service-embedded-player-provider-button-logo"
+          src={createProjectRelativeUrl('/assets/images/brand/tidal-button-black.png')}
+          alt=""
+          aria-hidden="true"
+        />
+        <span class="accessibility-visually-hidden-text">Tidal</span>
+      </button>
+    </div>
+    <div class="music-streaming-service-embedded-player-modal-frame">
+      <iframe
+        allow="autoplay; encrypted-media; fullscreen; clipboard-write https://embed.tidal.com; web-share"
+        data-music-streaming-service-embedded-player-iframe
+        loading="lazy"
+        title="Music streaming service embedded player"
+      ></iframe>
+    </div>
+  </div>
+</div>

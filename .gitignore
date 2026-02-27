@@ -9,9 +9,11 @@
 vendor/                     # Vendor gem directory (if used)
 
 # Dependency directories
-node_modules/               # Node.js dependencies
-npm-debug.log*              # npm debug logs
-yarn-error.log*             # Yarn error logs
+/node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Operating system files
 .DS_Store                   # macOS file metadata
@@ -41,6 +43,10 @@ CNAME                       # keep under source control but ignore deployment ou
 # Miscellaneous
 *.pem                       # SSL certificates
 /_site/*
+dist/
+.astro/
+node_modules/.astro/
+node_modules/.vite/
 
 cachedData/
 files/

@@ -1,0 +1,78 @@
+---
+import { getCollection } from 'astro:content';
+
+import InternalPageHero from '@/components/InternalPageHero.astro';
+import NewsletterSignup from '@/components/NewsletterSignup.astro';
+import SiteLayout from '@/layouts/SiteLayout.astro';
+import { aboutContent } from '@/data/about';
+import { calculateCountryCount, calculateYearsActive } from '@/utils/content';
+
+const artists = await getCollection('artists');
+const releases = await getCollection('releases');
+const yearsActive = calculateYearsActive();
+const countryCount = calculateCountryCount(artists.map((artist) => artist.data.country || ''));
+---
+
+<SiteLayout pageTitle="About" pageDescription="About the label.">
+  <InternalPageHero
+    sectionLabel={aboutContent.hero.section_label}
+    title={aboutContent.hero.title}
+    image={aboutContent.hero.image}
+    imageAlt={aboutContent.hero.image_alt}
+  />
+
+  <section class="page-section-standard-spacing">
+    <div class="page-content-width-constrained-container long-form-rich-text-content">
+      <p class="intro-lead-text-block">{aboutContent.lead}</p>
+
+      {
+        aboutContent.sections.map((sectionItem) => (
+          <>
+            <h2>{sectionItem.title.toUpperCase()}</h2>
+            {sectionItem.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+          </>
+        ))
+      }
+
+      <blockquote>
+        <p>&quot;{aboutContent.quote.text}&quot;</p>
+        <cite>&mdash; {aboutContent.quote.cite}</cite>
+      </blockquote>
+
+      <h2>{aboutContent.contact.title.toUpperCase()}</h2>
+      <p>{aboutContent.contact.intro}</p>
+      <ul>
+        {
+          aboutContent.contact.items.map((item) => (
+            <li>
+              <span>{item.label}:</span> {item.value}
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="page-section-standard-spacing-with-divider-and-surface-background">
+    <div class="page-content-width-constrained-container summary-statistics-grid">
+      {
+        aboutContent.stats.map((stat) => {
+          let statValue = '';
+          if (stat.key === 'artists') statValue = String(artists.length);
+          else if (stat.key === 'releases') statValue = String(releases.length);
+          else if (stat.key === 'countries') statValue = String(countryCount);
+          else if (stat.key === 'year') statValue = String(yearsActive);
+
+          return (
+            <div>
+              <p>{statValue}</p>
+              <span>{stat.label}</span>
+            </div>
+          );
+        })
+      }
+    </div>
+  </section>
+
+  <NewsletterSignup formId="about-newsletter-email" />
+</SiteLayout>

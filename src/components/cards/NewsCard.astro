@@ -1,0 +1,20 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { createProjectRelativeUrl } from '@/config/site';
+import { formatMonthYear } from '@/utils/content';
+
+interface Props {
+  item: CollectionEntry<'news'>;
+}
+
+const { item } = Astro.props;
+---
+
+<a class="news-summary-card-link" href={createProjectRelativeUrl(`/news/${item.id}/`)}>
+  <div class="news-summary-card-media-frame">
+    <img src={createProjectRelativeUrl(item.data.image)} alt={item.data.image_alt || item.data.title} />
+  </div>
+  <p class="news-summary-card-date-text">{formatMonthYear(item.data.date)}</p>
+  <h3>{item.data.title}</h3>
+  <p class="news-summary-card-summary-text">{item.data.summary}</p>
+</a>

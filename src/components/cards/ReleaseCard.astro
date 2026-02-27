@@ -1,0 +1,45 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { createProjectRelativeUrl } from '@/config/site';
+import { formatYear } from '@/utils/content';
+import { buildEmbeddedPlayerData } from '@/utils/music';
+
+interface Props {
+  release: CollectionEntry<'releases'>;
+  artist: CollectionEntry<'artists'> | undefined;
+}
+
+const { release, artist } = Astro.props;
+const artistFallbackName = release.data.artist_slug ? release.data.artist_slug.replace(/-/g, ' ') : 'Artist';
+const artistName = artist?.data.title || artistFallbackName;
+const releaseCardTitle = `${release.data.title} — ${artistName}`;
+const embeddedPlayerData = buildEmbeddedPlayerData(release.data, releaseCardTitle);
+
+const dataAttributes = embeddedPlayerData.hasProvider
+  ? {
+      'data-music-streaming-service-embedded-player-card': true,
+      'data-music-streaming-service-embedded-player-title': embeddedPlayerData.title,
+      'data-music-streaming-service-embedded-player-bandcamp-embed-url':
+        embeddedPlayerData.bandcampEmbedUrl || undefined,
+      'data-music-streaming-service-embedded-player-tidal-embed-url': embeddedPlayerData.tidalEmbedUrl || undefined,
+    }
+  : {};
+---
+
+<a class="release-summary-card-link" href={createProjectRelativeUrl(`/releases/${release.id}/`)} {...dataAttributes}>
+  <div class="release-summary-card-media-frame">
+    <img src={createProjectRelativeUrl(release.data.cover_image)} alt={release.data.cover_image_alt || release.data.title} />
+    {embeddedPlayerData.hasProvider && (
+      <div class="release-summary-card-overlay-layer">
+        <div class="release-summary-card-music-streaming-service-embedded-player-button" data-music-streaming-service-embedded-player-trigger>
+          <span class="release-summary-card-music-streaming-service-embedded-player-dot" aria-hidden="true"></span>
+          <span class="release-summary-card-music-streaming-service-embedded-player-text">Listen</span>
+        </div>
+        <span class="release-summary-card-open-label">View release</span>
+      </div>
+    )}
+  </div>
+  <p class="release-summary-card-year-text">{formatYear(release.data.release_date)}</p>
+  <h3 class="release-summary-card-title-text">{release.data.title.toUpperCase()}</h3>
+  <p class="release-summary-card-artist-text">{artistName}</p>
+</a>

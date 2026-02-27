@@ -1,7 +1,0 @@
-{% assign current_year = site.time | date: "%Y" | plus: 0 %}
-{% assign established_year = site.data.settings.established_year | default: current_year | plus: 0 %}
-{% assign years_active = current_year | minus: established_year | plus: 1 %}
-{% if years_active < 1 %}
-{% assign years_active = 1 %}
-{% endif %}
-{{ years_active }}

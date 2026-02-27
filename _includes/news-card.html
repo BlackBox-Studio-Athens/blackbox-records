@@ -1,8 +1,0 @@
-<a class="news-summary-card-link" href="{{ include.item.url | relative_url }}">
-  <div class="news-summary-card-media-frame">
-    <img src="{{ include.item.image | relative_url }}" alt="{{ include.item.image_alt | default: include.item.title }}">
-  </div>
-  <p class="news-summary-card-date-text">{{ include.item.date | date: "%b %Y" }}</p>
-  <h3>{{ include.item.title }}</h3>
-  <p class="news-summary-card-summary-text">{{ include.item.summary }}</p>
-</a>

@@ -1,0 +1,24 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { createProjectRelativeUrl } from '@/config/site';
+
+interface Props {
+  artist: CollectionEntry<'artists'>;
+}
+
+const { artist } = Astro.props;
+const artistName = artist.data.title || 'Artist';
+const artistUrl = createProjectRelativeUrl(`/artists/${artist.data.slug}/`);
+---
+
+<a class="artist-roster-card-link" href={artistUrl}>
+  <img src={createProjectRelativeUrl(artist.data.image)} alt={artist.data.image_alt || artistName} />
+  <div class="artist-roster-card-overlay-layer"></div>
+  <div class="artist-roster-card-text">
+    {artist.data.genre && <p>{artist.data.genre}</p>}
+    <h3>
+      {artistName.toUpperCase()} <span aria-hidden="true">↗</span>
+    </h3>
+  </div>
+  {artist.data.bio && <p class="artist-roster-card-bio-text">{artist.data.bio}</p>}
+</a>

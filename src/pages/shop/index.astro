@@ -1,0 +1,10 @@
+---
+import RedirectLayout from '@/layouts/RedirectLayout.astro';
+
+const redirectUrl = 'https://blackboxrecords-shop.fourthwall.com';
+---
+
+<RedirectLayout pageTitle="Shop" pageDescription="Visit the BlackBox Records shop." redirectUrl={redirectUrl}>
+  <p>Redirecting...</p>
+  <p><a href={redirectUrl}>Continue</a></p>
+</RedirectLayout>

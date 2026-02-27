@@ -1,0 +1,52 @@
+---
+import { createProjectRelativeUrl, siteConfig } from '@/config/site';
+import { navigationItems } from '@/data/nav';
+import { socialItems } from '@/data/socials';
+import { labelSettings } from '@/data/settings';
+
+const currentYear = new Date().getUTCFullYear();
+const establishedYear = Number(labelSettings.established_year) || currentYear;
+const copyrightYears =
+  establishedYear > 0 && establishedYear < currentYear ? `${establishedYear}&ndash;${currentYear}` : `${currentYear}`;
+---
+
+<footer class="global-site-footer">
+  <div class="page-content-width-constrained-container global-site-footer-layout">
+    <div class="global-site-footer-brand">
+      <img src={createProjectRelativeUrl('/assets/images/brand/logo.png')} alt="BlackBox Records" />
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
+        magna aliqua.
+      </p>
+    </div>
+    <div class="global-site-footer-column">
+      <h3>Sitemap</h3>
+      <ul>
+        {
+          navigationItems.map((item) => (
+            <li>
+              <a href={createProjectRelativeUrl(item.url)}>{item.title}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+    <div class="global-site-footer-column">
+      <h3>Connect</h3>
+      <ul>
+        {
+          socialItems.map((item) => (
+            <li>
+              <a href={item.url}>{item.title}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+
+  <div class="global-site-footer-bottom page-content-width-constrained-container">
+    <p set:html={`&copy; ${copyrightYears} ${siteConfig.title}. <span class=\"global-site-footer-legal-text\">All rights reserved.</span>`}></p>
+    {establishedYear > 0 && establishedYear <= currentYear && <p>Est. {establishedYear}</p>}
+  </div>
+</footer>

@@ -1,0 +1,26 @@
+---
+import { createProjectRelativeUrl } from '@/config/site';
+
+interface Props {
+  sectionLabel?: string;
+  title: string;
+  image?: string;
+  imageAlt?: string;
+  imageColor?: boolean;
+}
+
+const { sectionLabel, title, image, imageAlt, imageColor = false } = Astro.props;
+---
+
+<section class="internal-page-hero-section">
+  <div class="page-content-width-constrained-container">
+    {sectionLabel && <p class="internal-page-hero-kicker-text">{sectionLabel}</p>}
+    <h1 class="internal-page-hero-title-text">{title.toUpperCase()}</h1>
+  </div>
+</section>
+{image && (
+  <section class={`internal-page-hero-image-frame${imageColor ? ' internal-page-hero-image-frame--color' : ''}`}>
+    <img src={createProjectRelativeUrl(image)} alt={imageAlt || title} />
+    <div class="internal-page-hero-image-overlay-layer"></div>
+  </section>
+)}

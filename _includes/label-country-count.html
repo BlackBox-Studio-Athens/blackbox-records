@@ -1,3 +1,0 @@
-{% assign artists_with_country = site.artists | where_exp: "item", "item.country" %}
-{% assign country_names = artists_with_country | map: "country" | uniq %}
-{{ country_names | size }}

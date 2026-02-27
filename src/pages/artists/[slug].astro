@@ -1,0 +1,82 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
+
+import InternalPageHero from '@/components/InternalPageHero.astro';
+import ReleaseCard from '@/components/cards/ReleaseCard.astro';
+import SiteLayout from '@/layouts/SiteLayout.astro';
+import { createProjectRelativeUrl } from '@/config/site';
+
+export async function getStaticPaths() {
+  const artists = await getCollection('artists');
+  return artists.map((artist) => ({
+    params: { slug: artist.data.slug },
+    props: { artist },
+  }));
+}
+
+interface Props {
+  artist: CollectionEntry<'artists'>;
+}
+
+const { artist } = Astro.props;
+const artistName = artist.data.title || 'Artist';
+const sectionLabel = artist.data.section_label || 'Artist';
+
+const artistReleases = (await getCollection('releases'))
+  .filter((release) => release.data.artist_slug === artist.data.slug)
+  .sort((left, right) => right.data.release_date.getTime() - left.data.release_date.getTime());
+---
+
+<SiteLayout
+  pageTitle={artistName}
+  pageDescription={artist.data.bio}
+  image={artist.data.image}
+  imageAlt={artist.data.image_alt || artistName}
+>
+  <InternalPageHero
+    sectionLabel={sectionLabel}
+    title={artistName}
+    image={artist.data.image}
+    imageAlt={artist.data.image_alt || artistName}
+    imageColor={true}
+  />
+
+  <section class="page-section-standard-spacing">
+    <div class="page-content-width-constrained-container long-form-rich-text-content">
+      {(artist.data.genre || artist.data.country) && (
+        <p class="intro-lead-text-block">
+          {artist.data.genre || ''}
+          {artist.data.genre && artist.data.country ? ' · ' : ''}
+          {artist.data.country || ''}
+        </p>
+      )}
+      {artist.data.bio && <p>{artist.data.bio}</p>}
+      {artist.data.upcoming_release && (
+        <>
+          <h2>Upcoming Release</h2>
+          <p>{artist.data.upcoming_release}</p>
+        </>
+      )}
+    </div>
+  </section>
+
+  {artistReleases.length > 0 && (
+    <section class="page-section-standard-spacing-with-divider">
+      <div class="page-content-width-constrained-container">
+        <div class="page-section-header-layout-spaced">
+          <div>
+            <p class="page-section-kicker-text">Discography</p>
+            <h2 class="page-section-title-text">Releases</h2>
+          </div>
+          <a class="page-section-header-link" href={createProjectRelativeUrl('/releases/')}>
+            View all <span aria-hidden="true">&rarr;</span>
+          </a>
+        </div>
+        <div class="release-summary-card-grid">
+          {artistReleases.map((release) => <ReleaseCard release={release} artist={artist} />)}
+        </div>
+      </div>
+    </section>
+  )}
+</SiteLayout>

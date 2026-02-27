@@ -1,0 +1,131 @@
+---
+import '@/styles/global.css';
+import '@/styles/site-styles.scss';
+
+import Footer from '@/components/Footer.astro';
+import Header from '@/components/Header.astro';
+import MusicPlayerModal from '@/components/music/MusicPlayerModal.astro';
+import { createAbsoluteSiteUrl, createProjectRelativeUrl, siteConfig } from '@/config/site';
+import { labelSettings } from '@/data/settings';
+import { socialItems } from '@/data/socials';
+
+interface Props {
+  pageTitle?: string;
+  pageDescription?: string;
+  pageSummary?: string;
+  ogImage?: string;
+  image?: string;
+  coverImage?: string;
+  imageAlt?: string;
+  coverImageAlt?: string;
+  bodyClass?: string;
+  mainClass?: string;
+  layoutType?: string;
+  pageDate?: Date;
+  redirectUrl?: string;
+}
+
+const {
+  pageTitle,
+  pageDescription,
+  pageSummary,
+  ogImage,
+  image,
+  coverImage,
+  imageAlt,
+  coverImageAlt,
+  bodyClass,
+  mainClass,
+  layoutType,
+  pageDate,
+  redirectUrl,
+} = Astro.props;
+
+const metadataTitle = pageTitle || siteConfig.title;
+const metadataDescription = pageDescription || pageSummary || siteConfig.description;
+const metadataUrl = Astro.url.toString();
+const metadataImageRaw = ogImage || coverImage || image || siteConfig.socialImage;
+const metadataImage = metadataImageRaw.includes('://') ? metadataImageRaw : createAbsoluteSiteUrl(metadataImageRaw);
+const metadataImageAlt = coverImageAlt || imageAlt || siteConfig.socialImageAlt || siteConfig.title;
+const metadataType = layoutType === 'news' ? 'article' : 'website';
+const orgName = labelSettings.label_name || siteConfig.title;
+const orgUrl = labelSettings.url || createAbsoluteSiteUrl('/');
+const orgLogo = labelSettings.logo?.includes('://') ? labelSettings.logo : createAbsoluteSiteUrl(labelSettings.logo);
+const sameAs = socialItems.filter((item) => item.url && item.url !== '#').map((item) => item.url);
+const htmlTitle = pageTitle ? `${pageTitle} | ${siteConfig.title}` : siteConfig.title;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{htmlTitle}</title>
+    <meta name="description" content={metadataDescription} />
+    {redirectUrl && <meta content={`0; url=${redirectUrl}`} http-equiv="refresh" />}
+
+    <meta property="og:site_name" content={siteConfig.title} />
+    <meta property="og:title" content={metadataTitle} />
+    <meta property="og:description" content={metadataDescription} />
+    <meta property="og:type" content={metadataType} />
+    <meta property="og:url" content={metadataUrl} />
+    <meta property="og:image" content={metadataImage} />
+    <meta property="og:image:alt" content={metadataImageAlt} />
+    <meta property="og:locale" content="en_US" />
+    {layoutType === 'news' && pageDate && <meta property="article:published_time" content={pageDate.toISOString()} />}
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={metadataTitle} />
+    <meta name="twitter:description" content={metadataDescription} />
+    <meta name="twitter:image" content={metadataImage} />
+    <meta name="twitter:image:alt" content={metadataImageAlt} />
+
+    <link rel="canonical" href={redirectUrl || metadataUrl} />
+
+    <script type="application/ld+json" set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: orgName,
+      url: orgUrl,
+      logo: orgLogo,
+      description: siteConfig.description,
+      foundingDate: String(labelSettings.established_year),
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: labelSettings.location.locality,
+        addressCountry: labelSettings.location.country,
+      },
+      sameAs,
+    })}></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Geist+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap"
+      rel="preload"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Geist+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+  </head>
+  <body class={bodyClass}>
+    <a class="accessibility-skip-to-content-link" href="#main">Skip to content</a>
+    <Header pathname={Astro.url.pathname} />
+    <main class={`page-main-content-region${mainClass ? ` ${mainClass}` : ''}`} id="main">
+      <slot />
+    </main>
+    <MusicPlayerModal />
+    <Footer />
+    <script defer src={createProjectRelativeUrl('/assets/js/site-interactions.js')}></script>
+    {
+      import.meta.env.PROD && (
+        <script data-domain="zantoichi.github.io" defer src="https://www.glancelytics.com/js/script.js"></script>
+      )
+    }
+  </body>
+</html>

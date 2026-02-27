@@ -1,0 +1,30 @@
+---
+import { newsletterContent } from '@/data/newsletter';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+
+interface Props {
+  id?: string;
+  formId?: string;
+}
+
+const { id, formId = 'newsletter-email' } = Astro.props;
+---
+
+<section class="newsletter-signup-area" id={id}>
+  <div class="newsletter-background-ring-layer" aria-hidden="true">
+    <span></span>
+    <span></span>
+  </div>
+  <div class="page-content-width-constrained-container newsletter-content-block">
+    <p class="page-section-kicker-text">{newsletterContent.section_label}</p>
+    <h2 class="page-section-title-text">{newsletterContent.title.toUpperCase()}</h2>
+    <p>{newsletterContent.description}</p>
+    <form class="newsletter-signup-form">
+      <label class="accessibility-visually-hidden-text" for={formId}>Email address</label>
+      <Input id={formId} type="email" placeholder={newsletterContent.placeholder} required />
+      <Button type="submit">{newsletterContent.button_label}</Button>
+    </form>
+    <p class="newsletter-signup-note-text">{newsletterContent.note}</p>
+  </div>
+</section>

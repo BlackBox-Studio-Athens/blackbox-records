@@ -1,0 +1,26 @@
+---
+import { getCollection } from 'astro:content';
+
+import InternalPageHero from '@/components/InternalPageHero.astro';
+import ReleaseCard from '@/components/cards/ReleaseCard.astro';
+import SiteLayout from '@/layouts/SiteLayout.astro';
+
+const artists = await getCollection('artists');
+const releases = (await getCollection('releases')).slice().sort((left, right) => right.data.release_date.getTime() - left.data.release_date.getTime());
+---
+
+<SiteLayout pageTitle="Releases" pageDescription="Releases and label catalog.">
+  <InternalPageHero sectionLabel="Releases" title="Releases" />
+  <section class="page-section-compact-spacing">
+    <div class="page-content-width-constrained-container">
+      <div class="release-summary-card-grid">
+        {
+          releases.map((release) => {
+            const artist = artists.find((item) => item.data.slug === release.data.artist_slug);
+            return <ReleaseCard release={release} artist={artist} />;
+          })
+        }
+      </div>
+    </div>
+  </section>
+</SiteLayout>

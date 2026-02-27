@@ -1,0 +1,45 @@
+export const aboutContent = {
+  hero: {
+    section_label: 'About',
+    title: 'The Label',
+    image: '/assets/images/backgrounds/dark-recording-studio-vintage-equipment.jpg',
+    image_alt: 'BlackBox Records Studio',
+  },
+  lead:
+    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.',
+  sections: [
+    {
+      title: 'Manifest',
+      paragraphs: [
+        'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
+        'Praesent vel tortor quis nisi tincidunt eleifend. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae. Nullam quis risus eget urna mollis ornare vel eu leo.',
+      ],
+    },
+    {
+      title: 'Philosophy',
+      paragraphs: [
+        'Curabitur blandit tempus porttitor. Donec id elit non mi porta gravida at eget metus. Maecenas sed diam eget risus varius blandit sit amet non magna. Aenean lacinia bibendum nulla sed consectetur.',
+        'Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Nullam id dolor id nibh ultricies vehicula ut id elit.',
+      ],
+    },
+  ],
+  quote: {
+    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt.',
+    cite: 'Founder, BlackBox Records',
+  },
+  contact: {
+    title: 'Contact',
+    intro: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+    items: [
+      { label: 'General', value: 'info@blackboxrecords.com' },
+      { label: 'Demo Submissions', value: 'demos@blackboxrecords.com' },
+      { label: 'Press', value: 'press@blackboxrecords.com' },
+    ],
+  },
+  stats: [
+    { key: 'artists', label: 'Artists' },
+    { key: 'releases', label: 'Releases' },
+    { key: 'countries', label: 'Countries' },
+    { key: 'year', label: 'Year' },
+  ],
+} as const;

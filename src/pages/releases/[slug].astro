@@ -1,0 +1,106 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
+
+import SiteLayout from '@/layouts/SiteLayout.astro';
+import { createProjectRelativeUrl } from '@/config/site';
+import { formatYear } from '@/utils/content';
+import { buildEmbeddedPlayerData, resolveMerchHref } from '@/utils/music';
+
+export async function getStaticPaths() {
+  const releases = await getCollection('releases');
+  return releases.map((release) => ({
+    params: { slug: release.id },
+    props: { release },
+  }));
+}
+
+interface Props {
+  release: CollectionEntry<'releases'>;
+}
+
+const { release } = Astro.props;
+const artists = await getCollection('artists');
+const releaseArtist = artists.find((artist) => artist.data.slug === release.data.artist_slug);
+const artistFallbackName = release.data.artist_slug || 'Artist';
+const artistName = releaseArtist?.data.title || artistFallbackName.replace(/-/g, ' ');
+const artistUrl = releaseArtist ? createProjectRelativeUrl(`/artists/${releaseArtist.data.slug}/`) : createProjectRelativeUrl('/artists/');
+const releaseYear = formatYear(release.data.release_date);
+const embeddedPlayerTitle = `${release.data.title} — ${artistName}`;
+const embeddedPlayerData = buildEmbeddedPlayerData(release.data, embeddedPlayerTitle);
+const merchHref = resolveMerchHref(release.data.merch_url);
+
+const playerAttributes = embeddedPlayerData.hasProvider
+  ? {
+      'data-music-streaming-service-embedded-player-card': true,
+      'data-music-streaming-service-embedded-player-title': embeddedPlayerData.title,
+      'data-music-streaming-service-embedded-player-bandcamp-embed-url':
+        embeddedPlayerData.bandcampEmbedUrl || undefined,
+      'data-music-streaming-service-embedded-player-tidal-embed-url': embeddedPlayerData.tidalEmbedUrl || undefined,
+    }
+  : {};
+---
+
+<SiteLayout
+  pageTitle={release.data.title}
+  pageDescription={release.data.summary || `${release.data.title} by ${artistName}`}
+  coverImage={release.data.cover_image}
+  coverImageAlt={release.data.cover_image_alt || release.data.title}
+>
+  <section class="release-detail-hero-section">
+    <div class="page-content-width-constrained-container release-detail-hero-grid">
+      <div class="release-detail-cover-frame">
+        <img src={createProjectRelativeUrl(release.data.cover_image)} alt={release.data.cover_image_alt || release.data.title} />
+      </div>
+      <div class="release-detail-hero-content">
+        <p class="release-detail-kicker-text">Release</p>
+        <h1 class="release-detail-title-text">{release.data.title.toUpperCase()}</h1>
+        <p class="release-detail-artist-text">
+          <a href={artistUrl}>{artistName}</a>
+        </p>
+        <p class="release-detail-year-text">{releaseYear}</p>
+        {release.data.summary && <p class="release-detail-summary-text">{release.data.summary}</p>}
+        {
+          release.data.formats && (
+            <ul class="release-detail-format-list">
+              {release.data.formats.map((format) => <li>{format}</li>)}
+            </ul>
+          )
+        }
+        <div class="release-detail-cta-group">
+          {merchHref && (
+            <a class="call-to-action-button call-to-action-button--primary" href={merchHref}>
+              Buy merch
+            </a>
+          )}
+          {embeddedPlayerData.hasProvider && (
+            <button
+              class="call-to-action-button call-to-action-button--outline"
+              type="button"
+              data-music-streaming-service-embedded-player-trigger
+              {...playerAttributes}
+            >
+              Listen
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {release.data.credits && (
+    <section class="release-detail-credits-section">
+      <div class="page-content-width-constrained-container">
+        <h2 class="release-detail-section-title">Credits</h2>
+        <ul class="release-detail-credits-list">
+          {release.data.credits.map((credit) => (
+            <li>
+              <span class="release-detail-credit-role">{credit.role}</span>
+              <span class="release-detail-credit-name">{credit.name}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )}
+</SiteLayout>

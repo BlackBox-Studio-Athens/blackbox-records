@@ -1,62 +1,79 @@
 # BlackBox Records
 
-Static Jekyll site for the BlackBox Records label. Built for GitHub Pages, with
-content managed via Decap CMS.
+Static Astro site for the BlackBox Records label.
 
 ## Stack
 
-- Jekyll + Liquid templates
-- Sass (partials in `_sass/`, entrypoint `assets/css/site-styles.scss`)
-- Vanilla JavaScript (`assets/js/site-interactions.js`)
-- Decap CMS (`/admin`)
+- Astro 5 (static output)
+- React integration (for shadcn-ui primitives)
+- Tailwind CSS v4 + shadcn-ui setup
+- Legacy visual system preserved through imported site styles (`src/styles/site-styles.scss`)
+- Type-safe content collections (`src/content`)
+
+## URL model
+
+The production deployment is configured for GitHub Pages project hosting:
+
+- `site`: `https://zantoichi.github.io`
+- `base`: `/blackbox-records/`
+
+This is configured in `astro.config.mjs`.
+
+## Prerequisites
+
+- Node.js 20+
+- pnpm 10+
+
+## Setup
+
+```sh
+pnpm install
+```
 
 ## Local development
 
-1. `bundle install`
-2. `bundle exec jekyll serve --config _config.yml,_config.local.yml`
-3. Open `http://127.0.0.1:4000`
+```sh
+pnpm dev
+```
 
-## CMS (Decap)
+Clean dev run (mirrors the `ateleia` workflow):
 
-The admin UI lives at `/admin`.
+```sh
+pnpm dev:clean
+```
 
-Local editing uses the Decap proxy server:
+## Verification
 
-1. In one terminal: `bundle exec jekyll serve --config _config.yml,_config.local.yml`
-2. In another terminal: `npx decap-server`
-3. Open `http://127.0.0.1:4000/admin/`
+```sh
+pnpm check
+pnpm build
+```
 
-Commit messages are configured in `admin/config.yml` to follow Conventional
-Commits.
+## Content model
 
-## Content sources
+Content is managed directly in the repo (no CMS in this phase).
 
-- Home sections: `_data/home.yml`
-- Artists roster: `_artists/`
-- Releases: `_releases/`
-- News: `_news/`
-- About content: `_data/about.yml`
-- Newsletter: `_data/newsletter.yml`
-- Navigation: `_data/nav.yml`
-- Social links: `_data/socials.yml`
-- Site settings: `_data/settings.yml`
-- Page front matter: `index.md`, `about/index.md`, `artists/index.md`,
-  `news/index.md`, `releases/index.md`, `shop/index.md`
+- Artists: `src/content/artists/*.md`
+- Releases: `src/content/releases/*.md`
+- News: `src/content/news/*.md`
+- Site data: `src/data/*.ts`
 
-## Shop
+Collection schemas are defined in `src/content.config.ts`.
 
-The shop page redirects to the external Fourthwall store.
+## Project structure
 
-## Build
+- `src/layouts/`: document and page shell layouts
+- `src/components/`: shared sections, cards, player modal, UI primitives
+- `src/pages/`: routed Astro pages and endpoints
+- `src/styles/`: global Tailwind/shadcn layer + imported legacy style system
+- `public/assets/`: static images, JS, and 404 assets
 
-- `bundle exec jekyll build`
+## Build output
 
-## Deployment
+`pnpm build` outputs static files to `dist/`.
 
-GitHub Pages builds from `main` using `_config.yml`. Keep plugins compatible    
-with GitHub Pages.
+## WebStorm run configuration
 
-## Licensing
-
-- Code is MIT-licensed. See `LICENSE`.
-- Media assets in `/assets` are CC BY-ND 4.0. See `ASSETS_LICENSE.md`.
+- `.run/Astro Dev.run.xml` is included.
+- In WebStorm: Run/Debug Configurations -> `Astro Dev`.
+- It runs `pnpm run dev:clean` with the project Node interpreter and browser debugger enabled.

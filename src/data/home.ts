@@ -1,0 +1,43 @@
+export const homeContent = {
+  hero: {
+    tagline:
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent vel tortor quis nisi tincidunt eleifend.',
+    primary_button_text: 'Explore Artists',
+    primary_button_link: '/artists/',
+    secondary_button_text: 'Visit Shop',
+    secondary_button_link: '/shop/',
+  },
+  latest_releases: {
+    section_label: 'Latest',
+    title: 'Latest Releases',
+    link_text: 'View All',
+    link_url: '/releases/',
+  },
+  artists: {
+    section_label: 'Roster',
+    title: 'Featured Roster',
+    button_text: 'View Full Roster',
+    button_link: '/artists/',
+  },
+  news: {
+    section_label: 'Updates',
+    title: 'Latest News',
+    link_text: 'All News',
+    link_url: '/news/',
+  },
+  journey: {
+    section_label: 'About',
+    title: 'The Journey',
+    image: '/assets/images/backgrounds/dark-recording-studio-vintage-equipment.jpg',
+    image_alt: 'About BlackBox Records',
+    paragraphs: [
+      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+      'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',
+      'Praesent vel tortor quis nisi tincidunt eleifend. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae.',
+    ],
+    stats: [
+      { key: 'artists', label: 'Artists' },
+      { key: 'releases', label: 'Releases' },
+    ],
+  },
+} as const;
