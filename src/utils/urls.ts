@@ -1,11 +1,7 @@
-import { siteConfig } from '@/config/site';
-
-function normalizeBasePath(basePath: string) {
-  return basePath.replace(/\/$/, '');
-}
+import { getProjectBasePath } from '@/config/site';
 
 export function stripBasePath(pathname: string) {
-  const basePath = normalizeBasePath(import.meta.env.BASE_URL || siteConfig.basePath);
+  const basePath = getProjectBasePath();
   if (!basePath || basePath === '/') return pathname;
   return pathname.startsWith(basePath) ? pathname.slice(basePath.length) || '/' : pathname;
 }

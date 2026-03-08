@@ -1,20 +1,17 @@
 ---
-import { getCollection } from 'astro:content';
-
 import NewsCard from '@/components/cards/NewsCard.astro';
 import InternalPageHero from '@/components/InternalPageHero.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
+import { listNewsArticles } from '@/lib/catalog-data';
 
-const newsItems = (await getCollection('news')).slice().sort((left, right) => right.data.date.getTime() - left.data.date.getTime());
+const newsArticles = await listNewsArticles();
 ---
 
 <SiteLayout pageTitle="News" pageDescription="News updates.">
   <InternalPageHero sectionLabel="Updates" title="News" />
-  <section class="page-section-compact-spacing">
-    <div class="page-content-width-constrained-container">
-      <div class="news-summary-card-grid news-summary-card-grid--full">
-        {newsItems.map((item) => <NewsCard item={item} />)}
-      </div>
+  <section class="layout-container">
+    <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        {newsArticles.map((newsArticle) => <NewsCard item={newsArticle} />)}
     </div>
   </section>
 </SiteLayout>

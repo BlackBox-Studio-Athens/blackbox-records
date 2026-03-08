@@ -1,9 +1,8 @@
 ---
-layout: release
 title: Barren Point
-artist_slug: mass-culture
+artist: mass-culture
 release_date: 2024-02-01
-cover_image: /assets/images/releases/mass-culture-barren-point-cover.jpg
+cover_image: ./mass-culture-barren-point-cover.jpg
 cover_image_alt: Barren Point by Mass Culture
 merch_url: /shop/
 bandcamp_embed_url: https://bandcamp.com/EmbeddedPlayer/album=710431064/size=large/bgcol=ffffff/linkcol=0687f5/transparent=true/

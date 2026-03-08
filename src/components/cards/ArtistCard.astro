@@ -1,24 +1,120 @@
 ---
+import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import { createProjectRelativeUrl } from '@/config/site';
+import type { ArtistRosterReleaseContext } from '@/lib/catalog-data';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface Props {
   artist: CollectionEntry<'artists'>;
+  releaseContext?: ArtistRosterReleaseContext;
+  variant?: 'default' | 'featured-roster' | 'roster-detailed';
 }
 
-const { artist } = Astro.props;
+const { artist, releaseContext, variant = 'default' } = Astro.props;
 const artistName = artist.data.title || 'Artist';
 const artistUrl = createProjectRelativeUrl(`/artists/${artist.data.slug}/`);
+const isFeaturedRosterVariant = variant === 'featured-roster';
+const isRosterDetailedVariant = variant === 'roster-detailed';
+const releaseCount = releaseContext?.releaseCount ?? 0;
+const latestReleaseTitle = releaseContext?.latestReleaseTitle || 'No releases yet';
+const latestReleaseYear = releaseContext?.latestReleaseYear ? String(releaseContext.latestReleaseYear) : '';
+const hasLatestRelease = Boolean(releaseContext?.latestReleaseTitle);
 ---
 
-<a class="artist-roster-card-link" href={artistUrl}>
-  <img src={createProjectRelativeUrl(artist.data.image)} alt={artist.data.image_alt || artistName} />
-  <div class="artist-roster-card-overlay-layer"></div>
-  <div class="artist-roster-card-text">
-    {artist.data.genre && <p>{artist.data.genre}</p>}
-    <h3>
-      {artistName.toUpperCase()} <span aria-hidden="true">↗</span>
-    </h3>
-  </div>
-  {artist.data.bio && <p class="artist-roster-card-bio-text">{artist.data.bio}</p>}
+<a class="group block h-full" href={artistUrl} data-astro-prefetch>
+  {
+    isFeaturedRosterVariant ? (
+      <Card className="catalog-tile-card catalog-tile-card--featured-roster relative rounded-none border-[#2b2b2b] bg-[#141414] shadow-none">
+        <div class="relative aspect-[3/4] overflow-hidden">
+          <Image
+            src={artist.data.image}
+            alt={artist.data.image_alt || artistName}
+            class="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.025]"
+            sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
+          />
+          <div class="absolute inset-0 bg-gradient-to-t from-black via-black/76 via-32% to-black/12"></div>
+          <CardContent className="home-featured-roster-card__content absolute inset-x-0 bottom-0 z-[1] space-y-3 p-5 sm:p-6">
+            {artist.data.genre && (
+              <p class="text-[11px] tracking-[0.18em] uppercase text-[#d0d0d0]">{artist.data.genre}</p>
+            )}
+            <h3 class="font-display text-[2rem] leading-none tracking-[0.08em] uppercase text-foreground sm:text-[2.2rem]">
+              {artistName.toUpperCase()}
+            </h3>
+          </CardContent>
+        </div>
+      </Card>
+    ) : isRosterDetailedVariant ? (
+      <Card className="catalog-tile-card artist-roster-card relative rounded-none border-[#2b2b2b] bg-[#141414] shadow-none">
+        <div class="relative aspect-[3/4] overflow-hidden border-b border-[#2b2b2b]">
+          <Image
+            src={artist.data.image}
+            alt={artist.data.image_alt || artistName}
+            class="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.025]"
+            sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
+          />
+          <div class="absolute inset-0 bg-gradient-to-t from-black via-black/76 via-32% to-black/12"></div>
+          <div class="absolute inset-x-0 bottom-0 space-y-3 p-5 sm:p-6">
+            {artist.data.genre && (
+              <p class="text-[11px] tracking-[0.18em] uppercase text-[#d0d0d0]">{artist.data.genre}</p>
+            )}
+            <h3 class="font-display text-[2rem] leading-none tracking-[0.08em] uppercase text-foreground sm:text-[2.2rem]">
+              {artistName.toUpperCase()}
+            </h3>
+          </div>
+        </div>
+        <CardContent className="artist-roster-card__body space-y-4 p-5 pt-5">
+          {artist.data.bio && (
+            <p class="artist-roster-card__bio text-sm leading-relaxed text-muted-foreground">
+              {artist.data.bio}
+            </p>
+          )}
+          <div class="artist-roster-card__context border-t border-[#2b2b2b] pt-4">
+            <div class="artist-release-stat artist-release-stat--roster">
+              <span class="artist-release-stat__value">{releaseCount}</span>
+              <span class="artist-release-stat__label">Releases</span>
+            </div>
+            <div class="artist-latest-teaser artist-latest-teaser--roster">
+              <p class="artist-latest-teaser__label">Latest</p>
+              {
+                hasLatestRelease ? (
+                  <>
+                    <p class="artist-latest-teaser__title">{latestReleaseTitle}</p>
+                    {latestReleaseYear && <p class="artist-latest-teaser__meta">{latestReleaseYear}</p>}
+                  </>
+                ) : (
+                  <p class="artist-latest-teaser__title artist-latest-teaser__title--muted">{latestReleaseTitle}</p>
+                )
+              }
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    ) : (
+      <Card className="catalog-tile-card relative rounded-none border-[#2b2b2b] bg-[#141414] shadow-none">
+        <div class="relative aspect-[4/5] overflow-hidden">
+          <Image
+            src={artist.data.image}
+            alt={artist.data.image_alt || artistName}
+            class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            sizes="(min-width: 1280px) 19vw, (min-width: 640px) 50vw, 100vw"
+          />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+          <div class="absolute inset-x-0 bottom-0 space-y-3 p-5">
+            {artist.data.genre && (
+              <p class="text-[11px] tracking-[0.18em] uppercase text-[#d0d0d0]">{artist.data.genre}</p>
+            )}
+            <h3 class="font-display text-3xl tracking-[0.08em] uppercase text-foreground">
+              {artistName.toUpperCase()}
+            </h3>
+          </div>
+        </div>
+        {artist.data.bio && (
+          <CardContent className="p-5 pt-4 text-sm leading-relaxed text-muted-foreground">
+            {artist.data.bio}
+          </CardContent>
+        )}
+      </Card>
+    )
+  }
 </a>

@@ -1,21 +1,21 @@
 ---
 import '@/styles/global.css';
-import '@/styles/site-styles.scss';
 
+import type { ImageMetadata } from 'astro';
+
+import AppShell from '@/components/app-shell/AppShell.astro';
 import Footer from '@/components/Footer.astro';
 import Header from '@/components/Header.astro';
-import MusicPlayerModal from '@/components/music/MusicPlayerModal.astro';
 import { createAbsoluteSiteUrl, createProjectRelativeUrl, siteConfig } from '@/config/site';
-import { labelSettings } from '@/data/settings';
-import { socialItems } from '@/data/socials';
+import { getLabelSettings, getSocialItems } from '@/lib/site-data';
 
 interface Props {
   pageTitle?: string;
   pageDescription?: string;
   pageSummary?: string;
   ogImage?: string;
-  image?: string;
-  coverImage?: string;
+  image?: string | ImageMetadata;
+  coverImage?: string | ImageMetadata;
   imageAlt?: string;
   coverImageAlt?: string;
   bodyClass?: string;
@@ -41,11 +41,14 @@ const {
   redirectUrl,
 } = Astro.props;
 
+const [labelSettings, socialItems] = await Promise.all([getLabelSettings(), getSocialItems()]);
+
 const metadataTitle = pageTitle || siteConfig.title;
 const metadataDescription = pageDescription || pageSummary || siteConfig.description;
 const metadataUrl = Astro.url.toString();
 const metadataImageRaw = ogImage || coverImage || image || siteConfig.socialImage;
-const metadataImage = metadataImageRaw.includes('://') ? metadataImageRaw : createAbsoluteSiteUrl(metadataImageRaw);
+const metadataImagePath = typeof metadataImageRaw === 'string' ? metadataImageRaw : metadataImageRaw.src;
+const metadataImage = metadataImagePath.includes('://') ? metadataImagePath : createAbsoluteSiteUrl(metadataImagePath);
 const metadataImageAlt = coverImageAlt || imageAlt || siteConfig.socialImageAlt || siteConfig.title;
 const metadataType = layoutType === 'news' ? 'article' : 'website';
 const orgName = labelSettings.label_name || siteConfig.title;
@@ -53,6 +56,8 @@ const orgUrl = labelSettings.url || createAbsoluteSiteUrl('/');
 const orgLogo = labelSettings.logo?.includes('://') ? labelSettings.logo : createAbsoluteSiteUrl(labelSettings.logo);
 const sameAs = socialItems.filter((item) => item.url && item.url !== '#').map((item) => item.url);
 const htmlTitle = pageTitle ? `${pageTitle} | ${siteConfig.title}` : siteConfig.title;
+const resolvedBodyClass = ['min-h-screen overflow-x-clip bg-background text-foreground', bodyClass].filter(Boolean).join(' ');
+const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)]', mainClass].filter(Boolean).join(' ');
 ---
 
 <!doctype html>
@@ -62,6 +67,7 @@ const htmlTitle = pageTitle ? `${pageTitle} | ${siteConfig.title}` : siteConfig.
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{htmlTitle}</title>
     <meta name="description" content={metadataDescription} />
+    <link rel="icon" href={createProjectRelativeUrl('/assets/images/brand/logo.png')} />
     {redirectUrl && <meta content={`0; url=${redirectUrl}`} http-equiv="refresh" />}
 
     <meta property="og:site_name" content={siteConfig.title} />
@@ -82,7 +88,7 @@ const htmlTitle = pageTitle ? `${pageTitle} | ${siteConfig.title}` : siteConfig.
 
     <link rel="canonical" href={redirectUrl || metadataUrl} />
 
-    <script type="application/ld+json" set:html={JSON.stringify({
+    <script is:inline type="application/ld+json" set:html={JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'Organization',
       name: orgName,
@@ -113,18 +119,17 @@ const htmlTitle = pageTitle ? `${pageTitle} | ${siteConfig.title}` : siteConfig.
       />
     </noscript>
   </head>
-  <body class={bodyClass}>
+  <body class={resolvedBodyClass}>
     <a class="accessibility-skip-to-content-link" href="#main">Skip to content</a>
     <Header pathname={Astro.url.pathname} />
-    <main class={`page-main-content-region${mainClass ? ` ${mainClass}` : ''}`} id="main">
+    <main class={resolvedMainClass} id="main" tabindex="-1" data-app-shell-main>
       <slot />
     </main>
-    <MusicPlayerModal />
+    <AppShell />
     <Footer />
-    <script defer src={createProjectRelativeUrl('/assets/js/site-interactions.js')}></script>
     {
       import.meta.env.PROD && (
-        <script data-domain="zantoichi.github.io" defer src="https://www.glancelytics.com/js/script.js"></script>
+        <script is:inline data-domain="zantoichi.github.io" defer src="https://www.glancelytics.com/js/script.js"></script>
       )
     }
   </body>

@@ -1,0 +1,43 @@
+---
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+import { render } from 'astro:content';
+
+import InternalPageHero from '@/components/InternalPageHero.astro';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { formatMonthYear } from '@/utils/content';
+
+interface Props {
+  item: CollectionEntry<'news'>;
+}
+
+const { item } = Astro.props;
+const { Content } = await render(item);
+const sectionLabel = item.data.section_label || 'News';
+---
+
+<InternalPageHero sectionLabel={sectionLabel} title={item.data.title} />
+<section class="layout-container">
+  <Card className="surface-card">
+    <CardContent className="space-y-6 p-7 sm:p-9">
+      <Badge variant="outline" className="border-border/70 bg-background/80 text-xs tracking-[0.14em] uppercase text-muted-foreground">
+        {formatMonthYear(item.data.date)}
+      </Badge>
+      {item.data.image && (
+        <div class="overflow-hidden rounded-lg border border-border/70">
+          <Image
+            src={item.data.image}
+            alt={item.data.image_alt || item.data.title}
+            class="h-auto w-full object-cover"
+            sizes="(min-width: 1024px) 72rem, 100vw"
+          />
+        </div>
+      )}
+      {item.data.summary && <p class="font-display text-3xl tracking-[0.06em] uppercase text-foreground">{item.data.summary}</p>}
+      <div class="news-markdown-content text-sm leading-relaxed text-muted-foreground">
+        <Content />
+      </div>
+    </CardContent>
+  </Card>
+</section>

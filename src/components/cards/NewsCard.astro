@@ -1,20 +1,32 @@
 ---
+import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import { createProjectRelativeUrl } from '@/config/site';
+import { Card, CardContent } from '@/components/ui/card';
 import { formatMonthYear } from '@/utils/content';
 
 interface Props {
   item: CollectionEntry<'news'>;
+  showSummary?: boolean;
 }
 
-const { item } = Astro.props;
+const { item, showSummary = true } = Astro.props;
 ---
 
-<a class="news-summary-card-link" href={createProjectRelativeUrl(`/news/${item.id}/`)}>
-  <div class="news-summary-card-media-frame">
-    <img src={createProjectRelativeUrl(item.data.image)} alt={item.data.image_alt || item.data.title} />
-  </div>
-  <p class="news-summary-card-date-text">{formatMonthYear(item.data.date)}</p>
-  <h3>{item.data.title}</h3>
-  <p class="news-summary-card-summary-text">{item.data.summary}</p>
+<a class="group block h-full" href={createProjectRelativeUrl(`/news/${item.id}/`)} data-astro-prefetch>
+  <Card className="catalog-tile-card rounded-none border-[#2b2b2b] bg-[#141414] shadow-none">
+    <div class="aspect-[16/10] overflow-hidden border-b border-[#2b2b2b]">
+      <Image
+        src={item.data.image}
+        alt={item.data.image_alt || item.data.title}
+        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        sizes="(min-width: 1280px) 30vw, (min-width: 768px) 50vw, 100vw"
+      />
+    </div>
+    <CardContent className="space-y-3 p-5">
+      <p class="text-[11px] tracking-[0.18em] uppercase text-muted-foreground">{formatMonthYear(item.data.date)}</p>
+      <h3 class="font-display text-3xl tracking-[0.04em] text-foreground">{item.data.title}</h3>
+      {showSummary && <p class="text-sm leading-relaxed text-muted-foreground">{item.data.summary}</p>}
+    </CardContent>
+  </Card>
 </a>

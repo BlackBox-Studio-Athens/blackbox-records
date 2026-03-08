@@ -1,0 +1,12 @@
+---
+import AppShellRoot from '@/components/app-shell/AppShellRoot';
+import { getHeaderNavigationItems, getLabelSettings } from '@/lib/site-data';
+
+const [mobileNavigationItems, labelSettings] = await Promise.all([getHeaderNavigationItems(), getLabelSettings()]);
+---
+
+<AppShellRoot
+  client:load
+  mobileNavigationItems={mobileNavigationItems}
+  siteTitle={labelSettings.label_name}
+/>

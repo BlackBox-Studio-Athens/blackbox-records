@@ -2,6 +2,7 @@
 import { newsletterContent } from '@/data/newsletter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface Props {
   id?: string;
@@ -11,20 +12,33 @@ interface Props {
 const { id, formId = 'newsletter-email' } = Astro.props;
 ---
 
-<section class="newsletter-signup-area" id={id}>
-  <div class="newsletter-background-ring-layer" aria-hidden="true">
-    <span></span>
-    <span></span>
-  </div>
-  <div class="page-content-width-constrained-container newsletter-content-block">
-    <p class="page-section-kicker-text">{newsletterContent.section_label}</p>
-    <h2 class="page-section-title-text">{newsletterContent.title.toUpperCase()}</h2>
-    <p>{newsletterContent.description}</p>
-    <form class="newsletter-signup-form">
-      <label class="accessibility-visually-hidden-text" for={formId}>Email address</label>
-      <Input id={formId} type="email" placeholder={newsletterContent.placeholder} required />
-      <Button type="submit">{newsletterContent.button_label}</Button>
-    </form>
-    <p class="newsletter-signup-note-text">{newsletterContent.note}</p>
+<section class="layout-container mt-16" id={id}>
+  <div class="surface-card relative overflow-hidden rounded-xl border">
+    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_-15%,rgba(255,255,255,0.12),transparent_42%),radial-gradient(circle_at_86%_20%,rgba(255,255,255,0.08),transparent_40%)]"></div>
+    <div class="pointer-events-none absolute -left-14 top-[-4.5rem] h-40 w-40 rounded-full border border-border/50 animate-hero-orbit"></div>
+    <div class="pointer-events-none absolute -right-16 bottom-[-5rem] h-44 w-44 rounded-full border border-border/50 animate-hero-orbit [animation-duration:28s]"></div>
+    <Card className="relative border-none bg-transparent shadow-none">
+      <CardHeader className="pb-2">
+        <p class="text-xs tracking-[0.2em] text-muted-foreground uppercase">{newsletterContent.section_label}</p>
+        <CardTitle className="font-display text-4xl tracking-[0.09em] uppercase">{newsletterContent.title.toUpperCase()}</CardTitle>
+      </CardHeader>
+      <CardContent className="pb-8">
+        <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">{newsletterContent.description}</p>
+        <form class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <label class="accessibility-visually-hidden-text" for={formId}>Email address</label>
+          <Input
+            id={formId}
+            type="email"
+            placeholder={newsletterContent.placeholder}
+            required
+            className="h-11 rounded-md border-border/70 bg-background/85"
+          />
+          <Button type="submit" className="h-11 rounded-md px-6 uppercase tracking-[0.12em]">
+            {newsletterContent.button_label}
+          </Button>
+        </form>
+        <p class="mt-3 text-xs uppercase tracking-[0.08em] text-muted-foreground">{newsletterContent.note}</p>
+      </CardContent>
+    </Card>
   </div>
 </section>

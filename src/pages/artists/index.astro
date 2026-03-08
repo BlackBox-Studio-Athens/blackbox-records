@@ -1,20 +1,41 @@
 ---
-import { getCollection } from 'astro:content';
-
 import ArtistCard from '@/components/cards/ArtistCard.astro';
 import InternalPageHero from '@/components/InternalPageHero.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
+import { listArtistProfiles, mapArtistRosterReleaseContextById } from '@/lib/catalog-data';
 
-const artists = (await getCollection('artists')).sort((left, right) => left.data.title.localeCompare(right.data.title));
+const artistProfiles = await listArtistProfiles();
+const releaseContextByArtistId = await mapArtistRosterReleaseContextById();
 ---
 
 <SiteLayout pageTitle="Artists" pageDescription="Artists roster.">
   <InternalPageHero sectionLabel="Roster" title="Artists" />
-  <section class="page-section-compact-spacing">
-    <div class="page-content-width-constrained-container">
-      <div class="artist-roster-card-grid">
-        {artists.map((artist) => <ArtistCard artist={artist} />)}
-      </div>
+  <section class="layout-container artists-roster-section" data-artists-roster-root>
+    <div data-artists-roster-filters></div>
+    <div class="artists-roster-grid">
+      {
+        artistProfiles.map((artistProfile) => {
+          const releaseContext = releaseContextByArtistId.get(artistProfile.id) || {
+            latestReleaseTitle: null,
+            latestReleaseYear: null,
+            releaseCount: 0,
+          };
+          return (
+            <div
+              class="artists-roster-grid__item"
+              data-artist-roster-item
+              data-artist-title={artistProfile.data.title}
+              data-artist-genre={artistProfile.data.genre || ''}
+              data-artist-country={artistProfile.data.country || ''}
+              data-artist-bio={(artistProfile.data.bio || '').replace(/\s+/g, ' ').trim()}
+              data-artist-latest-release-title={releaseContext.latestReleaseTitle || ''}
+              data-artist-latest-release-year={releaseContext.latestReleaseYear ? String(releaseContext.latestReleaseYear) : ''}
+            >
+              <ArtistCard artist={artistProfile} releaseContext={releaseContext} variant="roster-detailed" />
+            </div>
+          );
+        })
+      }
     </div>
   </section>
 </SiteLayout>

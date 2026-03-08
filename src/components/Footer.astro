@@ -1,52 +1,112 @@
 ---
-import { createProjectRelativeUrl, siteConfig } from '@/config/site';
-import { navigationItems } from '@/data/nav';
-import { socialItems } from '@/data/socials';
-import { labelSettings } from '@/data/settings';
+import { createProjectRelativeUrl, resolveLinkAttributes, siteConfig } from '@/config/site';
+import LinktreeIcon from '@/components/icons/LinktreeIcon.astro';
+import { getFooterNavigationItems, getLabelSettings, getSocialItems } from '@/lib/site-data';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Disc3, Facebook, Globe2, Instagram } from 'lucide-react';
 
+const [footerNavigationItems, socialItems, labelSettings] = await Promise.all([
+  getFooterNavigationItems(),
+  getSocialItems(),
+  getLabelSettings(),
+]);
 const currentYear = new Date().getUTCFullYear();
 const establishedYear = Number(labelSettings.established_year) || currentYear;
 const copyrightYears =
-  establishedYear > 0 && establishedYear < currentYear ? `${establishedYear}&ndash;${currentYear}` : `${currentYear}`;
+  establishedYear > 0 && establishedYear < currentYear ? `${establishedYear}-${currentYear}` : `${currentYear}`;
+const footerDescription = siteConfig.description;
+const footerLabel = labelSettings.label_name || siteConfig.title;
+const footerSocialItems = socialItems
+  .filter((item) => item.url.trim() && item.url.trim() !== '#')
+  .map((item) => {
+    const normalizedTitle = item.title.trim().toLowerCase();
+    const iconName = normalizedTitle.includes('insta')
+      ? 'instagram'
+      : normalizedTitle.includes('face')
+        ? 'facebook'
+        : normalizedTitle.includes('link')
+          ? 'linktree'
+        : normalizedTitle.includes('band')
+          ? 'bandcamp'
+          : 'generic';
+
+    return {
+      ...item,
+      iconName,
+    };
+  });
 ---
 
-<footer class="global-site-footer">
-  <div class="page-content-width-constrained-container global-site-footer-layout">
-    <div class="global-site-footer-brand">
-      <img src={createProjectRelativeUrl('/assets/images/brand/logo.png')} alt="BlackBox Records" />
-      <p>
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.
-      </p>
+<footer class="site-footer-shell mt-12 border-t border-border">
+  <div class="page-content-width-constrained-container site-footer-top">
+    <div class="site-footer-brand">
+      <img src={createProjectRelativeUrl('/assets/images/brand/logo.png')} alt="BlackBox Records" class="site-footer-logo" />
+      <div class="space-y-2">
+        <p class="site-footer-description">
+          {footerDescription}
+        </p>
+        <div class="site-footer-social-row" aria-label="Connect">
+          {
+            footerSocialItems.map((item) => {
+              const linkAttributes = resolveLinkAttributes(item.url);
+
+              return (
+                <a
+                  href={linkAttributes.href}
+                  target={linkAttributes.target}
+                  rel={linkAttributes.rel}
+                  class={cn(
+                    buttonVariants({ variant: 'ghost' }),
+                    'site-footer-social-link h-11 w-11 px-0 hover:bg-transparent focus-visible:bg-transparent md:h-9 md:w-9',
+                  )}
+                  aria-label={item.title}
+                  title={item.title}
+                >
+                  {item.iconName === 'instagram' ? <Instagram className="site-footer-social-icon" aria-hidden="true" /> : null}
+                  {item.iconName === 'facebook' ? <Facebook className="site-footer-social-icon" aria-hidden="true" /> : null}
+                  {item.iconName === 'linktree' ? <LinktreeIcon class="site-footer-social-icon" /> : null}
+                  {item.iconName === 'bandcamp' ? <Disc3 className="site-footer-social-icon" aria-hidden="true" /> : null}
+                  {item.iconName === 'generic' ? <Globe2 className="site-footer-social-icon" aria-hidden="true" /> : null}
+                  <span class="accessibility-visually-hidden-text">{item.title}</span>
+                </a>
+              );
+            })
+          }
+        </div>
+      </div>
     </div>
-    <div class="global-site-footer-column">
-      <h3>Sitemap</h3>
-      <ul>
+
+    <div class="space-y-3">
+      <h3 class="site-footer-heading">Sitemap</h3>
+      <ul class="site-footer-nav-list">
         {
-          navigationItems.map((item) => (
-            <li>
-              <a href={createProjectRelativeUrl(item.url)}>{item.title}</a>
-            </li>
-          ))
-        }
-      </ul>
-    </div>
-    <div class="global-site-footer-column">
-      <h3>Connect</h3>
-      <ul>
-        {
-          socialItems.map((item) => (
-            <li>
-              <a href={item.url}>{item.title}</a>
-            </li>
-          ))
+          footerNavigationItems.map((item) => {
+            const linkAttributes = resolveLinkAttributes(item.url);
+
+            return (
+              <li>
+                <a
+                  href={linkAttributes.href}
+                  target={linkAttributes.target}
+                  rel={linkAttributes.rel}
+                  class="site-footer-link"
+                >
+                  {item.title}
+                </a>
+              </li>
+            );
+          })
         }
       </ul>
     </div>
   </div>
 
-  <div class="global-site-footer-bottom page-content-width-constrained-container">
-    <p set:html={`&copy; ${copyrightYears} ${siteConfig.title}. <span class=\"global-site-footer-legal-text\">All rights reserved.</span>`}></p>
+  <div class="page-content-width-constrained-container flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-t border-[#2b2b2b] py-3 text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+    <p>
+      <span>&copy; {copyrightYears} {footerLabel.toUpperCase()}.</span>{' '}
+      <span class="text-muted-foreground">All rights reserved.</span>
+    </p>
     {establishedYear > 0 && establishedYear <= currentYear && <p>Est. {establishedYear}</p>}
   </div>
 </footer>

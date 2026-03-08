@@ -1,0 +1,20 @@
+---
+export const partial = true;
+
+import ArtistDetailContent from '@/components/detail/ArtistDetailContent.astro';
+import { createArtistDetailStaticPaths, type ArtistProfileEntry } from '@/lib/catalog-data';
+
+export async function getStaticPaths() {
+  return createArtistDetailStaticPaths();
+}
+
+interface Props {
+  artist: ArtistProfileEntry;
+}
+
+const { artist } = Astro.props;
+---
+
+<div data-app-shell-overlay-fragment data-app-shell-overlay-kind="artists" data-app-shell-overlay-slug={artist.data.slug}>
+  <ArtistDetailContent artist={artist} showRouteNavigation={false} />
+</div>

@@ -1,0 +1,6 @@
+{
+  "$schema": "../../../.astro/collections/socials.schema.json",
+  "title": "Bandcamp",
+  "url": "#",
+  "order": 4
+}

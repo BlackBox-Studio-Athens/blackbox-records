@@ -1,0 +1,8 @@
+{
+  "$schema": "../../../.astro/collections/navigation.schema.json",
+  "title": "About",
+  "url": "/about/",
+  "order": 5,
+  "show_in_header": true,
+  "show_in_footer": true
+}

@@ -1,19 +1,25 @@
 ---
+import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import { createProjectRelativeUrl } from '@/config/site';
+import { Card, CardContent } from '@/components/ui/card';
 import { formatYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/utils/music';
 
 interface Props {
   release: CollectionEntry<'releases'>;
   artist: CollectionEntry<'artists'> | undefined;
+  variant?: 'default' | 'framed-artwork' | 'artist-discography';
 }
 
-const { release, artist } = Astro.props;
-const artistFallbackName = release.data.artist_slug ? release.data.artist_slug.replace(/-/g, ' ') : 'Artist';
+const { release, artist, variant = 'default' } = Astro.props;
+const artistFallbackName = release.data.artist.id ? release.data.artist.id.replace(/-/g, ' ') : 'Artist';
 const artistName = artist?.data.title || artistFallbackName;
 const releaseCardTitle = `${release.data.title} — ${artistName}`;
 const embeddedPlayerData = buildEmbeddedPlayerData(release.data, releaseCardTitle);
+const isFramedArtwork = variant === 'framed-artwork';
+const isArtistDiscography = variant === 'artist-discography';
+const usesFramedArtworkLayout = isFramedArtwork || isArtistDiscography;
 
 const dataAttributes = embeddedPlayerData.hasProvider
   ? {
@@ -26,20 +32,57 @@ const dataAttributes = embeddedPlayerData.hasProvider
   : {};
 ---
 
-<a class="release-summary-card-link" href={createProjectRelativeUrl(`/releases/${release.id}/`)} {...dataAttributes}>
-  <div class="release-summary-card-media-frame">
-    <img src={createProjectRelativeUrl(release.data.cover_image)} alt={release.data.cover_image_alt || release.data.title} />
-    {embeddedPlayerData.hasProvider && (
-      <div class="release-summary-card-overlay-layer">
-        <div class="release-summary-card-music-streaming-service-embedded-player-button" data-music-streaming-service-embedded-player-trigger>
-          <span class="release-summary-card-music-streaming-service-embedded-player-dot" aria-hidden="true"></span>
-          <span class="release-summary-card-music-streaming-service-embedded-player-text">Listen</span>
+<a class="release-card-link group block h-full" href={createProjectRelativeUrl(`/releases/${release.id}/`)} data-astro-prefetch {...dataAttributes}>
+  <Card
+    className={usesFramedArtworkLayout
+      ? `rounded-none border-0 bg-transparent shadow-none ${isArtistDiscography ? 'release-card-tile--artist-discography' : 'release-card-tile--framed'}`
+      : 'catalog-tile-card rounded-none border-[#2b2b2b] bg-[#141414] shadow-none'}
+  >
+    <div class={usesFramedArtworkLayout ? 'release-card-image-shell release-card-image-shell--framed' : 'relative aspect-square overflow-hidden border-b border-[#2b2b2b]'}>
+      <div class={usesFramedArtworkLayout ? 'release-card-image-frame release-card-image-frame--framed' : 'relative h-full w-full overflow-hidden'}>
+        <Image
+          src={release.data.cover_image}
+          alt={release.data.cover_image_alt || release.data.title}
+          class={usesFramedArtworkLayout
+            ? 'release-card-artwork release-card-artwork--framed h-full w-full object-cover'
+            : 'release-card-artwork h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]'}
+          sizes="(min-width: 1280px) 260px, (min-width: 768px) 50vw, 100vw"
+        />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div>
+        <div class="release-card-meta-row absolute inset-x-0 bottom-0 px-2.5 py-3">
+          {embeddedPlayerData.hasProvider && (
+            <div
+              class="release-card-listen-trigger inline-flex items-center border transition-[background-color,box-shadow,transform] duration-200"
+              data-music-streaming-service-embedded-player-trigger
+            >
+              <span class="release-card-listen-trigger__indicator" aria-hidden="true"></span>
+              Listen
+            </div>
+          )}
+          <span class="release-card-view-release-text release-card-view-release-desktop-reveal uppercase text-foreground">
+            View release
+          </span>
         </div>
-        <span class="release-summary-card-open-label">View release</span>
       </div>
-    )}
-  </div>
-  <p class="release-summary-card-year-text">{formatYear(release.data.release_date)}</p>
-  <h3 class="release-summary-card-title-text">{release.data.title.toUpperCase()}</h3>
-  <p class="release-summary-card-artist-text">{artistName}</p>
+    </div>
+    <CardContent
+      className={usesFramedArtworkLayout
+        ? `release-card-copy space-y-2.5 p-0 pt-4 ${isArtistDiscography ? 'release-card-copy--artist-discography' : 'release-card-copy--framed'}`
+        : 'release-card-copy space-y-2 p-5'}
+    >
+      <p class="release-card-year-text">{formatYear(release.data.release_date)}</p>
+      <h3 class={isArtistDiscography ? 'font-display text-[2.2rem] tracking-[0.08em] uppercase text-foreground sm:text-[2.45rem]' : 'font-display text-3xl tracking-[0.08em] uppercase text-foreground'}>
+        {release.data.title.toUpperCase()}
+      </h3>
+      {isArtistDiscography ? (
+        release.data.summary ? (
+          <p class="release-card-summary-text text-sm leading-relaxed text-muted-foreground">
+            {release.data.summary}
+          </p>
+        ) : null
+      ) : (
+        <p class="release-card-artist-text text-sm tracking-[0.03em] text-muted-foreground">{artistName}</p>
+      )}
+    </CardContent>
+  </Card>
 </a>

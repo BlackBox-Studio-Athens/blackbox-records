@@ -1,27 +1,17 @@
 ---
-import type { CollectionEntry } from 'astro:content';
-import { getCollection, render } from 'astro:content';
-
-import InternalPageHero from '@/components/InternalPageHero.astro';
+import NewsDetailContent from '@/components/detail/NewsDetailContent.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
-import { createProjectRelativeUrl } from '@/config/site';
-import { formatMonthYear } from '@/utils/content';
+import { createNewsDetailStaticPaths, type NewsArticleEntry } from '@/lib/catalog-data';
 
 export async function getStaticPaths() {
-  const newsItems = await getCollection('news');
-  return newsItems.map((item) => ({
-    params: { slug: item.id },
-    props: { item },
-  }));
+  return createNewsDetailStaticPaths();
 }
 
 interface Props {
-  item: CollectionEntry<'news'>;
+  item: NewsArticleEntry;
 }
 
 const { item } = Astro.props;
-const { Content } = await render(item);
-const sectionLabel = item.data.section_label || 'News';
 ---
 
 <SiteLayout
@@ -32,19 +22,5 @@ const sectionLabel = item.data.section_label || 'News';
   layoutType="news"
   pageDate={item.data.date}
 >
-  <InternalPageHero sectionLabel={sectionLabel} title={item.data.title} />
-  <section class="page-section-compact-spacing">
-    <div class="page-content-width-constrained-container news-detail-layout">
-      <p class="news-detail-date-text">{formatMonthYear(item.data.date)}</p>
-      {item.data.image && (
-        <div class="news-detail-image-frame">
-          <img src={createProjectRelativeUrl(item.data.image)} alt={item.data.image_alt || item.data.title} />
-        </div>
-      )}
-      {item.data.summary && <p class="news-detail-summary-text">{item.data.summary}</p>}
-      <div class="long-form-rich-text-content">
-        <Content />
-      </div>
-    </div>
-  </section>
+  <NewsDetailContent item={item} />
 </SiteLayout>

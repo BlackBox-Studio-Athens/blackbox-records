@@ -1,0 +1,19 @@
+---
+import { createProjectRelativeUrl } from '@/config/site';
+
+interface Props {
+  href?: string;
+  logoAlt?: string;
+  logoSrc?: string;
+}
+
+const {
+  href = createProjectRelativeUrl('/'),
+  logoAlt = 'BlackBox Records',
+  logoSrc = createProjectRelativeUrl('/assets/images/brand/logo.png'),
+} = Astro.props;
+---
+
+<a class="block shrink-0" href={href} aria-label={logoAlt} data-astro-prefetch transition:name="site-brand">
+  <img class="h-[var(--header-logo-size)] w-[var(--header-logo-size)] object-contain" src={logoSrc} alt={logoAlt} />
+</a>

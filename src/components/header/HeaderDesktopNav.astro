@@ -1,0 +1,46 @@
+---
+import { resolveLinkAttributes } from '@/config/site';
+import { isCurrentPath } from '@/utils/urls';
+
+type NavItem = {
+  title: string;
+  url: string;
+};
+
+interface Props {
+  items: readonly NavItem[];
+  pathname: string;
+}
+
+const { items, pathname } = Astro.props;
+---
+
+<nav class="hidden md:block" aria-label="Primary">
+  <ul class="flex items-center gap-[var(--header-nav-gap)]">
+    {
+      items.map((item) => {
+        const navIsActive = isCurrentPath(pathname, item.url);
+        const linkAttributes = resolveLinkAttributes(item.url);
+
+        return (
+          <li>
+            <a
+              class:list={[
+                'header-nav-link relative inline-flex items-center font-normal uppercase text-[#b3b3b3] transition-colors duration-200 ease-in-out hover:text-[#f5f5f5] focus-visible:text-[#f5f5f5] after:pointer-events-none after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:origin-center after:scale-x-0 after:bg-current after:opacity-90 after:transition-transform after:duration-250 after:ease-[cubic-bezier(0.22,1,0.36,1)] hover:after:scale-x-100 focus-visible:after:scale-x-100',
+                navIsActive && 'text-[#f5f5f5] after:scale-x-100',
+              ]}
+              href={linkAttributes.href}
+              target={linkAttributes.target}
+              rel={linkAttributes.rel}
+              data-navigation-pathname={item.url}
+              data-astro-prefetch={linkAttributes.shouldPrefetch ? true : undefined}
+              aria-current={navIsActive ? 'page' : undefined}
+            >
+              {item.title}
+            </a>
+          </li>
+        );
+      })
+    }
+  </ul>
+</nav>

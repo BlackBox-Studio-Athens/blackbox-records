@@ -1,26 +1,24 @@
 ---
-import { getCollection } from 'astro:content';
-
 import InternalPageHero from '@/components/InternalPageHero.astro';
 import ReleaseCard from '@/components/cards/ReleaseCard.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
+import { listArtistProfiles, listReleaseCatalog, mapArtistProfilesById } from '@/lib/catalog-data';
 
-const artists = await getCollection('artists');
-const releases = (await getCollection('releases')).slice().sort((left, right) => right.data.release_date.getTime() - left.data.release_date.getTime());
+const artistProfiles = await listArtistProfiles();
+const releaseCatalogEntries = await listReleaseCatalog();
+const artistProfileById = mapArtistProfilesById(artistProfiles);
 ---
 
 <SiteLayout pageTitle="Releases" pageDescription="Releases and label catalog.">
   <InternalPageHero sectionLabel="Releases" title="Releases" />
-  <section class="page-section-compact-spacing">
-    <div class="page-content-width-constrained-container">
-      <div class="release-summary-card-grid">
+  <section class="layout-container">
+    <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {
-          releases.map((release) => {
-            const artist = artists.find((item) => item.data.slug === release.data.artist_slug);
-            return <ReleaseCard release={release} artist={artist} />;
+          releaseCatalogEntries.map((releaseEntry) => {
+            const artistProfile = artistProfileById.get(releaseEntry.data.artist.id);
+            return <ReleaseCard release={releaseEntry} artist={artistProfile} />;
           })
         }
-      </div>
     </div>
   </section>
 </SiteLayout>

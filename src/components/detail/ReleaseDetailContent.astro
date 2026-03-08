@@ -1,0 +1,149 @@
+---
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { buttonVariants } from '@/components/ui/button';
+import { createProjectRelativeUrl, resolveLinkAttributes } from '@/config/site';
+import {
+  resolveArtistProfileForRelease,
+  resolveReleaseArtistDisplayName,
+} from '@/lib/catalog-data';
+import { cn } from '@/lib/utils';
+import { formatYear } from '@/utils/content';
+import { buildEmbeddedPlayerData, resolveMerchHref } from '@/utils/music';
+
+interface Props {
+  release: CollectionEntry<'releases'>;
+  showRouteNavigation?: boolean;
+}
+
+const { release, showRouteNavigation = true } = Astro.props;
+const releaseArtist = await resolveArtistProfileForRelease(release);
+const artistName = resolveReleaseArtistDisplayName(release, releaseArtist);
+const artistUrl = releaseArtist ? createProjectRelativeUrl(`/artists/${releaseArtist.data.slug}/`) : createProjectRelativeUrl('/artists/');
+const releaseYear = formatYear(release.data.release_date);
+const embeddedPlayerTitle = `${release.data.title} — ${artistName}`;
+const embeddedPlayerData = buildEmbeddedPlayerData(release.data, embeddedPlayerTitle);
+const merchHref = resolveMerchHref(release.data.merch_url, release.data.shop_collection_handle);
+const merchLinkAttributes = merchHref ? resolveLinkAttributes(merchHref) : null;
+
+const playerAttributes = embeddedPlayerData.hasProvider
+  ? {
+      'data-music-streaming-service-embedded-player-card': true,
+      'data-music-streaming-service-embedded-player-title': embeddedPlayerData.title,
+      'data-music-streaming-service-embedded-player-bandcamp-embed-url':
+        embeddedPlayerData.bandcampEmbedUrl || undefined,
+      'data-music-streaming-service-embedded-player-tidal-embed-url': embeddedPlayerData.tidalEmbedUrl || undefined,
+    }
+  : {};
+---
+
+<section class="layout-container pt-14">
+  <Card className="surface-card overflow-hidden">
+    <CardContent className="grid gap-8 p-0 lg:grid-cols-[0.85fr_1.15fr]">
+      <div class="relative overflow-hidden border-b border-border/70 lg:border-r lg:border-b-0">
+        <Image
+          src={release.data.cover_image}
+          alt={release.data.cover_image_alt || release.data.title}
+          class="h-full w-full object-cover"
+          sizes="(min-width: 1024px) 36vw, 100vw"
+        />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+      </div>
+      <div class="space-y-5 p-7 sm:p-9">
+        <Badge variant="outline" className="border-border/70 bg-background/80 text-xs tracking-[0.15em] uppercase">
+          Release
+        </Badge>
+        <h1 class="font-display text-5xl tracking-[0.08em] uppercase text-foreground sm:text-6xl">{release.data.title.toUpperCase()}</h1>
+        <p class="text-sm uppercase tracking-[0.13em] text-muted-foreground">
+          <a href={artistUrl} data-astro-prefetch class="underline decoration-border underline-offset-4 transition-colors hover:text-foreground">{artistName}</a>
+        </p>
+        <p class="text-sm uppercase tracking-[0.12em] text-muted-foreground">{releaseYear}</p>
+        {release.data.summary && <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">{release.data.summary}</p>}
+        {
+          release.data.formats && (
+            <ul class="flex flex-wrap items-center gap-2">
+              {release.data.formats.map((format) => (
+                <li>
+                  <Badge variant="secondary" className="text-[11px] tracking-[0.12em] uppercase">
+                    {format}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+        <div class="flex flex-wrap items-center gap-3 pt-1">
+          {merchLinkAttributes && (
+            <a
+              href={merchLinkAttributes.href}
+              target={merchLinkAttributes.target}
+              rel={merchLinkAttributes.rel}
+              class={cn(buttonVariants({ size: 'lg' }), 'rounded-md px-6 uppercase tracking-[0.12em]')}
+            >
+              Buy merch
+            </a>
+          )}
+          {embeddedPlayerData.hasProvider && (
+            <button
+              class={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-md px-6 uppercase tracking-[0.12em]')}
+              type="button"
+              data-music-streaming-service-embedded-player-trigger
+              {...playerAttributes}
+            >
+              Listen
+            </button>
+          )}
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+</section>
+
+{release.data.credits && (
+  <section class="layout-container mt-12">
+    <Card className="surface-card">
+      <CardContent className="p-7 sm:p-9">
+        <h2 class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">Credits</h2>
+        <ul class="mt-5 grid gap-3">
+          {release.data.credits.map((credit) => (
+            <li class="grid gap-1 rounded-md border border-border/70 bg-background/70 px-4 py-3 sm:grid-cols-[1fr_2fr] sm:items-center sm:gap-3">
+              <span class="text-xs tracking-[0.12em] text-muted-foreground uppercase">{credit.role}</span>
+              <span class="text-sm uppercase tracking-[0.12em] text-foreground">{credit.name}</span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  </section>
+)}
+
+{
+  showRouteNavigation && (
+    <section class="layout-container mt-12">
+      <Card className="surface-card">
+        <CardContent className="flex flex-wrap items-center justify-between gap-4 p-6">
+          <p class="text-xs uppercase tracking-[0.14em] text-muted-foreground">Back to catalog</p>
+          <div class="flex flex-wrap gap-3">
+            <a
+              href={createProjectRelativeUrl('/releases/')}
+              data-astro-prefetch
+              class={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'catalog-nav-button')}
+            >
+              All Releases
+            </a>
+            <a
+              href={artistUrl}
+              data-astro-prefetch
+              class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'catalog-nav-button catalog-nav-button--ghost')}
+            >
+              Artist Page
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+    </section>
+  )
+}

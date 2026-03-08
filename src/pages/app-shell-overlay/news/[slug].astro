@@ -1,0 +1,20 @@
+---
+export const partial = true;
+
+import NewsDetailContent from '@/components/detail/NewsDetailContent.astro';
+import { createNewsDetailStaticPaths, type NewsArticleEntry } from '@/lib/catalog-data';
+
+export async function getStaticPaths() {
+  return createNewsDetailStaticPaths();
+}
+
+interface Props {
+  item: NewsArticleEntry;
+}
+
+const { item } = Astro.props;
+---
+
+<div data-app-shell-overlay-fragment data-app-shell-overlay-kind="news" data-app-shell-overlay-slug={item.id}>
+  <NewsDetailContent item={item} />
+</div>

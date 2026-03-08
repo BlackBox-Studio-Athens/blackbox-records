@@ -1,0 +1,20 @@
+---
+export const partial = true;
+
+import ReleaseDetailContent from '@/components/detail/ReleaseDetailContent.astro';
+import { createReleaseDetailStaticPaths, type ReleaseCatalogEntry } from '@/lib/catalog-data';
+
+export async function getStaticPaths() {
+  return createReleaseDetailStaticPaths();
+}
+
+interface Props {
+  release: ReleaseCatalogEntry;
+}
+
+const { release } = Astro.props;
+---
+
+<div data-app-shell-overlay-fragment data-app-shell-overlay-kind="releases" data-app-shell-overlay-slug={release.id}>
+  <ReleaseDetailContent release={release} showRouteNavigation={false} />
+</div>

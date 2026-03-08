@@ -1,7 +1,7 @@
-import { siteConfig } from '@/config/site';
+import { createAbsoluteSiteUrl } from '@/config/site';
 
 export function GET() {
-  const sitemapUrl = `${siteConfig.origin}${siteConfig.basePath.replace(/\/$/, '')}/sitemap.xml`;
+  const sitemapUrl = createAbsoluteSiteUrl('/sitemap.xml');
   const body = `User-agent: *\nAllow: /\n\nSitemap: ${sitemapUrl}\n`;
 
   return new Response(body, {

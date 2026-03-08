@@ -1,176 +1,153 @@
 ---
-import { getCollection } from 'astro:content';
-
 import ArtistCard from '@/components/cards/ArtistCard.astro';
+import HomeHero from '@/components/hero/HomeHero.astro';
 import NewsCard from '@/components/cards/NewsCard.astro';
 import ReleaseCard from '@/components/cards/ReleaseCard.astro';
 import NewsletterSignup from '@/components/NewsletterSignup.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
+import { Card, CardContent } from '@/components/ui/card';
+import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl } from '@/config/site';
-import { homeContent } from '@/data/home';
+import {
+  listArtistProfiles,
+  listNewsArticles,
+  listReleaseCatalog,
+  mapArtistProfilesById,
+} from '@/lib/catalog-data';
+import { getHomeContent, getLabelSettings } from '@/lib/site-data';
+import { cn } from '@/lib/utils';
 import { calculateCountryCount, calculateYearsActive } from '@/utils/content';
 
-const allArtists = (await getCollection('artists')).sort((left, right) => left.data.title.localeCompare(right.data.title));
-const releases = (await getCollection('releases'))
-  .slice()
-  .sort((left, right) => right.data.release_date.getTime() - left.data.release_date.getTime())
-  .slice(0, 3);
-const featuredArtists = allArtists.slice(0, 5);
-const newsItems = (await getCollection('news'))
-  .slice()
-  .sort((left, right) => right.data.date.getTime() - left.data.date.getTime())
-  .slice(0, 3);
+const artistProfiles = await listArtistProfiles();
+const releaseCatalogEntries = await listReleaseCatalog();
+const newsArticles = await listNewsArticles();
+const artistProfileById = mapArtistProfilesById(artistProfiles);
+const latestReleaseEntries = releaseCatalogEntries.slice(0, 3);
+const featuredArtistProfiles = artistProfiles.slice(0, 3);
+const latestNewsArticles = newsArticles.slice(0, 3);
+const [homeContent, labelSettings] = await Promise.all([getHomeContent(), getLabelSettings()]);
 
-const yearsActive = calculateYearsActive();
-const countryCount = calculateCountryCount(allArtists.map((artist) => artist.data.country || ''));
-
-const featuredArtistsJson = JSON.stringify(
-  allArtists.map((artist) => ({
-    title: artist.data.title,
-    slug: artist.data.slug,
-    image: artist.data.image,
-    image_alt: artist.data.image_alt,
-    genre: artist.data.genre,
-    bio: artist.data.bio,
-  })),
-);
-
-const allReleasesCount = (await getCollection('releases')).length;
+const yearsActive = calculateYearsActive(labelSettings.established_year);
+const countryCount = calculateCountryCount(artistProfiles.map((artistProfile) => artistProfile.data.country || ''));
+const allReleasesCount = releaseCatalogEntries.length;
 ---
 
-<SiteLayout
-  pageTitle="Home"
-  pageDescription="BlackBox Records home."
-  bodyClass="home-scroll-snap-container"
-  mainClass="page-main-content-region--home"
->
-  <section class="homepage-hero-section" id="homepage-hero-section">
-    <div class="homepage-hero-section__background-pattern-layer" aria-hidden="true">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M50 100 Q45 70 50 50 Q55 30 50 0" stroke="currentColor" stroke-width="0.5" fill="none" />
-        <path d="M30 100 Q35 60 40 40 Q45 20 50 0" stroke="currentColor" stroke-width="0.3" fill="none" />
-        <path d="M70 100 Q65 60 60 40 Q55 20 50 0" stroke="currentColor" stroke-width="0.3" fill="none" />
-      </svg>
-    </div>
-    <div class="homepage-hero-section__orbit-ring-layer homepage-hero-section__orbit-ring-layer--large" aria-hidden="true"></div>
-    <div class="homepage-hero-section__orbit-ring-layer homepage-hero-section__orbit-ring-layer--medium" aria-hidden="true"></div>
-    <div class="homepage-hero-section__orbit-ring-layer homepage-hero-section__orbit-ring-layer--small" aria-hidden="true"></div>
-    <div class="homepage-hero-section__content-block page-content-width-constrained-container">
-      <div class="homepage-hero-section__logo-lockup">
-        <img src={createProjectRelativeUrl('/assets/images/brand/logo.png')} alt="BlackBox Records" />
-      </div>
-      <p class="homepage-hero-section__tagline-text">{homeContent.hero.tagline}</p>
-      <div class="homepage-hero-section__action-buttons">
-        <a class="call-to-action-button call-to-action-button--primary" href={createProjectRelativeUrl(homeContent.hero.primary_button_link)}>
-          {homeContent.hero.primary_button_text}
-        </a>
-        <a class="call-to-action-button call-to-action-button--outline" href={createProjectRelativeUrl(homeContent.hero.secondary_button_link)}>
-          {homeContent.hero.secondary_button_text}
-        </a>
-      </div>
-    </div>
-    <div class="homepage-hero-section__scroll-indicator" aria-hidden="true">
-      <span>Scroll</span>
-      <div class="homepage-hero-section__scroll-indicator-line">
-        <span></span>
-      </div>
-    </div>
-  </section>
+<SiteLayout pageTitle="Home" pageDescription="BlackBox Records home." mainClass="!pt-0">
+  <HomeHero
+    tagline={homeContent.hero.tagline}
+    primaryButtonText={homeContent.hero.primary_button_text}
+    primaryButtonLink={homeContent.hero.primary_button_link}
+    secondaryButtonText={homeContent.hero.secondary_button_text}
+    secondaryButtonLink={homeContent.hero.secondary_button_link}
+    scrollIndicatorText={homeContent.hero.scroll_indicator_text}
+  />
 
-  <section class="page-section-standard-spacing-with-divider" id="featured-releases">
-    <div class="page-content-width-constrained-container">
-      <div class="page-section-header-layout-spaced">
-        <div>
-          <p class="page-section-kicker-text">{homeContent.latest_releases.section_label}</p>
-          <h2 class="page-section-title-text">{homeContent.latest_releases.title.toUpperCase()}</h2>
-        </div>
-        <a class="page-section-header-link" href={createProjectRelativeUrl(homeContent.latest_releases.link_url)}>
-          {homeContent.latest_releases.link_text} <span aria-hidden="true">&rarr;</span>
-        </a>
+  <section class="featured-releases-section layout-container mt-16" id="featured-releases">
+    <div class="home-section-header home-section-header--split mb-6 sm:mb-8">
+      <div class="home-section-header__lead">
+        <h2 class="home-section-header__title">{homeContent.latest_releases.title}</h2>
+        <span class="home-section-header__rule" aria-hidden="true"></span>
       </div>
-      <div class="release-summary-card-grid">
-        {
-          releases.map((release) => {
-            const artist = allArtists.find((item) => item.data.slug === release.data.artist_slug);
-            return <ReleaseCard release={release} artist={artist} />;
-          })
-        }
-      </div>
-    </div>
-  </section>
-
-  <section class="page-section-standard-spacing-with-divider-and-surface-background" id="artists">
-    <div class="page-content-width-constrained-container">
-      <div class="page-section-header-layout-centered-and-stacked">
-        <p class="page-section-kicker-text">{homeContent.artists.section_label}</p>
-        <h2 class="page-section-title-text">{homeContent.artists.title.toUpperCase()}</h2>
-      </div>
-      <div
-        class="artist-roster-card-grid artist-roster-card-grid--featured"
-        data-featured-artist-grid
-        data-max-items="5"
-        data-site-base-url={createProjectRelativeUrl('/')}
+      <a
+        href={createProjectRelativeUrl(homeContent.latest_releases.link_url)}
+        data-astro-prefetch
+        class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'home-section-header__action rounded-md px-2 text-xs tracking-[0.14em] uppercase text-muted-foreground hover:text-foreground')}
       >
-        {featuredArtists.map((artist) => <ArtistCard artist={artist} />)}
+        {homeContent.latest_releases.link_text} <span aria-hidden="true">→</span>
+      </a>
+    </div>
+    <div class="featured-releases-grid">
+      {
+        latestReleaseEntries.map((releaseEntry) => {
+          const artistProfile = artistProfileById.get(releaseEntry.data.artist.id);
+          return <ReleaseCard release={releaseEntry} artist={artistProfile} variant="framed-artwork" />;
+        })
+      }
+    </div>
+  </section>
+
+  <section class="artists-surface-section mt-20 border-t border-border py-20 sm:py-24" id="artists">
+    <div class="layout-container">
+      <div class="home-section-header home-section-header--centered mb-6 sm:mb-8">
+        <span class="home-section-header__rule" aria-hidden="true"></span>
+        <h2 class="home-section-header__title">{homeContent.artists.title}</h2>
+        <span class="home-section-header__rule" aria-hidden="true"></span>
       </div>
-      <script type="application/json" id="homepage-featured-artists-data" set:html={featuredArtistsJson}></script>
-      <div class="page-section-call-to-action-region">
-        <a class="call-to-action-button call-to-action-button--outline" href={createProjectRelativeUrl(homeContent.artists.button_link)}>
+      <div class="home-featured-roster-grid">
+        {featuredArtistProfiles.map((artistProfile) => <ArtistCard artist={artistProfile} variant="featured-roster" />)}
+      </div>
+      <div class="mt-8 text-center">
+        <a
+          href={createProjectRelativeUrl(homeContent.artists.button_link)}
+          data-astro-prefetch
+          class={cn(
+            buttonVariants({ variant: 'outline' }),
+            'h-auto rounded-none border-foreground bg-transparent px-10 py-4 text-xs tracking-[0.2em] uppercase text-foreground shadow-none hover:bg-foreground hover:text-background',
+          )}
+        >
           {homeContent.artists.button_text}
         </a>
       </div>
     </div>
   </section>
 
-  <section class="page-section-standard-spacing-with-divider" id="news">
-    <div class="page-content-width-constrained-container">
-      <div class="page-section-header-layout-spaced">
-        <div>
-          <p class="page-section-kicker-text">{homeContent.news.section_label}</p>
-          <h2 class="page-section-title-text">{homeContent.news.title.toUpperCase()}</h2>
-        </div>
-        <a class="page-section-header-link" href={createProjectRelativeUrl(homeContent.news.link_url)}>
-          {homeContent.news.link_text} <span aria-hidden="true">&rarr;</span>
-        </a>
+  <section class="layout-container mt-20" id="news">
+    <div class="home-section-header home-section-header--split mb-6 sm:mb-8">
+      <div class="home-section-header__lead">
+        <h2 class="home-section-header__title">{homeContent.news.title}</h2>
+        <span class="home-section-header__rule" aria-hidden="true"></span>
       </div>
-      <div class="news-summary-card-grid">
-        {newsItems.map((item) => <NewsCard item={item} />)}
-      </div>
+      <a
+        href={createProjectRelativeUrl(homeContent.news.link_url)}
+        data-astro-prefetch
+        class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'home-section-header__action rounded-md px-2 text-xs tracking-[0.14em] uppercase text-muted-foreground hover:text-foreground')}
+      >
+        {homeContent.news.link_text} <span aria-hidden="true">→</span>
+      </a>
+    </div>
+    <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+      {latestNewsArticles.map((newsArticle) => <NewsCard item={newsArticle} showSummary={false} />)}
     </div>
   </section>
 
-  <section class="page-section-standard-spacing-with-divider-and-surface-background" id="journey">
-    <div class="page-content-width-constrained-container about-section-layout-grid">
-      <div class="about-section-image-frame">
-        <div class="about-section-image-outline"></div>
-        <img src={createProjectRelativeUrl(homeContent.journey.image)} alt={homeContent.journey.image_alt} />
-      </div>
-      <div class="about-section-content-block">
-        <p class="page-section-kicker-text">{homeContent.journey.section_label}</p>
-        <h2 class="page-section-title-text">{homeContent.journey.title.toUpperCase()}</h2>
-        <div class="about-section-body-text">
-          {homeContent.journey.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
-        </div>
-        <div class="about-section-statistics-grid">
-          {
-            homeContent.journey.stats.map((stat) => {
-              const statKey = String(stat.key);
-              let statValue = '';
-              if (statKey === 'artists') statValue = String(allArtists.length);
-              else if (statKey === 'releases') statValue = String(allReleasesCount);
-              else if (statKey === 'countries') statValue = String(countryCount);
-              else if (statKey === 'year') statValue = String(yearsActive);
+  <section class="artists-surface-section mt-20 border-t border-border py-20 sm:py-24" id="journey">
+    <div class="layout-container">
+      <Card className="surface-card overflow-hidden">
+        <CardContent className="grid gap-8 p-0 lg:grid-cols-[0.95fr_1.05fr]">
+          <div class="relative h-full min-h-[22rem] overflow-hidden border-b border-border/70 lg:border-r lg:border-b-0">
+            <img src={createProjectRelativeUrl(homeContent.journey.image)} alt={homeContent.journey.image_alt} class="h-full w-full object-cover" />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20"></div>
+          </div>
+          <div class="space-y-5 p-7 sm:p-9">
+            <p class="text-xs tracking-[0.2em] uppercase text-muted-foreground">{homeContent.journey.section_label}</p>
+            <h2 class="font-display text-5xl tracking-[0.09em] uppercase">{homeContent.journey.title.toUpperCase()}</h2>
+            <div class="space-y-4 text-sm leading-relaxed text-muted-foreground">
+              {homeContent.journey.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+            </div>
+            <div class="grid grid-cols-2 gap-3 pt-2 md:grid-cols-4">
+              {
+                homeContent.journey.stats.map((stat) => {
+                  const statKey = String(stat.key);
+                  let statValue = '';
+                  if (statKey === 'artists') statValue = String(artistProfiles.length);
+                  else if (statKey === 'releases') statValue = String(allReleasesCount);
+                  else if (statKey === 'countries') statValue = String(countryCount);
+                  else if (statKey === 'year') statValue = String(yearsActive);
 
-              return (
-                <div>
-                  <p>{statValue}</p>
-                  <span>{stat.label}</span>
-                </div>
-              );
-            })
-          }
-        </div>
-      </div>
+                  return (
+                    <Card className="border-border/70 bg-background/75">
+                      <CardContent className="space-y-1 p-4">
+                        <p class="font-display text-3xl tracking-[0.08em] uppercase text-foreground">{statValue}</p>
+                        <span class="text-[11px] tracking-[0.14em] uppercase text-muted-foreground">{stat.label}</span>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              }
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   </section>
 

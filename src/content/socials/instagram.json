@@ -1,0 +1,6 @@
+{
+  "$schema": "../../../.astro/collections/socials.schema.json",
+  "title": "Instagram",
+  "url": "https://www.instagram.com/blackboxrecords_aths/",
+  "order": 1
+}

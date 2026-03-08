@@ -1,4 +1,4 @@
-import { createProjectRelativeUrl } from '@/config/site';
+import { resolveLinkAttributes, siteConfig } from '@/config/site';
 
 type ReleaseLike = {
   bandcamp_embed_url?: string | undefined;
@@ -43,8 +43,21 @@ export function buildEmbeddedPlayerData(release: ReleaseLike, title?: string) {
   };
 }
 
-export function resolveMerchHref(merchUrl?: string) {
-  if (!merchUrl) return '';
-  if (merchUrl.includes('://')) return merchUrl;
-  return createProjectRelativeUrl(merchUrl);
+export function buildShopCollectionHref(shopCollectionHandle?: string) {
+  if (!shopCollectionHandle) return '';
+
+  const normalizedHandle = shopCollectionHandle
+    .trim()
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/^collections\//i, '');
+
+  if (!normalizedHandle) return '';
+
+  return `${siteConfig.shopUrl.replace(/\/+$/g, '')}/collections/${normalizedHandle}`;
+}
+
+export function resolveMerchHref(merchUrl?: string, shopCollectionHandle?: string) {
+  const resolvedMerchSource = merchUrl || buildShopCollectionHref(shopCollectionHandle);
+  if (!resolvedMerchSource) return '';
+  return resolveLinkAttributes(resolvedMerchSource).href;
 }
