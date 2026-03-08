@@ -1,4 +1,4 @@
-name: Deploy Jekyll site to Pages
+name: Deploy Astro site to Pages
 
 on:
   push:
@@ -12,65 +12,28 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+
+      - name: Build site and Pages artifact
+        uses: withastro/action@v5
         with:
-          ruby-version: "3.4.8"
-          bundler-cache: true
-      - name: Build site for link check
-        run: bundle exec jekyll build --config _config.yml,_config.local.yml
-        env:
-          JEKYLL_ENV: production
-      - name: Restore lychee cache
-        id: restore-lychee-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: _site/.lycheecache
-          key: lychee-cache-${{ github.sha }}
-          restore-keys: lychee-cache-
-      - name: Check for broken links
-        uses: lycheeverse/lychee-action@v2
-        with:
-          args: >
-            --cache
-            --max-cache-age 1d
-            --accept 200,206,429
-            --exclude "http://127.0.0.1"
-            --exclude "http://localhost"
-            --exclude "http://127.0.0.1:4000"
-            --exclude "http://localhost:4000"
-            "./**/*.html"
-          workingDirectory: _site
-          failIfEmpty: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Save lychee cache
-        if: always()
-        uses: actions/cache/save@v4
-        with:
-          path: _site/.lycheecache
-          key: ${{ steps.restore-lychee-cache.outputs.cache-primary-key }}
-      - name: Build with Jekyll
-        run: bundle exec jekyll build --config _config.yml
-        env:
-          JEKYLL_ENV: production
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: _site
+          node-version: 22
+          package-manager: pnpm@10.29.3
+          cache: true
+          build-cmd: pnpm test:unit && pnpm check && pnpm build
 
   deploy:
-    needs: build
+    needs: verify
     runs-on: ubuntu-latest
     environment:
       name: github-pages
