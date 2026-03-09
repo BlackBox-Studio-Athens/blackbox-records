@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "BlackBox T-Shirt",
+  "group": "Distro Picks",
+  "artist_or_label": "BlackBox Records",
+  "image": "./t-shirt.jpg",
+  "image_alt": "Plain t-shirt on a hanger",
+  "summary": "A simple shirt in the distro makes more sense to us than overbuilding merch. Something clean, useful, and easy to carry.",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "eyebrow": "BlackBox Distro",
+  "format": "T-Shirt",
+  "order": 2
+}

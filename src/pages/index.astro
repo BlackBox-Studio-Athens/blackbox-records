@@ -1,7 +1,7 @@
 ---
 import ArtistCard from '@/components/cards/ArtistCard.astro';
+import DistroCard from '@/components/cards/DistroCard.astro';
 import HomeHero from '@/components/hero/HomeHero.astro';
-import NewsCard from '@/components/cards/NewsCard.astro';
 import ReleaseCard from '@/components/cards/ReleaseCard.astro';
 import NewsletterSignup from '@/components/NewsletterSignup.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
@@ -11,7 +11,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl } from '@/config/site';
 import {
   listArtistProfiles,
-  listNewsArticles,
+  listDistroEntries,
   listReleaseCatalog,
   mapArtistProfilesById,
 } from '@/lib/catalog-data';
@@ -21,11 +21,11 @@ import { calculateCountryCount, calculateYearsActive } from '@/utils/content';
 
 const artistProfiles = await listArtistProfiles();
 const releaseCatalogEntries = await listReleaseCatalog();
-const newsArticles = await listNewsArticles();
+const distroEntries = await listDistroEntries();
 const artistProfileById = mapArtistProfilesById(artistProfiles);
 const latestReleaseEntries = releaseCatalogEntries.slice(0, 3);
 const featuredArtistProfiles = artistProfiles.slice(0, 3);
-const latestNewsArticles = newsArticles.slice(0, 3);
+const featuredDistroEntries = distroEntries.slice(0, 3);
 const [homeContent, labelSettings] = await Promise.all([getHomeContent(), getLabelSettings()]);
 
 const yearsActive = calculateYearsActive(labelSettings.established_year);
@@ -92,22 +92,22 @@ const allReleasesCount = releaseCatalogEntries.length;
     </div>
   </section>
 
-  <section class="layout-container mt-20" id="news">
+  <section class="layout-container mt-20" id="distro">
     <div class="home-section-header home-section-header--split mb-6 sm:mb-8">
       <div class="home-section-header__lead">
-        <h2 class="home-section-header__title">{homeContent.news.title}</h2>
+        <h2 class="home-section-header__title">{homeContent.distro.title}</h2>
         <span class="home-section-header__rule" aria-hidden="true"></span>
       </div>
       <a
-        href={createProjectRelativeUrl(homeContent.news.link_url)}
+        href={createProjectRelativeUrl(homeContent.distro.link_url)}
         data-astro-prefetch
         class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'home-section-header__action rounded-md px-2 text-xs tracking-[0.14em] uppercase text-muted-foreground hover:text-foreground')}
       >
-        {homeContent.news.link_text} <span aria-hidden="true">→</span>
+        {homeContent.distro.link_text} <span aria-hidden="true">→</span>
       </a>
     </div>
-    <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-      {latestNewsArticles.map((newsArticle) => <NewsCard item={newsArticle} showSummary={false} />)}
+    <div class="distro-home-grid">
+      {featuredDistroEntries.map((distroEntry) => <DistroCard item={distroEntry} variant="home" />)}
     </div>
   </section>
 

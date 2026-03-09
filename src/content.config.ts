@@ -57,6 +57,23 @@ const news = defineCollection({
     }),
 });
 
+const distro = defineCollection({
+  loader: glob({ pattern: '**/*.json', base: './src/content/distro' }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      group: z.enum(['Distro Picks', 'Other Labels', 'Friends & Trades']),
+      artist_or_label: z.string(),
+      image: image(),
+      image_alt: z.string(),
+      summary: z.string(),
+      fourthwall_url: z.string().url(),
+      eyebrow: z.string().optional(),
+      format: z.string().optional(),
+      order: z.number().int().nonnegative(),
+    }),
+});
+
 const navigation = defineCollection({
   loader: glob({ pattern: '**/*.json', base: './src/content/navigation' }),
   schema: z.object({
@@ -115,7 +132,7 @@ const home = defineCollection({
       button_text: z.string(),
       button_link: z.string(),
     }),
-    news: z.object({
+    distro: z.object({
       section_label: z.string(),
       title: z.string(),
       link_text: z.string(),
@@ -224,6 +241,7 @@ export const collections = {
   artists,
   releases,
   news,
+  distro,
   navigation,
   socials,
   settings,

@@ -16,6 +16,7 @@ Commerce remains external via Fourthwall.
 - Astro content collections for:
   - artists
   - releases
+  - distro
   - news
   - navigation
   - socials
@@ -95,6 +96,7 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 
 - Artists: `src/content/artists/*.md`
 - Releases: `src/content/releases/*.md`
+- Distro items: `src/content/distro/*.json`
 - News: `src/content/news/*.md`
 - Header/footer navigation: `src/content/navigation/*.json`
 - Footer social links: `src/content/socials/*.json`
@@ -125,7 +127,7 @@ All JSON collection entries include `$schema` links to Astro-generated collectio
 
 ## Routing model
 
-- Top-level section routes (`/`, `/news/`, `/artists/`, `/releases/`, `/services/`, `/about/`) are same-document shell routes
+- Top-level section routes (`/`, `/distro/`, `/news/`, `/artists/`, `/releases/`, `/services/`, `/about/`) are same-document shell routes
 - `AppShellRoot` fetches and caches rendered `<main>` content from the real Astro pages, then swaps it in place
 - The shell now owns section-transition UX:
   - scroll reset
@@ -134,6 +136,7 @@ All JSON collection entries include `$schema` links to Astro-generated collectio
   - route loading indicator
 - Internal clicks to release/artist/news detail routes are intercepted and opened as overlays
 - Direct loads to `/releases/[slug]/`, `/artists/[slug]/`, `/news/[slug]/` still render full Astro pages
+- `News` currently remains routed content, but is hidden from the visible homepage/header/footer IA while `Distro` is active
 - Overlay HTML is fetched from `partial = true` routes under `src/pages/app-shell-overlay/`
 - Non-shell routes still use normal document navigation
 

@@ -1,0 +1,53 @@
+---
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+import { resolveLinkAttributes } from '@/config/site';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+
+interface Props {
+  item: CollectionEntry<'distro'>;
+  variant?: 'home' | 'page';
+}
+
+const { item, variant = 'page' } = Astro.props;
+const linkAttributes = resolveLinkAttributes(item.data.fourthwall_url);
+const isHomeVariant = variant === 'home';
+---
+
+<a
+  class:list={[
+    'group block h-full distro-card',
+    isHomeVariant ? 'distro-card--home' : 'distro-card--page',
+  ]}
+  href={linkAttributes.href}
+  target={linkAttributes.target}
+  rel={linkAttributes.rel}
+>
+  <Card className="distro-card__surface rounded-none border-[#2b2b2b] bg-[#141414] shadow-none">
+    <div class="distro-card__image-frame">
+      <Image
+        src={item.data.image}
+        alt={item.data.image_alt}
+        class="distro-card__image"
+        sizes={isHomeVariant ? '(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw' : '(min-width: 1280px) 22vw, (min-width: 768px) 45vw, 100vw'}
+      />
+    </div>
+    <CardContent className={cn('distro-card__content', isHomeVariant ? 'space-y-2 p-4' : 'space-y-3 p-5')}>
+      <div class="space-y-2">
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+          {item.data.eyebrow && <span>{item.data.eyebrow}</span>}
+          {item.data.format && <span class="text-[#8a8a8a]">{item.data.format}</span>}
+        </div>
+        <h3 class="distro-card__title">{item.data.title}</h3>
+        <p class="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">{item.data.artist_or_label}</p>
+      </div>
+      {!isHomeVariant && <p class="distro-card__summary">{item.data.summary}</p>}
+      {!isHomeVariant && (
+        <span class="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-foreground/88">
+          View in Store <span aria-hidden="true">→</span>
+        </span>
+      )}
+    </CardContent>
+  </Card>
+</a>

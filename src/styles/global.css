@@ -319,6 +319,15 @@
     background: linear-gradient(180deg, rgba(138, 73, 90, 0.18), rgba(88, 38, 49, 0.18));
   }
 
+  .services-page-intro__cta {
+    min-height: 2.55rem;
+    padding-inline: 0.95rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    background: rgba(138, 73, 90, 0.1);
+    border-color: rgba(199, 137, 151, 0.38);
+  }
+
   .services-page-intro__cta:hover,
   .services-page-intro__cta:focus-visible,
   .services-inquiry-form__submit:hover,
@@ -563,7 +572,8 @@
   .site-footer-top {
     display: grid;
     gap: 1.35rem;
-    padding: 1.5rem 0 1.25rem;
+    padding-top: 1.5rem;
+    padding-bottom: 1.25rem;
   }
 
   .site-footer-brand {
@@ -675,6 +685,128 @@
 
   .home-featured-roster-card__content {
     max-width: 100%;
+  }
+
+  .distro-home-grid {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .distro-card {
+    color: inherit;
+  }
+
+  .distro-card__surface {
+    display: grid;
+    gap: 0;
+    height: 100%;
+    transition:
+      background-color 0.22s ease,
+      border-color 0.22s ease;
+  }
+
+  .distro-card:hover .distro-card__surface,
+  .distro-card:focus-visible .distro-card__surface {
+    background-color: #161616;
+    border-color: #3a3a3a;
+  }
+
+  .distro-card__image-frame {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-bottom: 1px solid #2b2b2b;
+    background: #0f0f0f;
+  }
+
+  .distro-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.45s ease;
+  }
+
+  .distro-card:hover .distro-card__image,
+  .distro-card:focus-visible .distro-card__image {
+    transform: scale(1.03);
+  }
+
+  .distro-card__title {
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 5vw, 2.4rem);
+    letter-spacing: 0.04em;
+    line-height: 0.96;
+    text-transform: uppercase;
+    color: var(--foreground);
+  }
+
+  .distro-card__summary {
+    color: var(--muted-foreground);
+    font-size: 0.92rem;
+    line-height: 1.6;
+  }
+
+  .distro-page-intro {
+    padding-top: 1.5rem;
+    padding-bottom: 1rem;
+  }
+
+  .distro-page-intro__surface {
+    display: grid;
+    gap: 0.75rem;
+    border-top: 1px solid #2b2b2b;
+    padding-top: 1.35rem;
+  }
+
+  .distro-page-intro__eyebrow,
+  .distro-group-section__kicker {
+    color: var(--muted-foreground);
+    font-size: 0.72rem;
+    letter-spacing: 0.28em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .distro-page-intro__title,
+  .distro-group-section__title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 10vw, 3.1rem);
+    letter-spacing: 0.06em;
+    line-height: 0.96;
+    text-transform: uppercase;
+  }
+
+  .distro-page-intro__copy,
+  .distro-group-section__copy {
+    max-width: 46rem;
+    color: var(--muted-foreground);
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
+  .distro-page-groups {
+    display: grid;
+    gap: 2.4rem;
+    padding-top: 1rem;
+    padding-bottom: 3.5rem;
+  }
+
+  .distro-group-section {
+    display: grid;
+    gap: 1.25rem;
+    border-top: 1px solid #2b2b2b;
+    padding-top: 1.35rem;
+  }
+
+  .distro-group-section__header {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .distro-group-grid {
+    display: grid;
+    gap: 1.25rem;
   }
 
   .artists-roster-section {
@@ -2266,6 +2398,11 @@ body.is-app-shell-overlay-open {
     grid-template-columns: 1fr;
   }
 
+  .distro-home-grid,
+  .distro-group-grid {
+    grid-template-columns: 1fr;
+  }
+
   .home-section-header--split .home-section-header__lead {
     width: 100%;
   }
@@ -2300,7 +2437,8 @@ body.is-app-shell-overlay-open {
 
   .site-footer-top {
     gap: 1.1rem;
-    padding: 1.25rem 0 1rem;
+    padding-top: 1.25rem;
+    padding-bottom: 1rem;
   }
 
   .site-footer-brand {
@@ -2359,7 +2497,8 @@ body.is-app-shell-overlay-open {
     grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.15fr);
     gap: 1.5rem;
     align-items: start;
-    padding: 1.9rem 0 1.5rem;
+    padding-top: 1.9rem;
+    padding-bottom: 1.5rem;
   }
 
   .site-footer-brand-topbar {
@@ -2618,8 +2757,22 @@ body.is-app-shell-overlay-open {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .distro-home-grid,
+  .distro-group-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .artists-roster-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .distro-page-groups {
+    gap: 2.85rem;
+  }
+
+  .distro-group-section {
+    gap: 1.5rem;
+    padding-top: 1.6rem;
   }
 
   .artist-detail-hero__context {
@@ -2706,6 +2859,9 @@ body.is-app-shell-overlay-open {
   }
 
   .services-service-section__media {
+    width: 100%;
+    min-width: 0;
+    aspect-ratio: auto;
     height: clamp(24rem, 33vw, 28rem);
   }
 
@@ -2747,6 +2903,12 @@ body.is-app-shell-overlay-open {
 
 @media (min-width: 80rem) {
   .home-featured-roster-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+
+  .distro-home-grid,
+  .distro-group-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1.5rem;
   }

@@ -2,7 +2,7 @@ import { createProjectRelativeUrl } from '@/config/site';
 import { stripBasePath } from '@/utils/urls';
 
 export type OverlayKind = 'artists' | 'news' | 'releases';
-export type ShellSectionKind = 'about' | 'artists' | 'home' | 'news' | 'releases' | 'services';
+export type ShellSectionKind = 'about' | 'artists' | 'distro' | 'home' | 'news' | 'releases' | 'services';
 
 export type OverlayRoute = {
   kind: OverlayKind;
@@ -23,6 +23,7 @@ const overlayRouteMatchers: Array<{ kind: OverlayKind; pattern: RegExp }> = [
 
 const shellSectionRouteMatchers: Array<{ kind: ShellSectionKind; pattern: RegExp }> = [
   { kind: 'home', pattern: /^\/$/ },
+  { kind: 'distro', pattern: /^\/distro\/?$/ },
   { kind: 'news', pattern: /^\/news\/?$/ },
   { kind: 'artists', pattern: /^\/artists\/?$/ },
   { kind: 'releases', pattern: /^\/releases\/?$/ },

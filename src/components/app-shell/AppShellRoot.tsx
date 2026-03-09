@@ -89,6 +89,7 @@ const OVERLAY_KIND_LABELS: Record<OverlayRoute['kind'], string> = {
 const SHELL_SECTION_LABELS: Record<ShellSectionKind, string> = {
   about: 'About',
   artists: 'Artists',
+  distro: 'Distro',
   home: 'Home',
   news: 'News',
   releases: 'Releases',

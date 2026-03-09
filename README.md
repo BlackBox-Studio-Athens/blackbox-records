@@ -20,7 +20,7 @@ This is configured in `astro.config.mjs`.
 
 ## Navigation model
 
-- Top-level sections (`/`, `/news/`, `/artists/`, `/releases/`, `/services/`, `/about/`) are shell-routed in the browser and swapped in-place.
+- Top-level sections (`/`, `/distro/`, `/artists/`, `/releases/`, `/services/`, `/about/`) are shell-routed in the browser and swapped in-place.
 - Release, artist, and news detail routes remain direct-load Astro pages, but in-site clicks open them through the app-shell overlay.
 - The Bandcamp/Tidal player stays mounted in the persistent shell so playback can survive top-level section switches.
 - The minimized player is only shown after the user interacts with the embed area; a loaded embed alone does not create the pill.
@@ -96,6 +96,7 @@ Content is managed directly in the repo (no CMS in this phase), but site-editabl
 
 - Artists: `src/content/artists/*.md`
 - Releases: `src/content/releases/*.md`
+- Distro items: `src/content/distro/*.json`
 - News: `src/content/news/*.md`
 - Home copy: `src/content/home/*.json`
 - About copy: `src/content/about/*.json`

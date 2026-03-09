@@ -1,8 +1,10 @@
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
+export { groupDistroEntries } from '@/lib/distro-data';
 
 export type ArtistProfileEntry = CollectionEntry<'artists'>;
 export type ReleaseCatalogEntry = CollectionEntry<'releases'>;
 export type NewsArticleEntry = CollectionEntry<'news'>;
+export type DistroEntry = CollectionEntry<'distro'>;
 export type ArtistRosterReleaseContext = {
   latestReleaseTitle: string | null;
   latestReleaseYear: number | null;
@@ -19,6 +21,14 @@ function sortReleaseCatalogByDate(left: ReleaseCatalogEntry, right: ReleaseCatal
 
 function sortNewsArticlesByDate(left: NewsArticleEntry, right: NewsArticleEntry) {
   return right.data.date.getTime() - left.data.date.getTime();
+}
+
+function sortDistroEntries(left: DistroEntry, right: DistroEntry) {
+  if (left.data.order !== right.data.order) {
+    return left.data.order - right.data.order;
+  }
+
+  return left.data.title.localeCompare(right.data.title);
 }
 
 export async function listArtistProfiles() {
@@ -54,6 +64,10 @@ export async function mapArtistRosterReleaseContextById() {
 
 export async function listNewsArticles() {
   return (await getCollection('news')).slice().sort(sortNewsArticlesByDate);
+}
+
+export async function listDistroEntries() {
+  return (await getCollection('distro')).slice().sort(sortDistroEntries);
 }
 
 export function mapArtistProfilesById(artistProfiles: ArtistProfileEntry[]) {

@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Silent Echoes CD",
+  "group": "Other Labels",
+  "artist_or_label": "Grey Window",
+  "image": "./compact-discs.jpg",
+  "image_alt": "Compact discs in jewel cases",
+  "summary": "A compact disc still earns its place when the release is right. This sits in the distro as a proper format, not an afterthought.",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "eyebrow": "Other Labels",
+  "format": "CD",
+  "order": 4
+}

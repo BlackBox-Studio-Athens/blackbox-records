@@ -20,11 +20,11 @@
     "button_text": "View Full Roster",
     "button_link": "/artists/"
   },
-  "news": {
-    "section_label": "News",
-    "title": "News",
-    "link_text": "All News",
-    "link_url": "/news/"
+  "distro": {
+    "section_label": "Distro",
+    "title": "Distro",
+    "link_text": "View All Distro",
+    "link_url": "/distro/"
   },
   "journey": {
     "section_label": "About",
