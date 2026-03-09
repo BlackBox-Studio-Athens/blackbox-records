@@ -1508,10 +1508,10 @@ export default function AppShellRoot({
                     'relative inline-flex min-h-11 items-center border-b border-border/70 py-1 text-[12px] font-medium uppercase tracking-[0.2em] transition-colors',
                     isServicesNavigationItem
                       ? navigationIsActive
-                        ? 'text-[var(--services-accent-active)]'
-                        : 'text-[var(--services-accent)] hover:text-[var(--services-accent-hover)]'
+                        ? 'border-l-2 border-l-[var(--services-accent-active)] pl-3 text-[var(--services-accent-active)]'
+                        : 'text-foreground/90 hover:text-[var(--services-accent-hover)]'
                       : navigationIsActive
-                        ? 'text-foreground'
+                        ? 'border-l-2 border-l-foreground/85 pl-3 text-foreground'
                         : 'text-foreground/90 hover:text-foreground',
                   ].join(' ')}
                   onClick={() => setIsMobileNavigationOpen(false)}

@@ -238,7 +238,7 @@
   }
 
   .header-nav-link--services {
-    color: var(--services-accent);
+    color: #b3b3b3;
   }
 
   .header-nav-link--services:hover,

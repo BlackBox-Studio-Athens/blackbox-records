@@ -5,22 +5,22 @@ import { groupDistroEntries, listDistroEntries } from '@/lib/catalog-data';
 import type { DistroGroupName } from '@/lib/distro-data';
 
 const DISTRO_GROUP_INTROS: Record<DistroGroupName, string> = {
-  'Distro Picks': 'Things we are backing hard right now, whether they come from BlackBox directly or from the edges of the same circle.',
-  'Other Labels': 'Records and small editions from labels we rate, carried because they sit naturally beside what BlackBox is already putting into the world.',
-  'Friends & Trades': 'Objects, editions, and trade-table kinds of things that came through the wider network and feel right staying in reach.',
+  Vinyls: 'Records worth keeping in circulation: BlackBox releases, close allies, and a few things that still belong on an actual shelf.',
+  Clothes: 'Shirts and wearable pieces that feel closer to the label table than to generic merch filler.',
+  Tapes: 'Small-run cassette releases and tape editions that still make sense in a real distro, not just as a novelty format.',
 };
 
 const distroEntries = await listDistroEntries();
 const groupedDistroEntries = groupDistroEntries(distroEntries);
 ---
 
-<SiteLayout pageTitle="Distro" pageDescription="Curated distro picks, other labels, and friends & trades.">
+<SiteLayout pageTitle="Distro" pageDescription="A curated distro of vinyls, clothes, and tapes carried through the BlackBox store.">
   <section class="layout-container distro-page-intro">
     <div class="distro-page-intro__surface">
       <p class="distro-page-intro__eyebrow">Distro</p>
       <h1 class="distro-page-intro__title">Distro</h1>
       <p class="distro-page-intro__copy">
-        A small curated layer around the store: things we are backing, things from labels we respect, and things that came in through the same extended network.
+        A small curated layer around the store: vinyls, clothes, and tapes that fit naturally beside the records BlackBox is already putting into the world.
       </p>
     </div>
   </section>
@@ -30,7 +30,7 @@ const groupedDistroEntries = groupDistroEntries(distroEntries);
       groupedDistroEntries.map((group) => (
         <section class="distro-group-section" aria-labelledby={`distro-group-${group.groupName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
           <div class="distro-group-section__header">
-            <p class="distro-group-section__kicker">Curated Group</p>
+            <p class="distro-group-section__kicker">Format Shelf</p>
             <h2
               class="distro-group-section__title"
               id={`distro-group-${group.groupName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}

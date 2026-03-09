@@ -62,7 +62,7 @@ const distro = defineCollection({
   schema: ({ image }) =>
     z.object({
       title: z.string(),
-      group: z.enum(['Distro Picks', 'Other Labels', 'Friends & Trades']),
+      group: z.enum(['Vinyls', 'Clothes', 'Tapes']),
       artist_or_label: z.string(),
       image: image(),
       image_alt: z.string(),

@@ -1,7 +1,7 @@
 {
   "$schema": "../../../.astro/collections/distro.schema.json",
   "title": "Mass Culture LP",
-  "group": "Distro Picks",
+  "group": "Vinyls",
   "artist_or_label": "BlackBox Records",
   "image": "./vinyl-records.jpg",
   "image_alt": "Stack of vinyl records",

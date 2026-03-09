@@ -1,4 +1,4 @@
-export const DISTRO_GROUP_ORDER = ['Distro Picks', 'Other Labels', 'Friends & Trades'] as const;
+export const DISTRO_GROUP_ORDER = ['Vinyls', 'Clothes', 'Tapes'] as const;
 export type DistroGroupName = (typeof DISTRO_GROUP_ORDER)[number];
 
 export type DistroGroupingRecord<T> = {
