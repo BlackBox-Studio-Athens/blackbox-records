@@ -38,3 +38,17 @@ export function buildServicesInquiryMailto({
 
   return `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
+
+type OpenMailtoInNewTabOptions = {
+  mailtoHref: string;
+  navigateToHref: (href: string) => void;
+  openWindow: (href: string, target: string, features: string) => Window | null;
+};
+
+export function openServicesInquiryMailtoInNewTab({ mailtoHref, navigateToHref, openWindow }: OpenMailtoInNewTabOptions) {
+  const popupWindow = openWindow(mailtoHref, '_blank', 'noopener,noreferrer');
+
+  if (!popupWindow) {
+    navigateToHref(mailtoHref);
+  }
+}

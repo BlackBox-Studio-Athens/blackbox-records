@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
   buildServicesInquiryMailto,
+  openServicesInquiryMailtoInNewTab,
   SERVICES_INQUIRY_SERVICE_OPTIONS,
   type ServicesInquiryService,
 } from '@/components/services/services-inquiry';
@@ -63,7 +64,13 @@ export default function ServicesInquiryForm({ email, submitText }: ServicesInqui
       className="services-inquiry-form"
       onSubmit={(event) => {
         event.preventDefault();
-        window.location.href = mailtoHref;
+        openServicesInquiryMailtoInNewTab({
+          mailtoHref,
+          navigateToHref: (href) => {
+            window.location.href = href;
+          },
+          openWindow: (href, target, features) => window.open(href, target, features),
+        });
       }}
     >
       <div className="services-inquiry-form__grid">

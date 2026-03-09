@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { buildServicesInquiryMailto } from './services-inquiry';
+import { buildServicesInquiryMailto, openServicesInquiryMailtoInNewTab } from './services-inquiry';
 
 describe('services inquiry mailto', () => {
   it('encodes a complete subject and body', () => {
@@ -36,5 +36,36 @@ describe('services inquiry mailto', () => {
     expect(decodeURIComponent(mailto)).toContain('Email: Not provided');
     expect(decodeURIComponent(mailto)).toContain('Band / Project: Not provided');
     expect(decodeURIComponent(mailto)).toContain('No message provided.');
+  });
+
+  it('opens the inquiry in a new tab when possible', () => {
+    const openWindow = vi.fn(() => ({} as Window));
+    const navigateToHref = vi.fn();
+
+    openServicesInquiryMailtoInNewTab({
+      mailtoHref: 'mailto:blackboxrecordsathens@gmail.com?subject=Test',
+      navigateToHref,
+      openWindow,
+    });
+
+    expect(openWindow).toHaveBeenCalledWith(
+      'mailto:blackboxrecordsathens@gmail.com?subject=Test',
+      '_blank',
+      'noopener,noreferrer',
+    );
+    expect(navigateToHref).not.toHaveBeenCalled();
+  });
+
+  it('falls back to same-tab navigation when the new tab is blocked', () => {
+    const openWindow = vi.fn(() => null);
+    const navigateToHref = vi.fn();
+
+    openServicesInquiryMailtoInNewTab({
+      mailtoHref: 'mailto:blackboxrecordsathens@gmail.com?subject=Fallback',
+      navigateToHref,
+      openWindow,
+    });
+
+    expect(navigateToHref).toHaveBeenCalledWith('mailto:blackboxrecordsathens@gmail.com?subject=Fallback');
   });
 });

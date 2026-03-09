@@ -346,7 +346,7 @@
   .services-service-section__media {
     position: relative;
     overflow: hidden;
-    aspect-ratio: 5 / 4;
+    height: clamp(16rem, 58vw, 20rem);
     border: 1px solid #2b2b2b;
     background: #0f0f0f;
   }
@@ -355,6 +355,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
     filter: grayscale(1) contrast(1.02) brightness(0.88);
   }
 
@@ -2705,13 +2706,12 @@ body.is-app-shell-overlay-open {
   }
 
   .services-service-section__media {
-    aspect-ratio: auto;
-    min-height: 26rem;
+    height: clamp(24rem, 33vw, 28rem);
   }
 
   .services-service-section__panel {
     border-top: 1px solid #2b2b2b;
-    min-height: 26rem;
+    min-height: clamp(24rem, 33vw, 28rem);
     align-content: start;
     padding: 1.45rem 1.45rem 1.55rem;
   }
