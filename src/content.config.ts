@@ -93,7 +93,8 @@ const settings = defineCollection({
 
 const home = defineCollection({
   loader: glob({ pattern: '**/*.json', base: './src/content/home' }),
-  schema: z.object({
+  schema: ({ image }) =>
+    z.object({
     hero: z.object({
       tagline: z.string(),
       primary_button_text: z.string(),
@@ -123,7 +124,7 @@ const home = defineCollection({
     journey: z.object({
       section_label: z.string(),
       title: z.string(),
-      image: z.string(),
+      image: image(),
       image_alt: z.string(),
       paragraphs: z.array(z.string()),
       stats: z.array(
@@ -133,16 +134,17 @@ const home = defineCollection({
         }),
       ),
     }),
-  }),
+    }),
 });
 
 const about = defineCollection({
   loader: glob({ pattern: '**/*.json', base: './src/content/about' }),
-  schema: z.object({
+  schema: ({ image }) =>
+    z.object({
     hero: z.object({
       section_label: z.string(),
       title: z.string(),
-      image: z.string(),
+      image: image(),
       image_alt: z.string(),
     }),
     lead: z.string(),
@@ -172,7 +174,50 @@ const about = defineCollection({
         label: z.string(),
       }),
     ),
-  }),
+    }),
+});
+
+const services = defineCollection({
+  loader: glob({ pattern: '**/*.json', base: './src/content/services' }),
+  schema: ({ image }) =>
+    z.object({
+      hero: z.object({
+        title: z.string(),
+        intro: z.string(),
+        cta_text: z.string(),
+      }),
+      services: z.array(
+        z.object({
+          id: z.string(),
+          title: z.string(),
+          image: image(),
+          image_alt: z.string(),
+          summary: z.string(),
+          bullets: z.array(z.string()).min(2),
+          contact_note: z.string(),
+          partner_name: z.string().optional(),
+          partner_url: z.string().url().optional(),
+        }),
+      ),
+      process: z.object({
+        title: z.string(),
+        intro: z.string(),
+        steps: z
+          .array(
+            z.object({
+              title: z.string(),
+              body: z.string(),
+            }),
+          )
+          .min(3),
+      }),
+      inquiry: z.object({
+        title: z.string(),
+        intro: z.string(),
+        email: z.string().email(),
+        submit_text: z.string(),
+      }),
+    }),
 });
 
 export const collections = {
@@ -184,4 +229,5 @@ export const collections = {
   settings,
   home,
   about,
+  services,
 };

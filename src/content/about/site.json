@@ -3,7 +3,7 @@
   "hero": {
     "section_label": "About",
     "title": "The Label",
-    "image": "/assets/images/backgrounds/dark-recording-studio-vintage-equipment.jpg",
+    "image": "./dark-recording-studio-vintage-equipment.jpg",
     "image_alt": "BlackBox Records Studio"
   },
   "lead": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.",

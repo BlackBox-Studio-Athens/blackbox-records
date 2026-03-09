@@ -4,7 +4,7 @@
     "tagline": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent vel tortor quis nisi tincidunt eleifend.",
     "primary_button_text": "Explore Artists",
     "primary_button_link": "/artists/",
-    "secondary_button_text": "Visit Shop",
+    "secondary_button_text": "Visit Store",
     "secondary_button_link": "/shop/",
     "scroll_indicator_text": "Scroll"
   },
@@ -28,8 +28,8 @@
   },
   "journey": {
     "section_label": "About",
-    "title": "The Journey",
-    "image": "/assets/images/backgrounds/dark-recording-studio-vintage-equipment.jpg",
+    "title": "Join the Collective",
+    "image": "./dark-recording-studio-vintage-equipment.jpg",
     "image_alt": "About BlackBox Records",
     "paragraphs": [
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",

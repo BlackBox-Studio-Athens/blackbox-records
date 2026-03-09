@@ -19,6 +19,7 @@ export type SiteSocialItem = {
 export type SiteLabelSettings = CollectionEntry<'settings'>['data'];
 export type HomeContent = CollectionEntry<'home'>['data'];
 export type AboutContent = CollectionEntry<'about'>['data'];
+export type ServicesContent = CollectionEntry<'services'>['data'];
 
 function sortByOrderAndTitle<T extends { order: number; title: string }>(left: T, right: T) {
   if (left.order !== right.order) {
@@ -79,4 +80,13 @@ export async function getAboutContent(): Promise<AboutContent> {
   }
 
   return aboutContent.data;
+}
+
+export async function getServicesContent(): Promise<ServicesContent> {
+  const servicesContent = await getEntry('services', 'site');
+  if (!servicesContent) {
+    throw new Error('Missing services content entry at src/content/services/site.json.');
+  }
+
+  return servicesContent.data;
 }
