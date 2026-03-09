@@ -443,7 +443,7 @@ export default function AppShellRoot({
       if (!currentHeroElement || !isCurrentPath(activeShellPathname, '/')) return;
 
       const heroRect = currentHeroElement.getBoundingClientRect();
-      const fadeDistance = Math.max(window.innerHeight * 0.32, heroRect.height * 0.24);
+      const fadeDistance = Math.max(window.innerHeight * 0.42, heroRect.height * 0.32);
       const progress = Math.min(Math.max(-heroRect.top / fadeDistance, 0), 1);
       currentHeroElement.style.setProperty('--homepage-hero-scroll-progress', progress.toFixed(4));
     };
