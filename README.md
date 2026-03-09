@@ -20,9 +20,10 @@ This is configured in `astro.config.mjs`.
 
 ## Navigation model
 
-- Top-level sections (`/`, `/news/`, `/artists/`, `/releases/`, `/about/`) are shell-routed in the browser and swapped in-place.
+- Top-level sections (`/`, `/news/`, `/artists/`, `/releases/`, `/services/`, `/about/`) are shell-routed in the browser and swapped in-place.
 - Release, artist, and news detail routes remain direct-load Astro pages, but in-site clicks open them through the app-shell overlay.
 - The Bandcamp/Tidal player stays mounted in the persistent shell so playback can survive top-level section switches.
+- The minimized player is only shown after the user interacts with the embed area; a loaded embed alone does not create the pill.
 - Real document navigations still occur for direct loads, refreshes, new tabs, and the external shop redirect.
 
 ## Prerequisites
@@ -98,12 +99,14 @@ Content is managed directly in the repo (no CMS in this phase), but site-editabl
 - News: `src/content/news/*.md`
 - Home copy: `src/content/home/*.json`
 - About copy: `src/content/about/*.json`
+- Services copy: `src/content/services/*.json`
 - Navigation: `src/content/navigation/*.json`
 - Social links: `src/content/socials/*.json`
 - Site settings: `src/content/settings/*.json`
 - Collection-owned images live next to their Markdown entries and are validated by Astro content schemas.
 - JSON collection entries include `$schema` references to Astro-generated collection schemas for editor/CMS validation.
 - Artists and releases may include an optional `shop_collection_handle` for future Fourthwall collection linking.
+- Home/about decorative images are now validated as Astro image fields.
 
 Collection schemas are defined in `src/content.config.ts`.
 

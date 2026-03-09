@@ -22,6 +22,7 @@ Commerce remains external via Fourthwall.
   - settings
   - home
   - about
+  - services
 
 ## New-thread startup checklist
 
@@ -33,8 +34,6 @@ Read these first before editing:
 4. `src/layouts/SiteLayout.astro`
 5. `src/components/app-shell/AppShell.astro`
 6. `src/components/app-shell/AppShellRoot.tsx`
-7. `SESSION-TRANSCRIPT-2026-03-01.md`
-
 Then inspect only task-relevant files with `rg` and scoped reads.
 
 ## Commands
@@ -45,6 +44,15 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - Unit tests: `pnpm test:unit`
 - Type/content checks: `pnpm check`
 - Production build: `pnpm build`
+
+### Required command policy
+
+- After finishing any implementation that changes behavior, run:
+  - `pnpm test:unit`
+  - `pnpm check`
+  - `pnpm build`
+- Before pushing, run the same three commands again unless they were just run against the exact final tree you are pushing
+- Do not claim completion or push with unverified behavioral changes
 
 ## Deployment and URL model
 
@@ -93,6 +101,7 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - Label metadata / JSON-LD: `src/content/settings/site.json`
 - Homepage copy: `src/content/home/site.json`
 - About page copy: `src/content/about/site.json`
+- Services page copy: `src/content/services/site.json`
 
 All JSON collection entries include `$schema` links to Astro-generated collection schemas for editor/CMS validation.
 
@@ -100,6 +109,7 @@ All JSON collection entries include `$schema` links to Astro-generated collectio
 
 - `releases.artist` is an Astro `reference('artists')`
 - Collection-owned images for artists/releases/news use Astro `image()`
+- Home/about decorative images also use Astro `image()`
 - Artists and releases may carry an optional `shop_collection_handle` for future Fourthwall collection linking
 - Home/about/settings/navigation/socials use structured JSON collections
 - Query helpers live in `src/lib/site-data.ts`
@@ -115,7 +125,7 @@ All JSON collection entries include `$schema` links to Astro-generated collectio
 
 ## Routing model
 
-- Top-level section routes (`/`, `/news/`, `/artists/`, `/releases/`, `/about/`) are same-document shell routes
+- Top-level section routes (`/`, `/news/`, `/artists/`, `/releases/`, `/services/`, `/about/`) are same-document shell routes
 - `AppShellRoot` fetches and caches rendered `<main>` content from the real Astro pages, then swaps it in place
 - The shell now owns section-transition UX:
   - scroll reset
@@ -136,6 +146,12 @@ All JSON collection entries include `$schema` links to Astro-generated collectio
   - modal open
   - minimized
 - Minimized player survives shell-managed top-level navigation
+- The mini player should only appear after real embed intent:
+  - the iframe must load
+  - the user must interact with the iframe area
+- Modal dismissal semantics are stateful:
+  - before embed interaction: `Close` destroys the session
+  - after embed interaction: `Minimize` keeps a `Player Ready` pill
 - Explicit `Stop` destroys the active iframe/session
 
 ### Important limitation
@@ -159,7 +175,7 @@ This is an iframe boundary, not an app bug.
   - shell-owned player
   - shell-owned mobile nav
 - The minimized player is intentionally floating over content on mobile
-- It is tuned to prefer a compact single-line pill when the title fits
+- It now prioritizes a visible two-line title and a calm `Player Ready · {Provider}` status line
 - If touched again, validate the floating pill carefully on narrow viewports
 
 ## Current Astro features in use
@@ -199,26 +215,28 @@ This is an iframe boundary, not an app bug.
 6. If content schemas or collections changed, verify affected routes still render and no collection errors appear
 7. Update `README.md`, this file, and the session handoff file if setup or architecture assumptions changed
 
+These checks are mandatory both:
+- after implementation is complete
+- immediately before pushing
+
 ## Known limitations / handoff notes
 
 - Do not casually move player logic back into page-local scripts
 - Do not reintroduce Astro `ClientRouter` or other body-swapping route navigation for top-level sections without re-evaluating embedded-player persistence
 - Prefetch exists both through link attributes and shell-managed fragment fetches; keep changes deliberate
-- Decorative `home` / `about` image fields are still string paths, not Astro `image()` fields
 - The minimized player was recently hardened for cross-browser visibility and compact mobile layout; validate it if touched
 - The shell section-transition veil and focus-reset path are now part of the routing model, not cosmetic extras
 
 ## Reasonable next TODOs
 
 1. Tighten content-query hygiene by centralizing repeated collection sorting/filtering helpers
-2. Consider migrating `home` / `about` decorative image fields to an Astro-assets-friendly model if editor-managed validation becomes important
-3. If a CMS is added, build it on top of the existing `src/content/**` collections rather than introducing a parallel content system
-4. If player behavior changes, validate:
+2. If a CMS is added, build it on top of the existing `src/content/**` collections rather than introducing a parallel content system
+3. If player behavior changes, validate:
    - top-level section continuity
    - mobile nav continuity
    - overlay continuity
    - console cleanliness
-5. If the minimized player is redesigned again, decide explicitly between:
+4. If the minimized player is redesigned again, decide explicitly between:
    - floating over content
    - reserving bottom space
 
