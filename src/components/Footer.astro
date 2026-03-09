@@ -41,11 +41,8 @@ const footerSocialItems = socialItems
 <footer class="site-footer-shell mt-12 border-t border-border">
   <div class="page-content-width-constrained-container site-footer-top">
     <div class="site-footer-brand">
-      <img src={createProjectRelativeUrl('/assets/images/brand/logo.png')} alt="BlackBox Records" class="site-footer-logo" />
-      <div class="space-y-2">
-        <p class="site-footer-description">
-          {footerDescription}
-        </p>
+      <div class="site-footer-brand-topbar">
+        <img src={createProjectRelativeUrl('/assets/images/brand/logo.png')} alt="BlackBox Records" class="site-footer-logo" />
         <div class="site-footer-social-row" aria-label="Connect">
           {
             footerSocialItems.map((item) => {
@@ -75,6 +72,9 @@ const footerSocialItems = socialItems
           }
         </div>
       </div>
+      <p class="site-footer-description">
+        {footerDescription}
+      </p>
     </div>
 
     <div class="space-y-3">

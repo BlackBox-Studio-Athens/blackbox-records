@@ -1,0 +1,136 @@
+---
+import { Image } from 'astro:assets';
+import GridPattern from '@/components/ui/grid-pattern.astro';
+import { buttonVariants } from '@/components/ui/button';
+import SiteLayout from '@/layouts/SiteLayout.astro';
+import { resolveLinkAttributes } from '@/config/site';
+import { getServicesContent } from '@/lib/site-data';
+import { cn } from '@/lib/utils';
+
+const servicesContent = await getServicesContent();
+---
+
+<SiteLayout pageTitle="Services" pageDescription="Tour booking, merch printing, and vinyl production support.">
+  <section class="layout-container services-page-intro">
+    <div class="services-page-intro__surface">
+      <GridPattern class="services-page-intro__pattern" squareSize={38} />
+      <div class="services-page-intro__stack">
+        <p class="services-page-intro__eyebrow">Services</p>
+        <h1 class="services-page-intro__title">{servicesContent.hero.title}</h1>
+        <p class="services-page-intro__copy">{servicesContent.hero.intro}</p>
+        <a
+          href="#services-inquiry"
+          data-services-inquiry-target-service="General"
+          data-scroll-to-target="services-inquiry"
+          class={cn(
+            buttonVariants({ variant: 'outline' }),
+            'services-page-intro__cta rounded-none border-[rgba(199,137,151,0.52)] bg-[rgba(138,73,90,0.14)] text-[#f4e7ea] hover:border-[rgba(199,137,151,0.74)] hover:bg-[rgba(138,73,90,0.22)] hover:text-[#fff5f7]',
+          )}
+        >
+          {servicesContent.hero.cta_text}
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="layout-container services-page-sections" aria-label="Services">
+    {
+      servicesContent.services.map((service, index) => {
+        const partnerLinkAttributes = service.partner_url ? resolveLinkAttributes(service.partner_url) : null;
+        const isReversed = index % 2 === 1;
+
+        return (
+          <article class:list={['services-service-section', isReversed && 'services-service-section--reverse']} id={service.id}>
+            <div class="services-service-section__media">
+              <Image
+                src={service.image}
+                alt={service.image_alt}
+                class="services-service-section__image"
+                widths={[720, 1200, 1600]}
+                sizes="(min-width: 80rem) 54rem, (min-width: 48rem) 60vw, calc(100vw - 2rem)"
+              />
+              <div class="services-service-section__media-overlay">
+                <h2 class="services-service-section__media-title">{service.title}</h2>
+              </div>
+            </div>
+            <div class="services-service-section__panel">
+              <p class="services-service-section__summary">
+                {service.summary}{' '}
+                {
+                  service.partner_name && partnerLinkAttributes && (
+                    <>
+                      In partnership with{' '}
+                      <a
+                        class="services-inline-link"
+                        href={partnerLinkAttributes.href}
+                        rel={partnerLinkAttributes.rel}
+                        target={partnerLinkAttributes.target}
+                      >
+                        {service.partner_name}
+                      </a>
+                      .
+                    </>
+                  )
+                }
+              </p>
+              <p class="services-service-section__eyebrow">What this covers</p>
+              <ul class="services-service-section__bullets">
+                {service.bullets.map((bullet) => <li>{bullet}</li>)}
+              </ul>
+              <p class="services-service-section__contact-note">
+                {service.contact_note}{' '}
+                <a
+                  href="#services-inquiry"
+                  data-services-inquiry-target-service={service.title}
+                  data-scroll-to-target="services-inquiry"
+                  class="services-inline-link"
+                >
+                  Mention {service.title} in your inquiry.
+                </a>
+              </p>
+            </div>
+          </article>
+        );
+      })
+    }
+  </section>
+
+  <section class="layout-container services-process-section" aria-labelledby="services-process-title">
+    <div class="services-process-section__header">
+      <p class="services-process-section__kicker">Process</p>
+      <h2 class="services-process-section__title" id="services-process-title">
+        {servicesContent.process.title}
+      </h2>
+      <p class="services-process-section__copy">{servicesContent.process.intro}</p>
+    </div>
+    <div class="services-process-grid">
+      {
+        servicesContent.process.steps.map((step, index) => (
+          <article class="services-process-card">
+            <p class="services-process-card__index">{String(index + 1).padStart(2, '0')}</p>
+            <h3 class="services-process-card__title">{step.title}</h3>
+            <p class="services-process-card__body">{step.body}</p>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="layout-container services-inquiry-section" id="services-inquiry">
+    <div class="services-inquiry-section__header">
+      <p class="services-inquiry-section__kicker">Inquiry</p>
+      <h2 class="services-inquiry-section__title">{servicesContent.inquiry.title}</h2>
+      <p class="services-inquiry-section__copy">{servicesContent.inquiry.intro}</p>
+    </div>
+    <div data-services-inquiry-form></div>
+    <noscript>
+      <p class="services-inquiry-section__noscript">
+        JavaScript is required for the inquiry form. Contact us directly at{' '}
+        <a class="services-inline-link" href={`mailto:${servicesContent.inquiry.email}`}>
+          {servicesContent.inquiry.email}
+        </a>
+        .
+      </p>
+    </noscript>
+  </section>
+</SiteLayout>

@@ -6,7 +6,7 @@ export async function GET() {
   const releases = await listReleaseCatalog();
   const news = await listNewsArticles();
 
-  const staticPaths = ['/', '/about/', '/artists/', '/releases/', '/news/', '/shop/'];
+  const staticPaths = ['/', '/about/', '/artists/', '/releases/', '/news/', '/services/', '/shop/'];
   const artistPaths = artists.map((artist) => `/artists/${artist.data.slug}/`);
   const releasePaths = releases.map((release) => `/releases/${release.id}/`);
   const newsPaths = news.map((item) => `/news/${item.id}/`);

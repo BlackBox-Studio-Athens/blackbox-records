@@ -5,6 +5,7 @@ import NewsCard from '@/components/cards/NewsCard.astro';
 import ReleaseCard from '@/components/cards/ReleaseCard.astro';
 import NewsletterSignup from '@/components/NewsletterSignup.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
+import { Image } from 'astro:assets';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl } from '@/config/site';
@@ -115,7 +116,12 @@ const allReleasesCount = releaseCatalogEntries.length;
       <Card className="surface-card overflow-hidden">
         <CardContent className="grid gap-8 p-0 lg:grid-cols-[0.95fr_1.05fr]">
           <div class="relative h-full min-h-[22rem] overflow-hidden border-b border-border/70 lg:border-r lg:border-b-0">
-            <img src={createProjectRelativeUrl(homeContent.journey.image)} alt={homeContent.journey.image_alt} class="h-full w-full object-cover" />
+            <Image
+              src={homeContent.journey.image}
+              alt={homeContent.journey.image_alt}
+              class="h-full w-full object-cover"
+              sizes="(min-width: 1024px) 46rem, 100vw"
+            />
             <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20"></div>
           </div>
           <div class="space-y-5 p-7 sm:p-9">
@@ -123,6 +129,18 @@ const allReleasesCount = releaseCatalogEntries.length;
             <h2 class="font-display text-5xl tracking-[0.09em] uppercase">{homeContent.journey.title.toUpperCase()}</h2>
             <div class="space-y-4 text-sm leading-relaxed text-muted-foreground">
               {homeContent.journey.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+            </div>
+            <div>
+              <a
+                href={createProjectRelativeUrl('/about/')}
+                data-astro-prefetch
+                class={cn(
+                  buttonVariants({ variant: 'ghost', size: 'sm' }),
+                  'h-auto rounded-none border border-border/70 bg-transparent px-0 py-0 text-xs tracking-[0.16em] uppercase text-foreground hover:border-foreground hover:bg-transparent hover:text-foreground',
+                )}
+              >
+                Learn More <span aria-hidden="true">→</span>
+              </a>
             </div>
             <div class="grid grid-cols-2 gap-3 pt-2 md:grid-cols-4">
               {
