@@ -114,10 +114,8 @@ const home = defineCollection({
     z.object({
     hero: z.object({
       tagline: z.string(),
-      primary_button_text: z.string(),
-      primary_button_link: z.string(),
-      secondary_button_text: z.string(),
-      secondary_button_link: z.string(),
+      image: image(),
+      image_alt: z.string(),
       scroll_indicator_text: z.string(),
     }),
     latest_releases: z.object({

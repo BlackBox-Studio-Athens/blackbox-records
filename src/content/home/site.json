@@ -1,11 +1,9 @@
 {
   "$schema": "../../../.astro/collections/home.schema.json",
   "hero": {
-    "tagline": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent vel tortor quis nisi tincidunt eleifend.",
-    "primary_button_text": "Explore Artists",
-    "primary_button_link": "/artists/",
-    "secondary_button_text": "Visit Store",
-    "secondary_button_link": "/shop/",
+    "tagline": "Heavy music on record.",
+    "image": "./hero-live-band.jpg",
+    "image_alt": "Black and white live band performing on stage",
     "scroll_indicator_text": "Scroll"
   },
   "latest_releases": {

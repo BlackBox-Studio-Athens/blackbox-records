@@ -430,6 +430,43 @@ export default function AppShellRoot({
     };
   }, [activeShellPathname]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let animationFrameId = 0;
+    let currentHeroElement: HTMLElement | null = null;
+
+    const applyHeroScrollProgress = () => {
+      animationFrameId = 0;
+      currentHeroElement = document.querySelector<HTMLElement>('#homepage-hero-section');
+
+      if (!currentHeroElement || !isCurrentPath(activeShellPathname, '/')) return;
+
+      const heroRect = currentHeroElement.getBoundingClientRect();
+      const fadeDistance = Math.max(window.innerHeight * 0.32, heroRect.height * 0.24);
+      const progress = Math.min(Math.max(-heroRect.top / fadeDistance, 0), 1);
+      currentHeroElement.style.setProperty('--homepage-hero-scroll-progress', progress.toFixed(4));
+    };
+
+    const queueHeroScrollSync = () => {
+      if (animationFrameId) return;
+      animationFrameId = window.requestAnimationFrame(applyHeroScrollProgress);
+    };
+
+    queueHeroScrollSync();
+    window.addEventListener('scroll', queueHeroScrollSync, { passive: true });
+    window.addEventListener('resize', queueHeroScrollSync);
+
+    return () => {
+      window.removeEventListener('scroll', queueHeroScrollSync);
+      window.removeEventListener('resize', queueHeroScrollSync);
+      if (animationFrameId) {
+        window.cancelAnimationFrame(animationFrameId);
+      }
+      currentHeroElement?.style.removeProperty('--homepage-hero-scroll-progress');
+    };
+  }, [activeShellPathname]);
+
   function clearRouteLoadingTimer() {
     if (routeLoadingTimerRef.current) {
       window.clearTimeout(routeLoadingTimerRef.current);
