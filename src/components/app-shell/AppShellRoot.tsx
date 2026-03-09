@@ -3,6 +3,12 @@ import { createPortal } from 'react-dom';
 import { Square, X } from 'lucide-react';
 
 import ArtistsRosterFilters from '@/components/artists/ArtistsRosterFilters';
+import {
+  IDLE_PLAYER_SESSION_MACHINE_STATE,
+  reducePlayerSessionMachine,
+} from '@/components/app-shell/player-session-machine';
+import { derivePlayerPresentationState, OPEN_PLAYER_ACTION_LABEL } from '@/components/app-shell/player-session-ui';
+import ServicesInquiryForm from '@/components/services/ServicesInquiryForm';
 import { Spinner } from '@/components/ui/spinner';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { createProjectRelativeUrl, resolveLinkAttributes } from '@/config/site';
@@ -33,6 +39,7 @@ type OverlayState = {
 
 type ActivePlayerSession = {
   embedUrl: string;
+  hasEmbedInteraction: boolean;
   iframeElement: HTMLIFrameElement;
   providerId: PlayerProviderId;
   releaseTitle: string;
@@ -64,6 +71,8 @@ type ShellPageSnapshot = {
 
 type AppShellRootProps = {
   mobileNavigationItems: SiteNavigationItem[];
+  servicesInquiryEmail: string;
+  servicesInquirySubmitText: string;
   siteTitle: string;
 };
 
@@ -83,6 +92,7 @@ const SHELL_SECTION_LABELS: Record<ShellSectionKind, string> = {
   home: 'Home',
   news: 'News',
   releases: 'Releases',
+  services: 'Services',
 };
 const EMBED_PROVIDER_WARMUP_ORIGINS: Record<PlayerProviderId, string[]> = {
   bandcamp: ['https://bandcamp.com'],
@@ -199,6 +209,9 @@ function readDocumentShellPageSnapshot(targetDocument: Document, href: string): 
   mainElementClone.querySelectorAll<HTMLElement>('[data-artists-roster-filters]').forEach((placeholderElement) => {
     placeholderElement.innerHTML = '';
   });
+  mainElementClone.querySelectorAll<HTMLElement>('[data-services-inquiry-form]').forEach((placeholderElement) => {
+    placeholderElement.innerHTML = '';
+  });
 
   const resolvedUrl = new URL(href, window.location.href);
   const canonicalHref =
@@ -216,7 +229,12 @@ function readDocumentShellPageSnapshot(targetDocument: Document, href: string): 
   };
 }
 
-export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppShellRootProps) {
+export default function AppShellRoot({
+  mobileNavigationItems,
+  servicesInquiryEmail,
+  servicesInquirySubmitText,
+  siteTitle,
+}: AppShellRootProps) {
   const [activeShellPathname, setActiveShellPathname] = useState(() =>
     typeof window === 'undefined' ? '' : normalizeAppPathname(window.location.pathname),
   );
@@ -228,11 +246,17 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
   const [activePlayerProviderId, setActivePlayerProviderId] = useState<PlayerProviderId | ''>('');
   const [activePlayerTitle, setActivePlayerTitle] = useState('');
   const [isMiniPlayerVisible, setIsMiniPlayerVisible] = useState(false);
+  const [miniPlayerStatusLabel, setMiniPlayerStatusLabel] = useState('Player Ready');
+  const [playerModalDismissActionLabel, setPlayerModalDismissActionLabel] = useState<'Close' | 'Minimize'>('Close');
+  const [playerModalDismissAriaLabel, setPlayerModalDismissAriaLabel] = useState<'Close player' | 'Minimize player'>(
+    'Close player',
+  );
   const [isMobileNavigationOpen, setIsMobileNavigationOpen] = useState(false);
   const [shellSectionTransitionState, setShellSectionTransitionState] = useState<'closed' | 'entering' | 'revealing'>('closed');
   const [shellSectionTransitionTarget, setShellSectionTransitionTarget] = useState('');
   const [shellNavigationSource, setShellNavigationSource] = useState<ShellNavigationSource>('programmatic');
   const [artistsRosterFiltersContainer, setArtistsRosterFiltersContainer] = useState<HTMLElement | null>(null);
+  const [servicesInquiryContainer, setServicesInquiryContainer] = useState<HTMLElement | null>(null);
 
   const overlayStateRef = useRef<OverlayState | null>(null);
   const overlayCacheRef = useRef(new Map<string, string>());
@@ -269,8 +293,6 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
     [],
   );
 
-  const miniPlayerProviderLabel = activePlayerProviderId ? EMBED_PROVIDER_LABELS[activePlayerProviderId] : '';
-
   overlayStateRef.current = overlayState;
 
   function getCurrentMainElement() {
@@ -305,9 +327,6 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
       } else {
         anchorElement.removeAttribute('aria-current');
       }
-
-      anchorElement.classList.toggle('text-[#f5f5f5]', isActive);
-      anchorElement.classList.toggle('after:scale-x-100', isActive);
     });
   }
 
@@ -378,6 +397,30 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
 
     syncArtistsRosterFiltersContainer();
     animationFrameId = window.requestAnimationFrame(syncArtistsRosterFiltersContainer);
+
+    return () => {
+      if (animationFrameId) {
+        window.cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [activeShellPathname]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (!isCurrentPath(activeShellPathname, '/services/')) {
+      setServicesInquiryContainer(null);
+      return;
+    }
+
+    let animationFrameId = 0;
+
+    const syncServicesInquiryContainer = () => {
+      setServicesInquiryContainer(document.querySelector<HTMLElement>('[data-services-inquiry-form]'));
+    };
+
+    syncServicesInquiryContainer();
+    animationFrameId = window.requestAnimationFrame(syncServicesInquiryContainer);
 
     return () => {
       if (animationFrameId) {
@@ -557,16 +600,49 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
       setActivePlayerProviderId('');
       setActivePlayerTitle('');
       setPlayerProviders([]);
-      setIsPlayerLoading(false);
-      setIsMiniPlayerVisible(false);
+      const presentation = derivePlayerPresentationState({
+        hasEmbedInteraction: false,
+        hasSession: false,
+        isLoaded: false,
+      });
+      setIsPlayerLoading(presentation.isLoading);
+      setIsMiniPlayerVisible(presentation.isMiniPlayerVisible);
+      setMiniPlayerStatusLabel(presentation.miniPlayerStatusLabel);
+      setPlayerModalDismissActionLabel(presentation.closeActionLabel);
+      setPlayerModalDismissAriaLabel(presentation.closeActionAriaLabel);
       return;
     }
 
     setActivePlayerProviderId(activeSession.providerId);
     setActivePlayerTitle(activeSession.releaseTitle);
     const isLoaded = activeSession.iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState === 'loaded';
-    setIsPlayerLoading(!isLoaded);
-    setIsMiniPlayerVisible(activeSession.status === 'minimized' && isLoaded);
+    const presentation = derivePlayerPresentationState({
+      hasEmbedInteraction: activeSession.hasEmbedInteraction,
+      hasSession: true,
+      isLoaded,
+      providerLabel: EMBED_PROVIDER_LABELS[activeSession.providerId],
+      status: activeSession.status,
+    });
+    setIsPlayerLoading(presentation.isLoading);
+    setIsMiniPlayerVisible(presentation.isMiniPlayerVisible);
+    setMiniPlayerStatusLabel(presentation.miniPlayerStatusLabel);
+    setPlayerModalDismissActionLabel(presentation.closeActionLabel);
+    setPlayerModalDismissAriaLabel(presentation.closeActionAriaLabel);
+  }
+
+  function markActivePlayerSessionAsInteracted(embedUrl: string) {
+    const activeSession = activePlayerSessionRef.current;
+    if (!activeSession || activeSession.embedUrl !== embedUrl || activeSession.hasEmbedInteraction) return;
+
+    activeSession.hasEmbedInteraction = true;
+    updatePlayerUiFromSession(activeSession);
+  }
+
+  function markActivePlayerSurfaceAsInteracted() {
+    const activeSession = activePlayerSessionRef.current;
+    if (!activeSession) return;
+
+    markActivePlayerSessionAsInteracted(activeSession.embedUrl);
   }
 
   function syncActivePlayerSessionIntoFrameHost() {
@@ -608,6 +684,10 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
       if (activePlayerSessionRef.current?.embedUrl !== provider.embedUrl) return;
       setIsPlayerLoading(false);
       updatePlayerUiFromSession(activePlayerSessionRef.current);
+    });
+
+    iframeElement.addEventListener('focus', () => {
+      markActivePlayerSessionAsInteracted(provider.embedUrl);
     });
 
     return iframeElement;
@@ -665,6 +745,7 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
 
     const nextSession: ActivePlayerSession = {
       embedUrl: provider.embedUrl,
+      hasEmbedInteraction: false,
       iframeElement,
       providerId: provider.id,
       releaseTitle,
@@ -700,10 +781,19 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
 
   function closePlayerModal() {
     const activeSession = activePlayerSessionRef.current;
-    const isLoaded =
-      activeSession?.iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState === 'loaded';
+    const nextSessionState = reducePlayerSessionMachine(
+      activeSession
+        ? {
+            hasEmbedInteraction: activeSession.hasEmbedInteraction,
+            hasSession: true,
+            isLoaded: activeSession.iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState === 'loaded',
+            status: activeSession.status,
+          }
+        : IDLE_PLAYER_SESSION_MACHINE_STATE,
+      { type: 'dismiss-requested' },
+    );
 
-    if (activeSession && activeSession.status === 'modal-open' && isLoaded) {
+    if (activeSession && nextSessionState.hasSession && nextSessionState.status === 'minimized') {
       minimizePlayerSession();
       return;
     }
@@ -715,7 +805,15 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
     const activeSession = activePlayerSessionRef.current;
     if (!activeSession) return;
 
-    activeSession.status = 'modal-open';
+    activeSession.status = reducePlayerSessionMachine(
+      {
+        hasEmbedInteraction: activeSession.hasEmbedInteraction,
+        hasSession: true,
+        isLoaded: activeSession.iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState === 'loaded',
+        status: activeSession.status,
+      },
+      { type: 'reopen-requested' },
+    ).status as ActivePlayerSession['status'];
     setIsPlayerModalOpen(true);
     syncActivePlayerSessionIntoFrameHost();
     window.requestAnimationFrame(() => modalCloseButtonRef.current?.focus());
@@ -1135,7 +1233,34 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
       const mobileNavigationTrigger = eventTarget.closest<HTMLElement>('[data-app-shell-mobile-navigation-trigger]');
       if (mobileNavigationTrigger) {
         event.preventDefault();
-        setIsMobileNavigationOpen(true);
+        setIsMobileNavigationOpen((currentState) => !currentState);
+        return;
+      }
+
+      const playerModalDismissTrigger = eventTarget.closest<HTMLElement>(
+        '[data-music-streaming-service-embedded-player-modal-dismiss]',
+      );
+      if (playerModalDismissTrigger) {
+        event.preventDefault();
+        closePlayerModal();
+        return;
+      }
+
+      const miniPlayerOpenTrigger = eventTarget.closest<HTMLElement>(
+        '[data-music-streaming-service-embedded-player-mini-player-open]',
+      );
+      if (miniPlayerOpenTrigger) {
+        event.preventDefault();
+        reopenPlayerModal();
+        return;
+      }
+
+      const miniPlayerStopTrigger = eventTarget.closest<HTMLElement>(
+        '[data-music-streaming-service-embedded-player-mini-player-stop]',
+      );
+      if (miniPlayerStopTrigger) {
+        event.preventDefault();
+        stopPlayerSession({ restoreFocus: true });
         return;
       }
 
@@ -1276,11 +1401,23 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
       closeOverlayState({ restoreFocus: false });
     }
 
+    function handleWindowBlur() {
+      window.setTimeout(() => {
+        const activeSession = activePlayerSessionRef.current;
+        if (!activeSession || activeSession.status !== 'modal-open') return;
+
+        if (document.activeElement === activeSession.iframeElement) {
+          markActivePlayerSessionAsInteracted(activeSession.embedUrl);
+        }
+      }, 0);
+    }
+
     document.addEventListener('click', handleDocumentClick, true);
     document.addEventListener('pointerover', handleDocumentPointerOver);
     document.addEventListener('focusin', handleDocumentFocusIn);
     document.addEventListener('keydown', handleKeyDown);
     window.addEventListener('popstate', handlePopState);
+    window.addEventListener('blur', handleWindowBlur);
 
     return () => {
       document.removeEventListener('click', handleDocumentClick, true);
@@ -1288,6 +1425,7 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
       document.removeEventListener('focusin', handleDocumentFocusIn);
       document.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('blur', handleWindowBlur);
       clearRouteLoadingTimer();
       clearShellPageTransition();
       resetShellSectionTransitionState();
@@ -1303,7 +1441,11 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
   return (
     <>
       <Sheet open={isMobileNavigationOpen} onOpenChange={setIsMobileNavigationOpen}>
-        <SheetContent side="right" className="flex w-[min(92vw,320px)] flex-col gap-6 border-l border-border/80 bg-background/95 pt-16">
+        <SheetContent
+          side="right"
+          className="top-[var(--header-height)] bottom-auto h-[calc(100dvh-var(--header-height))] w-[min(92vw,320px)] border-l border-border/80 bg-background/95 pt-6"
+        >
+          <div className="flex h-full flex-col gap-6">
           <SheetHeader>
             <SheetTitle className="font-display text-3xl tracking-[0.1em] uppercase">Menu</SheetTitle>
             <SheetDescription className="text-xs tracking-[0.16em] uppercase">{siteTitle}</SheetDescription>
@@ -1313,6 +1455,7 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
             {mobileNavigationItems.map((item) => {
               const navigationIsActive = activeShellPathname ? isCurrentPath(activeShellPathname, item.url) : false;
               const linkAttributes = resolveLinkAttributes(item.url);
+              const isServicesNavigationItem = item.url === '/services/';
 
               return (
                 <a
@@ -1322,9 +1465,16 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
                   rel={linkAttributes.rel}
                   data-astro-prefetch={linkAttributes.shouldPrefetch ? true : undefined}
                   aria-current={navigationIsActive ? 'page' : undefined}
+                  data-services-navigation-link={isServicesNavigationItem ? 'true' : undefined}
                   className={[
-                    'relative inline-flex min-h-11 items-center border-b border-border/70 py-1 text-[12px] font-medium uppercase tracking-[0.2em] transition-colors hover:text-foreground',
-                    navigationIsActive ? 'text-foreground' : 'text-foreground/90',
+                    'relative inline-flex min-h-11 items-center border-b border-border/70 py-1 text-[12px] font-medium uppercase tracking-[0.2em] transition-colors',
+                    isServicesNavigationItem
+                      ? navigationIsActive
+                        ? 'text-[var(--services-accent-active)]'
+                        : 'text-[var(--services-accent)] hover:text-[var(--services-accent-hover)]'
+                      : navigationIsActive
+                        ? 'text-foreground'
+                        : 'text-foreground/90 hover:text-foreground',
                   ].join(' ')}
                   onClick={() => setIsMobileNavigationOpen(false)}
                 >
@@ -1341,6 +1491,7 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
           >
             Close
           </button>
+          </div>
         </SheetContent>
       </Sheet>
 
@@ -1424,50 +1575,57 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
           <h2 className="accessibility-visually-hidden-text" id="music-streaming-service-embedded-player-modal-title">
             Music player
           </h2>
-          <div className="flex items-start justify-end gap-4">
-            <button
+          <div className="music-streaming-service-embedded-player-modal-header">
+            <div className="music-streaming-service-embedded-player-modal-topbar">
+              <button
               ref={modalCloseButtonRef}
-              aria-label="Close player"
-              className="music-streaming-service-embedded-player-modal-close-button inline-flex min-h-9 items-center rounded-md border border-border px-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              aria-label={playerModalDismissAriaLabel}
+              className="music-streaming-service-embedded-player-modal-close-button"
+              data-music-streaming-service-embedded-player-modal-dismiss
               type="button"
-              onClick={closePlayerModal}
             >
-              Close
+              {playerModalDismissActionLabel}
             </button>
+            </div>
+            <div
+              className="music-streaming-service-embedded-player-provider-switcher grid grid-cols-2 gap-2"
+              hidden={playerProviders.length < 2}
+            >
+              {(['bandcamp', 'tidal'] as PlayerProviderId[]).map((providerId) => {
+                const provider = playerProviders.find((item) => item.id === providerId);
+
+                return (
+                  <button
+                    key={providerId}
+                    className="music-streaming-service-embedded-player-provider-button music-streaming-service-embedded-player-provider-button--has-logo inline-flex min-h-10 items-center justify-center rounded-md px-4 transition-colors"
+                    type="button"
+                    data-state={activePlayerProviderId === providerId ? 'active' : 'inactive'}
+                    aria-label={EMBED_PROVIDER_LABELS[providerId]}
+                    hidden={!provider}
+                    aria-pressed={activePlayerProviderId === providerId}
+                    onClick={() => {
+                      if (!provider) return;
+                      applyPlayerProvider(provider, activePlayerTitle);
+                    }}
+                  >
+                    <img
+                      className="music-streaming-service-embedded-player-provider-button-logo h-4 w-auto"
+                      src={providerLogoUrls[providerId]}
+                      alt=""
+                      aria-hidden="true"
+                    />
+                    <span className="accessibility-visually-hidden-text">{EMBED_PROVIDER_LABELS[providerId]}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div
-            className="music-streaming-service-embedded-player-provider-switcher mt-3 grid grid-cols-2 gap-2"
-            hidden={playerProviders.length < 2}
+            className="music-streaming-service-embedded-player-modal-frame"
+            onPointerDownCapture={markActivePlayerSurfaceAsInteracted}
+            onMouseDownCapture={markActivePlayerSurfaceAsInteracted}
+            onTouchStartCapture={markActivePlayerSurfaceAsInteracted}
           >
-            {(['bandcamp', 'tidal'] as PlayerProviderId[]).map((providerId) => {
-              const provider = playerProviders.find((item) => item.id === providerId);
-
-              return (
-                <button
-                  key={providerId}
-                  className="music-streaming-service-embedded-player-provider-button music-streaming-service-embedded-player-provider-button--has-logo inline-flex min-h-10 items-center justify-center rounded-md border border-border bg-background px-4 transition-colors"
-                  type="button"
-                  data-state={activePlayerProviderId === providerId ? 'active' : 'inactive'}
-                  aria-label={EMBED_PROVIDER_LABELS[providerId]}
-                  hidden={!provider}
-                  aria-pressed={activePlayerProviderId === providerId}
-                  onClick={() => {
-                    if (!provider) return;
-                    applyPlayerProvider(provider, activePlayerTitle);
-                  }}
-                >
-                  <img
-                    className="music-streaming-service-embedded-player-provider-button-logo h-4 w-auto"
-                    src={providerLogoUrls[providerId]}
-                    alt=""
-                    aria-hidden="true"
-                  />
-                  <span className="accessibility-visually-hidden-text">{EMBED_PROVIDER_LABELS[providerId]}</span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="music-streaming-service-embedded-player-modal-frame mt-4 overflow-hidden rounded-md border border-border/80 bg-background/90">
             <div
               className="music-streaming-service-embedded-player-modal-loading-state absolute inset-0 flex items-center justify-center bg-background/92 px-3 py-3 text-center"
               role="status"
@@ -1489,27 +1647,27 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
         </div>
       </div>
 
-      <div className="music-streaming-service-embedded-player-mini-player" data-state={isMiniPlayerVisible ? 'open' : 'closed'}>
+        <div className="music-streaming-service-embedded-player-mini-player" data-state={isMiniPlayerVisible ? 'open' : 'closed'}>
         <div className="music-streaming-service-embedded-player-mini-player-copy">
-          <p className="music-streaming-service-embedded-player-mini-player-provider text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
-            {miniPlayerProviderLabel}
+          <p className="music-streaming-service-embedded-player-mini-player-provider uppercase text-muted-foreground">
+            {miniPlayerStatusLabel}
           </p>
           <p className="music-streaming-service-embedded-player-mini-player-title text-foreground/92">{activePlayerTitle}</p>
         </div>
         <div className="music-streaming-service-embedded-player-mini-player-actions">
           <button
-            aria-label="Reopen player"
-            className="music-streaming-service-embedded-player-mini-player-action inline-flex min-h-9 items-center whitespace-nowrap rounded-full border border-border/80 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/86 transition-colors hover:bg-accent hover:text-accent-foreground"
+            aria-label="Open player"
+            className="music-streaming-service-embedded-player-mini-player-action inline-flex min-h-9 items-center whitespace-nowrap rounded-full border border-border/80 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/78 transition-colors hover:bg-accent hover:text-accent-foreground"
+            data-music-streaming-service-embedded-player-mini-player-open
             type="button"
-            onClick={reopenPlayerModal}
           >
-            Reopen
+            {OPEN_PLAYER_ACTION_LABEL}
           </button>
           <button
             aria-label="Stop player"
             className="music-streaming-service-embedded-player-mini-player-action music-streaming-service-embedded-player-mini-player-action--icon inline-flex min-h-9 items-center whitespace-nowrap rounded-full border border-border/80 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            data-music-streaming-service-embedded-player-mini-player-stop
             type="button"
-            onClick={() => stopPlayerSession({ restoreFocus: true })}
           >
             <Square className="size-3 fill-current" aria-hidden="true" strokeWidth={0} />
           </button>
@@ -1518,6 +1676,17 @@ export default function AppShellRoot({ mobileNavigationItems, siteTitle }: AppSh
 
       {artistsRosterFiltersContainer
         ? createPortal(<ArtistsRosterFilters key={activeShellPathname} pageKey={activeShellPathname} />, artistsRosterFiltersContainer)
+        : null}
+
+      {servicesInquiryContainer
+        ? createPortal(
+            <ServicesInquiryForm
+              key={activeShellPathname}
+              email={servicesInquiryEmail}
+              submitText={servicesInquirySubmitText}
+            />,
+            servicesInquiryContainer,
+          )
         : null}
     </>
   );
