@@ -30,7 +30,6 @@ const groupedDistroEntries = groupDistroEntries(distroEntries);
       groupedDistroEntries.map((group) => (
         <section class="distro-group-section" aria-labelledby={`distro-group-${group.groupName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
           <div class="distro-group-section__header">
-            <p class="distro-group-section__kicker">Format Shelf</p>
             <h2
               class="distro-group-section__title"
               id={`distro-group-${group.groupName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
@@ -47,3 +46,4 @@ const groupedDistroEntries = groupDistroEntries(distroEntries);
     }
   </section>
 </SiteLayout>
+

@@ -2,7 +2,7 @@
   "$schema": "../../../.astro/collections/navigation.schema.json",
   "title": "Distro",
   "url": "/distro/",
-  "order": 1,
+  "order": 3,
   "show_in_header": true,
   "show_in_footer": true
 }

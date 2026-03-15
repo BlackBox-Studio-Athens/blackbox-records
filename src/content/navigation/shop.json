@@ -2,7 +2,7 @@
   "$schema": "../../../.astro/collections/navigation.schema.json",
   "title": "Store",
   "url": "/shop/",
-  "order": 5,
+  "order": 6,
   "show_in_header": true,
   "show_in_footer": true
 }
