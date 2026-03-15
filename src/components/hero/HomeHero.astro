@@ -1,15 +1,11 @@
 ---
 import type { ImageMetadata } from 'astro';
 import { Image } from 'astro:assets';
-import { createProjectRelativeUrl } from '@/config/site';
-
 interface Props {
   tagline: string;
   image: ImageMetadata;
   imageAlt: string;
   scrollIndicatorText?: string;
-  logoAlt?: string;
-  logoSrc?: string;
 }
 
 const {
@@ -17,8 +13,6 @@ const {
   image,
   imageAlt,
   scrollIndicatorText = 'Scroll',
-  logoAlt = 'BlackBox Records',
-  logoSrc = createProjectRelativeUrl('/assets/images/brand/logo.png'),
 } = Astro.props;
 ---
 
@@ -38,10 +32,6 @@ const {
 
   <div class="homepage-hero-section__content-block page-content-width-constrained-container">
     <h1 class="sr-only">BlackBox Records</h1>
-    <div class="homepage-hero-section__logo-lockup">
-      <img src={logoSrc} alt={logoAlt} />
-    </div>
-
     <p class="homepage-hero-section__tagline-text">{tagline}</p>
   </div>
 

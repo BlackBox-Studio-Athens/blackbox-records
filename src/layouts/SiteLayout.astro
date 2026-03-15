@@ -56,7 +56,7 @@ const orgUrl = labelSettings.url || createAbsoluteSiteUrl('/');
 const orgLogo = labelSettings.logo?.includes('://') ? labelSettings.logo : createAbsoluteSiteUrl(labelSettings.logo);
 const sameAs = socialItems.filter((item) => item.url && item.url !== '#').map((item) => item.url);
 const htmlTitle = pageTitle ? `${pageTitle} | ${siteConfig.title}` : siteConfig.title;
-const resolvedBodyClass = ['min-h-screen overflow-x-clip bg-background text-foreground', bodyClass].filter(Boolean).join(' ');
+const resolvedBodyClass = ['min-h-screen flex flex-col overflow-x-clip bg-background text-foreground', bodyClass].filter(Boolean).join(' ');
 const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)]', mainClass].filter(Boolean).join(' ');
 ---
 

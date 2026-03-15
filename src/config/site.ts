@@ -2,7 +2,7 @@ import { base as astroBasePath, site as astroSiteUrl } from 'astro:config/client
 
 export const siteConfig = {
   title: 'Blackbox Records',
-  description: 'Experimental record label with a focus on boundary-pushing music.',
+  description: 'Helping artists release/share/tour their music. Dreaming about a planet full of art.',
   socialImage: '/assets/images/brand/logo.png',
   socialImageAlt: 'Blackbox Records logo',
   shopUrl: 'https://blackboxrecords-shop.fourthwall.com',
