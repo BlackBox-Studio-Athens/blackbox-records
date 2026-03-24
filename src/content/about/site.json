@@ -6,7 +6,7 @@
     "image": "./dark-recording-studio-vintage-equipment.jpg",
     "image_alt": "BlackBox Records Studio"
   },
-  "lead": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.",
+  "lead": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.",
   "sections": [
     {
       "title": "Manifest",
@@ -31,15 +31,36 @@
     "title": "Contact",
     "intro": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
     "items": [
-      { "label": "General", "value": "info@blackboxrecords.com" },
-      { "label": "Demo Submissions", "value": "demos@blackboxrecords.com" },
-      { "label": "Press", "value": "press@blackboxrecords.com" }
+      {
+        "label": "General",
+        "value": "info@blackboxrecords.com"
+      },
+      {
+        "label": "Demo Submissions",
+        "value": "demos@blackboxrecords.com"
+      },
+      {
+        "label": "Press",
+        "value": "press@blackboxrecords.com"
+      }
     ]
   },
   "stats": [
-    { "key": "artists", "label": "Artists" },
-    { "key": "releases", "label": "Releases" },
-    { "key": "countries", "label": "Countries" },
-    { "key": "year", "label": "Year" }
+    {
+      "key": "artists",
+      "label": "Artists"
+    },
+    {
+      "key": "releases",
+      "label": "Releases"
+    },
+    {
+      "key": "countries",
+      "label": "Countries"
+    },
+    {
+      "key": "year",
+      "label": "Year"
+    }
   ]
 }
