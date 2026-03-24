@@ -22,19 +22,25 @@ const { items, pathname } = Astro.props;
         const navIsActive = isCurrentPath(pathname, item.url);
         const linkAttributes = resolveLinkAttributes(item.url);
         const isServicesNavigationItem = item.url === '/services/';
+        const isStoreNavigationItem = item.url === '/shop/';
 
         return (
           <li>
             <a
               class:list={[
                 'header-nav-link relative inline-flex items-center font-normal uppercase transition-colors duration-200 ease-in-out after:pointer-events-none after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:origin-center after:scale-x-0 after:bg-current after:opacity-90 after:transition-transform after:duration-250 after:ease-[cubic-bezier(0.22,1,0.36,1)] hover:after:scale-x-100 focus-visible:after:scale-x-100',
-                isServicesNavigationItem ? 'header-nav-link--services' : 'text-[#b3b3b3] hover:text-[#f5f5f5] focus-visible:text-[#f5f5f5]',
+                isServicesNavigationItem
+                  ? 'header-nav-link--services'
+                  : isStoreNavigationItem
+                    ? 'header-nav-link--store'
+                    : 'text-[#b3b3b3] hover:text-[#f5f5f5] focus-visible:text-[#f5f5f5]',
               ]}
               href={linkAttributes.href}
               target={linkAttributes.target}
               rel={linkAttributes.rel}
               data-navigation-pathname={item.url}
               data-services-navigation-link={isServicesNavigationItem ? 'true' : undefined}
+              data-store-navigation-link={isStoreNavigationItem ? 'true' : undefined}
               data-astro-prefetch={linkAttributes.shouldPrefetch ? true : undefined}
               aria-current={navIsActive ? 'page' : undefined}
             >

@@ -67,6 +67,10 @@
   --services-accent-hover: #a76376;
   --services-accent-active: #c78997;
   --services-accent-surface: rgba(138, 73, 90, 0.14);
+  --store-accent: #922f3f;
+  --store-accent-hover: #b4465a;
+  --store-accent-active: #cf6b80;
+  --store-accent-surface: rgba(146, 47, 63, 0.14);
 }
 
 @keyframes hero-orbit {
@@ -252,6 +256,19 @@
 
   .header-nav-link--services[aria-current='page'] {
     color: var(--services-accent-active);
+  }
+
+  .header-nav-link--store {
+    color: #b3b3b3;
+  }
+
+  .header-nav-link--store:hover,
+  .header-nav-link--store:focus-visible {
+    color: var(--store-accent-hover);
+  }
+
+  .header-nav-link--store[aria-current='page'] {
+    color: var(--store-accent-active);
   }
 
   .page-content-width-constrained-container {

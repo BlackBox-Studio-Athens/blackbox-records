@@ -1494,6 +1494,7 @@ export default function AppShellRoot({
               const navigationIsActive = activeShellPathname ? isCurrentPath(activeShellPathname, item.url) : false;
               const linkAttributes = resolveLinkAttributes(item.url);
               const isServicesNavigationItem = item.url === '/services/';
+              const isStoreNavigationItem = item.url === '/shop/';
 
               return (
                 <a
@@ -1504,9 +1505,12 @@ export default function AppShellRoot({
                   data-astro-prefetch={linkAttributes.shouldPrefetch ? true : undefined}
                   aria-current={navigationIsActive ? 'page' : undefined}
                   data-services-navigation-link={isServicesNavigationItem ? 'true' : undefined}
+                  data-store-navigation-link={isStoreNavigationItem ? 'true' : undefined}
                   className={[
                     'relative inline-flex min-h-11 items-center border-b border-border/70 py-1 text-[12px] font-medium uppercase tracking-[0.2em] transition-colors',
-                    isServicesNavigationItem
+                    isStoreNavigationItem
+                      ? 'border-l-2 border-l-[var(--store-accent-active)] pl-3 text-[var(--store-accent-active)] hover:text-[var(--store-accent-hover)]'
+                      : isServicesNavigationItem
                       ? navigationIsActive
                         ? 'border-l-2 border-l-[var(--services-accent-active)] pl-3 text-[var(--services-accent-active)]'
                         : 'text-foreground/90 hover:text-[var(--services-accent-hover)]'
