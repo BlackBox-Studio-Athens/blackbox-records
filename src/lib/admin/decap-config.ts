@@ -241,6 +241,10 @@ export function resolveDecapSiteRootUrl(options: {
   localCmsPort: string;
   site?: string;
 }): string {
+  if (!options.useLocalBackend && options.site) {
+    return ensureTrailingSlash(new URL(options.baseUrl, options.site).toString());
+  }
+
   const configuredSiteUrl = options.configuredSiteUrl?.trim();
   if (!options.useLocalBackend && configuredSiteUrl) {
     return ensureTrailingSlash(configuredSiteUrl);
@@ -654,7 +658,7 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
       label: 'URL',
       name: 'url',
       widget: 'string',
-      hint: 'Canonical site URL including https://. Example: https://zantoichi.github.io/blackbox-records/.',
+      hint: 'Canonical site URL including https://. Example: https://blackbox-studio-athens.github.io/blackbox-records/.',
     }),
     buildField({
       label: 'Logo path',

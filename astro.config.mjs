@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'astro/config';
 
 export default defineConfig({
-  site: 'https://zantoichi.github.io',
+  site: 'https://blackbox-studio-athens.github.io',
   base: '/blackbox-records/',
   output: 'static',
   prefetch: {

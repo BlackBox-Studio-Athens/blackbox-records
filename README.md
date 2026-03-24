@@ -13,7 +13,7 @@ Static Astro site for the BlackBox Records label.
 
 The production deployment is configured for GitHub Pages project hosting:
 
-- `site`: `https://zantoichi.github.io`
+- `site`: `https://blackbox-studio-athens.github.io`
 - `base`: `/blackbox-records/`
 
 This is configured in `astro.config.mjs`.
@@ -170,7 +170,7 @@ Add these in GitHub:
 
 - Repository `Settings -> Secrets and variables -> Actions -> Variables`
   - `DECAP_SITE_URL`
-    - `https://zantoichi.github.io/blackbox-records/`
+    - `https://blackbox-studio-athens.github.io/blackbox-records/`
   - `DECAP_REPOSITORY`
     - `BlackBox-Studio-Athens/blackbox-records`
   - `DECAP_BRANCH`

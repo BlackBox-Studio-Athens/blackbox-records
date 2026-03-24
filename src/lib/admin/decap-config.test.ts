@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { buildDecapConfig, resolveDecapSiteRootUrl, shouldUseLocalDecapBackend } from './decap-config';
 
 describe('resolveDecapSiteRootUrl', () => {
-  it('uses the configured site URL in production when provided', () => {
+  it('uses the Astro site URL in production when provided', () => {
     expect(
       resolveDecapSiteRootUrl({
         baseUrl: '/blackbox-records/',
@@ -11,6 +11,17 @@ describe('resolveDecapSiteRootUrl', () => {
         useLocalBackend: false,
         localCmsPort: '4322',
         site: 'https://fallback.example.com',
+      }),
+    ).toBe('https://fallback.example.com/blackbox-records/');
+  });
+
+  it('falls back to the configured site URL when no Astro site is available', () => {
+    expect(
+      resolveDecapSiteRootUrl({
+        baseUrl: '/blackbox-records/',
+        configuredSiteUrl: 'https://example.com/blackbox-records',
+        useLocalBackend: false,
+        localCmsPort: '4322',
       }),
     ).toBe('https://example.com/blackbox-records/');
   });
@@ -96,7 +107,7 @@ describe('buildDecapConfig', () => {
       localBackendPort: '8082',
       logoUrl: 'https://example.com/logo.png',
       repository: 'BlackBox-Studio-Athens/blackbox-records',
-      siteRootUrl: 'https://zantoichi.github.io/blackbox-records/',
+      siteRootUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/',
     });
 
     expect(yaml).toContain('name: git-gateway');
