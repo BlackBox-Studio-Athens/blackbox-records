@@ -2,7 +2,7 @@
   "$schema": "../../../.astro/collections/settings.schema.json",
   "label_name": "Blackbox Records",
   "established_year": 2026,
-  "url": "https://zantoichi.github.io/blackbox-records",
+  "url": "https://blackbox-studio-athens.github.io/blackbox-records",
   "logo": "/assets/images/brand/logo.png",
   "location": {
     "locality": "Athens",
