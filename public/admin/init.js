@@ -2,6 +2,7 @@
   const adminContext = window.__BLACKBOX_ADMIN__ || {};
   const previewStyleUrl = adminContext.previewStyleUrl;
   const previewAutoCollapseKey = 'blackbox-cms-preview-auto-collapsed';
+  const previewToggleClickBoundAttribute = 'data-preview-toggle-click-bound';
   let previewCollapseInFlight = false;
 
   const toArray = (value) => {
@@ -68,9 +69,70 @@
   const isEntryEditorRoute = () => /^#\/collections\/[^/]+\/entries\/[^/]+/.test(window.location.hash);
 
   const getPreviewToggleButton = () =>
+    document.querySelector('button[data-blackbox-preview-toggle="true"]') ||
     Array.from(document.querySelectorAll('button')).find(
       (button) => (button.getAttribute('title') || '').trim().toLowerCase() === 'toggle preview',
-    ) || null;
+    ) ||
+    null;
+
+  const ensurePreviewToggleContent = (previewToggleButton) => {
+    let previewCopy = previewToggleButton.querySelector('[data-blackbox-preview-copy="true"]');
+    let previewLabel = previewToggleButton.querySelector('[data-blackbox-preview-label="true"]');
+    let previewStatus = previewToggleButton.querySelector('[data-blackbox-preview-status="true"]');
+
+    if (!previewCopy) {
+      previewCopy = document.createElement('span');
+      previewCopy.dataset.blackboxPreviewCopy = 'true';
+
+      previewLabel = document.createElement('span');
+      previewLabel.dataset.blackboxPreviewLabel = 'true';
+
+      previewStatus = document.createElement('span');
+      previewStatus.dataset.blackboxPreviewStatus = 'true';
+
+      previewCopy.append(previewLabel, previewStatus);
+      previewToggleButton.append(previewCopy);
+    }
+
+    return {
+      previewLabel,
+      previewStatus,
+    };
+  };
+
+  const syncPreviewToggleButtonState = () => {
+    const previewToggleButton = getPreviewToggleButton();
+    if (!previewToggleButton) {
+      return;
+    }
+
+    const previewIsVisible = isPreviewPaneVisible();
+    const nextActionLabel = previewIsVisible ? 'Hide preview' : 'Open preview';
+    const previewStatusLabel = previewIsVisible ? 'Preview visible' : 'Preview hidden';
+    const previewStatusChipLabel = previewIsVisible ? 'Visible' : 'Hidden';
+    const { previewLabel, previewStatus } = ensurePreviewToggleContent(previewToggleButton);
+
+    previewToggleButton.dataset.blackboxPreviewToggle = 'true';
+    previewToggleButton.dataset.previewState = previewIsVisible ? 'open' : 'closed';
+    previewToggleButton.dataset.previewLabel = nextActionLabel;
+    previewToggleButton.dataset.previewStatus = previewStatusChipLabel;
+    previewToggleButton.setAttribute('aria-label', `${nextActionLabel}. ${previewStatusLabel}.`);
+    previewToggleButton.setAttribute('aria-pressed', String(previewIsVisible));
+    previewToggleButton.setAttribute('title', nextActionLabel);
+    previewLabel.textContent = nextActionLabel;
+    previewStatus.textContent = previewStatusChipLabel;
+
+    if (!previewToggleButton.hasAttribute(previewToggleClickBoundAttribute)) {
+      previewToggleButton.setAttribute(previewToggleClickBoundAttribute, 'true');
+      previewToggleButton.addEventListener('click', () => {
+        window.setTimeout(() => {
+          syncPreviewToggleButtonState();
+        }, 60);
+      });
+    }
+
+    document.documentElement.dataset.blackboxCmsPreview = previewIsVisible ? 'open' : 'collapsed';
+  };
 
   const isPreviewPaneVisible = () => {
     const previewPane =
@@ -85,6 +147,8 @@
   };
 
   const schedulePreviewCollapse = () => {
+    syncPreviewToggleButtonState();
+
     if (!isEntryEditorRoute() || hasAutoCollapsedPreview()) {
       return;
     }
@@ -106,6 +170,8 @@
         markPreviewAsAutoCollapsed();
 
         window.setTimeout(() => {
+          syncPreviewToggleButtonState();
+
           if (!isPreviewPaneVisible()) {
             document.documentElement.dataset.blackboxCmsPreview = 'collapsed';
           } else {
@@ -124,7 +190,10 @@
 
   const startEntryEditorPreviewController = () => {
     const triggerPreviewCollapse = () => {
-      window.requestAnimationFrame(schedulePreviewCollapse);
+      window.requestAnimationFrame(() => {
+        syncPreviewToggleButtonState();
+        schedulePreviewCollapse();
+      });
     };
 
     window.addEventListener('hashchange', triggerPreviewCollapse);
