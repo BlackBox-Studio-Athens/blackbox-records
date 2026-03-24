@@ -1,9 +1,9 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Astro Dev" type="js.build_tools.npm">
+  <configuration default="false" name="Astro Site" type="js.build_tools.npm">
     <package-json value="$PROJECT_DIR$/package.json" />
     <command value="run" />
     <scripts>
-      <script value="cms:dev" />
+      <script value="dev:clean" />
     </scripts>
     <node-interpreter value="project" />
     <envs />

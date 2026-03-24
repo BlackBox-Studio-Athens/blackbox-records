@@ -6,6 +6,8 @@
   "packageManager": "pnpm@10.29.3",
   "scripts": {
     "clean:dev-cache": "node -e \"const fs=require('node:fs');for (const p of ['.astro','node_modules/.astro','node_modules/.vite']) fs.rmSync(p,{recursive:true,force:true});\"",
+    "cms:dev": "node scripts/start-cms-dev.mjs",
+    "cms:proxy": "node scripts/start-decap-proxy.mjs",
     "dev": "astro dev",
     "dev:clean": "npm run clean:dev-cache && astro dev",
     "build": "astro build",
@@ -36,6 +38,7 @@
     "@astrojs/check": "^0.9.6",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
+    "decap-server": "^3.5.2",
     "shadcn": "^3.8.4",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"

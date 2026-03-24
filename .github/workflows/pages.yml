@@ -26,6 +26,14 @@ jobs:
 
       - name: Build site and Pages artifact
         uses: withastro/action@v5
+        env:
+          DECAP_SITE_URL: ${{ vars.DECAP_SITE_URL }}
+          DECAP_REPOSITORY: ${{ vars.DECAP_REPOSITORY }}
+          DECAP_BRANCH: ${{ vars.DECAP_BRANCH }}
+          DECAPBRIDGE_BASE_URL: ${{ vars.DECAPBRIDGE_BASE_URL }}
+          DECAPBRIDGE_AUTH_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_ENDPOINT }}
+          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT }}
+          DECAPBRIDGE_GATEWAY_URL: ${{ vars.DECAPBRIDGE_GATEWAY_URL }}
         with:
           node-version: 22
           package-manager: pnpm@10.29.3

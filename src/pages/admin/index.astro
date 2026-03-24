@@ -1,0 +1,60 @@
+---
+import { createProjectRelativeUrl } from '@/config/site';
+
+const adminConfigUrl = createProjectRelativeUrl('/admin/config.yml');
+const adminInitUrl = createProjectRelativeUrl('/admin/init.js');
+const adminStyleUrl = createProjectRelativeUrl('/admin/admin.css');
+const previewStyleUrl = createProjectRelativeUrl('/admin/preview.css');
+const faviconUrl = createProjectRelativeUrl('/assets/images/brand/logo.png');
+const fontStylesheetUrl =
+  'https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Geist+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#f3ece4" />
+    <title>BlackBox CMS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link rel="stylesheet" href={fontStylesheetUrl} />
+    <link rel="stylesheet" href={adminStyleUrl} />
+    <link rel="icon" href={faviconUrl} />
+    <link rel="cms-config-url" type="text/yaml" href={adminConfigUrl} />
+  </head>
+  <body>
+    <div class="blackbox-cms-boot" aria-live="polite">
+      <div class="blackbox-cms-boot__card">
+        <img
+          class="blackbox-cms-boot__logo"
+          src={faviconUrl}
+          alt="BlackBox Records logo"
+          width="80"
+          height="80"
+        />
+        <p class="blackbox-cms-boot__eyebrow">BlackBox CMS</p>
+        <h1 class="blackbox-cms-boot__title">Preparing the editor</h1>
+        <p class="blackbox-cms-boot__copy">Loading content collections, previews, and media tools.</p>
+      </div>
+    </div>
+    <script
+      is:inline
+      define:vars={{ previewStyleUrl }}
+    >
+      window.CMS_MANUAL_INIT = true;
+      window.__BLACKBOX_ADMIN__ = { previewStyleUrl };
+    </script>
+    <script src="https://unpkg.com/decap-cms@3.10.1/dist/decap-cms.js"></script>
+    <script
+      is:inline
+      define:vars={{ adminInitUrl }}
+    >
+      const initScript = document.createElement('script');
+      initScript.src = adminInitUrl;
+      document.body.appendChild(initScript);
+    </script>
+  </body>
+</html>

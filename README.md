@@ -92,7 +92,7 @@ pnpm build
 
 ## Content model
 
-Content is managed directly in the repo (no CMS in this phase), but site-editable data now also lives in Astro content collections.
+Content is managed in the repo through Astro content collections, and Decap CMS now provides an editing layer on top of the same `src/content/**` files.
 
 - Artists: `src/content/artists/*.md`
 - Releases: `src/content/releases/*.md`
@@ -110,6 +110,111 @@ Content is managed directly in the repo (no CMS in this phase), but site-editabl
 - Home/about decorative images are now validated as Astro image fields.
 
 Collection schemas are defined in `src/content.config.ts`.
+
+## Decap CMS
+
+BlackBox now ships with an Astro-hosted Decap CMS at `/admin/`.
+
+- Admin entry: `src/pages/admin/index.astro`
+- Generated config: `src/pages/admin/config.yml.ts`
+- Admin styling: `public/admin/admin.css`
+- Preview styling/runtime: `public/admin/preview.css`, `public/admin/init.js`
+- Local Decap proxy: `scripts/start-decap-proxy.mjs`
+- Combined local CMS dev server: `scripts/start-cms-dev.mjs`
+
+### Local CMS development
+
+Start Astro on a dedicated CMS port and the local Decap proxy together:
+
+```sh
+pnpm cms:dev
+```
+
+Run only the local Decap proxy:
+
+```sh
+pnpm cms:proxy
+```
+
+Default local ports:
+
+- Astro CMS dev server: `4322`
+- Decap proxy: `8082`
+
+### Decap environment variables
+
+- `DECAP_SITE_URL`
+  - Optional production override for the published site root used by Decap.
+- `DECAP_REPOSITORY`
+  - GitHub repository slug used by DecapBridge in production.
+- `DECAP_BRANCH`
+  - Branch Decap writes to. Defaults to `main`.
+- `DECAPBRIDGE_BASE_URL`
+  - DecapBridge auth base URL.
+- `DECAPBRIDGE_AUTH_ENDPOINT`
+  - PKCE auth endpoint path.
+- `DECAPBRIDGE_AUTH_TOKEN_ENDPOINT`
+  - PKCE token endpoint path.
+- `DECAPBRIDGE_GATEWAY_URL`
+  - DecapBridge gateway URL.
+- `DECAP_LOCAL_PROXY_PORT`
+  - Local Decap proxy port. Defaults to `8082`.
+- `CMS_DEV_PORT`
+  - Astro port used by `pnpm cms:dev`. Defaults to `4322`.
+
+### GitHub Pages + DecapBridge setup
+
+Production `/admin/config.yml` is generated during the GitHub Pages build, so the DecapBridge values must be present in the Pages workflow environment.
+
+Add these in GitHub:
+
+- Repository `Settings -> Secrets and variables -> Actions -> Variables`
+  - `DECAP_SITE_URL`
+    - `https://zantoichi.github.io/blackbox-records/`
+  - `DECAP_REPOSITORY`
+    - `BlackBox-Studio-Athens/blackbox-records`
+  - `DECAP_BRANCH`
+    - `main`
+  - `DECAPBRIDGE_BASE_URL`
+    - `https://auth.decapbridge.com`
+  - `DECAPBRIDGE_GATEWAY_URL`
+    - `https://gateway.decapbridge.com`
+- Repository `Settings -> Secrets and variables -> Actions -> Secrets`
+  - `DECAPBRIDGE_AUTH_ENDPOINT`
+    - The exact PKCE auth endpoint path DecapBridge generated for this site
+  - `DECAPBRIDGE_AUTH_TOKEN_ENDPOINT`
+    - The exact PKCE token endpoint path DecapBridge generated for this site
+
+Notes:
+
+- Keep the endpoint values in GitHub `Secrets`, not `Variables`.
+- The workflow now injects these values during the Pages build, so the published `/admin/config.yml` can emit the real `git-gateway` PKCE config.
+- Local `pnpm cms:dev` remains on the proxy backend unless you explicitly provide real DecapBridge values in your local environment.
+
+### Production auth model
+
+- Local development uses `decap-server` with the `proxy` backend. No DecapBridge login is required.
+- When the DecapBridge PKCE endpoints are not configured yet, the generated config stays on the local `proxy` backend instead of emitting broken placeholder login URLs.
+- Production `/admin/` only builds a DecapBridge PKCE config once the DecapBridge environment values above are set correctly.
+
+### Collection coverage
+
+The CMS edits the same Astro content files already used by the site:
+
+- Single-file collections:
+  - `home`
+  - `about`
+  - `services`
+  - `settings`
+- Folder collections:
+  - `navigation`
+  - `socials`
+  - `artists`
+  - `releases`
+  - `distro`
+  - `news`
+
+Image widgets are scoped per collection so saved paths stay compatible with Astro `image()` fields and collection-local assets.
 
 ## Artist image standard
 
@@ -143,5 +248,7 @@ If a source crops badly, replace the source image rather than adding focal-point
 ## WebStorm run configuration
 
 - `.run/Astro Dev.run.xml` is included.
+- `.run/Astro Site.run.xml` is included.
 - In WebStorm: Run/Debug Configurations -> `Astro Dev`.
-- It runs `pnpm run dev:clean` with the project Node interpreter and browser debugger enabled.
+- `Astro Dev` runs `pnpm run cms:dev`, so the site dev server and Decap proxy both start and `/admin/` works locally.
+- `Astro Site` runs `pnpm run dev:clean` when you only want the site dev server without the CMS proxy.
