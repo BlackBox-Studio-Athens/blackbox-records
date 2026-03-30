@@ -431,6 +431,65 @@ label {
   background: var(--bb-admin-surface-soft) !important;
 }
 
+[class*='EditorContainer'] [class*='ListItemTopBar'] button,
+[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.32rem !important;
+  min-height: 2rem !important;
+  padding: 0.33rem 0.58rem !important;
+  border: 1px solid rgba(67, 50, 42, 0.1) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.84) !important;
+  color: var(--bb-admin-text-muted) !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+[class*='EditorContainer'] [class*='ListItemTopBar'] button:hover,
+[class*='EditorContainer'] [class*='ListItemTopBar'] button:focus-visible,
+[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button']:hover,
+[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button']:focus-visible {
+  background: #ffffff !important;
+  color: var(--bb-admin-text) !important;
+}
+
+[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-list-action='remove'],
+[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-list-action='remove'] {
+  border-color: rgba(141, 61, 74, 0.22) !important;
+  background: rgba(141, 61, 74, 0.1) !important;
+  color: var(--bb-admin-accent-strong) !important;
+  font-weight: 700 !important;
+}
+
+[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-list-action='remove']:hover,
+[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-list-action='remove']:focus-visible,
+[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-list-action='remove']:hover,
+[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-list-action='remove']:focus-visible {
+  background: rgba(141, 61, 74, 0.16) !important;
+  border-color: rgba(141, 61, 74, 0.34) !important;
+  color: var(--bb-admin-accent) !important;
+}
+
+[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-list-action='remove'] svg,
+[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-list-action='remove'] svg {
+  width: 0.9rem !important;
+  height: 0.9rem !important;
+  flex: 0 0 auto;
+}
+
+[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-list-action='remove'] [data-blackbox-list-action-label='true'],
+[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-list-action='remove'] [data-blackbox-list-action-label='true'] {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 0.76rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
 [class*='ControlTopbar'],
 [class*='StyledListItemTopBar'] {
   background: var(--bb-admin-surface-soft) !important;

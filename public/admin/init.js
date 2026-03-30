@@ -75,6 +75,48 @@
     ) ||
     null;
 
+  const getListActionLabel = (button) => {
+    const candidates = [button.getAttribute('aria-label'), button.getAttribute('title'), button.textContent];
+    const labelSource = candidates.find((value) => typeof value === 'string' && value.trim()) || '';
+    const normalizedLabel = labelSource.trim().toLowerCase();
+
+    if (normalizedLabel.includes('delete')) {
+      return 'Delete';
+    }
+
+    if (normalizedLabel.includes('remove')) {
+      return 'Remove';
+    }
+
+    return '';
+  };
+
+  const enhanceListItemActionButtons = () => {
+    const actionButtons = Array.from(document.querySelectorAll('button, [role="button"]')).filter((button) => {
+      const label = `${button.getAttribute('aria-label') || ''} ${button.getAttribute('title') || ''} ${button.textContent || ''}`
+        .trim()
+        .toLowerCase();
+      return label.includes('remove') || label.includes('delete');
+    });
+
+    actionButtons.forEach((button) => {
+      const actionLabel = getListActionLabel(button) || 'Remove';
+      button.dataset.blackboxListAction = 'remove';
+      button.dataset.blackboxListActionLabel = actionLabel;
+      button.setAttribute('aria-label', button.getAttribute('aria-label') || `${actionLabel} item`);
+      button.setAttribute('title', button.getAttribute('title') || `${actionLabel} item`);
+
+      if (button.querySelector('[data-blackbox-list-action-label="true"]')) {
+        return;
+      }
+
+      const visibleLabel = document.createElement('span');
+      visibleLabel.dataset.blackboxListActionLabel = 'true';
+      visibleLabel.textContent = `× ${actionLabel}`;
+      button.append(visibleLabel);
+    });
+  };
+
   const ensurePreviewToggleContent = (previewToggleButton) => {
     let previewCopy = previewToggleButton.querySelector('[data-blackbox-preview-copy="true"]');
     let previewLabel = previewToggleButton.querySelector('[data-blackbox-preview-label="true"]');
@@ -192,6 +234,7 @@
     const triggerPreviewCollapse = () => {
       window.requestAnimationFrame(() => {
         syncPreviewToggleButtonState();
+        enhanceListItemActionButtons();
         schedulePreviewCollapse();
       });
     };
