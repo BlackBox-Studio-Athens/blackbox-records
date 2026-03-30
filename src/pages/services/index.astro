@@ -4,10 +4,13 @@ import GridPattern from '@/components/ui/grid-pattern.astro';
 import { buttonVariants } from '@/components/ui/button';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { resolveLinkAttributes } from '@/config/site';
-import { getServicesContent } from '@/lib/site-data';
+import { getContentSection, getServicesContent } from '@/lib/site-data';
 import { cn } from '@/lib/utils';
 
 const servicesContent = await getServicesContent();
+const servicesListSection = getContentSection(servicesContent.sections, 'services');
+const processSection = getContentSection(servicesContent.sections, 'process');
+const inquirySection = getContentSection(servicesContent.sections, 'inquiry');
 ---
 
 <SiteLayout pageTitle="Services" pageDescription="Tour booking, merch printing, and vinyl production support.">
@@ -33,9 +36,9 @@ const servicesContent = await getServicesContent();
     </div>
   </section>
 
-  <section class="layout-container services-page-sections" aria-label="Services">
-    {
-      servicesContent.services.map((service, index) => {
+  {servicesListSection && (
+    <section class="layout-container services-page-sections" aria-label="Services">
+      {servicesListSection.items.map((service, index) => {
         const partnerLinkAttributes = service.partner_url ? resolveLinkAttributes(service.partner_url) : null;
         const isReversed = index % 2 === 1;
 
@@ -91,46 +94,48 @@ const servicesContent = await getServicesContent();
             </div>
           </article>
         );
-      })
-    }
-  </section>
+      })}
+    </section>
+  )}
 
-  <section class="layout-container services-process-section" aria-labelledby="services-process-title">
-    <div class="services-process-section__header">
-      <p class="services-process-section__kicker">Process</p>
-      <h2 class="services-process-section__title" id="services-process-title">
-        {servicesContent.process.title}
-      </h2>
-      <p class="services-process-section__copy">{servicesContent.process.intro}</p>
-    </div>
-    <div class="services-process-grid">
-      {
-        servicesContent.process.steps.map((step, index) => (
+  {processSection && (
+    <section class="layout-container services-process-section" aria-labelledby="services-process-title">
+      <div class="services-process-section__header">
+        <p class="services-process-section__kicker">Process</p>
+        <h2 class="services-process-section__title" id="services-process-title">
+          {processSection.title}
+        </h2>
+        <p class="services-process-section__copy">{processSection.intro}</p>
+      </div>
+      <div class="services-process-grid">
+        {processSection.steps.map((step, index) => (
           <article class="services-process-card">
             <p class="services-process-card__index">{String(index + 1).padStart(2, '0')}</p>
             <h3 class="services-process-card__title">{step.title}</h3>
             <p class="services-process-card__body">{step.body}</p>
           </article>
-        ))
-      }
-    </div>
-  </section>
+        ))}
+      </div>
+    </section>
+  )}
 
-  <section class="layout-container services-inquiry-section" id="services-inquiry">
-    <div class="services-inquiry-section__header">
-      <p class="services-inquiry-section__kicker">Inquiry</p>
-      <h2 class="services-inquiry-section__title">{servicesContent.inquiry.title}</h2>
-      <p class="services-inquiry-section__copy">{servicesContent.inquiry.intro}</p>
-    </div>
-    <div data-services-inquiry-form></div>
-    <noscript>
-      <p class="services-inquiry-section__noscript">
-        JavaScript is required for the inquiry form. Contact us directly at{' '}
-        <a class="services-inline-link" href={`mailto:${servicesContent.inquiry.email}`}>
-          {servicesContent.inquiry.email}
-        </a>
-        .
-      </p>
-    </noscript>
-  </section>
+  {inquirySection && (
+    <section class="layout-container services-inquiry-section" id="services-inquiry">
+      <div class="services-inquiry-section__header">
+        <p class="services-inquiry-section__kicker">Inquiry</p>
+        <h2 class="services-inquiry-section__title">{inquirySection.title}</h2>
+        <p class="services-inquiry-section__copy">{inquirySection.intro}</p>
+      </div>
+      <div data-services-inquiry-form></div>
+      <noscript>
+        <p class="services-inquiry-section__noscript">
+          JavaScript is required for the inquiry form. Contact us directly at{' '}
+          <a class="services-inline-link" href={`mailto:${inquirySection.email}`}>
+            {inquirySection.email}
+          </a>
+          .
+        </p>
+      </noscript>
+    </section>
+  )}
 </SiteLayout>

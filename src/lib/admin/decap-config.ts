@@ -26,11 +26,21 @@ type BaseFieldConfig = {
   extras?: string[];
 };
 
+type ListTypeConfig = {
+  label: string;
+  name: string;
+  summary?: string;
+  collapsed?: boolean;
+  fields: string[];
+};
+
 type BlockFieldConfig = BaseFieldConfig & {
   collapsed?: boolean;
   summary?: string;
   fields?: string[];
   field?: string;
+  types?: ListTypeConfig[];
+  typeKey?: string;
   options?: DecapArtistOption[];
 };
 
@@ -114,6 +124,27 @@ function buildFieldMapping(config: BaseFieldConfig): string {
   return lines.join('\n');
 }
 
+function buildListType(config: ListTypeConfig): string {
+  const lines = [
+    `- label: ${escapeYamlScalar(config.label)}`,
+    `  name: ${escapeYamlScalar(config.name)}`,
+    '  widget: object',
+  ];
+
+  if (config.collapsed ?? true) {
+    lines.push('  collapsed: true');
+  }
+
+  if (config.summary) {
+    lines.push(`  summary: ${escapeYamlScalar(config.summary)}`);
+  }
+
+  lines.push('  fields:');
+  lines.push(...config.fields.map((field) => indentBlock(field, 4)));
+
+  return lines.join('\n');
+}
+
 function buildField(config: BlockFieldConfig): string {
   const lines = [
     `- label: ${escapeYamlScalar(config.label)}`,
@@ -144,6 +175,12 @@ function buildField(config: BlockFieldConfig): string {
   if (config.options?.length) {
     lines.push('  options:');
     lines.push(buildArtistOptionsYaml(config.options, 4));
+  }
+
+  if (config.types?.length) {
+    lines.push(`  typeKey: ${escapeYamlScalar(config.typeKey || 'type')}`);
+    lines.push('  types:');
+    lines.push(...config.types.map((type) => indentBlock(buildListType(type), 4)));
   }
 
   if (config.field) {
@@ -319,120 +356,167 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
       ],
     }),
     buildField({
-      label: 'Latest releases',
-      name: 'latest_releases',
-      widget: 'object',
-      hint: 'Homepage section that points visitors toward the current catalog.',
+      label: 'Sections',
+      name: 'sections',
+      widget: 'list',
+      hint: 'Add, remove, or reorder whole homepage sections.',
       collapsed: true,
-      summary: '{{fields.title}}',
-      fields: [
-        buildField({ label: 'Section label', name: 'section_label', widget: 'string', hint: 'Small label above the section title.' }),
-        buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Main heading for the homepage releases section.' }),
-        buildField({ label: 'Link text', name: 'link_text', widget: 'string', hint: 'CTA label. Example: "View all releases".' }),
-        buildField({
-          label: 'Link URL',
-          name: 'link_url',
-          widget: 'string',
-          hint: 'Internal section path starting with /. Example: /releases/.',
-        }),
-      ],
-    }),
-    buildField({
-      label: 'Artists',
-      name: 'artists',
-      widget: 'object',
-      hint: 'Homepage roster callout.',
-      collapsed: true,
-      summary: '{{fields.title}}',
-      fields: [
-        buildField({ label: 'Section label', name: 'section_label', widget: 'string', hint: 'Small label above the section title.' }),
-        buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Main heading for the homepage artists section.' }),
-        buildField({ label: 'Button text', name: 'button_text', widget: 'string', hint: 'CTA label. Example: "View full roster".' }),
-        buildField({
-          label: 'Button link',
-          name: 'button_link',
-          widget: 'string',
-          hint: 'Internal section path starting with /. Example: /artists/.',
-        }),
-      ],
-    }),
-    buildField({
-      label: 'Distro',
-      name: 'distro',
-      widget: 'object',
-      hint: 'Homepage shelf that leads into the distro section.',
-      collapsed: true,
-      summary: '{{fields.title}}',
-      fields: [
-        buildField({ label: 'Section label', name: 'section_label', widget: 'string', hint: 'Small label above the section title.' }),
-        buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Main heading for the homepage distro shelf.' }),
-        buildField({ label: 'Link text', name: 'link_text', widget: 'string', hint: 'CTA label. Example: "View all distro".' }),
-        buildField({
-          label: 'Link URL',
-          name: 'link_url',
-          widget: 'string',
-          hint: 'Internal section path starting with /. Example: /distro/.',
-        }),
-      ],
-    }),
-    buildField({
-      label: 'Journey',
-      name: 'journey',
-      widget: 'object',
-      hint: 'Editorial story block on the homepage.',
-      collapsed: true,
-      summary: '{{fields.title}}',
-      fields: [
-        buildField({ label: 'Section label', name: 'section_label', widget: 'string', hint: 'Small label above the section title.' }),
-        buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Main heading for the story block.' }),
-        buildField({
-          label: 'Image',
-          name: 'image',
-          widget: 'image',
-          hint: 'Supporting image for the journey section. Use a crop that survives both desktop and mobile framing.',
-        }),
-        buildField({
-          label: 'Image alt',
-          name: 'image_alt',
-          widget: 'string',
-          hint: 'Describe the journey image for screen readers.',
-        }),
-        buildField({
-          label: 'Paragraphs',
-          name: 'paragraphs',
-          widget: 'list',
-          hint: 'Short editorial paragraphs shown in order.',
-          collapsed: true,
-          summary: '{{fields.value}}',
-          field: buildFieldMapping({
-            label: 'Paragraph',
-            name: 'value',
-            widget: 'text',
-            hint: 'Keep paragraphs concise so the section remains readable on mobile.',
-          }),
-        }),
-        buildField({
-          label: 'Stats',
-          name: 'stats',
-          widget: 'list',
-          hint: 'Small label/value pairs shown beside the journey copy.',
-          collapsed: true,
-          summary: '{{fields.label}}',
+      types: [
+        {
+          label: 'Latest releases',
+          name: 'latest_releases',
+          summary: '{{fields.title}}',
           fields: [
             buildField({
-              label: 'Key',
-              name: 'key',
+              label: 'Section label',
+              name: 'section_label',
               widget: 'string',
-              hint: 'Short value or number. Example: "12" or "EST. 2026".',
+              hint: 'Small label above the section title.',
             }),
             buildField({
-              label: 'Label',
-              name: 'label',
+              label: 'Title',
+              name: 'title',
               widget: 'string',
-              hint: 'Descriptor shown under or beside the key.',
+              hint: 'Main heading for the homepage releases section.',
+            }),
+            buildField({
+              label: 'Link text',
+              name: 'link_text',
+              widget: 'string',
+              hint: 'CTA label. Example: "View all releases".',
+            }),
+            buildField({
+              label: 'Link URL',
+              name: 'link_url',
+              widget: 'string',
+              hint: 'Internal section path starting with /. Example: /releases/.',
             }),
           ],
-        }),
+        },
+        {
+          label: 'Artists',
+          name: 'artists',
+          summary: '{{fields.title}}',
+          fields: [
+            buildField({
+              label: 'Section label',
+              name: 'section_label',
+              widget: 'string',
+              hint: 'Small label above the section title.',
+            }),
+            buildField({
+              label: 'Title',
+              name: 'title',
+              widget: 'string',
+              hint: 'Main heading for the homepage artists section.',
+            }),
+            buildField({
+              label: 'Button text',
+              name: 'button_text',
+              widget: 'string',
+              hint: 'CTA label. Example: "View full roster".',
+            }),
+            buildField({
+              label: 'Button link',
+              name: 'button_link',
+              widget: 'string',
+              hint: 'Internal section path starting with /. Example: /artists/.',
+            }),
+          ],
+        },
+        {
+          label: 'Distro',
+          name: 'distro',
+          summary: '{{fields.title}}',
+          fields: [
+            buildField({
+              label: 'Section label',
+              name: 'section_label',
+              widget: 'string',
+              hint: 'Small label above the section title.',
+            }),
+            buildField({
+              label: 'Title',
+              name: 'title',
+              widget: 'string',
+              hint: 'Main heading for the homepage distro shelf.',
+            }),
+            buildField({
+              label: 'Link text',
+              name: 'link_text',
+              widget: 'string',
+              hint: 'CTA label. Example: "View all distro".',
+            }),
+            buildField({
+              label: 'Link URL',
+              name: 'link_url',
+              widget: 'string',
+              hint: 'Internal section path starting with /. Example: /distro/.',
+            }),
+          ],
+        },
+        {
+          label: 'Journey',
+          name: 'journey',
+          summary: '{{fields.title}}',
+          fields: [
+            buildField({
+              label: 'Section label',
+              name: 'section_label',
+              widget: 'string',
+              hint: 'Small label above the section title.',
+            }),
+            buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Main heading for the story block.' }),
+            buildField({
+              label: 'Image',
+              name: 'image',
+              widget: 'image',
+              hint: 'Supporting image for the journey section. Use a crop that survives both desktop and mobile framing.',
+            }),
+            buildField({
+              label: 'Image alt',
+              name: 'image_alt',
+              widget: 'string',
+              hint: 'Describe the journey image for screen readers.',
+            }),
+            buildField({
+              label: 'Paragraphs',
+              name: 'paragraphs',
+              widget: 'list',
+              hint: 'Short editorial paragraphs shown in order.',
+              collapsed: true,
+              summary: '{{fields.value}}',
+              field: buildFieldMapping({
+                label: 'Paragraph',
+                name: 'value',
+                widget: 'text',
+                hint: 'Keep paragraphs concise so the section remains readable on mobile.',
+              }),
+            }),
+            buildField({
+              label: 'Stats',
+              name: 'stats',
+              widget: 'list',
+              hint: 'Small label/value pairs shown beside the journey copy.',
+              collapsed: true,
+              summary: '{{fields.label}}',
+              fields: [
+                buildField({
+                  label: 'Key',
+                  name: 'key',
+                  widget: 'string',
+                  hint: 'Short value or number. Example: "12" or "EST. 2026".',
+                }),
+                buildField({
+                  label: 'Label',
+                  name: 'label',
+                  widget: 'string',
+                  hint: 'Descriptor shown under or beside the key.',
+                }),
+              ],
+            }),
+          ],
+        },
       ],
     }),
   ];
@@ -464,86 +548,100 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
       ],
     }),
     buildField({
-      label: 'Lead',
-      name: 'lead',
-      widget: 'text',
-      hint: 'Opening paragraph immediately after the About hero.',
-    }),
-    buildField({
       label: 'Sections',
       name: 'sections',
       widget: 'list',
-      hint: 'Main narrative blocks that build the About story.',
+      hint: 'Add, remove, or reorder whole About page sections.',
       collapsed: true,
-      summary: '{{fields.title}}',
-      fields: [
-        buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Section heading.' }),
-        buildField({
-          label: 'Paragraphs',
-          name: 'paragraphs',
-          widget: 'list',
-          collapsed: true,
-          summary: '{{fields.value}}',
-          field: buildFieldMapping({
-            label: 'Paragraph',
-            name: 'value',
-            widget: 'text',
-            hint: 'Section body copy. Keep each item to one paragraph.',
-          }),
-        }),
-      ],
-    }),
-    buildField({
-      label: 'Quote',
-      name: 'quote',
-      widget: 'list',
-      hint: 'Pull quote shown in the middle of the About page.',
-      collapsed: true,
-      summary: '{{fields.cite}}',
-      fields: [
-        buildField({ label: 'Text', name: 'text', widget: 'text', hint: 'Quoted line or statement.' }),
-        buildField({ label: 'Cite', name: 'cite', widget: 'string', hint: 'Attribution line shown with the quote.' }),
-      ],
-    }),
-    buildField({
-      label: 'Contact',
-      name: 'contact',
-      widget: 'object',
-      hint: 'Closing contact panel for the About page.',
-      collapsed: true,
-      summary: '{{fields.title}}',
-      fields: [
-        buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Contact panel heading.' }),
-        buildField({ label: 'Intro', name: 'intro', widget: 'text', hint: 'Short intro line before the contact rows.' }),
-        buildField({
-          label: 'Items',
-          name: 'items',
-          widget: 'list',
-          hint: 'Contact rows such as email, city, or booking.',
-          collapsed: true,
-          summary: '{{fields.label}}: {{fields.value}}',
+      types: [
+        {
+          label: 'Lead',
+          name: 'lead',
+          summary: '{{fields.text}}',
           fields: [
-            buildField({ label: 'Label', name: 'label', widget: 'string', hint: 'Left-hand label. Example: "Email".' }),
-            buildField({ label: 'Value', name: 'value', widget: 'string', hint: 'Displayed value or address.' }),
+            buildField({
+              label: 'Text',
+              name: 'text',
+              widget: 'text',
+              hint: 'Opening paragraph immediately after the About hero.',
+            }),
           ],
-        }),
-      ],
-    }),
-    buildField({
-      label: 'Stats',
-      name: 'stats',
-      widget: 'list',
-      hint: 'Small label/value pairs shown near the About content.',
-      collapsed: true,
-      summary: '{{fields.label}}',
-      fields: [
-        buildField({
-          label: 'Key',
-          name: 'key',
-          widget: 'string',
-          hint: 'Short value or number. Example: "12" or "EST. 2026".',
-        }),
-        buildField({ label: 'Label', name: 'label', widget: 'string', hint: 'Descriptor shown with the key.' }),
+        },
+        {
+          label: 'Story',
+          name: 'story',
+          summary: '{{fields.title}}',
+          fields: [
+            buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Section heading.' }),
+            buildField({
+              label: 'Paragraphs',
+              name: 'paragraphs',
+              widget: 'list',
+              collapsed: true,
+              summary: '{{fields.value}}',
+              field: buildFieldMapping({
+                label: 'Paragraph',
+                name: 'value',
+                widget: 'text',
+                hint: 'Section body copy. Keep each item to one paragraph.',
+              }),
+            }),
+          ],
+        },
+        {
+          label: 'Quote',
+          name: 'quote',
+          summary: '{{fields.cite}}',
+          fields: [
+            buildField({ label: 'Text', name: 'text', widget: 'text', hint: 'Quoted line or statement.' }),
+            buildField({ label: 'Cite', name: 'cite', widget: 'string', hint: 'Attribution line shown with the quote.' }),
+          ],
+        },
+        {
+          label: 'Contact',
+          name: 'contact',
+          summary: '{{fields.title}}',
+          fields: [
+            buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Contact panel heading.' }),
+            buildField({ label: 'Intro', name: 'intro', widget: 'text', hint: 'Short intro line before the contact rows.' }),
+            buildField({
+              label: 'Items',
+              name: 'items',
+              widget: 'list',
+              hint: 'Contact rows such as email, city, or booking.',
+              collapsed: true,
+              summary: '{{fields.label}}: {{fields.value}}',
+              fields: [
+                buildField({ label: 'Label', name: 'label', widget: 'string', hint: 'Left-hand label. Example: "Email".' }),
+                buildField({ label: 'Value', name: 'value', widget: 'string', hint: 'Displayed value or address.' }),
+              ],
+            }),
+          ],
+        },
+        {
+          label: 'Stats',
+          name: 'stats',
+          summary: 'Stats',
+          fields: [
+            buildField({
+              label: 'Items',
+              name: 'items',
+              widget: 'list',
+              hint: 'Small label/value pairs shown near the About content.',
+              collapsed: true,
+              summary: '{{fields.label}}',
+              fields: [
+                buildField({
+                  label: 'Key',
+                  name: 'key',
+                  widget: 'string',
+                  hint: 'Short value or number. Example: "12" or "EST. 2026".',
+                }),
+                buildField({ label: 'Label', name: 'label', widget: 'string', hint: 'Descriptor shown with the key.' }),
+              ],
+            }),
+          ],
+        },
       ],
     }),
   ];
@@ -564,82 +662,92 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
       ],
     }),
     buildField({
-      label: 'Services list',
-      name: 'services',
+      label: 'Sections',
+      name: 'sections',
       widget: 'list',
-      hint: 'Editorial service entries shown on the page and used by the inquiry flow.',
+      hint: 'Add, remove, or reorder whole Services page sections.',
       collapsed: true,
-      summary: '{{fields.title}}',
-      fields: [
-        buildField({
-          label: 'ID',
-          name: 'id',
-          widget: 'string',
-          hint: 'Stable ID used for inquiry preselection. Use lowercase kebab-case, for example "vinyl-printing".',
-        }),
-        buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Visible service heading.' }),
-        buildField({
-          label: 'Image',
-          name: 'image',
-          widget: 'image',
-          hint: 'Representative image for the service section. Choose a crop that works in both stacked and side-by-side layouts.',
-        }),
-        buildField({ label: 'Image alt', name: 'image_alt', widget: 'string', hint: 'Describe the service image for screen readers.' }),
-        buildField({ label: 'Summary', name: 'summary', widget: 'text', hint: 'Short editorial description shown near the service title.' }),
-        buildField({
-          label: 'Bullets',
-          name: 'bullets',
-          widget: 'list',
-          hint: 'Capability bullets shown under the summary.',
-          collapsed: true,
-          summary: '{{fields.value}}',
-          field: buildFieldMapping({
-            label: 'Bullet',
-            name: 'value',
-            widget: 'string',
-            hint: 'One concise capability per item.',
-          }),
-        }),
-        buildField({ label: 'Contact note', name: 'contact_note', widget: 'text', hint: 'Short line that nudges readers toward the inquiry form.' }),
-        buildField({ label: 'Partner name', name: 'partner_name', widget: 'string', required: false, hint: 'Optional partner name displayed inline.' }),
-        buildField({ label: 'Partner URL', name: 'partner_url', widget: 'string', required: false, hint: 'Optional partner URL. Include https://.' }),
-      ],
-    }),
-    buildField({
-      label: 'Process',
-      name: 'process',
-      widget: 'object',
-      hint: 'How-we-work strip above the inquiry form.',
-      collapsed: true,
-      summary: '{{fields.title}}',
-      fields: [
-        buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Process section heading.' }),
-        buildField({ label: 'Intro', name: 'intro', widget: 'text', hint: 'Short sentence introducing the process steps.' }),
-        buildField({
-          label: 'Steps',
-          name: 'steps',
-          widget: 'list',
-          collapsed: true,
+      types: [
+        {
+          label: 'Services list',
+          name: 'services',
+          summary: 'Services list',
+          fields: [
+            buildField({
+              label: 'Items',
+              name: 'items',
+              widget: 'list',
+              hint: 'Editorial service entries shown on the page and used by the inquiry flow.',
+              collapsed: true,
+              summary: '{{fields.title}}',
+              fields: [
+                buildField({
+                  label: 'ID',
+                  name: 'id',
+                  widget: 'string',
+                  hint: 'Stable ID used for inquiry preselection. Use lowercase kebab-case, for example "vinyl-printing".',
+                }),
+                buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Visible service heading.' }),
+                buildField({
+                  label: 'Image',
+                  name: 'image',
+                  widget: 'image',
+                  hint: 'Representative image for the service section. Choose a crop that works in both stacked and side-by-side layouts.',
+                }),
+                buildField({ label: 'Image alt', name: 'image_alt', widget: 'string', hint: 'Describe the service image for screen readers.' }),
+                buildField({ label: 'Summary', name: 'summary', widget: 'text', hint: 'Short editorial description shown near the service title.' }),
+                buildField({
+                  label: 'Bullets',
+                  name: 'bullets',
+                  widget: 'list',
+                  hint: 'Capability bullets shown under the summary.',
+                  collapsed: true,
+                  summary: '{{fields.value}}',
+                  field: buildFieldMapping({
+                    label: 'Bullet',
+                    name: 'value',
+                    widget: 'string',
+                    hint: 'One concise capability per item.',
+                  }),
+                }),
+                buildField({ label: 'Contact note', name: 'contact_note', widget: 'text', hint: 'Short line that nudges readers toward the inquiry form.' }),
+                buildField({ label: 'Partner name', name: 'partner_name', widget: 'string', required: false, hint: 'Optional partner name displayed inline.' }),
+                buildField({ label: 'Partner URL', name: 'partner_url', widget: 'string', required: false, hint: 'Optional partner URL. Include https://.' }),
+              ],
+            }),
+          ],
+        },
+        {
+          label: 'Process',
+          name: 'process',
           summary: '{{fields.title}}',
           fields: [
-            buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Step heading.' }),
-            buildField({ label: 'Body', name: 'body', widget: 'text', hint: 'Short explanatory sentence for the step.' }),
+            buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Process section heading.' }),
+            buildField({ label: 'Intro', name: 'intro', widget: 'text', hint: 'Short sentence introducing the process steps.' }),
+            buildField({
+              label: 'Steps',
+              name: 'steps',
+              widget: 'list',
+              collapsed: true,
+              summary: '{{fields.title}}',
+              fields: [
+                buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Step heading.' }),
+                buildField({ label: 'Body', name: 'body', widget: 'text', hint: 'Short explanatory sentence for the step.' }),
+              ],
+            }),
           ],
-        }),
-      ],
-    }),
-    buildField({
-      label: 'Inquiry',
-      name: 'inquiry',
-      widget: 'object',
-      hint: 'Copy and email settings for the unified inquiry form.',
-      collapsed: true,
-      summary: '{{fields.title}}',
-      fields: [
-        buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Inquiry section heading.' }),
-        buildField({ label: 'Intro', name: 'intro', widget: 'text', hint: 'Short intro line above the form.' }),
-        buildField({ label: 'Email', name: 'email', widget: 'string', hint: 'Mailbox that receives inquiries. Example: hello@blackboxrecords.com.' }),
-        buildField({ label: 'Submit text', name: 'submit_text', widget: 'string', hint: 'Button label used when composing the email draft.' }),
+        },
+        {
+          label: 'Inquiry',
+          name: 'inquiry',
+          summary: '{{fields.title}}',
+          fields: [
+            buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Inquiry section heading.' }),
+            buildField({ label: 'Intro', name: 'intro', widget: 'text', hint: 'Short intro line above the form.' }),
+            buildField({ label: 'Email', name: 'email', widget: 'string', hint: 'Mailbox that receives inquiries. Example: hello@blackboxrecords.com.' }),
+            buildField({ label: 'Submit text', name: 'submit_text', widget: 'string', hint: 'Button label used when composing the email draft.' }),
+          ],
+        },
       ],
     }),
   ];

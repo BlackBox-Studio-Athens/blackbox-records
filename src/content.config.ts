@@ -112,43 +112,51 @@ const home = defineCollection({
   loader: glob({ pattern: '**/*.json', base: './src/content/home' }),
   schema: ({ image }) =>
     z.object({
-    hero: z.object({
-      tagline: z.string(),
-      image: image(),
-      image_alt: z.string(),
-      scroll_indicator_text: z.string(),
-    }),
-    latest_releases: z.object({
-      section_label: z.string(),
-      title: z.string(),
-      link_text: z.string(),
-      link_url: z.string(),
-    }),
-    artists: z.object({
-      section_label: z.string(),
-      title: z.string(),
-      button_text: z.string(),
-      button_link: z.string(),
-    }),
-    distro: z.object({
-      section_label: z.string(),
-      title: z.string(),
-      link_text: z.string(),
-      link_url: z.string(),
-    }),
-    journey: z.object({
-      section_label: z.string(),
-      title: z.string(),
-      image: image(),
-      image_alt: z.string(),
-      paragraphs: z.array(z.string()),
-      stats: z.array(
-        z.object({
-          key: z.string(),
-          label: z.string(),
-        }),
+      hero: z.object({
+        tagline: z.string(),
+        image: image(),
+        image_alt: z.string(),
+        scroll_indicator_text: z.string(),
+      }),
+      sections: z.array(
+        z.discriminatedUnion('type', [
+          z.object({
+            type: z.literal('latest_releases'),
+            section_label: z.string(),
+            title: z.string(),
+            link_text: z.string(),
+            link_url: z.string(),
+          }),
+          z.object({
+            type: z.literal('artists'),
+            section_label: z.string(),
+            title: z.string(),
+            button_text: z.string(),
+            button_link: z.string(),
+          }),
+          z.object({
+            type: z.literal('distro'),
+            section_label: z.string(),
+            title: z.string(),
+            link_text: z.string(),
+            link_url: z.string(),
+          }),
+          z.object({
+            type: z.literal('journey'),
+            section_label: z.string(),
+            title: z.string(),
+            image: image(),
+            image_alt: z.string(),
+            paragraphs: z.array(z.string()),
+            stats: z.array(
+              z.object({
+                key: z.string(),
+                label: z.string(),
+              }),
+            ),
+          }),
+        ]),
       ),
-    }),
     }),
 });
 
@@ -156,41 +164,50 @@ const about = defineCollection({
   loader: glob({ pattern: '**/*.json', base: './src/content/about' }),
   schema: ({ image }) =>
     z.object({
-    hero: z.object({
-      section_label: z.string(),
-      title: z.string(),
-      image: image(),
-      image_alt: z.string(),
-    }),
-    lead: z.string(),
-    sections: z.array(
-      z.object({
+      hero: z.object({
+        section_label: z.string(),
         title: z.string(),
-        paragraphs: z.array(z.string()),
+        image: image(),
+        image_alt: z.string(),
       }),
-    ),
-    quote: z.array(
-      z.object({
-        text: z.string(),
-        cite: z.string(),
-      }),
-    ),
-    contact: z.object({
-      title: z.string(),
-      intro: z.string(),
-      items: z.array(
-        z.object({
-          label: z.string(),
-          value: z.string(),
-        }),
+      sections: z.array(
+        z.discriminatedUnion('type', [
+          z.object({
+            type: z.literal('lead'),
+            text: z.string(),
+          }),
+          z.object({
+            type: z.literal('story'),
+            title: z.string(),
+            paragraphs: z.array(z.string()),
+          }),
+          z.object({
+            type: z.literal('quote'),
+            text: z.string(),
+            cite: z.string(),
+          }),
+          z.object({
+            type: z.literal('contact'),
+            title: z.string(),
+            intro: z.string(),
+            items: z.array(
+              z.object({
+                label: z.string(),
+                value: z.string(),
+              }),
+            ),
+          }),
+          z.object({
+            type: z.literal('stats'),
+            items: z.array(
+              z.object({
+                key: z.string(),
+                label: z.string(),
+              }),
+            ),
+          }),
+        ]),
       ),
-    }),
-    stats: z.array(
-      z.object({
-        key: z.string(),
-        label: z.string(),
-      }),
-    ),
     }),
 });
 
@@ -203,37 +220,46 @@ const services = defineCollection({
         intro: z.string(),
         cta_text: z.string(),
       }),
-      services: z.array(
-        z.object({
-          id: z.string(),
-          title: z.string(),
-          image: image(),
-          image_alt: z.string(),
-          summary: z.string(),
-          bullets: z.array(z.string()).min(2),
-          contact_note: z.string(),
-          partner_name: z.string().optional(),
-          partner_url: z.string().url().optional(),
-        }),
+      sections: z.array(
+        z.discriminatedUnion('type', [
+          z.object({
+            type: z.literal('services'),
+            items: z.array(
+              z.object({
+                id: z.string(),
+                title: z.string(),
+                image: image(),
+                image_alt: z.string(),
+                summary: z.string(),
+                bullets: z.array(z.string()).min(2),
+                contact_note: z.string(),
+                partner_name: z.string().optional(),
+                partner_url: z.string().url().optional(),
+              }),
+            ),
+          }),
+          z.object({
+            type: z.literal('process'),
+            title: z.string(),
+            intro: z.string(),
+            steps: z
+              .array(
+                z.object({
+                  title: z.string(),
+                  body: z.string(),
+                }),
+              )
+              .min(3),
+          }),
+          z.object({
+            type: z.literal('inquiry'),
+            title: z.string(),
+            intro: z.string(),
+            email: z.string().email(),
+            submit_text: z.string(),
+          }),
+        ]),
       ),
-      process: z.object({
-        title: z.string(),
-        intro: z.string(),
-        steps: z
-          .array(
-            z.object({
-              title: z.string(),
-              body: z.string(),
-            }),
-          )
-          .min(3),
-      }),
-      inquiry: z.object({
-        title: z.string(),
-        intro: z.string(),
-        email: z.string().email(),
-        submit_text: z.string(),
-      }),
     }),
 });
 

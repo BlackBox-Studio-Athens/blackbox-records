@@ -15,7 +15,7 @@ import {
   listReleaseCatalog,
   mapArtistProfilesById,
 } from '@/lib/catalog-data';
-import { getHomeContent, getLabelSettings } from '@/lib/site-data';
+import { getContentSection, getHomeContent, getLabelSettings } from '@/lib/site-data';
 import { cn } from '@/lib/utils';
 import { calculateCountryCount, calculateYearsActive } from '@/utils/content';
 
@@ -27,6 +27,10 @@ const latestReleaseEntries = releaseCatalogEntries.slice(0, 3);
 const featuredArtistProfiles = artistProfiles.slice(0, 3);
 const featuredDistroEntries = distroEntries.slice(0, 3);
 const [homeContent, labelSettings] = await Promise.all([getHomeContent(), getLabelSettings()]);
+const homeLatestReleases = getContentSection(homeContent.sections, 'latest_releases');
+const homeArtists = getContentSection(homeContent.sections, 'artists');
+const homeDistro = getContentSection(homeContent.sections, 'distro');
+const homeJourney = getContentSection(homeContent.sections, 'journey');
 
 const yearsActive = calculateYearsActive(labelSettings.established_year);
 const countryCount = calculateCountryCount(artistProfiles.map((artistProfile) => artistProfile.data.country || ''));
@@ -41,131 +45,139 @@ const allReleasesCount = releaseCatalogEntries.length;
     scrollIndicatorText={homeContent.hero.scroll_indicator_text}
   />
 
-  <section class="featured-releases-section layout-container mt-16" id="featured-releases">
-    <div class="home-section-header home-section-header--split mb-6 sm:mb-8">
-      <div class="home-section-header__lead">
-        <h2 class="home-section-header__title">{homeContent.latest_releases.title}</h2>
-        <span class="home-section-header__rule" aria-hidden="true"></span>
-      </div>
-      <a
-        href={createProjectRelativeUrl(homeContent.latest_releases.link_url)}
-        data-astro-prefetch
-        class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'home-section-header__action rounded-md px-2 text-xs tracking-[0.14em] uppercase text-muted-foreground hover:text-foreground')}
-      >
-        {homeContent.latest_releases.link_text} <span aria-hidden="true">→</span>
-      </a>
-    </div>
-    <div class="featured-releases-grid">
-      {
-        latestReleaseEntries.map((releaseEntry) => {
-          const artistProfile = artistProfileById.get(releaseEntry.data.artist.id);
-          return <ReleaseCard release={releaseEntry} artist={artistProfile} variant="framed-artwork" />;
-        })
-      }
-    </div>
-  </section>
-
-  <section class="artists-surface-section mt-20 border-t border-border py-20 sm:py-24" id="artists">
-    <div class="layout-container">
-      <div class="home-section-header home-section-header--centered mb-6 sm:mb-8">
-        <span class="home-section-header__rule" aria-hidden="true"></span>
-        <h2 class="home-section-header__title">{homeContent.artists.title}</h2>
-        <span class="home-section-header__rule" aria-hidden="true"></span>
-      </div>
-      <div class="home-featured-roster-grid">
-        {featuredArtistProfiles.map((artistProfile) => <ArtistCard artist={artistProfile} variant="featured-roster" />)}
-      </div>
-      <div class="mt-8 text-center">
+  {homeLatestReleases && (
+    <section class="featured-releases-section layout-container mt-16" id="featured-releases">
+      <div class="home-section-header home-section-header--split mb-6 sm:mb-8">
+        <div class="home-section-header__lead">
+          <h2 class="home-section-header__title">{homeLatestReleases.title}</h2>
+          <span class="home-section-header__rule" aria-hidden="true"></span>
+        </div>
         <a
-          href={createProjectRelativeUrl(homeContent.artists.button_link)}
+          href={createProjectRelativeUrl(homeLatestReleases.link_url)}
           data-astro-prefetch
-          class={cn(
-            buttonVariants({ variant: 'outline' }),
-            'h-auto rounded-none border-foreground bg-transparent px-10 py-4 text-xs tracking-[0.2em] uppercase text-foreground shadow-none hover:bg-foreground hover:text-background',
-          )}
+          class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'home-section-header__action rounded-md px-2 text-xs tracking-[0.14em] uppercase text-muted-foreground hover:text-foreground')}
         >
-          {homeContent.artists.button_text}
+          {homeLatestReleases.link_text} <span aria-hidden="true">→</span>
         </a>
       </div>
-    </div>
-  </section>
-
-  <section class="layout-container mt-20" id="distro">
-    <div class="home-section-header home-section-header--split mb-6 sm:mb-8">
-      <div class="home-section-header__lead">
-        <h2 class="home-section-header__title">{homeContent.distro.title}</h2>
-        <span class="home-section-header__rule" aria-hidden="true"></span>
+      <div class="featured-releases-grid">
+        {
+          latestReleaseEntries.map((releaseEntry) => {
+            const artistProfile = artistProfileById.get(releaseEntry.data.artist.id);
+            return <ReleaseCard release={releaseEntry} artist={artistProfile} variant="framed-artwork" />;
+          })
+        }
       </div>
-      <a
-        href={createProjectRelativeUrl(homeContent.distro.link_url)}
-        data-astro-prefetch
-        class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'home-section-header__action rounded-md px-2 text-xs tracking-[0.14em] uppercase text-muted-foreground hover:text-foreground')}
-      >
-        {homeContent.distro.link_text} <span aria-hidden="true">→</span>
-      </a>
-    </div>
-    <div class="distro-home-grid">
-      {featuredDistroEntries.map((distroEntry) => <DistroCard item={distroEntry} variant="home" />)}
-    </div>
-  </section>
+    </section>
+  )}
 
-  <section class="artists-surface-section mt-20 border-t border-border py-20 sm:py-24" id="journey">
-    <div class="layout-container">
-      <Card className="surface-card overflow-hidden">
-        <CardContent className="grid gap-8 p-0 lg:grid-cols-[0.95fr_1.05fr]">
-          <div class="relative h-full min-h-[22rem] overflow-hidden border-b border-border/70 lg:border-r lg:border-b-0">
-            <Image
-              src={homeContent.journey.image}
-              alt={homeContent.journey.image_alt}
-              class="h-full w-full object-cover"
-              sizes="(min-width: 1024px) 46rem, 100vw"
-            />
-            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20"></div>
-          </div>
-          <div class="space-y-5 p-7 sm:p-9">
-            <p class="text-xs tracking-[0.2em] uppercase text-muted-foreground">{homeContent.journey.section_label}</p>
-            <h2 class="font-display text-5xl tracking-[0.09em] uppercase">{homeContent.journey.title.toUpperCase()}</h2>
-            <div class="space-y-4 text-sm leading-relaxed text-muted-foreground">
-              {homeContent.journey.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
-            </div>
-            <div>
-              <a
-                href={createProjectRelativeUrl('/about/')}
-                data-astro-prefetch
-                class={cn(
-                  buttonVariants({ variant: 'ghost', size: 'sm' }),
-                  'h-auto rounded-none border border-border/70 bg-transparent px-0 py-0 text-xs tracking-[0.16em] uppercase text-foreground hover:border-foreground hover:bg-transparent hover:text-foreground',
-                )}
-              >
-                Learn More <span aria-hidden="true">→</span>
-              </a>
-            </div>
-            <div class="grid grid-cols-2 gap-3 pt-2 md:grid-cols-4">
-              {
-                homeContent.journey.stats.map((stat) => {
-                  const statKey = String(stat.key);
-                  let statValue = '';
-                  if (statKey === 'artists') statValue = String(artistProfiles.length);
-                  else if (statKey === 'releases') statValue = String(allReleasesCount);
-                  else if (statKey === 'countries') statValue = String(countryCount);
-                  else if (statKey === 'year') statValue = String(yearsActive);
+  {homeArtists && (
+    <section class="artists-surface-section mt-20 border-t border-border py-20 sm:py-24" id="artists">
+      <div class="layout-container">
+        <div class="home-section-header home-section-header--centered mb-6 sm:mb-8">
+          <span class="home-section-header__rule" aria-hidden="true"></span>
+          <h2 class="home-section-header__title">{homeArtists.title}</h2>
+          <span class="home-section-header__rule" aria-hidden="true"></span>
+        </div>
+        <div class="home-featured-roster-grid">
+          {featuredArtistProfiles.map((artistProfile) => <ArtistCard artist={artistProfile} variant="featured-roster" />)}
+        </div>
+        <div class="mt-8 text-center">
+          <a
+            href={createProjectRelativeUrl(homeArtists.button_link)}
+            data-astro-prefetch
+            class={cn(
+              buttonVariants({ variant: 'outline' }),
+              'h-auto rounded-none border-foreground bg-transparent px-10 py-4 text-xs tracking-[0.2em] uppercase text-foreground shadow-none hover:bg-foreground hover:text-background',
+            )}
+          >
+            {homeArtists.button_text}
+          </a>
+        </div>
+      </div>
+    </section>
+  )}
 
-                  return (
-                    <Card className="border-border/70 bg-background/75">
-                      <CardContent className="space-y-1 p-4">
-                        <p class="font-display text-3xl tracking-[0.08em] uppercase text-foreground">{statValue}</p>
-                        <span class="text-[11px] tracking-[0.14em] uppercase text-muted-foreground">{stat.label}</span>
-                      </CardContent>
-                    </Card>
-                  );
-                })
-              }
+  {homeDistro && (
+    <section class="layout-container mt-20" id="distro">
+      <div class="home-section-header home-section-header--split mb-6 sm:mb-8">
+        <div class="home-section-header__lead">
+          <h2 class="home-section-header__title">{homeDistro.title}</h2>
+          <span class="home-section-header__rule" aria-hidden="true"></span>
+        </div>
+        <a
+          href={createProjectRelativeUrl(homeDistro.link_url)}
+          data-astro-prefetch
+          class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'home-section-header__action rounded-md px-2 text-xs tracking-[0.14em] uppercase text-muted-foreground hover:text-foreground')}
+        >
+          {homeDistro.link_text} <span aria-hidden="true">→</span>
+        </a>
+      </div>
+      <div class="distro-home-grid">
+        {featuredDistroEntries.map((distroEntry) => <DistroCard item={distroEntry} variant="home" />)}
+      </div>
+    </section>
+  )}
+
+  {homeJourney && (
+    <section class="artists-surface-section mt-20 border-t border-border py-20 sm:py-24" id="journey">
+      <div class="layout-container">
+        <Card className="surface-card overflow-hidden">
+          <CardContent className="grid gap-8 p-0 lg:grid-cols-[0.95fr_1.05fr]">
+            <div class="relative h-full min-h-[22rem] overflow-hidden border-b border-border/70 lg:border-r lg:border-b-0">
+              <Image
+                src={homeJourney.image}
+                alt={homeJourney.image_alt}
+                class="h-full w-full object-cover"
+                sizes="(min-width: 1024px) 46rem, 100vw"
+              />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20"></div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  </section>
+            <div class="space-y-5 p-7 sm:p-9">
+              <p class="text-xs tracking-[0.2em] uppercase text-muted-foreground">{homeJourney.section_label}</p>
+              <h2 class="font-display text-5xl tracking-[0.09em] uppercase">{homeJourney.title.toUpperCase()}</h2>
+              <div class="space-y-4 text-sm leading-relaxed text-muted-foreground">
+                {homeJourney.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+              </div>
+              <div>
+                <a
+                  href={createProjectRelativeUrl('/about/')}
+                  data-astro-prefetch
+                  class={cn(
+                    buttonVariants({ variant: 'ghost', size: 'sm' }),
+                    'h-auto rounded-none border border-border/70 bg-transparent px-0 py-0 text-xs tracking-[0.16em] uppercase text-foreground hover:border-foreground hover:bg-transparent hover:text-foreground',
+                  )}
+                >
+                  Learn More <span aria-hidden="true">→</span>
+                </a>
+              </div>
+              <div class="grid grid-cols-2 gap-3 pt-2 md:grid-cols-4">
+                {
+                  homeJourney.stats.map((stat) => {
+                    const statKey = String(stat.key);
+                    let statValue = '';
+                    if (statKey === 'artists') statValue = String(artistProfiles.length);
+                    else if (statKey === 'releases') statValue = String(allReleasesCount);
+                    else if (statKey === 'countries') statValue = String(countryCount);
+                    else if (statKey === 'year') statValue = String(yearsActive);
+
+                    return (
+                      <Card className="border-border/70 bg-background/75">
+                        <CardContent className="space-y-1 p-4">
+                          <p class="font-display text-3xl tracking-[0.08em] uppercase text-foreground">{statValue}</p>
+                          <span class="text-[11px] tracking-[0.14em] uppercase text-muted-foreground">{stat.label}</span>
+                        </CardContent>
+                      </Card>
+                    );
+                  })
+                }
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </section>
+  )}
 
   <NewsletterSignup id="newsletter-signup-area" />
 </SiteLayout>

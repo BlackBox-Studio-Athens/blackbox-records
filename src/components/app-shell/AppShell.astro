@@ -1,18 +1,19 @@
 ---
 import AppShellRoot from '@/components/app-shell/AppShellRoot';
-import { getHeaderNavigationItems, getLabelSettings, getServicesContent } from '@/lib/site-data';
+import { getContentSection, getHeaderNavigationItems, getLabelSettings, getServicesContent } from '@/lib/site-data';
 
 const [mobileNavigationItems, labelSettings, servicesContent] = await Promise.all([
   getHeaderNavigationItems(),
   getLabelSettings(),
   getServicesContent(),
 ]);
+const servicesInquirySection = getContentSection(servicesContent.sections, 'inquiry');
 ---
 
 <AppShellRoot
   client:load
   mobileNavigationItems={mobileNavigationItems}
-  servicesInquiryEmail={servicesContent.inquiry.email}
-  servicesInquirySubmitText={servicesContent.inquiry.submit_text}
+  servicesInquiryEmail={servicesInquirySection?.email || ''}
+  servicesInquirySubmitText={servicesInquirySection?.submit_text || 'Compose Inquiry'}
   siteTitle={labelSettings.label_name}
 />

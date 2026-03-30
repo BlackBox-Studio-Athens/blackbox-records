@@ -29,6 +29,13 @@ function sortByOrderAndTitle<T extends { order: number; title: string }>(left: T
   return left.title.localeCompare(right.title);
 }
 
+export function getContentSection<T extends { type: string }, U extends T['type']>(
+  sections: T[],
+  type: U,
+): Extract<T, { type: U }> | undefined {
+  return sections.find((section): section is Extract<T, { type: U }> => section.type === type);
+}
+
 export async function getNavigationItems(): Promise<SiteNavigationItem[]> {
   return (await getCollection('navigation'))
     .map((item) => ({

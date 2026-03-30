@@ -4,7 +4,7 @@ import NewsletterSignup from '@/components/NewsletterSignup.astro';
 import { Card, CardContent } from '@/components/ui/card';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { listArtistProfiles, listReleaseCatalog } from '@/lib/catalog-data';
-import { getAboutContent, getLabelSettings } from '@/lib/site-data';
+import { getAboutContent, getContentSection, getLabelSettings } from '@/lib/site-data';
 import { calculateCountryCount, calculateYearsActive } from '@/utils/content';
 
 const artistProfiles = await listArtistProfiles();
@@ -12,7 +12,11 @@ const releaseCatalogEntries = await listReleaseCatalog();
 const [aboutContent, labelSettings] = await Promise.all([getAboutContent(), getLabelSettings()]);
 const yearsActive = calculateYearsActive(labelSettings.established_year);
 const countryCount = calculateCountryCount(artistProfiles.map((artistProfile) => artistProfile.data.country || ''));
-const aboutQuote = aboutContent.quote[0];
+const aboutLead = getContentSection(aboutContent.sections, 'lead');
+const aboutStory = getContentSection(aboutContent.sections, 'story');
+const aboutQuote = getContentSection(aboutContent.sections, 'quote');
+const aboutContact = getContentSection(aboutContent.sections, 'contact');
+const aboutStats = getContentSection(aboutContent.sections, 'stats');
 ---
 
 <SiteLayout pageTitle="About" pageDescription="About the label.">
@@ -27,46 +31,44 @@ const aboutQuote = aboutContent.quote[0];
     <Card className="surface-card">
       <CardContent className="p-7 sm:p-10">
         <div class="rich-text-content">
-          <p class="font-display text-3xl tracking-[0.06em] uppercase text-foreground">{aboutContent.lead}</p>
+          {aboutLead && <p class="font-display text-3xl tracking-[0.06em] uppercase text-foreground">{aboutLead.text}</p>}
 
-          {
-            aboutContent.sections.map((sectionItem) => (
-              <>
-                <h2>{sectionItem.title.toUpperCase()}</h2>
-                {sectionItem.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
-              </>
-            ))
-          }
+          {aboutStory && (
+            <>
+              <h2>{aboutStory.title.toUpperCase()}</h2>
+              {aboutStory.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+            </>
+          )}
 
-          {
-            aboutQuote && (
-              <blockquote>
-                <p>&quot;{aboutQuote.text}&quot;</p>
-                <cite>{aboutQuote.cite}</cite>
-              </blockquote>
-            )
-          }
+          {aboutQuote && (
+            <blockquote>
+              <p>&quot;{aboutQuote.text}&quot;</p>
+              <cite>{aboutQuote.cite}</cite>
+            </blockquote>
+          )}
 
-          <h2>{aboutContent.contact.title.toUpperCase()}</h2>
-          <p>{aboutContent.contact.intro}</p>
-          <ul>
-            {
-              aboutContent.contact.items.map((item) => (
-                <li>
-                  <span class="font-semibold text-foreground">{item.label}:</span> {item.value}
-                </li>
-              ))
-            }
-          </ul>
+          {aboutContact && (
+            <>
+              <h2>{aboutContact.title.toUpperCase()}</h2>
+              <p>{aboutContact.intro}</p>
+              <ul>
+                {aboutContact.items.map((item) => (
+                  <li>
+                    <span class="font-semibold text-foreground">{item.label}:</span> {item.value}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       </CardContent>
     </Card>
   </section>
 
-  <section class="layout-container mt-12">
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {
-        aboutContent.stats.map((stat) => {
+  {aboutStats && (
+    <section class="layout-container mt-12">
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {aboutStats.items.map((stat) => {
           let statValue = '';
           if (stat.key === 'artists') statValue = String(artistProfiles.length);
           else if (stat.key === 'releases') statValue = String(releaseCatalogEntries.length);
@@ -81,10 +83,10 @@ const aboutQuote = aboutContent.quote[0];
               </CardContent>
             </Card>
           );
-        })
-      }
-    </div>
-  </section>
+        })}
+      </div>
+    </section>
+  )}
 
   <NewsletterSignup formId="about-newsletter-email" />
 </SiteLayout>

@@ -108,6 +108,7 @@ Content is managed in the repo through Astro content collections, and Decap CMS 
 - JSON collection entries include `$schema` references to Astro-generated collection schemas for editor/CMS validation.
 - Artists and releases may include an optional `shop_collection_handle` for future Fourthwall collection linking.
 - Home/about decorative images are now validated as Astro image fields.
+- Home, About, and Services now store their page sections as editable block lists in Decap so whole sections can be deleted or reordered when needed.
 
 Collection schemas are defined in `src/content.config.ts`.
 
