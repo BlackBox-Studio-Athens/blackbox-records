@@ -256,18 +256,18 @@ button[data-blackbox-preview-toggle='true'] {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 0.38rem !important;
-  min-height: 2.38rem !important;
+  gap: 0.34rem !important;
+  min-height: 2.1rem !important;
   width: auto !important;
   min-width: max-content !important;
   max-width: 100%;
-  padding-inline: 0.62rem 0.54rem !important;
+  padding: 0.32rem 0.66rem !important;
   margin-inline-start: 0.18rem !important;
   border: 1px solid var(--bb-admin-preview-outline) !important;
-  border-radius: 0.82rem !important;
-  background: linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(251, 242, 234, 0.98)) !important;
+  border-radius: 0.72rem !important;
+  background: rgba(255, 252, 248, 0.95) !important;
   color: var(--bb-admin-accent) !important;
-  box-shadow: var(--bb-admin-preview-shadow) !important;
+  box-shadow: none !important;
   font-size: 0 !important;
   line-height: 0 !important;
   white-space: nowrap;
@@ -305,38 +305,44 @@ button[data-blackbox-preview-toggle='true'] {
 }
 
 button[data-blackbox-preview-toggle='true'] svg {
-  width: 0.86rem;
-  height: 0.86rem;
+  width: 0.82rem;
+  height: 0.82rem;
   flex: none;
 }
 
 button[data-blackbox-preview-toggle='true'][data-preview-state='open'] {
-  background: linear-gradient(180deg, var(--bb-admin-accent-hover), var(--bb-admin-accent)) !important;
-  border-color: rgba(141, 61, 74, 0.4) !important;
+  background: rgba(141, 61, 74, 0.1) !important;
+  border-color: var(--bb-admin-preview-outline) !important;
   color: #fffaf7 !important;
 }
 
 button[data-blackbox-preview-toggle='true'][data-preview-state='open'] [data-blackbox-preview-status='true'] {
-  background: var(--bb-admin-preview-chip-open);
-  border-color: rgba(255, 250, 247, 0.22);
-  color: #fffaf7 !important;
+  background: rgba(141, 61, 74, 0.14);
+  border-color: rgba(141, 61, 74, 0.22);
+  color: var(--bb-admin-accent) !important;
 }
 
 button[data-blackbox-preview-toggle='true']:hover,
 button[data-blackbox-preview-toggle='true']:focus-visible {
-  transform: translateY(-1px);
+  transform: none !important;
+}
+
+button[data-blackbox-preview-toggle='true']:focus-visible {
+  outline: none !important;
+  box-shadow: inset 0 0 0 1px rgba(141, 61, 74, 0.18) !important;
 }
 
 button[data-blackbox-preview-toggle='true'][data-preview-state='closed']:hover,
 button[data-blackbox-preview-toggle='true'][data-preview-state='closed']:focus-visible {
-  background: linear-gradient(180deg, #fffdf9, #f7ebe1) !important;
-  border-color: rgba(141, 61, 74, 0.38) !important;
+  background: rgba(255, 252, 248, 1) !important;
+  border-color: var(--bb-admin-preview-outline) !important;
   color: var(--bb-admin-accent-hover) !important;
 }
 
 button[data-blackbox-preview-toggle='true'][data-preview-state='open']:hover,
 button[data-blackbox-preview-toggle='true'][data-preview-state='open']:focus-visible {
-  background: linear-gradient(180deg, var(--bb-admin-accent-strong), var(--bb-admin-accent-hover)) !important;
+  background: rgba(141, 61, 74, 0.14) !important;
+  border-color: var(--bb-admin-preview-outline) !important;
 }
 
 input,
@@ -456,38 +462,49 @@ label {
   color: var(--bb-admin-text) !important;
 }
 
-[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-list-action='remove'],
-[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-list-action='remove'] {
-  border-color: rgba(141, 61, 74, 0.22) !important;
-  background: rgba(141, 61, 74, 0.1) !important;
+[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-section-row-action='remove'],
+[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-section-row-action='remove'] {
+  width: auto !important;
+  height: auto !important;
+  min-width: 10rem !important;
+  min-height: 2rem !important;
+  flex: 0 0 auto !important;
+  padding: 0.33rem 0.75rem !important;
+  gap: 0.4rem !important;
+  border-color: rgba(141, 61, 74, 0.18) !important;
+  background: rgba(141, 61, 74, 0.08) !important;
   color: var(--bb-admin-accent-strong) !important;
   font-weight: 700 !important;
+  white-space: nowrap !important;
+  line-height: 1 !important;
 }
 
-[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-list-action='remove']:hover,
-[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-list-action='remove']:focus-visible,
-[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-list-action='remove']:hover,
-[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-list-action='remove']:focus-visible {
-  background: rgba(141, 61, 74, 0.16) !important;
-  border-color: rgba(141, 61, 74, 0.34) !important;
+[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-section-row-action='remove']:hover,
+[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-section-row-action='remove']:focus-visible,
+[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-section-row-action='remove']:hover,
+[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-section-row-action='remove']:focus-visible {
+  background: rgba(141, 61, 74, 0.14) !important;
+  border-color: rgba(141, 61, 74, 0.28) !important;
   color: var(--bb-admin-accent) !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
-[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-list-action='remove'] svg,
-[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-list-action='remove'] svg {
-  width: 0.9rem !important;
-  height: 0.9rem !important;
+[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-section-row-action='remove'] svg,
+[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-section-row-action='remove'] svg {
+  width: 0.72rem !important;
+  height: 0.72rem !important;
   flex: 0 0 auto;
 }
 
-[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-list-action='remove'] [data-blackbox-list-action-label='true'],
-[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-list-action='remove'] [data-blackbox-list-action-label='true'] {
+[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-section-row-action='remove'] [data-blackbox-section-row-action-label='true'],
+[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-section-row-action='remove'] [data-blackbox-section-row-action-label='true'] {
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   line-height: 1;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
 
 [class*='ControlTopbar'],

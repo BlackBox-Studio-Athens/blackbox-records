@@ -75,76 +75,34 @@
     ) ||
     null;
 
-  const getListActionLabel = (button) => {
-    const candidates = [button.getAttribute('aria-label'), button.getAttribute('title'), button.textContent];
-    const labelSource = candidates.find((value) => typeof value === 'string' && value.trim()) || '';
-    const normalizedLabel = labelSource.trim().toLowerCase();
-
-    if (normalizedLabel.includes('delete')) {
-      return 'Delete';
-    }
-
-    if (normalizedLabel.includes('remove')) {
-      return 'Remove';
-    }
-
-    return '';
-  };
-
   const enhanceListItemActionButtons = () => {
-    const actionButtons = Array.from(document.querySelectorAll('button, [role="button"]')).filter((button) => {
-      const label = `${button.getAttribute('aria-label') || ''} ${button.getAttribute('title') || ''} ${button.textContent || ''}`
-        .trim()
-        .toLowerCase();
-      return label.includes('remove') || label.includes('delete');
-    });
-
-    actionButtons.forEach((button) => {
-      const actionLabel = getListActionLabel(button) || 'Remove';
-      button.dataset.blackboxListAction = 'remove';
-      button.dataset.blackboxListActionLabel = actionLabel;
-      button.setAttribute('aria-label', button.getAttribute('aria-label') || `${actionLabel} item`);
-      button.setAttribute('title', button.getAttribute('title') || `${actionLabel} item`);
-
-      if (button.querySelector('[data-blackbox-list-action-label="true"]')) {
-        return;
-      }
-
-      const visibleLabel = document.createElement('span');
-      visibleLabel.dataset.blackboxListActionLabel = 'true';
-      visibleLabel.textContent = `× ${actionLabel}`;
-      button.append(visibleLabel);
-    });
-
     const topBars = Array.from(document.querySelectorAll('[class*="ListItemTopBar"]'));
     topBars.forEach((topBar) => {
-      if (topBar.querySelector('[data-blackbox-list-action="remove"]')) {
+      if (!topBar.closest('[class*="SortableListItem"]') || topBar.querySelector('[data-blackbox-section-row-action="remove"]')) {
         return;
       }
 
-      const topBarButtons = Array.from(topBar.querySelectorAll('button'));
+      const topBarButtons = Array.from(topBar.querySelectorAll('button')).filter((button) =>
+        button.className.includes('TopBarButton'),
+      );
       if (topBarButtons.length < 2) {
         return;
       }
 
       const targetButton = topBarButtons[topBarButtons.length - 1];
-      const targetLabel = `${targetButton.getAttribute('aria-label') || ''} ${targetButton.getAttribute('title') || ''} ${targetButton.textContent || ''}`
-        .trim()
-        .toLowerCase();
-
+      const targetLabel = `${targetButton.getAttribute('aria-label') || ''} ${targetButton.getAttribute('title') || ''} ${targetButton.textContent || ''}`.trim();
       if (targetLabel) {
         return;
       }
 
-      targetButton.dataset.blackboxListAction = 'remove';
-      targetButton.dataset.blackboxListActionLabel = 'Remove';
-      targetButton.setAttribute('aria-label', 'Remove item');
-      targetButton.setAttribute('title', 'Remove item');
+      targetButton.dataset.blackboxSectionRowAction = 'remove';
+      targetButton.setAttribute('aria-label', 'Remove section');
+      targetButton.setAttribute('title', 'Remove section');
 
-      if (!targetButton.querySelector('[data-blackbox-list-action-label="true"]')) {
+      if (!targetButton.querySelector('[data-blackbox-section-row-action-label="true"]')) {
         const visibleLabel = document.createElement('span');
-        visibleLabel.dataset.blackboxListActionLabel = 'true';
-        visibleLabel.textContent = '× Remove';
+        visibleLabel.dataset.blackboxSectionRowActionLabel = 'true';
+        visibleLabel.textContent = 'Remove';
         targetButton.append(visibleLabel);
       }
     });
