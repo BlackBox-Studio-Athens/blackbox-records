@@ -121,6 +121,7 @@ BlackBox now ships with an Astro-hosted Decap CMS at `/admin/`.
 - Preview styling/runtime: `public/admin/preview.css`, `public/admin/init.js`
 - Local Decap proxy: `scripts/start-decap-proxy.mjs`
 - Combined local CMS dev server: `scripts/start-cms-dev.mjs`
+- Global Decap media browser root: `src/content/uploads/`
 
 ### Local CMS development
 
@@ -190,12 +191,28 @@ Notes:
 - Keep the endpoint values in GitHub `Secrets`, not `Variables`.
 - The workflow now injects these values during the Pages build, so the published `/admin/config.yml` can emit the real `git-gateway` PKCE config.
 - Local `pnpm cms:dev` remains on the proxy backend unless you explicitly provide real DecapBridge values in your local environment.
+- For hosted production access, keep the DecapBridge site on `pkce` and leave only Google enabled as a login provider.
 
 ### Production auth model
 
 - Local development uses `decap-server` with the `proxy` backend. No DecapBridge login is required.
 - When the DecapBridge PKCE endpoints are not configured yet, the generated config stays on the local `proxy` backend instead of emitting broken placeholder login URLs.
 - Production `/admin/` only builds a DecapBridge PKCE config once the DecapBridge environment values above are set correctly.
+- The published `/admin/` is intended to be Google-only through DecapBridge social login. The repo does not emit Decap `classic` username/password auth.
+- The local `pnpm cms:dev` flow is intentionally different from production and continues using the unauthenticated proxy backend for editing convenience.
+
+### Hosted login troubleshooting
+
+- If the published `/admin/` still shows a password form, the cause is DecapBridge dashboard/provider configuration, not the generated repo config.
+- In DecapBridge, keep the site on `pkce`, disable any non-Google providers, and turn off any optional password or email/password login toggles.
+- The published `/admin/config.yml` should show `backend.name: git-gateway` and `auth_type: pkce`. If it does, the repo side is already configured for Google-only social login.
+
+### Media assets behavior
+
+- The Decap `Media assets` drawer is rooted at `src/content/uploads/`.
+- That folder acts as a mirrored library of the images currently in use across the site, including the brand assets that otherwise live in `public/assets/images/brand/`.
+- Decap’s global media drawer does not aggregate collection-local image folders into one repo-wide browser, so the mirrored uploads folder exists specifically to make those current assets appear in the drawer.
+- Collection image fields still keep their per-collection `media_folder` / `public_folder` overrides, so editing existing content continues to save files beside the relevant entries and remains compatible with Astro `image()` fields.
 
 ### Collection coverage
 
