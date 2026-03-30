@@ -115,6 +115,39 @@
       visibleLabel.textContent = `× ${actionLabel}`;
       button.append(visibleLabel);
     });
+
+    const topBars = Array.from(document.querySelectorAll('[class*="ListItemTopBar"]'));
+    topBars.forEach((topBar) => {
+      if (topBar.querySelector('[data-blackbox-list-action="remove"]')) {
+        return;
+      }
+
+      const topBarButtons = Array.from(topBar.querySelectorAll('button'));
+      if (topBarButtons.length < 2) {
+        return;
+      }
+
+      const targetButton = topBarButtons[topBarButtons.length - 1];
+      const targetLabel = `${targetButton.getAttribute('aria-label') || ''} ${targetButton.getAttribute('title') || ''} ${targetButton.textContent || ''}`
+        .trim()
+        .toLowerCase();
+
+      if (targetLabel) {
+        return;
+      }
+
+      targetButton.dataset.blackboxListAction = 'remove';
+      targetButton.dataset.blackboxListActionLabel = 'Remove';
+      targetButton.setAttribute('aria-label', 'Remove item');
+      targetButton.setAttribute('title', 'Remove item');
+
+      if (!targetButton.querySelector('[data-blackbox-list-action-label="true"]')) {
+        const visibleLabel = document.createElement('span');
+        visibleLabel.dataset.blackboxListActionLabel = 'true';
+        visibleLabel.textContent = '× Remove';
+        targetButton.append(visibleLabel);
+      }
+    });
   };
 
   const ensurePreviewToggleContent = (previewToggleButton) => {
@@ -376,6 +409,7 @@
     const createClass = window.createClass;
     const h = window.h;
     const { renderButton, renderBulletList, renderImage, renderPills } = createElementFactory(h);
+    const findSection = (sections, type) => toArray(sections).find((section) => section?.type === type);
 
     if (previewStyleUrl) {
       CMS.registerPreviewStyle(previewStyleUrl);
@@ -388,9 +422,17 @@
         const entry = this.props.entry;
         const data = toObject(entry.get('data'));
         const hero = toObject(data.hero);
-        const journey = toObject(data.journey);
+        const sections = toArray(data.sections);
+        const latestReleases = findSection(sections, 'latest_releases');
+        const artists = findSection(sections, 'artists');
+        const distro = findSection(sections, 'distro');
+        const journeyIndex = sections.findIndex((section) => section?.type === 'journey');
+        const journey = journeyIndex >= 0 ? toObject(sections[journeyIndex]) : null;
         const heroImageUrl = resolveAssetUrl(entry.getIn(['data', 'hero', 'image']), this.props.getAsset, 'home');
-        const journeyImageUrl = resolveAssetUrl(entry.getIn(['data', 'journey', 'image']), this.props.getAsset, 'home');
+        const journeyImageUrl =
+          journeyIndex >= 0
+            ? resolveAssetUrl(entry.getIn(['data', 'sections', journeyIndex, 'image']), this.props.getAsset, 'home')
+            : null;
 
         return h('div', { className: 'blackbox-preview blackbox-preview--home' }, [
           h('div', { className: 'blackbox-preview__shell' }, [
@@ -406,9 +448,9 @@
                   ),
                   renderPills(
                     [
-                      toText(data.latest_releases?.title || 'Releases'),
-                      toText(data.artists?.title || 'Artists'),
-                      toText(data.distro?.title || 'Distro'),
+                      toText(latestReleases?.title || 'Releases'),
+                      toText(artists?.title || 'Artists'),
+                      toText(distro?.title || 'Distro'),
                     ].filter(Boolean),
                     'blackbox-preview__pill blackbox-preview__pill--muted',
                   ),
@@ -419,31 +461,32 @@
               ]),
             ]),
             h('section', { className: 'blackbox-preview__grid blackbox-preview__grid--three' }, [
+                h('article', { className: 'blackbox-preview__card' }, [
+                  h(
+                    'p',
+                    { className: 'blackbox-preview__meta' },
+                  toText(latestReleases?.section_label || 'Latest Releases'),
+                  ),
+                  h(
+                    'h2',
+                    { className: 'blackbox-preview__card-title' },
+                  toText(latestReleases?.title || 'Latest Releases'),
+                  ),
+                renderButton(toText(latestReleases?.link_text || 'View All'), true),
+                ]),
               h('article', { className: 'blackbox-preview__card' }, [
-                h(
-                  'p',
-                  { className: 'blackbox-preview__meta' },
-                  toText(data.latest_releases?.section_label || 'Latest Releases'),
-                ),
-                h(
-                  'h2',
-                  { className: 'blackbox-preview__card-title' },
-                  toText(data.latest_releases?.title || 'Latest Releases'),
-                ),
-                renderButton(toText(data.latest_releases?.link_text || 'View All'), true),
+                h('p', { className: 'blackbox-preview__meta' }, toText(artists?.section_label || 'Artists')),
+                h('h2', { className: 'blackbox-preview__card-title' }, toText(artists?.title || 'Artists')),
+                renderButton(toText(artists?.button_text || 'View Full Roster'), true),
               ]),
               h('article', { className: 'blackbox-preview__card' }, [
-                h('p', { className: 'blackbox-preview__meta' }, toText(data.artists?.section_label || 'Artists')),
-                h('h2', { className: 'blackbox-preview__card-title' }, toText(data.artists?.title || 'Artists')),
-                renderButton(toText(data.artists?.button_text || 'View Full Roster'), true),
-              ]),
-              h('article', { className: 'blackbox-preview__card' }, [
-                h('p', { className: 'blackbox-preview__meta' }, toText(data.distro?.section_label || 'Distro')),
-                h('h2', { className: 'blackbox-preview__card-title' }, toText(data.distro?.title || 'Distro')),
-                renderButton(toText(data.distro?.link_text || 'View All Distro'), true),
+                h('p', { className: 'blackbox-preview__meta' }, toText(distro?.section_label || 'Distro')),
+                h('h2', { className: 'blackbox-preview__card-title' }, toText(distro?.title || 'Distro')),
+                renderButton(toText(distro?.link_text || 'View All Distro'), true),
               ]),
             ]),
-            h('section', { className: 'blackbox-preview__journey-surface' }, [
+            journey && journeyImageUrl
+              ? h('section', { className: 'blackbox-preview__journey-surface' }, [
               h('div', { className: 'blackbox-preview__journey-grid' }, [
                 h('div', { className: 'blackbox-preview__journey-copy' }, [
                   h('p', { className: 'blackbox-preview__eyebrow' }, toText(journey.section_label || 'About')),
@@ -474,7 +517,8 @@
                   ),
                 ]),
               ]),
-            ]),
+              ])
+              : null,
           ]),
         ]);
       },
@@ -485,8 +529,12 @@
         const entry = this.props.entry;
         const data = toObject(entry.get('data'));
         const hero = toObject(data.hero);
-        const quote = toObject(data.quote);
-        const contact = toObject(data.contact);
+        const sections = toArray(data.sections);
+        const lead = findSection(sections, 'lead');
+        const story = findSection(sections, 'story');
+        const quote = findSection(sections, 'quote');
+        const contact = findSection(sections, 'contact');
+        const stats = findSection(sections, 'stats');
         const heroImageUrl = resolveAssetUrl(entry.getIn(['data', 'hero', 'image']), this.props.getAsset, 'about');
 
         return h('div', { className: 'blackbox-preview blackbox-preview--about' }, [
@@ -496,7 +544,7 @@
                 h('div', { className: 'blackbox-preview__hero-copy' }, [
                   h('p', { className: 'blackbox-preview__eyebrow' }, toText(hero.section_label || 'About')),
                   h('h1', { className: 'blackbox-preview__title' }, toText(hero.title || 'The Label')),
-                  h('p', { className: 'blackbox-preview__copy blackbox-preview__copy--lead' }, toText(data.lead)),
+                  h('p', { className: 'blackbox-preview__copy blackbox-preview__copy--lead' }, toText(lead?.text || '')),
                 ]),
                 h('div', { className: 'blackbox-preview__hero-media' }, [
                   renderImage(
@@ -508,48 +556,67 @@
                 ]),
               ]),
             ]),
-            h(
-              'section',
-              { className: 'blackbox-preview__grid blackbox-preview__grid--two' },
-              toArray(data.sections).map((section, index) =>
-                h('article', { className: 'blackbox-preview__card', key: `section-${index}` }, [
-                  h('h2', { className: 'blackbox-preview__card-title' }, toText(section.title || `Section ${index + 1}`)),
-                  ...toArray(section.paragraphs)
-                    .slice(0, 2)
-                    .map((paragraph, paragraphIndex) =>
-                      h(
-                        'p',
-                        {
-                          key: `paragraph-${paragraphIndex}`,
-                          className: 'blackbox-preview__copy',
-                        },
-                        paragraph,
+            story || quote || contact
+              ? h('section', { className: 'blackbox-preview__grid blackbox-preview__grid--two' }, [
+                  story
+                    ? h('article', { className: 'blackbox-preview__card', key: 'story' }, [
+                        h('h2', { className: 'blackbox-preview__card-title' }, toText(story.title || 'Story')),
+                        ...toArray(story.paragraphs)
+                          .slice(0, 2)
+                          .map((paragraph, paragraphIndex) =>
+                            h(
+                              'p',
+                              {
+                                key: `paragraph-${paragraphIndex}`,
+                                className: 'blackbox-preview__copy',
+                              },
+                              paragraph,
+                            ),
+                          ),
+                      ])
+                    : null,
+                  quote
+                    ? h('article', { className: 'blackbox-preview__card blackbox-preview__card--quote', key: 'quote' }, [
+                        h('p', { className: 'blackbox-preview__eyebrow' }, 'Quote'),
+                        h('blockquote', { className: 'blackbox-preview__quote' }, toText(quote.text)),
+                        h('p', { className: 'blackbox-preview__meta' }, toText(quote.cite)),
+                      ])
+                    : null,
+                  contact
+                    ? h('article', { className: 'blackbox-preview__card', key: 'contact' }, [
+                        h('p', { className: 'blackbox-preview__eyebrow' }, toText(contact.title || 'Contact')),
+                        h('p', { className: 'blackbox-preview__copy' }, toText(contact.intro)),
+                        h(
+                          'div',
+                          { className: 'blackbox-preview__stack' },
+                          toArray(contact.items).map((item, index) =>
+                            h('div', { className: 'blackbox-preview__contact-row', key: `contact-${index}` }, [
+                              h('span', { className: 'blackbox-preview__meta' }, toText(item.label)),
+                              h('span', { className: 'blackbox-preview__copy' }, toText(item.value)),
+                            ]),
+                          ),
+                        ),
+                      ])
+                    : null,
+                ])
+              : null,
+            stats
+              ? h('section', { className: 'blackbox-preview__grid blackbox-preview__grid--four' }, [
+                  h('article', { className: 'blackbox-preview__card blackbox-preview__card--stats' }, [
+                    h('p', { className: 'blackbox-preview__eyebrow' }, 'Stats'),
+                    h(
+                      'div',
+                      { className: 'blackbox-preview__stats-grid' },
+                      toArray(stats.items).map((item, index) =>
+                        h('div', { className: 'blackbox-preview__stat', key: `stat-${index}` }, [
+                          h('span', { className: 'blackbox-preview__card-title blackbox-preview__card-title--small' }, toText(item.key)),
+                          h('p', { className: 'blackbox-preview__meta' }, toText(item.label)),
+                        ]),
                       ),
                     ),
-                ]),
-              ),
-            ),
-            h('section', { className: 'blackbox-preview__grid blackbox-preview__grid--two' }, [
-              h('article', { className: 'blackbox-preview__card blackbox-preview__card--quote' }, [
-                h('p', { className: 'blackbox-preview__eyebrow' }, 'Quote'),
-                h('blockquote', { className: 'blackbox-preview__quote' }, toText(quote.text)),
-                h('p', { className: 'blackbox-preview__meta' }, toText(quote.cite)),
-              ]),
-              h('article', { className: 'blackbox-preview__card' }, [
-                h('p', { className: 'blackbox-preview__eyebrow' }, toText(contact.title || 'Contact')),
-                h('p', { className: 'blackbox-preview__copy' }, toText(contact.intro)),
-                h(
-                  'div',
-                  { className: 'blackbox-preview__stack' },
-                  toArray(contact.items).map((item, index) =>
-                    h('div', { className: 'blackbox-preview__contact-row', key: `contact-${index}` }, [
-                      h('span', { className: 'blackbox-preview__meta' }, toText(item.label)),
-                      h('span', { className: 'blackbox-preview__copy' }, toText(item.value)),
-                    ]),
-                  ),
-                ),
-              ]),
-            ]),
+                  ]),
+                ])
+              : null,
           ]),
         ]);
       },
@@ -560,8 +627,11 @@
         const entry = this.props.entry;
         const data = toObject(entry.get('data'));
         const hero = toObject(data.hero);
-        const process = toObject(data.process);
-        const inquiry = toObject(data.inquiry);
+        const sections = toArray(data.sections);
+        const servicesSection = findSection(sections, 'services');
+        const process = findSection(sections, 'process');
+        const inquiry = findSection(sections, 'inquiry');
+        const servicesSectionIndex = sections.findIndex((section) => section?.type === 'services');
 
         return h('div', { className: 'blackbox-preview blackbox-preview--services' }, [
           h('div', { className: 'blackbox-preview__shell' }, [
@@ -571,72 +641,81 @@
               h('p', { className: 'blackbox-preview__copy blackbox-preview__copy--lead' }, toText(hero.intro)),
               renderButton(toText(hero.cta_text || 'Start an Inquiry'), true),
             ]),
-            h(
-              'section',
-              { className: 'blackbox-preview__stack blackbox-preview__stack--large' },
-              toArray(data.services).map((service, index) => {
-                const imageUrl = resolveAssetUrl(
-                  entry.getIn(['data', 'services', index, 'image']),
-                  this.props.getAsset,
-                  'services',
-                );
-                return h('article', { className: 'blackbox-preview__service-card', key: service.id || index }, [
-                  h('div', { className: 'blackbox-preview__service-media' }, [
-                    renderImage(
-                      imageUrl,
-                      service.image_alt,
-                      'blackbox-preview__media blackbox-preview__media--muted',
-                      service.title || 'Service image',
+            servicesSection
+              ? h(
+                  'section',
+                  { className: 'blackbox-preview__stack blackbox-preview__stack--large' },
+                  toArray(servicesSection.items).map((service, index) => {
+                    const imageUrl =
+                      servicesSectionIndex >= 0
+                        ? resolveAssetUrl(
+                            entry.getIn(['data', 'sections', servicesSectionIndex, 'items', index, 'image']),
+                            this.props.getAsset,
+                            'services',
+                          )
+                        : null;
+                    return h('article', { className: 'blackbox-preview__service-card', key: service.id || index }, [
+                      h('div', { className: 'blackbox-preview__service-media' }, [
+                        renderImage(
+                          imageUrl,
+                          service.image_alt,
+                          'blackbox-preview__media blackbox-preview__media--muted',
+                          service.title || 'Service image',
+                        ),
+                      ]),
+                      h('div', { className: 'blackbox-preview__service-copy' }, [
+                        h('p', { className: 'blackbox-preview__meta' }, titleCase(service.id || `service-${index + 1}`)),
+                        h('h2', { className: 'blackbox-preview__card-title' }, toText(service.title)),
+                        h('p', { className: 'blackbox-preview__copy' }, toText(service.summary)),
+                        renderBulletList(toArray(service.bullets)),
+                        service.partner_name
+                          ? renderPills([`With ${service.partner_name}`], 'blackbox-preview__pill blackbox-preview__pill--accent')
+                          : null,
+                        h('p', { className: 'blackbox-preview__meta blackbox-preview__meta--note' }, toText(service.contact_note)),
+                      ]),
+                    ]);
+                  }),
+                )
+              : null,
+            process
+              ? h('section', { className: 'blackbox-preview__process-surface' }, [
+                  h('p', { className: 'blackbox-preview__eyebrow' }, 'How We Work'),
+                  h(
+                    'h2',
+                    { className: 'blackbox-preview__title blackbox-preview__title--section' },
+                    toText(process.title),
+                  ),
+                  h('p', { className: 'blackbox-preview__copy' }, toText(process.intro)),
+                  h(
+                    'div',
+                    { className: 'blackbox-preview__grid blackbox-preview__grid--three' },
+                    toArray(process.steps).map((step, index) =>
+                      h('article', { className: 'blackbox-preview__card blackbox-preview__card--step', key: `step-${index}` }, [
+                        h('span', { className: 'blackbox-preview__step-number' }, `0${index + 1}`),
+                        h(
+                          'h3',
+                          { className: 'blackbox-preview__card-title blackbox-preview__card-title--small' },
+                          toText(step.title),
+                        ),
+                        h('p', { className: 'blackbox-preview__copy' }, toText(step.body)),
+                      ]),
                     ),
-                  ]),
-                  h('div', { className: 'blackbox-preview__service-copy' }, [
-                    h('p', { className: 'blackbox-preview__meta' }, titleCase(service.id || `service-${index + 1}`)),
-                    h('h2', { className: 'blackbox-preview__card-title' }, toText(service.title)),
-                    h('p', { className: 'blackbox-preview__copy' }, toText(service.summary)),
-                    renderBulletList(toArray(service.bullets)),
-                    service.partner_name
-                      ? renderPills([`With ${service.partner_name}`], 'blackbox-preview__pill blackbox-preview__pill--accent')
-                      : null,
-                    h('p', { className: 'blackbox-preview__meta blackbox-preview__meta--note' }, toText(service.contact_note)),
-                  ]),
-                ]);
-              }),
-            ),
-            h('section', { className: 'blackbox-preview__process-surface' }, [
-              h('p', { className: 'blackbox-preview__eyebrow' }, 'How We Work'),
-              h(
-                'h2',
-                { className: 'blackbox-preview__title blackbox-preview__title--section' },
-                toText(process.title),
-              ),
-              h('p', { className: 'blackbox-preview__copy' }, toText(process.intro)),
-              h(
-                'div',
-                { className: 'blackbox-preview__grid blackbox-preview__grid--three' },
-                toArray(process.steps).map((step, index) =>
-                  h('article', { className: 'blackbox-preview__card blackbox-preview__card--step', key: `step-${index}` }, [
-                    h('span', { className: 'blackbox-preview__step-number' }, `0${index + 1}`),
-                    h(
-                      'h3',
-                      { className: 'blackbox-preview__card-title blackbox-preview__card-title--small' },
-                      toText(step.title),
-                    ),
-                    h('p', { className: 'blackbox-preview__copy' }, toText(step.body)),
-                  ]),
-                ),
-              ),
-            ]),
-            h('section', { className: 'blackbox-preview__inquiry-surface' }, [
-              h('p', { className: 'blackbox-preview__eyebrow' }, 'Inquiry'),
-              h(
-                'h2',
-                { className: 'blackbox-preview__title blackbox-preview__title--section' },
-                toText(inquiry.title),
-              ),
-              h('p', { className: 'blackbox-preview__copy' }, toText(inquiry.intro)),
-              renderPills(['Name', 'Email', 'Band / Project', 'Service', 'Message'], 'blackbox-preview__pill blackbox-preview__pill--outline'),
-              renderButton(toText(inquiry.submit_text || 'Compose Inquiry')),
-            ]),
+                  ),
+                ])
+              : null,
+            inquiry
+              ? h('section', { className: 'blackbox-preview__inquiry-surface' }, [
+                  h('p', { className: 'blackbox-preview__eyebrow' }, 'Inquiry'),
+                  h(
+                    'h2',
+                    { className: 'blackbox-preview__title blackbox-preview__title--section' },
+                    toText(inquiry.title),
+                  ),
+                  h('p', { className: 'blackbox-preview__copy' }, toText(inquiry.intro)),
+                  renderPills(['Name', 'Email', 'Band / Project', 'Service', 'Message'], 'blackbox-preview__pill blackbox-preview__pill--outline'),
+                  renderButton(toText(inquiry.submit_text || 'Compose Inquiry')),
+                ])
+              : null,
           ]),
         ]);
       },

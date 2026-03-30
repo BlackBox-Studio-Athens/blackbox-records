@@ -298,6 +298,24 @@ body {
   margin-top: 1rem;
 }
 
+.blackbox-preview__card--stats {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.blackbox-preview__stats-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.blackbox-preview__stat {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.8rem 0.85rem;
+}
+
 @media (min-width: 760px) {
   .blackbox-preview {
     padding: 1.25rem;
@@ -327,5 +345,13 @@ body {
 
   .blackbox-preview__grid--three {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .blackbox-preview__grid--four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .blackbox-preview__stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
