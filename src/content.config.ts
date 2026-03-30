@@ -169,10 +169,12 @@ const about = defineCollection({
         paragraphs: z.array(z.string()),
       }),
     ),
-    quote: z.object({
-      text: z.string(),
-      cite: z.string(),
-    }),
+    quote: z.array(
+      z.object({
+        text: z.string(),
+        cite: z.string(),
+      }),
+    ),
     contact: z.object({
       title: z.string(),
       intro: z.string(),

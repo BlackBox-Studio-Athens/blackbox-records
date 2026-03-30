@@ -136,6 +136,7 @@ describe('buildDecapConfig', () => {
     });
 
     expect(yaml).toContain('label: "Hero"\n            name: "hero"\n            widget: object\n            hint: "Controls the opening still, tagline, and scroll cue."\n            collapsed: true\n            summary: "{{fields.tagline}}"');
+    expect(yaml).toContain('label: "Quote"\n            name: "quote"\n            widget: list\n            hint: "Pull quote shown in the middle of the About page."\n            collapsed: true\n            summary: "{{fields.cite}}"');
     expect(yaml).toContain('label: "Contact"\n            name: "contact"\n            widget: object\n            hint: "Closing contact panel for the About page."\n            collapsed: true\n            summary: "{{fields.title}}"');
     expect(yaml).toContain('label: "Inquiry"\n            name: "inquiry"\n            widget: object\n            hint: "Copy and email settings for the unified inquiry form."\n            collapsed: true\n            summary: "{{fields.title}}"');
     expect(yaml).toContain('summary: "{{fields.locality}}, {{fields.country}}"');

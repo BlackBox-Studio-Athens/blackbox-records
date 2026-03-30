@@ -496,7 +496,7 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
     buildField({
       label: 'Quote',
       name: 'quote',
-      widget: 'object',
+      widget: 'list',
       hint: 'Pull quote shown in the middle of the About page.',
       collapsed: true,
       summary: '{{fields.cite}}',

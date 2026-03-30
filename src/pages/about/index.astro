@@ -12,6 +12,7 @@ const releaseCatalogEntries = await listReleaseCatalog();
 const [aboutContent, labelSettings] = await Promise.all([getAboutContent(), getLabelSettings()]);
 const yearsActive = calculateYearsActive(labelSettings.established_year);
 const countryCount = calculateCountryCount(artistProfiles.map((artistProfile) => artistProfile.data.country || ''));
+const aboutQuote = aboutContent.quote[0];
 ---
 
 <SiteLayout pageTitle="About" pageDescription="About the label.">
@@ -37,10 +38,14 @@ const countryCount = calculateCountryCount(artistProfiles.map((artistProfile) =>
             ))
           }
 
-          <blockquote>
-            <p>&quot;{aboutContent.quote.text}&quot;</p>
-            <cite>{aboutContent.quote.cite}</cite>
-          </blockquote>
+          {
+            aboutQuote && (
+              <blockquote>
+                <p>&quot;{aboutQuote.text}&quot;</p>
+                <cite>{aboutQuote.cite}</cite>
+              </blockquote>
+            )
+          }
 
           <h2>{aboutContent.contact.title.toUpperCase()}</h2>
           <p>{aboutContent.contact.intro}</p>

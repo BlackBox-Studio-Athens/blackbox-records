@@ -15,10 +15,12 @@
       ]
     }
   ],
-  "quote": {
-    "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt.",
-    "cite": "Founder, BlackBox Records"
-  },
+  "quote": [
+    {
+      "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt.",
+      "cite": "Founder, BlackBox Records"
+    }
+  ],
   "contact": {
     "title": "Contact",
     "intro": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
