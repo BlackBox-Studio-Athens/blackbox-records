@@ -19,14 +19,9 @@
       ]
     },
     {
-      "type": "quote",
-      "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt.",
-      "cite": "Founder, BlackBox Records"
-    },
-    {
       "type": "contact",
       "title": "Contact",
-      "intro": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+      "intro": "Hit us up!",
       "items": [
         {
           "label": "General",
