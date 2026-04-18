@@ -5,8 +5,9 @@ If this file conflicts with the global file, follow the global file.
 
 ## Purpose
 
-Build and maintain a static Astro site for BlackBox Records, deployed to GitHub Pages.
-Commerce remains external via Fourthwall.
+Build and maintain the BlackBox Records Astro site.
+
+Current production storefront behavior still uses static GitHub Pages deployment and an external Fourthwall commerce handoff, but the repo now also carries planning and future implementation work for a native commerce migration. Do not assume commerce must remain external forever; follow the active planning docs when working in that area.
 
 ## Current stack
 
@@ -65,9 +66,10 @@ Then inspect only task-relevant files with `rg` and scoped reads.
   - `pnpm build`
 - The workflow uses `withastro/action@v5` with Node 22 and built-in pnpm/Astro caching
 - Configured in `astro.config.mjs`
-  - `site: https://zantoichi.github.io`
+  - `site: https://blackbox-studio-athens.github.io`
   - `base: /blackbox-records/`
 - Do not change `site` or `base` unless the task explicitly requires deployment URL changes.
+- Native commerce migration work must treat the current Pages + external-shop setup as the existing baseline, not the final architecture.
 
 ## Project map
 
@@ -201,6 +203,12 @@ This is an iframe boundary, not an app bug.
 - Metadata and Organization JSON-LD are assembled in `src/layouts/SiteLayout.astro`
 - Organization/social data comes from collection-backed settings and socials
 - `src/pages/sitemap.xml.ts` builds sitemap entries from static routes + collections
+
+## Stripe guidance
+
+- When working on Stripe-related planning or implementation, consult Stripe MCP when available.
+- If Stripe MCP is unavailable or incomplete for the task, consult official Stripe docs.
+- If guidance conflicts, prefer the current official Stripe API reference and Stripe docs.
 
 ## Verification checklist (minimum)
 
