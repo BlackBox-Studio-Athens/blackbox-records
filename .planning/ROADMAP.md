@@ -112,7 +112,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Runtime And Guardrails | 0/3 | Not started | - |
+| 1. Runtime And Guardrails | 0/3 | Planned    |  |
 | 2. Native Catalog And Embedded Checkout Slice | 0/3 | Not started | - |
 | 3. Webhook-Authoritative Orders And Inventory | 0/3 | Not started | - |
 | 4. BOX NOW Locker Shipping Slice | 0/2 | Not started | - |
