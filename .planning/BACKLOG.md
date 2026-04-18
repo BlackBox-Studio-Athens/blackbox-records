@@ -84,21 +84,30 @@
   - Document what is deferred to v2
 - Human review stop: approve fulfillment depth
 
-## Ready For Phases 5-6
+## Ready For Future Stripe Sandbox Milestone
 
-### BL-10: Brownfield cutover plan
-- Linked phase: Phase 5
+### BL-10: Sandbox implementation kickoff package
+- Linked milestone: Stripe Sandbox Integration
+- Acceptance criteria:
+  - Phase 1-4 outputs are bundled into implementation-ready inputs
+  - Sandbox milestone starts only after pre-sandbox planning approval
+  - Net-new shopper-facing sandbox phases are flagged for `gsd-ui-phase`
+- Human review stop: approve sandbox milestone kickoff
+
+## Ready For Future Go-Live Milestone
+
+### BL-11: Brownfield cutover plan
+- Linked milestone: Go-Live / Launch Hardening
 - Acceptance criteria:
   - Define rollout order and fallback path from Fourthwall
   - Define whether to use a limited-catalog or parallel-run phase
   - Define explicit rollback triggers
 - Human review stop: approve cutover approach
 
-### BL-11: Launch readiness checklist
-- Linked phase: Phase 6
+### BL-12: Launch readiness checklist
+- Linked milestone: Go-Live / Launch Hardening
 - Acceptance criteria:
   - Cover runtime, secrets, Stripe, Supabase, shipping, reconciliation, rollback, and communications
   - Name the required approvers and stop/go gate
   - Stay implementation-agnostic enough to survive planning revisions
 - Human review stop: approve launch gate format
-

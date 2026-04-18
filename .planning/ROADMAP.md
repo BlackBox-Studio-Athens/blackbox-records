@@ -2,9 +2,16 @@
 
 ## Overview
 
-This roadmap plans the migration from the current GitHub Pages + Fourthwall handoff model to a minimal native commerce stack inside the existing Astro storefront. It starts with runtime and trust-boundary decisions, then moves through thin vertical slices: native catalog plus embedded checkout, webhook-authoritative paid-order and inventory flow, BOX NOW locker selection for Greek shipments, brownfield cutover, and launch approval.
+This roadmap plans the migration from the current GitHub Pages + Fourthwall handoff model to a minimal native commerce stack inside the existing Astro storefront. The active milestone is pre-sandbox only: it ends when the team has a final runtime/vendor choice, approved trust boundaries, a first native storefront slice designed on paper, webhook-authoritative payment semantics defined, and BOX NOW locker-selection UX defined.
 
-This roadmap is itself a planning deliverable. No implementation work is approved until Phase 1 review is complete.
+This roadmap is itself a planning deliverable. No implementation work is approved until Phase 1 review is complete, and no Stripe sandbox work starts until this milestone finishes at Phase 4.
+
+## Milestone Position
+
+- **Current milestone:** Pre-Sandbox Planning
+- **Ends after:** Phase 4 approval
+- **Next milestone:** Stripe Sandbox Integration
+- **Following milestone:** Go-Live / Launch Hardening
 
 ## Phases
 
@@ -16,8 +23,6 @@ This roadmap is itself a planning deliverable. No implementation work is approve
 - [ ] **Phase 2: Native Catalog And Embedded Checkout Slice** - Plan the first sellable native storefront slice without inventory mutation
 - [ ] **Phase 3: Webhook-Authoritative Orders And Inventory** - Define paid-order authority, stock semantics, and reconciliation rules
 - [ ] **Phase 4: BOX NOW Locker Shipping Slice** - Add the Greek locker-selection and low-volume fulfillment path
-- [ ] **Phase 5: Brownfield Cutover And Rollback** - Plan how native commerce replaces the external shop path safely
-- [ ] **Phase 6: Launch Readiness And Approval** - Finalize the stop/go package before any implementation milestone begins
 
 ## Phase Details
 
@@ -26,7 +31,7 @@ This roadmap is itself a planning deliverable. No implementation work is approve
 **Depends on**: Nothing (first phase)
 **Requirements**: DEPL-01, DEPL-02, CATA-03, SECU-01
 **Success Criteria** (what must be TRUE):
-1. Team selects an Astro adapter/runtime family that can host on-demand server routes and Stripe webhooks.
+1. Team selects a final Astro adapter/runtime family and production host/vendor that can host on-demand server routes and Stripe webhooks.
 2. Secret-handling, system ownership boundaries, and Stripe API/version policy are approved in ADRs.
 3. A brownfield rollback shape exists before implementation planning continues.
 **Plans**: 3 plans
@@ -47,6 +52,7 @@ Plans:
 3. The slice introduces no browser-side privileged writes and no inventory mutation.
 **Plans**: 3 plans
 **Review gate**: Human approval required on the first sellable vertical slice scope.
+**UI workflow**: Run `$gsd-ui-phase 2` before `$gsd-plan-phase 2` to produce the storefront UI design contract.
 
 Plans:
 - [ ] 02-01: Define the Stripe-backed catalog projection and first-SKU rollout scope
@@ -80,45 +86,29 @@ Plans:
 3. v1 fulfillment remains low-maintenance and does not require a heavyweight shipping platform.
 **Plans**: 2 plans
 **Review gate**: Human approval required on shipping UX and fulfillment depth.
+**UI workflow**: Run `$gsd-ui-phase 4` before `$gsd-plan-phase 4` to lock the locker-selection and confirmation UX.
 
 Plans:
 - [ ] 04-01: Define locker-selection UX, data contract, and fallback behavior
 - [ ] 04-02: Decide between manual and thin-server BOX NOW fulfillment for v1
 
-### Phase 5: Brownfield Cutover And Rollback
-**Goal**: Plan how native commerce replaces the current external `/shop/` handoff without a one-way launch.
-**Depends on**: Phase 4
-**Requirements**: DEPL-03
-**Success Criteria** (what must be TRUE):
-1. The rollout sequence from Fourthwall to native commerce is documented.
-2. A rollback path exists and can return traffic to the current external-store experience.
-3. Limited-catalog or parallel-run assumptions are explicit instead of implied.
-**Plans**: 2 plans
-**Review gate**: Human approval required before any production cutover work begins.
+## Future Milestone Seeds
 
-Plans:
-- [ ] 05-01: Define the rollout sequence and any limited-catalog or parallel-run strategy
-- [ ] 05-02: Define rollback triggers, fallback paths, and operator response steps
+### Stripe Sandbox Integration Milestone
+- First milestone allowed to touch Stripe sandbox
+- Starts after Phase 4 approval
+- Uses the pre-sandbox planning outputs from Phases 1-4 as implementation inputs
+- Re-runs `$gsd-ui-phase` only if a sandbox implementation phase introduces net-new shopper-facing UI beyond the approved Phase 2 and Phase 4 designs
 
-### Phase 6: Launch Readiness And Approval
-**Goal**: Produce the final stop/go package for a later implementation milestone and eventual launch.
-**Depends on**: Phase 5
-**Requirements**: OPER-02
-**Success Criteria** (what must be TRUE):
-1. Launch-readiness criteria cover runtime, secrets, Stripe, Supabase, BOX NOW, reconciliation, and rollback.
-2. Named human reviewers can approve or stop the rollout at explicit checkpoints.
-3. The planning package is complete enough to start implementation through later `/gsd-plan-phase` work.
-**Plans**: 2 plans
-**Review gate**: Final human stop/go before implementation milestone kickoff.
-
-Plans:
-- [ ] 06-01: Finalize the launch-readiness checklist and approver matrix
-- [ ] 06-02: Package roadmap, ADRs, backlog, and rollout decisions for implementation kickoff
+### Go-Live / Launch Hardening Milestone
+- Covers brownfield cutover, rollback rehearsal, and final launch approval
+- Consumes the future cutover backlog and launch-readiness checklist maintained in the current milestone
+- No production go-live work is in scope for the active milestone
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -126,5 +116,3 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Native Catalog And Embedded Checkout Slice | 0/3 | Not started | - |
 | 3. Webhook-Authoritative Orders And Inventory | 0/3 | Not started | - |
 | 4. BOX NOW Locker Shipping Slice | 0/2 | Not started | - |
-| 5. Brownfield Cutover And Rollback | 0/2 | Not started | - |
-| 6. Launch Readiness And Approval | 0/2 | Not started | - |

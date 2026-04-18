@@ -2,7 +2,7 @@
 
 **Project:** BlackBox Records Native Commerce Migration  
 **Status:** Planning draft  
-**Purpose:** Stop/go checklist for replacing the current external shop redirect with native commerce.
+**Purpose:** Future go-live milestone input. This checklist is not part of the active pre-sandbox execution roadmap; it exists so the later Go-Live / Launch Hardening milestone starts with explicit stop/go criteria.
 
 ## Runtime And Deployment
 
@@ -51,6 +51,5 @@
 - [ ] Phase 1 review approved
 - [ ] Phase 3 review approved
 - [ ] Phase 4 review approved
-- [ ] Phase 5 review approved
+- [ ] Stripe sandbox milestone approved
 - [ ] Final stop/go reviewers identified
-
