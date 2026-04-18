@@ -39,7 +39,7 @@ This roadmap is itself a planning deliverable. No implementation work is approve
 
 Plans:
 - [ ] 01-01: Compare host/runtime options and recommend the portable default
-- [ ] 01-02: Finalize Stripe/Supabase/browser trust boundaries and embedded Checkout API policy
+- [ ] 01-02: Finalize Stripe/D1/browser trust boundaries and embedded Checkout API policy
 - [ ] 01-03: Define brownfield cutover guardrails and rollback assumptions
 
 ### Phase 2: Native Catalog And Embedded Checkout Slice
@@ -67,7 +67,7 @@ Plans:
 1. Paid-order state changes only from verified Stripe webhook events.
 2. Inventory decrements once, and only once, after confirmed payment success.
 3. Failed, expired, or abandoned checkouts leave stock untouched.
-4. Operators can reconcile Stripe payment records against Supabase order and inventory state.
+4. Operators can reconcile Stripe payment records against D1-backed order and inventory state.
 **Plans**: 3 plans
 **Review gate**: Human approval required on webhook authority, idempotency, and stock semantics.
 
@@ -113,6 +113,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Runtime And Guardrails | 0/3 | Planned    |  |
-| 2. Native Catalog And Embedded Checkout Slice | 0/3 | Not started | - |
+| 2. Native Catalog And Embedded Checkout Slice | 0/3 | Planned    |  |
 | 3. Webhook-Authoritative Orders And Inventory | 0/3 | Not started | - |
 | 4. BOX NOW Locker Shipping Slice | 0/2 | Not started | - |
