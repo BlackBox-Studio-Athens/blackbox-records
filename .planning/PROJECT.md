@@ -73,6 +73,8 @@ Current official docs matter here. Astro’s on-demand rendering guidance allows
 |----------|-----------|---------|
 | Use Astro on Cloudflare Workers for the native commerce runtime | Lowest recurring cost and lowest-ops path that still supports server routes and webhooks | ✓ Good |
 | Use D1 for inventory and order lifecycle state | Keeps the operational state narrow and colocated with the Worker runtime | ✓ Good |
+| Keep separate D1 databases for beta and production, with local D1 for development | Simpler and safer than schema or table-prefix isolation, and still fits the current free-tier limits | ✓ Good |
+| Use Wrangler D1 migrations as the schema migration system | Gives a checked-in, SQL-first, low-maintenance equivalent to heavier Java migration tooling | ✓ Good |
 | Keep Stripe as the authority for catalog, pricing, Checkout Sessions, and payment state | Avoids duplicate admin surfaces and keeps pricing in the payment system | ✓ Good |
 | Keep browser code away from authoritative order and inventory writes | Protects stock and paid-order state from untrusted clients | ✓ Good |
 | Use current embedded Checkout terminology and request shape | Stripe’s current docs use `ui_mode: embedded`, `return_url`, and optional `redirect_on_completion` tuning | ✓ Good |
@@ -97,4 +99,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-19 after starting milestone v1.1*
+*Last updated: 2026-04-20 during Phase 5 discussion*
