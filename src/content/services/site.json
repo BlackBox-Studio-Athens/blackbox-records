@@ -2,7 +2,7 @@
   "$schema": "../../../.astro/collections/services.schema.json",
   "hero": {
     "title": "Services",
-    "intro": "BlackBox offers a small set of practical services for bands that need help getting a tour together, producing merch, or figuring out a vinyl run. We keep it direct, realistic, and shaped around the kind of work we would trust around our own releases.",
+    "intro": "We offer a small set of practical services for bands that need help getting a tour together, producing merch, or figuring out a vinyl run. We do these things for our own bands, we know how difficult it can be to arrange all this. ",
     "cta_text": "Start an Inquiry"
   },
   "sections": [
@@ -14,13 +14,13 @@
           "title": "Tour Booking",
           "image": "./tour-booking.jpg",
           "image_alt": "Band members rehearsing together in a studio",
-          "summary": "Booking support for bands trying to put together focused runs, with a Europe-leaning network and a realistic sense of what can be built properly.",
+          "summary": "We are here to help you tour and make the necessary arrangements so you can get your music to Europe and Balkan grounds. ",
           "bullets": [
             "Routing support for short and multi-date runs",
             "Promoter and venue outreach",
-            "Schedule coordination and practical planning"
+            "Schedule coordination and practical planning (Van rentals, costs, etc.)"
           ],
-          "contact_note": "If touring is part of the plan, mention the route, timing, and what stage you are at."
+          "contact_note": "If you have already started planning and you need an extra pair of hands for this, mention the route, timing, and what stage you are at."
         },
         {
           "id": "merch-printing",
@@ -36,19 +36,19 @@
           "contact_note": "If merch is what you need, tell us the formats, rough quantities, and timing."
         },
         {
-          "id": "vinyl-printing",
-          "title": "Vinyl Printing",
-          "image": "./vinyl-press-machine.jpg",
+          "partner_name": "Dunk!pressing",
           "image_alt": "Vinyl record being pressed in a production machine",
-          "summary": "Vinyl production guidance for artists and labels that need a clear, workable route through pressing options, planning, and coordination.",
+          "summary": "Vinyl production guidance for artists, workable route through pressing options, planning, and coordination.",
+          "contact_note": "If vinyl is in the plan, mention the format, timeline, and any practical constraints.",
           "bullets": [
             "Pressing guidance and production planning",
             "Format, quantity, and option coordination",
             "Partner communication through the production process"
           ],
-          "contact_note": "If vinyl is in the plan, mention the format, timeline, and any practical constraints.",
-          "partner_name": "Dunk!pressing",
-          "partner_url": "https://www.dunkpressing.com/"
+          "partner_url": "https://www.dunkpressing.com/",
+          "title": "Vinyl Printing",
+          "id": "vinyl-printing",
+          "image": "./vinyl-press-machine.jpg"
         }
       ]
     },
@@ -62,12 +62,12 @@
           "body": "Tell us what you need, where things stand, and what timeline you are actually working with."
         },
         {
-          "title": "We scope it honestly",
-          "body": "If it fits, we come back with the route that makes the most sense and the next practical step."
+          "title": "Planning along with the band",
+          "body": "We'll sit down and discuss with you what's best for you based on the things you need. We keep the DIY ethics real so we'll work on this together and agree on next steps. "
         },
         {
-          "title": "Then we get to work",
-          "body": "Once the scope is clear, we keep the conversation practical and move through the right channel."
+          "title": "Get things done",
+          "body": "Once we agree on what the band needs, we move forward with the next steps, always keeping the band in the loop of progress. "
         }
       ]
     },
