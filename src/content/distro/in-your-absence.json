@@ -1,0 +1,12 @@
+{
+  "image_alt": "In Your Absence front",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "Released September 19, 2025\n\nGenre: post-rock\n\nCountry: Greece\n\nwe.own.the.sky's In Your Absence keeps the band's progressive post-rock atmosphere. This is their third full length album\n",
+  "order": 4,
+  "artist_or_label": "we.own.the.sky",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "format": "Vinyl",
+  "title": "In Your Absence",
+  "image": "we-own-the-sky-in-your-absence.jpg",
+  "group": "Vinyls"
+}
