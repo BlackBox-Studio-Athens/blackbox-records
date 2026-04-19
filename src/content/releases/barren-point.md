@@ -1,6 +1,6 @@
 ---
 title: Disintegration
-artist: chronoboros
+artist: afterwise
 release_date: 2026-09-01
 cover_image: 656856327_18427527979186423_8617747121554203403_n.jpg
 cover_image_alt: Disintegration by Afterwise
