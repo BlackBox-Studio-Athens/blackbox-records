@@ -1,0 +1,11 @@
+{
+  "image_alt": "Steelwitch front",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "released March 26, 2020\n\nGenre: heavy/ power metal\n\nCountry: Greece\n\nSteelwitch's heavy and power metal comes from Athens, Greece with a clean, direct approach. This is their first full length album. \n",
+  "order": 14,
+  "artist_or_label": "Steelwitch",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "title": "Steelwitch",
+  "image": "steelwitch-steelwitch.jpg",
+  "group": "Vinyls"
+}
