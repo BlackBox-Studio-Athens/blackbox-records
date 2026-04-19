@@ -1,7 +1,7 @@
 {
   "$schema": "../../../.astro/collections/home.schema.json",
   "hero": {
-    "tagline": "Heavy music on record.",
+    "tagline": "Fine music on record.",
     "image": "./hero-live-band.jpg",
     "image_alt": "Black and white live band performing on stage",
     "scroll_indicator_text": "Scroll"
@@ -35,13 +35,19 @@
       "image": "./dark-recording-studio-vintage-equipment.jpg",
       "image_alt": "About BlackBox Records",
       "paragraphs": [
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-        "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
-        "Praesent vel tortor quis nisi tincidunt eleifend. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae."
+        "We are part of the Blackbox Collective. ",
+        "Started the label because in a messed up world, music is what keeps people together.",
+        "This is a DIY driven team putting our efforts together to do some good for the shake of the bands that want to keep on being creative and release music. "
       ],
       "stats": [
-        { "key": "artists", "label": "Artists" },
-        { "key": "releases", "label": "Releases" }
+        {
+          "key": "artists",
+          "label": "Artists"
+        },
+        {
+          "key": "releases",
+          "label": "Releases"
+        }
       ]
     }
   ]
