@@ -1,0 +1,12 @@
+{
+  "image_alt": "Demikhov front",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "Genre: fuzzcore / noise-core\nCountry: Italy\nDescription: Demikhov's fuzzcore power trio from Desenzano del Garda includes six unreleased tracks on The Chemical Bath.",
+  "order": 2,
+  "artist_or_label": "Demikhov",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "format": "Vinyl",
+  "title": "The Chemical Bath",
+  "image": "demikhov.jpg",
+  "group": "Vinyls"
+}
