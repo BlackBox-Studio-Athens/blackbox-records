@@ -1,7 +1,7 @@
 {
   "image_alt": "Calf ____",
   "$schema": "../../../.astro/collections/distro.schema.json",
-  "summary": "Genre: noise rock / post-hardcore\nCountry: Greece\nDescription: CALF's noise rock/post-hardcore release from Karditsa following the trail of Unwound, Melvins, and Slint\n",
+  "summary": "Genre: noise rock/post-hardcore\n\nCountry: Greece\n\nCALF's noise rock/post-hardcore release from Karditsa, Greece following the trail of Unwound, Melvins, and Slint\n",
   "eyebrow": "",
   "order": 2,
   "artist_or_label": "Calf",
