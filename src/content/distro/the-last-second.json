@@ -1,0 +1,12 @@
+{
+  "image_alt": "The Last Second front",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "Released February 18, 2019\n\nGenre: post rock / post metal\n\nCountry: Greece\n\nTheir Methlab's instrumental rock and metal dates to 2011 in Athens, Greece as a project. This is their second full length album\n",
+  "order": 3,
+  "artist_or_label": "Their Methlab",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "format": "Vinyl",
+  "title": "The Last Second",
+  "image": "their-methlab-the-last-second.jpg",
+  "group": "Vinyls"
+}
