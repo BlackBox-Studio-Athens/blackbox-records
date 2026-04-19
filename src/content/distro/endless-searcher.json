@@ -1,0 +1,12 @@
+{
+  "image_alt": "Endless Searcher front",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "Genre: Doom Metal\n\nCountry: Sweden\n\nEndless Searcher carries Maha Sohona's fuzz rock and doom metal from northern Sweden throughout.\n",
+  "order": 8,
+  "artist_or_label": "Maha Sohona",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "format": "Vinyl",
+  "title": "Endless Searcher",
+  "image": "maha-sohona-endless-searcher.jpg",
+  "group": "Vinyls"
+}
