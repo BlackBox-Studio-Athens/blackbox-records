@@ -1,0 +1,12 @@
+{
+  "image_alt": "Rise Of The Black Fang front",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "Genre: death metal / melodic death metal / punk hardcore\nCountry: Greece\nDescription: Killgrave's Rise Of The Black Fang is a death metal release from Athens, Greece.\n",
+  "order": 2,
+  "artist_or_label": "Killgrave",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "format": "Vinyl",
+  "title": "Rise Of The Black Fang",
+  "image": "killgrave-rise-of-the-black-fang.jpg",
+  "group": "Vinyls"
+}
