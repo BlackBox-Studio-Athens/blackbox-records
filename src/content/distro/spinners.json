@@ -1,0 +1,12 @@
+{
+  "image_alt": "Spinners front",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "released December 7, 2013\n\nGenre: indie rock / punk / post-hardcore\n\nCountry: Greece\n\nSpinners' indie rock, punk, and post-hardcore trio from Athens keeps a direct, unvarnished sound.\n",
+  "order": 13,
+  "artist_or_label": "S/T",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "format": "Vinyl",
+  "title": "Spinners",
+  "image": "spinners-13.jpg",
+  "group": "Vinyls"
+}
