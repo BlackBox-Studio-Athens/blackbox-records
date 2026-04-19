@@ -1,13 +1,13 @@
 {
-  "$schema": "../../../.astro/collections/distro.schema.json",
-  "title": "BlackBox T-Shirt",
-  "group": "Clothes",
-  "artist_or_label": "BlackBox Records",
-  "image": "./t-shirt.jpg",
   "image_alt": "Plain t-shirt on a hanger",
-  "summary": "A simple shirt in the distro makes more sense to us than overbuilding merch. Something clean, useful, and easy to carry.",
-  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "Support our collective by supporting our Blackbox Studio team. ",
   "eyebrow": "BlackBox Distro",
+  "order": 2,
+  "artist_or_label": "BlackBox Records",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
   "format": "T-Shirt",
-  "order": 2
+  "title": "BlackBox Studio T-Shirt",
+  "image": "485959560_1089455589866031_1642364305898457824_n.jpg",
+  "group": "Clothes"
 }
