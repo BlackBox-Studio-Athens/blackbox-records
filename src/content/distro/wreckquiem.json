@@ -1,0 +1,12 @@
+{
+  "image_alt": "Wreckquiem front",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "released June 7, 2021\n\nGenre: alternative / punk\n\nCountry: Greece\n\nThree Way Plane has played alternative and noise rock since 2004, steadily out of Athens.\n",
+  "order": 14,
+  "artist_or_label": "Three Way Plane",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "format": "Vinyl",
+  "title": "Wreckquiem",
+  "image": "three-way-plane-your-kingdom-my-life.jpg",
+  "group": "Vinyls"
+}
