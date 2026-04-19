@@ -1,0 +1,12 @@
+{
+  "image_alt": "The Feathers of Oblivion front",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "Genre: kraut rock / psychedelic rock\n\nCountry: Czech Republic\n\nThe Feathers of Oblivion keeps the Big Bad Trip lineup while staying in Prague's psych kraut rock'n'roll lane.\n",
+  "order": 8,
+  "artist_or_label": "Olaf Olafsonn and the Big Bad Trip",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "format": "Vinyl",
+  "title": "The Feathers of Oblivion",
+  "image": "olaf-olafsson-and-the-big-bad-trip-the-feathers-of-oblivion.jpg",
+  "group": "Vinyls"
+}
