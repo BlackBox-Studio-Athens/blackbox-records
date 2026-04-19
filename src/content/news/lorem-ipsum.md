@@ -1,10 +1,11 @@
 ---
-title: Lorem ipsum dolor sit amet consectetur adipiscing elit sed do
-date: 2024-12-01
-summary: Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
-image: ./dark-concert-venue-.jpg
-image_alt: Lorem ipsum
+title: "New Release: Caregivers, by Chronoboros"
+date: 2026-03-13
+summary: "We are proud to announce our very first co-release of the new
+  Chronoboros album, Caregivers. This is a collaboration between the band,
+  Nothing to Harvest Records and us. "
+image: img_0697.jpg
+image_alt: Caregivers by Chronoboros
 section_label: Updates
 ---
-
-Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
+.
