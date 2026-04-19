@@ -1,7 +1,7 @@
 {
   "image_alt": "Transatlantic // Transiberian front",
   "$schema": "../../../.astro/collections/distro.schema.json",
-  "summary": "Genre: post-rock\nCountry: Italy\nDescription: Goodbye, Kings extend their linear post-rock approach on Transatlantic // Transiberian with this record.",
+  "summary": "Genre: post-rock\n\nCountry: Italy\n\nGoodbye, Kings extend their linear post-rock approach on Transatlantic // Transiberian with this record.",
   "order": 1,
   "artist_or_label": "Goodbye, Kings",
   "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
