@@ -1,0 +1,12 @@
+{
+  "image_alt": "Primal | Ephemeral front",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "Genre: Post metal / Hardcore\n\nCountry: Greece\n\nMass Culture formed in 2011 in Greece; Primal | Ephemeral mixes post-hardcore and metal.\n",
+  "order": 9,
+  "artist_or_label": "Mass Culture",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "format": "Vinyl",
+  "title": "Primal | Ephemeral",
+  "image": "mass-culture-primal-ephemeral.jpg",
+  "group": "Vinyls"
+}
