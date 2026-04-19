@@ -74,7 +74,7 @@
     {
       "type": "inquiry",
       "title": "Start an Inquiry",
-      "intro": "Send one inquiry and we will route it through the service path that actually fits.",
+      "intro": "Send one inquiry and we'll get back to you ASAP. ",
       "email": "blackboxrecordsathens@gmail.com",
       "submit_text": "Compose Inquiry"
     }
