@@ -1,75 +1,125 @@
 # Pitfalls Research: BlackBox Records Native Commerce Migration
 
-**Project:** BlackBox Records Native Commerce Migration
-**Domain:** Brownfield Astro storefront adding low-volume native commerce
-**Researched:** 2026-04-06
+**Project:** BlackBox Records Native Commerce Migration  
+**Domain:** Sandbox implementation pitfalls for Astro + Workers + Stripe + D1  
+**Researched:** 2026-04-19  
 **Confidence:** HIGH
 
-## Pitfalls
+## Primary Risks
 
-### 1. Treating the current static host as if it can safely grow live commerce routes
+### 1. Sending the wrong embedded Checkout request shape
 
-- Warning signs: planning assumes GitHub Pages can keep hosting checkout-session creation or webhook endpoints; runtime/adapter decision is postponed
-- Prevention strategy: make hosting/runtime the first phase and require explicit human approval before any implementation planning continues
-- Phase: Phase 1
+**Risk**
+- carrying forward the stale `embedded_page` wording into actual API calls
 
-### 2. Trusting browser return pages instead of Stripe webhooks for paid state
+**Why it matters**
+- current Stripe docs use `ui_mode: embedded`
+- the milestone should normalize the docs and code to the current API shape
 
-- Warning signs: success page logic decides that payment succeeded; inventory/order state changes happen from client-side code
-- Prevention strategy: require webhook-authoritative status transitions and make return pages read status only
-- Phase: Phase 3
+**Prevention**
+- treat Stripe’s current docs as authoritative
+- keep the request contract centralized in the checkout-session server route
 
-### 3. Leaking privileged writes to the browser
+### 2. Letting the browser become authoritative
 
-- Warning signs: browser can write order or inventory rows directly; Supabase service-role logic is reused on the client; “quick” inventory updates bypass the server
-- Prevention strategy: keep all authoritative writes in server-owned routes and explicitly document the trust boundary in ADRs
-- Phase: Phases 1 and 3
+**Risk**
+- using return pages as payment truth
+- letting browser code write D1 inventory or order state
 
-### 4. Building reservation logic too early
+**Why it matters**
+- it breaks the trust boundary that the whole migration is built around
 
-- Warning signs: planning introduces hold timers, stock reservations, or cart expiry workflows despite the v1 non-goal
-- Prevention strategy: keep v1 semantics simple: no reservation, decrement only after webhook-confirmed payment, and document oversell risk review as a future decision
-- Phase: Phase 3
+**Prevention**
+- verified webhooks own paid transitions
+- browser only reads safe projections and triggers server endpoints
+- D1 writes stay server-only
 
-### 5. Duplicating the catalog between Stripe and Astro content
+### 3. Overloading Workers with unnecessary dynamic work
 
-- Warning signs: sellable prices or product metadata are copied into Astro content files “just for now”; Stripe is no longer the single pricing authority
-- Prevention strategy: define a single catalog authority in the architecture ADR and treat Astro content as editorial only
-- Phase: Phases 1 and 2
+**Risk**
+- turning too much of the site into Worker-rendered pages
+- doing heavy data work inside request handlers
 
-### 6. Overbuilding shipping operations for low order volume
+**Why it matters**
+- Workers Free has limited CPU per request
+- the site already has a good static baseline that should be preserved
 
-- Warning signs: roadmap jumps straight to automated multi-step fulfillment flows, admin dashboards, or multi-carrier abstractions
-- Prevention strategy: keep BOX NOW work focused on locker selection plus the minimum operator-ready order metadata for v1
-- Phase: Phase 4
+**Prevention**
+- keep brochure and editorial routes prerendered where practical
+- keep server work focused on checkout, session retrieval, and webhooks
 
-### 7. Ignoring API-version and terminology drift in Stripe embedded Checkout docs
+### 4. Duplicating catalog ownership
 
-- Warning signs: plan mixes `embedded`, `embedded_page`, and older guide examples without deciding what API version/request shape to target
-- Prevention strategy: pin Stripe API/versioning expectations in Phase 1 ADR work and validate examples against the current API reference before implementation
-- Phase: Phase 1
+**Risk**
+- keeping sellable price truth in both Stripe and Astro content
 
-### 8. Launching without a reversible cutover
+**Why it matters**
+- creates drift and operator confusion
 
-- Warning signs: `/shop/` replacement is treated as a single irreversible deploy; no fallback path remains to the current external store
-- Prevention strategy: require phased cutover, reconciliation checks, and rollback criteria before replacing the live external handoff
-- Phase: Phases 5 and 6
+**Prevention**
+- Astro content owns editorial presentation
+- Stripe owns sellable name/price/currency truth for checkout purposes
+- use an explicit join key for the curated subset
 
-## Roadmap Implications
+### 5. Missing idempotency in the webhook path
 
-- Runtime and secret-boundary ADRs are mandatory before feature planning gets specific.
-- The first implementation slice should stop before inventory mutation.
-- Webhook idempotency and reconciliation need to be planned before shipping or launch phases.
-- BOX NOW integration should be scoped to selection + persisted metadata first.
-- Launch readiness must include rollback to the current external-store path.
+**Risk**
+- duplicate webhook delivery or concurrent handling causes double stock decrement or conflicting order states
+
+**Why it matters**
+- Stripe retries webhooks and checkout success can be observed more than once
+
+**Prevention**
+- store order state in D1 with an idempotent transition strategy
+- make inventory decrement conditional on first successful paid transition
+- route oversell or mismatch cases to `needs_review`
+
+### 6. Expanding shipping scope too early
+
+**Risk**
+- adding non-Greece shipping, fuller BOX NOW data capture, or automation in the sandbox milestone
+
+**Why it matters**
+- shipping complexity grows faster than storefront complexity
+
+**Prevention**
+- keep the milestone Greece-only
+- persist only `locker_id`, `country_code`, and `locker_name_or_label`
+- keep fulfillment manual
+
+### 7. Letting sandbox work mutate production behavior
+
+**Risk**
+- changing `/shop/` or navigation in a way that unintentionally affects the live GitHub Pages path before go-live review
+
+**Why it matters**
+- the user explicitly wants a sandbox milestone before production launch work
+
+**Prevention**
+- keep production cutover out of scope
+- document the deployment split clearly
+- require a separate go-live milestone for live traffic change
+
+## Phase Mapping
+
+| Pitfall | Phase that should address it |
+|---------|------------------------------|
+| Wrong Stripe embedded request shape | Phase 7 |
+| Browser becomes authoritative | Phases 7 and 8 |
+| Worker runtime too dynamic | Phase 5 |
+| Duplicate catalog ownership | Phase 6 |
+| Missing idempotency | Phase 8 |
+| Shipping scope creep | Phase 9 |
+| Sandbox/prod drift | Phase 5 and Phase 10 |
 
 ## Sources
 
-- [Astro on-demand rendering](https://docs.astro.build/en/guides/on-demand-rendering/)
-- [Stripe Checkout Sessions create API](https://docs.stripe.com/api/checkout/sessions/create)
-- [Stripe embedded Checkout guide](https://docs.stripe.com/payments/accept-a-payment?payment-ui=checkout&ui=embedded-form)
-- [Stripe handling payment events](https://docs.stripe.com/payments/handling-payment-events)
-- [BOX NOW API Manual v7.2](https://boxnow.gr/media/hidden/BoxNow%20API%20Manual%20%28v.7.2%29.pdf)
+- [Cloudflare Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
+- [Cloudflare Workers secrets](https://developers.cloudflare.com/workers/configuration/secrets/)
+- [Cloudflare D1 Worker API](https://developers.cloudflare.com/d1/worker-api/)
+- [Stripe embedded Checkout build guide](https://docs.stripe.com/payments/checkout/build-subscriptions?payment-ui=embedded-form)
+- [Stripe custom success / redirect behavior](https://docs.stripe.com/payments/checkout/custom-success-page?payment-ui=embedded-form)
+- [Stripe checkout fulfillment](https://docs.stripe.com/checkout/fulfillment?payment-ui=embedded-form)
 
 ---
-*Research completed: 2026-04-06*
+*Research completed: 2026-04-19*

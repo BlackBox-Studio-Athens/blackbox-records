@@ -1,102 +1,129 @@
 # Architecture Research: BlackBox Records Native Commerce Migration
 
-**Project:** BlackBox Records Native Commerce Migration
-**Domain:** Brownfield Astro storefront with native commerce added
-**Researched:** 2026-04-06
+**Project:** BlackBox Records Native Commerce Migration  
+**Domain:** Sandbox implementation architecture for native commerce  
+**Researched:** 2026-04-19  
 **Confidence:** HIGH
 
 ## Recommended Architecture
 
-Keep the current Astro storefront as the presentation shell and introduce a small server-owned commerce boundary inside the same codebase. Most public editorial routes should stay prerendered. Only the commerce-specific pages and API endpoints should opt out of prerendering and run on demand behind an Astro adapter-backed runtime.
+The right architecture for this milestone is a narrow extension of the current Astro storefront, not a second application. The existing Astro pages, app shell, and content collections remain the canonical browsing surface. Cloudflare Workers adds the server boundary that GitHub Pages could not provide, and D1 adds the minimum SQL state required for inventory and orders.
 
-Stripe should own product, price, checkout-session, and payment-event truth. Supabase should own only inventory and order lifecycle state that the storefront needs to query or reconcile. BOX NOW should initially contribute locker selection metadata and low-volume fulfillment affordances, not a full shipping orchestration subsystem.
+## Brownfield Integration Points
 
-## Major Components
+The repo already has the right surfaces for the first commerce slice:
+- `src/pages/shop/index.astro` is the current redirect route that should become the native store entry.
+- `src/config/site.ts` and distro card/link helpers currently resolve `/shop/` to Fourthwall and will need to route into the native flow for sandbox.
+- `src/content/distro/*.json` already provides the editorial product presentation layer.
+- The app shell already owns top-level navigation, so the native store routes should fit inside the same shell-managed experience instead of creating a separate storefront shell.
 
-1. **Astro storefront shell**
-   - Responsibilities: marketing/content pages, app-shell navigation, product discovery UI, success/cancel pages, account-free order status messaging
-   - Existing assets: `src/pages/**`, `src/layouts/SiteLayout.astro`, `src/components/app-shell/**`, `src/content/**`
+## New / Changed Layers
 
-2. **Server-owned commerce routes**
-   - Responsibilities: create Checkout Sessions, validate webhooks, read Stripe catalog data for sellable views, expose only safe projections to the browser
-   - Future runtime: Astro adapter-backed server routes with `prerender = false`
+### 1. Worker Runtime Layer
 
-3. **Stripe boundary**
-   - Responsibilities: authoritative products/prices, checkout configuration, payment lifecycle events
-   - Key rule: browser never uses secret-key operations
+Purpose:
+- host server endpoints for Checkout Session creation, webhook verification, and trusted session retrieval
+- keep secrets and D1 access server-only
+- preserve static prerendering for the rest of the site where practical
 
-4. **Supabase order/inventory boundary**
-   - Responsibilities: order lifecycle state, inventory levels, idempotent webhook side effects, reconciliation support
-   - Key rule: browser never receives write capability for authoritative stock/order mutations
+Key constraints:
+- use on-demand routes only where server execution is required
+- keep handlers thin because Workers Free CPU limits are tight
+- do not disturb the current production GitHub Pages deployment during sandbox work
 
-5. **BOX NOW shipping boundary**
-   - Responsibilities: locker selection capture for Greek shipments, persisted locker `locationId`, and fulfillment-ready order metadata
-   - Key rule: keep v1 thin and low-maintenance
+### 2. Catalog Projection Layer
 
-## Target Data Flow
+Purpose:
+- join Astro distro editorial content to Stripe product/price state for the curated sellable subset
 
-### Product browse flow
+Responsibilities:
+- Astro content remains the presentation and editorial layer
+- Stripe product/price data supplies sellable title/price/currency truth
+- the join key must be explicit and stable
 
-1. Storefront page requests sellable catalog projection.
-2. Server-owned commerce read path resolves Stripe Products/Prices into a storefront-safe view model.
-3. Astro page renders product data without creating a second pricing authority in content files.
+What not to do:
+- do not recreate pricing authority in Astro content
+- do not let the browser fetch Stripe secrets or internal catalog joins directly
 
-### Checkout flow
+### 3. Checkout Flow Layer
 
-1. Shopper chooses a product and shipping path.
-2. Browser posts a minimal request to a server-owned route.
-3. Server validates allowed inputs, resolves current Stripe price IDs, and creates a Checkout Session.
-4. Storefront renders embedded Checkout using the returned session/client context.
+Purpose:
+- turn a product-detail `Buy Now` action into a server-created Checkout Session and mount embedded Checkout on a dedicated route
 
-### Payment and order flow
+Responsibilities:
+- create a single-item Checkout Session on the server
+- return the `client_secret` needed by the embedded Checkout client
+- render in-site return/retry states without treating them as authoritative payment truth
 
-1. Shopper completes payment in Stripe Checkout.
-2. Stripe emits webhook events to a server-owned webhook endpoint.
-3. Server verifies the webhook signature, resolves the order context, marks the order paid, and decrements inventory.
-4. Browser-facing return page reads already-authoritative status; it does not decide payment success.
+Current Stripe integration implications:
+- use `ui_mode: embedded`
+- provide `return_url` when redirects are allowed
+- consider `redirect_on_completion: if_required` to keep card success in-page while still supporting redirect-based methods if enabled
 
-### Shipping flow
+### 4. D1 Order And Inventory Layer
 
-1. Shopper selects a BOX NOW locker for eligible Greek orders.
-2. Locker `locationId` and display metadata become part of the trusted order context.
-3. After payment confirmation, operator can fulfill through a thin BOX NOW path with the selected locker info available.
+Purpose:
+- store only the operational state BlackBox needs to fulfill paid orders and keep stock correct
 
-## Build Order Implications
+Responsibilities:
+- represent orders with the approved minimal states: `pending_payment`, `paid`, `closed_unpaid`, `needs_review`
+- store inventory counts
+- attach the thinnest approved BOX NOW metadata for paid Greek orders
+- enforce idempotent updates so paid inventory decrement happens once
 
-### Phase 1 comes first because:
+What not to do:
+- do not let the browser write this data
+- do not add reservation logic
+- do not turn D1 into a second product catalog
 
-- Runtime and secret boundaries determine every later integration choice.
-- Checkout creation and webhooks cannot be built safely until the host/runtime path exists.
-- The team needs a migration and rollback strategy before replacing `/shop/`.
+### 5. BOX NOW Shipping Gate
 
-### Phase 2 follows because:
+Purpose:
+- add the approved Greece-only locker selection step before payment
 
-- Catalog display and embedded checkout session creation can prove the new runtime without yet mutating stock.
-- It creates the smallest meaningful end-to-end storefront slice.
+Responsibilities:
+- gate the native checkout flow to Greece only
+- capture locker choice before session creation
+- persist only `locker_id`, `country_code`, and `locker_name_or_label`
+- keep fulfillment manual in the partner portal
 
-### Phase 3 must precede shipping cutover because:
+What not to do:
+- do not introduce non-Greece shipping in this milestone
+- do not add automated shipment creation yet
 
-- Paid-order authority and inventory semantics are the highest-risk business rules.
-- Shipping and launch should sit on top of a proven post-payment state model.
+## End-to-End Data Flow
 
-### Phase 4 stays thin because:
+1. Shopper lands on native `/shop/` collection route inside the existing app shell.
+2. Shopper opens a product detail page built from Astro editorial content plus Stripe-backed sellable data.
+3. Shopper presses `Buy Now`.
+4. Checkout route enforces the Greece-only BOX NOW gate and captures locker choice before payment.
+5. Front end calls a Worker endpoint to create a single-item Checkout Session.
+6. Worker creates the Session in Stripe sandbox, using the selected product/price plus pre-payment shipping context, and returns the `client_secret`.
+7. Embedded Checkout mounts on the dedicated in-site checkout route.
+8. Shopper completes payment. Return UX may render based on session retrieval, but it is not authoritative.
+9. Stripe sends webhook events to the Worker endpoint.
+10. Worker verifies the webhook signature, retrieves the Checkout Session details it needs, applies idempotent D1 state changes, and decrements inventory only after confirmed payment success.
+11. Operator uses Stripe Dashboard plus D1 inspection for manual reconciliation and BOX NOW partner-portal fulfillment.
 
-- Low order volume favors a simple fulfillment path over early automation.
-- BOX NOW selection is required, but full shipping automation is not.
+## Build Order Recommendation
 
-## Recommended Boundary Rules
+1. Runtime and secret plumbing
+2. Native store entry and catalog projection
+3. Embedded checkout session creation and mount
+4. Webhook-backed order and inventory state
+5. Greece-only locker step
+6. End-to-end sandbox verification
 
-- Keep Stripe API versioning explicit in Phase 1 ADR work because current docs show naming drift between guide prose and API reference for embedded Checkout.
-- Do not let Astro content collections become the sellable catalog source once native commerce is live.
-- Keep client code read-only for authoritative order/inventory state.
-- Add idempotency rules to webhook-driven mutations before launch planning.
+This order keeps the highest-risk trust boundaries ahead of the lower-risk shipping and review work.
 
 ## Sources
 
 - [Astro on-demand rendering](https://docs.astro.build/en/guides/on-demand-rendering/)
-- [Stripe Checkout Sessions create API](https://docs.stripe.com/api/checkout/sessions/create)
-- [Stripe handling payment events](https://docs.stripe.com/payments/handling-payment-events)
-- [BOX NOW API Manual v7.2](https://boxnow.gr/media/hidden/BoxNow%20API%20Manual%20%28v.7.2%29.pdf)
+- [Cloudflare Workers secrets](https://developers.cloudflare.com/workers/configuration/secrets/)
+- [Cloudflare D1 Worker API](https://developers.cloudflare.com/d1/worker-api/)
+- [Stripe embedded Checkout build guide](https://docs.stripe.com/payments/checkout/build-subscriptions?payment-ui=embedded-form)
+- [Stripe custom success / redirect behavior](https://docs.stripe.com/payments/checkout/custom-success-page?payment-ui=embedded-form)
+- [Stripe checkout fulfillment](https://docs.stripe.com/checkout/fulfillment?payment-ui=embedded-form)
 
 ---
-*Research completed: 2026-04-06*
+*Research completed: 2026-04-19*
