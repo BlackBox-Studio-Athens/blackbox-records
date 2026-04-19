@@ -8,5 +8,5 @@ image_alt: Chronoboros
 bio: |
   Chronoboros is a Greek hardcore project leaning into slow-burn intensity,
   cavernous tone, and a stark sense of space.
-upcoming_release: Upcoming LP (title TBA).
+upcoming_release: ""
 ---
