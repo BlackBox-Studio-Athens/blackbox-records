@@ -1,0 +1,12 @@
+{
+  "image_alt": "Crawl / Eat Them Dead Or Alive front",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "Released October 6, 2017\n\nGenre: experimental rock / math-rock\n\nCountry: Greece\n\nZebu / Dead Elephant split experimental rock and math-rock with heavier edges.\n\n",
+  "order": 21,
+  "artist_or_label": "Zebu / Dead Elephant ",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "format": "Vinyl",
+  "title": "Crawl / Eat Them Dead Or Alive, Split 7\"",
+  "image": "zebu-dead-elephant-split-7-.jpg",
+  "group": "Vinyls"
+}
