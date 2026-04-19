@@ -1,7 +1,7 @@
 {
   "image_alt": "aftermaths front",
   "$schema": "../../../.astro/collections/distro.schema.json",
-  "summary": "Genre: Harcore Punk\nCountry: Croatia\nDescription: Indoctrinate's aftermaths is a raw, straightforward hardcore punk release from Croatia.\n",
+  "summary": "Genre: Harcore Punk\n\nCountry: Croatia\n\nIndoctrinate's aftermaths is a raw, straightforward hardcore punk release from Croatia.\n",
   "order": 1,
   "artist_or_label": "Indoctrinate",
   "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
