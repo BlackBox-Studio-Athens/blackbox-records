@@ -1,7 +1,7 @@
 {
   "image_alt": "Stack of vinyl records",
   "$schema": "../../../.astro/collections/distro.schema.json",
-  "summary": "Genre: Post metal / Hardcore\nCountry: Greece\nDescription: Mass Culture formed in 2011 in Greece; Barren Point mixes post-hardcore and metal\n",
+  "summary": "Genre: Post metal / Hardcore\n\nCountry: Greece\n\nMass Culture formed in 2011 in Greece; Barren Point mixes post-hardcore and metal\n",
   "eyebrow": "BlackBox Pick",
   "order": 1,
   "artist_or_label": "Mass Culture",
