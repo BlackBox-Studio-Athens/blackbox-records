@@ -9,12 +9,6 @@ bandcamp_embed_url: https://chronoboros.bandcamp.com/album/caregivers
 summary: |-
   released March 13, 2026
 
-  Guitar/ Throat - Nikos Zalimoglou
-  Bass - Nikos Tzamalis
-  Drums - Iasonas Mitsios
-
-  Tsev featured on “Bone Char”
-
   All music written and performed by Chronoboros
   All lyrics written by Nikos Zalimoglou
 
