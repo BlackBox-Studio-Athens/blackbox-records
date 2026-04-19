@@ -29,7 +29,7 @@ The UI contracts for the store flow and BOX NOW locker flow were already approve
 ## Phase Details
 
 ### Phase 5: Cloudflare Runtime And Secret Plumbing
-**Goal**: Add the Cloudflare Worker runtime for sandbox commerce work without disturbing the live production path.
+**Goal**: Add the Cloudflare Worker runtime for sandbox commerce work, keep the Worker path as the active alpha runtime, and avoid disturbing the live GitHub Pages baseline during this milestone.
 **Depends on**: Archived milestone v1.0 decisions
 **Requirements**: DEPL-01, DEPL-02, DEPL-03, SECU-01
 **Success Criteria** (what must be TRUE):
@@ -42,7 +42,7 @@ The UI contracts for the store flow and BOX NOW locker flow were already approve
 Plans:
 - [ ] 05-01: Add the Cloudflare adapter/runtime configuration and keep brochure routes prerendered where practical
 - [ ] 05-02: Define Worker bindings for D1 and server-only secrets across local and deployed sandbox environments
-- [ ] 05-03: Update the deployment path so sandbox Worker deploys do not disturb the live GitHub Pages production site
+- [ ] 05-03: Add a dedicated sandbox Worker deployment workflow with branch automation and manual override, without disturbing the live GitHub Pages production site
 
 ### Phase 6: Native Storefront Slice
 **Goal**: Turn `/shop/` into the approved curated native store entry while preserving the existing shell and editorial model.

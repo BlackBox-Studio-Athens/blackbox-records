@@ -76,6 +76,7 @@ Current official docs matter here. Astro’s on-demand rendering guidance allows
 | Keep separate D1 databases for beta and production, with local D1 for development | Simpler and safer than schema or table-prefix isolation, and still fits the current free-tier limits | ✓ Good |
 | Use Prisma for runtime database access while staying on D1 | Improves readability and maintainability without forcing an immediate database change | ✓ Good |
 | Use Prisma schema plus `prisma migrate diff`, with Wrangler D1 migrations applying SQL | Matches Prisma's current D1 guidance without pretending Prisma-only migrations are first-class on D1 | ✓ Good |
+| Use a dedicated sandbox branch plus manual workflow dispatch for Worker deploys | Keeps sandbox automation independent from the legacy Pages workflow while preserving a manual override | ✓ Good |
 | Keep Stripe as the authority for catalog, pricing, Checkout Sessions, and payment state | Avoids duplicate admin surfaces and keeps pricing in the payment system | ✓ Good |
 | Keep browser code away from authoritative order and inventory writes | Protects stock and paid-order state from untrusted clients | ✓ Good |
 | Use current embedded Checkout terminology and request shape | Stripe’s current docs use `ui_mode: embedded`, `return_url`, and optional `redirect_on_completion` tuning | ✓ Good |

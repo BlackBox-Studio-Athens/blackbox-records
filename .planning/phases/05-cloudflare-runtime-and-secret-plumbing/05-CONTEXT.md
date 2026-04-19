@@ -1,7 +1,7 @@
 # Phase 5: Cloudflare Runtime And Secret Plumbing - Context
 
 **Gathered:** 2026-04-20
-**Status:** In discussion
+**Status:** Ready for planning
 
 <domain>
 ## Phase Boundary
@@ -43,8 +43,10 @@ Lock the active Cloudflare runtime shape for alpha and sandbox work: Astro deplo
 - **D-21:** Apply the same migration chain across local, beta, and later production databases.
 - **D-22:** Prefer forward-only, SQL-first migrations over environment-specific schema drift or manual dashboard edits.
 
-### Still open
-- Exact deploy-trigger policy for automated Worker deployments is still open and should be finalized before `05-CONTEXT.md` is treated as fully closed for planning.
+### Deploy automation
+- **D-23:** Use a dedicated `sandbox` branch for automatic sandbox Worker deploys.
+- **D-24:** Also provide a `workflow_dispatch` override so sandbox deploys can be triggered manually without coupling them to the GitHub Pages workflow.
+- **D-25:** Use a separate GitHub Actions workflow for Worker sandbox deploys rather than Cloudflare Workers Builds for this repo, because the repo already uses GitHub Actions and the user prefers a monorepo-style automation path.
 
 ### the agent's Discretion
 - Exact Wrangler file shape and environment naming
@@ -62,6 +64,7 @@ Lock the active Cloudflare runtime shape for alpha and sandbox work: Astro deplo
 - Avoid inventing table prefixes or schema conventions to compensate for environment separation that the platform already supports natively with separate databases.
 - Keep database creation and secret provisioning scriptable through Wrangler so future automation can run through GitHub Actions or agent-driven CLI flows.
 - Document clearly that deferring Cloudflare Access is a deliberate tradeoff, not an implicit security guarantee.
+- Prefer a stable `workers.dev` sandbox hostname in this milestone unless a later phase intentionally adds a custom domain.
 
 </specifics>
 
@@ -91,6 +94,8 @@ Lock the active Cloudflare runtime shape for alpha and sandbox work: Astro deplo
 - [Prisma on Cloudflare D1](https://docs.prisma.io/docs/v6/orm/overview/databases/cloudflare-d1) - Current Prisma runtime and migration guidance for D1
 - [Deploy Prisma to Cloudflare Workers](https://docs.prisma.io/docs/v6/orm/prisma-client/deployment/edge/deploy-to-cloudflare) - Worker-compatible Prisma runtime requirements
 - [Cloudflare Workers preview URLs](https://developers.cloudflare.com/workers/configuration/previews/) - Current public-by-default behavior and Access option for preview endpoints
+- [Cloudflare Workers GitHub Actions](https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/) - Official external CI/CD workflow for Wrangler deploys
+- [Cloudflare Build Branches](https://developers.cloudflare.com/workers/ci-cd/builds/build-branches/) - Reference for branch-trigger behavior when comparing CI/CD options
 
 </canonical_refs>
 
@@ -119,6 +124,7 @@ Lock the active Cloudflare runtime shape for alpha and sandbox work: Astro deplo
 - Prisma-only `migrate dev/deploy` as the migration authority while staying on D1
 - Liquibase, Flyway, or any additional migration framework on top of the Prisma-plus-Wrangler path for v1.1
 - Coupling Worker deployment automation directly to the legacy Pages production workflow before Phase 5 closes
+- Treating Workers Builds as mandatory when the repo already has a functioning GitHub Actions-based deployment workflow
 
 </deferred>
 

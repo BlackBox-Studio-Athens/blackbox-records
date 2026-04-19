@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 5 discussion in progress
-last_updated: "2026-04-20T10:45:00.000Z"
-last_activity: 2026-04-20 -- Phase 5 runtime, D1, and migration decisions captured; deploy trigger policy still open
+stopped_at: Phase 5 planned
+last_updated: "2026-04-20T12:10:00.000Z"
+last_activity: 2026-04-20 -- Phase 5 research, validation, and execution plans created
 progress:
   total_phases: 6
   completed_phases: 0
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-20)
 ## Current Position
 
 Phase: 5 (1 of 6 in current milestone) — Cloudflare Runtime And Secret Plumbing
-Plan: -
-Status: Discussion in progress
-Last activity: 2026-04-20 -- Phase 5 runtime, D1, and migration decisions captured; deploy trigger policy still open
+Plan: 05-01..05-03
+Status: Planned and ready to execute
+Last activity: 2026-04-20 -- Phase 5 research, validation, and execution plans created
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -63,7 +63,7 @@ Recent decisions affecting current work:
 - [v1.0] The first native sellable slice is a hand-picked distro subset rendered as `/shop/` collection -> product detail -> dedicated checkout, with single-item `Buy Now` and no cart.
 - [v1.0] v1 order state stays minimal — `pending_payment`, `paid`, `closed_unpaid`, and `needs_review` — with Checkout-session webhooks as the authoritative paid/unpaid signals.
 - [v1.0] MVP shipping is Greece only, BOX NOW locker selection happens before payment, and fulfillment stays manual through the partner portal.
-- [v1.1] Phase 5 now locks a Workers-first alpha runtime, Worker-managed runtime secrets, separate beta and future production D1 databases, Prisma for runtime database access on D1, and Prisma-generated SQL applied through Wrangler/D1 migrations.
+- [v1.1] Phase 5 now locks a Workers-first alpha runtime, Worker-managed runtime secrets, separate beta and future production D1 databases, Prisma for runtime database access on D1, Prisma-generated SQL applied through Wrangler/D1 migrations, and a dedicated sandbox-branch plus workflow-dispatch deploy path.
 
 ### Pending Todos
 
@@ -72,12 +72,11 @@ Recent decisions affecting current work:
 ### Blockers/Concerns
 
 - No production cutover work is approved in this milestone.
-- Phase 5 deploy-trigger automation policy is still open.
 - Cloudflare Access is intentionally deferred, so the sandbox Worker must not be treated as strongly access-controlled.
 - UI contracts for the store and locker flow already exist from v1.0; rerun `$gsd-ui-phase` only if implementation scope materially changes them.
 
 ## Session Continuity
 
-Last session: 2026-04-20T10:45:00.000Z
-Stopped at: Phase 5 discussion in progress
+Last session: 2026-04-20T12:10:00.000Z
+Stopped at: Phase 5 planned
 Resume file: .planning/ROADMAP.md

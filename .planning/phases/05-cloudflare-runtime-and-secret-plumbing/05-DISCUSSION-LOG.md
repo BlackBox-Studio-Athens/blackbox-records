@@ -1,11 +1,11 @@
 # Phase 5: Cloudflare Runtime And Secret Plumbing - Discussion Log
 
 **Date:** 2026-04-20
-**Status:** Finalized except for deploy-trigger policy
+**Status:** Finalized into `05-CONTEXT.md`
 
 ## Summary
 
-This discussion locked the Workers-first alpha runtime, the Worker-secret model, the D1 environment strategy, and the Prisma-on-D1 runtime posture. The remaining open item is the exact automated deploy-trigger policy.
+This discussion locked the Workers-first alpha runtime, the Worker-secret model, the D1 environment strategy, the Prisma-on-D1 runtime posture, and the sandbox deploy-trigger policy.
 
 ## Discussion Trail
 
@@ -49,6 +49,11 @@ This discussion locked the Workers-first alpha runtime, the Worker-secret model,
 - The docs support Prisma runtime access on D1, but the supported D1 migration workflow still routes through D1/Wrangler migrations, with `prisma migrate diff` generating SQL.
 - User chose to stay on D1 with Prisma runtime access rather than switch databases for first-class Prisma-only migrations.
 
+### Deploy automation direction
+- User wanted full automation, no coupling to the Pages workflow, and a monorepo-style setup.
+- The recommended default was a dedicated sandbox branch for automatic deploys plus a `workflow_dispatch` override.
+- That recommendation is now locked for planning so Phase 5 can produce a concrete CI/CD plan.
+
 ## Finalized decisions so far
 
 - Workers-first alpha runtime on Cloudflare
@@ -59,10 +64,7 @@ This discussion locked the Workers-first alpha runtime, the Worker-secret model,
 - Prisma runtime access on D1
 - Prisma schema plus `prisma migrate diff`, with Wrangler/D1 applying migrations as the authoritative migration system
 - Cloudflare Access deferred until a later live-mode milestone
-
-## Still open
-
-- Exact automated deploy trigger policy for Worker sandbox deploys
+- Dedicated `sandbox` branch auto-deploy plus `workflow_dispatch` override for the Worker sandbox workflow
 
 ## Notes for planning
 
@@ -70,6 +72,7 @@ This discussion locked the Workers-first alpha runtime, the Worker-secret model,
 - Future plans should assume a second production D1 database is feasible on the free tier and should not be avoided by inventing table-prefix or shared-database workarounds.
 - If later implementation requires seed data, keep it separate from schema migrations.
 - Future plans should avoid describing the sandbox environment as private unless Access or an equivalent control is actually added.
+- Future plans should keep Worker sandbox deploy automation independent from the GitHub Pages workflow.
 
 ---
 
