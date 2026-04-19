@@ -1,0 +1,12 @@
+{
+  "image_alt": "RITE front",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "released February 20, 2017\n\nGenre: experimental / nowave / post punk\n\nCountry: Greece\n\nThe You and What Army Faction's RITE pairs experimental no-wave and post-punk ideas. This is their sixth full length album\n",
+  "order": 2,
+  "artist_or_label": "The You and What Army Faction",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "format": "Vinyl",
+  "title": "RITE",
+  "image": "the-you-and-what-army-faction-rite.jpg",
+  "group": "Vinyls"
+}
