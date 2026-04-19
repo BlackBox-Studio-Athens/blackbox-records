@@ -1,0 +1,12 @@
+{
+  "image_alt": "Magic Sleazeball Corrida front",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "Released December 27, 2023\n\nGenre: garage punk / garage rock / noise rock\n\nCountry: Italy\n\nSkinny Peachfuzz has played garage punk since 2018, with fast guitars and heavy fuzz. This is their first full length album\n",
+  "order": 11,
+  "artist_or_label": "Skinny Peachfuzz",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "format": "Vinyl",
+  "title": "Magic Sleazeball Corrida",
+  "image": "skinny-peach-fuzz-7-.jpg",
+  "group": "Vinyls"
+}
