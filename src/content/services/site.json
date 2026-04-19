@@ -25,7 +25,7 @@
         {
           "id": "merch-printing",
           "title": "Merch Printing",
-          "image": "./merch-printing.jpg",
+          "image": "printing.png",
           "image_alt": "Workshop scene with a person preparing a t-shirt with a heat press",
           "summary": "Merch production support for bands that need solid runs handled cleanly, without turning the whole thing into a generic catalog exercise.",
           "bullets": [
