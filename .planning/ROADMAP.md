@@ -6,6 +6,8 @@ This roadmap covers milestone `v1.1`, the Stripe Sandbox Integration milestone. 
 
 The UI contracts for the store flow and BOX NOW locker flow were already approved in the archived pre-sandbox milestone. Re-run `$gsd-ui-phase` only if implementation work materially changes those approved shopper flows.
 
+## Milestone v1.1: Stripe Sandbox Integration
+
 ## Milestone Position
 
 - **Current milestone:** Stripe Sandbox Integration

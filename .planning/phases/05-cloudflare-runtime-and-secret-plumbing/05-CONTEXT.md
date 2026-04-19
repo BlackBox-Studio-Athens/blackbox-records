@@ -1,7 +1,7 @@
 # Phase 5: Cloudflare Runtime And Secret Plumbing - Context
 
 **Gathered:** 2026-04-20
-**Status:** Ready for planning
+**Status:** Planning complete
 
 <domain>
 ## Phase Boundary
@@ -76,7 +76,7 @@ Lock the active Cloudflare runtime shape for alpha and sandbox work: Astro deplo
 ### Phase requirements and milestone rules
 - `.planning/ROADMAP.md` - Phase 5 goal, success criteria, and plan inventory
 - `.planning/REQUIREMENTS.md` - Active milestone requirements for runtime, secrets, and operations
-- `.planning/STATE.md` - Current focus and remaining open item for deploy automation
+- `.planning/STATE.md` - Current milestone position and execution handoff state
 
 ### Architecture and repo constraints
 - `.planning/PROJECT.md` - Milestone context and key decisions that must stay in sync with this phase
