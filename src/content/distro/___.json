@@ -1,0 +1,13 @@
+{
+  "image_alt": "Calf ____",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "Genre: noise rock / post-hardcore\nCountry: Greece\nDescription: CALF's noise rock/post-hardcore release from Karditsa following the trail of Unwound, Melvins, and Slint\n",
+  "eyebrow": "",
+  "order": 2,
+  "artist_or_label": "Calf",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "format": "Vinyl",
+  "title": "___",
+  "image": "calf-karditsa.jpg",
+  "group": "Vinyls"
+}
