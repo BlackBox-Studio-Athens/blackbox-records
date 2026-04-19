@@ -1,0 +1,13 @@
+{
+  "image_alt": "Noise Without Decay front",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "Genre: Sludge / Noise-Rock\n\nCountry: Greece\n\nLast Rizla's Noise Without Decay leans into sludge and noise-rock from Athens, Greece.\n",
+  "eyebrow": "",
+  "order": 6,
+  "artist_or_label": "Last Rizla",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "format": "Vinyl",
+  "title": "Noise Without Decay",
+  "image": "last-rizla-noise-without-decay.jpg",
+  "group": "Vinyls"
+}
