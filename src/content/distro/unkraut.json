@@ -1,0 +1,12 @@
+{
+  "image_alt": "UnKraut front",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "Released: December 10, 2021\n\nGenre: kraut rock / space rock / heavy psych\n\nCountry: Austria\n\nSpeck keeps UnKraut's space kraut energy from 2019 in Austria.\n",
+  "order": 12,
+  "artist_or_label": "Speck",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "format": "Vinyl",
+  "title": "UnKraut",
+  "image": "speck-unkraut.jpg",
+  "group": "Vinyls"
+}
