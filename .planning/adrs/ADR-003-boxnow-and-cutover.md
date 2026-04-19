@@ -1,48 +1,35 @@
-# ADR-003: BOX NOW Shipping Scope And Brownfield Cutover Strategy
+# ADR-003: BOX NOW Shipping Scope And Production Cutover Boundary
 
-**Status:** Proposed  
-**Date:** 2026-04-06  
-**Decision owner:** Human review required in Phases 4 and 5
+**Status:** Accepted  
+**Date:** 2026-04-19  
+**Decision owner:** Approved during archived milestone v1.0
 
 ## Context
 
-Greek shipments require BOX NOW locker selection. At the same time, order volume is expected to stay low, and the migration starts from a current live storefront that still redirects `/shop/` externally to Fourthwall.
+Greek shipments require BOX NOW locker selection. Order volume is expected to stay low, and the current production storefront still redirects `/shop/` externally to Fourthwall. The project therefore needs a shipping scope that stays thin in v1 and a clear boundary between sandbox implementation and production launch work.
 
-The project therefore needs a shipping scope that stays thin in v1 and a cutover plan that remains reversible.
+## Decision
 
-## Proposed Decision
-
-- v1 must support **BOX NOW locker selection** for Greek shipments and persist the selected locker `locationId` with the order.
-- v1 should prefer a **manual or thin-server fulfillment workflow** over full BOX NOW shipment automation unless Phase 4 review proves automation is worth the added complexity.
-- Native commerce cutover should happen through a **reviewed, reversible rollout**, with the current external store path preserved until launch-readiness gates are met.
+- v1 supports **BOX NOW locker selection for Greece only**.
+- Locker selection happens **before payment** on the site-owned checkout flow.
+- v1 persists only the thinnest approved locker metadata: `locker_id`, `country_code`, and `locker_name_or_label`.
+- v1 fulfillment stays **manual through the BOX NOW partner portal**.
+- Production cutover is a **future milestone**. Sandbox implementation must not silently turn into live rollout work.
 
 ## Rationale
 
-- Low order volume does not justify a heavyweight shipping platform on day one
-- BOX NOW’s documented locker selection paths are enough to satisfy the core shipping requirement
-- Brownfield store replacement should not be treated as a one-shot irreversible launch
+- Low order volume does not justify a heavyweight shipping platform on day one.
+- BOX NOW’s locker selection paths are enough to satisfy the immediate Greek shipping requirement.
+- The project should not mix shipping MVP work with production launch risk.
 
 ## Consequences
 
-- Shipping UX and order data must capture enough locker metadata for operators to fulfill paid orders
-- The roadmap should defer deep fulfillment automation to v2 unless demand proves it necessary
-- `/shop/` fallback and rollback criteria need explicit launch-readiness documentation
-
-## Review Gate
-
-Phase 4 is not complete until the team approves:
-
-1. BOX NOW locker selection UX shape
-2. Which locker metadata is mandatory in the order record
-3. Whether v1 stops at manual fulfillment or includes a thin API-assisted step
-
-Phase 5 is not complete until the team approves:
-
-1. Cutover sequencing from Fourthwall to native commerce
-2. Rollback conditions
-3. Parallel-run or limited-catalog strategy, if used
+- The checkout flow must block payment if a valid Greek locker is not selected.
+- Non-Greece shipping paths are deferred to future milestones.
+- Deep BOX NOW automation is deferred to v2 unless actual demand proves it necessary.
+- Go-live planning must define production cutover and emergency disable behavior separately from the sandbox milestone.
 
 ## References
 
-- [BOX NOW API Manual v7.2](https://boxnow.gr/media/hidden/BoxNow%20API%20Manual%20%28v.7.2%29.pdf)
-
+- [BOX NOW API manual v7.2](https://boxnow.gr/media/hidden/BoxNow%20API%20Manual%20%28v.7.2%29.pdf)
+- [BOX NOW partner portal](https://boxnow.gr/en/diy/eshops/partner-portal)

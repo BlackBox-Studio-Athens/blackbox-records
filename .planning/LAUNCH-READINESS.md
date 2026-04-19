@@ -2,20 +2,20 @@
 
 **Project:** BlackBox Records Native Commerce Migration  
 **Status:** Planning draft  
-**Purpose:** Future go-live milestone input. This checklist is not part of the active pre-sandbox execution roadmap; it exists so the later Go-Live / Launch Hardening milestone starts with explicit stop/go criteria.
+**Purpose:** Future go-live milestone input. This checklist is not part of the active sandbox implementation roadmap; it exists so the later Go-Live / Launch Hardening milestone starts with explicit stop/go criteria.
 
 ## Runtime And Deployment
 
 - [ ] Target runtime/adapter is approved
 - [ ] Production host/vendor is approved
 - [ ] Deployment topology is documented
-- [ ] Rollback path to the current external-store experience is documented
+- [ ] Emergency disable or rollback strategy for native commerce is documented
 
 ## Secrets And Security
 
 - [ ] Stripe secret keys are server-only
 - [ ] Stripe webhook secret handling is documented
-- [ ] Supabase privileged credentials are server-only
+- [ ] D1 access remains server-only
 - [ ] Browser cannot write authoritative order or inventory state
 
 ## Stripe
@@ -25,7 +25,7 @@
 - [ ] Required webhook events and idempotency rules are documented
 - [ ] Success/cancel/return-page behavior is documented as non-authoritative
 
-## Supabase
+## D1
 
 - [ ] Inventory semantics are approved
 - [ ] Order lifecycle states are approved
@@ -37,19 +37,17 @@
 - [ ] Greek locker-selection UX is approved
 - [ ] Required locker metadata is defined
 - [ ] v1 fulfillment depth is approved
-- [ ] Manual fallback exists if BOX NOW automation is deferred
+- [ ] Manual partner-portal fulfillment path exists if automation remains deferred
 
 ## Cutover
 
-- [ ] Cutover sequence from Fourthwall to native commerce is documented
-- [ ] Fallback conditions are documented
+- [ ] Cutover sequence from the current external storefront handoff to native commerce is documented
+- [ ] Emergency disable conditions are documented
 - [ ] Operator comms/support plan is documented
 - [ ] Human approval checkpoints are named
 
 ## Go/No-Go Gate
 
-- [ ] Phase 1 review approved
-- [ ] Phase 3 review approved
-- [ ] Phase 4 review approved
-- [ ] Stripe sandbox milestone approved
+- [ ] Sandbox implementation milestone approved
+- [ ] Stripe sandbox evidence reviewed
 - [ ] Final stop/go reviewers identified
