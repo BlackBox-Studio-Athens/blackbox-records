@@ -8,14 +8,16 @@
 ### Runtime & Deployment
 
 - [ ] **DEPL-01**: Team can deploy the Astro storefront to Cloudflare Workers in sandbox while keeping brochure/content routes prerendered where practical.
-- [ ] **DEPL-02**: Commerce routes and webhooks can execute on demand with Worker bindings for D1 and server-only secrets.
+- [ ] **DEPL-02**: Commerce routes and local Worker development can execute on demand with Worker bindings and server-only secrets.
 - [ ] **DEPL-03**: Sandbox deployment and testing can proceed without changing the current live GitHub Pages + Fourthwall production path.
+- [ ] **DEPL-04**: Team can bootstrap local D1 and a Prisma-compatible migration workflow before Stripe checkout implementation begins.
 
 ### Catalog & Storefront
 
-- [ ] **CATA-01**: Shopper can browse a hand-picked distro subset at native `/shop/` inside the existing site shell.
-- [ ] **CATA-02**: Shopper can view product detail that combines Astro editorial content with Stripe product and price data.
-- [ ] **CATA-03**: Operator can manage sellable product and price data in Stripe sandbox without editing Astro content for price changes.
+- [ ] **CATA-01**: Shopper can browse a native `/shop/` catalog inside the existing shell using a unified shop projection derived from releases and distro.
+- [ ] **CATA-02**: Shopper can view product detail that combines Astro editorial content with fixture-backed offer state before D1 or Stripe is required.
+- [ ] **CATA-03**: Release and distro entry points can resolve to canonical native shop product pages instead of raw external shop URLs.
+- [ ] **CATA-04**: Temporary offer state remains outside editorial collections and can later swap from fixture-backed reads to D1-backed or Stripe-backed reads without changing the UI contract.
 
 ### Checkout & Payment
 
@@ -84,9 +86,11 @@
 | DEPL-01 | Phase 5 | Pending |
 | DEPL-02 | Phase 5 | Pending |
 | DEPL-03 | Phase 5 | Pending |
+| DEPL-04 | Phase 6.1 | Pending |
 | CATA-01 | Phase 6 | Pending |
 | CATA-02 | Phase 6 | Pending |
 | CATA-03 | Phase 6 | Pending |
+| CATA-04 | Phase 6.1 | Pending |
 | CHKO-01 | Phase 7 | Pending |
 | CHKO-02 | Phase 7 | Pending |
 | CHKO-03 | Phase 7 | Pending |
@@ -103,10 +107,10 @@
 | OPER-02 | Phase 10 | Pending |
 
 **Coverage:**
-- v1 requirements: 20 total
-- Mapped to phases: 20
+- v1 requirements: 22 total
+- Mapped to phases: 22
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-19*  
-*Last updated: 2026-04-19 after starting milestone v1.1*
+*Last updated: 2026-04-20 after refining pre-Stripe execution phases*

@@ -1,0 +1,79 @@
+---
+phase: 6
+slug: native-storefront-slice
+status: approved
+created: 2026-04-20
+---
+
+# Phase 6 - UI Design Contract
+
+## Experience Principles
+
+1. The store must feel like the BlackBox site, not a separate commerce app.
+2. The first native shop slice is editorial-first and projection-driven.
+3. Releases and distro items share one storefront language, even if their metadata origins differ.
+4. The checkout route exists in this phase as an information-architecture shell, not as a live payment experience.
+5. No cart, no search, no marketplace density, no fake scarcity.
+
+## Route Contract
+
+- `/shop/` - native collection view
+- `/shop/[slug]/` - native product detail view
+- `/shop/[slug]/checkout/` - non-transactional checkout handoff shell that Phase 7 will activate
+
+## Collection View
+
+- Intro block uses the current BlackBox display language, not generic ecommerce framing.
+- Grid mixes release-derived and distro-derived entries in one unified shelf.
+- Each card includes:
+  - image
+  - compact metadata row
+  - title
+  - subtitle (`artist` or `artist_or_label`)
+  - short summary
+  - fixture-backed price label
+  - `View Product` CTA
+- No filters, no sort controls, no stock countdown copy.
+
+## Product Detail View
+
+- Layout remains two-column on desktop and stacked on mobile.
+- Content order:
+  1. metadata row
+  2. title
+  3. subtitle
+  4. price label
+  5. format/group metadata
+  6. editorial summary
+  7. `Buy Now` CTA
+  8. quiet support note
+- `Buy Now` routes to `/shop/[slug]/checkout/`.
+
+## Checkout Handoff Shell
+
+- This route exists in Phase 6 but does not process payment yet.
+- It shows:
+  - product summary block
+  - clear page heading `Checkout`
+  - calm explanatory copy that this route will host the secure payment step in the next phase
+  - actions to return to the product page or store
+- It must not claim payment is possible or complete in this phase.
+
+## Release-To-Shop Navigation
+
+- Release pages with a mapped native shop entry link to the canonical `/shop/[slug]/` product page.
+- If a release has no mapped native shop entry, do not invent a misleading purchase route.
+
+## Copy Contract
+
+- Collection CTA: `View Product`
+- Product CTA: `Buy Now`
+- Checkout shell note: calm, direct, transitional
+- Tone remains curator-like and low-drama
+
+## Non-Goals
+
+- No live Stripe embed in this phase
+- No order confirmation language
+- No browser-authoritative inventory states
+- No duplicate media library for shop-only images

@@ -6,125 +6,85 @@
 <domain>
 ## Phase Boundary
 
-Lock the active Cloudflare runtime shape for alpha and sandbox work: Astro deployment target, secret-handling model, D1 environment split, and migration system. This phase does not reopen checkout, order-state, inventory, or shipping semantics.
+Phase 5 now stops at runtime, environment, local Worker ergonomics, deployment plumbing, and secret ownership. It does not front-run the unified shop model, local D1 + Prisma domain work, or any Stripe checkout integration.
 
 </domain>
 
 <decisions>
 ## Implementation Decisions
 
-### Runtime and hosting model
-- **D-01:** The active alpha runtime target is Astro on Cloudflare Workers.
-- **D-02:** During alpha, do not maintain GitHub Pages as an equal day-to-day runtime target. Treat the current Pages deployment as the brownfield baseline and fallback reference only.
-- **D-03:** Use one Astro configuration oriented around the Workers runtime instead of split Pages and Workers config files.
-- **D-04:** Use a stable separate Cloudflare sandbox hostname for worker-based testing so Stripe return URLs and browser/UAT checks have one consistent target.
+### Runtime split
+- **D-01:** Cloudflare Workers remains the active alpha runtime target.
+- **D-02:** Use one Astro config that is Worker-first while preserving an explicit legacy Pages build path.
+- **D-03:** Brochure and editorial routes remain prerendered by default; later commerce routes opt into on-demand execution deliberately.
+- **D-04:** Phase 5 defines the runtime boundary only. The actual shop projection work belongs to Phase 6 and the local D1 + Prisma domain baseline belongs to Phase 6.1.
 
-### Secrets and environment ownership
-- **D-05:** GitHub Secrets may hold CI/CD credentials such as Cloudflare API tokens and account identifiers.
-- **D-06:** Runtime secrets must live in Cloudflare Worker secrets or bindings, not only in GitHub Secrets.
-- **D-07:** Favor Wrangler and Cloudflare API-managed secret workflows so setup can be automated later from scripts or GitHub Actions.
-- **D-08:** Cloudflare Access is deferred for the sandbox milestone and should be revisited in the later go-live or live-mode milestone before real-customer traffic is allowed.
-- **D-09:** Because Cloudflare Access is deferred, do not describe the sandbox Worker hostname as strongly access-controlled. Treat it as an intentionally reachable alpha surface, not a private internal environment.
+### Environment model
+- **D-05:** Wrangler becomes the source of truth for Worker runtime configuration and environment naming.
+- **D-06:** The sandbox Worker must have one stable hostname so browser checks, Stripe return URLs, and future webhook testing point at one consistent target.
+- **D-07:** Local Worker development must be explicit and documented, not inferred from the legacy Astro Pages workflow.
 
-### Database environments
-- **D-10:** Use a local D1 database for normal development.
-- **D-11:** Use one shared remote D1 database for beta and sandbox testing.
-- **D-12:** Use a separate remote D1 database for production when the go-live milestone is reached.
-- **D-13:** Do not share one remote D1 database between beta and production.
-- **D-14:** Do not plan around Postgres-style schemas for environment separation. D1 should be separated by database, not by schema.
-- **D-15:** The second remote D1 database needed for production remains feasible on the current free-tier shape because Workers Free currently allows up to 10 D1 databases per account.
+### Secrets and trust boundaries
+- **D-08:** Runtime secrets stay in Worker secrets/bindings, not in browser code and not only in GitHub Secrets.
+- **D-09:** GitHub Secrets hold CI credentials such as Cloudflare API tokens and account identifiers.
+- **D-10:** Cloudflare Access remains deferred; sandbox must be treated as reachable, not as a private internal surface.
 
-### Migration system
-- **D-16:** Prisma is approved for runtime database access on D1 via the current D1 adapter path.
-- **D-17:** Database schema changes must be versioned in-repo through one authoritative SQL migration directory.
-- **D-18:** Stay on D1, so the migration path remains D1/Wrangler migrations rather than Prisma-only `migrate dev/deploy`.
-- **D-19:** Use `prisma migrate diff` to generate migration SQL from the Prisma schema when Prisma modeling is the source of truth.
-- **D-20:** Do not introduce a separate Liquibase-style framework for v1.1 unless later complexity proves the chosen Prisma-plus-Wrangler workflow insufficient.
-- **D-21:** Apply the same migration chain across local, beta, and later production databases.
-- **D-22:** Prefer forward-only, SQL-first migrations over environment-specific schema drift or manual dashboard edits.
-
-### Deploy automation
-- **D-23:** Use a dedicated `sandbox` branch for automatic sandbox Worker deploys.
-- **D-24:** Also provide a `workflow_dispatch` override so sandbox deploys can be triggered manually without coupling them to the GitHub Pages workflow.
-- **D-25:** Use a separate GitHub Actions workflow for Worker sandbox deploys rather than Cloudflare Workers Builds for this repo, because the repo already uses GitHub Actions and the user prefers a monorepo-style automation path.
+### Phase shape
+- **D-11:** Phase 5 expands from 3 plans to 6 plans:
+  - `05-01` adapter bootstrap
+  - `05-02` prerender contract
+  - `05-03` Wrangler and environment model
+  - `05-04` local Worker dev path
+  - `05-05` sandbox deploy workflow and hostname
+  - `05-06` secrets contract
+- **D-12:** Prisma and D1 schema work move out of Phase 5 and into inserted Phase 6.1 so the runtime foundation stays separate from local commerce state modeling.
 
 ### the agent's Discretion
-- Exact Wrangler file shape and environment naming
-- Whether preview and beta share the same remote database or whether preview is kept local-only
-- Seed-data workflow and import/export ergonomics
-- Exact migration folder path if the repo adopts a monorepo-style layout later
+- exact script names for Worker dev/build
+- whether Pages fallback uses env switching or a named explicit compatibility mode
+- exact Wrangler env labels, as long as local/sandbox/production intent stays clear
 
 </decisions>
 
 <specifics>
 ## Specific Ideas
 
-- Treat `local -> beta -> production` as the environment path for D1, with one database per remote environment.
-- Use Prisma for query/runtime ergonomics, but keep migration application aligned with D1's platform workflow.
-- Avoid inventing table prefixes or schema conventions to compensate for environment separation that the platform already supports natively with separate databases.
-- Keep database creation and secret provisioning scriptable through Wrangler so future automation can run through GitHub Actions or agent-driven CLI flows.
-- Document clearly that deferring Cloudflare Access is a deliberate tradeoff, not an implicit security guarantee.
-- Prefer a stable `workers.dev` sandbox hostname in this milestone unless a later phase intentionally adds a custom domain.
+- Treat Phase 5 as the minimum Worker platform foundation needed before native shop work begins.
+- Do not let D1 or Prisma scaffolding distort the simpler runtime tasks in this phase.
+- Keep sandbox deployment automation isolated from the current Pages workflow.
+- Document the runtime contract so later phases can assume Worker bindings and local dev are already stable.
 
 </specifics>
 
 <canonical_refs>
 ## Canonical References
 
-**Downstream agents MUST read these before planning or implementing.**
-
-### Phase requirements and milestone rules
-- `.planning/ROADMAP.md` - Phase 5 goal, success criteria, and plan inventory
-- `.planning/REQUIREMENTS.md` - Active milestone requirements for runtime, secrets, and operations
-- `.planning/STATE.md` - Current milestone position and execution handoff state
-
-### Architecture and repo constraints
-- `.planning/PROJECT.md` - Milestone context and key decisions that must stay in sync with this phase
-- `AGENTS.md` - Repo constraints, verification expectations, and Stripe guidance
-- `astro.config.mjs` - Current Astro deployment target that Phase 5 will replace for active alpha work
-- `.github/workflows/pages.yml` - Existing deployment workflow that should not be silently coupled to Worker sandbox deploys
-
-### External runtime and platform references
-- [Astro deploy to Cloudflare](https://docs.astro.build/en/guides/deploy/cloudflare/) - Astro adapter and deploy model for Workers
-- [Cloudflare D1 Wrangler commands](https://developers.cloudflare.com/d1/wrangler-commands/) - Database creation and migration commands
-- [Cloudflare D1 migrations](https://developers.cloudflare.com/d1/reference/migrations/) - Built-in migration behavior and tracking table
-- [Cloudflare D1 local development](https://developers.cloudflare.com/d1/best-practices/local-development/) - Local-versus-remote D1 behavior
-- [Cloudflare D1 environments](https://developers.cloudflare.com/d1/configuration/environments/) - Binding separate databases per environment
-- [Cloudflare D1 release notes](https://developers.cloudflare.com/d1/platform/release-notes/) - Current free-tier database-count limit
-- [Prisma on Cloudflare D1](https://docs.prisma.io/docs/v6/orm/overview/databases/cloudflare-d1) - Current Prisma runtime and migration guidance for D1
-- [Deploy Prisma to Cloudflare Workers](https://docs.prisma.io/docs/v6/orm/prisma-client/deployment/edge/deploy-to-cloudflare) - Worker-compatible Prisma runtime requirements
-- [Cloudflare Workers preview URLs](https://developers.cloudflare.com/workers/configuration/previews/) - Current public-by-default behavior and Access option for preview endpoints
-- [Cloudflare Workers GitHub Actions](https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/) - Official external CI/CD workflow for Wrangler deploys
-- [Cloudflare Build Branches](https://developers.cloudflare.com/workers/ci-cd/builds/build-branches/) - Reference for branch-trigger behavior when comparing CI/CD options
+- `.planning/ROADMAP.md` - Phase 5 goal, requirements, success criteria, and expanded plan list
+- `.planning/REQUIREMENTS.md` - DEPL and SECU requirements
+- `.planning/STATE.md` - current milestone position and plan counts
+- `.planning/PROJECT.md` - milestone context and key decisions
+- `astro.config.mjs` - current Astro runtime config baseline
+- `.github/workflows/pages.yml` - existing production deployment path that must stay isolated
+- `AGENTS.md` - repo runtime constraints and Stripe guidance
 
 </canonical_refs>
 
 <code_context>
 ## Existing Code Insights
 
-### Reusable Assets
-- `astro.config.mjs`: Current GitHub Pages-oriented Astro config and the obvious switch point for a Workers-first runtime.
-- `.github/workflows/pages.yml`: Existing CI pipeline that shows how much of the current deployment path is still coupled to Pages.
-
-### Established Patterns
-- The repo is still configured for static output today, so Phase 5 planning must explicitly account for runtime and binding setup rather than assume server routes already exist.
-- The app shell and content collections remain the architectural center of the site; runtime changes should preserve that structure rather than split commerce into a separate app.
-
-### Integration Points
-- Future Worker bindings and environment names will be introduced through the Wrangler configuration and deployment workflow, not through browser code.
-- Database lifecycle commands should be scriptable from the repo root so they can be reused in CI and local development without a second toolchain.
+- The repo is still static-first today, so runtime capability must be introduced intentionally.
+- `/shop/` is still a redirect route and must not be treated as already-native.
+- The app shell and content collections remain the architectural center and should survive the runtime transition unchanged.
 
 </code_context>
 
 <deferred>
 ## Deferred Ideas
 
-- Sharing one remote D1 database between beta and production
-- Postgres-style schema-based environment isolation
-- Prisma-only `migrate dev/deploy` as the migration authority while staying on D1
-- Liquibase, Flyway, or any additional migration framework on top of the Prisma-plus-Wrangler path for v1.1
-- Coupling Worker deployment automation directly to the legacy Pages production workflow before Phase 5 closes
-- Treating Workers Builds as mandatory when the repo already has a functioning GitHub Actions-based deployment workflow
+- Prisma runtime setup and migration scaffolding
+- local D1 bootstrap and inventory-related reads
+- unified shop projection and fixture-backed shop data
+- checkout session creation, webhooks, and BOX NOW integration
 
 </deferred>
 

@@ -14,7 +14,9 @@ Ship a minimal native commerce flow that is operationally safe: the site owns th
 
 **Target features:**
 - Cloudflare Workers + D1 sandbox runtime added to the existing Astro storefront
-- Native `/shop/` collection, product detail, and single-item `Buy Now` flow
+- Native `/shop/` collection and product detail built from a unified shop projection across releases and distro
+- Fixture-backed offer state before D1 or Stripe becomes required in the shop UI
+- Local D1 + Prisma foundation inserted before checkout integration
 - Greece-only BOX NOW locker selection before payment
 - Stripe embedded Checkout in sandbox with server-created Checkout Sessions
 - D1-backed order and inventory state driven by verified Stripe webhooks
@@ -32,9 +34,10 @@ Ship a minimal native commerce flow that is operationally safe: the site owns th
 
 ### Active
 
-- [ ] Replace the current external shop redirect with a native in-site store flow in Stripe sandbox
+- [ ] Replace the current external shop redirect with a native in-site store flow built from a shared shop projection over releases and distro
 - [ ] Deploy the Astro site to Cloudflare Workers for sandbox-only server routes while preserving the current content/app-shell architecture
-- [ ] Use Stripe Products and Prices as the canonical sellable catalog and pricing source
+- [ ] Use a fixture-backed offer adapter first, then introduce local D1 + Prisma before Stripe checkout integration
+- [ ] Use Stripe Products and Prices as the canonical sellable catalog and pricing source once checkout integration begins
 - [ ] Use D1 only for inventory and order lifecycle state, with server-owned writes
 - [ ] Enforce Greece-only BOX NOW locker selection before payment in v1
 - [ ] Finish the milestone with sandbox validation evidence and a clear handoff to the go-live milestone
@@ -53,6 +56,10 @@ Ship a minimal native commerce flow that is operationally safe: the site owns th
 The current repository is an Astro 5 storefront with a React-managed app shell, Astro content collections, and Decap CMS-backed editorial content. Production remains a static GitHub Pages deployment where `/shop/` redirects externally to Fourthwall. That current experience is the live baseline, not the long-term target.
 
 The pre-sandbox planning milestone locked the implementation shape. Astro will move to Cloudflare Workers for the native commerce runtime, with D1 as the narrow operational store for inventory and order lifecycle state. Stripe remains the authority for products, prices, Checkout Sessions, and payment state. BOX NOW applies only to Greece in v1, with locker selection before payment and manual partner-portal fulfillment after paid orders land.
+
+The implementation sequence is now intentionally split more finely before Stripe work starts. Phase 6 builds the native store UI and a unified shop-facing read model from existing editorial collections, using a fixture-backed offer adapter so the new `/shop/` flow can exist before D1 or Stripe becomes mandatory. Phase 6.1 then introduces local D1 and Prisma behind the repository boundary, so checkout integration starts only after the shop contract and local state plumbing are stable.
+
+Current repo facts shape that split. `releases` already reference `artists`, while `distro` currently carries editorial card content and Fourthwall URLs but no sellable identity or inventory model. That means the native store should read from a separate shop projection layer that reuses existing editorial content rather than stuffing temporary commerce fields into the collections themselves.
 
 Current official docs matter here. Astro’s on-demand rendering guidance allows adding the Cloudflare adapter while keeping most routes prerendered and opting specific commerce pages and endpoints out with `prerender = false`. Cloudflare Workers Free and D1 Free are currently large enough for the projected low volume. Stripe’s current embedded Checkout docs use `ui_mode: embedded`, not the older `embedded_page` phrasing, and require `return_url` unless redirects are explicitly disabled. Stripe sandbox and Stripe CLI flows are the expected validation path for this milestone.
 
@@ -77,6 +84,9 @@ Current official docs matter here. Astro’s on-demand rendering guidance allows
 | Use Prisma for runtime database access while staying on D1 | Improves readability and maintainability without forcing an immediate database change | ✓ Good |
 | Use Prisma schema plus `prisma migrate diff`, with Wrangler D1 migrations applying SQL | Matches Prisma's current D1 guidance without pretending Prisma-only migrations are first-class on D1 | ✓ Good |
 | Use a dedicated sandbox branch plus manual workflow dispatch for Worker deploys | Keeps sandbox automation independent from the legacy Pages workflow while preserving a manual override | ✓ Good |
+| Build the first native store from a unified shop projection over releases and distro | Maximizes reuse of existing editorial content and keeps shop identity separate from external URLs | ✓ Good |
+| Keep temporary offer state in a fixture-backed adapter before D1 or Stripe is mandatory | Lets the shop UI and navigation ship before the database and payment systems are connected | ✓ Good |
+| Insert a local D1 + Prisma foundation phase before checkout integration | Creates one hard gate between storefront work and Stripe work, reducing coupling and rework | ✓ Good |
 | Keep Stripe as the authority for catalog, pricing, Checkout Sessions, and payment state | Avoids duplicate admin surfaces and keeps pricing in the payment system | ✓ Good |
 | Keep browser code away from authoritative order and inventory writes | Protects stock and paid-order state from untrusted clients | ✓ Good |
 | Use current embedded Checkout terminology and request shape | Stripe’s current docs use `ui_mode: embedded`, `return_url`, and optional `redirect_on_completion` tuning | ✓ Good |
@@ -101,4 +111,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-20 after Phase 5 planning completion*
+*Last updated: 2026-04-20 after refining Phases 5, 6, and 6.1*
