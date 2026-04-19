@@ -8,8 +8,8 @@ merch_url: /shop/
 bandcamp_embed_url: https://afterwise.bandcamp.com/track/silverfeedssilence
 tidal_url: https://tidal.com/artist/75705460/u
 summary: >-
-  Engineering, recording, and mixing by Jim Spanos at BlackBox Studio, Athens,
-  Greece.
+  The first release of the band is a mix of post rock elements.  Engineering,
+  recording, and mixing by Jim Spanos at BlackBox Studio, Athens, Greece.
 
   Mastered by Nikos Dimitrakakos and Jim Spanos at Unreal Studio, Athens, Greece.
 formats:
@@ -17,8 +17,8 @@ formats:
   - CD
   - Digital
 credits:
-  - role: Produced by
+  - role: Produced by Jim Spanos
     name: BlackBox Records
-  - role: Artwork
-    name: Studio Placeholder
+  - role: "Artwork by @jtakakart "
+    name: BlackBox Studio
 ---
