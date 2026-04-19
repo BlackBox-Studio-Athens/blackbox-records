@@ -1,13 +1,13 @@
 {
-  "$schema": "../../../.astro/collections/distro.schema.json",
-  "title": "Mass Culture LP",
-  "group": "Vinyls",
-  "artist_or_label": "BlackBox Records",
-  "image": "./vinyl-records.jpg",
   "image_alt": "Stack of vinyl records",
-  "summary": "A record we keep close because it says exactly what BlackBox is trying to build: stark, heavy, and direct without wasting a gesture.",
-  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "Band: Mass Culture\nRelease: Barren Point\nGenre: Post metal / Hardcore\nCountry: Greece\nDescription\nMass Culture formed in 2011 in Greece; Barren Point mixes post-hardcore and metal\n",
   "eyebrow": "BlackBox Pick",
+  "order": 1,
+  "artist_or_label": "BlackBox Records",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
   "format": "LP",
-  "order": 1
+  "title": "Mass Culture LP",
+  "image": "mass-culture-barren-point.jpg",
+  "group": "Vinyls"
 }
