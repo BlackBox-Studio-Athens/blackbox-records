@@ -23,21 +23,25 @@ Lock the active Cloudflare runtime shape for alpha and sandbox work: Astro deplo
 - **D-05:** GitHub Secrets may hold CI/CD credentials such as Cloudflare API tokens and account identifiers.
 - **D-06:** Runtime secrets must live in Cloudflare Worker secrets or bindings, not only in GitHub Secrets.
 - **D-07:** Favor Wrangler and Cloudflare API-managed secret workflows so setup can be automated later from scripts or GitHub Actions.
+- **D-08:** Cloudflare Access is deferred for the sandbox milestone and should be revisited in the later go-live or live-mode milestone before real-customer traffic is allowed.
+- **D-09:** Because Cloudflare Access is deferred, do not describe the sandbox Worker hostname as strongly access-controlled. Treat it as an intentionally reachable alpha surface, not a private internal environment.
 
 ### Database environments
-- **D-08:** Use a local D1 database for normal development.
-- **D-09:** Use one shared remote D1 database for beta and sandbox testing.
-- **D-10:** Use a separate remote D1 database for production when the go-live milestone is reached.
-- **D-11:** Do not share one remote D1 database between beta and production.
-- **D-12:** Do not plan around Postgres-style schemas for environment separation. D1 should be separated by database, not by schema.
-- **D-13:** The second remote D1 database needed for production remains feasible on the current free-tier shape because Workers Free currently allows up to 10 D1 databases per account.
+- **D-10:** Use a local D1 database for normal development.
+- **D-11:** Use one shared remote D1 database for beta and sandbox testing.
+- **D-12:** Use a separate remote D1 database for production when the go-live milestone is reached.
+- **D-13:** Do not share one remote D1 database between beta and production.
+- **D-14:** Do not plan around Postgres-style schemas for environment separation. D1 should be separated by database, not by schema.
+- **D-15:** The second remote D1 database needed for production remains feasible on the current free-tier shape because Workers Free currently allows up to 10 D1 databases per account.
 
 ### Migration system
-- **D-14:** Database schema changes must be versioned in-repo through one authoritative SQL migration directory.
-- **D-15:** Use Cloudflare D1's built-in Wrangler migrations as the migration system for this project.
-- **D-16:** Do not introduce a separate Liquibase-style framework for v1.1 unless later complexity proves Wrangler migrations insufficient.
-- **D-17:** Apply the same migration chain across local, beta, and later production databases.
-- **D-18:** Prefer forward-only, SQL-first migrations over environment-specific schema drift or manual dashboard edits.
+- **D-16:** Prisma is approved for runtime database access on D1 via the current D1 adapter path.
+- **D-17:** Database schema changes must be versioned in-repo through one authoritative SQL migration directory.
+- **D-18:** Stay on D1, so the migration path remains D1/Wrangler migrations rather than Prisma-only `migrate dev/deploy`.
+- **D-19:** Use `prisma migrate diff` to generate migration SQL from the Prisma schema when Prisma modeling is the source of truth.
+- **D-20:** Do not introduce a separate Liquibase-style framework for v1.1 unless later complexity proves the chosen Prisma-plus-Wrangler workflow insufficient.
+- **D-21:** Apply the same migration chain across local, beta, and later production databases.
+- **D-22:** Prefer forward-only, SQL-first migrations over environment-specific schema drift or manual dashboard edits.
 
 ### Still open
 - Exact deploy-trigger policy for automated Worker deployments is still open and should be finalized before `05-CONTEXT.md` is treated as fully closed for planning.
@@ -54,9 +58,10 @@ Lock the active Cloudflare runtime shape for alpha and sandbox work: Astro deplo
 ## Specific Ideas
 
 - Treat `local -> beta -> production` as the environment path for D1, with one database per remote environment.
-- Keep the migration system deliberately boring: checked-in SQL files plus Wrangler apply commands.
+- Use Prisma for query/runtime ergonomics, but keep migration application aligned with D1's platform workflow.
 - Avoid inventing table prefixes or schema conventions to compensate for environment separation that the platform already supports natively with separate databases.
 - Keep database creation and secret provisioning scriptable through Wrangler so future automation can run through GitHub Actions or agent-driven CLI flows.
+- Document clearly that deferring Cloudflare Access is a deliberate tradeoff, not an implicit security guarantee.
 
 </specifics>
 
@@ -83,6 +88,9 @@ Lock the active Cloudflare runtime shape for alpha and sandbox work: Astro deplo
 - [Cloudflare D1 local development](https://developers.cloudflare.com/d1/best-practices/local-development/) - Local-versus-remote D1 behavior
 - [Cloudflare D1 environments](https://developers.cloudflare.com/d1/configuration/environments/) - Binding separate databases per environment
 - [Cloudflare D1 release notes](https://developers.cloudflare.com/d1/platform/release-notes/) - Current free-tier database-count limit
+- [Prisma on Cloudflare D1](https://docs.prisma.io/docs/v6/orm/overview/databases/cloudflare-d1) - Current Prisma runtime and migration guidance for D1
+- [Deploy Prisma to Cloudflare Workers](https://docs.prisma.io/docs/v6/orm/prisma-client/deployment/edge/deploy-to-cloudflare) - Worker-compatible Prisma runtime requirements
+- [Cloudflare Workers preview URLs](https://developers.cloudflare.com/workers/configuration/previews/) - Current public-by-default behavior and Access option for preview endpoints
 
 </canonical_refs>
 
@@ -108,7 +116,8 @@ Lock the active Cloudflare runtime shape for alpha and sandbox work: Astro deplo
 
 - Sharing one remote D1 database between beta and production
 - Postgres-style schema-based environment isolation
-- Liquibase, Flyway, or any additional migration framework on top of Wrangler for v1.1
+- Prisma-only `migrate dev/deploy` as the migration authority while staying on D1
+- Liquibase, Flyway, or any additional migration framework on top of the Prisma-plus-Wrangler path for v1.1
 - Coupling Worker deployment automation directly to the legacy Pages production workflow before Phase 5 closes
 
 </deferred>

@@ -63,7 +63,7 @@ Recent decisions affecting current work:
 - [v1.0] The first native sellable slice is a hand-picked distro subset rendered as `/shop/` collection -> product detail -> dedicated checkout, with single-item `Buy Now` and no cart.
 - [v1.0] v1 order state stays minimal — `pending_payment`, `paid`, `closed_unpaid`, and `needs_review` — with Checkout-session webhooks as the authoritative paid/unpaid signals.
 - [v1.0] MVP shipping is Greece only, BOX NOW locker selection happens before payment, and fulfillment stays manual through the partner portal.
-- [v1.1] Phase 5 now locks a Workers-first alpha runtime, Worker-managed runtime secrets, separate beta and future production D1 databases, and Wrangler D1 migrations as the schema-change mechanism.
+- [v1.1] Phase 5 now locks a Workers-first alpha runtime, Worker-managed runtime secrets, separate beta and future production D1 databases, Prisma for runtime database access on D1, and Prisma-generated SQL applied through Wrangler/D1 migrations.
 
 ### Pending Todos
 
@@ -73,6 +73,7 @@ Recent decisions affecting current work:
 
 - No production cutover work is approved in this milestone.
 - Phase 5 deploy-trigger automation policy is still open.
+- Cloudflare Access is intentionally deferred, so the sandbox Worker must not be treated as strongly access-controlled.
 - UI contracts for the store and locker flow already exist from v1.0; rerun `$gsd-ui-phase` only if implementation scope materially changes them.
 
 ## Session Continuity
