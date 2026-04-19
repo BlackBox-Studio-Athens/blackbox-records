@@ -1,0 +1,12 @@
+{
+  "image_alt": "Against Leviathan front",
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "summary": "Genre: sludge / stoner / doom metal\nCountry: Croatia\nDescription: Hazarder's Zagreb doom, sludge, and stoner metal features downtuned guitars and raw vocals throughout.\n",
+  "order": 1,
+  "artist_or_label": "Hazarder",
+  "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
+  "format": "Vinyl",
+  "title": "Against His-Story, Against Leviathan!",
+  "image": "hazarder-against-leviathan.jpg",
+  "group": "Vinyls"
+}
