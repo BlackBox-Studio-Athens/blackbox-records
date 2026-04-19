@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-04-18T23:31:45.4983003Z"
-last_activity: 2026-04-19 -- Phase 3 context gathered
+stopped_at: Phase 4 context gathered
+last_updated: "2026-04-19T05:52:20.3015077Z"
+last_activity: 2026-04-19 -- Phase 4 context gathered
 progress:
   total_phases: 4
   completed_phases: 0
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-06)
 
 **Core value:** Ship a minimal native commerce flow that is operationally safe: Stripe handles catalog/pricing/payment, server-owned logic handles checkout and webhooks, and inventory changes happen only after webhook-confirmed payment success.
-**Current focus:** Phase 3: Webhook-Authoritative Orders And Inventory
+**Current focus:** Phase 4: BOX NOW Locker Shipping Slice
 
 ## Current Position
 
-Phase: 3 of 4 (Webhook-Authoritative Orders And Inventory)
-Plan: 0 of 3 in current phase
+Phase: 4 of 4 (BOX NOW Locker Shipping Slice)
+Plan: 0 of 2 in current phase
 Status: Ready for planning
-Last activity: 2026-04-19 -- Phase 3 context gathered
+Last activity: 2026-04-19 -- Phase 4 context gathered
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -64,6 +64,7 @@ Recent decisions affecting current work:
 - [Phase 1]: Phase 1 context locked Astro on Cloudflare Workers with D1 as the v1 operational state store — GitHub Pages cannot host webhook-authoritative native commerce; Cloudflare Workers plus D1 matches the low-ops and low-cost goals while keeping server secrets in Worker bindings.
 - [Phase 2]: The first native sellable slice is a hand-picked distro subset rendered as `/shop/` collection -> product detail -> dedicated embedded checkout, with single-item `Buy Now` and no cart.
 - [Phase 3]: v1 order state stays minimal — `pending_payment`, `paid`, `closed_unpaid`, and `needs_review` — with Checkout-session webhooks as the authoritative paid/unpaid signals.
+- [Phase 4]: MVP shipping is Greece only, BOX NOW locker selection happens before payment, the flow fails closed without a valid locker, and stored locker data stays as thin as possible.
 
 ### Pending Todos
 
@@ -71,11 +72,11 @@ None yet.
 
 ### Blockers/Concerns
 
-- BOX NOW v1 automation depth is still unapproved
-- `.planning/REQUIREMENTS.md` still contains stale `Supabase` wording in `ORDR-01` and `OPER-01` that Phase 3 planning should normalize to D1-backed language
+- `.planning/REQUIREMENTS.md` still contains stale `Supabase` wording in `ORDR-01` and `OPER-01` that the Phase 3 planning set is intended to normalize
+- Non-Greece shipping is explicitly deferred, so Phase 4 planning must preserve Greece-only gating and avoid inventing a second shipping path
 
 ## Session Continuity
 
-Last session: 2026-04-18T23:31:45.4983003Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-webhook-authoritative-orders-and-inventory/03-CONTEXT.md
+Last session: 2026-04-19T05:52:20.3015077Z
+Stopped at: Phase 4 context gathered
+Resume file: .planning/phases/04-box-now-locker-shipping-slice/04-CONTEXT.md
