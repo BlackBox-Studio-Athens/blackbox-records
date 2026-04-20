@@ -8,6 +8,7 @@ Static Astro site for the BlackBox Records label.
 - React integration (for shadcn-ui primitives)
 - Tailwind CSS v4 + shadcn-ui setup (design implemented in Astro templates + `src/styles/global.css`)
 - Type-safe content collections (`src/content`)
+- Separate Cloudflare Worker backend scaffold (`worker/index.ts`)
 
 ## URL model
 
@@ -66,6 +67,18 @@ Notes:
 pnpm dev
 ```
 
+Run the separate Worker backend scaffold locally:
+
+```sh
+pnpm worker:dev
+```
+
+Current Worker scope:
+
+- smoke-test `GET /healthz`
+- no Stripe, D1, Prisma, or frontend wiring yet
+- no production deployment path yet
+
 Clean dev run (mirrors the `ateleia` workflow):
 
 ```sh
@@ -89,6 +102,7 @@ pnpm build
   - `pnpm build`
 - Pushes go directly to `main` in this repo.
 - If CI fails on `main`, GitHub Pages does not publish the broken revision; fix it with a follow-up commit or revert the bad commit on `main`.
+- The Astro frontend remains the active Pages deployment target. The Worker scaffold is separate and currently local-only until later commerce infrastructure phases land.
 
 ## Content model
 

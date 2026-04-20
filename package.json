@@ -10,6 +10,7 @@
     "cms:proxy": "node scripts/start-decap-proxy.mjs",
     "dev": "astro dev",
     "dev:clean": "npm run clean:dev-cache && astro dev",
+    "worker:dev": "wrangler dev worker/index.ts",
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
@@ -42,6 +43,7 @@
     "decap-server": "^3.5.2",
     "shadcn": "^3.8.4",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "wrangler": "^4.83.0"
   }
 }
