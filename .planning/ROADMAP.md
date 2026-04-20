@@ -71,8 +71,8 @@ Plans:
 Plans:
 - [x] 05.1-01: Spec the domain entities and source-of-truth matrix
 - [x] 05.1-02: Research implementation patterns and failure modes across Astro content, Worker backend, Stripe, and D1
-- [ ] 05.1-03: Draft internal backend interfaces and external Worker API contracts
-- [ ] 05.1-04: Freeze IDs, mappings, and static-to-dynamic linking rules for downstream phases
+- [x] 05.1-03: Draft internal backend interfaces and external Worker API contracts
+- [x] 05.1-04: Freeze IDs, mappings, and static-to-dynamic linking rules for downstream phases
 
 ### Phase 6: Static Storefront Slice
 **Goal**: Turn `/shop/` into a native storefront in the static Astro site using shared editorial content and the architecture frozen in Phase 5.1.
