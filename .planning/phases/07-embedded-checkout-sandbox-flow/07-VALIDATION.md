@@ -2,7 +2,7 @@
 
 ## Required Checks
 
-- Worker-owned catalog/offer and checkout-session APIs exist.
+- Worker-owned catalog-item/variant and checkout-session APIs exist.
 - Static frontend checkout route uses backend APIs, not Stripe secrets.
 - Embedded Checkout mounts and returns cleanly in sandbox.
 - Browser pages remain non-authoritative for paid state.

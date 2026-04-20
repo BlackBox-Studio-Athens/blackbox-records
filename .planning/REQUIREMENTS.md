@@ -14,17 +14,17 @@
 
 ### Commerce Architecture
 
-- [ ] **ARCH-01**: Team locks the commerce entity model for `Artist`, `Release`, `DistroEntry`, `ShopItem`, and `Offer/SKU` before implementation of storefront or checkout phases.
+- [ ] **ARCH-01**: Team locks the commerce entity model for `Artist`, `Release`, `DistroEntry`, `CatalogItem`, and `Variant` before implementation of storefront or checkout phases.
 - [ ] **ARCH-02**: Team locks the source-of-truth split so Astro content owns editorial content, Stripe owns sellable commerce data, and D1 owns operational state plus internal mappings.
-- [ ] **ARCH-03**: Team defines internal backend interfaces and external Worker API contracts before storefront and checkout implementation begins.
+- [ ] **ARCH-03**: Team defines internal backend interfaces and external Worker API contracts before storefront and checkout implementation begins, using backend-owned code-first OpenAPI with separate public/internal documents and generated clients.
 - [ ] **ARCH-04**: Canonical IDs, slugs, mappings, and release-to-shop linking rules are explicit before implementation.
 
 ### Catalog & Storefront
 
-- [ ] **CATA-01**: Shopper can browse a native `/shop/` catalog inside the existing shell using a unified `ShopItem` projection derived from releases and distro.
-- [ ] **CATA-02**: Shopper can view product detail that combines Astro editorial content with temporary offer state through a stable `OfferSnapshot` contract before live Stripe-backed reads are required.
+- [ ] **CATA-01**: Shopper can browse a native `/shop/` catalog inside the existing shell using a unified `CatalogItem` projection derived from releases and distro.
+- [ ] **CATA-02**: Shopper can view product detail that combines Astro editorial content with temporary variant state through a stable `VariantSnapshot` contract before live Stripe-backed reads are required.
 - [ ] **CATA-03**: Release and distro entry points can resolve to canonical native shop product pages instead of raw external shop URLs.
-- [ ] **CATA-04**: Temporary offer state remains outside editorial collections and can later swap from fixture-backed reads to Worker-backed D1/Stripe reads without changing the storefront contract.
+- [ ] **CATA-04**: Temporary variant state remains outside editorial collections and can later swap from fixture-backed reads to Worker-backed D1/Stripe reads without changing the storefront contract.
 
 ### Checkout & Payment
 
@@ -38,6 +38,14 @@
 - [ ] **ORDR-02**: Verified Stripe webhooks received by the Worker backend are authoritative for paid-order transitions.
 - [ ] **ORDR-03**: Inventory decrements once, and only once, after webhook-confirmed payment success.
 - [ ] **ORDR-04**: Failed, expired, canceled, or unpaid flows leave inventory untouched and remain traceable in D1.
+
+### Operator Access & Stock Operations
+
+- [ ] **AUTH-01**: Team members can access internal stock operations through Google-backed Cloudflare Access on a separate protected backend hostname.
+- [ ] **AUTH-02**: Internal stock writes record the authenticated operator identity and write time.
+- [ ] **INV-01**: Team members can update stock through `StockChange` and `StockCount` without direct database access.
+- [ ] **INV-02**: D1 remains the authoritative stock ledger and spreadsheets are temporary capture/reporting tools only, never the source of truth.
+- [ ] **INV-03**: Each `Variant` exposes both total `StockBalance` and a conservative `online_available` quantity so offline sales drift does not automatically oversell online.
 
 ### Shipping & Fulfillment
 
@@ -85,7 +93,7 @@
 | Multi-item cart | Single-item `Buy Now` is the approved MVP shape |
 | Non-Greece shipping paths | Greece-only BOX NOW is the approved v1 shipping scope |
 | Automated BOX NOW fulfillment | Manual partner-portal fulfillment is sufficient for projected low volume |
-| Full operator dashboard / OMS | Low order volume does not justify the maintenance cost yet |
+| Full operator dashboard / OMS beyond thin stock operations | Low order volume does not justify the maintenance cost yet |
 
 ## Traceability
 
@@ -103,6 +111,11 @@
 | CATA-02 | Phase 6 | Pending |
 | CATA-03 | Phase 6 | Pending |
 | CATA-04 | Phase 6.1 | Pending |
+| AUTH-01 | Phase 6.1.1 | Pending |
+| AUTH-02 | Phase 6.1.1 | Pending |
+| INV-01 | Phase 6.1.1 | Pending |
+| INV-02 | Phase 6.1.1 | Pending |
+| INV-03 | Phase 6.1.1 | Pending |
 | CHKO-01 | Phase 7 | Pending |
 | CHKO-02 | Phase 7 | Pending |
 | CHKO-03 | Phase 7 | Pending |
@@ -119,10 +132,11 @@
 | OPER-02 | Phase 10 | Pending |
 
 **Coverage:**
-- v1 requirements: 26 total
-- Mapped to phases: 26
+- v1 requirements: 31 total
+- Mapped to phases: 31
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-19*  
-*Last updated: 2026-04-20 after realigning to the dual-deploy commerce architecture*
+*Last updated: 2026-04-20 after adding operator auth and stock-operations planning*
+

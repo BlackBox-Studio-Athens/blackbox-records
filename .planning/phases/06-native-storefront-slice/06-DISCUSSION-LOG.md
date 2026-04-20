@@ -3,8 +3,8 @@
 ## Locked Storefront Defaults
 
 - `/shop/` becomes a native storefront inside the static Astro site.
-- The storefront uses one unified `ShopItem` projection over releases and distro.
-- The storefront reads temporary `OfferSnapshot` data through a stable contract before live backend/Stripe reads are required.
+- The storefront uses one unified `CatalogItem` projection over releases and distro.
+- The storefront reads temporary `VariantSnapshot` data through a stable contract before live backend/Stripe reads are required.
 - Release pages link to canonical shop pages, not external storefront URLs.
 
 ## Backend Boundary

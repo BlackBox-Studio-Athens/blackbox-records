@@ -26,12 +26,17 @@ Phase 5 bootstraps a **separate Cloudflare Worker backend** inside the repo. It 
 ### Secrets and trust boundaries
 - **D-07:** Runtime secrets stay in Worker secrets/bindings, not in browser code and not only in GitHub Secrets.
 - **D-08:** GitHub Secrets hold CI credentials such as Cloudflare API tokens and account identifiers.
-- **D-09:** Cloudflare Access remains deferred; the sandbox Worker must be treated as reachable, not private.
+- **D-09:** Cloudflare Access remains deferred for public sandbox browsing; the sandbox Worker must be treated as reachable, not private, until the later staff-only Access boundary is implemented.
+- **D-09.1:** The Worker does not expose synthetic probe endpoints such as `healthz`, `status`, or `readyz` by default; runtime checks rely on Wrangler, deploy success, and real API tests.
 
 ### Phase shape
 - **D-10:** Phase 5 owns only backend runtime/auth/deploy plumbing.
 - **D-11:** Phase 5.1 is the architecture gate for entities, source-of-truth, IDs, mappings, and APIs.
 - **D-12:** D1 + Prisma implementation remains deferred to Phase 6.1.
+- **D-13:** Backend application code is TypeScript-only and Hono is the only HTTP routing layer.
+- **D-14:** Backend code should begin in a layered shape with a thin composition root and no business logic in route files.
+- **D-15:** Backend behavior changes require backend-local tests, even while the scaffold is still minimal.
+- **D-16:** The backend owns HTTP contracts through code-first OpenAPI, emits separate public/internal documents, and frontend consumers use a generated workspace package instead of importing backend runtime code.
 
 ### the agent's Discretion
 - exact script names for local Worker dev/build/deploy

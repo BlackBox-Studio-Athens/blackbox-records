@@ -21,8 +21,11 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - separate Cloudflare Worker backend added to the existing Astro repo
 - explicit frontend-to-Worker environment and deployment contract
 - dedicated architecture gate for entity boundaries, IDs, mappings, and API contracts
-- native `/shop/` collection and product detail built from a unified shop projection across releases and distro
+- backend-owned code-first OpenAPI documents with a generated `@blackbox/api-client` package for frontend consumption
+- native `/shop/` collection and product detail built from a unified `CatalogItem` projection across releases and distro
 - Worker-backed D1 + Prisma foundation before Stripe checkout integration
+- protected internal stock operations surface on a separate backend hostname for label staff
+- D1-led stock ledger around `Variant`, `StockBalance`, `StockChange`, and `StockCount`, with a conservative `online_available` quantity for the public storefront
 - Greece-only BOX NOW locker selection before payment
 - Stripe embedded Checkout in sandbox with Worker-created Checkout Sessions
 - D1-backed order and inventory state driven by verified Stripe webhooks hitting the Worker backend
@@ -43,10 +46,13 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - [ ] Keep the Astro site static and deployed to GitHub Pages while adding a separate Worker backend for commerce
 - [ ] Define and document the Worker backend runtime, auth, secrets, and deployment contract
 - [ ] Freeze the commerce entity model, source-of-truth split, IDs, mappings, and APIs before storefront or checkout implementation
-- [ ] Replace the current external shop redirect with a native in-site store flow built from a shared `ShopItem` projection over releases and distro
+- [ ] Replace the current external shop redirect with a native in-site store flow built from a shared `CatalogItem` projection over releases and distro
 - [ ] Introduce Worker-side D1 + Prisma before Stripe checkout integration
+- [ ] Protect internal stock operations with Cloudflare Access + Google on a separate backend hostname
+- [ ] Give label staff a thin internal stock tool for `StockChange`, `StockCount`, and recent stock history
 - [ ] Use Stripe Products and Prices as the canonical sellable catalog and pricing source once checkout integration begins
 - [ ] Use D1 only for inventory, order lifecycle, and internal mappings, with server-owned writes
+- [ ] Treat spreadsheets as temporary capture/reporting only, never as an authoritative stock system
 - [ ] Enforce Greece-only BOX NOW locker selection before payment in v1
 - [ ] Finish the milestone with sandbox validation evidence and a clear handoff to the go-live milestone
 
@@ -69,6 +75,7 @@ The corrected milestone architecture is now dual deploy. The Astro site remains 
 - checkout session creation
 - Stripe webhook handling
 - D1-backed inventory and order lifecycle state
+- internal stock operations and operator-facing write APIs
 - later BOX NOW backend work
 
 This means the Astro site is no longer being treated as “moving to Workers” in this milestone. Instead, the frontend and backend are split intentionally:
@@ -78,9 +85,11 @@ This means the Astro site is no longer being treated as “moving to Workers” 
 - D1 owns operational state plus internal mappings
 - the Worker is the backend/BFF between the browser and Stripe/D1
 
+The stock model is now also explicit enough for offline retail reality. A storefront-facing `CatalogItem` points to one or more sellable `Variant` records. D1 tracks `StockBalance` plus a conservative `online_available` quantity for each `Variant`, and staff update stock through `StockChange` and `StockCount` workflows behind the Worker. Spreadsheets can remain temporary event-capture or reporting tools, but never become the authoritative ledger again.
+
 The new inserted Phase 5.1 is the architecture gate for this split. It must lock the domain model before implementation drifts into ad hoc duplication across content, Stripe, and D1.
 
-Current repo facts shape that decision. `releases` already reference `artists`, while `distro` carries editorial card content and Fourthwall URLs but no sellable identity or inventory model. That makes a projection layer necessary. The projection should not stuff temporary commerce fields directly into the editorial collections. Instead, it should produce a stable `ShopItem` view and link that to sellable `Offer/SKU` identities through Worker-side mappings.
+Current repo facts shape that decision. `releases` already reference `artists`, while `distro` carries editorial card content and Fourthwall URLs but no sellable identity or inventory model. That makes a projection layer necessary. The projection should not stuff temporary commerce fields directly into the editorial collections. Instead, it should produce a stable `CatalogItem` view and link that to sellable `Variant` identities through Worker-side mappings.
 
 ## Constraints
 
@@ -101,10 +110,19 @@ Current repo facts shape that decision. `releases` already reference `artists`, 
 | Keep the Astro site as a static GitHub Pages frontend during this milestone | Lowest-risk brownfield path that preserves the current content and app-shell model | ✓ Good |
 | Add a separate Cloudflare Worker backend in the same repo | Creates the minimal dynamic surface for Stripe, webhooks, and D1 without forcing a frontend hosting migration | ✓ Good |
 | Treat the Worker as a backend/BFF, not the primary frontend runtime | Matches the intended architecture and keeps the browser away from secrets and operational writes | ✓ Good |
-| Use an `Offer/SKU` layer beneath storefront-facing shop items | Separates editorial entities from sellable units, stock, and Stripe mappings | ✓ Good |
+| Do not expose synthetic probe endpoints such as `healthz`, `status`, or `readyz` by default | This backend is a thin Worker, not a containerized service with a separate actuator-style ops surface | ✓ Good |
+| Keep backend application code TypeScript-only | Prevents split language conventions and keeps backend contracts and domain models type-safe | ✓ Good |
+| Use Hono only as the Worker HTTP interface layer | Standardizes routing and JSON/error handling without pushing framework concerns into domain logic | ✓ Good |
+| Use backend-owned code-first OpenAPI with separate public/internal documents and a generated client package | Keeps the HTTP boundary explicit, avoids frontend imports of backend runtime code, and makes contract drift reviewable | ✓ Good |
+| Keep backend code DDD-layered with business names and mandatory tests | Stops backend growth from turning into route-level business logic and locks clean coding expectations early | ✓ Good |
+| Use a `Variant` layer beneath storefront-facing catalog items | Separates editorial entities from sellable units, stock, and Stripe mappings | ✓ Good |
 | Astro content owns editorial content only | Prevents operational and payment concerns from polluting content collections | ✓ Good |
 | Stripe owns sellable commerce data needed for checkout | Avoids duplicate product/price administration in the app layer | ✓ Good |
 | D1 owns operational state plus internal mappings | Keeps inventory, order lifecycle, and Stripe mappings in one backend-owned store | ✓ Good |
+| Protect internal stock operations with Cloudflare Access + Google on a separate backend hostname | Gives label staff shared access without turning shopper flows into a login product | ✓ Good |
+| Use `StockBalance`, `StockChange`, and `StockCount` as the stock ledger language | Keeps the operator model understandable and matches offline reconciliation needs | ✓ Good |
+| Keep spreadsheets as temporary capture/reporting only | Avoids dual sources of truth between D1 and ad hoc spreadsheets | ✓ Good |
+| Track a conservative `online_available` quantity alongside total stock balance | Reduces oversell risk when offline sales are reconciled later | ✓ Good |
 | Add Phase 5.1 as a hard architecture gate before storefront or checkout work continues | Prevents rework and model drift across content, backend state, and Stripe | ✓ Good |
 | Use Prisma for runtime database access while staying on D1 | Improves readability and maintainability without forcing an immediate database change | ✓ Good |
 | Use Prisma schema plus `prisma migrate diff`, with Wrangler D1 migrations applying SQL | Matches Prisma's current D1 guidance without pretending Prisma-only migrations are first-class on D1 | ✓ Good |
@@ -128,4 +146,5 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-20 after realigning to the dual-deploy commerce architecture*
+*Last updated: 2026-04-20 after adding the internal stock-operations planning lane*
+

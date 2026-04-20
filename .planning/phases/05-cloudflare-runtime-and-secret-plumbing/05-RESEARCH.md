@@ -30,7 +30,7 @@
 ## Common Pitfalls
 
 - Accidentally changing `pnpm build` so the static frontend no longer matches the Pages workflow.
-- Treating the sandbox Worker as private when Cloudflare Access is deferred.
+- Treating the sandbox Worker as private while public-surface Cloudflare Access is deferred.
 - Coupling frontend and backend env vars so tightly that local dev becomes brittle.
 
 ## Code Examples

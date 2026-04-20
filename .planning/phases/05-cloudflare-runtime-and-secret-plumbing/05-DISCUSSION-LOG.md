@@ -11,7 +11,7 @@
 - local auth uses `wrangler login`
 - CI auth uses `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
 - backend secrets stay in Worker secrets/bindings
-- Cloudflare Access is deferred
+- Cloudflare Access is deferred for public sandbox browsing
 
 ## Why Phase 5 Changed
 

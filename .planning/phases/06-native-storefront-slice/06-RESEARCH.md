@@ -4,13 +4,13 @@
 
 - Astro content collections for editorial data
 - app-shell-managed navigation and route experience
-- projection layer producing `ShopItem`
-- temporary `OfferSnapshot` adapter matching the future backend API shape
+- projection layer producing `CatalogItem`
+- temporary `VariantSnapshot` adapter matching the future backend API shape
 
 ## Architecture Patterns
 
 - static storefront pages generated from content-derived projections
-- canonical shop slug separate from backend or Stripe identifiers
+- canonical catalog slug separate from backend or Stripe identifiers
 - frontend contract stable before backend implementation arrives
 
 ## Don't Hand-Roll
@@ -21,15 +21,16 @@
 
 ## Common Pitfalls
 
-- mixing `ShopItem` and `Offer` into one unstable object
+- mixing `CatalogItem` and `Offer` into one unstable object
 - leaving release pages coupled to old external shop URLs
-- letting temporary offer data shape diverge from the later backend contract
+- letting temporary variant data shape diverge from the later backend contract
 
 ## Code Examples
 
-- browse route consumes `ShopItem[]`
-- PDP consumes `ShopItem + OfferSnapshot`
-- checkout handoff shell uses canonical shop slug plus offer identity contract
+- browse route consumes `CatalogItem[]`
+- PDP consumes `CatalogItem + VariantSnapshot`
+- checkout handoff shell uses canonical catalog slug plus variant identity contract
 
 ---
 *Research updated: 2026-04-20*
+

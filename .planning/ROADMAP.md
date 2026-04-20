@@ -30,6 +30,7 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - [ ] **Phase 5.1: Commerce Domain Architecture And Source-Of-Truth Research** - Lock entity boundaries, source-of-truth rules, IDs, mappings, and API contracts before storefront or checkout implementation
 - [ ] **Phase 6: Static Storefront Slice** - Replace `/shop/` with a native static storefront built from shared editorial content and a stable shop projection
 - [ ] **Phase 6.1: Worker Commerce State Foundation** - Introduce D1 + Prisma in the separate Worker backend behind repository and API boundaries before checkout work
+- [ ] **Phase 6.1.1: Internal Stock Operations And Operator Access** - Add protected staff-only stock tooling and operator auth before checkout depends on live stock
 - [ ] **Phase 7: Worker Checkout And Stripe Sandbox Flow** - Implement Worker-owned checkout APIs and connect the frontend checkout route to Stripe sandbox
 - [ ] **Phase 8: Webhook Orders And Inventory** - Make payment truth and stock mutation Worker-owned, webhook-authoritative, and idempotent
 - [ ] **Phase 9: Greece-Only BOX NOW Shipping** - Add the approved locker-selection gate and thin fulfillment data contract
@@ -44,7 +45,7 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 **Success Criteria** (what must be TRUE):
 1. The Astro site keeps its static Pages build path and remains the frontend deployment target during this milestone.
 2. A separate Cloudflare Worker backend can be built, configured, and run locally without changing the frontend runtime model.
-3. Frontend-to-Worker environment contracts, sandbox deployment plumbing, and server-only secret boundaries are explicit.
+3. Frontend-to-Worker environment contracts, sandbox deployment plumbing, server-only secret boundaries, the no-probe-endpoint runtime posture, the TS-only Hono backend conventions, and the code-first OpenAPI contract foundation are explicit.
 **Plans**: 6 plans
 **Review gate**: Human review required before the separate backend runtime and auth/deploy assumptions are treated as stable.
 
@@ -61,9 +62,9 @@ Plans:
 **Depends on**: Phase 5
 **Requirements**: ARCH-01, ARCH-02, ARCH-03, ARCH-04
 **Success Criteria** (what must be TRUE):
-1. The entity model for `Artist`, `Release`, `DistroEntry`, `ShopItem`, and `Offer/SKU` is explicit and decision-complete.
+1. The entity model for `Artist`, `Release`, `DistroEntry`, `CatalogItem`, and `Variant` is explicit and decision-complete.
 2. Astro content, Stripe, and D1 ownership boundaries are locked with no ambiguous overlap.
-3. Canonical IDs, mappings, internal interfaces, and external Worker APIs are drafted clearly enough that Phases 6, 6.1, and 7 can implement without re-deciding architecture.
+3. Canonical IDs, mappings, internal interfaces, external Worker APIs, backend naming conventions, and the backend-owned OpenAPI/generation contract are drafted clearly enough that Phases 6, 6.1, and 7 can implement without re-deciding architecture.
 **Plans**: 4 plans
 **Review gate**: Human review required because this phase locks the architecture that every later commerce phase consumes.
 
@@ -78,16 +79,16 @@ Plans:
 **Depends on**: Phase 5.1
 **Requirements**: CATA-01, CATA-02, CATA-03
 **Success Criteria** (what must be TRUE):
-1. Shopper can browse a native `/shop/` catalog built from a stable `ShopItem` projection derived from releases and distro entries.
-2. Shopper can open a native product detail page that reuses editorial assets and summaries while reading temporary offer state through the approved contract.
+1. Shopper can browse a native `/shop/` catalog built from a stable `CatalogItem` projection derived from releases and distro entries.
+2. Shopper can open a native product detail page that reuses editorial assets and summaries while reading temporary variant state through the approved contract.
 3. Release and distro entry points route into canonical native shop product pages instead of raw external shop URLs.
 **Plans**: 7 plans
 **Review gate**: Human review required if implementation drifts from the approved storefront UI contract or from the Phase 5.1 architecture.
 
 Plans:
-- [ ] 06-01: Implement the shared `ShopItem` projection contract in the static frontend
-- [ ] 06-02: Implement cross-collection mapping rules from releases and distro into shop items
-- [ ] 06-03: Add the temporary offer-state adapter that matches the future backend API shape
+- [ ] 06-01: Implement the shared `CatalogItem` projection contract in the static frontend
+- [ ] 06-02: Implement cross-collection mapping rules from releases and distro into catalog items
+- [ ] 06-03: Add the temporary variant-state adapter that matches the future backend API shape
 - [ ] 06-04: Replace `/shop/` redirect with the native collection route
 - [ ] 06-05: Build the product detail route and `Buy Now` handoff shell
 - [ ] 06-06: Add release-to-shop navigation using canonical shop links
@@ -100,7 +101,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
 1. Local D1 bindings and Worker-compatible Prisma runtime access exist inside the separate backend.
 2. The migration workflow is defined before checkout implementation depends on backend state.
-3. Backend repositories can evolve from temporary offer snapshots to D1-backed reads without changing the Phase 6 storefront contract.
+3. Backend repositories can evolve from temporary variant snapshots to D1-backed reads without changing the Phase 6 storefront contract, while staying inside the TS-only Hono + layered-boundary standard.
 **Plans**: 4 plans
 **Review gate**: Human review required before Stripe checkout work consumes the backend state model.
 
@@ -108,21 +109,40 @@ Plans:
 - [ ] 06.1-01: Bootstrap local D1 and Worker bindings
 - [ ] 06.1-02: Add Prisma runtime access and repository seams in the Worker backend
 - [ ] 06.1-03: Establish the migration workflow baseline
-- [ ] 06.1-04: Move backend offer and mapping reads from temporary data toward D1-backed repositories where needed
+- [ ] 06.1-04: Move backend variant and mapping reads from temporary data toward D1-backed repositories where needed
+
+### Phase 06.1.1: Internal Stock Operations And Operator Access (INSERTED)
+
+**Goal**: Add a protected staff-only stock operations surface on the Worker backend before public checkout depends on live stock.
+**Depends on**: Phase 6.1
+**Requirements**: AUTH-01, AUTH-02, INV-01, INV-02, INV-03
+**Success Criteria** (what must be TRUE):
+1. Team members can reach an internal stock tool through Google-backed Cloudflare Access on a separate protected backend hostname, while public storefront and shopper checkout remain unauthenticated.
+2. The Worker backend exposes protected internal APIs for variant discovery, stock visibility, `StockChange`, and `StockCount`, and every write records operator identity and time using the same TS-only Hono + layered-boundary standard.
+3. D1 is explicitly the authoritative stock ledger, spreadsheets are explicitly non-authoritative, and the online-vs-offline stock policy is locked before checkout consumes stock state.
+4. The operator UI is concrete enough that label staff can update stock without direct database access or Decap reuse.
+**Plans**: 4 plans
+**Review gate**: Human review required because this phase locks staff authentication, stock-write semantics, and the operator workflow that later checkout relies on.
+
+Plans:
+- [ ] 06.1.1-01: Lock the protected hostname and Cloudflare Access + Google contract for internal operators
+- [ ] 06.1.1-02: Define the internal stock API and D1 ledger contract around `Variant`, `StockBalance`, `StockChange`, and `StockCount`
+- [ ] 06.1.1-03: Design the internal stock operations UI for search, balance, history, and write actions
+- [ ] 06.1.1-04: Lock spreadsheet policy, audit attribution, and the online-vs-offline stock buffer rules
 
 ### Phase 7: Worker Checkout And Stripe Sandbox Flow
 **Goal**: Implement the Worker-owned checkout API surface and connect the static frontend checkout route to Stripe sandbox.
-**Depends on**: Phase 6.1
+**Depends on**: Phase 6.1.1
 **Requirements**: CHKO-01, CHKO-02, CHKO-03
 **Success Criteria** (what must be TRUE):
-1. The Worker backend exposes the required catalog-offer and checkout-session endpoints using the approved domain contracts.
+1. The Worker backend exposes the required catalog-item/variant and checkout-session endpoints using the approved domain contracts and the locked backend conventions.
 2. The static frontend checkout route mounts embedded Checkout using data and session state obtained through the Worker backend, not directly from Stripe.
 3. The checkout path is testable locally and in sandbox using Stripe sandbox and webhook tooling.
 **Plans**: 3 plans
 **Review gate**: Human review required on the final backend API contract and shopper-facing retry/return behavior.
 
 Plans:
-- [ ] 07-01: Implement Worker APIs for item lookup, offer lookup, and checkout-session creation
+- [ ] 07-01: Implement Worker APIs for item lookup, variant lookup, and checkout-session creation
 - [ ] 07-02: Connect the static frontend checkout route to the Worker APIs and embedded Checkout
 - [ ] 07-03: Validate the checkout loop locally and in sandbox with Stripe sandbox and webhook testing
 
@@ -183,7 +203,7 @@ Plans:
 ## Progress
 
 **Execution Order:**  
-Phases execute in numeric order: `5 → 5.1 → 6 → 6.1 → 7 → 8 → 9 → 10`
+Phases execute in numeric order: `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 8 → 9 → 10`
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -191,7 +211,9 @@ Phases execute in numeric order: `5 → 5.1 → 6 → 6.1 → 7 → 8 → 9 → 
 | 5.1. Commerce Domain Architecture And Source-Of-Truth Research | 0/4 | Planned |  |
 | 6. Static Storefront Slice | 0/7 | Planned |  |
 | 6.1. Worker Commerce State Foundation | 0/4 | Planned |  |
+| 6.1.1. Internal Stock Operations And Operator Access | 0/4 | Planned |  |
 | 7. Worker Checkout And Stripe Sandbox Flow | 0/3 | Planned |  |
 | 8. Webhook Orders And Inventory | 0/3 | Planned |  |
 | 9. Greece-Only BOX NOW Shipping | 0/3 | Planned |  |
 | 10. Sandbox Verification And Release Gate | 0/2 | Planned |  |
+

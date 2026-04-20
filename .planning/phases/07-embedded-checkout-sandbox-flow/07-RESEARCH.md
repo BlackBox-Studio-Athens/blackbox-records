@@ -26,9 +26,10 @@
 
 ## Code Examples
 
-- backend item/offer lookup endpoint
+- backend item/variant lookup endpoint
 - backend checkout-session creation endpoint
 - frontend checkout page fetching session state from backend
 
 ---
 *Research completed: 2026-04-20*
+

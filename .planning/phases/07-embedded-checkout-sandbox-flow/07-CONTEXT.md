@@ -13,6 +13,15 @@ Phase 7 implements Worker-owned checkout APIs and connects the static frontend c
 <decisions>
 ## Implementation Decisions
 
+- **D-01:** Checkout HTTP endpoints remain TypeScript-only and use Hono only at the HTTP interface layer.
+- **D-02:** Checkout handlers delegate to business-named application/use-case modules rather than embedding Stripe flow logic directly in route files.
+- **D-03:** Checkout endpoint changes require backend-local tests plus HTTP smoke coverage.
+
+</decisions>
+
+<decisions>
+## Implementation Decisions
+
 - **D-01:** The Worker backend creates Checkout Sessions.
 - **D-02:** The frontend checkout route consumes Worker APIs, not direct Stripe secret APIs.
 - **D-03:** Embedded Checkout remains the approved shopper-facing form factor.
@@ -24,8 +33,8 @@ Phase 7 implements Worker-owned checkout APIs and connects the static frontend c
 <specifics>
 ## Specific Ideas
 
-- Separate item lookup, offer lookup, and checkout-session creation concerns in the backend API.
-- Keep the frontend coupled to shop slugs and `OfferSnapshot`, not to Stripe IDs.
+- Separate item lookup, variant lookup, and checkout-session creation concerns in the backend API.
+- Keep the frontend coupled to catalog slugs and `VariantSnapshot`, not to Stripe IDs.
 - Treat sandbox validation as an API-plus-frontend integration problem, not a frontend-only task.
 
 </specifics>
@@ -45,3 +54,4 @@ Phase 7 implements Worker-owned checkout APIs and connects the static frontend c
 
 *Phase: 07-embedded-checkout-sandbox-flow*
 *Context gathered: 2026-04-20*
+

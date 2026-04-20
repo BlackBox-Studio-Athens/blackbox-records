@@ -14,12 +14,12 @@ Phase 6 turns `/shop/` into a native storefront inside the static Astro site. It
 ## Implementation Decisions
 
 ### Storefront model
-- **D-01:** Use one unified `ShopItem` projection over `releases` and `distro`.
-- **D-02:** Keep the `ShopItem` projection separate from editorial collections.
+- **D-01:** Use one unified `CatalogItem` projection over `releases` and `distro`.
+- **D-02:** Keep the `CatalogItem` projection separate from editorial collections.
 - **D-03:** `artists` remain editorial/navigation entities, not sellable entities.
 
 ### Offer state
-- **D-04:** Phase 6 uses a temporary `OfferSnapshot` adapter that matches the future backend contract.
+- **D-04:** Phase 6 uses a temporary `VariantSnapshot` adapter that matches the future backend contract.
 - **D-05:** The storefront contract must stay stable so later Worker-backed and D1/Stripe-backed reads do not force route or component rewrites.
 - **D-06:** The static storefront must not depend on direct browser access to Stripe or D1.
 
@@ -41,7 +41,7 @@ Phase 6 turns `/shop/` into a native storefront inside the static Astro site. It
 <specifics>
 ## Specific Ideas
 
-- Build the storefront around a stable `ShopItem` plus `OfferSnapshot` UI contract.
+- Build the storefront around a stable `CatalogItem` plus `VariantSnapshot` UI contract.
 - Let the first native shop be visually real and navigable before backend and Stripe integration land.
 - Keep all frontend data shapes backend-agnostic so the Worker can slot in later without redesign.
 
@@ -72,7 +72,7 @@ Phase 6 turns `/shop/` into a native storefront inside the static Astro site. It
 <deferred>
 ## Deferred Ideas
 
-- Worker-backed live offer reads
+- Worker-backed live variant reads
 - checkout session creation
 - webhook verification
 - authoritative order lifecycle state

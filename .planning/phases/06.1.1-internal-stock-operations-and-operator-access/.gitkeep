@@ -1,0 +1,18 @@
+# Phase 6.1 Validation
+
+## Required Checks
+
+- local D1 bootstrap exists in the Worker backend
+- Prisma runtime access exists in the Worker backend
+- migration workflow is explicit
+- frontend storefront contract remains unchanged
+- D1 state remains operational/mapping-oriented, not editorial
+
+## Review Questions
+
+- Is any D1 or Prisma concern leaking into the frontend?
+- Is any pricing authority being moved into D1 too early?
+- Can Phase 7 consume backend repositories and APIs without redesigning Phase 6 UI contracts?
+
+---
+*Validation updated: 2026-04-20*
