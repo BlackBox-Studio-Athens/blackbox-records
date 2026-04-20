@@ -1,17 +1,17 @@
-export { createPublicApiClient } from '@blackbox/api-client';
+export { createPublicApiFetcher } from '@blackbox/api-client';
 
-export type { PublicApiClient, PublicApiComponents, PublicApiOperations, PublicApiPaths } from '@blackbox/api-client';
+export type { PublicApiComponents, PublicApiFetcher, PublicApiOperations, PublicApiPaths } from '@blackbox/api-client';
 
-import { createPublicApiClient } from '@blackbox/api-client';
+import { createPublicApiFetcher } from '@blackbox/api-client';
 
 import { getPublicBackendBaseUrl } from './public-backend-config';
 
-export function createConfiguredPublicApiClient() {
-    const backendBaseUrl = getPublicBackendBaseUrl();
+export function createConfiguredPublicApiFetcher(configuredValue?: string) {
+    const backendBaseUrl = getPublicBackendBaseUrl(configuredValue);
 
     if (!backendBaseUrl) {
         return null;
     }
 
-    return createPublicApiClient(backendBaseUrl);
+    return createPublicApiFetcher(backendBaseUrl);
 }

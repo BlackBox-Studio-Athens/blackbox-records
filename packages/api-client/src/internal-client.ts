@@ -1,11 +1,15 @@
-import createClient from 'openapi-fetch';
+import { Fetcher } from 'openapi-typescript-fetch';
 
 import type { paths as InternalApiPaths } from './generated/internal/schema';
 
-export function createInternalApiClient(baseUrl: string) {
-    return createClient<InternalApiPaths>({
+export function createInternalApiFetcher(baseUrl: string) {
+    const fetcher = Fetcher.for<InternalApiPaths>();
+
+    fetcher.configure({
         baseUrl,
     });
+
+    return fetcher;
 }
 
-export type InternalApiClient = ReturnType<typeof createInternalApiClient>;
+export type InternalApiFetcher = ReturnType<typeof createInternalApiFetcher>;

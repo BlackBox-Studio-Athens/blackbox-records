@@ -1,8 +1,8 @@
-export { createInternalApiClient } from './internal-client';
-export { createPublicApiClient } from './public-client';
+export { createInternalApiFetcher } from './internal-client';
+export { createPublicApiFetcher } from './public-client';
 
-export type { InternalApiClient } from './internal-client';
-export type { PublicApiClient } from './public-client';
+export type { InternalApiFetcher } from './internal-client';
+export type { PublicApiFetcher } from './public-client';
 export type {
     components as InternalApiComponents,
     operations as InternalApiOperations,

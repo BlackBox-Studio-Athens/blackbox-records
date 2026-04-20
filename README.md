@@ -99,7 +99,7 @@ Current Worker scope:
 - no Stripe, D1, Prisma, or frontend wiring yet
 - no production deployment path yet
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
-- generated frontend-facing types and fetch clients live in `packages/api-client/`
+- generated frontend-facing types and `openapi-typescript-fetch` wrappers live in `packages/api-client/`
 - frontend discovers the backend only through `PUBLIC_BACKEND_BASE_URL`
 
 Clean dev run (mirrors the `ateleia` workflow):
@@ -136,6 +136,7 @@ pnpm generate:api
   - `apps/backend/openapi/public-openapi.json`
   - `apps/backend/openapi/internal-openapi.json`
 - Frontend code must consume backend API types through `@blackbox/api-client`, not by importing backend runtime modules.
+- `@blackbox/api-client` uses `openapi-typescript-fetch` as the runtime client layer on top of the generated schema types.
 
 ## Frontend-to-Worker URL contract
 

@@ -8,14 +8,16 @@
   },
   "scripts": {
     "generate": "pnpm exec tsx scripts/generate-api-client.ts",
-    "check": "tsc --noEmit -p tsconfig.json"
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
   },
   "dependencies": {
-    "openapi-fetch": "^0.14.0"
+    "openapi-typescript-fetch": "^2.2.1"
   },
   "devDependencies": {
     "openapi-typescript": "^7.10.1",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.4"
   }
 }

@@ -1,11 +1,15 @@
-import createClient from 'openapi-fetch';
+import { Fetcher } from 'openapi-typescript-fetch';
 
 import type { paths as PublicApiPaths } from './generated/public/schema';
 
-export function createPublicApiClient(baseUrl: string) {
-    return createClient<PublicApiPaths>({
+export function createPublicApiFetcher(baseUrl: string) {
+    const fetcher = Fetcher.for<PublicApiPaths>();
+
+    fetcher.configure({
         baseUrl,
     });
+
+    return fetcher;
 }
 
-export type PublicApiClient = ReturnType<typeof createPublicApiClient>;
+export type PublicApiFetcher = ReturnType<typeof createPublicApiFetcher>;

@@ -21,9 +21,10 @@
     "check:web": "pnpm --filter @blackbox/web check",
     "check:backend": "pnpm --filter @blackbox/backend check",
     "check:api-client": "pnpm --filter @blackbox/api-client check",
-    "test:unit": "pnpm test:web && pnpm test:backend",
+    "test:unit": "pnpm test:web && pnpm test:backend && pnpm test:api-client",
     "test:web": "pnpm --filter @blackbox/web test:unit",
-    "test:backend": "pnpm --filter @blackbox/backend test"
+    "test:backend": "pnpm --filter @blackbox/backend test",
+    "test:api-client": "pnpm --filter @blackbox/api-client test"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.8",
