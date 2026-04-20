@@ -80,6 +80,12 @@ Run the separate Worker backend scaffold locally:
 pnpm dev:backend
 ```
 
+Bootstrap backend-local Wrangler secrets:
+
+```sh
+cp apps/backend/.dev.vars.example apps/backend/.dev.vars
+```
+
 Deploy the sandbox Worker manually:
 
 ```sh
@@ -108,6 +114,7 @@ Current Worker scope:
 - generated frontend-facing types and `openapi-typescript-fetch` wrappers live in `packages/api-client/`
 - frontend discovers the backend only through `PUBLIC_BACKEND_BASE_URL`
 - the dedicated sandbox deploy target is the `blackbox-records-backend-sandbox` Worker on `workers.dev`
+- runtime business secrets stay in Worker secrets or backend-local Wrangler `.dev.vars`, not in browser env vars or GitHub deploy credentials
 
 Clean dev run (mirrors the `ateleia` workflow):
 
@@ -159,6 +166,35 @@ pnpm generate:api
 - The frontend must not guess production or sandbox backend origins in code.
 - Worker secrets, D1 bindings, Stripe secrets, Cloudflare Access config, and CI credentials remain backend/server-side only.
 
+## Worker secrets and CI auth
+
+- Backend runtime secrets belong to the Worker runtime, not to Astro browser env vars and not to GitHub Actions.
+- The current backend-local runtime secret contract is:
+  - `STRIPE_SECRET_KEY`
+  - `STRIPE_WEBHOOK_SECRET`
+- Future privileged backend-only values such as D1 bindings and BOX NOW credentials also remain runtime-only, but their exact names are deferred to the phases that introduce them.
+- `PUBLIC_BACKEND_BASE_URL` remains the only browser-facing backend env.
+
+Local development:
+
+```sh
+cp apps/backend/.dev.vars.example apps/backend/.dev.vars
+```
+
+- Fill `apps/backend/.dev.vars` locally before running `pnpm dev:backend` or `pnpm dev:backend:sandbox`.
+- `apps/backend/.dev.vars` is local-only, ignored by git, and must never be committed.
+- Missing runtime secrets are acceptable today because no route uses them yet.
+- Once Stripe-backed backend routes land, those routes must require the secrets to exist before use.
+
+CI/deploy credentials:
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+- These GitHub credentials are only for authenticating CI or a developer into Cloudflare for deployment.
+- They are not the Worker's runtime business secrets.
+- Deployed runtime secrets terminate as Cloudflare Worker secrets/bindings, not as browser env vars and not as GitHub-only config.
+
 ## Sandbox backend CI/CD
 
 - The static Astro site continues to deploy only through `.github/workflows/pages.yml`.
@@ -170,6 +206,9 @@ pnpm generate:api
   - runs `pnpm test:backend`
   - runs `pnpm check:backend`
   - deploys only the backend workspace to Cloudflare Workers
+- The sandbox `workers.dev` backend is a reachable sandbox target for browser checks, Stripe return URLs, and webhook testing.
+- Cloudflare Access is not part of public sandbox browsing at this stage.
+- The separate protected staff-only hostname and Google-backed Access boundary are deferred to Phase `06.1.1`.
 
 ## GitHub Pages CI/CD
 

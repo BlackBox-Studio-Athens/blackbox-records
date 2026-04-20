@@ -47,11 +47,14 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - Backend dev server: `pnpm dev:backend`
 - Backend sandbox dev server: `pnpm dev:backend:sandbox`
 - Backend sandbox deploy: `pnpm deploy:backend:sandbox`
+- Backend local secrets: copy `apps/backend/.dev.vars.example` to `apps/backend/.dev.vars`
 - Generate backend OpenAPI docs and client package: `pnpm generate:api`
 - Clean dev run: `pnpm dev:clean`
 - Unit tests: `pnpm test:unit`
 - Type/content checks: `pnpm check`
 - Production build: `pnpm build`
+- Runtime backend secrets belong in Worker secrets or `apps/backend/.dev.vars`, not in Astro public env vars or GitHub deploy credentials.
+- The current backend-local secret contract is `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
 
 ### Required command policy
 

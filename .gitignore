@@ -48,6 +48,8 @@ dist/
 .astro/
 node_modules/.astro/
 node_modules/.vite/
+.dev.vars
+**/.dev.vars
 
 cachedData/
 files/
