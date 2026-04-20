@@ -35,6 +35,7 @@ jobs:
           DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT }}
           DECAPBRIDGE_GATEWAY_URL: ${{ vars.DECAPBRIDGE_GATEWAY_URL }}
         with:
+          path: ./apps/web
           node-version: 22
           package-manager: pnpm@10.29.3
           cache: true

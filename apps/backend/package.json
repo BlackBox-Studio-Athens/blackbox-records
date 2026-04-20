@@ -1,0 +1,13 @@
+{
+  "name": "@blackbox/backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "dev:sandbox": "wrangler dev --env sandbox"
+  },
+  "devDependencies": {
+    "wrangler": "^4.83.0"
+  }
+}

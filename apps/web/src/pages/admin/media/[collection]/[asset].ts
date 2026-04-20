@@ -1,5 +1,6 @@
 import { readFile, readdir } from 'node:fs/promises';
-import { extname, resolve } from 'node:path';
+import { dirname, extname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import type { APIRoute, GetStaticPaths } from 'astro';
 
@@ -24,12 +25,13 @@ const contentTypes = {
   '.png': 'image/png',
   '.webp': 'image/webp',
 } as const;
+const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../..');
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const paths = [];
 
   for (const [collection, directory] of Object.entries(collectionDirectories)) {
-    const absoluteDirectory = resolve(process.cwd(), directory);
+    const absoluteDirectory = resolve(appRoot, directory);
     const entries = await readdir(absoluteDirectory, { withFileTypes: true });
 
     for (const entry of entries) {
@@ -67,7 +69,7 @@ export const GET: APIRoute = async ({ params }) => {
     return new Response(null, { status: 404 });
   }
 
-  const absoluteFilePath = resolve(process.cwd(), directory, asset);
+  const absoluteFilePath = resolve(appRoot, directory, asset);
   const extension = extname(asset).toLowerCase() as keyof typeof contentTypes;
   const fileBuffer = await readFile(absoluteFilePath);
 

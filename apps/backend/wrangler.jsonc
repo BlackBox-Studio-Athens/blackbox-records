@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "blackbox-records-backend-dev",
-  "main": "worker/index.ts",
+  "main": "src/index.ts",
   "compatibility_date": "2026-04-20",
   "workers_dev": true,
   "vars": {

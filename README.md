@@ -6,9 +6,9 @@ Static Astro site for the BlackBox Records label.
 
 - Astro 5 (static output)
 - React integration (for shadcn-ui primitives)
-- Tailwind CSS v4 + shadcn-ui setup (design implemented in Astro templates + `src/styles/global.css`)
-- Type-safe content collections (`src/content`)
-- Separate Cloudflare Worker backend scaffold (`worker/index.ts`)
+- Tailwind CSS v4 + shadcn-ui setup (design implemented in Astro templates + `apps/web/src/styles/global.css`)
+- Type-safe content collections (`apps/web/src/content`)
+- Separate Cloudflare Worker backend scaffold (`apps/backend/src/index.ts`)
 
 ## URL model
 
@@ -17,7 +17,7 @@ The production deployment is configured for GitHub Pages project hosting:
 - `site`: `https://blackbox-studio-athens.github.io`
 - `base`: `/blackbox-records/`
 
-This is configured in `astro.config.mjs`.
+This is configured in `apps/web/astro.config.mjs`.
 
 ## Navigation model
 
@@ -40,7 +40,7 @@ pnpm install
 
 ## shadcn MCP registries
 
-`components.json` is configured with a curated multi-registry set:
+`apps/web/components.json` is configured with a curated multi-registry set:
 
 - `@21st`: `https://21st.dev/r/shadcn/{name}`
 - `@magicui`: `https://magicui.design/r/{name}`
@@ -51,8 +51,8 @@ pnpm install
 Quick checks:
 
 ```sh
-pnpm dlx shadcn@latest search '@magicui' -q hero -l 5
-pnpm dlx shadcn@latest search '@blocks' -q dashboard -l 5
+pnpm --dir apps/web dlx shadcn@latest search '@magicui' -q hero -l 5
+pnpm --dir apps/web dlx shadcn@latest search '@blocks' -q dashboard -l 5
 ```
 
 Notes:
@@ -67,7 +67,19 @@ Notes:
 pnpm dev
 ```
 
+Run the Astro frontend explicitly:
+
+```sh
+pnpm dev:web
+```
+
 Run the separate Worker backend scaffold locally:
+
+```sh
+pnpm dev:backend
+```
+
+Compatibility alias:
 
 ```sh
 pnpm worker:dev
@@ -106,37 +118,37 @@ pnpm build
 
 ## Content model
 
-Content is managed in the repo through Astro content collections, and Decap CMS now provides an editing layer on top of the same `src/content/**` files.
+Content is managed in the repo through Astro content collections, and Decap CMS now provides an editing layer on top of the same `apps/web/src/content/**` files.
 
-- Artists: `src/content/artists/*.md`
-- Releases: `src/content/releases/*.md`
-- Distro items: `src/content/distro/*.json`
-- News: `src/content/news/*.md`
-- Home copy: `src/content/home/*.json`
-- About copy: `src/content/about/*.json`
-- Services copy: `src/content/services/*.json`
-- Navigation: `src/content/navigation/*.json`
-- Social links: `src/content/socials/*.json`
-- Site settings: `src/content/settings/*.json`
+- Artists: `apps/web/src/content/artists/*.md`
+- Releases: `apps/web/src/content/releases/*.md`
+- Distro items: `apps/web/src/content/distro/*.json`
+- News: `apps/web/src/content/news/*.md`
+- Home copy: `apps/web/src/content/home/*.json`
+- About copy: `apps/web/src/content/about/*.json`
+- Services copy: `apps/web/src/content/services/*.json`
+- Navigation: `apps/web/src/content/navigation/*.json`
+- Social links: `apps/web/src/content/socials/*.json`
+- Site settings: `apps/web/src/content/settings/*.json`
 - Collection-owned images live next to their Markdown entries and are validated by Astro content schemas.
 - JSON collection entries include `$schema` references to Astro-generated collection schemas for editor/CMS validation.
 - Artists and releases may include an optional `shop_collection_handle` for future Fourthwall collection linking.
 - Home/about decorative images are now validated as Astro image fields.
 - Home, About, and Services now store their page sections as editable block lists in Decap so whole sections can be deleted or reordered when needed.
 
-Collection schemas are defined in `src/content.config.ts`.
+Collection schemas are defined in `apps/web/src/content.config.ts`.
 
 ## Decap CMS
 
 BlackBox now ships with an Astro-hosted Decap CMS at `/admin/`.
 
-- Admin entry: `src/pages/admin/index.astro`
-- Generated config: `src/pages/admin/config.yml.ts`
-- Admin styling: `public/admin/admin.css`
-- Preview styling/runtime: `public/admin/preview.css`, `public/admin/init.js`
-- Local Decap proxy: `scripts/start-decap-proxy.mjs`
-- Combined local CMS dev server: `scripts/start-cms-dev.mjs`
-- Global Decap media browser root: `src/content/uploads/`
+- Admin entry: `apps/web/src/pages/admin/index.astro`
+- Generated config: `apps/web/src/pages/admin/config.yml.ts`
+- Admin styling: `apps/web/public/admin/admin.css`
+- Preview styling/runtime: `apps/web/public/admin/preview.css`, `apps/web/public/admin/init.js`
+- Local Decap proxy: `apps/web/scripts/start-decap-proxy.mjs`
+- Combined local CMS dev server: `apps/web/scripts/start-cms-dev.mjs`
+- Global Decap media browser root: `apps/web/src/content/uploads/`
 
 ### Local CMS development
 
@@ -224,7 +236,7 @@ Notes:
 
 ### Media assets behavior
 
-- The Decap `Media assets` drawer is rooted at `src/content/uploads/`.
+- The Decap `Media assets` drawer is rooted at `apps/web/src/content/uploads/`.
 - That folder acts as a mirrored library of the images currently in use across the site, including the brand assets that otherwise live in `public/assets/images/brand/`.
 - Decap’s global media drawer does not aggregate collection-local image folders into one repo-wide browser, so the mirrored uploads folder exists specifically to make those current assets appear in the drawer.
 - Collection image fields still keep their per-collection `media_folder` / `public_folder` overrides, so editing existing content continues to save files beside the relevant entries and remains compatible with Astro `image()` fields.

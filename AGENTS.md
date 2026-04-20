@@ -11,6 +11,7 @@ Current production storefront behavior still uses static GitHub Pages deployment
 
 ## Current stack
 
+- pnpm workspace monorepo
 - Astro 5, static output
 - React integration for shadcn-ui primitives and the persistent app shell
 - Tailwind CSS v4 + shadcn-ui primitives
@@ -31,17 +32,19 @@ Current production storefront behavior still uses static GitHub Pages deployment
 Read these first before editing:
 
 1. `README.md`
-2. `astro.config.mjs`
-3. `src/content.config.ts`
-4. `src/layouts/SiteLayout.astro`
-5. `src/components/app-shell/AppShell.astro`
-6. `src/components/app-shell/AppShellRoot.tsx`
+2. `apps/web/astro.config.mjs`
+3. `apps/web/src/content.config.ts`
+4. `apps/web/src/layouts/SiteLayout.astro`
+5. `apps/web/src/components/app-shell/AppShell.astro`
+6. `apps/web/src/components/app-shell/AppShellRoot.tsx`
 Then inspect only task-relevant files with `rg` and scoped reads.
 
 ## Commands
 
 - Install deps: `pnpm install`
-- Dev server: `pnpm dev`
+- Frontend dev server: `pnpm dev` or `pnpm dev:web`
+- Backend dev server: `pnpm dev:backend`
+- Backend sandbox dev server: `pnpm dev:backend:sandbox`
 - Clean dev run: `pnpm dev:clean`
 - Unit tests: `pnpm test:unit`
 - Type/content checks: `pnpm check`
@@ -65,7 +68,7 @@ Then inspect only task-relevant files with `rg` and scoped reads.
   - `pnpm check`
   - `pnpm build`
 - The workflow uses `withastro/action@v5` with Node 22 and built-in pnpm/Astro caching
-- Configured in `astro.config.mjs`
+- Configured in `apps/web/astro.config.mjs`
   - `site: https://blackbox-studio-athens.github.io`
   - `base: /blackbox-records/`
 - Do not change `site` or `base` unless the task explicitly requires deployment URL changes.
@@ -74,38 +77,41 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 ## Project map
 
 - Layout/document shell:
-  - `src/layouts/SiteLayout.astro`
+  - `apps/web/src/layouts/SiteLayout.astro`
 - Persistent shell:
-  - `src/components/app-shell/AppShell.astro`
-  - `src/components/app-shell/AppShellRoot.tsx`
-  - `src/lib/app-shell/routing.ts`
+  - `apps/web/src/components/app-shell/AppShell.astro`
+  - `apps/web/src/components/app-shell/AppShellRoot.tsx`
+  - `apps/web/src/lib/app-shell/routing.ts`
 - Content/data queries:
-  - `src/lib/site-data.ts`
+  - `apps/web/src/lib/site-data.ts`
 - Detail fragments:
-  - `src/components/detail/*.astro`
+  - `apps/web/src/components/detail/*.astro`
 - Cards/hero/header/footer:
-  - `src/components/**`
+  - `apps/web/src/components/**`
 - Overlay partial routes:
-  - `src/pages/app-shell-overlay/**`
+  - `apps/web/src/pages/app-shell-overlay/**`
 - Routed pages:
-  - `src/pages/**`
+  - `apps/web/src/pages/**`
 - Styles:
-  - `src/styles/global.css`
+  - `apps/web/src/styles/global.css`
 - Static brand assets:
-  - `public/assets/`
+  - `apps/web/public/assets/`
+- Worker backend:
+  - `apps/backend/src/index.ts`
+  - `apps/backend/wrangler.jsonc`
 
 ## Content ownership and edit points
 
-- Artists: `src/content/artists/*.md`
-- Releases: `src/content/releases/*.md`
-- Distro items: `src/content/distro/*.json`
-- News: `src/content/news/*.md`
-- Header/footer navigation: `src/content/navigation/*.json`
-- Footer social links: `src/content/socials/*.json`
-- Label metadata / JSON-LD: `src/content/settings/site.json`
-- Homepage copy: `src/content/home/site.json`
-- About page copy: `src/content/about/site.json`
-- Services page copy: `src/content/services/site.json`
+- Artists: `apps/web/src/content/artists/*.md`
+- Releases: `apps/web/src/content/releases/*.md`
+- Distro items: `apps/web/src/content/distro/*.json`
+- News: `apps/web/src/content/news/*.md`
+- Header/footer navigation: `apps/web/src/content/navigation/*.json`
+- Footer social links: `apps/web/src/content/socials/*.json`
+- Label metadata / JSON-LD: `apps/web/src/content/settings/site.json`
+- Homepage copy: `apps/web/src/content/home/site.json`
+- About page copy: `apps/web/src/content/about/site.json`
+- Services page copy: `apps/web/src/content/services/site.json`
 
 All JSON collection entries include `$schema` links to Astro-generated collection schemas for editor/CMS validation.
 
@@ -116,7 +122,7 @@ All JSON collection entries include `$schema` links to Astro-generated collectio
 - Home/about decorative images also use Astro `image()`
 - Artists and releases may carry an optional `shop_collection_handle` for future Fourthwall collection linking
 - Home/about/settings/navigation/socials use structured JSON collections
-- Query helpers live in `src/lib/site-data.ts`
+- Query helpers live in `apps/web/src/lib/site-data.ts`
 
 ### Artist image standard
 
@@ -139,7 +145,7 @@ All JSON collection entries include `$schema` links to Astro-generated collectio
 - Internal clicks to release/artist/news detail routes are intercepted and opened as overlays
 - Direct loads to `/releases/[slug]/`, `/artists/[slug]/`, `/news/[slug]/` still render full Astro pages
 - `News` currently remains routed content, but is hidden from the visible homepage/header/footer IA while `Distro` is active
-- Overlay HTML is fetched from `partial = true` routes under `src/pages/app-shell-overlay/`
+- Overlay HTML is fetched from `partial = true` routes under `apps/web/src/pages/app-shell-overlay/`
 - Non-shell routes still use normal document navigation
 
 ## Player model
@@ -194,15 +200,15 @@ This is an iframe boundary, not an app bug.
 
 ## Styling model
 
-- Primary styles are in `src/styles/global.css`
-- shadcn-ui primitives live in `src/components/ui/`
+- Primary styles are in `apps/web/src/styles/global.css`
+- shadcn-ui primitives live in `apps/web/src/components/ui/`
 - Keep the monochrome visual language and the current header/hero/releases direction unless the task explicitly changes it
 
 ## SEO and metadata model
 
-- Metadata and Organization JSON-LD are assembled in `src/layouts/SiteLayout.astro`
+- Metadata and Organization JSON-LD are assembled in `apps/web/src/layouts/SiteLayout.astro`
 - Organization/social data comes from collection-backed settings and socials
-- `src/pages/sitemap.xml.ts` builds sitemap entries from static routes + collections
+- `apps/web/src/pages/sitemap.xml.ts` builds sitemap entries from static routes + collections
 
 ## Stripe guidance
 
@@ -241,7 +247,7 @@ These checks are mandatory both:
 ## Reasonable next TODOs
 
 1. Tighten content-query hygiene by centralizing repeated collection sorting/filtering helpers
-2. If a CMS is added, build it on top of the existing `src/content/**` collections rather than introducing a parallel content system
+2. If a CMS is added, build it on top of the existing `apps/web/src/content/**` collections rather than introducing a parallel content system
 3. If player behavior changes, validate:
    - top-level section continuity
    - mobile nav continuity
