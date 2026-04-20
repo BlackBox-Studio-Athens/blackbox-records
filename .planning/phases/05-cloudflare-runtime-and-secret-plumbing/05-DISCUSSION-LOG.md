@@ -1,21 +1,21 @@
 # Phase 5 Discussion Log
 
-**Date:** 2026-04-20
-**Status:** Closed
+## Corrected Architecture
 
-## What changed
+- The Astro site stays static and continues to own frontend rendering.
+- GitHub Pages remains the frontend deployment target during this milestone.
+- A separate Cloudflare Worker backend is added in-repo for dynamic commerce behavior.
 
-Phase 5 was re-split so runtime work stays separate from shop modeling and local commerce state work.
+## Locked Operational Choices
 
-Locked outcome:
-- Phase 5 owns Worker bootstrap, runtime config, local dev ergonomics, deploy workflow, and secrets.
-- Phase 6 owns the UI-first native shop built from a unified shop projection and fixture-backed offer state.
-- Phase 6.1 owns local D1 + Prisma foundation before Phase 7 checkout integration.
+- local auth uses `wrangler login`
+- CI auth uses `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
+- backend secrets stay in Worker secrets/bindings
+- Cloudflare Access is deferred
 
-## Why
+## Why Phase 5 Changed
 
-The repo currently has strong editorial content models but no native commerce runtime. The safest sequence is:
-1. stabilize the Worker platform
-2. build the native shop contract without depending on Stripe or D1
-3. introduce local D1 + Prisma behind that contract
-4. start Stripe checkout integration only after the shop and local state boundaries are stable
+The earlier plan drifted into “Astro frontend moves to Workers.” That is no longer the active architecture. Phase 5 now only bootstraps the separate backend.
+
+---
+*Logged: 2026-04-20*

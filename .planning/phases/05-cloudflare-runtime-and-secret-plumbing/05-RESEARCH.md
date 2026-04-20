@@ -1,30 +1,50 @@
+# Phase 5 Research - Worker Backend Platform And Deployment Plumbing
+
+## Standard Stack
+
+- Astro static frontend remains on the existing GitHub Pages path.
+- Separate Cloudflare Worker backend uses `wrangler` as the runtime/deploy tool.
+- Worker runtime config should live in `wrangler.jsonc`.
+- Local and CI auth should use:
+  - local interactive `wrangler login`
+  - CI `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
+
+## Architecture Patterns
+
+- Dual-deploy monorepo:
+  - static frontend deploy target
+  - separate backend deploy target
+- Backend-for-frontend (BFF) pattern:
+  - browser talks to the Worker backend
+  - Worker talks to Stripe and D1
+- Explicit environment contract:
+  - frontend knows backend base URL
+  - backend knows secrets and bindings
+
+## Don't Hand-Roll
+
+- Do not invent ad hoc deploy scripts instead of using Wrangler.
+- Do not overload the Astro build to behave like the Worker backend.
+- Do not put backend secrets into frontend build-time vars or browser code.
+
+## Common Pitfalls
+
+- Accidentally changing `pnpm build` so the static frontend no longer matches the Pages workflow.
+- Treating the sandbox Worker as private when Cloudflare Access is deferred.
+- Coupling frontend and backend env vars so tightly that local dev becomes brittle.
+
+## Code Examples
+
+- Separate commands for frontend and backend
+- Frontend env var for backend base URL
+- Wrangler-managed backend config and deploy workflow
+
+## Sources
+
+- Astro on-demand rendering
+- Astro Cloudflare deployment guide
+- Wrangler configuration docs
+- Cloudflare Workers secrets docs
+
 ---
-phase: 5
-slug: cloudflare-runtime-and-secret-plumbing
-status: ready
----
-
-# Phase 5 Research
-
-## Repo facts that matter
-
-- `astro.config.mjs` is still Pages/static oriented today.
-- `/shop/` is still a redirect route, so no live server routes exist yet for commerce.
-- The current production workflow remains `.github/workflows/pages.yml`.
-- The app shell and Astro content collections are already the stable front-end baseline and should not be disrupted by runtime work.
-
-## Research conclusions
-
-1. Phase 5 should stop at platform capability.
-2. The phase should not front-run local D1 or Prisma domain work, because that now belongs to inserted Phase 6.1.
-3. The Worker runtime and secret model need to be explicit before any native shop or checkout work starts.
-4. A stable sandbox hostname belongs in Phase 5 because later checkout and webhook phases need one consistent target.
-
-## Resulting plan shape
-
-- `05-01` adapter bootstrap
-- `05-02` prerender contract
-- `05-03` Wrangler and environment model
-- `05-04` local Worker development
-- `05-05` sandbox deploy workflow and hostname
-- `05-06` secrets contract
+*Research updated: 2026-04-20 for the dual-deploy architecture*

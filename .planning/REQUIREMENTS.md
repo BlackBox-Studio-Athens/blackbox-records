@@ -1,34 +1,41 @@
 # Requirements: BlackBox Records Native Commerce Migration
 
 **Defined:** 2026-04-19  
-**Core Value:** Ship a minimal native commerce flow that is operationally safe: the site owns the storefront, Stripe owns catalog/pricing/payment, server routes own secrets and mutations, and inventory changes happen only after verified webhooks.
+**Core Value:** Ship a minimal native commerce flow that is operationally safe: the static site owns storefront presentation, the Worker backend owns dynamic commerce behavior, Stripe owns sellable catalog/pricing/payment, server routes own secrets and mutations, and inventory changes happen only after verified webhooks.
 
 ## v1 Requirements
 
 ### Runtime & Deployment
 
-- [ ] **DEPL-01**: Team can deploy the Astro storefront to Cloudflare Workers in sandbox while keeping brochure/content routes prerendered where practical.
-- [ ] **DEPL-02**: Commerce routes and local Worker development can execute on demand with Worker bindings and server-only secrets.
+- [ ] **DEPL-01**: Team can keep the Astro storefront deployed statically to GitHub Pages while adding a separate Cloudflare Worker backend for sandbox commerce.
+- [ ] **DEPL-02**: Static frontend and separate Worker backend can communicate locally and in sandbox through an explicit environment and URL contract.
 - [ ] **DEPL-03**: Sandbox deployment and testing can proceed without changing the current live GitHub Pages + Fourthwall production path.
-- [ ] **DEPL-04**: Team can bootstrap local D1 and a Prisma-compatible migration workflow before Stripe checkout implementation begins.
+- [ ] **DEPL-04**: Team can bootstrap local D1 and a Prisma-compatible migration workflow inside the Worker backend before Stripe checkout implementation begins.
+
+### Commerce Architecture
+
+- [ ] **ARCH-01**: Team locks the commerce entity model for `Artist`, `Release`, `DistroEntry`, `ShopItem`, and `Offer/SKU` before implementation of storefront or checkout phases.
+- [ ] **ARCH-02**: Team locks the source-of-truth split so Astro content owns editorial content, Stripe owns sellable commerce data, and D1 owns operational state plus internal mappings.
+- [ ] **ARCH-03**: Team defines internal backend interfaces and external Worker API contracts before storefront and checkout implementation begins.
+- [ ] **ARCH-04**: Canonical IDs, slugs, mappings, and release-to-shop linking rules are explicit before implementation.
 
 ### Catalog & Storefront
 
-- [ ] **CATA-01**: Shopper can browse a native `/shop/` catalog inside the existing shell using a unified shop projection derived from releases and distro.
-- [ ] **CATA-02**: Shopper can view product detail that combines Astro editorial content with fixture-backed offer state before D1 or Stripe is required.
+- [ ] **CATA-01**: Shopper can browse a native `/shop/` catalog inside the existing shell using a unified `ShopItem` projection derived from releases and distro.
+- [ ] **CATA-02**: Shopper can view product detail that combines Astro editorial content with temporary offer state through a stable `OfferSnapshot` contract before live Stripe-backed reads are required.
 - [ ] **CATA-03**: Release and distro entry points can resolve to canonical native shop product pages instead of raw external shop URLs.
-- [ ] **CATA-04**: Temporary offer state remains outside editorial collections and can later swap from fixture-backed reads to D1-backed or Stripe-backed reads without changing the UI contract.
+- [ ] **CATA-04**: Temporary offer state remains outside editorial collections and can later swap from fixture-backed reads to Worker-backed D1/Stripe reads without changing the storefront contract.
 
 ### Checkout & Payment
 
-- [ ] **CHKO-01**: Shopper can start single-item checkout from product detail using a server-created Checkout Session with Stripe embedded Checkout (`ui_mode: embedded`).
+- [ ] **CHKO-01**: Shopper can start single-item checkout from product detail using a Worker-created Checkout Session with Stripe embedded Checkout (`ui_mode: embedded`).
 - [ ] **CHKO-02**: Shopper can complete or retry checkout through dedicated in-site checkout and return states without treating the browser as payment authority.
-- [ ] **CHKO-03**: Team can validate Checkout Session creation, embedded mount, and return-page retrieval flow in Stripe sandbox and local webhook testing.
+- [ ] **CHKO-03**: Team can validate Worker-backed checkout session creation, embedded mount, and return-page retrieval flow in Stripe sandbox and local webhook testing.
 
 ### Orders & Inventory
 
-- [ ] **ORDR-01**: Server-side code stores D1 order lifecycle state using `pending_payment`, `paid`, `closed_unpaid`, and `needs_review`.
-- [ ] **ORDR-02**: Verified Stripe webhooks are authoritative for paid-order transitions.
+- [ ] **ORDR-01**: Worker-side code stores D1 order lifecycle state using `pending_payment`, `paid`, `closed_unpaid`, and `needs_review`.
+- [ ] **ORDR-02**: Verified Stripe webhooks received by the Worker backend are authoritative for paid-order transitions.
 - [ ] **ORDR-03**: Inventory decrements once, and only once, after webhook-confirmed payment success.
 - [ ] **ORDR-04**: Failed, expired, canceled, or unpaid flows leave inventory untouched and remain traceable in D1.
 
@@ -40,9 +47,9 @@
 
 ### Security & Operations
 
-- [ ] **SECU-01**: Stripe secrets, webhook secrets, and D1 access remain server-only in Cloudflare Workers and local development.
+- [ ] **SECU-01**: Stripe secrets, webhook secrets, and D1 access remain server-only in the Worker backend and local development.
 - [ ] **SECU-02**: Browser code never writes authoritative inventory or paid-order state.
-- [ ] **OPER-01**: Team can validate the full sandbox path from `/shop/` browse through webhook-confirmed paid order and D1 state changes.
+- [ ] **OPER-01**: Team can validate the full sandbox path from static `/shop/` browse through Worker checkout, webhook-confirmed paid order, and D1 state changes.
 - [ ] **OPER-02**: Milestone ends with a human review package that captures sandbox evidence, open production gaps, and explicit handoff to the go-live milestone.
 
 ## v2 Requirements
@@ -71,7 +78,8 @@
 
 | Feature | Reason |
 |---------|--------|
-| Live-mode production cutover | Deferred to the Go-Live milestone so sandbox implementation and launch risk stay separate |
+| Production cutover in this milestone | Deferred to the Go-Live milestone so sandbox implementation and launch risk stay separate |
+| Live-mode Stripe keys or real-money processing | This milestone stays in sandbox |
 | Browser-side writes to orders or inventory | Violates the trust boundary for payment and stock state |
 | Inventory reservation in v1 | Explicitly deferred to keep the first release simple and authoritative on payment webhook success |
 | Multi-item cart | Single-item `Buy Now` is the approved MVP shape |
@@ -87,6 +95,10 @@
 | DEPL-02 | Phase 5 | Pending |
 | DEPL-03 | Phase 5 | Pending |
 | DEPL-04 | Phase 6.1 | Pending |
+| ARCH-01 | Phase 5.1 | Pending |
+| ARCH-02 | Phase 5.1 | Pending |
+| ARCH-03 | Phase 5.1 | Pending |
+| ARCH-04 | Phase 5.1 | Pending |
 | CATA-01 | Phase 6 | Pending |
 | CATA-02 | Phase 6 | Pending |
 | CATA-03 | Phase 6 | Pending |
@@ -107,10 +119,10 @@
 | OPER-02 | Phase 10 | Pending |
 
 **Coverage:**
-- v1 requirements: 22 total
-- Mapped to phases: 22
+- v1 requirements: 26 total
+- Mapped to phases: 26
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-19*  
-*Last updated: 2026-04-20 after refining pre-Stripe execution phases*
+*Last updated: 2026-04-20 after realigning to the dual-deploy commerce architecture*

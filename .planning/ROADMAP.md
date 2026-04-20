@@ -2,9 +2,14 @@
 
 ## Overview
 
-This roadmap covers milestone `v1.1`, the Stripe Sandbox Integration milestone. The goal is to implement the approved native commerce slice end-to-end on Cloudflare Workers + D1 and validate it in Stripe sandbox, while leaving the live GitHub Pages + Fourthwall production experience unchanged until the next milestone.
+This roadmap covers milestone `v1.1`, the Stripe Sandbox Integration milestone. The goal is to add native commerce to the existing Astro site using a dual-deploy monorepo model:
 
-The UI contracts for the store flow and BOX NOW locker flow were already approved in the archived pre-sandbox milestone. Re-run `$gsd-ui-phase` only if implementation work materially changes those approved shopper flows.
+- the Astro site remains a static frontend deployed to GitHub Pages
+- a separate Cloudflare Worker backend is added in-repo for dynamic commerce APIs, Stripe integration, webhooks, and D1 state
+
+The live GitHub Pages + Fourthwall production experience remains the safety baseline until a later go-live milestone.
+
+The UI contracts for the store flow and BOX NOW locker flow were approved in the archived pre-sandbox milestone. Re-run `$gsd-ui-phase` only if implementation work materially changes those approved shopper flows.
 
 ## Milestone v1.1: Stripe Sandbox Integration
 
@@ -19,105 +24,122 @@ The UI contracts for the store flow and BOX NOW locker flow were already approve
 
 **Phase Numbering:**
 - Integer phases continue from the previous milestone
-- Decimal phases (for example `6.1`) remain reserved for inserted urgent work
+- Decimal phases remain reserved for inserted urgent work
 
-- [ ] **Phase 5: Cloudflare Runtime And Secret Plumbing** - Establish the Worker-first runtime, environment model, local dev path, and sandbox deploy plumbing
-- [ ] **Phase 6: Native Storefront Slice** - Replace `/shop/` with a native store built from a unified content-driven shop projection and fixture-backed offer state
-- [ ] **Phase 6.1: Local Commerce State Foundation** - Introduce local D1 + Prisma behind the shop repository boundary before any Stripe checkout work
-- [ ] **Phase 7: Embedded Checkout Sandbox Flow** - Implement server-created Checkout Sessions and embedded Checkout on the dedicated route
-- [ ] **Phase 8: Webhook Orders And Inventory** - Make D1 order and inventory state webhook-authoritative and idempotent
+- [ ] **Phase 5: Worker Backend Platform And Deployment Plumbing** - Add a separate Cloudflare Worker backend to the repo without disrupting the static Astro Pages frontend
+- [ ] **Phase 5.1: Commerce Domain Architecture And Source-Of-Truth Research** - Lock entity boundaries, source-of-truth rules, IDs, mappings, and API contracts before storefront or checkout implementation
+- [ ] **Phase 6: Static Storefront Slice** - Replace `/shop/` with a native static storefront built from shared editorial content and a stable shop projection
+- [ ] **Phase 6.1: Worker Commerce State Foundation** - Introduce D1 + Prisma in the separate Worker backend behind repository and API boundaries before checkout work
+- [ ] **Phase 7: Worker Checkout And Stripe Sandbox Flow** - Implement Worker-owned checkout APIs and connect the frontend checkout route to Stripe sandbox
+- [ ] **Phase 8: Webhook Orders And Inventory** - Make payment truth and stock mutation Worker-owned, webhook-authoritative, and idempotent
 - [ ] **Phase 9: Greece-Only BOX NOW Shipping** - Add the approved locker-selection gate and thin fulfillment data contract
-- [ ] **Phase 10: Sandbox Verification And Release Gate** - Prove the full sandbox flow and prepare the go-live handoff package
+- [ ] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow and prepare the go-live handoff package
 
 ## Phase Details
 
-### Phase 5: Cloudflare Runtime And Secret Plumbing
-**Goal**: Establish the Worker-first runtime and environment contract for sandbox commerce work without disturbing the live GitHub Pages baseline.
+### Phase 5: Worker Backend Platform And Deployment Plumbing
+**Goal**: Bootstrap a separate Cloudflare Worker backend in-repo while preserving the Astro static frontend and GitHub Pages deployment path.
 **Depends on**: Archived milestone v1.0 decisions
 **Requirements**: DEPL-01, DEPL-02, DEPL-03, SECU-01
 **Success Criteria** (what must be TRUE):
-1. Astro builds for Cloudflare Workers with brochure routes still prerendered by default and commerce routes able to opt into on-demand execution.
-2. Local Worker development, runtime configuration, and sandbox deploy plumbing are explicit and isolated from the current Pages production workflow.
-3. Runtime secrets remain server-only across local development, CI, and the deployed sandbox Worker.
+1. The Astro site keeps its static Pages build path and remains the frontend deployment target during this milestone.
+2. A separate Cloudflare Worker backend can be built, configured, and run locally without changing the frontend runtime model.
+3. Frontend-to-Worker environment contracts, sandbox deployment plumbing, and server-only secret boundaries are explicit.
 **Plans**: 6 plans
-**Review gate**: Human review required before sandbox runtime assumptions and secret handling are treated as stable.
+**Review gate**: Human review required before the separate backend runtime and auth/deploy assumptions are treated as stable.
 
 Plans:
-- [ ] 05-01: Astro Cloudflare adapter bootstrap
-- [ ] 05-02: On-demand route boundary and prerender contract
-- [ ] 05-03: Wrangler config and Workers-first environment model
-- [ ] 05-04: Local Worker development path
-- [ ] 05-05: Sandbox deployment workflow and stable sandbox hostname
-- [ ] 05-06: Secrets contract for local dev, CI, and deployed Worker
+- [ ] 05-01: Bootstrap the separate Cloudflare Worker backend in-repo
+- [ ] 05-02: Define the frontend-to-Worker environment and URL contract
+- [ ] 05-03: Add Wrangler config and the backend environment model
+- [ ] 05-04: Add the local Worker development path and docs
+- [ ] 05-05: Add the sandbox deployment workflow and stable backend hostname
+- [ ] 05-06: Lock the secrets and CI auth contract for the Worker backend
 
-### Phase 6: Native Storefront Slice
-**Goal**: Turn `/shop/` into a native store built from shared editorial content and a unified shop-facing projection, while preserving the existing shell and site language.
+### Phase 5.1: Commerce Domain Architecture And Source-Of-Truth Research (INSERTED)
+**Goal**: Freeze the commerce domain model and source-of-truth split before storefront, D1, or Stripe implementation drifts.
 **Depends on**: Phase 5
+**Requirements**: ARCH-01, ARCH-02, ARCH-03, ARCH-04
+**Success Criteria** (what must be TRUE):
+1. The entity model for `Artist`, `Release`, `DistroEntry`, `ShopItem`, and `Offer/SKU` is explicit and decision-complete.
+2. Astro content, Stripe, and D1 ownership boundaries are locked with no ambiguous overlap.
+3. Canonical IDs, mappings, internal interfaces, and external Worker APIs are drafted clearly enough that Phases 6, 6.1, and 7 can implement without re-deciding architecture.
+**Plans**: 4 plans
+**Review gate**: Human review required because this phase locks the architecture that every later commerce phase consumes.
+
+Plans:
+- [ ] 05.1-01: Spec the domain entities and source-of-truth matrix
+- [ ] 05.1-02: Research implementation patterns and failure modes across Astro content, Worker backend, Stripe, and D1
+- [ ] 05.1-03: Draft internal backend interfaces and external Worker API contracts
+- [ ] 05.1-04: Freeze IDs, mappings, and static-to-dynamic linking rules for downstream phases
+
+### Phase 6: Static Storefront Slice
+**Goal**: Turn `/shop/` into a native storefront in the static Astro site using shared editorial content and the architecture frozen in Phase 5.1.
+**Depends on**: Phase 5.1
 **Requirements**: CATA-01, CATA-02, CATA-03
 **Success Criteria** (what must be TRUE):
-1. Shopper can browse a native `/shop/` catalog backed by one unified shop projection derived from releases and distro entries.
-2. Shopper can open a native product detail page that reuses editorial assets and summaries while reading offer state from a fixture-backed adapter instead of Stripe or D1.
-3. Release and distro entry points route into canonical native shop product pages instead of the old redirect model.
+1. Shopper can browse a native `/shop/` catalog built from a stable `ShopItem` projection derived from releases and distro entries.
+2. Shopper can open a native product detail page that reuses editorial assets and summaries while reading temporary offer state through the approved contract.
+3. Release and distro entry points route into canonical native shop product pages instead of raw external shop URLs.
 **Plans**: 7 plans
-**Review gate**: Human review required if implementation drifts from the approved store UI contract.
+**Review gate**: Human review required if implementation drifts from the approved storefront UI contract or from the Phase 5.1 architecture.
 
 Plans:
-- [ ] 06-01: Define the shared shop projection contract
-- [ ] 06-02: Define cross-collection mapping rules
-- [ ] 06-03: Build a fixture-backed catalog adapter
-- [ ] 06-04: Replace `/shop/` redirect with native collection route
-- [ ] 06-05: Build shop product detail route and `Buy Now` handoff shell
-- [ ] 06-06: Add release-to-shop navigation
-- [ ] 06-07: Reuse editorial assets and summaries without duplication
+- [ ] 06-01: Implement the shared `ShopItem` projection contract in the static frontend
+- [ ] 06-02: Implement cross-collection mapping rules from releases and distro into shop items
+- [ ] 06-03: Add the temporary offer-state adapter that matches the future backend API shape
+- [ ] 06-04: Replace `/shop/` redirect with the native collection route
+- [ ] 06-05: Build the product detail route and `Buy Now` handoff shell
+- [ ] 06-06: Add release-to-shop navigation using canonical shop links
+- [ ] 06-07: Reuse editorial assets and summaries without duplicating content into commerce storage
 
-### Phase 6.1: Local Commerce State Foundation (INSERTED)
-**Goal**: Introduce local D1 and Prisma behind the shop repository boundary without changing the UI-facing shop contract or starting Stripe checkout work.
+### Phase 6.1: Worker Commerce State Foundation
+**Goal**: Introduce D1 + Prisma inside the separate Worker backend behind repository and API boundaries, without changing the frontend shop contract.
 **Depends on**: Phase 6
 **Requirements**: DEPL-04, CATA-04, SECU-01
 **Success Criteria** (what must be TRUE):
-1. Local D1 bindings and a Worker-compatible Prisma runtime path exist and are executable in local development.
-2. The migration workflow is defined before any checkout implementation depends on it.
-3. The shop repository boundary can evolve from fixture-backed state toward D1-backed reads where needed without changing the UI projection shape.
-4. No Stripe checkout-session creation or embedded Checkout integration is introduced in this phase.
+1. Local D1 bindings and Worker-compatible Prisma runtime access exist inside the separate backend.
+2. The migration workflow is defined before checkout implementation depends on backend state.
+3. Backend repositories can evolve from temporary offer snapshots to D1-backed reads without changing the Phase 6 storefront contract.
 **Plans**: 4 plans
-**Review gate**: Human review required before D1 or Prisma assumptions become the baseline for later checkout and order phases.
+**Review gate**: Human review required before Stripe checkout work consumes the backend state model.
 
 Plans:
-- [ ] 06.1-01: Local D1 bootstrap and bindings
-- [ ] 06.1-02: Prisma runtime setup on D1
-- [ ] 06.1-03: Migration workflow baseline
-- [ ] 06.1-04: Repository boundary swap from fixture-backed adapter to D1-backed reads where needed
+- [ ] 06.1-01: Bootstrap local D1 and Worker bindings
+- [ ] 06.1-02: Add Prisma runtime access and repository seams in the Worker backend
+- [ ] 06.1-03: Establish the migration workflow baseline
+- [ ] 06.1-04: Move backend offer and mapping reads from temporary data toward D1-backed repositories where needed
 
-### Phase 7: Embedded Checkout Sandbox Flow
-**Goal**: Implement the single-item embedded Checkout path on the dedicated in-site checkout route.
+### Phase 7: Worker Checkout And Stripe Sandbox Flow
+**Goal**: Implement the Worker-owned checkout API surface and connect the static frontend checkout route to Stripe sandbox.
 **Depends on**: Phase 6.1
 **Requirements**: CHKO-01, CHKO-02, CHKO-03
 **Success Criteria** (what must be TRUE):
-1. Server code creates a single-item Checkout Session using the current embedded Checkout request shape and the stable shop projection contract.
-2. Shopper can mount embedded Checkout on the dedicated in-site checkout route and reach return or retry states cleanly.
-3. The checkout path is testable locally and against the sandbox deployment using Stripe sandbox and webhook tooling.
+1. The Worker backend exposes the required catalog-offer and checkout-session endpoints using the approved domain contracts.
+2. The static frontend checkout route mounts embedded Checkout using data and session state obtained through the Worker backend, not directly from Stripe.
+3. The checkout path is testable locally and in sandbox using Stripe sandbox and webhook tooling.
 **Plans**: 3 plans
-**Review gate**: Human review required on the final checkout-session contract and shopper-facing retry/return behavior.
+**Review gate**: Human review required on the final backend API contract and shopper-facing retry/return behavior.
 
 Plans:
-- [ ] 07-01: Implement the server endpoint that creates single-item Checkout Sessions with `ui_mode: embedded`
-- [ ] 07-02: Mount embedded Checkout on the dedicated route and implement non-authoritative return and retry states
+- [ ] 07-01: Implement Worker APIs for item lookup, offer lookup, and checkout-session creation
+- [ ] 07-02: Connect the static frontend checkout route to the Worker APIs and embedded Checkout
 - [ ] 07-03: Validate the checkout loop locally and in sandbox with Stripe sandbox and webhook testing
 
 ### Phase 8: Webhook Orders And Inventory
-**Goal**: Make payment truth and stock mutation server-owned, verified, and idempotent.
+**Goal**: Make payment truth and stock mutation server-owned, verified, and idempotent in the Worker backend.
 **Depends on**: Phase 7
 **Requirements**: ORDR-01, ORDR-02, ORDR-03, ORDR-04, SECU-02
 **Success Criteria** (what must be TRUE):
-1. D1 extends the earlier local foundation to store the approved minimal order states and authoritative inventory values.
-2. Verified Stripe webhooks are the only path that marks orders paid.
+1. D1 stores the approved minimal order states, inventory values, and backend mappings needed for authoritative payment handling.
+2. Verified Stripe webhooks hitting the Worker backend are the only path that marks orders paid.
 3. Inventory decrements exactly once after confirmed payment success, and unpaid flows leave stock untouched.
 **Plans**: 3 plans
 **Review gate**: Human review required on webhook verification, idempotency, and inventory semantics.
 
 Plans:
-- [ ] 08-01: Extend the D1 schema and data-access layer for minimal order and inventory state
-- [ ] 08-02: Implement the verified webhook handler and idempotent paid-order transitions
+- [ ] 08-01: Extend the D1 schema and backend data-access layer for minimal order and inventory state
+- [ ] 08-02: Implement the verified Worker webhook handler and idempotent paid-order transitions
 - [ ] 08-03: Apply post-payment inventory decrement and manual reconciliation behavior for low-volume operations
 
 ### Phase 9: Greece-Only BOX NOW Shipping
@@ -137,18 +159,18 @@ Plans:
 - [ ] 09-03: Keep fulfillment manual through the BOX NOW partner portal and document the operator handoff
 
 ### Phase 10: Sandbox Verification And Release Gate
-**Goal**: Prove the implemented sandbox flow and package the milestone outcome for the go-live milestone.
+**Goal**: Prove the implemented dual-deploy sandbox flow and package the milestone outcome for the go-live milestone.
 **Depends on**: Phase 9
 **Requirements**: OPER-01, OPER-02
 **Success Criteria** (what must be TRUE):
-1. The full sandbox path works from native browse through webhook-confirmed paid order and D1 state updates.
-2. Required command checks, browser checks, and sandbox UAT evidence are captured.
+1. The full sandbox path works from static browse through Worker checkout APIs, webhook-confirmed paid order, and D1 state updates.
+2. Required command checks, browser checks, and sandbox UAT evidence are captured across both deployment targets.
 3. The milestone ends with a human review package and an explicit handoff to Go-Live / Launch Hardening.
 **Plans**: 2 plans
 **Review gate**: Human approval required before any production cutover milestone work starts.
 
 Plans:
-- [ ] 10-01: Run sandbox UAT, command validation, and browser verification across the implemented flow
+- [ ] 10-01: Run sandbox UAT, command validation, and browser verification across the implemented dual-deploy flow
 - [ ] 10-02: Produce milestone evidence, open-issues list, and the go-live handoff package
 
 ## Future Milestone Seeds
@@ -161,14 +183,15 @@ Plans:
 ## Progress
 
 **Execution Order:**  
-Phases execute in numeric order: `5 → 6 → 6.1 → 7 → 8 → 9 → 10`
+Phases execute in numeric order: `5 → 5.1 → 6 → 6.1 → 7 → 8 → 9 → 10`
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 5. Cloudflare Runtime And Secret Plumbing | 0/6 | Planned |  |
-| 6. Native Storefront Slice | 0/7 | Planned |  |
-| 6.1. Local Commerce State Foundation | 0/4 | Planned |  |
-| 7. Embedded Checkout Sandbox Flow | 0/3 | Planned |  |
+| 5. Worker Backend Platform And Deployment Plumbing | 0/6 | Planned |  |
+| 5.1. Commerce Domain Architecture And Source-Of-Truth Research | 0/4 | Planned |  |
+| 6. Static Storefront Slice | 0/7 | Planned |  |
+| 6.1. Worker Commerce State Foundation | 0/4 | Planned |  |
+| 7. Worker Checkout And Stripe Sandbox Flow | 0/3 | Planned |  |
 | 8. Webhook Orders And Inventory | 0/3 | Planned |  |
 | 9. Greece-Only BOX NOW Shipping | 0/3 | Planned |  |
 | 10. Sandbox Verification And Release Gate | 0/2 | Planned |  |
