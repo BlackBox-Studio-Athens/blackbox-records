@@ -46,6 +46,7 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - Frontend dev server: `pnpm dev` or `pnpm dev:web`
 - Backend dev server: `pnpm dev:backend`
 - Backend sandbox dev server: `pnpm dev:backend:sandbox`
+- Backend sandbox deploy: `pnpm deploy:backend:sandbox`
 - Generate backend OpenAPI docs and client package: `pnpm generate:api`
 - Clean dev run: `pnpm dev:clean`
 - Unit tests: `pnpm test:unit`

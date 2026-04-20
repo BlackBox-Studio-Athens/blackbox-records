@@ -11,6 +11,7 @@
     "cms:proxy": "pnpm --filter @blackbox/web cms:proxy",
     "dev:backend": "pnpm --filter @blackbox/backend dev",
     "dev:backend:sandbox": "pnpm --filter @blackbox/backend dev:sandbox",
+    "deploy:backend:sandbox": "pnpm --filter @blackbox/backend deploy:sandbox",
     "worker:dev": "pnpm dev:backend",
     "worker:dev:sandbox": "pnpm dev:backend:sandbox",
     "build": "pnpm build:web",

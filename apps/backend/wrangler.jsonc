@@ -10,6 +10,7 @@
   "env": {
     "sandbox": {
       "name": "blackbox-records-backend-sandbox",
+      "workers_dev": true,
       "vars": {
         "APP_ENV": "sandbox"
       }

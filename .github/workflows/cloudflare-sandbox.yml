@@ -1,0 +1,49 @@
+name: Deploy Worker sandbox
+
+on:
+  push:
+    branches: ["sandbox"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "cloudflare-sandbox"
+  cancel-in-progress: true
+
+jobs:
+  deploy-backend-sandbox:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.29.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate API contracts
+        run: pnpm generate:api
+
+      - name: Run backend tests
+        run: pnpm test:backend
+
+      - name: Run backend typecheck
+        run: pnpm check:backend
+
+      - name: Deploy Worker sandbox
+        run: pnpm deploy:backend:sandbox

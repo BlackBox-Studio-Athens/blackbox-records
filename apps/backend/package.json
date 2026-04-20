@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "dev:sandbox": "wrangler dev --env sandbox",
+    "deploy:sandbox": "wrangler deploy --env sandbox",
     "generate:openapi": "pnpm exec tsx scripts/generate-openapi.ts",
     "check": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"

@@ -80,6 +80,12 @@ Run the separate Worker backend scaffold locally:
 pnpm dev:backend
 ```
 
+Deploy the sandbox Worker manually:
+
+```sh
+pnpm deploy:backend:sandbox
+```
+
 When the frontend starts consuming Worker APIs, point it at the local backend with:
 
 ```sh
@@ -101,6 +107,7 @@ Current Worker scope:
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
 - generated frontend-facing types and `openapi-typescript-fetch` wrappers live in `packages/api-client/`
 - frontend discovers the backend only through `PUBLIC_BACKEND_BASE_URL`
+- the dedicated sandbox deploy target is the `blackbox-records-backend-sandbox` Worker on `workers.dev`
 
 Clean dev run (mirrors the `ateleia` workflow):
 
@@ -146,8 +153,23 @@ pnpm generate:api
   - `pnpm dev:backend`
   - `PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787`
 - Sandbox will use the same env var with a future stable Worker hostname from Phase `05-05`.
+- The sandbox backend target is the dedicated `workers.dev` Worker named `blackbox-records-backend-sandbox`.
+- Its stable URL shape is `https://blackbox-records-backend-sandbox.<your-account-subdomain>.workers.dev`.
+- The account-level `workers.dev` subdomain is owned in Cloudflare, not in this repo, so the Worker name is the repo-controlled stable portion of the sandbox hostname.
 - The frontend must not guess production or sandbox backend origins in code.
 - Worker secrets, D1 bindings, Stripe secrets, Cloudflare Access config, and CI credentials remain backend/server-side only.
+
+## Sandbox backend CI/CD
+
+- The static Astro site continues to deploy only through `.github/workflows/pages.yml`.
+- The separate Worker sandbox deploy path is isolated in `.github/workflows/cloudflare-sandbox.yml`.
+- That workflow:
+  - runs on pushes to `sandbox`
+  - can also be triggered manually
+  - runs `pnpm generate:api`
+  - runs `pnpm test:backend`
+  - runs `pnpm check:backend`
+  - deploys only the backend workspace to Cloudflare Workers
 
 ## GitHub Pages CI/CD
 
