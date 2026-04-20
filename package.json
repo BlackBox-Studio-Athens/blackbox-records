@@ -15,10 +15,12 @@
     "worker:dev:sandbox": "pnpm dev:backend:sandbox",
     "build": "pnpm build:web",
     "build:web": "pnpm --filter @blackbox/web build",
+    "generate:api": "pnpm --filter @blackbox/backend generate:openapi && pnpm --filter @blackbox/api-client generate",
     "preview": "pnpm --filter @blackbox/web preview",
-    "check": "pnpm check:web && pnpm check:backend",
+    "check": "pnpm check:web && pnpm check:backend && pnpm check:api-client",
     "check:web": "pnpm --filter @blackbox/web check",
     "check:backend": "pnpm --filter @blackbox/backend check",
+    "check:api-client": "pnpm --filter @blackbox/api-client check",
     "test:unit": "pnpm test:web && pnpm test:backend",
     "test:web": "pnpm --filter @blackbox/web test:unit",
     "test:backend": "pnpm --filter @blackbox/backend test"
@@ -26,6 +28,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.8",
     "astro": "^6.1.8",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }
 }

@@ -15,6 +15,7 @@ Current production storefront behavior still uses static GitHub Pages deployment
 - Astro 6, static output
 - React integration for shadcn-ui primitives and the persistent app shell
 - Tailwind CSS v4 + shadcn-ui primitives
+- Worker backend uses TypeScript + Hono + code-first OpenAPI
 - Astro content collections for:
   - artists
   - releases
@@ -45,6 +46,7 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - Frontend dev server: `pnpm dev` or `pnpm dev:web`
 - Backend dev server: `pnpm dev:backend`
 - Backend sandbox dev server: `pnpm dev:backend:sandbox`
+- Generate backend OpenAPI docs and client package: `pnpm generate:api`
 - Clean dev run: `pnpm dev:clean`
 - Unit tests: `pnpm test:unit`
 - Type/content checks: `pnpm check`
@@ -99,6 +101,9 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - Worker backend:
   - `apps/backend/src/index.ts`
   - `apps/backend/wrangler.jsonc`
+- Generated API client package:
+  - `packages/api-client/src/index.ts`
+  - `packages/api-client/src/generated/**`
 
 ## Content ownership and edit points
 

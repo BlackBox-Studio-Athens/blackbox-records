@@ -9,6 +9,7 @@ Static Astro site for the BlackBox Records label.
 - Tailwind CSS v4 + shadcn-ui setup (design implemented in Astro templates + `apps/web/src/styles/global.css`)
 - Type-safe content collections (`apps/web/src/content`)
 - Separate Cloudflare Worker backend scaffold (`apps/backend/src/index.ts`) using TypeScript + Hono
+- Code-first OpenAPI documents and a generated `@blackbox/api-client` workspace package
 
 ## URL model
 
@@ -91,6 +92,8 @@ Current Worker scope:
 - Hono owns the HTTP interface layer; unmatched routes currently return JSON `404`
 - no Stripe, D1, Prisma, or frontend wiring yet
 - no production deployment path yet
+- backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
+- generated frontend-facing types and fetch clients live in `packages/api-client/`
 
 Clean dev run (mirrors the `ateleia` workflow):
 
@@ -112,6 +115,20 @@ Backend-only verification:
 pnpm test:backend
 pnpm check:backend
 ```
+
+Generate backend OpenAPI documents and refresh the generated client package:
+
+```sh
+pnpm generate:api
+```
+
+## Backend contract model
+
+- The backend owns the HTTP contract through code-first OpenAPI definitions.
+- Public shopper APIs and staff-only internal APIs are emitted as separate OpenAPI documents:
+  - `apps/backend/openapi/public-openapi.json`
+  - `apps/backend/openapi/internal-openapi.json`
+- Frontend code must consume backend API types through `@blackbox/api-client`, not by importing backend runtime modules.
 
 ## GitHub Pages CI/CD
 
