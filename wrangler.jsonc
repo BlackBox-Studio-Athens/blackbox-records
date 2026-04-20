@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "blackbox-records-backend-dev",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-04-20",
+  "workers_dev": true,
+  "vars": {
+    "APP_ENV": "local"
+  },
+  "env": {
+    "sandbox": {
+      "name": "blackbox-records-backend-sandbox",
+      "vars": {
+        "APP_ENV": "sandbox"
+      }
+    },
+    "production": {
+      "name": "blackbox-records-backend",
+      "vars": {
+        "APP_ENV": "production"
+      }
+    }
+  }
+}
