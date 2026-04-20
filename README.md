@@ -4,11 +4,11 @@ Static Astro site for the BlackBox Records label.
 
 ## Stack
 
-- Astro 5 (static output)
+- Astro 6 (static output)
 - React integration (for shadcn-ui primitives)
 - Tailwind CSS v4 + shadcn-ui setup (design implemented in Astro templates + `apps/web/src/styles/global.css`)
 - Type-safe content collections (`apps/web/src/content`)
-- Separate Cloudflare Worker backend scaffold (`apps/backend/src/index.ts`)
+- Separate Cloudflare Worker backend scaffold (`apps/backend/src/index.ts`) using TypeScript + Hono
 
 ## URL model
 
@@ -29,7 +29,7 @@ This is configured in `apps/web/astro.config.mjs`.
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 22.12+
 - pnpm 10+
 
 ## Setup
@@ -87,7 +87,8 @@ pnpm worker:dev
 
 Current Worker scope:
 
-- smoke-test `GET /healthz`
+- no probe endpoints such as `healthz`, `status`, or `readyz`
+- Hono owns the HTTP interface layer; unmatched routes currently return JSON `404`
 - no Stripe, D1, Prisma, or frontend wiring yet
 - no production deployment path yet
 
@@ -103,6 +104,13 @@ pnpm dev:clean
 pnpm test:unit
 pnpm check
 pnpm build
+```
+
+Backend-only verification:
+
+```sh
+pnpm test:backend
+pnpm check:backend
 ```
 
 ## GitHub Pages CI/CD

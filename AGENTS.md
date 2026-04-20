@@ -12,7 +12,7 @@ Current production storefront behavior still uses static GitHub Pages deployment
 ## Current stack
 
 - pnpm workspace monorepo
-- Astro 5, static output
+- Astro 6, static output
 - React integration for shadcn-ui primitives and the persistent app shell
 - Tailwind CSS v4 + shadcn-ui primitives
 - Astro content collections for:

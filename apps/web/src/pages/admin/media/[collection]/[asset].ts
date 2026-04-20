@@ -1,6 +1,6 @@
+import { existsSync } from 'node:fs';
 import { readFile, readdir } from 'node:fs/promises';
-import { dirname, extname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { extname, resolve } from 'node:path';
 
 import type { APIRoute, GetStaticPaths } from 'astro';
 
@@ -25,7 +25,24 @@ const contentTypes = {
   '.png': 'image/png',
   '.webp': 'image/webp',
 } as const;
-const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../..');
+
+function resolveAppRoot(): string {
+  const currentWorkingDirectory = process.cwd();
+  const candidates = [
+    currentWorkingDirectory,
+    resolve(currentWorkingDirectory, 'apps/web'),
+  ];
+
+  for (const candidate of candidates) {
+    if (existsSync(resolve(candidate, 'src/content/about'))) {
+      return candidate;
+    }
+  }
+
+  throw new Error('Unable to resolve the Astro app root for admin media assets.');
+}
+
+const appRoot = resolveAppRoot();
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const paths = [];
