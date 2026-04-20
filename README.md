@@ -80,6 +80,12 @@ Run the separate Worker backend scaffold locally:
 pnpm dev:backend
 ```
 
+When the frontend starts consuming Worker APIs, point it at the local backend with:
+
+```sh
+PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787 pnpm dev:web
+```
+
 Compatibility alias:
 
 ```sh
@@ -94,6 +100,7 @@ Current Worker scope:
 - no production deployment path yet
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
 - generated frontend-facing types and fetch clients live in `packages/api-client/`
+- frontend discovers the backend only through `PUBLIC_BACKEND_BASE_URL`
 
 Clean dev run (mirrors the `ateleia` workflow):
 
@@ -129,6 +136,17 @@ pnpm generate:api
   - `apps/backend/openapi/public-openapi.json`
   - `apps/backend/openapi/internal-openapi.json`
 - Frontend code must consume backend API types through `@blackbox/api-client`, not by importing backend runtime modules.
+
+## Frontend-to-Worker URL contract
+
+- The browser-facing Astro app owns only `PUBLIC_BACKEND_BASE_URL`.
+- Local development uses:
+  - `pnpm dev:web`
+  - `pnpm dev:backend`
+  - `PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787`
+- Sandbox will use the same env var with a future stable Worker hostname from Phase `05-05`.
+- The frontend must not guess production or sandbox backend origins in code.
+- Worker secrets, D1 bindings, Stripe secrets, Cloudflare Access config, and CI credentials remain backend/server-side only.
 
 ## GitHub Pages CI/CD
 
