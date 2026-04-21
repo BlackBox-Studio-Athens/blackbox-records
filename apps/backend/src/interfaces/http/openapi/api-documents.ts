@@ -1,18 +1,19 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
 
+import type { AppEnv, AppOpenApi } from '../../../env';
 import { registerInternalRoutes } from '../routes/register-internal-routes';
 import { registerPublicRoutes } from '../routes/register-public-routes';
 
-function createPublicOpenApiApp(): OpenAPIHono {
-    const app = new OpenAPIHono();
+function createPublicOpenApiApp(): AppOpenApi {
+    const app = new OpenAPIHono<AppEnv>();
 
     registerPublicRoutes(app);
 
     return app;
 }
 
-function createInternalOpenApiApp(): OpenAPIHono {
-    const app = new OpenAPIHono();
+function createInternalOpenApiApp(): AppOpenApi {
+    const app = new OpenAPIHono<AppEnv>();
 
     registerInternalRoutes(app);
 

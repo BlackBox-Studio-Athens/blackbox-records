@@ -1,5 +1,5 @@
-import type { OpenAPIHono } from '@hono/zod-openapi';
+import type { AppOpenApi } from '../../../env';
 
-export function registerPublicRoutes(_app: OpenAPIHono): void {
+export function registerPublicRoutes(_app: AppOpenApi): void {
     // Public shopper routes will register here as they are introduced.
 }

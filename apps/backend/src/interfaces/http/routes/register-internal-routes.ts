@@ -1,5 +1,5 @@
-import type { OpenAPIHono } from '@hono/zod-openapi';
+import type { AppOpenApi } from '../../../env';
 
-export function registerInternalRoutes(_app: OpenAPIHono): void {
+export function registerInternalRoutes(_app: AppOpenApi): void {
     // Staff-only routes will register here as they are introduced.
 }

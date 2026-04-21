@@ -4,6 +4,12 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-04-20",
   "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "COMMERCE_DB",
+      "database_name": "blackbox-records-commerce-local"
+    }
+  ],
   "vars": {
     "APP_ENV": "local"
   },
@@ -11,6 +17,12 @@
     "sandbox": {
       "name": "blackbox-records-backend-sandbox",
       "workers_dev": true,
+      "d1_databases": [
+        {
+          "binding": "COMMERCE_DB",
+          "database_name": "blackbox-records-commerce-sandbox"
+        }
+      ],
       "vars": {
         "APP_ENV": "sandbox"
       }

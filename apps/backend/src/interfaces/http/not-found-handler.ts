@@ -1,6 +1,8 @@
 import type { NotFoundHandler } from 'hono';
 
-export const notFoundHandler: NotFoundHandler = (context) => {
+import type { AppEnv } from '../../env';
+
+export const notFoundHandler: NotFoundHandler<AppEnv> = (context) => {
     return context.json(
         {
             error: 'Not Found',

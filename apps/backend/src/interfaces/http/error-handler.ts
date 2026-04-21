@@ -1,6 +1,8 @@
 import type { ErrorHandler } from 'hono';
 
-export const errorHandler: ErrorHandler = (error, context) => {
+import type { AppEnv } from '../../env';
+
+export const errorHandler: ErrorHandler<AppEnv> = (error, context) => {
     console.error(error);
 
     return context.json(
