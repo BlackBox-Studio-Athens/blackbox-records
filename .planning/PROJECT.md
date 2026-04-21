@@ -22,7 +22,7 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - explicit frontend-to-Worker environment and deployment contract
 - dedicated architecture gate for entity boundaries, IDs, mappings, and API contracts
 - backend-owned code-first OpenAPI documents with a generated `@blackbox/api-client` package for frontend consumption
-- native `/shop/` collection and product detail built from a unified `CatalogItem` projection across releases and distro
+- native `/store/` collection, product detail, and checkout shell built from a unified `CatalogItem` projection across releases and distro
 - Worker-backed D1 + Prisma foundation before Stripe checkout integration
 - protected internal stock operations surface on a separate backend hostname for label staff
 - D1-led stock ledger around `Variant`, `StockBalance`, `StockChange`, and `StockCount`, with a conservative `online_available` quantity for the public storefront
@@ -37,16 +37,15 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 
 - ✓ Public storefront pages render from Astro content collections on a static GitHub Pages deployment — existing brownfield baseline
 - ✓ Top-level section navigation is managed by the persistent app shell instead of full document swaps — existing brownfield baseline
-- ✓ `/shop/` and distro/shop links currently hand off commerce to external Fourthwall — current production behavior
+- ✓ `/shop/` and distro/shop links previously handed off commerce to external Fourthwall — legacy baseline before native `/store/`
 - ✓ Editorial content is maintained in Astro collections with Decap CMS on top — existing brownfield baseline
 - ✓ Pre-sandbox commerce runtime, trust boundary, UI, and shipping decisions were captured and archived — v1.0
+- ✓ Separate Cloudflare Worker backend foundation, sandbox deployment path, and server-only secret model are in place — Phase 5
+- ✓ Commerce entity model, source-of-truth split, IDs, mappings, and backend-owned OpenAPI contract are frozen — Phase 5.1
+- ✓ Native `/store/` browse, product detail, checkout shell, and canonical release/distro-to-store linking are implemented in the static frontend — Phase 6
 
 ### Active
 
-- [ ] Keep the Astro site static and deployed to GitHub Pages while adding a separate Worker backend for commerce
-- [ ] Define and document the Worker backend runtime, auth, secrets, and deployment contract
-- [ ] Freeze the commerce entity model, source-of-truth split, IDs, mappings, and APIs before storefront or checkout implementation
-- [ ] Replace the current external shop redirect with a native in-site store flow built from a shared `CatalogItem` projection over releases and distro
 - [ ] Introduce Worker-side D1 + Prisma before Stripe checkout integration
 - [ ] Protect internal stock operations with Cloudflare Access + Google on a separate backend hostname
 - [ ] Give label staff a thin internal stock tool for `StockChange`, `StockCount`, and recent stock history
@@ -67,7 +66,7 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 
 ## Context
 
-The current repository is an Astro 5 storefront with a React-managed app shell, Astro content collections, and Decap CMS-backed editorial content. Production remains a static GitHub Pages deployment where `/shop/` redirects externally to Fourthwall. That current experience is the live baseline, not the long-term target.
+The current repository is an Astro storefront with a React-managed app shell, Astro content collections, and Decap CMS-backed editorial content. The previous production baseline redirected `/shop/` externally to Fourthwall. The active native storefront contract now uses `/store/` as the canonical collection route, while `/shop/` remains a compatibility redirect during migration.
 
 The corrected milestone architecture is now dual deploy. The Astro site remains the static frontend and content owner. A separate Cloudflare Worker backend becomes the dynamic commerce surface for:
 
@@ -90,6 +89,8 @@ The stock model is now also explicit enough for offline retail reality. A storef
 The new inserted Phase 5.1 is the architecture gate for this split. It must lock the domain model before implementation drifts into ad hoc duplication across content, Stripe, and D1.
 
 Current repo facts shape that decision. `releases` already reference `artists`, while `distro` carries editorial card content and Fourthwall URLs but no sellable identity or inventory model. That makes a projection layer necessary. The projection should not stuff temporary commerce fields directly into the editorial collections. Instead, it should produce a stable `CatalogItem` view and link that to sellable `Variant` identities through Worker-side mappings.
+
+That frontend projection layer is now live. `/store/` is the canonical native storefront route, `/shop/` is a compatibility redirect, release pages route into canonical store PDPs when mapped, distro cards route into the same PDP system, and the static checkout shell is in place for the later Worker-backed embedded Checkout flow.
 
 ## Constraints
 
@@ -146,5 +147,5 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-20 after adding the internal stock-operations planning lane*
+*Last updated: 2026-04-21 after the storefront review, simplification pass, and Phase 6 alignment*
 

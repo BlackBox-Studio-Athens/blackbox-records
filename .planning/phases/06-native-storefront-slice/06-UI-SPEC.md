@@ -17,9 +17,9 @@ created: 2026-04-20
 
 ## Route Contract
 
-- `/shop/` - native collection view
-- `/shop/[slug]/` - native product detail view
-- `/shop/[slug]/checkout/` - non-transactional checkout handoff shell that Phase 7 will activate
+- `/store/` - native collection view
+- `/store/[slug]/` - native product detail view
+- `/store/[slug]/checkout/` - non-transactional checkout handoff shell that Phase 7 will activate
 
 ## Collection View
 
@@ -33,7 +33,7 @@ created: 2026-04-20
   - short summary
   - fixture-backed price label
   - `View Product` CTA
-- No filters, no sort controls, no stock countdown copy.
+- No filters, no sort controls, no stock countdown copy, and no collection metrics dashboard.
 
 ## Product Detail View
 
@@ -47,7 +47,8 @@ created: 2026-04-20
   6. editorial summary
   7. `Buy Now` CTA
   8. quiet support note
-- `Buy Now` routes to `/shop/[slug]/checkout/`.
+- `Buy Now` routes to `/store/[slug]/checkout/`.
+- Do not surface canonical-path/debug panels or extra commerce chrome on the PDP.
 
 ## Checkout Handoff Shell
 
@@ -58,10 +59,11 @@ created: 2026-04-20
   - calm explanatory copy that this route will host the secure payment step in the next phase
   - actions to return to the product page or store
 - It must not claim payment is possible or complete in this phase.
+- It must not render fake payment controls, slug/debug fields, or dense checkout widgets before Phase 7.
 
 ## Release-To-Shop Navigation
 
-- Release pages with a mapped native shop entry link to the canonical `/shop/[slug]/` product page.
+- Release pages with a mapped native store entry link to the canonical `/store/[slug]/` product page.
 - If a release has no mapped native shop entry, do not invent a misleading purchase route.
 
 ## Copy Contract

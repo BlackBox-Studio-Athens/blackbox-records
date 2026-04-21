@@ -71,7 +71,7 @@ Phase 5 bootstraps a **separate Cloudflare Worker backend** inside the repo. It 
 ## Existing Code Insights
 
 - The repo is static-first today and already deploys successfully to GitHub Pages.
-- `/shop/` is still a redirect route and the app shell remains the frontend architectural center.
+- The app shell remains the frontend architectural center; native storefront routing now moves toward `/store/` while `/shop/` remains compatibility-only.
 - No separate backend workspace or Worker config currently exists in the repo.
 
 </code_context>

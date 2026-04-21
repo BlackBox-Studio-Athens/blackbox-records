@@ -1,12 +1,12 @@
 # Phase 6: Static Storefront Slice - Context
 
 **Gathered:** 2026-04-20
-**Status:** Planning complete
+**Status:** Implemented and reviewed
 
 <domain>
 ## Phase Boundary
 
-Phase 6 turns `/shop/` into a native storefront inside the static Astro site. It consumes the architecture frozen in Phase 5.1 and does not require the frontend itself to move to Workers.
+Phase 6 turns `/store/` into the canonical native storefront inside the static Astro site. It consumes the architecture frozen in Phase 5.1 and does not require the frontend itself to move to Workers. `/shop/` remains a compatibility redirect.
 
 </domain>
 
@@ -25,11 +25,11 @@ Phase 6 turns `/shop/` into a native storefront inside the static Astro site. It
 
 ### Route contract
 - **D-07:** Static storefront routes are:
-  - `/shop/`
-  - `/shop/[slug]/`
-  - `/shop/[slug]/checkout/`
-- **D-08:** Release pages with mapped shop entries route to canonical shop pages.
-- **D-09:** Legacy `fourthwall_url`, `merch_url`, and `shop_collection_handle` are no longer the canonical routing model.
+  - `/store/`
+  - `/store/[slug]/`
+  - `/store/[slug]/checkout/`
+- **D-08:** Release pages with mapped store entries route to canonical store pages, and unmapped releases keep explicit external fallback behavior.
+- **D-09:** Distro cards route to canonical store PDPs; legacy `fourthwall_url`, `merch_url`, and `shop_collection_handle` remain metadata only and are not the canonical routing model.
 
 ### Asset and content reuse
 - **D-10:** Release-derived shop entries reuse release cover image, summary, title, and artist relationship.
@@ -44,6 +44,7 @@ Phase 6 turns `/shop/` into a native storefront inside the static Astro site. It
 - Build the storefront around a stable `CatalogItem` plus `VariantSnapshot` UI contract.
 - Let the first native shop be visually real and navigable before backend and Stripe integration land.
 - Keep all frontend data shapes backend-agnostic so the Worker can slot in later without redesign.
+- Keep the static storefront visually calm: no merch dashboards, no debug/path callouts, and no fake scarcity language.
 
 </specifics>
 
@@ -55,7 +56,7 @@ Phase 6 turns `/shop/` into a native storefront inside the static Astro site. It
 - `.planning/phases/05.1-commerce-domain-architecture-and-source-of-truth-research/05.1-RESEARCH.md`
 - `src/content.config.ts`
 - `src/lib/catalog-data.ts`
-- `src/pages/shop/index.astro`
+- `src/pages/store/index.astro`
 
 </canonical_refs>
 
@@ -64,7 +65,9 @@ Phase 6 turns `/shop/` into a native storefront inside the static Astro site. It
 
 - `releases` already reference `artists`, which makes release-derived shop entries straightforward.
 - `distro` already carries editorial media and summary fields but currently points to Fourthwall URLs.
-- `/shop/` is still a redirect route and has no native collection or PDP contract yet.
+- `/store/`, `/store/[slug]/`, and `/store/[slug]/checkout/` are now implemented static routes.
+- `/store/` is now the canonical native storefront contract; `/shop/` is the legacy redirect path.
+- Release pages and distro cards now hand off to the canonical store PDPs instead of raw external shop URLs when native mapping exists.
 - The app shell already owns top-level navigation and must remain the frontend shell.
 
 </code_context>
@@ -82,4 +85,4 @@ Phase 6 turns `/shop/` into a native storefront inside the static Astro site. It
 ---
 
 *Phase: 06-native-storefront-slice*
-*Context gathered: 2026-04-20*
+*Context updated: 2026-04-21 after implementation review*

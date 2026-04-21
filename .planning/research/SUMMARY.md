@@ -25,7 +25,7 @@ The main risks are still boundary mistakes, not design mistakes: using stale Str
 
 ### Feature Table Stakes
 
-- Native `/shop/` collection and product detail pages for a curated distro subset
+- Native `/store/` collection and product detail pages for a curated distro subset
 - Single-item `Buy Now` flow only
 - Dedicated checkout route with embedded Checkout
 - Webhook-authoritative D1 orders and post-payment stock decrement

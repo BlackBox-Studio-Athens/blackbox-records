@@ -6,7 +6,7 @@
 
 ## Context
 
-Greek shipments require BOX NOW locker selection. Order volume is expected to stay low, and the current production storefront still redirects `/shop/` externally to Fourthwall. The project therefore needs a shipping scope that stays thin in v1 and a clear boundary between sandbox implementation and production launch work.
+Greek shipments require BOX NOW locker selection. Order volume is expected to stay low, and the previous production storefront redirected `/shop/` externally to Fourthwall. The project therefore needs a shipping scope that stays thin in v1 and a clear boundary between sandbox implementation and production launch work while the native `/store/` contract is introduced.
 
 ## Decision
 

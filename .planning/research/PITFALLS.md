@@ -90,7 +90,7 @@
 ### 7. Letting sandbox work mutate production behavior
 
 **Risk**
-- changing `/shop/` or navigation in a way that unintentionally affects the live GitHub Pages path before go-live review
+- changing `/store/` or the `/shop/` compatibility redirect in a way that unintentionally affects the live GitHub Pages path before go-live review
 
 **Why it matters**
 - the user explicitly wants a sandbox milestone before production launch work

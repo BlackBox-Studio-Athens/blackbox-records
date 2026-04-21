@@ -19,7 +19,7 @@ This milestone should not chase a generic full-stack rebuild. The practical stac
 ## Brownfield Baseline
 
 - Existing runtime: Astro 5.18 with `output: static`, React 19 app shell, Tailwind 4, Decap CMS, GitHub Pages
-- Existing commerce behavior: `/shop/` and distro links hand off to Fourthwall
+- Existing commerce behavior: legacy `/shop/` and distro links hand off to Fourthwall
 - Existing architectural constraint: app-shell routing and content collections should remain intact
 - Existing dependency baseline does not yet include the Cloudflare adapter or Stripe libraries
 

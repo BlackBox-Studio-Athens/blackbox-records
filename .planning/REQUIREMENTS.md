@@ -7,35 +7,35 @@
 
 ### Runtime & Deployment
 
-- [ ] **DEPL-01**: Team can keep the Astro storefront deployed statically to GitHub Pages while adding a separate Cloudflare Worker backend for sandbox commerce.
-- [ ] **DEPL-02**: Static frontend and separate Worker backend can communicate locally and in sandbox through an explicit environment and URL contract.
-- [ ] **DEPL-03**: Sandbox deployment and testing can proceed without changing the current live GitHub Pages + Fourthwall production path.
+- [x] **DEPL-01**: Team can keep the Astro storefront deployed statically to GitHub Pages while adding a separate Cloudflare Worker backend for sandbox commerce.
+- [x] **DEPL-02**: Static frontend and separate Worker backend can communicate locally and in sandbox through an explicit environment and URL contract.
+- [x] **DEPL-03**: Sandbox deployment and testing can proceed without changing the current live GitHub Pages + Fourthwall production path.
 - [ ] **DEPL-04**: Team can bootstrap local D1 and a Prisma-compatible migration workflow inside the Worker backend before Stripe checkout implementation begins.
 
 ### Commerce Architecture
 
-- [ ] **ARCH-01**: Team locks the commerce entity model for `Artist`, `Release`, `DistroEntry`, `CatalogItem`, and `Variant` before implementation of storefront or checkout phases.
-- [ ] **ARCH-02**: Team locks the source-of-truth split so Astro content owns editorial content, Stripe owns sellable commerce data, and D1 owns operational state plus internal mappings.
-- [ ] **ARCH-03**: Team defines internal backend interfaces and external Worker API contracts before storefront and checkout implementation begins, using backend-owned code-first OpenAPI with separate public/internal documents and generated clients.
-- [ ] **ARCH-04**: Canonical IDs, slugs, mappings, and release-to-shop linking rules are explicit before implementation.
+- [x] **ARCH-01**: Team locks the commerce entity model for `Artist`, `Release`, `DistroEntry`, `CatalogItem`, and `Variant` before implementation of storefront or checkout phases.
+- [x] **ARCH-02**: Team locks the source-of-truth split so Astro content owns editorial content, Stripe owns sellable commerce data, and D1 owns operational state plus internal mappings.
+- [x] **ARCH-03**: Team defines internal backend interfaces and external Worker API contracts before storefront and checkout implementation begins, using backend-owned code-first OpenAPI with separate public/internal documents and generated clients.
+- [x] **ARCH-04**: Canonical IDs, slugs, mappings, and release-to-shop linking rules are explicit before implementation.
 
 ### Catalog & Storefront
 
-- [ ] **CATA-01**: Shopper can browse a native `/shop/` catalog inside the existing shell using a unified `CatalogItem` projection derived from releases and distro.
-- [ ] **CATA-02**: Shopper can view product detail that combines Astro editorial content with temporary variant state through a stable `VariantSnapshot` contract before live Stripe-backed reads are required.
-- [ ] **CATA-03**: Release and distro entry points can resolve to canonical native shop product pages instead of raw external shop URLs.
+- [x] **CATA-01**: Shopper can browse a native `/store/` catalog inside the existing shell using a unified `CatalogItem` projection derived from releases and distro.
+- [x] **CATA-02**: Shopper can view product detail that combines Astro editorial content with temporary variant state through a stable `VariantSnapshot` contract before live Stripe-backed reads are required.
+- [x] **CATA-03**: Release and distro entry points can resolve to canonical native shop product pages instead of raw external shop URLs.
 - [ ] **CATA-04**: Temporary variant state remains outside editorial collections and can later swap from fixture-backed reads to Worker-backed D1/Stripe reads without changing the storefront contract.
 
 ### Checkout & Payment
 
-- [ ] **CHKO-01**: Shopper can start single-item checkout from product detail using a Worker-created Checkout Session with Stripe embedded Checkout (`ui_mode: embedded`).
-- [ ] **CHKO-02**: Shopper can complete or retry checkout through dedicated in-site checkout and return states without treating the browser as payment authority.
-- [ ] **CHKO-03**: Team can validate Worker-backed checkout session creation, embedded mount, and return-page retrieval flow in Stripe sandbox and local webhook testing.
+- [ ] **CHKO-01**: Shopper can start single-item checkout from product detail using a Worker-created Checkout Session with Stripe embedded Checkout (`ui_mode: embedded`), with Checkout Sessions as the only approved v1 payment-creation API.
+- [ ] **CHKO-02**: Shopper can complete or retry checkout through dedicated in-site checkout and return states that retrieve status through Worker-owned APIs without treating the browser as payment authority.
+- [ ] **CHKO-03**: Team can validate Worker-backed checkout session creation, embedded mount, and Worker-owned return-page/session-status retrieval flow in Stripe sandbox and local webhook testing.
 
 ### Orders & Inventory
 
 - [ ] **ORDR-01**: Worker-side code stores D1 order lifecycle state using `pending_payment`, `paid`, `closed_unpaid`, and `needs_review`.
-- [ ] **ORDR-02**: Verified Stripe webhooks received by the Worker backend are authoritative for paid-order transitions.
+- [ ] **ORDR-02**: Verified raw-body Stripe webhooks received by the Worker backend are authoritative for paid-order transitions.
 - [ ] **ORDR-03**: Inventory decrements once, and only once, after webhook-confirmed payment success.
 - [ ] **ORDR-04**: Failed, expired, canceled, or unpaid flows leave inventory untouched and remain traceable in D1.
 
@@ -55,9 +55,9 @@
 
 ### Security & Operations
 
-- [ ] **SECU-01**: Stripe secrets, webhook secrets, and D1 access remain server-only in the Worker backend and local development.
+- [x] **SECU-01**: Stripe secrets, webhook secrets, and D1 access remain server-only in the Worker backend and local development.
 - [ ] **SECU-02**: Browser code never writes authoritative inventory or paid-order state.
-- [ ] **OPER-01**: Team can validate the full sandbox path from static `/shop/` browse through Worker checkout, webhook-confirmed paid order, and D1 state changes.
+- [ ] **OPER-01**: Team can validate the full sandbox path from static `/store/` browse through Worker checkout, webhook-confirmed paid order, and D1 state changes.
 - [ ] **OPER-02**: Milestone ends with a human review package that captures sandbox evidence, open production gaps, and explicit handoff to the go-live milestone.
 
 ## v2 Requirements
@@ -99,17 +99,17 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DEPL-01 | Phase 5 | Pending |
-| DEPL-02 | Phase 5 | Pending |
-| DEPL-03 | Phase 5 | Pending |
+| DEPL-01 | Phase 5 | Completed |
+| DEPL-02 | Phase 5 | Completed |
+| DEPL-03 | Phase 5 | Completed |
 | DEPL-04 | Phase 6.1 | Pending |
-| ARCH-01 | Phase 5.1 | Pending |
-| ARCH-02 | Phase 5.1 | Pending |
-| ARCH-03 | Phase 5.1 | Pending |
-| ARCH-04 | Phase 5.1 | Pending |
-| CATA-01 | Phase 6 | Pending |
-| CATA-02 | Phase 6 | Pending |
-| CATA-03 | Phase 6 | Pending |
+| ARCH-01 | Phase 5.1 | Completed |
+| ARCH-02 | Phase 5.1 | Completed |
+| ARCH-03 | Phase 5.1 | Completed |
+| ARCH-04 | Phase 5.1 | Completed |
+| CATA-01 | Phase 6 | Completed |
+| CATA-02 | Phase 6 | Completed |
+| CATA-03 | Phase 6 | Completed |
 | CATA-04 | Phase 6.1 | Pending |
 | AUTH-01 | Phase 6.1.1 | Pending |
 | AUTH-02 | Phase 6.1.1 | Pending |
@@ -126,7 +126,7 @@
 | SHIP-01 | Phase 9 | Pending |
 | SHIP-02 | Phase 9 | Pending |
 | SHIP-03 | Phase 9 | Pending |
-| SECU-01 | Phase 5 | Pending |
+| SECU-01 | Phase 5 | Completed |
 | SECU-02 | Phase 8 | Pending |
 | OPER-01 | Phase 10 | Pending |
 | OPER-02 | Phase 10 | Pending |
@@ -138,5 +138,5 @@
 
 ---
 *Requirements defined: 2026-04-19*  
-*Last updated: 2026-04-20 after adding operator auth and stock-operations planning*
+*Last updated: 2026-04-21 after the storefront implementation review and Phase 6 alignment*
 

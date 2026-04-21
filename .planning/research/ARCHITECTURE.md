@@ -12,8 +12,8 @@ The right architecture for this milestone is a narrow extension of the current A
 ## Brownfield Integration Points
 
 The repo already has the right surfaces for the first commerce slice:
-- `src/pages/shop/index.astro` is the current redirect route that should become the native store entry.
-- `src/config/site.ts` and distro card/link helpers currently resolve `/shop/` to Fourthwall and will need to route into the native flow for sandbox.
+- `src/pages/store/index.astro` is the canonical native store entry, while `src/pages/shop/index.astro` becomes a compatibility redirect.
+- `src/config/site.ts` and distro card/link helpers previously resolved `/shop/` to Fourthwall and now need to preserve only external Fourthwall links, not native store paths.
 - `src/content/distro/*.json` already provides the editorial product presentation layer.
 - The app shell already owns top-level navigation, so the native store routes should fit inside the same shell-managed experience instead of creating a separate storefront shell.
 
@@ -93,7 +93,7 @@ What not to do:
 
 ## End-to-End Data Flow
 
-1. Shopper lands on native `/shop/` collection route inside the existing app shell.
+1. Shopper lands on native `/store/` collection route inside the existing app shell.
 2. Shopper opens a product detail page built from Astro editorial content plus Stripe-backed sellable data.
 3. Shopper presses `Buy Now`.
 4. Checkout route enforces the Greece-only BOX NOW gate and captures locker choice before payment.
