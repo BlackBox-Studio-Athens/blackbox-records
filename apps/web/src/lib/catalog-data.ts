@@ -28,6 +28,10 @@ export type ArtistRosterReleaseContext = {
   releaseCount: number;
 };
 
+function isNativeShopMerchUrl(path: string | undefined) {
+  return path === '/shop/';
+}
+
 function sortArtistProfilesByName(left: ArtistProfileEntry, right: ArtistProfileEntry) {
   return left.data.title.localeCompare(right.data.title);
 }
@@ -161,6 +165,43 @@ export function createCatalogItemFromDistroEntry(distroEntry: DistroCatalogEntry
     metadata,
     ...createCatalogItemPaths(slug),
   };
+}
+
+export function hasNativeCatalogItemForRelease(releaseEntry: ReleaseCatalogEntry) {
+  return isNativeShopMerchUrl(releaseEntry.data.merch_url);
+}
+
+export async function getCatalogItemForRelease(releaseEntry: ReleaseCatalogEntry) {
+  if (!hasNativeCatalogItemForRelease(releaseEntry)) {
+    return null;
+  }
+
+  return createCatalogItemFromRelease(releaseEntry);
+}
+
+export async function listCatalogItems(): Promise<CatalogItem[]> {
+  const [releaseCatalog, distroEntries] = await Promise.all([
+    listReleaseCatalog(),
+    listDistroEntries(),
+  ]);
+
+  const releaseCatalogItems = await Promise.all(
+    releaseCatalog
+      .filter(hasNativeCatalogItemForRelease)
+      .map((releaseEntry) => createCatalogItemFromRelease(releaseEntry)),
+  );
+
+  const distroCatalogItems = distroEntries.map((distroEntry) => createCatalogItemFromDistroEntry(distroEntry));
+
+  return [...releaseCatalogItems, ...distroCatalogItems];
+}
+
+export function mapCatalogItemsBySlug(catalogItems: CatalogItem[]) {
+  return new Map(catalogItems.map((catalogItem) => [catalogItem.slug, catalogItem]));
+}
+
+export async function getCatalogItemBySlug(slug: string) {
+  return mapCatalogItemsBySlug(await listCatalogItems()).get(slug) || null;
 }
 
 export async function createArtistDetailStaticPaths() {
