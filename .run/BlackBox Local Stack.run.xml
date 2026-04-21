@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="BlackBox Local Stack" type="CompoundRunConfigurationType">
+    <toRun name="BlackBox Backend Local" type="js.build_tools.npm" />
+    <toRun name="BlackBox Static Site" type="js.build_tools.npm" />
+    <method v="2" />
+  </configuration>
+</component>

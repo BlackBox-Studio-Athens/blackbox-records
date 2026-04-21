@@ -74,7 +74,7 @@ Run the Astro frontend explicitly:
 pnpm dev:web
 ```
 
-Run the canonical local static-site launcher used by the committed WebStorm run configuration:
+Run the frontend-only static-site launcher used by the committed WebStorm run configuration:
 
 ```sh
 pnpm site:dev
@@ -84,6 +84,12 @@ Run the separate Worker backend scaffold locally:
 
 ```sh
 pnpm dev:backend
+```
+
+Smoke-check the backend-local D1 binding:
+
+```sh
+pnpm --filter @blackbox/backend d1:smoke:local
 ```
 
 Bootstrap backend-local Wrangler secrets:
@@ -114,7 +120,8 @@ Current Worker scope:
 
 - no probe endpoints such as `healthz`, `status`, or `readyz`
 - Hono owns the HTTP interface layer; unmatched routes currently return JSON `404`
-- no Stripe, D1, Prisma, or frontend wiring yet
+- the backend-local D1 binding contract is `COMMERCE_DB`
+- no Stripe routes, Prisma runtime access, SQL schema, or frontend D1 wiring yet
 - no production deployment path yet
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
 - generated frontend-facing types and `openapi-typescript-fetch` wrappers live in `packages/api-client/`
@@ -175,10 +182,13 @@ pnpm generate:api
 ## Worker secrets and CI auth
 
 - Backend runtime secrets belong to the Worker runtime, not to Astro browser env vars and not to GitHub Actions.
+- The backend runtime binding contract now includes:
+  - `COMMERCE_DB`
 - The current backend-local runtime secret contract is:
   - `STRIPE_SECRET_KEY`
   - `STRIPE_WEBHOOK_SECRET`
-- Future privileged backend-only values such as D1 bindings and BOX NOW credentials also remain runtime-only, but their exact names are deferred to the phases that introduce them.
+- `COMMERCE_DB` is runtime-only backend infrastructure, not a browser env var and not a GitHub Actions credential.
+- Future privileged backend-only values such as BOX NOW credentials also remain runtime-only until the phases that introduce them.
 - `PUBLIC_BACKEND_BASE_URL` remains the only browser-facing backend env.
 
 Local development:
@@ -188,6 +198,7 @@ cp apps/backend/.dev.vars.example apps/backend/.dev.vars
 ```
 
 - Fill `apps/backend/.dev.vars` locally before running `pnpm dev:backend` or `pnpm dev:backend:sandbox`.
+- Verify the local D1 binding with `pnpm --filter @blackbox/backend d1:smoke:local`.
 - `apps/backend/.dev.vars` is local-only, ignored by git, and must never be committed.
 - Missing runtime secrets are acceptable today because no route uses them yet.
 - Once Stripe-backed backend routes land, those routes must require the secrets to exist before use.
@@ -402,9 +413,15 @@ If a source crops badly, replace the source image rather than adding focal-point
 
 ## WebStorm run configuration
 
-- `.run/BlackBox Static Site.run.xml` is the canonical committed launcher.
-- In WebStorm: Run/Debug Configurations -> `BlackBox Static Site`.
-- It runs `pnpm site:dev`, which starts only the static Astro site.
-- The launcher is pinned to `http://127.0.0.1:4321/blackbox-records/`.
-- If port `4321` is already in use, the launcher fails fast instead of silently switching ports.
-- Do not repurpose this run configuration for CMS or backend tasks; keep it as the single stable local site entrypoint.
+- `.run/BlackBox Local Stack.run.xml` is the canonical committed WebStorm launcher for day-to-day local work.
+- It starts:
+  - `BlackBox Backend Local`
+  - `BlackBox Static Site`
+- `.run/BlackBox Backend Local.run.xml` runs `pnpm dev:backend`.
+- `.run/BlackBox Backend Sandbox.run.xml` runs `pnpm dev:backend:sandbox`.
+- `.run/BlackBox Static Site.run.xml` remains the frontend-only inspection/debug launcher and runs `pnpm site:dev`.
+- Only `BlackBox Static Site` opens a browser/debug target.
+- The static-site launcher remains pinned to `http://127.0.0.1:4321/blackbox-records/`.
+- If port `4321` is already in use, the static-site launcher fails fast instead of silently switching ports.
+- Local D1 comes from Wrangler automatically during `pnpm dev:backend`; no separate D1 process is part of the run-config flow.
+- `pnpm --filter @blackbox/backend d1:smoke:local` remains a verification command, not a launch prerequisite.

@@ -44,10 +44,11 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 
 - Install deps: `pnpm install`
 - Frontend dev server: `pnpm dev` or `pnpm dev:web`
-- Canonical local static-site launcher: `pnpm site:dev`
+- Frontend-only static-site launcher: `pnpm site:dev`
 - Backend dev server: `pnpm dev:backend`
 - Backend sandbox dev server: `pnpm dev:backend:sandbox`
 - Backend sandbox deploy: `pnpm deploy:backend:sandbox`
+- Backend local D1 smoke check: `pnpm --filter @blackbox/backend d1:smoke:local`
 - Backend local secrets: copy `apps/backend/.dev.vars.example` to `apps/backend/.dev.vars`
 - Generate backend OpenAPI docs and client package: `pnpm generate:api`
 - Clean dev run: `pnpm dev:clean`
@@ -57,12 +58,19 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 
 ### WebStorm launcher contract
 
-- The single committed IDE launcher for the static site is `.run/BlackBox Static Site.run.xml`.
-- It must keep running the root script `pnpm site:dev`.
+- The canonical committed IDE launcher is `.run/BlackBox Local Stack.run.xml`.
+- It must compose:
+  - `.run/BlackBox Backend Local.run.xml`
+  - `.run/BlackBox Static Site.run.xml`
+- `.run/BlackBox Backend Local.run.xml` must keep running the root script `pnpm dev:backend`.
+- `.run/BlackBox Backend Sandbox.run.xml` must keep running the root script `pnpm dev:backend:sandbox`.
+- `.run/BlackBox Static Site.run.xml` remains the frontend-only launcher and must keep running the root script `pnpm site:dev`.
 - `pnpm site:dev` must keep the site on `http://127.0.0.1:4321/blackbox-records/`.
 - If that port is unavailable, the launcher should fail clearly rather than silently drifting to another port.
-- Do not repurpose this run configuration for CMS, backend, or multi-process dev flows.
+- Only the static-site launcher should keep a browser/debug target attached.
+- Backend local D1 comes from Wrangler automatically during `pnpm dev:backend`; do not add a second D1 process to the run-config flow.
 - Runtime backend secrets belong in Worker secrets or `apps/backend/.dev.vars`, not in Astro public env vars or GitHub deploy credentials.
+- The backend runtime binding contract now includes `COMMERCE_DB`.
 - The current backend-local secret contract is `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
 
 ### Required command policy
