@@ -1,10 +1,27 @@
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
-export { groupDistroEntries } from '@/lib/distro-data';
+
+import { createProjectRelativeUrl } from '../config/site';
+export { groupDistroEntries } from './distro-data';
 
 export type ArtistProfileEntry = CollectionEntry<'artists'>;
 export type ReleaseCatalogEntry = CollectionEntry<'releases'>;
 export type NewsArticleEntry = CollectionEntry<'news'>;
-export type DistroEntry = CollectionEntry<'distro'>;
+export type DistroCatalogEntry = CollectionEntry<'distro'>;
+export type CatalogItemSourceKind = 'release' | 'distro';
+export type CatalogItem = {
+  slug: string;
+  sourceKind: CatalogItemSourceKind;
+  sourceId: string;
+  title: string;
+  subtitle: string;
+  summary: string | null;
+  image: ReleaseCatalogEntry['data']['cover_image'] | DistroCatalogEntry['data']['image'];
+  imageAlt: string;
+  eyebrow: string | null;
+  metadata: string[];
+  shopPath: string;
+  checkoutPath: string;
+};
 export type ArtistRosterReleaseContext = {
   latestReleaseTitle: string | null;
   latestReleaseYear: number | null;
@@ -23,7 +40,7 @@ function sortNewsArticlesByDate(left: NewsArticleEntry, right: NewsArticleEntry)
   return right.data.date.getTime() - left.data.date.getTime();
 }
 
-function sortDistroEntries(left: DistroEntry, right: DistroEntry) {
+function sortDistroEntries(left: DistroCatalogEntry, right: DistroCatalogEntry) {
   if (left.data.order !== right.data.order) {
     return left.data.order - right.data.order;
   }
@@ -88,6 +105,62 @@ export function resolveReleaseArtistDisplayName(
 ) {
   const artistSlugFallbackName = releaseEntry.data.artist.id || 'Artist';
   return artistProfile?.data.title || artistSlugFallbackName.replace(/-/g, ' ');
+}
+
+function createCatalogItemPaths(slug: string) {
+  const shopPath = createProjectRelativeUrl(`/shop/${slug}/`);
+
+  return {
+    shopPath,
+    checkoutPath: createProjectRelativeUrl(`/shop/${slug}/checkout/`),
+  };
+}
+
+function normalizeCatalogItemImageAlt(imageAlt: string | undefined, fallback: string) {
+  return imageAlt || fallback;
+}
+
+export async function createCatalogItemFromRelease(releaseEntry: ReleaseCatalogEntry): Promise<CatalogItem> {
+  const artistProfile = await resolveArtistProfileForRelease(releaseEntry);
+  const artistDisplayName = resolveReleaseArtistDisplayName(releaseEntry, artistProfile || undefined);
+  const slug = releaseEntry.id;
+  const metadata = [
+    String(releaseEntry.data.release_date.getFullYear()),
+    ...(releaseEntry.data.formats || []),
+  ];
+
+  return {
+    slug,
+    sourceKind: 'release',
+    sourceId: releaseEntry.id,
+    title: releaseEntry.data.title,
+    subtitle: artistDisplayName,
+    summary: releaseEntry.data.summary || null,
+    image: releaseEntry.data.cover_image,
+    imageAlt: normalizeCatalogItemImageAlt(releaseEntry.data.cover_image_alt, releaseEntry.data.title),
+    eyebrow: 'Release',
+    metadata,
+    ...createCatalogItemPaths(slug),
+  };
+}
+
+export function createCatalogItemFromDistroEntry(distroEntry: DistroCatalogEntry): CatalogItem {
+  const slug = distroEntry.id;
+  const metadata = [distroEntry.data.group, distroEntry.data.format].filter(Boolean) as string[];
+
+  return {
+    slug,
+    sourceKind: 'distro',
+    sourceId: distroEntry.id,
+    title: distroEntry.data.title,
+    subtitle: distroEntry.data.artist_or_label,
+    summary: distroEntry.data.summary || null,
+    image: distroEntry.data.image,
+    imageAlt: normalizeCatalogItemImageAlt(distroEntry.data.image_alt, distroEntry.data.title),
+    eyebrow: distroEntry.data.eyebrow || null,
+    metadata,
+    ...createCatalogItemPaths(slug),
+  };
 }
 
 export async function createArtistDetailStaticPaths() {
