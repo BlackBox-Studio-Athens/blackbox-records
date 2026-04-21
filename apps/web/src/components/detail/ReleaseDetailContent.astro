@@ -5,14 +5,15 @@ import type { CollectionEntry } from 'astro:content';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
-import { createProjectRelativeUrl, resolveLinkAttributes } from '@/config/site';
+import { createProjectRelativeUrl } from '@/config/site';
 import {
   resolveArtistProfileForRelease,
   resolveReleaseArtistDisplayName,
 } from '@/lib/catalog-data';
+import { getReleaseCommerceLink } from '@/lib/release-commerce';
 import { cn } from '@/lib/utils';
 import { formatYear } from '@/utils/content';
-import { buildEmbeddedPlayerData, resolveMerchHref } from '@/utils/music';
+import { buildEmbeddedPlayerData } from '@/utils/music';
 
 interface Props {
   release: CollectionEntry<'releases'>;
@@ -26,8 +27,7 @@ const artistUrl = releaseArtist ? createProjectRelativeUrl(`/artists/${releaseAr
 const releaseYear = formatYear(release.data.release_date);
 const embeddedPlayerTitle = `${release.data.title} — ${artistName}`;
 const embeddedPlayerData = buildEmbeddedPlayerData(release.data, embeddedPlayerTitle);
-const merchHref = resolveMerchHref(release.data.merch_url, release.data.shop_collection_handle);
-const merchLinkAttributes = merchHref ? resolveLinkAttributes(merchHref) : null;
+const commerceLink = await getReleaseCommerceLink(release);
 
 const playerAttributes = embeddedPlayerData.hasProvider
   ? {
@@ -76,14 +76,14 @@ const playerAttributes = embeddedPlayerData.hasProvider
           )
         }
         <div class="flex flex-wrap items-center gap-3 pt-1">
-          {merchLinkAttributes && (
+          {commerceLink && (
             <a
-              href={merchLinkAttributes.href}
-              target={merchLinkAttributes.target}
-              rel={merchLinkAttributes.rel}
+              href={commerceLink.href}
+              target={commerceLink.target}
+              rel={commerceLink.rel}
               class={cn(buttonVariants({ size: 'lg' }), 'rounded-md px-6 uppercase tracking-[0.12em]')}
             >
-              Buy merch
+              {commerceLink.label}
             </a>
           )}
           {embeddedPlayerData.hasProvider && (

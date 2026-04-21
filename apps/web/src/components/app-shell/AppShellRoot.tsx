@@ -94,6 +94,7 @@ const SHELL_SECTION_LABELS: Record<ShellSectionKind, string> = {
   news: 'News',
   releases: 'Releases',
   services: 'Services',
+  store: 'Store',
 };
 const EMBED_PROVIDER_WARMUP_ORIGINS: Record<PlayerProviderId, string[]> = {
   bandcamp: ['https://bandcamp.com'],
@@ -1494,7 +1495,7 @@ export default function AppShellRoot({
               const navigationIsActive = activeShellPathname ? isCurrentPath(activeShellPathname, item.url) : false;
               const linkAttributes = resolveLinkAttributes(item.url);
               const isServicesNavigationItem = item.url === '/services/';
-              const isStoreNavigationItem = item.url === '/shop/';
+              const isStoreNavigationItem = item.url === '/store/';
 
               return (
                 <a

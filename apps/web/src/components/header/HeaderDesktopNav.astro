@@ -22,7 +22,7 @@ const { items, pathname } = Astro.props;
         const navIsActive = isCurrentPath(pathname, item.url);
         const linkAttributes = resolveLinkAttributes(item.url);
         const isServicesNavigationItem = item.url === '/services/';
-        const isStoreNavigationItem = item.url === '/shop/';
+        const isStoreNavigationItem = item.url === '/store/';
 
         return (
           <li>

@@ -29,7 +29,7 @@ export type ArtistRosterReleaseContext = {
 };
 
 function isNativeShopMerchUrl(path: string | undefined) {
-  return path === '/shop/';
+  return path === '/store/';
 }
 
 function sortArtistProfilesByName(left: ArtistProfileEntry, right: ArtistProfileEntry) {
@@ -112,11 +112,11 @@ export function resolveReleaseArtistDisplayName(
 }
 
 function createCatalogItemPaths(slug: string) {
-  const shopPath = createProjectRelativeUrl(`/shop/${slug}/`);
+  const shopPath = createProjectRelativeUrl(`/store/${slug}/`);
 
   return {
     shopPath,
-    checkoutPath: createProjectRelativeUrl(`/shop/${slug}/checkout/`),
+    checkoutPath: createProjectRelativeUrl(`/store/${slug}/checkout/`),
   };
 }
 

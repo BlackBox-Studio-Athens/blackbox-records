@@ -1,0 +1,130 @@
+---
+import { Image } from 'astro:assets';
+
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { createProjectRelativeUrl } from '@/config/site';
+import SiteLayout from '@/layouts/SiteLayout.astro';
+import { type StoreProductEntry, createStoreProductStaticPaths } from '@/lib/store-product';
+import { cn } from '@/lib/utils';
+
+export async function getStaticPaths() {
+  return createStoreProductStaticPaths();
+}
+
+interface Props {
+  entry: StoreProductEntry;
+}
+
+const { entry } = Astro.props;
+const { catalogItem, primaryVariantSnapshot } = entry;
+const priceLabel = primaryVariantSnapshot?.price.display || 'Price soon';
+const availabilityLabel = primaryVariantSnapshot?.availability.label || 'Unavailable';
+const canPurchase = primaryVariantSnapshot?.canPurchase ?? false;
+---
+
+<SiteLayout
+  pageTitle={`${catalogItem.title} Checkout | Store`}
+  pageDescription={`Static checkout handoff shell for ${catalogItem.title}. Live checkout wiring lands in the Worker-backed Stripe phase.`}
+>
+  <section class="layout-container pt-14 pb-6">
+    <div class="grid gap-6 border border-border/70 bg-card/35 p-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(22rem,1.1fr)] lg:p-8">
+      <div class="space-y-5">
+        <Badge variant="outline" className="border-border/70 bg-background/80 text-xs tracking-[0.15em] uppercase">
+          Checkout shell
+        </Badge>
+        <div class="space-y-3">
+          <h1 class="font-display text-5xl tracking-[0.08em] uppercase text-foreground sm:text-6xl">
+            {catalogItem.title.toUpperCase()}
+          </h1>
+          <p class="text-sm uppercase tracking-[0.13em] text-muted-foreground">{catalogItem.subtitle}</p>
+        </div>
+        <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          This is the stable handoff surface for the Worker-owned checkout flow. The product recap is real storefront state; payment collection is intentionally deferred to Phase 7.
+        </p>
+
+        <div class="grid gap-3 border border-border/60 bg-background/45 p-5">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 pb-3">
+            <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Order recap</p>
+            <span
+              class:list={[
+                'inline-flex items-center border px-2 py-1 text-[10px] uppercase tracking-[0.18em]',
+                canPurchase
+                  ? 'border-foreground/20 bg-background/60 text-foreground/82'
+                  : 'border-border/60 bg-background/80 text-muted-foreground',
+              ]}
+            >
+              {availabilityLabel}
+            </span>
+          </div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="space-y-2">
+              <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Offer</p>
+              <p class="font-display text-2xl tracking-[0.08em] uppercase text-foreground">
+                {primaryVariantSnapshot?.title || catalogItem.title}
+              </p>
+              {primaryVariantSnapshot?.optionLabel && (
+                <p class="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{primaryVariantSnapshot.optionLabel}</p>
+              )}
+            </div>
+            <div class="space-y-2">
+              <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Price recap</p>
+              <p class="font-display text-3xl tracking-[0.08em] uppercase text-foreground">{priceLabel}</p>
+              <p class="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{availabilityLabel}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <a
+            href={catalogItem.shopPath}
+            data-astro-prefetch
+            class={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'uppercase tracking-[0.12em]')}
+          >
+            Back To Product
+          </a>
+          <a
+            href={createProjectRelativeUrl('/store/')}
+            data-astro-prefetch
+            class={cn(buttonVariants({ variant: 'ghost', size: 'lg' }), 'uppercase tracking-[0.12em]')}
+          >
+            Back To Store
+          </a>
+        </div>
+      </div>
+
+      <div class="grid gap-5">
+        <Card className="rounded-none border-border/70 bg-[#111111] shadow-none">
+          <CardContent className="grid gap-5 p-5">
+            <div class="relative overflow-hidden border border-border/60 bg-background/55">
+              <Image
+                src={catalogItem.image}
+                alt={catalogItem.imageAlt}
+                class="aspect-[5/4] h-full w-full object-cover"
+                sizes="(min-width: 1024px) 32vw, 100vw"
+              />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+            </div>
+
+            <div class="space-y-3">
+              <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Phase 7 mount zone</p>
+              <div class="border border-dashed border-border/70 bg-background/45 p-5">
+                <p class="font-display text-2xl tracking-[0.08em] uppercase text-foreground">Embedded checkout mounts here next.</p>
+                <p class="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  The Worker API, trusted session-status retrieval, and Stripe embedded Checkout will occupy this surface later. Nothing fake is rendered here before that work exists.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {!canPurchase && (
+          <p class="text-sm leading-relaxed text-muted-foreground">
+            This item stays viewable, but the shell does not imply a live payment path while it is unavailable.
+          </p>
+        )}
+      </div>
+    </div>
+  </section>
+</SiteLayout>

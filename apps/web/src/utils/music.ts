@@ -1,4 +1,4 @@
-import { resolveLinkAttributes, siteConfig } from '@/config/site';
+import { resolveLinkAttributes, siteConfig } from '../config/site';
 
 type ReleaseLike = {
   bandcamp_embed_url?: string | undefined;

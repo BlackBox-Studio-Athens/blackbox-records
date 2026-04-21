@@ -17,11 +17,6 @@ function normalizeBasePath(basePath = '/') {
   return normalizedBasePath === '/' ? '' : normalizedBasePath;
 }
 
-function normalizeComparablePath(path = '/') {
-  const normalizedPath = normalizePath(path).replace(/\/+$/, '');
-  return normalizedPath || '/';
-}
-
 export function getProjectBasePath() {
   return normalizeBasePath(astroBasePath || import.meta.env.BASE_URL || '/');
 }
@@ -35,10 +30,6 @@ export function createProjectRelativeUrl(path = '/') {
 export function createAbsoluteSiteUrl(path = '/') {
   if (!astroSiteUrl) return createProjectRelativeUrl(path);
   return new URL(createProjectRelativeUrl(path), astroSiteUrl).toString();
-}
-
-export function isInternalShopPath(path = '/') {
-  return normalizeComparablePath(path) === '/shop';
 }
 
 export function isExternalUrl(path = '') {
@@ -59,7 +50,7 @@ type LinkAttributes = {
 };
 
 export function resolveLinkAttributes(path = '/'): LinkAttributes {
-  if (isInternalShopPath(path) || isShopUrl(path)) {
+  if (isShopUrl(path)) {
     return {
       href: siteConfig.shopUrl,
       rel: 'noreferrer noopener',

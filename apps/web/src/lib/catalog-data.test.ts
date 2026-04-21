@@ -11,7 +11,7 @@ vi.mock('astro:content', () => ({
             cover_image: { src: '/barren-point.jpg' },
             cover_image_alt: 'Barren Point cover',
             formats: ['Vinyl LP'],
-            merch_url: '/shop/',
+            merch_url: '/store/',
             release_date: new Date('2026-09-01T00:00:00.000Z'),
             summary: 'Native-shop release',
             title: 'Disintegration',
@@ -123,8 +123,8 @@ describe('CatalogItem projection contract', () => {
       imageAlt: 'Caregivers cover',
       eyebrow: 'Release',
       metadata: ['2024', 'LP', 'Digital'],
-      shopPath: '/blackbox-records/shop/caregivers/',
-      checkoutPath: '/blackbox-records/shop/caregivers/checkout/',
+      shopPath: '/blackbox-records/store/caregivers/',
+      checkoutPath: '/blackbox-records/store/caregivers/checkout/',
     });
   });
 
@@ -145,14 +145,14 @@ describe('CatalogItem projection contract', () => {
     } as any);
 
     expect(catalogItem.sourceKind).toBe('distro');
-    expect(catalogItem.shopPath).toBe('/blackbox-records/shop/afterglow-tape/');
-    expect(catalogItem.checkoutPath).toBe('/blackbox-records/shop/afterglow-tape/checkout/');
+    expect(catalogItem.shopPath).toBe('/blackbox-records/store/afterglow-tape/');
+    expect(catalogItem.checkoutPath).toBe('/blackbox-records/store/afterglow-tape/checkout/');
     expect(catalogItem.metadata).toEqual(['Tapes', 'Cassette']);
     expect(catalogItem).not.toHaveProperty('fourthwall_url');
     expect(catalogItem).not.toHaveProperty('merch_url');
   });
 
-  it('only treats releases with internal /shop/ merch_url as native catalog candidates', async () => {
+  it('only treats releases with internal /store/ merch_url as native catalog candidates', async () => {
     const [nativeRelease, externalRelease] = await listReleaseCatalog();
 
     expect(hasNativeCatalogItemForRelease(nativeRelease as any)).toBe(true);
@@ -182,6 +182,17 @@ describe('CatalogItem projection contract', () => {
 
   it('returns null for releases that are not native catalog items', async () => {
     const [, externalRelease] = await listReleaseCatalog();
+
+    await expect(getCatalogItemForRelease(externalRelease as any)).resolves.toBeNull();
+  });
+
+  it('resolves native catalog paths for mapped releases instead of legacy external merch links', async () => {
+    const [nativeRelease, externalRelease] = await listReleaseCatalog();
+
+    await expect(getCatalogItemForRelease(nativeRelease as any)).resolves.toMatchObject({
+      slug: 'barren-point',
+      shopPath: '/blackbox-records/store/barren-point/',
+    });
 
     await expect(getCatalogItemForRelease(externalRelease as any)).resolves.toBeNull();
   });
