@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "pnpm dev:web",
     "dev:web": "pnpm --filter @blackbox/web dev",
+    "site:dev": "pnpm --filter @blackbox/web dev:static",
     "dev:clean": "pnpm --filter @blackbox/web dev:clean",
     "cms:dev": "pnpm --filter @blackbox/web cms:dev",
     "cms:proxy": "pnpm --filter @blackbox/web cms:proxy",

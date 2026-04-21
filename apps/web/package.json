@@ -8,6 +8,7 @@
     "cms:dev": "node scripts/start-cms-dev.mjs",
     "cms:proxy": "node scripts/start-decap-proxy.mjs",
     "dev": "astro dev --root .",
+    "dev:static": "node scripts/start-static-site-dev.mjs",
     "dev:clean": "npm run clean:dev-cache && astro dev --root .",
     "build": "astro build --root .",
     "preview": "astro preview --root .",

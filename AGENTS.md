@@ -44,6 +44,7 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 
 - Install deps: `pnpm install`
 - Frontend dev server: `pnpm dev` or `pnpm dev:web`
+- Canonical local static-site launcher: `pnpm site:dev`
 - Backend dev server: `pnpm dev:backend`
 - Backend sandbox dev server: `pnpm dev:backend:sandbox`
 - Backend sandbox deploy: `pnpm deploy:backend:sandbox`
@@ -53,6 +54,14 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - Unit tests: `pnpm test:unit`
 - Type/content checks: `pnpm check`
 - Production build: `pnpm build`
+
+### WebStorm launcher contract
+
+- The single committed IDE launcher for the static site is `.run/BlackBox Static Site.run.xml`.
+- It must keep running the root script `pnpm site:dev`.
+- `pnpm site:dev` must keep the site on `http://127.0.0.1:4321/blackbox-records/`.
+- If that port is unavailable, the launcher should fail clearly rather than silently drifting to another port.
+- Do not repurpose this run configuration for CMS, backend, or multi-process dev flows.
 - Runtime backend secrets belong in Worker secrets or `apps/backend/.dev.vars`, not in Astro public env vars or GitHub deploy credentials.
 - The current backend-local secret contract is `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
 

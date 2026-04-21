@@ -74,6 +74,12 @@ Run the Astro frontend explicitly:
 pnpm dev:web
 ```
 
+Run the canonical local static-site launcher used by the committed WebStorm run configuration:
+
+```sh
+pnpm site:dev
+```
+
 Run the separate Worker backend scaffold locally:
 
 ```sh
@@ -396,8 +402,9 @@ If a source crops badly, replace the source image rather than adding focal-point
 
 ## WebStorm run configuration
 
-- `.run/Astro Dev.run.xml` is included.
-- `.run/Astro Site.run.xml` is included.
-- In WebStorm: Run/Debug Configurations -> `Astro Dev`.
-- `Astro Dev` runs `pnpm run cms:dev`, so the site dev server and Decap proxy both start and `/admin/` works locally.
-- `Astro Site` runs `pnpm run dev:clean` when you only want the site dev server without the CMS proxy.
+- `.run/BlackBox Static Site.run.xml` is the canonical committed launcher.
+- In WebStorm: Run/Debug Configurations -> `BlackBox Static Site`.
+- It runs `pnpm site:dev`, which starts only the static Astro site.
+- The launcher is pinned to `http://127.0.0.1:4321/blackbox-records/`.
+- If port `4321` is already in use, the launcher fails fast instead of silently switching ports.
+- Do not repurpose this run configuration for CMS or backend tasks; keep it as the single stable local site entrypoint.
