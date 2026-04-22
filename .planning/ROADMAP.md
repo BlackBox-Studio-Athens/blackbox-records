@@ -29,7 +29,7 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - [x] **Phase 5: Worker Backend Platform And Deployment Plumbing** - Add a separate Cloudflare Worker backend to the repo without disrupting the static Astro Pages frontend
 - [x] **Phase 5.1: Commerce Domain Architecture And Source-Of-Truth Research** - Lock entity boundaries, source-of-truth rules, IDs, mappings, and API contracts before storefront or checkout implementation
 - [x] **Phase 6: Static Storefront Slice** - Replace the legacy `/shop/` redirect with a canonical `/store/` static storefront built from shared editorial content and a stable store projection
-- [ ] **Phase 6.1: Worker Commerce State Foundation** - Introduce D1 + Prisma in the separate Worker backend behind repository and API boundaries before checkout work
+- [x] **Phase 6.1: Worker Commerce State Foundation** - Introduce D1 + Prisma in the separate Worker backend behind repository and API boundaries before checkout work
 - [ ] **Phase 6.1.1: Internal Stock Operations And Operator Access** - Add protected staff-only stock tooling and operator auth before checkout depends on live stock
 - [ ] **Phase 7: Worker Checkout And Stripe Sandbox Flow** - Implement Worker-owned checkout APIs and connect the frontend checkout route to Stripe sandbox
 - [ ] **Phase 8: Webhook Orders And Inventory** - Make payment truth and stock mutation Worker-owned, webhook-authoritative, and idempotent
@@ -109,7 +109,7 @@ Plans:
 - [x] 06.1-01: Bootstrap local D1 and Worker bindings
 - [x] 06.1-02: Add Prisma runtime access and repository seams in the Worker backend
 - [x] 06.1-03: Establish the migration workflow baseline
-- [ ] 06.1-04: Move backend variant and mapping reads from temporary data toward D1-backed repositories where needed
+- [x] 06.1-04: Move backend variant and mapping reads from temporary data toward D1-backed repositories where needed
 
 ### Phase 06.1.1: Internal Stock Operations And Operator Access (INSERTED)
 
@@ -210,7 +210,7 @@ Phases execute in numeric order: `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 8 
 | 5. Worker Backend Platform And Deployment Plumbing | 6/6 | Completed | 2026-04-20 |
 | 5.1. Commerce Domain Architecture And Source-Of-Truth Research | 4/4 | Completed | 2026-04-20 |
 | 6. Static Storefront Slice | 7/7 | Completed | 2026-04-21 |
-| 6.1. Worker Commerce State Foundation | 3/4 | Active |  |
+| 6.1. Worker Commerce State Foundation | 4/4 | Completed | 2026-04-22 |
 | 6.1.1. Internal Stock Operations And Operator Access | 0/4 | Planned |  |
 | 7. Worker Checkout And Stripe Sandbox Flow | 0/3 | Planned |  |
 | 8. Webhook Orders And Inventory | 0/3 | Planned |  |

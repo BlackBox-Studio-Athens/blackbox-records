@@ -10,7 +10,7 @@
 - [x] **DEPL-01**: Team can keep the Astro storefront deployed statically to GitHub Pages while adding a separate Cloudflare Worker backend for sandbox commerce.
 - [x] **DEPL-02**: Static frontend and separate Worker backend can communicate locally and in sandbox through an explicit environment and URL contract.
 - [x] **DEPL-03**: Sandbox deployment and testing can proceed without changing the current live GitHub Pages + Fourthwall production path.
-- [ ] **DEPL-04**: Team can bootstrap local D1 and a Prisma-compatible migration workflow inside the Worker backend before Stripe checkout implementation begins.
+- [x] **DEPL-04**: Team can bootstrap local D1 and a Prisma-compatible migration workflow inside the Worker backend before Stripe checkout implementation begins.
 
 ### Commerce Architecture
 
@@ -24,7 +24,7 @@
 - [x] **CATA-01**: Shopper can browse a native `/store/` catalog inside the existing shell using a unified `CatalogItem` projection derived from releases and distro.
 - [x] **CATA-02**: Shopper can view product detail that combines Astro editorial content with temporary variant state through a stable `VariantSnapshot` contract before live Stripe-backed reads are required.
 - [x] **CATA-03**: Release and distro entry points can resolve to canonical native shop product pages instead of raw external shop URLs.
-- [ ] **CATA-04**: Temporary variant state remains outside editorial collections and can later swap from fixture-backed reads to Worker-backed D1/Stripe reads without changing the storefront contract.
+- [x] **CATA-04**: Temporary variant state remains outside editorial collections and can later swap from fixture-backed reads to Worker-backed D1/Stripe reads without changing the storefront contract.
 
 ### Checkout & Payment
 
@@ -102,7 +102,7 @@
 | DEPL-01 | Phase 5 | Completed |
 | DEPL-02 | Phase 5 | Completed |
 | DEPL-03 | Phase 5 | Completed |
-| DEPL-04 | Phase 6.1 | Pending |
+| DEPL-04 | Phase 6.1 | Completed |
 | ARCH-01 | Phase 5.1 | Completed |
 | ARCH-02 | Phase 5.1 | Completed |
 | ARCH-03 | Phase 5.1 | Completed |
@@ -110,7 +110,7 @@
 | CATA-01 | Phase 6 | Completed |
 | CATA-02 | Phase 6 | Completed |
 | CATA-03 | Phase 6 | Completed |
-| CATA-04 | Phase 6.1 | Pending |
+| CATA-04 | Phase 6.1 | Completed |
 | AUTH-01 | Phase 6.1.1 | Pending |
 | AUTH-02 | Phase 6.1.1 | Pending |
 | INV-01 | Phase 6.1.1 | Pending |

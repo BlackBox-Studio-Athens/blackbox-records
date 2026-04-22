@@ -92,6 +92,12 @@ Smoke-check the backend-local D1 binding:
 pnpm --filter @blackbox/backend d1:smoke:local
 ```
 
+Seed the backend-local commerce-state tables:
+
+```sh
+pnpm --filter @blackbox/backend d1:seed:local
+```
+
 List or apply backend D1 migrations:
 
 ```sh
@@ -137,6 +143,8 @@ Current Worker scope:
 - Prisma runtime access now exists behind backend-only repository seams
 - the generated Prisma client is committed under `apps/backend/src/generated/prisma/`
 - the D1 migration workflow baseline now exists under `apps/backend/prisma/migrations/`
+- backend-local seed data now exists under `apps/backend/prisma/seeds/`
+- a backend-only catalog-offer lookup reader can now resolve mapped availability from D1
 - no Stripe routes, D1-backed read paths, or frontend D1 wiring yet
 - no production deployment path yet
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
@@ -234,6 +242,12 @@ Future migration flow:
    - Use `pnpm --filter @blackbox/backend exec prisma migrate diff --from-local-d1 --to-schema-datamodel ./prisma/schema.prisma --script --output <file>` for later migrations.
 5. Apply locally with `pnpm --filter @blackbox/backend d1:migrations:apply:local`.
 6. Apply to sandbox with `pnpm --filter @blackbox/backend d1:migrations:apply:sandbox` when ready.
+
+Local seed flow:
+
+1. Apply migrations locally.
+2. Run `pnpm --filter @blackbox/backend d1:seed:local`.
+3. Use direct D1 queries or backend-local smoke checks to verify seeded rows exist.
 
 Local development:
 

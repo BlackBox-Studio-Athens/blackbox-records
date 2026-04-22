@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 6.1 active; next implementation focus is 06.1-04 D1-backed read migration
-last_updated: "2026-04-22T11:15:00+03:00"
-last_activity: 2026-04-22 -- Locked the D1 migration workflow baseline with committed SQL history and Wrangler-owned apply commands
+stopped_at: Phase 6.1.1 active; next implementation focus is 06.1.1-01 protected hostname and access contract
+last_updated: "2026-04-22T13:20:00+03:00"
+last_activity: 2026-04-22 -- Seeded local D1 commerce-state rows and added the first repository-backed catalog offer lookup reader
 progress:
   total_phases: 9
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 36
-  completed_plans: 20
-  percent: 56
+  completed_plans: 21
+  percent: 58
 ---
 
 # Project State
@@ -21,22 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-21)
 
 **Core value:** Ship a minimal native commerce flow that is operationally safe: the static site owns storefront presentation, the Worker backend owns dynamic commerce behavior, Stripe owns sellable catalog/pricing/payment, server routes own secrets and mutations, and inventory changes happen only after verified webhooks.
-**Current focus:** Phase 6.1: Worker Commerce State Foundation
+**Current focus:** Phase 6.1.1: Internal Stock Operations And Operator Access
 
 ## Current Position
 
-Current Phase: 6.1
-Current Phase Name: Worker Commerce State Foundation
+Current Phase: 6.1.1
+Current Phase Name: Internal Stock Operations And Operator Access
 Total Phases: 9
-Current Plan: 4
+Current Plan: 1
 Total Plans in Phase: 4
 Status: Active
-Progress: 56%
+Progress: 58%
 Last Activity: 2026-04-22
-Last Activity Description: Locked the D1 migration workflow baseline with committed SQL history and Wrangler-owned apply commands
-Paused At: Phase 6.1 active; next implementation focus is 06.1-04 D1-backed read migration
+Last Activity Description: Seeded local D1 commerce-state rows and added the first repository-backed catalog offer lookup reader
+Paused At: Phase 6.1.1 active; next implementation focus is 06.1.1-01 protected hostname and access contract
 
-Phase summary: Phases 5, 5.1, and 6 are complete. Phase 6.1 is now active: the repo has a real backend-local D1 binding contract named `COMMERCE_DB`, Worker-compatible Prisma runtime access, a committed generated Prisma client, repo-owned SQL migration history under `apps/backend/prisma/migrations/`, and Wrangler-owned apply/list commands for local and sandbox D1 without changing the frontend `CatalogItem` or `VariantSnapshot` contracts. Phase 6.1.1 still gates operator auth and stock tooling before Phase 7 checkout work starts.
+Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real backend-local D1 binding contract named `COMMERCE_DB`, Worker-compatible Prisma runtime access, committed SQL migration history, local seed SQL for current storefront cases, and a first backend application reader that resolves offer availability by `catalogItemSlug` from D1-backed repositories without changing the frontend `CatalogItem` or `VariantSnapshot` contracts. Phase 6.1.1 is now the active gate before Phase 7 checkout work starts.
 
 ## Performance Metrics
 
@@ -53,12 +53,13 @@ Phase summary: Phases 5, 5.1, and 6 are complete. Phase 6.1 is now active: the r
 | 5 | 6 | Completed | 2026-04-20 |
 | 5.1 | 4 | Completed | 2026-04-20 |
 | 6 | 7 | Completed | 2026-04-21 |
-| 6.1 | 1 | Active | 2026-04-22 |
+| 6.1 | 4 | Completed | 2026-04-22 |
+| 6.1.1 | 0 | Active | 2026-04-22 |
 
 **Recent Trend:**
 
-- Last 5 plans: 06-05, 06-06, 06.1-01, 06.1-02, 06.1-03
-- Trend: Static storefront is complete and the backend commerce-state foundation now has both runtime and migration baselines in place
+- Last 5 plans: 06-06, 06.1-01, 06.1-02, 06.1-03, 06.1-04
+- Trend: Static storefront is complete and the backend commerce-state foundation is now closed with seeded local D1-backed reads
 
 ## Accumulated Context
 
@@ -70,6 +71,7 @@ Phase summary: Phases 5, 5.1, and 6 are complete. Phase 6.1 is now active: the r
 - The backend now exposes a typed Worker runtime binding contract with `COMMERCE_DB` as the first D1 binding.
 - The backend now uses Prisma + `@prisma/adapter-d1` behind committed repository seams, while HTTP routes remain persistence-agnostic.
 - The backend migration workflow is now Prisma-schema-driven but Wrangler-applied, with committed SQL under `apps/backend/prisma/migrations/`.
+- The backend now has repo-owned local seed SQL and a first application-layer catalog offer reader on top of the D1 repositories.
 
 ## Decisions Made
 
@@ -98,9 +100,8 @@ Phase summary: Phases 5, 5.1, and 6 are complete. Phase 6.1 is now active: the r
 ### Pending Todos
 
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
-- Complete the remaining Phase 6.1 work on top of the bootstrapped `COMMERCE_DB` binding without changing the frontend storefront contract.
-- Preserve the current `CatalogItem` and `VariantSnapshot` storefront contracts while backend reads move away from temporary fixture data.
-- Implement Phase 06.1-04 and move backend variant/mapping reads toward D1-backed repositories without changing the frontend contract.
+- Preserve the current `CatalogItem` and `VariantSnapshot` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
+- Start Phase 06.1.1 with the protected hostname and Cloudflare Access contract for internal operators.
 - Execute the planned Phase 6.1.1 stock-ops/auth work after Phase 6.1 is complete and before Phase 7 starts.
 
 ## Blockers
@@ -108,11 +109,11 @@ Phase summary: Phases 5, 5.1, and 6 are complete. Phase 6.1 is now active: the r
 - No production cutover work is approved in this milestone.
 - Public shopper and sandbox browsing surfaces are not yet treated as strongly access-controlled; do not expose internal stock-write routes until the Phase 6.1.1 Access boundary exists.
 - The Astro frontend is no longer being treated as “moving to Workers” in this milestone; do not reintroduce that assumption in implementation.
-- Phase 7 checkout work remains blocked on Phase 6.1 and Phase 6.1.1 finishing first.
+- Phase 7 checkout work remains blocked on Phase 6.1.1 finishing first.
 
 ## Session
 
 **Last Date:** 2026-04-22T01:52:14.9376385+03:00
-**Stopped At:** Phase 6.1 active; next implementation focus is 06.1-04 D1-backed read migration
+**Stopped At:** Phase 6.1.1 active; next implementation focus is 06.1.1-01 protected hostname and access contract
 **Resume File:** .planning/ROADMAP.md
 
