@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 6.1 active; next implementation focus is 06.1-02 Prisma runtime access and repository seams
-last_updated: "2026-04-22T01:52:14.9376385+03:00"
-last_activity: 2026-04-22 -- Bootstrapped the backend `COMMERCE_DB` D1 binding contract, typed Worker bindings, and the local D1 smoke path
+stopped_at: Phase 6.1 active; next implementation focus is 06.1-03 migration workflow baseline
+last_updated: "2026-04-22T02:00:00+03:00"
+last_activity: 2026-04-22 -- Added Worker-compatible Prisma runtime access, committed generated client output, and the first backend repository seams on top of `COMMERCE_DB`
 progress:
   total_phases: 9
   completed_phases: 3
   total_plans: 36
-  completed_plans: 18
-  percent: 50
+  completed_plans: 19
+  percent: 53
 ---
 
 # Project State
@@ -28,15 +28,15 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 Current Phase: 6.1
 Current Phase Name: Worker Commerce State Foundation
 Total Phases: 9
-Current Plan: 2
+Current Plan: 3
 Total Plans in Phase: 4
 Status: Active
-Progress: 50%
+Progress: 53%
 Last Activity: 2026-04-22
-Last Activity Description: Bootstrapped the backend `COMMERCE_DB` D1 binding contract, typed Worker bindings, and the local D1 smoke path
-Paused At: Phase 6.1 active; next implementation focus is 06.1-02 Prisma runtime access and repository seams
+Last Activity Description: Added Worker-compatible Prisma runtime access, committed generated client output, and the first backend repository seams on top of `COMMERCE_DB`
+Paused At: Phase 6.1 active; next implementation focus is 06.1-03 migration workflow baseline
 
-Phase summary: Phases 5, 5.1, and 6 are complete. Phase 6.1 is now active: the repo has a real backend-local D1 binding contract named `COMMERCE_DB`, typed Worker bindings in the Hono app surface, and a local smoke path that proves the binding works without changing the frontend `CatalogItem` or `VariantSnapshot` contracts. Phase 6.1.1 still gates operator auth and stock tooling before Phase 7 checkout work starts.
+Phase summary: Phases 5, 5.1, and 6 are complete. Phase 6.1 is now active: the repo has a real backend-local D1 binding contract named `COMMERCE_DB`, Worker-compatible Prisma runtime access, a committed generated Prisma client, and initial backend repository seams for catalog mappings, Stripe mappings, and transitional inventory snapshots without changing the frontend `CatalogItem` or `VariantSnapshot` contracts. Phase 6.1.1 still gates operator auth and stock tooling before Phase 7 checkout work starts.
 
 ## Performance Metrics
 
@@ -57,8 +57,8 @@ Phase summary: Phases 5, 5.1, and 6 are complete. Phase 6.1 is now active: the r
 
 **Recent Trend:**
 
-- Last 5 plans: 06-03, 06-04, 06-05, 06-06, 06.1-01
-- Trend: Static storefront completed; backend commerce-state foundation has started
+- Last 5 plans: 06-04, 06-05, 06-06, 06.1-01, 06.1-02
+- Trend: Static storefront is complete and the backend commerce-state foundation is now into Prisma/runtime repository work
 
 ## Accumulated Context
 
@@ -68,6 +68,7 @@ Phase summary: Phases 5, 5.1, and 6 are complete. Phase 6.1 is now active: the r
 - Phase 6.1.1 was fully planned to cover operator auth, stock tooling, auditability, and spreadsheet policy before checkout depends on live stock.
 - `/store/` replaced `/shop/` as the canonical native storefront route, with `/shop/` kept only as a compatibility redirect.
 - The backend now exposes a typed Worker runtime binding contract with `COMMERCE_DB` as the first D1 binding.
+- The backend now uses Prisma + `@prisma/adapter-d1` behind committed repository seams, while HTTP routes remain persistence-agnostic.
 
 ## Decisions Made
 
@@ -98,7 +99,7 @@ Phase summary: Phases 5, 5.1, and 6 are complete. Phase 6.1 is now active: the r
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
 - Complete the remaining Phase 6.1 work on top of the bootstrapped `COMMERCE_DB` binding without changing the frontend storefront contract.
 - Preserve the current `CatalogItem` and `VariantSnapshot` storefront contracts while backend reads move away from temporary fixture data.
-- Implement Phase 06.1-02 Prisma runtime access and repository seams on top of the `COMMERCE_DB` binding.
+- Implement Phase 06.1-03 migration workflow baseline on top of the committed Prisma schema and generated client.
 - Execute the planned Phase 6.1.1 stock-ops/auth work after Phase 6.1 is complete and before Phase 7 starts.
 
 ## Blockers
@@ -111,6 +112,6 @@ Phase summary: Phases 5, 5.1, and 6 are complete. Phase 6.1 is now active: the r
 ## Session
 
 **Last Date:** 2026-04-22T01:52:14.9376385+03:00
-**Stopped At:** Phase 6.1 active; next implementation focus is 06.1-02 Prisma runtime access and repository seams
+**Stopped At:** Phase 6.1 active; next implementation focus is 06.1-03 migration workflow baseline
 **Resume File:** .planning/ROADMAP.md
 

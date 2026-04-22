@@ -107,7 +107,7 @@ Plans:
 
 Plans:
 - [x] 06.1-01: Bootstrap local D1 and Worker bindings
-- [ ] 06.1-02: Add Prisma runtime access and repository seams in the Worker backend
+- [x] 06.1-02: Add Prisma runtime access and repository seams in the Worker backend
 - [ ] 06.1-03: Establish the migration workflow baseline
 - [ ] 06.1-04: Move backend variant and mapping reads from temporary data toward D1-backed repositories where needed
 
@@ -210,7 +210,7 @@ Phases execute in numeric order: `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 8 
 | 5. Worker Backend Platform And Deployment Plumbing | 6/6 | Completed | 2026-04-20 |
 | 5.1. Commerce Domain Architecture And Source-Of-Truth Research | 4/4 | Completed | 2026-04-20 |
 | 6. Static Storefront Slice | 7/7 | Completed | 2026-04-21 |
-| 6.1. Worker Commerce State Foundation | 1/4 | Active |  |
+| 6.1. Worker Commerce State Foundation | 2/4 | Active |  |
 | 6.1.1. Internal Stock Operations And Operator Access | 0/4 | Planned |  |
 | 7. Worker Checkout And Stripe Sandbox Flow | 0/3 | Planned |  |
 | 8. Webhook Orders And Inventory | 0/3 | Planned |  |

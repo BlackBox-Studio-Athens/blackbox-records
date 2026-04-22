@@ -92,6 +92,12 @@ Smoke-check the backend-local D1 binding:
 pnpm --filter @blackbox/backend d1:smoke:local
 ```
 
+Generate the committed Prisma client for the Worker backend:
+
+```sh
+pnpm --filter @blackbox/backend prisma:generate
+```
+
 Bootstrap backend-local Wrangler secrets:
 
 ```sh
@@ -121,7 +127,9 @@ Current Worker scope:
 - no probe endpoints such as `healthz`, `status`, or `readyz`
 - Hono owns the HTTP interface layer; unmatched routes currently return JSON `404`
 - the backend-local D1 binding contract is `COMMERCE_DB`
-- no Stripe routes, Prisma runtime access, SQL schema, or frontend D1 wiring yet
+- Prisma runtime access now exists behind backend-only repository seams
+- the generated Prisma client is committed under `apps/backend/src/generated/prisma/`
+- no Stripe routes, migration workflow, or frontend D1 wiring yet
 - no production deployment path yet
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
 - generated frontend-facing types and `openapi-typescript-fetch` wrappers live in `packages/api-client/`
@@ -184,10 +192,15 @@ pnpm generate:api
 - Backend runtime secrets belong to the Worker runtime, not to Astro browser env vars and not to GitHub Actions.
 - The backend runtime binding contract now includes:
   - `COMMERCE_DB`
+- The backend persistence runtime now uses:
+  - `@prisma/adapter-d1`
+  - a committed generated Prisma client under `apps/backend/src/generated/prisma/`
+  - repository seams under `apps/backend/src/domain/commerce/repositories/` and `apps/backend/src/infrastructure/persistence/prisma/`
 - The current backend-local runtime secret contract is:
   - `STRIPE_SECRET_KEY`
   - `STRIPE_WEBHOOK_SECRET`
 - `COMMERCE_DB` is runtime-only backend infrastructure, not a browser env var and not a GitHub Actions credential.
+- `apps/backend/prisma/schema.prisma` includes a local placeholder SQLite URL only to satisfy Prisma CLI generation; Worker runtime access still goes through `env.COMMERCE_DB`.
 - Future privileged backend-only values such as BOX NOW credentials also remain runtime-only until the phases that introduce them.
 - `PUBLIC_BACKEND_BASE_URL` remains the only browser-facing backend env.
 

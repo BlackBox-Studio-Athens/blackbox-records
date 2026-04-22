@@ -49,6 +49,7 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - Backend sandbox dev server: `pnpm dev:backend:sandbox`
 - Backend sandbox deploy: `pnpm deploy:backend:sandbox`
 - Backend local D1 smoke check: `pnpm --filter @blackbox/backend d1:smoke:local`
+- Backend Prisma client generation: `pnpm --filter @blackbox/backend prisma:generate`
 - Backend local secrets: copy `apps/backend/.dev.vars.example` to `apps/backend/.dev.vars`
 - Generate backend OpenAPI docs and client package: `pnpm generate:api`
 - Clean dev run: `pnpm dev:clean`
@@ -71,6 +72,11 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - Backend local D1 comes from Wrangler automatically during `pnpm dev:backend`; do not add a second D1 process to the run-config flow.
 - Runtime backend secrets belong in Worker secrets or `apps/backend/.dev.vars`, not in Astro public env vars or GitHub deploy credentials.
 - The backend runtime binding contract now includes `COMMERCE_DB`.
+- The backend persistence runtime now uses Prisma + `@prisma/adapter-d1` behind repository seams in:
+  - `apps/backend/src/domain/commerce/repositories/`
+  - `apps/backend/src/infrastructure/persistence/prisma/`
+- The committed Prisma client lives under `apps/backend/src/generated/prisma/`.
+- `apps/backend/prisma/schema.prisma` uses a placeholder local SQLite URL for Prisma CLI generation only; Worker runtime queries still go through `env.COMMERCE_DB`.
 - The current backend-local secret contract is `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
 
 ### Required command policy
