@@ -49,6 +49,12 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - Backend sandbox dev server: `pnpm dev:backend:sandbox`
 - Backend sandbox deploy: `pnpm deploy:backend:sandbox`
 - Backend local D1 smoke check: `pnpm --filter @blackbox/backend d1:smoke:local`
+- Backend local D1 migration list/apply:
+  - `pnpm --filter @blackbox/backend d1:migrations:list:local`
+  - `pnpm --filter @blackbox/backend d1:migrations:apply:local`
+- Backend sandbox D1 migration list/apply:
+  - `pnpm --filter @blackbox/backend d1:migrations:list:sandbox`
+  - `pnpm --filter @blackbox/backend d1:migrations:apply:sandbox`
 - Backend Prisma client generation: `pnpm --filter @blackbox/backend prisma:generate`
 - Backend local secrets: copy `apps/backend/.dev.vars.example` to `apps/backend/.dev.vars`
 - Generate backend OpenAPI docs and client package: `pnpm generate:api`
@@ -77,6 +83,8 @@ Then inspect only task-relevant files with `rg` and scoped reads.
   - `apps/backend/src/infrastructure/persistence/prisma/`
 - The committed Prisma client lives under `apps/backend/src/generated/prisma/`.
 - `apps/backend/prisma/schema.prisma` uses a placeholder local SQLite URL for Prisma CLI generation only; Worker runtime queries still go through `env.COMMERCE_DB`.
+- D1 migrations live under `apps/backend/prisma/migrations/`, and Wrangler applies them through the `COMMERCE_DB` binding.
+- Do not introduce `prisma migrate dev`, `prisma db push`, or `prisma migrate deploy` into this repo workflow.
 - The current backend-local secret contract is `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
 
 ### Required command policy

@@ -92,6 +92,13 @@ Smoke-check the backend-local D1 binding:
 pnpm --filter @blackbox/backend d1:smoke:local
 ```
 
+List or apply backend D1 migrations:
+
+```sh
+pnpm --filter @blackbox/backend d1:migrations:list:local
+pnpm --filter @blackbox/backend d1:migrations:apply:local
+```
+
 Generate the committed Prisma client for the Worker backend:
 
 ```sh
@@ -129,7 +136,8 @@ Current Worker scope:
 - the backend-local D1 binding contract is `COMMERCE_DB`
 - Prisma runtime access now exists behind backend-only repository seams
 - the generated Prisma client is committed under `apps/backend/src/generated/prisma/`
-- no Stripe routes, migration workflow, or frontend D1 wiring yet
+- the D1 migration workflow baseline now exists under `apps/backend/prisma/migrations/`
+- no Stripe routes, D1-backed read paths, or frontend D1 wiring yet
 - no production deployment path yet
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
 - generated frontend-facing types and `openapi-typescript-fetch` wrappers live in `packages/api-client/`
@@ -203,6 +211,29 @@ pnpm generate:api
 - `apps/backend/prisma/schema.prisma` includes a local placeholder SQLite URL only to satisfy Prisma CLI generation; Worker runtime access still goes through `env.COMMERCE_DB`.
 - Future privileged backend-only values such as BOX NOW credentials also remain runtime-only until the phases that introduce them.
 - `PUBLIC_BACKEND_BASE_URL` remains the only browser-facing backend env.
+
+## D1 migration workflow
+
+- `apps/backend/prisma/schema.prisma` is the declarative schema model.
+- `apps/backend/prisma/migrations/*.sql` is the committed D1 schema history.
+- Wrangler is the only apply path for D1 schema changes.
+- Prisma is used for client generation and SQL diff generation, not direct schema deployment.
+- Manual Cloudflare dashboard schema edits are out of workflow.
+- Do not use:
+  - `prisma migrate dev`
+  - `prisma db push`
+  - `prisma migrate deploy`
+
+Future migration flow:
+
+1. Update `apps/backend/prisma/schema.prisma`.
+2. Ensure local D1 is up to date with committed migrations.
+3. Create a new empty migration file with `pnpm --filter @blackbox/backend d1:migrations:create -- <name>`.
+4. Fill that file with `prisma migrate diff`.
+   - Use `pnpm --filter @blackbox/backend exec prisma migrate diff --from-empty --to-schema-datamodel ./prisma/schema.prisma --script --output <file>` only for `0001_initial_commerce_state.sql`.
+   - Use `pnpm --filter @blackbox/backend exec prisma migrate diff --from-local-d1 --to-schema-datamodel ./prisma/schema.prisma --script --output <file>` for later migrations.
+5. Apply locally with `pnpm --filter @blackbox/backend d1:migrations:apply:local`.
+6. Apply to sandbox with `pnpm --filter @blackbox/backend d1:migrations:apply:sandbox` when ready.
 
 Local development:
 
