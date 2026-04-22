@@ -1,0 +1,50 @@
+generator client {
+  provider   = "prisma-client"
+  output     = "../src/generated/prisma"
+  runtime    = "cloudflare"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+enum CatalogSourceKind {
+  release
+  distro
+}
+
+enum VariantInventoryStatus {
+  available
+  sold_out
+}
+
+model CatalogItemMapping {
+  id              String            @id @default(cuid())
+  catalogItemSlug String            @unique
+  sourceKind      CatalogSourceKind
+  sourceId        String
+  variantId       String            @unique
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([sourceKind, sourceId])
+}
+
+model VariantStripeMapping {
+  id              String   @id @default(cuid())
+  variantId       String   @unique
+  stripeProductId String?
+  stripePriceId   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model VariantInventorySnapshot {
+  id          String                 @id @default(cuid())
+  variantId   String                 @unique
+  status      VariantInventoryStatus
+  canPurchase Boolean
+  updatedAt   DateTime               @updatedAt
+}

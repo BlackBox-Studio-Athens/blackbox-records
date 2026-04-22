@@ -8,11 +8,14 @@
     "dev:sandbox": "wrangler dev --env sandbox",
     "deploy:sandbox": "wrangler deploy --env sandbox",
     "d1:smoke:local": "wrangler d1 execute COMMERCE_DB --local --command \"SELECT 1 AS ok\" --json",
+    "prisma:generate": "pnpm exec prisma generate",
     "generate:openapi": "pnpm exec tsx scripts/generate-openapi.ts",
     "check": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {
+    "@prisma/adapter-d1": "^6.16.0",
+    "@prisma/client": "^6.16.0",
     "@hono/zod-openapi": "^1.1.5",
     "hono": "4.12.14",
     "zod": "^4.1.12"
@@ -20,6 +23,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260420.1",
     "@types/node": "^25.6.0",
+    "prisma": "^6.16.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^4.1.4",
