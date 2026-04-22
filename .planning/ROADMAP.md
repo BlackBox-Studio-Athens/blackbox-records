@@ -125,7 +125,7 @@ Plans:
 **Review gate**: Human review required because this phase locks staff authentication, stock-write semantics, and the operator workflow that later checkout relies on.
 
 Plans:
-- [ ] 06.1.1-01: Lock the protected hostname and Cloudflare Access + Google contract for internal operators
+- [x] 06.1.1-01: Lock the protected hostname and Cloudflare Access + Google contract for internal operators
 - [ ] 06.1.1-02: Define the internal stock API and D1 ledger contract around `Variant`, `StockBalance`, `StockChange`, and `StockCount`
 - [ ] 06.1.1-03: Design the internal stock operations UI for search, balance, history, and write actions
 - [ ] 06.1.1-04: Lock spreadsheet policy, audit attribution, and the online-vs-offline stock buffer rules
@@ -211,7 +211,7 @@ Phases execute in numeric order: `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 8 
 | 5.1. Commerce Domain Architecture And Source-Of-Truth Research | 4/4 | Completed | 2026-04-20 |
 | 6. Static Storefront Slice | 7/7 | Completed | 2026-04-21 |
 | 6.1. Worker Commerce State Foundation | 4/4 | Completed | 2026-04-22 |
-| 6.1.1. Internal Stock Operations And Operator Access | 0/4 | Planned |  |
+| 6.1.1. Internal Stock Operations And Operator Access | 1/4 | Active | 2026-04-22 |
 | 7. Worker Checkout And Stripe Sandbox Flow | 0/3 | Planned |  |
 | 8. Webhook Orders And Inventory | 0/3 | Planned |  |
 | 9. Greece-Only BOX NOW Shipping | 0/3 | Planned |  |

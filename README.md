@@ -203,6 +203,21 @@ pnpm generate:api
 - The frontend must not guess production or sandbox backend origins in code.
 - Worker secrets, D1 bindings, Stripe secrets, Cloudflare Access config, and CI credentials remain backend/server-side only.
 
+## Protected operator hostname contract
+
+- Internal stock operations live on a separate protected operator hostname, referred to in repo docs as `ops.<managed-zone>` until the real account-owned custom domain is provisioned.
+- This hostname is distinct from:
+  - the public GitHub Pages storefront
+  - the public sandbox `workers.dev` backend used for shopper/browser sandbox checks
+- Protected operator routes belong under:
+  - `/stock/`
+  - `/stock/[variantId]/`
+  - `/api/internal/*`
+- The protected surface is not a public-path subtree on the shopper hostname.
+- Cloudflare Access uses Google as the identity provider for this hostname, and operator entry is controlled by an explicit email allowlist that stays out of the repo.
+- Worker-side operator attribution comes from the Access-authenticated request header `cf-access-authenticated-user-email`, which later stock-write flows will persist as `actor_email`.
+- This contract does not introduce shopper login; public storefront, public checkout, and sandbox shopper browsing remain unauthenticated.
+
 ## Worker secrets and CI auth
 
 - Backend runtime secrets belong to the Worker runtime, not to Astro browser env vars and not to GitHub Actions.
@@ -283,7 +298,7 @@ CI/deploy credentials:
   - deploys only the backend workspace to Cloudflare Workers
 - The sandbox `workers.dev` backend is a reachable sandbox target for browser checks, Stripe return URLs, and webhook testing.
 - Cloudflare Access is not part of public sandbox browsing at this stage.
-- The separate protected staff-only hostname and Google-backed Access boundary are deferred to Phase `06.1.1`.
+- Phase `06.1.1` now locks a separate protected staff-only hostname and Google-backed Access contract for internal stock work, while keeping the public sandbox backend reachable and unauthenticated.
 
 ## GitHub Pages CI/CD
 

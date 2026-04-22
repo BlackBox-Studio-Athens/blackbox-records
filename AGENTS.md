@@ -87,6 +87,13 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - D1 migrations live under `apps/backend/prisma/migrations/`, and Wrangler applies them through the `COMMERCE_DB` binding.
 - Backend-local seed SQL lives under `apps/backend/prisma/seeds/`.
 - The first backend application read seam now lives under `apps/backend/src/application/commerce/readers/` and resolves offer availability by `catalogItemSlug` without mirroring the frontend `VariantSnapshot` type.
+- Internal stock operations are now contractually separated onto a protected operator hostname, referred to in repo docs as `ops.<managed-zone>` until the real custom domain is provisioned.
+- Protected operator routes belong under:
+  - `/stock/`
+  - `/stock/[variantId]/`
+  - `/api/internal/*`
+- Cloudflare Access + Google protects that hostname through an explicit email allowlist; do not add shopper login or reuse Decap auth for runtime stock operations.
+- Worker-side operator attribution comes from the Access-authenticated request header `cf-access-authenticated-user-email`, which later stock-write flows persist as `actor_email`.
 - Do not introduce `prisma migrate dev`, `prisma db push`, or `prisma migrate deploy` into this repo workflow.
 - The current backend-local secret contract is `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
 

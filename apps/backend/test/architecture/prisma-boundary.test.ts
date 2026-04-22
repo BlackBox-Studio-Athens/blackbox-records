@@ -8,6 +8,8 @@ const currentDir = dirname(fileURLToPath(import.meta.url));
 const backendRoot = resolve(currentDir, '..', '..');
 const httpFiles = [
     resolve(backendRoot, 'src/interfaces/http/app.ts'),
+    resolve(backendRoot, 'src/interfaces/http/auth/index.ts'),
+    resolve(backendRoot, 'src/interfaces/http/auth/operator-identity.ts'),
     resolve(backendRoot, 'src/interfaces/http/error-handler.ts'),
     resolve(backendRoot, 'src/interfaces/http/not-found-handler.ts'),
     resolve(backendRoot, 'src/interfaces/http/openapi/api-documents.ts'),

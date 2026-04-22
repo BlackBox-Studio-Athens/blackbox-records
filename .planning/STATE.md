@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 6.1.1 active; next implementation focus is 06.1.1-01 protected hostname and access contract
-last_updated: "2026-04-22T13:20:00+03:00"
-last_activity: 2026-04-22 -- Seeded local D1 commerce-state rows and added the first repository-backed catalog offer lookup reader
+stopped_at: Phase 6.1.1 active; next implementation focus is 06.1.1-02 internal stock API and ledger contract
+last_updated: "2026-04-22T16:35:00+03:00"
+last_activity: 2026-04-22 -- Locked the protected operator hostname and Access-derived identity contract for internal stock operations
 progress:
   total_phases: 9
   completed_phases: 4
   total_plans: 36
-  completed_plans: 21
-  percent: 58
+  completed_plans: 22
+  percent: 61
 ---
 
 # Project State
@@ -28,21 +28,22 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 Current Phase: 6.1.1
 Current Phase Name: Internal Stock Operations And Operator Access
 Total Phases: 9
-Current Plan: 1
+Current Plan: 2
 Total Plans in Phase: 4
 Status: Active
-Progress: 58%
+Progress: 61%
 Last Activity: 2026-04-22
-Last Activity Description: Seeded local D1 commerce-state rows and added the first repository-backed catalog offer lookup reader
-Paused At: Phase 6.1.1 active; next implementation focus is 06.1.1-01 protected hostname and access contract
+Last Activity Description: Locked the protected operator hostname and Access-derived identity contract for internal stock operations
+Paused At: Phase 6.1.1 active; next implementation focus is 06.1.1-02 internal stock API and ledger contract
 
-Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real backend-local D1 binding contract named `COMMERCE_DB`, Worker-compatible Prisma runtime access, committed SQL migration history, local seed SQL for current storefront cases, and a first backend application reader that resolves offer availability by `catalogItemSlug` from D1-backed repositories without changing the frontend `CatalogItem` or `VariantSnapshot` contracts. Phase 6.1.1 is now the active gate before Phase 7 checkout work starts.
+Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real backend-local D1 binding contract named `COMMERCE_DB`, Worker-compatible Prisma runtime access, committed SQL migration history, local seed SQL for current storefront cases, a first backend application reader that resolves offer availability by `catalogItemSlug`, and a typed operator-identity extraction seam for the separate Access-protected stock hostname. Phase 6.1.1 remains the active gate before Phase 7 checkout work starts.
 
 ## Performance Metrics
 
 **Velocity:**
 
 - Total plans completed: 17
+- Total plans completed: 22
 - Average duration: -
 - Total execution time: -
 
@@ -54,12 +55,12 @@ Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real b
 | 5.1 | 4 | Completed | 2026-04-20 |
 | 6 | 7 | Completed | 2026-04-21 |
 | 6.1 | 4 | Completed | 2026-04-22 |
-| 6.1.1 | 0 | Active | 2026-04-22 |
+| 6.1.1 | 1 | Active | 2026-04-22 |
 
 **Recent Trend:**
 
-- Last 5 plans: 06-06, 06.1-01, 06.1-02, 06.1-03, 06.1-04
-- Trend: Static storefront is complete and the backend commerce-state foundation is now closed with seeded local D1-backed reads
+- Last 5 plans: 06.1-01, 06.1-02, 06.1-03, 06.1-04, 06.1.1-01
+- Trend: Backend commerce-state foundation is complete and Phase 6.1.1 has now locked the protected operator auth boundary needed before internal stock APIs land
 
 ## Accumulated Context
 
@@ -72,6 +73,7 @@ Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real b
 - The backend now uses Prisma + `@prisma/adapter-d1` behind committed repository seams, while HTTP routes remain persistence-agnostic.
 - The backend migration workflow is now Prisma-schema-driven but Wrangler-applied, with committed SQL under `apps/backend/prisma/migrations/`.
 - The backend now has repo-owned local seed SQL and a first application-layer catalog offer reader on top of the D1 repositories.
+- The backend now has a typed Access-header extraction seam for `actor_email` on the future protected operator hostname.
 
 ## Decisions Made
 
@@ -101,8 +103,8 @@ Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real b
 
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
 - Preserve the current `CatalogItem` and `VariantSnapshot` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
-- Start Phase 06.1.1 with the protected hostname and Cloudflare Access contract for internal operators.
-- Execute the planned Phase 6.1.1 stock-ops/auth work after Phase 6.1 is complete and before Phase 7 starts.
+- Execute the planned Phase 06.1.1-02 internal stock API and ledger contract on top of the locked protected-hostname/auth boundary.
+- Continue the planned Phase 6.1.1 stock-ops/auth work before Phase 7 starts.
 
 ## Blockers
 
@@ -114,6 +116,6 @@ Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real b
 ## Session
 
 **Last Date:** 2026-04-22T01:52:14.9376385+03:00
-**Stopped At:** Phase 6.1.1 active; next implementation focus is 06.1.1-01 protected hostname and access contract
+**Stopped At:** Phase 6.1.1 active; next implementation focus is 06.1.1-02 internal stock API and ledger contract
 **Resume File:** .planning/ROADMAP.md
 
