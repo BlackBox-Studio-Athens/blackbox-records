@@ -1,2 +1,2 @@
-export { CatalogOfferSnapshotReader } from './catalog-offer-snapshot-reader';
-export type { CatalogOfferSnapshot } from './catalog-offer-snapshot-reader';
+export { StoreOfferReader } from './store-offer-reader';
+export type { StoreOffer } from './store-offer-reader';

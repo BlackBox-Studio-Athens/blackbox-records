@@ -31,8 +31,8 @@ describe('createPrismaClient', () => {
             COMMERCE_DB: createD1DatabaseStub(),
         });
 
-        expect(typeof prisma.catalogItemMapping.findUnique).toBe('function');
-        expect(typeof prisma.variantInventorySnapshot.findUnique).toBe('function');
+        expect(typeof prisma.storeItemOption.findUnique).toBe('function');
+        expect(typeof prisma.itemAvailability.findUnique).toBe('function');
         await prisma.$disconnect();
     });
 });

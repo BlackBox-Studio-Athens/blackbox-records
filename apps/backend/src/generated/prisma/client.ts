@@ -26,8 +26,8 @@ export * from "./enums"
  * @example
  * ```
  * const prisma = new PrismaClient()
- * // Fetch zero or more CatalogItemMappings
- * const catalogItemMappings = await prisma.catalogItemMapping.findMany()
+ * // Fetch zero or more StoreItemOptions
+ * const storeItemOptions = await prisma.storeItemOption.findMany()
  * ```
  * 
  * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
@@ -39,17 +39,17 @@ export { Prisma }
 
 
 /**
- * Model CatalogItemMapping
+ * Model StoreItemOption
  * 
  */
-export type CatalogItemMapping = Prisma.CatalogItemMappingModel
+export type StoreItemOption = Prisma.StoreItemOptionModel
 /**
  * Model VariantStripeMapping
  * 
  */
 export type VariantStripeMapping = Prisma.VariantStripeMappingModel
 /**
- * Model VariantInventorySnapshot
+ * Model ItemAvailability
  * 
  */
-export type VariantInventorySnapshot = Prisma.VariantInventorySnapshotModel
+export type ItemAvailability = Prisma.ItemAvailabilityModel

@@ -27,8 +27,8 @@ const config: runtime.GetPrismaClientConfig = {
       "fromEnvVar": null
     },
     "config": {
-      "runtime": "cloudflare",
-      "engineType": "client"
+      "engineType": "client",
+      "runtime": "cloudflare"
     },
     "binaryTargets": [
       {
@@ -57,8 +57,8 @@ const config: runtime.GetPrismaClientConfig = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider   = \"prisma-client\"\n  output     = \"../src/generated/prisma\"\n  runtime    = \"cloudflare\"\n  engineType = \"client\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./dev.db\"\n}\n\nenum CatalogSourceKind {\n  release\n  distro\n}\n\nenum VariantInventoryStatus {\n  available\n  sold_out\n}\n\nmodel CatalogItemMapping {\n  id              String            @id @default(cuid())\n  catalogItemSlug String            @unique\n  sourceKind      CatalogSourceKind\n  sourceId        String\n  variantId       String            @unique\n  createdAt       DateTime          @default(now())\n  updatedAt       DateTime          @updatedAt\n\n  @@unique([sourceKind, sourceId])\n}\n\nmodel VariantStripeMapping {\n  id              String   @id @default(cuid())\n  variantId       String   @unique\n  stripeProductId String?\n  stripePriceId   String?\n  createdAt       DateTime @default(now())\n  updatedAt       DateTime @updatedAt\n}\n\nmodel VariantInventorySnapshot {\n  id          String                 @id @default(cuid())\n  variantId   String                 @unique\n  status      VariantInventoryStatus\n  canPurchase Boolean\n  updatedAt   DateTime               @updatedAt\n}\n",
-  "inlineSchemaHash": "bdbc85dd7828c2037b52a8684358c3834628186cfca619d8cb5a31dba647a7ed",
+  "inlineSchema": "generator client {\n  provider   = \"prisma-client\"\n  output     = \"../src/generated/prisma\"\n  runtime    = \"cloudflare\"\n  engineType = \"client\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./dev.db\"\n}\n\nenum StoreItemSourceKind {\n  release\n  distro\n}\n\nenum ItemAvailabilityStatus {\n  available\n  sold_out\n}\n\nmodel StoreItemOption {\n  id            String              @id @default(cuid())\n  storeItemSlug String              @unique\n  sourceKind    StoreItemSourceKind\n  sourceId      String\n  variantId     String              @unique\n  createdAt     DateTime            @default(now())\n  updatedAt     DateTime            @updatedAt\n\n  @@unique([sourceKind, sourceId])\n}\n\nmodel VariantStripeMapping {\n  id            String   @id @default(cuid())\n  variantId     String   @unique\n  stripePriceId String\n  createdAt     DateTime @default(now())\n  updatedAt     DateTime @updatedAt\n}\n\nmodel ItemAvailability {\n  id        String                 @id @default(cuid())\n  variantId String                 @unique\n  status    ItemAvailabilityStatus\n  canBuy    Boolean\n  updatedAt DateTime               @updatedAt\n}\n",
+  "inlineSchemaHash": "d8a6ff4150d36cbf16b1cb316990c79196ad4cd4a1489b03932e17f68fb5ca2b",
   "copyEngine": true,
   "runtimeDataModel": {
     "models": {},
@@ -68,7 +68,7 @@ const config: runtime.GetPrismaClientConfig = {
   "dirname": ""
 }
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"CatalogItemMapping\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"catalogItemSlug\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"sourceKind\",\"kind\":\"enum\",\"type\":\"CatalogSourceKind\"},{\"name\":\"sourceId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variantId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"VariantStripeMapping\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variantId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"stripeProductId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"stripePriceId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"VariantInventorySnapshot\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variantId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"status\",\"kind\":\"enum\",\"type\":\"VariantInventoryStatus\"},{\"name\":\"canPurchase\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"StoreItemOption\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"storeItemSlug\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"sourceKind\",\"kind\":\"enum\",\"type\":\"StoreItemSourceKind\"},{\"name\":\"sourceId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variantId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"VariantStripeMapping\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variantId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"stripePriceId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"ItemAvailability\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variantId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"status\",\"kind\":\"enum\",\"type\":\"ItemAvailabilityStatus\"},{\"name\":\"canBuy\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 config.engineWasm = undefined
 config.compilerWasm = {
   getRuntime: async () => await import("./query_compiler_bg.js"),
@@ -99,8 +99,8 @@ export interface PrismaClientConstructor {
    * @example
    * ```
    * const prisma = new PrismaClient()
-   * // Fetch zero or more CatalogItemMappings
-   * const catalogItemMappings = await prisma.catalogItemMapping.findMany()
+   * // Fetch zero or more StoreItemOptions
+   * const storeItemOptions = await prisma.storeItemOption.findMany()
    * ```
    * 
    * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
@@ -121,8 +121,8 @@ export interface PrismaClientConstructor {
  * @example
  * ```
  * const prisma = new PrismaClient()
- * // Fetch zero or more CatalogItemMappings
- * const catalogItemMappings = await prisma.catalogItemMapping.findMany()
+ * // Fetch zero or more StoreItemOptions
+ * const storeItemOptions = await prisma.storeItemOption.findMany()
  * ```
  * 
  * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
@@ -217,14 +217,14 @@ export interface PrismaClient<
   }>>
 
       /**
-   * `prisma.catalogItemMapping`: Exposes CRUD operations for the **CatalogItemMapping** model.
+   * `prisma.storeItemOption`: Exposes CRUD operations for the **StoreItemOption** model.
     * Example usage:
     * ```ts
-    * // Fetch zero or more CatalogItemMappings
-    * const catalogItemMappings = await prisma.catalogItemMapping.findMany()
+    * // Fetch zero or more StoreItemOptions
+    * const storeItemOptions = await prisma.storeItemOption.findMany()
     * ```
     */
-  get catalogItemMapping(): Prisma.CatalogItemMappingDelegate<ExtArgs, { omit: OmitOpts }>;
+  get storeItemOption(): Prisma.StoreItemOptionDelegate<ExtArgs, { omit: OmitOpts }>;
 
   /**
    * `prisma.variantStripeMapping`: Exposes CRUD operations for the **VariantStripeMapping** model.
@@ -237,14 +237,14 @@ export interface PrismaClient<
   get variantStripeMapping(): Prisma.VariantStripeMappingDelegate<ExtArgs, { omit: OmitOpts }>;
 
   /**
-   * `prisma.variantInventorySnapshot`: Exposes CRUD operations for the **VariantInventorySnapshot** model.
+   * `prisma.itemAvailability`: Exposes CRUD operations for the **ItemAvailability** model.
     * Example usage:
     * ```ts
-    * // Fetch zero or more VariantInventorySnapshots
-    * const variantInventorySnapshots = await prisma.variantInventorySnapshot.findMany()
+    * // Fetch zero or more ItemAvailabilities
+    * const itemAvailabilities = await prisma.itemAvailability.findMany()
     * ```
     */
-  get variantInventorySnapshot(): Prisma.VariantInventorySnapshotDelegate<ExtArgs, { omit: OmitOpts }>;
+  get itemAvailability(): Prisma.ItemAvailabilityDelegate<ExtArgs, { omit: OmitOpts }>;
 }
 
 export function getPrismaClientClass(dirname: string): PrismaClientConstructor {

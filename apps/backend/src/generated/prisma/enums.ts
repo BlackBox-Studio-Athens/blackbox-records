@@ -9,17 +9,17 @@
 * 🟢 You can import this file directly.
 */
 
-export const CatalogSourceKind = {
+export const StoreItemSourceKind = {
   release: 'release',
   distro: 'distro'
 } as const
 
-export type CatalogSourceKind = (typeof CatalogSourceKind)[keyof typeof CatalogSourceKind]
+export type StoreItemSourceKind = (typeof StoreItemSourceKind)[keyof typeof StoreItemSourceKind]
 
 
-export const VariantInventoryStatus = {
+export const ItemAvailabilityStatus = {
   available: 'available',
   sold_out: 'sold_out'
 } as const
 
-export type VariantInventoryStatus = (typeof VariantInventoryStatus)[keyof typeof VariantInventoryStatus]
+export type ItemAvailabilityStatus = (typeof ItemAvailabilityStatus)[keyof typeof ItemAvailabilityStatus]

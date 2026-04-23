@@ -57,7 +57,7 @@ describe('release commerce link resolution', () => {
 
     await expect(getReleaseCommerceLink(nativeRelease as any)).resolves.toEqual({
       href: '/blackbox-records/store/barren-point/',
-      isNativeCatalogLink: true,
+      isNativeStoreLink: true,
       label: 'View In Store',
     });
   });
@@ -67,7 +67,7 @@ describe('release commerce link resolution', () => {
 
     await expect(getReleaseCommerceLink(externalRelease as any)).resolves.toEqual({
       href: 'https://chronoboros.bandcamp.com/merch',
-      isNativeCatalogLink: false,
+      isNativeStoreLink: false,
       label: 'Buy merch',
       rel: 'noreferrer noopener',
       target: '_blank',

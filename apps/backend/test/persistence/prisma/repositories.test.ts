@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { PrismaCatalogItemMappingRepository, PrismaInventoryRepository, PrismaVariantStripeMappingRepository, createPrismaClient } from '../../../src/infrastructure/persistence/prisma';
+import { PrismaItemAvailabilityRepository, PrismaStoreItemOptionRepository, PrismaVariantStripeMappingRepository, createPrismaClient } from '../../../src/infrastructure/persistence/prisma';
 
 function createD1DatabaseStub(): D1Database {
     return {
@@ -31,13 +31,13 @@ describe('Prisma repository seams', () => {
             COMMERCE_DB: createD1DatabaseStub(),
         });
 
-        const catalogItemMappings = new PrismaCatalogItemMappingRepository(prisma);
-        const inventory = new PrismaInventoryRepository(prisma);
+        const storeItemOptions = new PrismaStoreItemOptionRepository(prisma);
+        const itemAvailability = new PrismaItemAvailabilityRepository(prisma);
         const variantStripeMappings = new PrismaVariantStripeMappingRepository(prisma);
 
-        expect(typeof catalogItemMappings.findByCatalogItemSlug).toBe('function');
-        expect(typeof catalogItemMappings.findBySource).toBe('function');
-        expect(typeof inventory.findByVariantId).toBe('function');
+        expect(typeof storeItemOptions.findByStoreItemSlug).toBe('function');
+        expect(typeof storeItemOptions.findBySource).toBe('function');
+        expect(typeof itemAvailability.findByVariantId).toBe('function');
         expect(typeof variantStripeMappings.findByVariantId).toBe('function');
 
         await prisma.$disconnect();

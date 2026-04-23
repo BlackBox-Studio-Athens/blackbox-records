@@ -390,9 +390,9 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 
 export const ModelName = {
-  CatalogItemMapping: 'CatalogItemMapping',
+  StoreItemOption: 'StoreItemOption',
   VariantStripeMapping: 'VariantStripeMapping',
-  VariantInventorySnapshot: 'VariantInventorySnapshot'
+  ItemAvailability: 'ItemAvailability'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -408,81 +408,81 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "catalogItemMapping" | "variantStripeMapping" | "variantInventorySnapshot"
+    modelProps: "storeItemOption" | "variantStripeMapping" | "itemAvailability"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
-    CatalogItemMapping: {
-      payload: Prisma.$CatalogItemMappingPayload<ExtArgs>
-      fields: Prisma.CatalogItemMappingFieldRefs
+    StoreItemOption: {
+      payload: Prisma.$StoreItemOptionPayload<ExtArgs>
+      fields: Prisma.StoreItemOptionFieldRefs
       operations: {
         findUnique: {
-          args: Prisma.CatalogItemMappingFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogItemMappingPayload> | null
+          args: Prisma.StoreItemOptionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreItemOptionPayload> | null
         }
         findUniqueOrThrow: {
-          args: Prisma.CatalogItemMappingFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogItemMappingPayload>
+          args: Prisma.StoreItemOptionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreItemOptionPayload>
         }
         findFirst: {
-          args: Prisma.CatalogItemMappingFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogItemMappingPayload> | null
+          args: Prisma.StoreItemOptionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreItemOptionPayload> | null
         }
         findFirstOrThrow: {
-          args: Prisma.CatalogItemMappingFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogItemMappingPayload>
+          args: Prisma.StoreItemOptionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreItemOptionPayload>
         }
         findMany: {
-          args: Prisma.CatalogItemMappingFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogItemMappingPayload>[]
+          args: Prisma.StoreItemOptionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreItemOptionPayload>[]
         }
         create: {
-          args: Prisma.CatalogItemMappingCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogItemMappingPayload>
+          args: Prisma.StoreItemOptionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreItemOptionPayload>
         }
         createMany: {
-          args: Prisma.CatalogItemMappingCreateManyArgs<ExtArgs>
+          args: Prisma.StoreItemOptionCreateManyArgs<ExtArgs>
           result: BatchPayload
         }
         createManyAndReturn: {
-          args: Prisma.CatalogItemMappingCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogItemMappingPayload>[]
+          args: Prisma.StoreItemOptionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreItemOptionPayload>[]
         }
         delete: {
-          args: Prisma.CatalogItemMappingDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogItemMappingPayload>
+          args: Prisma.StoreItemOptionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreItemOptionPayload>
         }
         update: {
-          args: Prisma.CatalogItemMappingUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogItemMappingPayload>
+          args: Prisma.StoreItemOptionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreItemOptionPayload>
         }
         deleteMany: {
-          args: Prisma.CatalogItemMappingDeleteManyArgs<ExtArgs>
+          args: Prisma.StoreItemOptionDeleteManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateMany: {
-          args: Prisma.CatalogItemMappingUpdateManyArgs<ExtArgs>
+          args: Prisma.StoreItemOptionUpdateManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateManyAndReturn: {
-          args: Prisma.CatalogItemMappingUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogItemMappingPayload>[]
+          args: Prisma.StoreItemOptionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreItemOptionPayload>[]
         }
         upsert: {
-          args: Prisma.CatalogItemMappingUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogItemMappingPayload>
+          args: Prisma.StoreItemOptionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreItemOptionPayload>
         }
         aggregate: {
-          args: Prisma.CatalogItemMappingAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateCatalogItemMapping>
+          args: Prisma.StoreItemOptionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateStoreItemOption>
         }
         groupBy: {
-          args: Prisma.CatalogItemMappingGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.CatalogItemMappingGroupByOutputType>[]
+          args: Prisma.StoreItemOptionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StoreItemOptionGroupByOutputType>[]
         }
         count: {
-          args: Prisma.CatalogItemMappingCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.CatalogItemMappingCountAggregateOutputType> | number
+          args: Prisma.StoreItemOptionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StoreItemOptionCountAggregateOutputType> | number
         }
       }
     }
@@ -560,77 +560,77 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    VariantInventorySnapshot: {
-      payload: Prisma.$VariantInventorySnapshotPayload<ExtArgs>
-      fields: Prisma.VariantInventorySnapshotFieldRefs
+    ItemAvailability: {
+      payload: Prisma.$ItemAvailabilityPayload<ExtArgs>
+      fields: Prisma.ItemAvailabilityFieldRefs
       operations: {
         findUnique: {
-          args: Prisma.VariantInventorySnapshotFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VariantInventorySnapshotPayload> | null
+          args: Prisma.ItemAvailabilityFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ItemAvailabilityPayload> | null
         }
         findUniqueOrThrow: {
-          args: Prisma.VariantInventorySnapshotFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VariantInventorySnapshotPayload>
+          args: Prisma.ItemAvailabilityFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ItemAvailabilityPayload>
         }
         findFirst: {
-          args: Prisma.VariantInventorySnapshotFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VariantInventorySnapshotPayload> | null
+          args: Prisma.ItemAvailabilityFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ItemAvailabilityPayload> | null
         }
         findFirstOrThrow: {
-          args: Prisma.VariantInventorySnapshotFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VariantInventorySnapshotPayload>
+          args: Prisma.ItemAvailabilityFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ItemAvailabilityPayload>
         }
         findMany: {
-          args: Prisma.VariantInventorySnapshotFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VariantInventorySnapshotPayload>[]
+          args: Prisma.ItemAvailabilityFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ItemAvailabilityPayload>[]
         }
         create: {
-          args: Prisma.VariantInventorySnapshotCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VariantInventorySnapshotPayload>
+          args: Prisma.ItemAvailabilityCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ItemAvailabilityPayload>
         }
         createMany: {
-          args: Prisma.VariantInventorySnapshotCreateManyArgs<ExtArgs>
+          args: Prisma.ItemAvailabilityCreateManyArgs<ExtArgs>
           result: BatchPayload
         }
         createManyAndReturn: {
-          args: Prisma.VariantInventorySnapshotCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VariantInventorySnapshotPayload>[]
+          args: Prisma.ItemAvailabilityCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ItemAvailabilityPayload>[]
         }
         delete: {
-          args: Prisma.VariantInventorySnapshotDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VariantInventorySnapshotPayload>
+          args: Prisma.ItemAvailabilityDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ItemAvailabilityPayload>
         }
         update: {
-          args: Prisma.VariantInventorySnapshotUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VariantInventorySnapshotPayload>
+          args: Prisma.ItemAvailabilityUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ItemAvailabilityPayload>
         }
         deleteMany: {
-          args: Prisma.VariantInventorySnapshotDeleteManyArgs<ExtArgs>
+          args: Prisma.ItemAvailabilityDeleteManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateMany: {
-          args: Prisma.VariantInventorySnapshotUpdateManyArgs<ExtArgs>
+          args: Prisma.ItemAvailabilityUpdateManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateManyAndReturn: {
-          args: Prisma.VariantInventorySnapshotUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VariantInventorySnapshotPayload>[]
+          args: Prisma.ItemAvailabilityUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ItemAvailabilityPayload>[]
         }
         upsert: {
-          args: Prisma.VariantInventorySnapshotUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$VariantInventorySnapshotPayload>
+          args: Prisma.ItemAvailabilityUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ItemAvailabilityPayload>
         }
         aggregate: {
-          args: Prisma.VariantInventorySnapshotAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateVariantInventorySnapshot>
+          args: Prisma.ItemAvailabilityAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateItemAvailability>
         }
         groupBy: {
-          args: Prisma.VariantInventorySnapshotGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.VariantInventorySnapshotGroupByOutputType>[]
+          args: Prisma.ItemAvailabilityGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ItemAvailabilityGroupByOutputType>[]
         }
         count: {
-          args: Prisma.VariantInventorySnapshotCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.VariantInventorySnapshotCountAggregateOutputType> | number
+          args: Prisma.ItemAvailabilityCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ItemAvailabilityCountAggregateOutputType> | number
         }
       }
     }
@@ -670,9 +670,9 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
-export const CatalogItemMappingScalarFieldEnum = {
+export const StoreItemOptionScalarFieldEnum = {
   id: 'id',
-  catalogItemSlug: 'catalogItemSlug',
+  storeItemSlug: 'storeItemSlug',
   sourceKind: 'sourceKind',
   sourceId: 'sourceId',
   variantId: 'variantId',
@@ -680,13 +680,12 @@ export const CatalogItemMappingScalarFieldEnum = {
   updatedAt: 'updatedAt'
 } as const
 
-export type CatalogItemMappingScalarFieldEnum = (typeof CatalogItemMappingScalarFieldEnum)[keyof typeof CatalogItemMappingScalarFieldEnum]
+export type StoreItemOptionScalarFieldEnum = (typeof StoreItemOptionScalarFieldEnum)[keyof typeof StoreItemOptionScalarFieldEnum]
 
 
 export const VariantStripeMappingScalarFieldEnum = {
   id: 'id',
   variantId: 'variantId',
-  stripeProductId: 'stripeProductId',
   stripePriceId: 'stripePriceId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -695,15 +694,15 @@ export const VariantStripeMappingScalarFieldEnum = {
 export type VariantStripeMappingScalarFieldEnum = (typeof VariantStripeMappingScalarFieldEnum)[keyof typeof VariantStripeMappingScalarFieldEnum]
 
 
-export const VariantInventorySnapshotScalarFieldEnum = {
+export const ItemAvailabilityScalarFieldEnum = {
   id: 'id',
   variantId: 'variantId',
   status: 'status',
-  canPurchase: 'canPurchase',
+  canBuy: 'canBuy',
   updatedAt: 'updatedAt'
 } as const
 
-export type VariantInventorySnapshotScalarFieldEnum = (typeof VariantInventorySnapshotScalarFieldEnum)[keyof typeof VariantInventorySnapshotScalarFieldEnum]
+export type ItemAvailabilityScalarFieldEnum = (typeof ItemAvailabilityScalarFieldEnum)[keyof typeof ItemAvailabilityScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -712,14 +711,6 @@ export const SortOrder = {
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
-
-
-export const NullsOrder = {
-  first: 'first',
-  last: 'last'
-} as const
-
-export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 
 
 
@@ -736,9 +727,9 @@ export type StringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 
 
 
 /**
- * Reference to a field of type 'CatalogSourceKind'
+ * Reference to a field of type 'StoreItemSourceKind'
  */
-export type EnumCatalogSourceKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CatalogSourceKind'>
+export type EnumStoreItemSourceKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StoreItemSourceKind'>
     
 
 
@@ -750,9 +741,9 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
 
 
 /**
- * Reference to a field of type 'VariantInventoryStatus'
+ * Reference to a field of type 'ItemAvailabilityStatus'
  */
-export type EnumVariantInventoryStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VariantInventoryStatus'>
+export type EnumItemAvailabilityStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ItemAvailabilityStatus'>
     
 
 
@@ -856,9 +847,9 @@ export interface PrismaClientOptions {
   omit?: GlobalOmitConfig
 }
 export type GlobalOmitConfig = {
-  catalogItemMapping?: Prisma.CatalogItemMappingOmit
+  storeItemOption?: Prisma.StoreItemOptionOmit
   variantStripeMapping?: Prisma.VariantStripeMappingOmit
-  variantInventorySnapshot?: Prisma.VariantInventorySnapshotOmit
+  itemAvailability?: Prisma.ItemAvailabilityOmit
 }
 
 /* Types for Logging */

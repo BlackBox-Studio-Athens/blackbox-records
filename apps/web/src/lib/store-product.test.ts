@@ -3,21 +3,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createStoreProductStaticPaths, getStoreProductEntryBySlug } from './store-product';
 
 const mockCatalogData = vi.hoisted(() => ({
-  getCatalogItemBySlug: vi.fn(),
-  listCatalogItems: vi.fn(),
+  getStoreItemBySlug: vi.fn(),
+  listStoreItems: vi.fn(),
 }));
 
-const mockVariantSnapshot = vi.hoisted(() => ({
-  getPrimaryVariantSnapshotForCatalogItem: vi.fn(),
+const mockItemAvailability = vi.hoisted(() => ({
+  getPrimaryAvailabilityForStoreItem: vi.fn(),
 }));
 
 vi.mock('./catalog-data', () => ({
-  getCatalogItemBySlug: mockCatalogData.getCatalogItemBySlug,
-  listCatalogItems: mockCatalogData.listCatalogItems,
+  getStoreItemBySlug: mockCatalogData.getStoreItemBySlug,
+  listStoreItems: mockCatalogData.listStoreItems,
 }));
 
-vi.mock('./variant-snapshot', () => ({
-  getPrimaryVariantSnapshotForCatalogItem: mockVariantSnapshot.getPrimaryVariantSnapshotForCatalogItem,
+vi.mock('./item-availability', () => ({
+  getPrimaryAvailabilityForStoreItem: mockItemAvailability.getPrimaryAvailabilityForStoreItem,
 }));
 
 describe('store product helper', () => {
@@ -26,7 +26,7 @@ describe('store product helper', () => {
   });
 
   it('returns a store product entry for a known slug', async () => {
-    mockCatalogData.getCatalogItemBySlug.mockResolvedValue({
+    mockCatalogData.getStoreItemBySlug.mockResolvedValue({
       slug: 'barren-point',
       sourceKind: 'release',
       sourceId: 'barren-point',
@@ -41,10 +41,9 @@ describe('store product helper', () => {
       checkoutPath: '/blackbox-records/store/barren-point/checkout/',
     });
 
-    mockVariantSnapshot.getPrimaryVariantSnapshotForCatalogItem.mockResolvedValue({
+    mockItemAvailability.getPrimaryAvailabilityForStoreItem.mockResolvedValue({
       variantId: 'variant_barren-point_standard',
-      catalogItemSlug: 'barren-point',
-      title: 'Barren Point LP',
+      storeItemSlug: 'barren-point',
       optionLabel: 'Black Vinyl LP',
       price: {
         amountMinor: 2800,
@@ -55,31 +54,31 @@ describe('store product helper', () => {
         status: 'available',
         label: 'Available',
       },
-      canPurchase: true,
+      canBuy: true,
     });
 
     await expect(getStoreProductEntryBySlug('barren-point')).resolves.toMatchObject({
-      catalogItem: {
+      storeItem: {
         slug: 'barren-point',
         shopPath: '/blackbox-records/store/barren-point/',
         checkoutPath: '/blackbox-records/store/barren-point/checkout/',
       },
-      primaryVariantSnapshot: {
+      primaryAvailability: {
         variantId: 'variant_barren-point_standard',
-        canPurchase: true,
+        canBuy: true,
       },
     });
   });
 
   it('returns null for an unknown slug', async () => {
-    mockCatalogData.getCatalogItemBySlug.mockResolvedValue(null);
+    mockCatalogData.getStoreItemBySlug.mockResolvedValue(null);
 
     await expect(getStoreProductEntryBySlug('unknown-slug')).resolves.toBeNull();
-    expect(mockVariantSnapshot.getPrimaryVariantSnapshotForCatalogItem).not.toHaveBeenCalled();
+    expect(mockItemAvailability.getPrimaryAvailabilityForStoreItem).not.toHaveBeenCalled();
   });
 
-  it('creates static paths for every catalog item with matching checkout links', async () => {
-    mockCatalogData.listCatalogItems.mockResolvedValue([
+  it('creates static paths for every store item with matching checkout links', async () => {
+    mockCatalogData.listStoreItems.mockResolvedValue([
       {
         slug: 'barren-point',
         sourceKind: 'release',
@@ -110,24 +109,22 @@ describe('store product helper', () => {
       },
     ]);
 
-    mockVariantSnapshot.getPrimaryVariantSnapshotForCatalogItem
+    mockItemAvailability.getPrimaryAvailabilityForStoreItem
       .mockResolvedValueOnce({
         variantId: 'variant_barren-point_standard',
-        catalogItemSlug: 'barren-point',
-        title: 'Barren Point LP',
+        storeItemSlug: 'barren-point',
         optionLabel: 'Black Vinyl LP',
         price: { amountMinor: 2800, currencyCode: 'EUR', display: 'EUR 28.00' },
         availability: { status: 'available', label: 'Available' },
-        canPurchase: true,
+        canBuy: true,
       })
       .mockResolvedValueOnce({
         variantId: 'variant_afterglow-tape_standard',
-        catalogItemSlug: 'afterglow-tape',
-        title: 'Afterglow Tape',
+        storeItemSlug: 'afterglow-tape',
         optionLabel: 'Cassette',
         price: { amountMinor: 1400, currencyCode: 'EUR', display: 'EUR 14.00' },
         availability: { status: 'sold_out', label: 'Sold Out' },
-        canPurchase: false,
+        canBuy: false,
       });
 
     await expect(createStoreProductStaticPaths()).resolves.toEqual([
@@ -135,12 +132,12 @@ describe('store product helper', () => {
         params: { slug: 'barren-point' },
         props: {
           entry: {
-            catalogItem: expect.objectContaining({
+            storeItem: expect.objectContaining({
               slug: 'barren-point',
               checkoutPath: '/blackbox-records/store/barren-point/checkout/',
             }),
-            primaryVariantSnapshot: expect.objectContaining({
-              catalogItemSlug: 'barren-point',
+            primaryAvailability: expect.objectContaining({
+              storeItemSlug: 'barren-point',
             }),
           },
         },
@@ -149,12 +146,12 @@ describe('store product helper', () => {
         params: { slug: 'afterglow-tape' },
         props: {
           entry: {
-            catalogItem: expect.objectContaining({
+            storeItem: expect.objectContaining({
               slug: 'afterglow-tape',
               checkoutPath: '/blackbox-records/store/afterglow-tape/checkout/',
             }),
-            primaryVariantSnapshot: expect.objectContaining({
-              catalogItemSlug: 'afterglow-tape',
+            primaryAvailability: expect.objectContaining({
+              storeItemSlug: 'afterglow-tape',
             }),
           },
         },

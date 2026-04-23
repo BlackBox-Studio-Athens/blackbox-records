@@ -2,7 +2,7 @@
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import { Card, CardContent } from '@/components/ui/card';
-import { createCatalogItemFromDistroEntry } from '@/lib/catalog-data';
+import { createStoreItemFromDistroEntry } from '@/lib/catalog-data';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -11,7 +11,7 @@ interface Props {
 }
 
 const { item, variant = 'page' } = Astro.props;
-const catalogItem = createCatalogItemFromDistroEntry(item);
+const storeItem = createStoreItemFromDistroEntry(item);
 const isHomeVariant = variant === 'home';
 ---
 
@@ -20,7 +20,7 @@ const isHomeVariant = variant === 'home';
     'group block h-full distro-card',
     isHomeVariant ? 'distro-card--home' : 'distro-card--page',
   ]}
-  href={catalogItem.shopPath}
+  href={storeItem.shopPath}
   data-astro-prefetch
 >
   <Card className="distro-card__surface rounded-none border-[#2b2b2b] bg-[#141414] shadow-none">

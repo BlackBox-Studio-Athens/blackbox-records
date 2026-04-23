@@ -18,17 +18,17 @@ export { Prisma }
 export * as $Enums from './enums'
 export * from './enums';
 /**
- * Model CatalogItemMapping
+ * Model StoreItemOption
  * 
  */
-export type CatalogItemMapping = Prisma.CatalogItemMappingModel
+export type StoreItemOption = Prisma.StoreItemOptionModel
 /**
  * Model VariantStripeMapping
  * 
  */
 export type VariantStripeMapping = Prisma.VariantStripeMappingModel
 /**
- * Model VariantInventorySnapshot
+ * Model ItemAvailability
  * 
  */
-export type VariantInventorySnapshot = Prisma.VariantInventorySnapshotModel
+export type ItemAvailability = Prisma.ItemAvailabilityModel

@@ -17,12 +17,12 @@ interface Props {
 }
 
 const { entry } = Astro.props;
-const { catalogItem, primaryVariantSnapshot } = entry;
-const metadataLabel = catalogItem.metadata.join(' · ');
-const priceLabel = primaryVariantSnapshot?.price.display || 'Price soon';
-const availabilityLabel = primaryVariantSnapshot?.availability.label || 'Unavailable';
-const canPurchase = primaryVariantSnapshot?.canPurchase ?? false;
-const primaryActionClassName = canPurchase
+const { storeItem, primaryAvailability } = entry;
+const metadataLabel = storeItem.metadata.join(' · ');
+const priceLabel = primaryAvailability?.price.display || 'Price soon';
+const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
+const canBuy = primaryAvailability?.canBuy ?? false;
+const primaryActionClassName = canBuy
   ? buttonVariants({ size: 'lg' })
   : cn(
       buttonVariants({ size: 'lg', variant: 'outline' }),
@@ -31,28 +31,28 @@ const primaryActionClassName = canPurchase
 ---
 
 <SiteLayout
-  pageTitle={`${catalogItem.title} | Store`}
-  pageDescription={catalogItem.summary || `${catalogItem.title} available through the BlackBox native storefront.`}
+  pageTitle={`${storeItem.title} | Store`}
+  pageDescription={storeItem.summary || `${storeItem.title} available through the BlackBox native storefront.`}
 >
   <section class="layout-container pt-14 pb-6">
     <div class="grid gap-8 border border-border/70 bg-card/35 p-6 lg:grid-cols-[0.9fr_1.1fr] lg:p-8">
       <div class="relative overflow-hidden border border-border/60 bg-background/55">
         <Image
-          src={catalogItem.image}
-          alt={catalogItem.imageAlt}
+          src={storeItem.image}
+          alt={storeItem.imageAlt}
           class="aspect-[4/5] h-full w-full object-cover"
           sizes="(min-width: 1024px) 40vw, 100vw"
         />
         <div class="absolute inset-0 bg-gradient-to-t from-black/78 via-black/10 to-transparent"></div>
         <div class="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 px-5 py-5">
           <div class="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/78">
-            {catalogItem.eyebrow && <span>{catalogItem.eyebrow}</span>}
-            <span class="text-white/55">{catalogItem.sourceKind === 'release' ? 'BlackBox' : 'Distro'}</span>
+            {storeItem.eyebrow && <span>{storeItem.eyebrow}</span>}
+            <span class="text-white/55">{storeItem.sourceKind === 'release' ? 'BlackBox' : 'Distro'}</span>
           </div>
           <span
             class:list={[
               'inline-flex items-center border px-2 py-1 text-[10px] uppercase tracking-[0.18em]',
-              canPurchase
+              canBuy
                 ? 'border-white/25 bg-black/35 text-white/82'
                 : 'border-white/15 bg-black/45 text-white/55',
             ]}
@@ -73,21 +73,21 @@ const primaryActionClassName = canPurchase
 
           <div class="space-y-3">
             <h1 class="font-display text-5xl tracking-[0.08em] uppercase text-foreground sm:text-6xl">
-              {catalogItem.title.toUpperCase()}
+              {storeItem.title.toUpperCase()}
             </h1>
-            <p class="text-sm uppercase tracking-[0.13em] text-muted-foreground">{catalogItem.subtitle}</p>
+            <p class="text-sm uppercase tracking-[0.13em] text-muted-foreground">{storeItem.subtitle}</p>
           </div>
 
-          {catalogItem.summary && <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">{catalogItem.summary}</p>}
+          {storeItem.summary && <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">{storeItem.summary}</p>}
 
           <div class="grid gap-4 border border-border/60 bg-background/45 p-5 sm:grid-cols-2">
             <div class="space-y-2">
               <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Offer</p>
               <p class="font-display text-2xl tracking-[0.08em] uppercase text-foreground">
-                {primaryVariantSnapshot?.title || catalogItem.title}
+                {storeItem.title}
               </p>
-              {primaryVariantSnapshot?.optionLabel && (
-                <p class="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{primaryVariantSnapshot.optionLabel}</p>
+              {primaryAvailability?.optionLabel && (
+                <p class="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{primaryAvailability.optionLabel}</p>
               )}
             </div>
 
@@ -101,8 +101,8 @@ const primaryActionClassName = canPurchase
 
         <div class="space-y-4 border-t border-border/60 pt-5">
           <div class="flex flex-wrap gap-3">
-            <a href={catalogItem.checkoutPath} data-astro-prefetch class={primaryActionClassName}>
-              {canPurchase ? 'Buy Now' : 'Currently Unavailable'}
+            <a href={storeItem.checkoutPath} data-astro-prefetch class={primaryActionClassName}>
+              {canBuy ? 'Buy Now' : 'Currently Unavailable'}
             </a>
             <a
               href={createProjectRelativeUrl('/store/')}
@@ -114,7 +114,7 @@ const primaryActionClassName = canPurchase
           </div>
 
           <p class="text-sm leading-relaxed text-muted-foreground">
-            {canPurchase
+            {canBuy
               ? 'The same storefront contract feeds the collection page, this PDP, and the checkout shell that comes next.'
               : 'This item stays viewable even while it is resting. Availability remains explicit without dropping it out of the shelf.'}
           </p>

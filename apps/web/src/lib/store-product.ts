@@ -1,37 +1,37 @@
-import { getCatalogItemBySlug, listCatalogItems, type CatalogItem } from './catalog-data';
+import { getStoreItemBySlug, listStoreItems, type StoreItem } from './catalog-data';
 import {
-  getPrimaryVariantSnapshotForCatalogItem,
-  type VariantSnapshot,
-} from './variant-snapshot';
+  getPrimaryAvailabilityForStoreItem,
+  type ItemAvailability,
+} from './item-availability';
 
 export type StoreProductEntry = {
-  catalogItem: CatalogItem;
-  primaryVariantSnapshot: VariantSnapshot | null;
+  storeItem: StoreItem;
+  primaryAvailability: ItemAvailability | null;
 };
 
 export async function getStoreProductEntryBySlug(slug: string): Promise<StoreProductEntry | null> {
-  const catalogItem = await getCatalogItemBySlug(slug);
+  const storeItem = await getStoreItemBySlug(slug);
 
-  if (!catalogItem) {
+  if (!storeItem) {
     return null;
   }
 
   return {
-    catalogItem,
-    primaryVariantSnapshot: await getPrimaryVariantSnapshotForCatalogItem(catalogItem.slug),
+    storeItem,
+    primaryAvailability: await getPrimaryAvailabilityForStoreItem(storeItem.slug),
   };
 }
 
 export async function createStoreProductStaticPaths() {
-  const catalogItems = await listCatalogItems();
+  const storeItems = await listStoreItems();
 
   return Promise.all(
-    catalogItems.map(async (catalogItem) => ({
-      params: { slug: catalogItem.slug },
+    storeItems.map(async (storeItem) => ({
+      params: { slug: storeItem.slug },
       props: {
         entry: {
-          catalogItem,
-          primaryVariantSnapshot: await getPrimaryVariantSnapshotForCatalogItem(catalogItem.slug),
+          storeItem,
+          primaryAvailability: await getPrimaryAvailabilityForStoreItem(storeItem.slug),
         } satisfies StoreProductEntry,
       },
     })),

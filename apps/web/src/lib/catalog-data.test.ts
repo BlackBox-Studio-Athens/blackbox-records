@@ -69,15 +69,15 @@ vi.mock('astro:config/client', () => ({
 }));
 
 import {
-  createCatalogItemFromDistroEntry,
-  createCatalogItemFromRelease,
-  getCatalogItemBySlug,
-  getCatalogItemForRelease,
+  createStoreItemFromDistroEntry,
+  createStoreItemFromRelease,
+  getStoreItemBySlug,
+  getStoreItemForRelease,
   groupDistroEntries,
-  hasNativeCatalogItemForRelease,
-  listCatalogItems,
+  hasNativeStoreItemForRelease,
+  listStoreItems,
   listReleaseCatalog,
-  mapCatalogItemsBySlug,
+  mapStoreItemsBySlug,
 } from './catalog-data';
 
 describe('groupDistroEntries', () => {
@@ -97,9 +97,9 @@ describe('groupDistroEntries', () => {
   });
 });
 
-describe('CatalogItem projection contract', () => {
-  it('creates a release-derived catalog item with stable shop and checkout paths', async () => {
-    const catalogItem = await createCatalogItemFromRelease({
+describe('StoreItem projection contract', () => {
+  it('creates a release-derived store item with stable shop and checkout paths', async () => {
+    const storeItem = await createStoreItemFromRelease({
       id: 'caregivers',
       data: {
         artist: { id: 'afterwise' },
@@ -112,7 +112,7 @@ describe('CatalogItem projection contract', () => {
       },
     } as any);
 
-    expect(catalogItem).toEqual({
+    expect(storeItem).toEqual({
       slug: 'caregivers',
       sourceKind: 'release',
       sourceId: 'caregivers',
@@ -128,8 +128,8 @@ describe('CatalogItem projection contract', () => {
     });
   });
 
-  it('creates a distro-derived catalog item without leaking external-shop fields', () => {
-    const catalogItem = createCatalogItemFromDistroEntry({
+  it('creates a distro-derived store item without leaking external-shop fields', () => {
+    const storeItem = createStoreItemFromDistroEntry({
       id: 'afterglow-tape',
       data: {
         artist_or_label: 'Afterglow',
@@ -144,56 +144,56 @@ describe('CatalogItem projection contract', () => {
       },
     } as any);
 
-    expect(catalogItem.sourceKind).toBe('distro');
-    expect(catalogItem.shopPath).toBe('/blackbox-records/store/afterglow-tape/');
-    expect(catalogItem.checkoutPath).toBe('/blackbox-records/store/afterglow-tape/checkout/');
-    expect(catalogItem.metadata).toEqual(['Tapes', 'Cassette']);
-    expect(catalogItem).not.toHaveProperty('fourthwall_url');
-    expect(catalogItem).not.toHaveProperty('merch_url');
+    expect(storeItem.sourceKind).toBe('distro');
+    expect(storeItem.shopPath).toBe('/blackbox-records/store/afterglow-tape/');
+    expect(storeItem.checkoutPath).toBe('/blackbox-records/store/afterglow-tape/checkout/');
+    expect(storeItem.metadata).toEqual(['Tapes', 'Cassette']);
+    expect(storeItem).not.toHaveProperty('fourthwall_url');
+    expect(storeItem).not.toHaveProperty('merch_url');
   });
 
-  it('only treats releases with internal /store/ merch_url as native catalog candidates', async () => {
+  it('only treats releases with internal /store/ merch_url as native store candidates', async () => {
     const [nativeRelease, externalRelease] = await listReleaseCatalog();
 
-    expect(hasNativeCatalogItemForRelease(nativeRelease as any)).toBe(true);
-    expect(hasNativeCatalogItemForRelease(externalRelease as any)).toBe(false);
+    expect(hasNativeStoreItemForRelease(nativeRelease as any)).toBe(true);
+    expect(hasNativeStoreItemForRelease(externalRelease as any)).toBe(false);
   });
 
-  it('lists native catalog items across releases and distro with stable slugs', async () => {
-    const catalogItems = await listCatalogItems();
+  it('lists native store items across releases and distro with stable slugs', async () => {
+    const storeItems = await listStoreItems();
 
-    expect(catalogItems.map((catalogItem) => [catalogItem.slug, catalogItem.sourceKind])).toEqual([
+    expect(storeItems.map((storeItem) => [storeItem.slug, storeItem.sourceKind])).toEqual([
       ['barren-point', 'release'],
       ['afterglow-tape', 'distro'],
     ]);
   });
 
-  it('maps and resolves catalog items by canonical slug', async () => {
-    const catalogItems = await listCatalogItems();
-    const catalogItemsBySlug = mapCatalogItemsBySlug(catalogItems);
+  it('maps and resolves store items by canonical slug', async () => {
+    const storeItems = await listStoreItems();
+    const storeItemsBySlug = mapStoreItemsBySlug(storeItems);
 
-    expect(catalogItemsBySlug.get('barren-point')?.sourceKind).toBe('release');
-    await expect(getCatalogItemBySlug('afterglow-tape')).resolves.toMatchObject({
+    expect(storeItemsBySlug.get('barren-point')?.sourceKind).toBe('release');
+    await expect(getStoreItemBySlug('afterglow-tape')).resolves.toMatchObject({
       slug: 'afterglow-tape',
       sourceKind: 'distro',
     });
-    await expect(getCatalogItemBySlug('caregivers')).resolves.toBeNull();
+    await expect(getStoreItemBySlug('caregivers')).resolves.toBeNull();
   });
 
-  it('returns null for releases that are not native catalog items', async () => {
+  it('returns null for releases that are not native store items', async () => {
     const [, externalRelease] = await listReleaseCatalog();
 
-    await expect(getCatalogItemForRelease(externalRelease as any)).resolves.toBeNull();
+    await expect(getStoreItemForRelease(externalRelease as any)).resolves.toBeNull();
   });
 
-  it('resolves native catalog paths for mapped releases instead of legacy external merch links', async () => {
+  it('resolves native store paths for mapped releases instead of legacy external merch links', async () => {
     const [nativeRelease, externalRelease] = await listReleaseCatalog();
 
-    await expect(getCatalogItemForRelease(nativeRelease as any)).resolves.toMatchObject({
+    await expect(getStoreItemForRelease(nativeRelease as any)).resolves.toMatchObject({
       slug: 'barren-point',
       shopPath: '/blackbox-records/store/barren-point/',
     });
 
-    await expect(getCatalogItemForRelease(externalRelease as any)).resolves.toBeNull();
+    await expect(getStoreItemForRelease(externalRelease as any)).resolves.toBeNull();
   });
 });

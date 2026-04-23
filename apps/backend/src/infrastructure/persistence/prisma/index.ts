@@ -1,4 +1,4 @@
 export { createPrismaClient } from './create-prisma-client';
-export { PrismaCatalogItemMappingRepository } from './prisma-catalog-item-mapping-repository';
-export { PrismaInventoryRepository } from './prisma-inventory-repository';
+export { PrismaItemAvailabilityRepository } from './prisma-item-availability-repository';
+export { PrismaStoreItemOptionRepository } from './prisma-store-item-option-repository';
 export { PrismaVariantStripeMappingRepository } from './prisma-variant-stripe-mapping-repository';

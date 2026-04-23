@@ -1,9 +1,10 @@
+import type { StripePriceId, VariantId } from '../ids';
+
 export type VariantStripeMappingRecord = {
-    variantId: string;
-    stripeProductId: string | null;
-    stripePriceId: string | null;
+    variantId: VariantId;
+    stripePriceId: StripePriceId;
 };
 
 export interface VariantStripeMappingRepository {
-    findByVariantId(variantId: string): Promise<VariantStripeMappingRecord | null>;
+    findByVariantId(variantId: VariantId): Promise<VariantStripeMappingRecord | null>;
 }

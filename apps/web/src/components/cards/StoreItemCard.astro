@@ -1,26 +1,26 @@
 ---
 import { Image } from 'astro:assets';
 import { Card, CardContent } from '@/components/ui/card';
-import type { ShopCollectionEntry } from '@/lib/shop-collection';
+import type { StoreCollectionEntry } from '@/lib/store-collection';
 
 interface Props {
-  entry: ShopCollectionEntry;
+  entry: StoreCollectionEntry;
 }
 
 const { entry } = Astro.props;
-const { catalogItem, primaryVariantSnapshot } = entry;
-const priceLabel = primaryVariantSnapshot?.price.display || 'Price soon';
-const availabilityLabel = primaryVariantSnapshot?.availability.label || 'Unavailable';
-const metadataLabel = catalogItem.metadata.join(' · ');
-const collectionLabel = catalogItem.eyebrow || (catalogItem.sourceKind === 'release' ? 'Release' : 'Distro');
+const { storeItem, primaryAvailability } = entry;
+const priceLabel = primaryAvailability?.price.display || 'Price soon';
+const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
+const metadataLabel = storeItem.metadata.join(' · ');
+const collectionLabel = storeItem.eyebrow || (storeItem.sourceKind === 'release' ? 'Release' : 'Distro');
 ---
 
-<a class="group block h-full" href={catalogItem.shopPath} data-astro-prefetch>
+<a class="group block h-full" href={storeItem.shopPath} data-astro-prefetch>
   <Card className="h-full rounded-none border-[#2b2b2b] bg-[#121212] shadow-none transition-colors duration-300 group-hover:border-[#4a4a4a]">
     <div class="relative aspect-[4/5] overflow-hidden border-b border-[#2b2b2b] bg-[#0d0d0d]">
       <Image
-        src={catalogItem.image}
-        alt={catalogItem.imageAlt}
+        src={storeItem.image}
+        alt={storeItem.imageAlt}
         class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         sizes="(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw"
       />
@@ -32,7 +32,7 @@ const collectionLabel = catalogItem.eyebrow || (catalogItem.sourceKind === 'rele
         <span
           class:list={[
             'inline-flex items-center border px-2 py-1 text-[10px] uppercase tracking-[0.18em]',
-            primaryVariantSnapshot?.canPurchase
+            primaryAvailability?.canBuy
               ? 'border-white/25 bg-black/35 text-white/82'
               : 'border-white/15 bg-black/45 text-white/55',
           ]}
@@ -44,11 +44,11 @@ const collectionLabel = catalogItem.eyebrow || (catalogItem.sourceKind === 'rele
     <CardContent className="flex h-[calc(100%-theme(spacing.0))] flex-col gap-4 p-5">
       <div class="space-y-2">
         {metadataLabel && <p class="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{metadataLabel}</p>}
-        <h2 class="font-display text-3xl tracking-[0.08em] uppercase text-foreground">{catalogItem.title}</h2>
-        <p class="text-[12px] uppercase tracking-[0.16em] text-muted-foreground">{catalogItem.subtitle}</p>
+        <h2 class="font-display text-3xl tracking-[0.08em] uppercase text-foreground">{storeItem.title}</h2>
+        <p class="text-[12px] uppercase tracking-[0.16em] text-muted-foreground">{storeItem.subtitle}</p>
       </div>
 
-      {catalogItem.summary && <p class="text-sm leading-relaxed text-muted-foreground">{catalogItem.summary}</p>}
+      {storeItem.summary && <p class="text-sm leading-relaxed text-muted-foreground">{storeItem.summary}</p>}
 
       <div class="mt-auto flex items-end justify-between gap-4 border-t border-border/50 pt-4">
         <div class="space-y-1">

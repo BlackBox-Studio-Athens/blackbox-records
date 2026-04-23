@@ -8,7 +8,7 @@
  *
  * 🟢 You can import this file directly.
  */
-export type * from './models/CatalogItemMapping'
+export type * from './models/StoreItemOption'
 export type * from './models/VariantStripeMapping'
-export type * from './models/VariantInventorySnapshot'
+export type * from './models/ItemAvailability'
 export type * from './commonInputTypes'

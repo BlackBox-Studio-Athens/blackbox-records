@@ -1,12 +1,12 @@
 import type { CollectionEntry } from 'astro:content';
 
 import { resolveLinkAttributes } from '../config/site';
-import { getCatalogItemForRelease } from './catalog-data';
+import { getStoreItemForRelease } from './catalog-data';
 import { resolveMerchHref } from '../utils/music';
 
 export type ReleaseCommerceLink = {
   href: string;
-  isNativeCatalogLink: boolean;
+  isNativeStoreLink: boolean;
   label: 'Buy merch' | 'View In Store';
   rel?: string;
   target?: '_blank';
@@ -15,12 +15,12 @@ export type ReleaseCommerceLink = {
 export async function getReleaseCommerceLink(
   release: CollectionEntry<'releases'>,
 ): Promise<ReleaseCommerceLink | null> {
-  const nativeCatalogItem = await getCatalogItemForRelease(release);
+  const nativeStoreItem = await getStoreItemForRelease(release);
 
-  if (nativeCatalogItem) {
+  if (nativeStoreItem) {
     return {
-      href: nativeCatalogItem.shopPath,
-      isNativeCatalogLink: true,
+      href: nativeStoreItem.shopPath,
+      isNativeStoreLink: true,
       label: 'View In Store',
     };
   }
@@ -34,7 +34,7 @@ export async function getReleaseCommerceLink(
 
   return {
     href: linkAttributes.href,
-    isNativeCatalogLink: false,
+    isNativeStoreLink: false,
     label: 'Buy merch',
     ...(linkAttributes.rel ? { rel: linkAttributes.rel } : {}),
     ...(linkAttributes.target ? { target: linkAttributes.target } : {}),

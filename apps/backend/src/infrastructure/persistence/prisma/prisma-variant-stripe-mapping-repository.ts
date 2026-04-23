@@ -2,14 +2,12 @@ import type { VariantStripeMappingRecord, VariantStripeMappingRepository } from 
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapVariantStripeMapping(record: {
+    stripePriceId: string;
     variantId: string;
-    stripePriceId: string | null;
-    stripeProductId: string | null;
 }): VariantStripeMappingRecord {
     return {
         variantId: record.variantId,
         stripePriceId: record.stripePriceId,
-        stripeProductId: record.stripeProductId,
     };
 }
 

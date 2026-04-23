@@ -49,9 +49,9 @@ export const AnyNull = runtime.objectEnumValues.instances.AnyNull
 
 
 export const ModelName = {
-  CatalogItemMapping: 'CatalogItemMapping',
+  StoreItemOption: 'StoreItemOption',
   VariantStripeMapping: 'VariantStripeMapping',
-  VariantInventorySnapshot: 'VariantInventorySnapshot'
+  ItemAvailability: 'ItemAvailability'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -67,9 +67,9 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
-export const CatalogItemMappingScalarFieldEnum = {
+export const StoreItemOptionScalarFieldEnum = {
   id: 'id',
-  catalogItemSlug: 'catalogItemSlug',
+  storeItemSlug: 'storeItemSlug',
   sourceKind: 'sourceKind',
   sourceId: 'sourceId',
   variantId: 'variantId',
@@ -77,13 +77,12 @@ export const CatalogItemMappingScalarFieldEnum = {
   updatedAt: 'updatedAt'
 } as const
 
-export type CatalogItemMappingScalarFieldEnum = (typeof CatalogItemMappingScalarFieldEnum)[keyof typeof CatalogItemMappingScalarFieldEnum]
+export type StoreItemOptionScalarFieldEnum = (typeof StoreItemOptionScalarFieldEnum)[keyof typeof StoreItemOptionScalarFieldEnum]
 
 
 export const VariantStripeMappingScalarFieldEnum = {
   id: 'id',
   variantId: 'variantId',
-  stripeProductId: 'stripeProductId',
   stripePriceId: 'stripePriceId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -92,15 +91,15 @@ export const VariantStripeMappingScalarFieldEnum = {
 export type VariantStripeMappingScalarFieldEnum = (typeof VariantStripeMappingScalarFieldEnum)[keyof typeof VariantStripeMappingScalarFieldEnum]
 
 
-export const VariantInventorySnapshotScalarFieldEnum = {
+export const ItemAvailabilityScalarFieldEnum = {
   id: 'id',
   variantId: 'variantId',
   status: 'status',
-  canPurchase: 'canPurchase',
+  canBuy: 'canBuy',
   updatedAt: 'updatedAt'
 } as const
 
-export type VariantInventorySnapshotScalarFieldEnum = (typeof VariantInventorySnapshotScalarFieldEnum)[keyof typeof VariantInventorySnapshotScalarFieldEnum]
+export type ItemAvailabilityScalarFieldEnum = (typeof ItemAvailabilityScalarFieldEnum)[keyof typeof ItemAvailabilityScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -109,12 +108,4 @@ export const SortOrder = {
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
-
-
-export const NullsOrder = {
-  first: 'first',
-  last: 'last'
-} as const
-
-export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 

@@ -1,6 +1,6 @@
-INSERT INTO "CatalogItemMapping" (
+INSERT INTO "StoreItemOption" (
     "id",
-    "catalogItemSlug",
+    "storeItemSlug",
     "sourceKind",
     "sourceId",
     "variantId",
@@ -9,7 +9,7 @@ INSERT INTO "CatalogItemMapping" (
 )
 VALUES
     (
-        'catalog_item_mapping_barren_point',
+        'store_item_option_barren_point',
         'barren-point',
         'release',
         'barren-point',
@@ -18,7 +18,7 @@ VALUES
         CURRENT_TIMESTAMP
     ),
     (
-        'catalog_item_mapping_aftermaths',
+        'store_item_option_aftermaths',
         'aftermaths',
         'distro',
         'aftermaths',
@@ -27,7 +27,7 @@ VALUES
         CURRENT_TIMESTAMP
     ),
     (
-        'catalog_item_mapping_afterglow_tape',
+        'store_item_option_afterglow_tape',
         'afterglow-tape',
         'distro',
         'afterglow-tape',
@@ -35,36 +35,36 @@ VALUES
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP
     )
-ON CONFLICT("catalogItemSlug") DO UPDATE SET
+ON CONFLICT("storeItemSlug") DO UPDATE SET
     "sourceKind" = excluded."sourceKind",
     "sourceId" = excluded."sourceId",
     "variantId" = excluded."variantId",
     "updatedAt" = CURRENT_TIMESTAMP;
 
-INSERT INTO "VariantInventorySnapshot" (
+INSERT INTO "ItemAvailability" (
     "id",
     "variantId",
     "status",
-    "canPurchase",
+    "canBuy",
     "updatedAt"
 )
 VALUES
     (
-        'variant_inventory_snapshot_barren_point',
+        'item_availability_barren_point',
         'variant_barren-point_standard',
         'available',
         TRUE,
         CURRENT_TIMESTAMP
     ),
     (
-        'variant_inventory_snapshot_aftermaths',
+        'item_availability_aftermaths',
         'variant_aftermaths_standard',
         'sold_out',
         FALSE,
         CURRENT_TIMESTAMP
     ),
     (
-        'variant_inventory_snapshot_afterglow_tape',
+        'item_availability_afterglow_tape',
         'variant_afterglow-tape_standard',
         'sold_out',
         FALSE,
@@ -72,5 +72,5 @@ VALUES
     )
 ON CONFLICT("variantId") DO UPDATE SET
     "status" = excluded."status",
-    "canPurchase" = excluded."canPurchase",
+    "canBuy" = excluded."canBuy",
     "updatedAt" = CURRENT_TIMESTAMP;

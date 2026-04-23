@@ -71,17 +71,16 @@ vi.mock('astro:config/client', () => ({
 }));
 
 import {
-  getPrimaryVariantSnapshotForCatalogItem,
-  listVariantSnapshotsForCatalogItem,
-} from './variant-snapshot';
+  getPrimaryAvailabilityForStoreItem,
+  listAvailabilityForStoreItem,
+} from './item-availability';
 
-describe('VariantSnapshot adapter', () => {
-  it('resolves one stable temporary variant snapshot for a native catalog item slug', async () => {
-    await expect(listVariantSnapshotsForCatalogItem('barren-point')).resolves.toEqual([
+describe('ItemAvailability adapter', () => {
+  it('resolves one stable temporary item availability record for a native store item slug', async () => {
+    await expect(listAvailabilityForStoreItem('barren-point')).resolves.toEqual([
       {
         variantId: 'variant_barren-point_standard',
-        catalogItemSlug: 'barren-point',
-        title: 'Disintegration',
+        storeItemSlug: 'barren-point',
         optionLabel: 'Black Vinyl LP',
         price: {
           amountMinor: 2800,
@@ -92,21 +91,20 @@ describe('VariantSnapshot adapter', () => {
           status: 'available',
           label: 'Available',
         },
-        canPurchase: true,
+        canBuy: true,
       },
     ]);
   });
 
   it('returns null and an empty list cleanly for an unknown slug', async () => {
-    await expect(listVariantSnapshotsForCatalogItem('unknown-slug')).resolves.toEqual([]);
-    await expect(getPrimaryVariantSnapshotForCatalogItem('unknown-slug')).resolves.toBeNull();
+    await expect(listAvailabilityForStoreItem('unknown-slug')).resolves.toEqual([]);
+    await expect(getPrimaryAvailabilityForStoreItem('unknown-slug')).resolves.toBeNull();
   });
 
-  it('creates a fallback snapshot for known catalog items without explicit fixture pricing', async () => {
-    await expect(getPrimaryVariantSnapshotForCatalogItem('aftermaths')).resolves.toMatchObject({
+  it('creates fallback availability for known store items without explicit fixture pricing', async () => {
+    await expect(getPrimaryAvailabilityForStoreItem('aftermaths')).resolves.toMatchObject({
       variantId: 'variant_aftermaths_standard',
-      catalogItemSlug: 'aftermaths',
-      title: 'Aftermaths',
+      storeItemSlug: 'aftermaths',
       optionLabel: null,
       price: {
         amountMinor: 0,
@@ -114,48 +112,47 @@ describe('VariantSnapshot adapter', () => {
         display: 'Price soon',
       },
       availability: {
-        status: 'sold_out',
-        label: 'Unavailable',
+          status: 'sold_out',
+          label: 'Unavailable',
       },
-      canPurchase: false,
+      canBuy: false,
     });
   });
 
   it('exposes structured price data and a stable display label', async () => {
-    const variantSnapshot = await getPrimaryVariantSnapshotForCatalogItem('barren-point');
+    const itemAvailability = await getPrimaryAvailabilityForStoreItem('barren-point');
 
-    expect(variantSnapshot?.price).toEqual({
+    expect(itemAvailability?.price).toEqual({
       amountMinor: 2800,
       currencyCode: 'EUR',
       display: '€28.00',
     });
   });
 
-  it('marks sold-out variants as non-purchasable', async () => {
-    await expect(getPrimaryVariantSnapshotForCatalogItem('afterglow-tape')).resolves.toMatchObject({
+  it('marks sold-out variants as unavailable to buy', async () => {
+    await expect(getPrimaryAvailabilityForStoreItem('afterglow-tape')).resolves.toMatchObject({
       availability: {
         status: 'sold_out',
         label: 'Sold Out',
       },
-      canPurchase: false,
+      canBuy: false,
     });
   });
 
-  it('keeps backend and order state out of the snapshot contract', async () => {
-    const variantSnapshot = await getPrimaryVariantSnapshotForCatalogItem('barren-point');
+  it('keeps backend and order state out of the availability contract', async () => {
+    const itemAvailability = await getPrimaryAvailabilityForStoreItem('barren-point');
 
-    expect(variantSnapshot).not.toHaveProperty('stripePriceId');
-    expect(variantSnapshot).not.toHaveProperty('stripeProductId');
-    expect(variantSnapshot).not.toHaveProperty('d1VariantId');
-    expect(variantSnapshot).not.toHaveProperty('inventoryCount');
-    expect(variantSnapshot).not.toHaveProperty('orderState');
+    expect(itemAvailability).not.toHaveProperty('stripePriceId');
+    expect(itemAvailability).not.toHaveProperty('d1VariantId');
+    expect(itemAvailability).not.toHaveProperty('stockCount');
+    expect(itemAvailability).not.toHaveProperty('orderState');
   });
 
-  it('returns the first snapshot as the stable primary variant while the list API stays array-based', async () => {
-    const variantSnapshots = await listVariantSnapshotsForCatalogItem('barren-point');
-    const primaryVariantSnapshot = await getPrimaryVariantSnapshotForCatalogItem('barren-point');
+  it('returns the first availability record as the stable primary variant while the list API stays array-based', async () => {
+    const itemAvailability = await listAvailabilityForStoreItem('barren-point');
+    const primaryAvailability = await getPrimaryAvailabilityForStoreItem('barren-point');
 
-    expect(variantSnapshots).toHaveLength(1);
-    expect(primaryVariantSnapshot).toEqual(variantSnapshots[0]);
+    expect(itemAvailability).toHaveLength(1);
+    expect(primaryAvailability).toEqual(itemAvailability[0]);
   });
 });

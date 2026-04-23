@@ -7,10 +7,10 @@ export type ArtistProfileEntry = CollectionEntry<'artists'>;
 export type ReleaseCatalogEntry = CollectionEntry<'releases'>;
 export type NewsArticleEntry = CollectionEntry<'news'>;
 export type DistroCatalogEntry = CollectionEntry<'distro'>;
-export type CatalogItemSourceKind = 'release' | 'distro';
-export type CatalogItem = {
+export type StoreItemSourceKind = 'release' | 'distro';
+export type StoreItem = {
   slug: string;
-  sourceKind: CatalogItemSourceKind;
+  sourceKind: StoreItemSourceKind;
   sourceId: string;
   title: string;
   subtitle: string;
@@ -111,7 +111,7 @@ export function resolveReleaseArtistDisplayName(
   return artistProfile?.data.title || artistSlugFallbackName.replace(/-/g, ' ');
 }
 
-function createCatalogItemPaths(slug: string) {
+function createStoreItemPaths(slug: string) {
   const shopPath = createProjectRelativeUrl(`/store/${slug}/`);
 
   return {
@@ -120,11 +120,11 @@ function createCatalogItemPaths(slug: string) {
   };
 }
 
-function normalizeCatalogItemImageAlt(imageAlt: string | undefined, fallback: string) {
+function normalizeStoreItemImageAlt(imageAlt: string | undefined, fallback: string) {
   return imageAlt || fallback;
 }
 
-export async function createCatalogItemFromRelease(releaseEntry: ReleaseCatalogEntry): Promise<CatalogItem> {
+export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEntry): Promise<StoreItem> {
   const artistProfile = await resolveArtistProfileForRelease(releaseEntry);
   const artistDisplayName = resolveReleaseArtistDisplayName(releaseEntry, artistProfile || undefined);
   const slug = releaseEntry.id;
@@ -141,14 +141,14 @@ export async function createCatalogItemFromRelease(releaseEntry: ReleaseCatalogE
     subtitle: artistDisplayName,
     summary: releaseEntry.data.summary || null,
     image: releaseEntry.data.cover_image,
-    imageAlt: normalizeCatalogItemImageAlt(releaseEntry.data.cover_image_alt, releaseEntry.data.title),
+    imageAlt: normalizeStoreItemImageAlt(releaseEntry.data.cover_image_alt, releaseEntry.data.title),
     eyebrow: 'Release',
     metadata,
-    ...createCatalogItemPaths(slug),
+    ...createStoreItemPaths(slug),
   };
 }
 
-export function createCatalogItemFromDistroEntry(distroEntry: DistroCatalogEntry): CatalogItem {
+export function createStoreItemFromDistroEntry(distroEntry: DistroCatalogEntry): StoreItem {
   const slug = distroEntry.id;
   const metadata = [distroEntry.data.group, distroEntry.data.format].filter(Boolean) as string[];
 
@@ -160,48 +160,48 @@ export function createCatalogItemFromDistroEntry(distroEntry: DistroCatalogEntry
     subtitle: distroEntry.data.artist_or_label,
     summary: distroEntry.data.summary || null,
     image: distroEntry.data.image,
-    imageAlt: normalizeCatalogItemImageAlt(distroEntry.data.image_alt, distroEntry.data.title),
+    imageAlt: normalizeStoreItemImageAlt(distroEntry.data.image_alt, distroEntry.data.title),
     eyebrow: distroEntry.data.eyebrow || null,
     metadata,
-    ...createCatalogItemPaths(slug),
+    ...createStoreItemPaths(slug),
   };
 }
 
-export function hasNativeCatalogItemForRelease(releaseEntry: ReleaseCatalogEntry) {
+export function hasNativeStoreItemForRelease(releaseEntry: ReleaseCatalogEntry) {
   return isNativeShopMerchUrl(releaseEntry.data.merch_url);
 }
 
-export async function getCatalogItemForRelease(releaseEntry: ReleaseCatalogEntry) {
-  if (!hasNativeCatalogItemForRelease(releaseEntry)) {
+export async function getStoreItemForRelease(releaseEntry: ReleaseCatalogEntry) {
+  if (!hasNativeStoreItemForRelease(releaseEntry)) {
     return null;
   }
 
-  return createCatalogItemFromRelease(releaseEntry);
+  return createStoreItemFromRelease(releaseEntry);
 }
 
-export async function listCatalogItems(): Promise<CatalogItem[]> {
+export async function listStoreItems(): Promise<StoreItem[]> {
   const [releaseCatalog, distroEntries] = await Promise.all([
     listReleaseCatalog(),
     listDistroEntries(),
   ]);
 
-  const releaseCatalogItems = await Promise.all(
+  const releaseStoreItems = await Promise.all(
     releaseCatalog
-      .filter(hasNativeCatalogItemForRelease)
-      .map((releaseEntry) => createCatalogItemFromRelease(releaseEntry)),
+      .filter(hasNativeStoreItemForRelease)
+      .map((releaseEntry) => createStoreItemFromRelease(releaseEntry)),
   );
 
-  const distroCatalogItems = distroEntries.map((distroEntry) => createCatalogItemFromDistroEntry(distroEntry));
+  const distroStoreItems = distroEntries.map((distroEntry) => createStoreItemFromDistroEntry(distroEntry));
 
-  return [...releaseCatalogItems, ...distroCatalogItems];
+  return [...releaseStoreItems, ...distroStoreItems];
 }
 
-export function mapCatalogItemsBySlug(catalogItems: CatalogItem[]) {
-  return new Map(catalogItems.map((catalogItem) => [catalogItem.slug, catalogItem]));
+export function mapStoreItemsBySlug(storeItems: StoreItem[]) {
+  return new Map(storeItems.map((storeItem) => [storeItem.slug, storeItem]));
 }
 
-export async function getCatalogItemBySlug(slug: string) {
-  return mapCatalogItemsBySlug(await listCatalogItems()).get(slug) || null;
+export async function getStoreItemBySlug(slug: string) {
+  return mapStoreItemsBySlug(await listStoreItems()).get(slug) || null;
 }
 
 export async function createArtistDetailStaticPaths() {

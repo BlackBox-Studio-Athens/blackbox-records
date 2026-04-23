@@ -10,41 +10,40 @@ datasource db {
   url      = "file:./dev.db"
 }
 
-enum CatalogSourceKind {
+enum StoreItemSourceKind {
   release
   distro
 }
 
-enum VariantInventoryStatus {
+enum ItemAvailabilityStatus {
   available
   sold_out
 }
 
-model CatalogItemMapping {
-  id              String            @id @default(cuid())
-  catalogItemSlug String            @unique
-  sourceKind      CatalogSourceKind
-  sourceId        String
-  variantId       String            @unique
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+model StoreItemOption {
+  id            String              @id @default(cuid())
+  storeItemSlug String              @unique
+  sourceKind    StoreItemSourceKind
+  sourceId      String
+  variantId     String              @unique
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
   @@unique([sourceKind, sourceId])
 }
 
 model VariantStripeMapping {
-  id              String   @id @default(cuid())
-  variantId       String   @unique
-  stripeProductId String?
-  stripePriceId   String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(cuid())
+  variantId     String   @unique
+  stripePriceId String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
-model VariantInventorySnapshot {
-  id          String                 @id @default(cuid())
-  variantId   String                 @unique
-  status      VariantInventoryStatus
-  canPurchase Boolean
-  updatedAt   DateTime               @updatedAt
+model ItemAvailability {
+  id        String                 @id @default(cuid())
+  variantId String                 @unique
+  status    ItemAvailabilityStatus
+  canBuy    Boolean
+  updatedAt DateTime               @updatedAt
 }

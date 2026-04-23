@@ -68,28 +68,28 @@ vi.mock('astro:config/client', () => ({
   site: 'https://blackbox-studio-athens.github.io',
 }));
 
-import { listShopCollectionEntries } from './shop-collection';
+import { listStoreCollectionEntries } from './store-collection';
 
-describe('shop collection entries', () => {
-  it('returns a unified collection with primary variant snapshots for native catalog items only', async () => {
-    const collectionEntries = await listShopCollectionEntries();
+describe('store collection entries', () => {
+  it('returns a unified collection with primary availability for native store items only', async () => {
+    const collectionEntries = await listStoreCollectionEntries();
 
-    expect(collectionEntries.map((entry) => [entry.catalogItem.slug, entry.catalogItem.sourceKind])).toEqual([
+    expect(collectionEntries.map((entry) => [entry.storeItem.slug, entry.storeItem.sourceKind])).toEqual([
       ['barren-point', 'release'],
       ['afterglow-tape', 'distro'],
     ]);
 
-    expect(collectionEntries[0]?.primaryVariantSnapshot).toMatchObject({
-      catalogItemSlug: 'barren-point',
+    expect(collectionEntries[0]?.primaryAvailability).toMatchObject({
+      storeItemSlug: 'barren-point',
       price: { display: '€28.00' },
-      canPurchase: true,
+      canBuy: true,
     });
 
-    expect(collectionEntries[1]?.primaryVariantSnapshot).toMatchObject({
-      catalogItemSlug: 'afterglow-tape',
+    expect(collectionEntries[1]?.primaryAvailability).toMatchObject({
+      storeItemSlug: 'afterglow-tape',
       price: { display: '€14.00' },
       availability: { status: 'sold_out', label: 'Sold Out' },
-      canPurchase: false,
+      canBuy: false,
     });
   });
 });
