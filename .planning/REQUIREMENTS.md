@@ -1,7 +1,7 @@
 # Requirements: BlackBox Records Native Commerce Migration
 
 **Defined:** 2026-04-19  
-**Core Value:** Ship a minimal native commerce flow that is operationally safe: the static site owns storefront presentation, the Worker backend owns dynamic commerce behavior, Stripe owns sellable catalog/pricing/payment, server routes own secrets and mutations, and inventory changes happen only after verified webhooks.
+**Core Value:** Ship a minimal native commerce flow that is operationally safe: the static site owns storefront presentation, the Worker backend owns dynamic commerce behavior, Stripe owns sellable items/pricing/payment, server routes own secrets and mutations, and stock changes happen only after verified webhooks.
 
 ## v1 Requirements
 
@@ -14,15 +14,15 @@
 
 ### Commerce Architecture
 
-- [x] **ARCH-01**: Team locks the commerce entity model for `Artist`, `Release`, `DistroEntry`, `CatalogItem`, and `Variant` before implementation of storefront or checkout phases.
+- [x] **ARCH-01**: Team locks the commerce entity model for `Artist`, `Release`, `DistroEntry`, `StoreItem`, and `Variant` before implementation of storefront or checkout phases.
 - [x] **ARCH-02**: Team locks the source-of-truth split so Astro content owns editorial content, Stripe owns sellable commerce data, and D1 owns operational state plus internal mappings.
 - [x] **ARCH-03**: Team defines internal backend interfaces and external Worker API contracts before storefront and checkout implementation begins, using backend-owned code-first OpenAPI with separate public/internal documents and generated clients.
 - [x] **ARCH-04**: Canonical IDs, slugs, mappings, and release-to-shop linking rules are explicit before implementation.
 
-### Catalog & Storefront
+### Storefront
 
-- [x] **CATA-01**: Shopper can browse a native `/store/` catalog inside the existing shell using a unified `CatalogItem` projection derived from releases and distro.
-- [x] **CATA-02**: Shopper can view product detail that combines Astro editorial content with temporary variant state through a stable `VariantSnapshot` contract before live Stripe-backed reads are required.
+- [x] **CATA-01**: Shopper can browse a native `/store/` collection inside the existing shell using a unified `StoreItem` projection derived from releases and distro.
+- [x] **CATA-02**: Shopper can view product detail that combines Astro editorial content with temporary variant state through a stable `ItemAvailability` contract before live Stripe-backed reads are required.
 - [x] **CATA-03**: Release and distro entry points can resolve to canonical native shop product pages instead of raw external shop URLs.
 - [x] **CATA-04**: Temporary variant state remains outside editorial collections and can later swap from fixture-backed reads to Worker-backed D1/Stripe reads without changing the storefront contract.
 
@@ -30,14 +30,14 @@
 
 - [ ] **CHKO-01**: Shopper can start single-item checkout from product detail using a Worker-created Checkout Session with Stripe embedded Checkout (`ui_mode: embedded`), with Checkout Sessions as the only approved v1 payment-creation API.
 - [ ] **CHKO-02**: Shopper can complete or retry checkout through dedicated in-site checkout and return states that retrieve status through Worker-owned APIs without treating the browser as payment authority.
-- [ ] **CHKO-03**: Team can validate Worker-backed checkout session creation, embedded mount, and Worker-owned return-page/session-status retrieval flow in Stripe sandbox and local webhook testing.
+- [ ] **CHKO-03**: Team can validate Worker-backed `StartCheckout`, embedded mount, and Worker-owned return-page/ReadCheckoutState flow in Stripe sandbox and local webhook testing.
 
-### Orders & Inventory
+### Orders & Stock
 
-- [ ] **ORDR-01**: Worker-side code stores D1 order lifecycle state using `pending_payment`, `paid`, `closed_unpaid`, and `needs_review`.
+- [ ] **ORDR-01**: Worker-side code stores D1 order lifecycle state using `pending_payment`, `paid`, `not_paid`, and `needs_review`.
 - [ ] **ORDR-02**: Verified raw-body Stripe webhooks received by the Worker backend are authoritative for paid-order transitions.
-- [ ] **ORDR-03**: Inventory decrements once, and only once, after webhook-confirmed payment success.
-- [ ] **ORDR-04**: Failed, expired, canceled, or unpaid flows leave inventory untouched and remain traceable in D1.
+- [ ] **ORDR-03**: Stock decrements once, and only once, after webhook-confirmed payment success.
+- [ ] **ORDR-04**: Failed, expired, canceled, or unpaid flows leave stock untouched and remain traceable in D1.
 
 ### Operator Access & Stock Operations
 
@@ -45,7 +45,7 @@
 - [ ] **AUTH-02**: Internal stock writes record the authenticated operator identity and write time.
 - [ ] **INV-01**: Team members can update stock through `StockChange` and `StockCount` without direct database access.
 - [ ] **INV-02**: D1 remains the authoritative stock ledger and spreadsheets are temporary capture/reporting tools only, never the source of truth.
-- [ ] **INV-03**: Each `Variant` exposes both total `StockBalance` and a conservative `online_available` quantity so offline sales drift does not automatically oversell online.
+- [ ] **INV-03**: Each `Variant` exposes both total `Stock` and a conservative `OnlineStock` quantity so offline sales drift does not automatically oversell online.
 
 ### Shipping & Fulfillment
 
@@ -56,7 +56,7 @@
 ### Security & Operations
 
 - [x] **SECU-01**: Stripe secrets, webhook secrets, and D1 access remain server-only in the Worker backend and local development.
-- [ ] **SECU-02**: Browser code never writes authoritative inventory or paid-order state.
+- [ ] **SECU-02**: Browser code never writes authoritative stock or paid-order state.
 - [ ] **OPER-01**: Team can validate the full sandbox path from static `/store/` browse through Worker checkout, webhook-confirmed paid order, and D1 state changes.
 - [ ] **OPER-02**: Milestone ends with a human review package that captures sandbox evidence, open production gaps, and explicit handoff to the go-live milestone.
 
@@ -67,7 +67,7 @@
 - **V2GO-01**: Team can switch the live production storefront from the current external handoff to native commerce.
 - **V2GO-02**: Team can run live-mode secrets, production monitoring, and a documented emergency disable path.
 
-### Inventory & Checkout
+### Stock & Checkout
 
 - **V2IN-01**: System reserves stock before payment confirmation to reduce oversell risk on higher-demand launches.
 - **V2IN-02**: System supports a cart or other multi-item checkout flow when the single-item MVP is proven.
@@ -80,7 +80,7 @@
 ### Operator Tooling
 
 - **V2OP-01**: Operator can manage order exceptions through a dedicated admin workflow instead of Stripe Dashboard plus D1 inspection.
-- **V2OP-02**: Operator can see structured fulfillment, refund, and inventory adjustment history in one place.
+- **V2OP-02**: Operator can see structured fulfillment, refund, and stock adjustment history in one place.
 
 ## Out of Scope
 
@@ -88,8 +88,8 @@
 |---------|--------|
 | Production cutover in this milestone | Deferred to the Go-Live milestone so sandbox implementation and launch risk stay separate |
 | Live-mode Stripe keys or real-money processing | This milestone stays in sandbox |
-| Browser-side writes to orders or inventory | Violates the trust boundary for payment and stock state |
-| Inventory reservation in v1 | Explicitly deferred to keep the first release simple and authoritative on payment webhook success |
+| Browser-side writes to orders or stock | Violates the trust boundary for payment and stock state |
+| Stock reservation in v1 | Explicitly deferred to keep the first release simple and authoritative on payment webhook success |
 | Multi-item cart | Single-item `Buy Now` is the approved MVP shape |
 | Non-Greece shipping paths | Greece-only BOX NOW is the approved v1 shipping scope |
 | Automated BOX NOW fulfillment | Manual partner-portal fulfillment is sufficient for projected low volume |

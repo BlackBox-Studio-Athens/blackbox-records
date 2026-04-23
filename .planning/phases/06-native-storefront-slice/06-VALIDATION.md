@@ -4,8 +4,8 @@
 
 - `/store/` is native and `/shop/` redirects to it.
 - `/store/[slug]/` and `/store/[slug]/checkout/` are native static routes.
-- `CatalogItem` projection is explicit and stable.
-- Temporary `VariantSnapshot` contract exists, matches future backend expectations, and supplies a calm fallback state for known catalog items without explicit fixture pricing.
+- `StoreItem` projection is explicit and stable.
+- Temporary `ItemAvailability` contract exists, matches future backend expectations, and supplies a calm fallback state for known store items without explicit fixture pricing.
 - Release pages and distro cards link into canonical store routes instead of raw external shop URLs.
 - No direct Stripe or D1 dependency is introduced in the frontend.
 

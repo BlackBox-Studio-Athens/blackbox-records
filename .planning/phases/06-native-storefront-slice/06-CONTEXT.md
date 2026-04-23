@@ -14,12 +14,12 @@ Phase 6 turns `/store/` into the canonical native storefront inside the static A
 ## Implementation Decisions
 
 ### Storefront model
-- **D-01:** Use one unified `CatalogItem` projection over `releases` and `distro`.
-- **D-02:** Keep the `CatalogItem` projection separate from editorial collections.
+- **D-01:** Use one unified `StoreItem` projection over `releases` and `distro`.
+- **D-02:** Keep the `StoreItem` projection separate from editorial collections.
 - **D-03:** `artists` remain editorial/navigation entities, not sellable entities.
 
 ### Offer state
-- **D-04:** Phase 6 uses a temporary `VariantSnapshot` adapter that matches the future backend contract.
+- **D-04:** Phase 6 uses a temporary `ItemAvailability` adapter that matches the future backend contract.
 - **D-05:** The storefront contract must stay stable so later Worker-backed and D1/Stripe-backed reads do not force route or component rewrites.
 - **D-06:** The static storefront must not depend on direct browser access to Stripe or D1.
 
@@ -41,7 +41,7 @@ Phase 6 turns `/store/` into the canonical native storefront inside the static A
 <specifics>
 ## Specific Ideas
 
-- Build the storefront around a stable `CatalogItem` plus `VariantSnapshot` UI contract.
+- Build the storefront around a stable `StoreItem` plus `ItemAvailability` UI contract.
 - Let the first native shop be visually real and navigable before backend and Stripe integration land.
 - Keep all frontend data shapes backend-agnostic so the Worker can slot in later without redesign.
 - Keep the static storefront visually calm: no merch dashboards, no debug/path callouts, and no fake scarcity language.

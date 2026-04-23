@@ -32,7 +32,7 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - [x] **Phase 6.1: Worker Commerce State Foundation** - Introduce D1 + Prisma in the separate Worker backend behind repository and API boundaries before checkout work
 - [ ] **Phase 6.1.1: Internal Stock Operations And Operator Access** - Add protected staff-only stock tooling and operator auth before checkout depends on live stock
 - [ ] **Phase 7: Worker Checkout And Stripe Sandbox Flow** - Implement Worker-owned checkout APIs and connect the frontend checkout route to Stripe sandbox
-- [ ] **Phase 8: Webhook Orders And Inventory** - Make payment truth and stock mutation Worker-owned, webhook-authoritative, and idempotent
+- [ ] **Phase 8: Webhook Orders And Stock** - Make payment truth and stock mutation Worker-owned, webhook-authoritative, and idempotent
 - [ ] **Phase 9: Greece-Only BOX NOW Shipping** - Add the approved locker-selection gate and thin fulfillment data contract
 - [ ] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow and prepare the go-live handoff package
 
@@ -62,7 +62,7 @@ Plans:
 **Depends on**: Phase 5
 **Requirements**: ARCH-01, ARCH-02, ARCH-03, ARCH-04
 **Success Criteria** (what must be TRUE):
-1. The entity model for `Artist`, `Release`, `DistroEntry`, `CatalogItem`, and `Variant` is explicit and decision-complete.
+1. The entity model for `Artist`, `Release`, `DistroEntry`, `StoreItem`, and `Variant` is explicit and decision-complete.
 2. Astro content, Stripe, and D1 ownership boundaries are locked with no ambiguous overlap.
 3. Canonical IDs, mappings, internal interfaces, external Worker APIs, backend naming conventions, and the backend-owned OpenAPI/generation contract are drafted clearly enough that Phases 6, 6.1, and 7 can implement without re-deciding architecture.
 **Plans**: 4 plans
@@ -79,16 +79,16 @@ Plans:
 **Depends on**: Phase 5.1
 **Requirements**: CATA-01, CATA-02, CATA-03
 **Success Criteria** (what must be TRUE):
-1. Shopper can browse a native `/store/` catalog built from a stable `CatalogItem` projection derived from releases and distro entries.
+1. Shopper can browse a native `/store/` collection built from a stable `StoreItem` projection derived from releases and distro entries.
 2. Shopper can open a native product detail page that reuses editorial assets and summaries while reading temporary variant state through the approved contract.
 3. Release and distro entry points route into canonical native shop product pages instead of raw external shop URLs.
 **Plans**: 7 plans
 **Review gate**: Human review required if implementation drifts from the approved storefront UI contract or from the Phase 5.1 architecture.
 
 Plans:
-- [x] 06-01: Implement the shared `CatalogItem` projection contract in the static frontend
-- [x] 06-02: Implement cross-collection mapping rules from releases and distro into catalog items
-- [x] 06-03: Add the temporary variant-state adapter that matches the future backend API shape
+- [x] 06-01: Implement the shared `StoreItem` projection contract in the static frontend
+- [x] 06-02: Implement cross-collection mapping rules from releases and distro into store items
+- [x] 06-03: Add the temporary ItemAvailability adapter that matches the future backend API shape
 - [x] 06-04: Replace the legacy `/shop/` redirect with the canonical native `/store/` collection route
 - [x] 06-05: Build the product detail route and `Buy Now` handoff shell
 - [x] 06-06: Add release-to-shop navigation using canonical shop links
@@ -101,7 +101,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
 1. Local D1 bindings and Worker-compatible Prisma runtime access exist inside the separate backend.
 2. The migration workflow is defined before checkout implementation depends on backend state.
-3. Backend repositories can evolve from temporary variant snapshots to D1-backed reads without changing the Phase 6 storefront contract, while staying inside the TS-only Hono + layered-boundary standard.
+3. Backend repositories can evolve from temporary ItemAvailability data to D1-backed reads without changing the Phase 6 storefront contract, while staying inside the TS-only Hono + layered-boundary standard.
 **Plans**: 4 plans
 **Review gate**: Human review required before Stripe checkout work consumes the backend state model.
 
@@ -126,7 +126,7 @@ Plans:
 
 Plans:
 - [x] 06.1.1-01: Lock the protected hostname and Cloudflare Access + Google contract for internal operators
-- [ ] 06.1.1-02: Define the internal stock API and D1 ledger contract around `Variant`, `StockBalance`, `StockChange`, and `StockCount`
+- [ ] 06.1.1-02: Define the internal stock API and D1 ledger contract around `Variant`, `Stock`, `StockChange`, and `StockCount`
 - [ ] 06.1.1-03: Design the internal stock operations UI for search, balance, history, and write actions
 - [ ] 06.1.1-04: Lock spreadsheet policy, audit attribution, and the online-vs-offline stock buffer rules
 
@@ -135,32 +135,32 @@ Plans:
 **Depends on**: Phase 6.1.1
 **Requirements**: CHKO-01, CHKO-02, CHKO-03
 **Success Criteria** (what must be TRUE):
-1. The Worker backend exposes the required catalog-item/variant, trusted session-status, and checkout-session endpoints using the approved domain contracts and the locked backend conventions.
-2. The static frontend checkout route mounts embedded Checkout using data and session state obtained through the Worker backend, not directly from Stripe, and return/retry state reads Worker-owned checkout status instead of raw Stripe browser contracts.
+1. The Worker backend exposes the required StoreItem/Variant lookup, ReadCheckoutState, and StartCheckout endpoints using the approved domain contracts and the locked backend conventions.
+2. The static frontend checkout route mounts embedded Checkout using data and session state obtained through the Worker backend, not directly from Stripe, and return/retry state reads Worker-owned CheckoutState instead of raw Stripe browser contracts.
 3. The checkout path is testable locally and in sandbox using Stripe sandbox and webhook tooling.
 **Plans**: 3 plans
 **Review gate**: Human review required on the final backend API contract and shopper-facing retry/return behavior.
 
 Plans:
-- [ ] 07-01: Implement Worker APIs for item lookup, variant lookup, trusted session-status retrieval, and checkout-session creation
+- [ ] 07-01: Implement Worker APIs for item lookup, variant lookup, ReadCheckoutState, and StartCheckout
 - [ ] 07-02: Connect the static frontend checkout route to the Worker APIs, embedded Checkout, and Worker-owned return-state retrieval
 - [ ] 07-03: Validate the checkout loop locally and in sandbox with Stripe sandbox and webhook testing
 
-### Phase 8: Webhook Orders And Inventory
+### Phase 8: Webhook Orders And Stock
 **Goal**: Make payment truth and stock mutation server-owned, verified, and idempotent in the Worker backend.
 **Depends on**: Phase 7
 **Requirements**: ORDR-01, ORDR-02, ORDR-03, ORDR-04, SECU-02
 **Success Criteria** (what must be TRUE):
-1. D1 stores the approved minimal order states, inventory values, and backend mappings needed for authoritative payment handling.
+1. D1 stores the approved minimal order states, stock values, and backend mappings needed for authoritative payment handling.
 2. Verified Stripe webhooks hitting the Worker backend verify the raw body/signature, acknowledge safely, and remain the only path that marks orders paid.
-3. Inventory decrements exactly once after confirmed payment success, unpaid flows leave stock untouched, and trusted session-status retrieval reuses shared backend reconciliation logic without becoming payment authority.
+3. Stock decrements exactly once after confirmed payment success, unpaid flows leave stock untouched, and ReadCheckoutState reuses shared backend reconciliation logic without becoming payment authority.
 **Plans**: 3 plans
-**Review gate**: Human review required on webhook verification, idempotency, and inventory semantics.
+**Review gate**: Human review required on webhook verification, idempotency, and stock semantics.
 
 Plans:
-- [ ] 08-01: Extend the D1 schema and backend data-access layer for minimal order and inventory state
+- [ ] 08-01: Extend the D1 schema and backend data-access layer for minimal order and stock state
 - [ ] 08-02: Implement the verified Worker webhook handler, shared Stripe reconciliation flow, and idempotent paid-order transitions
-- [ ] 08-03: Apply post-payment inventory decrement and manual reconciliation behavior for low-volume operations
+- [ ] 08-03: Apply post-payment stock decrement and manual reconciliation behavior for low-volume operations
 
 ### Phase 9: Greece-Only BOX NOW Shipping
 **Goal**: Add the approved Greece-only locker gate before payment and keep fulfillment low-maintenance.
@@ -213,7 +213,7 @@ Phases execute in numeric order: `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 8 
 | 6.1. Worker Commerce State Foundation | 4/4 | Completed | 2026-04-22 |
 | 6.1.1. Internal Stock Operations And Operator Access | 1/4 | Active | 2026-04-22 |
 | 7. Worker Checkout And Stripe Sandbox Flow | 0/3 | Planned |  |
-| 8. Webhook Orders And Inventory | 0/3 | Planned |  |
+| 8. Webhook Orders And Stock | 0/3 | Planned |  |
 | 9. Greece-Only BOX NOW Shipping | 0/3 | Planned |  |
 | 10. Sandbox Verification And Release Gate | 0/2 | Planned |  |
 

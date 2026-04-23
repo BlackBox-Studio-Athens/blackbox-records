@@ -14,7 +14,7 @@ This milestone should not chase a generic full-stack rebuild. The practical stac
 - Cloudflare Workers bindings for secrets and D1
 - Stripe server SDK for Checkout Session creation and webhook verification
 - Stripe.js plus the embedded Checkout client integration on the dedicated checkout route
-- D1 access layer for minimal order and inventory state
+- D1 access layer for minimal order and stock state
 
 ## Brownfield Baseline
 
@@ -30,9 +30,9 @@ This milestone should not chase a generic full-stack rebuild. The practical stac
 | Astro 5 + existing app shell | Storefront shell and routed UI | Preserves working brownfield behavior and approved UI contracts | HIGH |
 | `@astrojs/cloudflare` | Astro adapter for Worker runtime | Astro supports adding an adapter and opting specific pages/endpoints out with `prerender = false` | HIGH |
 | Cloudflare Workers Free | Sandbox server runtime | Low-ops and low-cost fit for low request volume, with server routes and secrets support | HIGH |
-| Cloudflare D1 | Inventory and order lifecycle store | Narrow SQL state store colocated with Workers and sufficient free-tier headroom for low volume | HIGH |
+| Cloudflare D1 | Stock and order lifecycle store | Narrow SQL state store colocated with Workers and sufficient free-tier headroom for low volume | HIGH |
 | Stripe Checkout Sessions + embedded Checkout | Payment surface | Lowest-maintenance PCI posture and current docs use `ui_mode: embedded` | HIGH |
-| Stripe Products / Prices | Catalog and pricing authority | Keeps sellable catalog administration in Stripe instead of duplicating it in Astro content | HIGH |
+| Stripe Products / Prices | Store item and pricing authority | Keeps sellable item administration in Stripe instead of duplicating it in Astro content | HIGH |
 | Stripe CLI + Stripe sandboxes | Local and remote sandbox validation | Official testing path for webhook forwarding and isolated Stripe test data | HIGH |
 | BOX NOW locker selection + manual partner portal fulfillment | Greece-only shipping path | Meets the approved MVP without overbuilding automation | MEDIUM |
 
@@ -61,16 +61,16 @@ That means the repo should stop carrying `embedded_page` as if it were the value
 - Worker bindings for D1 and secrets
 - Stripe server SDK
 - Stripe.js and the embedded Checkout client integration
-- Thin D1 data-access helpers for orders and inventory
+- Thin D1 data-access helpers for orders and stock
 - Testing scripts and verification notes for Worker + Stripe sandbox flows
 
 ## What Not To Add
 
 - A custom card form or custom payment element flow
-- Browser-side writes to D1-backed inventory or paid-order state
+- Browser-side writes to D1-backed stock or paid-order state
 - Cart or multi-item checkout in this milestone
 - Reservation logic in this milestone
-- A second sellable catalog admin surface in Astro/Decap
+- A second sellable item admin surface in Astro/Decap
 - Automated BOX NOW fulfillment in this milestone
 
 ## Sources

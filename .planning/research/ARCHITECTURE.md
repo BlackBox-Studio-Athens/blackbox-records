@@ -7,7 +7,7 @@
 
 ## Recommended Architecture
 
-The right architecture for this milestone is a narrow extension of the current Astro storefront, not a second application. The existing Astro pages, app shell, and content collections remain the canonical browsing surface. Cloudflare Workers adds the server boundary that GitHub Pages could not provide, and D1 adds the minimum SQL state required for inventory and orders.
+The right architecture for this milestone is a narrow extension of the current Astro storefront, not a second application. The existing Astro pages, app shell, and content collections remain the canonical browsing surface. Cloudflare Workers adds the server boundary that GitHub Pages could not provide, and D1 adds the minimum SQL state required for stock and orders.
 
 ## Brownfield Integration Points
 
@@ -60,16 +60,16 @@ Current Stripe integration implications:
 - provide `return_url` when redirects are allowed
 - consider `redirect_on_completion: if_required` to keep card success in-page while still supporting redirect-based methods if enabled
 
-### 4. D1 Order And Inventory Layer
+### 4. D1 Order And Stock Layer
 
 Purpose:
 - store only the operational state BlackBox needs to fulfill paid orders and keep stock correct
 
 Responsibilities:
-- represent orders with the approved minimal states: `pending_payment`, `paid`, `closed_unpaid`, `needs_review`
-- store inventory counts
+- represent orders with the approved minimal states: `pending_payment`, `paid`, `not_paid`, `needs_review`
+- store stock counts
 - attach the thinnest approved BOX NOW metadata for paid Greek orders
-- enforce idempotent updates so paid inventory decrement happens once
+- enforce idempotent updates so paid stock decrement happens once
 
 What not to do:
 - do not let the browser write this data
@@ -102,7 +102,7 @@ What not to do:
 7. Embedded Checkout mounts on the dedicated in-site checkout route.
 8. Shopper completes payment. Return UX may render based on session retrieval, but it is not authoritative.
 9. Stripe sends webhook events to the Worker endpoint.
-10. Worker verifies the webhook signature, retrieves the Checkout Session details it needs, applies idempotent D1 state changes, and decrements inventory only after confirmed payment success.
+10. Worker verifies the webhook signature, retrieves the Checkout Session details it needs, applies idempotent D1 state changes, and decrements stock only after confirmed payment success.
 11. Operator uses Stripe Dashboard plus D1 inspection for manual reconciliation and BOX NOW partner-portal fulfillment.
 
 ## Build Order Recommendation
@@ -110,7 +110,7 @@ What not to do:
 1. Runtime and secret plumbing
 2. Native store entry and catalog projection
 3. Embedded checkout session creation and mount
-4. Webhook-backed order and inventory state
+4. Webhook-backed order and stock state
 5. Greece-only locker step
 6. End-to-end sandbox verification
 

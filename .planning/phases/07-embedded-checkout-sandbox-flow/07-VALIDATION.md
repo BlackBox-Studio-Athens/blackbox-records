@@ -2,7 +2,7 @@
 
 ## Required Checks
 
-- Worker-owned catalog-item/variant and checkout-session APIs exist.
+- Worker-owned StoreItem/Variant lookup and StartCheckout APIs exist.
 - Worker-owned checkout-status retrieval exists for return/retry states.
 - Static frontend checkout route uses backend APIs, not Stripe secrets.
 - Embedded Checkout mounts and returns cleanly in sandbox.

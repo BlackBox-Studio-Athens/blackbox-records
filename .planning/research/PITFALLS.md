@@ -18,13 +18,13 @@
 
 **Prevention**
 - treat Stripe’s current docs as authoritative
-- keep the request contract centralized in the checkout-session server route
+- keep the request contract centralized in the `StartCheckout` server route
 
 ### 2. Letting the browser become authoritative
 
 **Risk**
 - using return pages as payment truth
-- letting browser code write D1 inventory or order state
+- letting browser code write D1 stock or order state
 
 **Why it matters**
 - it breaks the trust boundary that the whole migration is built around
@@ -71,7 +71,7 @@
 
 **Prevention**
 - store order state in D1 with an idempotent transition strategy
-- make inventory decrement conditional on first successful paid transition
+- make stock decrement conditional on first successful paid transition
 - route oversell or mismatch cases to `needs_review`
 
 ### 6. Expanding shipping scope too early

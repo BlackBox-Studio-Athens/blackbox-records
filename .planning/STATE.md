@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
 stopped_at: Phase 6.1.1 active; next implementation focus is 06.1.1-02 internal stock API and ledger contract
-last_updated: "2026-04-22T16:35:00+03:00"
-last_activity: 2026-04-22 -- Locked the protected operator hostname and Access-derived identity contract for internal stock operations
+last_updated: "2026-04-23T12:30:00+03:00"
+last_activity: 2026-04-23 -- Simplified commerce ubiquitous language across store, D1, Stripe mapping, and active planning docs
 progress:
   total_phases: 9
   completed_phases: 4
@@ -20,7 +20,7 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-04-21)
 
-**Core value:** Ship a minimal native commerce flow that is operationally safe: the static site owns storefront presentation, the Worker backend owns dynamic commerce behavior, Stripe owns sellable catalog/pricing/payment, server routes own secrets and mutations, and inventory changes happen only after verified webhooks.
+**Core value:** Ship a minimal native commerce flow that is operationally safe: the static site owns storefront presentation, the Worker backend owns dynamic commerce behavior, Stripe owns sellable items/pricing/payment, server routes own secrets and mutations, and stock changes happen only after verified webhooks.
 **Current focus:** Phase 6.1.1: Internal Stock Operations And Operator Access
 
 ## Current Position
@@ -32,11 +32,11 @@ Current Plan: 2
 Total Plans in Phase: 4
 Status: Active
 Progress: 61%
-Last Activity: 2026-04-22
-Last Activity Description: Locked the protected operator hostname and Access-derived identity contract for internal stock operations
+Last Activity: 2026-04-23
+Last Activity Description: Simplified commerce ubiquitous language across store, D1, Stripe mapping, and active planning docs
 Paused At: Phase 6.1.1 active; next implementation focus is 06.1.1-02 internal stock API and ledger contract
 
-Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real backend-local D1 binding contract named `COMMERCE_DB`, Worker-compatible Prisma runtime access, committed SQL migration history, local seed SQL for current storefront cases, a first backend application reader that resolves offer availability by `catalogItemSlug`, and a typed operator-identity extraction seam for the separate Access-protected stock hostname. Phase 6.1.1 remains the active gate before Phase 7 checkout work starts.
+Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real backend-local D1 binding contract named `COMMERCE_DB`, Worker-compatible Prisma runtime access, committed SQL migration history, local seed SQL for current storefront cases, a first backend application reader that resolves offer availability by `storeItemSlug`, and a typed operator-identity extraction seam for the separate Access-protected stock hostname. Phase 6.1.1 remains the active gate before Phase 7 checkout work starts.
 
 ## Performance Metrics
 
@@ -60,7 +60,7 @@ Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real b
 **Recent Trend:**
 
 - Last 5 plans: 06.1-01, 06.1-02, 06.1-03, 06.1-04, 06.1.1-01
-- Trend: Backend commerce-state foundation is complete and Phase 6.1.1 has now locked the protected operator auth boundary needed before internal stock APIs land
+- Trend: Backend commerce-state foundation is complete, Phase 6.1.1 has locked the protected operator auth boundary, and the active commerce language now uses StoreItem, ItemAvailability, StoreOffer, Stock, OnlineStock, StartCheckout, and ReadCheckoutState.
 
 ## Accumulated Context
 
@@ -72,8 +72,9 @@ Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real b
 - The backend now exposes a typed Worker runtime binding contract with `COMMERCE_DB` as the first D1 binding.
 - The backend now uses Prisma + `@prisma/adapter-d1` behind committed repository seams, while HTTP routes remain persistence-agnostic.
 - The backend migration workflow is now Prisma-schema-driven but Wrangler-applied, with committed SQL under `apps/backend/prisma/migrations/`.
-- The backend now has repo-owned local seed SQL and a first application-layer catalog offer reader on top of the D1 repositories.
+- The backend now has repo-owned local seed SQL and a first application-layer StoreOffer reader on top of the D1 repositories.
 - The backend now has a typed Access-header extraction seam for `actor_email` on the future protected operator hostname.
+- Commerce naming was simplified to DDD-style label language: `StoreItem`, `ItemAvailability`, `StoreItemOption`, `StoreOffer`, `Stock`, `OnlineStock`, `StartCheckout`, `ReadCheckoutState`, and `not_paid`.
 
 ## Decisions Made
 
@@ -81,7 +82,7 @@ Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real b
 |-------|----------|--------|
 | v1.0 | Production remains GitHub Pages + Fourthwall until the future go-live milestone. | Active |
 | v1.0 | The first native sellable slice is `/store/` collection -> product detail -> dedicated checkout, with single-item `Buy Now` and no cart. | Active |
-| v1.0 | v1 order state stays minimal: `pending_payment`, `paid`, `closed_unpaid`, and `needs_review`, with Checkout-session webhooks as the authoritative paid/unpaid signals. | Active |
+| v1.0 | v1 order state stays minimal: `pending_payment`, `paid`, `not_paid`, and `needs_review`, with Checkout webhooks as the authoritative paid/unpaid signals. | Active |
 | v1.0 | MVP shipping is Greece only, BOX NOW locker selection happens before payment, and fulfillment stays manual through the partner portal. | Active |
 | v1.1 | The Astro site remains a static frontend on GitHub Pages during this milestone. | Active |
 | v1.1 | A separate Cloudflare Worker backend is the dynamic commerce surface for Stripe, webhooks, D1, and later BOX NOW backend work. | Active |
@@ -91,18 +92,18 @@ Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real b
 | v1.1 | The backend owns HTTP contracts through code-first OpenAPI, emitted as separate public/internal documents, and the frontend consumes generated clients from `@blackbox/api-client`. | Active |
 | v1.1 | Backend modules must stay DDD-layered, use ubiquitous-language names, and ship with mandatory tests. | Active |
 | v1.1 | Astro content owns editorial content only, Stripe owns sellable commerce data, and D1 owns operational state plus internal mappings. | Active |
-| v1.1 | The primary sellable unit is a `Variant` attached to a storefront-facing `CatalogItem`. | Active |
+| v1.1 | The primary sellable unit is a `Variant` attached to a storefront-facing `StoreItem`. | Active |
 | v1.1 | Phase 5.1 is inserted as a hard architecture gate before further storefront or checkout work. | Active |
 | v1.1 | `/store/` is the canonical native storefront route; `/shop/` is compatibility-only. | Active |
-| v1.1 | Phase 6 storefront UI composes stable `CatalogItem` plus `VariantSnapshot` contracts and keeps temporary offer state out of editorial content. | Active |
+| v1.1 | Phase 6 storefront UI composes stable `StoreItem` plus `ItemAvailability` contracts and keeps temporary offer state out of editorial content. | Active |
 | v1.1 | Internal stock operations use Google-backed Cloudflare Access on a separate protected backend hostname; Decap auth is not reused for runtime stock writes. | Active |
-| v1.1 | D1 is the authoritative stock ledger using `StockBalance`, `StockChange`, and `StockCount`; spreadsheets are temporary capture/reporting only. | Active |
-| v1.1 | Each `Variant` exposes a conservative `online_available` quantity separate from total stock balance before public checkout depends on live stock. | Active |
+| v1.1 | D1 is the authoritative stock ledger using `Stock`, `StockChange`, and `StockCount`; spreadsheets are temporary capture/reporting only. | Active |
+| v1.1 | Each `Variant` exposes a conservative `OnlineStock` quantity separate from total stock balance before public checkout depends on live stock. | Active |
 
 ### Pending Todos
 
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
-- Preserve the current `CatalogItem` and `VariantSnapshot` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
+- Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
 - Execute the planned Phase 06.1.1-02 internal stock API and ledger contract on top of the locked protected-hostname/auth boundary.
 - Continue the planned Phase 6.1.1 stock-ops/auth work before Phase 7 starts.
 

@@ -4,7 +4,7 @@
 
 - Worker backend owns Checkout Session creation
 - static frontend mounts embedded Checkout using Worker-provided session data
-- static frontend return/retry states retrieve checkout status through Worker-owned APIs
+- static frontend return/retry states retrieve CheckoutState through Worker-owned APIs
 - Stripe sandbox and webhook tooling validate the checkout loop
 
 ## Architecture Patterns
@@ -31,8 +31,8 @@
 ## Code Examples
 
 - backend item/variant lookup endpoint
-- backend trusted session-status retrieval endpoint
-- backend checkout-session creation endpoint
+- backend ReadCheckoutState endpoint
+- backend StartCheckout endpoint
 - frontend checkout page fetching session state from backend
 
 ---

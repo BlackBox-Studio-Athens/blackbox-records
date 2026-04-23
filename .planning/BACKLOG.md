@@ -28,10 +28,10 @@
 - Linked milestone: v2+
 - Acceptance criteria:
   - Define cart semantics that fit the existing shell and Stripe flow
-  - Confirm inventory implications for multi-item checkout
+  - Confirm stock implications for multi-item checkout
   - Keep single-item `Buy Now` behavior stable while designing the expansion
 
-### BL-14: Inventory reservation design
+### BL-14: Stock reservation design
 - Linked milestone: v2+
 - Acceptance criteria:
   - Define reservation lifecycle and expiry behavior

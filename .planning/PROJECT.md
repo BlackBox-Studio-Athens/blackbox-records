@@ -11,7 +11,7 @@ The live production checkout remains unchanged until a later go-live milestone.
 
 ## Core Value
 
-Ship a minimal native commerce flow that is operationally safe: the static site owns storefront presentation, the Worker backend owns dynamic commerce behavior, Stripe owns sellable catalog/pricing/payment, server routes own secrets and mutations, and inventory changes happen only after verified webhooks.
+Ship a minimal native commerce flow that is operationally safe: the static site owns storefront presentation, the Worker backend owns dynamic commerce behavior, Stripe owns sellable items/pricing/payment, server routes own secrets and mutations, and stock changes happen only after verified webhooks.
 
 ## Current Milestone: v1.1 Stripe Sandbox Integration
 
@@ -22,13 +22,13 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - explicit frontend-to-Worker environment and deployment contract
 - dedicated architecture gate for entity boundaries, IDs, mappings, and API contracts
 - backend-owned code-first OpenAPI documents with a generated `@blackbox/api-client` package for frontend consumption
-- native `/store/` collection, product detail, and checkout shell built from a unified `CatalogItem` projection across releases and distro
+- native `/store/` collection, product detail, and checkout shell built from a unified `StoreItem` projection across releases and distro
 - Worker-backed D1 + Prisma foundation before Stripe checkout integration
 - protected internal stock operations surface on a separate backend hostname for label staff
-- D1-led stock ledger around `Variant`, `StockBalance`, `StockChange`, and `StockCount`, with a conservative `online_available` quantity for the public storefront
+- D1-led stock ledger around `Variant`, `Stock`, `StockChange`, and `StockCount`, with a conservative `OnlineStock` quantity for the public storefront
 - Greece-only BOX NOW locker selection before payment
 - Stripe embedded Checkout in sandbox with Worker-created Checkout Sessions
-- D1-backed order and inventory state driven by verified Stripe webhooks hitting the Worker backend
+- D1-backed order and stock state driven by verified Stripe webhooks hitting the Worker backend
 - sandbox validation package and human review handoff for the future go-live milestone
 
 ## Requirements
@@ -49,8 +49,8 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - [ ] Introduce Worker-side D1 + Prisma before Stripe checkout integration
 - [ ] Protect internal stock operations with Cloudflare Access + Google on a separate backend hostname
 - [ ] Give label staff a thin internal stock tool for `StockChange`, `StockCount`, and recent stock history
-- [ ] Use Stripe Products and Prices as the canonical sellable catalog and pricing source once checkout integration begins
-- [ ] Use D1 only for inventory, order lifecycle, and internal mappings, with server-owned writes
+- [ ] Use Stripe Products and Prices as the canonical sellable item and pricing source once checkout integration begins
+- [ ] Use D1 only for stock, order lifecycle, and internal mappings, with server-owned writes
 - [ ] Treat spreadsheets as temporary capture/reporting only, never as an authoritative stock system
 - [ ] Enforce Greece-only BOX NOW locker selection before payment in v1
 - [ ] Finish the milestone with sandbox validation evidence and a clear handoff to the go-live milestone
@@ -59,8 +59,8 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 
 - Production cutover in this milestone
 - Live-mode Stripe keys or real-money processing
-- Inventory reservation before payment confirmation
-- Browser-side writes to inventory or authoritative order state
+- Stock reservation before payment confirmation
+- Browser-side writes to stock or authoritative order state
 - A full operator dashboard, ERP, or warehouse management layer
 - Multi-item cart or multi-carrier shipping
 
@@ -70,10 +70,10 @@ The current repository is an Astro storefront with a React-managed app shell, As
 
 The corrected milestone architecture is now dual deploy. The Astro site remains the static frontend and content owner. A separate Cloudflare Worker backend becomes the dynamic commerce surface for:
 
-- sellable catalog lookups when needed
+- sellable item lookups when needed
 - checkout session creation
 - Stripe webhook handling
-- D1-backed inventory and order lifecycle state
+- D1-backed stock and order lifecycle state
 - internal stock operations and operator-facing write APIs
 - later BOX NOW backend work
 
@@ -84,11 +84,11 @@ This means the Astro site is no longer being treated as “moving to Workers” 
 - D1 owns operational state plus internal mappings
 - the Worker is the backend/BFF between the browser and Stripe/D1
 
-The stock model is now also explicit enough for offline retail reality. A storefront-facing `CatalogItem` points to one or more sellable `Variant` records. D1 tracks `StockBalance` plus a conservative `online_available` quantity for each `Variant`, and staff update stock through `StockChange` and `StockCount` workflows behind the Worker. Spreadsheets can remain temporary event-capture or reporting tools, but never become the authoritative ledger again.
+The stock model is now also explicit enough for offline retail reality. A storefront-facing `StoreItem` points to one or more sellable `Variant` records. D1 tracks `Stock` plus a conservative `OnlineStock` quantity for each `Variant`, and staff update stock through `StockChange` and `StockCount` workflows behind the Worker. Spreadsheets can remain temporary event-capture or reporting tools, but never become the authoritative ledger again.
 
 The new inserted Phase 5.1 is the architecture gate for this split. It must lock the domain model before implementation drifts into ad hoc duplication across content, Stripe, and D1.
 
-Current repo facts shape that decision. `releases` already reference `artists`, while `distro` carries editorial card content and Fourthwall URLs but no sellable identity or inventory model. That makes a projection layer necessary. The projection should not stuff temporary commerce fields directly into the editorial collections. Instead, it should produce a stable `CatalogItem` view and link that to sellable `Variant` identities through Worker-side mappings.
+Current repo facts shape that decision. `releases` already reference `artists`, while `distro` carries editorial card content and Fourthwall URLs but no sellable identity or stock model. That makes a projection layer necessary. The projection should not stuff temporary commerce fields directly into the editorial collections. Instead, it should produce a stable `StoreItem` view and link that to sellable `Variant` identities through Worker-side mappings.
 
 That frontend projection layer is now live. `/store/` is the canonical native storefront route, `/shop/` is a compatibility redirect, release pages route into canonical store PDPs when mapped, distro cards route into the same PDP system, and the static checkout shell is in place for the later Worker-backed embedded Checkout flow.
 
@@ -100,7 +100,7 @@ That frontend projection layer is now live. `/store/` is the canonical native st
 - **Production safety**: Live GitHub Pages + Fourthwall behavior stays untouched during sandbox implementation
 - **Security**: Stripe secrets, webhook secrets, and D1 access must remain server-only in the Worker backend and local development
 - **Payment authority**: Webhooks are authoritative for paid state
-- **Inventory semantics**: Inventory decrements only after webhook-confirmed payment success, with no v1 reservation logic
+- **Stock semantics**: Stock decrements only after webhook-confirmed payment success, with no v1 reservation logic
 - **Shipping scope**: v1 shipping is Greece-only through BOX NOW lockers
 - **Operations**: Expected order volume is low, so recurring cost and maintenance burden must stay minimal
 
@@ -116,14 +116,14 @@ That frontend projection layer is now live. `/store/` is the canonical native st
 | Use Hono only as the Worker HTTP interface layer | Standardizes routing and JSON/error handling without pushing framework concerns into domain logic | ✓ Good |
 | Use backend-owned code-first OpenAPI with separate public/internal documents and a generated client package | Keeps the HTTP boundary explicit, avoids frontend imports of backend runtime code, and makes contract drift reviewable | ✓ Good |
 | Keep backend code DDD-layered with business names and mandatory tests | Stops backend growth from turning into route-level business logic and locks clean coding expectations early | ✓ Good |
-| Use a `Variant` layer beneath storefront-facing catalog items | Separates editorial entities from sellable units, stock, and Stripe mappings | ✓ Good |
+| Use a `Variant` layer beneath storefront-facing store items | Separates editorial entities from sellable units, stock, and Stripe mappings | ✓ Good |
 | Astro content owns editorial content only | Prevents operational and payment concerns from polluting content collections | ✓ Good |
 | Stripe owns sellable commerce data needed for checkout | Avoids duplicate product/price administration in the app layer | ✓ Good |
-| D1 owns operational state plus internal mappings | Keeps inventory, order lifecycle, and Stripe mappings in one backend-owned store | ✓ Good |
+| D1 owns operational state plus internal mappings | Keeps stock, order lifecycle, and Stripe mappings in one backend-owned store | ✓ Good |
 | Protect internal stock operations with Cloudflare Access + Google on a separate backend hostname | Gives label staff shared access without turning shopper flows into a login product | ✓ Good |
-| Use `StockBalance`, `StockChange`, and `StockCount` as the stock ledger language | Keeps the operator model understandable and matches offline reconciliation needs | ✓ Good |
+| Use `Stock`, `StockChange`, and `StockCount` as the stock ledger language | Keeps the operator model understandable and matches offline reconciliation needs | ✓ Good |
 | Keep spreadsheets as temporary capture/reporting only | Avoids dual sources of truth between D1 and ad hoc spreadsheets | ✓ Good |
-| Track a conservative `online_available` quantity alongside total stock balance | Reduces oversell risk when offline sales are reconciled later | ✓ Good |
+| Track a conservative `OnlineStock` quantity alongside total stock balance | Reduces oversell risk when offline sales are reconciled later | ✓ Good |
 | Add Phase 5.1 as a hard architecture gate before storefront or checkout work continues | Prevents rework and model drift across content, backend state, and Stripe | ✓ Good |
 | Use Prisma for runtime database access while staying on D1 | Improves readability and maintainability without forcing an immediate database change | ✓ Good |
 | Use Prisma schema plus `prisma migrate diff`, with Wrangler D1 migrations applying SQL | Matches Prisma's current D1 guidance without pretending Prisma-only migrations are first-class on D1 | ✓ Good |
@@ -147,5 +147,5 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-21 after the storefront review, simplification pass, and Phase 6 alignment*
+*Last updated: 2026-04-23 after the commerce ubiquitous-language refactor and active GSD alignment*
 

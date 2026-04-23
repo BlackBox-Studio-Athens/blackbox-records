@@ -16,7 +16,7 @@
 - [ ] Stripe secret keys are server-only
 - [ ] Stripe webhook secret handling is documented
 - [ ] D1 access remains server-only
-- [ ] Browser cannot write authoritative order or inventory state
+- [ ] Browser cannot write authoritative order or stock state
 
 ## Stripe
 
@@ -27,7 +27,7 @@
 
 ## D1
 
-- [ ] Inventory semantics are approved
+- [ ] Stock semantics are approved
 - [ ] Order lifecycle states are approved
 - [ ] Paid-order reconciliation path is documented
 - [ ] Failure cases do not decrement stock

@@ -14,7 +14,7 @@
 | Single-item embedded Checkout | Proves in-site payment without building a cart | Medium | Server-created Checkout Session, Stripe.js |
 | Server-created Checkout Sessions | Prevents secret leakage and untrusted checkout mutations | Medium | Worker runtime, Stripe secret key |
 | Webhook-authoritative payment success | Prevents false positives from relying on return pages | Medium | Stripe webhook endpoint, signature verification |
-| Post-payment inventory decrement | Matches the approved stock semantics | Medium | D1 order/inventory model, idempotency |
+| Post-payment stock decrement | Matches the approved stock semantics | Medium | D1 order/stock model, idempotency |
 | Greece-only BOX NOW locker step | Required v1 shipping path | Medium | Checkout route UX, locker capture |
 | Sandbox verification path | The milestone ends only when the end-to-end flow is proven in sandbox | Medium | Stripe sandbox, Stripe CLI, Worker deployment |
 
@@ -25,7 +25,7 @@
 | Preserve the current Astro content/app-shell architecture | Avoids rewriting parts of the site that already work |
 | Keep most routes prerendered | Limits runtime cost and keeps Worker work narrow |
 | Use Stripe as catalog/pricing authority | Avoids maintaining a second product admin surface |
-| Keep D1 narrow | Stores only inventory and order lifecycle state |
+| Keep D1 narrow | Stores only stock and order lifecycle state |
 | Keep BOX NOW manual | Matches low order volume instead of overbuilding shipping ops |
 
 ## Anti-Features
@@ -33,9 +33,9 @@
 | Feature to avoid | Why to avoid it now |
 |------------------|---------------------|
 | Production cutover | This milestone is sandbox-only and should not silently turn into launch work |
-| Inventory reservation logic | Explicit non-goal and unnecessary at projected volume |
+| Stock reservation logic | Explicit non-goal and unnecessary at projected volume |
 | Client-trusted payment confirmation | Unsafe because return pages are not authoritative |
-| Browser-side order or inventory writes | Breaks the trust boundary |
+| Browser-side order or stock writes | Breaks the trust boundary |
 | Cart / multi-item checkout | Expands scope before the single-item flow is proven |
 | Non-Greece shipping paths | Conflicts with the approved Greece-only MVP |
 | Automated BOX NOW shipment creation | Adds maintenance without current business need |

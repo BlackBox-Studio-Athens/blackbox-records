@@ -28,16 +28,16 @@ Phase 7 implements Worker-owned checkout APIs and connects the static frontend c
 - **D-04:** Return and retry pages remain non-authoritative for payment truth.
 - **D-05:** Webhook authority remains deferred to Phase 8, but Phase 7 must already be shaped for that backend contract.
 - **D-06:** Checkout Sessions are the only approved v1 shopper payment-creation API; raw PaymentIntents or Payment Element flows stay out of scope unless a later phase explicitly re-approves them.
-- **D-07:** Return and retry pages retrieve checkout status through a Worker-owned session-status endpoint; raw Stripe query params and raw Stripe IDs are not the durable frontend contract.
-- **D-08:** Phase 7 APIs must already be shaped so Phase 8 can reuse one backend-owned reconciliation use case across trusted session-status retrieval and verified webhook handling.
+- **D-07:** Return and retry pages retrieve CheckoutState through a Worker-owned checkout-state endpoint; raw Stripe query params and raw Stripe IDs are not the durable frontend contract.
+- **D-08:** Phase 7 APIs must already be shaped so Phase 8 can reuse one backend-owned reconciliation use case across ReadCheckoutState and verified webhook handling.
 
 </decisions>
 
 <specifics>
 ## Specific Ideas
 
-- Separate item lookup, variant lookup, trusted session-status retrieval, and checkout-session creation concerns in the backend API.
-- Keep the frontend coupled to catalog slugs and `VariantSnapshot`, not to Stripe IDs.
+- Separate item lookup, variant lookup, ReadCheckoutState, and StartCheckout concerns in the backend API.
+- Keep the frontend coupled to store item slugs and `ItemAvailability`, not to Stripe IDs.
 - Treat sandbox validation as an API-plus-frontend integration problem, not a frontend-only task.
 
 </specifics>

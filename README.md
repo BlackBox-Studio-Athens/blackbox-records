@@ -144,7 +144,7 @@ Current Worker scope:
 - the generated Prisma client is committed under `apps/backend/src/generated/prisma/`
 - the D1 migration workflow baseline now exists under `apps/backend/prisma/migrations/`
 - backend-local seed data now exists under `apps/backend/prisma/seeds/`
-- a backend-only catalog-offer lookup reader can now resolve mapped availability from D1
+- a backend-only StoreOffer reader can now resolve mapped availability from D1
 - no Stripe routes, D1-backed read paths, or frontend D1 wiring yet
 - no production deployment path yet
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`

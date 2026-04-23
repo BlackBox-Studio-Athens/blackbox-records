@@ -31,7 +31,7 @@ Implementation guidance:
 - Cloudflare Workers + D1 is the lowest-cost and lowest-ops option that still supports server routes, secrets, and webhooks.
 - The Worker model avoids introducing a second API service just to add commerce.
 - Astro’s current on-demand rendering model fits the repo’s brownfield shape better than a broader frontend rewrite.
-- D1 is sufficient for the approved low-volume order and inventory semantics.
+- D1 is sufficient for the approved low-volume order and stock semantics.
 
 ## Consequences
 

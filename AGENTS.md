@@ -86,7 +86,7 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - `apps/backend/prisma/schema.prisma` uses a placeholder local SQLite URL for Prisma CLI generation only; Worker runtime queries still go through `env.COMMERCE_DB`.
 - D1 migrations live under `apps/backend/prisma/migrations/`, and Wrangler applies them through the `COMMERCE_DB` binding.
 - Backend-local seed SQL lives under `apps/backend/prisma/seeds/`.
-- The first backend application read seam now lives under `apps/backend/src/application/commerce/readers/` and resolves offer availability by `catalogItemSlug` without mirroring the frontend `VariantSnapshot` type.
+- The first backend application read seam now lives under `apps/backend/src/application/commerce/readers/` and resolves offer availability by `storeItemSlug` without mirroring the frontend `ItemAvailability` type.
 - Internal stock operations are now contractually separated onto a protected operator hostname, referred to in repo docs as `ops.<managed-zone>` until the real custom domain is provisioned.
 - Protected operator routes belong under:
   - `/stock/`

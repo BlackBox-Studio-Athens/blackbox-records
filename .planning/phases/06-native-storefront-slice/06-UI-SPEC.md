@@ -77,5 +77,5 @@ created: 2026-04-20
 
 - No live Stripe embed in this phase
 - No order confirmation language
-- No browser-authoritative inventory states
+- No browser-authoritative stock states
 - No duplicate media library for shop-only images
