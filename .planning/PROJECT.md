@@ -22,7 +22,7 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - explicit frontend-to-Worker environment and deployment contract
 - dedicated architecture gate for entity boundaries, IDs, mappings, and API contracts
 - backend-owned code-first OpenAPI documents with a generated `@blackbox/api-client` package for frontend consumption
-- native `/store/` collection, product detail, and checkout shell built from a unified `StoreItem` projection across releases and distro
+- native `/store/` collection, store item detail, and checkout shell built from a unified `StoreItem` projection across releases and distro
 - Worker-backed D1 + Prisma foundation before Stripe checkout integration
 - protected internal stock operations surface on a separate backend hostname for label staff
 - D1-led stock ledger around `Variant`, `Stock`, `StockChange`, and `StockCount`, with a conservative `OnlineStock` quantity for the public storefront
@@ -42,7 +42,7 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - ✓ Pre-sandbox commerce runtime, trust boundary, UI, and shipping decisions were captured and archived — v1.0
 - ✓ Separate Cloudflare Worker backend foundation, sandbox deployment path, and server-only secret model are in place — Phase 5
 - ✓ Commerce entity model, source-of-truth split, IDs, mappings, and backend-owned OpenAPI contract are frozen — Phase 5.1
-- ✓ Native `/store/` browse, product detail, checkout shell, and canonical release/distro-to-store linking are implemented in the static frontend — Phase 6
+- ✓ Native `/store/` browse, store item detail, checkout shell, and canonical release/distro-to-store linking are implemented in the static frontend — Phase 6
 
 ### Active
 

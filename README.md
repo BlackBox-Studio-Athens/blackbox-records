@@ -145,7 +145,7 @@ Current Worker scope:
 - the D1 migration workflow baseline now exists under `apps/backend/prisma/migrations/`
 - backend-local seed data now exists under `apps/backend/prisma/seeds/`
 - a backend-only StoreOffer reader can now resolve mapped availability from D1
-- no Stripe routes, D1-backed read paths, or frontend D1 wiring yet
+- no Stripe routes, public D1-backed HTTP read routes, or frontend D1 wiring yet
 - no production deployment path yet
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
 - generated frontend-facing types and `openapi-typescript-fetch` wrappers live in `packages/api-client/`
@@ -231,14 +231,16 @@ pnpm generate:api
   - `STRIPE_SECRET_KEY`
   - `STRIPE_WEBHOOK_SECRET`
 - `COMMERCE_DB` is runtime-only backend infrastructure, not a browser env var and not a GitHub Actions credential.
-- `apps/backend/prisma/schema.prisma` includes a local placeholder SQLite URL only to satisfy Prisma CLI generation; Worker runtime access still goes through `env.COMMERCE_DB`.
+- `apps/backend/prisma/schema.prisma` includes a local placeholder SQLite URL only to satisfy the current Prisma 6 CLI; Worker runtime access still goes through `env.COMMERCE_DB`.
 - Future privileged backend-only values such as BOX NOW credentials also remain runtime-only until the phases that introduce them.
 - `PUBLIC_BACKEND_BASE_URL` remains the only browser-facing backend env.
 
 ## D1 migration workflow
 
 - `apps/backend/prisma/schema.prisma` is the declarative schema model.
+- Prisma 7 moves datasource URLs to `prisma.config.ts`; keep the schema URL until the repo upgrades from Prisma 6 because Prisma 6 still requires it during generation.
 - `apps/backend/prisma/migrations/*.sql` is the committed D1 schema history.
+- The current pre-production commerce schema is intentionally consolidated into one baseline migration: `0001_initial_commerce_state.sql`.
 - Wrangler is the only apply path for D1 schema changes.
 - Prisma is used for client generation and SQL diff generation, not direct schema deployment.
 - Manual Cloudflare dashboard schema edits are out of workflow.
@@ -257,6 +259,8 @@ Future migration flow:
    - Use `pnpm --filter @blackbox/backend exec prisma migrate diff --from-local-d1 --to-schema-datamodel ./prisma/schema.prisma --script --output <file>` for later migrations.
 5. Apply locally with `pnpm --filter @blackbox/backend d1:migrations:apply:local`.
 6. Apply to sandbox with `pnpm --filter @blackbox/backend d1:migrations:apply:sandbox` when ready.
+
+Do not rewrite committed migration history after real sandbox or production commerce data exists.
 
 Local seed flow:
 

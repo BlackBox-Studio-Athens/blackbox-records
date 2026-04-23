@@ -10,7 +10,7 @@
 | Feature | Why it matters | Complexity | Dependencies |
 |---------|----------------|------------|--------------|
 | Cloudflare Worker sandbox runtime | Native checkout and webhooks need live server routes | Medium | Astro adapter, Worker config, secret bindings |
-| Native `/store/` collection and product detail | Replaces the legacy external redirect for the first sellable slice | Medium | Existing distro content, Stripe catalog projection |
+| Native `/store/` collection and store item detail | Replaces the legacy external redirect for the first sellable slice | Medium | Existing distro content, StoreItem projection |
 | Single-item embedded Checkout | Proves in-site payment without building a cart | Medium | Server-created Checkout Session, Stripe.js |
 | Server-created Checkout Sessions | Prevents secret leakage and untrusted checkout mutations | Medium | Worker runtime, Stripe secret key |
 | Webhook-authoritative payment success | Prevents false positives from relying on return pages | Medium | Stripe webhook endpoint, signature verification |

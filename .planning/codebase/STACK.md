@@ -85,7 +85,7 @@
 
 **Production:**
 - GitHub Pages project hosting with static output, site URL `https://blackbox-studio-athens.github.io`, and base path `/blackbox-records/` from `astro.config.mjs`.
-- Store commerce remains external on Fourthwall via links and redirects from `src/config/site.ts`, `src/pages/shop/index.astro`, and distro/release content in `src/content/distro/*.json` and `src/content/releases/*.md`.
+- `/store/` is now the canonical native static storefront. `/shop/` remains a compatibility redirect, and external Fourthwall/artist merch links remain fallback-only until a store item is mapped.
 
 ---
 

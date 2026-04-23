@@ -98,7 +98,7 @@ describe('groupDistroEntries', () => {
 });
 
 describe('StoreItem projection contract', () => {
-  it('creates a release-derived store item with stable shop and checkout paths', async () => {
+  it('creates a release-derived store item with stable store and checkout paths', async () => {
     const storeItem = await createStoreItemFromRelease({
       id: 'caregivers',
       data: {
@@ -123,7 +123,7 @@ describe('StoreItem projection contract', () => {
       imageAlt: 'Caregivers cover',
       eyebrow: 'Release',
       metadata: ['2024', 'LP', 'Digital'],
-      shopPath: '/blackbox-records/store/caregivers/',
+      storePath: '/blackbox-records/store/caregivers/',
       checkoutPath: '/blackbox-records/store/caregivers/checkout/',
     });
   });
@@ -145,7 +145,7 @@ describe('StoreItem projection contract', () => {
     } as any);
 
     expect(storeItem.sourceKind).toBe('distro');
-    expect(storeItem.shopPath).toBe('/blackbox-records/store/afterglow-tape/');
+    expect(storeItem.storePath).toBe('/blackbox-records/store/afterglow-tape/');
     expect(storeItem.checkoutPath).toBe('/blackbox-records/store/afterglow-tape/checkout/');
     expect(storeItem.metadata).toEqual(['Tapes', 'Cassette']);
     expect(storeItem).not.toHaveProperty('fourthwall_url');
@@ -191,7 +191,7 @@ describe('StoreItem projection contract', () => {
 
     await expect(getStoreItemForRelease(nativeRelease as any)).resolves.toMatchObject({
       slug: 'barren-point',
-      shopPath: '/blackbox-records/store/barren-point/',
+      storePath: '/blackbox-records/store/barren-point/',
     });
 
     await expect(getStoreItemForRelease(externalRelease as any)).resolves.toBeNull();

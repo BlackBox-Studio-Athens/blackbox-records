@@ -15,7 +15,7 @@ const metadataLabel = storeItem.metadata.join(' · ');
 const collectionLabel = storeItem.eyebrow || (storeItem.sourceKind === 'release' ? 'Release' : 'Distro');
 ---
 
-<a class="group block h-full" href={storeItem.shopPath} data-astro-prefetch>
+<a class="group block h-full" href={storeItem.storePath} data-astro-prefetch>
   <Card className="h-full rounded-none border-[#2b2b2b] bg-[#121212] shadow-none transition-colors duration-300 group-hover:border-[#4a4a4a]">
     <div class="relative aspect-[4/5] overflow-hidden border-b border-[#2b2b2b] bg-[#0d0d0d]">
       <Image
@@ -56,7 +56,7 @@ const collectionLabel = storeItem.eyebrow || (storeItem.sourceKind === 'release'
           <p class="font-display text-2xl tracking-[0.08em] uppercase text-foreground">{priceLabel}</p>
         </div>
         <span class="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-foreground/88">
-          View Product <span aria-hidden="true">→</span>
+          View Item <span aria-hidden="true">→</span>
         </span>
       </div>
     </CardContent>

@@ -22,13 +22,13 @@
 ### Storefront
 
 - [x] **CATA-01**: Shopper can browse a native `/store/` collection inside the existing shell using a unified `StoreItem` projection derived from releases and distro.
-- [x] **CATA-02**: Shopper can view product detail that combines Astro editorial content with temporary variant state through a stable `ItemAvailability` contract before live Stripe-backed reads are required.
-- [x] **CATA-03**: Release and distro entry points can resolve to canonical native shop product pages instead of raw external shop URLs.
+- [x] **CATA-02**: Shopper can view store item detail that combines Astro editorial content with temporary variant state through a stable `ItemAvailability` contract before live Stripe-backed reads are required.
+- [x] **CATA-03**: Release and distro entry points can resolve to canonical native store item pages instead of raw external shop URLs.
 - [x] **CATA-04**: Temporary variant state remains outside editorial collections and can later swap from fixture-backed reads to Worker-backed D1/Stripe reads without changing the storefront contract.
 
 ### Checkout & Payment
 
-- [ ] **CHKO-01**: Shopper can start single-item checkout from product detail using a Worker-created Checkout Session with Stripe embedded Checkout (`ui_mode: embedded`), with Checkout Sessions as the only approved v1 payment-creation API.
+- [ ] **CHKO-01**: Shopper can start single-item checkout from store item detail using a Worker-created Checkout Session with Stripe embedded Checkout (`ui_mode: embedded`), with Checkout Sessions as the only approved v1 payment-creation API.
 - [ ] **CHKO-02**: Shopper can complete or retry checkout through dedicated in-site checkout and return states that retrieve status through Worker-owned APIs without treating the browser as payment authority.
 - [ ] **CHKO-03**: Team can validate Worker-backed `StartCheckout`, embedded mount, and Worker-owned return-page/ReadCheckoutState flow in Stripe sandbox and local webhook testing.
 

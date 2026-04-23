@@ -104,7 +104,10 @@
 - `src/pages/releases/index.astro`: Releases index route.
 - `src/pages/news/index.astro`: News index route.
 - `src/pages/services/index.astro`: Services route with a shell-portal placeholder for the inquiry form.
-- `src/pages/shop/index.astro`: External store redirect route.
+- `src/pages/store/index.astro`: Canonical native store collection route.
+- `src/pages/store/[slug]/index.astro`: Native store item detail route.
+- `src/pages/store/[slug]/checkout/index.astro`: Static checkout handoff shell.
+- `src/pages/shop/index.astro`: Compatibility redirect to `/store/`.
 - `src/pages/artists/[slug].astro`, `src/pages/releases/[slug].astro`, `src/pages/news/[slug].astro`: Canonical detail routes.
 - `src/pages/app-shell-overlay/**`: Fragment-only detail routes for the app-shell overlay.
 

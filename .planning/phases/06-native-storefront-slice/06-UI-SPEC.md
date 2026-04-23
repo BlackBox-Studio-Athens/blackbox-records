@@ -18,7 +18,7 @@ created: 2026-04-20
 ## Route Contract
 
 - `/store/` - native collection view
-- `/store/[slug]/` - native product detail view
+- `/store/[slug]/` - native store item detail view
 - `/store/[slug]/checkout/` - non-transactional checkout handoff shell that Phase 7 will activate
 
 ## Collection View
@@ -32,10 +32,10 @@ created: 2026-04-20
   - subtitle (`artist` or `artist_or_label`)
   - short summary
   - fixture-backed price label
-  - `View Product` CTA
+  - `View Item` CTA
 - No filters, no sort controls, no stock countdown copy, and no collection metrics dashboard.
 
-## Product Detail View
+## Store Item Detail View
 
 - Layout remains two-column on desktop and stacked on mobile.
 - Content order:
@@ -54,22 +54,22 @@ created: 2026-04-20
 
 - This route exists in Phase 6 but does not process payment yet.
 - It shows:
-  - product summary block
+  - item summary block
   - clear page heading `Checkout`
   - calm explanatory copy that this route will host the secure payment step in the next phase
-  - actions to return to the product page or store
+  - actions to return to the item page or store
 - It must not claim payment is possible or complete in this phase.
 - It must not render fake payment controls, slug/debug fields, or dense checkout widgets before Phase 7.
 
 ## Release-To-Shop Navigation
 
-- Release pages with a mapped native store entry link to the canonical `/store/[slug]/` product page.
+- Release pages with a mapped native store entry link to the canonical `/store/[slug]/` item page.
 - If a release has no mapped native shop entry, do not invent a misleading purchase route.
 
 ## Copy Contract
 
-- Collection CTA: `View Product`
-- Product CTA: `Buy Now`
+- Collection CTA: `View Item`
+- Item CTA: `Buy Now`
 - Checkout shell note: calm, direct, transitional
 - Tone remains curator-like and low-drama
 

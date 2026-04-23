@@ -10,7 +10,7 @@
 - Use `src/pages/**` as the canonical static route graph. Every section and detail view has a real Astro page that works on direct load, refresh, and GitHub Pages static hosting.
 - Use `src/components/app-shell/AppShellRoot.tsx` to intercept same-origin top-level section links and swap cached `<main>` snapshots in place so the player, mobile nav, and shell UI survive section changes.
 - Use duplicate route surfaces for detail content: full pages under `src/pages/{artists,releases,news}/[slug].astro` and fragment-only partial routes under `src/pages/app-shell-overlay/**`, both reusing the same detail components in `src/components/detail/*.astro`.
-- Keep commerce external. `src/config/site.ts`, `src/utils/music.ts`, `src/components/cards/DistroCard.astro`, and `src/pages/shop/index.astro` route store traffic to Fourthwall instead of implementing in-repo checkout.
+- Use `/store/` as the canonical native storefront route. `/shop/` remains a compatibility redirect, while unmapped legacy merch links can still exit to Fourthwall or artist-owned external destinations.
 
 ## Layers
 
@@ -24,7 +24,7 @@
 **Content Query And Normalization:**
 - Purpose: Convert raw collection entries into sorted lists, singleton settings, route props, and outbound link metadata.
 - Location: `src/lib/site-data.ts`, `src/lib/catalog-data.ts`, `src/lib/distro-data.ts`, `src/config/site.ts`, `src/utils/music.ts`, `src/utils/urls.ts`
-- Contains: Singleton getters such as `getHomeContent()` and `getServicesContent()`, list helpers such as `listReleaseCatalog()` and `listDistroEntries()`, artist/release reference resolution, distro grouping, base-path-aware URL builders, and shop/merch URL normalization.
+- Contains: Singleton getters such as `getHomeContent()` and `getServicesContent()`, list helpers such as `listReleaseCatalog()` and `listDistroEntries()`, artist/release reference resolution, distro grouping, base-path-aware URL builders, and store/merch URL normalization.
 - Depends on: `astro:content`, `astro:config/client`, collection schemas, and shared URL utilities.
 - Used by: `src/layouts/SiteLayout.astro`, `src/layouts/RedirectLayout.astro`, `src/pages/**`, `src/components/detail/*.astro`, `src/components/cards/*.astro`, `src/components/Header.astro`, and `src/components/app-shell/AppShellRoot.tsx`.
 
@@ -73,12 +73,12 @@
 4. The shell fetches the partial route in `src/pages/app-shell-overlay/{artists,releases,news}/[slug].astro`, stores the fragment HTML in `overlayCacheRef`, writes overlay-specific history state, and renders the fragment into the overlay panel with `dangerouslySetInnerHTML`.
 5. Direct loads, refreshes, and new-tab opens still land on `src/pages/{artists,releases,news}/[slug].astro`, so overlay behavior is an enhancement layer over normal static routes.
 
-**Shop Redirect And Merch Flow:**
+**Native Store And Merch Flow:**
 
-1. Store-facing links resolve through `resolveLinkAttributes()` in `src/config/site.ts`. When a link targets `/shop/` or the configured Fourthwall domain, the helper returns the external `siteConfig.shopUrl` with `_blank` and `noreferrer noopener`.
-2. Header, footer, mobile nav, and distro cards use those attributes in `src/components/header/HeaderDesktopNav.astro`, `src/components/Footer.astro`, `src/components/app-shell/AppShellRoot.tsx`, and `src/components/cards/DistroCard.astro`, so normal store clicks bypass the shell entirely.
-3. Release detail merch buttons call `resolveMerchHref()` in `src/utils/music.ts`, which prefers a frontmatter `merch_url` and otherwise builds a Fourthwall collection URL from `shop_collection_handle`.
-4. `src/pages/shop/index.astro` remains a canonical internal route for direct loads and sitemap coverage. It renders `src/layouts/RedirectLayout.astro`, which layers a canonical link, meta refresh, `window.location.replace()`, and a visible manual CTA.
+1. Store-facing links resolve to `/store/` and `/store/[slug]/` through `StoreItem` helpers in `src/lib/catalog-data.ts`.
+2. Distro cards and mapped release commerce links point to the canonical native `storePath` for each `StoreItem`.
+3. Release detail merch buttons prefer a mapped native store item; only unmapped releases fall back to `resolveMerchHref()` and legacy external merch URLs.
+4. `src/pages/shop/index.astro` remains a compatibility redirect to `/store/` for direct loads and older links.
 
 **Distro Catalog Rendering:**
 
@@ -123,10 +123,10 @@
 - Examples: `src/lib/site-data.ts`, `src/lib/catalog-data.ts`, `src/lib/distro-data.ts`
 - Pattern: Keep `site-data` for singleton JSON and navigation/settings, `catalog-data` for sortable collections and static path generation, and `distro-data` for distro taxonomy shaping only.
 
-**External Commerce Link Resolution:**
-- Purpose: Keep the storefront static while centralizing all outbound shop rules in one place.
-- Examples: `src/config/site.ts`, `src/utils/music.ts`, `src/components/cards/DistroCard.astro`, `src/components/detail/ReleaseDetailContent.astro`
-- Pattern: Resolve `/shop/`, direct Fourthwall URLs, and collection handles through shared helpers before rendering anchors.
+**Store Commerce Resolution:**
+- Purpose: Keep store navigation canonical while preserving external merch fallback only for unmapped releases.
+- Examples: `src/lib/catalog-data.ts`, `src/lib/release-commerce.ts`, `src/utils/music.ts`, `src/components/cards/DistroCard.astro`
+- Pattern: Resolve native `StoreItem.storePath` first, then fall back to direct merch URLs or Fourthwall collection handles only when no native store item exists.
 
 ## Entry Points
 

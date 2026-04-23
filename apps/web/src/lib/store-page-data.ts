@@ -4,12 +4,12 @@ import {
   type ItemAvailability,
 } from './item-availability';
 
-export type StoreProductEntry = {
+export type StorePageEntry = {
   storeItem: StoreItem;
   primaryAvailability: ItemAvailability | null;
 };
 
-export async function getStoreProductEntryBySlug(slug: string): Promise<StoreProductEntry | null> {
+export async function getStorePageEntryBySlug(slug: string): Promise<StorePageEntry | null> {
   const storeItem = await getStoreItemBySlug(slug);
 
   if (!storeItem) {
@@ -22,7 +22,7 @@ export async function getStoreProductEntryBySlug(slug: string): Promise<StorePro
   };
 }
 
-export async function createStoreProductStaticPaths() {
+export async function createStorePageStaticPaths() {
   const storeItems = await listStoreItems();
 
   return Promise.all(
@@ -32,7 +32,7 @@ export async function createStoreProductStaticPaths() {
         entry: {
           storeItem,
           primaryAvailability: await getPrimaryAvailabilityForStoreItem(storeItem.slug),
-        } satisfies StoreProductEntry,
+        } satisfies StorePageEntry,
       },
     })),
   );

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createStoreProductStaticPaths, getStoreProductEntryBySlug } from './store-product';
+import { createStorePageStaticPaths, getStorePageEntryBySlug } from './store-page-data';
 
 const mockCatalogData = vi.hoisted(() => ({
   getStoreItemBySlug: vi.fn(),
@@ -20,12 +20,12 @@ vi.mock('./item-availability', () => ({
   getPrimaryAvailabilityForStoreItem: mockItemAvailability.getPrimaryAvailabilityForStoreItem,
 }));
 
-describe('store product helper', () => {
+describe('store page data helper', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('returns a store product entry for a known slug', async () => {
+  it('returns a store page entry for a known slug', async () => {
     mockCatalogData.getStoreItemBySlug.mockResolvedValue({
       slug: 'barren-point',
       sourceKind: 'release',
@@ -37,7 +37,7 @@ describe('store product helper', () => {
       imageAlt: 'Barren Point cover',
       eyebrow: 'Release',
       metadata: ['2024', 'LP'],
-      shopPath: '/blackbox-records/store/barren-point/',
+      storePath: '/blackbox-records/store/barren-point/',
       checkoutPath: '/blackbox-records/store/barren-point/checkout/',
     });
 
@@ -57,10 +57,10 @@ describe('store product helper', () => {
       canBuy: true,
     });
 
-    await expect(getStoreProductEntryBySlug('barren-point')).resolves.toMatchObject({
+    await expect(getStorePageEntryBySlug('barren-point')).resolves.toMatchObject({
       storeItem: {
         slug: 'barren-point',
-        shopPath: '/blackbox-records/store/barren-point/',
+        storePath: '/blackbox-records/store/barren-point/',
         checkoutPath: '/blackbox-records/store/barren-point/checkout/',
       },
       primaryAvailability: {
@@ -73,7 +73,7 @@ describe('store product helper', () => {
   it('returns null for an unknown slug', async () => {
     mockCatalogData.getStoreItemBySlug.mockResolvedValue(null);
 
-    await expect(getStoreProductEntryBySlug('unknown-slug')).resolves.toBeNull();
+    await expect(getStorePageEntryBySlug('unknown-slug')).resolves.toBeNull();
     expect(mockItemAvailability.getPrimaryAvailabilityForStoreItem).not.toHaveBeenCalled();
   });
 
@@ -90,7 +90,7 @@ describe('store product helper', () => {
         imageAlt: 'Barren Point cover',
         eyebrow: 'Release',
         metadata: ['2024', 'LP'],
-        shopPath: '/blackbox-records/store/barren-point/',
+        storePath: '/blackbox-records/store/barren-point/',
         checkoutPath: '/blackbox-records/store/barren-point/checkout/',
       },
       {
@@ -104,7 +104,7 @@ describe('store product helper', () => {
         imageAlt: 'Afterglow Tape cover',
         eyebrow: 'Distro',
         metadata: ['Cassette'],
-        shopPath: '/blackbox-records/store/afterglow-tape/',
+        storePath: '/blackbox-records/store/afterglow-tape/',
         checkoutPath: '/blackbox-records/store/afterglow-tape/checkout/',
       },
     ]);
@@ -127,7 +127,7 @@ describe('store product helper', () => {
         canBuy: false,
       });
 
-    await expect(createStoreProductStaticPaths()).resolves.toEqual([
+    await expect(createStorePageStaticPaths()).resolves.toEqual([
       {
         params: { slug: 'barren-point' },
         props: {

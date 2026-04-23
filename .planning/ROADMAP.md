@@ -80,8 +80,8 @@ Plans:
 **Requirements**: CATA-01, CATA-02, CATA-03
 **Success Criteria** (what must be TRUE):
 1. Shopper can browse a native `/store/` collection built from a stable `StoreItem` projection derived from releases and distro entries.
-2. Shopper can open a native product detail page that reuses editorial assets and summaries while reading temporary variant state through the approved contract.
-3. Release and distro entry points route into canonical native shop product pages instead of raw external shop URLs.
+2. Shopper can open a native store item detail page that reuses editorial assets and summaries while reading temporary variant state through the approved contract.
+3. Release and distro entry points route into canonical native store item pages instead of raw external shop URLs.
 **Plans**: 7 plans
 **Review gate**: Human review required if implementation drifts from the approved storefront UI contract or from the Phase 5.1 architecture.
 
@@ -90,7 +90,7 @@ Plans:
 - [x] 06-02: Implement cross-collection mapping rules from releases and distro into store items
 - [x] 06-03: Add the temporary ItemAvailability adapter that matches the future backend API shape
 - [x] 06-04: Replace the legacy `/shop/` redirect with the canonical native `/store/` collection route
-- [x] 06-05: Build the product detail route and `Buy Now` handoff shell
+- [x] 06-05: Build the store item detail route and `Buy Now` handoff shell
 - [x] 06-06: Add release-to-shop navigation using canonical shop links
 - [x] 06-07: Reuse editorial assets and summaries without duplicating content into commerce storage
 

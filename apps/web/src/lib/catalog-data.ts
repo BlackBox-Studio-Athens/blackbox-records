@@ -19,7 +19,7 @@ export type StoreItem = {
   imageAlt: string;
   eyebrow: string | null;
   metadata: string[];
-  shopPath: string;
+  storePath: string;
   checkoutPath: string;
 };
 export type ArtistRosterReleaseContext = {
@@ -28,7 +28,7 @@ export type ArtistRosterReleaseContext = {
   releaseCount: number;
 };
 
-function isNativeShopMerchUrl(path: string | undefined) {
+function isNativeStoreMerchUrl(path: string | undefined) {
   return path === '/store/';
 }
 
@@ -112,10 +112,10 @@ export function resolveReleaseArtistDisplayName(
 }
 
 function createStoreItemPaths(slug: string) {
-  const shopPath = createProjectRelativeUrl(`/store/${slug}/`);
+  const storePath = createProjectRelativeUrl(`/store/${slug}/`);
 
   return {
-    shopPath,
+    storePath,
     checkoutPath: createProjectRelativeUrl(`/store/${slug}/checkout/`),
   };
 }
@@ -168,7 +168,7 @@ export function createStoreItemFromDistroEntry(distroEntry: DistroCatalogEntry):
 }
 
 export function hasNativeStoreItemForRelease(releaseEntry: ReleaseCatalogEntry) {
-  return isNativeShopMerchUrl(releaseEntry.data.merch_url);
+  return isNativeStoreMerchUrl(releaseEntry.data.merch_url);
 }
 
 export async function getStoreItemForRelease(releaseEntry: ReleaseCatalogEntry) {

@@ -6,15 +6,15 @@ import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { createProjectRelativeUrl } from '@/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
-import { type StoreProductEntry, createStoreProductStaticPaths } from '@/lib/store-product';
+import { type StorePageEntry, createStorePageStaticPaths } from '@/lib/store-page-data';
 import { cn } from '@/lib/utils';
 
 export async function getStaticPaths() {
-  return createStoreProductStaticPaths();
+  return createStorePageStaticPaths();
 }
 
 interface Props {
-  entry: StoreProductEntry;
+  entry: StorePageEntry;
 }
 
 const { entry } = Astro.props;
@@ -41,7 +41,7 @@ const canBuy = primaryAvailability?.canBuy ?? false;
           <p class="text-sm uppercase tracking-[0.13em] text-muted-foreground">{storeItem.subtitle}</p>
         </div>
         <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          This is the stable handoff surface for the Worker-owned checkout flow. The product recap is real storefront state; payment collection is intentionally deferred to Phase 7.
+          This is the stable handoff surface for the Worker-owned checkout flow. The item recap is real storefront state; payment collection is intentionally deferred to Phase 7.
         </p>
 
         <div class="grid gap-3 border border-border/60 bg-background/45 p-5">
@@ -78,11 +78,11 @@ const canBuy = primaryAvailability?.canBuy ?? false;
 
         <div class="flex flex-wrap gap-3">
           <a
-            href={storeItem.shopPath}
+            href={storeItem.storePath}
             data-astro-prefetch
             class={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'uppercase tracking-[0.12em]')}
           >
-            Back To Product
+            Back To Item
           </a>
           <a
             href={createProjectRelativeUrl('/store/')}

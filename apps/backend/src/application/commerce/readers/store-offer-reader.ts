@@ -17,7 +17,7 @@ export type StoreOffer = {
 };
 
 function createAvailabilityLabel(status: ItemAvailabilityRecord['status']): string {
-    return status === 'available' ? 'Available' : 'Unavailable';
+    return status === 'available' ? 'Available' : 'Sold Out';
 }
 
 export class StoreOfferReader {

@@ -71,7 +71,7 @@ Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real b
 - `/store/` replaced `/shop/` as the canonical native storefront route, with `/shop/` kept only as a compatibility redirect.
 - The backend now exposes a typed Worker runtime binding contract with `COMMERCE_DB` as the first D1 binding.
 - The backend now uses Prisma + `@prisma/adapter-d1` behind committed repository seams, while HTTP routes remain persistence-agnostic.
-- The backend migration workflow is now Prisma-schema-driven but Wrangler-applied, with committed SQL under `apps/backend/prisma/migrations/`.
+- The backend migration workflow is now Prisma-schema-driven but Wrangler-applied, with the current pre-production D1 schema consolidated into one baseline SQL migration under `apps/backend/prisma/migrations/`.
 - The backend now has repo-owned local seed SQL and a first application-layer StoreOffer reader on top of the D1 repositories.
 - The backend now has a typed Access-header extraction seam for `actor_email` on the future protected operator hostname.
 - Commerce naming was simplified to DDD-style label language: `StoreItem`, `ItemAvailability`, `StoreItemOption`, `StoreOffer`, `Stock`, `OnlineStock`, `StartCheckout`, `ReadCheckoutState`, and `not_paid`.
@@ -81,7 +81,7 @@ Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real b
 | Phase | Decision | Status |
 |-------|----------|--------|
 | v1.0 | Production remains GitHub Pages + Fourthwall until the future go-live milestone. | Active |
-| v1.0 | The first native sellable slice is `/store/` collection -> product detail -> dedicated checkout, with single-item `Buy Now` and no cart. | Active |
+| v1.0 | The first native sellable slice is `/store/` collection -> store item detail -> dedicated checkout, with single-item `Buy Now` and no cart. | Active |
 | v1.0 | v1 order state stays minimal: `pending_payment`, `paid`, `not_paid`, and `needs_review`, with Checkout webhooks as the authoritative paid/unpaid signals. | Active |
 | v1.0 | MVP shipping is Greece only, BOX NOW locker selection happens before payment, and fulfillment stays manual through the partner portal. | Active |
 | v1.1 | The Astro site remains a static frontend on GitHub Pages during this milestone. | Active |

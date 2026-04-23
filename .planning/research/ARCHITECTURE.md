@@ -94,7 +94,7 @@ What not to do:
 ## End-to-End Data Flow
 
 1. Shopper lands on native `/store/` collection route inside the existing app shell.
-2. Shopper opens a product detail page built from Astro editorial content plus Stripe-backed sellable data.
+2. Shopper opens a store item detail page built from Astro editorial content plus Stripe-backed sellable data.
 3. Shopper presses `Buy Now`.
 4. Checkout route enforces the Greece-only BOX NOW gate and captures locker choice before payment.
 5. Front end calls a Worker endpoint to create a single-item Checkout Session.

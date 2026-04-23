@@ -19,7 +19,7 @@ export async function getReleaseCommerceLink(
 
   if (nativeStoreItem) {
     return {
-      href: nativeStoreItem.shopPath,
+      href: nativeStoreItem.storePath,
       isNativeStoreLink: true,
       label: 'View In Store',
     };

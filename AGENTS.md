@@ -83,8 +83,10 @@ Then inspect only task-relevant files with `rg` and scoped reads.
   - `apps/backend/src/domain/commerce/repositories/`
   - `apps/backend/src/infrastructure/persistence/prisma/`
 - The committed Prisma client lives under `apps/backend/src/generated/prisma/`.
-- `apps/backend/prisma/schema.prisma` uses a placeholder local SQLite URL for Prisma CLI generation only; Worker runtime queries still go through `env.COMMERCE_DB`.
+- `apps/backend/prisma/schema.prisma` uses a placeholder local SQLite URL for the current Prisma 6 CLI generation only; Worker runtime queries still go through `env.COMMERCE_DB`.
+- Prisma 7 moves datasource URLs to `prisma.config.ts`; do not remove the schema URL until the repo upgrades from Prisma 6 because Prisma 6 still requires it during generation.
 - D1 migrations live under `apps/backend/prisma/migrations/`, and Wrangler applies them through the `COMMERCE_DB` binding.
+- The current pre-production D1 schema history is consolidated into one baseline migration; do not rewrite migration history after real sandbox or production commerce data exists.
 - Backend-local seed SQL lives under `apps/backend/prisma/seeds/`.
 - The first backend application read seam now lives under `apps/backend/src/application/commerce/readers/` and resolves offer availability by `storeItemSlug` without mirroring the frontend `ItemAvailability` type.
 - Internal stock operations are now contractually separated onto a protected operator hostname, referred to in repo docs as `ops.<managed-zone>` until the real custom domain is provisioned.

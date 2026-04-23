@@ -5,15 +5,15 @@ import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl } from '@/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
-import { type StoreProductEntry, createStoreProductStaticPaths } from '@/lib/store-product';
+import { type StorePageEntry, createStorePageStaticPaths } from '@/lib/store-page-data';
 import { cn } from '@/lib/utils';
 
 export async function getStaticPaths() {
-  return createStoreProductStaticPaths();
+  return createStorePageStaticPaths();
 }
 
 interface Props {
-  entry: StoreProductEntry;
+  entry: StorePageEntry;
 }
 
 const { entry } = Astro.props;

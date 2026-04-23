@@ -84,4 +84,36 @@ describe('StoreOfferReader', () => {
             canBuy: true,
         });
     });
+
+    it('uses sold-out language for stored sold-out availability', async () => {
+        const storeItemOption: StoreItemOptionRecord = {
+            storeItemSlug: 'afterglow-tape',
+            sourceKind: 'distro',
+            sourceId: 'afterglow-tape',
+            variantId: 'variant_afterglow-tape_standard',
+        };
+        const availability: ItemAvailabilityRecord = {
+            variantId: 'variant_afterglow-tape_standard',
+            status: 'sold_out',
+            canBuy: false,
+            updatedAt: new Date('2026-04-22T00:00:00.000Z'),
+        };
+        const storeItemOptions: StoreItemOptionRepository = {
+            findByStoreItemSlug: vi.fn(async () => storeItemOption),
+            findBySource: vi.fn(async () => null),
+        };
+        const itemAvailability: ItemAvailabilityRepository = {
+            findByVariantId: vi.fn(async () => availability),
+        };
+
+        const reader = new StoreOfferReader(storeItemOptions, itemAvailability);
+
+        await expect(reader.findByStoreItemSlug('afterglow-tape')).resolves.toMatchObject({
+            availability: {
+                status: 'sold_out',
+                label: 'Sold Out',
+            },
+            canBuy: false,
+        });
+    });
 });

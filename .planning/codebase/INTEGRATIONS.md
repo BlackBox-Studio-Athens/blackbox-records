@@ -5,12 +5,15 @@
 ## APIs & External Services
 
 **Storefront & Commerce:**
-- Fourthwall - external store destination for the `/shop/` route, release merch links, artist/release collection handles, and distro product links.
-  - SDK/Client: no SDK; link/redirect integration through `src/config/site.ts`, `src/pages/shop/index.astro`, `src/layouts/RedirectLayout.astro`, `src/utils/music.ts`, and `src/components/cards/DistroCard.astro`.
+- Native store flow - `/store/` is the canonical static storefront, with `/store/[slug]/` item pages and `/store/[slug]/checkout/` handoff shells built from `StoreItem` plus `ItemAvailability`.
+  - SDK/Client: frontend data helpers in `src/lib/catalog-data.ts`, `src/lib/item-availability.ts`, `src/lib/store-collection.ts`, and `src/lib/store-page-data.ts`; no Stripe browser dependency is wired yet.
+  - Auth: none for shopper browsing.
+- Fourthwall and external merch - fallback-only for unmapped release merch links and legacy content fields.
+  - SDK/Client: no SDK; fallback link resolution through `src/utils/music.ts`, `src/config/site.ts`, and release content fields.
   - Auth: none in the repo.
-- Distro catalog flow - curated catalog content stays local in Astro content files, then each card exits to Fourthwall.
-  - SDK/Client: local grouping/query code in `src/lib/distro-data.ts`, `src/lib/catalog-data.ts`, and `src/pages/distro/index.astro`; outbound product URL field is `fourthwall_url` in `src/content.config.ts` and `src/content/distro/*.json`.
-  - Auth: none.
+- Cloudflare Worker commerce backend - separate Hono Worker for future Stripe routes, D1 reads, webhooks, and protected stock operations.
+  - SDK/Client: `apps/backend/src/index.ts`, `apps/backend/wrangler.jsonc`, and the generated API client package.
+  - Auth: public shopper routes remain unauthenticated; future internal stock routes are protected by Cloudflare Access on a separate operator hostname.
 
 **Streaming & Embedded Media:**
 - Bandcamp - embedded player provider when a release defines `bandcamp_embed_url`.
@@ -50,9 +53,9 @@
 ## Data Storage
 
 **Databases:**
-- None detected.
-  - Connection: Not applicable.
-  - Client: content is read from the filesystem through `astro:content` in `src/lib/site-data.ts` and `src/lib/catalog-data.ts`; there is no ORM or database client in `package.json`.
+- Cloudflare D1 `COMMERCE_DB` for backend commerce state.
+  - Connection: Worker runtime binding from `apps/backend/wrangler.jsonc`; local verification uses Wrangler D1 commands.
+  - Client: Prisma generated client plus `@prisma/adapter-d1` behind backend repository seams in `apps/backend/src/infrastructure/persistence/prisma/`.
 
 **File Storage:**
 - Local filesystem only.
