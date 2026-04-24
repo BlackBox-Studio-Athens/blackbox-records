@@ -1,0 +1,20 @@
+-- Copy this file to local-stripe-test-state.sql and replace the price ID with
+-- a real Stripe test-mode Price ID from your Stripe account.
+
+INSERT INTO "VariantStripeMapping" (
+    "id",
+    "variantId",
+    "stripePriceId",
+    "createdAt",
+    "updatedAt"
+)
+VALUES (
+    'variant_stripe_mapping_barren_point_test',
+    'variant_barren-point_standard',
+    'price_replace_with_real_stripe_test_price',
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+)
+ON CONFLICT("variantId") DO UPDATE SET
+    "stripePriceId" = excluded."stripePriceId",
+    "updatedAt" = CURRENT_TIMESTAMP;

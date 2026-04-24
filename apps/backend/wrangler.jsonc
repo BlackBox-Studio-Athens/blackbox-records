@@ -17,6 +17,22 @@
     "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321,https://blackbox-studio-athens.github.io"
   },
   "env": {
+    "mock": {
+      "name": "blackbox-records-backend-dev-mock",
+      "workers_dev": true,
+      "d1_databases": [
+        {
+          "binding": "COMMERCE_DB",
+          "database_name": "blackbox-records-commerce-local",
+          "migrations_dir": "prisma/migrations"
+        }
+      ],
+      "vars": {
+        "APP_ENV": "local",
+        "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321,https://blackbox-studio-athens.github.io",
+        "STRIPE_API_BASE_URL": "http://127.0.0.1:12111"
+      }
+    },
     "sandbox": {
       "name": "blackbox-records-backend-sandbox",
       "workers_dev": true,

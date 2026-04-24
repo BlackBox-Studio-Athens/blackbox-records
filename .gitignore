@@ -50,6 +50,7 @@ node_modules/.astro/
 node_modules/.vite/
 .dev.vars
 **/.dev.vars
+apps/backend/prisma/seeds/local-stripe-test-state.sql
 
 cachedData/
 files/

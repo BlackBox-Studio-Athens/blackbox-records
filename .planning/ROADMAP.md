@@ -137,7 +137,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
 1. The Worker backend exposes the required StoreItem/Variant lookup, ReadCheckoutState, and StartCheckout endpoints using the approved domain contracts and the locked backend conventions.
 2. The static frontend checkout route mounts embedded Checkout using data and session state obtained through the Worker backend, not directly from Stripe, and return/retry state reads Worker-owned CheckoutState instead of raw Stripe browser contracts.
-3. The checkout path is testable locally and in sandbox using Stripe sandbox and webhook tooling.
+3. The checkout path is testable locally and in sandbox using real Stripe test mappings, with stripe-mock available only as a local request-shape sanity path.
 **Plans**: 7 plans
 **Review gate**: Human review required on the final backend API contract and shopper-facing retry/return behavior.
 

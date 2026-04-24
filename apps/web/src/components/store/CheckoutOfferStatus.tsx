@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { createPublicCheckoutApi, type PublicCheckoutApi } from '@/lib/backend/public-checkout-api';
 import {
-  createStripeEmbeddedCheckoutAdapter,
+  createConfiguredEmbeddedCheckoutAdapter,
   type EmbeddedCheckoutAdapter,
   type EmbeddedCheckoutMount,
 } from '@/lib/backend/stripe-embedded-checkout';
@@ -67,7 +67,7 @@ export default function CheckoutOfferStatus({
 
   async function handleStartCheckout() {
     const checkoutApi = api ?? createPublicCheckoutApi();
-    const embeddedCheckoutAdapter = checkoutAdapter ?? createStripeEmbeddedCheckoutAdapter();
+    const embeddedCheckoutAdapter = checkoutAdapter ?? createConfiguredEmbeddedCheckoutAdapter();
     const mountTarget = checkoutMountRef.current;
 
     if (!view.variantId || !mountTarget) {

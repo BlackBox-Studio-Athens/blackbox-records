@@ -32,6 +32,8 @@ Phase 7 implements Worker-owned checkout APIs and connects the static frontend c
 - **D-08:** Phase 7 APIs must already be shaped so Phase 8 can reuse one backend-owned reconciliation use case across ReadCheckoutState and verified webhook handling.
 - **D-09:** On Stripe API `2026-04-22.dahlia`, embedded Checkout is represented by `ui_mode: embedded_page`; older docs may refer to this as embedded Checkout.
 - **D-10:** Checkout return URLs must be constrained by the Worker-side `CHECKOUT_RETURN_ORIGINS` allowlist and expected `/store/<slug>/checkout/` route shape; arbitrary browser `Referer` origins are not trusted.
+- **D-11:** Local checkout validation has two explicit modes: `dev:stack:stripe-test` for real Stripe test keys and real test Price mappings, and `dev:stack:stripe-mock` for Dockerized stripe-mock request-shape sanity plus a frontend mock checkout panel.
+- **D-12:** `stripe-mock` is not a real embedded Checkout browser substitute. It must never be documented as a successful end-to-end payment flow.
 
 </decisions>
 
@@ -41,6 +43,7 @@ Phase 7 implements Worker-owned checkout APIs and connects the static frontend c
 - Separate item lookup, variant lookup, ReadCheckoutState, and StartCheckout concerns in the backend API.
 - Keep the frontend coupled to store item slugs and `ItemAvailability`, not to Stripe IDs.
 - Treat sandbox validation as an API-plus-frontend integration problem, not a frontend-only task.
+- Keep real Stripe test Price IDs in ignored local seed SQL; committed mock Price IDs are allowed only for the stripe-mock path.
 
 </specifics>
 

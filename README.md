@@ -68,6 +68,29 @@ Notes:
 pnpm dev
 ```
 
+Run the full local commerce stack with real Stripe test mode:
+
+```powershell
+$env:PUBLIC_STRIPE_PUBLISHABLE_KEY = "pk_test_..."
+pnpm dev:stack:stripe-test
+```
+
+Before using `dev:stack:stripe-test`:
+
+1. Copy `apps/backend/.dev.vars.example` to `apps/backend/.dev.vars`.
+2. Fill `STRIPE_SECRET_KEY` with a real Stripe `sk_test_...` value.
+3. Copy `apps/backend/prisma/seeds/local-stripe-test-state.sql.example` to the ignored `apps/backend/prisma/seeds/local-stripe-test-state.sql`.
+4. Replace the example `price_...` value with a real Stripe test Price ID.
+
+Run the full local commerce stack with stripe-mock:
+
+```sh
+pnpm dev:stack:stripe-mock
+```
+
+Before using `dev:stack:stripe-mock`, keep Docker running and set `STRIPE_SECRET_KEY=sk_test_mock` in `apps/backend/.dev.vars`.
+This mode starts `stripe/stripe-mock`, points the Worker at it through the `mock` Wrangler env, seeds a mock `VariantStripeMapping`, and renders a local mock checkout panel in the browser. It validates backend Stripe request shape and frontend flow control, but it is not a real embedded Checkout browser experience.
+
 Run the Astro frontend explicitly:
 
 ```sh
@@ -96,6 +119,19 @@ Seed the backend-local commerce-state tables:
 
 ```sh
 pnpm --filter @blackbox/backend d1:seed:local
+```
+
+Prepare local D1 for the full stack:
+
+```sh
+pnpm --filter @blackbox/backend d1:prepare:local
+```
+
+Seed local Stripe mapping variants:
+
+```sh
+pnpm --filter @blackbox/backend d1:seed:stripe-mock:local
+pnpm --filter @blackbox/backend d1:seed:stripe-test:local
 ```
 
 List or apply backend D1 migrations:
@@ -151,6 +187,8 @@ Current Worker scope:
 - public store-offer and checkout API routes now exist under `/api/store/*` and `/api/checkout/*`
 - checkout creation is Worker-owned and uses Stripe embedded Checkout Sessions through a backend gateway seam
 - the static checkout shell mounts Stripe embedded Checkout from Worker-created sessions
+- `pnpm dev:stack:stripe-test` prepares local D1, applies the ignored real Stripe test mapping seed, starts the Worker, and starts the static site
+- `pnpm dev:stack:stripe-mock` starts Dockerized `stripe-mock`, prepares local D1, applies committed mock Stripe mappings, starts the Worker with `STRIPE_API_BASE_URL`, and starts the static site in mock checkout mode
 - no webhook order authority, stock decrement, or frontend D1 wiring yet
 - no backend production deployment path yet
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
@@ -199,6 +237,9 @@ pnpm generate:api
 
 - The browser-facing Astro app owns `PUBLIC_BACKEND_BASE_URL` for Worker discovery.
 - The browser also owns `PUBLIC_STRIPE_PUBLISHABLE_KEY` so Stripe.js can initialize embedded Checkout.
+- Local checkout mode is controlled by `PUBLIC_CHECKOUT_CLIENT_MODE`.
+  - `stripe` uses real Stripe.js embedded Checkout and requires `PUBLIC_STRIPE_PUBLISHABLE_KEY`.
+  - `mock` skips Stripe.js and renders a local mock checkout panel after `StartCheckout`.
 - Local development uses:
   - `pnpm dev:web`
   - `pnpm dev:backend`
@@ -243,6 +284,9 @@ pnpm generate:api
 - The current backend-local runtime secret contract is:
   - `STRIPE_SECRET_KEY`
   - `STRIPE_WEBHOOK_SECRET`
+- The optional backend-local Stripe mock/test override is:
+  - `STRIPE_API_BASE_URL`
+- `STRIPE_API_BASE_URL` defaults to real Stripe when unset. The committed `mock` Wrangler env binds it to `http://127.0.0.1:12111` for local stripe-mock only.
 - The checkout return-origin allowlist is configured server-side with `CHECKOUT_RETURN_ORIGINS`.
 - `COMMERCE_DB` is runtime-only backend infrastructure, not a browser env var and not a GitHub Actions credential.
 - `CHECKOUT_RETURN_ORIGINS` is a Worker runtime variable, not a browser-selected return URL.
@@ -286,6 +330,12 @@ Local seed flow:
 2. Run `pnpm --filter @blackbox/backend d1:seed:local`.
 3. Use direct D1 queries or backend-local smoke checks to verify seeded rows exist.
 
+Local checkout seed flow:
+
+1. For stripe-mock, run `pnpm --filter @blackbox/backend d1:seed:stripe-mock:local`; the committed seed uses local-only `price_mock_*` values.
+2. For real Stripe test mode, copy `apps/backend/prisma/seeds/local-stripe-test-state.sql.example` to ignored `apps/backend/prisma/seeds/local-stripe-test-state.sql`, replace the example price with a real `price_...`, then run `pnpm --filter @blackbox/backend d1:seed:stripe-test:local`.
+3. Do not commit real Stripe test Price IDs.
+
 Local development:
 
 ```sh
@@ -299,6 +349,7 @@ cp apps/backend/.dev.vars.example apps/backend/.dev.vars
 - Current Stripe-backed checkout routes require `STRIPE_SECRET_KEY` before creating or reading Checkout Sessions.
 - Checkout session creation accepts return URLs only from `CHECKOUT_RETURN_ORIGINS`; local defaults include `http://127.0.0.1:4321`, `http://localhost:4321`, and the GitHub Pages origin.
 - The static checkout shell also requires `PUBLIC_STRIPE_PUBLISHABLE_KEY` before it can mount embedded Checkout in the browser.
+- `stripe-mock` mode does not require `PUBLIC_STRIPE_PUBLISHABLE_KEY` because the browser renders the local mock checkout panel instead of loading Stripe.js.
 
 CI/deploy credentials:
 
@@ -511,14 +562,14 @@ If a source crops badly, replace the source image rather than adding focal-point
 ## WebStorm run configuration
 
 - `.run/BlackBox Local Stack.run.xml` is the canonical committed WebStorm launcher for day-to-day local work.
-- It starts:
-  - `BlackBox Backend Local`
-  - `BlackBox Static Site`
+- It runs `pnpm dev:stack:stripe-test`.
+- `.run/BlackBox Mock Stripe Stack.run.xml` runs `pnpm dev:stack:stripe-mock`.
 - `.run/BlackBox Backend Local.run.xml` runs `pnpm dev:backend`.
 - `.run/BlackBox Backend Sandbox.run.xml` runs `pnpm dev:backend:sandbox`.
 - `.run/BlackBox Static Site.run.xml` remains the frontend-only inspection/debug launcher and runs `pnpm site:dev`.
 - Only `BlackBox Static Site` opens a browser/debug target.
 - The static-site launcher remains pinned to `http://127.0.0.1:4321/blackbox-records/`.
 - If port `4321` is already in use, the static-site launcher fails fast instead of silently switching ports.
-- Local D1 comes from Wrangler automatically during `pnpm dev:backend`; no separate D1 process is part of the run-config flow.
+- Local D1 comes from Wrangler automatically during Worker dev; no separate D1 process is part of the run-config flow.
+- The stack launchers run D1 migrations and seed SQL before starting long-running services.
 - `pnpm --filter @blackbox/backend d1:smoke:local` remains a verification command, not a launch prerequisite.

@@ -46,10 +46,16 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - Frontend dev server: `pnpm dev` or `pnpm dev:web`
 - Frontend-only static-site launcher: `pnpm site:dev`
 - Backend dev server: `pnpm dev:backend`
+- Backend dev server with local stripe-mock API override: `pnpm dev:backend:mock`
 - Backend sandbox dev server: `pnpm dev:backend:sandbox`
 - Backend sandbox deploy: `pnpm deploy:backend:sandbox`
+- Full local stack with real Stripe test mode: `pnpm dev:stack:stripe-test`
+- Full local stack with Dockerized stripe-mock mode: `pnpm dev:stack:stripe-mock`
 - Backend local D1 smoke check: `pnpm --filter @blackbox/backend d1:smoke:local`
 - Backend local D1 seed apply: `pnpm --filter @blackbox/backend d1:seed:local`
+- Backend local D1 prepare flow: `pnpm --filter @blackbox/backend d1:prepare:local`
+- Backend local Stripe mock seed: `pnpm --filter @blackbox/backend d1:seed:stripe-mock:local`
+- Backend local Stripe test seed from ignored SQL: `pnpm --filter @blackbox/backend d1:seed:stripe-test:local`
 - Backend local D1 migration list/apply:
   - `pnpm --filter @blackbox/backend d1:migrations:list:local`
   - `pnpm --filter @blackbox/backend d1:migrations:apply:local`
@@ -67,16 +73,19 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 ### WebStorm launcher contract
 
 - The canonical committed IDE launcher is `.run/BlackBox Local Stack.run.xml`.
-- It must compose:
-  - `.run/BlackBox Backend Local.run.xml`
-  - `.run/BlackBox Static Site.run.xml`
+- It must keep running the root script `pnpm dev:stack:stripe-test`.
+- `.run/BlackBox Mock Stripe Stack.run.xml` must keep running the root script `pnpm dev:stack:stripe-mock`.
 - `.run/BlackBox Backend Local.run.xml` must keep running the root script `pnpm dev:backend`.
+- The root script `pnpm dev:backend:mock` must keep running the backend package script `pnpm --filter @blackbox/backend dev:mock`.
 - `.run/BlackBox Backend Sandbox.run.xml` must keep running the root script `pnpm dev:backend:sandbox`.
 - `.run/BlackBox Static Site.run.xml` remains the frontend-only launcher and must keep running the root script `pnpm site:dev`.
 - `pnpm site:dev` must keep the site on `http://127.0.0.1:4321/blackbox-records/`.
 - If that port is unavailable, the launcher should fail clearly rather than silently drifting to another port.
 - Only the static-site launcher should keep a browser/debug target attached.
-- Backend local D1 comes from Wrangler automatically during `pnpm dev:backend`; do not add a second D1 process to the run-config flow.
+- Backend local D1 comes from Wrangler automatically during Worker dev; do not add a second D1 process to the run-config flow.
+- The stack launcher scripts must run D1 migrations and seed SQL before starting the Worker/static site.
+- `pnpm dev:stack:stripe-test` is the real local checkout path and requires `PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, and ignored local Stripe test Price mappings.
+- `pnpm dev:stack:stripe-mock` starts Dockerized `stripe-mock`, uses `STRIPE_SECRET_KEY=sk_test_mock`, seeds local `price_mock_*` mappings, and renders a frontend mock checkout panel. It is not a real embedded Checkout browser substitute.
 - Runtime backend secrets belong in Worker secrets or `apps/backend/.dev.vars`, not in Astro public env vars or GitHub deploy credentials.
 - The backend runtime binding contract now includes `COMMERCE_DB`.
 - The backend persistence runtime now uses Prisma + `@prisma/adapter-d1` behind repository seams in:
@@ -105,6 +114,8 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - `OnlineStock` is the conservative checkout-facing quantity and may be lower than physical `Stock`.
 - Do not introduce `prisma migrate dev`, `prisma db push`, or `prisma migrate deploy` into this repo workflow.
 - The current backend-local secret contract is `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
+- `STRIPE_API_BASE_URL` is an optional backend runtime variable for local Stripe API overrides; the committed Wrangler `mock` env binds it to `http://127.0.0.1:12111`.
+- `PUBLIC_CHECKOUT_CLIENT_MODE` is the browser checkout mode switch. Use `stripe` for real Stripe.js and `mock` only for the local stripe-mock flow.
 - Checkout return origins are allowlisted through the Worker runtime variable `CHECKOUT_RETURN_ORIGINS`; never trust browser-submitted or arbitrary `Referer` origins.
 - The static checkout shell uses browser-safe `PUBLIC_STRIPE_PUBLISHABLE_KEY` to initialize Stripe.js; never expose `STRIPE_SECRET_KEY` through Astro public env.
 - Public shopper checkout APIs now live under `/api/store/*` and `/api/checkout/*`.

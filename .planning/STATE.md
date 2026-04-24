@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
 stopped_at: Phase 7 plan 5; add checkout return and retry state UI through ReadCheckoutState
-last_updated: "2026-04-24T07:20:00+03:00"
-last_activity: 2026-04-24 -- Mounted embedded Stripe Checkout from Worker-created sessions
+last_updated: "2026-04-24T08:15:00+03:00"
+last_activity: 2026-04-24 -- Added local stack launchers for Stripe test and stripe-mock modes
 progress:
   total_phases: 9
   completed_phases: 5
@@ -33,10 +33,10 @@ Total Plans in Phase: 7
 Status: Active
 Progress: 58%
 Last Activity: 2026-04-24
-Last Activity Description: Mounted embedded Stripe Checkout from Worker-created sessions
+Last Activity Description: Added local stack launchers for Stripe test and stripe-mock modes
 Paused At: Phase 7 plan 5; add checkout return and retry state UI through ReadCheckoutState
 
-Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has started: the Worker now exposes public store-offer lookup, variant offer lookup, `StartCheckout`, and `ReadCheckoutState` APIs, backed by D1 repository seams and a Stripe Checkout gateway. The frontend checkout shell now reads Worker-known offer and variant state, starts Worker-owned Checkout Sessions, and mounts Stripe embedded Checkout from the returned `clientSecret`; the next implementation step is checkout return and retry state UI through `ReadCheckoutState`.
+Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has started: the Worker now exposes public store-offer lookup, variant offer lookup, `StartCheckout`, and `ReadCheckoutState` APIs, backed by D1 repository seams and a Stripe Checkout gateway. The frontend checkout shell now reads Worker-known offer and variant state, starts Worker-owned Checkout Sessions, and mounts Stripe embedded Checkout from the returned `clientSecret`. Local development now has explicit full-stack launchers for real Stripe test mode and stripe-mock request-shape sanity mode; the next implementation step is checkout return and retry state UI through `ReadCheckoutState`.
 
 ## Performance Metrics
 
@@ -61,7 +61,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 **Recent Trend:**
 
 - Last 5 plans: 06.1.1-04, 07-01, 07-02, 07-03, 07-04
-- Trend: Protected stock policy, the first Worker checkout API contract, the frontend public checkout API seam, Worker-backed checkout shell reads, and embedded Stripe Checkout mounting are complete.
+- Trend: Protected stock policy, the first Worker checkout API contract, the frontend public checkout API seam, Worker-backed checkout shell reads, embedded Stripe Checkout mounting, and local stack launchers are complete.
 
 ## Accumulated Context
 
@@ -84,6 +84,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 - The static checkout shell now hydrates a small Worker-read status panel that displays backend-known offer, variant, and checkout eligibility state without starting payment.
 - The static checkout shell now uses browser-safe `PUBLIC_STRIPE_PUBLISHABLE_KEY` and Stripe.js to mount embedded Checkout from the Worker-returned `clientSecret`.
 - Checkout session return URLs are constrained by the Worker-side `CHECKOUT_RETURN_ORIGINS` allowlist and expected store checkout route shape.
+- Local checkout validation now has two explicit stack launchers: `pnpm dev:stack:stripe-test` for real Stripe test keys and real local Price mappings, and `pnpm dev:stack:stripe-mock` for Dockerized stripe-mock request-shape sanity plus a frontend mock checkout panel.
 
 ## Decisions Made
 
