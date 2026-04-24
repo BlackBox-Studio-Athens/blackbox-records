@@ -138,13 +138,17 @@ Plans:
 1. The Worker backend exposes the required StoreItem/Variant lookup, ReadCheckoutState, and StartCheckout endpoints using the approved domain contracts and the locked backend conventions.
 2. The static frontend checkout route mounts embedded Checkout using data and session state obtained through the Worker backend, not directly from Stripe, and return/retry state reads Worker-owned CheckoutState instead of raw Stripe browser contracts.
 3. The checkout path is testable locally and in sandbox using Stripe sandbox and webhook tooling.
-**Plans**: 3 plans
+**Plans**: 7 plans
 **Review gate**: Human review required on the final backend API contract and shopper-facing retry/return behavior.
 
 Plans:
 - [x] 07-01: Implement Worker APIs for item lookup, variant lookup, ReadCheckoutState, and StartCheckout
-- [ ] 07-02: Connect the static frontend checkout route to the Worker APIs, embedded Checkout, and Worker-owned return-state retrieval
-- [ ] 07-03: Validate the checkout loop locally and in sandbox with Stripe sandbox and webhook testing
+- [ ] 07-02: Add the frontend public checkout API client seam
+- [ ] 07-03: Wire the checkout shell to Worker offer and variant reads
+- [ ] 07-04: Mount embedded Stripe Checkout from Worker-created sessions
+- [ ] 07-05: Add checkout return and retry state UI through ReadCheckoutState
+- [ ] 07-06: Harden checkout browser states, unavailable handling, and no-secret guarantees
+- [ ] 07-07: Validate the local and sandbox checkout loop with real Stripe sandbox mappings
 
 ### Phase 8: Webhook Orders And Stock
 **Goal**: Make payment truth and stock mutation server-owned, verified, and idempotent in the Worker backend.
@@ -154,13 +158,17 @@ Plans:
 1. D1 stores the approved minimal order states, stock values, and backend mappings needed for authoritative payment handling.
 2. Verified Stripe webhooks hitting the Worker backend verify the raw body/signature, acknowledge safely, and remain the only path that marks orders paid.
 3. Stock decrements exactly once after confirmed payment success, unpaid flows leave stock untouched, and ReadCheckoutState reuses shared backend reconciliation logic without becoming payment authority.
-**Plans**: 3 plans
+**Plans**: 7 plans
 **Review gate**: Human review required on webhook verification, idempotency, and stock semantics.
 
 Plans:
-- [ ] 08-01: Extend the D1 schema and backend data-access layer for minimal order and stock state
-- [ ] 08-02: Implement the verified Worker webhook handler, shared Stripe reconciliation flow, and idempotent paid-order transitions
-- [ ] 08-03: Apply post-payment stock decrement and manual reconciliation behavior for low-volume operations
+- [ ] 08-01: Add minimal D1 order lifecycle schema and migration
+- [ ] 08-02: Add order repositories and lifecycle use-case seams
+- [ ] 08-03: Add verified Stripe webhook raw-body route contract
+- [ ] 08-04: Add shared Stripe checkout reconciliation use case
+- [ ] 08-05: Apply idempotent paid-order transition and stock decrement
+- [ ] 08-06: Handle unpaid, expired, canceled, and needs-review outcomes
+- [ ] 08-07: Add backend order-state readback and operator reconciliation notes
 
 ### Phase 9: Greece-Only BOX NOW Shipping
 **Goal**: Add the approved Greece-only locker gate before payment and keep fulfillment low-maintenance.
@@ -170,13 +178,16 @@ Plans:
 1. Greece-only shoppers must select a BOX NOW locker before entering payment.
 2. Paid orders persist only the approved thin locker snapshot.
 3. Fulfillment remains manual through the BOX NOW partner portal.
-**Plans**: 3 plans
+**Plans**: 6 plans
 **Review gate**: Human review required if implementation drifts from the approved locker UX or expands shipping scope.
 
 Plans:
-- [ ] 09-01: Gate checkout to Greece-only BOX NOW shipping and capture locker selection before session creation
-- [ ] 09-02: Persist the thin locker snapshot on the order and surface the selected locker back to the shopper
-- [ ] 09-03: Keep fulfillment manual through the BOX NOW partner portal and document the operator handoff
+- [ ] 09-01: Lock BOX NOW shipping data and secret contracts
+- [ ] 09-02: Add Greece-only locker selection UI before checkout
+- [ ] 09-03: Add backend checkout preflight for Greece-only locker selection
+- [ ] 09-04: Persist the thin locker snapshot on checkout/order state
+- [ ] 09-05: Surface selected locker state in checkout return/order recap
+- [ ] 09-06: Document manual BOX NOW fulfillment and sandbox validation
 
 ### Phase 10: Sandbox Verification And Release Gate
 **Goal**: Prove the implemented dual-deploy sandbox flow and package the milestone outcome for the go-live milestone.
@@ -186,12 +197,15 @@ Plans:
 1. The full sandbox path works from static browse through Worker checkout APIs, webhook-confirmed paid order, and D1 state updates.
 2. Required command checks, browser checks, and sandbox UAT evidence are captured across both deployment targets.
 3. The milestone ends with a human review package and an explicit handoff to Go-Live / Launch Hardening.
-**Plans**: 2 plans
+**Plans**: 5 plans
 **Review gate**: Human approval required before any production cutover milestone work starts.
 
 Plans:
-- [ ] 10-01: Run sandbox UAT, command validation, and browser verification across the implemented dual-deploy flow
-- [ ] 10-02: Produce milestone evidence, open-issues list, and the go-live handoff package
+- [ ] 10-01: Create local full-loop UAT checklist and scripts
+- [ ] 10-02: Verify sandbox deployment, secrets, D1, and Stripe mapping readiness
+- [ ] 10-03: Run sandbox end-to-end checkout, webhook, stock, and shipping evidence pass
+- [ ] 10-04: Run security, OpenAPI, browser, and no-secret release audit
+- [ ] 10-05: Produce milestone review package and go-live handoff
 
 ## Future Milestone Seeds
 
@@ -212,8 +226,8 @@ Phases execute in numeric order: `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 8 
 | 6. Static Storefront Slice | 7/7 | Completed | 2026-04-21 |
 | 6.1. Worker Commerce State Foundation | 4/4 | Completed | 2026-04-22 |
 | 6.1.1. Internal Stock Operations And Operator Access | 4/4 | Completed | 2026-04-24 |
-| 7. Worker Checkout And Stripe Sandbox Flow | 1/3 | Active | 2026-04-24 |
-| 8. Webhook Orders And Stock | 0/3 | Planned |  |
-| 9. Greece-Only BOX NOW Shipping | 0/3 | Planned |  |
-| 10. Sandbox Verification And Release Gate | 0/2 | Planned |  |
+| 7. Worker Checkout And Stripe Sandbox Flow | 1/7 | Active | 2026-04-24 |
+| 8. Webhook Orders And Stock | 0/7 | Planned |  |
+| 9. Greece-Only BOX NOW Shipping | 0/6 | Planned |  |
+| 10. Sandbox Verification And Release Gate | 0/5 | Planned |  |
 

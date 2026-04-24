@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 7 active; connect static checkout route to Worker APIs and embedded Checkout
-last_updated: "2026-04-24T06:40:00+03:00"
-last_activity: 2026-04-24 -- Implemented Worker checkout API contract and StartCheckout seam
+stopped_at: Phase 7 plan 2; add frontend public checkout API client seam
+last_updated: "2026-04-24T06:55:00+03:00"
+last_activity: 2026-04-24 -- Split remaining commerce milestone into small executable increments
 progress:
   total_phases: 9
   completed_phases: 5
-  total_plans: 36
+  total_plans: 50
   completed_plans: 26
-  percent: 72
+  percent: 52
 ---
 
 # Project State
@@ -29,21 +29,21 @@ Current Phase: 7
 Current Phase Name: Worker Checkout And Stripe Sandbox Flow
 Total Phases: 9
 Current Plan: 2
-Total Plans in Phase: 3
+Total Plans in Phase: 7
 Status: Active
-Progress: 72%
+Progress: 52%
 Last Activity: 2026-04-24
-Last Activity Description: Implemented Worker checkout API contract and StartCheckout seam
-Paused At: Phase 7 active; connect static checkout route to Worker APIs and embedded Checkout
+Last Activity Description: Split remaining commerce milestone into small executable increments
+Paused At: Phase 7 plan 2; add frontend public checkout API client seam
 
-Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has started: the Worker now exposes public store-offer lookup, variant offer lookup, `StartCheckout`, and `ReadCheckoutState` APIs, backed by D1 repository seams and a Stripe Checkout gateway. Frontend checkout mounting and sandbox loop validation remain next.
+Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has started: the Worker now exposes public store-offer lookup, variant offer lookup, `StartCheckout`, and `ReadCheckoutState` APIs, backed by D1 repository seams and a Stripe Checkout gateway. The remaining milestone is now split into tiny executable increments, and the next implementation step is the frontend public checkout API client seam.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 17
-- Total plans completed: 24
+- Total plans completed: 26
+- Total plans remaining: 24
 - Average duration: -
 - Total execution time: -
 
@@ -56,11 +56,12 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 | 6 | 7 | Completed | 2026-04-21 |
 | 6.1 | 4 | Completed | 2026-04-22 |
 | 6.1.1 | 4 | Completed | 2026-04-24 |
+| 7 | 1/7 | Active | 2026-04-24 |
 
 **Recent Trend:**
 
 - Last 5 plans: 06.1.1-01, 06.1.1-02, 06.1.1-03, 06.1.1-04, 07-01
-- Trend: Backend commerce-state foundation, protected stock operations, and the first Worker checkout API contract are complete; next work connects the static checkout route.
+- Trend: Backend commerce-state foundation, protected stock operations, and the first Worker checkout API contract are complete; remaining checkout, webhook, shipping, and verification work is now split into small commits.
 
 ## Accumulated Context
 
@@ -110,7 +111,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
-- Connect the static frontend checkout route to Worker APIs and embedded Checkout in Phase 7 plan 2.
+- Add the frontend public checkout API client seam in Phase 7 plan 2.
 
 ## Blockers
 
@@ -122,6 +123,6 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 ## Session
 
 **Last Date:** 2026-04-22T01:52:14.9376385+03:00
-**Stopped At:** Phase 7 active; connect static checkout route to Worker APIs and embedded Checkout
+**Stopped At:** Phase 7 plan 2; add frontend public checkout API client seam
 **Resume File:** .planning/ROADMAP.md
 
