@@ -152,7 +152,7 @@ Current Worker scope:
 - checkout creation is Worker-owned and uses Stripe embedded Checkout Sessions through a backend gateway seam
 - the static checkout shell mounts Stripe embedded Checkout from Worker-created sessions
 - no webhook order authority, stock decrement, or frontend D1 wiring yet
-- no production deployment path yet
+- no backend production deployment path yet
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
 - generated frontend-facing types and `openapi-typescript-fetch` wrappers live in `packages/api-client/`
 - frontend discovers the backend only through `PUBLIC_BACKEND_BASE_URL`
@@ -243,7 +243,9 @@ pnpm generate:api
 - The current backend-local runtime secret contract is:
   - `STRIPE_SECRET_KEY`
   - `STRIPE_WEBHOOK_SECRET`
+- The checkout return-origin allowlist is configured server-side with `CHECKOUT_RETURN_ORIGINS`.
 - `COMMERCE_DB` is runtime-only backend infrastructure, not a browser env var and not a GitHub Actions credential.
+- `CHECKOUT_RETURN_ORIGINS` is a Worker runtime variable, not a browser-selected return URL.
 - `apps/backend/prisma/schema.prisma` includes a local placeholder SQLite URL only to satisfy the current Prisma 6 CLI; Worker runtime access still goes through `env.COMMERCE_DB`.
 - Future privileged backend-only values such as BOX NOW credentials also remain runtime-only until the phases that introduce them.
 - `PUBLIC_BACKEND_BASE_URL` remains the only browser-facing backend env.
@@ -295,6 +297,7 @@ cp apps/backend/.dev.vars.example apps/backend/.dev.vars
 - `apps/backend/.dev.vars` is local-only, ignored by git, and must never be committed.
 - Missing backend runtime secrets are acceptable only for local work that does not exercise those routes.
 - Current Stripe-backed checkout routes require `STRIPE_SECRET_KEY` before creating or reading Checkout Sessions.
+- Checkout session creation accepts return URLs only from `CHECKOUT_RETURN_ORIGINS`; local defaults include `http://127.0.0.1:4321`, `http://localhost:4321`, and the GitHub Pages origin.
 - The static checkout shell also requires `PUBLIC_STRIPE_PUBLISHABLE_KEY` before it can mount embedded Checkout in the browser.
 
 CI/deploy credentials:

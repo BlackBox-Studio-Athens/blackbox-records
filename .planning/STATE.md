@@ -83,6 +83,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 - The Worker now exposes public checkout/store API routes under `/api/store/*` and `/api/checkout/*`, with `StartCheckout` validating store item mapping, availability, `OnlineStock`, and Stripe price mapping before creating an embedded Checkout Session.
 - The static checkout shell now hydrates a small Worker-read status panel that displays backend-known offer, variant, and checkout eligibility state without starting payment.
 - The static checkout shell now uses browser-safe `PUBLIC_STRIPE_PUBLISHABLE_KEY` and Stripe.js to mount embedded Checkout from the Worker-returned `clientSecret`.
+- Checkout session return URLs are constrained by the Worker-side `CHECKOUT_RETURN_ORIGINS` allowlist and expected store checkout route shape.
 
 ## Decisions Made
 
@@ -108,6 +109,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 | v1.1 | D1 is the authoritative stock ledger using `Stock`, `StockChange`, and `StockCount`; spreadsheets are temporary capture/reporting only. | Active |
 | v1.1 | Each `Variant` exposes a conservative `OnlineStock` quantity separate from total stock balance before public checkout depends on live stock. | Active |
 | v1.1 | Public checkout starts only through Worker-owned `StartCheckout`; the browser receives a Stripe Checkout `clientSecret` but never receives Stripe price IDs or server secrets. | Active |
+| v1.1 | Stripe Checkout return URLs are Worker-validated against `CHECKOUT_RETURN_ORIGINS`; arbitrary browser origins are not trusted. | Active |
 
 ### Pending Todos
 

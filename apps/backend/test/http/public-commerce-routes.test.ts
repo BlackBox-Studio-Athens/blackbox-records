@@ -32,6 +32,7 @@ vi.mock('../../src/interfaces/http/routes/public-commerce-services', () => ({
 
 const testBindings = {
     APP_ENV: 'local' as const,
+    CHECKOUT_RETURN_ORIGINS: 'https://blackbox.example,http://127.0.0.1:4321',
     COMMERCE_DB: {} as D1Database,
     STRIPE_SECRET_KEY: 'sk_test_123',
 };
@@ -126,6 +127,7 @@ describe('public commerce routes', () => {
                 }),
                 headers: {
                     origin: 'https://blackbox.example',
+                    referer: 'https://blackbox.example/blackbox-records/store/barren-point/checkout/',
                     'content-type': 'application/json',
                 },
                 method: 'POST',
@@ -134,13 +136,66 @@ describe('public commerce routes', () => {
         );
 
         expect(mockStartCheckout).toHaveBeenCalledWith({
-            returnUrl: 'https://blackbox.example/store/barren-point/checkout/return?session_id={CHECKOUT_SESSION_ID}',
+            returnUrl:
+                'https://blackbox.example/blackbox-records/store/barren-point/checkout/return?session_id={CHECKOUT_SESSION_ID}',
             storeItemSlug: 'barren-point',
             variantId: 'variant_barren-point_standard',
         });
         expect(response.status).toBe(200);
         await expect(response.json()).resolves.toEqual({
             clientSecret: 'cs_test_123_secret_abc',
+        });
+    });
+
+    it('rejects checkout return URLs from unapproved origins', async () => {
+        const app = createHttpApp();
+        const response = await app.request(
+            'http://backend.test/api/checkout/sessions',
+            {
+                body: JSON.stringify({
+                    storeItemSlug: 'barren-point',
+                    variantId: 'variant_barren-point_standard',
+                }),
+                headers: {
+                    origin: 'https://evil.example',
+                    referer: 'https://evil.example/store/barren-point/checkout/',
+                    'content-type': 'application/json',
+                },
+                method: 'POST',
+            },
+            testBindings,
+        );
+
+        expect(mockStartCheckout).not.toHaveBeenCalled();
+        expect(response.status).toBe(409);
+        await expect(response.json()).resolves.toEqual({
+            error: 'Checkout return URL is not allowed.',
+        });
+    });
+
+    it('ignores malformed checkout referers instead of failing open', async () => {
+        const app = createHttpApp();
+        const response = await app.request(
+            'http://backend.test/api/checkout/sessions',
+            {
+                body: JSON.stringify({
+                    storeItemSlug: 'barren-point',
+                    variantId: 'variant_barren-point_standard',
+                }),
+                headers: {
+                    origin: 'https://evil.example',
+                    referer: 'not-a-url',
+                    'content-type': 'application/json',
+                },
+                method: 'POST',
+            },
+            testBindings,
+        );
+
+        expect(mockStartCheckout).not.toHaveBeenCalled();
+        expect(response.status).toBe(409);
+        await expect(response.json()).resolves.toEqual({
+            error: 'Checkout return URL is not allowed.',
         });
     });
 
@@ -156,6 +211,8 @@ describe('public commerce routes', () => {
                     variantId: 'variant_barren-point_standard',
                 }),
                 headers: {
+                    origin: 'https://blackbox.example',
+                    referer: 'https://blackbox.example/store/barren-point/checkout/',
                     'content-type': 'application/json',
                 },
                 method: 'POST',

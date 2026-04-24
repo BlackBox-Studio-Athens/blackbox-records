@@ -1,5 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
 
+import { CheckoutConfigurationError } from '../../../application/commerce/checkout';
 import type { AppOpenApi } from '../../../env';
 import { createPublicCommerceServices } from './public-commerce-services';
 
@@ -230,7 +231,12 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
         try {
             const body = context.req.valid('json');
             const checkoutSession = await services.startCheckout({
-                returnUrl: createCheckoutReturnUrl(context.req.raw.headers, context.req.url, body.storeItemSlug),
+                returnUrl: createCheckoutReturnUrl(
+                    context.req.raw.headers,
+                    context.req.url,
+                    body.storeItemSlug,
+                    context.env.CHECKOUT_RETURN_ORIGINS,
+                ),
                 storeItemSlug: body.storeItemSlug,
                 variantId: body.variantId,
             });
@@ -283,17 +289,64 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
     });
 }
 
-function createCheckoutReturnUrl(headers: Headers, requestUrl: string, storeItemSlug: string): string {
+const DEFAULT_CHECKOUT_RETURN_ORIGINS = [
+    'http://127.0.0.1:4321',
+    'http://localhost:4321',
+    'https://blackbox-studio-athens.github.io',
+];
+
+function createCheckoutReturnUrl(
+    headers: Headers,
+    requestUrl: string,
+    storeItemSlug: string,
+    configuredReturnOrigins?: string,
+): string {
+    const allowedOrigins = readAllowedReturnOrigins(configuredReturnOrigins);
     const referer = headers.get('referer');
 
     if (referer) {
-        const refererUrl = new URL(referer);
-        const checkoutPath = refererUrl.pathname.endsWith('/') ? refererUrl.pathname : `${refererUrl.pathname}/`;
+        const refererUrl = parseUrl(referer);
 
-        return `${refererUrl.origin}${checkoutPath}return?session_id={CHECKOUT_SESSION_ID}`;
+        if (refererUrl) {
+            const checkoutPath = refererUrl.pathname.endsWith('/') ? refererUrl.pathname : `${refererUrl.pathname}/`;
+
+            if (allowedOrigins.has(refererUrl.origin) && isCheckoutPathForStoreItem(checkoutPath, storeItemSlug)) {
+                return `${refererUrl.origin}${checkoutPath}return?session_id={CHECKOUT_SESSION_ID}`;
+            }
+        }
     }
 
     const origin = headers.get('origin') ?? new URL(requestUrl).origin;
+    const originUrl = parseUrl(origin);
 
-    return `${origin}/store/${encodeURIComponent(storeItemSlug)}/checkout/return?session_id={CHECKOUT_SESSION_ID}`;
+    if (!originUrl || !allowedOrigins.has(originUrl.origin)) {
+        throw new CheckoutConfigurationError('Checkout return URL is not allowed.');
+    }
+
+    return `${originUrl.origin}/store/${encodeURIComponent(storeItemSlug)}/checkout/return?session_id={CHECKOUT_SESSION_ID}`;
+}
+
+function readAllowedReturnOrigins(configuredReturnOrigins?: string): Set<string> {
+    const configuredOrigins = configuredReturnOrigins
+        ?.split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean);
+
+    return new Set(
+        (configuredOrigins?.length ? configuredOrigins : DEFAULT_CHECKOUT_RETURN_ORIGINS)
+            .map((origin) => parseUrl(origin)?.origin)
+            .filter((origin): origin is string => Boolean(origin)),
+    );
+}
+
+function isCheckoutPathForStoreItem(pathname: string, storeItemSlug: string): boolean {
+    return pathname.endsWith(`/store/${encodeURIComponent(storeItemSlug)}/checkout/`);
+}
+
+function parseUrl(value: string): URL | null {
+    try {
+        return new URL(value);
+    } catch {
+        return null;
+    }
 }

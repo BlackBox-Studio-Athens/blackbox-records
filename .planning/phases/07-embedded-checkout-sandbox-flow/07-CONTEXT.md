@@ -31,6 +31,7 @@ Phase 7 implements Worker-owned checkout APIs and connects the static frontend c
 - **D-07:** Return and retry pages retrieve CheckoutState through a Worker-owned checkout-state endpoint; raw Stripe query params and raw Stripe IDs are not the durable frontend contract.
 - **D-08:** Phase 7 APIs must already be shaped so Phase 8 can reuse one backend-owned reconciliation use case across ReadCheckoutState and verified webhook handling.
 - **D-09:** On Stripe API `2026-04-22.dahlia`, embedded Checkout is represented by `ui_mode: embedded_page`; older docs may refer to this as embedded Checkout.
+- **D-10:** Checkout return URLs must be constrained by the Worker-side `CHECKOUT_RETURN_ORIGINS` allowlist and expected `/store/<slug>/checkout/` route shape; arbitrary browser `Referer` origins are not trusted.
 
 </decisions>
 

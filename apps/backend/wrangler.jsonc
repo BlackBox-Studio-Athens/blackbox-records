@@ -13,7 +13,8 @@
     }
   ],
   "vars": {
-    "APP_ENV": "local"
+    "APP_ENV": "local",
+    "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321,https://blackbox-studio-athens.github.io"
   },
   "env": {
     "sandbox": {
@@ -27,7 +28,8 @@
         }
       ],
       "vars": {
-        "APP_ENV": "sandbox"
+        "APP_ENV": "sandbox",
+        "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321,https://blackbox-studio-athens.github.io"
       }
     },
     "production": {

@@ -5,7 +5,9 @@ export type AppEnvironment = 'local' | 'sandbox' | 'production';
 export type AppBindings = {
     APP_ENV: AppEnvironment;
     COMMERCE_DB: D1Database;
+    CHECKOUT_RETURN_ORIGINS?: string;
     STRIPE_SECRET_KEY: string;
+    STRIPE_WEBHOOK_SECRET?: string;
 };
 
 export type AppEnv = {
