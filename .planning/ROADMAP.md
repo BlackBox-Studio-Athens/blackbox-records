@@ -2,12 +2,12 @@
 
 ## Overview
 
-This roadmap covers milestone `v1.1`, the Stripe Sandbox Integration milestone. The goal is to add native commerce to the existing Astro site using a dual-deploy monorepo model:
+This roadmap covers milestone `v1.1`, the Stripe Sandbox Integration milestone. The goal is to add native commerce to the existing Astro site using a Cloudflare-fronted dual-runtime monorepo model:
 
-- the Astro site remains a static frontend deployed to GitHub Pages
+- the Astro site remains a static frontend, moving from GitHub Pages to Cloudflare Pages during this milestone
 - a separate Cloudflare Worker backend is added in-repo for dynamic commerce APIs, Stripe integration, webhooks, and D1 state
 
-The live GitHub Pages + Fourthwall production experience remains the safety baseline until a later go-live milestone.
+The live GitHub Pages + Fourthwall production experience remains the safety baseline until the Cloudflare Pages migration is explicitly validated.
 
 The UI contracts for the store flow and BOX NOW locker flow were approved in the archived pre-sandbox milestone. Re-run `$gsd-ui-phase` only if implementation work materially changes those approved shopper flows.
 
@@ -32,6 +32,7 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - [x] **Phase 6.1: Worker Commerce State Foundation** - Introduce D1 + Prisma in the separate Worker backend behind repository and API boundaries before checkout work
 - [x] **Phase 6.1.1: Internal Stock Operations And Operator Access** - Add protected staff-only stock tooling and operator auth before checkout depends on live stock
 - [ ] **Phase 7: Worker Checkout And Stripe Sandbox Flow** - Implement Worker-owned checkout APIs and connect the frontend checkout route to Stripe sandbox
+- [ ] **Phase 7.1: Cloudflare Pages Static Frontend Migration** - Move the static Astro frontend from GitHub Pages to Cloudflare Pages before webhook/order/shipping verification depends on stable Cloudflare-hosted origins
 - [ ] **Phase 8: Webhook Orders And Stock** - Make payment truth and stock mutation Worker-owned, webhook-authoritative, and idempotent
 - [ ] **Phase 9: Greece-Only BOX NOW Shipping** - Add the approved locker-selection gate and thin fulfillment data contract
 - [ ] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow and prepare the go-live handoff package
@@ -131,28 +132,58 @@ Plans:
 - [x] 06.1.1-04: Lock spreadsheet policy, audit attribution, and the online-vs-offline stock buffer rules
 
 ### Phase 7: Worker Checkout And Stripe Sandbox Flow
-**Goal**: Implement the Worker-owned checkout API surface and connect the static frontend checkout route to Stripe sandbox.
+**Goal**: Implement the Worker-owned checkout API surface and connect the static frontend checkout route to a Shopify-familiar cart and Stripe sandbox checkout flow.
 **Depends on**: Phase 6.1.1
-**Requirements**: CHKO-01, CHKO-02, CHKO-03
+**Requirements**: CHKO-01, CHKO-02, CHKO-03, CHKO-04, CHKO-05
 **Success Criteria** (what must be TRUE):
 1. The Worker backend exposes the required StoreItem/Variant lookup, ReadCheckoutState, and StartCheckout endpoints using the approved domain contracts and the locked backend conventions.
-2. The static frontend checkout route mounts embedded Checkout using data and session state obtained through the Worker backend, not directly from Stripe, and return/retry state reads Worker-owned CheckoutState instead of raw Stripe browser contracts.
-3. The checkout path is testable locally and in sandbox using real Stripe test mappings, with stripe-mock available only as a local request-shape sanity path.
-**Plans**: 7 plans
-**Review gate**: Human review required on the final backend API contract and shopper-facing retry/return behavior.
+2. Shopper-facing store URLs describe the sellable item/option being purchased, not legacy release shorthand or backend mapping names.
+3. The static frontend provides a familiar single-item cart affordance, cart icon, cart drawer/summary, and checkout page layout before mounting embedded Stripe Checkout.
+4. The static frontend checkout route mounts embedded Checkout using data and session state obtained through the Worker backend, not directly from Stripe, and return/retry state reads Worker-owned CheckoutState instead of raw Stripe browser contracts.
+5. The checkout path is testable locally and in sandbox using real Stripe test mappings, with stripe-mock available as the all-current-items local no-network checkout readiness path.
+6. Every current distro entry and release entry is treated as a real sellable store candidate for local mock checkout readiness, while unknown real quantities remain uncounted until staff records stock through D1-backed stock operations.
+**Plans**: 16 plans
+**Review gate**: Human review required on the shopper-facing URL/cart/checkout UX, final backend API contract, and retry/return behavior.
 
 Plans:
 - [x] 07-01: Implement Worker APIs for item lookup, variant lookup, ReadCheckoutState, and StartCheckout
 - [x] 07-02: Add the frontend public checkout API client seam
 - [x] 07-03: Wire the checkout shell to Worker offer and variant reads
 - [x] 07-04: Mount embedded Stripe Checkout from Worker-created sessions
-- [ ] 07-05: Add checkout return and retry state UI through ReadCheckoutState
-- [ ] 07-06: Harden checkout browser states, unavailable handling, and no-secret guarantees
-- [ ] 07-07: Validate the local and sandbox checkout loop with real Stripe sandbox mappings
+- [ ] 07-05: Correct shopper-facing item option URLs and legacy slug redirects
+- [ ] 07-06: Add the storefront cart icon and single-item cart state seam
+- [ ] 07-07: Build the Shopify-inspired cart drawer and item summary
+- [ ] 07-08: Refactor PDP and checkout entry actions around Add To Cart and Checkout
+- [ ] 07-09: Rebuild the checkout page into a familiar Shopify-like order summary plus embedded Checkout layout
+- [ ] 07-10: Add checkout return and retry state UI through ReadCheckoutState
+- [ ] 07-11: Harden checkout browser states, unavailable handling, cart edge cases, and no-secret guarantees
+- [ ] 07-12: Treat all current distro and release entries as sellable store candidates
+- [ ] 07-13: Generate local mock commerce state for every current store item
+- [ ] 07-14: Add all-items local mock checkout readiness checks
+- [ ] 07-15: Run local mock checkout UAT across representative item types
+- [ ] 07-16: Validate the local and sandbox checkout loop with real Stripe sandbox mappings
+
+### Phase 7.1: Cloudflare Pages Static Frontend Migration (INSERTED)
+**Goal**: Move the static Astro frontend deployment target from GitHub Pages to Cloudflare Pages while preserving the static frontend model and separate Worker backend boundary.
+**Depends on**: Phase 7
+**Requirements**: DEPL-01, DEPL-02, DEPL-03, OPER-01
+**Success Criteria** (what must be TRUE):
+1. The Astro frontend deploys to Cloudflare Pages from the monorepo using the existing static build output without introducing SSR, Pages Functions, or frontend-owned secrets.
+2. The public storefront, protected ops UI, and checkout browser flows use explicit Cloudflare Pages environment/origin contracts for the Worker backend, Stripe publishable key, and checkout return allowlist.
+3. GitHub Pages remains a rollback/safety reference until Cloudflare Pages preview and production-like sandbox checks pass, then docs clearly identify Cloudflare Pages as the canonical static frontend target for the remainder of the milestone.
+**Plans**: 5 plans
+**Review gate**: Human review required before GitHub Pages is treated as non-canonical because this changes hosting, CI/CD, URL/origin assumptions, and checkout return-origin configuration.
+
+Plans:
+- [ ] 07.1-01: Lock the Cloudflare Pages deployment contract and rollback posture
+- [ ] 07.1-02: Add Cloudflare Pages project config and direct-upload CI workflow
+- [ ] 07.1-03: Move frontend browser env and checkout return-origin contracts to Cloudflare Pages
+- [ ] 07.1-04: Validate Cloudflare Pages previews, production branch deploys, and Worker API routing
+- [ ] 07.1-05: Retire GitHub Pages as canonical hosting in docs after Cloudflare Pages acceptance
 
 ### Phase 8: Webhook Orders And Stock
 **Goal**: Make payment truth and stock mutation server-owned, verified, and idempotent in the Worker backend.
-**Depends on**: Phase 7
+**Depends on**: Phase 7.1
 **Requirements**: ORDR-01, ORDR-02, ORDR-03, ORDR-04, SECU-02
 **Success Criteria** (what must be TRUE):
 1. D1 stores the approved minimal order states, stock values, and backend mappings needed for authoritative payment handling.
@@ -217,7 +248,7 @@ Plans:
 ## Progress
 
 **Execution Order:**  
-Phases execute in numeric order: `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 8 → 9 → 10`
+Phases execute in numeric order: `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 7.1 → 8 → 9 → 10`
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -226,7 +257,8 @@ Phases execute in numeric order: `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 8 
 | 6. Static Storefront Slice | 7/7 | Completed | 2026-04-21 |
 | 6.1. Worker Commerce State Foundation | 4/4 | Completed | 2026-04-22 |
 | 6.1.1. Internal Stock Operations And Operator Access | 4/4 | Completed | 2026-04-24 |
-| 7. Worker Checkout And Stripe Sandbox Flow | 4/7 | Active | 2026-04-24 |
+| 7. Worker Checkout And Stripe Sandbox Flow | 4/16 | Active | 2026-04-24 |
+| 7.1. Cloudflare Pages Static Frontend Migration | 0/5 | Planned |  |
 | 8. Webhook Orders And Stock | 0/7 | Planned |  |
 | 9. Greece-Only BOX NOW Shipping | 0/6 | Planned |  |
 | 10. Sandbox Verification And Release Gate | 0/5 | Planned |  |

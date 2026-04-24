@@ -35,6 +35,31 @@
 - backend StartCheckout endpoint
 - frontend checkout page fetching session state from backend
 
+## Shopify-Familiar UX Research Addendum
+
+See `07-SHOPIFY-CHECKOUT-RESEARCH.md` for the UI research pass.
+
+Key conclusions:
+
+- Use free Shopify theme patterns as familiarity references, especially Dawn's cart drawer, line item, subtotal, continue shopping, and checkout CTA structure.
+- Do not copy Shopify theme code, Liquid, CSS, or visual assets.
+- Keep the BlackBox implementation Astro/React/shadcn-native.
+- Correct shopper-facing item option URLs before cart work; the current `/store/barren-point/` route is misleading for the shown `Disintegration` Black Vinyl LP option.
+- Add a single-item cart icon and drawer for familiarity while keeping true multi-item cart behavior out of scope.
+- Keep checkout simple, high-contrast, and low-distraction; Stripe embedded Checkout owns payment internals.
+
+## All-Items Local Mock Readiness Addendum
+
+The current site items are real sellable items across both distro and releases, but real quantities are not yet counted.
+
+Key conclusions:
+
+- Treat every current distro JSON entry and release Markdown entry as a sellable store candidate for local mock checkout readiness.
+- Use fake development stock only in local stripe-mock mode so every current item can exercise the local buy path.
+- Do not treat fake local stock as a label inventory count, sandbox stock count, or production stock count.
+- Keep real Stripe test Price IDs out of git; local mock mode can use committed `price_mock_*` mappings for every current variant.
+- Real Stripe test-mode all-items coverage is deferred. Final Phase 7 validation may use selected real sandbox Price mappings while mock mode proves all-items route and API readiness.
+
 ---
-*Research completed: 2026-04-20*
+*Research completed: 2026-04-20; Shopify UX addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25*
 

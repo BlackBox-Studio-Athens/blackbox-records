@@ -11,6 +11,7 @@
 - [x] **DEPL-02**: Static frontend and separate Worker backend can communicate locally and in sandbox through an explicit environment and URL contract.
 - [x] **DEPL-03**: Sandbox deployment and testing can proceed without changing the current live GitHub Pages + Fourthwall production path.
 - [x] **DEPL-04**: Team can bootstrap local D1 and a Prisma-compatible migration workflow inside the Worker backend before Stripe checkout implementation begins.
+- [ ] **DEPL-05**: Team can migrate the static Astro frontend from GitHub Pages to Cloudflare Pages with preview validation, rollback posture, and explicit Worker/checkout origin configuration.
 
 ### Commerce Architecture
 
@@ -31,6 +32,8 @@
 - [x] **CHKO-01**: Shopper can start single-item checkout from store item detail using a Worker-created Checkout Session with Stripe embedded Checkout (`ui_mode: embedded_page` on the current Stripe API version), with Checkout Sessions as the only approved v1 payment-creation API.
 - [ ] **CHKO-02**: Shopper can complete or retry checkout through dedicated in-site checkout and return states that retrieve status through Worker-owned APIs without treating the browser as payment authority.
 - [ ] **CHKO-03**: Team can validate Worker-backed `StartCheckout`, embedded mount, and Worker-owned return-page/ReadCheckoutState flow in Stripe sandbox and local webhook testing.
+- [ ] **CHKO-04**: Shopper-facing store URLs, cart affordances, and checkout layout feel familiar to Shopify buyers while remaining a single-item flow with Worker-owned checkout authority.
+- [ ] **CHKO-05**: Team can run a local no-network mock checkout readiness path for every current distro and release store item using fake local stock and mock Stripe mappings, without treating that fake stock as real inventory.
 
 ### Orders & Stock
 
@@ -90,7 +93,7 @@
 | Live-mode Stripe keys or real-money processing | This milestone stays in sandbox |
 | Browser-side writes to orders or stock | Violates the trust boundary for payment and stock state |
 | Stock reservation in v1 | Explicitly deferred to keep the first release simple and authoritative on payment webhook success |
-| Multi-item cart | Single-item `Buy Now` is the approved MVP shape |
+| True multi-item cart | This milestone may add a single-item cart-like UX, cart icon, and cart drawer, but multiple line items and quantity management remain deferred |
 | Non-Greece shipping paths | Greece-only BOX NOW is the approved v1 shipping scope |
 | Automated BOX NOW fulfillment | Manual partner-portal fulfillment is sufficient for projected low volume |
 | Full operator dashboard / OMS beyond thin stock operations | Low order volume does not justify the maintenance cost yet |
@@ -103,6 +106,7 @@
 | DEPL-02 | Phase 5 | Completed |
 | DEPL-03 | Phase 5 | Completed |
 | DEPL-04 | Phase 6.1 | Completed |
+| DEPL-05 | Phase 7.1 | Pending |
 | ARCH-01 | Phase 5.1 | Completed |
 | ARCH-02 | Phase 5.1 | Completed |
 | ARCH-03 | Phase 5.1 | Completed |
@@ -119,6 +123,8 @@
 | CHKO-01 | Phase 7 | Completed |
 | CHKO-02 | Phase 7 | Pending |
 | CHKO-03 | Phase 7 | Pending |
+| CHKO-04 | Phase 7 | Pending |
+| CHKO-05 | Phase 7 | Pending |
 | ORDR-01 | Phase 8 | Pending |
 | ORDR-02 | Phase 8 | Pending |
 | ORDR-03 | Phase 8 | Pending |
@@ -132,11 +138,11 @@
 | OPER-02 | Phase 10 | Pending |
 
 **Coverage:**
-- v1 requirements: 31 total
-- Mapped to phases: 31
+- v1 requirements: 34 total
+- Mapped to phases: 34
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-19*  
-*Last updated: 2026-04-21 after the storefront implementation review and Phase 6 alignment*
+*Last updated: 2026-04-25 after adding all-current-items local mock checkout readiness to Phase 7*
 

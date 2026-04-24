@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 7 plan 5; add checkout return and retry state UI through ReadCheckoutState
-last_updated: "2026-04-24T08:15:00+03:00"
-last_activity: 2026-04-24 -- Added local stack launchers for Stripe test and stripe-mock modes
+stopped_at: Phase 7 plan 5; correct shopper-facing item option URLs and legacy slug redirects
+last_updated: "2026-04-25T02:32:58+03:00"
+last_activity: 2026-04-25 -- Added all-current-items local mock checkout readiness to the Phase 7 plan
 progress:
-  total_phases: 9
+  total_phases: 10
   completed_phases: 5
-  total_plans: 50
+  total_plans: 64
   completed_plans: 29
-  percent: 58
+  percent: 45
 ---
 
 # Project State
@@ -27,23 +27,23 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 
 Current Phase: 7
 Current Phase Name: Worker Checkout And Stripe Sandbox Flow
-Total Phases: 9
+Total Phases: 10
 Current Plan: 5
-Total Plans in Phase: 7
+Total Plans in Phase: 16
 Status: Active
-Progress: 58%
-Last Activity: 2026-04-24
-Last Activity Description: Added local stack launchers for Stripe test and stripe-mock modes
-Paused At: Phase 7 plan 5; add checkout return and retry state UI through ReadCheckoutState
+Progress: 45%
+Last Activity: 2026-04-25
+Last Activity Description: Added all-current-items local mock checkout readiness to the Phase 7 plan
+Paused At: Phase 7 plan 5; correct shopper-facing item option URLs and legacy slug redirects
 
-Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has started: the Worker now exposes public store-offer lookup, variant offer lookup, `StartCheckout`, and `ReadCheckoutState` APIs, backed by D1 repository seams and a Stripe Checkout gateway. The frontend checkout shell now reads Worker-known offer and variant state, starts Worker-owned Checkout Sessions, and mounts Stripe embedded Checkout from the returned `clientSecret`. Local development now has explicit full-stack launchers for real Stripe test mode and stripe-mock request-shape sanity mode; the next implementation step is checkout return and retry state UI through `ReadCheckoutState`.
+Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has started: the Worker now exposes public store-offer lookup, variant offer lookup, `StartCheckout`, and `ReadCheckoutState` APIs, backed by D1 repository seams and a Stripe Checkout gateway. The frontend checkout shell now reads Worker-known offer and variant state, starts Worker-owned Checkout Sessions, and mounts Stripe embedded Checkout from the returned `clientSecret`. Phase 7 is now replanned before return/retry work so shopper-facing URLs describe the purchased item option, the checkout path gains a familiar single-item cart icon, cart drawer, cart summary, and Shopify-inspired checkout layout, and local mock checkout readiness covers every current distro entry and release entry. Local fake stock is allowed only in stripe-mock mode; sandbox/production stock remains uncounted until staff records it through D1-backed stock operations. Phase 7.1 is planned after Phase 7 to migrate the static frontend from GitHub Pages to Cloudflare Pages before Phase 8 webhook/order work depends on final hosted origins; the next implementation step is correcting shopper-facing item option URLs and legacy slug redirects.
 
 ## Performance Metrics
 
 **Velocity:**
 
 - Total plans completed: 29
-- Total plans remaining: 21
+- Total plans remaining: 31
 - Average duration: -
 - Total execution time: -
 
@@ -56,7 +56,8 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 | 6 | 7 | Completed | 2026-04-21 |
 | 6.1 | 4 | Completed | 2026-04-22 |
 | 6.1.1 | 4 | Completed | 2026-04-24 |
-| 7 | 4/7 | Active | 2026-04-24 |
+| 7 | 4/16 | Active | 2026-04-24 |
+| 7.1 | 0/5 | Planned | - |
 
 **Recent Trend:**
 
@@ -83,18 +84,23 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 - The Worker now exposes public checkout/store API routes under `/api/store/*` and `/api/checkout/*`, with `StartCheckout` validating store item mapping, availability, `OnlineStock`, and Stripe price mapping before creating an embedded Checkout Session.
 - The static checkout shell now hydrates a small Worker-read status panel that displays backend-known offer, variant, and checkout eligibility state without starting payment.
 - The static checkout shell now uses browser-safe `PUBLIC_STRIPE_PUBLISHABLE_KEY` and Stripe.js to mount embedded Checkout from the Worker-returned `clientSecret`.
+- Phase 7 must now correct the current `/store/barren-point/` route drift so the shopper-facing URL and page title describe the purchased option, for example Disintegration by Afterwise on Black Vinyl LP, rather than legacy release shorthand.
+- Phase 7 must add a familiar single-item cart UX with a cart icon, cart drawer/summary, checkout CTA, and Shopify-inspired order summary while keeping multi-item cart semantics out of scope.
+- Phase 7 must treat every current distro entry and release entry as a real sellable store candidate for local mock checkout readiness, even if real quantities are unknown.
+- Phase 7 may seed fake local mock stock and mock Stripe Price mappings for every current item so the no-network local checkout path can exercise representative item types; that fake stock must never be described as a real stock count.
 - Checkout session return URLs are constrained by the Worker-side `CHECKOUT_RETURN_ORIGINS` allowlist and expected store checkout route shape.
-- Local checkout validation now has two explicit stack launchers: `pnpm dev:stack:stripe-test` for real Stripe test keys and real local Price mappings, and `pnpm dev:stack:stripe-mock` for Dockerized stripe-mock request-shape sanity plus a frontend mock checkout panel.
+- Local checkout validation now has two explicit stack launchers: `pnpm dev:stack:stripe-test` for real Stripe test keys and real local Price mappings, and `pnpm dev:stack:stripe-mock` for an in-process mock Stripe gateway plus a frontend mock checkout panel.
+- Phase 7.1 is inserted after Phase 7 to move the static Astro frontend from GitHub Pages to Cloudflare Pages while keeping the Worker backend separate and GitHub Pages available as rollback until acceptance.
 
 ## Decisions Made
 
 | Phase | Decision | Status |
 |-------|----------|--------|
 | v1.0 | Production remains GitHub Pages + Fourthwall until the future go-live milestone. | Active |
-| v1.0 | The first native sellable slice is `/store/` collection -> store item detail -> dedicated checkout, with single-item `Buy Now` and no cart. | Active |
+| v1.0 | The first native sellable slice is `/store/` collection -> store item detail -> single-item cart-like checkout, with familiar cart affordances but no multi-item cart semantics. | Revised |
 | v1.0 | v1 order state stays minimal: `pending_payment`, `paid`, `not_paid`, and `needs_review`, with Checkout webhooks as the authoritative paid/unpaid signals. | Active |
 | v1.0 | MVP shipping is Greece only, BOX NOW locker selection happens before payment, and fulfillment stays manual through the partner portal. | Active |
-| v1.1 | The Astro site remains a static frontend on GitHub Pages during this milestone. | Active |
+| v1.1 | The Astro site remains static, and Phase 7.1 now moves canonical static hosting from GitHub Pages to Cloudflare Pages after checkout browser wiring is complete. | Active |
 | v1.1 | A separate Cloudflare Worker backend is the dynamic commerce surface for Stripe, webhooks, D1, and later BOX NOW backend work. | Active |
 | v1.1 | The Worker is a backend/BFF, not the primary frontend runtime. | Active |
 | v1.1 | The Worker does not expose default synthetic probe routes such as `healthz`, `status`, or `readyz`; runtime checks rely on Wrangler, deploy success, and real API tests. | Active |
@@ -111,12 +117,16 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 | v1.1 | Each `Variant` exposes a conservative `OnlineStock` quantity separate from total stock balance before public checkout depends on live stock. | Active |
 | v1.1 | Public checkout starts only through Worker-owned `StartCheckout`; the browser receives a Stripe Checkout `clientSecret` but never receives Stripe price IDs or server secrets. | Active |
 | v1.1 | Stripe Checkout return URLs are Worker-validated against `CHECKOUT_RETURN_ORIGINS`; arbitrary browser origins are not trusted. | Active |
+| v1.1 | Shopper-facing store URLs must describe the sellable item option, not legacy release shorthand or backend mapping names. | Active |
+| v1.1 | Phase 7 cart UX is a single-item Shopify-familiar shell built in Astro/React/shadcn; true multi-item cart remains out of scope for this milestone. | Active |
+| v1.1 | Local stripe-mock checkout readiness may use fake dev stock for every current distro and release item; real stock authority still requires staff-recorded D1 stock operations. | Active |
 
 ### Pending Todos
 
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
-- Add checkout return and retry state UI through `ReadCheckoutState` in Phase 7 plan 5.
+- Correct shopper-facing item option URLs and legacy slug redirects in Phase 7 plan 5.
+- Add all-current-items local mock checkout readiness in Phase 7 plans 12 through 15 before final checkout validation.
 
 ## Blockers
 
@@ -127,7 +137,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 
 ## Session
 
-**Last Date:** 2026-04-24T06:05:32.0186058+03:00
-**Stopped At:** Phase 7 plan 5; add checkout return and retry state UI through ReadCheckoutState
+**Last Date:** 2026-04-25T02:32:58+03:00
+**Stopped At:** Phase 7 plan 5; correct shopper-facing item option URLs and legacy slug redirects
 **Resume File:** .planning/ROADMAP.md
 

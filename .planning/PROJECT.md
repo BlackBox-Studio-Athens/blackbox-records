@@ -2,9 +2,9 @@
 
 ## What This Is
 
-This project migrates BlackBox Records from a static GitHub Pages + Fourthwall storefront handoff to native commerce inside the existing Astro site. The active milestone now uses a dual-deploy architecture:
+This project migrates BlackBox Records from a static GitHub Pages + Fourthwall storefront handoff to native commerce inside the existing Astro site. The active milestone now uses a Cloudflare-fronted dual-runtime architecture:
 
-- the Astro site remains a static frontend deployed to GitHub Pages
+- the Astro site remains a static frontend and will move from GitHub Pages to Cloudflare Pages during Phase 7.1
 - a separate Cloudflare Worker backend is added in-repo for dynamic commerce APIs, Stripe integration, webhooks, and D1 state
 
 The live production checkout remains unchanged until a later go-live milestone.
@@ -27,7 +27,9 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - protected internal stock operations surface on a separate backend hostname for label staff
 - D1-led stock ledger around `Variant`, `Stock`, `StockChange`, and `StockCount`, with a conservative `OnlineStock` quantity for the public storefront
 - Greece-only BOX NOW locker selection before payment
-- Stripe embedded Checkout in sandbox with Worker-created Checkout Sessions
+- Shopify-familiar single-item cart affordances and Stripe embedded Checkout in sandbox with Worker-created Checkout Sessions
+- all-current-items local mock checkout readiness for current distro and release items without treating fake local stock as real label inventory
+- Cloudflare Pages static frontend migration before webhook/order/shipping verification depends on final hosted origins
 - D1-backed order and stock state driven by verified Stripe webhooks hitting the Worker backend
 - sandbox validation package and human review handoff for the future go-live milestone
 
@@ -50,9 +52,13 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - [ ] Protect internal stock operations with Cloudflare Access + Google on a separate backend hostname
 - [ ] Give label staff a thin internal stock tool for `StockChange`, `StockCount`, and recent stock history
 - [ ] Use Stripe Products and Prices as the canonical sellable item and pricing source once checkout integration begins
+- [ ] Correct shopper-facing store URLs so they describe the purchased item option instead of legacy release shorthand
+- [ ] Add a single-item cart icon, cart drawer, and familiar checkout layout before sandbox validation
+- [ ] Make stripe-mock local checkout readiness cover every current distro and release item with clearly fake local stock
 - [ ] Use D1 only for stock, order lifecycle, and internal mappings, with server-owned writes
 - [ ] Treat spreadsheets as temporary capture/reporting only, never as an authoritative stock system
 - [ ] Enforce Greece-only BOX NOW locker selection before payment in v1
+- [ ] Move the static frontend from GitHub Pages to Cloudflare Pages after checkout wiring and before webhook/order/shipping verification
 - [ ] Finish the milestone with sandbox validation evidence and a clear handoff to the go-live milestone
 
 ### Out of Scope
@@ -62,13 +68,13 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - Stock reservation before payment confirmation
 - Browser-side writes to stock or authoritative order state
 - A full operator dashboard, ERP, or warehouse management layer
-- Multi-item cart or multi-carrier shipping
+- True multi-item cart or multi-carrier shipping
 
 ## Context
 
 The current repository is an Astro storefront with a React-managed app shell, Astro content collections, and Decap CMS-backed editorial content. The previous production baseline redirected `/shop/` externally to Fourthwall. The active native storefront contract now uses `/store/` as the canonical collection route, while `/shop/` remains a compatibility redirect during migration.
 
-The corrected milestone architecture is now dual deploy. The Astro site remains the static frontend and content owner. A separate Cloudflare Worker backend becomes the dynamic commerce surface for:
+The corrected milestone architecture is now dual runtime. The Astro site remains the static frontend and content owner. A separate Cloudflare Worker backend becomes the dynamic commerce surface for:
 
 - sellable item lookups when needed
 - checkout session creation
@@ -77,7 +83,7 @@ The corrected milestone architecture is now dual deploy. The Astro site remains 
 - internal stock operations and operator-facing write APIs
 - later BOX NOW backend work
 
-This means the Astro site is no longer being treated as “moving to Workers” in this milestone. Instead, the frontend and backend are split intentionally:
+This means the Astro site is no longer being treated as “moving to Workers” in this milestone. Instead, the frontend and backend are split intentionally. Phase 7.1 changes the static frontend host from GitHub Pages to Cloudflare Pages, but it does not merge the Worker backend into Pages Functions:
 
 - Astro content collections own editorial content and shop presentation inputs
 - Stripe owns sellable commerce data needed for checkout
@@ -90,12 +96,14 @@ The new inserted Phase 5.1 is the architecture gate for this split. It must lock
 
 Current repo facts shape that decision. `releases` already reference `artists`, while `distro` carries editorial card content and Fourthwall URLs but no sellable identity or stock model. That makes a projection layer necessary. The projection should not stuff temporary commerce fields directly into the editorial collections. Instead, it should produce a stable `StoreItem` view and link that to sellable `Variant` identities through Worker-side mappings.
 
-That frontend projection layer is now live. `/store/` is the canonical native storefront route, `/shop/` is a compatibility redirect, release pages route into canonical store PDPs when mapped, distro cards route into the same PDP system, and the static checkout shell is in place for the later Worker-backed embedded Checkout flow.
+That frontend projection layer is now live. `/store/` is the canonical native storefront route, `/shop/` is a compatibility redirect, release pages route into canonical store PDPs when mapped, distro cards route into the same PDP system, and the static checkout shell is in place for the later Worker-backed embedded Checkout flow. Phase 7 now corrects a discovered route-identity problem: a shopper buying the Black Vinyl LP option for Afterwise's `Disintegration` should not see a legacy shorthand URL such as `/store/barren-point/`.
+
+Current inventory knowledge also shapes Phase 7. The current site items are real sellable items across both distro and releases, but real quantities are not yet counted. Local stripe-mock checkout readiness may therefore use fake development stock and mock Stripe mappings for every current item so the buying path is testable, while sandbox and production buyability still require staff-recorded D1 stock counts and real Stripe mappings.
 
 ## Constraints
 
 - **Existing architecture**: Keep the Astro content/app-shell structure intact unless a milestone phase explicitly changes it
-- **Frontend deployment**: GitHub Pages remains the active frontend deployment target during this milestone
+- **Frontend deployment**: GitHub Pages remains the active frontend deployment target until Phase 7.1 validates Cloudflare Pages and marks it canonical
 - **Backend runtime**: Dynamic commerce behavior must target a separate Cloudflare Worker backend
 - **Production safety**: Live GitHub Pages + Fourthwall behavior stays untouched during sandbox implementation
 - **Security**: Stripe secrets, webhook secrets, and D1 access must remain server-only in the Worker backend and local development
@@ -108,7 +116,7 @@ That frontend projection layer is now live. `/store/` is the canonical native st
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Keep the Astro site as a static GitHub Pages frontend during this milestone | Lowest-risk brownfield path that preserves the current content and app-shell model | ✓ Good |
+| Keep the Astro site static while moving canonical hosting from GitHub Pages to Cloudflare Pages in Phase 7.1 | Preserves the content/app-shell model while aligning frontend hosting with the Cloudflare Worker backend before final sandbox verification | ✓ Good |
 | Add a separate Cloudflare Worker backend in the same repo | Creates the minimal dynamic surface for Stripe, webhooks, and D1 without forcing a frontend hosting migration | ✓ Good |
 | Treat the Worker as a backend/BFF, not the primary frontend runtime | Matches the intended architecture and keeps the browser away from secrets and operational writes | ✓ Good |
 | Do not expose synthetic probe endpoints such as `healthz`, `status`, or `readyz` by default | This backend is a thin Worker, not a containerized service with a separate actuator-style ops surface | ✓ Good |
@@ -124,6 +132,9 @@ That frontend projection layer is now live. `/store/` is the canonical native st
 | Use `Stock`, `StockChange`, and `StockCount` as the stock ledger language | Keeps the operator model understandable and matches offline reconciliation needs | ✓ Good |
 | Keep spreadsheets as temporary capture/reporting only | Avoids dual sources of truth between D1 and ad hoc spreadsheets | ✓ Good |
 | Track a conservative `OnlineStock` quantity alongside total stock balance | Reduces oversell risk when offline sales are reconciled later | ✓ Good |
+| Use Shopify-familiar cart affordances without implementing a true multi-item cart | Gives shoppers a familiar buying path while preserving the low-risk single-item MVP and backend authority boundaries | ✓ Good |
+| Make shopper-facing store URLs describe the sellable item option | Avoids exposing legacy release shorthand or backend mapping names as the primary buying URL | ✓ Good |
+| Let stripe-mock mode use fake local stock for every current item | Makes the local buying path testable across real distro and release entries without pretending unknown quantities are real label stock | ✓ Good |
 | Add Phase 5.1 as a hard architecture gate before storefront or checkout work continues | Prevents rework and model drift across content, backend state, and Stripe | ✓ Good |
 | Use Prisma for runtime database access while staying on D1 | Improves readability and maintainability without forcing an immediate database change | ✓ Good |
 | Use Prisma schema plus `prisma migrate diff`, with Wrangler D1 migrations applying SQL | Matches Prisma's current D1 guidance without pretending Prisma-only migrations are first-class on D1 | ✓ Good |
@@ -147,5 +158,5 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-23 after the commerce ubiquitous-language refactor and active GSD alignment*
+*Last updated: 2026-04-25 after adding all-current-items local mock checkout readiness to Phase 7*
 
