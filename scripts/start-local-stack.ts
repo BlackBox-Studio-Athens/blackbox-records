@@ -25,7 +25,6 @@ export type StackPlan = {
 const rootDir = process.cwd();
 const BACKEND_PORT = 8787;
 const STATIC_PORT = 4321;
-const STRIPE_MOCK_PORT = 12111;
 
 export function buildStackPlan(mode: LocalStackMode): StackPlan {
     const prepare: StackCommand[] = [
@@ -68,14 +67,7 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
             command: 'pnpm',
             name: 'Seed stripe-mock mappings',
         });
-        ports.push(STRIPE_MOCK_PORT);
         longRunning.push(
-            {
-                args: ['run', '--rm', '-p', `${STRIPE_MOCK_PORT}:12111`, 'stripe/stripe-mock:latest'],
-                command: 'docker',
-                name: 'stripe-mock',
-                waitForPort: STRIPE_MOCK_PORT,
-            },
             {
                 args: ['dev:backend:mock'],
                 command: 'pnpm',
@@ -115,8 +107,8 @@ export function readRequiredEnvironmentIssues(
         issues.push('PUBLIC_STRIPE_PUBLISHABLE_KEY is required for dev:stack:stripe-test.');
     }
 
-    if (!devVarKeys.has('STRIPE_SECRET_KEY')) {
-        issues.push('apps/backend/.dev.vars must define STRIPE_SECRET_KEY. Use sk_test_mock for stripe-mock mode.');
+    if (mode === 'stripe-test' && !devVarKeys.has('STRIPE_SECRET_KEY')) {
+        issues.push('apps/backend/.dev.vars must define STRIPE_SECRET_KEY for dev:stack:stripe-test.');
     }
 
     return issues;
@@ -247,7 +239,8 @@ async function assertPortsAvailable(ports: number[]) {
 
 function runOnce(command: StackCommand) {
     console.log(`[${command.name}] ${command.command} ${command.args.join(' ')}`);
-    const result = spawnSync(resolveCommand(command.command), command.args, {
+    const processCommand = createProcessCommand(command);
+    const result = spawnSync(processCommand.command, processCommand.args, {
         cwd: rootDir,
         env: {
             ...process.env,
@@ -264,8 +257,9 @@ function runOnce(command: StackCommand) {
 
 function spawnLongRunning(command: StackCommand, onUnexpectedExit: () => void): ChildProcess {
     console.log(`[${command.name}] ${command.command} ${command.args.join(' ')}`);
+    const processCommand = createProcessCommand(command);
 
-    const child = spawn(resolveCommand(command.command), command.args, {
+    const child = spawn(processCommand.command, processCommand.args, {
         cwd: rootDir,
         env: {
             ...process.env,
@@ -299,8 +293,15 @@ async function waitForPort(port: number, label: string) {
     throw new Error(`${label} did not start on port ${port}.`);
 }
 
-function resolveCommand(command: string): string {
-    return process.platform === 'win32' ? `${command}.cmd` : command;
+function createProcessCommand(command: StackCommand): Pick<StackCommand, 'args' | 'command'> {
+    if (process.platform !== 'win32') {
+        return command;
+    }
+
+    return {
+        args: ['/d', '/s', '/c', command.command, ...command.args],
+        command: 'cmd.exe',
+    };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

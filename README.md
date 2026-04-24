@@ -68,6 +68,24 @@ Notes:
 pnpm dev
 ```
 
+Run the default full local commerce stack:
+
+```sh
+pnpm dev:stack:stripe-mock
+```
+
+This is what `BlackBox Local Stack` runs in WebStorm. It prepares local D1, starts the Worker with an in-process mock Stripe gateway, and starts the static Astro site with a mock checkout panel. It does not require Docker, real Stripe keys, or `apps/backend/.dev.vars`.
+
+Local mock checkout smoke path:
+
+```text
+http://127.0.0.1:4321/blackbox-records/store/barren-point/checkout/
+```
+
+That path is seeded end-to-end in local D1 and mock Stripe mode. Other store items may remain visible but unavailable until they receive D1 stock and Stripe price mappings.
+
+Phase 7 now treats that `barren-point` path as a temporary smoke-test alias. The shopper-facing route should be corrected to describe the buyable item option itself, for example `Disintegration` by `Afterwise` as `Black Vinyl LP`, before cart and sandbox validation work continues.
+
 Run the full local commerce stack with real Stripe test mode:
 
 ```powershell
@@ -88,8 +106,7 @@ Run the full local commerce stack with stripe-mock:
 pnpm dev:stack:stripe-mock
 ```
 
-Before using `dev:stack:stripe-mock`, keep Docker running and set `STRIPE_SECRET_KEY=sk_test_mock` in `apps/backend/.dev.vars`.
-This mode starts `stripe/stripe-mock`, points the Worker at it through the `mock` Wrangler env, seeds a mock `VariantStripeMapping`, and renders a local mock checkout panel in the browser. It validates backend Stripe request shape and frontend flow control, but it is not a real embedded Checkout browser experience.
+This mode points the Worker at an in-process mock Stripe gateway through the `mock` Wrangler env, seeds a mock `VariantStripeMapping`, and renders a local mock checkout panel in the browser. It validates backend checkout flow control, but it is not a real embedded Checkout browser experience. It does not require Docker, real Stripe keys, or `apps/backend/.dev.vars`.
 
 Run the Astro frontend explicitly:
 
@@ -188,7 +205,7 @@ Current Worker scope:
 - checkout creation is Worker-owned and uses Stripe embedded Checkout Sessions through a backend gateway seam
 - the static checkout shell mounts Stripe embedded Checkout from Worker-created sessions
 - `pnpm dev:stack:stripe-test` prepares local D1, applies the ignored real Stripe test mapping seed, starts the Worker, and starts the static site
-- `pnpm dev:stack:stripe-mock` starts Dockerized `stripe-mock`, prepares local D1, applies committed mock Stripe mappings, starts the Worker with `STRIPE_API_BASE_URL`, and starts the static site in mock checkout mode
+- `pnpm dev:stack:stripe-mock` prepares local D1, applies committed mock Stripe mappings, starts the Worker with its in-process mock Stripe gateway, and starts the static site in mock checkout mode
 - no webhook order authority, stock decrement, or frontend D1 wiring yet
 - no backend production deployment path yet
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
@@ -266,7 +283,7 @@ pnpm generate:api
 - Worker-side operator attribution comes from the Access-authenticated request header `cf-access-authenticated-user-email`, which the internal stock-write routes now persist as `actor_email`.
 - The internal Worker API now exposes operator-only stock lookup and stock-write routes under `/api/internal/variants/*`.
 - The protected stock operations UI is built by the static Astro app at `/stock/`; it calls same-origin `/api/internal/*` on the protected operator hostname.
-- For local split-port development, set `PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787` so the static UI can call the local Worker.
+- For local split-port development, set `PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787` so the static UI can call the local Worker; the Worker allows browser API calls only from origins listed in `CHECKOUT_RETURN_ORIGINS`.
 - The stock UI is intentionally absent from public navigation. If served directly from public GitHub Pages before the protected ops hostname is provisioned, it is not a production-safe stock operations surface.
 - D1 is the stock source of truth. Spreadsheets are temporary capture/reporting only; operators reconcile offline movement through `/stock/` using `StockChange` for known deltas and `StockCount` for recounts.
 - `OnlineStock` is the conservative checkout-facing quantity and may be lower than physical `Stock`.
@@ -286,10 +303,10 @@ pnpm generate:api
   - `STRIPE_WEBHOOK_SECRET`
 - The optional backend-local Stripe mock/test override is:
   - `STRIPE_API_BASE_URL`
-- `STRIPE_API_BASE_URL` defaults to real Stripe when unset. The committed `mock` Wrangler env binds it to `http://127.0.0.1:12111` for local stripe-mock only.
-- The checkout return-origin allowlist is configured server-side with `CHECKOUT_RETURN_ORIGINS`.
+- `STRIPE_API_BASE_URL` defaults to real Stripe when unset. The committed `mock` Wrangler env binds it to `mock` for the in-process local mock Stripe gateway.
+- The checkout return-origin and browser API CORS allowlist is configured server-side with `CHECKOUT_RETURN_ORIGINS`.
 - `COMMERCE_DB` is runtime-only backend infrastructure, not a browser env var and not a GitHub Actions credential.
-- `CHECKOUT_RETURN_ORIGINS` is a Worker runtime variable, not a browser-selected return URL.
+- `CHECKOUT_RETURN_ORIGINS` is a Worker runtime variable, not a browser-selected return URL or an open CORS wildcard.
 - `apps/backend/prisma/schema.prisma` includes a local placeholder SQLite URL only to satisfy the current Prisma 6 CLI; Worker runtime access still goes through `env.COMMERCE_DB`.
 - Future privileged backend-only values such as BOX NOW credentials also remain runtime-only until the phases that introduce them.
 - `PUBLIC_BACKEND_BASE_URL` remains the only browser-facing backend env.
@@ -347,9 +364,9 @@ cp apps/backend/.dev.vars.example apps/backend/.dev.vars
 - `apps/backend/.dev.vars` is local-only, ignored by git, and must never be committed.
 - Missing backend runtime secrets are acceptable only for local work that does not exercise those routes.
 - Current Stripe-backed checkout routes require `STRIPE_SECRET_KEY` before creating or reading Checkout Sessions.
-- Checkout session creation accepts return URLs only from `CHECKOUT_RETURN_ORIGINS`; local defaults include `http://127.0.0.1:4321`, `http://localhost:4321`, and the GitHub Pages origin.
+- Checkout session creation and split-port browser API reads accept origins only from `CHECKOUT_RETURN_ORIGINS`; local defaults include `http://127.0.0.1:4321`, `http://localhost:4321`, and the GitHub Pages origin.
 - The static checkout shell also requires `PUBLIC_STRIPE_PUBLISHABLE_KEY` before it can mount embedded Checkout in the browser.
-- `stripe-mock` mode does not require `PUBLIC_STRIPE_PUBLISHABLE_KEY` because the browser renders the local mock checkout panel instead of loading Stripe.js.
+- `stripe-mock` mode does not require `PUBLIC_STRIPE_PUBLISHABLE_KEY` or `apps/backend/.dev.vars` because the Worker `mock` env binds harmless local Stripe mock configuration and the browser renders the local mock checkout panel instead of loading Stripe.js.
 
 CI/deploy credentials:
 
@@ -561,13 +578,10 @@ If a source crops badly, replace the source image rather than adding focal-point
 
 ## WebStorm run configuration
 
-- `.run/BlackBox Local Stack.run.xml` is the canonical committed WebStorm launcher for day-to-day local work.
-- It runs `pnpm dev:stack:stripe-test`.
-- `.run/BlackBox Mock Stripe Stack.run.xml` runs `pnpm dev:stack:stripe-mock`.
-- `.run/BlackBox Backend Local.run.xml` runs `pnpm dev:backend`.
-- `.run/BlackBox Backend Sandbox.run.xml` runs `pnpm dev:backend:sandbox`.
-- `.run/BlackBox Static Site.run.xml` remains the frontend-only inspection/debug launcher and runs `pnpm site:dev`.
-- Only `BlackBox Static Site` opens a browser/debug target.
+- `.run/BlackBox Local Stack.run.xml` is the only committed WebStorm launcher for now.
+- It runs `pnpm dev:stack:stripe-mock`, which starts local D1 prep, the local Worker backend with an in-process mock Stripe gateway, and the local Astro frontend without Docker or real Stripe keys.
+- Real Stripe test mode remains available from the terminal through `pnpm dev:stack:stripe-test`.
+- Focused backend/frontend scripts remain available from the terminal, not committed IDE run configs.
 - The static-site launcher remains pinned to `http://127.0.0.1:4321/blackbox-records/`.
 - If port `4321` is already in use, the static-site launcher fails fast instead of silently switching ports.
 - Local D1 comes from Wrangler automatically during Worker dev; no separate D1 process is part of the run-config flow.

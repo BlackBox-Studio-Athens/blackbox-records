@@ -30,19 +30,15 @@ describe('local stack launcher plan', () => {
         ]);
     });
 
-    it('builds the stripe-mock stack with Docker, D1 mock seed, backend mock env, and frontend mock mode', () => {
+    it('builds the stripe-mock stack with D1 mock seed, backend mock env, and frontend mock mode', () => {
         const plan = buildStackPlan('stripe-mock');
 
-        expect(plan.ports).toContain(12111);
+        expect(plan.ports).toEqual([8787, 4321]);
         expect(plan.prepare.map((command) => command.args.join(' '))).toEqual([
             '--filter @blackbox/backend d1:prepare:local',
             '--filter @blackbox/backend d1:seed:stripe-mock:local',
         ]);
         expect(plan.longRunning).toEqual([
-            expect.objectContaining({
-                command: 'docker',
-                name: 'stripe-mock',
-            }),
             expect.objectContaining({
                 args: ['dev:backend:mock'],
                 name: 'Worker',
@@ -72,5 +68,13 @@ describe('local stack launcher plan', () => {
         expect(readRequiredEnvironmentIssues('stripe-mock', {}, new Set(['STRIPE_SECRET_KEY']))).not.toContain(
             'PUBLIC_STRIPE_PUBLISHABLE_KEY is required for dev:stack:stripe-test.',
         );
+    });
+
+    it('requires a backend Stripe secret only for the real Stripe test stack', () => {
+        expect(readRequiredEnvironmentIssues('stripe-test', { PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_test_key' }, new Set())).toContain(
+            'apps/backend/.dev.vars must define STRIPE_SECRET_KEY for dev:stack:stripe-test.',
+        );
+
+        expect(readRequiredEnvironmentIssues('stripe-mock', {}, new Set())).toEqual([]);
     });
 });
