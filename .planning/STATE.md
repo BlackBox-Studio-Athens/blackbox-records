@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 7 plan 3; wire the checkout shell to Worker offer and variant reads
-last_updated: "2026-04-24T06:05:32+03:00"
-last_activity: 2026-04-24 -- Added public checkout API client seam
+stopped_at: Phase 7 plan 4; mount embedded Stripe Checkout from Worker-created sessions
+last_updated: "2026-04-24T06:20:00+03:00"
+last_activity: 2026-04-24 -- Wired checkout shell to Worker offer and variant reads
 progress:
   total_phases: 9
   completed_phases: 5
   total_plans: 50
-  completed_plans: 27
-  percent: 54
+  completed_plans: 28
+  percent: 56
 ---
 
 # Project State
@@ -28,22 +28,22 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 Current Phase: 7
 Current Phase Name: Worker Checkout And Stripe Sandbox Flow
 Total Phases: 9
-Current Plan: 3
+Current Plan: 4
 Total Plans in Phase: 7
 Status: Active
-Progress: 54%
+Progress: 56%
 Last Activity: 2026-04-24
-Last Activity Description: Added public checkout API client seam
-Paused At: Phase 7 plan 3; wire the checkout shell to Worker offer and variant reads
+Last Activity Description: Wired checkout shell to Worker offer and variant reads
+Paused At: Phase 7 plan 4; mount embedded Stripe Checkout from Worker-created sessions
 
-Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has started: the Worker now exposes public store-offer lookup, variant offer lookup, `StartCheckout`, and `ReadCheckoutState` APIs, backed by D1 repository seams and a Stripe Checkout gateway. The frontend public checkout API client seam is now in place, and the next implementation step is wiring the checkout shell to the Worker offer and variant reads.
+Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has started: the Worker now exposes public store-offer lookup, variant offer lookup, `StartCheckout`, and `ReadCheckoutState` APIs, backed by D1 repository seams and a Stripe Checkout gateway. The frontend checkout shell now reads Worker-known offer and variant state; the next implementation step is mounting embedded Stripe Checkout from Worker-created sessions.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 27
-- Total plans remaining: 23
+- Total plans completed: 28
+- Total plans remaining: 22
 - Average duration: -
 - Total execution time: -
 
@@ -56,12 +56,12 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 | 6 | 7 | Completed | 2026-04-21 |
 | 6.1 | 4 | Completed | 2026-04-22 |
 | 6.1.1 | 4 | Completed | 2026-04-24 |
-| 7 | 1/7 | Active | 2026-04-24 |
+| 7 | 3/7 | Active | 2026-04-24 |
 
 **Recent Trend:**
 
-- Last 5 plans: 06.1.1-02, 06.1.1-03, 06.1.1-04, 07-01, 07-02
-- Trend: Backend commerce-state foundation, protected stock operations, the first Worker checkout API contract, and the frontend public checkout API seam are complete; remaining checkout, webhook, shipping, and verification work is now split into small commits.
+- Last 5 plans: 06.1.1-03, 06.1.1-04, 07-01, 07-02, 07-03
+- Trend: Backend commerce-state foundation, protected stock operations, the first Worker checkout API contract, the frontend public checkout API seam, and Worker-backed checkout shell reads are complete.
 
 ## Accumulated Context
 
@@ -81,6 +81,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 - The stock reconciliation policy now defines when to use `StockChange`, when to use `StockCount`, and why spreadsheets must not become live stock truth.
 - Commerce naming was simplified to DDD-style label language: `StoreItem`, `ItemAvailability`, `StoreItemOption`, `StoreOffer`, `Stock`, `OnlineStock`, `StartCheckout`, `ReadCheckoutState`, and `not_paid`.
 - The Worker now exposes public checkout/store API routes under `/api/store/*` and `/api/checkout/*`, with `StartCheckout` validating store item mapping, availability, `OnlineStock`, and Stripe price mapping before creating an embedded Checkout Session.
+- The static checkout shell now hydrates a small Worker-read status panel that displays backend-known offer, variant, and checkout eligibility state without starting payment.
 
 ## Decisions Made
 
@@ -111,7 +112,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
-- Add the frontend public checkout API client seam in Phase 7 plan 2.
+- Mount embedded Stripe Checkout from Worker-created sessions in Phase 7 plan 4.
 
 ## Blockers
 
@@ -123,6 +124,6 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 ## Session
 
 **Last Date:** 2026-04-24T06:05:32.0186058+03:00
-**Stopped At:** Phase 7 plan 3; wire the checkout shell to Worker offer and variant reads
+**Stopped At:** Phase 7 plan 4; mount embedded Stripe Checkout from Worker-created sessions
 **Resume File:** .planning/ROADMAP.md
 
