@@ -96,6 +96,7 @@ Then inspect only task-relevant files with `rg` and scoped reads.
   - `/stock/[variantId]/`
   - `/api/internal/*`
 - The internal Worker API now exposes operator-only stock routes under `/api/internal/variants/*`.
+- The protected stock operations UI is served by the Worker from `apps/backend/src/interfaces/http/routes/register-internal-stock-ui-routes.ts`.
 - Cloudflare Access + Google protects that hostname through an explicit email allowlist; do not add shopper login or reuse Decap auth for runtime stock operations.
 - Worker-side operator attribution comes from the Access-authenticated request header `cf-access-authenticated-user-email`, which the stock-write routes persist as `actor_email`.
 - The D1 stock ledger now uses `Stock`, `StockChange`, and `StockCount`, with `onlineQuantity` tracked on `Stock`.

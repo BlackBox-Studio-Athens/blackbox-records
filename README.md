@@ -146,6 +146,7 @@ Current Worker scope:
 - backend-local seed data now exists under `apps/backend/prisma/seeds/`
 - a backend-only StoreOffer reader can now resolve mapped availability from D1
 - protected internal stock routes now exist under `/api/internal/variants/*`
+- protected stock operations UI routes now exist under `/stock/` and `/stock/[variantId]/`
 - D1-backed `Stock`, `StockChange`, and `StockCount` now back the operator stock ledger contract
 - no Stripe routes, public D1-backed HTTP read routes, or frontend D1 wiring yet
 - no production deployment path yet
@@ -218,7 +219,8 @@ pnpm generate:api
 - The protected surface is not a public-path subtree on the shopper hostname.
 - Cloudflare Access uses Google as the identity provider for this hostname, and operator entry is controlled by an explicit email allowlist that stays out of the repo.
 - Worker-side operator attribution comes from the Access-authenticated request header `cf-access-authenticated-user-email`, which the internal stock-write routes now persist as `actor_email`.
-- The internal Worker API now exposes operator-only stock lookup and stock-write routes under `/api/internal/variants/*`; the operator UI remains a later phase.
+- The internal Worker API now exposes operator-only stock lookup and stock-write routes under `/api/internal/variants/*`.
+- The protected stock operations UI is served by the Worker at `/stock/` and `/stock/[variantId]/` on the operator hostname.
 - This contract does not introduce shopper login; public storefront, public checkout, and sandbox shopper browsing remain unauthenticated.
 
 ## Worker secrets and CI auth

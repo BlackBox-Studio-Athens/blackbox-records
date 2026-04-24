@@ -127,7 +127,7 @@ Plans:
 Plans:
 - [x] 06.1.1-01: Lock the protected hostname and Cloudflare Access + Google contract for internal operators
 - [x] 06.1.1-02: Define the internal stock API and D1 ledger contract around `Variant`, `Stock`, `StockChange`, and `StockCount`
-- [ ] 06.1.1-03: Design the internal stock operations UI for search, balance, history, and write actions
+- [x] 06.1.1-03: Design the internal stock operations UI for search, balance, history, and write actions
 - [ ] 06.1.1-04: Lock spreadsheet policy, audit attribution, and the online-vs-offline stock buffer rules
 
 ### Phase 7: Worker Checkout And Stripe Sandbox Flow
