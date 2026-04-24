@@ -27,7 +27,7 @@ describe('CheckoutOfferStatus helpers', () => {
           status: 'available' as const,
         },
         canCheckout: true,
-        storeItemSlug: 'barren-point',
+        storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_barren-point_standard',
       })),
       readStoreOfferVariants: vi.fn(async () => [
@@ -37,17 +37,17 @@ describe('CheckoutOfferStatus helpers', () => {
             status: 'available' as const,
           },
           canCheckout: true,
-          storeItemSlug: 'barren-point',
+          storeItemSlug: 'disintegration-black-vinyl-lp',
           variantId: 'variant_barren-point_standard',
         },
       ]),
       startCheckout: vi.fn(),
     };
 
-    const state = await loadCheckoutOfferState(api, 'barren-point');
+    const state = await loadCheckoutOfferState(api, 'disintegration-black-vinyl-lp');
 
-    expect(api.readStoreOffer).toHaveBeenCalledWith('barren-point');
-    expect(api.readStoreOfferVariants).toHaveBeenCalledWith('barren-point');
+    expect(api.readStoreOffer).toHaveBeenCalledWith('disintegration-black-vinyl-lp');
+    expect(api.readStoreOfferVariants).toHaveBeenCalledWith('disintegration-black-vinyl-lp');
     expect(api.startCheckout).not.toHaveBeenCalled();
     expect(state).toMatchObject({
       kind: 'ready',
@@ -68,7 +68,7 @@ describe('CheckoutOfferStatus helpers', () => {
             status: 'available',
           },
           canCheckout: true,
-          storeItemSlug: 'barren-point',
+          storeItemSlug: 'disintegration-black-vinyl-lp',
           variantId: 'variant_barren-point_standard',
         },
         variants: [
@@ -78,7 +78,7 @@ describe('CheckoutOfferStatus helpers', () => {
               status: 'available',
             },
             canCheckout: true,
-            storeItemSlug: 'barren-point',
+            storeItemSlug: 'disintegration-black-vinyl-lp',
             variantId: 'variant_barren-point_standard',
           },
         ],
@@ -175,12 +175,12 @@ describe('CheckoutOfferStatus helpers', () => {
       api,
       checkoutAdapter,
       mountTarget,
-      storeItemSlug: 'barren-point',
+      storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
     });
 
     expect(api.startCheckout).toHaveBeenCalledExactlyOnceWith({
-      storeItemSlug: 'barren-point',
+      storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
     });
     expect(checkoutAdapter.mountEmbeddedCheckout).toHaveBeenCalledExactlyOnceWith({
@@ -210,7 +210,7 @@ describe('CheckoutOfferStatus helpers', () => {
         api,
         checkoutAdapter,
         mountTarget: {} as HTMLElement,
-        storeItemSlug: 'barren-point',
+        storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_barren-point_standard',
       }),
     ).resolves.toEqual({

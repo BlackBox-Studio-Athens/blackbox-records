@@ -21,10 +21,10 @@ export type ItemAvailability = {
 
 // Phase 6 keeps temporary offer-state fixtures in code so editorial collections remain presentation-only.
 const availabilityByStoreItemSlug: Record<StoreItemSlug, ItemAvailability[]> = {
-  'barren-point': [
+  'disintegration-black-vinyl-lp': [
     {
       variantId: 'variant_barren-point_standard',
-      storeItemSlug: 'barren-point',
+      storeItemSlug: 'disintegration-black-vinyl-lp',
       optionLabel: 'Black Vinyl LP',
       price: {
         amountMinor: 2800,

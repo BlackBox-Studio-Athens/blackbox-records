@@ -28,6 +28,10 @@ export type ArtistRosterReleaseContext = {
   releaseCount: number;
 };
 
+const releaseStoreItemSlugByReleaseId: Record<string, string> = {
+  'barren-point': 'disintegration-black-vinyl-lp',
+};
+
 function isNativeStoreMerchUrl(path: string | undefined) {
   return path === '/store/';
 }
@@ -127,7 +131,7 @@ function normalizeStoreItemImageAlt(imageAlt: string | undefined, fallback: stri
 export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEntry): Promise<StoreItem> {
   const artistProfile = await resolveArtistProfileForRelease(releaseEntry);
   const artistDisplayName = resolveReleaseArtistDisplayName(releaseEntry, artistProfile || undefined);
-  const slug = releaseEntry.id;
+  const slug = releaseStoreItemSlugByReleaseId[releaseEntry.id] || releaseEntry.id;
   const metadata = [
     String(releaseEntry.data.release_date.getFullYear()),
     ...(releaseEntry.data.formats || []),

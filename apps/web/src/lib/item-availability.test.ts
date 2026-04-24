@@ -77,10 +77,10 @@ import {
 
 describe('ItemAvailability adapter', () => {
   it('resolves one stable temporary item availability record for a native store item slug', async () => {
-    await expect(listAvailabilityForStoreItem('barren-point')).resolves.toEqual([
+    await expect(listAvailabilityForStoreItem('disintegration-black-vinyl-lp')).resolves.toEqual([
       {
         variantId: 'variant_barren-point_standard',
-        storeItemSlug: 'barren-point',
+        storeItemSlug: 'disintegration-black-vinyl-lp',
         optionLabel: 'Black Vinyl LP',
         price: {
           amountMinor: 2800,
@@ -120,7 +120,7 @@ describe('ItemAvailability adapter', () => {
   });
 
   it('exposes structured price data and a stable display label', async () => {
-    const itemAvailability = await getPrimaryAvailabilityForStoreItem('barren-point');
+    const itemAvailability = await getPrimaryAvailabilityForStoreItem('disintegration-black-vinyl-lp');
 
     expect(itemAvailability?.price).toEqual({
       amountMinor: 2800,
@@ -140,7 +140,7 @@ describe('ItemAvailability adapter', () => {
   });
 
   it('keeps backend and order state out of the availability contract', async () => {
-    const itemAvailability = await getPrimaryAvailabilityForStoreItem('barren-point');
+    const itemAvailability = await getPrimaryAvailabilityForStoreItem('disintegration-black-vinyl-lp');
 
     expect(itemAvailability).not.toHaveProperty('stripePriceId');
     expect(itemAvailability).not.toHaveProperty('d1VariantId');
@@ -149,8 +149,8 @@ describe('ItemAvailability adapter', () => {
   });
 
   it('returns the first availability record as the stable primary variant while the list API stays array-based', async () => {
-    const itemAvailability = await listAvailabilityForStoreItem('barren-point');
-    const primaryAvailability = await getPrimaryAvailabilityForStoreItem('barren-point');
+    const itemAvailability = await listAvailabilityForStoreItem('disintegration-black-vinyl-lp');
+    const primaryAvailability = await getPrimaryAvailabilityForStoreItem('disintegration-black-vinyl-lp');
 
     expect(itemAvailability).toHaveLength(1);
     expect(primaryAvailability).toEqual(itemAvailability[0]);

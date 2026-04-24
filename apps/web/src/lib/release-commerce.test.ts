@@ -56,7 +56,7 @@ describe('release commerce link resolution', () => {
     const [nativeRelease] = await listReleaseCatalog();
 
     await expect(getReleaseCommerceLink(nativeRelease as any)).resolves.toEqual({
-      href: '/blackbox-records/store/barren-point/',
+      href: '/blackbox-records/store/disintegration-black-vinyl-lp/',
       isNativeStoreLink: true,
       label: 'View In Store',
     });

@@ -27,23 +27,23 @@ describe('store page data helper', () => {
 
   it('returns a store page entry for a known slug', async () => {
     mockCatalogData.getStoreItemBySlug.mockResolvedValue({
-      slug: 'barren-point',
+      slug: 'disintegration-black-vinyl-lp',
       sourceKind: 'release',
       sourceId: 'barren-point',
-      title: 'Barren Point',
-      subtitle: 'Mass Culture',
+      title: 'Disintegration',
+      subtitle: 'Afterwise',
       summary: 'BlackBox release.',
       image: '/cover.jpg',
-      imageAlt: 'Barren Point cover',
+      imageAlt: 'Disintegration cover',
       eyebrow: 'Release',
       metadata: ['2024', 'LP'],
-      storePath: '/blackbox-records/store/barren-point/',
-      checkoutPath: '/blackbox-records/store/barren-point/checkout/',
+      storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
+      checkoutPath: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
     });
 
     mockItemAvailability.getPrimaryAvailabilityForStoreItem.mockResolvedValue({
       variantId: 'variant_barren-point_standard',
-      storeItemSlug: 'barren-point',
+      storeItemSlug: 'disintegration-black-vinyl-lp',
       optionLabel: 'Black Vinyl LP',
       price: {
         amountMinor: 2800,
@@ -57,11 +57,11 @@ describe('store page data helper', () => {
       canBuy: true,
     });
 
-    await expect(getStorePageEntryBySlug('barren-point')).resolves.toMatchObject({
+    await expect(getStorePageEntryBySlug('disintegration-black-vinyl-lp')).resolves.toMatchObject({
       storeItem: {
-        slug: 'barren-point',
-        storePath: '/blackbox-records/store/barren-point/',
-        checkoutPath: '/blackbox-records/store/barren-point/checkout/',
+        slug: 'disintegration-black-vinyl-lp',
+        storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
+        checkoutPath: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
       },
       primaryAvailability: {
         variantId: 'variant_barren-point_standard',
@@ -80,18 +80,18 @@ describe('store page data helper', () => {
   it('creates static paths for every store item with matching checkout links', async () => {
     mockCatalogData.listStoreItems.mockResolvedValue([
       {
-        slug: 'barren-point',
+        slug: 'disintegration-black-vinyl-lp',
         sourceKind: 'release',
         sourceId: 'barren-point',
-        title: 'Barren Point',
-        subtitle: 'Mass Culture',
+        title: 'Disintegration',
+        subtitle: 'Afterwise',
         summary: 'BlackBox release.',
         image: '/cover.jpg',
-        imageAlt: 'Barren Point cover',
+        imageAlt: 'Disintegration cover',
         eyebrow: 'Release',
         metadata: ['2024', 'LP'],
-        storePath: '/blackbox-records/store/barren-point/',
-        checkoutPath: '/blackbox-records/store/barren-point/checkout/',
+        storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
+        checkoutPath: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
       },
       {
         slug: 'afterglow-tape',
@@ -112,7 +112,7 @@ describe('store page data helper', () => {
     mockItemAvailability.getPrimaryAvailabilityForStoreItem
       .mockResolvedValueOnce({
         variantId: 'variant_barren-point_standard',
-        storeItemSlug: 'barren-point',
+        storeItemSlug: 'disintegration-black-vinyl-lp',
         optionLabel: 'Black Vinyl LP',
         price: { amountMinor: 2800, currencyCode: 'EUR', display: 'EUR 28.00' },
         availability: { status: 'available', label: 'Available' },
@@ -129,15 +129,15 @@ describe('store page data helper', () => {
 
     await expect(createStorePageStaticPaths()).resolves.toEqual([
       {
-        params: { slug: 'barren-point' },
+        params: { slug: 'disintegration-black-vinyl-lp' },
         props: {
           entry: {
             storeItem: expect.objectContaining({
-              slug: 'barren-point',
-              checkoutPath: '/blackbox-records/store/barren-point/checkout/',
+              slug: 'disintegration-black-vinyl-lp',
+              checkoutPath: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
             }),
             primaryAvailability: expect.objectContaining({
-              storeItemSlug: 'barren-point',
+              storeItemSlug: 'disintegration-black-vinyl-lp',
             }),
           },
         },

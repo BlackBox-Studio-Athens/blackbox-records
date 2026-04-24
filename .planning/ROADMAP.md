@@ -150,7 +150,7 @@ Plans:
 - [x] 07-02: Add the frontend public checkout API client seam
 - [x] 07-03: Wire the checkout shell to Worker offer and variant reads
 - [x] 07-04: Mount embedded Stripe Checkout from Worker-created sessions
-- [ ] 07-05: Correct shopper-facing item option URLs and legacy slug redirects
+- [x] 07-05: Correct shopper-facing item option URLs and legacy slug redirects
 - [ ] 07-06: Add the storefront cart icon and single-item cart state seam
 - [ ] 07-07: Build the Shopify-inspired cart drawer and item summary
 - [ ] 07-08: Refactor PDP and checkout entry actions around Add To Cart and Checkout
@@ -257,7 +257,7 @@ Phases execute in numeric order: `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 7.
 | 6. Static Storefront Slice | 7/7 | Completed | 2026-04-21 |
 | 6.1. Worker Commerce State Foundation | 4/4 | Completed | 2026-04-22 |
 | 6.1.1. Internal Stock Operations And Operator Access | 4/4 | Completed | 2026-04-24 |
-| 7. Worker Checkout And Stripe Sandbox Flow | 4/16 | Active | 2026-04-24 |
+| 7. Worker Checkout And Stripe Sandbox Flow | 5/16 | Active | 2026-04-25 |
 | 7.1. Cloudflare Pages Static Frontend Migration | 0/5 | Planned |  |
 | 8. Webhook Orders And Stock | 0/7 | Planned |  |
 | 9. Greece-Only BOX NOW Shipping | 0/6 | Planned |  |

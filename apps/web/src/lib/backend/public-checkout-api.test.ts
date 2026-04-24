@@ -28,18 +28,18 @@ describe('createPublicCheckoutApi', () => {
                 status: 'available',
             },
             canCheckout: true,
-            storeItemSlug: 'barren-point',
+            storeItemSlug: 'disintegration-black-vinyl-lp',
             variantId: 'variant_barren-point_standard',
         };
         const fetchStub = vi.fn(async (_url: string, _init?: RequestInit) => new Response(JSON.stringify(offer), { status: 200 }));
         vi.stubGlobal('fetch', fetchStub);
 
         const api = createPublicCheckoutApi('');
-        const result = await api.readStoreOffer('barren-point');
+        const result = await api.readStoreOffer('disintegration-black-vinyl-lp');
 
         expect(result).toEqual(offer);
         expect(fetchStub).toHaveBeenCalledWith(
-            '/api/store/items/barren-point',
+            '/api/store/items/disintegration-black-vinyl-lp',
             expect.objectContaining({
                 method: 'GET',
             }),
@@ -54,7 +54,7 @@ describe('createPublicCheckoutApi', () => {
                     status: 'available',
                 },
                 canCheckout: true,
-                storeItemSlug: 'barren-point',
+                storeItemSlug: 'disintegration-black-vinyl-lp',
                 variantId: 'variant_barren-point_standard',
             },
         ];
@@ -62,11 +62,11 @@ describe('createPublicCheckoutApi', () => {
         vi.stubGlobal('fetch', fetchStub);
 
         const api = createPublicCheckoutApi('http://127.0.0.1:8787/');
-        const result = await api.readStoreOfferVariants('barren-point');
+        const result = await api.readStoreOfferVariants('disintegration-black-vinyl-lp');
 
         expect(result).toEqual(variants);
         expect(fetchStub).toHaveBeenCalledWith(
-            'http://127.0.0.1:8787/api/store/items/barren-point/variants',
+            'http://127.0.0.1:8787/api/store/items/disintegration-black-vinyl-lp/variants',
             expect.objectContaining({
                 method: 'GET',
             }),
@@ -81,7 +81,7 @@ describe('createPublicCheckoutApi', () => {
 
         const api = createPublicCheckoutApi('');
         const result = await api.startCheckout({
-            storeItemSlug: 'barren-point',
+            storeItemSlug: 'disintegration-black-vinyl-lp',
             variantId: 'variant_barren-point_standard',
         });
 
@@ -97,7 +97,7 @@ describe('createPublicCheckoutApi', () => {
         const requestInit = firstCall?.[1];
         expect(requestInit?.body).toBe(
             JSON.stringify({
-                storeItemSlug: 'barren-point',
+                storeItemSlug: 'disintegration-black-vinyl-lp',
                 variantId: 'variant_barren-point_standard',
             }),
         );
@@ -116,7 +116,7 @@ describe('createPublicCheckoutApi', () => {
 
         await expect(
             api.startCheckout({
-                storeItemSlug: 'barren-point',
+                storeItemSlug: 'disintegration-black-vinyl-lp',
                 variantId: 'variant_barren-point_standard',
             }),
         ).rejects.toMatchObject({

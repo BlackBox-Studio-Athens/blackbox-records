@@ -18,7 +18,7 @@ Research enough Shopify-style buying conventions to guide a BlackBox-owned cart 
 2. Dawn's cart drawer is structured around an accessible drawer/dialog, cart line table, product image/title/options, per-line price, quantity controls, remove controls, footer totals, tax/shipping note, and checkout action. For BlackBox v1, keep the drawer, item row, subtotal, continue shopping, remove, and checkout action. Defer quantity controls and multi-line totals.
 3. Shopify checkout guidance recommends simple, high-contrast checkout styling because shoppers enter sensitive shipping and payment details there. For BlackBox, this supports a calmer checkout surface: monochrome, sparse, legible, and not over-animated.
 4. Shopify checkout has an order summary pattern that is especially familiar on mobile through a show/hide order summary. For BlackBox, the static shell can own the summary while Stripe embedded Checkout owns payment fields.
-5. The current BlackBox route identity is misleading for the local buyable item. `/store/barren-point/checkout/` is actually presenting Afterwise's `Disintegration` with the `Black Vinyl LP` option. The next implementation slice should fix shopper-facing URL semantics before cart UX lands.
+5. The first BlackBox route identity correction is now explicit: `/store/disintegration-black-vinyl-lp/checkout/` presents Afterwise's `Disintegration` with the `Black Vinyl LP` option, while legacy `/store/barren-point/checkout/` remains compatibility-only.
 
 ## Adopted Patterns
 

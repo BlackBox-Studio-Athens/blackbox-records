@@ -16,7 +16,7 @@ This spec is locked together with `07-CART-CHECKOUT-DESIGN-SPIKE.md`; implemente
 
 ## Hard UX Correction
 
-The current local smoke URL `/store/barren-point/checkout/` is not acceptable as the long-term shopper-facing URL for the item being shown.
+The local smoke URL is now `/store/disintegration-black-vinyl-lp/checkout/`, which describes the item option being shown.
 
 The displayed buyable object is:
 
@@ -30,7 +30,7 @@ The shopper-facing store URL must therefore describe the item option, for exampl
 - `/store/disintegration-black-vinyl-lp/checkout/`
 - `/store/disintegration-black-vinyl-lp/checkout/return/`
 
-Legacy routes such as `/store/barren-point/` may remain as redirects or aliases during migration, but they must not be treated as the canonical checkout URL.
+Legacy routes such as `/store/barren-point/` remain redirects or aliases during migration, but they must not be treated as the canonical checkout URL.
 
 ## Experience Model
 

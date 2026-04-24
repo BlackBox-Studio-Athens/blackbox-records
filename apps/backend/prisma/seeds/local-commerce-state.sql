@@ -1,3 +1,8 @@
+DELETE FROM "StoreItemOption"
+WHERE "sourceKind" = 'release'
+  AND "sourceId" = 'barren-point'
+  AND "storeItemSlug" <> 'disintegration-black-vinyl-lp';
+
 INSERT INTO "StoreItemOption" (
     "id",
     "storeItemSlug",
@@ -10,7 +15,7 @@ INSERT INTO "StoreItemOption" (
 VALUES
     (
         'store_item_option_barren_point',
-        'barren-point',
+        'disintegration-black-vinyl-lp',
         'release',
         'barren-point',
         'variant_barren-point_standard',

@@ -26,8 +26,8 @@ describe('createStripeClientOptions', () => {
         });
 
         const session = await gateway.createEmbeddedCheckoutSession({
-            returnUrl: 'http://127.0.0.1:4321/blackbox-records/store/barren-point/checkout/',
-            storeItemSlug: 'barren-point',
+            returnUrl: 'http://127.0.0.1:4321/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
+            storeItemSlug: 'disintegration-black-vinyl-lp',
             stripePriceId: 'price_mock_barren_point',
             variantId: 'variant_barren-point_standard',
         });

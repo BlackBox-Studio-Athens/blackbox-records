@@ -163,7 +163,7 @@ describe('StoreItem projection contract', () => {
     const storeItems = await listStoreItems();
 
     expect(storeItems.map((storeItem) => [storeItem.slug, storeItem.sourceKind])).toEqual([
-      ['barren-point', 'release'],
+      ['disintegration-black-vinyl-lp', 'release'],
       ['afterglow-tape', 'distro'],
     ]);
   });
@@ -172,7 +172,7 @@ describe('StoreItem projection contract', () => {
     const storeItems = await listStoreItems();
     const storeItemsBySlug = mapStoreItemsBySlug(storeItems);
 
-    expect(storeItemsBySlug.get('barren-point')?.sourceKind).toBe('release');
+    expect(storeItemsBySlug.get('disintegration-black-vinyl-lp')?.sourceKind).toBe('release');
     await expect(getStoreItemBySlug('afterglow-tape')).resolves.toMatchObject({
       slug: 'afterglow-tape',
       sourceKind: 'distro',
@@ -190,8 +190,9 @@ describe('StoreItem projection contract', () => {
     const [nativeRelease, externalRelease] = await listReleaseCatalog();
 
     await expect(getStoreItemForRelease(nativeRelease as any)).resolves.toMatchObject({
-      slug: 'barren-point',
-      storePath: '/blackbox-records/store/barren-point/',
+      slug: 'disintegration-black-vinyl-lp',
+      sourceId: 'barren-point',
+      storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
     });
 
     await expect(getStoreItemForRelease(externalRelease as any)).resolves.toBeNull();

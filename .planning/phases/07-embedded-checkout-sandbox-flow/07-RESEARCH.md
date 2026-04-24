@@ -44,7 +44,7 @@ Key conclusions:
 - Use free Shopify theme patterns as familiarity references, especially Dawn's cart drawer, line item, subtotal, continue shopping, and checkout CTA structure.
 - Do not copy Shopify theme code, Liquid, CSS, or visual assets.
 - Keep the BlackBox implementation Astro/React/shadcn-native.
-- Correct shopper-facing item option URLs before cart work; the current `/store/barren-point/` route is misleading for the shown `Disintegration` Black Vinyl LP option.
+- Keep shopper-facing item option URLs canonical before cart work; `/store/disintegration-black-vinyl-lp/` is the canonical smoke item and `/store/barren-point/` is compatibility-only.
 - Add a single-item cart icon and drawer for familiarity while keeping true multi-item cart behavior out of scope.
 - Keep checkout simple, high-contrast, and low-distraction; Stripe embedded Checkout owns payment internals.
 

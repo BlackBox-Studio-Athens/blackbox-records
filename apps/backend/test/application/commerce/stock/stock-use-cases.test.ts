@@ -131,7 +131,7 @@ describe('commerce stock use cases', () => {
     const storeItem = {
         sourceId: 'barren-point',
         sourceKind: 'release' as const,
-        storeItemSlug: 'barren-point',
+        storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_barren-point_standard',
     };
 

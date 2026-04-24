@@ -1,0 +1,19 @@
+---
+import RedirectLayout from '@/layouts/RedirectLayout.astro';
+import { createProjectRelativeUrl } from '@/config/site';
+
+const redirectUrl = createProjectRelativeUrl('/store/disintegration-black-vinyl-lp/checkout/');
+---
+
+<RedirectLayout
+  pageTitle="Disintegration Black Vinyl LP Checkout"
+  pageDescription="Continue to the canonical BlackBox Records checkout page for Disintegration Black Vinyl LP."
+  redirectUrl={redirectUrl}
+>
+  <p class="text-sm text-muted-foreground">
+    This checkout moved to a clearer item-option URL.
+  </p>
+  <a class="mt-4 inline-flex text-sm font-semibold uppercase tracking-[0.16em] text-foreground" href={redirectUrl}>
+    Continue To Checkout
+  </a>
+</RedirectLayout>

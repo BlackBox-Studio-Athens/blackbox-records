@@ -48,7 +48,7 @@ describe('internal stock routes', () => {
             {
                 sourceId: 'barren-point',
                 sourceKind: 'release',
-                storeItemSlug: 'barren-point',
+                storeItemSlug: 'disintegration-black-vinyl-lp',
                 variantId: 'variant_barren-point_standard',
             },
         ]);
@@ -73,7 +73,7 @@ describe('internal stock routes', () => {
             {
                 sourceId: 'barren-point',
                 sourceKind: 'release',
-                storeItemSlug: 'barren-point',
+                storeItemSlug: 'disintegration-black-vinyl-lp',
                 variantId: 'variant_barren-point_standard',
             },
         ]);
@@ -88,7 +88,7 @@ describe('internal stock routes', () => {
                 quantity: 3,
                 updatedAt: new Date('2026-04-24T12:00:00.000Z'),
             },
-            storeItemSlug: 'barren-point',
+            storeItemSlug: 'disintegration-black-vinyl-lp',
             variantId: 'variant_barren-point_standard',
         });
 
@@ -115,7 +115,7 @@ describe('internal stock routes', () => {
                 quantity: 3,
                 updatedAt: '2026-04-24T12:00:00.000Z',
             },
-            storeItemSlug: 'barren-point',
+            storeItemSlug: 'disintegration-black-vinyl-lp',
             variantId: 'variant_barren-point_standard',
         });
     });

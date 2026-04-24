@@ -85,7 +85,7 @@ describe('checkout use cases', () => {
     const storeItem: StoreItemOptionRecord = {
         sourceId: 'barren-point',
         sourceKind: 'release',
-        storeItemSlug: 'barren-point',
+        storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_barren-point_standard',
     };
 
@@ -129,21 +129,21 @@ describe('checkout use cases', () => {
     });
 
     it('reads backend-known checkout eligibility for one store item', async () => {
-        await expect(readStoreOffer(storeItems, itemAvailability, stock, 'barren-point')).resolves.toEqual({
+        await expect(readStoreOffer(storeItems, itemAvailability, stock, 'disintegration-black-vinyl-lp')).resolves.toEqual({
             availability: {
                 label: 'Available',
                 status: 'available',
             },
             canCheckout: true,
-            storeItemSlug: 'barren-point',
+            storeItemSlug: 'disintegration-black-vinyl-lp',
             variantId: 'variant_barren-point_standard',
         });
     });
 
     it('returns array-shaped variant offers for future multi-variant expansion', async () => {
-        await expect(listVariantOffersForStoreItem(storeItems, itemAvailability, stock, 'barren-point')).resolves.toEqual([
+        await expect(listVariantOffersForStoreItem(storeItems, itemAvailability, stock, 'disintegration-black-vinyl-lp')).resolves.toEqual([
             expect.objectContaining({
-                storeItemSlug: 'barren-point',
+                storeItemSlug: 'disintegration-black-vinyl-lp',
                 variantId: 'variant_barren-point_standard',
             }),
         ]);
@@ -210,7 +210,7 @@ describe('checkout use cases', () => {
 
         expect(checkoutGateway.createEmbeddedCheckoutSession).toHaveBeenCalledWith({
             returnUrl: 'https://example.com/return',
-            storeItemSlug: 'barren-point',
+            storeItemSlug: 'disintegration-black-vinyl-lp',
             stripePriceId: 'price_test_barren_point',
             variantId: 'variant_barren-point_standard',
         });

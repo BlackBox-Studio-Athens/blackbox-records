@@ -48,8 +48,8 @@ Canonical shopper URLs:
 
 Compatibility URLs:
 
-- `/store/barren-point/`
-- `/store/barren-point/checkout/`
+- `/store/disintegration-black-vinyl-lp/`
+- `/store/disintegration-black-vinyl-lp/checkout/`
 
 Compatibility URLs should redirect or resolve safely to the canonical URLs. They must not be rendered as the primary shopper-facing route in links, cart state, checkout actions, or docs.
 

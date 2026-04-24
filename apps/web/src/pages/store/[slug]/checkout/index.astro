@@ -23,6 +23,7 @@ const { storeItem, primaryAvailability } = entry;
 const priceLabel = primaryAvailability?.price.display || 'Price soon';
 const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
 const canBuy = primaryAvailability?.canBuy ?? false;
+const itemTypeLabel = storeItem.sourceKind === 'release' ? 'Release' : 'Item';
 const initialCheckoutAvailability = {
   canBuy,
   label: availabilityLabel,
@@ -67,12 +68,14 @@ const initialCheckoutAvailability = {
           </div>
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="space-y-2">
-              <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Offer</p>
+              <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{itemTypeLabel}</p>
               <p class="font-display text-2xl tracking-[0.08em] uppercase text-foreground">
                 {storeItem.title}
               </p>
               {primaryAvailability?.optionLabel && (
-                <p class="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{primaryAvailability.optionLabel}</p>
+                <p class="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                  Item option · {primaryAvailability.optionLabel}
+                </p>
               )}
             </div>
             <div class="space-y-2">

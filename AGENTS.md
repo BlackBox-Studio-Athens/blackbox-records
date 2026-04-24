@@ -82,7 +82,7 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - Backend local D1 comes from Wrangler automatically during Worker dev; do not add a second D1 process to the run-config flow.
 - The stack launcher scripts must run D1 migrations and seed SQL before starting the Worker/static site.
 - Keep `BlackBox Local Stack` working whenever frontend env, backend env, ports, checkout setup, D1 migrations, seed files, or WebStorm run configs change. If a change breaks the canonical launcher, fix the launcher or docs in the same commit.
-- The deterministic local mock checkout smoke path is `http://127.0.0.1:4321/blackbox-records/store/barren-point/checkout/`; do not assume every visible store item is seeded as checkout-ready.
+- The deterministic local mock checkout smoke path is `http://127.0.0.1:4321/blackbox-records/store/disintegration-black-vinyl-lp/checkout/`; do not assume every visible store item is seeded as checkout-ready.
 - `pnpm dev:stack:stripe-test` is the real local checkout path and requires `PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, and ignored local Stripe test Price mappings.
 - `pnpm dev:stack:stripe-mock` uses the Worker in-process mock Stripe gateway through the Wrangler `mock` env, seeds local `price_mock_*` mappings, and renders a frontend mock checkout panel. It must not require Docker or `apps/backend/.dev.vars`. It is not a real embedded Checkout browser substitute.
 - Runtime backend secrets belong in Worker secrets or `apps/backend/.dev.vars`, not in Astro public env vars or GitHub deploy credentials.
@@ -121,7 +121,7 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - Checkout creation is Worker-owned through a backend Stripe gateway seam; route files must not instantiate Stripe directly.
 - Stripe Checkout Sessions are the approved v1 payment creation path, using embedded Checkout (`ui_mode: embedded_page` on the current Stripe API version).
 - The web checkout shell mounts Stripe embedded Checkout from the Worker-returned `clientSecret`; browser payloads must stay limited to app identities such as `storeItemSlug` and `variantId`.
-- Phase 7 now requires shopper-facing store URLs to describe the sellable item option, not legacy release shorthand. The current `barren-point` local smoke route should become a compatibility alias for the canonical `Disintegration` / `Black Vinyl LP` route.
+- Phase 7 requires shopper-facing store URLs to describe the sellable item option, not legacy release shorthand. The old `barren-point` local smoke route is a compatibility alias for the canonical `Disintegration` / `Black Vinyl LP` route.
 - Phase 7 cart UX should be Shopify-familiar but BlackBox-owned: cart icon, single-item cart drawer, order summary, and checkout CTA using Astro/React/shadcn. Do not implement true multi-item cart, quantity controls, discount codes, or browser-owned commerce authority in this milestone.
 
 ### Required command policy

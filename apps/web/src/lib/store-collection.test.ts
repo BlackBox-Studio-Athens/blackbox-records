@@ -75,12 +75,12 @@ describe('store collection entries', () => {
     const collectionEntries = await listStoreCollectionEntries();
 
     expect(collectionEntries.map((entry) => [entry.storeItem.slug, entry.storeItem.sourceKind])).toEqual([
-      ['barren-point', 'release'],
+      ['disintegration-black-vinyl-lp', 'release'],
       ['afterglow-tape', 'distro'],
     ]);
 
     expect(collectionEntries[0]?.primaryAvailability).toMatchObject({
-      storeItemSlug: 'barren-point',
+      storeItemSlug: 'disintegration-black-vinyl-lp',
       price: { display: '€28.00' },
       canBuy: true,
     });

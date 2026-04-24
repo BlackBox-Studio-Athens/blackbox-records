@@ -57,7 +57,7 @@ describe('StoreOfferReader', () => {
 
     it('returns repository-backed offer availability for a mapped slug', async () => {
         const storeItemOption: StoreItemOptionRecord = {
-            storeItemSlug: 'barren-point',
+            storeItemSlug: 'disintegration-black-vinyl-lp',
             sourceKind: 'release',
             sourceId: 'barren-point',
             variantId: 'variant_barren-point_standard',
@@ -80,8 +80,8 @@ describe('StoreOfferReader', () => {
 
         const reader = new StoreOfferReader(storeItemOptions, itemAvailability);
 
-        await expect(reader.findByStoreItemSlug('barren-point')).resolves.toEqual({
-            storeItemSlug: 'barren-point',
+        await expect(reader.findByStoreItemSlug('disintegration-black-vinyl-lp')).resolves.toEqual({
+            storeItemSlug: 'disintegration-black-vinyl-lp',
             variantId: 'variant_barren-point_standard',
             availability: {
                 status: 'available',

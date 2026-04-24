@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 7 plan 5; correct shopper-facing item option URLs and legacy slug redirects
-last_updated: "2026-04-25T02:32:58+03:00"
-last_activity: 2026-04-25 -- Added all-current-items local mock checkout readiness to the Phase 7 plan
+stopped_at: Phase 7 plan 6; add the storefront cart icon and single-item cart state seam
+last_updated: "2026-04-25T02:43:00+03:00"
+last_activity: 2026-04-25 -- Completed canonical store item URL correction for Disintegration Black Vinyl LP
 progress:
   total_phases: 10
   completed_phases: 5
   total_plans: 64
-  completed_plans: 29
-  percent: 45
+  completed_plans: 30
+  percent: 47
 ---
 
 # Project State
@@ -28,22 +28,22 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 Current Phase: 7
 Current Phase Name: Worker Checkout And Stripe Sandbox Flow
 Total Phases: 10
-Current Plan: 5
+Current Plan: 6
 Total Plans in Phase: 16
 Status: Active
-Progress: 45%
+Progress: 47%
 Last Activity: 2026-04-25
-Last Activity Description: Added all-current-items local mock checkout readiness to the Phase 7 plan
-Paused At: Phase 7 plan 5; correct shopper-facing item option URLs and legacy slug redirects
+Last Activity Description: Completed canonical store item URL correction for Disintegration Black Vinyl LP
+Paused At: Phase 7 plan 6; add the storefront cart icon and single-item cart state seam
 
-Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has started: the Worker now exposes public store-offer lookup, variant offer lookup, `StartCheckout`, and `ReadCheckoutState` APIs, backed by D1 repository seams and a Stripe Checkout gateway. The frontend checkout shell now reads Worker-known offer and variant state, starts Worker-owned Checkout Sessions, and mounts Stripe embedded Checkout from the returned `clientSecret`. Phase 7 is now replanned before return/retry work so shopper-facing URLs describe the purchased item option, the checkout path gains a familiar single-item cart icon, cart drawer, cart summary, and Shopify-inspired checkout layout, and local mock checkout readiness covers every current distro entry and release entry. Local fake stock is allowed only in stripe-mock mode; sandbox/production stock remains uncounted until staff records it through D1-backed stock operations. Phase 7.1 is planned after Phase 7 to migrate the static frontend from GitHub Pages to Cloudflare Pages before Phase 8 webhook/order work depends on final hosted origins; the next implementation step is correcting shopper-facing item option URLs and legacy slug redirects.
+Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has started: the Worker now exposes public store-offer lookup, variant offer lookup, `StartCheckout`, and `ReadCheckoutState` APIs, backed by D1 repository seams and a Stripe Checkout gateway. The frontend checkout shell now reads Worker-known offer and variant state, starts Worker-owned Checkout Sessions, and mounts Stripe embedded Checkout from the returned `clientSecret`. Shopper-facing store URLs now describe the purchased item option for the first smoke item: `Disintegration` by `Afterwise` as `Black Vinyl LP` uses `/store/disintegration-black-vinyl-lp/`, with `/store/barren-point/` kept as a compatibility redirect. Phase 7 continues with a familiar single-item cart icon, cart drawer, cart summary, and Shopify-inspired checkout layout, then all-current-items local mock checkout readiness. Local fake stock is allowed only in stripe-mock mode; sandbox/production stock remains uncounted until staff records it through D1-backed stock operations. Phase 7.1 is planned after Phase 7 to migrate the static frontend from GitHub Pages to Cloudflare Pages before Phase 8 webhook/order work depends on final hosted origins; the next implementation step is adding the storefront cart icon and single-item cart state seam.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 29
-- Total plans remaining: 31
+- Total plans completed: 30
+- Total plans remaining: 34
 - Average duration: -
 - Total execution time: -
 
@@ -56,13 +56,13 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 | 6 | 7 | Completed | 2026-04-21 |
 | 6.1 | 4 | Completed | 2026-04-22 |
 | 6.1.1 | 4 | Completed | 2026-04-24 |
-| 7 | 4/16 | Active | 2026-04-24 |
+| 7 | 5/16 | Active | 2026-04-25 |
 | 7.1 | 0/5 | Planned | - |
 
 **Recent Trend:**
 
-- Last 5 plans: 06.1.1-04, 07-01, 07-02, 07-03, 07-04
-- Trend: Protected stock policy, the first Worker checkout API contract, the frontend public checkout API seam, Worker-backed checkout shell reads, embedded Stripe Checkout mounting, and local stack launchers are complete.
+- Last 5 plans: 07-01, 07-02, 07-03, 07-04, 07-05
+- Trend: The first Worker checkout API contract, the frontend public checkout API seam, Worker-backed checkout shell reads, embedded Stripe Checkout mounting, local stack launchers, and canonical item-option URLs are complete.
 
 ## Accumulated Context
 
@@ -84,7 +84,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 - The Worker now exposes public checkout/store API routes under `/api/store/*` and `/api/checkout/*`, with `StartCheckout` validating store item mapping, availability, `OnlineStock`, and Stripe price mapping before creating an embedded Checkout Session.
 - The static checkout shell now hydrates a small Worker-read status panel that displays backend-known offer, variant, and checkout eligibility state without starting payment.
 - The static checkout shell now uses browser-safe `PUBLIC_STRIPE_PUBLISHABLE_KEY` and Stripe.js to mount embedded Checkout from the Worker-returned `clientSecret`.
-- Phase 7 must now correct the current `/store/barren-point/` route drift so the shopper-facing URL and page title describe the purchased option, for example Disintegration by Afterwise on Black Vinyl LP, rather than legacy release shorthand.
+- Phase 7 corrected the current `/store/barren-point/` route drift: the shopper-facing smoke item now uses `/store/disintegration-black-vinyl-lp/`, with legacy `barren-point` routes kept as compatibility redirects.
 - Phase 7 must add a familiar single-item cart UX with a cart icon, cart drawer/summary, checkout CTA, and Shopify-inspired order summary while keeping multi-item cart semantics out of scope.
 - Phase 7 must treat every current distro entry and release entry as a real sellable store candidate for local mock checkout readiness, even if real quantities are unknown.
 - Phase 7 may seed fake local mock stock and mock Stripe Price mappings for every current item so the no-network local checkout path can exercise representative item types; that fake stock must never be described as a real stock count.
@@ -125,7 +125,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
-- Correct shopper-facing item option URLs and legacy slug redirects in Phase 7 plan 5.
+- Add the storefront cart icon and single-item cart state seam in Phase 7 plan 6.
 - Add all-current-items local mock checkout readiness in Phase 7 plans 12 through 15 before final checkout validation.
 
 ## Blockers
@@ -137,7 +137,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 
 ## Session
 
-**Last Date:** 2026-04-25T02:32:58+03:00
-**Stopped At:** Phase 7 plan 5; correct shopper-facing item option URLs and legacy slug redirects
+**Last Date:** 2026-04-25T02:43:00+03:00
+**Stopped At:** Phase 7 plan 6; add the storefront cart icon and single-item cart state seam
 **Resume File:** .planning/ROADMAP.md
 

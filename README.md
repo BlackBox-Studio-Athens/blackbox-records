@@ -79,12 +79,10 @@ This is what `BlackBox Local Stack` runs in WebStorm. It prepares local D1, star
 Local mock checkout smoke path:
 
 ```text
-http://127.0.0.1:4321/blackbox-records/store/barren-point/checkout/
+http://127.0.0.1:4321/blackbox-records/store/disintegration-black-vinyl-lp/checkout/
 ```
 
-That path is seeded end-to-end in local D1 and mock Stripe mode. Other store items may remain visible but unavailable until they receive D1 stock and Stripe price mappings.
-
-Phase 7 now treats that `barren-point` path as a temporary smoke-test alias. The shopper-facing route should be corrected to describe the buyable item option itself, for example `Disintegration` by `Afterwise` as `Black Vinyl LP`, before cart and sandbox validation work continues.
+That canonical path is seeded end-to-end in local D1 and mock Stripe mode. Legacy `/store/barren-point/` and `/store/barren-point/checkout/` paths remain compatibility redirects for the same item option. Other store items may remain visible but unavailable until they receive D1 stock and Stripe price mappings.
 
 Run the full local commerce stack with real Stripe test mode:
 
