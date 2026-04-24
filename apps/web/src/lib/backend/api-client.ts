@@ -1,6 +1,15 @@
 export { createPublicApiFetcher } from '@blackbox/api-client';
 
-export type { PublicApiComponents, PublicApiFetcher, PublicApiOperations, PublicApiPaths } from '@blackbox/api-client';
+export type {
+    InternalApiComponents,
+    InternalApiFetcher,
+    InternalApiOperations,
+    InternalApiPaths,
+    PublicApiComponents,
+    PublicApiFetcher,
+    PublicApiOperations,
+    PublicApiPaths,
+} from '@blackbox/api-client';
 
 import { createPublicApiFetcher } from '@blackbox/api-client';
 

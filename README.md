@@ -146,7 +146,7 @@ Current Worker scope:
 - backend-local seed data now exists under `apps/backend/prisma/seeds/`
 - a backend-only StoreOffer reader can now resolve mapped availability from D1
 - protected internal stock routes now exist under `/api/internal/variants/*`
-- protected stock operations UI routes now exist under `/stock/` and `/stock/[variantId]/`
+- the static Astro app now exposes the protected stock operations UI at `/stock/`
 - D1-backed `Stock`, `StockChange`, and `StockCount` now back the operator stock ledger contract
 - no Stripe routes, public D1-backed HTTP read routes, or frontend D1 wiring yet
 - no production deployment path yet
@@ -213,14 +213,16 @@ pnpm generate:api
   - the public GitHub Pages storefront
   - the public sandbox `workers.dev` backend used for shopper/browser sandbox checks
 - Protected operator routes belong under:
-  - `/stock/`
-  - `/stock/[variantId]/`
-  - `/api/internal/*`
+  - static Astro UI: `/stock/`
+  - static Astro detail state: `/stock/?variantId=<variantId>`
+  - Worker API: `/api/internal/*`
 - The protected surface is not a public-path subtree on the shopper hostname.
 - Cloudflare Access uses Google as the identity provider for this hostname, and operator entry is controlled by an explicit email allowlist that stays out of the repo.
 - Worker-side operator attribution comes from the Access-authenticated request header `cf-access-authenticated-user-email`, which the internal stock-write routes now persist as `actor_email`.
 - The internal Worker API now exposes operator-only stock lookup and stock-write routes under `/api/internal/variants/*`.
-- The protected stock operations UI is served by the Worker at `/stock/` and `/stock/[variantId]/` on the operator hostname.
+- The protected stock operations UI is built by the static Astro app at `/stock/`; it calls same-origin `/api/internal/*` on the protected operator hostname.
+- For local split-port development, set `PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787` so the static UI can call the local Worker.
+- The stock UI is intentionally absent from public navigation. If served directly from public GitHub Pages before the protected ops hostname is provisioned, it is not a production-safe stock operations surface.
 - This contract does not introduce shopper login; public storefront, public checkout, and sandbox shopper browsing remain unauthenticated.
 
 ## Worker secrets and CI auth

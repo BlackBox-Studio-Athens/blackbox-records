@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
 stopped_at: Phase 6.1.1 active; next implementation focus is 06.1.1-04 spreadsheet policy and reconciliation rules
-last_updated: "2026-04-24T04:55:00+03:00"
-last_activity: 2026-04-24 -- Added protected Worker-served stock operations UI under /stock/ and /stock/[variantId]/
+last_updated: "2026-04-24T05:10:00+03:00"
+last_activity: 2026-04-24 -- Refactored protected stock operations UI to static Astro at /stock/ with Worker-owned internal APIs
 progress:
   total_phases: 9
   completed_phases: 4
@@ -33,10 +33,10 @@ Total Plans in Phase: 4
 Status: Active
 Progress: 67%
 Last Activity: 2026-04-24
-Last Activity Description: Added protected Worker-served stock operations UI under /stock/ and /stock/[variantId]/
+Last Activity Description: Refactored protected stock operations UI to static Astro at /stock/ with Worker-owned internal APIs
 Paused At: Phase 6.1.1 active; next implementation focus is 06.1.1-04 spreadsheet policy and reconciliation rules
 
-Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real backend-local D1 binding contract named `COMMERCE_DB`, Worker-compatible Prisma runtime access, committed SQL migration history, local seed SQL for current storefront cases, a first backend application reader that resolves offer availability by `storeItemSlug`, a typed operator-identity extraction seam for the separate Access-protected stock hostname, an internal stock ledger API backed by `Stock`, `StockChange`, and `StockCount`, and a protected Worker-served stock operations UI. Phase 6.1.1 remains the active gate before Phase 7 checkout work starts.
+Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real backend-local D1 binding contract named `COMMERCE_DB`, Worker-compatible Prisma runtime access, committed SQL migration history, local seed SQL for current storefront cases, a first backend application reader that resolves offer availability by `storeItemSlug`, a typed operator-identity extraction seam for the separate Access-protected stock hostname, an internal stock ledger API backed by `Stock`, `StockChange`, and `StockCount`, and a protected static Astro stock operations UI that calls Worker-owned internal APIs. Phase 6.1.1 remains the active gate before Phase 7 checkout work starts.
 
 ## Performance Metrics
 
@@ -60,7 +60,7 @@ Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real b
 **Recent Trend:**
 
 - Last 5 plans: 06.1-03, 06.1-04, 06.1.1-01, 06.1.1-02, 06.1.1-03
-- Trend: Backend commerce-state foundation is complete, the protected operator auth boundary is locked, and the Worker now exposes both the internal stock ledger API and the first protected stock operations UI.
+- Trend: Backend commerce-state foundation is complete, the protected operator auth boundary is locked, and the Worker now exposes the internal stock ledger API consumed by the static Astro stock operations UI.
 
 ## Accumulated Context
 
@@ -75,7 +75,7 @@ Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real b
 - The backend now has repo-owned local seed SQL and a first application-layer StoreOffer reader on top of the D1 repositories.
 - The backend now has a typed Access-header extraction seam for `actor_email` on the future protected operator hostname.
 - The backend now persists `Stock`, `StockChange`, and `StockCount` in D1 and exposes internal stock lookup/write routes under `/api/internal/variants/*`.
-- The backend now serves the protected stock operations UI under `/stock/` and `/stock/[variantId]/` on the operator hostname.
+- The static Astro app now serves the protected stock operations UI at `/stock/`, using `/stock/?variantId=<variantId>` for detail state and Worker-owned `/api/internal/variants/*` calls for data and writes.
 - Commerce naming was simplified to DDD-style label language: `StoreItem`, `ItemAvailability`, `StoreItemOption`, `StoreOffer`, `Stock`, `OnlineStock`, `StartCheckout`, `ReadCheckoutState`, and `not_paid`.
 
 ## Decisions Made

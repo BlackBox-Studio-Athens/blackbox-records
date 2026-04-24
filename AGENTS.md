@@ -92,11 +92,12 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - The backend stock application seam now lives under `apps/backend/src/application/commerce/stock/`.
 - Internal stock operations are now contractually separated onto a protected operator hostname, referred to in repo docs as `ops.<managed-zone>` until the real custom domain is provisioned.
 - Protected operator routes belong under:
-  - `/stock/`
-  - `/stock/[variantId]/`
-  - `/api/internal/*`
+  - static Astro UI: `/stock/`
+  - static Astro detail state: `/stock/?variantId=<variantId>`
+  - Worker API: `/api/internal/*`
 - The internal Worker API now exposes operator-only stock routes under `/api/internal/variants/*`.
-- The protected stock operations UI is served by the Worker from `apps/backend/src/interfaces/http/routes/register-internal-stock-ui-routes.ts`.
+- The protected stock operations UI is served by the static Astro app from `apps/web/src/pages/stock/index.astro` and calls same-origin `/api/internal/*` on the protected operator hostname.
+- For local split-port development, set `PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787` so the static UI can call `pnpm dev:backend`.
 - Cloudflare Access + Google protects that hostname through an explicit email allowlist; do not add shopper login or reuse Decap auth for runtime stock operations.
 - Worker-side operator attribution comes from the Access-authenticated request header `cf-access-authenticated-user-email`, which the stock-write routes persist as `actor_email`.
 - The D1 stock ledger now uses `Stock`, `StockChange`, and `StockCount`, with `onlineQuantity` tracked on `Stock`.

@@ -113,11 +113,11 @@ Plans:
 
 ### Phase 06.1.1: Internal Stock Operations And Operator Access (INSERTED)
 
-**Goal**: Add a protected staff-only stock operations surface on the Worker backend before public checkout depends on live stock.
+**Goal**: Add a protected staff-only stock operations surface before public checkout depends on live stock, with Astro owning the UI and the Worker owning internal APIs.
 **Depends on**: Phase 6.1
 **Requirements**: AUTH-01, AUTH-02, INV-01, INV-02, INV-03
 **Success Criteria** (what must be TRUE):
-1. Team members can reach an internal stock tool through Google-backed Cloudflare Access on a separate protected backend hostname, while public storefront and shopper checkout remain unauthenticated.
+1. Team members can reach an internal stock tool through Google-backed Cloudflare Access on a separate protected operator hostname, while public storefront and shopper checkout remain unauthenticated.
 2. The Worker backend exposes protected internal APIs for variant discovery, stock visibility, `StockChange`, and `StockCount`, and every write records operator identity and time using the same TS-only Hono + layered-boundary standard.
 3. D1 is explicitly the authoritative stock ledger, spreadsheets are explicitly non-authoritative, and the online-vs-offline stock policy is locked before checkout consumes stock state.
 4. The operator UI is concrete enough that label staff can update stock without direct database access or Decap reuse.
@@ -127,7 +127,7 @@ Plans:
 Plans:
 - [x] 06.1.1-01: Lock the protected hostname and Cloudflare Access + Google contract for internal operators
 - [x] 06.1.1-02: Define the internal stock API and D1 ledger contract around `Variant`, `Stock`, `StockChange`, and `StockCount`
-- [x] 06.1.1-03: Design the internal stock operations UI for search, balance, history, and write actions
+- [x] 06.1.1-03: Design the static Astro internal stock operations UI for search, balance, history, and write actions
 - [ ] 06.1.1-04: Lock spreadsheet policy, audit attribution, and the online-vs-offline stock buffer rules
 
 ### Phase 7: Worker Checkout And Stripe Sandbox Flow
