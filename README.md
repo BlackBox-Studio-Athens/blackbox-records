@@ -145,6 +145,8 @@ Current Worker scope:
 - the D1 migration workflow baseline now exists under `apps/backend/prisma/migrations/`
 - backend-local seed data now exists under `apps/backend/prisma/seeds/`
 - a backend-only StoreOffer reader can now resolve mapped availability from D1
+- protected internal stock routes now exist under `/api/internal/variants/*`
+- D1-backed `Stock`, `StockChange`, and `StockCount` now back the operator stock ledger contract
 - no Stripe routes, public D1-backed HTTP read routes, or frontend D1 wiring yet
 - no production deployment path yet
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
@@ -215,7 +217,8 @@ pnpm generate:api
   - `/api/internal/*`
 - The protected surface is not a public-path subtree on the shopper hostname.
 - Cloudflare Access uses Google as the identity provider for this hostname, and operator entry is controlled by an explicit email allowlist that stays out of the repo.
-- Worker-side operator attribution comes from the Access-authenticated request header `cf-access-authenticated-user-email`, which later stock-write flows will persist as `actor_email`.
+- Worker-side operator attribution comes from the Access-authenticated request header `cf-access-authenticated-user-email`, which the internal stock-write routes now persist as `actor_email`.
+- The internal Worker API now exposes operator-only stock lookup and stock-write routes under `/api/internal/variants/*`; the operator UI remains a later phase.
 - This contract does not introduce shopper login; public storefront, public checkout, and sandbox shopper browsing remain unauthenticated.
 
 ## Worker secrets and CI auth
@@ -240,7 +243,9 @@ pnpm generate:api
 - `apps/backend/prisma/schema.prisma` is the declarative schema model.
 - Prisma 7 moves datasource URLs to `prisma.config.ts`; keep the schema URL until the repo upgrades from Prisma 6 because Prisma 6 still requires it during generation.
 - `apps/backend/prisma/migrations/*.sql` is the committed D1 schema history.
-- The current pre-production commerce schema is intentionally consolidated into one baseline migration: `0001_initial_commerce_state.sql`.
+- The current pre-production commerce schema uses:
+  - `0001_initial_commerce_state.sql` as the baseline store-state migration
+  - `0002_add_internal_stock_ledger.sql` as the additive stock-ledger migration
 - Wrangler is the only apply path for D1 schema changes.
 - Prisma is used for client generation and SQL diff generation, not direct schema deployment.
 - Manual Cloudflare dashboard schema edits are out of workflow.

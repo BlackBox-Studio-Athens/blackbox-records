@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 6.1.1 active; next implementation focus is 06.1.1-02 internal stock API and ledger contract
-last_updated: "2026-04-23T12:30:00+03:00"
-last_activity: 2026-04-23 -- Simplified commerce ubiquitous language across store, D1, Stripe mapping, and active planning docs
+stopped_at: Phase 6.1.1 active; next implementation focus is 06.1.1-03 protected operator stock UI
+last_updated: "2026-04-24T00:40:00+03:00"
+last_activity: 2026-04-24 -- Landed internal stock ledger schema, D1-backed stock routes, and internal OpenAPI contract under /api/internal/variants/*
 progress:
   total_phases: 9
   completed_phases: 4
   total_plans: 36
-  completed_plans: 22
-  percent: 61
+  completed_plans: 23
+  percent: 64
 ---
 
 # Project State
@@ -28,22 +28,22 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 Current Phase: 6.1.1
 Current Phase Name: Internal Stock Operations And Operator Access
 Total Phases: 9
-Current Plan: 2
+Current Plan: 3
 Total Plans in Phase: 4
 Status: Active
 Progress: 61%
-Last Activity: 2026-04-23
-Last Activity Description: Simplified commerce ubiquitous language across store, D1, Stripe mapping, and active planning docs
-Paused At: Phase 6.1.1 active; next implementation focus is 06.1.1-02 internal stock API and ledger contract
+Last Activity: 2026-04-24
+Last Activity Description: Landed internal stock ledger schema, D1-backed stock routes, and internal OpenAPI contract under /api/internal/variants/*
+Paused At: Phase 6.1.1 active; next implementation focus is 06.1.1-03 protected operator stock UI
 
-Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real backend-local D1 binding contract named `COMMERCE_DB`, Worker-compatible Prisma runtime access, committed SQL migration history, local seed SQL for current storefront cases, a first backend application reader that resolves offer availability by `storeItemSlug`, and a typed operator-identity extraction seam for the separate Access-protected stock hostname. Phase 6.1.1 remains the active gate before Phase 7 checkout work starts.
+Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real backend-local D1 binding contract named `COMMERCE_DB`, Worker-compatible Prisma runtime access, committed SQL migration history, local seed SQL for current storefront cases, a first backend application reader that resolves offer availability by `storeItemSlug`, a typed operator-identity extraction seam for the separate Access-protected stock hostname, and an internal stock ledger API backed by `Stock`, `StockChange`, and `StockCount`. Phase 6.1.1 remains the active gate before Phase 7 checkout work starts.
 
 ## Performance Metrics
 
 **Velocity:**
 
 - Total plans completed: 17
-- Total plans completed: 22
+- Total plans completed: 23
 - Average duration: -
 - Total execution time: -
 
@@ -55,12 +55,12 @@ Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real b
 | 5.1 | 4 | Completed | 2026-04-20 |
 | 6 | 7 | Completed | 2026-04-21 |
 | 6.1 | 4 | Completed | 2026-04-22 |
-| 6.1.1 | 1 | Active | 2026-04-22 |
+| 6.1.1 | 2 | Active | 2026-04-24 |
 
 **Recent Trend:**
 
-- Last 5 plans: 06.1-01, 06.1-02, 06.1-03, 06.1-04, 06.1.1-01
-- Trend: Backend commerce-state foundation is complete, Phase 6.1.1 has locked the protected operator auth boundary, and the active commerce language now uses StoreItem, ItemAvailability, StoreOffer, Stock, OnlineStock, StartCheckout, and ReadCheckoutState.
+- Last 5 plans: 06.1-02, 06.1-03, 06.1-04, 06.1.1-01, 06.1.1-02
+- Trend: Backend commerce-state foundation is complete, the protected operator auth boundary is locked, and the Worker now exposes a D1-backed internal stock ledger API before the operator UI phase.
 
 ## Accumulated Context
 
@@ -74,6 +74,7 @@ Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real b
 - The backend migration workflow is now Prisma-schema-driven but Wrangler-applied, with the current pre-production D1 schema consolidated into one baseline SQL migration under `apps/backend/prisma/migrations/`.
 - The backend now has repo-owned local seed SQL and a first application-layer StoreOffer reader on top of the D1 repositories.
 - The backend now has a typed Access-header extraction seam for `actor_email` on the future protected operator hostname.
+- The backend now persists `Stock`, `StockChange`, and `StockCount` in D1 and exposes internal stock lookup/write routes under `/api/internal/variants/*`.
 - Commerce naming was simplified to DDD-style label language: `StoreItem`, `ItemAvailability`, `StoreItemOption`, `StoreOffer`, `Stock`, `OnlineStock`, `StartCheckout`, `ReadCheckoutState`, and `not_paid`.
 
 ## Decisions Made
@@ -104,7 +105,7 @@ Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real b
 
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
-- Execute the planned Phase 06.1.1-02 internal stock API and ledger contract on top of the locked protected-hostname/auth boundary.
+- Build the planned Phase 06.1.1-03 protected operator stock UI on top of the landed internal stock API and ledger contract.
 - Continue the planned Phase 6.1.1 stock-ops/auth work before Phase 7 starts.
 
 ## Blockers
@@ -112,11 +113,11 @@ Phase summary: Phases 5, 5.1, 6, and 6.1 are complete. The repo now has a real b
 - No production cutover work is approved in this milestone.
 - Public shopper and sandbox browsing surfaces are not yet treated as strongly access-controlled; do not expose internal stock-write routes until the Phase 6.1.1 Access boundary exists.
 - The Astro frontend is no longer being treated as “moving to Workers” in this milestone; do not reintroduce that assumption in implementation.
-- Phase 7 checkout work remains blocked on Phase 6.1.1 finishing first.
+- Phase 7 checkout work remains blocked on the remaining Phase 6.1.1 operator UI and operator workflow steps.
 
 ## Session
 
 **Last Date:** 2026-04-22T01:52:14.9376385+03:00
-**Stopped At:** Phase 6.1.1 active; next implementation focus is 06.1.1-02 internal stock API and ledger contract
+**Stopped At:** Phase 6.1.1 active; next implementation focus is 06.1.1-03 protected operator stock UI
 **Resume File:** .planning/ROADMAP.md
 

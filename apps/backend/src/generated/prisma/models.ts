@@ -11,4 +11,7 @@
 export type * from './models/StoreItemOption'
 export type * from './models/VariantStripeMapping'
 export type * from './models/ItemAvailability'
+export type * from './models/Stock'
+export type * from './models/StockChange'
+export type * from './models/StockCount'
 export type * from './commonInputTypes'

@@ -5,9 +5,602 @@
     "version": "1.0.0"
   },
   "components": {
-    "schemas": {},
+    "schemas": {
+      "InternalVariantSummary": {
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "string"
+          },
+          "sourceKind": {
+            "type": "string",
+            "enum": [
+              "release",
+              "distro"
+            ]
+          },
+          "storeItemSlug": {
+            "type": "string"
+          },
+          "variantId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sourceId",
+          "sourceKind",
+          "storeItemSlug",
+          "variantId"
+        ]
+      },
+      "InternalStockError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "InternalStockDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/InternalVariantSummary"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "stock": {
+                "$ref": "#/components/schemas/InternalStockState"
+              }
+            },
+            "required": [
+              "stock"
+            ]
+          }
+        ]
+      },
+      "InternalStockState": {
+        "type": "object",
+        "properties": {
+          "onlineQuantity": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "onlineQuantity",
+          "quantity",
+          "updatedAt"
+        ]
+      },
+      "InternalStockHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/InternalStockChangeEntry"
+                },
+                {
+                  "$ref": "#/components/schemas/InternalStockCountEntry"
+                }
+              ]
+            }
+          },
+          "variantId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "entries",
+          "variantId"
+        ]
+      },
+      "InternalStockChangeEntry": {
+        "type": "object",
+        "properties": {
+          "actorEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "id": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quantityDelta": {
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "change"
+            ]
+          },
+          "variantId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "actorEmail",
+          "id",
+          "notes",
+          "quantityDelta",
+          "reason",
+          "recordedAt",
+          "type",
+          "variantId"
+        ]
+      },
+      "InternalStockCountEntry": {
+        "type": "object",
+        "properties": {
+          "actorEmail": {
+            "type": "string",
+            "format": "email"
+          },
+          "countedQuantity": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "id": {
+            "type": "string"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "onlineQuantity": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "count"
+            ]
+          },
+          "variantId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "actorEmail",
+          "countedQuantity",
+          "id",
+          "notes",
+          "onlineQuantity",
+          "recordedAt",
+          "type",
+          "variantId"
+        ]
+      },
+      "RecordedStockChangeResponse": {
+        "type": "object",
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/InternalStockChangeEntry"
+          },
+          "stock": {
+            "$ref": "#/components/schemas/InternalStockState"
+          },
+          "variantId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "entry",
+          "stock",
+          "variantId"
+        ]
+      },
+      "InternalStockChangeBody": {
+        "type": "object",
+        "properties": {
+          "delta": {
+            "type": "integer"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "delta",
+          "reason"
+        ]
+      },
+      "RecordedStockCountResponse": {
+        "type": "object",
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/InternalStockCountEntry"
+          },
+          "stock": {
+            "$ref": "#/components/schemas/InternalStockState"
+          },
+          "variantId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "entry",
+          "stock",
+          "variantId"
+        ]
+      },
+      "InternalStockCountBody": {
+        "type": "object",
+        "properties": {
+          "countedQuantity": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "onlineQuantity": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "countedQuantity",
+          "onlineQuantity"
+        ]
+      }
+    },
     "parameters": {}
   },
-  "paths": {},
+  "paths": {
+    "/api/internal/variants": {
+      "get": {
+        "tags": [
+          "Internal Stock"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": false,
+            "name": "q",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search variants for internal stock operations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InternalVariantSummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing operator identity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/variants/{variantId}/stock": {
+      "get": {
+        "tags": [
+          "Internal Stock"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "variantId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current stock for a variant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing operator identity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Variant not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/variants/{variantId}/stock/history": {
+      "get": {
+        "tags": [
+          "Internal Stock"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "variantId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent stock history for a variant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockHistoryResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing operator identity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Variant not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/variants/{variantId}/stock/changes": {
+      "post": {
+        "tags": [
+          "Internal Stock"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "variantId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InternalStockChangeBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded a stock change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordedStockChangeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid stock change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing operator identity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Variant not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/variants/{variantId}/stock/counts": {
+      "post": {
+        "tags": [
+          "Internal Stock"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "variantId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InternalStockCountBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded a stock count.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordedStockCountResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid stock count.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing operator identity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Variant not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "webhooks": {}
 }

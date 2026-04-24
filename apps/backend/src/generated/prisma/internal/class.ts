@@ -57,8 +57,8 @@ const config: runtime.GetPrismaClientConfig = {
       }
     }
   },
-  "inlineSchema": "generator client {\n  provider   = \"prisma-client\"\n  output     = \"../src/generated/prisma\"\n  runtime    = \"cloudflare\"\n  engineType = \"client\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./dev.db\"\n}\n\nenum StoreItemSourceKind {\n  release\n  distro\n}\n\nenum ItemAvailabilityStatus {\n  available\n  sold_out\n}\n\nmodel StoreItemOption {\n  id            String              @id @default(cuid())\n  storeItemSlug String              @unique\n  sourceKind    StoreItemSourceKind\n  sourceId      String\n  variantId     String              @unique\n  createdAt     DateTime            @default(now())\n  updatedAt     DateTime            @updatedAt\n\n  @@unique([sourceKind, sourceId])\n}\n\nmodel VariantStripeMapping {\n  id            String   @id @default(cuid())\n  variantId     String   @unique\n  stripePriceId String\n  createdAt     DateTime @default(now())\n  updatedAt     DateTime @updatedAt\n}\n\nmodel ItemAvailability {\n  id        String                 @id @default(cuid())\n  variantId String                 @unique\n  status    ItemAvailabilityStatus\n  canBuy    Boolean\n  updatedAt DateTime               @updatedAt\n}\n",
-  "inlineSchemaHash": "d8a6ff4150d36cbf16b1cb316990c79196ad4cd4a1489b03932e17f68fb5ca2b",
+  "inlineSchema": "generator client {\n  provider   = \"prisma-client\"\n  output     = \"../src/generated/prisma\"\n  runtime    = \"cloudflare\"\n  engineType = \"client\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./dev.db\"\n}\n\nenum StoreItemSourceKind {\n  release\n  distro\n}\n\nenum ItemAvailabilityStatus {\n  available\n  sold_out\n}\n\nmodel StoreItemOption {\n  id            String              @id @default(cuid())\n  storeItemSlug String              @unique\n  sourceKind    StoreItemSourceKind\n  sourceId      String\n  variantId     String              @unique\n  createdAt     DateTime            @default(now())\n  updatedAt     DateTime            @updatedAt\n\n  @@unique([sourceKind, sourceId])\n}\n\nmodel VariantStripeMapping {\n  id            String   @id @default(cuid())\n  variantId     String   @unique\n  stripePriceId String\n  createdAt     DateTime @default(now())\n  updatedAt     DateTime @updatedAt\n}\n\nmodel ItemAvailability {\n  id        String                 @id @default(cuid())\n  variantId String                 @unique\n  status    ItemAvailabilityStatus\n  canBuy    Boolean\n  updatedAt DateTime               @updatedAt\n}\n\nmodel Stock {\n  id             String   @id @default(cuid())\n  variantId      String   @unique\n  quantity       Int\n  onlineQuantity Int\n  createdAt      DateTime @default(now())\n  updatedAt      DateTime @updatedAt\n}\n\nmodel StockChange {\n  id            String   @id @default(cuid())\n  variantId     String\n  quantityDelta Int\n  reason        String\n  notes         String?\n  actorEmail    String\n  recordedAt    DateTime @default(now())\n\n  @@index([variantId, recordedAt])\n}\n\nmodel StockCount {\n  id              String   @id @default(cuid())\n  variantId       String\n  countedQuantity Int\n  onlineQuantity  Int\n  notes           String?\n  actorEmail      String\n  recordedAt      DateTime @default(now())\n\n  @@index([variantId, recordedAt])\n}\n",
+  "inlineSchemaHash": "175d890c33074ceac0892fbe36dee3a5a0e749ade13c87b8bac6bf5465d0e77e",
   "copyEngine": true,
   "runtimeDataModel": {
     "models": {},
@@ -68,7 +68,7 @@ const config: runtime.GetPrismaClientConfig = {
   "dirname": ""
 }
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"StoreItemOption\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"storeItemSlug\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"sourceKind\",\"kind\":\"enum\",\"type\":\"StoreItemSourceKind\"},{\"name\":\"sourceId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variantId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"VariantStripeMapping\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variantId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"stripePriceId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"ItemAvailability\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variantId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"status\",\"kind\":\"enum\",\"type\":\"ItemAvailabilityStatus\"},{\"name\":\"canBuy\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"StoreItemOption\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"storeItemSlug\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"sourceKind\",\"kind\":\"enum\",\"type\":\"StoreItemSourceKind\"},{\"name\":\"sourceId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variantId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"VariantStripeMapping\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variantId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"stripePriceId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"ItemAvailability\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variantId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"status\",\"kind\":\"enum\",\"type\":\"ItemAvailabilityStatus\"},{\"name\":\"canBuy\",\"kind\":\"scalar\",\"type\":\"Boolean\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"Stock\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variantId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"quantity\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"onlineQuantity\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"StockChange\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variantId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"quantityDelta\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"reason\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"notes\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"actorEmail\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"recordedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"StockCount\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"variantId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"countedQuantity\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"onlineQuantity\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"notes\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"actorEmail\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"recordedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 config.engineWasm = undefined
 config.compilerWasm = {
   getRuntime: async () => await import("./query_compiler_bg.js"),
@@ -245,6 +245,36 @@ export interface PrismaClient<
     * ```
     */
   get itemAvailability(): Prisma.ItemAvailabilityDelegate<ExtArgs, { omit: OmitOpts }>;
+
+  /**
+   * `prisma.stock`: Exposes CRUD operations for the **Stock** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Stocks
+    * const stocks = await prisma.stock.findMany()
+    * ```
+    */
+  get stock(): Prisma.StockDelegate<ExtArgs, { omit: OmitOpts }>;
+
+  /**
+   * `prisma.stockChange`: Exposes CRUD operations for the **StockChange** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more StockChanges
+    * const stockChanges = await prisma.stockChange.findMany()
+    * ```
+    */
+  get stockChange(): Prisma.StockChangeDelegate<ExtArgs, { omit: OmitOpts }>;
+
+  /**
+   * `prisma.stockCount`: Exposes CRUD operations for the **StockCount** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more StockCounts
+    * const stockCounts = await prisma.stockCount.findMany()
+    * ```
+    */
+  get stockCount(): Prisma.StockCountDelegate<ExtArgs, { omit: OmitOpts }>;
 }
 
 export function getPrismaClientClass(dirname: string): PrismaClientConstructor {

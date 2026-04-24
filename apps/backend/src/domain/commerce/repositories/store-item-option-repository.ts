@@ -16,5 +16,7 @@ export type StoreItemOptionRecord = {
 
 export interface StoreItemOptionRepository {
     findByStoreItemSlug(storeItemSlug: StoreItemSlug): Promise<StoreItemOptionRecord | null>;
+    findByVariantId(variantId: VariantId): Promise<StoreItemOptionRecord | null>;
     findBySource(source: StoreItemSourceRef): Promise<StoreItemOptionRecord | null>;
+    search(query: string | null, limit: number): Promise<StoreItemOptionRecord[]>;
 }

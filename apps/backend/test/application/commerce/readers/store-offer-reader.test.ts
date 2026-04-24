@@ -11,8 +11,10 @@ import { StoreOfferReader } from '../../../../src/application/commerce/readers';
 describe('StoreOfferReader', () => {
     it('returns null when no store item option exists', async () => {
         const storeItemOptions: StoreItemOptionRepository = {
+            findByVariantId: vi.fn(async () => null),
             findByStoreItemSlug: vi.fn(async () => null),
             findBySource: vi.fn(async () => null),
+            search: vi.fn(async () => []),
         };
         const itemAvailability: ItemAvailabilityRepository = {
             findByVariantId: vi.fn(async () => null),
@@ -31,8 +33,10 @@ describe('StoreOfferReader', () => {
             variantId: 'variant_aftermaths_standard',
         };
         const storeItemOptions: StoreItemOptionRepository = {
+            findByVariantId: vi.fn(async () => null),
             findByStoreItemSlug: vi.fn(async () => storeItemOption),
             findBySource: vi.fn(async () => null),
+            search: vi.fn(async () => []),
         };
         const itemAvailability: ItemAvailabilityRepository = {
             findByVariantId: vi.fn(async () => null),
@@ -65,8 +69,10 @@ describe('StoreOfferReader', () => {
             updatedAt: new Date('2026-04-22T00:00:00.000Z'),
         };
         const storeItemOptions: StoreItemOptionRepository = {
+            findByVariantId: vi.fn(async () => null),
             findByStoreItemSlug: vi.fn(async () => storeItemOption),
             findBySource: vi.fn(async () => null),
+            search: vi.fn(async () => []),
         };
         const itemAvailability: ItemAvailabilityRepository = {
             findByVariantId: vi.fn(async () => availability),
@@ -99,8 +105,10 @@ describe('StoreOfferReader', () => {
             updatedAt: new Date('2026-04-22T00:00:00.000Z'),
         };
         const storeItemOptions: StoreItemOptionRepository = {
+            findByVariantId: vi.fn(async () => null),
             findByStoreItemSlug: vi.fn(async () => storeItemOption),
             findBySource: vi.fn(async () => null),
+            search: vi.fn(async () => []),
         };
         const itemAvailability: ItemAvailabilityRepository = {
             findByVariantId: vi.fn(async () => availability),

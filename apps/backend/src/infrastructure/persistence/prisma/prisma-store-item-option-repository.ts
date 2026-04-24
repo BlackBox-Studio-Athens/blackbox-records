@@ -30,6 +30,14 @@ export class PrismaStoreItemOptionRepository implements StoreItemOptionRepositor
         return record ? mapStoreItemOption(record) : null;
     }
 
+    public async findByVariantId(variantId: string): Promise<StoreItemOptionRecord | null> {
+        const record = await this.prisma.storeItemOption.findUnique({
+            where: { variantId },
+        });
+
+        return record ? mapStoreItemOption(record) : null;
+    }
+
     public async findBySource(source: StoreItemSourceRef): Promise<StoreItemOptionRecord | null> {
         const record = await this.prisma.storeItemOption.findUnique({
             where: {
@@ -41,5 +49,28 @@ export class PrismaStoreItemOptionRepository implements StoreItemOptionRepositor
         });
 
         return record ? mapStoreItemOption(record) : null;
+    }
+
+    public async search(query: string | null, limit: number): Promise<StoreItemOptionRecord[]> {
+        const trimmedQuery = query?.trim() ?? '';
+
+        const records = await this.prisma.storeItemOption.findMany({
+            orderBy: {
+                storeItemSlug: 'asc',
+            },
+            take: limit,
+            where:
+                trimmedQuery.length === 0
+                    ? undefined
+                    : {
+                          OR: [
+                              { sourceId: { contains: trimmedQuery } },
+                              { storeItemSlug: { contains: trimmedQuery } },
+                              { variantId: { contains: trimmedQuery } },
+                          ],
+                      },
+        });
+
+        return records.map(mapStoreItemOption);
     }
 }

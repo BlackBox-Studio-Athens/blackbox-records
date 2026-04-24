@@ -74,3 +74,41 @@ ON CONFLICT("variantId") DO UPDATE SET
     "status" = excluded."status",
     "canBuy" = excluded."canBuy",
     "updatedAt" = CURRENT_TIMESTAMP;
+
+INSERT INTO "Stock" (
+    "id",
+    "variantId",
+    "quantity",
+    "onlineQuantity",
+    "createdAt",
+    "updatedAt"
+)
+VALUES
+    (
+        'stock_barren_point',
+        'variant_barren-point_standard',
+        3,
+        2,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    ),
+    (
+        'stock_aftermaths',
+        'variant_aftermaths_standard',
+        0,
+        0,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    ),
+    (
+        'stock_afterglow_tape',
+        'variant_afterglow-tape_standard',
+        1,
+        0,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    )
+ON CONFLICT("variantId") DO UPDATE SET
+    "quantity" = excluded."quantity",
+    "onlineQuantity" = excluded."onlineQuantity",
+    "updatedAt" = CURRENT_TIMESTAMP;

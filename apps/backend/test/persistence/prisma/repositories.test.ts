@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { PrismaItemAvailabilityRepository, PrismaStoreItemOptionRepository, PrismaVariantStripeMappingRepository, createPrismaClient } from '../../../src/infrastructure/persistence/prisma';
+import {
+    PrismaItemAvailabilityRepository,
+    PrismaStockChangeRepository,
+    PrismaStockCountRepository,
+    PrismaStockRepository,
+    PrismaStoreItemOptionRepository,
+    PrismaVariantStripeMappingRepository,
+    createPrismaClient,
+} from '../../../src/infrastructure/persistence/prisma';
 
 function createD1DatabaseStub(): D1Database {
     return {
@@ -33,11 +41,22 @@ describe('Prisma repository seams', () => {
 
         const storeItemOptions = new PrismaStoreItemOptionRepository(prisma);
         const itemAvailability = new PrismaItemAvailabilityRepository(prisma);
+        const stock = new PrismaStockRepository(prisma);
+        const stockChanges = new PrismaStockChangeRepository(prisma);
+        const stockCounts = new PrismaStockCountRepository(prisma);
         const variantStripeMappings = new PrismaVariantStripeMappingRepository(prisma);
 
         expect(typeof storeItemOptions.findByStoreItemSlug).toBe('function');
+        expect(typeof storeItemOptions.findByVariantId).toBe('function');
         expect(typeof storeItemOptions.findBySource).toBe('function');
+        expect(typeof storeItemOptions.search).toBe('function');
         expect(typeof itemAvailability.findByVariantId).toBe('function');
+        expect(typeof stock.findByVariantId).toBe('function');
+        expect(typeof stock.save).toBe('function');
+        expect(typeof stockChanges.listByVariantId).toBe('function');
+        expect(typeof stockChanges.record).toBe('function');
+        expect(typeof stockCounts.listByVariantId).toBe('function');
+        expect(typeof stockCounts.record).toBe('function');
         expect(typeof variantStripeMappings.findByVariantId).toBe('function');
 
         await prisma.$disconnect();

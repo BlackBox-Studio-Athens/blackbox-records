@@ -1,7 +1,6 @@
 import type { AppOpenApi } from '../../../env';
+import { registerInternalStockRoutes } from './register-internal-stock-routes';
 
-export function registerInternalRoutes(_app: AppOpenApi): void {
-    // Staff-only routes will register here as they are introduced.
-    // They belong on the separate Access-protected operator hostname under
-    // `/api/internal/*`, never on the public shopper hostname.
+export function registerInternalRoutes(app: AppOpenApi): void {
+    registerInternalStockRoutes(app);
 }

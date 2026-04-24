@@ -53,3 +53,18 @@ export type VariantStripeMapping = Prisma.VariantStripeMappingModel
  * 
  */
 export type ItemAvailability = Prisma.ItemAvailabilityModel
+/**
+ * Model Stock
+ * 
+ */
+export type Stock = Prisma.StockModel
+/**
+ * Model StockChange
+ * 
+ */
+export type StockChange = Prisma.StockChangeModel
+/**
+ * Model StockCount
+ * 
+ */
+export type StockCount = Prisma.StockCountModel

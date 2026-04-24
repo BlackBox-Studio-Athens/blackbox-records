@@ -51,7 +51,10 @@ export const AnyNull = runtime.objectEnumValues.instances.AnyNull
 export const ModelName = {
   StoreItemOption: 'StoreItemOption',
   VariantStripeMapping: 'VariantStripeMapping',
-  ItemAvailability: 'ItemAvailability'
+  ItemAvailability: 'ItemAvailability',
+  Stock: 'Stock',
+  StockChange: 'StockChange',
+  StockCount: 'StockCount'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -102,10 +105,56 @@ export const ItemAvailabilityScalarFieldEnum = {
 export type ItemAvailabilityScalarFieldEnum = (typeof ItemAvailabilityScalarFieldEnum)[keyof typeof ItemAvailabilityScalarFieldEnum]
 
 
+export const StockScalarFieldEnum = {
+  id: 'id',
+  variantId: 'variantId',
+  quantity: 'quantity',
+  onlineQuantity: 'onlineQuantity',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type StockScalarFieldEnum = (typeof StockScalarFieldEnum)[keyof typeof StockScalarFieldEnum]
+
+
+export const StockChangeScalarFieldEnum = {
+  id: 'id',
+  variantId: 'variantId',
+  quantityDelta: 'quantityDelta',
+  reason: 'reason',
+  notes: 'notes',
+  actorEmail: 'actorEmail',
+  recordedAt: 'recordedAt'
+} as const
+
+export type StockChangeScalarFieldEnum = (typeof StockChangeScalarFieldEnum)[keyof typeof StockChangeScalarFieldEnum]
+
+
+export const StockCountScalarFieldEnum = {
+  id: 'id',
+  variantId: 'variantId',
+  countedQuantity: 'countedQuantity',
+  onlineQuantity: 'onlineQuantity',
+  notes: 'notes',
+  actorEmail: 'actorEmail',
+  recordedAt: 'recordedAt'
+} as const
+
+export type StockCountScalarFieldEnum = (typeof StockCountScalarFieldEnum)[keyof typeof StockCountScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const NullsOrder = {
+  first: 'first',
+  last: 'last'
+} as const
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 

@@ -14,6 +14,8 @@ const httpFiles = [
     resolve(backendRoot, 'src/interfaces/http/not-found-handler.ts'),
     resolve(backendRoot, 'src/interfaces/http/openapi/api-documents.ts'),
     resolve(backendRoot, 'src/interfaces/http/routes/register-internal-routes.ts'),
+    resolve(backendRoot, 'src/interfaces/http/routes/register-internal-stock-routes.ts'),
+    resolve(backendRoot, 'src/interfaces/http/routes/internal-stock-services.ts'),
     resolve(backendRoot, 'src/interfaces/http/routes/register-public-routes.ts'),
 ];
 

@@ -16,6 +16,12 @@ describe('OpenAPI documents', () => {
 
         expect(document.info.title).toBe('BlackBox Records Internal API');
         expect(document.openapi).toBe('3.1.0');
-        expect(Object.keys(document.paths ?? {})).toHaveLength(0);
+        expect(Object.keys(document.paths ?? {})).toEqual([
+            '/api/internal/variants',
+            '/api/internal/variants/{variantId}/stock',
+            '/api/internal/variants/{variantId}/stock/history',
+            '/api/internal/variants/{variantId}/stock/changes',
+            '/api/internal/variants/{variantId}/stock/counts',
+        ]);
     });
 });
