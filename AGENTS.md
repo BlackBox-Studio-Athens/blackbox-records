@@ -101,6 +101,8 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - Cloudflare Access + Google protects that hostname through an explicit email allowlist; do not add shopper login or reuse Decap auth for runtime stock operations.
 - Worker-side operator attribution comes from the Access-authenticated request header `cf-access-authenticated-user-email`, which the stock-write routes persist as `actor_email`.
 - The D1 stock ledger now uses `Stock`, `StockChange`, and `StockCount`, with `onlineQuantity` tracked on `Stock`.
+- D1 is the stock source of truth. Spreadsheets are temporary capture/reporting only; operators reconcile offline movement through `/stock/` using `StockChange` for known deltas and `StockCount` for recounts.
+- `OnlineStock` is the conservative checkout-facing quantity and may be lower than physical `Stock`.
 - Do not introduce `prisma migrate dev`, `prisma db push`, or `prisma migrate deploy` into this repo workflow.
 - The current backend-local secret contract is `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
 

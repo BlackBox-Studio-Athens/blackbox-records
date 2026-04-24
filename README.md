@@ -223,6 +223,8 @@ pnpm generate:api
 - The protected stock operations UI is built by the static Astro app at `/stock/`; it calls same-origin `/api/internal/*` on the protected operator hostname.
 - For local split-port development, set `PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787` so the static UI can call the local Worker.
 - The stock UI is intentionally absent from public navigation. If served directly from public GitHub Pages before the protected ops hostname is provisioned, it is not a production-safe stock operations surface.
+- D1 is the stock source of truth. Spreadsheets are temporary capture/reporting only; operators reconcile offline movement through `/stock/` using `StockChange` for known deltas and `StockCount` for recounts.
+- `OnlineStock` is the conservative checkout-facing quantity and may be lower than physical `Stock`.
 - This contract does not introduce shopper login; public storefront, public checkout, and sandbox shopper browsing remain unauthenticated.
 
 ## Worker secrets and CI auth
