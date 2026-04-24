@@ -8,7 +8,12 @@ describe('OpenAPI documents', () => {
 
         expect(document.info.title).toBe('BlackBox Records Public API');
         expect(document.openapi).toBe('3.1.0');
-        expect(Object.keys(document.paths ?? {})).toHaveLength(0);
+        expect(Object.keys(document.paths ?? {})).toEqual([
+            '/api/store/items/{storeItemSlug}',
+            '/api/store/items/{storeItemSlug}/variants',
+            '/api/checkout/sessions',
+            '/api/checkout/sessions/{checkoutSessionId}/state',
+        ]);
     });
 
     it('emits the internal API document', () => {

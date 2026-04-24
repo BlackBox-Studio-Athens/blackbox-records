@@ -30,7 +30,7 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - [x] **Phase 5.1: Commerce Domain Architecture And Source-Of-Truth Research** - Lock entity boundaries, source-of-truth rules, IDs, mappings, and API contracts before storefront or checkout implementation
 - [x] **Phase 6: Static Storefront Slice** - Replace the legacy `/shop/` redirect with a canonical `/store/` static storefront built from shared editorial content and a stable store projection
 - [x] **Phase 6.1: Worker Commerce State Foundation** - Introduce D1 + Prisma in the separate Worker backend behind repository and API boundaries before checkout work
-- [ ] **Phase 6.1.1: Internal Stock Operations And Operator Access** - Add protected staff-only stock tooling and operator auth before checkout depends on live stock
+- [x] **Phase 6.1.1: Internal Stock Operations And Operator Access** - Add protected staff-only stock tooling and operator auth before checkout depends on live stock
 - [ ] **Phase 7: Worker Checkout And Stripe Sandbox Flow** - Implement Worker-owned checkout APIs and connect the frontend checkout route to Stripe sandbox
 - [ ] **Phase 8: Webhook Orders And Stock** - Make payment truth and stock mutation Worker-owned, webhook-authoritative, and idempotent
 - [ ] **Phase 9: Greece-Only BOX NOW Shipping** - Add the approved locker-selection gate and thin fulfillment data contract
@@ -142,7 +142,7 @@ Plans:
 **Review gate**: Human review required on the final backend API contract and shopper-facing retry/return behavior.
 
 Plans:
-- [ ] 07-01: Implement Worker APIs for item lookup, variant lookup, ReadCheckoutState, and StartCheckout
+- [x] 07-01: Implement Worker APIs for item lookup, variant lookup, ReadCheckoutState, and StartCheckout
 - [ ] 07-02: Connect the static frontend checkout route to the Worker APIs, embedded Checkout, and Worker-owned return-state retrieval
 - [ ] 07-03: Validate the checkout loop locally and in sandbox with Stripe sandbox and webhook testing
 
@@ -211,8 +211,8 @@ Phases execute in numeric order: `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 8 
 | 5.1. Commerce Domain Architecture And Source-Of-Truth Research | 4/4 | Completed | 2026-04-20 |
 | 6. Static Storefront Slice | 7/7 | Completed | 2026-04-21 |
 | 6.1. Worker Commerce State Foundation | 4/4 | Completed | 2026-04-22 |
-| 6.1.1. Internal Stock Operations And Operator Access | 1/4 | Active | 2026-04-22 |
-| 7. Worker Checkout And Stripe Sandbox Flow | 0/3 | Planned |  |
+| 6.1.1. Internal Stock Operations And Operator Access | 4/4 | Completed | 2026-04-24 |
+| 7. Worker Checkout And Stripe Sandbox Flow | 1/3 | Active | 2026-04-24 |
 | 8. Webhook Orders And Stock | 0/3 | Planned |  |
 | 9. Greece-Only BOX NOW Shipping | 0/3 | Planned |  |
 | 10. Sandbox Verification And Release Gate | 0/2 | Planned |  |

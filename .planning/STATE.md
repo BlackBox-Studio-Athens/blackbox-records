@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 7 next; implement Worker checkout API and Stripe sandbox flow
-last_updated: "2026-04-24T05:25:00+03:00"
-last_activity: 2026-04-24 -- Locked stock reconciliation policy and completed Phase 6.1.1
+stopped_at: Phase 7 active; connect static checkout route to Worker APIs and embedded Checkout
+last_updated: "2026-04-24T06:40:00+03:00"
+last_activity: 2026-04-24 -- Implemented Worker checkout API contract and StartCheckout seam
 progress:
   total_phases: 9
   completed_phases: 5
   total_plans: 36
-  completed_plans: 25
-  percent: 69
+  completed_plans: 26
+  percent: 72
 ---
 
 # Project State
@@ -28,15 +28,15 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 Current Phase: 7
 Current Phase Name: Worker Checkout And Stripe Sandbox Flow
 Total Phases: 9
-Current Plan: 1
+Current Plan: 2
 Total Plans in Phase: 3
 Status: Active
-Progress: 69%
+Progress: 72%
 Last Activity: 2026-04-24
-Last Activity Description: Locked stock reconciliation policy and completed Phase 6.1.1
-Paused At: Phase 7 next; implement Worker checkout API and Stripe sandbox flow
+Last Activity Description: Implemented Worker checkout API contract and StartCheckout seam
+Paused At: Phase 7 active; connect static checkout route to Worker APIs and embedded Checkout
 
-Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. The repo now has a real backend-local D1 binding contract named `COMMERCE_DB`, Worker-compatible Prisma runtime access, committed SQL migration history, local seed SQL for current storefront cases, a first backend application reader that resolves offer availability by `storeItemSlug`, a typed operator-identity extraction seam for the separate Access-protected stock hostname, an internal stock ledger API backed by `Stock`, `StockChange`, and `StockCount`, a protected static Astro stock operations UI that calls Worker-owned internal APIs, and a locked spreadsheet/reconciliation policy. Phase 7 checkout work is now unblocked.
+Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has started: the Worker now exposes public store-offer lookup, variant offer lookup, `StartCheckout`, and `ReadCheckoutState` APIs, backed by D1 repository seams and a Stripe Checkout gateway. Frontend checkout mounting and sandbox loop validation remain next.
 
 ## Performance Metrics
 
@@ -59,8 +59,8 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. The repo now has a
 
 **Recent Trend:**
 
-- Last 5 plans: 06.1-04, 06.1.1-01, 06.1.1-02, 06.1.1-03, 06.1.1-04
-- Trend: Backend commerce-state foundation and protected stock operations are complete; next work moves to the Worker checkout and Stripe sandbox flow.
+- Last 5 plans: 06.1.1-01, 06.1.1-02, 06.1.1-03, 06.1.1-04, 07-01
+- Trend: Backend commerce-state foundation, protected stock operations, and the first Worker checkout API contract are complete; next work connects the static checkout route.
 
 ## Accumulated Context
 
@@ -79,6 +79,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. The repo now has a
 - The static Astro app now serves the protected stock operations UI at `/stock/`, using `/stock/?variantId=<variantId>` for detail state and Worker-owned `/api/internal/variants/*` calls for data and writes.
 - The stock reconciliation policy now defines when to use `StockChange`, when to use `StockCount`, and why spreadsheets must not become live stock truth.
 - Commerce naming was simplified to DDD-style label language: `StoreItem`, `ItemAvailability`, `StoreItemOption`, `StoreOffer`, `Stock`, `OnlineStock`, `StartCheckout`, `ReadCheckoutState`, and `not_paid`.
+- The Worker now exposes public checkout/store API routes under `/api/store/*` and `/api/checkout/*`, with `StartCheckout` validating store item mapping, availability, `OnlineStock`, and Stripe price mapping before creating an embedded Checkout Session.
 
 ## Decisions Made
 
@@ -103,12 +104,13 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. The repo now has a
 | v1.1 | Internal stock operations use Google-backed Cloudflare Access on a separate protected backend hostname; Decap auth is not reused for runtime stock writes. | Active |
 | v1.1 | D1 is the authoritative stock ledger using `Stock`, `StockChange`, and `StockCount`; spreadsheets are temporary capture/reporting only. | Active |
 | v1.1 | Each `Variant` exposes a conservative `OnlineStock` quantity separate from total stock balance before public checkout depends on live stock. | Active |
+| v1.1 | Public checkout starts only through Worker-owned `StartCheckout`; the browser receives a Stripe Checkout `clientSecret` but never receives Stripe price IDs or server secrets. | Active |
 
 ### Pending Todos
 
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
-- Start Phase 7 with the Worker checkout API and Stripe sandbox flow.
+- Connect the static frontend checkout route to Worker APIs and embedded Checkout in Phase 7 plan 2.
 
 ## Blockers
 
@@ -120,6 +122,6 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. The repo now has a
 ## Session
 
 **Last Date:** 2026-04-22T01:52:14.9376385+03:00
-**Stopped At:** Phase 7 next; implement Worker checkout API and Stripe sandbox flow
+**Stopped At:** Phase 7 active; connect static checkout route to Worker APIs and embedded Checkout
 **Resume File:** .planning/ROADMAP.md
 

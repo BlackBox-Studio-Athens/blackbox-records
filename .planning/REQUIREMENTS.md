@@ -28,7 +28,7 @@
 
 ### Checkout & Payment
 
-- [ ] **CHKO-01**: Shopper can start single-item checkout from store item detail using a Worker-created Checkout Session with Stripe embedded Checkout (`ui_mode: embedded`), with Checkout Sessions as the only approved v1 payment-creation API.
+- [x] **CHKO-01**: Shopper can start single-item checkout from store item detail using a Worker-created Checkout Session with Stripe embedded Checkout (`ui_mode: embedded_page` on the current Stripe API version), with Checkout Sessions as the only approved v1 payment-creation API.
 - [ ] **CHKO-02**: Shopper can complete or retry checkout through dedicated in-site checkout and return states that retrieve status through Worker-owned APIs without treating the browser as payment authority.
 - [ ] **CHKO-03**: Team can validate Worker-backed `StartCheckout`, embedded mount, and Worker-owned return-page/ReadCheckoutState flow in Stripe sandbox and local webhook testing.
 
@@ -111,12 +111,12 @@
 | CATA-02 | Phase 6 | Completed |
 | CATA-03 | Phase 6 | Completed |
 | CATA-04 | Phase 6.1 | Completed |
-| AUTH-01 | Phase 6.1.1 | Pending |
-| AUTH-02 | Phase 6.1.1 | Pending |
-| INV-01 | Phase 6.1.1 | Pending |
-| INV-02 | Phase 6.1.1 | Pending |
-| INV-03 | Phase 6.1.1 | Pending |
-| CHKO-01 | Phase 7 | Pending |
+| AUTH-01 | Phase 6.1.1 | Completed |
+| AUTH-02 | Phase 6.1.1 | Completed |
+| INV-01 | Phase 6.1.1 | Completed |
+| INV-02 | Phase 6.1.1 | Completed |
+| INV-03 | Phase 6.1.1 | Completed |
+| CHKO-01 | Phase 7 | Completed |
 | CHKO-02 | Phase 7 | Pending |
 | CHKO-03 | Phase 7 | Pending |
 | ORDR-01 | Phase 8 | Pending |

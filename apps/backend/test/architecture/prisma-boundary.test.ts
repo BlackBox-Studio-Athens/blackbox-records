@@ -17,6 +17,8 @@ const httpFiles = [
     resolve(backendRoot, 'src/interfaces/http/routes/register-internal-stock-routes.ts'),
     resolve(backendRoot, 'src/interfaces/http/routes/internal-stock-services.ts'),
     resolve(backendRoot, 'src/interfaces/http/routes/register-public-routes.ts'),
+    resolve(backendRoot, 'src/interfaces/http/routes/register-public-commerce-routes.ts'),
+    resolve(backendRoot, 'src/interfaces/http/routes/public-commerce-services.ts'),
 ];
 
 describe('Prisma architecture boundary', () => {

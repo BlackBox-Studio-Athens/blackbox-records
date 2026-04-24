@@ -5,9 +5,317 @@
     "version": "1.0.0"
   },
   "components": {
-    "schemas": {},
+    "schemas": {
+      "PublicStoreOffer": {
+        "type": "object",
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/PublicStoreOfferAvailability"
+          },
+          "canCheckout": {
+            "type": "boolean"
+          },
+          "storeItemSlug": {
+            "type": "string"
+          },
+          "variantId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "availability",
+          "canCheckout",
+          "storeItemSlug",
+          "variantId"
+        ]
+      },
+      "PublicStoreOfferAvailability": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "sold_out"
+            ]
+          }
+        },
+        "required": [
+          "label",
+          "status"
+        ]
+      },
+      "PublicCommerceError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "StartCheckoutResponse": {
+        "type": "object",
+        "properties": {
+          "clientSecret": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientSecret"
+        ]
+      },
+      "StartCheckoutBody": {
+        "type": "object",
+        "properties": {
+          "storeItemSlug": {
+            "type": "string",
+            "minLength": 1
+          },
+          "variantId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "storeItemSlug",
+          "variantId"
+        ]
+      },
+      "CheckoutState": {
+        "type": "object",
+        "properties": {
+          "checkoutSessionId": {
+            "type": "string"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "paid",
+              "unpaid",
+              "no_payment_required"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "paid",
+              "processing",
+              "expired",
+              "unknown"
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "open",
+              "complete",
+              "expired",
+              null
+            ]
+          }
+        },
+        "required": [
+          "checkoutSessionId",
+          "paymentStatus",
+          "state",
+          "status"
+        ]
+      }
+    },
     "parameters": {}
   },
-  "paths": {},
+  "paths": {
+    "/api/store/items/{storeItemSlug}": {
+      "get": {
+        "tags": [
+          "Store"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "storeItemSlug",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Backend-known checkout eligibility for one store item.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicStoreOffer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Store item not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCommerceError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/store/items/{storeItemSlug}/variants": {
+      "get": {
+        "tags": [
+          "Store"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "storeItemSlug",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Checkout-eligible variants for one store item.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicStoreOffer"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Store item not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCommerceError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/checkout/sessions": {
+      "post": {
+        "tags": [
+          "Checkout"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartCheckoutBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created an embedded Stripe Checkout Session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartCheckoutResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid checkout request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCommerceError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Store item not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCommerceError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Checkout unavailable or not configured.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCommerceError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/checkout/sessions/{checkoutSessionId}/state": {
+      "get": {
+        "tags": [
+          "Checkout"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "checkoutSessionId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sanitized Checkout Session state for shopper return UI.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutState"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Checkout is not configured.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCommerceError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "webhooks": {}
 }

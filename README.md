@@ -148,7 +148,9 @@ Current Worker scope:
 - protected internal stock routes now exist under `/api/internal/variants/*`
 - the static Astro app now exposes the protected stock operations UI at `/stock/`
 - D1-backed `Stock`, `StockChange`, and `StockCount` now back the operator stock ledger contract
-- no Stripe routes, public D1-backed HTTP read routes, or frontend D1 wiring yet
+- public store-offer and checkout API routes now exist under `/api/store/*` and `/api/checkout/*`
+- checkout creation is Worker-owned and uses Stripe embedded Checkout Sessions through a backend gateway seam
+- no frontend embedded Checkout mounting, webhook order authority, stock decrement, or frontend D1 wiring yet
 - no production deployment path yet
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
 - generated frontend-facing types and `openapi-typescript-fetch` wrappers live in `packages/api-client/`
@@ -290,6 +292,7 @@ cp apps/backend/.dev.vars.example apps/backend/.dev.vars
 - `apps/backend/.dev.vars` is local-only, ignored by git, and must never be committed.
 - Missing runtime secrets are acceptable today because no route uses them yet.
 - Once Stripe-backed backend routes land, those routes must require the secrets to exist before use.
+- Current Stripe-backed checkout routes require `STRIPE_SECRET_KEY` before creating or reading Checkout Sessions.
 
 CI/deploy credentials:
 
