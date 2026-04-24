@@ -150,7 +150,8 @@ Current Worker scope:
 - D1-backed `Stock`, `StockChange`, and `StockCount` now back the operator stock ledger contract
 - public store-offer and checkout API routes now exist under `/api/store/*` and `/api/checkout/*`
 - checkout creation is Worker-owned and uses Stripe embedded Checkout Sessions through a backend gateway seam
-- no frontend embedded Checkout mounting, webhook order authority, stock decrement, or frontend D1 wiring yet
+- the static checkout shell mounts Stripe embedded Checkout from Worker-created sessions
+- no webhook order authority, stock decrement, or frontend D1 wiring yet
 - no production deployment path yet
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
 - generated frontend-facing types and `openapi-typescript-fetch` wrappers live in `packages/api-client/`
@@ -196,7 +197,8 @@ pnpm generate:api
 
 ## Frontend-to-Worker URL contract
 
-- The browser-facing Astro app owns only `PUBLIC_BACKEND_BASE_URL`.
+- The browser-facing Astro app owns `PUBLIC_BACKEND_BASE_URL` for Worker discovery.
+- The browser also owns `PUBLIC_STRIPE_PUBLISHABLE_KEY` so Stripe.js can initialize embedded Checkout.
 - Local development uses:
   - `pnpm dev:web`
   - `pnpm dev:backend`
@@ -206,7 +208,7 @@ pnpm generate:api
 - Its stable URL shape is `https://blackbox-records-backend-sandbox.<your-account-subdomain>.workers.dev`.
 - The account-level `workers.dev` subdomain is owned in Cloudflare, not in this repo, so the Worker name is the repo-controlled stable portion of the sandbox hostname.
 - The frontend must not guess production or sandbox backend origins in code.
-- Worker secrets, D1 bindings, Stripe secrets, Cloudflare Access config, and CI credentials remain backend/server-side only.
+- Worker secrets, D1 bindings, Stripe secret keys, Cloudflare Access config, and CI credentials remain backend/server-side only.
 
 ## Protected operator hostname contract
 
@@ -245,6 +247,7 @@ pnpm generate:api
 - `apps/backend/prisma/schema.prisma` includes a local placeholder SQLite URL only to satisfy the current Prisma 6 CLI; Worker runtime access still goes through `env.COMMERCE_DB`.
 - Future privileged backend-only values such as BOX NOW credentials also remain runtime-only until the phases that introduce them.
 - `PUBLIC_BACKEND_BASE_URL` remains the only browser-facing backend env.
+- `PUBLIC_STRIPE_PUBLISHABLE_KEY` is safe browser configuration for Stripe.js and must not be confused with `STRIPE_SECRET_KEY`.
 
 ## D1 migration workflow
 
@@ -290,9 +293,9 @@ cp apps/backend/.dev.vars.example apps/backend/.dev.vars
 - Fill `apps/backend/.dev.vars` locally before running `pnpm dev:backend` or `pnpm dev:backend:sandbox`.
 - Verify the local D1 binding with `pnpm --filter @blackbox/backend d1:smoke:local`.
 - `apps/backend/.dev.vars` is local-only, ignored by git, and must never be committed.
-- Missing runtime secrets are acceptable today because no route uses them yet.
-- Once Stripe-backed backend routes land, those routes must require the secrets to exist before use.
+- Missing backend runtime secrets are acceptable only for local work that does not exercise those routes.
 - Current Stripe-backed checkout routes require `STRIPE_SECRET_KEY` before creating or reading Checkout Sessions.
+- The static checkout shell also requires `PUBLIC_STRIPE_PUBLISHABLE_KEY` before it can mount embedded Checkout in the browser.
 
 CI/deploy credentials:
 

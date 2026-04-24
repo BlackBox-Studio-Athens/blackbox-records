@@ -4,9 +4,11 @@ import {
   createCheckoutOfferView,
   createInitialCheckoutOfferView,
   loadCheckoutOfferState,
+  startEmbeddedCheckout,
   type CheckoutOfferInitialAvailability,
 } from './checkout-offer-status-state';
 import { PublicCheckoutApiError, type PublicCheckoutApi } from '../../lib/backend/public-checkout-api';
+import type { EmbeddedCheckoutAdapter } from '../../lib/backend/stripe-embedded-checkout';
 
 const initialAvailability: CheckoutOfferInitialAvailability = {
   canBuy: true,
@@ -83,6 +85,7 @@ describe('CheckoutOfferStatus helpers', () => {
       }),
     ).toEqual({
       badgeLabel: 'Worker ready',
+      canStartCheckout: true,
       detail: 'Checkout eligibility confirmed for 1 variant.',
       isReady: true,
       statusLabel: 'Available',
@@ -108,6 +111,7 @@ describe('CheckoutOfferStatus helpers', () => {
       }),
     ).toMatchObject({
       badgeLabel: 'Not checkout-ready',
+      canStartCheckout: false,
       isReady: false,
       statusLabel: 'Sold Out',
       tone: 'unavailable',
@@ -129,6 +133,7 @@ describe('CheckoutOfferStatus helpers', () => {
 
     expect(createCheckoutOfferView(state)).toMatchObject({
       badgeLabel: 'Backend unavailable',
+      canStartCheckout: false,
       detail: 'Store item not found.',
       isReady: false,
       tone: 'error',
@@ -139,11 +144,109 @@ describe('CheckoutOfferStatus helpers', () => {
   it('uses static availability as initial fallback while Worker state loads', () => {
     expect(createInitialCheckoutOfferView(initialAvailability)).toEqual({
       badgeLabel: 'Checking Worker',
+      canStartCheckout: false,
       detail: 'Static store data is ready. Confirming checkout eligibility with the Worker.',
       isReady: false,
       statusLabel: 'Available',
       tone: 'loading',
       variantId: null,
     });
+  });
+
+  it('starts checkout with only the store item slug and variant id, then mounts Stripe with the returned client secret', async () => {
+    const mountTarget = {} as HTMLElement;
+    const mount = {
+      destroy: vi.fn(),
+    };
+    const api: PublicCheckoutApi = {
+      readCheckoutState: vi.fn(),
+      readStoreOffer: vi.fn(),
+      readStoreOfferVariants: vi.fn(),
+      startCheckout: vi.fn(async () => ({
+        clientSecret: 'cs_test_client_secret',
+      })),
+    };
+    const checkoutAdapter: EmbeddedCheckoutAdapter = {
+      getConfigurationError: vi.fn(() => null),
+      mountEmbeddedCheckout: vi.fn(async () => mount),
+    };
+
+    const state = await startEmbeddedCheckout({
+      api,
+      checkoutAdapter,
+      mountTarget,
+      storeItemSlug: 'barren-point',
+      variantId: 'variant_barren-point_standard',
+    });
+
+    expect(api.startCheckout).toHaveBeenCalledExactlyOnceWith({
+      storeItemSlug: 'barren-point',
+      variantId: 'variant_barren-point_standard',
+    });
+    expect(checkoutAdapter.mountEmbeddedCheckout).toHaveBeenCalledExactlyOnceWith({
+      clientSecret: 'cs_test_client_secret',
+      mountTarget,
+    });
+    expect(state).toEqual({
+      kind: 'mounted',
+      mount,
+    });
+  });
+
+  it('does not start checkout when the Stripe publishable key is missing', async () => {
+    const api: PublicCheckoutApi = {
+      readCheckoutState: vi.fn(),
+      readStoreOffer: vi.fn(),
+      readStoreOfferVariants: vi.fn(),
+      startCheckout: vi.fn(),
+    };
+    const checkoutAdapter: EmbeddedCheckoutAdapter = {
+      getConfigurationError: vi.fn(() => 'Stripe publishable key is not configured.'),
+      mountEmbeddedCheckout: vi.fn(),
+    };
+
+    await expect(
+      startEmbeddedCheckout({
+        api,
+        checkoutAdapter,
+        mountTarget: {} as HTMLElement,
+        storeItemSlug: 'barren-point',
+        variantId: 'variant_barren-point_standard',
+      }),
+    ).resolves.toEqual({
+      kind: 'error',
+      message: 'Stripe publishable key is not configured.',
+    });
+    expect(api.startCheckout).not.toHaveBeenCalled();
+    expect(checkoutAdapter.mountEmbeddedCheckout).not.toHaveBeenCalled();
+  });
+
+  it('keeps checkout start API errors visible without mounting Stripe', async () => {
+    const api: PublicCheckoutApi = {
+      readCheckoutState: vi.fn(),
+      readStoreOffer: vi.fn(),
+      readStoreOfferVariants: vi.fn(),
+      startCheckout: vi.fn(async () => {
+        throw new PublicCheckoutApiError(409, 'Checkout is not available.');
+      }),
+    };
+    const checkoutAdapter: EmbeddedCheckoutAdapter = {
+      getConfigurationError: vi.fn(() => null),
+      mountEmbeddedCheckout: vi.fn(),
+    };
+
+    await expect(
+      startEmbeddedCheckout({
+        api,
+        checkoutAdapter,
+        mountTarget: {} as HTMLElement,
+        storeItemSlug: 'afterglow-tape',
+        variantId: 'variant_afterglow-tape_standard',
+      }),
+    ).resolves.toEqual({
+      kind: 'error',
+      message: 'Checkout is not available.',
+    });
+    expect(checkoutAdapter.mountEmbeddedCheckout).not.toHaveBeenCalled();
   });
 });

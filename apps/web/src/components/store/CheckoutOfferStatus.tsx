@@ -1,13 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { createPublicCheckoutApi, type PublicCheckoutApi } from '@/lib/backend/public-checkout-api';
+import {
+  createStripeEmbeddedCheckoutAdapter,
+  type EmbeddedCheckoutAdapter,
+  type EmbeddedCheckoutMount,
+} from '@/lib/backend/stripe-embedded-checkout';
 import { cn } from '@/lib/utils';
 import {
   createCheckoutOfferView,
   createInitialCheckoutOfferView,
   loadCheckoutOfferState,
+  startEmbeddedCheckout,
   type CheckoutOfferInitialAvailability,
   type CheckoutOfferStatusView,
 } from './checkout-offer-status-state';
@@ -16,10 +23,21 @@ interface CheckoutOfferStatusProps {
   initialAvailability: CheckoutOfferInitialAvailability;
   storeItemSlug: string;
   api?: PublicCheckoutApi;
+  checkoutAdapter?: EmbeddedCheckoutAdapter;
 }
 
-export default function CheckoutOfferStatus({ api, initialAvailability, storeItemSlug }: CheckoutOfferStatusProps) {
+export default function CheckoutOfferStatus({
+  api,
+  checkoutAdapter,
+  initialAvailability,
+  storeItemSlug,
+}: CheckoutOfferStatusProps) {
   const [view, setView] = useState<CheckoutOfferStatusView>(() => createInitialCheckoutOfferView(initialAvailability));
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutMounted, setCheckoutMounted] = useState(false);
+  const [isStartingCheckout, setIsStartingCheckout] = useState(false);
+  const checkoutMountRef = useRef<HTMLDivElement | null>(null);
+  const checkoutSessionRef = useRef<EmbeddedCheckoutMount | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -39,6 +57,49 @@ export default function CheckoutOfferStatus({ api, initialAvailability, storeIte
       isActive = false;
     };
   }, [api, storeItemSlug]);
+
+  useEffect(() => {
+    return () => {
+      checkoutSessionRef.current?.destroy();
+      checkoutSessionRef.current = null;
+    };
+  }, []);
+
+  async function handleStartCheckout() {
+    const checkoutApi = api ?? createPublicCheckoutApi();
+    const embeddedCheckoutAdapter = checkoutAdapter ?? createStripeEmbeddedCheckoutAdapter();
+    const mountTarget = checkoutMountRef.current;
+
+    if (!view.variantId || !mountTarget) {
+      setCheckoutError('Checkout is not ready for this item yet.');
+      return;
+    }
+
+    setCheckoutError(null);
+    setIsStartingCheckout(true);
+
+    checkoutSessionRef.current?.destroy();
+    checkoutSessionRef.current = null;
+    setCheckoutMounted(false);
+
+    const checkoutState = await startEmbeddedCheckout({
+      api: checkoutApi,
+      checkoutAdapter: embeddedCheckoutAdapter,
+      mountTarget,
+      storeItemSlug,
+      variantId: view.variantId,
+    });
+
+    if (checkoutState.kind === 'mounted') {
+      checkoutSessionRef.current = checkoutState.mount;
+      setCheckoutMounted(true);
+      setIsStartingCheckout(false);
+      return;
+    }
+
+    setCheckoutError(checkoutState.message);
+    setIsStartingCheckout(false);
+  }
 
   return (
     <div className="space-y-4" data-checkout-offer-status>
@@ -73,11 +134,46 @@ export default function CheckoutOfferStatus({ api, initialAvailability, storeIte
 
           <p className="text-sm leading-relaxed text-muted-foreground">{view.detail}</p>
 
-          {!view.isReady && (
-            <p className="border-t border-border/50 pt-3 text-xs leading-relaxed text-muted-foreground">
-              Payment is not started from this panel. The next slice mounts embedded Checkout only after this Worker-read path is stable.
-            </p>
-          )}
+          <div className="space-y-3 border-t border-border/50 pt-4">
+            {view.canStartCheckout ? (
+              <Button
+                type="button"
+                size="lg"
+                className="w-full rounded-none uppercase tracking-[0.16em]"
+                disabled={isStartingCheckout}
+                onClick={() => {
+                  void handleStartCheckout();
+                }}
+              >
+                {isStartingCheckout ? 'Starting Checkout' : checkoutMounted ? 'Restart Checkout' : 'Start Checkout'}
+              </Button>
+            ) : (
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Checkout can start only after the Worker confirms this variant is buyable.
+              </p>
+            )}
+
+            {checkoutError && (
+              <p className="border border-amber-300/40 bg-amber-300/10 p-3 text-xs leading-relaxed text-amber-100" role="alert">
+                {checkoutError}
+              </p>
+            )}
+
+            {checkoutMounted && (
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Stripe Checkout is mounted below. Payment state is confirmed by Stripe and the Worker after return.
+              </p>
+            )}
+          </div>
+
+          <div
+            ref={checkoutMountRef}
+            data-embedded-checkout-mount
+            className={cn(
+              'min-h-0 border border-border/60 bg-background/70',
+              checkoutMounted ? 'min-h-[560px] p-2' : 'h-px overflow-hidden border-transparent p-0',
+            )}
+          />
         </CardContent>
       </Card>
     </div>

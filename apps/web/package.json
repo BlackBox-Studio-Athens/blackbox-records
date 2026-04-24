@@ -17,11 +17,12 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@blackbox/api-client": "workspace:*",
     "@astrojs/react": "^5.0.3",
+    "@blackbox/api-client": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.4",
+    "@stripe/stripe-js": "^9.3.1",
     "@tailwindcss/vite": "^4.2.2",
     "astro": "^6.1.8",
     "class-variance-authority": "^0.7.1",

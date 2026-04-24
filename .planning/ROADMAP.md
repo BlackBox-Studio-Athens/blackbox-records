@@ -145,7 +145,7 @@ Plans:
 - [x] 07-01: Implement Worker APIs for item lookup, variant lookup, ReadCheckoutState, and StartCheckout
 - [x] 07-02: Add the frontend public checkout API client seam
 - [x] 07-03: Wire the checkout shell to Worker offer and variant reads
-- [ ] 07-04: Mount embedded Stripe Checkout from Worker-created sessions
+- [x] 07-04: Mount embedded Stripe Checkout from Worker-created sessions
 - [ ] 07-05: Add checkout return and retry state UI through ReadCheckoutState
 - [ ] 07-06: Harden checkout browser states, unavailable handling, and no-secret guarantees
 - [ ] 07-07: Validate the local and sandbox checkout loop with real Stripe sandbox mappings
@@ -226,7 +226,7 @@ Phases execute in numeric order: `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 8 
 | 6. Static Storefront Slice | 7/7 | Completed | 2026-04-21 |
 | 6.1. Worker Commerce State Foundation | 4/4 | Completed | 2026-04-22 |
 | 6.1.1. Internal Stock Operations And Operator Access | 4/4 | Completed | 2026-04-24 |
-| 7. Worker Checkout And Stripe Sandbox Flow | 3/7 | Active | 2026-04-24 |
+| 7. Worker Checkout And Stripe Sandbox Flow | 4/7 | Active | 2026-04-24 |
 | 8. Webhook Orders And Stock | 0/7 | Planned |  |
 | 9. Greece-Only BOX NOW Shipping | 0/6 | Planned |  |
 | 10. Sandbox Verification And Release Gate | 0/5 | Planned |  |

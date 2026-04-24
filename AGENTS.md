@@ -105,9 +105,11 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - `OnlineStock` is the conservative checkout-facing quantity and may be lower than physical `Stock`.
 - Do not introduce `prisma migrate dev`, `prisma db push`, or `prisma migrate deploy` into this repo workflow.
 - The current backend-local secret contract is `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
+- The static checkout shell uses browser-safe `PUBLIC_STRIPE_PUBLISHABLE_KEY` to initialize Stripe.js; never expose `STRIPE_SECRET_KEY` through Astro public env.
 - Public shopper checkout APIs now live under `/api/store/*` and `/api/checkout/*`.
 - Checkout creation is Worker-owned through a backend Stripe gateway seam; route files must not instantiate Stripe directly.
 - Stripe Checkout Sessions are the approved v1 payment creation path, using embedded Checkout (`ui_mode: embedded_page` on the current Stripe API version).
+- The web checkout shell mounts Stripe embedded Checkout from the Worker-returned `clientSecret`; browser payloads must stay limited to app identities such as `storeItemSlug` and `variantId`.
 
 ### Required command policy
 
