@@ -63,7 +63,8 @@ describe('createStripeEmbeddedCheckoutAdapter', () => {
 
     expect(loadStripeClient).not.toHaveBeenCalled();
     expect(mountTarget.setAttribute).toHaveBeenCalledWith('data-mock-checkout-panel', '');
-    expect(mountTarget.textContent).toContain('cs_mock_client_secret');
+    expect(mountTarget.textContent).toContain('Mock Checkout Started');
+    expect(mountTarget.textContent).not.toContain('cs_mock_client_secret');
   });
 
   it('defaults unknown checkout client modes to real Stripe mode', () => {

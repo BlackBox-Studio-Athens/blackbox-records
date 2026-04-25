@@ -37,6 +37,11 @@
 - 2026-04-25: Checkout return UI was added at `/store/[slug]/checkout/return/`. It reads `session_id` only as input to the Worker-owned checkout state endpoint, renders app-owned paid/open/processing/expired/unknown states, and keeps retry/cart/item/store actions non-authoritative.
 - 2026-04-25: Codex Browser Use verified `/blackbox-records/store/disintegration-black-vinyl-lp/checkout/return?session_id=cs_mock_variant_barren-point_standard` through the local stripe-mock stack. The page called `ReadCheckoutState`, rendered `Checkout Still Open`, showed retry/cart/item/store actions and the order summary, and had no browser console errors. Browser Use also verified the missing-`session_id` state renders `Checkout Link Incomplete`, and `Back To Cart` opens the existing cart drawer without treating browser state as payment truth.
 
+## 07-11 Validation Evidence
+
+- 2026-04-25: Checkout browser hardening removed visible mock client-secret output, rejects malformed checkout-start responses without mounting checkout, keeps unavailable Worker offer states non-startable, and sanitizes cart drawer input even if an unsafe cart state reaches the drawer view.
+- 2026-04-25: Focused tests cover missing backend/API errors, missing Stripe publishable key, empty Worker client secret, missing variant id, malformed cart state, forbidden browser/cart fields, and return-page missing-session behavior. Browser Use verification confirmed ready, unavailable, missing-session, and return-state paths through the local stripe-mock stack with no browser console errors.
+
 ---
 
-_Validation completed: 2026-04-20; Shopify UX validation addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25; 07-08 Browser Use verification added: 2026-04-25; 07-09 checkout summary Browser Use evidence added: 2026-04-25; 07-10 checkout return Browser Use evidence added: 2026-04-25_
+_Validation completed: 2026-04-20; Shopify UX validation addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25; 07-08 Browser Use verification added: 2026-04-25; 07-09 checkout summary Browser Use evidence added: 2026-04-25; 07-10 checkout return Browser Use evidence added: 2026-04-25; 07-11 checkout browser hardening evidence added: 2026-04-25_

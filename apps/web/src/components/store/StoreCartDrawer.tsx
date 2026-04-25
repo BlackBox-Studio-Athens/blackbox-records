@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { createStoreCartCheckoutPath, type StoreCartState } from '@/lib/store-cart';
+import { createStoreCartCheckoutPath, sanitizeStoreCartItem, type StoreCartState } from '@/lib/store-cart';
 
 type StoreCartDrawerProps = {
   cartState: StoreCartState;
@@ -22,7 +22,7 @@ export const STORE_CART_DRAWER_COPY = {
 } as const;
 
 export function createStoreCartDrawerView(cartState: StoreCartState, resolveHref: (path: string) => string) {
-  const item = cartState.item;
+  const item = sanitizeStoreCartItem(cartState.item);
 
   return {
     checkoutHref: item ? resolveHref(createStoreCartCheckoutPath(item)) : null,

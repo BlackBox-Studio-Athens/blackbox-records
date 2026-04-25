@@ -172,10 +172,10 @@ describe('store purchase happy path', () => {
       variantId: checkoutView.variantId!,
     });
 
-    // Assert: checkout starts with app identities only, and the mock embedded handoff receives the client secret.
+    // Assert: checkout starts with app identities only, and the mock embedded handoff does not render secrets.
     expect(handoffState.kind).toBe('mounted');
     expect(mountTarget.textContent).toContain('Mock Checkout Started');
-    expect(mountTarget.textContent).toContain('cs_mock_secret_variant_barren-point_standard');
+    expect(mountTarget.textContent).not.toContain('cs_mock_secret_variant_barren-point_standard');
     expect(fetchStub).toHaveBeenCalledWith(
       '/api/checkout/sessions',
       expect.objectContaining({

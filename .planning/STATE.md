@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 7 plan 11; harden checkout browser states, unavailable handling, cart edge cases, and no-secret guarantees
-last_updated: '2026-04-25T04:45:00+03:00'
-last_activity: 2026-04-25 -- Added checkout return and retry UI through Worker-owned ReadCheckoutState
+stopped_at: Phase 7 plan 12; treat all current distro and release entries as sellable store candidates
+last_updated: '2026-04-25T10:48:21+03:00'
+last_activity: 2026-04-25 -- Hardened checkout browser states, cart edge cases, and no-secret guarantees
 progress:
   total_phases: 10
   completed_phases: 5
   total_plans: 64
-  completed_plans: 35
-  percent: 55
+  completed_plans: 36
+  percent: 56
 ---
 
 # Project State
@@ -28,22 +28,22 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 Current Phase: 7
 Current Phase Name: Worker Checkout And Stripe Sandbox Flow
 Total Phases: 10
-Current Plan: 11
+Current Plan: 12
 Total Plans in Phase: 16
 Status: Active
-Progress: 55%
+Progress: 56%
 Last Activity: 2026-04-25
-Last Activity Description: Added checkout return and retry UI through Worker-owned ReadCheckoutState
-Paused At: Phase 7 plan 11; harden checkout browser states, unavailable handling, cart edge cases, and no-secret guarantees
+Last Activity Description: Hardened checkout browser states, cart edge cases, and no-secret guarantees
+Paused At: Phase 7 plan 12; treat all current distro and release entries as sellable store candidates
 
-Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has started: the Worker now exposes public store-offer lookup, variant offer lookup, `StartCheckout`, and `ReadCheckoutState` APIs, backed by D1 repository seams and a Stripe Checkout gateway. The frontend checkout shell now reads Worker-known offer and variant state, starts Worker-owned Checkout Sessions, and mounts Stripe embedded Checkout from the returned `clientSecret`. Shopper-facing store URLs now describe the purchased item option for the first smoke item: `Disintegration` by `Afterwise` as `Black Vinyl LP` uses `/store/disintegration-black-vinyl-lp/`, with `/store/barren-point/` kept as a compatibility redirect. Phase 7 now has a browser-safe single-item cart state seam, header cart icon, Shopify-inspired cart drawer, PDP `Add To Cart` entry action, checkout page order summary, and checkout return/retry UI that reads Worker-owned `ReadCheckoutState`. It continues with browser-state hardening and all-current-items local mock checkout readiness. Local fake stock is allowed only in stripe-mock mode; sandbox/production stock remains uncounted until staff records it through D1-backed stock operations. Phase 7.1 is planned after Phase 7 to migrate the static frontend from GitHub Pages to Cloudflare Pages before Phase 8 webhook/order work depends on final hosted origins; the next implementation step is hardening checkout browser states, unavailable handling, cart edge cases, and no-secret guarantees.
+Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has started: the Worker now exposes public store-offer lookup, variant offer lookup, `StartCheckout`, and `ReadCheckoutState` APIs, backed by D1 repository seams and a Stripe Checkout gateway. The frontend checkout shell now reads Worker-known offer and variant state, starts Worker-owned Checkout Sessions, and mounts Stripe embedded Checkout from the returned `clientSecret`. Shopper-facing store URLs now describe the purchased item option for the first smoke item: `Disintegration` by `Afterwise` as `Black Vinyl LP` uses `/store/disintegration-black-vinyl-lp/`, with `/store/barren-point/` kept as a compatibility redirect. Phase 7 now has a browser-safe single-item cart state seam, header cart icon, Shopify-inspired cart drawer, PDP `Add To Cart` entry action, checkout page order summary, checkout return/retry UI that reads Worker-owned `ReadCheckoutState`, and hardened browser states for unavailable, missing backend, missing Stripe config, malformed cart, and no-secret cases. It continues with all-current-items local mock checkout readiness. Local fake stock is allowed only in stripe-mock mode; sandbox/production stock remains uncounted until staff records it through D1-backed stock operations. Phase 7.1 is planned after Phase 7 to migrate the static frontend from GitHub Pages to Cloudflare Pages before Phase 8 webhook/order work depends on final hosted origins; the next implementation step is treating all current distro and release entries as sellable store candidates.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 35
-- Total plans remaining: 31
+- Total plans completed: 36
+- Total plans remaining: 30
 - Average duration: -
 - Total execution time: -
 
@@ -56,13 +56,13 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 | 6     | 7     | Completed | 2026-04-21 |
 | 6.1   | 4     | Completed | 2026-04-22 |
 | 6.1.1 | 4     | Completed | 2026-04-24 |
-| 7     | 10/16 | Active    | 2026-04-25 |
+| 7     | 11/16 | Active    | 2026-04-25 |
 | 7.1   | 0/5   | Planned   | -          |
 
 **Recent Trend:**
 
-- Last 5 plans: 07-06, 07-07, 07-08, 07-09, 07-10
-- Trend: Browser-safe cart state seam, the single-item cart drawer, PDP Add To Cart entry, Shopify-like checkout order summary, and checkout return/retry state UI are complete.
+- Last 5 plans: 07-07, 07-08, 07-09, 07-10, 07-11
+- Trend: The single-item cart drawer, PDP Add To Cart entry, Shopify-like checkout order summary, checkout return/retry state UI, and checkout browser hardening are complete.
 
 ## Accumulated Context
 
@@ -130,7 +130,6 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
-- Harden checkout browser states, unavailable handling, cart edge cases, and no-secret guarantees in Phase 7 plan 11.
 - Add all-current-items local mock checkout readiness in Phase 7 plans 12 through 15 before final checkout validation.
 
 ## Blockers
@@ -142,6 +141,6 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 
 ## Session
 
-**Last Date:** 2026-04-25T03:35:00+03:00
-**Stopped At:** Phase 7 plan 11; harden checkout browser states, unavailable handling, cart edge cases, and no-secret guarantees
+**Last Date:** 2026-04-25T10:48:21+03:00
+**Stopped At:** Phase 7 plan 12; treat all current distro and release entries as sellable store candidates
 **Resume File:** .planning/ROADMAP.md

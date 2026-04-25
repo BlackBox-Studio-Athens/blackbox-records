@@ -75,13 +75,12 @@ export function createMockEmbeddedCheckoutAdapter(): EmbeddedCheckoutAdapter {
     getConfigurationError() {
       return null;
     },
-    async mountEmbeddedCheckout({ clientSecret, mountTarget }) {
+    async mountEmbeddedCheckout({ mountTarget }) {
       mountTarget.setAttribute('data-mock-checkout-panel', '');
       mountTarget.className = 'grid gap-3 p-5 text-sm text-muted-foreground';
       mountTarget.textContent = [
         'Mock Checkout Started',
         'This local mode confirms the Worker can create a checkout session shape without mounting real Stripe Checkout.',
-        `Client secret: ${clientSecret}`,
       ].join(' ');
 
       return {

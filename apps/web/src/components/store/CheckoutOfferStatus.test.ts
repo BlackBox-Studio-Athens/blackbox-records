@@ -193,6 +193,31 @@ describe('CheckoutOfferStatus helpers', () => {
     });
   });
 
+  it('does not start checkout when Worker eligibility is missing the variant id', () => {
+    expect(
+      createCheckoutOfferView({
+        kind: 'ready',
+        offer: {
+          availability: {
+            label: 'Available',
+            status: 'available',
+          },
+          canCheckout: true,
+          storeItemSlug: 'disintegration-black-vinyl-lp',
+          variantId: '',
+        },
+        variants: [],
+      }),
+    ).toMatchObject({
+      badgeLabel: 'Checkout unavailable',
+      canStartCheckout: false,
+      detail: 'Checkout is not ready for this item yet.',
+      isReady: false,
+      tone: 'error',
+      variantId: null,
+    });
+  });
+
   it('keeps shopper-facing checkout status copy free of implementation terms', () => {
     const readyView = createCheckoutOfferView({
       kind: 'ready',
@@ -250,6 +275,35 @@ describe('CheckoutOfferStatus helpers', () => {
       message: 'Stripe publishable key is not configured.',
     });
     expect(api.startCheckout).not.toHaveBeenCalled();
+    expect(checkoutAdapter.mountEmbeddedCheckout).not.toHaveBeenCalled();
+  });
+
+  it('does not mount checkout when the Worker returns no client secret', async () => {
+    const api: PublicCheckoutApi = {
+      readCheckoutState: vi.fn(),
+      readStoreOffer: vi.fn(),
+      readStoreOfferVariants: vi.fn(),
+      startCheckout: vi.fn(async () => ({
+        clientSecret: '',
+      })),
+    };
+    const checkoutAdapter: EmbeddedCheckoutAdapter = {
+      getConfigurationError: vi.fn(() => null),
+      mountEmbeddedCheckout: vi.fn(),
+    };
+
+    await expect(
+      startEmbeddedCheckout({
+        api,
+        checkoutAdapter,
+        mountTarget: {} as HTMLElement,
+        storeItemSlug: 'disintegration-black-vinyl-lp',
+        variantId: 'variant_barren-point_standard',
+      }),
+    ).resolves.toEqual({
+      kind: 'error',
+      message: 'Checkout could not be opened. Please retry shortly.',
+    });
     expect(checkoutAdapter.mountEmbeddedCheckout).not.toHaveBeenCalled();
   });
 

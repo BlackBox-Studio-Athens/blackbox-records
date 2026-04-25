@@ -97,6 +97,18 @@ export function createCheckoutOfferView(loadState: CheckoutOfferLoadState): Chec
     };
   }
 
+  if (!loadState.offer.variantId.trim()) {
+    return {
+      badgeLabel: 'Checkout unavailable',
+      canStartCheckout: false,
+      detail: 'Checkout is not ready for this item yet.',
+      isReady: false,
+      statusLabel: loadState.offer.availability.label,
+      tone: 'error',
+      variantId: null,
+    };
+  }
+
   return {
     badgeLabel: 'Checkout ready',
     canStartCheckout: true,
@@ -147,6 +159,14 @@ export async function startEmbeddedCheckout({
       storeItemSlug,
       variantId,
     });
+
+    if (typeof clientSecret !== 'string' || !clientSecret.trim()) {
+      return {
+        kind: 'error',
+        message: 'Checkout could not be opened. Please retry shortly.',
+      };
+    }
+
     const mount = await checkoutAdapter.mountEmbeddedCheckout({
       clientSecret,
       mountTarget,

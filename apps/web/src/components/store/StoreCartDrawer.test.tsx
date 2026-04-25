@@ -59,15 +59,18 @@ describe('StoreCartDrawer', () => {
 
   it('does not render forbidden checkout, Stripe, D1, stock, or order fields', () => {
     const view = createStoreCartDrawerView(
-      addStoreCartItem({
-        ...cartItem,
-        stripePriceId: 'price_secret',
-        d1Id: 'store_item_option_1',
-        stockCount: 99,
-        checkoutSessionId: 'cs_secret',
-        clientSecret: 'cs_secret_client',
-        orderState: 'paid',
-      } as StoreCartItem & Record<string, unknown>),
+      {
+        item: {
+          ...cartItem,
+          stripePriceId: 'price_secret',
+          d1Id: 'store_item_option_1',
+          stockCount: 99,
+          checkoutSessionId: 'cs_secret',
+          clientSecret: 'cs_secret_client',
+          orderState: 'paid',
+          actorEmail: 'operator@example.com',
+        } as StoreCartItem & Record<string, unknown>,
+      },
       resolveHref,
     );
     const serializedView = JSON.stringify(view);
@@ -77,5 +80,6 @@ describe('StoreCartDrawer', () => {
     expect(serializedView).not.toContain('stockCount');
     expect(serializedView).not.toContain('cs_secret');
     expect(serializedView).not.toContain('paid');
+    expect(serializedView).not.toContain('operator@example.com');
   });
 });
