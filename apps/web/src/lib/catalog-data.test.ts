@@ -74,7 +74,6 @@ import {
   getStoreItemBySlug,
   getStoreItemForRelease,
   groupDistroEntries,
-  hasNativeStoreItemForRelease,
   listStoreItems,
   listReleaseCatalog,
   mapStoreItemsBySlug,
@@ -113,7 +112,7 @@ describe('StoreItem projection contract', () => {
     } as any);
 
     expect(storeItem).toEqual({
-      slug: 'caregivers',
+      slug: 'caregivers-vinyl',
       sourceKind: 'release',
       sourceId: 'caregivers',
       title: 'Caregivers',
@@ -123,8 +122,8 @@ describe('StoreItem projection contract', () => {
       imageAlt: 'Caregivers cover',
       eyebrow: 'Release',
       metadata: ['2024', 'LP', 'Digital'],
-      storePath: '/blackbox-records/store/caregivers/',
-      checkoutPath: '/blackbox-records/store/caregivers/checkout/',
+      storePath: '/blackbox-records/store/caregivers-vinyl/',
+      checkoutPath: '/blackbox-records/store/caregivers-vinyl/checkout/',
     });
   });
 
@@ -152,11 +151,19 @@ describe('StoreItem projection contract', () => {
     expect(storeItem).not.toHaveProperty('merch_url');
   });
 
-  it('only treats releases with internal /store/ merch_url as native store candidates', async () => {
+  it('treats current releases as native store candidates regardless of legacy merch metadata', async () => {
     const [nativeRelease, externalRelease] = await listReleaseCatalog();
 
-    expect(hasNativeStoreItemForRelease(nativeRelease as any)).toBe(true);
-    expect(hasNativeStoreItemForRelease(externalRelease as any)).toBe(false);
+    await expect(getStoreItemForRelease(nativeRelease as any)).resolves.toMatchObject({
+      slug: 'disintegration-black-vinyl-lp',
+      sourceId: 'barren-point',
+      storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
+    });
+    await expect(getStoreItemForRelease(externalRelease as any)).resolves.toMatchObject({
+      slug: 'caregivers-vinyl',
+      sourceId: 'caregivers',
+      storePath: '/blackbox-records/store/caregivers-vinyl/',
+    });
   });
 
   it('lists native store items across releases and distro with stable slugs', async () => {
@@ -164,6 +171,7 @@ describe('StoreItem projection contract', () => {
 
     expect(storeItems.map((storeItem) => [storeItem.slug, storeItem.sourceKind])).toEqual([
       ['disintegration-black-vinyl-lp', 'release'],
+      ['caregivers-vinyl', 'release'],
       ['afterglow-tape', 'distro'],
     ]);
   });
@@ -177,16 +185,24 @@ describe('StoreItem projection contract', () => {
       slug: 'afterglow-tape',
       sourceKind: 'distro',
     });
+    await expect(getStoreItemBySlug('caregivers-vinyl')).resolves.toMatchObject({
+      slug: 'caregivers-vinyl',
+      sourceKind: 'release',
+      sourceId: 'caregivers',
+    });
     await expect(getStoreItemBySlug('caregivers')).resolves.toBeNull();
   });
 
-  it('returns null for releases that are not native store items', async () => {
+  it('keeps legacy release ids separate from canonical item-option slugs', async () => {
     const [, externalRelease] = await listReleaseCatalog();
 
-    await expect(getStoreItemForRelease(externalRelease as any)).resolves.toBeNull();
+    await expect(getStoreItemForRelease(externalRelease as any)).resolves.toMatchObject({
+      slug: 'caregivers-vinyl',
+    });
+    await expect(getStoreItemBySlug('caregivers')).resolves.toBeNull();
   });
 
-  it('resolves native store paths for mapped releases instead of legacy external merch links', async () => {
+  it('resolves native store paths for mapped releases instead of legacy merch links', async () => {
     const [nativeRelease, externalRelease] = await listReleaseCatalog();
 
     await expect(getStoreItemForRelease(nativeRelease as any)).resolves.toMatchObject({
@@ -195,6 +211,10 @@ describe('StoreItem projection contract', () => {
       storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
     });
 
-    await expect(getStoreItemForRelease(externalRelease as any)).resolves.toBeNull();
+    await expect(getStoreItemForRelease(externalRelease as any)).resolves.toMatchObject({
+      slug: 'caregivers-vinyl',
+      sourceId: 'caregivers',
+      storePath: '/blackbox-records/store/caregivers-vinyl/',
+    });
   });
 });

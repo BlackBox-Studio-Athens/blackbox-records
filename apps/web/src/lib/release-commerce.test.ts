@@ -62,15 +62,13 @@ describe('release commerce link resolution', () => {
     });
   });
 
-  it('falls back to the external merch link for unmapped releases', async () => {
+  it('prefers native store paths even when releases still carry legacy external merch metadata', async () => {
     const [, externalRelease] = await listReleaseCatalog();
 
     await expect(getReleaseCommerceLink(externalRelease as any)).resolves.toEqual({
-      href: 'https://chronoboros.bandcamp.com/merch',
-      isNativeStoreLink: false,
-      label: 'Buy merch',
-      rel: 'noreferrer noopener',
-      target: '_blank',
+      href: '/blackbox-records/store/caregivers-vinyl/',
+      isNativeStoreLink: true,
+      label: 'View In Store',
     });
   });
 });

@@ -71,11 +71,12 @@ vi.mock('astro:config/client', () => ({
 import { listStoreCollectionEntries } from './store-collection';
 
 describe('store collection entries', () => {
-  it('returns a unified collection with primary availability for native store items only', async () => {
+  it('returns a unified collection with primary availability for all release and distro store candidates', async () => {
     const collectionEntries = await listStoreCollectionEntries();
 
     expect(collectionEntries.map((entry) => [entry.storeItem.slug, entry.storeItem.sourceKind])).toEqual([
       ['disintegration-black-vinyl-lp', 'release'],
+      ['caregivers-vinyl', 'release'],
       ['afterglow-tape', 'distro'],
     ]);
 
@@ -86,6 +87,13 @@ describe('store collection entries', () => {
     });
 
     expect(collectionEntries[1]?.primaryAvailability).toMatchObject({
+      storeItemSlug: 'caregivers-vinyl',
+      price: { display: 'Price soon' },
+      availability: { status: 'sold_out', label: 'Unavailable' },
+      canBuy: false,
+    });
+
+    expect(collectionEntries[2]?.primaryAvailability).toMatchObject({
       storeItemSlug: 'afterglow-tape',
       price: { display: '€14.00' },
       availability: { status: 'sold_out', label: 'Sold Out' },

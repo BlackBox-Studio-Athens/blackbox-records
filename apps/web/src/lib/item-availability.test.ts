@@ -17,6 +17,19 @@ vi.mock('astro:content', () => ({
             title: 'Disintegration',
           },
         },
+        {
+          id: 'caregivers',
+          data: {
+            artist: { id: 'chronoboros' },
+            cover_image: { src: '/caregivers.jpg' },
+            cover_image_alt: 'Caregivers cover',
+            formats: ['Vinyl'],
+            merch_url: 'https://chronoboros.bandcamp.com/merch',
+            release_date: new Date('2026-03-13T00:00:00.000Z'),
+            summary: 'Legacy merch release.',
+            title: 'Caregivers',
+          },
+        },
       ];
     }
 
@@ -102,6 +115,22 @@ describe('ItemAvailability adapter', () => {
     await expect(getPrimaryAvailabilityForStoreItem('aftermaths')).resolves.toMatchObject({
       variantId: 'variant_aftermaths_standard',
       storeItemSlug: 'aftermaths',
+      optionLabel: null,
+      price: {
+        amountMinor: 0,
+        currencyCode: 'EUR',
+        display: 'Price soon',
+      },
+      availability: {
+        status: 'sold_out',
+        label: 'Unavailable',
+      },
+      canBuy: false,
+    });
+
+    await expect(getPrimaryAvailabilityForStoreItem('caregivers-vinyl')).resolves.toMatchObject({
+      variantId: 'variant_caregivers-vinyl_standard',
+      storeItemSlug: 'caregivers-vinyl',
       optionLabel: null,
       price: {
         amountMinor: 0,

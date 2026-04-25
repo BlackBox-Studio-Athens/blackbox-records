@@ -30,11 +30,8 @@ export type ArtistRosterReleaseContext = {
 
 const releaseStoreItemSlugByReleaseId: Record<string, string> = {
   'barren-point': 'disintegration-black-vinyl-lp',
+  caregivers: 'caregivers-vinyl',
 };
-
-function isNativeStoreMerchUrl(path: string | undefined) {
-  return path === '/store/';
-}
 
 function sortArtistProfilesByName(left: ArtistProfileEntry, right: ArtistProfileEntry) {
   return left.data.title.localeCompare(right.data.title);
@@ -168,15 +165,7 @@ export function createStoreItemFromDistroEntry(distroEntry: DistroCatalogEntry):
   };
 }
 
-export function hasNativeStoreItemForRelease(releaseEntry: ReleaseCatalogEntry) {
-  return isNativeStoreMerchUrl(releaseEntry.data.merch_url);
-}
-
 export async function getStoreItemForRelease(releaseEntry: ReleaseCatalogEntry) {
-  if (!hasNativeStoreItemForRelease(releaseEntry)) {
-    return null;
-  }
-
   return createStoreItemFromRelease(releaseEntry);
 }
 
@@ -184,7 +173,7 @@ export async function listStoreItems(): Promise<StoreItem[]> {
   const [releaseCatalog, distroEntries] = await Promise.all([listReleaseCatalog(), listDistroEntries()]);
 
   const releaseStoreItems = await Promise.all(
-    releaseCatalog.filter(hasNativeStoreItemForRelease).map((releaseEntry) => createStoreItemFromRelease(releaseEntry)),
+    releaseCatalog.map((releaseEntry) => createStoreItemFromRelease(releaseEntry)),
   );
 
   const distroStoreItems = distroEntries.map((distroEntry) => createStoreItemFromDistroEntry(distroEntry));

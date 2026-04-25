@@ -175,7 +175,7 @@ Plans:
 - [x] 07-09: Rebuild the checkout page into a familiar Shopify-like order summary plus embedded Checkout layout
 - [x] 07-10: Add checkout return and retry state UI through ReadCheckoutState
 - [x] 07-11: Harden checkout browser states, unavailable handling, cart edge cases, and no-secret guarantees
-- [ ] 07-12: Treat all current distro and release entries as sellable store candidates
+- [x] 07-12: Treat all current distro and release entries as sellable store candidates
 - [ ] 07-13: Generate local mock commerce state for every current store item
 - [ ] 07-14: Add all-items local mock checkout readiness checks
 - [ ] 07-15: Run local mock checkout UAT across representative item types

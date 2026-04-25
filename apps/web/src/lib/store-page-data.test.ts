@@ -111,6 +111,20 @@ describe('store page data helper', () => {
         storePath: '/blackbox-records/store/afterglow-tape/',
         checkoutPath: '/blackbox-records/store/afterglow-tape/checkout/',
       },
+      {
+        slug: 'caregivers-vinyl',
+        sourceKind: 'release',
+        sourceId: 'caregivers',
+        title: 'Caregivers',
+        subtitle: 'Chronoboros',
+        summary: 'BlackBox release.',
+        image: { src: '/caregivers.jpg', width: 1, height: 1, format: 'jpg' },
+        imageAlt: 'Caregivers cover',
+        eyebrow: 'Release',
+        metadata: ['2026', 'Vinyl'],
+        storePath: '/blackbox-records/store/caregivers-vinyl/',
+        checkoutPath: '/blackbox-records/store/caregivers-vinyl/checkout/',
+      },
     ]);
 
     mockItemAvailability.getPrimaryAvailabilityForStoreItem
@@ -128,6 +142,14 @@ describe('store page data helper', () => {
         optionLabel: 'Cassette',
         price: { amountMinor: 1400, currencyCode: 'EUR', display: 'EUR 14.00' },
         availability: { status: 'sold_out', label: 'Sold Out' },
+        canBuy: false,
+      })
+      .mockResolvedValueOnce({
+        variantId: 'variant_caregivers-vinyl_standard',
+        storeItemSlug: 'caregivers-vinyl',
+        optionLabel: null,
+        price: { amountMinor: 0, currencyCode: 'EUR', display: 'Price soon' },
+        availability: { status: 'sold_out', label: 'Unavailable' },
         canBuy: false,
       });
 
@@ -156,6 +178,21 @@ describe('store page data helper', () => {
             }),
             primaryAvailability: expect.objectContaining({
               storeItemSlug: 'afterglow-tape',
+            }),
+          },
+        },
+      },
+      {
+        params: { slug: 'caregivers-vinyl' },
+        props: {
+          entry: {
+            storeItem: expect.objectContaining({
+              slug: 'caregivers-vinyl',
+              checkoutPath: '/blackbox-records/store/caregivers-vinyl/checkout/',
+            }),
+            primaryAvailability: expect.objectContaining({
+              storeItemSlug: 'caregivers-vinyl',
+              canBuy: false,
             }),
           },
         },

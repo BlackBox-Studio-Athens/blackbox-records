@@ -42,6 +42,11 @@
 - 2026-04-25: Checkout browser hardening removed visible mock client-secret output, rejects malformed checkout-start responses without mounting checkout, keeps unavailable Worker offer states non-startable, and sanitizes cart drawer input even if an unsafe cart state reaches the drawer view.
 - 2026-04-25: Focused tests cover missing backend/API errors, missing Stripe publishable key, empty Worker client secret, missing variant id, malformed cart state, forbidden browser/cart fields, and return-page missing-session behavior. Browser Use verification confirmed ready, unavailable, missing-session, and return-state paths through the local stripe-mock stack with no browser console errors.
 
+## 07-12 Validation Evidence
+
+- 2026-04-25: Store discovery now treats every current release and distro entry as a native store candidate. The `Caregivers` release keeps its legacy external merch metadata in content, but the release page now links to `/store/caregivers-vinyl/` and no longer exposes the external merch link as the primary commerce path.
+- 2026-04-25: Codex Browser Use verified `/blackbox-records/store/` shows `Disintegration`, `Caregivers`, and the real distro entry `Afterglow Cassette`; `/blackbox-records/store/caregivers-vinyl/` renders fallback unavailable/price-soon state; `/blackbox-records/releases/caregivers/` links to the native store route; and `/blackbox-records/store/disintegration-black-vinyl-lp/` still renders the canonical smoke item. Fresh console logs during the clean Browser Use pass had no errors.
+
 ---
 
-_Validation completed: 2026-04-20; Shopify UX validation addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25; 07-08 Browser Use verification added: 2026-04-25; 07-09 checkout summary Browser Use evidence added: 2026-04-25; 07-10 checkout return Browser Use evidence added: 2026-04-25; 07-11 checkout browser hardening evidence added: 2026-04-25_
+_Validation completed: 2026-04-20; Shopify UX validation addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25; 07-08 Browser Use verification added: 2026-04-25; 07-09 checkout summary Browser Use evidence added: 2026-04-25; 07-10 checkout return Browser Use evidence added: 2026-04-25; 07-11 checkout browser hardening evidence added: 2026-04-25; 07-12 store candidacy Browser Use evidence added: 2026-04-25_
