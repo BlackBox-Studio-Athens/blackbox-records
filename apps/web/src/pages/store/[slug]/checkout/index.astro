@@ -1,14 +1,11 @@
 ---
-import { Image } from 'astro:assets';
-
 import { Badge } from '@/components/ui/badge';
-import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import CheckoutOrderSummary from '@/components/store/CheckoutOrderSummary';
 import CheckoutOfferStatus from '@/components/store/CheckoutOfferStatus';
 import { createProjectRelativeUrl } from '@/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { type StorePageEntry, createStorePageStaticPaths } from '@/lib/store-page-data';
-import { cn } from '@/lib/utils';
 
 export async function getStaticPaths() {
   return createStorePageStaticPaths();
@@ -23,123 +20,97 @@ const { storeItem, primaryAvailability } = entry;
 const priceLabel = primaryAvailability?.price.display || 'Price soon';
 const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
 const canBuy = primaryAvailability?.canBuy ?? false;
-const itemTypeLabel = storeItem.sourceKind === 'release' ? 'Release' : 'Item';
 const initialCheckoutAvailability = {
   canBuy,
   label: availabilityLabel,
   optionLabel: primaryAvailability?.optionLabel ?? null,
   priceDisplay: priceLabel,
 };
+const summaryItem = {
+  availabilityLabel,
+  canBuy,
+  image: storeItem.image.src,
+  imageAlt: storeItem.imageAlt,
+  itemHref: storeItem.storePath,
+  optionLabel: primaryAvailability?.optionLabel ?? null,
+  priceDisplay: priceLabel,
+  subtitle: storeItem.subtitle,
+  title: storeItem.title,
+};
 ---
 
 <SiteLayout
   pageTitle={`${storeItem.title} Checkout | Store`}
-  pageDescription={`Worker-backed checkout handoff shell for ${storeItem.title}.`}
+  pageDescription={`Checkout for ${storeItem.title} by ${storeItem.subtitle}.`}
 >
-  <section class="layout-container pt-14 pb-6">
-    <div
-      class="grid gap-6 border border-border/70 bg-card/35 p-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(22rem,1.1fr)] lg:p-8"
-    >
-      <div class="space-y-5">
+  <section class="layout-container pt-14 pb-8">
+    <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+      <div class="space-y-3">
         <Badge variant="outline" className="border-border/70 bg-background/80 text-xs tracking-[0.15em] uppercase">
-          Checkout shell
+          Checkout
         </Badge>
-        <div class="space-y-3">
-          <h1 class="font-display text-5xl tracking-[0.08em] uppercase text-foreground sm:text-6xl">
-            {storeItem.title.toUpperCase()}
-          </h1>
-          <p class="text-sm uppercase tracking-[0.13em] text-muted-foreground">{storeItem.subtitle}</p>
+        <div class="space-y-2">
+          <h1 class="font-display text-5xl tracking-[0.08em] uppercase text-foreground sm:text-6xl">Checkout</h1>
+          <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            Review the item, confirm availability, then open secure payment through Stripe.
+          </p>
         </div>
-        <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          This is the stable handoff surface for the Worker-owned checkout flow. The item recap stays editorial, while
-          checkout eligibility is confirmed by the backend before payment starts.
-        </p>
+      </div>
+      <a
+        href={createProjectRelativeUrl('/store/')}
+        data-astro-prefetch
+        class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+      >
+        Continue Shopping
+      </a>
+    </div>
 
-        <div class="grid gap-3 border border-border/60 bg-background/45 p-5">
-          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 pb-3">
-            <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Order recap</p>
-            <span
-              class:list={[
-                'inline-flex items-center border px-2 py-1 text-[10px] uppercase tracking-[0.18em]',
-                canBuy
-                  ? 'border-foreground/20 bg-background/60 text-foreground/82'
-                  : 'border-border/60 bg-background/80 text-muted-foreground',
-              ]}
-            >
-              {availabilityLabel}
-            </span>
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] xl:grid-cols-[minmax(0,1fr)_27rem]">
+      <div class="lg:hidden">
+        <details class="group border border-border/70 bg-card/45" open>
+          <summary
+            class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground marker:hidden"
+          >
+            <span>Order Summary</span>
+            <span class="font-display text-2xl tracking-[0.08em]">{priceLabel}</span>
+          </summary>
+          <div class="border-t border-border/70 p-4">
+            <CheckoutOrderSummary {...summaryItem} />
           </div>
-          <div class="grid gap-4 sm:grid-cols-2">
+        </details>
+      </div>
+
+      <Card className="rounded-none border-border/70 bg-card/35 shadow-none">
+        <CardContent className="grid gap-6 p-5 sm:p-6 lg:p-8">
+          <div class="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-5">
             <div class="space-y-2">
-              <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{itemTypeLabel}</p>
-              <p class="font-display text-2xl tracking-[0.08em] uppercase text-foreground">
-                {storeItem.title}
+              <p class="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Checkout</p>
+              <h2 class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">Payment</h2>
+            </div>
+            <span class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Cart / Checkout</span>
+          </div>
+
+          <CheckoutOfferStatus
+            client:load
+            storeItemSlug={storeItem.slug}
+            initialAvailability={initialCheckoutAvailability}
+          />
+
+          {
+            !canBuy && (
+              <p class="border border-border/70 bg-background/55 p-4 text-sm leading-relaxed text-muted-foreground">
+                This item stays viewable, but checkout stays closed while it is unavailable.
               </p>
-              {
-                primaryAvailability?.optionLabel && (
-                  <p class="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-                    Item option · {primaryAvailability.optionLabel}
-                  </p>
-                )
-              }
-            </div>
-            <div class="space-y-2">
-              <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Price recap</p>
-              <p class="font-display text-3xl tracking-[0.08em] uppercase text-foreground">{priceLabel}</p>
-              <p class="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{availabilityLabel}</p>
-            </div>
-          </div>
+            )
+          }
+        </CardContent>
+      </Card>
+
+      <aside class="hidden lg:block">
+        <div class="sticky top-[calc(var(--header-height)+2rem)]">
+          <CheckoutOrderSummary {...summaryItem} />
         </div>
-
-        <div class="flex flex-wrap gap-3">
-          <a
-            href={storeItem.storePath}
-            data-astro-prefetch
-            class={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'uppercase tracking-[0.12em]')}
-          >
-            Back To Item
-          </a>
-          <a
-            href={createProjectRelativeUrl('/store/')}
-            data-astro-prefetch
-            class={cn(buttonVariants({ variant: 'ghost', size: 'lg' }), 'uppercase tracking-[0.12em]')}
-          >
-            Back To Store
-          </a>
-        </div>
-      </div>
-
-      <div class="grid gap-5">
-        <Card className="rounded-none border-border/70 bg-[#111111] shadow-none">
-          <CardContent className="grid gap-5 p-5">
-            <div class="relative overflow-hidden border border-border/60 bg-background/55">
-              <Image
-                src={storeItem.image}
-                alt={storeItem.imageAlt}
-                class="aspect-[5/4] h-full w-full object-cover"
-                sizes="(min-width: 1024px) 32vw, 100vw"
-              />
-              <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
-            </div>
-
-            <div class="space-y-3">
-              <CheckoutOfferStatus
-                client:load
-                storeItemSlug={storeItem.slug}
-                initialAvailability={initialCheckoutAvailability}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {
-          !canBuy && (
-            <p class="text-sm leading-relaxed text-muted-foreground">
-              This item stays viewable, but the shell does not imply a live payment path while it is unavailable.
-            </p>
-          )
-        }
-      </div>
+      </aside>
     </div>
   </section>
 </SiteLayout>

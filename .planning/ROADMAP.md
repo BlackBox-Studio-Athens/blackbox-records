@@ -172,7 +172,7 @@ Plans:
 - [x] 07-06: Add the storefront cart icon and single-item cart state seam
 - [x] 07-07: Build the Shopify-inspired cart drawer and item summary
 - [x] 07-08: Refactor PDP and checkout entry actions around Add To Cart and Checkout
-- [ ] 07-09: Rebuild the checkout page into a familiar Shopify-like order summary plus embedded Checkout layout
+- [x] 07-09: Rebuild the checkout page into a familiar Shopify-like order summary plus embedded Checkout layout
 - [ ] 07-10: Add checkout return and retry state UI through ReadCheckoutState
 - [ ] 07-11: Harden checkout browser states, unavailable handling, cart edge cases, and no-secret guarantees
 - [ ] 07-12: Treat all current distro and release entries as sellable store candidates

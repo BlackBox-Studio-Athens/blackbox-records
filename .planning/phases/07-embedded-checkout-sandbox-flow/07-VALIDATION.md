@@ -27,6 +27,11 @@
 - 2026-04-25: Codex Browser Use verified `/blackbox-records/store/disintegration-black-vinyl-lp/` through the local stripe-mock stack. The eligible PDP showed `Add To Cart`, did not expose a primary `Buy Now`, opened the cart drawer after Add To Cart, showed `Disintegration`, `Afterwise`, and `Black Vinyl LP`, and linked checkout to `/store/disintegration-black-vinyl-lp/checkout/`.
 - 2026-04-25: Codex Browser Use verified `/blackbox-records/store/afterglow-tape/` remained viewable while unavailable, rendered disabled `Currently Unavailable`, and exposed no actionable Add To Cart or checkout link.
 
+## 07-09 Validation Evidence
+
+- 2026-04-25: Checkout page was rebuilt around a Shopify-like order summary and payment panel. Direct checkout loads render `Order Summary`, the canonical item option, subtotal, secure Stripe copy, and the existing Worker-read embedded Checkout island without relying on browser cart state.
+- 2026-04-25: Codex Browser Use verified `/blackbox-records/store/disintegration-black-vinyl-lp/checkout/` through the local stripe-mock stack. The page rendered `Order Summary`, `Disintegration`, `Afterwise`, `Black Vinyl LP`, `Subtotal`, secure Stripe copy, checkout status, and the embedded Checkout mount; clicking `Checkout` rendered the local `Mock Checkout Started` handoff panel with no browser console errors.
+
 ---
 
-_Validation completed: 2026-04-20; Shopify UX validation addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25; 07-08 Browser Use verification added: 2026-04-25_
+_Validation completed: 2026-04-20; Shopify UX validation addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25; 07-08 Browser Use verification added: 2026-04-25; 07-09 checkout summary Browser Use evidence added: 2026-04-25_
