@@ -146,6 +146,7 @@ Seed local Stripe mapping variants:
 
 ```sh
 pnpm --filter @blackbox/backend d1:seed:stripe-mock:local
+pnpm --filter @blackbox/backend d1:check:stripe-mock:local
 pnpm --filter @blackbox/backend d1:seed:stripe-test:local
 ```
 
@@ -350,8 +351,9 @@ Local seed flow:
 Local checkout seed flow:
 
 1. For stripe-mock, run `pnpm --filter @blackbox/backend d1:seed:stripe-mock:local`; the generator derives current store items from static content and applies local-only fake 99/99 stock plus `price_mock_*` values.
-2. For real Stripe test mode, copy `apps/backend/prisma/seeds/local-stripe-test-state.sql.example` to ignored `apps/backend/prisma/seeds/local-stripe-test-state.sql`, replace the example price with a real `price_...`, then run `pnpm --filter @blackbox/backend d1:seed:stripe-test:local`.
-3. Do not commit real Stripe test Price IDs.
+2. Verify stripe-mock readiness with `pnpm --filter @blackbox/backend d1:check:stripe-mock:local`; it reports any current store item missing local mock availability, stock, or `price_mock_*` mapping rows.
+3. For real Stripe test mode, copy `apps/backend/prisma/seeds/local-stripe-test-state.sql.example` to ignored `apps/backend/prisma/seeds/local-stripe-test-state.sql`, replace the example price with a real `price_...`, then run `pnpm --filter @blackbox/backend d1:seed:stripe-test:local`.
+4. Do not commit real Stripe test Price IDs.
 
 Local development:
 
@@ -586,4 +588,5 @@ If a source crops badly, replace the source image rather than adding focal-point
 - If port `4321` is already in use, the static-site launcher fails fast instead of silently switching ports.
 - Local D1 comes from Wrangler automatically during Worker dev; no separate D1 process is part of the run-config flow.
 - The stack launchers run D1 migrations and seed SQL before starting long-running services.
+- `pnpm --filter @blackbox/backend d1:check:stripe-mock:local` verifies every current store item has local mock checkout readiness rows after the mock seed runs.
 - `pnpm --filter @blackbox/backend d1:smoke:local` remains a verification command, not a launch prerequisite.

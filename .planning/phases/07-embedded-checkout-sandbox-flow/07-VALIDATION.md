@@ -52,6 +52,11 @@
 - 2026-04-25: `pnpm --filter @blackbox/backend d1:seed:stripe-mock:local` now generates local mock D1 state from static storefront content instead of applying a one-row static SQL file. The generated seed upserts `StoreItemOption`, `ItemAvailability`, `Stock`, and `VariantStripeMapping` rows for every current release and distro store item.
 - 2026-04-25: Mock seed data uses clearly fake local-only defaults: `available`, `canBuy=true`, `quantity=99`, `onlineQuantity=99`, and `price_mock_*` Stripe mappings. This is development scaffolding for `dev:stack:stripe-mock`, not counted stock or sandbox/production payment evidence.
 
+## 07-14 Validation Evidence
+
+- 2026-04-25: `pnpm --filter @blackbox/backend d1:check:stripe-mock:local` now compares current storefront content against local D1 mock checkout rows and reports missing `StoreItemOption`, `ItemAvailability`, `Stock`, or mock `VariantStripeMapping` rows by slug/source.
+- 2026-04-25: The readiness check is read-only, uses one local Wrangler D1 query, verifies positive local fake stock plus `price_mock_*` mappings, and prints local prep/seed commands when local D1 is unavailable or incomplete.
+
 ---
 
-_Validation completed: 2026-04-20; Shopify UX validation addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25; 07-08 Browser Use verification added: 2026-04-25; 07-09 checkout summary Browser Use evidence added: 2026-04-25; 07-10 checkout return Browser Use evidence added: 2026-04-25; 07-11 checkout browser hardening evidence added: 2026-04-25; 07-12 store candidacy Browser Use evidence added: 2026-04-25; 07-13 local mock commerce seed evidence added: 2026-04-25_
+_Validation completed: 2026-04-20; Shopify UX validation addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25; 07-08 Browser Use verification added: 2026-04-25; 07-09 checkout summary Browser Use evidence added: 2026-04-25; 07-10 checkout return Browser Use evidence added: 2026-04-25; 07-11 checkout browser hardening evidence added: 2026-04-25; 07-12 store candidacy Browser Use evidence added: 2026-04-25; 07-13 local mock commerce seed evidence added: 2026-04-25; 07-14 local mock readiness command evidence added: 2026-04-25_

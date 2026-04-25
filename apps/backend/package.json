@@ -11,6 +11,7 @@
     "d1:smoke:local": "wrangler d1 execute COMMERCE_DB --local --command \"SELECT 1 AS ok\" --json",
     "d1:seed:local": "wrangler d1 execute COMMERCE_DB --local --file ./prisma/seeds/local-commerce-state.sql --json",
     "d1:seed:stripe-mock:local": "tsx scripts/seed-local-mock-commerce-state.ts",
+    "d1:check:stripe-mock:local": "tsx scripts/check-local-mock-commerce-readiness.ts",
     "d1:seed:stripe-test:local": "node scripts/apply-local-stripe-test-seed.mjs",
     "d1:prepare:local": "pnpm d1:migrations:apply:local && pnpm d1:seed:local && pnpm d1:smoke:local",
     "d1:migrations:create": "wrangler d1 migrations create COMMERCE_DB",

@@ -55,6 +55,7 @@ Read these first before editing:
 - Backend local D1 seed apply: `pnpm --filter @blackbox/backend d1:seed:local`
 - Backend local D1 prepare flow: `pnpm --filter @blackbox/backend d1:prepare:local`
 - Backend local Stripe mock seed: `pnpm --filter @blackbox/backend d1:seed:stripe-mock:local`
+- Backend local Stripe mock readiness check: `pnpm --filter @blackbox/backend d1:check:stripe-mock:local`
 - Backend local Stripe test seed from ignored SQL: `pnpm --filter @blackbox/backend d1:seed:stripe-test:local`
 - Backend local D1 migration list/apply:
   - `pnpm --filter @blackbox/backend d1:migrations:list:local`
@@ -87,6 +88,7 @@ Read these first before editing:
 - The deterministic local mock checkout smoke path is `http://127.0.0.1:4321/blackbox-records/store/disintegration-black-vinyl-lp/checkout/`; stripe-mock mode now seeds every current visible store item with fake local checkout state.
 - `pnpm dev:stack:stripe-test` is the real local checkout path and requires `PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, and ignored local Stripe test Price mappings.
 - `pnpm dev:stack:stripe-mock` uses the Worker in-process mock Stripe gateway through the Wrangler `mock` env, generates local-only fake `Stock`, `ItemAvailability`, and `price_mock_*` mappings for every current store item, and renders a frontend mock checkout panel. It must not require Docker or `apps/backend/.dev.vars`. It is not a real embedded Checkout browser substitute, and the generated 99/99 stock values are not real inventory counts.
+- `pnpm --filter @blackbox/backend d1:check:stripe-mock:local` verifies the generated local mock checkout rows for all current store items and should be run when store content, mock seeds, D1 migrations, or checkout readiness assumptions change.
 - Runtime backend secrets belong in Worker secrets or `apps/backend/.dev.vars`, not in Astro public env vars or GitHub deploy credentials.
 - The backend runtime binding contract now includes `COMMERCE_DB`.
 - The backend persistence runtime now uses Prisma + `@prisma/adapter-d1` behind repository seams in:
