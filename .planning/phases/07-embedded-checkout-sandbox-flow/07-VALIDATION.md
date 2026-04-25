@@ -47,6 +47,11 @@
 - 2026-04-25: Store discovery now treats every current release and distro entry as a native store candidate. The `Caregivers` release keeps its legacy external merch metadata in content, but the release page now links to `/store/caregivers-vinyl/` and no longer exposes the external merch link as the primary commerce path.
 - 2026-04-25: Codex Browser Use verified `/blackbox-records/store/` shows `Disintegration`, `Caregivers`, and the real distro entry `Afterglow Cassette`; `/blackbox-records/store/caregivers-vinyl/` renders fallback unavailable/price-soon state; `/blackbox-records/releases/caregivers/` links to the native store route; and `/blackbox-records/store/disintegration-black-vinyl-lp/` still renders the canonical smoke item. Fresh console logs during the clean Browser Use pass had no errors.
 
+## 07-13 Validation Evidence
+
+- 2026-04-25: `pnpm --filter @blackbox/backend d1:seed:stripe-mock:local` now generates local mock D1 state from static storefront content instead of applying a one-row static SQL file. The generated seed upserts `StoreItemOption`, `ItemAvailability`, `Stock`, and `VariantStripeMapping` rows for every current release and distro store item.
+- 2026-04-25: Mock seed data uses clearly fake local-only defaults: `available`, `canBuy=true`, `quantity=99`, `onlineQuantity=99`, and `price_mock_*` Stripe mappings. This is development scaffolding for `dev:stack:stripe-mock`, not counted stock or sandbox/production payment evidence.
+
 ---
 
-_Validation completed: 2026-04-20; Shopify UX validation addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25; 07-08 Browser Use verification added: 2026-04-25; 07-09 checkout summary Browser Use evidence added: 2026-04-25; 07-10 checkout return Browser Use evidence added: 2026-04-25; 07-11 checkout browser hardening evidence added: 2026-04-25; 07-12 store candidacy Browser Use evidence added: 2026-04-25_
+_Validation completed: 2026-04-20; Shopify UX validation addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25; 07-08 Browser Use verification added: 2026-04-25; 07-09 checkout summary Browser Use evidence added: 2026-04-25; 07-10 checkout return Browser Use evidence added: 2026-04-25; 07-11 checkout browser hardening evidence added: 2026-04-25; 07-12 store candidacy Browser Use evidence added: 2026-04-25; 07-13 local mock commerce seed evidence added: 2026-04-25_

@@ -84,9 +84,9 @@ Read these first before editing:
 - Backend local D1 comes from Wrangler automatically during Worker dev; do not add a second D1 process to the run-config flow.
 - The stack launcher scripts must run D1 migrations and seed SQL before starting the Worker/static site.
 - Keep `BlackBox Local Stack` working whenever frontend env, backend env, ports, checkout setup, D1 migrations, seed files, or WebStorm run configs change. If a change breaks the canonical launcher, fix the launcher or docs in the same commit.
-- The deterministic local mock checkout smoke path is `http://127.0.0.1:4321/blackbox-records/store/disintegration-black-vinyl-lp/checkout/`; do not assume every visible store item is seeded as checkout-ready.
+- The deterministic local mock checkout smoke path is `http://127.0.0.1:4321/blackbox-records/store/disintegration-black-vinyl-lp/checkout/`; stripe-mock mode now seeds every current visible store item with fake local checkout state.
 - `pnpm dev:stack:stripe-test` is the real local checkout path and requires `PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, and ignored local Stripe test Price mappings.
-- `pnpm dev:stack:stripe-mock` uses the Worker in-process mock Stripe gateway through the Wrangler `mock` env, seeds local `price_mock_*` mappings, and renders a frontend mock checkout panel. It must not require Docker or `apps/backend/.dev.vars`. It is not a real embedded Checkout browser substitute.
+- `pnpm dev:stack:stripe-mock` uses the Worker in-process mock Stripe gateway through the Wrangler `mock` env, generates local-only fake `Stock`, `ItemAvailability`, and `price_mock_*` mappings for every current store item, and renders a frontend mock checkout panel. It must not require Docker or `apps/backend/.dev.vars`. It is not a real embedded Checkout browser substitute, and the generated 99/99 stock values are not real inventory counts.
 - Runtime backend secrets belong in Worker secrets or `apps/backend/.dev.vars`, not in Astro public env vars or GitHub deploy credentials.
 - The backend runtime binding contract now includes `COMMERCE_DB`.
 - The backend persistence runtime now uses Prisma + `@prisma/adapter-d1` behind repository seams in:

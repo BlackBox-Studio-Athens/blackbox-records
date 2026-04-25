@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 7 plan 13; generate local mock commerce state for every current store item
-last_updated: '2026-04-25T13:40:00+03:00'
-last_activity: 2026-04-25 -- Treated all current distro and release entries as sellable store candidates
+stopped_at: Phase 7 plan 14; add all-items local mock checkout readiness checks
+last_updated: '2026-04-25T14:05:00+03:00'
+last_activity: 2026-04-25 -- Generated local mock commerce state for every current store item
 progress:
   total_phases: 10
   completed_phases: 5
   total_plans: 64
-  completed_plans: 37
-  percent: 58
+  completed_plans: 38
+  percent: 59
 ---
 
 # Project State
@@ -28,22 +28,22 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 Current Phase: 7
 Current Phase Name: Worker Checkout And Stripe Sandbox Flow
 Total Phases: 10
-Current Plan: 13
+Current Plan: 14
 Total Plans in Phase: 16
 Status: Active
-Progress: 58%
+Progress: 59%
 Last Activity: 2026-04-25
-Last Activity Description: Treated all current distro and release entries as sellable store candidates
-Paused At: Phase 7 plan 13; generate local mock commerce state for every current store item
+Last Activity Description: Generated local mock commerce state for every current store item
+Paused At: Phase 7 plan 14; add all-items local mock checkout readiness checks
 
-Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has started: the Worker now exposes public store-offer lookup, variant offer lookup, `StartCheckout`, and `ReadCheckoutState` APIs, backed by D1 repository seams and a Stripe Checkout gateway. The frontend checkout shell now reads Worker-known offer and variant state, starts Worker-owned Checkout Sessions, and mounts Stripe embedded Checkout from the returned `clientSecret`. Shopper-facing store URLs now describe the purchased item option for the first smoke item: `Disintegration` by `Afterwise` as `Black Vinyl LP` uses `/store/disintegration-black-vinyl-lp/`, with `/store/barren-point/` kept as a compatibility redirect. Phase 7 now has a browser-safe single-item cart state seam, header cart icon, Shopify-inspired cart drawer, PDP `Add To Cart` entry action, checkout page order summary, checkout return/retry UI that reads Worker-owned `ReadCheckoutState`, hardened browser states for unavailable, missing backend, missing Stripe config, malformed cart, and no-secret cases, and native store candidacy for all current distro and release entries. It continues with all-current-items local mock commerce state. Local fake stock is allowed only in stripe-mock mode; sandbox/production stock remains uncounted until staff records it through D1-backed stock operations. Phase 7.1 is planned after Phase 7 to migrate the static frontend from GitHub Pages to Cloudflare Pages before Phase 8 webhook/order work depends on final hosted origins; the next implementation step is generating local mock commerce state for every current store item.
+Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has started: the Worker now exposes public store-offer lookup, variant offer lookup, `StartCheckout`, and `ReadCheckoutState` APIs, backed by D1 repository seams and a Stripe Checkout gateway. The frontend checkout shell now reads Worker-known offer and variant state, starts Worker-owned Checkout Sessions, and mounts Stripe embedded Checkout from the returned `clientSecret`. Shopper-facing store URLs now describe the purchased item option for the first smoke item: `Disintegration` by `Afterwise` as `Black Vinyl LP` uses `/store/disintegration-black-vinyl-lp/`, with `/store/barren-point/` kept as a compatibility redirect. Phase 7 now has a browser-safe single-item cart state seam, header cart icon, Shopify-inspired cart drawer, PDP `Add To Cart` entry action, checkout page order summary, checkout return/retry UI that reads Worker-owned `ReadCheckoutState`, hardened browser states for unavailable, missing backend, missing Stripe config, malformed cart, and no-secret cases, native store candidacy for all current distro and release entries, and local stripe-mock D1 state for every current store item. Local fake stock is allowed only in stripe-mock mode; sandbox/production stock remains uncounted until staff records it through D1-backed stock operations. Phase 7.1 is planned after Phase 7 to migrate the static frontend from GitHub Pages to Cloudflare Pages before Phase 8 webhook/order work depends on final hosted origins; the next implementation step is adding an all-items local mock checkout readiness check.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 37
-- Total plans remaining: 27
+- Total plans completed: 38
+- Total plans remaining: 26
 - Average duration: -
 - Total execution time: -
 
@@ -56,13 +56,13 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 | 6     | 7     | Completed | 2026-04-21 |
 | 6.1   | 4     | Completed | 2026-04-22 |
 | 6.1.1 | 4     | Completed | 2026-04-24 |
-| 7     | 12/16 | Active    | 2026-04-25 |
+| 7     | 13/16 | Active    | 2026-04-25 |
 | 7.1   | 0/5   | Planned   | -          |
 
 **Recent Trend:**
 
-- Last 5 plans: 07-08, 07-09, 07-10, 07-11, 07-12
-- Trend: PDP Add To Cart entry, Shopify-like checkout order summary, checkout return/retry state UI, checkout browser hardening, and all-current-item store candidacy are complete.
+- Last 5 plans: 07-09, 07-10, 07-11, 07-12, 07-13
+- Trend: Shopify-like checkout order summary, checkout return/retry state UI, checkout browser hardening, all-current-item store candidacy, and local mock commerce seeding are complete.
 
 ## Accumulated Context
 
@@ -91,6 +91,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 - Phase 7 now renders checkout as a familiar order-summary plus payment-panel layout while preserving Worker-owned checkout eligibility and Stripe embedded Checkout mounting.
 - Phase 7 now renders checkout return/retry feedback from Worker-owned `ReadCheckoutState` and does not treat raw Stripe return query parameters as payment truth.
 - Phase 7 now treats every current distro entry and release entry as a native store candidate, while keeping fallback availability unavailable until mock or real commerce readiness exists.
+- Phase 7 now generates local stripe-mock `StoreItemOption`, `ItemAvailability`, `Stock`, and `VariantStripeMapping` rows for every current store item from static storefront content.
 - Phase 7 must add a familiar single-item cart UX with a cart icon, cart drawer/summary, checkout CTA, and Shopify-inspired order summary while keeping multi-item cart semantics out of scope.
 - Phase 7 must treat every current distro entry and release entry as a real sellable store candidate for local mock checkout readiness, even if real quantities are unknown.
 - Phase 7 may seed fake local mock stock and mock Stripe Price mappings for every current item so the no-network local checkout path can exercise representative item types; that fake stock must never be described as a real stock count.
@@ -126,6 +127,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 | v1.1  | Shopper-facing store URLs must describe the sellable item option, not legacy release shorthand or backend mapping names.                                                            | Active  |
 | v1.1  | Phase 7 cart UX is a single-item Shopify-familiar shell built in Astro/React/shadcn; true multi-item cart remains out of scope for this milestone.                                  | Active  |
 | v1.1  | Every current release and distro entry is a native store candidate; legacy external merch metadata no longer blocks native store projection.                                        | Active  |
+| v1.1  | Local stripe-mock D1 state is generated from static storefront content and uses fake 99/99 stock plus `price_mock_*` mappings only for local development.                           | Active  |
 | v1.1  | Local stripe-mock checkout readiness may use fake dev stock for every current distro and release item; real stock authority still requires staff-recorded D1 stock operations.      | Active  |
 | v1.1  | Do not add frontend commerce state machines or state-machine dependencies now; Phase 8 will add a tiny backend typed order transition guard after D1 order rows exist.              | Active  |
 
@@ -133,7 +135,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
-- Add all-current-items local mock checkout readiness in Phase 7 plans 13 through 15 before final checkout validation.
+- Add all-current-items local mock checkout readiness checks and UAT in Phase 7 plans 14 through 15 before final checkout validation.
 - In Phase 8 plan 2, implement order lifecycle writes through a backend typed transition guard, not Robot3, XState, Cloudflare Workflows, or frontend state authority.
 
 ## Blockers
@@ -145,6 +147,6 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 
 ## Session
 
-**Last Date:** 2026-04-25T13:40:00+03:00
-**Stopped At:** Phase 7 plan 13; generate local mock commerce state for every current store item
+**Last Date:** 2026-04-25T14:05:00+03:00
+**Stopped At:** Phase 7 plan 14; add all-items local mock checkout readiness checks
 **Resume File:** .planning/ROADMAP.md

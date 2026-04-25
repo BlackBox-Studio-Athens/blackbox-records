@@ -82,7 +82,7 @@ Local mock checkout smoke path:
 http://127.0.0.1:4321/blackbox-records/store/disintegration-black-vinyl-lp/checkout/
 ```
 
-That canonical path is seeded end-to-end in local D1 and mock Stripe mode. Legacy `/store/barren-point/` and `/store/barren-point/checkout/` paths remain compatibility redirects for the same item option. Other store items may remain visible but unavailable until they receive D1 stock and Stripe price mappings.
+That canonical path remains the fastest smoke path. Legacy `/store/barren-point/` and `/store/barren-point/checkout/` paths remain compatibility redirects for the same item option. In stripe-mock mode, the local seed generator now creates fake development `Stock`, `ItemAvailability`, and `price_mock_*` mappings for every current store item so each item can exercise the local no-network checkout path. Those values are not real inventory counts or Stripe test evidence.
 
 Run the full local commerce stack with real Stripe test mode:
 
@@ -104,7 +104,7 @@ Run the full local commerce stack with stripe-mock:
 pnpm dev:stack:stripe-mock
 ```
 
-This mode points the Worker at an in-process mock Stripe gateway through the `mock` Wrangler env, seeds a mock `VariantStripeMapping`, and renders a local mock checkout panel in the browser. It validates backend checkout flow control, but it is not a real embedded Checkout browser experience. It does not require Docker, real Stripe keys, or `apps/backend/.dev.vars`.
+This mode points the Worker at an in-process mock Stripe gateway through the `mock` Wrangler env, generates local-only mock commerce state for every current store item, and renders a local mock checkout panel in the browser. It validates backend checkout flow control, but it is not a real embedded Checkout browser experience. It does not require Docker, real Stripe keys, or `apps/backend/.dev.vars`.
 
 Run the Astro frontend explicitly:
 
@@ -203,7 +203,7 @@ Current Worker scope:
 - checkout creation is Worker-owned and uses Stripe embedded Checkout Sessions through a backend gateway seam
 - the static checkout shell mounts Stripe embedded Checkout from Worker-created sessions
 - `pnpm dev:stack:stripe-test` prepares local D1, applies the ignored real Stripe test mapping seed, starts the Worker, and starts the static site
-- `pnpm dev:stack:stripe-mock` prepares local D1, applies committed mock Stripe mappings, starts the Worker with its in-process mock Stripe gateway, and starts the static site in mock checkout mode
+- `pnpm dev:stack:stripe-mock` prepares local D1, generates local-only mock commerce state for every current store item, starts the Worker with its in-process mock Stripe gateway, and starts the static site in mock checkout mode
 - no webhook order authority, stock decrement, or frontend D1 wiring yet
 - no backend production deployment path yet
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
@@ -349,7 +349,7 @@ Local seed flow:
 
 Local checkout seed flow:
 
-1. For stripe-mock, run `pnpm --filter @blackbox/backend d1:seed:stripe-mock:local`; the committed seed uses local-only `price_mock_*` values.
+1. For stripe-mock, run `pnpm --filter @blackbox/backend d1:seed:stripe-mock:local`; the generator derives current store items from static content and applies local-only fake 99/99 stock plus `price_mock_*` values.
 2. For real Stripe test mode, copy `apps/backend/prisma/seeds/local-stripe-test-state.sql.example` to ignored `apps/backend/prisma/seeds/local-stripe-test-state.sql`, replace the example price with a real `price_...`, then run `pnpm --filter @blackbox/backend d1:seed:stripe-test:local`.
 3. Do not commit real Stripe test Price IDs.
 
