@@ -49,6 +49,10 @@ export function getStoreCartCount(state: StoreCartState): 0 | 1 {
   return state.item ? 1 : 0;
 }
 
+export function createStoreCartCheckoutPath(item: StoreCartItem): string {
+  return `/store/${item.storeItemSlug}/checkout/`;
+}
+
 export function sanitizeStoreCartItem(value: unknown): StoreCartItem | null {
   if (!isRecord(value)) return null;
 

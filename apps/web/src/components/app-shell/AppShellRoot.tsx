@@ -10,6 +10,7 @@ import {
 import { derivePlayerPresentationState, OPEN_PLAYER_ACTION_LABEL } from '@/components/app-shell/player-session-ui';
 import ServicesInquiryForm from '@/components/services/ServicesInquiryForm';
 import StoreCartButton from '@/components/store/StoreCartButton';
+import StoreCartDrawer from '@/components/store/StoreCartDrawer';
 import { Spinner } from '@/components/ui/spinner';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { createProjectRelativeUrl, resolveLinkAttributes } from '@/config/site';
@@ -26,6 +27,7 @@ import {
   addStoreCartItem,
   createEmptyStoreCartState,
   readStoreCartState,
+  removeStoreCartItem,
   sanitizeStoreCartItem,
   STORE_CART_ADD_ITEM_EVENT,
   STORE_CART_OPEN_REQUESTED_EVENT,
@@ -281,6 +283,7 @@ export default function AppShellRoot({
   const [servicesInquiryContainer, setServicesInquiryContainer] = useState<HTMLElement | null>(null);
   const [storeCartHeaderContainer, setStoreCartHeaderContainer] = useState<HTMLElement | null>(null);
   const [storeCartState, setStoreCartState] = useState<StoreCartState>(() => createEmptyStoreCartState());
+  const [isStoreCartDrawerOpen, setIsStoreCartDrawerOpen] = useState(false);
 
   const overlayStateRef = useRef<OverlayState | null>(null);
   const overlayCacheRef = useRef(new Map<string, string>());
@@ -318,6 +321,14 @@ export default function AppShellRoot({
   );
 
   overlayStateRef.current = overlayState;
+
+  function applyStoreCartState(nextState: StoreCartState) {
+    setStoreCartState(nextState);
+    if (typeof window === 'undefined') return;
+
+    writeStoreCartState(getStoreCartBrowserStorage(), nextState);
+    window.dispatchEvent(new CustomEvent(STORE_CART_UPDATED_EVENT, { detail: nextState }));
+  }
 
   function getCurrentMainElement() {
     return document.querySelector<HTMLElement>('main[data-app-shell-main]');
@@ -412,26 +423,27 @@ export default function AppShellRoot({
       setStoreCartHeaderContainer(document.querySelector<HTMLElement>('[data-store-cart-header-root]'));
     };
 
-    function writeAndPublishStoreCartState(nextState: StoreCartState) {
-      setStoreCartState(nextState);
-      writeStoreCartState(getStoreCartBrowserStorage(), nextState);
-      window.dispatchEvent(new CustomEvent(STORE_CART_UPDATED_EVENT, { detail: nextState }));
-    }
-
     function handleStoreCartAddItem(event: Event) {
       const item = sanitizeStoreCartItem((event as CustomEvent<unknown>).detail);
       if (!item) return;
 
-      writeAndPublishStoreCartState(addStoreCartItem(item));
+      applyStoreCartState(addStoreCartItem(item));
+      setIsStoreCartDrawerOpen(true);
+    }
+
+    function handleStoreCartOpenRequested() {
+      setIsStoreCartDrawerOpen(true);
     }
 
     setStoreCartState(readStoreCartState(getStoreCartBrowserStorage()));
     syncStoreCartHeaderContainer();
     window.addEventListener(STORE_CART_ADD_ITEM_EVENT, handleStoreCartAddItem);
+    window.addEventListener(STORE_CART_OPEN_REQUESTED_EVENT, handleStoreCartOpenRequested);
     window.addEventListener('pageshow', syncStoreCartHeaderContainer);
 
     return () => {
       window.removeEventListener(STORE_CART_ADD_ITEM_EVENT, handleStoreCartAddItem);
+      window.removeEventListener(STORE_CART_OPEN_REQUESTED_EVENT, handleStoreCartOpenRequested);
       window.removeEventListener('pageshow', syncStoreCartHeaderContainer);
     };
   }, []);
@@ -1590,6 +1602,15 @@ export default function AppShellRoot({
           </div>
         </SheetContent>
       </Sheet>
+
+      <StoreCartDrawer
+        cartState={storeCartState}
+        open={isStoreCartDrawerOpen}
+        resolveHref={createProjectRelativeUrl}
+        onContinueShopping={() => setIsStoreCartDrawerOpen(false)}
+        onOpenChange={setIsStoreCartDrawerOpen}
+        onRemoveItem={() => applyStoreCartState(removeStoreCartItem())}
+      />
 
       <div className="app-shell-route-loading-indicator" data-state={isRouteLoading ? 'open' : 'closed'} aria-hidden="true">
         <span className="app-shell-route-loading-indicator__bar"></span>
