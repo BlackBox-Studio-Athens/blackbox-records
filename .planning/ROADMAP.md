@@ -178,7 +178,7 @@ Plans:
 - [x] 07-12: Treat all current distro and release entries as sellable store candidates
 - [x] 07-13: Generate local mock commerce state for every current store item
 - [x] 07-14: Add all-items local mock checkout readiness checks
-- [ ] 07-15: Run local mock checkout UAT across representative item types
+- [x] 07-15: Run local mock checkout UAT across representative item types
 - [ ] 07-16: Validate the local and sandbox checkout loop with real Stripe sandbox mappings
 
 ### Phase 7.1: Cloudflare Pages Static Frontend Migration (INSERTED)
@@ -288,7 +288,7 @@ Phases execute in numeric order: `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 7.
 | 6. Static Storefront Slice                                     | 7/7            | Completed | 2026-04-21 |
 | 6.1. Worker Commerce State Foundation                          | 4/4            | Completed | 2026-04-22 |
 | 6.1.1. Internal Stock Operations And Operator Access           | 4/4            | Completed | 2026-04-24 |
-| 7. Worker Checkout And Stripe Sandbox Flow                     | 7/16           | Active    | 2026-04-25 |
+| 7. Worker Checkout And Stripe Sandbox Flow                     | 15/16          | Active    | 2026-04-25 |
 | 7.1. Cloudflare Pages Static Frontend Migration                | 0/5            | Planned   |            |
 | 8. Webhook Orders And Stock                                    | 0/7            | Planned   |            |
 | 9. Greece-Only BOX NOW Shipping                                | 0/6            | Planned   |            |
