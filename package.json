@@ -15,6 +15,7 @@
     "dev:backend:sandbox": "pnpm --filter @blackbox/backend dev:sandbox",
     "dev:stack:stripe-test": "tsx scripts/start-local-stack.ts stripe-test",
     "dev:stack:stripe-mock": "tsx scripts/start-local-stack.ts stripe-mock",
+    "checkout:preflight:stripe-test": "tsx scripts/check-stripe-test-checkout.ts",
     "deploy:backend:sandbox": "pnpm --filter @blackbox/backend deploy:sandbox",
     "worker:dev": "pnpm dev:backend",
     "worker:dev:sandbox": "pnpm dev:backend:sandbox",

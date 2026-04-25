@@ -51,6 +51,7 @@ Read these first before editing:
 - Backend sandbox deploy: `pnpm deploy:backend:sandbox`
 - Full local stack with real Stripe test mode: `pnpm dev:stack:stripe-test`
 - Full local stack with mock Stripe mode: `pnpm dev:stack:stripe-mock`
+- Real Stripe test checkout preflight: `pnpm checkout:preflight:stripe-test`
 - Backend local D1 smoke check: `pnpm --filter @blackbox/backend d1:smoke:local`
 - Backend local D1 seed apply: `pnpm --filter @blackbox/backend d1:seed:local`
 - Backend local D1 prepare flow: `pnpm --filter @blackbox/backend d1:prepare:local`
@@ -87,6 +88,7 @@ Read these first before editing:
 - Keep `BlackBox Local Stack` working whenever frontend env, backend env, ports, checkout setup, D1 migrations, seed files, or WebStorm run configs change. If a change breaks the canonical launcher, fix the launcher or docs in the same commit.
 - The deterministic local mock checkout smoke path is `http://127.0.0.1:4321/blackbox-records/store/disintegration-black-vinyl-lp/checkout/`; stripe-mock mode now seeds every current visible store item with fake local checkout state.
 - `pnpm dev:stack:stripe-test` is the real local checkout path and requires `PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, and ignored local Stripe test Price mappings.
+- Run `pnpm checkout:preflight:stripe-test` before `pnpm dev:stack:stripe-test`; it verifies the real Stripe test publishable key, backend local secret file, ignored local Price mapping seed, and gitignore protection without printing secrets.
 - `pnpm dev:stack:stripe-mock` uses the Worker in-process mock Stripe gateway through the Wrangler `mock` env, generates local-only fake `Stock`, `ItemAvailability`, and `price_mock_*` mappings for every current store item, and renders a frontend mock checkout panel. It must not require Docker or `apps/backend/.dev.vars`. It is not a real embedded Checkout browser substitute, and the generated 99/99 stock values are not real inventory counts.
 - `pnpm --filter @blackbox/backend d1:check:stripe-mock:local` verifies the generated local mock checkout rows for all current store items and should be run when store content, mock seeds, D1 migrations, or checkout readiness assumptions change.
 - Runtime backend secrets belong in Worker secrets or `apps/backend/.dev.vars`, not in Astro public env vars or GitHub deploy credentials.

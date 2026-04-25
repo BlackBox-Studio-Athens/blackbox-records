@@ -88,6 +88,7 @@ Run the full local commerce stack with real Stripe test mode:
 
 ```powershell
 $env:PUBLIC_STRIPE_PUBLISHABLE_KEY = "pk_test_..."
+pnpm checkout:preflight:stripe-test
 pnpm dev:stack:stripe-test
 ```
 
@@ -97,6 +98,7 @@ Before using `dev:stack:stripe-test`:
 2. Fill `STRIPE_SECRET_KEY` with a real Stripe `sk_test_...` value.
 3. Copy `apps/backend/prisma/seeds/local-stripe-test-state.sql.example` to the ignored `apps/backend/prisma/seeds/local-stripe-test-state.sql`.
 4. Replace the example `price_...` value with a real Stripe test Price ID.
+5. Run `pnpm checkout:preflight:stripe-test` to verify the local-only setup before starting servers.
 
 Run the full local commerce stack with stripe-mock:
 
@@ -147,6 +149,7 @@ Seed local Stripe mapping variants:
 ```sh
 pnpm --filter @blackbox/backend d1:seed:stripe-mock:local
 pnpm --filter @blackbox/backend d1:check:stripe-mock:local
+pnpm checkout:preflight:stripe-test
 pnpm --filter @blackbox/backend d1:seed:stripe-test:local
 ```
 
