@@ -9,6 +9,7 @@ import {
 } from '@/components/app-shell/player-session-machine';
 import { derivePlayerPresentationState, OPEN_PLAYER_ACTION_LABEL } from '@/components/app-shell/player-session-ui';
 import ServicesInquiryForm from '@/components/services/ServicesInquiryForm';
+import StoreCartButton from '@/components/store/StoreCartButton';
 import { Spinner } from '@/components/ui/spinner';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { createProjectRelativeUrl, resolveLinkAttributes } from '@/config/site';
@@ -21,6 +22,17 @@ import {
   type ShellSectionKind,
 } from '@/lib/app-shell/routing';
 import type { SiteNavigationItem } from '@/lib/site-data';
+import {
+  addStoreCartItem,
+  createEmptyStoreCartState,
+  readStoreCartState,
+  sanitizeStoreCartItem,
+  STORE_CART_ADD_ITEM_EVENT,
+  STORE_CART_OPEN_REQUESTED_EVENT,
+  STORE_CART_UPDATED_EVENT,
+  type StoreCartState,
+  writeStoreCartState,
+} from '@/lib/store-cart';
 import { isCurrentPath } from '@/utils/urls';
 
 type PlayerProviderId = 'bandcamp' | 'tidal';
@@ -200,6 +212,14 @@ function appendHeadLink(rel: string, href: string, useCrossOrigin: boolean) {
   document.head.appendChild(linkElement);
 }
 
+function getStoreCartBrowserStorage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
 function readDocumentShellPageSnapshot(targetDocument: Document, href: string): ShellPageSnapshot | null {
   const mainElement =
     targetDocument.querySelector<HTMLElement>('main[data-app-shell-main]') ||
@@ -259,6 +279,8 @@ export default function AppShellRoot({
   const [shellNavigationSource, setShellNavigationSource] = useState<ShellNavigationSource>('programmatic');
   const [artistsRosterFiltersContainer, setArtistsRosterFiltersContainer] = useState<HTMLElement | null>(null);
   const [servicesInquiryContainer, setServicesInquiryContainer] = useState<HTMLElement | null>(null);
+  const [storeCartHeaderContainer, setStoreCartHeaderContainer] = useState<HTMLElement | null>(null);
+  const [storeCartState, setStoreCartState] = useState<StoreCartState>(() => createEmptyStoreCartState());
 
   const overlayStateRef = useRef<OverlayState | null>(null);
   const overlayCacheRef = useRef(new Map<string, string>());
@@ -382,6 +404,37 @@ export default function AppShellRoot({
       document.body.classList.remove('is-app-shell-overlay-open');
     };
   }, [isPlayerModalOpen, overlayState]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const syncStoreCartHeaderContainer = () => {
+      setStoreCartHeaderContainer(document.querySelector<HTMLElement>('[data-store-cart-header-root]'));
+    };
+
+    function writeAndPublishStoreCartState(nextState: StoreCartState) {
+      setStoreCartState(nextState);
+      writeStoreCartState(getStoreCartBrowserStorage(), nextState);
+      window.dispatchEvent(new CustomEvent(STORE_CART_UPDATED_EVENT, { detail: nextState }));
+    }
+
+    function handleStoreCartAddItem(event: Event) {
+      const item = sanitizeStoreCartItem((event as CustomEvent<unknown>).detail);
+      if (!item) return;
+
+      writeAndPublishStoreCartState(addStoreCartItem(item));
+    }
+
+    setStoreCartState(readStoreCartState(getStoreCartBrowserStorage()));
+    syncStoreCartHeaderContainer();
+    window.addEventListener(STORE_CART_ADD_ITEM_EVENT, handleStoreCartAddItem);
+    window.addEventListener('pageshow', syncStoreCartHeaderContainer);
+
+    return () => {
+      window.removeEventListener(STORE_CART_ADD_ITEM_EVENT, handleStoreCartAddItem);
+      window.removeEventListener('pageshow', syncStoreCartHeaderContainer);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1729,6 +1782,18 @@ export default function AppShellRoot({
               submitText={servicesInquirySubmitText}
             />,
             servicesInquiryContainer,
+          )
+        : null}
+
+      {storeCartHeaderContainer
+        ? createPortal(
+            <StoreCartButton
+              cartState={storeCartState}
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent(STORE_CART_OPEN_REQUESTED_EVENT, { detail: storeCartState }));
+              }}
+            />,
+            storeCartHeaderContainer,
           )
         : null}
     </>
