@@ -30,8 +30,6 @@ import {
   removeStoreCartItem,
   sanitizeStoreCartItem,
   STORE_CART_ADD_ITEM_EVENT,
-  STORE_CART_OPEN_REQUESTED_EVENT,
-  STORE_CART_UPDATED_EVENT,
   type StoreCartState,
   writeStoreCartState,
 } from '@/lib/store-cart';
@@ -327,7 +325,6 @@ export default function AppShellRoot({
     if (typeof window === 'undefined') return;
 
     writeStoreCartState(getStoreCartBrowserStorage(), nextState);
-    window.dispatchEvent(new CustomEvent(STORE_CART_UPDATED_EVENT, { detail: nextState }));
   }
 
   function getCurrentMainElement() {
@@ -431,19 +428,13 @@ export default function AppShellRoot({
       setIsStoreCartDrawerOpen(true);
     }
 
-    function handleStoreCartOpenRequested() {
-      setIsStoreCartDrawerOpen(true);
-    }
-
     setStoreCartState(readStoreCartState(getStoreCartBrowserStorage()));
     syncStoreCartHeaderContainer();
     window.addEventListener(STORE_CART_ADD_ITEM_EVENT, handleStoreCartAddItem);
-    window.addEventListener(STORE_CART_OPEN_REQUESTED_EVENT, handleStoreCartOpenRequested);
     window.addEventListener('pageshow', syncStoreCartHeaderContainer);
 
     return () => {
       window.removeEventListener(STORE_CART_ADD_ITEM_EVENT, handleStoreCartAddItem);
-      window.removeEventListener(STORE_CART_OPEN_REQUESTED_EVENT, handleStoreCartOpenRequested);
       window.removeEventListener('pageshow', syncStoreCartHeaderContainer);
     };
   }, []);
@@ -1811,7 +1802,7 @@ export default function AppShellRoot({
             <StoreCartButton
               cartState={storeCartState}
               onClick={() => {
-                window.dispatchEvent(new CustomEvent(STORE_CART_OPEN_REQUESTED_EVENT, { detail: storeCartState }));
+                setIsStoreCartDrawerOpen(true);
               }}
             />,
             storeCartHeaderContainer,

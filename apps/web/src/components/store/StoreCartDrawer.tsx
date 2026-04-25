@@ -1,7 +1,7 @@
 import * as React from 'react';
 
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../ui/sheet';
-import { createStoreCartCheckoutPath, type StoreCartState } from '../../lib/store-cart';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { createStoreCartCheckoutPath, type StoreCartState } from '@/lib/store-cart';
 
 type StoreCartDrawerProps = {
   cartState: StoreCartState;

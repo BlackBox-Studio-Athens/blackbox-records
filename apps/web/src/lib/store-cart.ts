@@ -1,7 +1,5 @@
 export const STORE_CART_STORAGE_KEY = 'blackbox.storeCart.v1';
 export const STORE_CART_ADD_ITEM_EVENT = 'blackbox:store-cart:add-item';
-export const STORE_CART_OPEN_REQUESTED_EVENT = 'blackbox:store-cart:open-requested';
-export const STORE_CART_UPDATED_EVENT = 'blackbox:store-cart:updated';
 
 export type StoreCartItem = {
   availabilityLabel: string;

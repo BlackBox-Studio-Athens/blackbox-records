@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { ShoppingBag } from 'lucide-react';
 
-import { getStoreCartCount, type StoreCartState } from '../../lib/store-cart';
+import { getStoreCartCount, type StoreCartState } from '@/lib/store-cart';
 
 type StoreCartButtonProps = {
   cartState: StoreCartState;
