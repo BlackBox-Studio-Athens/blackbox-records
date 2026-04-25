@@ -1,77 +1,48 @@
-# Jekyll build outputs and caches
-/_site/*                     # Jekyll’s generated site
-.sass-cache/                # Sass cache directory
-.jekyll-cache/              # Jekyll build cache
-.jekyll-metadata            # Jekyll metadata file
-
-# Ruby & Bundler
-.bundle/                    # Bundler cache directory
-vendor/                     # Vendor gem directory (if used)
-
-# Dependency directories
+# Dependencies
 /node_modules/
 **/node_modules/
 npm-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Operating system files
-.DS_Store                   # macOS file metadata
-Thumbs.db                   # Windows image cache
-desktop.ini                 # Windows desktop configuration
-
-# JetBrains WebStorm / IntelliJ IDEA
-.idea/                      # IDE project files
-*.iml                       # Module files
-out/                        # Compiler output
-
-# Editor backups and temp files
-*~                          # Editor backup files
-*.swp                       # Vim swap files
-*.tmp                       # Temporary files
-
-# Logs
-*.log                       # Log files
-logs/                       # Local runtime logs
-
-# IDE-independent helpers
-.vscode/                    # VSCode settings
-
-# Custom Domain file
-CNAME                       # keep under source control but ignore deployment outputs
-
-# Miscellaneous
-*.pem                       # SSL certificates
-/_site/*
+# Build outputs and caches
+/_site/
+/dist/
 dist/
-.wrangler/
+build/
+out/
 .astro/
-node_modules/.astro/
-node_modules/.vite/
-.dev.vars
-**/.dev.vars
-apps/backend/prisma/seeds/local-stripe-test-state.sql
-
+.wrangler/
 cachedData/
 files/
+node_modules/.astro/
+node_modules/.vite/
 
-### IntelliJ IDEA ###
-.idea/*
+# Local secrets and account-specific checkout data
+.dev.vars
+**/.dev.vars
+*.pem
+apps/backend/prisma/seeds/local-stripe-test-state.sql
+
+# Logs and temporary files
+*.log
+logs/
+*~
+*.swp
+*.tmp
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.idea/
 *.iws
 *.iml
 *.ipr
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
-
-### NetBeans ###
+.vscode/
 /nbproject/private/
 /nbbuild/
-/dist/
 /nbdist/
 /.nb-gradle/
-build/
-
-### VS Code ###
-.vscode/
-
