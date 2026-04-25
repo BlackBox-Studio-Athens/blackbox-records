@@ -47,11 +47,14 @@ Read these first before editing:
 - Frontend-only static-site launcher: `pnpm site:dev`
 - Backend dev server: `pnpm dev:backend`
 - Backend dev server with local stripe-mock API override: `pnpm dev:backend:mock`
+- Backend dev server with official local stripe-mock API override: `pnpm dev:backend:mock-api`
 - Backend sandbox dev server: `pnpm dev:backend:sandbox`
 - Backend sandbox deploy: `pnpm deploy:backend:sandbox`
 - Full local stack with real Stripe test mode: `pnpm dev:stack:stripe-test`
 - Full local stack with mock Stripe mode: `pnpm dev:stack:stripe-mock`
+- Full local stack with official stripe-mock API mode: `pnpm dev:stack:stripe-mock-api`
 - Real Stripe test checkout preflight: `pnpm checkout:preflight:stripe-test`
+- Local signed Stripe webhook fixture simulator: `pnpm stripe:webhook:simulate:local`
 - Backend local D1 smoke check: `pnpm --filter @blackbox/backend d1:smoke:local`
 - Backend local D1 seed apply: `pnpm --filter @blackbox/backend d1:seed:local`
 - Backend local D1 prepare flow: `pnpm --filter @blackbox/backend d1:prepare:local`
@@ -90,6 +93,8 @@ Read these first before editing:
 - `pnpm dev:stack:stripe-test` is the real local checkout path and requires `PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, and ignored local Stripe test Price mappings.
 - Run `pnpm checkout:preflight:stripe-test` before `pnpm dev:stack:stripe-test`; it verifies the real Stripe test publishable key, backend local secret file, ignored local Price mapping seed, and gitignore protection without printing secrets.
 - `pnpm dev:stack:stripe-mock` uses the Worker in-process mock Stripe gateway through the Wrangler `mock` env, generates local-only fake `Stock`, `ItemAvailability`, and `price_mock_*` mappings for every current store item, and renders a frontend mock checkout panel. It must not require Docker or `apps/backend/.dev.vars`. It is not a real embedded Checkout browser substitute, and the generated 99/99 stock values are not real inventory counts.
+- `pnpm dev:stack:stripe-mock-api` is optional and requires official `stripe/stripe-mock` listening on `http://127.0.0.1:12111` first, for example through Docker. It points the real Stripe SDK at that local API server while keeping the browser in mock checkout panel mode. It is stateless API-shape validation only; it is not real payment, real embedded Checkout, or real webhook delivery.
+- `pnpm stripe:webhook:simulate:local` posts a signed local checkout-session fixture to `/api/stripe/webhooks` using the fake local `whsec_local_mock` secret. Use it only for local webhook contract checks.
 - `pnpm --filter @blackbox/backend d1:check:stripe-mock:local` verifies the generated local mock checkout rows for all current store items and should be run when store content, mock seeds, D1 migrations, or checkout readiness assumptions change.
 - Runtime backend secrets belong in Worker secrets or `apps/backend/.dev.vars`, not in Astro public env vars or GitHub deploy credentials.
 - The backend runtime binding contract now includes `COMMERCE_DB`.
@@ -119,7 +124,7 @@ Read these first before editing:
 - `OnlineStock` is the conservative checkout-facing quantity and may be lower than physical `Stock`.
 - Do not introduce `prisma migrate dev`, `prisma db push`, or `prisma migrate deploy` into this repo workflow.
 - The current backend-local secret contract is `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
-- `STRIPE_API_BASE_URL` is an optional backend runtime variable for local Stripe API overrides; the committed Wrangler `mock` env binds it to `mock` for the in-process local mock Stripe gateway.
+- `STRIPE_API_BASE_URL` is an optional backend runtime variable for local Stripe API overrides; the committed Wrangler `mock` env binds it to `mock` for the in-process local mock Stripe gateway, and `mock-api` binds it to `http://127.0.0.1:12111` for official `stripe-mock`.
 - `PUBLIC_CHECKOUT_CLIENT_MODE` is the browser checkout mode switch. Use `stripe` for real Stripe.js and `mock` only for the local stripe-mock flow.
 - Checkout return origins and split-port browser API CORS origins are allowlisted through the Worker runtime variable `CHECKOUT_RETURN_ORIGINS`; never trust browser-submitted or arbitrary `Referer` origins.
 - The static checkout shell uses browser-safe `PUBLIC_STRIPE_PUBLISHABLE_KEY` to initialize Stripe.js; never expose `STRIPE_SECRET_KEY` through Astro public env.

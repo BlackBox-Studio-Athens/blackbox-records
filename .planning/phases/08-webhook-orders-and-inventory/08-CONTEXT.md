@@ -39,6 +39,7 @@ Because Stripe account access is not currently available, Phase 8 is split into 
 - `08-01` added only the D1/Prisma lifecycle schema: `CheckoutOrder` plus `OrderStatus`. It intentionally did not add repositories, transition guards, webhook routes, reconciliation, stock decrement, frontend behavior, or account-specific Stripe values.
 - `08-02` added internal order repository/application seams plus a dependency-free typed transition guard. It intentionally did not add webhook routes, Stripe signature verification, stock decrement, frontend behavior, or account-specific Stripe values.
 - `08-03` added the Stripe webhook raw-body route contract using fixture-based signature tests. It intentionally did not claim real Stripe account validation, live Dashboard webhook setup, order mutation, stock decrement, frontend behavior, or account-specific Stripe values.
+- `08-03.1` added an optional official `stripe-mock` API local checkout simulation harness. It points the real Stripe SDK at local `stripe-mock` for request-shape validation, keeps mock/fake behavior in local scripts/config/tests, and uses signed webhook fixtures because official `stripe-mock` is stateless and does not emit webhooks.
 
 </specifics>
 

@@ -5,7 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
-export type LocalStackMode = 'stripe-test' | 'stripe-mock';
+export type LocalStackMode = 'stripe-test' | 'stripe-mock' | 'stripe-mock-api';
 
 export type StackCommand = {
   args: string[];
@@ -20,11 +20,18 @@ export type StackPlan = {
   mode: LocalStackMode;
   ports: number[];
   prepare: StackCommand[];
+  requiredServices: RequiredService[];
+};
+
+export type RequiredService = {
+  label: string;
+  url: string;
 };
 
 const rootDir = process.cwd();
 const BACKEND_PORT = 8787;
 const STATIC_PORT = 4321;
+const STRIPE_MOCK_API_URL = 'http://127.0.0.1:12111/v1/charges';
 
 export function buildStackPlan(mode: LocalStackMode): StackPlan {
   const prepare: StackCommand[] = [
@@ -61,7 +68,7 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
         waitForPort: STATIC_PORT,
       },
     );
-  } else {
+  } else if (mode === 'stripe-mock') {
     prepare.push({
       args: ['--filter', '@blackbox/backend', 'd1:seed:stripe-mock:local'],
       command: 'pnpm',
@@ -86,6 +93,31 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
         waitForPort: STATIC_PORT,
       },
     );
+  } else {
+    prepare.push({
+      args: ['--filter', '@blackbox/backend', 'd1:seed:stripe-mock:local'],
+      command: 'pnpm',
+      name: 'Seed stripe-mock mappings',
+    });
+    longRunning.push(
+      {
+        args: ['dev:backend:mock-api'],
+        command: 'pnpm',
+        name: 'Worker',
+        waitForPort: BACKEND_PORT,
+      },
+      {
+        args: ['site:dev'],
+        command: 'pnpm',
+        env: {
+          PUBLIC_BACKEND_BASE_URL: `http://127.0.0.1:${BACKEND_PORT}`,
+          PUBLIC_CHECKOUT_CLIENT_MODE: 'mock',
+          PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_test_mock',
+        },
+        name: 'Static site',
+        waitForPort: STATIC_PORT,
+      },
+    );
   }
 
   return {
@@ -93,6 +125,15 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
     mode,
     ports,
     prepare,
+    requiredServices:
+      mode === 'stripe-mock-api'
+        ? [
+            {
+              label: 'stripe-mock API',
+              url: STRIPE_MOCK_API_URL,
+            },
+          ]
+        : [],
   };
 }
 
@@ -158,6 +199,7 @@ async function main() {
   }
 
   await assertPortsAvailable(plan.ports);
+  await assertRequiredServicesAvailable(plan.requiredServices);
 
   for (const command of plan.prepare) {
     runOnce(command);
@@ -198,11 +240,11 @@ async function main() {
 }
 
 function parseMode(value: string | undefined): LocalStackMode {
-  if (value === 'stripe-test' || value === 'stripe-mock') {
+  if (value === 'stripe-test' || value === 'stripe-mock' || value === 'stripe-mock-api') {
     return value;
   }
 
-  console.error('Usage: pnpm dev:stack:stripe-test OR pnpm dev:stack:stripe-mock');
+  console.error('Usage: pnpm dev:stack:stripe-test OR pnpm dev:stack:stripe-mock OR pnpm dev:stack:stripe-mock-api');
   process.exit(1);
 }
 
@@ -234,6 +276,28 @@ async function assertPortsAvailable(ports: number[]) {
 
   if (unavailablePorts.length) {
     throw new Error(`Port(s) already in use: ${unavailablePorts.join(', ')}. Stop the existing local stack and retry.`);
+  }
+}
+
+export async function assertRequiredServicesAvailable(requiredServices: RequiredService[]) {
+  for (const service of requiredServices) {
+    try {
+      const response = await fetch(service.url, {
+        headers: {
+          Authorization: 'Bearer sk_test_mock',
+        },
+      });
+
+      if (response.status < 500) {
+        continue;
+      }
+    } catch {
+      // Fall through to the explicit setup error below.
+    }
+
+    throw new Error(
+      `${service.label} is not reachable at ${service.url}. Start official stripe-mock first, for example: docker run --rm -it -p 12111-12112:12111-12112 stripe/stripe-mock:latest`,
+    );
   }
 }
 

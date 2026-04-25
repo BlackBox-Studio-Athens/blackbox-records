@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "dev:mock": "wrangler dev --env mock",
+    "dev:mock-api": "wrangler dev --env mock-api",
     "dev:sandbox": "wrangler dev --env sandbox",
     "deploy:sandbox": "wrangler deploy --env sandbox",
     "d1:smoke:local": "wrangler d1 execute COMMERCE_DB --local --command \"SELECT 1 AS ok\" --json",
@@ -21,6 +22,7 @@
     "d1:migrations:apply:sandbox": "wrangler d1 migrations apply COMMERCE_DB --env sandbox --remote",
     "prisma:generate": "pnpm exec prisma generate",
     "generate:openapi": "pnpm exec tsx scripts/generate-openapi.ts",
+    "webhook:simulate:local": "tsx scripts/simulate-stripe-webhook.ts",
     "check": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"
   },

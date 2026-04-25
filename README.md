@@ -108,6 +108,19 @@ pnpm dev:stack:stripe-mock
 
 This mode points the Worker at an in-process mock Stripe gateway through the `mock` Wrangler env, generates local-only mock commerce state for every current store item, and renders a local mock checkout panel in the browser. It validates backend checkout flow control, but it is not a real embedded Checkout browser experience. It does not require Docker, real Stripe keys, or `apps/backend/.dev.vars`.
 
+Run the optional local commerce stack against the official `stripe/stripe-mock` API server:
+
+```sh
+docker run --rm -it -p 12111-12112:12111-12112 stripe/stripe-mock:latest
+pnpm dev:stack:stripe-mock-api
+```
+
+This mode still uses the browser mock checkout panel, but the Worker creates Checkout Sessions through the real Stripe SDK pointed at `http://127.0.0.1:12111`. It validates Stripe API request shape more closely than the in-process gateway. Official `stripe-mock` is stateless and does not emit webhooks, so webhook checks use a signed local fixture:
+
+```sh
+pnpm stripe:webhook:simulate:local
+```
+
 Run the Astro frontend explicitly:
 
 ```sh
@@ -586,6 +599,7 @@ If a source crops badly, replace the source image rather than adding focal-point
 - `.run/BlackBox Local Stack.run.xml` is the only committed WebStorm launcher for now.
 - It runs `pnpm dev:stack:stripe-mock`, which starts local D1 prep, the local Worker backend with an in-process mock Stripe gateway, and the local Astro frontend without Docker or real Stripe keys.
 - Real Stripe test mode remains available from the terminal through `pnpm dev:stack:stripe-test`.
+- Official `stripe/stripe-mock` API simulation remains terminal-only through `pnpm dev:stack:stripe-mock-api`; do not add a second WebStorm launcher for it unless explicitly requested.
 - Focused backend/frontend scripts remain available from the terminal, not committed IDE run configs.
 - The static-site launcher remains pinned to `http://127.0.0.1:4321/blackbox-records/`.
 - If port `4321` is already in use, the static-site launcher fails fast instead of silently switching ports.
