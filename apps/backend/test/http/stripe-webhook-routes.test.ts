@@ -81,6 +81,47 @@ describe('Stripe webhook routes', () => {
     );
   });
 
+  it('acknowledges allowed checkout-session events through shared reconciliation without exposing recommendations', async () => {
+    const payload = JSON.stringify({
+      api_version: '2026-04-25.basil',
+      created: 1777132800,
+      data: {
+        object: {
+          id: 'cs_test_123',
+          object: 'checkout.session',
+          payment_intent: 'pi_test_123',
+          payment_status: 'no_payment_required',
+          status: 'complete',
+        },
+      },
+      id: 'evt_checkout_session_completed',
+      livemode: false,
+      object: 'event',
+      pending_webhooks: 1,
+      request: null,
+      type: 'checkout.session.completed',
+    });
+
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://backend.test/api/stripe/webhooks',
+      {
+        body: payload,
+        headers: {
+          'content-type': 'application/json',
+          'stripe-signature': createSignatureHeader(payload),
+        },
+        method: 'POST',
+      },
+      testBindings,
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      received: true,
+    });
+  });
+
   it('acknowledges but ignores valid unsupported events', async () => {
     const payload = createStripeEventPayload('payment_intent.succeeded');
 

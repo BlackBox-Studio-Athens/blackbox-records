@@ -31,6 +31,7 @@ export type StripeCheckoutPaymentStatus = 'paid' | 'unpaid' | 'no_payment_requir
 export type StripeCheckoutSessionState = {
   checkoutSessionId: string;
   paymentStatus: StripeCheckoutPaymentStatus;
+  stripePaymentIntentId?: string | null;
   status: StripeCheckoutSessionStatus;
 };
 

@@ -1,4 +1,5 @@
 export { createStripeCheckoutGateway, StripeCheckoutGateway } from './stripe-checkout-gateway';
+export { toStripeCheckoutSessionState } from './stripe-checkout-session-state';
 export {
   STRIPE_CHECKOUT_WEBHOOK_EVENT_TYPES,
   StripeWebhookConfigurationError,

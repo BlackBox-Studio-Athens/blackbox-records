@@ -1,3 +1,5 @@
+import { reconcileCheckoutSession } from '../../../application/commerce/checkout';
+import { toStripeCheckoutSessionState } from '../../../infrastructure/stripe';
 import type { VerifiedStripeWebhookEvent } from '../../../infrastructure/stripe';
 
 export type StripeWebhookAcknowledgement = {
@@ -14,6 +16,8 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
       received: true,
     };
   }
+
+  reconcileCheckoutSession(toStripeCheckoutSessionState(event.checkoutSession));
 
   return {
     received: true,

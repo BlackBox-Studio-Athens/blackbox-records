@@ -8,6 +8,7 @@ import type {
 } from '../../application/commerce/checkout';
 import { CheckoutConfigurationError } from '../../application/commerce/checkout';
 import type { AppBindings } from '../../env';
+import { toStripeCheckoutSessionState } from './stripe-checkout-session-state';
 
 const STRIPE_API_VERSION = '2026-04-22.dahlia';
 const DEFAULT_STRIPE_PROTOCOL = 'https';
@@ -49,11 +50,7 @@ export class StripeCheckoutGateway implements CheckoutGateway {
   public async readCheckoutSession(checkoutSessionId: string): Promise<StripeCheckoutSessionState> {
     const session = await this.stripe.checkout.sessions.retrieve(checkoutSessionId);
 
-    return {
-      checkoutSessionId: session.id,
-      paymentStatus: session.payment_status,
-      status: session.status,
-    };
+    return toStripeCheckoutSessionState(session);
   }
 }
 
