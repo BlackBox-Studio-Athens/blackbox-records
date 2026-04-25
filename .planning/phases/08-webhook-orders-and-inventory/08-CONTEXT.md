@@ -19,6 +19,8 @@ Phase 8 makes paid-order truth and post-payment stock mutation authoritative in 
 - **D-04:** Shared reconciliation logic can normalize observable checkout state for browser UX, but only verified webhooks may perform authoritative paid transitions or stock decrement.
 - **D-05:** Phase 8 remains a one-time physical-goods flow; subscription-oriented Stripe event models and customer-authenticated SaaS assumptions are out of scope.
 - **D-06:** Low-volume exception handling can continue through Stripe Dashboard plus D1-backed manual reconciliation rather than requiring a full operator OMS in this milestone.
+- **D-07:** Do not add Robot3, XState, Cloudflare Workflows, or a frontend commerce state machine for v1 order status. Use a tiny backend typed transition table/guard after the D1 order schema exists.
+- **D-08:** `CheckoutState` remains a derived browser read model from Stripe session state; persisted D1 order lifecycle uses `pending_payment`, `paid`, `not_paid`, and `needs_review`.
 
 </decisions>
 
@@ -28,6 +30,7 @@ Phase 8 makes paid-order truth and post-payment stock mutation authoritative in 
 - Keep the Stripe event allowlist narrow and focused on the checkout/session events needed for the approved v1 flow.
 - Treat Stripe customer/session/payment identifiers as backend mapping inputs, not as durable browser contracts.
 - Reuse the same backend normalization logic for ReadCheckoutState and webhook-triggered reconciliation so order state does not drift across code paths.
+- Persist transition authority only through backend order use cases. Browser return reads may observe state, but must not apply persisted order transitions.
 
 </specifics>
 
@@ -40,6 +43,7 @@ Phase 8 makes paid-order truth and post-payment stock mutation authoritative in 
 - `.planning/adrs/ADR-002-commerce-boundaries.md`
 - `.planning/phases/07-embedded-checkout-sandbox-flow/07-CONTEXT.md`
 - `.planning/phases/06.1.1-internal-stock-operations-and-operator-access/06.1.1-CONTEXT.md`
+- `.planning/phases/08-webhook-orders-and-inventory/08-STATE-MODEL.md`
 
 </canonical_refs>
 

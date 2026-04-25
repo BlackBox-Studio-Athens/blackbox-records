@@ -218,7 +218,7 @@ Plans:
 Plans:
 
 - [ ] 08-01: Add minimal D1 order lifecycle schema and migration
-- [ ] 08-02: Add order repositories and lifecycle use-case seams
+- [ ] 08-02: Add order repositories, lifecycle seams, and typed order transition guard
 - [ ] 08-03: Add verified Stripe webhook raw-body route contract
 - [ ] 08-04: Add shared Stripe checkout reconciliation use case
 - [ ] 08-05: Apply idempotent paid-order transition and stock decrement

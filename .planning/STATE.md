@@ -125,12 +125,14 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 | v1.1  | Shopper-facing store URLs must describe the sellable item option, not legacy release shorthand or backend mapping names.                                                            | Active  |
 | v1.1  | Phase 7 cart UX is a single-item Shopify-familiar shell built in Astro/React/shadcn; true multi-item cart remains out of scope for this milestone.                                  | Active  |
 | v1.1  | Local stripe-mock checkout readiness may use fake dev stock for every current distro and release item; real stock authority still requires staff-recorded D1 stock operations.      | Active  |
+| v1.1  | Do not add frontend commerce state machines or state-machine dependencies now; Phase 8 will add a tiny backend typed order transition guard after D1 order rows exist.              | Active  |
 
 ### Pending Todos
 
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
 - Add all-current-items local mock checkout readiness in Phase 7 plans 12 through 15 before final checkout validation.
+- In Phase 8 plan 2, implement order lifecycle writes through a backend typed transition guard, not Robot3, XState, Cloudflare Workflows, or frontend state authority.
 
 ## Blockers
 
