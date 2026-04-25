@@ -23,3 +23,13 @@ export const ItemAvailabilityStatus = {
 } as const
 
 export type ItemAvailabilityStatus = (typeof ItemAvailabilityStatus)[keyof typeof ItemAvailabilityStatus]
+
+
+export const OrderStatus = {
+  pending_payment: 'pending_payment',
+  paid: 'paid',
+  not_paid: 'not_paid',
+  needs_review: 'needs_review'
+} as const
+
+export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus]

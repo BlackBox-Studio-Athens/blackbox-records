@@ -46,6 +46,7 @@ describe('Prisma repository seams', () => {
     const stockCounts = new PrismaStockCountRepository(prisma);
     const variantStripeMappings = new PrismaVariantStripeMappingRepository(prisma);
 
+    expect(typeof prisma.checkoutOrder.findUnique).toBe('function');
     expect(typeof storeItemOptions.findByStoreItemSlug).toBe('function');
     expect(typeof storeItemOptions.findByVariantId).toBe('function');
     expect(typeof storeItemOptions.findBySource).toBe('function');

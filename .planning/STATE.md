@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 8 plan 1; add minimal D1 order lifecycle schema and migration
-last_updated: '2026-04-25T18:10:00+03:00'
-last_activity: 2026-04-25 -- Deferred Stripe-account validation gate and resumed non-secret backend order groundwork
+stopped_at: Phase 8 plan 2; add order repositories, lifecycle seams, and typed transition guard
+last_updated: '2026-04-25T18:20:00+03:00'
+last_activity: 2026-04-25 -- Added minimal D1 order lifecycle schema and migration
 progress:
   total_phases: 10
   completed_phases: 5
   total_plans: 64
-  completed_plans: 40
-  percent: 63
+  completed_plans: 41
+  percent: 64
 ---
 
 # Project State
@@ -28,22 +28,22 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 Current Phase: 8
 Current Phase Name: Webhook Orders And Stock
 Total Phases: 10
-Current Plan: 1
+Current Plan: 2
 Total Plans in Phase: 7
 Status: Active
 Progress: 63%
 Last Activity: 2026-04-25
-Last Activity Description: Deferred Stripe-account validation gate and resumed non-secret backend order groundwork
-Paused At: Phase 8 plan 1; add minimal D1 order lifecycle schema and migration
+Last Activity Description: Added minimal D1 order lifecycle schema and migration
+Paused At: Phase 8 plan 2; add order repositories, lifecycle seams, and typed transition guard
 
-Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed with non-secret backend order groundwork. Real Stripe-account validation remains explicitly deferred because the project does not yet have Stripe account access, sandbox keys, real products/prices, or webhook secrets. The deferred gate is still required before any sandbox/release approval, but it no longer blocks local D1/Prisma order schema, repository seams, transition guards, generated API contracts, fixture-based webhook route shape, or docs. Current focus is Phase 8 plan 1: add the minimal D1 order lifecycle schema and migration without adding live Stripe keys, hardcoded Price IDs, webhook endpoint provisioning, stock decrement, shipping, or production assumptions.
+Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed with non-secret backend order groundwork. Real Stripe-account validation remains explicitly deferred because the project does not yet have Stripe account access, sandbox keys, real products/prices, or webhook secrets. The deferred gate is still required before any sandbox/release approval, but it no longer blocks local D1/Prisma order schema, repository seams, transition guards, generated API contracts, fixture-based webhook route shape, or docs. Phase 8 has started with a schema-only `CheckoutOrder` lifecycle table and `OrderStatus` enum. Current focus is Phase 8 plan 2: add order repositories, lifecycle seams, and typed transition guard without adding webhook routes, stock decrement, frontend behavior, or account-specific Stripe values.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 40
-- Total plans remaining: 24
+- Total plans completed: 41
+- Total plans remaining: 23
 - Average duration: -
 - Total execution time: -
 
@@ -58,12 +58,12 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 mock, cont
 | 6.1.1 | 4     | Completed | 2026-04-24 |
 | 7     | 15/16 | Deferred  | 2026-04-25 |
 | 7.1   | 0/5   | Planned   | -          |
-| 8     | 0/7   | Active    | -          |
+| 8     | 1/7   | Active    | -          |
 
 **Recent Trend:**
 
-- Last 5 plans: 07-11, 07-12, 07-13, 07-14, 07-15
-- Trend: Checkout browser hardening, all-current-item store candidacy, local mock commerce seeding, all-items mock readiness checks, and representative local mock checkout UAT are complete. Real Stripe validation is deferred until account access exists.
+- Last 5 plans: 07-12, 07-13, 07-14, 07-15, 08-01
+- Trend: Store candidacy, local mock checkout readiness, representative local mock UAT, and the minimal D1 order lifecycle schema are complete. Real Stripe validation is deferred until account access exists.
 
 ## Accumulated Context
 
@@ -97,6 +97,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 mock, cont
 - Phase 7 now has Browser Use UAT evidence that representative release and distro items can enter the local mock checkout panel through PDP, cart, checkout, and Worker-owned `StartCheckout`.
 - Phase 7 real Stripe validation is deferred until Stripe account access exists. Required later inputs are real `pk_test_*`, `sk_test_*`, `price_*`, `STRIPE_WEBHOOK_SECRET`, Stripe products/prices, webhook endpoint configuration, sandbox Worker URL, and Browser Use evidence against real Stripe test mode.
 - Non-secret Phase 8 backend order groundwork may proceed before real Stripe validation because D1 schema, repositories, transition guards, fixture-based webhook contracts, generated clients, and local tests do not require account-specific Stripe values.
+- Phase 8 now has a schema-only `CheckoutOrder` model with backend-owned checkout session, payment intent, item/variant identity, status, and lifecycle timestamp fields. Repositories, transition guards, webhook routes, reconciliation, and stock decrement remain separate follow-up commits.
 - Phase 7 must add a familiar single-item cart UX with a cart icon, cart drawer/summary, checkout CTA, and Shopify-inspired order summary while keeping multi-item cart semantics out of scope.
 - Phase 7 must treat every current distro entry and release entry as a real sellable store candidate for local mock checkout readiness, even if real quantities are unknown.
 - Phase 7 may seed fake local mock stock and mock Stripe Price mappings for every current item so the no-network local checkout path can exercise representative item types; that fake stock must never be described as a real stock count.
@@ -153,6 +154,6 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 mock, cont
 
 ## Session
 
-**Last Date:** 2026-04-25T18:10:00+03:00
-**Stopped At:** Phase 8 plan 1; add minimal D1 order lifecycle schema and migration
+**Last Date:** 2026-04-25T18:20:00+03:00
+**Stopped At:** Phase 8 plan 2; add order repositories, lifecycle seams, and typed transition guard
 **Resume File:** .planning/ROADMAP.md

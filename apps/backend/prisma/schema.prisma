@@ -20,6 +20,13 @@ enum ItemAvailabilityStatus {
   sold_out
 }
 
+enum OrderStatus {
+  pending_payment
+  paid
+  not_paid
+  needs_review
+}
+
 model StoreItemOption {
   id            String              @id @default(cuid())
   storeItemSlug String              @unique
@@ -79,4 +86,22 @@ model StockCount {
   recordedAt      DateTime @default(now())
 
   @@index([variantId, recordedAt])
+}
+
+model CheckoutOrder {
+  id                    String      @id @default(cuid())
+  storeItemSlug         String
+  variantId             String
+  checkoutSessionId     String      @unique
+  stripePaymentIntentId String?
+  status                OrderStatus
+  statusUpdatedAt       DateTime
+  paidAt                DateTime?
+  notPaidAt             DateTime?
+  needsReviewAt         DateTime?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([variantId, status])
+  @@index([status, createdAt])
 }

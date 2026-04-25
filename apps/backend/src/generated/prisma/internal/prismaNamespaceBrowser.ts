@@ -54,7 +54,8 @@ export const ModelName = {
   ItemAvailability: 'ItemAvailability',
   Stock: 'Stock',
   StockChange: 'StockChange',
-  StockCount: 'StockCount'
+  StockCount: 'StockCount',
+  CheckoutOrder: 'CheckoutOrder'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -141,6 +142,24 @@ export const StockCountScalarFieldEnum = {
 } as const
 
 export type StockCountScalarFieldEnum = (typeof StockCountScalarFieldEnum)[keyof typeof StockCountScalarFieldEnum]
+
+
+export const CheckoutOrderScalarFieldEnum = {
+  id: 'id',
+  storeItemSlug: 'storeItemSlug',
+  variantId: 'variantId',
+  checkoutSessionId: 'checkoutSessionId',
+  stripePaymentIntentId: 'stripePaymentIntentId',
+  status: 'status',
+  statusUpdatedAt: 'statusUpdatedAt',
+  paidAt: 'paidAt',
+  notPaidAt: 'notPaidAt',
+  needsReviewAt: 'needsReviewAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CheckoutOrderScalarFieldEnum = (typeof CheckoutOrderScalarFieldEnum)[keyof typeof CheckoutOrderScalarFieldEnum]
 
 
 export const SortOrder = {
