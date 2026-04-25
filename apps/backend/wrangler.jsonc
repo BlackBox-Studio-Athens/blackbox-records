@@ -30,7 +30,7 @@
       "vars": {
         "APP_ENV": "local",
         "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321,https://blackbox-studio-athens.github.io",
-        "STRIPE_API_BASE_URL": "mock",
+        "STRIPE_API_BASE_URL": "http://127.0.0.1:12110",
         "STRIPE_SECRET_KEY": "sk_test_mock",
         "STRIPE_WEBHOOK_SECRET": "whsec_local_mock",
       },
@@ -48,7 +48,7 @@
       "vars": {
         "APP_ENV": "local",
         "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321,https://blackbox-studio-athens.github.io",
-        "STRIPE_API_BASE_URL": "http://127.0.0.1:12111",
+        "STRIPE_API_BASE_URL": "http://127.0.0.1:12110",
         "STRIPE_SECRET_KEY": "sk_test_mock",
         "STRIPE_WEBHOOK_SECRET": "whsec_local_mock",
       },

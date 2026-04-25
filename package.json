@@ -13,6 +13,7 @@
     "dev:backend": "pnpm --filter @blackbox/backend dev",
     "dev:backend:mock": "pnpm --filter @blackbox/backend dev:mock",
     "dev:backend:sandbox": "pnpm --filter @blackbox/backend dev:sandbox",
+    "stripe-mock:local": "tsx scripts/start-stripe-mock.ts",
     "dev:stack:stripe-test": "tsx scripts/start-local-stack.ts stripe-test",
     "dev:stack:stripe-mock": "tsx scripts/start-local-stack.ts stripe-mock",
     "dev:stack:stripe-mock-api": "tsx scripts/start-local-stack.ts stripe-mock-api",

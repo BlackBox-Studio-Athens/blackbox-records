@@ -74,7 +74,7 @@ Run the default full local commerce stack:
 pnpm dev:stack:stripe-mock
 ```
 
-This is what `BlackBox Local Stack` runs in WebStorm. It prepares local D1, starts the Worker with an in-process mock Stripe gateway, and starts the static Astro site with a mock checkout panel. It does not require Docker, real Stripe keys, or `apps/backend/.dev.vars`.
+This is what `BlackBox Local Stack` runs in WebStorm. It prepares local D1, starts official `stripe-mock` through local Go tooling, starts the Worker with the Stripe SDK pointed at the local mock API proxy, and starts the static Astro site with a mock checkout panel. It does not require Docker, real Stripe keys, or `apps/backend/.dev.vars`.
 
 Local mock checkout smoke path:
 
@@ -106,16 +106,17 @@ Run the full local commerce stack with stripe-mock:
 pnpm dev:stack:stripe-mock
 ```
 
-This mode points the Worker at an in-process mock Stripe gateway through the `mock` Wrangler env, generates local-only mock commerce state for every current store item, and renders a local mock checkout panel in the browser. It validates backend checkout flow control, but it is not a real embedded Checkout browser experience. It does not require Docker, real Stripe keys, or `apps/backend/.dev.vars`.
+This mode runs official `stripe-mock` locally through `go run github.com/stripe/stripe-mock@latest`, points the Worker Stripe SDK at a local compatibility proxy on `http://127.0.0.1:12110`, generates local-only mock commerce state for every current store item, and renders a local mock checkout panel in the browser. It validates backend checkout flow control and Stripe API request shape, but it is not a real embedded Checkout browser experience. It requires Go, but it does not require Docker, real Stripe keys, or `apps/backend/.dev.vars`.
 
-Run the optional local commerce stack against the official `stripe/stripe-mock` API server:
+The first run may download and compile `stripe-mock` through Go. Official `stripe-mock` currently differs from the Stripe SDK enum for embedded Checkout and returns a null `client_secret`, so the local proxy applies only those dev-only compatibility patches before the Worker receives the response. Production checkout code still sends the real Stripe SDK request shape.
+
+Run the explicit alias for the same official stripe-mock API stack:
 
 ```sh
-docker run --rm -it -p 12111-12112:12111-12112 stripe/stripe-mock:latest
 pnpm dev:stack:stripe-mock-api
 ```
 
-This mode still uses the browser mock checkout panel, but the Worker creates Checkout Sessions through the real Stripe SDK pointed at `http://127.0.0.1:12111`. It validates Stripe API request shape more closely than the in-process gateway. Official `stripe-mock` is stateless and does not emit webhooks, so webhook checks use a signed local fixture:
+Official `stripe-mock` is stateless and does not emit webhooks, so webhook checks use a signed local fixture:
 
 ```sh
 pnpm stripe:webhook:simulate:local
@@ -220,7 +221,7 @@ Current Worker scope:
 - checkout creation is Worker-owned and uses Stripe embedded Checkout Sessions through a backend gateway seam
 - the static checkout shell mounts Stripe embedded Checkout from Worker-created sessions
 - `pnpm dev:stack:stripe-test` prepares local D1, applies the ignored real Stripe test mapping seed, starts the Worker, and starts the static site
-- `pnpm dev:stack:stripe-mock` prepares local D1, generates local-only mock commerce state for every current store item, starts the Worker with its in-process mock Stripe gateway, and starts the static site in mock checkout mode
+- `pnpm dev:stack:stripe-mock` prepares local D1, generates local-only mock commerce state for every current store item, starts official `stripe-mock` through Go, starts the Worker with the Stripe SDK pointed at the local mock API proxy, and starts the static site in mock checkout mode
 - no webhook order authority, stock decrement, or frontend D1 wiring yet
 - no backend production deployment path yet
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
@@ -320,7 +321,7 @@ pnpm generate:api
   - `STRIPE_WEBHOOK_SECRET`
 - The optional backend-local Stripe mock/test override is:
   - `STRIPE_API_BASE_URL`
-- `STRIPE_API_BASE_URL` defaults to real Stripe when unset. The committed `mock` Wrangler env binds it to `mock` for the in-process local mock Stripe gateway.
+- `STRIPE_API_BASE_URL` defaults to real Stripe when unset. The committed `mock` Wrangler env binds it to `http://127.0.0.1:12110` for the local official stripe-mock proxy.
 - The checkout return-origin and browser API CORS allowlist is configured server-side with `CHECKOUT_RETURN_ORIGINS`.
 - `COMMERCE_DB` is runtime-only backend infrastructure, not a browser env var and not a GitHub Actions credential.
 - `CHECKOUT_RETURN_ORIGINS` is a Worker runtime variable, not a browser-selected return URL or an open CORS wildcard.
@@ -597,9 +598,9 @@ If a source crops badly, replace the source image rather than adding focal-point
 ## WebStorm run configuration
 
 - `.run/BlackBox Local Stack.run.xml` is the only committed WebStorm launcher for now.
-- It runs `pnpm dev:stack:stripe-mock`, which starts local D1 prep, the local Worker backend with an in-process mock Stripe gateway, and the local Astro frontend without Docker or real Stripe keys.
+- It runs `pnpm dev:stack:stripe-mock`, which starts local D1 prep, local official `stripe-mock` through Go, the local Worker backend pointed at the local stripe-mock proxy, and the local Astro frontend without Docker or real Stripe keys.
 - Real Stripe test mode remains available from the terminal through `pnpm dev:stack:stripe-test`.
-- Official `stripe/stripe-mock` API simulation remains terminal-only through `pnpm dev:stack:stripe-mock-api`; do not add a second WebStorm launcher for it unless explicitly requested.
+- `pnpm dev:stack:stripe-mock-api` is a terminal alias for the same official stripe-mock API path; do not add a second WebStorm launcher for it unless explicitly requested.
 - Focused backend/frontend scripts remain available from the terminal, not committed IDE run configs.
 - The static-site launcher remains pinned to `http://127.0.0.1:4321/blackbox-records/`.
 - If port `4321` is already in use, the static-site launcher fails fast instead of silently switching ports.

@@ -20,18 +20,14 @@ export type StackPlan = {
   mode: LocalStackMode;
   ports: number[];
   prepare: StackCommand[];
-  requiredServices: RequiredService[];
-};
-
-export type RequiredService = {
-  label: string;
-  url: string;
 };
 
 const rootDir = process.cwd();
 const BACKEND_PORT = 8787;
 const STATIC_PORT = 4321;
-const STRIPE_MOCK_API_URL = 'http://127.0.0.1:12111/v1/charges';
+const STRIPE_MOCK_PROXY_PORT = 12110;
+const STRIPE_MOCK_HTTP_PORT = 12111;
+const STRIPE_MOCK_HTTPS_PORT = 12112;
 
 export function buildStackPlan(mode: LocalStackMode): StackPlan {
   const prepare: StackCommand[] = [
@@ -42,7 +38,10 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
     },
   ];
   const longRunning: StackCommand[] = [];
-  const ports = [BACKEND_PORT, STATIC_PORT];
+  const ports =
+    mode === 'stripe-mock' || mode === 'stripe-mock-api'
+      ? [STRIPE_MOCK_PROXY_PORT, STRIPE_MOCK_HTTP_PORT, STRIPE_MOCK_HTTPS_PORT, BACKEND_PORT, STATIC_PORT]
+      : [BACKEND_PORT, STATIC_PORT];
 
   if (mode === 'stripe-test') {
     prepare.push({
@@ -76,6 +75,12 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
     });
     longRunning.push(
       {
+        args: ['stripe-mock:local'],
+        command: 'pnpm',
+        name: 'Stripe mock API',
+        waitForPort: STRIPE_MOCK_PROXY_PORT,
+      },
+      {
         args: ['dev:backend:mock'],
         command: 'pnpm',
         name: 'Worker',
@@ -101,6 +106,12 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
     });
     longRunning.push(
       {
+        args: ['stripe-mock:local'],
+        command: 'pnpm',
+        name: 'Stripe mock API',
+        waitForPort: STRIPE_MOCK_PROXY_PORT,
+      },
+      {
         args: ['dev:backend:mock-api'],
         command: 'pnpm',
         name: 'Worker',
@@ -125,15 +136,6 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
     mode,
     ports,
     prepare,
-    requiredServices:
-      mode === 'stripe-mock-api'
-        ? [
-            {
-              label: 'stripe-mock API',
-              url: STRIPE_MOCK_API_URL,
-            },
-          ]
-        : [],
   };
 }
 
@@ -199,7 +201,6 @@ async function main() {
   }
 
   await assertPortsAvailable(plan.ports);
-  await assertRequiredServicesAvailable(plan.requiredServices);
 
   for (const command of plan.prepare) {
     runOnce(command);
@@ -276,28 +277,6 @@ async function assertPortsAvailable(ports: number[]) {
 
   if (unavailablePorts.length) {
     throw new Error(`Port(s) already in use: ${unavailablePorts.join(', ')}. Stop the existing local stack and retry.`);
-  }
-}
-
-export async function assertRequiredServicesAvailable(requiredServices: RequiredService[]) {
-  for (const service of requiredServices) {
-    try {
-      const response = await fetch(service.url, {
-        headers: {
-          Authorization: 'Bearer sk_test_mock',
-        },
-      });
-
-      if (response.status < 500) {
-        continue;
-      }
-    } catch {
-      // Fall through to the explicit setup error below.
-    }
-
-    throw new Error(
-      `${service.label} is not reachable at ${service.url}. Start official stripe-mock first, for example: docker run --rm -it -p 12111-12112:12111-12112 stripe/stripe-mock:latest`,
-    );
   }
 }
 
