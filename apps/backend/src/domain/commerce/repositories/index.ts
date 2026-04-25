@@ -10,7 +10,13 @@ export type {
   ItemAvailabilityRepository,
   ItemAvailabilityStatus,
 } from './item-availability-repository';
-export type { OrderStateRepository } from './order-state-repository';
+export type {
+  CheckoutOrderRecord,
+  CheckoutOrderTransitionInput,
+  CreatePendingCheckoutOrderInput,
+  OrderStateRepository,
+  OrderStatus,
+} from './order-state-repository';
 export type { StockRecord, StockRepository, StockState } from './stock-repository';
 export type { RecordStockChangeInput, StockChangeRecord, StockChangeRepository } from './stock-change-repository';
 export type { RecordStockCountInput, StockCountRecord, StockCountRepository } from './stock-count-repository';

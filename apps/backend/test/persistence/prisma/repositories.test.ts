@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   PrismaItemAvailabilityRepository,
+  PrismaOrderStateRepository,
   PrismaStockChangeRepository,
   PrismaStockCountRepository,
   PrismaStockRepository,
@@ -45,8 +46,12 @@ describe('Prisma repository seams', () => {
     const stockChanges = new PrismaStockChangeRepository(prisma);
     const stockCounts = new PrismaStockCountRepository(prisma);
     const variantStripeMappings = new PrismaVariantStripeMappingRepository(prisma);
+    const orders = new PrismaOrderStateRepository(prisma);
 
     expect(typeof prisma.checkoutOrder.findUnique).toBe('function');
+    expect(typeof orders.createPending).toBe('function');
+    expect(typeof orders.findByCheckoutSessionId).toBe('function');
+    expect(typeof orders.saveTransition).toBe('function');
     expect(typeof storeItemOptions.findByStoreItemSlug).toBe('function');
     expect(typeof storeItemOptions.findByVariantId).toBe('function');
     expect(typeof storeItemOptions.findBySource).toBe('function');

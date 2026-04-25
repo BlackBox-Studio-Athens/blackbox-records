@@ -37,6 +37,7 @@ Because Stripe account access is not currently available, Phase 8 is split into 
 - Keep fixture-based webhook tests explicitly labeled as contract tests until `STRIPE_WEBHOOK_SECRET` and Stripe account access exist.
 - Preserve `07-16` as a required later validation gate before sandbox/release approval.
 - `08-01` added only the D1/Prisma lifecycle schema: `CheckoutOrder` plus `OrderStatus`. It intentionally did not add repositories, transition guards, webhook routes, reconciliation, stock decrement, frontend behavior, or account-specific Stripe values.
+- `08-02` added internal order repository/application seams plus a dependency-free typed transition guard. It intentionally did not add webhook routes, Stripe signature verification, stock decrement, frontend behavior, or account-specific Stripe values.
 
 </specifics>
 
