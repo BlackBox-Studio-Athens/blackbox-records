@@ -12,6 +12,7 @@ import type { AppBindings } from '../../../env';
 import {
   createPrismaClient,
   PrismaItemAvailabilityRepository,
+  PrismaOrderStateRepository,
   PrismaStockRepository,
   PrismaStoreItemOptionRepository,
   PrismaVariantStripeMappingRepository,
@@ -24,6 +25,7 @@ export function createPublicCommerceServices(bindings: AppBindings) {
   const itemAvailability = new PrismaItemAvailabilityRepository(prisma);
   const stock = new PrismaStockRepository(prisma);
   const variantStripeMappings = new PrismaVariantStripeMappingRepository(prisma);
+  const orders = new PrismaOrderStateRepository(prisma);
 
   return {
     disconnect: async () => prisma.$disconnect(),
@@ -45,6 +47,7 @@ export function createPublicCommerceServices(bindings: AppBindings) {
         stock,
         variantStripeMappings,
         createStripeCheckoutGateway(bindings),
+        orders,
         command,
       ),
   };

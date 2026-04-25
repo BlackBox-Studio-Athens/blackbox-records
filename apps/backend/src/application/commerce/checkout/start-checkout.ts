@@ -1,5 +1,6 @@
 import type {
   ItemAvailabilityRepository,
+  OrderStateRepository,
   StockRepository,
   StoreItemOptionRepository,
   StoreItemSlug,
@@ -12,6 +13,7 @@ import {
   StoreItemNotFoundError,
   VariantMismatchError,
 } from './errors';
+import { createPendingCheckoutOrder } from '../orders';
 import type { CheckoutGateway, EmbeddedCheckoutSession } from './types';
 
 export type StartCheckoutCommand = {
@@ -26,6 +28,7 @@ export async function startCheckout(
   stock: StockRepository,
   variantStripeMappings: VariantStripeMappingRepository,
   checkoutGateway: CheckoutGateway,
+  orders: OrderStateRepository,
   command: StartCheckoutCommand,
 ): Promise<EmbeddedCheckoutSession> {
   const storeItem = await storeItems.findByStoreItemSlug(command.storeItemSlug);
@@ -56,10 +59,18 @@ export async function startCheckout(
     throw new CheckoutConfigurationError();
   }
 
-  return checkoutGateway.createEmbeddedCheckoutSession({
+  const checkoutSession = await checkoutGateway.createEmbeddedCheckoutSession({
     returnUrl: command.returnUrl,
     storeItemSlug: command.storeItemSlug,
     stripePriceId: stripeMapping.stripePriceId,
     variantId: command.variantId,
   });
+
+  await createPendingCheckoutOrder(orders, {
+    checkoutSessionId: checkoutSession.checkoutSessionId,
+    storeItemSlug: command.storeItemSlug,
+    variantId: command.variantId,
+  });
+
+  return checkoutSession;
 }

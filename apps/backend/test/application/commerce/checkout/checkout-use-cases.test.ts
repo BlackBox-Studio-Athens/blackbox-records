@@ -12,8 +12,12 @@ import {
   type CheckoutGateway,
 } from '../../../../src/application/commerce/checkout';
 import type {
+  CheckoutOrderRecord,
+  CheckoutOrderTransitionInput,
+  CreatePendingCheckoutOrderInput,
   ItemAvailabilityRecord,
   ItemAvailabilityRepository,
+  OrderStateRepository,
   StockRecord,
   StockRepository,
   StoreItemOptionRecord,
@@ -84,6 +88,62 @@ class InMemoryVariantStripeMappingRepository implements VariantStripeMappingRepo
   }
 }
 
+class InMemoryOrderStateRepository implements OrderStateRepository {
+  public readonly records = new Map<string, CheckoutOrderRecord>();
+
+  public async createPending(input: CreatePendingCheckoutOrderInput): Promise<CheckoutOrderRecord> {
+    const createdAt = input.createdAt ?? new Date('2026-04-25T10:00:00.000Z');
+    const record: CheckoutOrderRecord = {
+      checkoutSessionId: input.checkoutSessionId,
+      createdAt,
+      id: `order_${this.records.size + 1}`,
+      needsReviewAt: null,
+      notPaidAt: null,
+      paidAt: null,
+      status: 'pending_payment',
+      statusUpdatedAt: createdAt,
+      storeItemSlug: input.storeItemSlug,
+      stripePaymentIntentId: input.stripePaymentIntentId ?? null,
+      updatedAt: createdAt,
+      variantId: input.variantId,
+    };
+
+    this.records.set(record.checkoutSessionId, record);
+
+    return record;
+  }
+
+  public async findByCheckoutSessionId(checkoutSessionId: string): Promise<CheckoutOrderRecord | null> {
+    return this.records.get(checkoutSessionId) ?? null;
+  }
+
+  public async saveTransition(
+    checkoutSessionId: string,
+    transition: CheckoutOrderTransitionInput,
+  ): Promise<CheckoutOrderRecord | null> {
+    const current = this.records.get(checkoutSessionId);
+
+    if (!current) {
+      return null;
+    }
+
+    const next: CheckoutOrderRecord = {
+      ...current,
+      needsReviewAt: transition.status === 'needs_review' ? transition.statusUpdatedAt : current.needsReviewAt,
+      notPaidAt: transition.status === 'not_paid' ? transition.statusUpdatedAt : current.notPaidAt,
+      paidAt: transition.status === 'paid' ? transition.statusUpdatedAt : current.paidAt,
+      status: transition.status,
+      statusUpdatedAt: transition.statusUpdatedAt,
+      stripePaymentIntentId: transition.stripePaymentIntentId ?? current.stripePaymentIntentId,
+      updatedAt: transition.statusUpdatedAt,
+    };
+
+    this.records.set(checkoutSessionId, next);
+
+    return next;
+  }
+}
+
 describe('checkout use cases', () => {
   const storeItem: StoreItemOptionRecord = {
     sourceId: 'barren-point',
@@ -96,6 +156,7 @@ describe('checkout use cases', () => {
   let itemAvailability: InMemoryItemAvailabilityRepository;
   let stock: InMemoryStockRepository;
   let stripeMappings: InMemoryVariantStripeMappingRepository;
+  let orders: InMemoryOrderStateRepository;
   let checkoutGateway: CheckoutGateway;
 
   beforeEach(async () => {
@@ -103,6 +164,7 @@ describe('checkout use cases', () => {
     itemAvailability = new InMemoryItemAvailabilityRepository();
     stock = new InMemoryStockRepository();
     stripeMappings = new InMemoryVariantStripeMappingRepository();
+    orders = new InMemoryOrderStateRepository();
     checkoutGateway = {
       createEmbeddedCheckoutSession: vi.fn(async () => ({
         checkoutSessionId: 'cs_test_123',
@@ -158,7 +220,7 @@ describe('checkout use cases', () => {
 
   it('rejects unknown store items before starting checkout', async () => {
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, {
+      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         returnUrl: 'https://example.com/return',
         storeItemSlug: 'unknown',
         variantId: storeItem.variantId,
@@ -168,7 +230,7 @@ describe('checkout use cases', () => {
 
   it('rejects variants that do not belong to the requested store item', async () => {
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, {
+      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         returnUrl: 'https://example.com/return',
         storeItemSlug: storeItem.storeItemSlug,
         variantId: 'variant_other',
@@ -183,7 +245,7 @@ describe('checkout use cases', () => {
     });
 
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, {
+      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         returnUrl: 'https://example.com/return',
         storeItemSlug: storeItem.storeItemSlug,
         variantId: storeItem.variantId,
@@ -195,7 +257,7 @@ describe('checkout use cases', () => {
     stripeMappings.records.clear();
 
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, {
+      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         returnUrl: 'https://example.com/return',
         storeItemSlug: storeItem.storeItemSlug,
         variantId: storeItem.variantId,
@@ -205,7 +267,7 @@ describe('checkout use cases', () => {
 
   it('starts embedded Checkout with the mapped Stripe price', async () => {
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, {
+      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         returnUrl: 'https://example.com/return',
         storeItemSlug: storeItem.storeItemSlug,
         variantId: storeItem.variantId,
@@ -221,6 +283,14 @@ describe('checkout use cases', () => {
       stripePriceId: 'price_test_barren_point',
       variantId: 'variant_barren-point_standard',
     });
+    expect(orders.records.get('cs_test_123')).toEqual(
+      expect.objectContaining({
+        checkoutSessionId: 'cs_test_123',
+        status: 'pending_payment',
+        storeItemSlug: 'disintegration-black-vinyl-lp',
+        variantId: 'variant_barren-point_standard',
+      }),
+    );
   });
 
   it('maps Stripe Checkout Session status into app-owned return state without D1 writes', async () => {
