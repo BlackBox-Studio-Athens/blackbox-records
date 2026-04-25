@@ -218,7 +218,7 @@ Plans:
 1. D1 stores the approved minimal order states, stock values, and backend mappings needed for authoritative payment handling.
 2. Verified Stripe webhooks hitting the Worker backend verify the raw body/signature, acknowledge safely, and remain the only path that marks orders paid.
 3. Stock decrements exactly once after confirmed payment success, unpaid flows leave stock untouched, and ReadCheckoutState reuses shared backend reconciliation logic without becoming payment authority.
-   **Plans**: 7 plans
+   **Plans**: 8 plans
    **Review gate**: Human review required on webhook verification, idempotency, and stock semantics.
 
 Plans:
@@ -226,6 +226,7 @@ Plans:
 - [x] 08-01: Add minimal D1 order lifecycle schema and migration
 - [x] 08-02: Add order repositories, lifecycle seams, and typed order transition guard
 - [x] 08-03: Add verified Stripe webhook raw-body route contract
+- [ ] 08-03.1: Add stripe-mock API local checkout simulation harness
 - [ ] 08-04: Add shared Stripe checkout reconciliation use case
 - [ ] 08-05: Apply idempotent paid-order transition and stock decrement
 - [ ] 08-06: Handle unpaid, expired, canceled, and needs-review outcomes
@@ -297,6 +298,6 @@ Because Stripe account access is unavailable, non-secret Phase 8 backend groundw
 | 6.1.1. Internal Stock Operations And Operator Access           | 4/4            | Completed | 2026-04-24 |
 | 7. Worker Checkout And Stripe Sandbox Flow                     | 15/16          | Deferred  | 2026-04-25 |
 | 7.1. Cloudflare Pages Static Frontend Migration                | 0/5            | Planned   |            |
-| 8. Webhook Orders And Stock                                    | 3/7            | Active    |            |
+| 8. Webhook Orders And Stock                                    | 3/8            | Active    |            |
 | 9. Greece-Only BOX NOW Shipping                                | 0/6            | Planned   |            |
 | 10. Sandbox Verification And Release Gate                      | 0/5            | Planned   |            |

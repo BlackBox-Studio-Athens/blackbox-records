@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 8 plan 4; add shared Stripe checkout reconciliation use case
-last_updated: '2026-04-25T19:30:00+03:00'
-last_activity: 2026-04-25 -- Added fixture-tested Stripe webhook raw-body route contract
+stopped_at: Phase 8 plan 3.1; add stripe-mock API local checkout simulation harness
+last_updated: '2026-04-26T00:00:00+03:00'
+last_activity: 2026-04-26 -- Inserted optional official stripe-mock API checkout simulation plan
 progress:
   total_phases: 10
   completed_phases: 5
-  total_plans: 64
+  total_plans: 65
   completed_plans: 43
-  percent: 67
+  percent: 66
 ---
 
 # Project State
@@ -28,22 +28,22 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 Current Phase: 8
 Current Phase Name: Webhook Orders And Stock
 Total Phases: 10
-Current Plan: 4
-Total Plans in Phase: 7
+Current Plan: 3.1
+Total Plans in Phase: 8
 Status: Active
-Progress: 67%
-Last Activity: 2026-04-25
-Last Activity Description: Added fixture-tested Stripe webhook raw-body route contract
-Paused At: Phase 8 plan 4; add shared Stripe checkout reconciliation use case
+Progress: 66%
+Last Activity: 2026-04-26
+Last Activity Description: Inserted optional official stripe-mock API checkout simulation plan
+Paused At: Phase 8 plan 3.1; add stripe-mock API local checkout simulation harness
 
-Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed with non-secret backend order groundwork. Real Stripe-account validation remains explicitly deferred because the project does not yet have Stripe account access, sandbox keys, real products/prices, or webhook secrets. The deferred gate is still required before any sandbox/release approval, but it no longer blocks local D1/Prisma order schema, repository seams, transition guards, generated API contracts, fixture-based webhook route shape, or docs. Phase 8 now has the schema-only `CheckoutOrder` lifecycle table, internal order repository/application seams, a dependency-free typed transition guard, and a fixture-tested Stripe webhook raw-body route contract. Current focus is Phase 8 plan 4: add shared Stripe checkout reconciliation use case without stock decrement, hosted sandbox evidence, or account-specific Stripe values.
+Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed with non-secret backend order groundwork. Real Stripe-account validation remains explicitly deferred because the project does not yet have Stripe account access, sandbox keys, real products/prices, or webhook secrets. The deferred gate is still required before any sandbox/release approval, but it no longer blocks local D1/Prisma order schema, repository seams, transition guards, generated API contracts, fixture-based webhook route shape, or docs. Phase 8 now has the schema-only `CheckoutOrder` lifecycle table, internal order repository/application seams, a dependency-free typed transition guard, and a fixture-tested Stripe webhook raw-body route contract. Current focus is Phase 8 plan 3.1: add an optional official `stripe-mock` API local checkout simulation harness before shared reconciliation work.
 
 ## Performance Metrics
 
 **Velocity:**
 
 - Total plans completed: 43
-- Total plans remaining: 21
+- Total plans remaining: 22
 - Average duration: -
 - Total execution time: -
 
@@ -58,12 +58,12 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 mock, cont
 | 6.1.1 | 4     | Completed | 2026-04-24 |
 | 7     | 15/16 | Deferred  | 2026-04-25 |
 | 7.1   | 0/5   | Planned   | -          |
-| 8     | 3/7   | Active    | -          |
+| 8     | 3/8   | Active    | -          |
 
 **Recent Trend:**
 
 - Last 5 plans: 07-14, 07-15, 08-01, 08-02, 08-03
-- Trend: Local mock checkout readiness, representative local mock UAT, minimal D1 order lifecycle schema, internal order lifecycle seams, and the fixture-tested webhook route contract are complete. Real Stripe validation is deferred until account access exists.
+- Trend: Local mock checkout readiness, representative local mock UAT, minimal D1 order lifecycle schema, internal order lifecycle seams, and the fixture-tested webhook route contract are complete. The next inserted slice adds optional official `stripe-mock` API simulation while real Stripe validation remains deferred until account access exists.
 
 ## Accumulated Context
 
@@ -103,6 +103,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 mock, cont
 - Phase 7 may seed fake local mock stock and mock Stripe Price mappings for every current item so the no-network local checkout path can exercise representative item types; that fake stock must never be described as a real stock count.
 - Checkout session return URLs are constrained by the Worker-side `CHECKOUT_RETURN_ORIGINS` allowlist and expected store checkout route shape.
 - Local checkout validation now has two explicit stack launchers: `pnpm dev:stack:stripe-test` for real Stripe test keys and real local Price mappings, and `pnpm dev:stack:stripe-mock` for an in-process mock Stripe gateway plus a frontend mock checkout panel.
+- Phase 8 plan 3.1 adds an optional official `stripe-mock` API stack for local Stripe SDK request-shape simulation. The existing in-process `stripe-mock` stack remains the default because official `stripe-mock` is stateless, hardcoded, and not a real payment or webhook simulator.
 - Phase 7.1 is inserted after Phase 7 to move the static Astro frontend from GitHub Pages to Cloudflare Pages while keeping the Worker backend separate and GitHub Pages available as rollback until acceptance.
 
 ## Decisions Made
@@ -155,5 +156,5 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 mock, cont
 ## Session
 
 **Last Date:** 2026-04-25T19:30:00+03:00
-**Stopped At:** Phase 8 plan 4; add shared Stripe checkout reconciliation use case
+**Stopped At:** Phase 8 plan 3.1; add stripe-mock API local checkout simulation harness
 **Resume File:** .planning/ROADMAP.md
