@@ -1,0 +1,89 @@
+---
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import CheckoutOrderSummary from '@/components/store/CheckoutOrderSummary';
+import CheckoutReturnStatus from '@/components/store/CheckoutReturnStatus';
+import { createProjectRelativeUrl } from '@/config/site';
+import SiteLayout from '@/layouts/SiteLayout.astro';
+import { type StorePageEntry, createStorePageStaticPaths } from '@/lib/store-page-data';
+
+export async function getStaticPaths() {
+  return createStorePageStaticPaths();
+}
+
+interface Props {
+  entry: StorePageEntry;
+}
+
+const { entry } = Astro.props;
+const { storeItem, primaryAvailability } = entry;
+const priceLabel = primaryAvailability?.price.display || 'Price soon';
+const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
+const canBuy = primaryAvailability?.canBuy ?? false;
+const summaryItem = {
+  availabilityLabel,
+  canBuy,
+  image: storeItem.image.src,
+  imageAlt: storeItem.imageAlt,
+  itemHref: storeItem.storePath,
+  optionLabel: primaryAvailability?.optionLabel ?? null,
+  priceDisplay: priceLabel,
+  subtitle: storeItem.subtitle,
+  title: storeItem.title,
+};
+---
+
+<SiteLayout
+  pageTitle={`${storeItem.title} Checkout Return | Store`}
+  pageDescription={`Checkout return state for ${storeItem.title} by ${storeItem.subtitle}.`}
+>
+  <section class="layout-container pt-14 pb-8">
+    <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+      <div class="space-y-3">
+        <Badge variant="outline" className="border-border/70 bg-background/80 text-xs tracking-[0.15em] uppercase">
+          Return
+        </Badge>
+        <div class="space-y-2">
+          <h1 class="font-display text-5xl tracking-[0.08em] uppercase text-foreground sm:text-6xl">Checkout Return</h1>
+          <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            Payment state is read from the Worker. Browser query parameters are never treated as order truth.
+          </p>
+        </div>
+      </div>
+      <a
+        href={createProjectRelativeUrl('/store/')}
+        data-astro-prefetch
+        class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+      >
+        Continue Shopping
+      </a>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] xl:grid-cols-[minmax(0,1fr)_27rem]">
+      <Card className="rounded-none border-border/70 bg-card/35 shadow-none">
+        <CardContent className="grid gap-6 p-5 sm:p-6 lg:p-8">
+          <div class="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-5">
+            <div class="space-y-2">
+              <p class="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Return</p>
+              <h2 class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">Checkout State</h2>
+            </div>
+            <span class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Cart / Checkout / Return</span>
+          </div>
+
+          <CheckoutReturnStatus
+            client:load
+            checkoutPath={storeItem.checkoutPath}
+            itemPath={storeItem.storePath}
+            storePath={createProjectRelativeUrl('/store/')}
+          />
+        </CardContent>
+      </Card>
+
+      <aside>
+        <div class="sticky top-[calc(var(--header-height)+2rem)]">
+          <CheckoutOrderSummary {...summaryItem} />
+        </div>
+      </aside>
+    </div>
+  </section>
+</SiteLayout>

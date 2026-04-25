@@ -30,6 +30,7 @@ import {
   removeStoreCartItem,
   sanitizeStoreCartItem,
   STORE_CART_ADD_ITEM_EVENT,
+  STORE_CART_OPEN_REQUESTED_EVENT,
   type StoreCartState,
   writeStoreCartState,
 } from '@/lib/store-cart';
@@ -435,13 +436,19 @@ export default function AppShellRoot({
       setIsStoreCartDrawerOpen(true);
     }
 
+    function handleStoreCartOpenRequested() {
+      setIsStoreCartDrawerOpen(true);
+    }
+
     setStoreCartState(readStoreCartState(getStoreCartBrowserStorage()));
     syncStoreCartHeaderContainer();
     window.addEventListener(STORE_CART_ADD_ITEM_EVENT, handleStoreCartAddItem);
+    window.addEventListener(STORE_CART_OPEN_REQUESTED_EVENT, handleStoreCartOpenRequested);
     window.addEventListener('pageshow', syncStoreCartHeaderContainer);
 
     return () => {
       window.removeEventListener(STORE_CART_ADD_ITEM_EVENT, handleStoreCartAddItem);
+      window.removeEventListener(STORE_CART_OPEN_REQUESTED_EVENT, handleStoreCartOpenRequested);
       window.removeEventListener('pageshow', syncStoreCartHeaderContainer);
     };
   }, []);
