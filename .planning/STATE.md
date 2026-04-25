@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 7 plan 16; validate the local and sandbox checkout loop with real Stripe sandbox mappings
-last_updated: '2026-04-25T17:30:00+03:00'
-last_activity: 2026-04-25 -- Ran local mock checkout UAT across representative item types
+stopped_at: Phase 8 plan 1; add minimal D1 order lifecycle schema and migration
+last_updated: '2026-04-25T18:10:00+03:00'
+last_activity: 2026-04-25 -- Deferred Stripe-account validation gate and resumed non-secret backend order groundwork
 progress:
   total_phases: 10
   completed_phases: 5
@@ -21,22 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-21)
 
 **Core value:** Ship a minimal native commerce flow that is operationally safe: the static site owns storefront presentation, the Worker backend owns dynamic commerce behavior, Stripe owns sellable items/pricing/payment, server routes own secrets and mutations, and stock changes happen only after verified webhooks.
-**Current focus:** Phase 7: Worker Checkout And Stripe Sandbox Flow
+**Current focus:** Phase 8: Webhook Orders And Stock
 
 ## Current Position
 
-Current Phase: 7
-Current Phase Name: Worker Checkout And Stripe Sandbox Flow
+Current Phase: 8
+Current Phase Name: Webhook Orders And Stock
 Total Phases: 10
-Current Plan: 16
-Total Plans in Phase: 16
+Current Plan: 1
+Total Plans in Phase: 7
 Status: Active
 Progress: 63%
 Last Activity: 2026-04-25
-Last Activity Description: Ran local mock checkout UAT across representative item types
-Paused At: Phase 7 plan 16; validate the local and sandbox checkout loop with real Stripe sandbox mappings
+Last Activity Description: Deferred Stripe-account validation gate and resumed non-secret backend order groundwork
+Paused At: Phase 8 plan 1; add minimal D1 order lifecycle schema and migration
 
-Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has started: the Worker now exposes public store-offer lookup, variant offer lookup, `StartCheckout`, and `ReadCheckoutState` APIs, backed by D1 repository seams and a Stripe Checkout gateway. The frontend checkout shell now reads Worker-known offer and variant state, starts Worker-owned Checkout Sessions, and mounts Stripe embedded Checkout from the returned `clientSecret`. Shopper-facing store URLs now describe the purchased item option for the first smoke item: `Disintegration` by `Afterwise` as `Black Vinyl LP` uses `/store/disintegration-black-vinyl-lp/`, with `/store/barren-point/` kept as a compatibility redirect. Phase 7 now has a browser-safe single-item cart state seam, header cart icon, Shopify-inspired cart drawer, PDP `Add To Cart` entry action, checkout page order summary, checkout return/retry UI that reads Worker-owned `ReadCheckoutState`, hardened browser states for unavailable, missing backend, missing Stripe config, malformed cart, and no-secret cases, native store candidacy for all current distro and release entries, local stripe-mock D1 state for every current store item, a deterministic readiness command that reports missing local mock availability, stock, or `price_mock_*` mapping rows, and Browser Use UAT evidence across representative release and distro item types. Local fake stock is allowed only in stripe-mock mode; sandbox/production stock remains uncounted until staff records it through D1-backed stock operations. Phase 7.1 is planned after Phase 7 to migrate the static frontend from GitHub Pages to Cloudflare Pages before Phase 8 webhook/order work depends on final hosted origins; the next implementation step is validating the local and sandbox checkout loop with real Stripe sandbox mappings.
+Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed with non-secret backend order groundwork. Real Stripe-account validation remains explicitly deferred because the project does not yet have Stripe account access, sandbox keys, real products/prices, or webhook secrets. The deferred gate is still required before any sandbox/release approval, but it no longer blocks local D1/Prisma order schema, repository seams, transition guards, generated API contracts, fixture-based webhook route shape, or docs. Current focus is Phase 8 plan 1: add the minimal D1 order lifecycle schema and migration without adding live Stripe keys, hardcoded Price IDs, webhook endpoint provisioning, stock decrement, shipping, or production assumptions.
 
 ## Performance Metrics
 
@@ -56,13 +56,14 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 | 6     | 7     | Completed | 2026-04-21 |
 | 6.1   | 4     | Completed | 2026-04-22 |
 | 6.1.1 | 4     | Completed | 2026-04-24 |
-| 7     | 15/16 | Active    | 2026-04-25 |
+| 7     | 15/16 | Deferred  | 2026-04-25 |
 | 7.1   | 0/5   | Planned   | -          |
+| 8     | 0/7   | Active    | -          |
 
 **Recent Trend:**
 
 - Last 5 plans: 07-11, 07-12, 07-13, 07-14, 07-15
-- Trend: Checkout browser hardening, all-current-item store candidacy, local mock commerce seeding, all-items mock readiness checks, and representative local mock checkout UAT are complete.
+- Trend: Checkout browser hardening, all-current-item store candidacy, local mock commerce seeding, all-items mock readiness checks, and representative local mock checkout UAT are complete. Real Stripe validation is deferred until account access exists.
 
 ## Accumulated Context
 
@@ -94,6 +95,8 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 - Phase 7 now generates local stripe-mock `StoreItemOption`, `ItemAvailability`, `Stock`, and `VariantStripeMapping` rows for every current store item from static storefront content.
 - Phase 7 now has a local mock checkout readiness command that compares current storefront content against local D1 mock rows and reports missing availability, stock, or `price_mock_*` mappings by slug/source.
 - Phase 7 now has Browser Use UAT evidence that representative release and distro items can enter the local mock checkout panel through PDP, cart, checkout, and Worker-owned `StartCheckout`.
+- Phase 7 real Stripe validation is deferred until Stripe account access exists. Required later inputs are real `pk_test_*`, `sk_test_*`, `price_*`, `STRIPE_WEBHOOK_SECRET`, Stripe products/prices, webhook endpoint configuration, sandbox Worker URL, and Browser Use evidence against real Stripe test mode.
+- Non-secret Phase 8 backend order groundwork may proceed before real Stripe validation because D1 schema, repositories, transition guards, fixture-based webhook contracts, generated clients, and local tests do not require account-specific Stripe values.
 - Phase 7 must add a familiar single-item cart UX with a cart icon, cart drawer/summary, checkout CTA, and Shopify-inspired order summary while keeping multi-item cart semantics out of scope.
 - Phase 7 must treat every current distro entry and release entry as a real sellable store candidate for local mock checkout readiness, even if real quantities are unknown.
 - Phase 7 may seed fake local mock stock and mock Stripe Price mappings for every current item so the no-network local checkout path can exercise representative item types; that fake stock must never be described as a real stock count.
@@ -137,7 +140,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
-- Validate the local and sandbox checkout loop with real Stripe sandbox mappings in Phase 7 plan 16.
+- Complete the deferred Stripe access validation gate before sandbox/release approval.
 - In Phase 8 plan 2, implement order lifecycle writes through a backend typed transition guard, not Robot3, XState, Cloudflare Workflows, or frontend state authority.
 
 ## Blockers
@@ -146,9 +149,10 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 - Public shopper and sandbox browsing remain unauthenticated by design; internal stock writes stay confined to the protected operator hostname and Access boundary.
 - The Astro frontend is no longer being treated as “moving to Workers” in this milestone; do not reintroduce that assumption in implementation.
 - Phase 7 must still avoid production cutover and should remain sandbox-first.
+- Real Stripe-account validation is blocked until Stripe account access, test keys, test Price IDs, webhook secret, and sandbox endpoint configuration exist. Do not commit any account-specific Stripe values.
 
 ## Session
 
-**Last Date:** 2026-04-25T17:30:00+03:00
-**Stopped At:** Phase 7 plan 16; validate the local and sandbox checkout loop with real Stripe sandbox mappings
+**Last Date:** 2026-04-25T18:10:00+03:00
+**Stopped At:** Phase 8 plan 1; add minimal D1 order lifecycle schema and migration
 **Resume File:** .planning/ROADMAP.md
