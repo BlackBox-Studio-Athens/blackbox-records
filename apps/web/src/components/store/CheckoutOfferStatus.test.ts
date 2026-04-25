@@ -84,9 +84,9 @@ describe('CheckoutOfferStatus helpers', () => {
         ],
       }),
     ).toEqual({
-      badgeLabel: 'Worker ready',
+      badgeLabel: 'Checkout ready',
       canStartCheckout: true,
-      detail: 'Checkout eligibility confirmed for 1 variant.',
+      detail: 'Checkout is ready for 1 item option.',
       isReady: true,
       statusLabel: 'Available',
       tone: 'ready',
@@ -110,7 +110,7 @@ describe('CheckoutOfferStatus helpers', () => {
         variants: [],
       }),
     ).toMatchObject({
-      badgeLabel: 'Not checkout-ready',
+      badgeLabel: 'Not available',
       canStartCheckout: false,
       isReady: false,
       statusLabel: 'Sold Out',
@@ -132,7 +132,7 @@ describe('CheckoutOfferStatus helpers', () => {
     const state = await loadCheckoutOfferState(api, 'missing');
 
     expect(createCheckoutOfferView(state)).toMatchObject({
-      badgeLabel: 'Backend unavailable',
+      badgeLabel: 'Checkout unavailable',
       canStartCheckout: false,
       detail: 'Store item not found.',
       isReady: false,
@@ -143,9 +143,9 @@ describe('CheckoutOfferStatus helpers', () => {
 
   it('uses static availability as initial fallback while Worker state loads', () => {
     expect(createInitialCheckoutOfferView(initialAvailability)).toEqual({
-      badgeLabel: 'Checking Worker',
+      badgeLabel: 'Checking checkout',
       canStartCheckout: false,
-      detail: 'Static store data is ready. Confirming checkout eligibility with the Worker.',
+      detail: 'Confirming checkout eligibility before payment opens.',
       isReady: false,
       statusLabel: 'Available',
       tone: 'loading',
@@ -191,6 +191,38 @@ describe('CheckoutOfferStatus helpers', () => {
       kind: 'mounted',
       mount,
     });
+  });
+
+  it('keeps shopper-facing checkout status copy free of implementation terms', () => {
+    const readyView = createCheckoutOfferView({
+      kind: 'ready',
+      offer: {
+        availability: {
+          label: 'Available',
+          status: 'available',
+        },
+        canCheckout: true,
+        storeItemSlug: 'disintegration-black-vinyl-lp',
+        variantId: 'variant_barren-point_standard',
+      },
+      variants: [
+        {
+          availability: {
+            label: 'Available',
+            status: 'available',
+          },
+          canCheckout: true,
+          storeItemSlug: 'disintegration-black-vinyl-lp',
+          variantId: 'variant_barren-point_standard',
+        },
+      ],
+    });
+    const copy = [readyView.badgeLabel, readyView.detail, readyView.statusLabel].join(' ');
+
+    expect(copy).not.toContain('Worker');
+    expect(copy).not.toContain('Variant');
+    expect(copy).not.toContain('StoreItem');
+    expect(copy).not.toContain('StartCheckout');
   });
 
   it('does not start checkout when the Stripe publishable key is missing', async () => {

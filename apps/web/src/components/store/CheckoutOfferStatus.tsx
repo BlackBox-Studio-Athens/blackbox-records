@@ -38,6 +38,7 @@ export default function CheckoutOfferStatus({
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
   const checkoutMountRef = useRef<HTMLDivElement | null>(null);
   const checkoutSessionRef = useRef<EmbeddedCheckoutMount | null>(null);
+  const itemOptionLabel = initialAvailability.optionLabel || (view.variantId ? 'Selected option' : 'Checking item option');
 
   useEffect(() => {
     let isActive = true;
@@ -104,7 +105,7 @@ export default function CheckoutOfferStatus({
   return (
     <div className="space-y-4" data-checkout-offer-status>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Worker checkout state</p>
+        <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Checkout status</p>
         <Badge
           variant="outline"
           className={cn(
@@ -127,8 +128,8 @@ export default function CheckoutOfferStatus({
               <p className="font-display text-2xl uppercase tracking-[0.08em] text-foreground">{view.statusLabel}</p>
             </div>
             <div className="space-y-2">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Variant</p>
-              <p className="break-all font-mono text-xs text-muted-foreground">{view.variantId ?? 'Awaiting Worker read'}</p>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Item option</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{itemOptionLabel}</p>
             </div>
           </div>
 
@@ -145,11 +146,11 @@ export default function CheckoutOfferStatus({
                   void handleStartCheckout();
                 }}
               >
-                {isStartingCheckout ? 'Starting Checkout' : checkoutMounted ? 'Restart Checkout' : 'Start Checkout'}
+                {isStartingCheckout ? 'Opening Checkout' : checkoutMounted ? 'Reload Checkout' : 'Checkout'}
               </Button>
             ) : (
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Checkout can start only after the Worker confirms this variant is buyable.
+                Checkout opens only after this item is confirmed as buyable.
               </p>
             )}
 
@@ -161,7 +162,7 @@ export default function CheckoutOfferStatus({
 
             {checkoutMounted && (
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Stripe Checkout is mounted below. Payment state is confirmed by Stripe and the Worker after return.
+                Stripe Checkout is mounted below. Payment state is confirmed after return.
               </p>
             )}
           </div>

@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createStorePageStaticPaths, getStorePageEntryBySlug } from './store-page-data';
+import {
+  createStoreCartItemForStorePage,
+  createStorePageStaticPaths,
+  getStorePageEntryBySlug,
+} from './store-page-data';
 
 const mockCatalogData = vi.hoisted(() => ({
   getStoreItemBySlug: vi.fn(),
@@ -86,7 +90,7 @@ describe('store page data helper', () => {
         title: 'Disintegration',
         subtitle: 'Afterwise',
         summary: 'BlackBox release.',
-        image: '/cover.jpg',
+        image: { src: '/cover.jpg', width: 1, height: 1, format: 'jpg' },
         imageAlt: 'Disintegration cover',
         eyebrow: 'Release',
         metadata: ['2024', 'LP'],
@@ -100,7 +104,7 @@ describe('store page data helper', () => {
         title: 'Afterglow Tape',
         subtitle: 'Various Artists',
         summary: 'Distributed release.',
-        image: '/afterglow.jpg',
+        image: { src: '/afterglow.jpg', width: 1, height: 1, format: 'jpg' },
         imageAlt: 'Afterglow Tape cover',
         eyebrow: 'Distro',
         metadata: ['Cassette'],
@@ -157,5 +161,79 @@ describe('store page data helper', () => {
         },
       },
     ]);
+  });
+
+  it('creates a browser-safe cart item for an eligible store page', () => {
+    const cartItem = createStoreCartItemForStorePage(
+      {
+        slug: 'disintegration-black-vinyl-lp',
+        sourceKind: 'release',
+        sourceId: 'barren-point',
+        title: 'Disintegration',
+        subtitle: 'Afterwise',
+        summary: 'BlackBox release.',
+        image: { src: '/cover.jpg', width: 1, height: 1, format: 'jpg' },
+        imageAlt: 'Disintegration cover',
+        eyebrow: 'Release',
+        metadata: ['2024', 'LP'],
+        storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
+        checkoutPath: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
+      },
+      {
+        variantId: 'variant_barren-point_standard',
+        storeItemSlug: 'disintegration-black-vinyl-lp',
+        optionLabel: 'Black Vinyl LP',
+        price: { amountMinor: 2800, currencyCode: 'EUR', display: 'EUR 28.00' },
+        availability: { status: 'available', label: 'Available' },
+        canBuy: true,
+      },
+      '/blackbox-records/_astro/disintegration.webp',
+    );
+
+    expect(cartItem).toEqual({
+      availabilityLabel: 'Available',
+      image: '/blackbox-records/_astro/disintegration.webp',
+      imageAlt: 'Disintegration cover',
+      optionLabel: 'Black Vinyl LP',
+      priceDisplay: 'EUR 28.00',
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+      subtitle: 'Afterwise',
+      title: 'Disintegration',
+      variantId: 'variant_barren-point_standard',
+    });
+    expect(JSON.stringify(cartItem)).not.toContain('barren-point/checkout');
+    expect(JSON.stringify(cartItem)).not.toContain('price_');
+    expect(JSON.stringify(cartItem)).not.toContain('stockCount');
+    expect(JSON.stringify(cartItem)).not.toContain('clientSecret');
+  });
+
+  it('does not create a cart item for unavailable store pages', () => {
+    const cartItem = createStoreCartItemForStorePage(
+      {
+        slug: 'afterglow-tape',
+        sourceKind: 'distro',
+        sourceId: 'afterglow-tape',
+        title: 'Afterglow Tape',
+        subtitle: 'Various Artists',
+        summary: 'Distributed release.',
+        image: { src: '/afterglow.jpg', width: 1, height: 1, format: 'jpg' },
+        imageAlt: 'Afterglow Tape cover',
+        eyebrow: 'Distro',
+        metadata: ['Cassette'],
+        storePath: '/blackbox-records/store/afterglow-tape/',
+        checkoutPath: '/blackbox-records/store/afterglow-tape/checkout/',
+      },
+      {
+        variantId: 'variant_afterglow-tape_standard',
+        storeItemSlug: 'afterglow-tape',
+        optionLabel: 'Cassette',
+        price: { amountMinor: 1400, currencyCode: 'EUR', display: 'EUR 14.00' },
+        availability: { status: 'sold_out', label: 'Sold Out' },
+        canBuy: false,
+      },
+      '/blackbox-records/_astro/afterglow.webp',
+    );
+
+    expect(cartItem).toBeNull();
   });
 });

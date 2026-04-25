@@ -55,10 +55,10 @@ export async function loadCheckoutOfferState(api: PublicCheckoutApi, storeItemSl
 
 export function createInitialCheckoutOfferView(initialAvailability: CheckoutOfferInitialAvailability): CheckoutOfferStatusView {
   return {
-    badgeLabel: 'Checking Worker',
+    badgeLabel: 'Checking checkout',
     canStartCheckout: false,
     detail: initialAvailability.canBuy
-      ? 'Static store data is ready. Confirming checkout eligibility with the Worker.'
+      ? 'Confirming checkout eligibility before payment opens.'
       : 'Static store data says this item is not currently buyable.',
     isReady: false,
     statusLabel: initialAvailability.label,
@@ -70,11 +70,11 @@ export function createInitialCheckoutOfferView(initialAvailability: CheckoutOffe
 export function createCheckoutOfferView(loadState: CheckoutOfferLoadState): CheckoutOfferStatusView {
   if (loadState.kind === 'error') {
     return {
-      badgeLabel: 'Backend unavailable',
+      badgeLabel: 'Checkout unavailable',
       canStartCheckout: false,
       detail: loadState.message,
       isReady: false,
-      statusLabel: 'Worker state unavailable',
+      statusLabel: 'Checkout unavailable',
       tone: 'error',
       variantId: null,
     };
@@ -82,9 +82,9 @@ export function createCheckoutOfferView(loadState: CheckoutOfferLoadState): Chec
 
   if (!loadState.offer.canCheckout) {
     return {
-      badgeLabel: 'Not checkout-ready',
+      badgeLabel: 'Not available',
       canStartCheckout: false,
-      detail: 'The Worker can see this item, but it is not eligible for checkout right now.',
+      detail: 'This item is not eligible for checkout right now.',
       isReady: false,
       statusLabel: loadState.offer.availability.label,
       tone: 'unavailable',
@@ -93,9 +93,9 @@ export function createCheckoutOfferView(loadState: CheckoutOfferLoadState): Chec
   }
 
   return {
-    badgeLabel: 'Worker ready',
+    badgeLabel: 'Checkout ready',
     canStartCheckout: true,
-    detail: `Checkout eligibility confirmed for ${loadState.variants.length} variant${loadState.variants.length === 1 ? '' : 's'}.`,
+    detail: `Checkout is ready for ${loadState.variants.length} item option${loadState.variants.length === 1 ? '' : 's'}.`,
     isReady: true,
     statusLabel: loadState.offer.availability.label,
     tone: 'ready',
@@ -168,5 +168,5 @@ export function readCheckoutErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Could not load Worker checkout state.';
+  return 'Could not load checkout status.';
 }

@@ -1,11 +1,16 @@
 ---
 import { Image } from 'astro:assets';
 
+import StoreItemPurchaseActions from '@/components/store/StoreItemPurchaseActions';
 import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl } from '@/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
-import { type StorePageEntry, createStorePageStaticPaths } from '@/lib/store-page-data';
+import {
+  createStoreCartItemForStorePage,
+  type StorePageEntry,
+  createStorePageStaticPaths,
+} from '@/lib/store-page-data';
 import { cn } from '@/lib/utils';
 
 export async function getStaticPaths() {
@@ -23,12 +28,7 @@ const priceLabel = primaryAvailability?.price.display || 'Price soon';
 const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
 const itemTypeLabel = storeItem.sourceKind === 'release' ? 'Release' : 'Item';
 const canBuy = primaryAvailability?.canBuy ?? false;
-const primaryActionClassName = canBuy
-  ? buttonVariants({ size: 'lg' })
-  : cn(
-      buttonVariants({ size: 'lg', variant: 'outline' }),
-      'pointer-events-none border-border/60 text-muted-foreground opacity-70',
-    );
+const cartItem = createStoreCartItemForStorePage(storeItem, primaryAvailability, storeItem.image.src);
 ---
 
 <SiteLayout
@@ -104,9 +104,7 @@ const primaryActionClassName = canBuy
 
         <div class="space-y-4 border-t border-border/60 pt-5">
           <div class="flex flex-wrap gap-3">
-            <a href={storeItem.checkoutPath} data-astro-prefetch class={primaryActionClassName}>
-              {canBuy ? 'Buy Now' : 'Currently Unavailable'}
-            </a>
+            <StoreItemPurchaseActions client:load cartItem={cartItem} />
             <a
               href={createProjectRelativeUrl('/store/')}
               data-astro-prefetch
@@ -118,7 +116,7 @@ const primaryActionClassName = canBuy
 
           <p class="text-sm leading-relaxed text-muted-foreground">
             {canBuy
-              ? 'The same storefront contract feeds the collection page, this PDP, and the checkout shell that comes next.'
+              ? 'Add it to the cart to review this item before checkout.'
               : 'This item stays viewable even while it is resting. Availability remains explicit without dropping it out of the shelf.'}
           </p>
         </div>

@@ -3,6 +3,7 @@ import {
   getPrimaryAvailabilityForStoreItem,
   type ItemAvailability,
 } from './item-availability';
+import type { StoreCartItem } from './store-cart';
 
 export type StorePageEntry = {
   storeItem: StoreItem;
@@ -19,6 +20,28 @@ export async function getStorePageEntryBySlug(slug: string): Promise<StorePageEn
   return {
     storeItem,
     primaryAvailability: await getPrimaryAvailabilityForStoreItem(storeItem.slug),
+  };
+}
+
+export function createStoreCartItemForStorePage(
+  storeItem: StoreItem,
+  primaryAvailability: ItemAvailability | null,
+  image: string | null,
+): StoreCartItem | null {
+  if (!primaryAvailability?.canBuy) {
+    return null;
+  }
+
+  return {
+    availabilityLabel: primaryAvailability.availability.label,
+    image,
+    imageAlt: storeItem.imageAlt,
+    optionLabel: primaryAvailability.optionLabel,
+    priceDisplay: primaryAvailability.price.display,
+    storeItemSlug: storeItem.slug,
+    subtitle: storeItem.subtitle,
+    title: storeItem.title,
+    variantId: primaryAvailability.variantId,
   };
 }
 
