@@ -30,7 +30,7 @@
   };
 
   const toText = (value) => {
-    if (value == null) {
+    if (value === null || value === undefined) {
       return '';
     }
 
@@ -46,7 +46,9 @@
 
   const getAdminMediaBaseUrl = () => {
     const pathname = window.location.pathname;
-    const adminRootPath = pathname.includes('/admin/') ? pathname.slice(0, pathname.indexOf('/admin/') + '/admin/'.length) : '/admin/';
+    const adminRootPath = pathname.includes('/admin/')
+      ? pathname.slice(0, pathname.indexOf('/admin/') + '/admin/'.length)
+      : '/admin/';
     return `${window.location.origin}${adminRootPath}media/`;
   };
 
@@ -78,7 +80,10 @@
   const enhanceListItemActionButtons = () => {
     const topBars = Array.from(document.querySelectorAll('[class*="ListItemTopBar"]'));
     topBars.forEach((topBar) => {
-      if (!topBar.closest('[class*="SortableListItem"]') || topBar.querySelector('[data-blackbox-section-row-action="remove"]')) {
+      if (
+        !topBar.closest('[class*="SortableListItem"]') ||
+        topBar.querySelector('[data-blackbox-section-row-action="remove"]')
+      ) {
         return;
       }
 
@@ -90,7 +95,8 @@
       }
 
       const targetButton = topBarButtons[topBarButtons.length - 1];
-      const targetLabel = `${targetButton.getAttribute('aria-label') || ''} ${targetButton.getAttribute('title') || ''} ${targetButton.textContent || ''}`.trim();
+      const targetLabel =
+        `${targetButton.getAttribute('aria-label') || ''} ${targetButton.getAttribute('title') || ''} ${targetButton.textContent || ''}`.trim();
       if (targetLabel) {
         return;
       }
@@ -290,7 +296,11 @@
 
     if (resolvedAsset && typeof resolvedAsset.toString === 'function') {
       const serializedValue = resolvedAsset.toString();
-      if (serializedValue && serializedValue !== '[object Object]' && /^(blob:|data:|https?:\/\/)/i.test(serializedValue)) {
+      if (
+        serializedValue &&
+        serializedValue !== '[object Object]' &&
+        /^(blob:|data:|https?:\/\/)/i.test(serializedValue)
+      ) {
         return serializedValue;
       }
 
@@ -419,19 +429,19 @@
               ]),
             ]),
             h('section', { className: 'blackbox-preview__grid blackbox-preview__grid--three' }, [
-                h('article', { className: 'blackbox-preview__card' }, [
-                  h(
-                    'p',
-                    { className: 'blackbox-preview__meta' },
+              h('article', { className: 'blackbox-preview__card' }, [
+                h(
+                  'p',
+                  { className: 'blackbox-preview__meta' },
                   toText(latestReleases?.section_label || 'Latest Releases'),
-                  ),
-                  h(
-                    'h2',
-                    { className: 'blackbox-preview__card-title' },
+                ),
+                h(
+                  'h2',
+                  { className: 'blackbox-preview__card-title' },
                   toText(latestReleases?.title || 'Latest Releases'),
-                  ),
+                ),
                 renderButton(toText(latestReleases?.link_text || 'View All'), true),
-                ]),
+              ]),
               h('article', { className: 'blackbox-preview__card' }, [
                 h('p', { className: 'blackbox-preview__meta' }, toText(artists?.section_label || 'Artists')),
                 h('h2', { className: 'blackbox-preview__card-title' }, toText(artists?.title || 'Artists')),
@@ -445,37 +455,39 @@
             ]),
             journey && journeyImageUrl
               ? h('section', { className: 'blackbox-preview__journey-surface' }, [
-              h('div', { className: 'blackbox-preview__journey-grid' }, [
-                h('div', { className: 'blackbox-preview__journey-copy' }, [
-                  h('p', { className: 'blackbox-preview__eyebrow' }, toText(journey.section_label || 'About')),
-                  h(
-                    'h2',
-                    { className: 'blackbox-preview__title blackbox-preview__title--section' },
-                    toText(journey.title || 'The Journey'),
-                  ),
-                  h(
-                    'div',
-                    { className: 'blackbox-preview__copy-stack' },
-                    toArray(journey.paragraphs).slice(0, 2).map((paragraph, index) =>
-                      h('p', { key: `journey-${index}`, className: 'blackbox-preview__copy' }, paragraph),
-                    ),
-                  ),
-                  renderPills(
-                    toArray(journey.stats)
-                      .map((item) => titleCase(item.label || item.key))
-                      .filter(Boolean),
-                  ),
-                ]),
-                h('div', { className: 'blackbox-preview__journey-media' }, [
-                  renderImage(
-                    journeyImageUrl,
-                    journey.image_alt,
-                    'blackbox-preview__media blackbox-preview__media--muted',
-                    'Journey image',
-                  ),
-                ]),
-              ]),
-              ])
+                  h('div', { className: 'blackbox-preview__journey-grid' }, [
+                    h('div', { className: 'blackbox-preview__journey-copy' }, [
+                      h('p', { className: 'blackbox-preview__eyebrow' }, toText(journey.section_label || 'About')),
+                      h(
+                        'h2',
+                        { className: 'blackbox-preview__title blackbox-preview__title--section' },
+                        toText(journey.title || 'The Journey'),
+                      ),
+                      h(
+                        'div',
+                        { className: 'blackbox-preview__copy-stack' },
+                        toArray(journey.paragraphs)
+                          .slice(0, 2)
+                          .map((paragraph, index) =>
+                            h('p', { key: `journey-${index}`, className: 'blackbox-preview__copy' }, paragraph),
+                          ),
+                      ),
+                      renderPills(
+                        toArray(journey.stats)
+                          .map((item) => titleCase(item.label || item.key))
+                          .filter(Boolean),
+                      ),
+                    ]),
+                    h('div', { className: 'blackbox-preview__journey-media' }, [
+                      renderImage(
+                        journeyImageUrl,
+                        journey.image_alt,
+                        'blackbox-preview__media blackbox-preview__media--muted',
+                        'Journey image',
+                      ),
+                    ]),
+                  ]),
+                ])
               : null,
           ]),
         ]);
@@ -502,7 +514,11 @@
                 h('div', { className: 'blackbox-preview__hero-copy' }, [
                   h('p', { className: 'blackbox-preview__eyebrow' }, toText(hero.section_label || 'About')),
                   h('h1', { className: 'blackbox-preview__title' }, toText(hero.title || 'The Label')),
-                  h('p', { className: 'blackbox-preview__copy blackbox-preview__copy--lead' }, toText(lead?.text || '')),
+                  h(
+                    'p',
+                    { className: 'blackbox-preview__copy blackbox-preview__copy--lead' },
+                    toText(lead?.text || ''),
+                  ),
                 ]),
                 h('div', { className: 'blackbox-preview__hero-media' }, [
                   renderImage(
@@ -534,11 +550,15 @@
                       ])
                     : null,
                   quote
-                    ? h('article', { className: 'blackbox-preview__card blackbox-preview__card--quote', key: 'quote' }, [
-                        h('p', { className: 'blackbox-preview__eyebrow' }, 'Quote'),
-                        h('blockquote', { className: 'blackbox-preview__quote' }, toText(quote.text)),
-                        h('p', { className: 'blackbox-preview__meta' }, toText(quote.cite)),
-                      ])
+                    ? h(
+                        'article',
+                        { className: 'blackbox-preview__card blackbox-preview__card--quote', key: 'quote' },
+                        [
+                          h('p', { className: 'blackbox-preview__eyebrow' }, 'Quote'),
+                          h('blockquote', { className: 'blackbox-preview__quote' }, toText(quote.text)),
+                          h('p', { className: 'blackbox-preview__meta' }, toText(quote.cite)),
+                        ],
+                      )
                     : null,
                   contact
                     ? h('article', { className: 'blackbox-preview__card', key: 'contact' }, [
@@ -567,7 +587,11 @@
                       { className: 'blackbox-preview__stats-grid' },
                       toArray(stats.items).map((item, index) =>
                         h('div', { className: 'blackbox-preview__stat', key: `stat-${index}` }, [
-                          h('span', { className: 'blackbox-preview__card-title blackbox-preview__card-title--small' }, toText(item.key)),
+                          h(
+                            'span',
+                            { className: 'blackbox-preview__card-title blackbox-preview__card-title--small' },
+                            toText(item.key),
+                          ),
                           h('p', { className: 'blackbox-preview__meta' }, toText(item.label)),
                         ]),
                       ),
@@ -622,14 +646,25 @@
                         ),
                       ]),
                       h('div', { className: 'blackbox-preview__service-copy' }, [
-                        h('p', { className: 'blackbox-preview__meta' }, titleCase(service.id || `service-${index + 1}`)),
+                        h(
+                          'p',
+                          { className: 'blackbox-preview__meta' },
+                          titleCase(service.id || `service-${index + 1}`),
+                        ),
                         h('h2', { className: 'blackbox-preview__card-title' }, toText(service.title)),
                         h('p', { className: 'blackbox-preview__copy' }, toText(service.summary)),
                         renderBulletList(toArray(service.bullets)),
                         service.partner_name
-                          ? renderPills([`With ${service.partner_name}`], 'blackbox-preview__pill blackbox-preview__pill--accent')
+                          ? renderPills(
+                              [`With ${service.partner_name}`],
+                              'blackbox-preview__pill blackbox-preview__pill--accent',
+                            )
                           : null,
-                        h('p', { className: 'blackbox-preview__meta blackbox-preview__meta--note' }, toText(service.contact_note)),
+                        h(
+                          'p',
+                          { className: 'blackbox-preview__meta blackbox-preview__meta--note' },
+                          toText(service.contact_note),
+                        ),
                       ]),
                     ]);
                   }),
@@ -648,15 +683,19 @@
                     'div',
                     { className: 'blackbox-preview__grid blackbox-preview__grid--three' },
                     toArray(process.steps).map((step, index) =>
-                      h('article', { className: 'blackbox-preview__card blackbox-preview__card--step', key: `step-${index}` }, [
-                        h('span', { className: 'blackbox-preview__step-number' }, `0${index + 1}`),
-                        h(
-                          'h3',
-                          { className: 'blackbox-preview__card-title blackbox-preview__card-title--small' },
-                          toText(step.title),
-                        ),
-                        h('p', { className: 'blackbox-preview__copy' }, toText(step.body)),
-                      ]),
+                      h(
+                        'article',
+                        { className: 'blackbox-preview__card blackbox-preview__card--step', key: `step-${index}` },
+                        [
+                          h('span', { className: 'blackbox-preview__step-number' }, `0${index + 1}`),
+                          h(
+                            'h3',
+                            { className: 'blackbox-preview__card-title blackbox-preview__card-title--small' },
+                            toText(step.title),
+                          ),
+                          h('p', { className: 'blackbox-preview__copy' }, toText(step.body)),
+                        ],
+                      ),
                     ),
                   ),
                 ])
@@ -670,7 +709,10 @@
                     toText(inquiry.title),
                   ),
                   h('p', { className: 'blackbox-preview__copy' }, toText(inquiry.intro)),
-                  renderPills(['Name', 'Email', 'Band / Project', 'Service', 'Message'], 'blackbox-preview__pill blackbox-preview__pill--outline'),
+                  renderPills(
+                    ['Name', 'Email', 'Band / Project', 'Service', 'Message'],
+                    'blackbox-preview__pill blackbox-preview__pill--outline',
+                  ),
                   renderButton(toText(inquiry.submit_text || 'Compose Inquiry')),
                 ])
               : null,
@@ -698,7 +740,11 @@
                 metaItems.length ? renderPills(metaItems) : null,
                 h('p', { className: 'blackbox-preview__copy' }, toText(data.bio)),
                 data.upcoming_release
-                  ? h('p', { className: 'blackbox-preview__meta blackbox-preview__meta--note' }, `Upcoming: ${data.upcoming_release}`)
+                  ? h(
+                      'p',
+                      { className: 'blackbox-preview__meta blackbox-preview__meta--note' },
+                      `Upcoming: ${data.upcoming_release}`,
+                    )
                   : null,
               ]),
             ]),
@@ -770,14 +816,13 @@
               ]),
               h('div', { className: 'blackbox-preview__catalog-copy' }, [
                 h('p', { className: 'blackbox-preview__eyebrow' }, toText(data.group || 'Distro')),
-                h(
-                  'h1',
-                  { className: 'blackbox-preview__title blackbox-preview__title--section' },
-                  toText(data.title),
-                ),
+                h('h1', { className: 'blackbox-preview__title blackbox-preview__title--section' }, toText(data.title)),
                 h('p', { className: 'blackbox-preview__meta' }, toText(data.artist_or_label)),
                 data.summary ? h('p', { className: 'blackbox-preview__copy' }, toText(data.summary)) : null,
-                renderPills([data.eyebrow, data.format].filter(Boolean), 'blackbox-preview__pill blackbox-preview__pill--outline'),
+                renderPills(
+                  [data.eyebrow, data.format].filter(Boolean),
+                  'blackbox-preview__pill blackbox-preview__pill--outline',
+                ),
                 renderButton('View in Store', true),
               ]),
             ]),
@@ -815,7 +860,15 @@
       },
     });
 
-    const registeredPreviewCollections = ['home-site', 'about-site', 'services-site', 'artists', 'releases', 'distro', 'news'];
+    const registeredPreviewCollections = [
+      'home-site',
+      'about-site',
+      'services-site',
+      'artists',
+      'releases',
+      'distro',
+      'news',
+    ];
 
     CMS.registerPreviewTemplate('home', HomePreview);
     CMS.registerPreviewTemplate('home-site', HomePreview);

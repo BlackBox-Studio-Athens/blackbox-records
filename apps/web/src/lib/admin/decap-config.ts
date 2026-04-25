@@ -307,7 +307,9 @@ export function shouldUseLocalDecapBackend(options: {
     return true;
   }
 
-  return authEndpoint.includes('__SET_DECAPBRIDGE_SITE_ID__') || authTokenEndpoint.includes('__SET_DECAPBRIDGE_SITE_ID__');
+  return (
+    authEndpoint.includes('__SET_DECAPBRIDGE_SITE_ID__') || authTokenEndpoint.includes('__SET_DECAPBRIDGE_SITE_ID__')
+  );
 }
 
 export function buildDecapConfig(options: BuildDecapConfigOptions): string {
@@ -531,7 +533,12 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
       collapsed: true,
       summary: '{{fields.title}}',
       fields: [
-        buildField({ label: 'Section label', name: 'section_label', widget: 'string', hint: 'Small label above the hero title.' }),
+        buildField({
+          label: 'Section label',
+          name: 'section_label',
+          widget: 'string',
+          hint: 'Small label above the hero title.',
+        }),
         buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Primary About page title.' }),
         buildField({
           label: 'Image',
@@ -594,7 +601,12 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
           summary: '{{fields.cite}}',
           fields: [
             buildField({ label: 'Text', name: 'text', widget: 'text', hint: 'Quoted line or statement.' }),
-            buildField({ label: 'Cite', name: 'cite', widget: 'string', hint: 'Attribution line shown with the quote.' }),
+            buildField({
+              label: 'Cite',
+              name: 'cite',
+              widget: 'string',
+              hint: 'Attribution line shown with the quote.',
+            }),
           ],
         },
         {
@@ -603,7 +615,12 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
           summary: '{{fields.title}}',
           fields: [
             buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Contact panel heading.' }),
-            buildField({ label: 'Intro', name: 'intro', widget: 'text', hint: 'Short intro line before the contact rows.' }),
+            buildField({
+              label: 'Intro',
+              name: 'intro',
+              widget: 'text',
+              hint: 'Short intro line before the contact rows.',
+            }),
             buildField({
               label: 'Items',
               name: 'items',
@@ -612,7 +629,12 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
               collapsed: true,
               summary: '{{fields.label}}: {{fields.value}}',
               fields: [
-                buildField({ label: 'Label', name: 'label', widget: 'string', hint: 'Left-hand label. Example: "Email".' }),
+                buildField({
+                  label: 'Label',
+                  name: 'label',
+                  widget: 'string',
+                  hint: 'Left-hand label. Example: "Email".',
+                }),
                 buildField({ label: 'Value', name: 'value', widget: 'string', hint: 'Displayed value or address.' }),
               ],
             }),
@@ -658,7 +680,12 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
       fields: [
         buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Main Services page heading.' }),
         buildField({ label: 'Intro', name: 'intro', widget: 'text', hint: 'Short framing paragraph under the title.' }),
-        buildField({ label: 'CTA text', name: 'cta_text', widget: 'string', hint: 'Short inquiry button label. Keep it compact.' }),
+        buildField({
+          label: 'CTA text',
+          name: 'cta_text',
+          widget: 'string',
+          hint: 'Short inquiry button label. Keep it compact.',
+        }),
       ],
     }),
     buildField({
@@ -694,8 +721,18 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
                   widget: 'image',
                   hint: 'Representative image for the service section. Choose a crop that works in both stacked and side-by-side layouts.',
                 }),
-                buildField({ label: 'Image alt', name: 'image_alt', widget: 'string', hint: 'Describe the service image for screen readers.' }),
-                buildField({ label: 'Summary', name: 'summary', widget: 'text', hint: 'Short editorial description shown near the service title.' }),
+                buildField({
+                  label: 'Image alt',
+                  name: 'image_alt',
+                  widget: 'string',
+                  hint: 'Describe the service image for screen readers.',
+                }),
+                buildField({
+                  label: 'Summary',
+                  name: 'summary',
+                  widget: 'text',
+                  hint: 'Short editorial description shown near the service title.',
+                }),
                 buildField({
                   label: 'Bullets',
                   name: 'bullets',
@@ -710,9 +747,26 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
                     hint: 'One concise capability per item.',
                   }),
                 }),
-                buildField({ label: 'Contact note', name: 'contact_note', widget: 'text', hint: 'Short line that nudges readers toward the inquiry form.' }),
-                buildField({ label: 'Partner name', name: 'partner_name', widget: 'string', required: false, hint: 'Optional partner name displayed inline.' }),
-                buildField({ label: 'Partner URL', name: 'partner_url', widget: 'string', required: false, hint: 'Optional partner URL. Include https://.' }),
+                buildField({
+                  label: 'Contact note',
+                  name: 'contact_note',
+                  widget: 'text',
+                  hint: 'Short line that nudges readers toward the inquiry form.',
+                }),
+                buildField({
+                  label: 'Partner name',
+                  name: 'partner_name',
+                  widget: 'string',
+                  required: false,
+                  hint: 'Optional partner name displayed inline.',
+                }),
+                buildField({
+                  label: 'Partner URL',
+                  name: 'partner_url',
+                  widget: 'string',
+                  required: false,
+                  hint: 'Optional partner URL. Include https://.',
+                }),
               ],
             }),
           ],
@@ -723,7 +777,12 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
           summary: '{{fields.title}}',
           fields: [
             buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Process section heading.' }),
-            buildField({ label: 'Intro', name: 'intro', widget: 'text', hint: 'Short sentence introducing the process steps.' }),
+            buildField({
+              label: 'Intro',
+              name: 'intro',
+              widget: 'text',
+              hint: 'Short sentence introducing the process steps.',
+            }),
             buildField({
               label: 'Steps',
               name: 'steps',
@@ -732,7 +791,12 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
               summary: '{{fields.title}}',
               fields: [
                 buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Step heading.' }),
-                buildField({ label: 'Body', name: 'body', widget: 'text', hint: 'Short explanatory sentence for the step.' }),
+                buildField({
+                  label: 'Body',
+                  name: 'body',
+                  widget: 'text',
+                  hint: 'Short explanatory sentence for the step.',
+                }),
               ],
             }),
           ],
@@ -744,8 +808,18 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
           fields: [
             buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Inquiry section heading.' }),
             buildField({ label: 'Intro', name: 'intro', widget: 'text', hint: 'Short intro line above the form.' }),
-            buildField({ label: 'Email', name: 'email', widget: 'string', hint: 'Mailbox that receives inquiries. Example: hello@blackboxrecords.com.' }),
-            buildField({ label: 'Submit text', name: 'submit_text', widget: 'string', hint: 'Button label used when composing the email draft.' }),
+            buildField({
+              label: 'Email',
+              name: 'email',
+              widget: 'string',
+              hint: 'Mailbox that receives inquiries. Example: hello@blackboxrecords.com.',
+            }),
+            buildField({
+              label: 'Submit text',
+              name: 'submit_text',
+              widget: 'string',
+              hint: 'Button label used when composing the email draft.',
+            }),
           ],
         },
       ],
@@ -754,7 +828,12 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
 
   const settingsFields = [
     buildSchemaField('../../../.astro/collections/settings.schema.json'),
-    buildField({ label: 'Label name', name: 'label_name', widget: 'string', hint: 'Official public name used in metadata and footer copy.' }),
+    buildField({
+      label: 'Label name',
+      name: 'label_name',
+      widget: 'string',
+      hint: 'Official public name used in metadata and footer copy.',
+    }),
     buildField({
       label: 'Established year',
       name: 'established_year',
@@ -864,10 +943,35 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
       fields: [
         buildSchemaField('../../../.astro/collections/navigation.schema.json'),
         buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Visible navigation label.' }),
-        buildField({ label: 'URL', name: 'url', widget: 'string', hint: 'Internal routes should start with /. External links should include https://.' }),
-        buildField({ label: 'Order', name: 'order', widget: 'number', hint: 'Lower numbers appear first.', extras: ['value_type: int', 'min: 0'] }),
-        buildField({ label: 'Show in header', name: 'show_in_header', widget: 'boolean', required: false, hint: 'Enable this item in the desktop and mobile header navigation.', extras: ['default: true'] }),
-        buildField({ label: 'Show in footer', name: 'show_in_footer', widget: 'boolean', required: false, hint: 'Enable this item in the footer sitemap.', extras: ['default: true'] }),
+        buildField({
+          label: 'URL',
+          name: 'url',
+          widget: 'string',
+          hint: 'Internal routes should start with /. External links should include https://.',
+        }),
+        buildField({
+          label: 'Order',
+          name: 'order',
+          widget: 'number',
+          hint: 'Lower numbers appear first.',
+          extras: ['value_type: int', 'min: 0'],
+        }),
+        buildField({
+          label: 'Show in header',
+          name: 'show_in_header',
+          widget: 'boolean',
+          required: false,
+          hint: 'Enable this item in the desktop and mobile header navigation.',
+          extras: ['default: true'],
+        }),
+        buildField({
+          label: 'Show in footer',
+          name: 'show_in_footer',
+          widget: 'boolean',
+          required: false,
+          hint: 'Enable this item in the footer sitemap.',
+          extras: ['default: true'],
+        }),
       ],
     }),
     buildFolderCollection({
@@ -884,7 +988,13 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
         buildSchemaField('../../../.astro/collections/socials.schema.json'),
         buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Platform or network name.' }),
         buildField({ label: 'URL', name: 'url', widget: 'string', hint: 'Full profile URL including https://.' }),
-        buildField({ label: 'Order', name: 'order', widget: 'number', hint: 'Lower numbers appear first.', extras: ['value_type: int', 'min: 0'] }),
+        buildField({
+          label: 'Order',
+          name: 'order',
+          widget: 'number',
+          hint: 'Lower numbers appear first.',
+          extras: ['value_type: int', 'min: 0'],
+        }),
       ],
     }),
     buildFolderCollection({
@@ -902,15 +1012,60 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
       summary: '{{title}} - {{slug}}',
       fields: [
         buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Artist or band name.' }),
-        buildField({ label: 'Slug', name: 'slug', widget: 'string', hint: 'Used for the artist page filename. Use lowercase kebab-case, for example "mass-culture".' }),
-        buildField({ label: 'Genre', name: 'genre', widget: 'string', hint: 'Short genre line shown in cards and detail views.' }),
-        buildField({ label: 'Country', name: 'country', widget: 'string', required: false, hint: 'Optional country or origin.' }),
-        buildField({ label: 'Image', name: 'image', widget: 'image', hint: 'Portrait-oriented artist image. Keep the subject centered for the 3:4 crop.' }),
-        buildField({ label: 'Image alt', name: 'image_alt', widget: 'string', required: false, hint: 'Describe the band or artist image for screen readers.' }),
+        buildField({
+          label: 'Slug',
+          name: 'slug',
+          widget: 'string',
+          hint: 'Used for the artist page filename. Use lowercase kebab-case, for example "mass-culture".',
+        }),
+        buildField({
+          label: 'Genre',
+          name: 'genre',
+          widget: 'string',
+          hint: 'Short genre line shown in cards and detail views.',
+        }),
+        buildField({
+          label: 'Country',
+          name: 'country',
+          widget: 'string',
+          required: false,
+          hint: 'Optional country or origin.',
+        }),
+        buildField({
+          label: 'Image',
+          name: 'image',
+          widget: 'image',
+          hint: 'Portrait-oriented artist image. Keep the subject centered for the 3:4 crop.',
+        }),
+        buildField({
+          label: 'Image alt',
+          name: 'image_alt',
+          widget: 'string',
+          required: false,
+          hint: 'Describe the band or artist image for screen readers.',
+        }),
         buildField({ label: 'Bio', name: 'bio', widget: 'text', hint: 'Short artist bio used on the detail page.' }),
-        buildField({ label: 'Upcoming release', name: 'upcoming_release', widget: 'string', required: false, hint: 'Optional note shown when an artist has a release on the way.' }),
-        buildField({ label: 'Shop collection handle', name: 'shop_collection_handle', widget: 'string', required: false, hint: 'Optional Fourthwall collection handle, without a full URL.' }),
-        buildField({ label: 'Section label', name: 'section_label', widget: 'string', required: false, hint: 'Optional small label used in selected UI contexts.' }),
+        buildField({
+          label: 'Upcoming release',
+          name: 'upcoming_release',
+          widget: 'string',
+          required: false,
+          hint: 'Optional note shown when an artist has a release on the way.',
+        }),
+        buildField({
+          label: 'Shop collection handle',
+          name: 'shop_collection_handle',
+          widget: 'string',
+          required: false,
+          hint: 'Optional Fourthwall collection handle, without a full URL.',
+        }),
+        buildField({
+          label: 'Section label',
+          name: 'section_label',
+          widget: 'string',
+          required: false,
+          hint: 'Optional small label used in selected UI contexts.',
+        }),
       ],
     }),
     buildFolderCollection({
@@ -927,15 +1082,68 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
       summary: '{{title}} - {{artist}}',
       fields: [
         buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Release title.' }),
-        buildField({ label: 'Artist', name: 'artist', widget: 'select', hint: 'Pick the matching artist entry so Astro references stay valid.', options: options.artistOptions }),
-        buildField({ label: 'Release date', name: 'release_date', widget: 'datetime', hint: 'Release day only. Time is ignored. Example: 2026-09-18.', extras: ['date_format: YYYY-MM-DD', 'time_format: false'] }),
-        buildField({ label: 'Cover image', name: 'cover_image', widget: 'image', hint: 'Primary release artwork used in cards and the release detail view.' }),
-        buildField({ label: 'Cover image alt', name: 'cover_image_alt', widget: 'string', required: false, hint: 'Describe the artwork for screen readers.' }),
-        buildField({ label: 'Merch URL', name: 'merch_url', widget: 'string', required: false, hint: 'Optional direct merch or product URL. Include https://.' }),
-        buildField({ label: 'Shop collection handle', name: 'shop_collection_handle', widget: 'string', required: false, hint: 'Optional Fourthwall collection handle, without a full URL.' }),
-        buildField({ label: 'Bandcamp embed URL', name: 'bandcamp_embed_url', widget: 'string', required: false, hint: 'Embed URL from Bandcamp, not the public album page URL.' }),
-        buildField({ label: 'Tidal URL', name: 'tidal_url', widget: 'string', required: false, hint: 'Full Tidal share URL including https://.' }),
-        buildField({ label: 'Summary', name: 'summary', widget: 'text', required: false, hint: 'Short release summary shown in cards and detail headers.' }),
+        buildField({
+          label: 'Artist',
+          name: 'artist',
+          widget: 'select',
+          hint: 'Pick the matching artist entry so Astro references stay valid.',
+          options: options.artistOptions,
+        }),
+        buildField({
+          label: 'Release date',
+          name: 'release_date',
+          widget: 'datetime',
+          hint: 'Release day only. Time is ignored. Example: 2026-09-18.',
+          extras: ['date_format: YYYY-MM-DD', 'time_format: false'],
+        }),
+        buildField({
+          label: 'Cover image',
+          name: 'cover_image',
+          widget: 'image',
+          hint: 'Primary release artwork used in cards and the release detail view.',
+        }),
+        buildField({
+          label: 'Cover image alt',
+          name: 'cover_image_alt',
+          widget: 'string',
+          required: false,
+          hint: 'Describe the artwork for screen readers.',
+        }),
+        buildField({
+          label: 'Merch URL',
+          name: 'merch_url',
+          widget: 'string',
+          required: false,
+          hint: 'Optional direct merch or product URL. Include https://.',
+        }),
+        buildField({
+          label: 'Shop collection handle',
+          name: 'shop_collection_handle',
+          widget: 'string',
+          required: false,
+          hint: 'Optional Fourthwall collection handle, without a full URL.',
+        }),
+        buildField({
+          label: 'Bandcamp embed URL',
+          name: 'bandcamp_embed_url',
+          widget: 'string',
+          required: false,
+          hint: 'Embed URL from Bandcamp, not the public album page URL.',
+        }),
+        buildField({
+          label: 'Tidal URL',
+          name: 'tidal_url',
+          widget: 'string',
+          required: false,
+          hint: 'Full Tidal share URL including https://.',
+        }),
+        buildField({
+          label: 'Summary',
+          name: 'summary',
+          widget: 'text',
+          required: false,
+          hint: 'Short release summary shown in cards and detail headers.',
+        }),
         buildField({
           label: 'Formats',
           name: 'formats',
@@ -944,7 +1152,12 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
           hint: 'Physical or digital formats shown in the release detail UI.',
           collapsed: true,
           summary: '{{fields.value}}',
-          field: buildFieldMapping({ label: 'Format', name: 'value', widget: 'string', hint: 'Example: "LP", "CD", or "Digital".' }),
+          field: buildFieldMapping({
+            label: 'Format',
+            name: 'value',
+            widget: 'string',
+            hint: 'Example: "LP", "CD", or "Digital".',
+          }),
         }),
         buildField({
           label: 'Credits',
@@ -987,14 +1200,57 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
             { label: 'Tapes', value: 'Tapes' },
           ],
         }),
-        buildField({ label: 'Artist or label', name: 'artist_or_label', widget: 'string', hint: 'Supporting line shown below the item title.' }),
-        buildField({ label: 'Image', name: 'image', widget: 'image', hint: 'Product image used in distro cards. Choose a clean, readable crop.' }),
-        buildField({ label: 'Image alt', name: 'image_alt', widget: 'string', hint: 'Describe the product image for screen readers.' }),
-        buildField({ label: 'Summary', name: 'summary', widget: 'text', hint: 'Short curator-style note for the distro item.' }),
-        buildField({ label: 'Fourthwall URL', name: 'fourthwall_url', widget: 'string', hint: 'Direct product URL on Fourthwall. Include https://.' }),
-        buildField({ label: 'Eyebrow', name: 'eyebrow', widget: 'string', required: false, hint: 'Optional small label above the summary.' }),
-        buildField({ label: 'Format', name: 'format', widget: 'string', required: false, hint: 'Optional short format note, such as "LP" or "Black tee".' }),
-        buildField({ label: 'Order', name: 'order', widget: 'number', hint: 'Lower numbers appear first within the group.', extras: ['value_type: int', 'min: 0'] }),
+        buildField({
+          label: 'Artist or label',
+          name: 'artist_or_label',
+          widget: 'string',
+          hint: 'Supporting line shown below the item title.',
+        }),
+        buildField({
+          label: 'Image',
+          name: 'image',
+          widget: 'image',
+          hint: 'Product image used in distro cards. Choose a clean, readable crop.',
+        }),
+        buildField({
+          label: 'Image alt',
+          name: 'image_alt',
+          widget: 'string',
+          hint: 'Describe the product image for screen readers.',
+        }),
+        buildField({
+          label: 'Summary',
+          name: 'summary',
+          widget: 'text',
+          hint: 'Short curator-style note for the distro item.',
+        }),
+        buildField({
+          label: 'Fourthwall URL',
+          name: 'fourthwall_url',
+          widget: 'string',
+          hint: 'Direct product URL on Fourthwall. Include https://.',
+        }),
+        buildField({
+          label: 'Eyebrow',
+          name: 'eyebrow',
+          widget: 'string',
+          required: false,
+          hint: 'Optional small label above the summary.',
+        }),
+        buildField({
+          label: 'Format',
+          name: 'format',
+          widget: 'string',
+          required: false,
+          hint: 'Optional short format note, such as "LP" or "Black tee".',
+        }),
+        buildField({
+          label: 'Order',
+          name: 'order',
+          widget: 'number',
+          hint: 'Lower numbers appear first within the group.',
+          extras: ['value_type: int', 'min: 0'],
+        }),
       ],
     }),
     buildFolderCollection({
@@ -1011,11 +1267,34 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
       summary: '{{title}} - {{date}}',
       fields: [
         buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Article title.' }),
-        buildField({ label: 'Date', name: 'date', widget: 'datetime', hint: 'Publish date for the card and article header. Example: 2026-05-12.', extras: ['date_format: YYYY-MM-DD', 'time_format: false'] }),
+        buildField({
+          label: 'Date',
+          name: 'date',
+          widget: 'datetime',
+          hint: 'Publish date for the card and article header. Example: 2026-05-12.',
+          extras: ['date_format: YYYY-MM-DD', 'time_format: false'],
+        }),
         buildField({ label: 'Summary', name: 'summary', widget: 'text', hint: 'Short teaser used in listing cards.' }),
-        buildField({ label: 'Image', name: 'image', widget: 'image', hint: 'Lead image for the news card and article header.' }),
-        buildField({ label: 'Image alt', name: 'image_alt', widget: 'string', required: false, hint: 'Describe the news image for screen readers.' }),
-        buildField({ label: 'Section label', name: 'section_label', widget: 'string', required: false, hint: 'Optional small label shown above the article title.' }),
+        buildField({
+          label: 'Image',
+          name: 'image',
+          widget: 'image',
+          hint: 'Lead image for the news card and article header.',
+        }),
+        buildField({
+          label: 'Image alt',
+          name: 'image_alt',
+          widget: 'string',
+          required: false,
+          hint: 'Describe the news image for screen readers.',
+        }),
+        buildField({
+          label: 'Section label',
+          name: 'section_label',
+          widget: 'string',
+          required: false,
+          hint: 'Optional small label shown above the article title.',
+        }),
         buildField({ label: 'Body', name: 'body', widget: 'markdown', hint: 'Main article body in Markdown.' }),
       ],
     }),

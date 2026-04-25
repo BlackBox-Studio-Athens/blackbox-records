@@ -29,9 +29,7 @@ function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
 
   function applyFilters(nextSearchQuery: string, domItems: ArtistRosterDomItem[]) {
     const matchedElements = nextSearchQuery.trim()
-      ? new Set(
-          (searcherRef.current?.search(nextSearchQuery) || []).map((match) => match.element),
-        )
+      ? new Set((searcherRef.current?.search(nextSearchQuery) || []).map((match) => match.element))
       : null;
 
     let nextVisibleCount = 0;
@@ -81,7 +79,10 @@ function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
   return (
     <div className="artists-roster-filters-panel space-y-4">
       <div className="relative">
-        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+        <Search
+          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden="true"
+        />
         <Input
           type="search"
           value={searchQuery}

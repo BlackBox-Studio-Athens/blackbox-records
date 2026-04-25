@@ -14,22 +14,26 @@ Phase 5 bootstraps a **separate Cloudflare Worker backend** inside the repo. It 
 ## Implementation Decisions
 
 ### Deployment model
+
 - **D-01:** The Astro site remains the static frontend and keeps its GitHub Pages deployment path during this milestone.
 - **D-02:** A separate Cloudflare Worker backend is added in-repo for dynamic commerce APIs, Stripe integration, webhooks, and D1 access.
 - **D-03:** The Worker is a backend/BFF, not the primary frontend runtime.
 
 ### Environment model
+
 - **D-04:** Wrangler is the source of truth for Worker runtime configuration and environment naming.
 - **D-05:** Frontend-to-Worker URLs and env vars must be explicit for local and sandbox use.
 - **D-06:** The sandbox Worker must have one stable hostname so browser checks, Stripe return URLs, and webhook testing point at one consistent backend target.
 
 ### Secrets and trust boundaries
+
 - **D-07:** Runtime secrets stay in Worker secrets/bindings, not in browser code and not only in GitHub Secrets.
 - **D-08:** GitHub Secrets hold CI credentials such as Cloudflare API tokens and account identifiers.
 - **D-09:** Cloudflare Access remains deferred for public sandbox browsing; the sandbox Worker must be treated as reachable, not private, until the later staff-only Access boundary is implemented.
 - **D-09.1:** The Worker does not expose synthetic probe endpoints such as `healthz`, `status`, or `readyz` by default; runtime checks rely on Wrangler, deploy success, and real API tests.
 
 ### Phase shape
+
 - **D-10:** Phase 5 owns only backend runtime/auth/deploy plumbing.
 - **D-11:** Phase 5.1 is the architecture gate for entities, source-of-truth, IDs, mappings, and APIs.
 - **D-12:** D1 + Prisma implementation remains deferred to Phase 6.1.
@@ -39,6 +43,7 @@ Phase 5 bootstraps a **separate Cloudflare Worker backend** inside the repo. It 
 - **D-16:** The backend owns HTTP contracts through code-first OpenAPI, emits separate public/internal documents, and frontend consumers use a generated workspace package instead of importing backend runtime code.
 
 ### the agent's Discretion
+
 - exact script names for local Worker dev/build/deploy
 - exact backend package/layout choice, as long as it stays separate from the Astro frontend
 - exact env var names, as long as frontend vs backend ownership stays explicit
@@ -55,6 +60,7 @@ Phase 5 bootstraps a **separate Cloudflare Worker backend** inside the repo. It 
 </specifics>
 
 <canonical_refs>
+
 ## Canonical References
 
 - `.planning/ROADMAP.md` - Phase 5 goal, requirements, success criteria, and plan list
@@ -68,6 +74,7 @@ Phase 5 bootstraps a **separate Cloudflare Worker backend** inside the repo. It 
 </canonical_refs>
 
 <code_context>
+
 ## Existing Code Insights
 
 - The repo is static-first today and already deploys successfully to GitHub Pages.
@@ -88,5 +95,5 @@ Phase 5 bootstraps a **separate Cloudflare Worker backend** inside the repo. It 
 
 ---
 
-*Phase: 05-cloudflare-runtime-and-secret-plumbing*
-*Context gathered: 2026-04-20*
+_Phase: 05-cloudflare-runtime-and-secret-plumbing_
+_Context gathered: 2026-04-20_

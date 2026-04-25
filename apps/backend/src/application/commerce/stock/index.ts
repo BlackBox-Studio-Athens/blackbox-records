@@ -7,9 +7,9 @@ export { searchVariants } from './search-variants';
 export type { RecordStockChangeCommand } from './record-stock-change';
 export type { RecordStockCountCommand } from './record-stock-count';
 export type {
-    RecordedStockChange,
-    RecordedStockCount,
-    VariantStockDetail,
-    VariantStockHistoryEntry,
-    VariantSummary,
+  RecordedStockChange,
+  RecordedStockCount,
+  VariantStockDetail,
+  VariantStockHistoryEntry,
+  VariantSummary,
 } from './types';

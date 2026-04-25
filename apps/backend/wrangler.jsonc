@@ -9,12 +9,12 @@
     {
       "binding": "COMMERCE_DB",
       "database_name": "blackbox-records-commerce-local",
-      "migrations_dir": "prisma/migrations"
-    }
+      "migrations_dir": "prisma/migrations",
+    },
   ],
   "vars": {
     "APP_ENV": "local",
-    "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321,https://blackbox-studio-athens.github.io"
+    "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321,https://blackbox-studio-athens.github.io",
   },
   "env": {
     "mock": {
@@ -24,15 +24,15 @@
         {
           "binding": "COMMERCE_DB",
           "database_name": "blackbox-records-commerce-local",
-          "migrations_dir": "prisma/migrations"
-        }
+          "migrations_dir": "prisma/migrations",
+        },
       ],
       "vars": {
         "APP_ENV": "local",
         "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321,https://blackbox-studio-athens.github.io",
         "STRIPE_API_BASE_URL": "mock",
-        "STRIPE_SECRET_KEY": "sk_test_mock"
-      }
+        "STRIPE_SECRET_KEY": "sk_test_mock",
+      },
     },
     "sandbox": {
       "name": "blackbox-records-backend-sandbox",
@@ -41,19 +41,19 @@
         {
           "binding": "COMMERCE_DB",
           "database_name": "blackbox-records-commerce-sandbox",
-          "migrations_dir": "prisma/migrations"
-        }
+          "migrations_dir": "prisma/migrations",
+        },
       ],
       "vars": {
         "APP_ENV": "sandbox",
-        "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321,https://blackbox-studio-athens.github.io"
-      }
+        "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321,https://blackbox-studio-athens.github.io",
+      },
     },
     "production": {
       "name": "blackbox-records-backend",
       "vars": {
-        "APP_ENV": "production"
-      }
-    }
-  }
+        "APP_ENV": "production",
+      },
+    },
+  },
 }

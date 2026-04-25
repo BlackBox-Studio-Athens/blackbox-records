@@ -146,7 +146,10 @@ function waitForAnimationFrames(count = 1) {
   });
 }
 
-function resolveShellNavigationSource(anchorElement: HTMLAnchorElement, isMobileNavigationLink: boolean): ShellNavigationSource {
+function resolveShellNavigationSource(
+  anchorElement: HTMLAnchorElement,
+  isMobileNavigationLink: boolean,
+): ShellNavigationSource {
   if (isMobileNavigationLink) return 'mobile-nav';
   if (anchorElement.closest('footer')) return 'footer';
   if (anchorElement.closest('header')) return 'header';
@@ -274,7 +277,9 @@ export default function AppShellRoot({
     'Close player',
   );
   const [isMobileNavigationOpen, setIsMobileNavigationOpen] = useState(false);
-  const [shellSectionTransitionState, setShellSectionTransitionState] = useState<'closed' | 'entering' | 'revealing'>('closed');
+  const [shellSectionTransitionState, setShellSectionTransitionState] = useState<'closed' | 'entering' | 'revealing'>(
+    'closed',
+  );
   const [shellSectionTransitionTarget, setShellSectionTransitionTarget] = useState('');
   const [shellNavigationSource, setShellNavigationSource] = useState<ShellNavigationSource>('programmatic');
   const [artistsRosterFiltersContainer, setArtistsRosterFiltersContainer] = useState<HTMLElement | null>(null);
@@ -308,7 +313,9 @@ export default function AppShellRoot({
   const shellSectionTransitionTimerRef = useRef<number | null>(null);
   const activePlayerSessionRef = useRef<ActivePlayerSession | null>(null);
   const renderedPageHrefRef = useRef(typeof window === 'undefined' ? '' : window.location.href);
-  const renderedPagePathnameRef = useRef(typeof window === 'undefined' ? '' : normalizeAppPathname(window.location.pathname));
+  const renderedPagePathnameRef = useRef(
+    typeof window === 'undefined' ? '' : normalizeAppPathname(window.location.pathname),
+  );
 
   const providerLogoUrls = useMemo(
     () => ({
@@ -662,11 +669,11 @@ export default function AppShellRoot({
     const frameHostElement = iframeFrameHostRef.current;
     if (!frameHostElement) return;
 
-    Array.from(frameHostElement.querySelectorAll<HTMLIFrameElement>('[data-music-streaming-service-embedded-player-iframe]')).forEach(
-      (iframeElement) => {
-        iframeElement.dataset.state = iframeElement === activeIframeElement ? 'active' : 'inactive';
-      },
-    );
+    Array.from(
+      frameHostElement.querySelectorAll<HTMLIFrameElement>('[data-music-streaming-service-embedded-player-iframe]'),
+    ).forEach((iframeElement) => {
+      iframeElement.dataset.state = iframeElement === activeIframeElement ? 'active' : 'inactive';
+    });
   }
 
   function pruneIframeCache(activeEmbedUrl = '') {
@@ -1096,7 +1103,8 @@ export default function AppShellRoot({
 
     try {
       const pageSnapshot =
-        cachedSnapshot || (await fetchShellPageSnapshot(route.pathname, resolvedUrl.toString(), abortController.signal));
+        cachedSnapshot ||
+        (await fetchShellPageSnapshot(route.pathname, resolvedUrl.toString(), abortController.signal));
 
       if (abortController.signal.aborted) {
         return true;
@@ -1108,7 +1116,11 @@ export default function AppShellRoot({
       }
 
       if (options?.historyMode === 'push') {
-        window.history.pushState({ __appShellSection: true, pathname: route.pathname } satisfies ShellSectionHistoryState, '', resolvedUrl.toString());
+        window.history.pushState(
+          { __appShellSection: true, pathname: route.pathname } satisfies ShellSectionHistoryState,
+          '',
+          resolvedUrl.toString(),
+        );
       } else if (options?.historyMode === 'replace') {
         markCurrentHistoryEntryForShellSection(route.pathname, resolvedUrl.toString());
       }
@@ -1170,7 +1182,9 @@ export default function AppShellRoot({
 
   function scrollToTargetId(targetId: string, triggerElement?: HTMLElement | null) {
     const overlayScrollRoot =
-      triggerElement && overlayScrollContainerRef.current?.contains(triggerElement) ? overlayScrollContainerRef.current : null;
+      triggerElement && overlayScrollContainerRef.current?.contains(triggerElement)
+        ? overlayScrollContainerRef.current
+        : null;
     const targetElement =
       overlayScrollRoot?.querySelector<HTMLElement>(`[id="${targetId}"]`) ||
       document.querySelector<HTMLElement>(`[id="${targetId}"]`);
@@ -1251,7 +1265,10 @@ export default function AppShellRoot({
     window.history.replaceState(nextHistoryState, '', options.href);
   }
 
-  async function openOverlayHref(href: string, options?: { backgroundHref?: string; pushHistory?: boolean; replaceHistory?: boolean }) {
+  async function openOverlayHref(
+    href: string,
+    options?: { backgroundHref?: string; pushHistory?: boolean; replaceHistory?: boolean },
+  ) {
     const resolvedUrl = new URL(href, window.location.href);
     const route = parseOverlayRoute(resolvedUrl.pathname);
     if (!route) return false;
@@ -1359,10 +1376,13 @@ export default function AppShellRoot({
         return;
       }
 
-      const playerTriggerElement = eventTarget.closest<HTMLElement>('[data-music-streaming-service-embedded-player-trigger]');
+      const playerTriggerElement = eventTarget.closest<HTMLElement>(
+        '[data-music-streaming-service-embedded-player-trigger]',
+      );
       if (playerTriggerElement) {
         const playerElement =
-          playerTriggerElement.closest<HTMLElement>('[data-music-streaming-service-embedded-player-card]') || playerTriggerElement;
+          playerTriggerElement.closest<HTMLElement>('[data-music-streaming-service-embedded-player-card]') ||
+          playerTriggerElement;
 
         if (readPlayerProviders(playerElement).length > 0) {
           event.preventDefault();
@@ -1541,55 +1561,55 @@ export default function AppShellRoot({
           className="top-[var(--header-height)] bottom-auto h-[calc(100dvh-var(--header-height))] w-[min(92vw,320px)] border-l border-border/80 bg-background/95 pt-6"
         >
           <div className="flex h-full flex-col gap-6">
-          <SheetHeader>
-            <SheetTitle className="font-display text-3xl tracking-[0.1em] uppercase">Menu</SheetTitle>
-            <SheetDescription className="text-xs tracking-[0.16em] uppercase">{siteTitle}</SheetDescription>
-          </SheetHeader>
+            <SheetHeader>
+              <SheetTitle className="font-display text-3xl tracking-[0.1em] uppercase">Menu</SheetTitle>
+              <SheetDescription className="text-xs tracking-[0.16em] uppercase">{siteTitle}</SheetDescription>
+            </SheetHeader>
 
-          <nav className="grid gap-1" aria-label="Mobile" data-app-shell-mobile-navigation>
-            {mobileNavigationItems.map((item) => {
-              const navigationIsActive = activeShellPathname ? isCurrentPath(activeShellPathname, item.url) : false;
-              const linkAttributes = resolveLinkAttributes(item.url);
-              const isServicesNavigationItem = item.url === '/services/';
-              const isStoreNavigationItem = item.url === '/store/';
+            <nav className="grid gap-1" aria-label="Mobile" data-app-shell-mobile-navigation>
+              {mobileNavigationItems.map((item) => {
+                const navigationIsActive = activeShellPathname ? isCurrentPath(activeShellPathname, item.url) : false;
+                const linkAttributes = resolveLinkAttributes(item.url);
+                const isServicesNavigationItem = item.url === '/services/';
+                const isStoreNavigationItem = item.url === '/store/';
 
-              return (
-                <a
-                  key={item.id}
-                  href={linkAttributes.href}
-                  target={linkAttributes.target}
-                  rel={linkAttributes.rel}
-                  data-astro-prefetch={linkAttributes.shouldPrefetch ? true : undefined}
-                  aria-current={navigationIsActive ? 'page' : undefined}
-                  data-services-navigation-link={isServicesNavigationItem ? 'true' : undefined}
-                  data-store-navigation-link={isStoreNavigationItem ? 'true' : undefined}
-                  className={[
-                    'relative inline-flex min-h-11 items-center border-b border-border/70 py-1 text-[12px] font-medium uppercase tracking-[0.2em] transition-colors',
-                    isStoreNavigationItem
-                      ? 'border-l-2 border-l-[var(--store-accent-active)] pl-3 text-[var(--store-accent-active)] hover:text-[var(--store-accent-hover)]'
-                      : isServicesNavigationItem
-                      ? navigationIsActive
-                        ? 'border-l-2 border-l-[var(--services-accent-active)] pl-3 text-[var(--services-accent-active)]'
-                        : 'text-foreground/90 hover:text-[var(--services-accent-hover)]'
-                      : navigationIsActive
-                        ? 'border-l-2 border-l-foreground/85 pl-3 text-foreground'
-                        : 'text-foreground/90 hover:text-foreground',
-                  ].join(' ')}
-                  onClick={() => setIsMobileNavigationOpen(false)}
-                >
-                  {item.title}
-                </a>
-              );
-            })}
-          </nav>
+                return (
+                  <a
+                    key={item.id}
+                    href={linkAttributes.href}
+                    target={linkAttributes.target}
+                    rel={linkAttributes.rel}
+                    data-astro-prefetch={linkAttributes.shouldPrefetch ? true : undefined}
+                    aria-current={navigationIsActive ? 'page' : undefined}
+                    data-services-navigation-link={isServicesNavigationItem ? 'true' : undefined}
+                    data-store-navigation-link={isStoreNavigationItem ? 'true' : undefined}
+                    className={[
+                      'relative inline-flex min-h-11 items-center border-b border-border/70 py-1 text-[12px] font-medium uppercase tracking-[0.2em] transition-colors',
+                      isStoreNavigationItem
+                        ? 'border-l-2 border-l-[var(--store-accent-active)] pl-3 text-[var(--store-accent-active)] hover:text-[var(--store-accent-hover)]'
+                        : isServicesNavigationItem
+                          ? navigationIsActive
+                            ? 'border-l-2 border-l-[var(--services-accent-active)] pl-3 text-[var(--services-accent-active)]'
+                            : 'text-foreground/90 hover:text-[var(--services-accent-hover)]'
+                          : navigationIsActive
+                            ? 'border-l-2 border-l-foreground/85 pl-3 text-foreground'
+                            : 'text-foreground/90 hover:text-foreground',
+                    ].join(' ')}
+                    onClick={() => setIsMobileNavigationOpen(false)}
+                  >
+                    {item.title}
+                  </a>
+                );
+              })}
+            </nav>
 
-          <button
-            className="mt-auto w-full text-[11px] tracking-[0.18em] uppercase text-muted-foreground transition-colors hover:text-foreground"
-            type="button"
-            onClick={() => setIsMobileNavigationOpen(false)}
-          >
-            Close
-          </button>
+            <button
+              className="mt-auto w-full text-[11px] tracking-[0.18em] uppercase text-muted-foreground transition-colors hover:text-foreground"
+              type="button"
+              onClick={() => setIsMobileNavigationOpen(false)}
+            >
+              Close
+            </button>
           </div>
         </SheetContent>
       </Sheet>
@@ -1603,7 +1623,11 @@ export default function AppShellRoot({
         onRemoveItem={() => applyStoreCartState(removeStoreCartItem())}
       />
 
-      <div className="app-shell-route-loading-indicator" data-state={isRouteLoading ? 'open' : 'closed'} aria-hidden="true">
+      <div
+        className="app-shell-route-loading-indicator"
+        data-state={isRouteLoading ? 'open' : 'closed'}
+        aria-hidden="true"
+      >
         <span className="app-shell-route-loading-indicator__bar"></span>
       </div>
 
@@ -1621,7 +1645,12 @@ export default function AppShellRoot({
         aria-hidden={overlayState ? 'false' : 'true'}
       >
         <div className="app-shell-content-overlay__backdrop" onClick={closeOverlayWithHistoryBack}></div>
-        <div className="app-shell-content-overlay__panel" role="dialog" aria-modal="true" aria-busy={overlayState?.isLoading ? 'true' : 'false'}>
+        <div
+          className="app-shell-content-overlay__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-busy={overlayState?.isLoading ? 'true' : 'false'}
+        >
           <div className="app-shell-content-overlay__header">
             <span className="app-shell-content-overlay__eyebrow">
               {overlayState ? OVERLAY_KIND_LABELS[overlayState.route.kind] : 'detail'}
@@ -1686,14 +1715,14 @@ export default function AppShellRoot({
           <div className="music-streaming-service-embedded-player-modal-header">
             <div className="music-streaming-service-embedded-player-modal-topbar">
               <button
-              ref={modalCloseButtonRef}
-              aria-label={playerModalDismissAriaLabel}
-              className="music-streaming-service-embedded-player-modal-close-button"
-              data-music-streaming-service-embedded-player-modal-dismiss
-              type="button"
-            >
-              {playerModalDismissActionLabel}
-            </button>
+                ref={modalCloseButtonRef}
+                aria-label={playerModalDismissAriaLabel}
+                className="music-streaming-service-embedded-player-modal-close-button"
+                data-music-streaming-service-embedded-player-modal-dismiss
+                type="button"
+              >
+                {playerModalDismissActionLabel}
+              </button>
             </div>
             <div
               className="music-streaming-service-embedded-player-provider-switcher grid grid-cols-2 gap-2"
@@ -1750,17 +1779,25 @@ export default function AppShellRoot({
                 </div>
               </div>
             </div>
-            <div ref={iframeFrameHostRef} className="music-streaming-service-embedded-player-modal-frame-host flex w-full justify-center"></div>
+            <div
+              ref={iframeFrameHostRef}
+              className="music-streaming-service-embedded-player-modal-frame-host flex w-full justify-center"
+            ></div>
           </div>
         </div>
       </div>
 
-        <div className="music-streaming-service-embedded-player-mini-player" data-state={isMiniPlayerVisible ? 'open' : 'closed'}>
+      <div
+        className="music-streaming-service-embedded-player-mini-player"
+        data-state={isMiniPlayerVisible ? 'open' : 'closed'}
+      >
         <div className="music-streaming-service-embedded-player-mini-player-copy">
           <p className="music-streaming-service-embedded-player-mini-player-provider uppercase text-muted-foreground">
             {miniPlayerStatusLabel}
           </p>
-          <p className="music-streaming-service-embedded-player-mini-player-title text-foreground/92">{activePlayerTitle}</p>
+          <p className="music-streaming-service-embedded-player-mini-player-title text-foreground/92">
+            {activePlayerTitle}
+          </p>
         </div>
         <div className="music-streaming-service-embedded-player-mini-player-actions">
           <button
@@ -1783,7 +1820,10 @@ export default function AppShellRoot({
       </div>
 
       {artistsRosterFiltersContainer
-        ? createPortal(<ArtistsRosterFilters key={activeShellPathname} pageKey={activeShellPathname} />, artistsRosterFiltersContainer)
+        ? createPortal(
+            <ArtistsRosterFilters key={activeShellPathname} pageKey={activeShellPathname} />,
+            artistsRosterFiltersContainer,
+          )
         : null}
 
       {servicesInquiryContainer

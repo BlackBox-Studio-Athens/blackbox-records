@@ -32,5 +32,5 @@
 - checkout handoff shell uses canonical store item slug plus variant identity contract
 
 ---
-*Research updated: 2026-04-20*
 
+_Research updated: 2026-04-20_

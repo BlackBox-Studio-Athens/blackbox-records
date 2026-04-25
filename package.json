@@ -22,7 +22,12 @@
     "build:web": "pnpm --filter @blackbox/web build",
     "generate:api": "pnpm --filter @blackbox/backend generate:openapi && pnpm --filter @blackbox/api-client generate",
     "preview": "pnpm --filter @blackbox/web preview",
-    "check": "pnpm check:web && pnpm check:backend && pnpm check:api-client",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix",
+    "check": "pnpm format:check && pnpm lint && pnpm check:types",
+    "check:types": "pnpm check:web && pnpm check:backend && pnpm check:api-client",
     "check:web": "pnpm --filter @blackbox/web check",
     "check:backend": "pnpm --filter @blackbox/backend check",
     "check:api-client": "pnpm --filter @blackbox/api-client check",
@@ -33,8 +38,15 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.8",
+    "@eslint/js": "^10.0.1",
     "astro": "^6.1.8",
+    "eslint": "^10.2.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-astro": "^1.7.0",
+    "prettier": "^3.8.3",
+    "prettier-plugin-astro": "^0.14.1",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.59.0"
   }
 }

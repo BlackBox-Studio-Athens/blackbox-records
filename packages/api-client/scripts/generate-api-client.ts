@@ -12,20 +12,20 @@ const publicOpenApiPath = resolve(workspaceDirectory, 'apps', 'backend', 'openap
 const internalOpenApiPath = resolve(workspaceDirectory, 'apps', 'backend', 'openapi', 'internal-openapi.json');
 
 async function generateSchemaFile(sourcePath: string, targetPath: string): Promise<void> {
-    const sourceDocument = JSON.parse(await readFile(sourcePath, 'utf8'));
-    const abstractSyntaxTree = await openapiTS(sourceDocument, {
-        alphabetize: true,
-        exportType: true,
-    });
+  const sourceDocument = JSON.parse(await readFile(sourcePath, 'utf8'));
+  const abstractSyntaxTree = await openapiTS(sourceDocument, {
+    alphabetize: true,
+    exportType: true,
+  });
 
-    await mkdir(dirname(targetPath), {
-        recursive: true,
-    });
+  await mkdir(dirname(targetPath), {
+    recursive: true,
+  });
 
-    await writeFile(targetPath, `${astToString(abstractSyntaxTree)}\n`, 'utf8');
+  await writeFile(targetPath, `${astToString(abstractSyntaxTree)}\n`, 'utf8');
 }
 
 await Promise.all([
-    generateSchemaFile(publicOpenApiPath, resolve(generatedDirectory, 'public', 'schema.ts')),
-    generateSchemaFile(internalOpenApiPath, resolve(generatedDirectory, 'internal', 'schema.ts')),
+  generateSchemaFile(publicOpenApiPath, resolve(generatedDirectory, 'public', 'schema.ts')),
+  generateSchemaFile(internalOpenApiPath, resolve(generatedDirectory, 'internal', 'schema.ts')),
 ]);

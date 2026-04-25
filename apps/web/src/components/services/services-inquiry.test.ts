@@ -39,7 +39,7 @@ describe('services inquiry mailto', () => {
   });
 
   it('opens the inquiry in a new tab when possible', () => {
-    const openWindow = vi.fn(() => ({} as Window));
+    const openWindow = vi.fn(() => ({}) as Window);
     const navigateToHref = vi.fn();
 
     openServicesInquiryMailtoInNewTab({

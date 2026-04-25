@@ -17,6 +17,7 @@ const currentYear = new Date().getUTCFullYear();
 const establishedYear = Number(labelSettings.established_year) || currentYear;
 const copyrightYears =
   establishedYear > 0 && establishedYear < currentYear ? `${establishedYear}-${currentYear}` : `${currentYear}`;
+const showEstablishedYear = establishedYear > 0 && establishedYear <= currentYear;
 const footerDescription = siteConfig.description;
 const footerLabel = labelSettings.label_name || siteConfig.title;
 const footerSocialItems = socialItems
@@ -29,9 +30,9 @@ const footerSocialItems = socialItems
         ? 'facebook'
         : normalizedTitle.includes('link')
           ? 'linktree'
-        : normalizedTitle.includes('band')
-          ? 'bandcamp'
-          : 'generic';
+          : normalizedTitle.includes('band')
+            ? 'bandcamp'
+            : 'generic';
 
     return {
       ...item,
@@ -44,7 +45,11 @@ const footerSocialItems = socialItems
   <div class="page-content-width-constrained-container site-footer-top site-footer-content-shell">
     <div class="site-footer-brand">
       <div class="site-footer-brand-topbar">
-        <img src={createProjectRelativeUrl('/assets/images/brand/logo.png')} alt="BlackBox Records" class="site-footer-logo" />
+        <img
+          src={createProjectRelativeUrl('/assets/images/brand/logo.png')}
+          alt="BlackBox Records"
+          class="site-footer-logo"
+        />
         <div class="site-footer-social-row" aria-label="Connect">
           {
             footerSocialItems.map((item) => {
@@ -65,8 +70,12 @@ const footerSocialItems = socialItems
                   {item.iconName === 'instagram' ? <InstagramIcon class="site-footer-social-icon" /> : null}
                   {item.iconName === 'facebook' ? <FacebookIcon class="site-footer-social-icon" /> : null}
                   {item.iconName === 'linktree' ? <LinktreeIcon class="site-footer-social-icon" /> : null}
-                  {item.iconName === 'bandcamp' ? <Disc3 className="site-footer-social-icon" aria-hidden="true" /> : null}
-                  {item.iconName === 'generic' ? <Globe2 className="site-footer-social-icon" aria-hidden="true" /> : null}
+                  {item.iconName === 'bandcamp' ? (
+                    <Disc3 className="site-footer-social-icon" aria-hidden="true" />
+                  ) : null}
+                  {item.iconName === 'generic' ? (
+                    <Globe2 className="site-footer-social-icon" aria-hidden="true" />
+                  ) : null}
                   <span class="accessibility-visually-hidden-text">{item.title}</span>
                 </a>
               );
@@ -104,11 +113,13 @@ const footerSocialItems = socialItems
     </div>
   </div>
 
-  <div class="page-content-width-constrained-container site-footer-meta border-t border-[#2b2b2b] py-3 text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+  <div
+    class="page-content-width-constrained-container site-footer-meta border-t border-[#2b2b2b] py-3 text-[11px] uppercase tracking-[0.08em] text-muted-foreground"
+  >
     <p class="site-footer-meta-copy">
       <span>&copy; {copyrightYears} {footerLabel.toUpperCase()}.</span>{' '}
       <span class="text-muted-foreground">All rights reserved.</span>
     </p>
-    {establishedYear > 0 && establishedYear <= currentYear && <p class="site-footer-meta-established">Est. {establishedYear}</p>}
+    {showEstablishedYear && <p class="site-footer-meta-established">Est. {establishedYear}</p>}
   </div>
 </footer>

@@ -1,4 +1,9 @@
-export const SERVICES_INQUIRY_SERVICE_OPTIONS = ['General', 'Tour Booking', 'Merch Printing', 'Vinyl Printing'] as const;
+export const SERVICES_INQUIRY_SERVICE_OPTIONS = [
+  'General',
+  'Tour Booking',
+  'Merch Printing',
+  'Vinyl Printing',
+] as const;
 
 export type ServicesInquiryService = (typeof SERVICES_INQUIRY_SERVICE_OPTIONS)[number];
 
@@ -25,7 +30,9 @@ export function buildServicesInquiryMailto({
   service,
 }: ServicesInquiryValues) {
   const normalizedBandOrProject = bandOrProject.trim();
-  const subject = ['Services Inquiry', service, normalizedBandOrProject || withFallback(name, 'BlackBox Contact')].join(' — ');
+  const subject = ['Services Inquiry', service, normalizedBandOrProject || withFallback(name, 'BlackBox Contact')].join(
+    ' — ',
+  );
   const body = [
     `Name: ${withFallback(name)}`,
     `Email: ${withFallback(email)}`,
@@ -45,7 +52,11 @@ type OpenMailtoInNewTabOptions = {
   openWindow: (href: string, target: string, features: string) => Window | null;
 };
 
-export function openServicesInquiryMailtoInNewTab({ mailtoHref, navigateToHref, openWindow }: OpenMailtoInNewTabOptions) {
+export function openServicesInquiryMailtoInNewTab({
+  mailtoHref,
+  navigateToHref,
+  openWindow,
+}: OpenMailtoInNewTabOptions) {
   const popupWindow = openWindow(mailtoHref, '_blank', 'noopener,noreferrer');
 
   if (!popupWindow) {

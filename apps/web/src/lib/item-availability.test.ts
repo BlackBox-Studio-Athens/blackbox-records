@@ -70,10 +70,7 @@ vi.mock('astro:config/client', () => ({
   site: 'https://blackbox-studio-athens.github.io',
 }));
 
-import {
-  getPrimaryAvailabilityForStoreItem,
-  listAvailabilityForStoreItem,
-} from './item-availability';
+import { getPrimaryAvailabilityForStoreItem, listAvailabilityForStoreItem } from './item-availability';
 
 describe('ItemAvailability adapter', () => {
   it('resolves one stable temporary item availability record for a native store item slug', async () => {
@@ -112,8 +109,8 @@ describe('ItemAvailability adapter', () => {
         display: 'Price soon',
       },
       availability: {
-          status: 'sold_out',
-          label: 'Unavailable',
+        status: 'sold_out',
+        label: 'Unavailable',
       },
       canBuy: false,
     });

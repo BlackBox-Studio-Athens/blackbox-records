@@ -9,6 +9,7 @@
 The current production site is an Astro 5 storefront deployed as static output on GitHub Pages. That deployment model cannot safely host Checkout Session creation or Stripe webhook endpoints, which means it cannot be the final runtime for native commerce.
 
 The approved implementation target needs to support:
+
 - low recurring cost
 - minimal maintenance
 - server-only secrets
@@ -20,6 +21,7 @@ The approved implementation target needs to support:
 Use **Astro on Cloudflare Workers** for the native commerce runtime and **Cloudflare D1** for the minimal SQL state store.
 
 Implementation guidance:
+
 - keep the storefront in Astro
 - add the official Cloudflare adapter
 - keep brochure/editorial routes prerendered where practical

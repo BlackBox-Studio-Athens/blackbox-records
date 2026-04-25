@@ -1,8 +1,5 @@
 import { listStoreItems, type StoreItem } from './catalog-data';
-import {
-  getPrimaryAvailabilityForStoreItem,
-  type ItemAvailability,
-} from './item-availability';
+import { getPrimaryAvailabilityForStoreItem, type ItemAvailability } from './item-availability';
 
 export type StoreCollectionEntry = {
   storeItem: StoreItem;

@@ -5,6 +5,7 @@
 ## APIs & External Services
 
 **Storefront & Commerce:**
+
 - Native store flow - `/store/` is the canonical static storefront, with `/store/[slug]/` item pages and `/store/[slug]/checkout/` handoff shells built from `StoreItem` plus `ItemAvailability`.
   - SDK/Client: frontend data helpers in `src/lib/catalog-data.ts`, `src/lib/item-availability.ts`, `src/lib/store-collection.ts`, and `src/lib/store-page-data.ts`; no Stripe browser dependency is wired yet.
   - Auth: none for shopper browsing.
@@ -16,6 +17,7 @@
   - Auth: public shopper routes remain unauthenticated; future internal stock routes are protected by Cloudflare Access on a separate operator hostname.
 
 **Streaming & Embedded Media:**
+
 - Bandcamp - embedded player provider when a release defines `bandcamp_embed_url`.
   - SDK/Client: iframe embed URL stored in `src/content/releases/*.md`, passed through `src/utils/music.ts`, and rendered/persisted in `src/components/app-shell/AppShellRoot.tsx`.
   - Auth: none.
@@ -24,6 +26,7 @@
   - Auth: none.
 
 **CMS & Authoring:**
+
 - Decap CMS - browser admin UI served at `/admin/`.
   - SDK/Client: remote script from `https://unpkg.com/decap-cms@3.10.1/dist/decap-cms.js` in `src/pages/admin/index.astro` plus local bootstrap/preview logic in `public/admin/init.js`.
   - Auth: delegated to DecapBridge in production or to local proxy mode in development.
@@ -35,11 +38,13 @@
   - Auth: none; local proxy backend only.
 
 **Same-Origin Storefront Runtime:**
+
 - Astro app-shell HTML/fragment fetching - the React shell prefetches and caches full HTML pages for top-level sections plus `partial = true` overlay fragments for detail routes.
   - SDK/Client: routing contract in `src/lib/app-shell/routing.ts`, fetch/cache/apply logic in `src/components/app-shell/AppShellRoot.tsx`, and overlay fragment routes in `src/pages/app-shell-overlay/**`.
   - Auth: same-origin only.
 
 **Fonts, Analytics, and Frontend CDNs:**
+
 - Google Fonts - site and admin typography.
   - SDK/Client: stylesheet/preconnect tags in `src/layouts/SiteLayout.astro` and `src/pages/admin/index.astro`.
   - Auth: none.
@@ -53,11 +58,13 @@
 ## Data Storage
 
 **Databases:**
+
 - Cloudflare D1 `COMMERCE_DB` for backend commerce state.
   - Connection: Worker runtime binding from `apps/backend/wrangler.jsonc`; local verification uses Wrangler D1 commands.
   - Client: Prisma generated client plus `@prisma/adapter-d1` behind backend repository seams in `apps/backend/src/infrastructure/persistence/prisma/`.
 
 **File Storage:**
+
 - Local filesystem only.
   - Content collections live under `src/content/artists`, `src/content/releases`, `src/content/news`, `src/content/distro`, `src/content/navigation`, `src/content/socials`, `src/content/settings`, `src/content/home`, `src/content/about`, and `src/content/services`, all defined in `src/content.config.ts`.
   - CMS media drawer root is `src/content/uploads`, emitted globally by `src/lib/admin/decap-config.ts`.
@@ -66,12 +73,14 @@
   - Admin preview assets are exposed through the prerendered static route `src/pages/admin/media/[collection]/[asset].ts`.
 
 **Caching:**
+
 - No external cache service.
   - Browser-only in-memory caches for shell page snapshots, overlay HTML, and iframe reuse live inside `src/components/app-shell/AppShellRoot.tsx`.
 
 ## Authentication & Identity
 
 **Auth Provider:**
+
 - DecapBridge in production; local proxy backend in development.
   - Implementation: `src/pages/admin/config.yml.ts` builds artist options from `getCollection('artists')`, resolves site/base URLs, and switches between proxy mode and `git-gateway` PKCE mode via `shouldUseLocalDecapBackend()` in `src/lib/admin/decap-config.ts`.
   - Production writes target the GitHub repo/branch from `DECAP_REPOSITORY` and `DECAP_BRANCH`.
@@ -80,22 +89,27 @@
 ## Monitoring & Observability
 
 **Error Tracking:**
+
 - None detected.
 
 **Logs:**
+
 - Build/deploy logs come from GitHub Actions in `.github/workflows/pages.yml`.
 - Runtime/browser diagnostics rely on native thrown errors and the browser console in files such as `src/components/app-shell/AppShellRoot.tsx` and `src/lib/site-data.ts`.
 
 **Analytics:**
+
 - Glancelytics is the only analytics integration detected, loaded in production from `src/layouts/SiteLayout.astro`.
 
 ## CI/CD & Deployment
 
 **Hosting:**
+
 - GitHub Pages project hosting for the static Astro site, configured by `astro.config.mjs` with `site: 'https://blackbox-studio-athens.github.io'`, `base: '/blackbox-records/'`, and `output: 'static'`.
 - Fourthwall remains a separate hosted commerce destination reached through outbound links and the `/shop/` redirect route.
 
 **CI Pipeline:**
+
 - GitHub Actions workflow in `.github/workflows/pages.yml`.
 - Uses `actions/checkout@v5`, `actions/configure-pages@v5`, `withastro/action@v5`, and `actions/deploy-pages@v4`.
 - Build is gated by `pnpm test:unit && pnpm check && pnpm build`.
@@ -104,6 +118,7 @@
 ## Environment Configuration
 
 **Required env vars:**
+
 - `DECAP_SITE_URL` - published site root used when generating `/admin/config.yml` in `src/pages/admin/config.yml.ts`.
 - `DECAP_REPOSITORY` - GitHub repository slug for DecapBridge/git-gateway writes.
 - `DECAP_BRANCH` - branch target for Decap writes.
@@ -116,6 +131,7 @@
 - Astro-provided `SITE` and `BASE_URL` are consumed indirectly by `src/pages/admin/config.yml.ts` when resolving the published admin root.
 
 **Secrets location:**
+
 - GitHub Actions Variables are referenced in `.github/workflows/pages.yml` for `DECAP_SITE_URL`, `DECAP_REPOSITORY`, `DECAP_BRANCH`, `DECAPBRIDGE_BASE_URL`, and `DECAPBRIDGE_GATEWAY_URL`.
 - GitHub Actions Secrets are referenced in `.github/workflows/pages.yml` for `DECAPBRIDGE_AUTH_ENDPOINT` and `DECAPBRIDGE_AUTH_TOKEN_ENDPOINT`.
 - No `.env` or `.env.*` files were detected in the repo file listing.
@@ -123,13 +139,15 @@
 ## Webhooks & Callbacks
 
 **Incoming:**
+
 - None detected.
 - `src/pages/admin/config.yml.ts`, `src/pages/admin/index.astro`, and `src/pages/admin/media/[collection]/[asset].ts` are static/generated admin routes, not webhook receivers.
 
 **Outgoing:**
+
 - Browser/runtime traffic goes to Fourthwall, Bandcamp, Tidal, DecapBridge, Google Fonts, Glancelytics, and the Decap CMS bundle on unpkg through `src/config/site.ts`, `src/utils/music.ts`, `src/pages/admin/index.astro`, and `src/layouts/SiteLayout.astro`.
 - CI/CD traffic goes to GitHub Pages through `.github/workflows/pages.yml`.
 
 ---
 
-*Integration audit: 2026-04-06*
+_Integration audit: 2026-04-06_

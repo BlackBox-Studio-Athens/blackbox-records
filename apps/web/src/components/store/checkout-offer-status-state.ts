@@ -33,7 +33,10 @@ export type CheckoutOfferLoadState =
       message: string;
     };
 
-export async function loadCheckoutOfferState(api: PublicCheckoutApi, storeItemSlug: string): Promise<CheckoutOfferLoadState> {
+export async function loadCheckoutOfferState(
+  api: PublicCheckoutApi,
+  storeItemSlug: string,
+): Promise<CheckoutOfferLoadState> {
   try {
     const [offer, variants] = await Promise.all([
       api.readStoreOffer(storeItemSlug),
@@ -53,7 +56,9 @@ export async function loadCheckoutOfferState(api: PublicCheckoutApi, storeItemSl
   }
 }
 
-export function createInitialCheckoutOfferView(initialAvailability: CheckoutOfferInitialAvailability): CheckoutOfferStatusView {
+export function createInitialCheckoutOfferView(
+  initialAvailability: CheckoutOfferInitialAvailability,
+): CheckoutOfferStatusView {
   return {
     badgeLabel: 'Checking checkout',
     canStartCheckout: false,

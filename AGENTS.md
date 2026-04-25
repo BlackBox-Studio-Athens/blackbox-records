@@ -38,7 +38,7 @@ Read these first before editing:
 4. `apps/web/src/layouts/SiteLayout.astro`
 5. `apps/web/src/components/app-shell/AppShell.astro`
 6. `apps/web/src/components/app-shell/AppShellRoot.tsx`
-Then inspect only task-relevant files with `rg` and scoped reads.
+   Then inspect only task-relevant files with `rg` and scoped reads.
 
 ## Commands
 
@@ -67,7 +67,9 @@ Then inspect only task-relevant files with `rg` and scoped reads.
 - Generate backend OpenAPI docs and client package: `pnpm generate:api`
 - Clean dev run: `pnpm dev:clean`
 - Unit tests: `pnpm test:unit`
-- Type/content checks: `pnpm check`
+- Format/lint/type/content checks: `pnpm check`
+- Apply formatter: `pnpm format`
+- Lint only: `pnpm lint`
 - Production build: `pnpm build`
 
 ### WebStorm launcher contract
@@ -130,6 +132,7 @@ Then inspect only task-relevant files with `rg` and scoped reads.
   - `pnpm test:unit`
   - `pnpm check`
   - `pnpm build`
+- `pnpm check` includes Prettier format verification, ESLint, and Astro/TypeScript content checks.
 - Before pushing, run the same three commands again unless they were just run against the exact final tree you are pushing
 - Do not claim completion or push with unverified behavioral changes
 
@@ -141,6 +144,7 @@ Then inspect only task-relevant files with `rg` and scoped reads.
   - `pnpm test:unit`
   - `pnpm check`
   - `pnpm build`
+- `pnpm check` is intentionally editor-independent; do not rely on WebStorm formatting or inspections as the only style gate.
 - The workflow uses `withastro/action@v5` with Node 22 and built-in pnpm/Astro caching
 - Configured in `apps/web/astro.config.mjs`
   - `site: https://blackbox-studio-athens.github.io`
@@ -310,6 +314,7 @@ This is an iframe boundary, not an app bug.
 7. Update `README.md`, this file, and the session handoff file if setup or architecture assumptions changed
 
 These checks are mandatory both:
+
 - after implementation is complete
 - immediately before pushing
 

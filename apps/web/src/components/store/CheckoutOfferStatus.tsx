@@ -38,7 +38,8 @@ export default function CheckoutOfferStatus({
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
   const checkoutMountRef = useRef<HTMLDivElement | null>(null);
   const checkoutSessionRef = useRef<EmbeddedCheckoutMount | null>(null);
-  const itemOptionLabel = initialAvailability.optionLabel || (view.variantId ? 'Selected option' : 'Checking item option');
+  const itemOptionLabel =
+    initialAvailability.optionLabel || (view.variantId ? 'Selected option' : 'Checking item option');
 
   useEffect(() => {
     let isActive = true;
@@ -155,7 +156,10 @@ export default function CheckoutOfferStatus({
             )}
 
             {checkoutError && (
-              <p className="border border-amber-300/40 bg-amber-300/10 p-3 text-xs leading-relaxed text-amber-100" role="alert">
+              <p
+                className="border border-amber-300/40 bg-amber-300/10 p-3 text-xs leading-relaxed text-amber-100"
+                role="alert"
+              >
                 {checkoutError}
               </p>
             )}

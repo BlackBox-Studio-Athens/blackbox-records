@@ -18,6 +18,7 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 **Goal:** Implement and validate the first end-to-end native commerce sandbox flow using a static Astro frontend plus a separate Cloudflare Worker backend, without cutting over production traffic.
 
 **Target features:**
+
 - separate Cloudflare Worker backend added to the existing Astro repo
 - explicit frontend-to-Worker environment and deployment contract
 - dedicated architecture gate for entity boundaries, IDs, mappings, and API contracts
@@ -114,37 +115,38 @@ Current inventory knowledge also shapes Phase 7. The current site items are real
 
 ## Key Decisions
 
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| Keep the Astro site static while moving canonical hosting from GitHub Pages to Cloudflare Pages in Phase 7.1 | Preserves the content/app-shell model while aligning frontend hosting with the Cloudflare Worker backend before final sandbox verification | ✓ Good |
-| Add a separate Cloudflare Worker backend in the same repo | Creates the minimal dynamic surface for Stripe, webhooks, and D1 without forcing a frontend hosting migration | ✓ Good |
-| Treat the Worker as a backend/BFF, not the primary frontend runtime | Matches the intended architecture and keeps the browser away from secrets and operational writes | ✓ Good |
-| Do not expose synthetic probe endpoints such as `healthz`, `status`, or `readyz` by default | This backend is a thin Worker, not a containerized service with a separate actuator-style ops surface | ✓ Good |
-| Keep backend application code TypeScript-only | Prevents split language conventions and keeps backend contracts and domain models type-safe | ✓ Good |
-| Use Hono only as the Worker HTTP interface layer | Standardizes routing and JSON/error handling without pushing framework concerns into domain logic | ✓ Good |
-| Use backend-owned code-first OpenAPI with separate public/internal documents and a generated client package | Keeps the HTTP boundary explicit, avoids frontend imports of backend runtime code, and makes contract drift reviewable | ✓ Good |
-| Keep backend code DDD-layered with business names and mandatory tests | Stops backend growth from turning into route-level business logic and locks clean coding expectations early | ✓ Good |
-| Use a `Variant` layer beneath storefront-facing store items | Separates editorial entities from sellable units, stock, and Stripe mappings | ✓ Good |
-| Astro content owns editorial content only | Prevents operational and payment concerns from polluting content collections | ✓ Good |
-| Stripe owns sellable commerce data needed for checkout | Avoids duplicate product/price administration in the app layer | ✓ Good |
-| D1 owns operational state plus internal mappings | Keeps stock, order lifecycle, and Stripe mappings in one backend-owned store | ✓ Good |
-| Protect internal stock operations with Cloudflare Access + Google on a separate backend hostname | Gives label staff shared access without turning shopper flows into a login product | ✓ Good |
-| Use `Stock`, `StockChange`, and `StockCount` as the stock ledger language | Keeps the operator model understandable and matches offline reconciliation needs | ✓ Good |
-| Keep spreadsheets as temporary capture/reporting only | Avoids dual sources of truth between D1 and ad hoc spreadsheets | ✓ Good |
-| Track a conservative `OnlineStock` quantity alongside total stock balance | Reduces oversell risk when offline sales are reconciled later | ✓ Good |
-| Use Shopify-familiar cart affordances without implementing a true multi-item cart | Gives shoppers a familiar buying path while preserving the low-risk single-item MVP and backend authority boundaries | ✓ Good |
-| Make shopper-facing store URLs describe the sellable item option | Avoids exposing legacy release shorthand or backend mapping names as the primary buying URL | ✓ Good |
-| Let stripe-mock mode use fake local stock for every current item | Makes the local buying path testable across real distro and release entries without pretending unknown quantities are real label stock | ✓ Good |
-| Add Phase 5.1 as a hard architecture gate before storefront or checkout work continues | Prevents rework and model drift across content, backend state, and Stripe | ✓ Good |
-| Use Prisma for runtime database access while staying on D1 | Improves readability and maintainability without forcing an immediate database change | ✓ Good |
-| Use Prisma schema plus `prisma migrate diff`, with Wrangler D1 migrations applying SQL | Matches Prisma's current D1 guidance without pretending Prisma-only migrations are first-class on D1 | ✓ Good |
-| Production cutover is deferred to a future go-live milestone | Keeps sandbox implementation and production launch risks separate | ✓ Good |
+| Decision                                                                                                     | Rationale                                                                                                                                  | Outcome |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
+| Keep the Astro site static while moving canonical hosting from GitHub Pages to Cloudflare Pages in Phase 7.1 | Preserves the content/app-shell model while aligning frontend hosting with the Cloudflare Worker backend before final sandbox verification | ✓ Good  |
+| Add a separate Cloudflare Worker backend in the same repo                                                    | Creates the minimal dynamic surface for Stripe, webhooks, and D1 without forcing a frontend hosting migration                              | ✓ Good  |
+| Treat the Worker as a backend/BFF, not the primary frontend runtime                                          | Matches the intended architecture and keeps the browser away from secrets and operational writes                                           | ✓ Good  |
+| Do not expose synthetic probe endpoints such as `healthz`, `status`, or `readyz` by default                  | This backend is a thin Worker, not a containerized service with a separate actuator-style ops surface                                      | ✓ Good  |
+| Keep backend application code TypeScript-only                                                                | Prevents split language conventions and keeps backend contracts and domain models type-safe                                                | ✓ Good  |
+| Use Hono only as the Worker HTTP interface layer                                                             | Standardizes routing and JSON/error handling without pushing framework concerns into domain logic                                          | ✓ Good  |
+| Use backend-owned code-first OpenAPI with separate public/internal documents and a generated client package  | Keeps the HTTP boundary explicit, avoids frontend imports of backend runtime code, and makes contract drift reviewable                     | ✓ Good  |
+| Keep backend code DDD-layered with business names and mandatory tests                                        | Stops backend growth from turning into route-level business logic and locks clean coding expectations early                                | ✓ Good  |
+| Use a `Variant` layer beneath storefront-facing store items                                                  | Separates editorial entities from sellable units, stock, and Stripe mappings                                                               | ✓ Good  |
+| Astro content owns editorial content only                                                                    | Prevents operational and payment concerns from polluting content collections                                                               | ✓ Good  |
+| Stripe owns sellable commerce data needed for checkout                                                       | Avoids duplicate product/price administration in the app layer                                                                             | ✓ Good  |
+| D1 owns operational state plus internal mappings                                                             | Keeps stock, order lifecycle, and Stripe mappings in one backend-owned store                                                               | ✓ Good  |
+| Protect internal stock operations with Cloudflare Access + Google on a separate backend hostname             | Gives label staff shared access without turning shopper flows into a login product                                                         | ✓ Good  |
+| Use `Stock`, `StockChange`, and `StockCount` as the stock ledger language                                    | Keeps the operator model understandable and matches offline reconciliation needs                                                           | ✓ Good  |
+| Keep spreadsheets as temporary capture/reporting only                                                        | Avoids dual sources of truth between D1 and ad hoc spreadsheets                                                                            | ✓ Good  |
+| Track a conservative `OnlineStock` quantity alongside total stock balance                                    | Reduces oversell risk when offline sales are reconciled later                                                                              | ✓ Good  |
+| Use Shopify-familiar cart affordances without implementing a true multi-item cart                            | Gives shoppers a familiar buying path while preserving the low-risk single-item MVP and backend authority boundaries                       | ✓ Good  |
+| Make shopper-facing store URLs describe the sellable item option                                             | Avoids exposing legacy release shorthand or backend mapping names as the primary buying URL                                                | ✓ Good  |
+| Let stripe-mock mode use fake local stock for every current item                                             | Makes the local buying path testable across real distro and release entries without pretending unknown quantities are real label stock     | ✓ Good  |
+| Add Phase 5.1 as a hard architecture gate before storefront or checkout work continues                       | Prevents rework and model drift across content, backend state, and Stripe                                                                  | ✓ Good  |
+| Use Prisma for runtime database access while staying on D1                                                   | Improves readability and maintainability without forcing an immediate database change                                                      | ✓ Good  |
+| Use Prisma schema plus `prisma migrate diff`, with Wrangler D1 migrations applying SQL                       | Matches Prisma's current D1 guidance without pretending Prisma-only migrations are first-class on D1                                       | ✓ Good  |
+| Production cutover is deferred to a future go-live milestone                                                 | Keeps sandbox implementation and production launch risks separate                                                                          | ✓ Good  |
 
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
 
 **After each phase transition** (via `$gsd-transition`):
+
 1. Requirements invalidated? → Move to Out of Scope with reason
 2. Requirements validated? → Move to Validated with phase reference
 3. New requirements emerged? → Add to Active
@@ -152,11 +154,12 @@ This document evolves at phase transitions and milestone boundaries.
 5. "What This Is" still accurate? → Update if drifted
 
 **After each milestone** (via `$gsd-complete-milestone`):
+
 1. Full review of all sections
 2. Core Value check — still the right priority?
 3. Audit Out of Scope — reasons still valid?
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-25 after completing the canonical store item URL correction*
 
+_Last updated: 2026-04-25 after completing the canonical store item URL correction_

@@ -28,30 +28,18 @@ const fontStylesheetUrl =
   <body>
     <div class="blackbox-cms-boot" aria-live="polite">
       <div class="blackbox-cms-boot__card">
-        <img
-          class="blackbox-cms-boot__logo"
-          src={faviconUrl}
-          alt="BlackBox Records logo"
-          width="80"
-          height="80"
-        />
+        <img class="blackbox-cms-boot__logo" src={faviconUrl} alt="BlackBox Records logo" width="80" height="80" />
         <p class="blackbox-cms-boot__eyebrow">BlackBox CMS</p>
         <h1 class="blackbox-cms-boot__title">Preparing the editor</h1>
         <p class="blackbox-cms-boot__copy">Loading content collections, previews, and media tools.</p>
       </div>
     </div>
-    <script
-      is:inline
-      define:vars={{ previewStyleUrl }}
-    >
+    <script is:inline define:vars={{ previewStyleUrl }}>
       window.CMS_MANUAL_INIT = true;
       window.__BLACKBOX_ADMIN__ = { previewStyleUrl };
     </script>
     <script src="https://unpkg.com/decap-cms@3.10.1/dist/decap-cms.js"></script>
-    <script
-      is:inline
-      define:vars={{ adminInitUrl }}
-    >
+    <script is:inline define:vars={{ adminInitUrl }}>
       const initScript = document.createElement('script');
       initScript.src = adminInitUrl;
       document.body.appendChild(initScript);

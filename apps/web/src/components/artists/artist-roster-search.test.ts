@@ -2,11 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createArtistRosterSearcher, getArtistRosterExactMatches } from './artist-roster-search';
 
-const rosterItems = [
-  { title: 'Chronoboros' },
-  { title: 'Mass Culture' },
-  { title: 'Ouranopithecus' },
-];
+const rosterItems = [{ title: 'Chronoboros' }, { title: 'Mass Culture' }, { title: 'Ouranopithecus' }];
 
 describe('artist roster search', () => {
   it('returns only exact substring title matches before fuzzy fallback', () => {
@@ -31,10 +27,6 @@ describe('artist roster search', () => {
   it('returns all items for an empty query', () => {
     const searcher = createArtistRosterSearcher(rosterItems);
 
-    expect(searcher.search('').map((item) => item.title)).toEqual([
-      'Chronoboros',
-      'Mass Culture',
-      'Ouranopithecus',
-    ]);
+    expect(searcher.search('').map((item) => item.title)).toEqual(['Chronoboros', 'Mass Culture', 'Ouranopithecus']);
   });
 });

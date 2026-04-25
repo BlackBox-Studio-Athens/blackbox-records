@@ -87,62 +87,63 @@
 
 ## Out of Scope
 
-| Feature | Reason |
-|---------|--------|
-| Production cutover in this milestone | Deferred to the Go-Live milestone so sandbox implementation and launch risk stay separate |
-| Live-mode Stripe keys or real-money processing | This milestone stays in sandbox |
-| Browser-side writes to orders or stock | Violates the trust boundary for payment and stock state |
-| Stock reservation in v1 | Explicitly deferred to keep the first release simple and authoritative on payment webhook success |
-| True multi-item cart | This milestone may add a single-item cart-like UX, cart icon, and cart drawer, but multiple line items and quantity management remain deferred |
-| Non-Greece shipping paths | Greece-only BOX NOW is the approved v1 shipping scope |
-| Automated BOX NOW fulfillment | Manual partner-portal fulfillment is sufficient for projected low volume |
-| Full operator dashboard / OMS beyond thin stock operations | Low order volume does not justify the maintenance cost yet |
+| Feature                                                    | Reason                                                                                                                                         |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Production cutover in this milestone                       | Deferred to the Go-Live milestone so sandbox implementation and launch risk stay separate                                                      |
+| Live-mode Stripe keys or real-money processing             | This milestone stays in sandbox                                                                                                                |
+| Browser-side writes to orders or stock                     | Violates the trust boundary for payment and stock state                                                                                        |
+| Stock reservation in v1                                    | Explicitly deferred to keep the first release simple and authoritative on payment webhook success                                              |
+| True multi-item cart                                       | This milestone may add a single-item cart-like UX, cart icon, and cart drawer, but multiple line items and quantity management remain deferred |
+| Non-Greece shipping paths                                  | Greece-only BOX NOW is the approved v1 shipping scope                                                                                          |
+| Automated BOX NOW fulfillment                              | Manual partner-portal fulfillment is sufficient for projected low volume                                                                       |
+| Full operator dashboard / OMS beyond thin stock operations | Low order volume does not justify the maintenance cost yet                                                                                     |
 
 ## Traceability
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| DEPL-01 | Phase 5 | Completed |
-| DEPL-02 | Phase 5 | Completed |
-| DEPL-03 | Phase 5 | Completed |
-| DEPL-04 | Phase 6.1 | Completed |
-| DEPL-05 | Phase 7.1 | Pending |
-| ARCH-01 | Phase 5.1 | Completed |
-| ARCH-02 | Phase 5.1 | Completed |
-| ARCH-03 | Phase 5.1 | Completed |
-| ARCH-04 | Phase 5.1 | Completed |
-| CATA-01 | Phase 6 | Completed |
-| CATA-02 | Phase 6 | Completed |
-| CATA-03 | Phase 6 | Completed |
-| CATA-04 | Phase 6.1 | Completed |
-| AUTH-01 | Phase 6.1.1 | Completed |
-| AUTH-02 | Phase 6.1.1 | Completed |
-| INV-01 | Phase 6.1.1 | Completed |
-| INV-02 | Phase 6.1.1 | Completed |
-| INV-03 | Phase 6.1.1 | Completed |
-| CHKO-01 | Phase 7 | Completed |
-| CHKO-02 | Phase 7 | Pending |
-| CHKO-03 | Phase 7 | Pending |
-| CHKO-04 | Phase 7 | Pending |
-| CHKO-05 | Phase 7 | Pending |
-| ORDR-01 | Phase 8 | Pending |
-| ORDR-02 | Phase 8 | Pending |
-| ORDR-03 | Phase 8 | Pending |
-| ORDR-04 | Phase 8 | Pending |
-| SHIP-01 | Phase 9 | Pending |
-| SHIP-02 | Phase 9 | Pending |
-| SHIP-03 | Phase 9 | Pending |
-| SECU-01 | Phase 5 | Completed |
-| SECU-02 | Phase 8 | Pending |
-| OPER-01 | Phase 10 | Pending |
-| OPER-02 | Phase 10 | Pending |
+| Requirement | Phase       | Status    |
+| ----------- | ----------- | --------- |
+| DEPL-01     | Phase 5     | Completed |
+| DEPL-02     | Phase 5     | Completed |
+| DEPL-03     | Phase 5     | Completed |
+| DEPL-04     | Phase 6.1   | Completed |
+| DEPL-05     | Phase 7.1   | Pending   |
+| ARCH-01     | Phase 5.1   | Completed |
+| ARCH-02     | Phase 5.1   | Completed |
+| ARCH-03     | Phase 5.1   | Completed |
+| ARCH-04     | Phase 5.1   | Completed |
+| CATA-01     | Phase 6     | Completed |
+| CATA-02     | Phase 6     | Completed |
+| CATA-03     | Phase 6     | Completed |
+| CATA-04     | Phase 6.1   | Completed |
+| AUTH-01     | Phase 6.1.1 | Completed |
+| AUTH-02     | Phase 6.1.1 | Completed |
+| INV-01      | Phase 6.1.1 | Completed |
+| INV-02      | Phase 6.1.1 | Completed |
+| INV-03      | Phase 6.1.1 | Completed |
+| CHKO-01     | Phase 7     | Completed |
+| CHKO-02     | Phase 7     | Pending   |
+| CHKO-03     | Phase 7     | Pending   |
+| CHKO-04     | Phase 7     | Pending   |
+| CHKO-05     | Phase 7     | Pending   |
+| ORDR-01     | Phase 8     | Pending   |
+| ORDR-02     | Phase 8     | Pending   |
+| ORDR-03     | Phase 8     | Pending   |
+| ORDR-04     | Phase 8     | Pending   |
+| SHIP-01     | Phase 9     | Pending   |
+| SHIP-02     | Phase 9     | Pending   |
+| SHIP-03     | Phase 9     | Pending   |
+| SECU-01     | Phase 5     | Completed |
+| SECU-02     | Phase 8     | Pending   |
+| OPER-01     | Phase 10    | Pending   |
+| OPER-02     | Phase 10    | Pending   |
 
 **Coverage:**
+
 - v1 requirements: 34 total
 - Mapped to phases: 34
 - Unmapped: 0 ✓
 
 ---
-*Requirements defined: 2026-04-19*  
-*Last updated: 2026-04-25 after adding all-current-items local mock checkout readiness to Phase 7*
 
+_Requirements defined: 2026-04-19_
+_Last updated: 2026-04-25 after adding all-current-items local mock checkout readiness to Phase 7_

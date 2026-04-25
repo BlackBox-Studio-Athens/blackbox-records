@@ -1,6 +1,6 @@
 :root {
-  --bb-admin-font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
-  --bb-admin-font-mono: "Geist Mono", "Courier New", monospace;
+  --bb-admin-font-sans: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --bb-admin-font-mono: 'Geist Mono', 'Courier New', monospace;
   --bb-admin-page: #f3ece4;
   --bb-admin-page-strong: #ebe1d5;
   --bb-admin-surface: rgba(255, 252, 248, 0.96);
@@ -482,7 +482,9 @@ label {
 [class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-section-row-action='remove']:hover,
 [class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-section-row-action='remove']:focus-visible,
 [class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-section-row-action='remove']:hover,
-[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-section-row-action='remove']:focus-visible {
+[class*='EditorContainer']
+  [class*='ListItemTopBar']
+  [role='button'][data-blackbox-section-row-action='remove']:focus-visible {
   background: rgba(141, 61, 74, 0.14) !important;
   border-color: rgba(141, 61, 74, 0.28) !important;
   color: var(--bb-admin-accent) !important;
@@ -497,8 +499,14 @@ label {
   flex: 0 0 auto;
 }
 
-[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-section-row-action='remove'] [data-blackbox-section-row-action-label='true'],
-[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-section-row-action='remove'] [data-blackbox-section-row-action-label='true'] {
+[class*='EditorContainer']
+  [class*='ListItemTopBar']
+  button[data-blackbox-section-row-action='remove']
+  [data-blackbox-section-row-action-label='true'],
+[class*='EditorContainer']
+  [class*='ListItemTopBar']
+  [role='button'][data-blackbox-section-row-action='remove']
+  [data-blackbox-section-row-action-label='true'] {
   display: inline-flex;
   align-items: center;
   white-space: nowrap;

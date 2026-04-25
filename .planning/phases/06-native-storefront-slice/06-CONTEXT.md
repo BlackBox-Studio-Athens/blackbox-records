@@ -14,16 +14,19 @@ Phase 6 turns `/store/` into the canonical native storefront inside the static A
 ## Implementation Decisions
 
 ### Storefront model
+
 - **D-01:** Use one unified `StoreItem` projection over `releases` and `distro`.
 - **D-02:** Keep the `StoreItem` projection separate from editorial collections.
 - **D-03:** `artists` remain editorial/navigation entities, not sellable entities.
 
 ### Offer state
+
 - **D-04:** Phase 6 uses a temporary `ItemAvailability` adapter that matches the future backend contract.
 - **D-05:** The storefront contract must stay stable so later Worker-backed and D1/Stripe-backed reads do not force route or component rewrites.
 - **D-06:** The static storefront must not depend on direct browser access to Stripe or D1.
 
 ### Route contract
+
 - **D-07:** Static storefront routes are:
   - `/store/`
   - `/store/[slug]/`
@@ -32,6 +35,7 @@ Phase 6 turns `/store/` into the canonical native storefront inside the static A
 - **D-09:** Distro cards route to canonical store PDPs; legacy `fourthwall_url`, `merch_url`, and `shop_collection_handle` remain metadata only and are not the canonical routing model.
 
 ### Asset and content reuse
+
 - **D-10:** Release-derived shop entries reuse release cover image, summary, title, and artist relationship.
 - **D-11:** Distro-derived shop entries reuse distro image, summary, title, and existing metadata.
 - **D-12:** Do not duplicate editorial media or summaries into commerce storage.
@@ -49,6 +53,7 @@ Phase 6 turns `/store/` into the canonical native storefront inside the static A
 </specifics>
 
 <canonical_refs>
+
 ## Canonical References
 
 - `.planning/ROADMAP.md`
@@ -61,6 +66,7 @@ Phase 6 turns `/store/` into the canonical native storefront inside the static A
 </canonical_refs>
 
 <code_context>
+
 ## Existing Code Insights
 
 - `releases` already reference `artists`, which makes release-derived shop entries straightforward.
@@ -84,5 +90,5 @@ Phase 6 turns `/store/` into the canonical native storefront inside the static A
 
 ---
 
-*Phase: 06-native-storefront-slice*
-*Context updated: 2026-04-21 after implementation review*
+_Phase: 06-native-storefront-slice_
+_Context updated: 2026-04-21 after implementation review_

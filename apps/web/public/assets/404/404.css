@@ -91,11 +91,13 @@ h1 {
   text-decoration: none;
   cursor: pointer;
   overflow: hidden;
-  transition: color 180ms ease, transform 180ms ease;
+  transition:
+    color 180ms ease,
+    transform 180ms ease;
 }
 
 .btn::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   width: 0;
@@ -154,15 +156,15 @@ svg {
   filter: drop-shadow(0 12px 26px var(--ct-404-shadow-color));
 }
 
-svg [stroke="#0E0620"] {
+svg [stroke='#0E0620'] {
   stroke: var(--ct-404-illustration-stroke);
 }
 
-svg [fill="#FFFFFF"] {
+svg [fill='#FFFFFF'] {
   fill: var(--ct-404-illustration-fill);
 }
 
-svg [fill="#0E0620"] {
+svg [fill='#0E0620'] {
   fill: var(--ct-404-illustration-dot);
 }
 
@@ -337,49 +339,49 @@ svg [fill="#0E0620"] {
   }
 }
 
-:root[data-ct-404-embed="true"] {
+:root[data-ct-404-embed='true'] {
   overflow: hidden;
 }
 
-:root[data-ct-404-embed="true"] body {
+:root[data-ct-404-embed='true'] body {
   overflow: hidden;
 }
 
-:root[data-ct-404-embed="true"] .error-404 {
+:root[data-ct-404-embed='true'] .error-404 {
   min-height: 0;
   padding: 1rem;
 }
 
-:root[data-ct-404-embed="true"] .row {
+:root[data-ct-404-embed='true'] .row {
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
   gap: 1rem;
 }
 
-:root[data-ct-404-embed="true"] .error-404__code {
+:root[data-ct-404-embed='true'] .error-404__code {
   font-size: clamp(1.6rem, 3.6vw, 2.4rem);
   letter-spacing: 0.18em;
 }
 
-:root[data-ct-404-embed="true"] h1 {
+:root[data-ct-404-embed='true'] h1 {
   font-size: clamp(2.2rem, 6vw, 4.6rem);
 }
 
-:root[data-ct-404-embed="true"] .error-404__copy h1 + p,
-:root[data-ct-404-embed="true"] .error-404__message {
+:root[data-ct-404-embed='true'] .error-404__copy h1 + p,
+:root[data-ct-404-embed='true'] .error-404__message {
   margin-top: 0.6rem;
   font-size: clamp(0.92rem, 1.8vw, 1.03rem);
 }
 
-:root[data-ct-404-embed="true"] .error-404__actions {
+:root[data-ct-404-embed='true'] .error-404__actions {
   margin-top: 1rem;
 }
 
-:root[data-ct-404-embed="true"] .error-404__meta {
+:root[data-ct-404-embed='true'] .error-404__meta {
   margin-top: 0.75rem;
   font-size: 0.82rem;
 }
 
-:root[data-ct-404-embed="true"] svg {
+:root[data-ct-404-embed='true'] svg {
   max-width: 30rem;
 }
 

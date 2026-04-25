@@ -2,14 +2,14 @@ name: Deploy Worker sandbox
 
 on:
   push:
-    branches: ["sandbox"]
+    branches: ['sandbox']
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: "cloudflare-sandbox"
+  group: 'cloudflare-sandbox'
   cancel-in-progress: true
 
 jobs:
@@ -39,11 +39,11 @@ jobs:
       - name: Generate API contracts
         run: pnpm generate:api
 
-      - name: Run backend tests
-        run: pnpm test:backend
+      - name: Run unit tests
+        run: pnpm test:unit
 
-      - name: Run backend typecheck
-        run: pnpm check:backend
+      - name: Run workspace checks
+        run: pnpm check
 
       - name: Deploy Worker sandbox
         run: pnpm deploy:backend:sandbox

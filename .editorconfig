@@ -1,58 +1,16 @@
-# top-most EditorConfig file
 root = true
 
-#-------------------------------------------------------------------------------
-# General settings (applies to ALL files)
-#-------------------------------------------------------------------------------
 [*]
-charset = utf-8 # UTF-8 encoding
-end_of_line = lf # Use LF for cross‐platform consistency
-indent_style = space # Spaces, not tabs
-indent_size = 4 # 4-space indent for code clarity
-tab_width = 4 # Tab width aligns with indent size
-trim_trailing_whitespace = true # Remove stray spaces
-insert_final_newline = true # Always end files with newline
-max_line_length = 120 # Enforce 120-char maximum
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = true
+insert_final_newline = true
+max_line_length = 120
 
-#-------------------------------------------------------------------------------
-# Markup & Configuration files
-#-------------------------------------------------------------------------------
 [*.md]
-trim_trailing_whitespace = false # Preserve spacing in Markdown
+trim_trailing_whitespace = false
 
-[*.{yml,yaml}]
-indent_size = 2 # 2-space YAML indent per Jekyll conventions
-
-[*.{html,htm,xml,liquid}]
-indent_size = 2 # 2-space HTML/templating indent
-
-#-------------------------------------------------------------------------------
-# Stylesheets & Scripts
-#-------------------------------------------------------------------------------
-[*.{css,scss,sass,less}]
-indent_size = 2 # 2-space CSS/Sass/Less indent
-
-[*.js]
-indent_size = 2 # 2-space JavaScript indent
-
-#-------------------------------------------------------------------------------
-# Ruby files
-#-------------------------------------------------------------------------------
-[*.{rb,Rakefile,Gemfile}]
-indent_size = 2 # Ruby community standard
-
-#-------------------------------------------------------------------------------
-# Makefiles
-#-------------------------------------------------------------------------------
 [Makefile]
-indent_style = tab # Makefiles require tabs
-
-#-------------------------------------------------------------------------------
-# WebStorm / IntelliJ IDEA Enhancements
-#-------------------------------------------------------------------------------
-ij_continuation_indent_size = 8 # IDE continuation indent
-ij_formatter_off_tag = @formatter:off # Disable formatter block start
-ij_formatter_on_tag = @formatter:on # Disable formatter block end
-ij_formatter_tags_enabled = true # Honor off/on tags
-ij_smart_tabs = false # Avoid mixed tabs/spaces
-ij_wrap_on_typing = false # Disable auto-wrap while typing
+indent_style = tab

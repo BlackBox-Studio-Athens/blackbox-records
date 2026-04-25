@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "types": ["node", "@cloudflare/workers-types"]
+  },
+  "include": ["*.config.js", "*.config.mjs", "scripts/**/*.ts", "apps/**/*.ts", "apps/**/*.tsx", "packages/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "out",
+    ".astro",
+    ".wrangler",
+    "apps/backend/src/generated",
+    "packages/api-client/src/generated"
+  ]
+}

@@ -16,4 +16,5 @@
 - Is the backend deploy path isolated from `.github/workflows/pages.yml`?
 
 ---
-*Validation updated: 2026-04-20*
+
+_Validation updated: 2026-04-20_

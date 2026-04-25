@@ -35,6 +35,7 @@ The main risks are still boundary mistakes, not design mistakes: using stale Str
 ### Architecture Approach
 
 Use the current Astro routes as the canonical UI surface and introduce a narrow server boundary:
+
 1. Worker-backed server routes create Checkout Sessions and verify webhooks.
 2. D1 stores only minimal order and stock state.
 3. Stripe remains the authority for product, price, and payment state.
@@ -51,31 +52,37 @@ Use the current Astro routes as the canonical UI surface and introduce a narrow 
 ## Implications for Roadmap
 
 ### Phase 5: Cloudflare Runtime And Secret Plumbing
+
 **Why first:** all later work depends on a deployable sandbox runtime and server-only bindings.
 
 ### Phase 6: Native Storefront Slice
+
 **Why second:** prove the curated in-site store flow before wiring payment.
 
 ### Phase 7: Embedded Checkout Sandbox Flow
+
 **Why third:** prove server-created Checkout Sessions and embedded Checkout on the dedicated route.
 
 ### Phase 8: Webhook Orders And Stock
+
 **Why fourth:** payment truth and stock mutation remain the highest-risk operational boundary.
 
 ### Phase 9: Greece-Only BOX NOW Shipping
+
 **Why fifth:** shipping stays thin and should layer onto the proven checkout/order path.
 
 ### Phase 10: Sandbox Verification And Release Gate
+
 **Why last:** the milestone is complete only when the full sandbox flow is proven and handed off cleanly to go-live planning.
 
 ## Confidence Assessment
 
-| Area | Confidence | Notes |
-|------|------------|-------|
-| Stack | HIGH | Based on current official Astro, Cloudflare, and Stripe docs plus the repo baseline |
-| Features | HIGH | Directly grounded in the approved pre-sandbox milestone outputs |
-| Architecture | HIGH | Clear ownership boundaries are already decided and fit the runtime |
-| Pitfalls | HIGH | The main failure modes are common and directly relevant to this repo |
+| Area         | Confidence | Notes                                                                               |
+| ------------ | ---------- | ----------------------------------------------------------------------------------- |
+| Stack        | HIGH       | Based on current official Astro, Cloudflare, and Stripe docs plus the repo baseline |
+| Features     | HIGH       | Directly grounded in the approved pre-sandbox milestone outputs                     |
+| Architecture | HIGH       | Clear ownership boundaries are already decided and fit the runtime                  |
+| Pitfalls     | HIGH       | The main failure modes are common and directly relevant to this repo                |
 
 **Overall confidence:** HIGH
 
@@ -94,5 +101,6 @@ Use the current Astro routes as the canonical UI surface and introduce a narrow 
 - [Stripe checkout fulfillment](https://docs.stripe.com/checkout/fulfillment?payment-ui=embedded-form)
 
 ---
-*Research completed: 2026-04-19*  
-*Ready for roadmap: yes*
+
+_Research completed: 2026-04-19_
+_Ready for roadmap: yes_

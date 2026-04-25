@@ -2,27 +2,27 @@ import type { ItemAvailabilityRecord, ItemAvailabilityRepository } from '../../.
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapItemAvailability(record: {
-    canBuy: boolean;
-    status: 'available' | 'sold_out';
-    updatedAt: Date;
-    variantId: string;
+  canBuy: boolean;
+  status: 'available' | 'sold_out';
+  updatedAt: Date;
+  variantId: string;
 }): ItemAvailabilityRecord {
-    return {
-        canBuy: record.canBuy,
-        status: record.status,
-        updatedAt: record.updatedAt,
-        variantId: record.variantId,
-    };
+  return {
+    canBuy: record.canBuy,
+    status: record.status,
+    updatedAt: record.updatedAt,
+    variantId: record.variantId,
+  };
 }
 
 export class PrismaItemAvailabilityRepository implements ItemAvailabilityRepository {
-    public constructor(private readonly prisma: PrismaClient) {}
+  public constructor(private readonly prisma: PrismaClient) {}
 
-    public async findByVariantId(variantId: string): Promise<ItemAvailabilityRecord | null> {
-        const record = await this.prisma.itemAvailability.findUnique({
-            where: { variantId },
-        });
+  public async findByVariantId(variantId: string): Promise<ItemAvailabilityRecord | null> {
+    const record = await this.prisma.itemAvailability.findUnique({
+      where: { variantId },
+    });
 
-        return record ? mapItemAvailability(record) : null;
-    }
+    return record ? mapItemAvailability(record) : null;
+  }
 }

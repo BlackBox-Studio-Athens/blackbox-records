@@ -28,10 +28,7 @@ const contentTypes = {
 
 function resolveAppRoot(): string {
   const currentWorkingDirectory = process.cwd();
-  const candidates = [
-    currentWorkingDirectory,
-    resolve(currentWorkingDirectory, 'apps/web'),
-  ];
+  const candidates = [currentWorkingDirectory, resolve(currentWorkingDirectory, 'apps/web')];
 
   for (const candidate of candidates) {
     if (existsSync(resolve(candidate, 'src/content/about'))) {

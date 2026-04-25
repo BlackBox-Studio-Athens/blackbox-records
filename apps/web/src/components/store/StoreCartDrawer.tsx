@@ -60,9 +60,7 @@ export default function StoreCartDrawer({
           <div className="flex flex-1 flex-col justify-between gap-8 px-6 py-8">
             <div className="space-y-3">
               <p className="font-display text-4xl uppercase tracking-[0.1em]">{STORE_CART_DRAWER_COPY.emptyTitle}</p>
-              <p className="max-w-sm text-sm leading-6 text-muted-foreground">
-                {STORE_CART_DRAWER_COPY.emptyDetail}
-              </p>
+              <p className="max-w-sm text-sm leading-6 text-muted-foreground">{STORE_CART_DRAWER_COPY.emptyDetail}</p>
             </div>
             <button
               type="button"

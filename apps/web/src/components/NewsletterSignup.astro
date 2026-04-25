@@ -14,13 +14,24 @@ const { id, formId = 'newsletter-email' } = Astro.props;
 
 <section class="layout-container mt-16" id={id}>
   <div class="surface-card relative overflow-hidden rounded-xl border">
-    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_-15%,rgba(255,255,255,0.12),transparent_42%),radial-gradient(circle_at_86%_20%,rgba(255,255,255,0.08),transparent_40%)]"></div>
-    <div class="pointer-events-none absolute -left-14 top-[-4.5rem] h-40 w-40 rounded-full border border-border/50 animate-hero-orbit"></div>
-    <div class="pointer-events-none absolute -right-16 bottom-[-5rem] h-44 w-44 rounded-full border border-border/50 animate-hero-orbit [animation-duration:28s]"></div>
+    <div
+      class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_-15%,rgba(255,255,255,0.12),transparent_42%),radial-gradient(circle_at_86%_20%,rgba(255,255,255,0.08),transparent_40%)]"
+    >
+    </div>
+    <div
+      class="pointer-events-none absolute -left-14 top-[-4.5rem] h-40 w-40 rounded-full border border-border/50 animate-hero-orbit"
+    >
+    </div>
+    <div
+      class="pointer-events-none absolute -right-16 bottom-[-5rem] h-44 w-44 rounded-full border border-border/50 animate-hero-orbit [animation-duration:28s]"
+    >
+    </div>
     <Card className="relative border-none bg-transparent shadow-none">
       <CardHeader className="pb-2">
         <p class="text-xs tracking-[0.2em] text-muted-foreground uppercase">{newsletterContent.section_label}</p>
-        <CardTitle className="font-display text-4xl tracking-[0.09em] uppercase">{newsletterContent.title.toUpperCase()}</CardTitle>
+        <CardTitle className="font-display text-4xl tracking-[0.09em] uppercase"
+          >{newsletterContent.title.toUpperCase()}</CardTitle
+        >
       </CardHeader>
       <CardContent className="pb-8">
         <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">{newsletterContent.description}</p>

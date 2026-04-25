@@ -32,6 +32,7 @@ Phase 8 makes paid-order truth and post-payment stock mutation authoritative in 
 </specifics>
 
 <canonical_refs>
+
 ## Canonical References
 
 - `.planning/ROADMAP.md`
@@ -44,5 +45,5 @@ Phase 8 makes paid-order truth and post-payment stock mutation authoritative in 
 
 ---
 
-*Phase: 08-webhook-orders-and-stock*
-*Context gathered: 2026-04-21*
+_Phase: 08-webhook-orders-and-stock_
+_Context gathered: 2026-04-21_

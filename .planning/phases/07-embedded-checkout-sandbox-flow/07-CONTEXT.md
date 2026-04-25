@@ -60,6 +60,7 @@ Phase 7 implements Worker-owned checkout APIs and connects the static frontend c
 </specifics>
 
 <canonical_refs>
+
 ## Canonical References
 
 - `.planning/ROADMAP.md`
@@ -75,6 +76,5 @@ Phase 7 implements Worker-owned checkout APIs and connects the static frontend c
 
 ---
 
-*Phase: 07-embedded-checkout-sandbox-flow*
-*Context gathered: 2026-04-20*
-
+_Phase: 07-embedded-checkout-sandbox-flow_
+_Context gathered: 2026-04-20_

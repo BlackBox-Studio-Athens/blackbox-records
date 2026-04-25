@@ -61,5 +61,5 @@ Key conclusions:
 - Real Stripe test-mode all-items coverage is deferred. Final Phase 7 validation may use selected real sandbox Price mappings while mock mode proves all-items route and API readiness.
 
 ---
-*Research completed: 2026-04-20; Shopify UX addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25*
 
+_Research completed: 2026-04-20; Shopify UX addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25_

@@ -53,9 +53,7 @@ const cartItem = createStoreCartItemForStorePage(storeItem, primaryAvailability,
           <span
             class:list={[
               'inline-flex items-center border px-2 py-1 text-[10px] uppercase tracking-[0.18em]',
-              canBuy
-                ? 'border-white/25 bg-black/35 text-white/82'
-                : 'border-white/15 bg-black/45 text-white/55',
+              canBuy ? 'border-white/25 bg-black/35 text-white/82' : 'border-white/15 bg-black/45 text-white/55',
             ]}
           >
             {availabilityLabel}
@@ -69,7 +67,11 @@ const cartItem = createStoreCartItemForStorePage(storeItem, primaryAvailability,
             <Badge variant="outline" className="border-border/70 bg-background/80 text-xs tracking-[0.15em] uppercase">
               Store
             </Badge>
-            {metadataLabel && <p class="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{metadataLabel}</p>}
+            {
+              metadataLabel && (
+                <p class="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{metadataLabel}</p>
+              )
+            }
           </div>
 
           <div class="space-y-3">
@@ -79,7 +81,11 @@ const cartItem = createStoreCartItemForStorePage(storeItem, primaryAvailability,
             <p class="text-sm uppercase tracking-[0.13em] text-muted-foreground">{storeItem.subtitle}</p>
           </div>
 
-          {storeItem.summary && <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">{storeItem.summary}</p>}
+          {
+            storeItem.summary && (
+              <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">{storeItem.summary}</p>
+            )
+          }
 
           <div class="grid gap-4 border border-border/60 bg-background/45 p-5 sm:grid-cols-2">
             <div class="space-y-2">
@@ -87,11 +93,13 @@ const cartItem = createStoreCartItemForStorePage(storeItem, primaryAvailability,
               <p class="font-display text-2xl tracking-[0.08em] uppercase text-foreground">
                 {storeItem.title}
               </p>
-              {primaryAvailability?.optionLabel && (
-                <p class="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-                  Item option · {primaryAvailability.optionLabel}
-                </p>
-              )}
+              {
+                primaryAvailability?.optionLabel && (
+                  <p class="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                    Item option · {primaryAvailability.optionLabel}
+                  </p>
+                )
+              }
             </div>
 
             <div class="space-y-2">
@@ -115,9 +123,11 @@ const cartItem = createStoreCartItemForStorePage(storeItem, primaryAvailability,
           </div>
 
           <p class="text-sm leading-relaxed text-muted-foreground">
-            {canBuy
-              ? 'Add it to the cart to review this item before checkout.'
-              : 'This item stays viewable even while it is resting. Availability remains explicit without dropping it out of the shelf.'}
+            {
+              canBuy
+                ? 'Add it to the cart to review this item before checkout.'
+                : 'This item stays viewable even while it is resting. Availability remains explicit without dropping it out of the shelf.'
+            }
           </p>
         </div>
       </div>

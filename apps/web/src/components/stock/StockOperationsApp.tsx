@@ -65,7 +65,10 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     setIsLoading(true);
 
     try {
-      const [detail, historyResponse] = await Promise.all([api.readStock(variantId), api.readStockHistory(variantId, 25)]);
+      const [detail, historyResponse] = await Promise.all([
+        api.readStock(variantId),
+        api.readStockHistory(variantId, 25),
+      ]);
       setStockDetail(detail);
       setHistory(historyResponse.entries);
       setCountedQuantity(String(detail.stock.quantity));
@@ -162,13 +165,19 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
         <div className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(255,255,255,.8)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.8)_1px,transparent_1px)] [background-size:28px_28px]" />
         <div className="relative mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.6fr)] lg:items-end">
           <div className="grid gap-4">
-            <Badge variant="outline" className="w-fit border-white/20 bg-white/5 font-mono uppercase tracking-[0.22em] text-white/75">
+            <Badge
+              variant="outline"
+              className="w-fit border-white/20 bg-white/5 font-mono uppercase tracking-[0.22em] text-white/75"
+            >
               Protected Ops
             </Badge>
             <div className="grid gap-2">
-              <h1 className="font-display text-5xl uppercase tracking-[0.08em] text-white sm:text-7xl">Stock Control</h1>
+              <h1 className="font-display text-5xl uppercase tracking-[0.08em] text-white sm:text-7xl">
+                Stock Control
+              </h1>
               <p className="max-w-2xl text-sm leading-6 text-white/65 sm:text-base">
-                Search a Variant, review Stock and OnlineStock, then record a StockChange or StockCount through the protected backend API.
+                Search a Variant, review Stock and OnlineStock, then record a StockChange or StockCount through the
+                protected backend API.
               </p>
             </div>
           </div>
@@ -254,7 +263,9 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
             <CardHeader className="flex-row items-start justify-between gap-4">
               <div className="grid gap-1">
                 <CardTitle className="font-display text-4xl uppercase tracking-[0.06em]">Current Stock</CardTitle>
-                <CardDescription>{stockDetail ? stockDetail.variantId : 'Select a Variant to inspect stock.'}</CardDescription>
+                <CardDescription>
+                  {stockDetail ? stockDetail.variantId : 'Select a Variant to inspect stock.'}
+                </CardDescription>
               </div>
               <Button
                 className="rounded-none"
@@ -276,7 +287,9 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
               {stockDetail && (
                 <div className="grid gap-2 border border-white/10 bg-black/30 p-3 font-mono text-xs text-white/55">
                   <span>storeItemSlug: {stockDetail.storeItemSlug}</span>
-                  <span>source: {stockDetail.sourceKind}/{stockDetail.sourceId}</span>
+                  <span>
+                    source: {stockDetail.sourceKind}/{stockDetail.sourceId}
+                  </span>
                 </div>
               )}
             </CardContent>
@@ -393,7 +406,15 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
   );
 }
 
-function StockMetric({ isText = false, label, value }: { isText?: boolean; label: string; value?: number | string | null | undefined }) {
+function StockMetric({
+  isText = false,
+  label,
+  value,
+}: {
+  isText?: boolean;
+  label: string;
+  value?: number | string | null | undefined;
+}) {
   return (
     <div className="border border-white/10 bg-black/35 p-4">
       <p className="text-xs uppercase tracking-[0.22em] text-white/45">{label}</p>
@@ -405,7 +426,10 @@ function StockMetric({ isText = false, label, value }: { isText?: boolean; label
 }
 
 function HistoryRow({ entry }: { entry: HistoryEntry }) {
-  const quantityLabel = entry.type === 'change' ? `${entry.quantityDelta > 0 ? '+' : ''}${entry.quantityDelta}` : `count ${entry.countedQuantity}`;
+  const quantityLabel =
+    entry.type === 'change'
+      ? `${entry.quantityDelta > 0 ? '+' : ''}${entry.quantityDelta}`
+      : `count ${entry.countedQuantity}`;
 
   return (
     <article className="grid gap-2 border border-white/10 bg-black/25 p-3 sm:grid-cols-[8rem_minmax(0,1fr)_auto] sm:items-center">
@@ -419,7 +443,9 @@ function HistoryRow({ entry }: { entry: HistoryEntry }) {
         </p>
         {entry.notes && <p className="text-sm text-white/60">{entry.notes}</p>}
       </div>
-      {'onlineQuantity' in entry && <p className="font-mono text-xs text-white/50">OnlineStock {entry.onlineQuantity}</p>}
+      {'onlineQuantity' in entry && (
+        <p className="font-mono text-xs text-white/50">OnlineStock {entry.onlineQuantity}</p>
+      )}
     </article>
   );
 }

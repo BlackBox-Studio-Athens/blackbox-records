@@ -2,7 +2,7 @@ name: Deploy Astro site to Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: ['main']
   workflow_dispatch:
 
 permissions:
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: 'pages'
   cancel-in-progress: true
 
 jobs:
@@ -39,7 +39,7 @@ jobs:
           node-version: 22
           package-manager: pnpm@10.29.3
           cache: true
-          build-cmd: pnpm test:unit && pnpm check && pnpm build
+          build-cmd: pnpm --workspace-root test:unit && pnpm --workspace-root check && pnpm --workspace-root build:web
 
   deploy:
     needs: verify

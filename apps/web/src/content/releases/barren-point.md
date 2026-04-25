@@ -19,6 +19,6 @@ formats:
 credits:
   - role: Produced by Jim Spanos
     name: BlackBox Records
-  - role: "Artwork by @jtakakart "
+  - role: 'Artwork by @jtakakart '
     name: BlackBox Studio
 ---

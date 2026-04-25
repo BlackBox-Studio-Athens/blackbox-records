@@ -12,6 +12,7 @@ The right architecture for this milestone is a narrow extension of the current A
 ## Brownfield Integration Points
 
 The repo already has the right surfaces for the first commerce slice:
+
 - `src/pages/store/index.astro` is the canonical native store entry, while `src/pages/shop/index.astro` becomes a compatibility redirect.
 - `src/config/site.ts` and distro card/link helpers previously resolved `/shop/` to Fourthwall and now need to preserve only external Fourthwall links, not native store paths.
 - `src/content/distro/*.json` already provides the editorial product presentation layer.
@@ -22,11 +23,13 @@ The repo already has the right surfaces for the first commerce slice:
 ### 1. Worker Runtime Layer
 
 Purpose:
+
 - host server endpoints for Checkout Session creation, webhook verification, and trusted session retrieval
 - keep secrets and D1 access server-only
 - preserve static prerendering for the rest of the site where practical
 
 Key constraints:
+
 - use on-demand routes only where server execution is required
 - keep handlers thin because Workers Free CPU limits are tight
 - do not disturb the current production GitHub Pages deployment during sandbox work
@@ -34,28 +37,34 @@ Key constraints:
 ### 2. Catalog Projection Layer
 
 Purpose:
+
 - join Astro distro editorial content to Stripe product/price state for the curated sellable subset
 
 Responsibilities:
+
 - Astro content remains the presentation and editorial layer
 - Stripe product/price data supplies sellable title/price/currency truth
 - the join key must be explicit and stable
 
 What not to do:
+
 - do not recreate pricing authority in Astro content
 - do not let the browser fetch Stripe secrets or internal catalog joins directly
 
 ### 3. Checkout Flow Layer
 
 Purpose:
+
 - turn a product-detail `Buy Now` action into a server-created Checkout Session and mount embedded Checkout on a dedicated route
 
 Responsibilities:
+
 - create a single-item Checkout Session on the server
 - return the `client_secret` needed by the embedded Checkout client
 - render in-site return/retry states without treating them as authoritative payment truth
 
 Current Stripe integration implications:
+
 - use `ui_mode: embedded`
 - provide `return_url` when redirects are allowed
 - consider `redirect_on_completion: if_required` to keep card success in-page while still supporting redirect-based methods if enabled
@@ -63,15 +72,18 @@ Current Stripe integration implications:
 ### 4. D1 Order And Stock Layer
 
 Purpose:
+
 - store only the operational state BlackBox needs to fulfill paid orders and keep stock correct
 
 Responsibilities:
+
 - represent orders with the approved minimal states: `pending_payment`, `paid`, `not_paid`, `needs_review`
 - store stock counts
 - attach the thinnest approved BOX NOW metadata for paid Greek orders
 - enforce idempotent updates so paid stock decrement happens once
 
 What not to do:
+
 - do not let the browser write this data
 - do not add reservation logic
 - do not turn D1 into a second product catalog
@@ -79,15 +91,18 @@ What not to do:
 ### 5. BOX NOW Shipping Gate
 
 Purpose:
+
 - add the approved Greece-only locker selection step before payment
 
 Responsibilities:
+
 - gate the native checkout flow to Greece only
 - capture locker choice before session creation
 - persist only `locker_id`, `country_code`, and `locker_name_or_label`
 - keep fulfillment manual in the partner portal
 
 What not to do:
+
 - do not introduce non-Greece shipping in this milestone
 - do not add automated shipment creation yet
 
@@ -126,4 +141,5 @@ This order keeps the highest-risk trust boundaries ahead of the lower-risk shipp
 - [Stripe checkout fulfillment](https://docs.stripe.com/checkout/fulfillment?payment-ui=embedded-form)
 
 ---
-*Research completed: 2026-04-19*
+
+_Research completed: 2026-04-19_

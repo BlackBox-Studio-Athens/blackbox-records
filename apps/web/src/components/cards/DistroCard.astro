@@ -16,10 +16,7 @@ const isHomeVariant = variant === 'home';
 ---
 
 <a
-  class:list={[
-    'group block h-full distro-card',
-    isHomeVariant ? 'distro-card--home' : 'distro-card--page',
-  ]}
+  class:list={['group block h-full distro-card', isHomeVariant ? 'distro-card--home' : 'distro-card--page']}
   href={storeItem.storePath}
   data-astro-prefetch
 >
@@ -29,12 +26,16 @@ const isHomeVariant = variant === 'home';
         src={item.data.image}
         alt={item.data.image_alt}
         class="distro-card__image"
-        sizes={isHomeVariant ? '(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw' : '(min-width: 1280px) 22vw, (min-width: 768px) 45vw, 100vw'}
+        sizes={isHomeVariant
+          ? '(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw'
+          : '(min-width: 1280px) 22vw, (min-width: 768px) 45vw, 100vw'}
       />
     </div>
     <CardContent className={cn('distro-card__content', isHomeVariant ? 'space-y-2 p-4' : 'space-y-3 p-5')}>
       <div class="space-y-2">
-        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+        <div
+          class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] uppercase tracking-[0.16em] text-muted-foreground"
+        >
           {item.data.eyebrow && <span>{item.data.eyebrow}</span>}
           {item.data.format && <span class="text-[#8a8a8a]">{item.data.format}</span>}
         </div>
@@ -42,11 +43,13 @@ const isHomeVariant = variant === 'home';
         <p class="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">{item.data.artist_or_label}</p>
       </div>
       {!isHomeVariant && <p class="distro-card__summary">{item.data.summary}</p>}
-      {!isHomeVariant && (
-        <span class="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-foreground/88">
-          View in Store <span aria-hidden="true">→</span>
-        </span>
-      )}
+      {
+        !isHomeVariant && (
+          <span class="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-foreground/88">
+            View in Store <span aria-hidden="true">→</span>
+          </span>
+        )
+      }
     </CardContent>
   </Card>
 </a>

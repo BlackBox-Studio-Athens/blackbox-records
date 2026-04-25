@@ -33,7 +33,7 @@ const hasLatestRelease = Boolean(releaseContext?.latestReleaseTitle);
             class="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.025]"
             sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
           />
-          <div class="absolute inset-0 bg-gradient-to-t from-black via-black/76 via-32% to-black/12"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black via-black/76 via-32% to-black/12" />
           <CardContent className="home-featured-roster-card__content absolute inset-x-0 bottom-0 z-[1] space-y-3 p-5 sm:p-6">
             {artist.data.genre && (
               <p class="text-[11px] tracking-[0.18em] uppercase text-[#d0d0d0]">{artist.data.genre}</p>
@@ -53,7 +53,7 @@ const hasLatestRelease = Boolean(releaseContext?.latestReleaseTitle);
             class="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.025]"
             sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
           />
-          <div class="absolute inset-0 bg-gradient-to-t from-black via-black/76 via-32% to-black/12"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black via-black/76 via-32% to-black/12" />
           <div class="absolute inset-x-0 bottom-0 space-y-3 p-5 sm:p-6">
             {artist.data.genre && (
               <p class="text-[11px] tracking-[0.18em] uppercase text-[#d0d0d0]">{artist.data.genre}</p>
@@ -65,9 +65,7 @@ const hasLatestRelease = Boolean(releaseContext?.latestReleaseTitle);
         </div>
         <CardContent className="artist-roster-card__body space-y-4 p-5 pt-5">
           {artist.data.bio && (
-            <p class="artist-roster-card__bio text-sm leading-relaxed text-muted-foreground">
-              {artist.data.bio}
-            </p>
+            <p class="artist-roster-card__bio text-sm leading-relaxed text-muted-foreground">{artist.data.bio}</p>
           )}
           <div class="artist-roster-card__context border-t border-[#2b2b2b] pt-4">
             <div class="artist-release-stat artist-release-stat--roster">
@@ -76,16 +74,14 @@ const hasLatestRelease = Boolean(releaseContext?.latestReleaseTitle);
             </div>
             <div class="artist-latest-teaser artist-latest-teaser--roster">
               <p class="artist-latest-teaser__label">Latest</p>
-              {
-                hasLatestRelease ? (
-                  <>
-                    <p class="artist-latest-teaser__title">{latestReleaseTitle}</p>
-                    {latestReleaseYear && <p class="artist-latest-teaser__meta">{latestReleaseYear}</p>}
-                  </>
-                ) : (
-                  <p class="artist-latest-teaser__title artist-latest-teaser__title--muted">{latestReleaseTitle}</p>
-                )
-              }
+              {hasLatestRelease ? (
+                <>
+                  <p class="artist-latest-teaser__title">{latestReleaseTitle}</p>
+                  {latestReleaseYear && <p class="artist-latest-teaser__meta">{latestReleaseYear}</p>}
+                </>
+              ) : (
+                <p class="artist-latest-teaser__title artist-latest-teaser__title--muted">{latestReleaseTitle}</p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -99,7 +95,7 @@ const hasLatestRelease = Boolean(releaseContext?.latestReleaseTitle);
             class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             sizes="(min-width: 1280px) 19vw, (min-width: 640px) 50vw, 100vw"
           />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
           <div class="absolute inset-x-0 bottom-0 space-y-3 p-5">
             {artist.data.genre && (
               <p class="text-[11px] tracking-[0.18em] uppercase text-[#d0d0d0]">{artist.data.genre}</p>

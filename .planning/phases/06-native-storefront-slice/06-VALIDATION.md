@@ -17,5 +17,5 @@
 - Would the storefront survive a swap from temporary variant data to backend variant data unchanged?
 
 ---
-*Validation updated: 2026-04-21 after storefront review and simplification*
 
+_Validation updated: 2026-04-21 after storefront review and simplification_

@@ -18,36 +18,40 @@ const heroImageClass = `h-[20rem] w-full object-cover sm:h-[24rem]${imageColor ?
 
 <section class="mx-auto w-full max-w-6xl px-4 pt-14 pb-8 sm:px-6 lg:px-8">
   <div class="max-w-4xl">
-    {sectionLabel && (
-      <Badge variant="outline" className="border-border/80 bg-card/85 px-3 py-1 text-xs tracking-[0.18em] uppercase text-muted-foreground">
-        {sectionLabel}
-      </Badge>
-    )}
-    <h1 class="mt-4 font-display text-5xl tracking-[0.1em] uppercase text-foreground sm:text-6xl" transition:name="internal-page-hero-title">
+    {
+      sectionLabel && (
+        <Badge
+          variant="outline"
+          className="border-border/80 bg-card/85 px-3 py-1 text-xs tracking-[0.18em] uppercase text-muted-foreground"
+        >
+          {sectionLabel}
+        </Badge>
+      )
+    }
+    <h1
+      class="mt-4 font-display text-5xl tracking-[0.1em] uppercase text-foreground sm:text-6xl"
+      transition:name="internal-page-hero-title"
+    >
       {title.toUpperCase()}
     </h1>
   </div>
 </section>
-{image && (
-  <section class="layout-container">
-    <div class="relative overflow-hidden rounded-xl border border-border/70 bg-card shadow-2xl shadow-black/35" transition:name="internal-page-hero-image">
-      {
-        typeof image === 'string' ? (
-          <img
-            src={createProjectRelativeUrl(image)}
-            alt={imageAlt || title}
-            class={heroImageClass}
-          />
+{
+  image && (
+    <section class="layout-container">
+      <div
+        class="relative overflow-hidden rounded-xl border border-border/70 bg-card shadow-2xl shadow-black/35"
+        transition:name="internal-page-hero-image"
+      >
+        {typeof image === 'string' ? (
+          <img src={createProjectRelativeUrl(image)} alt={imageAlt || title} class={heroImageClass} />
         ) : (
-          <Image
-            src={image}
-            alt={imageAlt || title}
-            class={heroImageClass}
-            sizes="(min-width: 1024px) 72rem, 100vw"
-          />
-        )
-      }
-      <div class={`absolute inset-0${imageColor ? ' bg-gradient-to-t from-black/45 via-transparent to-black/15' : ' bg-gradient-to-t from-black/70 via-black/20 to-transparent'}`}></div>
-    </div>
-  </section>
-)}
+          <Image src={image} alt={imageAlt || title} class={heroImageClass} sizes="(min-width: 1024px) 72rem, 100vw" />
+        )}
+        <div
+          class={`absolute inset-0${imageColor ? ' bg-gradient-to-t from-black/45 via-transparent to-black/15' : ' bg-gradient-to-t from-black/70 via-black/20 to-transparent'}`}
+        />
+      </div>
+    </section>
+  )
+}

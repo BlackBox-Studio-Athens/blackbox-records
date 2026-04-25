@@ -132,10 +132,7 @@ export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEnt
   const artistProfile = await resolveArtistProfileForRelease(releaseEntry);
   const artistDisplayName = resolveReleaseArtistDisplayName(releaseEntry, artistProfile || undefined);
   const slug = releaseStoreItemSlugByReleaseId[releaseEntry.id] || releaseEntry.id;
-  const metadata = [
-    String(releaseEntry.data.release_date.getFullYear()),
-    ...(releaseEntry.data.formats || []),
-  ];
+  const metadata = [String(releaseEntry.data.release_date.getFullYear()), ...(releaseEntry.data.formats || [])];
 
   return {
     slug,
@@ -184,15 +181,10 @@ export async function getStoreItemForRelease(releaseEntry: ReleaseCatalogEntry) 
 }
 
 export async function listStoreItems(): Promise<StoreItem[]> {
-  const [releaseCatalog, distroEntries] = await Promise.all([
-    listReleaseCatalog(),
-    listDistroEntries(),
-  ]);
+  const [releaseCatalog, distroEntries] = await Promise.all([listReleaseCatalog(), listDistroEntries()]);
 
   const releaseStoreItems = await Promise.all(
-    releaseCatalog
-      .filter(hasNativeStoreItemForRelease)
-      .map((releaseEntry) => createStoreItemFromRelease(releaseEntry)),
+    releaseCatalog.filter(hasNativeStoreItemForRelease).map((releaseEntry) => createStoreItemFromRelease(releaseEntry)),
   );
 
   const distroStoreItems = distroEntries.map((distroEntry) => createStoreItemFromDistroEntry(distroEntry));

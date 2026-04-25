@@ -12,7 +12,9 @@ const { class: className } = Astro.props;
     className,
   ]}
 >
-  <div class="mx-auto flex h-full w-full max-w-[1240px] items-center justify-between gap-4 px-[var(--header-padding-x-mobile)] md:gap-6 md:px-[var(--header-padding-x-desktop)]">
+  <div
+    class="mx-auto flex h-full w-full max-w-[1240px] items-center justify-between gap-4 px-[var(--header-padding-x-mobile)] md:gap-6 md:px-[var(--header-padding-x-desktop)]"
+  >
     <slot />
   </div>
 </header>

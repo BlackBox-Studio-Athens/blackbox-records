@@ -8,12 +8,7 @@ interface Props {
   scrollIndicatorText?: string;
 }
 
-const {
-  tagline,
-  image,
-  imageAlt,
-  scrollIndicatorText = 'Scroll',
-} = Astro.props;
+const { tagline, image, imageAlt, scrollIndicatorText = 'Scroll' } = Astro.props;
 ---
 
 <section class="homepage-hero-section border-b border-border/70" id="homepage-hero-section">

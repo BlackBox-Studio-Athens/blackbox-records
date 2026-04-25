@@ -13,12 +13,12 @@ const artistProfileById = mapArtistProfilesById(artistProfiles);
   <InternalPageHero sectionLabel="Releases" title="Releases" />
   <section class="layout-container">
     <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {
-          releaseCatalogEntries.map((releaseEntry) => {
-            const artistProfile = artistProfileById.get(releaseEntry.data.artist.id);
-            return <ReleaseCard release={releaseEntry} artist={artistProfile} />;
-          })
-        }
+      {
+        releaseCatalogEntries.map((releaseEntry) => {
+          const artistProfile = artistProfileById.get(releaseEntry.data.artist.id);
+          return <ReleaseCard release={releaseEntry} artist={artistProfile} />;
+        })
+      }
     </div>
   </section>
 </SiteLayout>

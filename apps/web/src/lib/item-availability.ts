@@ -86,9 +86,7 @@ export async function listAvailabilityForStoreItem(slug: StoreItemSlug): Promise
   return storeItem ? [createFallbackItemAvailability(storeItem)] : [];
 }
 
-export async function getPrimaryAvailabilityForStoreItem(
-  slug: StoreItemSlug,
-): Promise<ItemAvailability | null> {
+export async function getPrimaryAvailabilityForStoreItem(slug: StoreItemSlug): Promise<ItemAvailability | null> {
   const availability = await listAvailabilityForStoreItem(slug);
   return availability[0] || null;
 }

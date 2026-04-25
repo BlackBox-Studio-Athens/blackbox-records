@@ -56,8 +56,12 @@ const orgUrl = labelSettings.url || createAbsoluteSiteUrl('/');
 const orgLogo = labelSettings.logo?.includes('://') ? labelSettings.logo : createAbsoluteSiteUrl(labelSettings.logo);
 const sameAs = socialItems.filter((item) => item.url && item.url !== '#').map((item) => item.url);
 const htmlTitle = pageTitle ? `${pageTitle} | ${siteConfig.title}` : siteConfig.title;
-const resolvedBodyClass = ['min-h-screen flex flex-col overflow-x-clip bg-background text-foreground', bodyClass].filter(Boolean).join(' ');
-const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)]', mainClass].filter(Boolean).join(' ');
+const resolvedBodyClass = ['min-h-screen flex flex-col overflow-x-clip bg-background text-foreground', bodyClass]
+  .filter(Boolean)
+  .join(' ');
+const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)]', mainClass]
+  .filter(Boolean)
+  .join(' ');
 ---
 
 <!doctype html>
@@ -88,21 +92,25 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
 
     <link rel="canonical" href={redirectUrl || metadataUrl} />
 
-    <script is:inline type="application/ld+json" set:html={JSON.stringify({
-      '@context': 'https://schema.org',
-      '@type': 'Organization',
-      name: orgName,
-      url: orgUrl,
-      logo: orgLogo,
-      description: siteConfig.description,
-      foundingDate: String(labelSettings.established_year),
-      address: {
-        '@type': 'PostalAddress',
-        addressLocality: labelSettings.location.locality,
-        addressCountry: labelSettings.location.country,
-      },
-      sameAs,
-    })}></script>
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: orgName,
+        url: orgUrl,
+        logo: orgLogo,
+        description: siteConfig.description,
+        foundingDate: String(labelSettings.established_year),
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: labelSettings.location.locality,
+          addressCountry: labelSettings.location.country,
+        },
+        sameAs,
+      })}
+    />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
@@ -134,7 +142,7 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
           data-domain="blackbox-studio-athens.github.io"
           defer
           src="https://www.glancelytics.com/js/script.js"
-        ></script>
+        />
       )
     }
   </body>

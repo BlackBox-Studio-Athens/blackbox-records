@@ -18,4 +18,5 @@
 The earlier plan drifted into “Astro frontend moves to Workers.” That is no longer the active architecture. Phase 5 now only bootstraps the separate backend.
 
 ---
-*Logged: 2026-04-20*
+
+_Logged: 2026-04-20_

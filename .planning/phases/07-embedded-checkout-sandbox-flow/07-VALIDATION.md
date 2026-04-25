@@ -22,5 +22,11 @@
 - Does every current release and distro store item have local mock D1 state, fake local stock, and a mock Stripe mapping?
 - Is real quantity uncertainty still handled by staff-recorded D1 stock operations rather than committed fake data outside mock mode?
 
+## 07-08 Browser Use Evidence
+
+- 2026-04-25: Codex Browser Use verified `/blackbox-records/store/disintegration-black-vinyl-lp/` through the local stripe-mock stack. The eligible PDP showed `Add To Cart`, did not expose a primary `Buy Now`, opened the cart drawer after Add To Cart, showed `Disintegration`, `Afterwise`, and `Black Vinyl LP`, and linked checkout to `/store/disintegration-black-vinyl-lp/checkout/`.
+- 2026-04-25: Codex Browser Use verified `/blackbox-records/store/afterglow-tape/` remained viewable while unavailable, rendered disabled `Currently Unavailable`, and exposed no actionable Add To Cart or checkout link.
+
 ---
-*Validation completed: 2026-04-20; Shopify UX validation addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25*
+
+_Validation completed: 2026-04-20; Shopify UX validation addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25; 07-08 Browser Use verification added: 2026-04-25_

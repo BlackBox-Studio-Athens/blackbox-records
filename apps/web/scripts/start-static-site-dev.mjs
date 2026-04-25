@@ -44,12 +44,7 @@ function assertPortAvailable(host, port) {
 }
 
 function spawnAstroDev() {
-  const astroCommand = path.join(
-    webDir,
-    'node_modules',
-    '.bin',
-    process.platform === 'win32' ? 'astro.CMD' : 'astro',
-  );
+  const astroCommand = path.join(webDir, 'node_modules', '.bin', process.platform === 'win32' ? 'astro.CMD' : 'astro');
 
   if (process.platform === 'win32') {
     const commandString = `"${astroCommand}" dev --root . --host ${HOST} --port ${PORT}`;
@@ -62,15 +57,11 @@ function spawnAstroDev() {
     });
   }
 
-  return spawn(
-    astroCommand,
-    ['dev', '--root', '.', '--host', HOST, '--port', String(PORT)],
-    {
-      cwd: webDir,
-      stdio: 'inherit',
-      env: process.env,
-    },
-  );
+  return spawn(astroCommand, ['dev', '--root', '.', '--host', HOST, '--port', String(PORT)], {
+    cwd: webDir,
+    stdio: 'inherit',
+    env: process.env,
+  });
 }
 
 try {

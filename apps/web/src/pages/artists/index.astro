@@ -29,7 +29,9 @@ const releaseContextByArtistId = await mapArtistRosterReleaseContextById();
               data-artist-country={artistProfile.data.country || ''}
               data-artist-bio={(artistProfile.data.bio || '').replace(/\s+/g, ' ').trim()}
               data-artist-latest-release-title={releaseContext.latestReleaseTitle || ''}
-              data-artist-latest-release-year={releaseContext.latestReleaseYear ? String(releaseContext.latestReleaseYear) : ''}
+              data-artist-latest-release-year={
+                releaseContext.latestReleaseYear ? String(releaseContext.latestReleaseYear) : ''
+              }
             >
               <ArtistCard artist={artistProfile} releaseContext={releaseContext} variant="roster-detailed" />
             </div>

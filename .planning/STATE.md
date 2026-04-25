@@ -4,7 +4,7 @@ milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
 stopped_at: Phase 7 plan 9; rebuild checkout page into Shopify-like order summary plus embedded Checkout layout
-last_updated: "2026-04-25T03:35:00+03:00"
+last_updated: '2026-04-25T03:35:00+03:00'
 last_activity: 2026-04-25 -- Routed PDP purchases through the single-item cart and cleaned checkout entry copy
 progress:
   total_phases: 10
@@ -49,15 +49,15 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 
 **By Phase:**
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 5 | 6 | Completed | 2026-04-20 |
-| 5.1 | 4 | Completed | 2026-04-20 |
-| 6 | 7 | Completed | 2026-04-21 |
-| 6.1 | 4 | Completed | 2026-04-22 |
-| 6.1.1 | 4 | Completed | 2026-04-24 |
-| 7 | 8/16 | Active | 2026-04-25 |
-| 7.1 | 0/5 | Planned | - |
+| Phase | Plans | Total     | Avg/Plan   |
+| ----- | ----- | --------- | ---------- |
+| 5     | 6     | Completed | 2026-04-20 |
+| 5.1   | 4     | Completed | 2026-04-20 |
+| 6     | 7     | Completed | 2026-04-21 |
+| 6.1   | 4     | Completed | 2026-04-22 |
+| 6.1.1 | 4     | Completed | 2026-04-24 |
+| 7     | 8/16  | Active    | 2026-04-25 |
+| 7.1   | 0/5   | Planned   | -          |
 
 **Recent Trend:**
 
@@ -97,32 +97,32 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 
 ## Decisions Made
 
-| Phase | Decision | Status |
-|-------|----------|--------|
-| v1.0 | Production remains GitHub Pages + Fourthwall until the future go-live milestone. | Active |
-| v1.0 | The first native sellable slice is `/store/` collection -> store item detail -> single-item cart-like checkout, with familiar cart affordances but no multi-item cart semantics. | Revised |
-| v1.0 | v1 order state stays minimal: `pending_payment`, `paid`, `not_paid`, and `needs_review`, with Checkout webhooks as the authoritative paid/unpaid signals. | Active |
-| v1.0 | MVP shipping is Greece only, BOX NOW locker selection happens before payment, and fulfillment stays manual through the partner portal. | Active |
-| v1.1 | The Astro site remains static, and Phase 7.1 now moves canonical static hosting from GitHub Pages to Cloudflare Pages after checkout browser wiring is complete. | Active |
-| v1.1 | A separate Cloudflare Worker backend is the dynamic commerce surface for Stripe, webhooks, D1, and later BOX NOW backend work. | Active |
-| v1.1 | The Worker is a backend/BFF, not the primary frontend runtime. | Active |
-| v1.1 | The Worker does not expose default synthetic probe routes such as `healthz`, `status`, or `readyz`; runtime checks rely on Wrangler, deploy success, and real API tests. | Active |
-| v1.1 | Backend application code is TypeScript-only and uses Hono only as the HTTP interface layer. | Active |
-| v1.1 | The backend owns HTTP contracts through code-first OpenAPI, emitted as separate public/internal documents, and the frontend consumes generated clients from `@blackbox/api-client`. | Active |
-| v1.1 | Backend modules must stay DDD-layered, use ubiquitous-language names, and ship with mandatory tests. | Active |
-| v1.1 | Astro content owns editorial content only, Stripe owns sellable commerce data, and D1 owns operational state plus internal mappings. | Active |
-| v1.1 | The primary sellable unit is a `Variant` attached to a storefront-facing `StoreItem`. | Active |
-| v1.1 | Phase 5.1 is inserted as a hard architecture gate before further storefront or checkout work. | Active |
-| v1.1 | `/store/` is the canonical native storefront route; `/shop/` is compatibility-only. | Active |
-| v1.1 | Phase 6 storefront UI composes stable `StoreItem` plus `ItemAvailability` contracts and keeps temporary offer state out of editorial content. | Active |
-| v1.1 | Internal stock operations use Google-backed Cloudflare Access on a separate protected backend hostname; Decap auth is not reused for runtime stock writes. | Active |
-| v1.1 | D1 is the authoritative stock ledger using `Stock`, `StockChange`, and `StockCount`; spreadsheets are temporary capture/reporting only. | Active |
-| v1.1 | Each `Variant` exposes a conservative `OnlineStock` quantity separate from total stock balance before public checkout depends on live stock. | Active |
-| v1.1 | Public checkout starts only through Worker-owned `StartCheckout`; the browser receives a Stripe Checkout `clientSecret` but never receives Stripe price IDs or server secrets. | Active |
-| v1.1 | Stripe Checkout return URLs are Worker-validated against `CHECKOUT_RETURN_ORIGINS`; arbitrary browser origins are not trusted. | Active |
-| v1.1 | Shopper-facing store URLs must describe the sellable item option, not legacy release shorthand or backend mapping names. | Active |
-| v1.1 | Phase 7 cart UX is a single-item Shopify-familiar shell built in Astro/React/shadcn; true multi-item cart remains out of scope for this milestone. | Active |
-| v1.1 | Local stripe-mock checkout readiness may use fake dev stock for every current distro and release item; real stock authority still requires staff-recorded D1 stock operations. | Active |
+| Phase | Decision                                                                                                                                                                            | Status  |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| v1.0  | Production remains GitHub Pages + Fourthwall until the future go-live milestone.                                                                                                    | Active  |
+| v1.0  | The first native sellable slice is `/store/` collection -> store item detail -> single-item cart-like checkout, with familiar cart affordances but no multi-item cart semantics.    | Revised |
+| v1.0  | v1 order state stays minimal: `pending_payment`, `paid`, `not_paid`, and `needs_review`, with Checkout webhooks as the authoritative paid/unpaid signals.                           | Active  |
+| v1.0  | MVP shipping is Greece only, BOX NOW locker selection happens before payment, and fulfillment stays manual through the partner portal.                                              | Active  |
+| v1.1  | The Astro site remains static, and Phase 7.1 now moves canonical static hosting from GitHub Pages to Cloudflare Pages after checkout browser wiring is complete.                    | Active  |
+| v1.1  | A separate Cloudflare Worker backend is the dynamic commerce surface for Stripe, webhooks, D1, and later BOX NOW backend work.                                                      | Active  |
+| v1.1  | The Worker is a backend/BFF, not the primary frontend runtime.                                                                                                                      | Active  |
+| v1.1  | The Worker does not expose default synthetic probe routes such as `healthz`, `status`, or `readyz`; runtime checks rely on Wrangler, deploy success, and real API tests.            | Active  |
+| v1.1  | Backend application code is TypeScript-only and uses Hono only as the HTTP interface layer.                                                                                         | Active  |
+| v1.1  | The backend owns HTTP contracts through code-first OpenAPI, emitted as separate public/internal documents, and the frontend consumes generated clients from `@blackbox/api-client`. | Active  |
+| v1.1  | Backend modules must stay DDD-layered, use ubiquitous-language names, and ship with mandatory tests.                                                                                | Active  |
+| v1.1  | Astro content owns editorial content only, Stripe owns sellable commerce data, and D1 owns operational state plus internal mappings.                                                | Active  |
+| v1.1  | The primary sellable unit is a `Variant` attached to a storefront-facing `StoreItem`.                                                                                               | Active  |
+| v1.1  | Phase 5.1 is inserted as a hard architecture gate before further storefront or checkout work.                                                                                       | Active  |
+| v1.1  | `/store/` is the canonical native storefront route; `/shop/` is compatibility-only.                                                                                                 | Active  |
+| v1.1  | Phase 6 storefront UI composes stable `StoreItem` plus `ItemAvailability` contracts and keeps temporary offer state out of editorial content.                                       | Active  |
+| v1.1  | Internal stock operations use Google-backed Cloudflare Access on a separate protected backend hostname; Decap auth is not reused for runtime stock writes.                          | Active  |
+| v1.1  | D1 is the authoritative stock ledger using `Stock`, `StockChange`, and `StockCount`; spreadsheets are temporary capture/reporting only.                                             | Active  |
+| v1.1  | Each `Variant` exposes a conservative `OnlineStock` quantity separate from total stock balance before public checkout depends on live stock.                                        | Active  |
+| v1.1  | Public checkout starts only through Worker-owned `StartCheckout`; the browser receives a Stripe Checkout `clientSecret` but never receives Stripe price IDs or server secrets.      | Active  |
+| v1.1  | Stripe Checkout return URLs are Worker-validated against `CHECKOUT_RETURN_ORIGINS`; arbitrary browser origins are not trusted.                                                      | Active  |
+| v1.1  | Shopper-facing store URLs must describe the sellable item option, not legacy release shorthand or backend mapping names.                                                            | Active  |
+| v1.1  | Phase 7 cart UX is a single-item Shopify-familiar shell built in Astro/React/shadcn; true multi-item cart remains out of scope for this milestone.                                  | Active  |
+| v1.1  | Local stripe-mock checkout readiness may use fake dev stock for every current distro and release item; real stock authority still requires staff-recorded D1 stock operations.      | Active  |
 
 ### Pending Todos
 
@@ -143,4 +143,3 @@ Phase summary: Phases 5, 5.1, 6, 6.1, and 6.1.1 are complete. Phase 7 has starte
 **Last Date:** 2026-04-25T03:35:00+03:00
 **Stopped At:** Phase 7 plan 9; rebuild checkout page into Shopify-like order summary plus embedded Checkout layout
 **Resume File:** .planning/ROADMAP.md
-

@@ -226,6 +226,8 @@ pnpm check
 pnpm build
 ```
 
+`pnpm check` is the repo-owned quality gate. It runs Prettier format verification, ESLint, and the existing Astro/TypeScript content checks.
+
 Backend-only verification:
 
 ```sh
@@ -383,8 +385,8 @@ CI/deploy credentials:
   - runs on pushes to `sandbox`
   - can also be triggered manually
   - runs `pnpm generate:api`
-  - runs `pnpm test:backend`
-  - runs `pnpm check:backend`
+  - runs `pnpm test:unit`
+  - runs `pnpm check`
   - deploys only the backend workspace to Cloudflare Workers
 - The sandbox `workers.dev` backend is a reachable sandbox target for browser checks, Stripe return URLs, and webhook testing.
 - Cloudflare Access is not part of public sandbox browsing at this stage.

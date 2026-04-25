@@ -47,4 +47,5 @@
 - Cloudflare Workers secrets docs
 
 ---
-*Research updated: 2026-04-20 for the dual-deploy architecture*
+
+_Research updated: 2026-04-20 for the dual-deploy architecture_

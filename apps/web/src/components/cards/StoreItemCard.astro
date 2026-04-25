@@ -16,7 +16,9 @@ const collectionLabel = storeItem.eyebrow || (storeItem.sourceKind === 'release'
 ---
 
 <a class="group block h-full" href={storeItem.storePath} data-astro-prefetch>
-  <Card className="h-full rounded-none border-[#2b2b2b] bg-[#121212] shadow-none transition-colors duration-300 group-hover:border-[#4a4a4a]">
+  <Card
+    className="h-full rounded-none border-[#2b2b2b] bg-[#121212] shadow-none transition-colors duration-300 group-hover:border-[#4a4a4a]"
+  >
     <div class="relative aspect-[4/5] overflow-hidden border-b border-[#2b2b2b] bg-[#0d0d0d]">
       <Image
         src={storeItem.image}

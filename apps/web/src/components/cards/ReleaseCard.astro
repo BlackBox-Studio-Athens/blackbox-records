@@ -32,14 +32,27 @@ const dataAttributes = embeddedPlayerData.hasProvider
   : {};
 ---
 
-<a class="release-card-link group block h-full" href={createProjectRelativeUrl(`/releases/${release.id}/`)} data-astro-prefetch {...dataAttributes}>
+<a
+  class="release-card-link group block h-full"
+  href={createProjectRelativeUrl(`/releases/${release.id}/`)}
+  data-astro-prefetch
+  {...dataAttributes}
+>
   <Card
     className={usesFramedArtworkLayout
       ? `rounded-none border-0 bg-transparent shadow-none ${isArtistDiscography ? 'release-card-tile--artist-discography' : 'release-card-tile--framed'}`
       : 'catalog-tile-card rounded-none border-[#2b2b2b] bg-[#141414] shadow-none'}
   >
-    <div class={usesFramedArtworkLayout ? 'release-card-image-shell release-card-image-shell--framed' : 'relative aspect-square overflow-hidden border-b border-[#2b2b2b]'}>
-      <div class={usesFramedArtworkLayout ? 'release-card-image-frame release-card-image-frame--framed' : 'relative h-full w-full overflow-hidden'}>
+    <div
+      class={usesFramedArtworkLayout
+        ? 'release-card-image-shell release-card-image-shell--framed'
+        : 'relative aspect-square overflow-hidden border-b border-[#2b2b2b]'}
+    >
+      <div
+        class={usesFramedArtworkLayout
+          ? 'release-card-image-frame release-card-image-frame--framed'
+          : 'relative h-full w-full overflow-hidden'}
+      >
         <Image
           src={release.data.cover_image}
           alt={release.data.cover_image_alt || release.data.title}
@@ -50,16 +63,20 @@ const dataAttributes = embeddedPlayerData.hasProvider
         />
         <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div>
         <div class="release-card-meta-row absolute inset-x-0 bottom-0 px-2.5 py-3">
-          {embeddedPlayerData.hasProvider && (
-            <div
-              class="release-card-listen-trigger inline-flex items-center border transition-[background-color,box-shadow,transform] duration-200"
-              data-music-streaming-service-embedded-player-trigger
-            >
-              <span class="release-card-listen-trigger__indicator" aria-hidden="true"></span>
-              Listen
-            </div>
-          )}
-          <span class="release-card-view-release-text release-card-view-release-desktop-reveal uppercase text-foreground">
+          {
+            embeddedPlayerData.hasProvider && (
+              <div
+                class="release-card-listen-trigger inline-flex items-center border transition-[background-color,box-shadow,transform] duration-200"
+                data-music-streaming-service-embedded-player-trigger
+              >
+                <span class="release-card-listen-trigger__indicator" aria-hidden="true" />
+                Listen
+              </div>
+            )
+          }
+          <span
+            class="release-card-view-release-text release-card-view-release-desktop-reveal uppercase text-foreground"
+          >
             View release
           </span>
         </div>
@@ -71,18 +88,24 @@ const dataAttributes = embeddedPlayerData.hasProvider
         : 'release-card-copy space-y-2 p-5'}
     >
       <p class="release-card-year-text">{formatYear(release.data.release_date)}</p>
-      <h3 class={isArtistDiscography ? 'font-display text-[2.2rem] tracking-[0.08em] uppercase text-foreground sm:text-[2.45rem]' : 'font-display text-3xl tracking-[0.08em] uppercase text-foreground'}>
+      <h3
+        class={isArtistDiscography
+          ? 'font-display text-[2.2rem] tracking-[0.08em] uppercase text-foreground sm:text-[2.45rem]'
+          : 'font-display text-3xl tracking-[0.08em] uppercase text-foreground'}
+      >
         {release.data.title.toUpperCase()}
       </h3>
-      {isArtistDiscography ? (
-        release.data.summary ? (
-          <p class="release-card-summary-text text-sm leading-relaxed text-muted-foreground">
-            {release.data.summary}
-          </p>
-        ) : null
-      ) : (
-        <p class="release-card-artist-text text-sm tracking-[0.03em] text-muted-foreground">{artistName}</p>
-      )}
+      {
+        isArtistDiscography ? (
+          release.data.summary ? (
+            <p class="release-card-summary-text text-sm leading-relaxed text-muted-foreground">
+              {release.data.summary}
+            </p>
+          ) : null
+        ) : (
+          <p class="release-card-artist-text text-sm tracking-[0.03em] text-muted-foreground">{artistName}</p>
+        )
+      }
     </CardContent>
   </Card>
 </a>

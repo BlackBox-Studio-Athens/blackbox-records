@@ -8,40 +8,40 @@ import { registerInternalRoutes } from './routes/register-internal-routes';
 import { registerPublicRoutes } from './routes/register-public-routes';
 
 export function createHttpApp(): AppOpenApi {
-    const app = new OpenAPIHono<AppEnv>();
+  const app = new OpenAPIHono<AppEnv>();
 
-    app.use(
-        '/api/*',
-        cors({
-            allowHeaders: ['Content-Type'],
-            allowMethods: ['GET', 'POST', 'OPTIONS'],
-            maxAge: 600,
-            origin: (origin, context) => {
-                if (!origin) {
-                    return null;
-                }
+  app.use(
+    '/api/*',
+    cors({
+      allowHeaders: ['Content-Type'],
+      allowMethods: ['GET', 'POST', 'OPTIONS'],
+      maxAge: 600,
+      origin: (origin, context) => {
+        if (!origin) {
+          return null;
+        }
 
-                const allowedOrigins = parseAllowedOrigins(context.env.CHECKOUT_RETURN_ORIGINS);
+        const allowedOrigins = parseAllowedOrigins(context.env.CHECKOUT_RETURN_ORIGINS);
 
-                return allowedOrigins.has(origin) ? origin : null;
-            },
-        }),
-    );
+        return allowedOrigins.has(origin) ? origin : null;
+      },
+    }),
+  );
 
-    registerPublicRoutes(app);
-    registerInternalRoutes(app);
+  registerPublicRoutes(app);
+  registerInternalRoutes(app);
 
-    app.notFound(notFoundHandler);
-    app.onError(errorHandler);
+  app.notFound(notFoundHandler);
+  app.onError(errorHandler);
 
-    return app;
+  return app;
 }
 
 function parseAllowedOrigins(value: string | undefined) {
-    return new Set(
-        (value || '')
-            .split(',')
-            .map((origin) => origin.trim())
-            .filter(Boolean),
-    );
+  return new Set(
+    (value || '')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  );
 }

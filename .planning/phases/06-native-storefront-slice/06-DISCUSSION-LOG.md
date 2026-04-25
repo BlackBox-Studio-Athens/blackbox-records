@@ -17,4 +17,5 @@
 - The storefront contract must remain stable so Worker-backed reads can replace temporary data later.
 
 ---
-*Logged and updated through implementation review: 2026-04-21*
+
+_Logged and updated through implementation review: 2026-04-21_
