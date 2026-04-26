@@ -41,6 +41,7 @@ Because Stripe account access is not currently available, Phase 8 is split into 
 - `08-03` added the Stripe webhook raw-body route contract using fixture-based signature tests. It intentionally did not claim real Stripe account validation, live Dashboard webhook setup, order mutation, stock decrement, frontend behavior, or account-specific Stripe values.
 - `08-03.1` added a no-Docker official `stripe-mock` API local checkout simulation harness. It starts `stripe-mock` through Go, points the real Stripe SDK at a local dev-only compatibility proxy for request-shape validation, keeps mock/fake behavior in local scripts/config/tests, and uses signed webhook fixtures because official `stripe-mock` is stateless and does not emit webhooks.
 - `08-04` added shared Stripe Checkout Session reconciliation for `ReadCheckoutState` and verified webhook acknowledgement. It intentionally remains non-authoritative for browser reads and does not perform order mutation, stock decrement, frontend behavior, live Stripe validation, or account-specific configuration.
+- `08-05` added pending `CheckoutOrder` creation from Worker-owned checkout start and idempotent paid webhook handling that transitions orders to `paid`, decrements stock once, and records a `checkout_paid` stock change only when the transition is not a replay. It intentionally does not handle unpaid/expired/needs-review outcomes, shipping, frontend behavior, live Stripe validation, or account-specific configuration.
 
 </specifics>
 

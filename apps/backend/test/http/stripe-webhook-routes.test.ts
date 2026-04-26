@@ -4,6 +4,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHttpApp } from '../../src/interfaces/http/app';
 import * as stripeWebhookAcknowledgement from '../../src/interfaces/http/routes/stripe-webhook-acknowledgement';
 
+const { mockApplyPaidCheckoutReconciliation, mockDisconnectStripeWebhookServices } = vi.hoisted(() => ({
+  mockApplyPaidCheckoutReconciliation: vi.fn(async () => ({
+    kind: 'applied',
+  })),
+  mockDisconnectStripeWebhookServices: vi.fn(async () => {}),
+}));
+
+vi.mock('../../src/interfaces/http/routes/stripe-webhook-services', () => ({
+  createStripeWebhookServices: () => ({
+    applyPaidCheckoutReconciliation: mockApplyPaidCheckoutReconciliation,
+    disconnect: mockDisconnectStripeWebhookServices,
+  }),
+}));
+
 const webhookSecret = 'whsec_fixture_secret';
 
 const testBindings = {
@@ -44,6 +58,8 @@ function createSignatureHeader(payload: string): string {
 describe('Stripe webhook routes', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    mockApplyPaidCheckoutReconciliation.mockClear();
+    mockDisconnectStripeWebhookServices.mockClear();
   });
 
   it('acknowledges valid allowed checkout-session events after signature verification', async () => {
@@ -77,6 +93,12 @@ describe('Stripe webhook routes', () => {
         id: 'evt_checkout_session_completed',
         isAllowed: true,
         type: 'checkout.session.completed',
+      }),
+      expect.anything(),
+    );
+    expect(mockApplyPaidCheckoutReconciliation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recommendedOrderStatus: 'paid',
       }),
     );
   });
@@ -120,6 +142,7 @@ describe('Stripe webhook routes', () => {
     await expect(response.json()).resolves.toEqual({
       received: true,
     });
+    expect(mockApplyPaidCheckoutReconciliation).not.toHaveBeenCalled();
   });
 
   it('acknowledges but ignores valid unsupported events', async () => {

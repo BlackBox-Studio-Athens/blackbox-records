@@ -228,7 +228,7 @@ Plans:
 - [x] 08-03: Add verified Stripe webhook raw-body route contract
 - [x] 08-03.1: Add stripe-mock API local checkout simulation harness
 - [x] 08-04: Add shared Stripe checkout reconciliation use case
-- [ ] 08-05: Apply idempotent paid-order transition and stock decrement
+- [x] 08-05: Apply idempotent paid-order transition and stock decrement
 - [ ] 08-06: Handle unpaid, expired, canceled, and needs-review outcomes
 - [ ] 08-07: Add backend order-state readback and operator reconciliation notes
 
@@ -298,6 +298,6 @@ Because Stripe account access is unavailable, non-secret Phase 8 backend groundw
 | 6.1.1. Internal Stock Operations And Operator Access           | 4/4            | Completed | 2026-04-24 |
 | 7. Worker Checkout And Stripe Sandbox Flow                     | 15/16          | Deferred  | 2026-04-25 |
 | 7.1. Cloudflare Pages Static Frontend Migration                | 0/5            | Planned   |            |
-| 8. Webhook Orders And Stock                                    | 5/8            | Active    |            |
+| 8. Webhook Orders And Stock                                    | 6/8            | Active    |            |
 | 9. Greece-Only BOX NOW Shipping                                | 0/6            | Planned   |            |
 | 10. Sandbox Verification And Release Gate                      | 0/5            | Planned   |            |

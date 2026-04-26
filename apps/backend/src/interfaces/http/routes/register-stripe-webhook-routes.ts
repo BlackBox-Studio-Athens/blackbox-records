@@ -6,9 +6,12 @@ import {
   verifyStripeWebhookEvent,
 } from '../../../infrastructure/stripe';
 import { acknowledgeVerifiedStripeWebhookEvent } from './stripe-webhook-acknowledgement';
+import { createStripeWebhookServices } from './stripe-webhook-services';
 
 export function registerStripeWebhookRoutes(app: AppOpenApi): void {
   app.post('/api/stripe/webhooks', async (context) => {
+    const services = createStripeWebhookServices(context.env);
+
     try {
       const rawBody = await context.req.text();
       const event = await verifyStripeWebhookEvent({
@@ -16,7 +19,7 @@ export function registerStripeWebhookRoutes(app: AppOpenApi): void {
         signature: context.req.header('stripe-signature') ?? null,
         webhookSecret: context.env.STRIPE_WEBHOOK_SECRET,
       });
-      const acknowledgement = await acknowledgeVerifiedStripeWebhookEvent(event);
+      const acknowledgement = await acknowledgeVerifiedStripeWebhookEvent(event, services);
 
       return context.json(acknowledgement, 200);
     } catch (error) {
@@ -33,6 +36,8 @@ export function registerStripeWebhookRoutes(app: AppOpenApi): void {
       }
 
       throw error;
+    } finally {
+      await services.disconnect();
     }
   });
 }
