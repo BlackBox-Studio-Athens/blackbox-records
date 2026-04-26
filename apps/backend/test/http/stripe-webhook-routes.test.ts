@@ -4,7 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHttpApp } from '../../src/interfaces/http/app';
 import * as stripeWebhookAcknowledgement from '../../src/interfaces/http/routes/stripe-webhook-acknowledgement';
 
-const { mockApplyPaidCheckoutReconciliation, mockDisconnectStripeWebhookServices } = vi.hoisted(() => ({
+const {
+  mockApplyNonPaidCheckoutReconciliation,
+  mockApplyPaidCheckoutReconciliation,
+  mockDisconnectStripeWebhookServices,
+} = vi.hoisted(() => ({
+  mockApplyNonPaidCheckoutReconciliation: vi.fn(async () => ({
+    kind: 'transitioned',
+  })),
   mockApplyPaidCheckoutReconciliation: vi.fn(async () => ({
     kind: 'applied',
   })),
@@ -13,6 +20,7 @@ const { mockApplyPaidCheckoutReconciliation, mockDisconnectStripeWebhookServices
 
 vi.mock('../../src/interfaces/http/routes/stripe-webhook-services', () => ({
   createStripeWebhookServices: () => ({
+    applyNonPaidCheckoutReconciliation: mockApplyNonPaidCheckoutReconciliation,
     applyPaidCheckoutReconciliation: mockApplyPaidCheckoutReconciliation,
     disconnect: mockDisconnectStripeWebhookServices,
   }),
@@ -58,6 +66,7 @@ function createSignatureHeader(payload: string): string {
 describe('Stripe webhook routes', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    mockApplyNonPaidCheckoutReconciliation.mockClear();
     mockApplyPaidCheckoutReconciliation.mockClear();
     mockDisconnectStripeWebhookServices.mockClear();
   });
@@ -101,6 +110,7 @@ describe('Stripe webhook routes', () => {
         recommendedOrderStatus: 'paid',
       }),
     );
+    expect(mockApplyNonPaidCheckoutReconciliation).not.toHaveBeenCalled();
   });
 
   it('acknowledges allowed checkout-session events through shared reconciliation without exposing recommendations', async () => {
@@ -142,6 +152,99 @@ describe('Stripe webhook routes', () => {
     await expect(response.json()).resolves.toEqual({
       received: true,
     });
+    expect(mockApplyNonPaidCheckoutReconciliation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recommendedOrderStatus: 'needs_review',
+      }),
+    );
+    expect(mockApplyPaidCheckoutReconciliation).not.toHaveBeenCalled();
+  });
+
+  it('acknowledges expired checkout-session events through non-paid reconciliation', async () => {
+    const payload = JSON.stringify({
+      api_version: '2026-04-25.basil',
+      created: 1777132800,
+      data: {
+        object: {
+          id: 'cs_test_123',
+          object: 'checkout.session',
+          payment_status: 'unpaid',
+          status: 'expired',
+        },
+      },
+      id: 'evt_checkout_session_expired',
+      livemode: false,
+      object: 'event',
+      pending_webhooks: 1,
+      request: null,
+      type: 'checkout.session.expired',
+    });
+
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://backend.test/api/stripe/webhooks',
+      {
+        body: payload,
+        headers: {
+          'content-type': 'application/json',
+          'stripe-signature': createSignatureHeader(payload),
+        },
+        method: 'POST',
+      },
+      testBindings,
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      received: true,
+    });
+    expect(mockApplyNonPaidCheckoutReconciliation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recommendedOrderStatus: 'not_paid',
+      }),
+    );
+    expect(mockApplyPaidCheckoutReconciliation).not.toHaveBeenCalled();
+  });
+
+  it('acknowledges open checkout-session events without lifecycle mutation', async () => {
+    const payload = JSON.stringify({
+      api_version: '2026-04-25.basil',
+      created: 1777132800,
+      data: {
+        object: {
+          id: 'cs_test_123',
+          object: 'checkout.session',
+          payment_status: 'unpaid',
+          status: 'open',
+        },
+      },
+      id: 'evt_checkout_session_completed',
+      livemode: false,
+      object: 'event',
+      pending_webhooks: 1,
+      request: null,
+      type: 'checkout.session.completed',
+    });
+
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://backend.test/api/stripe/webhooks',
+      {
+        body: payload,
+        headers: {
+          'content-type': 'application/json',
+          'stripe-signature': createSignatureHeader(payload),
+        },
+        method: 'POST',
+      },
+      testBindings,
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      received: true,
+    });
+    expect(mockApplyNonPaidCheckoutReconciliation).not.toHaveBeenCalled();
     expect(mockApplyPaidCheckoutReconciliation).not.toHaveBeenCalled();
   });
 

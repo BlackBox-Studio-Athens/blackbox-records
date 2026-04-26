@@ -1,5 +1,8 @@
 import { reconcileCheckoutSession } from '../../../application/commerce/checkout';
-import type { ApplyPaidCheckoutReconciliationResult } from '../../../application/commerce/orders';
+import type {
+  ApplyNonPaidCheckoutReconciliationResult,
+  ApplyPaidCheckoutReconciliationResult,
+} from '../../../application/commerce/orders';
 import { toStripeCheckoutSessionState } from '../../../infrastructure/stripe';
 import type { VerifiedStripeWebhookEvent } from '../../../infrastructure/stripe';
 
@@ -9,6 +12,9 @@ export type StripeWebhookAcknowledgement = {
 };
 
 export type StripeWebhookAcknowledgementServices = {
+  applyNonPaidCheckoutReconciliation: (
+    reconciliation: ReturnType<typeof reconcileCheckoutSession>,
+  ) => Promise<ApplyNonPaidCheckoutReconciliationResult>;
   applyPaidCheckoutReconciliation: (
     reconciliation: ReturnType<typeof reconcileCheckoutSession>,
   ) => Promise<ApplyPaidCheckoutReconciliationResult>;
@@ -29,6 +35,11 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
 
   if (reconciliation.recommendedOrderStatus === 'paid') {
     await services.applyPaidCheckoutReconciliation(reconciliation);
+  } else if (
+    reconciliation.recommendedOrderStatus === 'needs_review' ||
+    reconciliation.recommendedOrderStatus === 'not_paid'
+  ) {
+    await services.applyNonPaidCheckoutReconciliation(reconciliation);
   }
 
   return {

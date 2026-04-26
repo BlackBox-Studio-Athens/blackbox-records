@@ -1,5 +1,7 @@
 import {
+  applyNonPaidCheckoutReconciliation,
   applyPaidCheckoutReconciliation,
+  type ApplyNonPaidCheckoutReconciliationResult,
   type ApplyPaidCheckoutReconciliationResult,
 } from '../../../application/commerce/orders';
 import type { CheckoutReconciliation } from '../../../application/commerce/checkout';
@@ -18,6 +20,9 @@ export function createStripeWebhookServices(bindings: AppBindings) {
   const stockChanges = new PrismaStockChangeRepository(prisma);
 
   return {
+    applyNonPaidCheckoutReconciliation: (
+      reconciliation: CheckoutReconciliation,
+    ): Promise<ApplyNonPaidCheckoutReconciliationResult> => applyNonPaidCheckoutReconciliation(orders, reconciliation),
     applyPaidCheckoutReconciliation: (
       reconciliation: CheckoutReconciliation,
     ): Promise<ApplyPaidCheckoutReconciliationResult> =>
