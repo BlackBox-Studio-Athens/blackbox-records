@@ -31,9 +31,15 @@ export type CheckoutOrderTransitionInput = {
   stripePaymentIntentId?: string | null;
 };
 
+export type ListRecentCheckoutOrdersInput = {
+  limit: number;
+  status?: OrderStatus | null;
+};
+
 export interface OrderStateRepository {
   createPending(input: CreatePendingCheckoutOrderInput): Promise<CheckoutOrderRecord>;
   findByCheckoutSessionId(checkoutSessionId: string): Promise<CheckoutOrderRecord | null>;
+  listRecent(input: ListRecentCheckoutOrdersInput): Promise<CheckoutOrderRecord[]>;
   saveTransition(
     checkoutSessionId: string,
     transition: CheckoutOrderTransitionInput,

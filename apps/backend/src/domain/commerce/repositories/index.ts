@@ -14,6 +14,7 @@ export type {
   CheckoutOrderRecord,
   CheckoutOrderTransitionInput,
   CreatePendingCheckoutOrderInput,
+  ListRecentCheckoutOrdersInput,
   OrderStateRepository,
   OrderStatus,
 } from './order-state-repository';

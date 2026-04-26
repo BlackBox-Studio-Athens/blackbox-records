@@ -2,6 +2,7 @@ import type {
   CheckoutOrderRecord,
   CheckoutOrderTransitionInput,
   CreatePendingCheckoutOrderInput,
+  ListRecentCheckoutOrdersInput,
   OrderStateRepository,
   OrderStatus,
 } from '../../../domain/commerce/repositories';
@@ -63,6 +64,22 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
     });
 
     return record ? mapCheckoutOrder(record) : null;
+  }
+
+  public async listRecent(input: ListRecentCheckoutOrdersInput): Promise<CheckoutOrderRecord[]> {
+    const records = await this.prisma.checkoutOrder.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: input.limit,
+      where: input.status
+        ? {
+            status: input.status,
+          }
+        : undefined,
+    });
+
+    return records.map(mapCheckoutOrder);
   }
 
   public async saveTransition(

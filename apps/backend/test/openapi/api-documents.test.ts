@@ -22,6 +22,8 @@ describe('OpenAPI documents', () => {
     expect(document.info.title).toBe('BlackBox Records Internal API');
     expect(document.openapi).toBe('3.1.0');
     expect(Object.keys(document.paths ?? {})).toEqual([
+      '/api/internal/orders',
+      '/api/internal/orders/checkout-sessions/{checkoutSessionId}',
       '/api/internal/variants',
       '/api/internal/variants/{variantId}/stock',
       '/api/internal/variants/{variantId}/stock/history',

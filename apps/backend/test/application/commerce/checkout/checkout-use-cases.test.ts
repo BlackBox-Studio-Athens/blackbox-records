@@ -18,6 +18,7 @@ import type {
   ItemAvailabilityRecord,
   ItemAvailabilityRepository,
   OrderStateRepository,
+  OrderStatus,
   StockRecord,
   StockRepository,
   StoreItemOptionRecord,
@@ -115,6 +116,13 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
 
   public async findByCheckoutSessionId(checkoutSessionId: string): Promise<CheckoutOrderRecord | null> {
     return this.records.get(checkoutSessionId) ?? null;
+  }
+
+  public async listRecent(input: { limit: number; status?: OrderStatus | null }): Promise<CheckoutOrderRecord[]> {
+    return [...this.records.values()]
+      .filter((record) => !input.status || record.status === input.status)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, input.limit);
   }
 
   public async saveTransition(

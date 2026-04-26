@@ -6,6 +6,95 @@
   },
   "components": {
     "schemas": {
+      "InternalCheckoutOrder": {
+        "type": "object",
+        "properties": {
+          "checkoutSessionId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "needsReviewAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "notPaidAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "paidAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InternalOrderStatus"
+          },
+          "statusUpdatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "storeItemSlug": {
+            "type": "string"
+          },
+          "stripePaymentIntentId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "variantId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "checkoutSessionId",
+          "createdAt",
+          "needsReviewAt",
+          "notPaidAt",
+          "paidAt",
+          "status",
+          "statusUpdatedAt",
+          "storeItemSlug",
+          "stripePaymentIntentId",
+          "updatedAt",
+          "variantId"
+        ]
+      },
+      "InternalOrderStatus": {
+        "type": "string",
+        "enum": [
+          "pending_payment",
+          "paid",
+          "not_paid",
+          "needs_review"
+        ]
+      },
+      "InternalOrderError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
       "InternalVariantSummary": {
         "type": "object",
         "properties": {
@@ -300,6 +389,108 @@
     "parameters": {}
   },
   "paths": {
+    "/api/internal/orders": {
+      "get": {
+        "tags": [
+          "Internal Orders"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/InternalOrderStatus"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent checkout orders for protected operator reconciliation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InternalCheckoutOrder"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing operator identity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalOrderError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/orders/checkout-sessions/{checkoutSessionId}": {
+      "get": {
+        "tags": [
+          "Internal Orders"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "checkoutSessionId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Checkout order state for one checkout session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalCheckoutOrder"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing operator identity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalOrderError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Checkout order not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalOrderError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/internal/variants": {
       "get": {
         "tags": [

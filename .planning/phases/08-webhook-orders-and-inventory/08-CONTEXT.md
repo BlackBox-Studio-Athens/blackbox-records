@@ -43,6 +43,7 @@ Because Stripe account access is not currently available, Phase 8 is split into 
 - `08-04` added shared Stripe Checkout Session reconciliation for `ReadCheckoutState` and verified webhook acknowledgement. It intentionally remains non-authoritative for browser reads and does not perform order mutation, stock decrement, frontend behavior, live Stripe validation, or account-specific configuration.
 - `08-05` added pending `CheckoutOrder` creation from Worker-owned checkout start and idempotent paid webhook handling that transitions orders to `paid`, decrements stock once, and records a `checkout_paid` stock change only when the transition is not a replay. It intentionally does not handle unpaid/expired/needs-review outcomes, shipping, frontend behavior, live Stripe validation, or account-specific configuration.
 - `08-06` added fixture-tested non-paid and needs-review webhook handling. It transitions pending orders to `not_paid` or `needs_review`, ignores open/processing `pending_payment` recommendations, treats duplicate terminal delivery as replay/no-op, and never writes stock. It intentionally does not add operator order-state readback, refunds, shipping, frontend behavior, live Stripe validation, or account-specific configuration.
+- `08-07` added Access-protected internal read-only order state routes and low-volume operator reconciliation notes. It intentionally does not add an order dashboard, order mutation, refunds, shipping, frontend behavior, live Stripe validation, or account-specific configuration.
 
 </specifics>
 
