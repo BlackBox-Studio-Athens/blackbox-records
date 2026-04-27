@@ -394,6 +394,7 @@ CI/deploy credentials:
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
+- Cloudflare Pages project name: `blackbox-records-web`
 
 - These GitHub credentials are only for authenticating CI or a developer into Cloudflare for deployment.
 - They are not the Worker's runtime business secrets.
@@ -401,7 +402,9 @@ CI/deploy credentials:
 
 ## Sandbox backend CI/CD
 
-- The static Astro site continues to deploy only through `.github/workflows/pages.yml` until Phase 7.1 adds and validates the Cloudflare Pages workflow.
+- The static Astro site has two temporary deployment workflows during Phase 7.1:
+  - `.github/workflows/pages.yml` remains the GitHub Pages rollback workflow.
+  - `.github/workflows/cloudflare-pages.yml` uploads the prebuilt static artifact to Cloudflare Pages.
 - The separate Worker sandbox deploy path is isolated in `.github/workflows/cloudflare-sandbox.yml`.
 - That workflow:
   - runs on pushes to `sandbox`
@@ -429,7 +432,8 @@ CI/deploy credentials:
 
 - Cloudflare Pages is the future canonical static frontend host for this milestone.
 - The deploy artifact remains the prebuilt Astro output at `apps/web/dist`.
-- Use Cloudflare Pages Direct Upload from GitHub Actions after repo-owned gates pass.
+- Cloudflare Pages Direct Upload is handled by `.github/workflows/cloudflare-pages.yml`.
+- The workflow runs `pnpm test:unit`, `pnpm check`, and `pnpm build` before uploading `apps/web/dist` to the `blackbox-records-web` Pages project.
 - The Worker remains separate and owns `/api/*`, Stripe secrets, webhooks, D1, stock operations, order state, and future BOX NOW work.
 - Do not introduce Pages Functions, SSR, D1 access, backend routes, or runtime business secrets into the Pages project.
 - Browser-safe Pages variables are limited to `PUBLIC_BACKEND_BASE_URL`, `PUBLIC_STRIPE_PUBLISHABLE_KEY`, and non-production `PUBLIC_CHECKOUT_CLIENT_MODE` when needed.

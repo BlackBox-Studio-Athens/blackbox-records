@@ -1,0 +1,60 @@
+name: Deploy Astro site to Cloudflare Pages
+
+on:
+  push:
+    branches: ['main']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: 'cloudflare-pages-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  deploy-cloudflare-pages:
+    runs-on: ubuntu-latest
+    env:
+      DECAP_SITE_URL: ${{ vars.DECAP_SITE_URL }}
+      DECAP_REPOSITORY: ${{ vars.DECAP_REPOSITORY }}
+      DECAP_BRANCH: ${{ vars.DECAP_BRANCH }}
+      DECAPBRIDGE_BASE_URL: ${{ vars.DECAPBRIDGE_BASE_URL }}
+      DECAPBRIDGE_AUTH_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_ENDPOINT }}
+      DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT }}
+      DECAPBRIDGE_GATEWAY_URL: ${{ vars.DECAPBRIDGE_GATEWAY_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.29.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run unit tests
+        run: pnpm test:unit
+
+      - name: Run workspace checks
+        run: pnpm check
+
+      - name: Build static frontend
+        run: pnpm build
+
+      - name: Deploy static frontend to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/web/dist --project-name=blackbox-records-web --branch=${{ github.ref_name }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}

@@ -50,6 +50,7 @@ Read these first before editing:
 - Backend dev server with official local stripe-mock API override: `pnpm dev:backend:mock-api`
 - Backend sandbox dev server: `pnpm dev:backend:sandbox`
 - Backend sandbox deploy: `pnpm deploy:backend:sandbox`
+- Cloudflare Pages frontend deploy workflow: `.github/workflows/cloudflare-pages.yml`
 - Full local stack with real Stripe test mode: `pnpm dev:stack:stripe-test`
 - Local official stripe-mock launcher: `pnpm stripe-mock:local`
 - Full local stack with mock Stripe mode: `pnpm dev:stack:stripe-mock`
@@ -152,6 +153,7 @@ Read these first before editing:
 - Current static deployment target: GitHub Pages
 - Future canonical static deployment target after Phase 7.1 acceptance: Cloudflare Pages
 - Current CI/CD workflow: `.github/workflows/pages.yml`
+- Future Cloudflare Pages CI/CD workflow during Phase 7.1: `.github/workflows/cloudflare-pages.yml`
 - GitHub Pages builds are gated by:
   - `pnpm test:unit`
   - `pnpm check`
@@ -163,6 +165,7 @@ Read these first before editing:
   - `base: /blackbox-records/`
 - Do not change `site` or `base` unless the task explicitly requires deployment URL changes.
 - Cloudflare Pages migration work must keep the frontend static and deploy only the prebuilt `apps/web/dist` artifact.
+- The Cloudflare Pages workflow must run `pnpm test:unit`, `pnpm check`, and `pnpm build` before Direct Upload to the `blackbox-records-web` Pages project.
 - Cloudflare Pages must not own backend routes, Pages Functions, D1 access, Stripe secrets, webhooks, operator auth, stock mutations, order state, or future BOX NOW runtime secrets.
 - GitHub Pages remains rollback until Phase `07.1-05` retires it as canonical after acceptance.
 - Native commerce migration work must treat the current GitHub Pages + external-shop setup as the existing baseline, not the final architecture.
