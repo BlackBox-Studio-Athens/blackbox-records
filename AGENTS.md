@@ -149,8 +149,9 @@ Read these first before editing:
 
 ## Deployment and URL model
 
-- Static deployment target: GitHub Pages
-- CI/CD workflow: `.github/workflows/pages.yml`
+- Current static deployment target: GitHub Pages
+- Future canonical static deployment target after Phase 7.1 acceptance: Cloudflare Pages
+- Current CI/CD workflow: `.github/workflows/pages.yml`
 - GitHub Pages builds are gated by:
   - `pnpm test:unit`
   - `pnpm check`
@@ -161,7 +162,10 @@ Read these first before editing:
   - `site: https://blackbox-studio-athens.github.io`
   - `base: /blackbox-records/`
 - Do not change `site` or `base` unless the task explicitly requires deployment URL changes.
-- Native commerce migration work must treat the current Pages + external-shop setup as the existing baseline, not the final architecture.
+- Cloudflare Pages migration work must keep the frontend static and deploy only the prebuilt `apps/web/dist` artifact.
+- Cloudflare Pages must not own backend routes, Pages Functions, D1 access, Stripe secrets, webhooks, operator auth, stock mutations, order state, or future BOX NOW runtime secrets.
+- GitHub Pages remains rollback until Phase `07.1-05` retires it as canonical after acceptance.
+- Native commerce migration work must treat the current GitHub Pages + external-shop setup as the existing baseline, not the final architecture.
 
 ## Project map
 

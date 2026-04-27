@@ -13,12 +13,14 @@ Static Astro site for the BlackBox Records label.
 
 ## URL model
 
-The production deployment is configured for GitHub Pages project hosting:
+The current production deployment is configured for GitHub Pages project hosting:
 
 - `site`: `https://blackbox-studio-athens.github.io`
 - `base`: `/blackbox-records/`
 
 This is configured in `apps/web/astro.config.mjs`.
+
+Phase 7.1 moves the future canonical static frontend host to Cloudflare Pages after preview and production-branch validation. Until that acceptance is complete, GitHub Pages remains the active deployment and rollback reference.
 
 ## Navigation model
 
@@ -399,7 +401,7 @@ CI/deploy credentials:
 
 ## Sandbox backend CI/CD
 
-- The static Astro site continues to deploy only through `.github/workflows/pages.yml`.
+- The static Astro site continues to deploy only through `.github/workflows/pages.yml` until Phase 7.1 adds and validates the Cloudflare Pages workflow.
 - The separate Worker sandbox deploy path is isolated in `.github/workflows/cloudflare-sandbox.yml`.
 - That workflow:
   - runs on pushes to `sandbox`
@@ -421,7 +423,17 @@ CI/deploy credentials:
   - `pnpm build`
 - Pushes go directly to `main` in this repo.
 - If CI fails on `main`, GitHub Pages does not publish the broken revision; fix it with a follow-up commit or revert the bad commit on `main`.
-- The Astro frontend remains the active Pages deployment target. The Worker scaffold is separate and currently local-only until later commerce infrastructure phases land.
+- GitHub Pages remains the active static frontend deployment and rollback target until Cloudflare Pages acceptance is complete.
+
+## Cloudflare Pages migration contract
+
+- Cloudflare Pages is the future canonical static frontend host for this milestone.
+- The deploy artifact remains the prebuilt Astro output at `apps/web/dist`.
+- Use Cloudflare Pages Direct Upload from GitHub Actions after repo-owned gates pass.
+- The Worker remains separate and owns `/api/*`, Stripe secrets, webhooks, D1, stock operations, order state, and future BOX NOW work.
+- Do not introduce Pages Functions, SSR, D1 access, backend routes, or runtime business secrets into the Pages project.
+- Browser-safe Pages variables are limited to `PUBLIC_BACKEND_BASE_URL`, `PUBLIC_STRIPE_PUBLISHABLE_KEY`, and non-production `PUBLIC_CHECKOUT_CLIENT_MODE` when needed.
+- Required CI/project names are documented in `.planning/phases/07.1-cloudflare-pages-static-frontend-migration/07.1-CLOUDFLARE-PAGES-CONTRACT.md`; account-specific IDs, tokens, and domains stay out of git.
 
 ## Content model
 
@@ -594,7 +606,7 @@ If a source crops badly, replace the source image rather than adding focal-point
 
 ## Build output
 
-`pnpm build` outputs static files to `dist/`.
+`pnpm build` outputs static files to `apps/web/dist/`.
 
 ## WebStorm run configuration
 

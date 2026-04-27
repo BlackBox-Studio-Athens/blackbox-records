@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 7.1 plan 1; lock the Cloudflare Pages deployment contract and rollback posture
-last_updated: '2026-04-26T03:25:00+03:00'
-last_activity: 2026-04-26 -- Added protected backend order-state readback and operator reconciliation notes
+stopped_at: Phase 7.1 plan 2; add Cloudflare Pages project config and direct-upload CI workflow
+last_updated: '2026-04-27T06:10:00+03:00'
+last_activity: 2026-04-27 -- Locked Cloudflare Pages deployment contract and rollback posture
 progress:
   total_phases: 10
   completed_phases: 6
   total_plans: 65
-  completed_plans: 48
-  percent: 74
+  completed_plans: 49
+  percent: 75
 ---
 
 # Project State
@@ -28,22 +28,22 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 Current Phase: 7.1
 Current Phase Name: Cloudflare Pages Static Frontend Migration
 Total Phases: 10
-Current Plan: 1
+Current Plan: 2
 Total Plans in Phase: 5
 Status: Active
-Progress: 74%
-Last Activity: 2026-04-26
-Last Activity Description: Added protected backend order-state readback and operator reconciliation notes
-Paused At: Phase 7.1 plan 1; lock the Cloudflare Pages deployment contract and rollback posture
+Progress: 75%
+Last Activity: 2026-04-27
+Last Activity Description: Locked Cloudflare Pages deployment contract and rollback posture
+Paused At: Phase 7.1 plan 2; add Cloudflare Pages project config and direct-upload CI workflow
 
-Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, and 8 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed while real Stripe-account validation remains explicitly deferred. Phase 8 now has the schema-only `CheckoutOrder` lifecycle table, internal order repository/application seams, a dependency-free typed transition guard, a fixture-tested Stripe webhook raw-body route contract, an optional official `stripe-mock` API local checkout simulation harness, shared Stripe Checkout Session reconciliation, pending order creation from Worker-owned checkout start, idempotent paid webhook handling that decrements stock only on the first paid transition, non-paid/needs-review handling that never mutates stock, and Access-protected order readback for low-volume reconciliation. Current focus returns to Phase 7.1 plan 1: lock the Cloudflare Pages deployment contract and rollback posture before hosted sandbox/release evidence.
+Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, and 8 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed while real Stripe-account validation remains explicitly deferred. Phase 8 now has the schema-only `CheckoutOrder` lifecycle table, internal order repository/application seams, a dependency-free typed transition guard, a fixture-tested Stripe webhook raw-body route contract, an optional official `stripe-mock` API local checkout simulation harness, shared Stripe Checkout Session reconciliation, pending order creation from Worker-owned checkout start, idempotent paid webhook handling that decrements stock only on the first paid transition, non-paid/needs-review handling that never mutates stock, and Access-protected order readback for low-volume reconciliation. Phase 7.1 now has the Cloudflare Pages static artifact contract and GitHub Pages rollback posture locked without runtime or workflow changes. Current focus is Phase 7.1 plan 2: add Cloudflare Pages project config and direct-upload CI workflow.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 48
-- Total plans remaining: 17
+- Total plans completed: 49
+- Total plans remaining: 16
 - Average duration: -
 - Total execution time: -
 
@@ -57,13 +57,13 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, and 8 are complete. Phase 7 mock, c
 | 6.1   | 4     | Completed | 2026-04-22 |
 | 6.1.1 | 4     | Completed | 2026-04-24 |
 | 7     | 15/16 | Deferred  | 2026-04-25 |
-| 7.1   | 0/5   | Active    | -          |
+| 7.1   | 1/5   | Active    | -          |
 | 8     | 8/8   | Completed | 2026-04-26 |
 
 **Recent Trend:**
 
-- Last 5 plans: 08-03.1, 08-04, 08-05, 08-06, 08-07
-- Trend: Optional official `stripe-mock` API simulation, shared Checkout Session reconciliation, idempotent paid-order stock decrement, non-paid lifecycle handling, and protected order readback are complete. Real Stripe validation remains deferred until account access exists.
+- Last 5 plans: 08-04, 08-05, 08-06, 08-07, 07.1-01
+- Trend: Shared Checkout Session reconciliation, idempotent paid-order stock decrement, non-paid lifecycle handling, protected order readback, and the Cloudflare Pages deployment contract are complete. Real Stripe validation remains deferred until account access exists.
 
 ## Accumulated Context
 
@@ -105,6 +105,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, and 8 are complete. Phase 7 mock, c
 - Local checkout validation now has two explicit stack launchers: `pnpm dev:stack:stripe-test` for real Stripe test keys and real local Price mappings, and `pnpm dev:stack:stripe-mock` for local official `stripe-mock` API request-shape simulation plus a frontend mock checkout panel.
 - Phase 8 plan 3.1 added the official `stripe-mock` API stack for local Stripe SDK request-shape simulation. Mock-specific compatibility remains outside production checkout/order use cases because official `stripe-mock` is stateless, hardcoded, and not a real payment or webhook simulator.
 - Phase 7.1 is inserted after Phase 7 to move the static Astro frontend from GitHub Pages to Cloudflare Pages while keeping the Worker backend separate and GitHub Pages available as rollback until acceptance.
+- Phase 7.1 now has the deployment contract locked: Cloudflare Pages will deploy only the prebuilt `apps/web/dist` static artifact, the Worker remains separate for dynamic commerce and secrets, and GitHub Pages remains rollback until Phase 7.1 acceptance.
 
 ## Decisions Made
 
@@ -143,7 +144,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, and 8 are complete. Phase 7 mock, c
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
 - Complete the deferred Stripe access validation gate before sandbox/release approval.
-- Start Phase 7.1 by locking the Cloudflare Pages static frontend deployment contract and rollback posture without changing runtime behavior.
+- In Phase 7.1 plan 2, add the Cloudflare Pages project config and direct-upload CI workflow without retiring GitHub Pages.
 
 ## Blockers
 
@@ -155,6 +156,6 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, and 8 are complete. Phase 7 mock, c
 
 ## Session
 
-**Last Date:** 2026-04-26T03:25:00+03:00
-**Stopped At:** Phase 7.1 plan 1; lock the Cloudflare Pages deployment contract and rollback posture
+**Last Date:** 2026-04-27T06:10:00+03:00
+**Stopped At:** Phase 7.1 plan 2; add Cloudflare Pages project config and direct-upload CI workflow
 **Resume File:** .planning/ROADMAP.md
