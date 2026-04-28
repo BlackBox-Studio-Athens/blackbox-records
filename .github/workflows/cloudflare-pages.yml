@@ -54,9 +54,8 @@ jobs:
         run: pnpm build
 
       - name: Deploy static frontend to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy apps/web/dist --project-name=blackbox-records-web --branch=${{ github.ref_name }}
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: apps/backend
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm exec wrangler pages deploy ../../apps/web/dist --project-name=blackbox-records-web --branch=${{ github.ref_name }}
