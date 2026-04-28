@@ -130,6 +130,7 @@ Read these first before editing:
 - `STRIPE_API_BASE_URL` is an optional backend runtime variable for local Stripe API overrides; the committed Wrangler `mock` and `mock-api` envs bind it to `http://127.0.0.1:12110` for the local official stripe-mock proxy.
 - `PUBLIC_CHECKOUT_CLIENT_MODE` is the browser checkout mode switch. Use `stripe` for real Stripe.js and `mock` only for the local stripe-mock flow.
 - Checkout return origins and split-port browser API CORS origins are allowlisted through the Worker runtime variable `CHECKOUT_RETURN_ORIGINS`; never trust browser-submitted or arbitrary `Referer` origins.
+- Cloudflare Pages production origin is `https://blackbox-records-web.pages.dev`; add preview origins only as exact emitted origins during validation, never as `*.pages.dev`.
 - The static checkout shell uses browser-safe `PUBLIC_STRIPE_PUBLISHABLE_KEY` to initialize Stripe.js; never expose `STRIPE_SECRET_KEY` through Astro public env.
 - Public shopper checkout APIs now live under `/api/store/*` and `/api/checkout/*`.
 - Checkout creation is Worker-owned through a backend Stripe gateway seam; route files must not instantiate Stripe directly.
@@ -166,6 +167,7 @@ Read these first before editing:
 - Do not change `site` or `base` unless the task explicitly requires deployment URL changes.
 - Cloudflare Pages migration work must keep the frontend static and deploy only the prebuilt `apps/web/dist` artifact.
 - The Cloudflare Pages workflow must run `pnpm test:unit`, `pnpm check`, and `pnpm build` before Direct Upload to the `blackbox-records-web` Pages project.
+- The Cloudflare Pages workflow may pass only browser-safe public Astro env into the build: `PUBLIC_BACKEND_BASE_URL` and `PUBLIC_STRIPE_PUBLISHABLE_KEY`; keep production `PUBLIC_CHECKOUT_CLIENT_MODE` unset.
 - Cloudflare Pages must not own backend routes, Pages Functions, D1 access, Stripe secrets, webhooks, operator auth, stock mutations, order state, or future BOX NOW runtime secrets.
 - GitHub Pages remains rollback until Phase `07.1-05` retires it as canonical after acceptance.
 - Native commerce migration work must treat the current GitHub Pages + external-shop setup as the existing baseline, not the final architecture.

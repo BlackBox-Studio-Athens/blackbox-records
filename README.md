@@ -277,6 +277,10 @@ pnpm generate:api
 - Local checkout mode is controlled by `PUBLIC_CHECKOUT_CLIENT_MODE`.
   - `stripe` uses real Stripe.js embedded Checkout and requires `PUBLIC_STRIPE_PUBLISHABLE_KEY`.
   - `mock` skips Stripe.js and renders a local mock checkout panel after `StartCheckout`.
+- Cloudflare Pages production builds use GitHub Actions variables for browser-safe public env:
+  - `PUBLIC_BACKEND_BASE_URL`
+  - `PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- Do not set `PUBLIC_CHECKOUT_CLIENT_MODE` on the production Pages workflow; reserve `mock` for explicit non-production local/mock testing.
 - Local development uses:
   - `pnpm dev:web`
   - `pnpm dev:backend`
@@ -328,6 +332,12 @@ pnpm generate:api
 - The checkout return-origin and browser API CORS allowlist is configured server-side with `CHECKOUT_RETURN_ORIGINS`.
 - `COMMERCE_DB` is runtime-only backend infrastructure, not a browser env var and not a GitHub Actions credential.
 - `CHECKOUT_RETURN_ORIGINS` is a Worker runtime variable, not a browser-selected return URL or an open CORS wildcard.
+- Current checkout return allowlist entries are exact origins only:
+  - `http://127.0.0.1:4321`
+  - `http://localhost:4321`
+  - `https://blackbox-studio-athens.github.io`
+  - `https://blackbox-records-web.pages.dev`
+- Add Cloudflare Pages preview origins only as exact emitted origins during validation; never use `*.pages.dev`.
 - `apps/backend/prisma/schema.prisma` includes a local placeholder SQLite URL only to satisfy the current Prisma 6 CLI; Worker runtime access still goes through `env.COMMERCE_DB`.
 - Future privileged backend-only values such as BOX NOW credentials also remain runtime-only until the phases that introduce them.
 - `PUBLIC_BACKEND_BASE_URL` remains the only browser-facing backend env.
@@ -390,14 +400,17 @@ cp apps/backend/.dev.vars.example apps/backend/.dev.vars
 - The static checkout shell also requires `PUBLIC_STRIPE_PUBLISHABLE_KEY` before it can mount embedded Checkout in the browser.
 - `stripe-mock` mode does not require `PUBLIC_STRIPE_PUBLISHABLE_KEY` or `apps/backend/.dev.vars` because the Worker `mock` env binds harmless local Stripe mock configuration and the browser renders the local mock checkout panel instead of loading Stripe.js.
 
-CI/deploy credentials:
+CI/deploy credentials and public build variables:
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
 - Cloudflare Pages project name: `blackbox-records-web`
+- `PUBLIC_BACKEND_BASE_URL`
+- `PUBLIC_STRIPE_PUBLISHABLE_KEY`
 
-- These GitHub credentials are only for authenticating CI or a developer into Cloudflare for deployment.
-- They are not the Worker's runtime business secrets.
+- `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are only for authenticating CI or a developer into Cloudflare for deployment.
+- `PUBLIC_BACKEND_BASE_URL` and `PUBLIC_STRIPE_PUBLISHABLE_KEY` are browser-visible build variables for the static Astro frontend.
+- None of these values are the Worker's runtime business secrets.
 - Deployed runtime secrets terminate as Cloudflare Worker secrets/bindings, not as browser env vars and not as GitHub-only config.
 
 ## Sandbox backend CI/CD
@@ -434,9 +447,10 @@ CI/deploy credentials:
 - The deploy artifact remains the prebuilt Astro output at `apps/web/dist`.
 - Cloudflare Pages Direct Upload is handled by `.github/workflows/cloudflare-pages.yml`.
 - The workflow runs `pnpm test:unit`, `pnpm check`, and `pnpm build` before uploading `apps/web/dist` to the `blackbox-records-web` Pages project.
+- The workflow passes only browser-safe public Astro variables into the static build: `PUBLIC_BACKEND_BASE_URL` and `PUBLIC_STRIPE_PUBLISHABLE_KEY`.
 - The Worker remains separate and owns `/api/*`, Stripe secrets, webhooks, D1, stock operations, order state, and future BOX NOW work.
 - Do not introduce Pages Functions, SSR, D1 access, backend routes, or runtime business secrets into the Pages project.
-- Browser-safe Pages variables are limited to `PUBLIC_BACKEND_BASE_URL`, `PUBLIC_STRIPE_PUBLISHABLE_KEY`, and non-production `PUBLIC_CHECKOUT_CLIENT_MODE` when needed.
+- Browser-safe Pages variables are limited to `PUBLIC_BACKEND_BASE_URL`, `PUBLIC_STRIPE_PUBLISHABLE_KEY`, and non-production `PUBLIC_CHECKOUT_CLIENT_MODE` only when deliberately testing mock mode outside production.
 - Required CI/project names are documented in `.planning/phases/07.1-cloudflare-pages-static-frontend-migration/07.1-CLOUDFLARE-PAGES-CONTRACT.md`; account-specific IDs, tokens, and domains stay out of git.
 
 ## Content model

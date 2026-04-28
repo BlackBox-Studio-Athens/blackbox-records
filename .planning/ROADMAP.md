@@ -204,7 +204,7 @@ Plans:
 
 - [x] 07.1-01: Lock the Cloudflare Pages deployment contract and rollback posture
 - [x] 07.1-02: Add Cloudflare Pages project config and direct-upload CI workflow
-- [ ] 07.1-03: Move frontend browser env and checkout return-origin contracts to Cloudflare Pages
+- [x] 07.1-03: Move frontend browser env and checkout return-origin contracts to Cloudflare Pages
 - [ ] 07.1-04: Validate Cloudflare Pages previews, production branch deploys, and Worker API routing
 - [ ] 07.1-05: Retire GitHub Pages as canonical hosting in docs after Cloudflare Pages acceptance
 
@@ -297,7 +297,7 @@ Because Stripe account access is unavailable, non-secret Phase 8 backend groundw
 | 6.1. Worker Commerce State Foundation                          | 4/4            | Completed | 2026-04-22 |
 | 6.1.1. Internal Stock Operations And Operator Access           | 4/4            | Completed | 2026-04-24 |
 | 7. Worker Checkout And Stripe Sandbox Flow                     | 15/16          | Deferred  | 2026-04-25 |
-| 7.1. Cloudflare Pages Static Frontend Migration                | 2/5            | Active    |            |
+| 7.1. Cloudflare Pages Static Frontend Migration                | 3/5            | Active    |            |
 | 8. Webhook Orders And Stock                                    | 8/8            | Completed | 2026-04-26 |
 | 9. Greece-Only BOX NOW Shipping                                | 0/6            | Planned   |            |
 | 10. Sandbox Verification And Release Gate                      | 0/5            | Planned   |            |
