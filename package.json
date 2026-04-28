@@ -2,7 +2,7 @@
   "name": "blackbox-records",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@10.29.3",
+  "packageManager": "pnpm@10.33.2",
   "scripts": {
     "dev": "pnpm dev:web",
     "dev:web": "pnpm --filter @blackbox/web dev",
@@ -43,14 +43,14 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.8",
     "@eslint/js": "^10.0.1",
-    "astro": "^6.1.8",
+    "astro": "^6.1.9",
     "eslint": "^10.2.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-astro": "^1.7.0",
     "prettier": "^3.8.3",
     "prettier-plugin-astro": "^0.14.1",
-    "tsx": "^4.20.6",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.59.0"
+    "typescript-eslint": "^8.59.1"
   }
 }
