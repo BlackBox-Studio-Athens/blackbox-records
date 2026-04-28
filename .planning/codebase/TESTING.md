@@ -142,7 +142,7 @@ const rosterItems = [{ title: 'Chronoboros' }, { title: 'Mass Culture' }, { titl
 **GitHub Pages gate:**
 
 - `.github/workflows/pages.yml` runs one `verify` job before deploy.
-- The job uses `withastro/action@v5` and executes `pnpm test:unit && pnpm check && pnpm build`.
+- The job uses `withastro/action@v6.1.1` on Node 24 with pnpm 10.33.2 and executes `pnpm test:unit && pnpm check && pnpm build`.
 - The `deploy` job depends on `verify`, so any failing test blocks Pages publication.
 
 **Decap-related CI behavior:**

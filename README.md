@@ -32,14 +32,23 @@ Phase 7.1 moves the future canonical static frontend host to Cloudflare Pages af
 
 ## Prerequisites
 
-- Node.js 22.12+
-- pnpm 10+
+- Node.js 24 LTS
+- pnpm 10.33.2, via the repo `packageManager` field
+- Go, only for the local official `stripe-mock` launcher
 
 ## Setup
 
 ```sh
 pnpm install
 ```
+
+## Toolchain policy
+
+- Keep local and CI Node on the current 24.x LTS line; do not move this repo to Node Current for routine dependency updates.
+- Keep TypeScript on `5.9.3` until `@astrojs/check` and `openapi-typescript` publish compatible TypeScript 6 peer ranges.
+- Keep Prisma on the latest compatible v6 line, currently `6.19.3`; Prisma 7 requires a separate `prisma.config.ts` migration.
+- Keep repo Wrangler on the workspace dependency, currently `wrangler@4.85.0`; if a global Wrangler is installed, keep it aligned for ad hoc terminal use.
+- Keep GitHub CLI and Serena MCP updated locally, but do not commit machine-local tool shims, caches, credentials, or MCP memories.
 
 ## shadcn MCP registries
 
@@ -433,7 +442,7 @@ CI/deploy credentials and public build variables:
 ## GitHub Pages CI/CD
 
 - Deployment is handled by `.github/workflows/pages.yml`.
-- The workflow uses `withastro/action@v5` and only deploys if all of these succeed:
+- The workflow uses `withastro/action@v6.1.1`, Node 24, and pnpm 10.33.2, and only deploys if all of these succeed:
   - `pnpm test:unit`
   - `pnpm check`
   - `pnpm build`

@@ -111,9 +111,9 @@
 **CI Pipeline:**
 
 - GitHub Actions workflow in `.github/workflows/pages.yml`.
-- Uses `actions/checkout@v5`, `actions/configure-pages@v5`, `withastro/action@v5`, and `actions/deploy-pages@v4`.
+- Uses `actions/checkout@v6.0.2`, `actions/configure-pages@v6.0.0`, `withastro/action@v6.1.1`, and `actions/deploy-pages@v5.0.0`.
 - Build is gated by `pnpm test:unit && pnpm check && pnpm build`.
-- CI runs on Node 22 and pnpm 10.29.3 per `.github/workflows/pages.yml`.
+- CI runs on Node 24 and pnpm 10.33.2 per `.github/workflows/pages.yml`.
 
 ## Environment Configuration
 

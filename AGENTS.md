@@ -160,7 +160,7 @@ Read these first before editing:
   - `pnpm check`
   - `pnpm build`
 - `pnpm check` is intentionally editor-independent; do not rely on WebStorm formatting or inspections as the only style gate.
-- The workflow uses `withastro/action@v5` with Node 22 and built-in pnpm/Astro caching
+- The workflow uses `withastro/action@v6.1.1` with Node 24, pnpm 10.33.2, and built-in pnpm/Astro caching
 - Configured in `apps/web/astro.config.mjs`
   - `site: https://blackbox-studio-athens.github.io`
   - `base: /blackbox-records/`

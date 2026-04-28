@@ -20,32 +20,32 @@
 
 **Environment:**
 
-- Node.js 20+ for local development per `README.md`.
-- Node.js 22 in CI via `.github/workflows/pages.yml`.
+- Node.js 24 LTS for local development per `README.md`.
+- Node.js 24 in CI via `.github/workflows/pages.yml`, `.github/workflows/cloudflare-pages.yml`, and `.github/workflows/cloudflare-sandbox.yml`.
 - Production runtime is static hosting on GitHub Pages from `astro.config.mjs`; there is no long-lived server runtime in the deployed app.
 
 **Package Manager:**
 
-- pnpm 10.29.3 from the `packageManager` field in `package.json`.
+- pnpm 10.33.2 from the `packageManager` field in `package.json`.
 - Lockfile: present in `pnpm-lock.yaml`.
 
 ## Frameworks
 
 **Core:**
 
-- Astro 5.18.0 - static site generation, content collections, API routes, partial routes, and project URL/base handling in `astro.config.mjs`, `src/content.config.ts`, and `src/pages/**`.
-- React 19.2.0 with `@astrojs/react` 4.4.2 - client-loaded app shell, overlays, mobile nav, filters, inquiry form, and shadcn primitives in `src/components/app-shell/AppShell.astro`, `src/components/app-shell/AppShellRoot.tsx`, and `src/components/ui/**`.
+- Astro 6.1.9 - static site generation, content collections, API routes, partial routes, and project URL/base handling in `astro.config.mjs`, `src/content.config.ts`, and `src/pages/**`.
+- React 19.2.5 with `@astrojs/react` 5.0.4 - client-loaded app shell, overlays, mobile nav, filters, inquiry form, and shadcn primitives in `src/components/app-shell/AppShell.astro`, `src/components/app-shell/AppShellRoot.tsx`, and `src/components/ui/**`.
 - Astro content collections - 10 typed collections defined in `src/content.config.ts` and queried through `src/lib/site-data.ts` and `src/lib/catalog-data.ts`.
 - Custom app-shell routing - same-document top-level section swaps plus overlay fragment fetching in `src/lib/app-shell/routing.ts` and `src/components/app-shell/AppShellRoot.tsx`.
 
 **Testing:**
 
-- Vitest 4.0.18 - unit tests for CMS config logic and player/session logic in `src/lib/admin/decap-config.test.ts` and `src/components/app-shell/player-session-machine.test.ts`.
+- Vitest 4.1.5 - unit tests across the web, backend, and generated API client workspaces.
 
 **Build/Dev:**
 
-- Tailwind CSS 4.1.18 with `@tailwindcss/vite` 4.1.18 - styling pipeline configured in `astro.config.mjs` and applied through `src/styles/global.css`.
-- shadcn CLI 3.8.4 - component registry/bootstrap metadata in `components.json`, with generated primitives under `src/components/ui/**`.
+- Tailwind CSS 4.2.4 with `@tailwindcss/vite` 4.2.4 - styling pipeline configured in `astro.config.mjs` and applied through `src/styles/global.css`.
+- shadcn CLI 4.5.0 - component registry/bootstrap metadata in `components.json`, with generated primitives under `src/components/ui/**`.
 - Radix UI primitives - dialog/select/slot primitives used by shadcn-based UI in `src/components/ui/sheet.tsx`, `src/components/ui/select.tsx`, and `src/components/ui/button.tsx`.
 - Sharp 0.34.5 - Astro image processing backing `image()` collection fields in `src/content.config.ts` and `astro:assets` usage such as `src/components/cards/DistroCard.astro`.
 - `@astrojs/check` 0.9.6 - content/type verification behind `pnpm check` in `package.json`.
@@ -54,18 +54,18 @@
 
 **Critical:**
 
-- `astro` `^5.18.0` - powers the static storefront, content collections, partial overlay routes, sitemap generation, and admin config/media routes in `astro.config.mjs`, `src/content.config.ts`, `src/pages/app-shell-overlay/**`, `src/pages/sitemap.xml.ts`, and `src/pages/admin/**`.
-- `react` `^19.2.0` and `react-dom` `^19.2.0` - keep the persistent app shell, player session, overlay UI, and mobile sheet mounted across shell-managed navigation in `src/components/app-shell/AppShellRoot.tsx`.
+- `astro` `^6.1.9` - powers the static storefront, content collections, partial overlay routes, sitemap generation, and admin config/media routes in `astro.config.mjs`, `src/content.config.ts`, `src/pages/app-shell-overlay/**`, `src/pages/sitemap.xml.ts`, and `src/pages/admin/**`.
+- `react` `^19.2.5` and `react-dom` `^19.2.5` - keep the persistent app shell, player session, overlay UI, and mobile sheet mounted across shell-managed navigation in `src/components/app-shell/AppShellRoot.tsx`.
 - `sharp` `^0.34.5` - required for collection-owned image assets referenced through `image()` fields in `src/content.config.ts`.
 - `decap-server` `^3.5.2` - local CMS proxy backend launched by `scripts/start-decap-proxy.mjs` and `scripts/start-cms-dev.mjs`.
 
 **Infrastructure:**
 
-- `@astrojs/react` `^4.4.2` - Astro/React bridge for client-loaded islands in `astro.config.mjs`.
-- `tailwindcss` `^4.1.18` and `@tailwindcss/vite` `^4.1.18` - styling/build integration via `astro.config.mjs` and `src/styles/global.css`.
-- `shadcn` `^3.8.4` plus `@radix-ui/react-dialog`, `@radix-ui/react-select`, and `@radix-ui/react-slot` - component system configuration in `components.json` and implementation in `src/components/ui/**`.
+- `@astrojs/react` `^5.0.4` - Astro/React bridge for client-loaded islands in `astro.config.mjs`.
+- `tailwindcss` `^4.2.4` and `@tailwindcss/vite` `^4.2.4` - styling/build integration via `astro.config.mjs` and `src/styles/global.css`.
+- `shadcn` `^4.5.0` plus `@radix-ui/react-dialog`, `@radix-ui/react-select`, and `@radix-ui/react-slot` - component system configuration in `components.json` and implementation in `src/components/ui/**`.
 - `class-variance-authority`, `clsx`, `tailwind-merge`, and `tw-animate-css` - utility-driven component styling in `src/components/ui/**`, `src/lib/utils.ts`, and `src/styles/global.css`.
-- `lucide-react` `^0.563.0` - icon system used across navigation, footer, and shell UI in `src/components/Header.astro`, `src/components/Footer.astro`, and `src/components/app-shell/AppShellRoot.tsx`.
+- `lucide-react` `^1.11.0` - icon system used across navigation, footer, and shell UI in `src/components/Header.astro`, `src/components/Footer.astro`, and `src/components/app-shell/AppShellRoot.tsx`.
 - `fuse.js` `^7.1.0` - client-side artist search in `src/components/artists/artist-roster-search.ts`.
 
 ## Configuration
@@ -91,7 +91,7 @@
 
 **Development:**
 
-- Node.js 20+ and pnpm 10+ per `README.md`.
+- Node.js 24 LTS and pnpm 10.33.2 per `README.md`.
 - `pnpm dev` runs Astro locally; `pnpm cms:dev` runs the site on port `4322` plus `decap-server` on port `8082` through `scripts/start-cms-dev.mjs`.
 - Local content editing assumes the repo filesystem is writable under `src/content/**` and `src/content/uploads/**`.
 
