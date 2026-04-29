@@ -162,12 +162,14 @@ Read these first before editing:
 - `pnpm check` is intentionally editor-independent; do not rely on WebStorm formatting or inspections as the only style gate.
 - The workflow uses `withastro/action@v6.1.1` with Node 24, pnpm 10.33.2, and built-in pnpm/Astro caching
 - Configured in `apps/web/astro.config.mjs`
-  - `site: https://blackbox-studio-athens.github.io`
-  - `base: /blackbox-records/`
-- Do not change `site` or `base` unless the task explicitly requires deployment URL changes.
+  - default `site: https://blackbox-studio-athens.github.io`
+  - default `base: /blackbox-records/`
+- Cloudflare Pages builds override those defaults through non-secret `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/` so the artifact serves from the Pages domain root.
+- Do not change `site` or `base` behavior unless the task explicitly requires deployment URL changes.
 - Cloudflare Pages migration work must keep the frontend static and deploy only the prebuilt `apps/web/dist` artifact.
 - The Cloudflare Pages workflow must run `pnpm test:unit`, `pnpm check`, and `pnpm build` before Direct Upload to the `blackbox-records-web` Pages project.
-- The Cloudflare Pages workflow may pass only browser-safe public Astro env into the build: `PUBLIC_BACKEND_BASE_URL` and `PUBLIC_STRIPE_PUBLISHABLE_KEY`; keep production `PUBLIC_CHECKOUT_CLIENT_MODE` unset.
+- The Cloudflare Pages workflow may pass only non-secret build-target env plus browser-safe public Astro env into the build: `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, `PUBLIC_BACKEND_BASE_URL`, and `PUBLIC_STRIPE_PUBLISHABLE_KEY`; keep production `PUBLIC_CHECKOUT_CLIENT_MODE` unset.
+- Cloudflare Pages acceptance deploys must run through `.github/workflows/cloudflare-pages.yml`. Manual local `wrangler pages deploy` is diagnostic only and is not Phase 7.1 acceptance evidence.
 - Cloudflare Pages must not own backend routes, Pages Functions, D1 access, Stripe secrets, webhooks, operator auth, stock mutations, order state, or future BOX NOW runtime secrets.
 - GitHub Pages remains rollback until Phase `07.1-05` retires it as canonical after acceptance.
 - Native commerce migration work must treat the current GitHub Pages + external-shop setup as the existing baseline, not the final architecture.

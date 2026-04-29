@@ -34,6 +34,8 @@ jobs:
           DECAPBRIDGE_AUTH_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_ENDPOINT }}
           DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT }}
           DECAPBRIDGE_GATEWAY_URL: ${{ vars.DECAPBRIDGE_GATEWAY_URL }}
+          ASTRO_SITE_URL: https://blackbox-studio-athens.github.io
+          ASTRO_BASE_PATH: /blackbox-records/
         with:
           path: ./apps/web
           node-version: 24

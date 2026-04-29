@@ -18,7 +18,10 @@ The current production deployment is configured for GitHub Pages project hosting
 - `site`: `https://blackbox-studio-athens.github.io`
 - `base`: `/blackbox-records/`
 
-This is configured in `apps/web/astro.config.mjs`.
+This is the default in `apps/web/astro.config.mjs`. Cloudflare Pages builds override it with non-secret build-time variables so the same static app can be served from the Pages domain root:
+
+- `ASTRO_SITE_URL`: `https://blackbox-records-web.pages.dev`
+- `ASTRO_BASE_PATH`: `/`
 
 Phase 7.1 moves the future canonical static frontend host to Cloudflare Pages after preview and production-branch validation. Until that acceptance is complete, GitHub Pages remains the active deployment and rollback reference.
 
@@ -289,6 +292,9 @@ pnpm generate:api
 - Cloudflare Pages production builds use GitHub Actions variables for browser-safe public env:
   - `PUBLIC_BACKEND_BASE_URL`
   - `PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- Cloudflare Pages production builds also set non-secret Astro build-target env:
+  - `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev`
+  - `ASTRO_BASE_PATH=/`
 - Do not set `PUBLIC_CHECKOUT_CLIENT_MODE` on the production Pages workflow; reserve `mock` for explicit non-production local/mock testing.
 - Local development uses:
   - `pnpm dev:web`
@@ -413,11 +419,14 @@ CI/deploy credentials and public build variables:
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
+- `ASTRO_SITE_URL`
+- `ASTRO_BASE_PATH`
 - Cloudflare Pages project name: `blackbox-records-web`
 - `PUBLIC_BACKEND_BASE_URL`
 - `PUBLIC_STRIPE_PUBLISHABLE_KEY`
 
 - `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are only for authenticating CI or a developer into Cloudflare for deployment.
+- `ASTRO_SITE_URL` and `ASTRO_BASE_PATH` are non-secret static build target values. GitHub Pages uses `https://blackbox-studio-athens.github.io` plus `/blackbox-records/`; Cloudflare Pages uses `https://blackbox-records-web.pages.dev` plus `/`.
 - `PUBLIC_BACKEND_BASE_URL` and `PUBLIC_STRIPE_PUBLISHABLE_KEY` are browser-visible build variables for the static Astro frontend.
 - None of these values are the Worker's runtime business secrets.
 - Deployed runtime secrets terminate as Cloudflare Worker secrets/bindings, not as browser env vars and not as GitHub-only config.
@@ -454,9 +463,10 @@ CI/deploy credentials and public build variables:
 
 - Cloudflare Pages is the future canonical static frontend host for this milestone.
 - The deploy artifact remains the prebuilt Astro output at `apps/web/dist`.
-- Cloudflare Pages Direct Upload is handled by `.github/workflows/cloudflare-pages.yml`.
+- Cloudflare Pages Direct Upload acceptance is handled by `.github/workflows/cloudflare-pages.yml`, not by local manual `wrangler pages deploy`.
 - The workflow runs `pnpm test:unit`, `pnpm check`, and `pnpm build` before uploading `apps/web/dist` to the `blackbox-records-web` Pages project.
-- The workflow passes only browser-safe public Astro variables into the static build: `PUBLIC_BACKEND_BASE_URL` and `PUBLIC_STRIPE_PUBLISHABLE_KEY`.
+- The workflow sets Cloudflare-root static build values with `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/`.
+- The workflow passes only browser-safe public Astro variables into the frontend runtime: `PUBLIC_BACKEND_BASE_URL` and `PUBLIC_STRIPE_PUBLISHABLE_KEY`.
 - The Worker remains separate and owns `/api/*`, Stripe secrets, webhooks, D1, stock operations, order state, and future BOX NOW work.
 - Do not introduce Pages Functions, SSR, D1 access, backend routes, or runtime business secrets into the Pages project.
 - Browser-safe Pages variables are limited to `PUBLIC_BACKEND_BASE_URL`, `PUBLIC_STRIPE_PUBLISHABLE_KEY`, and non-production `PUBLIC_CHECKOUT_CLIENT_MODE` only when deliberately testing mock mode outside production.
