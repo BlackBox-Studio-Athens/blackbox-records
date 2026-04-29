@@ -18,6 +18,7 @@ export const STORE_CART_DRAWER_COPY = {
   emptyDetail: 'Add one store item to review the line item before checkout.',
   emptyTitle: 'Your cart is empty',
   remove: 'Remove',
+  shipping: 'Greece-only BOX NOW locker shipping is confirmed at checkout.',
   subtotal: 'Subtotal',
 } as const;
 
@@ -119,9 +120,7 @@ export default function StoreCartDrawer({
                   {view.subtotalDisplay}
                 </span>
               </div>
-              <p className="text-xs leading-5 text-muted-foreground">
-                Shipping and taxes are handled at checkout where applicable.
-              </p>
+              <p className="text-xs leading-5 text-muted-foreground">{STORE_CART_DRAWER_COPY.shipping}</p>
               <a
                 className="inline-flex min-h-11 w-full items-center justify-center bg-foreground px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-background transition-colors hover:bg-foreground/88"
                 href={view.checkoutHref || undefined}

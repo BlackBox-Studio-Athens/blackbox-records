@@ -39,6 +39,7 @@ describe('StoreCartDrawer', () => {
     expect(STORE_CART_DRAWER_COPY.emptyTitle).toBe('Your cart is empty');
     expect(STORE_CART_DRAWER_COPY.continueShopping).toBe('Continue Shopping');
     expect(STORE_CART_DRAWER_COPY.checkout).toBe('Checkout');
+    expect(STORE_CART_DRAWER_COPY.shipping).toBe('Greece-only BOX NOW locker shipping is confirmed at checkout.');
   });
 
   it('represents exactly one filled line item with subtotal and checkout action data', () => {

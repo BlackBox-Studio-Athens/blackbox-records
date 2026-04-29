@@ -18,6 +18,26 @@
 - `git diff --check`
 - `pnpm check`
 
+## 09-02 Add Greece-Only Locker Selection UI Before Checkout
+
+- Result: passed.
+- Evidence: Checkout now renders a shipping-first BOX NOW gate before the payment action.
+- Evidence: Local mock checkout mode can select a deterministic Greek locker with `locker_id`, `country_code = GR`, and `locker_name_or_label` held only in browser component state.
+- Evidence: Non-mock checkout mode fails closed with the approved “Locker selection unavailable” copy until the real BOX NOW picker integration exists.
+- Evidence: `StartCheckout` request payload remains unchanged and still sends only `storeItemSlug` and `variantId`.
+- Evidence: Tests cover missing locker, non-Greece locker rejection, valid Greek locker enablement, non-mock fail-closed behavior, and no BOX NOW credentials in browser-rendered markup.
+- Evidence: Browser Use against `pnpm dev:stack:stripe-mock` on `/blackbox-records/store/disintegration-black-vinyl-lp/checkout/` verified payment is blocked before locker selection, the local Greek locker unlocks payment, the mock checkout panel mounts, and `Change Locker` returns to the shipping gate and hides the mounted checkout.
+- Note: the Browser Use dev log buffer retained two first-load Astro hydration errors from the initial Vite dependency optimization reload; the successful interaction pass produced no new checkout UI errors.
+- No BOX NOW API calls, backend checkout preflight, D1 migration, OpenAPI/generated client change, order persistence, Stripe account values, or fulfillment automation changed.
+- Validation: targeted web tests; `git diff --check`; `pnpm test:unit`; `pnpm check`; `pnpm build`.
+
+Manual UI validation:
+
+- Result: passed with the Vite first-load caveat above.
+- Command: `pnpm dev:stack:stripe-mock`.
+- Browser Use route: `/blackbox-records/store/disintegration-black-vinyl-lp/checkout/`.
+- Verified: payment blocked before locker selection; local Greek locker selection unlocks payment; mock checkout panel mounts; `Change Locker` returns to shipping and destroys/hides the mounted checkout.
+
 ## Explicit Non-Goals
 
 - No BOX NOW API integration.

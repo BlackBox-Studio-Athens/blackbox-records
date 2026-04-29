@@ -4,6 +4,7 @@ import {
   type PublicStoreOffer,
 } from '../../lib/backend/public-checkout-api';
 import type { EmbeddedCheckoutAdapter, EmbeddedCheckoutMount } from '../../lib/backend/stripe-embedded-checkout';
+import { readCheckoutShippingGateError, type CheckoutLockerSelection } from './checkout-shipping-step-state';
 
 export type CheckoutOfferInitialAvailability = {
   label: string;
@@ -133,6 +134,7 @@ export type EmbeddedCheckoutStartState =
 export type EmbeddedCheckoutStartInput = {
   api: PublicCheckoutApi;
   checkoutAdapter: EmbeddedCheckoutAdapter;
+  lockerSelection: CheckoutLockerSelection | null;
   mountTarget: HTMLElement;
   storeItemSlug: string;
   variantId: string;
@@ -141,10 +143,20 @@ export type EmbeddedCheckoutStartInput = {
 export async function startEmbeddedCheckout({
   api,
   checkoutAdapter,
+  lockerSelection,
   mountTarget,
   storeItemSlug,
   variantId,
 }: EmbeddedCheckoutStartInput): Promise<EmbeddedCheckoutStartState> {
+  const shippingGateError = readCheckoutShippingGateError(lockerSelection);
+
+  if (shippingGateError) {
+    return {
+      kind: 'error',
+      message: shippingGateError,
+    };
+  }
+
   const configurationError = checkoutAdapter.getConfigurationError();
 
   if (configurationError) {

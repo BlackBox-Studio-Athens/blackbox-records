@@ -70,6 +70,7 @@ import {
 import { createStoreCartDrawerView } from './StoreCartDrawer';
 import { requestStoreCartAddItem } from './StoreItemPurchaseActions';
 import { createCheckoutOfferView, loadCheckoutOfferState, startEmbeddedCheckout } from './checkout-offer-status-state';
+import { LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION } from './checkout-shipping-step-state';
 import { createStoreCartItemForStorePage, getStorePageEntryBySlug } from '../../lib/store-page-data';
 
 afterEach(() => {
@@ -167,6 +168,7 @@ describe('store purchase happy path', () => {
     const handoffState = await startEmbeddedCheckout({
       api,
       checkoutAdapter: createMockEmbeddedCheckoutAdapter(),
+      lockerSelection: LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION,
       mountTarget,
       storeItemSlug: persistedCartState.item!.storeItemSlug,
       variantId: checkoutView.variantId!,
@@ -186,11 +188,13 @@ describe('store purchase happy path', () => {
         method: 'POST',
       }),
     );
+    expect(readJsonBody(fetchStub, '/api/checkout/sessions')).not.toHaveProperty('locker_id');
 
     const browserOwnedPayload = JSON.stringify({
       cart: persistedCartState,
       checkoutBody: readJsonBody(fetchStub, '/api/checkout/sessions'),
       drawer: drawerView,
+      lockerSelection: LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION,
     });
 
     expect(browserOwnedPayload).not.toContain('price_mock_');
@@ -201,6 +205,9 @@ describe('store purchase happy path', () => {
     expect(browserOwnedPayload).not.toContain('orderState');
     expect(browserOwnedPayload).not.toContain('actorEmail');
     expect(browserOwnedPayload).not.toContain('clientSecret');
+    expect(browserOwnedPayload).not.toContain('BOX_NOW_API');
+    expect(browserOwnedPayload).not.toContain('whsec_');
+    expect(browserOwnedPayload).not.toContain('sk_');
     expect(storage.getItem(STORE_CART_STORAGE_KEY)).toContain('disintegration-black-vinyl-lp');
   });
 });

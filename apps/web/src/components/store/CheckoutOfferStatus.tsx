@@ -18,8 +18,11 @@ import {
   type CheckoutOfferInitialAvailability,
   type CheckoutOfferStatusView,
 } from './checkout-offer-status-state';
+import CheckoutShippingStep from './CheckoutShippingStep';
+import { createCheckoutShippingGateView, type CheckoutLockerSelection } from './checkout-shipping-step-state';
 
 interface CheckoutOfferStatusProps {
+  checkoutClientMode?: string;
   initialAvailability: CheckoutOfferInitialAvailability;
   storeItemSlug: string;
   api?: PublicCheckoutApi;
@@ -29,6 +32,7 @@ interface CheckoutOfferStatusProps {
 export default function CheckoutOfferStatus({
   api,
   checkoutAdapter,
+  checkoutClientMode = import.meta.env.PUBLIC_CHECKOUT_CLIENT_MODE,
   initialAvailability,
   storeItemSlug,
 }: CheckoutOfferStatusProps) {
@@ -36,10 +40,15 @@ export default function CheckoutOfferStatus({
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutMounted, setCheckoutMounted] = useState(false);
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
+  const [lockerSelection, setLockerSelection] = useState<CheckoutLockerSelection | null>(null);
   const checkoutMountRef = useRef<HTMLDivElement | null>(null);
   const checkoutSessionRef = useRef<EmbeddedCheckoutMount | null>(null);
   const itemOptionLabel =
     initialAvailability.optionLabel || (view.variantId ? 'Selected option' : 'Checking item option');
+  const shippingGateView = createCheckoutShippingGateView({
+    checkoutClientMode,
+    lockerSelection,
+  });
 
   useEffect(() => {
     let isActive = true;
@@ -72,6 +81,11 @@ export default function CheckoutOfferStatus({
     const embeddedCheckoutAdapter = checkoutAdapter ?? createConfiguredEmbeddedCheckoutAdapter();
     const mountTarget = checkoutMountRef.current;
 
+    if (!shippingGateView.canContinueToPayment) {
+      setCheckoutError('Select a Greece BOX NOW locker before payment opens.');
+      return;
+    }
+
     if (!view.variantId || !mountTarget) {
       setCheckoutError('Checkout is not ready for this item yet.');
       return;
@@ -87,6 +101,7 @@ export default function CheckoutOfferStatus({
     const checkoutState = await startEmbeddedCheckout({
       api: checkoutApi,
       checkoutAdapter: embeddedCheckoutAdapter,
+      lockerSelection: shippingGateView.selectedLocker,
       mountTarget,
       storeItemSlug,
       variantId: view.variantId,
@@ -103,10 +118,34 @@ export default function CheckoutOfferStatus({
     setIsStartingCheckout(false);
   }
 
+  function resetMountedCheckout() {
+    checkoutSessionRef.current?.destroy();
+    checkoutSessionRef.current = null;
+    setCheckoutMounted(false);
+    setCheckoutError(null);
+  }
+
+  function handleSelectLocker(nextLockerSelection: CheckoutLockerSelection) {
+    resetMountedCheckout();
+    setLockerSelection(nextLockerSelection);
+  }
+
+  function handleChangeLocker() {
+    resetMountedCheckout();
+    setLockerSelection(null);
+  }
+
   return (
     <div className="space-y-4" data-checkout-offer-status>
+      <CheckoutShippingStep
+        checkoutClientMode={checkoutClientMode}
+        lockerSelection={lockerSelection}
+        onChangeLocker={handleChangeLocker}
+        onSelectLocker={handleSelectLocker}
+      />
+
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Checkout status</p>
+        <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Payment status</p>
         <Badge
           variant="outline"
           className={cn(
@@ -137,7 +176,7 @@ export default function CheckoutOfferStatus({
           <p className="text-sm leading-relaxed text-muted-foreground">{view.detail}</p>
 
           <div className="space-y-3 border-t border-border/50 pt-4">
-            {view.canStartCheckout ? (
+            {view.canStartCheckout && shippingGateView.canContinueToPayment ? (
               <Button
                 type="button"
                 size="lg"
@@ -147,11 +186,13 @@ export default function CheckoutOfferStatus({
                   void handleStartCheckout();
                 }}
               >
-                {isStartingCheckout ? 'Opening Checkout' : checkoutMounted ? 'Reload Checkout' : 'Checkout'}
+                {isStartingCheckout ? 'Opening Payment' : checkoutMounted ? 'Reload Payment' : 'Continue To Payment'}
               </Button>
             ) : (
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Checkout opens only after this item is confirmed as buyable.
+                {view.canStartCheckout
+                  ? 'Payment opens only after a Greece BOX NOW locker is selected.'
+                  : 'Payment opens only after this item is confirmed as buyable.'}
               </p>
             )}
 

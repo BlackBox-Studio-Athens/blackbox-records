@@ -7,6 +7,7 @@ import {
   startEmbeddedCheckout,
   type CheckoutOfferInitialAvailability,
 } from './checkout-offer-status-state';
+import { LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION } from './checkout-shipping-step-state';
 import { PublicCheckoutApiError, type PublicCheckoutApi } from '../../lib/backend/public-checkout-api';
 import type { EmbeddedCheckoutAdapter } from '../../lib/backend/stripe-embedded-checkout';
 
@@ -158,13 +159,14 @@ describe('CheckoutOfferStatus helpers', () => {
     const mount = {
       destroy: vi.fn(),
     };
+    const startCheckout = vi.fn(async () => ({
+      clientSecret: 'cs_test_client_secret',
+    }));
     const api: PublicCheckoutApi = {
       readCheckoutState: vi.fn(),
       readStoreOffer: vi.fn(),
       readStoreOfferVariants: vi.fn(),
-      startCheckout: vi.fn(async () => ({
-        clientSecret: 'cs_test_client_secret',
-      })),
+      startCheckout,
     };
     const checkoutAdapter: EmbeddedCheckoutAdapter = {
       getConfigurationError: vi.fn(() => null),
@@ -174,6 +176,7 @@ describe('CheckoutOfferStatus helpers', () => {
     const state = await startEmbeddedCheckout({
       api,
       checkoutAdapter,
+      lockerSelection: LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION,
       mountTarget,
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
@@ -191,6 +194,68 @@ describe('CheckoutOfferStatus helpers', () => {
       kind: 'mounted',
       mount,
     });
+  });
+
+  it('does not start checkout before a Greek locker is selected', async () => {
+    const api: PublicCheckoutApi = {
+      readCheckoutState: vi.fn(),
+      readStoreOffer: vi.fn(),
+      readStoreOfferVariants: vi.fn(),
+      startCheckout: vi.fn(),
+    };
+    const checkoutAdapter: EmbeddedCheckoutAdapter = {
+      getConfigurationError: vi.fn(() => null),
+      mountEmbeddedCheckout: vi.fn(),
+    };
+
+    await expect(
+      startEmbeddedCheckout({
+        api,
+        checkoutAdapter,
+        lockerSelection: null,
+        mountTarget: {} as HTMLElement,
+        storeItemSlug: 'disintegration-black-vinyl-lp',
+        variantId: 'variant_barren-point_standard',
+      }),
+    ).resolves.toEqual({
+      kind: 'error',
+      message: 'Select a Greece BOX NOW locker before payment opens.',
+    });
+    expect(api.startCheckout).not.toHaveBeenCalled();
+    expect(checkoutAdapter.mountEmbeddedCheckout).not.toHaveBeenCalled();
+  });
+
+  it('does not start checkout with a non-Greece locker selection', async () => {
+    const api: PublicCheckoutApi = {
+      readCheckoutState: vi.fn(),
+      readStoreOffer: vi.fn(),
+      readStoreOfferVariants: vi.fn(),
+      startCheckout: vi.fn(),
+    };
+    const checkoutAdapter: EmbeddedCheckoutAdapter = {
+      getConfigurationError: vi.fn(() => null),
+      mountEmbeddedCheckout: vi.fn(),
+    };
+
+    await expect(
+      startEmbeddedCheckout({
+        api,
+        checkoutAdapter,
+        lockerSelection: {
+          locker_id: 'locker_berlin',
+          country_code: 'DE',
+          locker_name_or_label: 'Berlin Locker',
+        },
+        mountTarget: {} as HTMLElement,
+        storeItemSlug: 'disintegration-black-vinyl-lp',
+        variantId: 'variant_barren-point_standard',
+      }),
+    ).resolves.toEqual({
+      kind: 'error',
+      message: 'Select a Greece BOX NOW locker before payment opens.',
+    });
+    expect(api.startCheckout).not.toHaveBeenCalled();
+    expect(checkoutAdapter.mountEmbeddedCheckout).not.toHaveBeenCalled();
   });
 
   it('does not start checkout when Worker eligibility is missing the variant id', () => {
@@ -266,6 +331,7 @@ describe('CheckoutOfferStatus helpers', () => {
       startEmbeddedCheckout({
         api,
         checkoutAdapter,
+        lockerSelection: LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION,
         mountTarget: {} as HTMLElement,
         storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_barren-point_standard',
@@ -296,6 +362,7 @@ describe('CheckoutOfferStatus helpers', () => {
       startEmbeddedCheckout({
         api,
         checkoutAdapter,
+        lockerSelection: LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION,
         mountTarget: {} as HTMLElement,
         storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_barren-point_standard',
@@ -325,6 +392,7 @@ describe('CheckoutOfferStatus helpers', () => {
       startEmbeddedCheckout({
         api,
         checkoutAdapter,
+        lockerSelection: LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION,
         mountTarget: {} as HTMLElement,
         storeItemSlug: 'afterglow-tape',
         variantId: 'variant_afterglow-tape_standard',
