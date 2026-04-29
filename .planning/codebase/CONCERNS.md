@@ -32,7 +32,7 @@
 
 **Stale deployment guidance in repo instructions:**
 
-- Symptoms: Contributors reading the repo-local instructions can pick the wrong `site` value for GitHub Pages.
+- Symptoms: Contributors reading the repo-local instructions can pick the wrong `site` or `base` value for Cloudflare Pages canonical hosting or GitHub Pages rollback.
 - Trigger: Onboarding, deployment changes, or any task that trusts `AGENTS.md` over the actual config.
 - Workaround: Treat `astro.config.mjs` and `README.md` as the source of truth for deployment URL values.
 - Root cause: `AGENTS.md` still references `https://zantoichi.github.io`, while `astro.config.mjs` and `README.md` use `https://blackbox-studio-athens.github.io`.
@@ -91,7 +91,7 @@
 **Generated Decap admin surface:**
 
 - Files: `src/pages/admin/index.astro`, `src/pages/admin/config.yml.ts`, `src/pages/admin/media/[collection]/[asset].ts`, `src/lib/admin/decap-config.ts`
-- Why fragile: Build-time environment values, generated YAML, media routing, and runtime boot scripts must all stay aligned with GitHub Pages base-path behavior.
+- Why fragile: Build-time environment values, generated YAML, media routing, and runtime boot scripts must stay aligned with Cloudflare Pages root hosting and GitHub Pages rollback base-path behavior.
 - Common failures: Broken `/admin/config.yml`, wrong asset URLs, PKCE placeholder leakage, or media links resolving under the wrong base path.
 - Safe modification: After changes, inspect the generated `/admin/config.yml`, verify `/admin/` loads, and test one media URL plus one representative collection entry.
 - Test coverage: `src/lib/admin/decap-config.test.ts` covers core config branches, but the route-level output and hosted Pages wiring are not end-to-end tested in-repo.
@@ -132,13 +132,13 @@
 **Shop redirect and redirect layout behavior:**
 
 - What's not tested: `/shop/` redirect semantics, meta-refresh fallback, and `window.location.replace()` behavior in `src/layouts/RedirectLayout.astro`.
-- Risk: External shop entry can silently fail or regress under GitHub Pages/base-path changes.
+- Risk: External shop entry can silently fail or regress under static host base-path changes.
 - Priority: Medium
 - Difficulty to test: Needs route-level rendering plus browser navigation assertions.
 
 **Hosted admin route output:**
 
-- What's not tested: The fully rendered `/admin/config.yml` response under production-like environment values and GitHub Pages base-path assumptions.
+- What's not tested: The fully rendered `/admin/config.yml` response under production-like environment values for Cloudflare Pages root hosting and GitHub Pages rollback base-path assumptions.
 - Risk: CMS access can break in deployment while unit tests still pass.
 - Priority: High
 - Difficulty to test: Needs integration coverage over Astro route output with environment permutations.

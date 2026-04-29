@@ -105,7 +105,7 @@
 
 **Hosting:**
 
-- GitHub Pages project hosting for the static Astro site, configured by `astro.config.mjs` with `site: 'https://blackbox-studio-athens.github.io'`, `base: '/blackbox-records/'`, and `output: 'static'`.
+- Cloudflare Pages canonical hosting for the static Astro site, deployed from `apps/web/dist` by `.github/workflows/cloudflare-pages.yml` with `site: 'https://blackbox-records-web.pages.dev'`, `base: '/'`, and `output: 'static'`. GitHub Pages remains rollback/legacy through `.github/workflows/pages.yml`.
 - Fourthwall remains a separate hosted commerce destination reached through outbound links and the `/shop/` redirect route.
 
 **CI Pipeline:**
@@ -146,7 +146,7 @@
 **Outgoing:**
 
 - Browser/runtime traffic goes to Fourthwall, Bandcamp, Tidal, DecapBridge, Google Fonts, Glancelytics, and the Decap CMS bundle on unpkg through `src/config/site.ts`, `src/utils/music.ts`, `src/pages/admin/index.astro`, and `src/layouts/SiteLayout.astro`.
-- CI/CD traffic goes to GitHub Pages through `.github/workflows/pages.yml`.
+- CI/CD traffic goes to Cloudflare Pages through `.github/workflows/cloudflare-pages.yml`; GitHub Pages rollback traffic remains available through `.github/workflows/pages.yml`.
 
 ---
 

@@ -139,11 +139,11 @@ const rosterItems = [{ title: 'Chronoboros' }, { title: 'Mass Culture' }, { titl
 
 ## CI Verification
 
-**GitHub Pages gate:**
+**Cloudflare Pages gate:**
 
-- `.github/workflows/pages.yml` runs one `verify` job before deploy.
-- The job uses `withastro/action@v6.1.1` on Node 24 with pnpm 10.33.2 and executes `pnpm test:unit && pnpm check && pnpm build`.
-- The `deploy` job depends on `verify`, so any failing test blocks Pages publication.
+- `.github/workflows/cloudflare-pages.yml` installs dependencies, then runs `pnpm test:unit`, `pnpm check`, and `pnpm build` before Direct Upload.
+- The same gates must pass before Cloudflare Pages publication.
+- `.github/workflows/pages.yml` keeps the GitHub Pages rollback deployment behind equivalent repo gates.
 
 **Decap-related CI behavior:**
 

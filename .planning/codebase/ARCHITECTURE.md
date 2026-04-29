@@ -8,7 +8,7 @@
 
 **Key Characteristics:**
 
-- Use `src/pages/**` as the canonical static route graph. Every section and detail view has a real Astro page that works on direct load, refresh, and GitHub Pages static hosting.
+- Use `src/pages/**` as the canonical static route graph. Every section and detail view has a real Astro page that works on direct load, refresh, Cloudflare Pages hosting, and GitHub Pages rollback hosting.
 - Use `src/components/app-shell/AppShellRoot.tsx` to intercept same-origin top-level section links and swap cached `<main>` snapshots in place so the player, mobile nav, and shell UI survive section changes.
 - Use duplicate route surfaces for detail content: full pages under `src/pages/{artists,releases,news}/[slug].astro` and fragment-only partial routes under `src/pages/app-shell-overlay/**`, both reusing the same detail components in `src/components/detail/*.astro`.
 - Use `/store/` as the canonical native storefront route. `/shop/` remains a compatibility redirect, while unmapped legacy merch links can still exit to Fourthwall or artist-owned external destinations.
@@ -37,7 +37,7 @@
 - Location: `src/layouts/SiteLayout.astro`, `src/layouts/RedirectLayout.astro`, `src/pages/**`, `src/components/cards/*.astro`, `src/components/detail/*.astro`
 - Contains: Full storefront routes, redirect routes, sitemap generation, reusable card/detail presentation, and the shared `<main data-app-shell-main>` region that the shell swaps.
 - Depends on: Content query helpers, `src/components/Header.astro`, `src/components/Footer.astro`, and `src/components/app-shell/AppShell.astro`.
-- Used by: Browser direct loads, GitHub Pages static output, and the client shell’s snapshot-fetching flow.
+- Used by: Browser direct loads, static hosting output, and the client shell’s snapshot-fetching flow.
 
 **Client Shell Orchestration:**
 

@@ -11,7 +11,7 @@
 - [x] **DEPL-02**: Static frontend and separate Worker backend can communicate locally and in sandbox through an explicit environment and URL contract.
 - [x] **DEPL-03**: Sandbox deployment and testing can proceed without changing the current live GitHub Pages + Fourthwall production path.
 - [x] **DEPL-04**: Team can bootstrap local D1 and a Prisma-compatible migration workflow inside the Worker backend before Stripe checkout implementation begins.
-- [ ] **DEPL-05**: Team can migrate the static Astro frontend from GitHub Pages to Cloudflare Pages with preview validation, rollback posture, and explicit Worker/checkout origin configuration.
+- [x] **DEPL-05**: Team can migrate the static Astro frontend from GitHub Pages to Cloudflare Pages with preview validation, rollback posture, and explicit Worker/checkout origin configuration.
 
 ### Commerce Architecture
 
@@ -106,7 +106,7 @@
 | DEPL-02     | Phase 5     | Completed |
 | DEPL-03     | Phase 5     | Completed |
 | DEPL-04     | Phase 6.1   | Completed |
-| DEPL-05     | Phase 7.1   | Pending   |
+| DEPL-05     | Phase 7.1   | Completed |
 | ARCH-01     | Phase 5.1   | Completed |
 | ARCH-02     | Phase 5.1   | Completed |
 | ARCH-03     | Phase 5.1   | Completed |
@@ -146,4 +146,4 @@
 ---
 
 _Requirements defined: 2026-04-19_
-_Last updated: 2026-04-25 after adding all-current-items local mock checkout readiness to Phase 7_
+_Last updated: 2026-04-29 after completing the Cloudflare Pages canonical static hosting migration docs_

@@ -2,9 +2,9 @@
 
 ## What This Is
 
-This project migrates BlackBox Records from a static GitHub Pages + Fourthwall storefront handoff to native commerce inside the existing Astro site. The active milestone now uses a Cloudflare-fronted dual-runtime architecture:
+This project migrates BlackBox Records from a legacy static GitHub Pages + Fourthwall storefront handoff to native commerce inside the existing Astro site. The active milestone now uses a Cloudflare-fronted dual-runtime architecture:
 
-- the Astro site remains a static frontend and will move from GitHub Pages to Cloudflare Pages during Phase 7.1
+- the Astro site remains a static frontend, with Cloudflare Pages now canonical and GitHub Pages retained as rollback/legacy
 - a separate Cloudflare Worker backend is added in-repo for dynamic commerce APIs, Stripe integration, webhooks, and D1 state
 
 The live production checkout remains unchanged until a later go-live milestone.
@@ -30,7 +30,7 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - Greece-only BOX NOW locker selection before payment
 - Shopify-familiar single-item cart affordances and Stripe embedded Checkout in sandbox with Worker-created Checkout Sessions
 - all-current-items local mock checkout readiness for current distro and release items without treating fake local stock as real label inventory
-- Cloudflare Pages static frontend migration before webhook/order/shipping verification depends on final hosted origins
+- completed Cloudflare Pages static frontend migration before webhook/order/shipping verification depends on final hosted origins
 - D1-backed order and stock state driven by verified Stripe webhooks hitting the Worker backend
 - sandbox validation package and human review handoff for the future go-live milestone
 
@@ -46,6 +46,7 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - ✓ Separate Cloudflare Worker backend foundation, sandbox deployment path, and server-only secret model are in place — Phase 5
 - ✓ Commerce entity model, source-of-truth split, IDs, mappings, and backend-owned OpenAPI contract are frozen — Phase 5.1
 - ✓ Native `/store/` browse, store item detail, checkout shell, and canonical release/distro-to-store linking are implemented in the static frontend — Phase 6
+- ✓ Cloudflare Pages is the canonical static frontend host, with GitHub Pages kept as rollback/legacy — Phase 7.1
 
 ### Active
 
@@ -59,7 +60,7 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - [ ] Use D1 only for stock, order lifecycle, and internal mappings, with server-owned writes
 - [ ] Treat spreadsheets as temporary capture/reporting only, never as an authoritative stock system
 - [ ] Enforce Greece-only BOX NOW locker selection before payment in v1
-- [ ] Move the static frontend from GitHub Pages to Cloudflare Pages after checkout wiring and before webhook/order/shipping verification
+- [x] Completed the static frontend migration from GitHub Pages to Cloudflare Pages after checkout wiring and before webhook/order/shipping verification
 - [ ] Finish the milestone with sandbox validation evidence and a clear handoff to the go-live milestone
 
 ### Out of Scope
@@ -84,7 +85,7 @@ The corrected milestone architecture is now dual runtime. The Astro site remains
 - internal stock operations and operator-facing write APIs
 - later BOX NOW backend work
 
-This means the Astro site is no longer being treated as “moving to Workers” in this milestone. Instead, the frontend and backend are split intentionally. Phase 7.1 changes the static frontend host from GitHub Pages to Cloudflare Pages, but it does not merge the Worker backend into Pages Functions:
+This means the Astro site is no longer being treated as “moving to Workers” in this milestone. Instead, the frontend and backend are split intentionally. Phase 7.1 changed the static frontend host from GitHub Pages to Cloudflare Pages, but it did not merge the Worker backend into Pages Functions:
 
 - Astro content collections own editorial content and shop presentation inputs
 - Stripe owns sellable commerce data needed for checkout
@@ -104,9 +105,9 @@ Current inventory knowledge also shapes Phase 7. The current site items are real
 ## Constraints
 
 - **Existing architecture**: Keep the Astro content/app-shell structure intact unless a milestone phase explicitly changes it
-- **Frontend deployment**: GitHub Pages remains the active frontend deployment target until Phase 7.1 validates Cloudflare Pages and marks it canonical
+- **Frontend deployment**: Cloudflare Pages is the canonical static frontend deployment target; GitHub Pages remains rollback/legacy
 - **Backend runtime**: Dynamic commerce behavior must target a separate Cloudflare Worker backend
-- **Production safety**: Live GitHub Pages + Fourthwall behavior stays untouched during sandbox implementation
+- **Production safety**: Native commerce production cutover stays deferred; GitHub Pages remains rollback/legacy and external commerce context remains legacy-only
 - **Security**: Stripe secrets, webhook secrets, and D1 access must remain server-only in the Worker backend and local development
 - **Payment authority**: Webhooks are authoritative for paid state
 - **Stock semantics**: Stock decrements only after webhook-confirmed payment success, with no v1 reservation logic
@@ -162,4 +163,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-_Last updated: 2026-04-25 after completing the canonical store item URL correction_
+_Last updated: 2026-04-29 after completing the Cloudflare Pages canonical static hosting migration docs_

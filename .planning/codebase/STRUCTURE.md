@@ -6,7 +6,7 @@
 
 ```text
 [project-root]/
-├── .github/workflows/        # GitHub Pages verification and deployment
+├── .github/workflows/        # Cloudflare Pages deployment and GitHub Pages rollback
 ├── .planning/codebase/       # Generated codebase mapping docs for GSD workflows
 ├── public/                   # Static passthrough assets, 404 assets, and admin runtime files
 ├── scripts/                  # Local CMS/dev helper scripts
@@ -20,7 +20,7 @@
 │   ├── pages/                # Canonical Astro routes and overlay fragment routes
 │   ├── styles/               # Global stylesheet entry
 │   └── utils/                # Low-level URL, music, and formatting helpers
-├── astro.config.mjs          # Astro runtime and GitHub Pages config
+├── astro.config.mjs          # Astro runtime and GitHub Pages rollback defaults
 ├── package.json              # Scripts, dependencies, and package manager version
 └── tsconfig.json             # Strict TS config and `@/*` path alias
 ```
@@ -127,11 +127,12 @@
 
 **Configuration:**
 
-- `astro.config.mjs`: Static output, GitHub Pages `site`/`base`, React integration, and Tailwind Vite plugin.
+- `astro.config.mjs`: Static output, GitHub Pages rollback `site`/`base` defaults, React integration, and Tailwind Vite plugin.
 - `src/content.config.ts`: Astro content collection schema definitions and references.
 - `tsconfig.json`: Strict compiler settings and the `@/* -> src/*` alias.
 - `src/config/site.ts`: Base-path-aware URL builders, shop URL rules, and link-attribute resolution.
-- `.github/workflows/pages.yml`: Verify-and-deploy pipeline for GitHub Pages.
+- `.github/workflows/cloudflare-pages.yml`: Verify-and-deploy pipeline for canonical Cloudflare Pages.
+- `.github/workflows/pages.yml`: Verify-and-deploy rollback pipeline for GitHub Pages.
 
 **Core Logic:**
 

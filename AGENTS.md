@@ -7,7 +7,7 @@ If this file conflicts with the global file, follow the global file.
 
 Build and maintain the BlackBox Records Astro site.
 
-Current production storefront behavior still uses static GitHub Pages deployment and an external Fourthwall commerce handoff, but the repo now also carries planning and future implementation work for a native commerce migration. Do not assume commerce must remain external forever; follow the active planning docs when working in that area.
+Current static frontend hosting is Cloudflare Pages, with GitHub Pages kept as rollback/legacy. The live commerce handoff still has external Fourthwall history, but the repo now carries native commerce migration work; follow the active planning docs when working in that area.
 
 ## Current stack
 
@@ -151,11 +151,11 @@ Read these first before editing:
 
 ## Deployment and URL model
 
-- Current static deployment target: GitHub Pages
-- Future canonical static deployment target after Phase 7.1 acceptance: Cloudflare Pages
-- Current CI/CD workflow: `.github/workflows/pages.yml`
-- Future Cloudflare Pages CI/CD workflow during Phase 7.1: `.github/workflows/cloudflare-pages.yml`
-- GitHub Pages builds are gated by:
+- Canonical static deployment target: Cloudflare Pages
+- Rollback static deployment target: GitHub Pages
+- Canonical CI/CD workflow: `.github/workflows/cloudflare-pages.yml`
+- Rollback CI/CD workflow: `.github/workflows/pages.yml`
+- Both static frontend workflows are gated by:
   - `pnpm test:unit`
   - `pnpm check`
   - `pnpm build`
@@ -166,13 +166,13 @@ Read these first before editing:
   - default `base: /blackbox-records/`
 - Cloudflare Pages builds override those defaults through non-secret `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/` so the artifact serves from the Pages domain root.
 - Do not change `site` or `base` behavior unless the task explicitly requires deployment URL changes.
-- Cloudflare Pages migration work must keep the frontend static and deploy only the prebuilt `apps/web/dist` artifact.
+- Cloudflare Pages hosting must keep the frontend static and deploy only the prebuilt `apps/web/dist` artifact.
 - The Cloudflare Pages workflow must run `pnpm test:unit`, `pnpm check`, and `pnpm build` before Direct Upload to the `blackbox-records-web` Pages project.
 - The Cloudflare Pages workflow may pass only non-secret build-target env plus browser-safe public Astro env into the build: `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, `PUBLIC_BACKEND_BASE_URL`, and `PUBLIC_STRIPE_PUBLISHABLE_KEY`; keep production `PUBLIC_CHECKOUT_CLIENT_MODE` unset.
-- Cloudflare Pages acceptance deploys must run through `.github/workflows/cloudflare-pages.yml`. Manual local `wrangler pages deploy` is diagnostic only and is not Phase 7.1 acceptance evidence.
+- Cloudflare Pages deploys must run through `.github/workflows/cloudflare-pages.yml`. Manual local `wrangler pages deploy` is diagnostic only and is not Phase 7.1 acceptance evidence.
 - Cloudflare Pages must not own backend routes, Pages Functions, D1 access, Stripe secrets, webhooks, operator auth, stock mutations, order state, or future BOX NOW runtime secrets.
-- GitHub Pages remains rollback until Phase `07.1-05` retires it as canonical after acceptance.
-- Native commerce migration work must treat the current GitHub Pages + external-shop setup as the existing baseline, not the final architecture.
+- GitHub Pages remains rollback/legacy only after Phase `07.1-05`; do not delete it without an explicit follow-up task.
+- Native commerce migration work must treat Cloudflare Pages plus the separate Worker as the static/dynamic hosting baseline. External-shop behavior remains legacy commerce context, not the final architecture.
 
 ## Project map
 
@@ -366,4 +366,4 @@ These checks are mandatory both:
 - Reintroducing Jekyll/Decap-era files or assumptions
 - Moving shell state into scattered document-global scripts
 - Reintroducing real route swaps on top-level section links without revisiting player persistence
-- Introducing SSR/live content features unless the deployment model intentionally changes away from static GitHub Pages
+- Introducing SSR/live content features unless the deployment model intentionally changes away from static Cloudflare Pages with GitHub Pages rollback

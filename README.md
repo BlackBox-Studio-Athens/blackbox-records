@@ -13,17 +13,20 @@ Static Astro site for the BlackBox Records label.
 
 ## URL model
 
-The current production deployment is configured for GitHub Pages project hosting:
+Cloudflare Pages is the canonical static frontend host:
 
-- `site`: `https://blackbox-studio-athens.github.io`
-- `base`: `/blackbox-records/`
+- `site`: `https://blackbox-records-web.pages.dev`
+- `base`: `/`
 
-This is the default in `apps/web/astro.config.mjs`. Cloudflare Pages builds override it with non-secret build-time variables so the same static app can be served from the Pages domain root:
+The Cloudflare Pages workflow sets these non-secret build-time variables before deploying `apps/web/dist`:
 
 - `ASTRO_SITE_URL`: `https://blackbox-records-web.pages.dev`
 - `ASTRO_BASE_PATH`: `/`
 
-Phase 7.1 moves the future canonical static frontend host to Cloudflare Pages after preview and production-branch validation. Until that acceptance is complete, GitHub Pages remains the active deployment and rollback reference.
+GitHub Pages remains a rollback/legacy static deployment and keeps the repo defaults in `apps/web/astro.config.mjs`:
+
+- `site`: `https://blackbox-studio-athens.github.io`
+- `base`: `/blackbox-records/`
 
 ## Navigation model
 
@@ -311,7 +314,7 @@ pnpm generate:api
 
 - Internal stock operations live on a separate protected operator hostname, referred to in repo docs as `ops.<managed-zone>` until the real account-owned custom domain is provisioned.
 - This hostname is distinct from:
-  - the public GitHub Pages storefront
+  - the public Cloudflare Pages storefront
   - the public sandbox `workers.dev` backend used for shopper/browser sandbox checks
 - Protected operator routes belong under:
   - static Astro UI: `/stock/`
@@ -324,7 +327,7 @@ pnpm generate:api
 - The internal Worker API now exposes read-only checkout order inspection under `/api/internal/orders*` for low-volume reconciliation. It is Access-protected, not a shopper API, and does not mutate order or stock state.
 - The protected stock operations UI is built by the static Astro app at `/stock/`; it calls same-origin `/api/internal/*` on the protected operator hostname.
 - For local split-port development, set `PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787` so the static UI can call the local Worker; the Worker allows browser API calls only from origins listed in `CHECKOUT_RETURN_ORIGINS`.
-- The stock UI is intentionally absent from public navigation. If served directly from public GitHub Pages before the protected ops hostname is provisioned, it is not a production-safe stock operations surface.
+- The stock UI is intentionally absent from public navigation. If served directly from public Cloudflare Pages or GitHub Pages rollback before the protected ops hostname is provisioned, it is not a production-safe stock operations surface.
 - D1 is the stock source of truth. Spreadsheets are temporary capture/reporting only; operators reconcile offline movement through `/stock/` using `StockChange` for known deltas and `StockCount` for recounts.
 - `OnlineStock` is the conservative checkout-facing quantity and may be lower than physical `Stock`.
 - This contract does not introduce shopper login; public storefront, public checkout, and sandbox shopper browsing remain unauthenticated.
@@ -411,7 +414,7 @@ cp apps/backend/.dev.vars.example apps/backend/.dev.vars
 - `apps/backend/.dev.vars` is local-only, ignored by git, and must never be committed.
 - Missing backend runtime secrets are acceptable only for local work that does not exercise those routes.
 - Current Stripe-backed checkout routes require `STRIPE_SECRET_KEY` before creating or reading Checkout Sessions.
-- Checkout session creation and split-port browser API reads accept origins only from `CHECKOUT_RETURN_ORIGINS`; local defaults include `http://127.0.0.1:4321`, `http://localhost:4321`, and the GitHub Pages origin.
+- Checkout session creation and split-port browser API reads accept origins only from `CHECKOUT_RETURN_ORIGINS`; configured origins include local static dev, Cloudflare Pages, and the GitHub Pages rollback origin.
 - The static checkout shell also requires `PUBLIC_STRIPE_PUBLISHABLE_KEY` before it can mount embedded Checkout in the browser.
 - `stripe-mock` mode does not require `PUBLIC_STRIPE_PUBLISHABLE_KEY` or `apps/backend/.dev.vars` because the Worker `mock` env binds harmless local Stripe mock configuration and the browser renders the local mock checkout panel instead of loading Stripe.js.
 
@@ -426,16 +429,16 @@ CI/deploy credentials and public build variables:
 - `PUBLIC_STRIPE_PUBLISHABLE_KEY`
 
 - `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are only for authenticating CI or a developer into Cloudflare for deployment.
-- `ASTRO_SITE_URL` and `ASTRO_BASE_PATH` are non-secret static build target values. GitHub Pages uses `https://blackbox-studio-athens.github.io` plus `/blackbox-records/`; Cloudflare Pages uses `https://blackbox-records-web.pages.dev` plus `/`.
+- `ASTRO_SITE_URL` and `ASTRO_BASE_PATH` are non-secret static build target values. Cloudflare Pages uses `https://blackbox-records-web.pages.dev` plus `/`; GitHub Pages rollback uses `https://blackbox-studio-athens.github.io` plus `/blackbox-records/`.
 - `PUBLIC_BACKEND_BASE_URL` and `PUBLIC_STRIPE_PUBLISHABLE_KEY` are browser-visible build variables for the static Astro frontend.
 - None of these values are the Worker's runtime business secrets.
 - Deployed runtime secrets terminate as Cloudflare Worker secrets/bindings, not as browser env vars and not as GitHub-only config.
 
 ## Sandbox backend CI/CD
 
-- The static Astro site has two temporary deployment workflows during Phase 7.1:
+- The static Astro site has two deployment workflows:
+  - `.github/workflows/cloudflare-pages.yml` uploads the prebuilt static artifact to canonical Cloudflare Pages.
   - `.github/workflows/pages.yml` remains the GitHub Pages rollback workflow.
-  - `.github/workflows/cloudflare-pages.yml` uploads the prebuilt static artifact to Cloudflare Pages.
 - The separate Worker sandbox deploy path is isolated in `.github/workflows/cloudflare-sandbox.yml`.
 - That workflow:
   - runs on pushes to `sandbox`
@@ -448,20 +451,20 @@ CI/deploy credentials and public build variables:
 - Cloudflare Access is not part of public sandbox browsing at this stage.
 - Phase `06.1.1` now locks a separate protected staff-only hostname and Google-backed Access contract for internal stock work, while keeping the public sandbox backend reachable and unauthenticated.
 
-## GitHub Pages CI/CD
+## GitHub Pages rollback CI/CD
 
-- Deployment is handled by `.github/workflows/pages.yml`.
+- Rollback deployment is handled by `.github/workflows/pages.yml`.
 - The workflow uses `withastro/action@v6.1.1`, Node 24, and pnpm 10.33.2, and only deploys if all of these succeed:
   - `pnpm test:unit`
   - `pnpm check`
   - `pnpm build`
 - Pushes go directly to `main` in this repo.
-- If CI fails on `main`, GitHub Pages does not publish the broken revision; fix it with a follow-up commit or revert the bad commit on `main`.
-- GitHub Pages remains the active static frontend deployment and rollback target until Cloudflare Pages acceptance is complete.
+- If CI fails on `main`, GitHub Pages does not publish the broken rollback revision; fix it with a follow-up commit or revert the bad commit on `main`.
+- GitHub Pages is no longer the canonical static host after Phase 7.1 acceptance, but it remains available as a rollback/legacy deployment path until a later cutover explicitly disables it.
 
-## Cloudflare Pages migration contract
+## Cloudflare Pages canonical deployment
 
-- Cloudflare Pages is the future canonical static frontend host for this milestone.
+- Cloudflare Pages is the canonical static frontend host for this milestone.
 - The deploy artifact remains the prebuilt Astro output at `apps/web/dist`.
 - Cloudflare Pages Direct Upload acceptance is handled by `.github/workflows/cloudflare-pages.yml`, not by local manual `wrangler pages deploy`.
 - The workflow runs `pnpm test:unit`, `pnpm check`, and `pnpm build` before uploading `apps/web/dist` to the `blackbox-records-web` Pages project.
@@ -546,9 +549,9 @@ Default local ports:
 - `CMS_DEV_PORT`
   - Astro port used by `pnpm cms:dev`. Defaults to `4322`.
 
-### GitHub Pages + DecapBridge setup
+### DecapBridge hosted setup
 
-Production `/admin/config.yml` is generated during the GitHub Pages build, so the DecapBridge values must be present in the Pages workflow environment.
+Hosted `/admin/config.yml` is generated during the static frontend build, so the DecapBridge values must be present in the deploy workflow environment that is intended to serve production admin access. The values below are already wired for the GitHub Pages rollback workflow; mirror them into the Cloudflare Pages build path in a focused CMS/deploy task before treating hosted Decap admin as validated on Cloudflare Pages.
 
 Add these in GitHub:
 

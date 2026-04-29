@@ -22,7 +22,7 @@
 
 - Node.js 24 LTS for local development per `README.md`.
 - Node.js 24 in CI via `.github/workflows/pages.yml`, `.github/workflows/cloudflare-pages.yml`, and `.github/workflows/cloudflare-sandbox.yml`.
-- Production runtime is static hosting on GitHub Pages from `astro.config.mjs`; there is no long-lived server runtime in the deployed app.
+- Production runtime is static hosting on Cloudflare Pages from the prebuilt Astro artifact; there is no long-lived server runtime in the deployed app.
 
 **Package Manager:**
 
@@ -97,7 +97,7 @@
 
 **Production:**
 
-- GitHub Pages project hosting with static output, site URL `https://blackbox-studio-athens.github.io`, and base path `/blackbox-records/` from `astro.config.mjs`.
+- Cloudflare Pages static hosting with site URL `https://blackbox-records-web.pages.dev` and root base path `/` from the Cloudflare Pages workflow. GitHub Pages remains rollback/legacy with `https://blackbox-studio-athens.github.io/blackbox-records/`.
 - `/store/` is now the canonical native static storefront. `/shop/` remains a compatibility redirect, and external Fourthwall/artist merch links remain fallback-only until a store item is mapped.
 
 ---

@@ -4,10 +4,10 @@
 
 This roadmap covers milestone `v1.1`, the Stripe Sandbox Integration milestone. The goal is to add native commerce to the existing Astro site using a Cloudflare-fronted dual-runtime monorepo model:
 
-- the Astro site remains a static frontend, moving from GitHub Pages to Cloudflare Pages during this milestone
+- the Astro site remains a static frontend, now hosted canonically on Cloudflare Pages with GitHub Pages kept as rollback/legacy
 - a separate Cloudflare Worker backend is added in-repo for dynamic commerce APIs, Stripe integration, webhooks, and D1 state
 
-The live GitHub Pages + Fourthwall production experience remains the safety baseline until the Cloudflare Pages migration is explicitly validated.
+Cloudflare Pages is now the canonical static frontend host after Phase 7.1 validation. GitHub Pages remains rollback/legacy, and real native-commerce production cutover remains a later milestone.
 
 The UI contracts for the store flow and BOX NOW locker flow were approved in the archived pre-sandbox milestone. Re-run `$gsd-ui-phase` only if implementation work materially changes those approved shopper flows.
 
@@ -33,7 +33,7 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - [x] **Phase 6.1: Worker Commerce State Foundation** - Introduce D1 + Prisma in the separate Worker backend behind repository and API boundaries before checkout work
 - [x] **Phase 6.1.1: Internal Stock Operations And Operator Access** - Add protected staff-only stock tooling and operator auth before checkout depends on live stock
 - [ ] **Phase 7: Worker Checkout And Stripe Sandbox Flow** - Implement Worker-owned checkout APIs and connect the frontend checkout route to Stripe sandbox (mock/contract implementation complete; real Stripe account validation deferred)
-- [ ] **Phase 7.1: Cloudflare Pages Static Frontend Migration** - Move the static Astro frontend from GitHub Pages to Cloudflare Pages before webhook/order/shipping verification depends on stable Cloudflare-hosted origins
+- [x] **Phase 7.1: Cloudflare Pages Static Frontend Migration** - Move the static Astro frontend from GitHub Pages to Cloudflare Pages before webhook/order/shipping verification depends on stable Cloudflare-hosted origins
 - [x] **Phase 8: Webhook Orders And Stock** - Make payment truth and stock mutation Worker-owned, webhook-authoritative, and idempotent (non-secret backend groundwork may proceed before real Stripe account access)
 - [ ] **Phase 9: Greece-Only BOX NOW Shipping** - Add the approved locker-selection gate and thin fulfillment data contract
 - [ ] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow and prepare the go-live handoff package
@@ -206,7 +206,7 @@ Plans:
 - [x] 07.1-02: Add Cloudflare Pages project config and direct-upload CI workflow
 - [x] 07.1-03: Move frontend browser env and checkout return-origin contracts to Cloudflare Pages
 - [x] 07.1-04: Validate Cloudflare Pages previews, production branch deploys, and Worker API routing
-- [ ] 07.1-05: Retire GitHub Pages as canonical hosting in docs after Cloudflare Pages acceptance
+- [x] 07.1-05: Retire GitHub Pages as canonical hosting in docs after Cloudflare Pages acceptance
 
 ### Phase 8: Webhook Orders And Stock
 
@@ -297,7 +297,7 @@ Because Stripe account access is unavailable, non-secret Phase 8 backend groundw
 | 6.1. Worker Commerce State Foundation                          | 4/4            | Completed | 2026-04-22 |
 | 6.1.1. Internal Stock Operations And Operator Access           | 4/4            | Completed | 2026-04-24 |
 | 7. Worker Checkout And Stripe Sandbox Flow                     | 15/16          | Deferred  | 2026-04-25 |
-| 7.1. Cloudflare Pages Static Frontend Migration                | 4/5            | Active    |            |
+| 7.1. Cloudflare Pages Static Frontend Migration                | 5/5            | Completed | 2026-04-29 |
 | 8. Webhook Orders And Stock                                    | 8/8            | Completed | 2026-04-26 |
 | 9. Greece-Only BOX NOW Shipping                                | 0/6            | Planned   |            |
 | 10. Sandbox Verification And Release Gate                      | 0/5            | Planned   |            |
