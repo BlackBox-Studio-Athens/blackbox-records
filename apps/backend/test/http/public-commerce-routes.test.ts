@@ -302,6 +302,7 @@ describe('public commerce routes', () => {
     mockReadCheckoutState.mockResolvedValueOnce({
       checkoutSessionId: 'cs_test_123',
       paymentStatus: 'paid',
+      shippingLocker,
       state: 'paid',
       status: 'complete',
     });
@@ -313,6 +314,7 @@ describe('public commerce routes', () => {
     await expect(response.json()).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
       paymentStatus: 'paid',
+      shippingLocker,
       state: 'paid',
       status: 'complete',
     });

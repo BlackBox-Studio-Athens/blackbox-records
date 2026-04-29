@@ -116,6 +116,31 @@ describe('createPublicCheckoutApi', () => {
     );
   });
 
+  it('reads checkout state with the Worker-owned shipping locker recap', async () => {
+    const checkoutState = {
+      checkoutSessionId: 'cs_test_123',
+      paymentStatus: 'paid',
+      shippingLocker,
+      state: 'paid',
+      status: 'complete',
+    };
+    const fetchStub = vi.fn(
+      async (_url: string, _init?: RequestInit) => new Response(JSON.stringify(checkoutState), { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchStub);
+
+    const api = createPublicCheckoutApi('');
+    const result = await api.readCheckoutState('cs_test_123');
+
+    expect(result).toEqual(checkoutState);
+    expect(fetchStub).toHaveBeenCalledWith(
+      '/api/checkout/sessions/cs_test_123/state',
+      expect.objectContaining({
+        method: 'GET',
+      }),
+    );
+  });
+
   it('surfaces visible API error objects with status and response body', async () => {
     const fetchStub = vi.fn(
       async (_url: string, _init?: RequestInit) =>

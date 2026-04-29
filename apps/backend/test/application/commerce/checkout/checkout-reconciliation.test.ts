@@ -28,6 +28,7 @@ describe('checkout reconciliation', () => {
       checkoutState: {
         checkoutSessionId: 'cs_test_123',
         paymentStatus: 'paid',
+        shippingLocker: null,
         state: 'paid',
         status: 'complete',
       },

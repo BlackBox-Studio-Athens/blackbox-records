@@ -11,9 +11,16 @@ import {
 } from './checkout-return-status-state';
 import type { CheckoutState, PublicCheckoutApi } from '../../lib/backend/public-checkout-api';
 
+const shippingLocker = {
+  country_code: 'GR' as const,
+  locker_id: '4',
+  locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
+};
+
 const checkoutState = {
   checkoutSessionId: 'cs_mock_variant_barren-point_standard',
   paymentStatus: 'unpaid',
+  shippingLocker,
   state: 'open',
   status: 'open',
 } satisfies CheckoutState;
@@ -65,6 +72,34 @@ describe('CheckoutReturnStatus', () => {
       badgeLabel,
       isFinal,
       title,
+    });
+  });
+
+  it('shows the Worker-owned selected BOX NOW locker in return recap state', () => {
+    expect(
+      createCheckoutReturnStatusView({
+        checkoutState,
+        kind: 'ready',
+      }).shippingLocker,
+    ).toEqual({
+      detail: 'Locker ID 4 · Greece-only BOX NOW',
+      kind: 'selected',
+      label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
+    });
+  });
+
+  it('shows a support-oriented needs-review recap when Worker state has no locker snapshot', () => {
+    expect(
+      createCheckoutReturnStatusView({
+        checkoutState: {
+          ...checkoutState,
+          shippingLocker: null,
+        },
+        kind: 'ready',
+      }).shippingLocker,
+    ).toMatchObject({
+      kind: 'needs_review',
+      label: 'Locker Needs Review',
     });
   });
 

@@ -38,14 +38,17 @@ const storeOfferSchema = z
   })
   .openapi('PublicStoreOffer');
 
-const checkoutShippingLockerSchema = z
-  .object({
+function createCheckoutShippingLockerSchema() {
+  return z.object({
     country_code: z.enum(['GR']),
     locker_id: z.string().trim().min(1),
     locker_name_or_label: z.string().trim().min(1),
-  })
-  .strict()
-  .openapi('CheckoutShippingLocker');
+  });
+}
+
+const checkoutShippingLockerSchema = createCheckoutShippingLockerSchema().strict().openapi('CheckoutShippingLocker');
+
+const checkoutStateShippingLockerSchema = createCheckoutShippingLockerSchema().openapi('CheckoutStateShippingLocker');
 
 const startCheckoutBodySchema = z
   .object({
@@ -66,6 +69,7 @@ const checkoutStateSchema = z
   .object({
     checkoutSessionId: z.string(),
     paymentStatus: z.enum(['paid', 'unpaid', 'no_payment_required']),
+    shippingLocker: z.union([checkoutStateShippingLockerSchema, z.null()]),
     state: z.enum(['open', 'paid', 'processing', 'expired', 'unknown']),
     status: z.enum(['open', 'complete', 'expired']).nullable(),
   })

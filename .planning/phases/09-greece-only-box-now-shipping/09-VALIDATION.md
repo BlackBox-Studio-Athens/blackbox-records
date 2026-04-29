@@ -62,10 +62,24 @@ Manual UI validation:
 - No BOX NOW API calls, credentials, raw payload persistence, coordinates, postal codes, voucher IDs, labels, tracking data, fulfillment automation, stock behavior, webhook behavior, real Stripe account value, or production cutover changed.
 - Validation: `pnpm --filter @blackbox/backend prisma:generate`; `pnpm generate:api`; `pnpm --filter @blackbox/backend d1:migrations:apply:local`; `PRAGMA table_info('CheckoutOrder')`; targeted backend tests; `pnpm --filter @blackbox/backend test`; `pnpm --filter @blackbox/backend check`.
 
+## 09-05 Surface Selected Locker State In Checkout Return And Order Recap
+
+- Result: passed.
+- Evidence: Public `ReadCheckoutState` now returns `shippingLocker` as the Worker-owned thin BOX NOW snapshot or `null`.
+- Evidence: `readCheckoutState` reads the persisted checkout order by checkout session id and does not infer locker data from browser state or query parameters.
+- Evidence: Checkout return UI now shows the selected BOX NOW locker label and locker id when Worker state has the snapshot.
+- Evidence: Checkout return UI shows support-oriented needs-review copy when payment state loads but the persisted locker snapshot is missing.
+- Evidence: Generated public OpenAPI/API-client artifacts were regenerated for the nullable `shippingLocker` response field.
+- Browser Use note: Browser Use was attempted first, but Windows security blocked the in-app browser client file `browser-client.mjs` as potentially unwanted software, so DevTools MCP was used as the documented fallback.
+- Fallback smoke evidence: `pnpm dev:stack:stripe-mock` created a local mock checkout with `checkoutSessionId = cs_test_Qc8qnErOUWF1djL`; the return page displayed `ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234` and `Locker ID 4 · Greece-only BOX NOW`.
+- Fallback smoke evidence: an older local checkout row with no locker snapshot displayed `Locker Needs Review` and support copy, and the browser console had no warnings or errors.
+- No BOX NOW API calls, tracking, fulfillment status, fulfillment automation, checkout-start payload change, D1 migration, webhook behavior, stock behavior, real Stripe account value, or production cutover changed.
+- Validation: `pnpm generate:api`; targeted backend/web tests; `git diff --check`; `pnpm test:unit`; `pnpm check`; `pnpm build`; DevTools MCP local mock smoke after Browser Use fallback.
+
 ## Explicit Non-Goals
 
 - No BOX NOW API integration.
 - No non-Greece shipping.
 - No automated delivery request, voucher, label, or tracking creation.
-- No shopper-facing locker recap, BOX NOW fulfillment, or deployment change.
+- No BOX NOW fulfillment, tracking page, or deployment change.
 - No real Stripe validation or production cutover.

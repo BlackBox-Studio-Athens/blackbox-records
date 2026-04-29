@@ -217,10 +217,17 @@ export type components = {
             checkoutSessionId: string;
             /** @enum {string} */
             paymentStatus: "paid" | "unpaid" | "no_payment_required";
+            shippingLocker: components["schemas"]["CheckoutStateShippingLocker"] | null;
             /** @enum {string} */
             state: "open" | "paid" | "processing" | "expired" | "unknown";
             /** @enum {string|null} */
             status: "open" | "complete" | "expired" | null;
+        };
+        CheckoutStateShippingLocker: {
+            /** @enum {string} */
+            country_code: "GR";
+            locker_id: string;
+            locker_name_or_label: string;
         };
         PublicCommerceError: {
             error: string;

@@ -131,6 +131,16 @@
               "no_payment_required"
             ]
           },
+          "shippingLocker": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CheckoutStateShippingLocker"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "state": {
             "type": "string",
             "enum": [
@@ -157,8 +167,33 @@
         "required": [
           "checkoutSessionId",
           "paymentStatus",
+          "shippingLocker",
           "state",
           "status"
+        ]
+      },
+      "CheckoutStateShippingLocker": {
+        "type": "object",
+        "properties": {
+          "country_code": {
+            "type": "string",
+            "enum": [
+              "GR"
+            ]
+          },
+          "locker_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "locker_name_or_label": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "country_code",
+          "locker_id",
+          "locker_name_or_label"
         ]
       }
     },

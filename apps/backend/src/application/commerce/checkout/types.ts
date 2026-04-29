@@ -1,4 +1,9 @@
-import type { StoreItemSlug, StripePriceId, VariantId } from '../../../domain/commerce/repositories';
+import type {
+  ShippingLockerSnapshot,
+  StoreItemSlug,
+  StripePriceId,
+  VariantId,
+} from '../../../domain/commerce/repositories';
 
 export type StoreOfferAvailability = {
   status: 'available' | 'sold_out';
@@ -44,6 +49,7 @@ export type StripeCheckoutSessionState = {
 export type CheckoutState = {
   checkoutSessionId: string;
   paymentStatus: StripeCheckoutPaymentStatus;
+  shippingLocker: ShippingLockerSnapshot | null;
   state: 'open' | 'paid' | 'processing' | 'expired' | 'unknown';
   status: StripeCheckoutSessionStatus;
 };

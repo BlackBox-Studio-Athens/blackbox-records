@@ -10,9 +10,15 @@ export type CheckoutReturnStatusView = {
   badgeLabel: string;
   detail: string;
   isFinal: boolean;
+  shippingLocker: CheckoutReturnShippingLockerView;
   title: string;
   tone: 'loading' | 'success' | 'attention' | 'error';
 };
+
+export type CheckoutReturnShippingLockerView =
+  | { kind: 'hidden' }
+  | { detail: string; kind: 'selected'; label: string }
+  | { detail: string; kind: 'needs_review'; label: string };
 
 export function readCheckoutSessionIdFromSearch(search: string): string | null {
   const sessionId = new URLSearchParams(search).get('session_id')?.trim();
@@ -41,11 +47,14 @@ export async function loadCheckoutReturnState(
 }
 
 export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): CheckoutReturnStatusView {
+  const shippingLocker = createCheckoutReturnShippingLockerView(state);
+
   if (state.kind === 'loading') {
     return {
       badgeLabel: 'Checking',
       detail: 'Checking checkout state with the payment server.',
       isFinal: false,
+      shippingLocker,
       title: 'Checking Checkout',
       tone: 'loading',
     };
@@ -56,6 +65,7 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
       badgeLabel: 'Needs Retry',
       detail: 'This return link is missing a checkout session. You can retry checkout from the item page.',
       isFinal: false,
+      shippingLocker,
       title: 'Checkout Link Incomplete',
       tone: 'attention',
     };
@@ -66,6 +76,7 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
       badgeLabel: 'Needs Retry',
       detail: state.message,
       isFinal: false,
+      shippingLocker,
       title: 'Checkout State Unavailable',
       tone: 'error',
     };
@@ -76,6 +87,7 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
       badgeLabel: 'Paid',
       detail: 'Payment is confirmed. Final order handling is completed by the secure backend flow.',
       isFinal: true,
+      shippingLocker,
       title: 'Payment Confirmed',
       tone: 'success',
     };
@@ -86,6 +98,7 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
       badgeLabel: 'Processing',
       detail: 'Payment is still processing. Check again shortly before retrying checkout.',
       isFinal: false,
+      shippingLocker,
       title: 'Payment Processing',
       tone: 'attention',
     };
@@ -96,6 +109,7 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
       badgeLabel: 'Expired',
       detail: 'The checkout session expired before payment finished. You can retry checkout safely.',
       isFinal: false,
+      shippingLocker,
       title: 'Checkout Expired',
       tone: 'attention',
     };
@@ -106,6 +120,7 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
       badgeLabel: 'Open',
       detail: 'Checkout is still open. Continue or retry checkout when you are ready.',
       isFinal: false,
+      shippingLocker,
       title: 'Checkout Still Open',
       tone: 'attention',
     };
@@ -115,7 +130,31 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
     badgeLabel: 'Unknown',
     detail: 'Checkout state is not clear yet. Retry checkout or contact the label if payment completed.',
     isFinal: false,
+    shippingLocker,
     title: 'Checkout State Unknown',
     tone: 'error',
+  };
+}
+
+function createCheckoutReturnShippingLockerView(state: CheckoutReturnLoadState): CheckoutReturnShippingLockerView {
+  if (state.kind !== 'ready') {
+    return { kind: 'hidden' };
+  }
+
+  const locker = state.checkoutState.shippingLocker;
+
+  if (!locker) {
+    return {
+      detail:
+        'We could not confirm the selected BOX NOW locker for this checkout. Contact the label before fulfillment.',
+      kind: 'needs_review',
+      label: 'Locker Needs Review',
+    };
+  }
+
+  return {
+    detail: `Locker ID ${locker.locker_id} · Greece-only BOX NOW`,
+    kind: 'selected',
+    label: locker.locker_name_or_label,
   };
 }

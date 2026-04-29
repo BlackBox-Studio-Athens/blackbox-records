@@ -41,7 +41,7 @@ export function createPublicCommerceServices(bindings: AppBindings) {
     listVariantOffersForStoreItem: async (storeItemSlug: string) =>
       listVariantOffersForStoreItem(storeItems, itemAvailability, stock, storeItemSlug),
     readCheckoutState: async (checkoutSessionId: string) =>
-      readCheckoutState(createStripeCheckoutGateway(bindings), checkoutSessionId),
+      readCheckoutState(createStripeCheckoutGateway(bindings), orders, checkoutSessionId),
     readStoreOffer: async (storeItemSlug: string) => readStoreOffer(storeItems, itemAvailability, stock, storeItemSlug),
     startCheckout: async (command: {
       returnUrl: string;

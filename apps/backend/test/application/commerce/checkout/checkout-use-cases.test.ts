@@ -362,13 +362,31 @@ describe('checkout use cases', () => {
   });
 
   it('maps Stripe Checkout Session status into app-owned return state without D1 writes', async () => {
-    await expect(readCheckoutState(checkoutGateway, 'cs_test_123')).resolves.toEqual({
+    await expect(readCheckoutState(checkoutGateway, orders, 'cs_test_123')).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
       paymentStatus: 'paid',
+      shippingLocker: null,
       state: 'paid',
       status: 'complete',
     });
 
     expect(checkoutGateway.readCheckoutSession).toHaveBeenCalledWith('cs_test_123');
+  });
+
+  it('surfaces the persisted shipping locker snapshot for checkout return recap', async () => {
+    await startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
+      returnUrl: 'https://example.com/return',
+      shippingLocker,
+      storeItemSlug: storeItem.storeItemSlug,
+      variantId: storeItem.variantId,
+    });
+
+    await expect(readCheckoutState(checkoutGateway, orders, 'cs_test_123')).resolves.toEqual({
+      checkoutSessionId: 'cs_test_123',
+      paymentStatus: 'paid',
+      shippingLocker,
+      state: 'paid',
+      status: 'complete',
+    });
   });
 });

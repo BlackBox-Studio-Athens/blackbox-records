@@ -76,6 +76,22 @@ export default function CheckoutReturnStatus({ api, checkoutPath, itemPath, stor
           <p className="text-sm leading-6 text-muted-foreground">{view.detail}</p>
         </div>
 
+        {view.shippingLocker.kind !== 'hidden' && (
+          <div
+            className={cn(
+              'grid gap-2 border p-4',
+              view.shippingLocker.kind === 'selected'
+                ? 'border-border/70 bg-background/55'
+                : 'border-amber-300/45 bg-amber-300/10',
+            )}
+            data-checkout-return-locker-recap
+          >
+            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">BOX NOW locker</p>
+            <p className="text-sm font-medium leading-6 text-foreground">{view.shippingLocker.label}</p>
+            <p className="text-xs leading-5 text-muted-foreground">{view.shippingLocker.detail}</p>
+          </div>
+        )}
+
         <div className="grid gap-3 sm:grid-cols-2">
           {!view.isFinal && (
             <a
