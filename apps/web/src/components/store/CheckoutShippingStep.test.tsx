@@ -73,9 +73,9 @@ describe('CheckoutShippingStep', () => {
   it('normalizes selected locker fields without adding extra data', () => {
     expect(
       normalizeCheckoutLockerSelection({
-        locker_id: ' boxnow_mock_athens_001 ',
+        locker_id: ' 4 ',
         country_code: ' gr ',
-        locker_name_or_label: ' BOX NOW Athens Mock Locker ',
+        locker_name_or_label: ' ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234 ',
       }),
     ).toEqual(LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION);
   });
@@ -91,7 +91,7 @@ describe('CheckoutShippingStep', () => {
     );
 
     expect(markup).toContain('Choose your BOX NOW Locker');
-    expect(markup).toContain('Use Local Greek Locker');
+    expect(markup).toContain('Use BOX NOW Test Locker');
     expect(markup).not.toContain('BOX_NOW_API');
     expect(markup).not.toContain('whsec_');
     expect(markup).not.toContain('sk_');
@@ -108,7 +108,7 @@ describe('CheckoutShippingStep', () => {
     );
 
     expect(markup).toContain('data-checkout-shipping-ready="true"');
-    expect(markup).toContain('BOX NOW Athens Mock Locker');
+    expect(markup).toContain('ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234');
     expect(markup).toContain('Greece');
     expect(markup).toContain('Change Locker');
   });

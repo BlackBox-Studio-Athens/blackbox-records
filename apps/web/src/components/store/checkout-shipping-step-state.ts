@@ -15,9 +15,9 @@ export type CheckoutShippingGateView = {
 };
 
 export const LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION: CheckoutLockerSelection = {
-  locker_id: 'boxnow_mock_athens_001',
+  locker_id: '4',
   country_code: 'GR',
-  locker_name_or_label: 'BOX NOW Athens Mock Locker',
+  locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
 };
 
 export const CHECKOUT_SHIPPING_COPY = {
@@ -26,7 +26,7 @@ export const CHECKOUT_SHIPPING_COPY = {
   blockedTitle: 'Shipping limited to Greece',
   changeLocker: 'Change Locker',
   continueSupport: 'Payment unlocks after the Greek locker is selected.',
-  mockSelect: 'Use Local Greek Locker',
+  mockSelect: 'Use BOX NOW Test Locker',
   readyBadge: 'Locker selected',
   readyDetail: 'You can change this before payment.',
   stepSupport: 'Available for Greece orders only',

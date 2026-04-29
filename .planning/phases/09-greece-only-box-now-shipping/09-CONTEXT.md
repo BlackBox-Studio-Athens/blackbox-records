@@ -22,6 +22,7 @@ This phase does not expand shipping beyond Greece, does not automate BOX NOW ful
 - **D-05:** BOX NOW credentials belong only in Worker runtime secrets or out-of-band operator tooling, never Astro `PUBLIC_*` env.
 - **D-06:** Fulfillment remains manual through the BOX NOW partner portal for v1.
 - **D-07:** Browser-selected locker data is checkout input until the Worker validates and persists it; the browser is not shipping, payment, or order authority.
+- **D-08:** Local/mock BOX NOW testing uses the BOX NOW FAQ test locker: `locker_id = 4`, `country_code = GR`, and `locker_name_or_label = ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234`.
 
 </decisions>
 

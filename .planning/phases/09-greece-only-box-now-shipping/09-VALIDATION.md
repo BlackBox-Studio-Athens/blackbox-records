@@ -22,7 +22,7 @@
 
 - Result: passed.
 - Evidence: Checkout now renders a shipping-first BOX NOW gate before the payment action.
-- Evidence: Local mock checkout mode can select a deterministic Greek locker with `locker_id`, `country_code = GR`, and `locker_name_or_label` held only in browser component state.
+- Evidence: Local mock checkout mode selects the BOX NOW FAQ test locker with `locker_id = 4`, `country_code = GR`, and `locker_name_or_label = ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234` held only in browser component state.
 - Evidence: Non-mock checkout mode fails closed with the approved “Locker selection unavailable” copy until the real BOX NOW picker integration exists.
 - Evidence: `StartCheckout` request payload remains unchanged and still sends only `storeItemSlug` and `variantId`.
 - Evidence: Tests cover missing locker, non-Greece locker rejection, valid Greek locker enablement, non-mock fail-closed behavior, and no BOX NOW credentials in browser-rendered markup.

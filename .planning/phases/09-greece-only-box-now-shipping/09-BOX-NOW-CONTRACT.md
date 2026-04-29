@@ -10,6 +10,7 @@ Non-Greece shipping, carrier choice, automated label creation, voucher managemen
 
 - Payment must not start until a valid BOX NOW locker has been selected for Greece.
 - The allowed country code is `GR`.
+- Local/mock testing must use the BOX NOW FAQ test locker: `locker_id = 4`, `country_code = GR`, and `locker_name_or_label = ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234`.
 - If locker selection is unavailable, invalid, or incomplete, the checkout flow fails closed and keeps payment unavailable.
 - The browser may hold temporary selected-locker UI state, but the Worker owns checkout preflight, order persistence, and all authoritative decisions.
 

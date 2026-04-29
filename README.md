@@ -366,6 +366,7 @@ pnpm generate:api
 
 - Phase 9 shipping is Greece only via BOX NOW lockers.
 - Payment must remain unavailable until a valid Greek locker is selected.
+- Local/mock BOX NOW testing must use the BOX NOW FAQ test locker: `locker_id = 4`, `country_code = GR`, and `locker_name_or_label = ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234`.
 - Future paid-order shipping persistence is limited to the approved thin locker snapshot:
   - `locker_id`
   - `country_code` with v1 value `GR`
