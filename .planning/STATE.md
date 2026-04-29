@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 9 plan 1; lock BOX NOW shipping data and secret contracts
-last_updated: '2026-04-29T14:45:00+03:00'
-last_activity: 2026-04-29 -- Retired GitHub Pages as canonical static hosting in docs after Cloudflare Pages acceptance
+stopped_at: Phase 9 plan 2; add Greece-only locker selection UI before checkout
+last_updated: '2026-04-29T16:25:00+03:00'
+last_activity: 2026-04-29 -- Locked BOX NOW shipping data and secret contracts for Greece-only checkout
 progress:
   total_phases: 10
   completed_phases: 7
   total_plans: 65
-  completed_plans: 53
-  percent: 82
+  completed_plans: 54
+  percent: 83
 ---
 
 # Project State
@@ -28,22 +28,22 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 Current Phase: 9
 Current Phase Name: Greece-Only BOX NOW Shipping
 Total Phases: 10
-Current Plan: 1
+Current Plan: 2
 Total Plans in Phase: 6
 Status: Active
-Progress: 82%
+Progress: 83%
 Last Activity: 2026-04-29
-Last Activity Description: Cloudflare Pages is now documented as the canonical static frontend host after Phase 7.1 acceptance, with GitHub Pages retained as rollback/legacy only
-Paused At: Phase 9 plan 1; lock BOX NOW shipping data and secret contracts
+Last Activity Description: BOX NOW shipping data and secret contracts are locked for Greece-only checkout, with minimal locker snapshot fields, Worker-only credential boundaries, and manual partner-portal fulfillment documented
+Paused At: Phase 9 plan 2; add Greece-only locker selection UI before checkout
 
-Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed while real Stripe-account validation remains explicitly deferred. Phase 8 now has the schema-only `CheckoutOrder` lifecycle table, internal order repository/application seams, a dependency-free typed transition guard, a fixture-tested Stripe webhook raw-body route contract, an optional official `stripe-mock` API local checkout simulation harness, shared Stripe Checkout Session reconciliation, pending order creation from Worker-owned checkout start, idempotent paid webhook handling that decrements stock only on the first paid transition, non-paid/needs-review handling that never mutates stock, and Access-protected order readback for low-volume reconciliation. Phase 7.1 completed the Cloudflare Pages static artifact contract, GitHub Pages rollback posture, Direct Upload CI workflow, browser-safe Pages build env contract, exact checkout return-origin allowlist guidance, Cloudflare-root Astro base-path correction, Browser Use hosted validation, and canonical hosting docs. Current focus is Phase 9 plan 1: lock BOX NOW shipping data and secret contracts.
+Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed while real Stripe-account validation remains explicitly deferred. Phase 8 now has the schema-only `CheckoutOrder` lifecycle table, internal order repository/application seams, a dependency-free typed transition guard, a fixture-tested Stripe webhook raw-body route contract, an optional official `stripe-mock` API local checkout simulation harness, shared Stripe Checkout Session reconciliation, pending order creation from Worker-owned checkout start, idempotent paid webhook handling that decrements stock only on the first paid transition, non-paid/needs-review handling that never mutates stock, and Access-protected order readback for low-volume reconciliation. Phase 7.1 completed the Cloudflare Pages static artifact contract, GitHub Pages rollback posture, Direct Upload CI workflow, browser-safe Pages build env contract, exact checkout return-origin allowlist guidance, Cloudflare-root Astro base-path correction, Browser Use hosted validation, and canonical hosting docs. Phase 9 now has the BOX NOW Greece-only shipping data and secret contract locked. Current focus is Phase 9 plan 2: add Greece-only locker selection UI before checkout.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 53
-- Total plans remaining: 12
+- Total plans completed: 54
+- Total plans remaining: 11
 - Average duration: -
 - Total execution time: -
 
@@ -59,11 +59,12 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mo
 | 7     | 15/16 | Deferred  | 2026-04-25 |
 | 7.1   | 5/5   | Completed | 2026-04-29 |
 | 8     | 8/8   | Completed | 2026-04-26 |
+| 9     | 1/6   | Active    | 2026-04-29 |
 
 **Recent Trend:**
 
-- Last 5 plans: 07.1-01, 07.1-02, 07.1-03, 07.1-04, 07.1-05
-- Trend: The Cloudflare Pages deployment contract, Direct Upload CI workflow, browser env/origin contract, GitHub Actions hosted Pages validation, and canonical-hosting doc retirement are complete. Real Stripe validation remains deferred until account access exists.
+- Last 5 plans: 07.1-02, 07.1-03, 07.1-04, 07.1-05, 09-01
+- Trend: The Cloudflare Pages migration is complete, and Phase 9 has started with BOX NOW shipping data and secret boundaries locked before UI/backend enforcement. Real Stripe validation remains deferred until account access exists.
 
 ## Accumulated Context
 
@@ -108,6 +109,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mo
 - Phase 7.1 now has the deployment contract locked, a Cloudflare Pages Direct Upload workflow, browser-safe Pages build env wiring, exact checkout return-origin guidance, hosted Browser Use validation, and canonical docs: Cloudflare Pages deploys only the prebuilt `apps/web/dist` static artifact after repo gates, the Worker remains separate for dynamic commerce and secrets, and GitHub Pages remains rollback/legacy only.
 - Phase 7.1 plan 4 hosted validation passed on 2026-04-29 after switching acceptance evidence to GitHub Actions Direct Upload, correcting the Cloudflare-root Astro base path, validating production and `pages/no-stripe-validation` preview routes with Browser Use, and confirming Worker CORS/routing from both exact Pages origins. Hosted real Stripe checkout mount and payment evidence remain deferred to the Stripe access gate.
 - Phase 7.1 plan 5 retired GitHub Pages as canonical hosting in docs after Cloudflare Pages acceptance. GitHub Pages remains a rollback/legacy workflow and Astro default path, not the canonical static frontend host.
+- Phase 9 plan 1 locked the BOX NOW shipping contract: v1 is Greece-only, payment stays blocked until a valid Greek locker is selected, future paid-order shipping persistence is limited to `locker_id`, `country_code`, and `locker_name_or_label`, BOX NOW credentials remain Worker runtime secrets or out-of-band operator credentials, and fulfillment stays manual through the BOX NOW partner portal.
 
 ## Decisions Made
 
@@ -146,7 +148,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mo
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
 - Complete the deferred Stripe access validation gate before sandbox/release approval.
-- In Phase 9 plan 1, lock BOX NOW shipping data and secret contracts before UI or backend enforcement.
+- In Phase 9 plan 2, add Greece-only locker selection UI before checkout without introducing BOX NOW credentials or backend persistence yet.
 
 ## Blockers
 
@@ -160,6 +162,6 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mo
 
 ## Session
 
-**Last Date:** 2026-04-29T14:45:00+03:00
-**Stopped At:** Phase 9 plan 1; lock BOX NOW shipping data and secret contracts
+**Last Date:** 2026-04-29T16:25:00+03:00
+**Stopped At:** Phase 9 plan 2; add Greece-only locker selection UI before checkout
 **Resume File:** .planning/ROADMAP.md

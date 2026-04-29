@@ -56,6 +56,8 @@
 - [ ] **SHIP-02**: Paid orders store only `locker_id`, `country_code`, and `locker_name_or_label` as BOX NOW metadata.
 - [ ] **SHIP-03**: Operator can fulfill sandbox-paid Greek orders manually through the BOX NOW partner portal.
 
+Phase `09-01` locks the BOX NOW data and secret contract only. `SHIP-01`, `SHIP-02`, and `SHIP-03` remain implementation-pending until the locker UI, checkout preflight, order persistence, and fulfillment validation tasks land.
+
 ### Security & Operations
 
 - [x] **SECU-01**: Stripe secrets, webhook secrets, and D1 access remain server-only in the Worker backend and local development.
@@ -146,4 +148,4 @@
 ---
 
 _Requirements defined: 2026-04-19_
-_Last updated: 2026-04-29 after completing the Cloudflare Pages canonical static hosting migration docs_
+_Last updated: 2026-04-29 after locking the BOX NOW shipping data and secret contract_

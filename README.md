@@ -344,6 +344,7 @@ pnpm generate:api
 - The current backend-local runtime secret contract is:
   - `STRIPE_SECRET_KEY`
   - `STRIPE_WEBHOOK_SECRET`
+- Future BOX NOW credentials remain Worker runtime secrets or out-of-band operator credentials. They must not be exposed through Astro `PUBLIC_*` env, Cloudflare Pages public build variables, generated frontend clients, static content, or committed seed files.
 - The optional backend-local Stripe mock/test override is:
   - `STRIPE_API_BASE_URL`
 - `STRIPE_API_BASE_URL` defaults to real Stripe when unset. The committed `mock` Wrangler env binds it to `http://127.0.0.1:12110` for the local official stripe-mock proxy.
@@ -360,6 +361,18 @@ pnpm generate:api
 - Future privileged backend-only values such as BOX NOW credentials also remain runtime-only until the phases that introduce them.
 - `PUBLIC_BACKEND_BASE_URL` remains the only browser-facing backend env.
 - `PUBLIC_STRIPE_PUBLISHABLE_KEY` is safe browser configuration for Stripe.js and must not be confused with `STRIPE_SECRET_KEY`.
+
+## BOX NOW shipping contract
+
+- Phase 9 shipping is Greece only via BOX NOW lockers.
+- Payment must remain unavailable until a valid Greek locker is selected.
+- Future paid-order shipping persistence is limited to the approved thin locker snapshot:
+  - `locker_id`
+  - `country_code` with v1 value `GR`
+  - `locker_name_or_label`
+- Do not persist raw BOX NOW widget/API payloads, full locker addresses, coordinates, voucher IDs, label URLs, tracking automation state, or partner-portal credentials in v1.
+- Fulfillment remains manual through the BOX NOW partner portal until a later milestone explicitly adds automation.
+- Astro may render the shopper-facing locker step, but the Worker owns checkout preflight, validation, order persistence, secrets, and any future BOX NOW server integration.
 
 ## D1 migration workflow
 
