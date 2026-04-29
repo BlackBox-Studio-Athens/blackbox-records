@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
 stopped_at: Phase 7.1 plan 4; validate Cloudflare Pages previews, production branch deploys, and Worker API routing
-last_updated: '2026-04-29T14:05:00+03:00'
-last_activity: 2026-04-29 -- Corrected Cloudflare Pages validation to use GitHub Actions and root-base Astro builds
+last_updated: '2026-04-29T14:55:00+03:00'
+last_activity: 2026-04-29 -- Validated GitHub Actions Pages deploys by HTTP diagnostics; Browser Use hosted smoke remains blocked
 progress:
   total_phases: 10
   completed_phases: 6
@@ -33,7 +33,7 @@ Total Plans in Phase: 5
 Status: Active
 Progress: 78%
 Last Activity: 2026-04-29
-Last Activity Description: Identified the direct-deploy Pages render failure as a GitHub Pages base-path artifact mismatch, then corrected the validation plan to require GitHub Actions root-base Cloudflare Pages builds
+Last Activity Description: Corrected the Cloudflare Pages root-base build, deployed production and preview through GitHub Actions, verified root asset URLs and Worker CORS by HTTP diagnostics, and recorded Browser Use runtime failure as the remaining hosted-smoke blocker
 Paused At: Phase 7.1 plan 4; validate Cloudflare Pages previews, production branch deploys, and Worker API routing
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, and 8 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed while real Stripe-account validation remains explicitly deferred. Phase 8 now has the schema-only `CheckoutOrder` lifecycle table, internal order repository/application seams, a dependency-free typed transition guard, a fixture-tested Stripe webhook raw-body route contract, an optional official `stripe-mock` API local checkout simulation harness, shared Stripe Checkout Session reconciliation, pending order creation from Worker-owned checkout start, idempotent paid webhook handling that decrements stock only on the first paid transition, non-paid/needs-review handling that never mutates stock, and Access-protected order readback for low-volume reconciliation. Phase 7.1 now has the Cloudflare Pages static artifact contract, GitHub Pages rollback posture, Direct Upload CI workflow, browser-safe Pages build env contract, exact checkout return-origin allowlist guidance, and the Cloudflare-root Astro base-path correction. Current focus is Phase 7.1 plan 4: validate Cloudflare Pages previews, production branch deploys, and Worker API routing through GitHub Actions.
@@ -154,11 +154,11 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, and 8 are complete. Phase 7 mock, c
 - The Astro frontend is no longer being treated as “moving to Workers” in this milestone; do not reintroduce that assumption in implementation.
 - Phase 7 must still avoid production cutover and should remain sandbox-first.
 - Real Stripe-account validation is blocked until Stripe account access, test keys, test Price IDs, webhook secret, and sandbox endpoint configuration exist. Do not commit any account-specific Stripe values.
-- Cloudflare Pages hosted validation still needs GitHub Actions production and preview deploy evidence after the Cloudflare-root Astro base-path correction. Real Stripe checkout mount evidence remains blocked on Stripe account access for a real test `PUBLIC_STRIPE_PUBLISHABLE_KEY`, backend Stripe secrets, Price mappings, and webhook secret.
+- Cloudflare Pages production and `pages/no-stripe-validation` preview deploys now pass through GitHub Actions and serve root-based assets by HTTP diagnostics. Phase 7.1 plan 4 still needs Browser Use hosted smoke evidence because the in-app Browser Use runtime failed to start its app-server. Real Stripe checkout mount evidence remains blocked on Stripe account access for a real test `PUBLIC_STRIPE_PUBLISHABLE_KEY`, backend Stripe secrets, Price mappings, and webhook secret.
 - Cloudflare Access + Google setup for the protected operator hostname remains deferred until the operator-hostname setup phase; do not treat it as a blocker for public Pages/Worker sandbox browsing.
 
 ## Session
 
-**Last Date:** 2026-04-29T14:05:00+03:00
+**Last Date:** 2026-04-29T14:55:00+03:00
 **Stopped At:** Phase 7.1 plan 4; validate Cloudflare Pages previews, production branch deploys, and Worker API routing
 **Resume File:** .planning/ROADMAP.md
