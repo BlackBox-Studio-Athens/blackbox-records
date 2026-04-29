@@ -30,6 +30,9 @@ export type CheckoutOrderMinAggregateOutputType = {
   variantId: string | null
   checkoutSessionId: string | null
   stripePaymentIntentId: string | null
+  shippingLockerId: string | null
+  shippingLockerCountryCode: string | null
+  shippingLockerNameOrLabel: string | null
   status: $Enums.OrderStatus | null
   statusUpdatedAt: Date | null
   paidAt: Date | null
@@ -45,6 +48,9 @@ export type CheckoutOrderMaxAggregateOutputType = {
   variantId: string | null
   checkoutSessionId: string | null
   stripePaymentIntentId: string | null
+  shippingLockerId: string | null
+  shippingLockerCountryCode: string | null
+  shippingLockerNameOrLabel: string | null
   status: $Enums.OrderStatus | null
   statusUpdatedAt: Date | null
   paidAt: Date | null
@@ -60,6 +66,9 @@ export type CheckoutOrderCountAggregateOutputType = {
   variantId: number
   checkoutSessionId: number
   stripePaymentIntentId: number
+  shippingLockerId: number
+  shippingLockerCountryCode: number
+  shippingLockerNameOrLabel: number
   status: number
   statusUpdatedAt: number
   paidAt: number
@@ -77,6 +86,9 @@ export type CheckoutOrderMinAggregateInputType = {
   variantId?: true
   checkoutSessionId?: true
   stripePaymentIntentId?: true
+  shippingLockerId?: true
+  shippingLockerCountryCode?: true
+  shippingLockerNameOrLabel?: true
   status?: true
   statusUpdatedAt?: true
   paidAt?: true
@@ -92,6 +104,9 @@ export type CheckoutOrderMaxAggregateInputType = {
   variantId?: true
   checkoutSessionId?: true
   stripePaymentIntentId?: true
+  shippingLockerId?: true
+  shippingLockerCountryCode?: true
+  shippingLockerNameOrLabel?: true
   status?: true
   statusUpdatedAt?: true
   paidAt?: true
@@ -107,6 +122,9 @@ export type CheckoutOrderCountAggregateInputType = {
   variantId?: true
   checkoutSessionId?: true
   stripePaymentIntentId?: true
+  shippingLockerId?: true
+  shippingLockerCountryCode?: true
+  shippingLockerNameOrLabel?: true
   status?: true
   statusUpdatedAt?: true
   paidAt?: true
@@ -195,6 +213,9 @@ export type CheckoutOrderGroupByOutputType = {
   variantId: string
   checkoutSessionId: string
   stripePaymentIntentId: string | null
+  shippingLockerId: string | null
+  shippingLockerCountryCode: string | null
+  shippingLockerNameOrLabel: string | null
   status: $Enums.OrderStatus
   statusUpdatedAt: Date
   paidAt: Date | null
@@ -231,6 +252,9 @@ export type CheckoutOrderWhereInput = {
   variantId?: Prisma.StringFilter<"CheckoutOrder"> | string
   checkoutSessionId?: Prisma.StringFilter<"CheckoutOrder"> | string
   stripePaymentIntentId?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  shippingLockerId?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  shippingLockerCountryCode?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  shippingLockerNameOrLabel?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   status?: Prisma.EnumOrderStatusFilter<"CheckoutOrder"> | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFilter<"CheckoutOrder"> | Date | string
   paidAt?: Prisma.DateTimeNullableFilter<"CheckoutOrder"> | Date | string | null
@@ -246,6 +270,9 @@ export type CheckoutOrderOrderByWithRelationInput = {
   variantId?: Prisma.SortOrder
   checkoutSessionId?: Prisma.SortOrder
   stripePaymentIntentId?: Prisma.SortOrderInput | Prisma.SortOrder
+  shippingLockerId?: Prisma.SortOrderInput | Prisma.SortOrder
+  shippingLockerCountryCode?: Prisma.SortOrderInput | Prisma.SortOrder
+  shippingLockerNameOrLabel?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   statusUpdatedAt?: Prisma.SortOrder
   paidAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -264,6 +291,9 @@ export type CheckoutOrderWhereUniqueInput = Prisma.AtLeast<{
   storeItemSlug?: Prisma.StringFilter<"CheckoutOrder"> | string
   variantId?: Prisma.StringFilter<"CheckoutOrder"> | string
   stripePaymentIntentId?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  shippingLockerId?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  shippingLockerCountryCode?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  shippingLockerNameOrLabel?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   status?: Prisma.EnumOrderStatusFilter<"CheckoutOrder"> | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFilter<"CheckoutOrder"> | Date | string
   paidAt?: Prisma.DateTimeNullableFilter<"CheckoutOrder"> | Date | string | null
@@ -279,6 +309,9 @@ export type CheckoutOrderOrderByWithAggregationInput = {
   variantId?: Prisma.SortOrder
   checkoutSessionId?: Prisma.SortOrder
   stripePaymentIntentId?: Prisma.SortOrderInput | Prisma.SortOrder
+  shippingLockerId?: Prisma.SortOrderInput | Prisma.SortOrder
+  shippingLockerCountryCode?: Prisma.SortOrderInput | Prisma.SortOrder
+  shippingLockerNameOrLabel?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   statusUpdatedAt?: Prisma.SortOrder
   paidAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -300,6 +333,9 @@ export type CheckoutOrderScalarWhereWithAggregatesInput = {
   variantId?: Prisma.StringWithAggregatesFilter<"CheckoutOrder"> | string
   checkoutSessionId?: Prisma.StringWithAggregatesFilter<"CheckoutOrder"> | string
   stripePaymentIntentId?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
+  shippingLockerId?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
+  shippingLockerCountryCode?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
+  shippingLockerNameOrLabel?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
   status?: Prisma.EnumOrderStatusWithAggregatesFilter<"CheckoutOrder"> | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeWithAggregatesFilter<"CheckoutOrder"> | Date | string
   paidAt?: Prisma.DateTimeNullableWithAggregatesFilter<"CheckoutOrder"> | Date | string | null
@@ -315,6 +351,9 @@ export type CheckoutOrderCreateInput = {
   variantId: string
   checkoutSessionId: string
   stripePaymentIntentId?: string | null
+  shippingLockerId?: string | null
+  shippingLockerCountryCode?: string | null
+  shippingLockerNameOrLabel?: string | null
   status: $Enums.OrderStatus
   statusUpdatedAt: Date | string
   paidAt?: Date | string | null
@@ -330,6 +369,9 @@ export type CheckoutOrderUncheckedCreateInput = {
   variantId: string
   checkoutSessionId: string
   stripePaymentIntentId?: string | null
+  shippingLockerId?: string | null
+  shippingLockerCountryCode?: string | null
+  shippingLockerNameOrLabel?: string | null
   status: $Enums.OrderStatus
   statusUpdatedAt: Date | string
   paidAt?: Date | string | null
@@ -345,6 +387,9 @@ export type CheckoutOrderUpdateInput = {
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   checkoutSessionId?: Prisma.StringFieldUpdateOperationsInput | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerCountryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerNameOrLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -360,6 +405,9 @@ export type CheckoutOrderUncheckedUpdateInput = {
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   checkoutSessionId?: Prisma.StringFieldUpdateOperationsInput | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerCountryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerNameOrLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -375,6 +423,9 @@ export type CheckoutOrderCreateManyInput = {
   variantId: string
   checkoutSessionId: string
   stripePaymentIntentId?: string | null
+  shippingLockerId?: string | null
+  shippingLockerCountryCode?: string | null
+  shippingLockerNameOrLabel?: string | null
   status: $Enums.OrderStatus
   statusUpdatedAt: Date | string
   paidAt?: Date | string | null
@@ -390,6 +441,9 @@ export type CheckoutOrderUpdateManyMutationInput = {
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   checkoutSessionId?: Prisma.StringFieldUpdateOperationsInput | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerCountryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerNameOrLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -405,6 +459,9 @@ export type CheckoutOrderUncheckedUpdateManyInput = {
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   checkoutSessionId?: Prisma.StringFieldUpdateOperationsInput | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerCountryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerNameOrLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -420,6 +477,9 @@ export type CheckoutOrderCountOrderByAggregateInput = {
   variantId?: Prisma.SortOrder
   checkoutSessionId?: Prisma.SortOrder
   stripePaymentIntentId?: Prisma.SortOrder
+  shippingLockerId?: Prisma.SortOrder
+  shippingLockerCountryCode?: Prisma.SortOrder
+  shippingLockerNameOrLabel?: Prisma.SortOrder
   status?: Prisma.SortOrder
   statusUpdatedAt?: Prisma.SortOrder
   paidAt?: Prisma.SortOrder
@@ -435,6 +495,9 @@ export type CheckoutOrderMaxOrderByAggregateInput = {
   variantId?: Prisma.SortOrder
   checkoutSessionId?: Prisma.SortOrder
   stripePaymentIntentId?: Prisma.SortOrder
+  shippingLockerId?: Prisma.SortOrder
+  shippingLockerCountryCode?: Prisma.SortOrder
+  shippingLockerNameOrLabel?: Prisma.SortOrder
   status?: Prisma.SortOrder
   statusUpdatedAt?: Prisma.SortOrder
   paidAt?: Prisma.SortOrder
@@ -450,6 +513,9 @@ export type CheckoutOrderMinOrderByAggregateInput = {
   variantId?: Prisma.SortOrder
   checkoutSessionId?: Prisma.SortOrder
   stripePaymentIntentId?: Prisma.SortOrder
+  shippingLockerId?: Prisma.SortOrder
+  shippingLockerCountryCode?: Prisma.SortOrder
+  shippingLockerNameOrLabel?: Prisma.SortOrder
   status?: Prisma.SortOrder
   statusUpdatedAt?: Prisma.SortOrder
   paidAt?: Prisma.SortOrder
@@ -475,6 +541,9 @@ export type CheckoutOrderSelect<ExtArgs extends runtime.Types.Extensions.Interna
   variantId?: boolean
   checkoutSessionId?: boolean
   stripePaymentIntentId?: boolean
+  shippingLockerId?: boolean
+  shippingLockerCountryCode?: boolean
+  shippingLockerNameOrLabel?: boolean
   status?: boolean
   statusUpdatedAt?: boolean
   paidAt?: boolean
@@ -490,6 +559,9 @@ export type CheckoutOrderSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   variantId?: boolean
   checkoutSessionId?: boolean
   stripePaymentIntentId?: boolean
+  shippingLockerId?: boolean
+  shippingLockerCountryCode?: boolean
+  shippingLockerNameOrLabel?: boolean
   status?: boolean
   statusUpdatedAt?: boolean
   paidAt?: boolean
@@ -505,6 +577,9 @@ export type CheckoutOrderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   variantId?: boolean
   checkoutSessionId?: boolean
   stripePaymentIntentId?: boolean
+  shippingLockerId?: boolean
+  shippingLockerCountryCode?: boolean
+  shippingLockerNameOrLabel?: boolean
   status?: boolean
   statusUpdatedAt?: boolean
   paidAt?: boolean
@@ -520,6 +595,9 @@ export type CheckoutOrderSelectScalar = {
   variantId?: boolean
   checkoutSessionId?: boolean
   stripePaymentIntentId?: boolean
+  shippingLockerId?: boolean
+  shippingLockerCountryCode?: boolean
+  shippingLockerNameOrLabel?: boolean
   status?: boolean
   statusUpdatedAt?: boolean
   paidAt?: boolean
@@ -529,7 +607,7 @@ export type CheckoutOrderSelectScalar = {
   updatedAt?: boolean
 }
 
-export type CheckoutOrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "storeItemSlug" | "variantId" | "checkoutSessionId" | "stripePaymentIntentId" | "status" | "statusUpdatedAt" | "paidAt" | "notPaidAt" | "needsReviewAt" | "createdAt" | "updatedAt", ExtArgs["result"]["checkoutOrder"]>
+export type CheckoutOrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "storeItemSlug" | "variantId" | "checkoutSessionId" | "stripePaymentIntentId" | "shippingLockerId" | "shippingLockerCountryCode" | "shippingLockerNameOrLabel" | "status" | "statusUpdatedAt" | "paidAt" | "notPaidAt" | "needsReviewAt" | "createdAt" | "updatedAt", ExtArgs["result"]["checkoutOrder"]>
 
 export type $CheckoutOrderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "CheckoutOrder"
@@ -540,6 +618,9 @@ export type $CheckoutOrderPayload<ExtArgs extends runtime.Types.Extensions.Inter
     variantId: string
     checkoutSessionId: string
     stripePaymentIntentId: string | null
+    shippingLockerId: string | null
+    shippingLockerCountryCode: string | null
+    shippingLockerNameOrLabel: string | null
     status: $Enums.OrderStatus
     statusUpdatedAt: Date
     paidAt: Date | null
@@ -975,6 +1056,9 @@ export interface CheckoutOrderFieldRefs {
   readonly variantId: Prisma.FieldRef<"CheckoutOrder", 'String'>
   readonly checkoutSessionId: Prisma.FieldRef<"CheckoutOrder", 'String'>
   readonly stripePaymentIntentId: Prisma.FieldRef<"CheckoutOrder", 'String'>
+  readonly shippingLockerId: Prisma.FieldRef<"CheckoutOrder", 'String'>
+  readonly shippingLockerCountryCode: Prisma.FieldRef<"CheckoutOrder", 'String'>
+  readonly shippingLockerNameOrLabel: Prisma.FieldRef<"CheckoutOrder", 'String'>
   readonly status: Prisma.FieldRef<"CheckoutOrder", 'OrderStatus'>
   readonly statusUpdatedAt: Prisma.FieldRef<"CheckoutOrder", 'DateTime'>
   readonly paidAt: Prisma.FieldRef<"CheckoutOrder", 'DateTime'>

@@ -2,12 +2,19 @@ import type { StoreItemSlug, VariantId } from '../ids';
 
 export type OrderStatus = 'pending_payment' | 'paid' | 'not_paid' | 'needs_review';
 
+export type ShippingLockerSnapshot = {
+  locker_id: string;
+  country_code: 'GR';
+  locker_name_or_label: string;
+};
+
 export type CheckoutOrderRecord = {
   id: string;
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
   checkoutSessionId: string;
   stripePaymentIntentId: string | null;
+  shippingLocker: ShippingLockerSnapshot | null;
   status: OrderStatus;
   statusUpdatedAt: Date;
   paidAt: Date | null;
@@ -21,6 +28,7 @@ export type CreatePendingCheckoutOrderInput = {
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
   checkoutSessionId: string;
+  shippingLocker: ShippingLockerSnapshot;
   stripePaymentIntentId?: string | null;
   createdAt?: Date;
 };

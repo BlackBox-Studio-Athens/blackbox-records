@@ -17,6 +17,7 @@ export type {
   ListRecentCheckoutOrdersInput,
   OrderStateRepository,
   OrderStatus,
+  ShippingLockerSnapshot,
 } from './order-state-repository';
 export type { StockRecord, StockRepository, StockState } from './stock-repository';
 export type { RecordStockChangeInput, StockChangeRecord, StockChangeRepository } from './stock-change-repository';

@@ -32,6 +32,7 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
       needsReviewAt: null,
       notPaidAt: null,
       paidAt: null,
+      shippingLocker: input.shippingLocker,
       status: 'pending_payment',
       statusUpdatedAt: createdAt,
       storeItemSlug: input.storeItemSlug,
@@ -134,6 +135,11 @@ class InMemoryStockChangeRepository implements StockChangeRepository {
 
 describe('paid checkout reconciliation', () => {
   const appliedAt = new Date('2026-04-25T11:00:00.000Z');
+  const shippingLocker = {
+    country_code: 'GR' as const,
+    locker_id: '4',
+    locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
+  };
   const variantId = 'variant_barren-point_standard';
   let orders: InMemoryOrderStateRepository;
   let stock: InMemoryStockRepository;
@@ -145,6 +151,7 @@ describe('paid checkout reconciliation', () => {
     stockChanges = new InMemoryStockChangeRepository();
     await createPendingCheckoutOrder(orders, {
       checkoutSessionId: 'cs_test_123',
+      shippingLocker,
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId,
     });

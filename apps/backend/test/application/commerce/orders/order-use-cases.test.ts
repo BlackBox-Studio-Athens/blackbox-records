@@ -28,6 +28,7 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
       needsReviewAt: null,
       notPaidAt: null,
       paidAt: null,
+      shippingLocker: input.shippingLocker,
       status: 'pending_payment',
       statusUpdatedAt: createdAt,
       storeItemSlug: input.storeItemSlug,
@@ -81,6 +82,11 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
 }
 
 describe('order lifecycle use cases', () => {
+  const shippingLocker = {
+    country_code: 'GR' as const,
+    locker_id: '4',
+    locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
+  };
   let orders: InMemoryOrderStateRepository;
 
   beforeEach(() => {
@@ -94,11 +100,13 @@ describe('order lifecycle use cases', () => {
       createPendingCheckoutOrder(orders, {
         checkoutSessionId: 'cs_test_123',
         createdAt,
+        shippingLocker,
         storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_barren-point_standard',
       }),
     ).resolves.toMatchObject({
       checkoutSessionId: 'cs_test_123',
+      shippingLocker,
       status: 'pending_payment',
       statusUpdatedAt: createdAt,
       storeItemSlug: 'disintegration-black-vinyl-lp',
@@ -114,6 +122,7 @@ describe('order lifecycle use cases', () => {
   it('transitions a pending order to paid and records payment metadata', async () => {
     await createPendingCheckoutOrder(orders, {
       checkoutSessionId: 'cs_test_123',
+      shippingLocker,
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
     });
@@ -141,6 +150,7 @@ describe('order lifecycle use cases', () => {
   it('returns a no-op result for duplicate paid replay without saving another transition', async () => {
     await createPendingCheckoutOrder(orders, {
       checkoutSessionId: 'cs_test_123',
+      shippingLocker,
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
     });
@@ -169,6 +179,7 @@ describe('order lifecycle use cases', () => {
   it('rejects invalid transitions before persistence writes', async () => {
     await createPendingCheckoutOrder(orders, {
       checkoutSessionId: 'cs_test_123',
+      shippingLocker,
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
     });
@@ -190,6 +201,7 @@ describe('order lifecycle use cases', () => {
   it('rejects browser read-path transition attempts', async () => {
     await createPendingCheckoutOrder(orders, {
       checkoutSessionId: 'cs_test_123',
+      shippingLocker,
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
     });

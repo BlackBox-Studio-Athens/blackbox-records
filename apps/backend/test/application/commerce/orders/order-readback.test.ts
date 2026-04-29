@@ -21,6 +21,7 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
       needsReviewAt: null,
       notPaidAt: null,
       paidAt: null,
+      shippingLocker: input.shippingLocker,
       status: 'pending_payment',
       statusUpdatedAt: createdAt,
       storeItemSlug: input.storeItemSlug,
@@ -73,6 +74,11 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
 }
 
 describe('order readback use cases', () => {
+  const shippingLocker = {
+    country_code: 'GR' as const,
+    locker_id: '4',
+    locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
+  };
   let orders: InMemoryOrderStateRepository;
 
   beforeEach(async () => {
@@ -80,6 +86,7 @@ describe('order readback use cases', () => {
     await orders.createPending({
       checkoutSessionId: 'cs_old_paid',
       createdAt: new Date('2026-04-25T10:00:00.000Z'),
+      shippingLocker,
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
     });
@@ -91,6 +98,7 @@ describe('order readback use cases', () => {
     await orders.createPending({
       checkoutSessionId: 'cs_new_review',
       createdAt: new Date('2026-04-25T11:00:00.000Z'),
+      shippingLocker,
       storeItemSlug: 'caregivers-vinyl',
       variantId: 'variant_caregivers-vinyl_standard',
     });
@@ -103,6 +111,7 @@ describe('order readback use cases', () => {
   it('reads one checkout order by checkout session id', async () => {
     await expect(readCheckoutOrder(orders, 'cs_old_paid')).resolves.toMatchObject({
       checkoutSessionId: 'cs_old_paid',
+      shippingLocker,
       status: 'paid',
       stripePaymentIntentId: 'pi_test_paid',
     });

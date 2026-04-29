@@ -250,7 +250,7 @@ Plans:
 - [x] 09-01: Lock BOX NOW shipping data and secret contracts
 - [x] 09-02: Add Greece-only locker selection UI before checkout
 - [x] 09-03: Add backend checkout preflight for Greece-only locker selection
-- [ ] 09-04: Persist the thin locker snapshot on checkout/order state
+- [x] 09-04: Persist the thin locker snapshot on checkout/order state
 - [ ] 09-05: Surface selected locker state in checkout return/order recap
 - [ ] 09-06: Document manual BOX NOW fulfillment and sandbox validation
 
@@ -299,5 +299,5 @@ Because Stripe account access is unavailable, non-secret Phase 8 backend groundw
 | 7. Worker Checkout And Stripe Sandbox Flow                     | 15/16          | Deferred  | 2026-04-25 |
 | 7.1. Cloudflare Pages Static Frontend Migration                | 5/5            | Completed | 2026-04-29 |
 | 8. Webhook Orders And Stock                                    | 8/8            | Completed | 2026-04-26 |
-| 9. Greece-Only BOX NOW Shipping                                | 2/6            | Active    |            |
+| 9. Greece-Only BOX NOW Shipping                                | 4/6            | Active    |            |
 | 10. Sandbox Verification And Release Gate                      | 0/5            | Planned   |            |

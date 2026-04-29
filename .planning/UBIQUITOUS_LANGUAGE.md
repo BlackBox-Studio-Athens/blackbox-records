@@ -7,7 +7,7 @@ records a terminology change here first.
 ## Storefront And Catalog
 
 | Canonical term           | Meaning                                                                                                                             | Aliases to avoid              |
-|--------------------------|-------------------------------------------------------------------------------------------------------------------------------------|-------------------------------|
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
 | **Artist**               | Editorial content entry for a label artist or band in the Astro content collection.                                                 | band record                   |
 | **Release**              | Editorial music release entry, usually tied to an Artist and optionally projected into the Storefront.                              | album record                  |
 | **Distro Entry**         | Editorial distro catalog entry for non-release shop inventory that can become a StoreItem.                                          | merch entry, distro item      |
@@ -22,7 +22,7 @@ records a terminology change here first.
 ## Checkout And Payment
 
 | Canonical term            | Meaning                                                                                                                     | Aliases to avoid                |
-|---------------------------|-----------------------------------------------------------------------------------------------------------------------------|---------------------------------|
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
 | **Checkout Request**      | Public shopper API input containing app-owned item identity plus the approved Shipping Locker Snapshot.                     | payment payload                 |
 | **StartCheckout**         | Worker application action and public API path that validates checkout input and creates the Stripe Checkout Session.        | create checkout, start payment  |
 | **ReadCheckoutState**     | Worker application action and public API path that reports backend-known checkout status to the browser.                    | payment status check            |
@@ -41,7 +41,7 @@ records a terminology change here first.
 ## Stock Operations
 
 | Canonical term                  | Meaning                                                                                               | Aliases to avoid           |
-|---------------------------------|-------------------------------------------------------------------------------------------------------|----------------------------|
+| ------------------------------- | ----------------------------------------------------------------------------------------------------- | -------------------------- |
 | **Stock**                       | D1 source-of-truth quantity record for a Variant, including online checkout-facing quantity.          | inventory                  |
 | **OnlineStock**                 | Conservative checkout-facing quantity exposed from Stock and allowed to be lower than physical stock. | available stock, web stock |
 | **StockChange**                 | D1 ledger entry for a known stock movement delta recorded by an operator or checkout webhook.         | adjustment                 |
@@ -52,7 +52,7 @@ records a terminology change here first.
 ## Shipping And Fulfillment
 
 | Canonical term               | Meaning                                                                                                                                       | Aliases to avoid                 |
-|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
 | **BOX NOW Locker**           | Shopper-selected Greek BOX NOW locker used for v1 delivery.                                                                                   | pickup point, parcel locker      |
 | **Shipping Locker Snapshot** | Minimal persisted locker data: `locker_id`, `country_code`, and `locker_name_or_label`.                                                       | locker payload, BOX NOW response |
 | **BOX NOW Test Locker**      | Local/test locker snapshot from the BOX NOW FAQ: `locker_id = 4`, `country_code = GR`, `locker_name_or_label = ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234`. | fake locker, default locker      |

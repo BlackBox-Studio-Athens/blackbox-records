@@ -410,6 +410,12 @@ export type components = {
             notPaidAt: string | null;
             /** Format: date-time */
             paidAt: string | null;
+            shippingLocker: {
+                /** @enum {string} */
+                country_code: "GR";
+                locker_id: string;
+                locker_name_or_label: string;
+            } | null;
             status: components["schemas"]["InternalOrderStatus"];
             /** Format: date-time */
             statusUpdatedAt: string;

@@ -37,6 +37,31 @@
             ],
             "format": "date-time"
           },
+          "shippingLocker": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "country_code": {
+                "type": "string",
+                "enum": [
+                  "GR"
+                ]
+              },
+              "locker_id": {
+                "type": "string"
+              },
+              "locker_name_or_label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "country_code",
+              "locker_id",
+              "locker_name_or_label"
+            ]
+          },
           "status": {
             "$ref": "#/components/schemas/InternalOrderStatus"
           },
@@ -67,6 +92,7 @@
           "needsReviewAt",
           "notPaidAt",
           "paidAt",
+          "shippingLocker",
           "status",
           "statusUpdatedAt",
           "storeItemSlug",

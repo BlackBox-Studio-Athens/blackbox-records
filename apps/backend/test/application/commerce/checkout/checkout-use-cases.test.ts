@@ -102,6 +102,7 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
       needsReviewAt: null,
       notPaidAt: null,
       paidAt: null,
+      shippingLocker: input.shippingLocker,
       status: 'pending_payment',
       statusUpdatedAt: createdAt,
       storeItemSlug: input.storeItemSlug,
@@ -352,6 +353,7 @@ describe('checkout use cases', () => {
     expect(orders.records.get('cs_test_123')).toEqual(
       expect.objectContaining({
         checkoutSessionId: 'cs_test_123',
+        shippingLocker,
         status: 'pending_payment',
         storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_barren-point_standard',

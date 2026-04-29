@@ -33,7 +33,7 @@ export async function startCheckout(
   orders: OrderStateRepository,
   command: StartCheckoutCommand,
 ): Promise<EmbeddedCheckoutSession> {
-  validateCheckoutShippingLocker(command.shippingLocker);
+  const shippingLocker = validateCheckoutShippingLocker(command.shippingLocker);
 
   const storeItem = await storeItems.findByStoreItemSlug(command.storeItemSlug);
 
@@ -72,6 +72,7 @@ export async function startCheckout(
 
   await createPendingCheckoutOrder(orders, {
     checkoutSessionId: checkoutSession.checkoutSessionId,
+    shippingLocker,
     storeItemSlug: command.storeItemSlug,
     variantId: command.variantId,
   });

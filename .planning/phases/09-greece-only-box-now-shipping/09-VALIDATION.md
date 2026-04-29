@@ -50,10 +50,22 @@ Manual UI validation:
 - No paid-order shipping persistence, D1 migration, BOX NOW partner API call, fulfillment automation, stock behavior, Stripe account value, or webhook behavior changed.
 - Validation: `pnpm generate:api`; targeted backend/web tests; `git diff --check`; `pnpm test:unit`; `pnpm check`; `pnpm build`; Browser Use local mock smoke.
 
+## 09-04 Persist The Thin Locker Snapshot On Checkout And Order State
+
+- Result: passed.
+- Evidence: `CheckoutOrder` now has nullable D1/Prisma fields for the approved thin BOX NOW locker snapshot: `shippingLockerId`, `shippingLockerCountryCode`, and `shippingLockerNameOrLabel`.
+- Evidence: Worker-owned `StartCheckout` validates the shopper-provided `shippingLocker`, normalizes it to a `ShippingLockerSnapshot`, and persists it when creating the pending checkout order.
+- Evidence: Protected internal order readback now returns `shippingLocker` as the approved nested snapshot or `null` for older rows.
+- Evidence: The public `ReadCheckoutState` response remains unchanged; shopper-facing selected-locker display is deferred to `09-05`.
+- Evidence: Generated Prisma and internal OpenAPI/API-client artifacts were regenerated.
+- Evidence: Local D1 migration `0004_add_checkout_order_shipping_locker_snapshot.sql` applied successfully, and `PRAGMA table_info('CheckoutOrder')` confirmed all three nullable columns.
+- No BOX NOW API calls, credentials, raw payload persistence, coordinates, postal codes, voucher IDs, labels, tracking data, fulfillment automation, stock behavior, webhook behavior, real Stripe account value, or production cutover changed.
+- Validation: `pnpm --filter @blackbox/backend prisma:generate`; `pnpm generate:api`; `pnpm --filter @blackbox/backend d1:migrations:apply:local`; `PRAGMA table_info('CheckoutOrder')`; targeted backend tests; `pnpm --filter @blackbox/backend test`; `pnpm --filter @blackbox/backend check`.
+
 ## Explicit Non-Goals
 
 - No BOX NOW API integration.
 - No non-Greece shipping.
 - No automated delivery request, voucher, label, or tracking creation.
-- No paid-order shipping persistence, D1 schema, BOX NOW fulfillment, or deployment change.
+- No shopper-facing locker recap, BOX NOW fulfillment, or deployment change.
 - No real Stripe validation or production cutover.

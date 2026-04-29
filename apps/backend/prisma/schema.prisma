@@ -89,18 +89,21 @@ model StockCount {
 }
 
 model CheckoutOrder {
-  id                    String      @id @default(cuid())
-  storeItemSlug         String
-  variantId             String
-  checkoutSessionId     String      @unique
-  stripePaymentIntentId String?
-  status                OrderStatus
-  statusUpdatedAt       DateTime
-  paidAt                DateTime?
-  notPaidAt             DateTime?
-  needsReviewAt         DateTime?
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
+  id                        String      @id @default(cuid())
+  storeItemSlug             String
+  variantId                 String
+  checkoutSessionId         String      @unique
+  stripePaymentIntentId     String?
+  shippingLockerId          String?
+  shippingLockerCountryCode String?
+  shippingLockerNameOrLabel String?
+  status                    OrderStatus
+  statusUpdatedAt           DateTime
+  paidAt                    DateTime?
+  notPaidAt                 DateTime?
+  needsReviewAt             DateTime?
+  createdAt                 DateTime    @default(now())
+  updatedAt                 DateTime    @updatedAt
 
   @@index([variantId, status])
   @@index([status, createdAt])

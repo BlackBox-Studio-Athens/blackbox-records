@@ -35,6 +35,13 @@ const checkoutOrderSchema = z
     needsReviewAt: z.string().datetime().nullable(),
     notPaidAt: z.string().datetime().nullable(),
     paidAt: z.string().datetime().nullable(),
+    shippingLocker: z
+      .object({
+        country_code: z.literal('GR'),
+        locker_id: z.string(),
+        locker_name_or_label: z.string(),
+      })
+      .nullable(),
     status: orderStatusSchema,
     statusUpdatedAt: z.string().datetime(),
     storeItemSlug: z.string(),
@@ -160,6 +167,7 @@ function toCheckoutOrderResponse(order: CheckoutOrderRecord) {
     needsReviewAt: order.needsReviewAt?.toISOString() ?? null,
     notPaidAt: order.notPaidAt?.toISOString() ?? null,
     paidAt: order.paidAt?.toISOString() ?? null,
+    shippingLocker: order.shippingLocker,
     status: order.status,
     statusUpdatedAt: order.statusUpdatedAt.toISOString(),
     storeItemSlug: order.storeItemSlug,
