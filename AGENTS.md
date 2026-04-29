@@ -324,6 +324,12 @@ This is an iframe boundary, not an app bug.
 - If Stripe MCP is unavailable or incomplete for the task, consult official Stripe docs.
 - If guidance conflicts, prefer the current official Stripe API reference and Stripe docs.
 
+## Ubiquitous language
+
+- Canonical project terminology lives in `.planning/UBIQUITOUS_LANGUAGE.md`.
+- Use those terms in GSD plans, test names, route/use-case names, UI copy, validation notes, ADRs, and handoff summaries.
+- If a task needs a new domain term or changes an existing meaning, update `.planning/UBIQUITOUS_LANGUAGE.md` in the same change instead of introducing synonyms ad hoc.
+
 ## MCP usage
 
 - For code-heavy TypeScript work, activate this repo in Serena, read Serena initial instructions if needed, run `check_onboarding_performed`, and list relevant memories before large edits.

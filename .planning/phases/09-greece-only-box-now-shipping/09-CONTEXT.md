@@ -43,6 +43,7 @@ This phase does not expand shipping beyond Greece, does not automate BOX NOW ful
 
 - `.planning/ROADMAP.md`
 - `.planning/REQUIREMENTS.md`
+- `.planning/UBIQUITOUS_LANGUAGE.md`
 - `.planning/adrs/ADR-003-boxnow-and-cutover.md`
 - `.planning/archive/v1.0-pre-sandbox-planning/phases/04-box-now-locker-shipping-slice/04-UI-SPEC.md`
 - `.planning/phases/09-greece-only-box-now-shipping/09-BOX-NOW-CONTRACT.md`
