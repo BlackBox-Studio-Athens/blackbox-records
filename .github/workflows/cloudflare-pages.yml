@@ -24,10 +24,6 @@ jobs:
       DECAPBRIDGE_AUTH_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_ENDPOINT }}
       DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT }}
       DECAPBRIDGE_GATEWAY_URL: ${{ vars.DECAPBRIDGE_GATEWAY_URL }}
-      ASTRO_SITE_URL: https://blackbox-records-web.pages.dev
-      ASTRO_BASE_PATH: /
-      PUBLIC_BACKEND_BASE_URL: ${{ vars.PUBLIC_BACKEND_BASE_URL }}
-      PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ vars.PUBLIC_STRIPE_PUBLISHABLE_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -53,6 +49,11 @@ jobs:
         run: pnpm check
 
       - name: Build static frontend
+        env:
+          ASTRO_SITE_URL: https://blackbox-records-web.pages.dev
+          ASTRO_BASE_PATH: /
+          PUBLIC_BACKEND_BASE_URL: ${{ vars.PUBLIC_BACKEND_BASE_URL }}
+          PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ vars.PUBLIC_STRIPE_PUBLISHABLE_KEY }}
         run: pnpm build
 
       - name: Deploy static frontend to Cloudflare Pages
