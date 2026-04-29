@@ -324,12 +324,23 @@ This is an iframe boundary, not an app bug.
 - If Stripe MCP is unavailable or incomplete for the task, consult official Stripe docs.
 - If guidance conflicts, prefer the current official Stripe API reference and Stripe docs.
 
+## MCP usage
+
+- For code-heavy TypeScript work, activate this repo in Serena, read Serena initial instructions if needed, run `check_onboarding_performed`, and list relevant memories before large edits.
+- Prefer Serena symbol tools for definitions, references, call relationships, and whole-symbol edits.
+- Use normal shell tools for broad text search, docs/YAML/JSON, generated artifacts, package scripts, and validation commands.
+- If an expected Serena tool is not visible, use `tool_search` before falling back to shell-only inspection.
+- Treat an empty Serena `find_referencing_symbols` result as inconclusive in this monorepo; confirm with Serena `search_for_pattern` or shell `rg` before deciding a symbol is unused.
+- WebStorm users who want richer local reference results may set `language_backend: JetBrains` in ignored `.serena/project.local.yml` and restart Serena. Keep committed `.serena/project.yml` portable with the default LSP backend.
+- Browser Use is mandatory for local or hosted rendered UI checks.
+- DevTools MCP is fallback-only for browser validation. Use it only when Browser Use is unavailable, fails to initialize, or lacks a needed inspection capability, and record the Browser Use failure reason in validation notes.
+
 ## Verification checklist (minimum)
 
 1. `pnpm test:unit` succeeds
 2. `pnpm check` succeeds
 3. `pnpm build` succeeds
-4. If UI/layout changed, validate with DevTools MCP
+4. If UI/layout changed, validate with Browser Use; use DevTools MCP only as the fallback described above
 5. If routing/player behavior changed, validate:
    - header section switch
    - footer section switch
