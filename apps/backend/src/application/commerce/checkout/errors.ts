@@ -21,3 +21,9 @@ export class CheckoutConfigurationError extends Error {
     super(message);
   }
 }
+
+export class CheckoutShippingSelectionError extends Error {
+  public constructor() {
+    super('A valid Greece BOX NOW locker is required before checkout.');
+  }
+}

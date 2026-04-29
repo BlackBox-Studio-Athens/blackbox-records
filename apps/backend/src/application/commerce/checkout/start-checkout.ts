@@ -14,10 +14,12 @@ import {
   VariantMismatchError,
 } from './errors';
 import { createPendingCheckoutOrder } from '../orders';
-import type { CheckoutGateway, EmbeddedCheckoutSession } from './types';
+import { validateCheckoutShippingLocker } from './checkout-shipping';
+import type { CheckoutGateway, CheckoutShippingLockerSnapshot, EmbeddedCheckoutSession } from './types';
 
 export type StartCheckoutCommand = {
   returnUrl: string;
+  shippingLocker: CheckoutShippingLockerSnapshot;
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
 };
@@ -31,6 +33,8 @@ export async function startCheckout(
   orders: OrderStateRepository,
   command: StartCheckoutCommand,
 ): Promise<EmbeddedCheckoutSession> {
+  validateCheckoutShippingLocker(command.shippingLocker);
+
   const storeItem = await storeItems.findByStoreItemSlug(command.storeItemSlug);
 
   if (!storeItem) {

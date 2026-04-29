@@ -38,11 +38,22 @@ const storeOfferSchema = z
   })
   .openapi('PublicStoreOffer');
 
+const checkoutShippingLockerSchema = z
+  .object({
+    country_code: z.enum(['GR']),
+    locker_id: z.string().trim().min(1),
+    locker_name_or_label: z.string().trim().min(1),
+  })
+  .strict()
+  .openapi('CheckoutShippingLocker');
+
 const startCheckoutBodySchema = z
   .object({
+    shippingLocker: checkoutShippingLockerSchema,
     storeItemSlug: z.string().trim().min(1),
     variantId: z.string().trim().min(1),
   })
+  .strict()
   .openapi('StartCheckoutBody');
 
 const startCheckoutResponseSchema = z
@@ -237,6 +248,7 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
           body.storeItemSlug,
           context.env.CHECKOUT_RETURN_ORIGINS,
         ),
+        shippingLocker: body.shippingLocker,
         storeItemSlug: body.storeItemSlug,
         variantId: body.variantId,
       });
@@ -253,6 +265,10 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
       }
 
       if (error instanceof services.errors.VariantMismatchError) {
+        return context.json({ error: error.message }, 400);
+      }
+
+      if (error instanceof services.errors.CheckoutShippingSelectionError) {
         return context.json({ error: error.message }, 400);
       }
 

@@ -249,7 +249,7 @@ Plans:
 
 - [x] 09-01: Lock BOX NOW shipping data and secret contracts
 - [x] 09-02: Add Greece-only locker selection UI before checkout
-- [ ] 09-03: Add backend checkout preflight for Greece-only locker selection
+- [x] 09-03: Add backend checkout preflight for Greece-only locker selection
 - [ ] 09-04: Persist the thin locker snapshot on checkout/order state
 - [ ] 09-05: Surface selected locker state in checkout return/order recap
 - [ ] 09-06: Document manual BOX NOW fulfillment and sandbox validation

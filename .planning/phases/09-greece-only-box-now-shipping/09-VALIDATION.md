@@ -38,10 +38,22 @@ Manual UI validation:
 - Browser Use route: `/blackbox-records/store/disintegration-black-vinyl-lp/checkout/`.
 - Verified: payment blocked before locker selection; local Greek locker selection unlocks payment; mock checkout panel mounts; `Change Locker` returns to shipping and destroys/hides the mounted checkout.
 
+## 09-03 Add Backend Checkout Preflight For Greece-Only Locker Selection
+
+- Result: passed.
+- Evidence: Public `StartCheckout` now requires `shippingLocker` with `locker_id`, `country_code = GR`, and `locker_name_or_label` before the Worker creates a Stripe Checkout Session.
+- Evidence: Backend validation rejects missing locker data, blank locker fields, and non-Greece lockers before calling the Stripe gateway.
+- Evidence: Frontend checkout start sends only `storeItemSlug`, `variantId`, and the minimal selected locker snapshot.
+- Evidence: The checkout gateway request remains unchanged and does not receive BOX NOW data, credentials, raw payloads, stock counts, or order state.
+- Evidence: OpenAPI and generated public API client artifacts include the required `shippingLocker` request object.
+- Evidence: Browser Use against `pnpm dev:stack:stripe-mock` on `/blackbox-records/store/disintegration-black-vinyl-lp/checkout/` verified payment is blocked before locker selection, the approved local Greek test locker unlocks payment, the mock checkout panel mounts, `Change Locker` returns to the shipping gate, and the console stays clean.
+- No paid-order shipping persistence, D1 migration, BOX NOW partner API call, fulfillment automation, stock behavior, Stripe account value, or webhook behavior changed.
+- Validation: `pnpm generate:api`; targeted backend/web tests; `git diff --check`; `pnpm test:unit`; `pnpm check`; `pnpm build`; Browser Use local mock smoke.
+
 ## Explicit Non-Goals
 
 - No BOX NOW API integration.
 - No non-Greece shipping.
 - No automated delivery request, voucher, label, or tracking creation.
-- No checkout UI, backend route, D1 schema, OpenAPI, generated client, or deployment change.
+- No paid-order shipping persistence, D1 schema, BOX NOW fulfillment, or deployment change.
 - No real Stripe validation or production cutover.

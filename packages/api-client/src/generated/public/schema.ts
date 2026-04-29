@@ -207,6 +207,12 @@ export type paths = {
 export type webhooks = Record<string, never>;
 export type components = {
     schemas: {
+        CheckoutShippingLocker: {
+            /** @enum {string} */
+            country_code: "GR";
+            locker_id: string;
+            locker_name_or_label: string;
+        };
         CheckoutState: {
             checkoutSessionId: string;
             /** @enum {string} */
@@ -231,6 +237,7 @@ export type components = {
             status: "available" | "sold_out";
         };
         StartCheckoutBody: {
+            shippingLocker: components["schemas"]["CheckoutShippingLocker"];
             storeItemSlug: string;
             variantId: string;
         };

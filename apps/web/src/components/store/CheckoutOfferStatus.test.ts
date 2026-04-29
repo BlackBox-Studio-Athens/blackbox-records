@@ -154,7 +154,7 @@ describe('CheckoutOfferStatus helpers', () => {
     });
   });
 
-  it('starts checkout with only the store item slug and variant id, then mounts Stripe with the returned client secret', async () => {
+  it('starts checkout with app identity and the selected shipping locker, then mounts Stripe with the returned client secret', async () => {
     const mountTarget = {} as HTMLElement;
     const mount = {
       destroy: vi.fn(),
@@ -183,6 +183,7 @@ describe('CheckoutOfferStatus helpers', () => {
     });
 
     expect(api.startCheckout).toHaveBeenCalledExactlyOnceWith({
+      shippingLocker: LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION,
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
     });

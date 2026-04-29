@@ -4,7 +4,11 @@ import {
   type PublicStoreOffer,
 } from '../../lib/backend/public-checkout-api';
 import type { EmbeddedCheckoutAdapter, EmbeddedCheckoutMount } from '../../lib/backend/stripe-embedded-checkout';
-import { readCheckoutShippingGateError, type CheckoutLockerSelection } from './checkout-shipping-step-state';
+import {
+  normalizeCheckoutLockerSelection,
+  readCheckoutShippingGateError,
+  type CheckoutLockerSelection,
+} from './checkout-shipping-step-state';
 
 export type CheckoutOfferInitialAvailability = {
   label: string;
@@ -157,6 +161,15 @@ export async function startEmbeddedCheckout({
     };
   }
 
+  const shippingLocker = normalizeCheckoutLockerSelection(lockerSelection);
+
+  if (!shippingLocker || shippingLocker.country_code !== 'GR') {
+    return {
+      kind: 'error',
+      message: 'Select a Greece BOX NOW locker before payment opens.',
+    };
+  }
+
   const configurationError = checkoutAdapter.getConfigurationError();
 
   if (configurationError) {
@@ -168,6 +181,10 @@ export async function startEmbeddedCheckout({
 
   try {
     const { clientSecret } = await api.startCheckout({
+      shippingLocker: {
+        ...shippingLocker,
+        country_code: 'GR',
+      },
       storeItemSlug,
       variantId,
     });

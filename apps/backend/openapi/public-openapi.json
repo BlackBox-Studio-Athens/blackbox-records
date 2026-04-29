@@ -73,6 +73,9 @@
       "StartCheckoutBody": {
         "type": "object",
         "properties": {
+          "shippingLocker": {
+            "$ref": "#/components/schemas/CheckoutShippingLocker"
+          },
           "storeItemSlug": {
             "type": "string",
             "minLength": 1
@@ -83,9 +86,36 @@
           }
         },
         "required": [
+          "shippingLocker",
           "storeItemSlug",
           "variantId"
-        ]
+        ],
+        "additionalProperties": false
+      },
+      "CheckoutShippingLocker": {
+        "type": "object",
+        "properties": {
+          "country_code": {
+            "type": "string",
+            "enum": [
+              "GR"
+            ]
+          },
+          "locker_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "locker_name_or_label": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "country_code",
+          "locker_id",
+          "locker_name_or_label"
+        ],
+        "additionalProperties": false
       },
       "CheckoutState": {
         "type": "object",

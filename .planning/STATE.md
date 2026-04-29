@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 9 plan 3; add backend checkout preflight for Greece-only locker selection
-last_updated: '2026-04-29T16:44:00+03:00'
-last_activity: 2026-04-29 -- Added Greece-only BOX NOW locker selection UI gate before checkout payment
+stopped_at: Phase 9 plan 4; persist the thin locker snapshot on checkout/order state
+last_updated: '2026-04-29T17:26:55+03:00'
+last_activity: 2026-04-29 -- Added Worker-owned Greece-only BOX NOW locker checkout preflight
 progress:
   total_phases: 10
   completed_phases: 7
   total_plans: 65
-  completed_plans: 55
-  percent: 85
+  completed_plans: 56
+  percent: 86
 ---
 
 # Project State
@@ -28,15 +28,15 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 Current Phase: 9
 Current Phase Name: Greece-Only BOX NOW Shipping
 Total Phases: 10
-Current Plan: 3
+Current Plan: 4
 Total Plans in Phase: 6
 Status: Active
-Progress: 85%
+Progress: 86%
 Last Activity: 2026-04-29
-Last Activity Description: Checkout now has a frontend-only Greece BOX NOW locker gate that blocks payment until local mock Greek locker selection, while non-mock mode fails closed until the real picker exists
-Paused At: Phase 9 plan 3; add backend checkout preflight for Greece-only locker selection
+Last Activity Description: Worker checkout start now requires the minimal Greece BOX NOW locker snapshot before creating Stripe Checkout Sessions, while keeping paid-order shipping persistence deferred
+Paused At: Phase 9 plan 4; persist the thin locker snapshot on checkout/order state
 
-Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed while real Stripe-account validation remains explicitly deferred. Phase 8 now has the schema-only `CheckoutOrder` lifecycle table, internal order repository/application seams, a dependency-free typed transition guard, a fixture-tested Stripe webhook raw-body route contract, an optional official `stripe-mock` API local checkout simulation harness, shared Stripe Checkout Session reconciliation, pending order creation from Worker-owned checkout start, idempotent paid webhook handling that decrements stock only on the first paid transition, non-paid/needs-review handling that never mutates stock, and Access-protected order readback for low-volume reconciliation. Phase 7.1 completed the Cloudflare Pages static artifact contract, GitHub Pages rollback posture, Direct Upload CI workflow, browser-safe Pages build env contract, exact checkout return-origin allowlist guidance, Cloudflare-root Astro base-path correction, Browser Use hosted validation, and canonical hosting docs. Phase 9 now has the BOX NOW Greece-only shipping data and secret contract locked plus a frontend-only locker gate before payment. Current focus is Phase 9 plan 3: add backend checkout preflight for Greece-only locker selection.
+Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed while real Stripe-account validation remains explicitly deferred. Phase 8 now has the schema-only `CheckoutOrder` lifecycle table, internal order repository/application seams, a dependency-free typed transition guard, a fixture-tested Stripe webhook raw-body route contract, an optional official `stripe-mock` API local checkout simulation harness, shared Stripe Checkout Session reconciliation, pending order creation from Worker-owned checkout start, idempotent paid webhook handling that decrements stock only on the first paid transition, non-paid/needs-review handling that never mutates stock, and Access-protected order readback for low-volume reconciliation. Phase 7.1 completed the Cloudflare Pages static artifact contract, GitHub Pages rollback posture, Direct Upload CI workflow, browser-safe Pages build env contract, exact checkout return-origin allowlist guidance, Cloudflare-root Astro base-path correction, Browser Use hosted validation, and canonical hosting docs. Phase 9 now has the BOX NOW Greece-only shipping data and secret contract locked, a frontend-only locker gate before payment, and Worker-owned checkout preflight that requires the minimal Greek locker snapshot before payment starts. Current focus is Phase 9 plan 4: persist the thin locker snapshot on checkout/order state.
 
 ## Performance Metrics
 
@@ -59,12 +59,12 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mo
 | 7     | 15/16 | Deferred  | 2026-04-25 |
 | 7.1   | 5/5   | Completed | 2026-04-29 |
 | 8     | 8/8   | Completed | 2026-04-26 |
-| 9     | 2/6   | Active    | 2026-04-29 |
+| 9     | 3/6   | Active    | 2026-04-29 |
 
 **Recent Trend:**
 
-- Last 5 plans: 07.1-03, 07.1-04, 07.1-05, 09-01, 09-02
-- Trend: The Cloudflare Pages migration is complete, and Phase 9 now has BOX NOW shipping data boundaries plus a frontend-only Greece locker selection gate. Real Stripe validation remains deferred until account access exists.
+- Last 5 plans: 07.1-04, 07.1-05, 09-01, 09-02, 09-03
+- Trend: The Cloudflare Pages migration is complete, and Phase 9 now has BOX NOW shipping data boundaries, a frontend-only Greece locker selection gate, and Worker checkout preflight. Real Stripe validation remains deferred until account access exists.
 
 ## Accumulated Context
 
@@ -111,6 +111,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mo
 - Phase 7.1 plan 5 retired GitHub Pages as canonical hosting in docs after Cloudflare Pages acceptance. GitHub Pages remains a rollback/legacy workflow and Astro default path, not the canonical static frontend host.
 - Phase 9 plan 1 locked the BOX NOW shipping contract: v1 is Greece-only, payment stays blocked until a valid Greek locker is selected, future paid-order shipping persistence is limited to `locker_id`, `country_code`, and `locker_name_or_label`, BOX NOW credentials remain Worker runtime secrets or out-of-band operator credentials, and fulfillment stays manual through the BOX NOW partner portal.
 - Phase 9 plan 2 added the frontend-only BOX NOW locker gate to the checkout route. Local mock mode can select a deterministic Greek locker before payment, non-mock mode fails closed until the real BOX NOW picker exists, and `StartCheckout` still sends only `storeItemSlug` and `variantId`.
+- Phase 9 plan 3 added Worker-owned checkout preflight for Greece-only BOX NOW locker selection. `StartCheckout` now requires a minimal `shippingLocker` snapshot before Stripe Checkout Session creation, but paid-order shipping persistence remains deferred.
 
 ## Decisions Made
 
@@ -149,7 +150,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mo
 - Keep future backend routes inside the OpenAPI contract/generation workflow; do not add handwritten frontend DTOs for backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of the completed Phase 6.1 foundation.
 - Complete the deferred Stripe access validation gate before sandbox/release approval.
-- In Phase 9 plan 3, add Worker-owned checkout preflight for Greece-only locker selection without persisting paid-order shipping state yet.
+- In Phase 9 plan 4, persist the thin BOX NOW locker snapshot on checkout/order state without adding BOX NOW partner API calls or fulfillment automation.
 
 ## Blockers
 
@@ -163,6 +164,6 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mo
 
 ## Session
 
-**Last Date:** 2026-04-29T16:44:00+03:00
-**Stopped At:** Phase 9 plan 3; add backend checkout preflight for Greece-only locker selection
+**Last Date:** 2026-04-29T17:26:55+03:00
+**Stopped At:** Phase 9 plan 4; persist the thin locker snapshot on checkout/order state
 **Resume File:** .planning/ROADMAP.md

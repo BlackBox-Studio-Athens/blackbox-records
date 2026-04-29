@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   CheckoutConfigurationError,
+  CheckoutShippingSelectionError,
   CheckoutUnavailableError,
   listVariantOffersForStoreItem,
   readCheckoutState,
@@ -159,6 +160,11 @@ describe('checkout use cases', () => {
     storeItemSlug: 'disintegration-black-vinyl-lp',
     variantId: 'variant_barren-point_standard',
   };
+  const shippingLocker = {
+    country_code: 'GR',
+    locker_id: '4',
+    locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
+  };
 
   let storeItems: InMemoryStoreItemOptionRepository;
   let itemAvailability: InMemoryItemAvailabilityRepository;
@@ -226,10 +232,58 @@ describe('checkout use cases', () => {
     ]);
   });
 
+  it('rejects missing shipping locker data before starting checkout', async () => {
+    await expect(
+      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
+        returnUrl: 'https://example.com/return',
+        shippingLocker: null as never,
+        storeItemSlug: storeItem.storeItemSlug,
+        variantId: storeItem.variantId,
+      }),
+    ).rejects.toBeInstanceOf(CheckoutShippingSelectionError);
+
+    expect(checkoutGateway.createEmbeddedCheckoutSession).not.toHaveBeenCalled();
+  });
+
+  it('rejects non-Greece shipping lockers before starting checkout', async () => {
+    await expect(
+      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
+        returnUrl: 'https://example.com/return',
+        shippingLocker: {
+          country_code: 'DE',
+          locker_id: 'locker_berlin',
+          locker_name_or_label: 'Berlin Locker',
+        },
+        storeItemSlug: storeItem.storeItemSlug,
+        variantId: storeItem.variantId,
+      }),
+    ).rejects.toBeInstanceOf(CheckoutShippingSelectionError);
+
+    expect(checkoutGateway.createEmbeddedCheckoutSession).not.toHaveBeenCalled();
+  });
+
+  it('rejects blank shipping locker fields before starting checkout', async () => {
+    await expect(
+      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
+        returnUrl: 'https://example.com/return',
+        shippingLocker: {
+          country_code: 'GR',
+          locker_id: ' ',
+          locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
+        },
+        storeItemSlug: storeItem.storeItemSlug,
+        variantId: storeItem.variantId,
+      }),
+    ).rejects.toBeInstanceOf(CheckoutShippingSelectionError);
+
+    expect(checkoutGateway.createEmbeddedCheckoutSession).not.toHaveBeenCalled();
+  });
+
   it('rejects unknown store items before starting checkout', async () => {
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         returnUrl: 'https://example.com/return',
+        shippingLocker,
         storeItemSlug: 'unknown',
         variantId: storeItem.variantId,
       }),
@@ -240,6 +294,7 @@ describe('checkout use cases', () => {
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         returnUrl: 'https://example.com/return',
+        shippingLocker,
         storeItemSlug: storeItem.storeItemSlug,
         variantId: 'variant_other',
       }),
@@ -255,6 +310,7 @@ describe('checkout use cases', () => {
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         returnUrl: 'https://example.com/return',
+        shippingLocker,
         storeItemSlug: storeItem.storeItemSlug,
         variantId: storeItem.variantId,
       }),
@@ -267,6 +323,7 @@ describe('checkout use cases', () => {
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         returnUrl: 'https://example.com/return',
+        shippingLocker,
         storeItemSlug: storeItem.storeItemSlug,
         variantId: storeItem.variantId,
       }),
@@ -277,6 +334,7 @@ describe('checkout use cases', () => {
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         returnUrl: 'https://example.com/return',
+        shippingLocker,
         storeItemSlug: storeItem.storeItemSlug,
         variantId: storeItem.variantId,
       }),

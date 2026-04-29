@@ -174,7 +174,7 @@ describe('store purchase happy path', () => {
       variantId: checkoutView.variantId!,
     });
 
-    // Assert: checkout starts with app identities only, and the mock embedded handoff does not render secrets.
+    // Assert: checkout starts with app identity plus the minimal locker snapshot, and the handoff does not render secrets.
     expect(handoffState.kind).toBe('mounted');
     expect(mountTarget.textContent).toContain('Mock Checkout Started');
     expect(mountTarget.textContent).not.toContain('cs_mock_secret_variant_barren-point_standard');
@@ -182,6 +182,7 @@ describe('store purchase happy path', () => {
       '/api/checkout/sessions',
       expect.objectContaining({
         body: JSON.stringify({
+          shippingLocker: LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION,
           storeItemSlug: 'disintegration-black-vinyl-lp',
           variantId: 'variant_barren-point_standard',
         }),
@@ -189,6 +190,10 @@ describe('store purchase happy path', () => {
       }),
     );
     expect(readJsonBody(fetchStub, '/api/checkout/sessions')).not.toHaveProperty('locker_id');
+    expect(readJsonBody(fetchStub, '/api/checkout/sessions')).toHaveProperty(
+      'shippingLocker',
+      LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION,
+    );
 
     const browserOwnedPayload = JSON.stringify({
       cart: persistedCartState,

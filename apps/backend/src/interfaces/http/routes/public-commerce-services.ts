@@ -1,5 +1,6 @@
 import {
   CheckoutConfigurationError,
+  CheckoutShippingSelectionError,
   CheckoutUnavailableError,
   listVariantOffersForStoreItem,
   readCheckoutState,
@@ -7,6 +8,7 @@ import {
   startCheckout,
   StoreItemNotFoundError,
   VariantMismatchError,
+  type CheckoutShippingLockerSnapshot,
 } from '../../../application/commerce/checkout';
 import type { AppBindings } from '../../../env';
 import {
@@ -31,6 +33,7 @@ export function createPublicCommerceServices(bindings: AppBindings) {
     disconnect: async () => prisma.$disconnect(),
     errors: {
       CheckoutConfigurationError,
+      CheckoutShippingSelectionError,
       CheckoutUnavailableError,
       StoreItemNotFoundError,
       VariantMismatchError,
@@ -40,7 +43,12 @@ export function createPublicCommerceServices(bindings: AppBindings) {
     readCheckoutState: async (checkoutSessionId: string) =>
       readCheckoutState(createStripeCheckoutGateway(bindings), checkoutSessionId),
     readStoreOffer: async (storeItemSlug: string) => readStoreOffer(storeItems, itemAvailability, stock, storeItemSlug),
-    startCheckout: async (command: { returnUrl: string; storeItemSlug: string; variantId: string }) =>
+    startCheckout: async (command: {
+      returnUrl: string;
+      shippingLocker: CheckoutShippingLockerSnapshot;
+      storeItemSlug: string;
+      variantId: string;
+    }) =>
       startCheckout(
         storeItems,
         itemAvailability,

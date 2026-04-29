@@ -19,6 +19,12 @@ export type EmbeddedCheckoutSessionRequest = {
   variantId: VariantId;
 };
 
+export type CheckoutShippingLockerSnapshot = {
+  locker_id: string;
+  country_code: string;
+  locker_name_or_label: string;
+};
+
 export type EmbeddedCheckoutSession = {
   checkoutSessionId: string;
   clientSecret: string;

@@ -6,6 +6,12 @@ import {
   resolvePublicCheckoutApiBaseUrl,
 } from './public-checkout-api';
 
+const shippingLocker = {
+  country_code: 'GR' as const,
+  locker_id: '4',
+  locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
+};
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -86,6 +92,7 @@ describe('createPublicCheckoutApi', () => {
 
     const api = createPublicCheckoutApi('');
     const result = await api.startCheckout({
+      shippingLocker,
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
     });
@@ -102,6 +109,7 @@ describe('createPublicCheckoutApi', () => {
     const requestInit = firstCall?.[1];
     expect(requestInit?.body).toBe(
       JSON.stringify({
+        shippingLocker,
         storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_barren-point_standard',
       }),
@@ -121,6 +129,7 @@ describe('createPublicCheckoutApi', () => {
 
     await expect(
       api.startCheckout({
+        shippingLocker,
         storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_barren-point_standard',
       }),
