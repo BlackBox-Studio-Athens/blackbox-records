@@ -56,7 +56,7 @@
 - [x] **SHIP-02**: Paid orders store only `locker_id`, `country_code`, and `locker_name_or_label` as BOX NOW metadata.
 - [ ] **SHIP-03**: Operator can fulfill sandbox-paid Greek orders manually through the BOX NOW partner portal.
 
-Phase `09-01` locks the BOX NOW data and secret contract only. `SHIP-01` landed through the frontend locker gate and Worker checkout preflight. `SHIP-02` landed when the pending checkout order began persisting only the approved thin locker snapshot. `SHIP-03` remains implementation-pending until manual fulfillment validation lands.
+Phase `09-01` locks the BOX NOW data and secret contract only. `SHIP-01` landed through the frontend locker gate and Worker checkout preflight. `SHIP-02` landed when the pending checkout order began persisting only the approved thin locker snapshot. `09-06` now documents the manual fulfillment handoff and local signed-fixture validation path, but `SHIP-03` remains pending until BOX NOW partner or sandbox portal access exists and a sandbox-paid Greek order is fulfilled through that portal.
 
 ### Security & Operations
 
@@ -148,4 +148,4 @@ Phase `09-01` locks the BOX NOW data and secret contract only. `SHIP-01` landed 
 ---
 
 _Requirements defined: 2026-04-19_
-_Last updated: 2026-04-29 after locking the BOX NOW shipping data and secret contract_
+_Last updated: 2026-04-30 after documenting the manual BOX NOW fulfillment handoff and portal-access blocker_

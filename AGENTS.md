@@ -141,6 +141,7 @@ Read these first before editing:
 - Local/mock BOX NOW testing must use the BOX NOW FAQ test locker: `locker_id = 4`, `country_code = GR`, and `locker_name_or_label = ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234`.
 - Do not persist raw BOX NOW widget/API payloads, full locker addresses, coordinates, voucher IDs, label URLs, tracking automation state, or partner-portal credentials in v1.
 - BOX NOW fulfillment remains manual through the partner portal until a later milestone explicitly adds automation.
+- Manual fulfillment handoff and local validation steps live in `.planning/phases/09-greece-only-box-now-shipping/09-MANUAL-FULFILLMENT.md`.
 - Phase 7 requires shopper-facing store URLs to describe the sellable item option, not legacy release shorthand. The old `barren-point` local smoke route is a compatibility alias for the canonical `Disintegration` / `Black Vinyl LP` route.
 - Phase 7 cart UX should be Shopify-familiar but BlackBox-owned: cart icon, single-item cart drawer, order summary, and checkout CTA using Astro/React/shadcn. Do not implement true multi-item cart, quantity controls, discount codes, or browser-owned commerce authority in this milestone.
 

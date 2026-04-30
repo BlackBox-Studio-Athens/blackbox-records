@@ -76,6 +76,17 @@ Manual UI validation:
 - No BOX NOW API calls, tracking, fulfillment status, fulfillment automation, checkout-start payload change, D1 migration, webhook behavior, stock behavior, real Stripe account value, or production cutover changed.
 - Validation: `pnpm generate:api`; targeted backend/web tests; `git diff --check`; `pnpm test:unit`; `pnpm check`; `pnpm build`; DevTools MCP local mock smoke after Browser Use fallback.
 
+## 09-06 Document Manual BOX NOW Fulfillment And Sandbox Validation
+
+- Result: prepared but blocked.
+- Evidence: `09-MANUAL-FULFILLMENT.md` documents the manual BOX NOW partner-portal handoff from Worker-owned paid order state and persisted `shippingLocker` snapshot.
+- Evidence: The documented operator source of truth is the Worker-owned `CheckoutOrder` readback, not browser state, screenshots, query parameters, or raw BOX NOW payloads.
+- Evidence: The local validation path covers the no-Stripe/no-BOX-NOW contract using `pnpm dev:stack:stripe-mock`, the BOX NOW FAQ test locker, a signed local paid webhook fixture, internal order readback, and checkout return recap.
+- Evidence: The approved v1 data boundary remains unchanged: only `locker_id`, `country_code`, and `locker_name_or_label` may be used for the shipping locker snapshot.
+- Blocker: real `SHIP-03` completion requires BOX NOW partner or sandbox portal access. That access is not available, so `09-06`, Phase 9, and `SHIP-03` remain open.
+- No BOX NOW API calls, partner credentials, label/voucher persistence, D1 schema changes, frontend behavior changes, generated API client changes, Stripe changes, or production cutover changed.
+- Validation: `git diff --check`; `pnpm check`.
+
 ## Explicit Non-Goals
 
 - No BOX NOW API integration.

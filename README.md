@@ -373,6 +373,7 @@ pnpm generate:api
   - `locker_name_or_label`
 - Do not persist raw BOX NOW widget/API payloads, full locker addresses, coordinates, voucher IDs, label URLs, tracking automation state, or partner-portal credentials in v1.
 - Fulfillment remains manual through the BOX NOW partner portal until a later milestone explicitly adds automation.
+- Operator handoff and local validation steps live in `.planning/phases/09-greece-only-box-now-shipping/09-MANUAL-FULFILLMENT.md`.
 - Astro may render the shopper-facing locker step, but the Worker owns checkout preflight, validation, order persistence, secrets, and any future BOX NOW server integration.
 
 ## D1 migration workflow
