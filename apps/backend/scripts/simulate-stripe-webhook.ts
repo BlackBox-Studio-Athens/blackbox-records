@@ -87,13 +87,19 @@ export async function simulateStripeWebhook({
 
 async function main() {
   const type = readWebhookEventType(process.argv[2]);
+  const checkoutSessionId = readWebhookCheckoutSessionId();
+  const endpointUrl = process.env.STRIPE_WEBHOOK_ENDPOINT_URL?.trim() || defaultEndpointUrl;
   const result = await simulateStripeWebhook({
-    endpointUrl: process.env.STRIPE_WEBHOOK_ENDPOINT_URL?.trim() || defaultEndpointUrl,
+    checkoutSessionId,
+    endpointUrl,
     type,
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET?.trim() || defaultWebhookSecret,
   });
 
-  console.log(`Stripe webhook fixture ${type} -> HTTP ${result.status}`);
+  console.log(`Stripe webhook fixture ${type}`);
+  console.log(`Checkout session: ${checkoutSessionId}`);
+  console.log(`Endpoint: ${endpointUrl}`);
+  console.log(`HTTP ${result.status}`);
   console.log(result.body);
 
   if (result.status < 200 || result.status >= 300) {
@@ -112,6 +118,14 @@ function readWebhookEventType(value: string | undefined): StripeCheckoutWebhookE
   }
 
   return defaultEventType;
+}
+
+export function readWebhookCheckoutSessionId(env: Record<string, string | undefined> = process.env): string {
+  return (
+    env.STRIPE_WEBHOOK_CHECKOUT_SESSION_ID?.trim() ||
+    env.LOCAL_CHECKOUT_SESSION_ID?.trim() ||
+    defaultCheckoutSessionId
+  );
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

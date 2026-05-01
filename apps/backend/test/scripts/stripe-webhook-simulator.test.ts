@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   createStripeWebhookFixturePayload,
   createStripeWebhookSignatureHeader,
+  readWebhookCheckoutSessionId,
   simulateStripeWebhook,
 } from '../../scripts/simulate-stripe-webhook';
 import { verifyStripeWebhookEvent } from '../../src/infrastructure/stripe';
@@ -49,6 +50,7 @@ describe('Stripe webhook simulator', () => {
         }),
       );
       expect(init?.body).toEqual(expect.stringContaining('"type":"checkout.session.expired"'));
+      expect(init?.body).toEqual(expect.stringContaining('"id":"cs_test_browser_created"'));
 
       return new Response(JSON.stringify({ received: true }), {
         status: 200,
@@ -57,6 +59,7 @@ describe('Stripe webhook simulator', () => {
 
     await expect(
       simulateStripeWebhook({
+        checkoutSessionId: 'cs_test_browser_created',
         endpointUrl: 'http://127.0.0.1:8787/api/stripe/webhooks',
         fetcher,
         paymentStatus: 'unpaid',
@@ -75,5 +78,22 @@ describe('Stripe webhook simulator', () => {
         method: 'POST',
       }),
     );
+  });
+
+  it('reads the checkout session id from the webhook-specific env before the legacy local env', () => {
+    expect(
+      readWebhookCheckoutSessionId({
+        LOCAL_CHECKOUT_SESSION_ID: 'cs_local_legacy',
+        STRIPE_WEBHOOK_CHECKOUT_SESSION_ID: ' cs_test_browser_created ',
+      }),
+    ).toBe('cs_test_browser_created');
+  });
+
+  it('falls back to the legacy local checkout session env for older handoff docs', () => {
+    expect(
+      readWebhookCheckoutSessionId({
+        LOCAL_CHECKOUT_SESSION_ID: ' cs_local_legacy ',
+      }),
+    ).toBe('cs_local_legacy');
   });
 });
