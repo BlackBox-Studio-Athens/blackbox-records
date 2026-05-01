@@ -58,3 +58,19 @@
 - Browser Use evidence: `/blackbox-records/stock/` rendered the protected stock operations shell and failed closed with `Stock API unavailable` / `401 Unauthorized` because the local browser request does not carry the Cloudflare Access operator header. No browser console errors were recorded.
 - Browser Use evidence: primary shell navigation from Home to Releases to Store worked and console warnings/errors remained empty.
 - Boundary: no real `pk_test_*`, `sk_test_*`, `price_*`, `whsec_*`, BOX NOW credentials, production data, production cutover, schema changes, generated client drift, or deployment credential changes were introduced.
+
+## 10-04.1 Add Worker-Owned Native Checkout Feature Gate
+
+- Result: complete for no-account runtime capability hardening.
+- Evidence: `10-FEATURE-GATES.md` documents the difference between Worker environment isolation and Worker-owned feature gates.
+- Evidence: the first feature gate is `native_checkout_enabled`, evaluated by the Worker before Stripe Checkout Session creation or pending `CheckoutOrder` creation.
+- Evidence: local/mock defaults keep native checkout enabled without a Flagship binding, while sandbox/production default to disabled if `FLAGS` is missing or evaluation fails.
+- Evidence: public `GET /api/store/capabilities` returns only browser-safe capability state and does not expose provider names, flag keys, Stripe identifiers, D1 bindings, or internal evaluation errors.
+- Evidence: the checkout UI now reads capability state and blocks the payment action when the Worker reports native checkout unavailable.
+- Evidence: Cloudflare Flagship setup remains documented as a later account step using binding name `FLAGS` and flag key `native_checkout_enabled`; no Flagship app ID was committed.
+- Validation: `pnpm generate:api` passed and updated the public OpenAPI/API client artifacts for `/api/store/capabilities` and checkout `503`.
+- Validation: `pnpm audit:commerce-boundaries` passed.
+- Validation: `pnpm --filter @blackbox/backend exec vitest run test/infrastructure/feature-flags/cloudflare-feature-flag-reader.test.ts test/application/commerce/checkout/checkout-use-cases.test.ts test/http/public-commerce-routes.test.ts test/openapi/api-documents.test.ts` passed.
+- Validation: `pnpm --filter @blackbox/web exec vitest run src/components/store/CheckoutOfferStatus.test.ts src/components/store/StorePurchaseFlow.test.ts src/lib/backend/public-checkout-api.test.ts` passed.
+- Validation: `pnpm check` passed after formatting the new docs/test/API-client edits.
+- Boundary: no real Stripe keys, Price IDs, webhook secrets, BOX NOW credentials, production D1 mutation, production deploy, Cloudflare Flagship app ID, or browser-owned checkout authority was introduced.
