@@ -69,6 +69,7 @@ Read these first before editing:
 - Backend sandbox D1 migration list/apply:
   - `pnpm --filter @blackbox/backend d1:migrations:list:sandbox`
   - `pnpm --filter @blackbox/backend d1:migrations:apply:sandbox`
+- Backend sandbox D1 non-secret seed apply: `pnpm --filter @blackbox/backend d1:seed:sandbox`
 - Backend Prisma client generation: `pnpm --filter @blackbox/backend prisma:generate`
 - Backend local secrets: copy `apps/backend/.dev.vars.example` to `apps/backend/.dev.vars`
 - Generate backend OpenAPI docs and client package: `pnpm generate:api`

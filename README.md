@@ -420,6 +420,12 @@ Local checkout seed flow:
 3. For real Stripe test mode, copy `apps/backend/prisma/seeds/local-stripe-test-state.sql.example` to ignored `apps/backend/prisma/seeds/local-stripe-test-state.sql`, replace the example price with a real `price_...`, then run `pnpm --filter @blackbox/backend d1:seed:stripe-test:local`.
 4. Do not commit real Stripe test Price IDs.
 
+Sandbox D1 seed flow:
+
+1. Apply sandbox migrations only when the sandbox environment is intentionally being prepared: `pnpm --filter @blackbox/backend d1:migrations:apply:sandbox`.
+2. Apply the non-secret base commerce seed with `pnpm --filter @blackbox/backend d1:seed:sandbox`.
+3. Do not use local mock stock, `price_mock_*` rows, real Stripe Price IDs, BOX NOW credentials, or production data in sandbox seed files.
+
 Local development:
 
 ```sh
