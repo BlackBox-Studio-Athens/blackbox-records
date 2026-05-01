@@ -31,6 +31,8 @@ records a terminology change here first.
 | **Local stripe-mock API** | Local official `stripe-mock` process/proxy used to validate Stripe SDK request shape without a real Stripe account.         | fake Stripe, test Stripe        |
 | **Mock Checkout Panel**   | Local frontend mock handoff panel used when `PUBLIC_CHECKOUT_CLIENT_MODE=mock`. It is not Stripe Embedded Checkout.         | fake payment page               |
 | **Stripe Access Gate**    | Deferred real Stripe validation requiring test keys, real Price IDs, webhook secret, products/prices, and sandbox evidence. | Stripe blocker, payment blocker |
+| **Native Checkout Gate**  | Worker-owned runtime feature gate for enabling or disabling native checkout before Stripe Session creation.                  | frontend checkout flag          |
+| **Feature Gate**          | Worker-evaluated runtime capability switch. It does not replace environment isolation or own secrets.                       | feature toggle, browser flag    |
 | **CheckoutOrder**         | D1 order row tracking checkout session identity, item/variant identity, payment state, and lifecycle timestamps.            | order row, payment row          |
 | **Stripe Webhook**        | Verified Stripe event route that is the authoritative paid/non-paid signal for CheckoutOrder and stock mutation.            | callback, payment notification  |
 | **pending_payment**       | Canonical CheckoutOrder state after checkout starts and before a terminal Stripe outcome.                                   | open, waiting                   |
@@ -69,7 +71,7 @@ records a terminology change here first.
 - A Variant owns Stock and exposes OnlineStock to checkout.
 - A Variant can have one Stripe Price Mapping, but Stripe Price IDs never belong in frontend payloads.
 - StartCheckout reads a StoreOffer and creates a Checkout Session only when ItemAvailability, OnlineStock, Stripe
-  mapping, and Shipping Locker Snapshot are valid.
+  mapping, Native Checkout Gate, and Shipping Locker Snapshot are valid.
 - Local stripe-mock API validates Stripe SDK request shape. The Mock Checkout Panel validates local browser handoff.
   Neither satisfies the Stripe Access Gate.
 - Stripe Webhook events update CheckoutOrder and are the only paid-signal path that may decrement Stock.
@@ -91,6 +93,7 @@ records a terminology change here first.
 - "The Static Astro Frontend must not receive BOX NOW Credentials or Stripe secret keys."
 - "07-16 is a Deferred Gate until the Stripe Access Gate can be satisfied."
 - "09-06 is a Deferred Gate until the BOX NOW Portal Gate can be satisfied."
+- "The Native Checkout Gate is Worker-owned; the browser can only read sanitized capability state."
 - "Run Browser Use Validation for rendered checkout UI; DevTools MCP is fallback-only."
 
 ## Flagged ambiguities
@@ -112,3 +115,5 @@ records a terminology change here first.
   shape only. Real portal fulfillment evidence still requires BOX NOW partner/sandbox portal access.
 - **Cloudflare Pages vs Worker Backend:** Pages serves static frontend assets. The Worker owns all dynamic commerce
   behavior and secrets.
+- **Feature Gate vs environment:** Feature Gates are runtime capability switches. Worker environments still isolate
+  D1 data, secrets, webhook endpoints, return origins, and release evidence.

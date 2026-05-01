@@ -270,7 +270,7 @@ BOX NOW portal deferred gate:
 1. The full sandbox path works from static browse through Worker checkout APIs, webhook-confirmed paid order, and D1 state updates.
 2. Required command checks, browser checks, and sandbox UAT evidence are captured across both deployment targets.
 3. The milestone ends with a human review package and an explicit handoff to Go-Live / Launch Hardening.
-   **Plans**: 5 plans
+   **Plans**: 6 plans
    **Review gate**: Human approval required before any production cutover milestone work starts.
 
 Plans:
@@ -279,6 +279,7 @@ Plans:
 - [x] 10-02: Verify sandbox deployment, secrets, D1, and Stripe mapping readiness
 - [ ] 10-03: Run sandbox end-to-end checkout, webhook, stock, and shipping evidence pass (deferred until the Stripe Access Gate and BOX NOW Portal Gate can both be satisfied)
 - [x] 10-04: Run security, OpenAPI, browser, and no-secret release audit
+- [ ] 10-04.1: Add Worker-owned native checkout feature gate
 - [ ] 10-05: Produce milestone review package and go-live handoff
 
 ## Future Milestone Seeds
@@ -306,4 +307,4 @@ Because Stripe account access and BOX NOW portal access are unavailable, non-sec
 | 7.1. Cloudflare Pages Static Frontend Migration                | 5/5            | Completed | 2026-04-29 |
 | 8. Webhook Orders And Stock                                    | 8/8            | Completed | 2026-04-26 |
 | 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred  |            |
-| 10. Sandbox Verification And Release Gate                      | 3/5            | Active    |            |
+| 10. Sandbox Verification And Release Gate                      | 3/6            | Active    |            |
