@@ -122,9 +122,7 @@ function readWebhookEventType(value: string | undefined): StripeCheckoutWebhookE
 
 export function readWebhookCheckoutSessionId(env: Record<string, string | undefined> = process.env): string {
   return (
-    env.STRIPE_WEBHOOK_CHECKOUT_SESSION_ID?.trim() ||
-    env.LOCAL_CHECKOUT_SESSION_ID?.trim() ||
-    defaultCheckoutSessionId
+    env.STRIPE_WEBHOOK_CHECKOUT_SESSION_ID?.trim() || env.LOCAL_CHECKOUT_SESSION_ID?.trim() || defaultCheckoutSessionId
   );
 }
 
