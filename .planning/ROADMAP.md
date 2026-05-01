@@ -275,7 +275,7 @@ BOX NOW portal deferred gate:
 
 Plans:
 
-- [ ] 10-01: Create local full-loop UAT checklist and scripts
+- [x] 10-01: Create local full-loop UAT checklist and scripts
 - [ ] 10-02: Verify sandbox deployment, secrets, D1, and Stripe mapping readiness
 - [ ] 10-03: Run sandbox end-to-end checkout, webhook, stock, and shipping evidence pass
 - [ ] 10-04: Run security, OpenAPI, browser, and no-secret release audit
@@ -306,4 +306,4 @@ Because Stripe account access and BOX NOW portal access are unavailable, non-sec
 | 7.1. Cloudflare Pages Static Frontend Migration                | 5/5            | Completed | 2026-04-29 |
 | 8. Webhook Orders And Stock                                    | 8/8            | Completed | 2026-04-26 |
 | 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred  |            |
-| 10. Sandbox Verification And Release Gate                      | 0/5            | Planned   |            |
+| 10. Sandbox Verification And Release Gate                      | 1/5            | Active    |            |
