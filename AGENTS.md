@@ -73,6 +73,7 @@ Read these first before editing:
 - Backend Prisma client generation: `pnpm --filter @blackbox/backend prisma:generate`
 - Backend local secrets: copy `apps/backend/.dev.vars.example` to `apps/backend/.dev.vars`
 - Generate backend OpenAPI docs and client package: `pnpm generate:api`
+- Browser/API commerce boundary audit: `pnpm audit:commerce-boundaries`
 - Clean dev run: `pnpm dev:clean`
 - Unit tests: `pnpm test:unit`
 - Format/lint/type/content checks: `pnpm check`

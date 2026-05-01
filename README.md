@@ -278,6 +278,12 @@ Generate backend OpenAPI documents and refresh the generated client package:
 pnpm generate:api
 ```
 
+Run the browser/API commerce boundary audit:
+
+```sh
+pnpm audit:commerce-boundaries
+```
+
 ## Backend contract model
 
 - The backend owns the HTTP contract through code-first OpenAPI definitions.

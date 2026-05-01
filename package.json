@@ -25,6 +25,7 @@
     "build": "pnpm build:web",
     "build:web": "pnpm --filter @blackbox/web build",
     "generate:api": "pnpm --filter @blackbox/backend generate:openapi && pnpm --filter @blackbox/api-client generate",
+    "audit:commerce-boundaries": "tsx scripts/audit-commerce-boundaries.ts",
     "preview": "pnpm --filter @blackbox/web preview",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
