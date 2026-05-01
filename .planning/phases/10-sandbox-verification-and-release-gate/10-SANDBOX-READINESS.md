@@ -1,12 +1,12 @@
 # Phase 10 Sandbox Readiness Evidence
 
-Last checked: 2026-05-01T04:35:01+03:00
+Last checked: 2026-05-01T05:01:41+03:00
 
 ## Summary
 
 `10-02` verified the current sandbox posture without changing runtime code, applying migrations, writing remote D1 data, setting secrets, or introducing account-specific Stripe or BOX NOW values.
 
-The Cloudflare sandbox Worker deployment path exists, but the sandbox commerce environment is not ready for full end-to-end UAT. The blocking gaps are now explicit: sandbox D1 is behind the current repo schema and unseeded, Worker sandbox secrets are absent, real Stripe mappings are absent, Stripe test preflight is blocked by missing account credentials, and BOX NOW partner/sandbox portal validation remains unavailable.
+The Cloudflare sandbox Worker deployment path exists and sandbox D1 is now bound, migrated through the current repo schema, and seeded with the non-secret base commerce rows. The remaining blockers for full end-to-end sandbox UAT are external or deliberately deferred: Worker sandbox Stripe secrets are absent, real Stripe mappings are absent, Stripe test preflight is blocked by missing account credentials, and BOX NOW partner/sandbox portal validation remains unavailable.
 
 ## Cloudflare Worker Sandbox
 
@@ -19,25 +19,29 @@ The Cloudflare sandbox Worker deployment path exists, but the sandbox commerce e
 
 Binding readiness:
 
-- `pnpm --filter @blackbox/backend d1:migrations:list:sandbox` failed because the sandbox `COMMERCE_DB` binding is missing a `database_id` for remote D1 operations.
-- This means the documented binding-scoped remote D1 commands are not ready until the existing sandbox database is linked in Worker config or an approved environment setup step handles the binding.
+- `apps/backend/wrangler.jsonc` now binds sandbox `COMMERCE_DB` to the existing `blackbox-records-commerce-sandbox` D1 database ID.
+- `pnpm --filter @blackbox/backend d1:migrations:list:sandbox` now works through the `COMMERCE_DB` binding and reports no pending migrations after the prep pass.
 
-Read-only database-name checks:
+Remote setup applied:
 
-- `wrangler d1 list --json` shows a remote database named `blackbox-records-commerce-sandbox`.
-- Read-only `wrangler d1 execute blackbox-records-commerce-sandbox --remote` queries succeeded.
+- `pnpm --filter @blackbox/backend d1:migrations:apply:sandbox` applied `0004_add_checkout_order_shipping_locker_snapshot.sql`.
+- `pnpm --filter @blackbox/backend d1:seed:sandbox` applied the non-secret base commerce seed and wrote 33 rows.
+- `pnpm deploy:backend:sandbox` redeployed `blackbox-records-backend-sandbox` with the bound D1 config.
+
+Read-only binding checks:
+
+- `wrangler d1 execute COMMERCE_DB --env sandbox --remote` queries now succeed.
 - Existing tables: `CheckoutOrder`, `ItemAvailability`, `Stock`, `StockChange`, `StockCount`, `StoreItemOption`, `VariantStripeMapping`, `_cf_KV`, `d1_migrations`, and `sqlite_sequence`.
-- Applied migration rows: `0001_initial_commerce_state.sql`, `0002_add_internal_stock_ledger.sql`, and `0003_add_checkout_order_lifecycle.sql`.
-- Current repo migration `0004_add_checkout_order_shipping_locker_snapshot.sql` is not applied in sandbox.
-- `CheckoutOrder` does not yet have the `shippingLockerId`, `shippingLockerCountryCode`, or `shippingLockerNameOrLabel` columns in sandbox.
+- Applied migration rows now include `0001_initial_commerce_state.sql`, `0002_add_internal_stock_ledger.sql`, `0003_add_checkout_order_lifecycle.sql`, and `0004_add_checkout_order_shipping_locker_snapshot.sql`.
+- `CheckoutOrder` now has the `shippingLockerId`, `shippingLockerCountryCode`, and `shippingLockerNameOrLabel` columns in sandbox.
 
 Read-only row counts:
 
 | Table                  | Row count |
 | ---------------------- | --------: |
-| `StoreItemOption`      |         0 |
+| `StoreItemOption`      |         3 |
 | `VariantStripeMapping` |         0 |
-| `Stock`                |         0 |
+| `Stock`                |         3 |
 | `CheckoutOrder`        |         0 |
 
 Stripe mapping readiness:
@@ -81,15 +85,15 @@ Ready:
 
 - Cloudflare authentication and sandbox Worker deployment lookup.
 - Cloudflare Pages workflow readiness and public backend URL variable.
-- Read-only remote D1 inspection by database name.
+- Binding-scoped remote D1 inspection through `COMMERCE_DB`.
+- Sandbox D1 migration parity with the current repo schema.
+- Non-secret base commerce rows in sandbox `StoreItemOption` and `Stock`.
 
 Not ready:
 
-- Binding-scoped remote D1 commands through `COMMERCE_DB`.
-- Sandbox D1 migration parity with the current repo schema.
-- Sandbox D1 seed/mapping data.
 - Worker sandbox Stripe secrets.
 - Real Stripe test checkout preflight.
+- Real Stripe price mappings.
 - BOX NOW portal fulfillment evidence.
 
-`10-02` may be marked complete because the readiness pass was executed and blockers were captured. `10-03` remains blocked for full sandbox evidence until the Stripe Access Gate and BOX NOW Portal Gate are satisfied and sandbox D1 is brought to the current schema/seed posture through a separately approved setup step.
+`10-02` remains complete because the readiness pass was executed and blockers were captured. `10-03` remains blocked for full sandbox evidence until the Stripe Access Gate and BOX NOW Portal Gate are satisfied.

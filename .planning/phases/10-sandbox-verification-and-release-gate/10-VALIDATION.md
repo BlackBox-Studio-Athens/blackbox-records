@@ -23,3 +23,15 @@
 - GitHub readiness: Cloudflare Pages and Worker sandbox workflows are active; `CLOUDFLARE_ACCOUNT_ID`, `PUBLIC_BACKEND_BASE_URL`, and `CLOUDFLARE_API_TOKEN` are configured by name. `PUBLIC_STRIPE_PUBLISHABLE_KEY` is not configured while the Stripe Access Gate is deferred.
 - BOX NOW blocker: the BOX NOW Portal Gate remains deferred, so `09-06`, Phase 9 completion, and `SHIP-03` remain pending.
 - Boundary: no remote D1 migrations were applied, no remote data was written, no secrets were read, and no runtime behavior changed.
+
+## 10-03 Prep - Make Sandbox D1 Ready Enough For Later UAT
+
+- Result: partial prep for `10-03`, not full sandbox UAT completion.
+- Evidence: sandbox `COMMERCE_DB` is now bound to the existing `blackbox-records-commerce-sandbox` D1 database in `apps/backend/wrangler.jsonc`.
+- Evidence: `pnpm --filter @blackbox/backend d1:migrations:apply:sandbox` applied `0004_add_checkout_order_shipping_locker_snapshot.sql`, and `pnpm --filter @blackbox/backend d1:migrations:list:sandbox` now reports no pending migrations.
+- Evidence: `pnpm --filter @blackbox/backend d1:seed:sandbox` applied the non-secret base commerce seed and wrote 33 rows.
+- Evidence: sandbox row counts are now `StoreItemOption = 3`, `Stock = 3`, `VariantStripeMapping = 0`, and `CheckoutOrder = 0`.
+- Evidence: `CheckoutOrder` now includes the thin locker snapshot columns in sandbox: `shippingLockerId`, `shippingLockerCountryCode`, and `shippingLockerNameOrLabel`.
+- Evidence: `pnpm deploy:backend:sandbox` redeployed `blackbox-records-backend-sandbox` with the bound D1 config.
+- Boundary: no real Stripe mappings, mock Stripe mappings, BOX NOW credentials, production D1 config, production data, Worker secrets, or runtime behavior changes were introduced.
+- Remaining blockers: full `10-03` sandbox UAT still requires the Stripe Access Gate and BOX NOW Portal Gate.
