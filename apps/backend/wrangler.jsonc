@@ -60,6 +60,7 @@
         {
           "binding": "COMMERCE_DB",
           "database_name": "blackbox-records-commerce-sandbox",
+          "database_id": "d8971b93-5db5-4583-9c06-7edf33e78cde",
           "migrations_dir": "prisma/migrations",
         },
       ],
