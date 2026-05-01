@@ -96,4 +96,4 @@ Not ready:
 - Real Stripe price mappings.
 - BOX NOW portal fulfillment evidence.
 
-`10-02` remains complete because the readiness pass was executed and blockers were captured. `10-03` remains blocked for full sandbox evidence until the Stripe Access Gate and BOX NOW Portal Gate are satisfied.
+`10-02` remains complete because the readiness pass was executed and blockers were captured. `10-03` is a deferred external gate for full sandbox evidence until the Stripe Access Gate and BOX NOW Portal Gate are satisfied. `10-04` no-account audit work may proceed around that gate, but it does not satisfy `OPER-01`.
