@@ -61,7 +61,7 @@ Phase `09-01` locks the BOX NOW data and secret contract only. `SHIP-01` landed 
 ### Security & Operations
 
 - [x] **SECU-01**: Stripe secrets, webhook secrets, and D1 access remain server-only in the Worker backend and local development.
-- [ ] **SECU-02**: Browser code never writes authoritative stock or paid-order state.
+- [x] **SECU-02**: Browser code never writes authoritative stock or paid-order state.
 - [ ] **OPER-01**: Team can validate the full sandbox path from static `/store/` browse through Worker checkout, webhook-confirmed paid order, and D1 state changes.
 - [ ] **OPER-02**: Milestone ends with a human review package that captures sandbox evidence, open production gaps, and explicit handoff to the go-live milestone.
 
@@ -135,7 +135,7 @@ Phase `09-01` locks the BOX NOW data and secret contract only. `SHIP-01` landed 
 | SHIP-02     | Phase 9     | Completed |
 | SHIP-03     | Phase 9     | Pending   |
 | SECU-01     | Phase 5     | Completed |
-| SECU-02     | Phase 8     | Pending   |
+| SECU-02     | Phase 8     | Completed |
 | OPER-01     | Phase 10    | Pending   |
 | OPER-02     | Phase 10    | Pending   |
 
@@ -148,4 +148,4 @@ Phase `09-01` locks the BOX NOW data and secret contract only. `SHIP-01` landed 
 ---
 
 _Requirements defined: 2026-04-19_
-_Last updated: 2026-05-01 after recording the BOX NOW Portal Gate as a deferred external validation gate_
+_Last updated: 2026-05-01 after completing the no-account release audit and recording `10-03` as a deferred external gate_

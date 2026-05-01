@@ -35,3 +35,26 @@
 - Evidence: `pnpm deploy:backend:sandbox` redeployed `blackbox-records-backend-sandbox` with the bound D1 config.
 - Boundary: no real Stripe mappings, mock Stripe mappings, BOX NOW credentials, production D1 config, production data, Worker secrets, or runtime behavior changes were introduced.
 - Remaining blockers: full `10-03` sandbox UAT still requires the Stripe Access Gate and BOX NOW Portal Gate.
+
+## 10-03 Deferred External Gate
+
+- Result: deferred, not complete.
+- Evidence: sandbox D1 prep is done, but full hosted sandbox checkout/webhook/stock/shipping evidence cannot be claimed without real Stripe test mode and real BOX NOW portal fulfillment evidence.
+- Boundary: `10-03`, `07-16`, `09-06`, `OPER-01`, and `SHIP-03` remain pending/deferred. No completed-plan count was added for this gate.
+- Decision: Phase 10 may proceed to no-account audit and review packaging, but full release approval remains blocked by the Stripe Access Gate and BOX NOW Portal Gate.
+
+## 10-04 Run Security, OpenAPI, Browser, And No-Secret Release Audit
+
+- Result: complete for no-account release hardening, not full release approval.
+- Evidence: `pnpm generate:api` passed and generated API artifacts remained unchanged.
+- Evidence: `pnpm audit:commerce-boundaries` passed, scanning 145 browser-facing files for server-only Stripe secrets, webhook secrets, raw Stripe price IDs, D1 binding/config leakage, backend runtime imports, and public generated API/internal-contract leakage.
+- Evidence: `pnpm --filter @blackbox/backend exec vitest run test/openapi/api-documents.test.ts` passed with 1 test file and 2 tests.
+- Browser Use evidence: `pnpm dev:stack:stripe-mock` started local D1 prep, official local `stripe-mock`, Worker mock mode on `127.0.0.1:8787`, and static Astro on `127.0.0.1:4321`.
+- Browser Use evidence: `/blackbox-records/store/` rendered the store collection.
+- Browser Use evidence: `/blackbox-records/store/disintegration-black-vinyl-lp/checkout/` blocked payment before locker selection, accepted the BOX NOW Test Locker (`locker_id = 4`, `country_code = GR`, `locker_name_or_label = ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234`), and mounted the local Mock Checkout Panel.
+- Local fixture evidence: the Browser-created checkout session was `cs_test_QcW82wLNfwSWD0V`; `pnpm stripe:webhook:simulate:local checkout.session.completed` returned HTTP 200 for that exact session.
+- Internal readback evidence: protected internal order readback returned `status = paid` with the persisted thin BOX NOW locker snapshot for `cs_test_QcW82wLNfwSWD0V`.
+- Browser Use evidence: `/blackbox-records/store/disintegration-black-vinyl-lp/checkout/return?session_id=cs_test_QcW82wLNfwSWD0V` rendered Worker-owned checkout return state and the persisted BOX NOW locker recap. The visible checkout payment state remained `Open` because official local `stripe-mock` still returns an open Checkout Session even after the signed local webhook fixture updates the internal order row; this is a known no-account local simulation limit, not real Stripe evidence.
+- Browser Use evidence: `/blackbox-records/stock/` rendered the protected stock operations shell and failed closed with `Stock API unavailable` / `401 Unauthorized` because the local browser request does not carry the Cloudflare Access operator header. No browser console errors were recorded.
+- Browser Use evidence: primary shell navigation from Home to Releases to Store worked and console warnings/errors remained empty.
+- Boundary: no real `pk_test_*`, `sk_test_*`, `price_*`, `whsec_*`, BOX NOW credentials, production data, production cutover, schema changes, generated client drift, or deployment credential changes were introduced.

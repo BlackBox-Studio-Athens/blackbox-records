@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
-stopped_at: Phase 10 plan 3; run sandbox end-to-end checkout, webhook, stock, and shipping evidence pass
-last_updated: '2026-05-01T05:01:41+03:00'
-last_activity: 2026-05-01 -- Bound and prepared sandbox D1 for later UAT while keeping external Stripe and BOX NOW gates open
+stopped_at: Phase 10 plan 5; produce milestone review package and go-live handoff
+last_updated: '2026-05-01T05:34:13+03:00'
+last_activity: 2026-05-01 -- Deferred blocked sandbox e2e gate and completed the no-account release audit
 progress:
   total_phases: 10
   completed_phases: 7
   total_plans: 65
-  completed_plans: 60
-  percent: 92
+  completed_plans: 61
+  percent: 94
 ---
 
 # Project State
@@ -28,22 +28,22 @@ See: .planning/PROJECT.md (updated 2026-04-21)
 Current Phase: 10
 Current Phase Name: Sandbox Verification And Release Gate
 Total Phases: 10
-Current Plan: 3
+Current Plan: 5
 Total Plans in Phase: 5
 Status: Active
-Progress: 92%
+Progress: 94%
 Last Activity: 2026-05-01
-Last Activity Description: Sandbox D1 is now bound through `COMMERCE_DB`, migration `0004` is applied, the non-secret base seed is present, and the sandbox Worker was redeployed; full UAT remains blocked by real Stripe and BOX NOW portal access
-Paused At: Phase 10 plan 3; run sandbox end-to-end checkout, webhook, stock, and shipping evidence pass
+Last Activity Description: Full sandbox e2e is now explicitly deferred behind the Stripe Access Gate and BOX NOW Portal Gate, while `10-04` no-account release audit evidence passed with generated API parity, OpenAPI separation, commerce boundary scanning, and Browser Use local route checks
+Paused At: Phase 10 plan 5; produce milestone review package and go-live handoff
 
-Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed while real Stripe-account validation remains explicitly deferred. Phase 8 now has the schema-only `CheckoutOrder` lifecycle table, internal order repository/application seams, a dependency-free typed transition guard, a fixture-tested Stripe webhook raw-body route contract, an optional official `stripe-mock` API local checkout simulation harness, shared Stripe Checkout Session reconciliation, pending order creation from Worker-owned checkout start, idempotent paid webhook handling that decrements stock only on the first paid transition, non-paid/needs-review handling that never mutates stock, and Access-protected order readback for low-volume reconciliation. Phase 7.1 completed the Cloudflare Pages static artifact contract, GitHub Pages rollback posture, Direct Upload CI workflow, browser-safe Pages build env contract, exact checkout return-origin allowlist guidance, Cloudflare-root Astro base-path correction, Browser Use hosted validation, and canonical hosting docs. Phase 9 now has the BOX NOW Greece-only shipping data and secret contract locked, a frontend-only locker gate before payment, Worker-owned checkout preflight that requires the minimal Greek locker snapshot before payment starts, D1-backed CheckoutOrder persistence for the approved thin locker snapshot, shopper-facing checkout return recap of the Worker-owned selected locker state, and local signed-fixture evidence for the manual handoff. Phase 10 now has a no-account local UAT checklist and sandbox readiness evidence: the Worker sandbox deployment path exists, sandbox D1 is bound through `COMMERCE_DB`, migration `0004` is applied, the non-secret base commerce seed is present, and the Stripe secret/mapping plus BOX NOW portal blockers are explicit. The BOX NOW Portal Gate remains deferred until partner/sandbox portal access exists, and Phase 10 may proceed only with no-account preparation, readiness checks, blocker capture, and audits until the Stripe Access Gate and BOX NOW Portal Gate are satisfied.
+Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed while real Stripe-account validation remains explicitly deferred. Phase 8 now has the schema-only `CheckoutOrder` lifecycle table, internal order repository/application seams, a dependency-free typed transition guard, a fixture-tested Stripe webhook raw-body route contract, an optional official `stripe-mock` API local checkout simulation harness, shared Stripe Checkout Session reconciliation, pending order creation from Worker-owned checkout start, idempotent paid webhook handling that decrements stock only on the first paid transition, non-paid/needs-review handling that never mutates stock, and Access-protected order readback for low-volume reconciliation. Phase 7.1 completed the Cloudflare Pages static artifact contract, GitHub Pages rollback posture, Direct Upload CI workflow, browser-safe Pages build env contract, exact checkout return-origin allowlist guidance, Cloudflare-root Astro base-path correction, Browser Use hosted validation, and canonical hosting docs. Phase 9 now has the BOX NOW Greece-only shipping data and secret contract locked, a frontend-only locker gate before payment, Worker-owned checkout preflight that requires the minimal Greek locker snapshot before payment starts, D1-backed CheckoutOrder persistence for the approved thin locker snapshot, shopper-facing checkout return recap of the Worker-owned selected locker state, and local signed-fixture evidence for the manual handoff. Phase 10 now has a no-account local UAT checklist, sandbox readiness evidence, a deferred `10-03` full sandbox e2e gate, and `10-04` no-account release audit evidence: generated API parity, OpenAPI public/internal separation, a deterministic commerce boundary audit, Browser Use checks for store/checkout/return/stock/shell navigation, and explicit residual external blockers. The BOX NOW Portal Gate remains deferred until partner/sandbox portal access exists, and Phase 10 may proceed only with no-account preparation, readiness checks, blocker capture, audits, and review packaging until the Stripe Access Gate and BOX NOW Portal Gate are satisfied.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 60
-- Total plans remaining: 5
+- Total plans completed: 61
+- Total plans remaining: 4
 - Average duration: -
 - Total execution time: -
 
@@ -60,12 +60,12 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mo
 | 7.1   | 5/5   | Completed | 2026-04-29 |
 | 8     | 8/8   | Completed | 2026-04-26 |
 | 9     | 5/6   | Deferred  | 2026-04-30 |
-| 10    | 2/5   | Active    | 2026-05-01 |
+| 10    | 3/5   | Active    | 2026-05-01 |
 
 **Recent Trend:**
 
-- Last 5 plans: 09-03, 09-04, 09-05, 10-01, 10-02
-- Trend: The Cloudflare Pages migration is complete, Phase 9 now has local BOX NOW shipping implementation and handoff evidence, and Phase 10 now has a repeatable local full-loop UAT checklist plus sandbox D1 readiness for later UAT. Real Stripe validation remains deferred until account access exists, and real BOX NOW portal validation remains deferred until portal access exists.
+- Last 5 plans: 09-04, 09-05, 10-01, 10-02, 10-04
+- Trend: The Cloudflare Pages migration is complete, Phase 9 now has local BOX NOW shipping implementation and handoff evidence, and Phase 10 now has a repeatable local full-loop UAT checklist, sandbox D1 readiness, and no-account release audit evidence. Real Stripe validation remains deferred until account access exists, and real BOX NOW portal validation remains deferred until portal access exists.
 
 ## Accumulated Context
 
@@ -118,7 +118,8 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mo
 - Phase 9 plan 6 has local evidence for the manual BOX NOW fulfillment handoff using the local mock checkout, signed paid webhook fixture, internal paid order readback, idempotent stock decrement replay, and return locker recap. It is now a deferred `BOX NOW Portal Gate` until BOX NOW partner/sandbox portal validation can prove `SHIP-03`.
 - Phase 10 plan 1 added a repeatable local full-loop UAT checklist for the no-account path: local D1, official local `stripe-mock`, Mock Checkout Panel, BOX NOW Test Locker, signed paid webhook fixture, protected internal order readback, checkout return recap, and replay idempotency checks.
 - Phase 10 plan 2 recorded sandbox readiness evidence: Worker sandbox deployment lookup succeeds, Cloudflare/GitHub CI credentials are present by name, sandbox D1 can be inspected by database name, but binding-scoped `COMMERCE_DB` remote commands are blocked by missing `database_id`, migration `0004` is not applied, key commerce tables are empty, Worker Stripe secrets are absent, real Stripe mappings are absent, and BOX NOW portal evidence remains unavailable.
-- Phase 10 plan 3 prep bound sandbox `COMMERCE_DB` to the existing sandbox D1 database, applied migration `0004`, applied the non-secret base commerce seed, and redeployed the sandbox Worker with the D1 binding. Full sandbox UAT remains blocked by the Stripe Access Gate and BOX NOW Portal Gate.
+- Phase 10 plan 3 prep bound sandbox `COMMERCE_DB` to the existing sandbox D1 database, applied migration `0004`, applied the non-secret base commerce seed, and redeployed the sandbox Worker with the D1 binding. `10-03` itself is now a deferred external gate and remains unchecked until the Stripe Access Gate and BOX NOW Portal Gate can both be satisfied.
+- Phase 10 plan 4 added a deterministic commerce boundary audit and recorded no-account release audit evidence: generated API parity, public/internal OpenAPI separation, Browser Use local checks for store/checkout/return/stock/shell navigation, and explicit limits around local stripe-mock and Access-protected stock API behavior.
 
 ## Decisions Made
 
@@ -174,6 +175,6 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mo
 
 ## Session
 
-**Last Date:** 2026-05-01T05:01:41+03:00
-**Stopped At:** Phase 10 plan 3; run sandbox end-to-end checkout, webhook, stock, and shipping evidence pass
+**Last Date:** 2026-05-01T05:34:13+03:00
+**Stopped At:** Phase 10 plan 5; produce milestone review package and go-live handoff
 **Resume File:** .planning/ROADMAP.md
