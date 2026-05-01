@@ -4,12 +4,15 @@
 **Status:** Planning draft  
 **Purpose:** Future go-live milestone input. This checklist is not part of the active sandbox implementation roadmap; it exists so the later Go-Live / Launch Hardening milestone starts with explicit stop/go criteria.
 
+Primary handoff input: `.planning/phases/10-sandbox-verification-and-release-gate/10-MILESTONE-REVIEW.md`.
+
 ## Runtime And Deployment
 
 - [ ] Target runtime/adapter is approved
 - [ ] Production host/vendor is approved
 - [ ] Deployment topology is documented
 - [ ] Emergency disable or rollback strategy for native commerce is documented
+- [ ] Native Checkout Gate production rollout and rollback behavior is approved
 
 ## Secrets And Security
 
@@ -24,6 +27,7 @@
 - [ ] Embedded Checkout request shape is documented
 - [ ] Required webhook events and idempotency rules are documented
 - [ ] Success/cancel/return-page behavior is documented as non-authoritative
+- [ ] Stripe Access Gate evidence is captured with real test keys, Price mappings, webhook secret, and Browser Use validation
 
 ## D1
 
@@ -38,6 +42,7 @@
 - [ ] Required locker metadata is defined
 - [ ] v1 fulfillment depth is approved
 - [ ] Manual partner-portal fulfillment path exists if automation remains deferred
+- [ ] BOX NOW Portal Gate evidence is captured from partner or sandbox portal fulfillment
 
 ## Cutover
 
@@ -50,4 +55,5 @@
 
 - [ ] Sandbox implementation milestone approved
 - [ ] Stripe sandbox evidence reviewed
+- [ ] BOX NOW sandbox fulfillment evidence reviewed
 - [ ] Final stop/go reviewers identified

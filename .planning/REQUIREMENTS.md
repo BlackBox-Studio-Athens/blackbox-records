@@ -65,6 +65,8 @@ Phase `09-01` locks the BOX NOW data and secret contract only. `SHIP-01` landed 
 - [ ] **OPER-01**: Team can validate the full sandbox path from static `/store/` browse through Worker checkout, webhook-confirmed paid order, and D1 state changes.
 - [ ] **OPER-02**: Milestone ends with a human review package that captures sandbox evidence, open production gaps, and explicit handoff to the go-live milestone.
 
+`10-MILESTONE-REVIEW.md` now prepares the `OPER-02` review package and go-live handoff. `OPER-02` remains pending until human review accepts the package, and `OPER-01` remains pending until the Stripe Access Gate and BOX NOW Portal Gate can both be satisfied.
+
 ## v2 Requirements
 
 ### Launch & Production
@@ -137,7 +139,7 @@ Phase `09-01` locks the BOX NOW data and secret contract only. `SHIP-01` landed 
 | SECU-01     | Phase 5     | Completed |
 | SECU-02     | Phase 8     | Completed |
 | OPER-01     | Phase 10    | Pending   |
-| OPER-02     | Phase 10    | Pending   |
+| OPER-02     | Phase 10    | Prepared  |
 
 **Coverage:**
 
@@ -148,4 +150,4 @@ Phase `09-01` locks the BOX NOW data and secret contract only. `SHIP-01` landed 
 ---
 
 _Requirements defined: 2026-04-19_
-_Last updated: 2026-05-01 after completing the no-account release audit and recording `10-03` as a deferred external gate_
+_Last updated: 2026-05-01 after preparing the milestone review package while keeping external gates pending_

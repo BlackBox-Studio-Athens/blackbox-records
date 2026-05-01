@@ -6,10 +6,13 @@
 
 ## Ready For Future Go-Live Milestone
 
+Start from `.planning/phases/10-sandbox-verification-and-release-gate/10-MILESTONE-REVIEW.md`.
+
 ### BL-11: One-way production cutover plan
 
 - Linked milestone: Go-Live / Launch Hardening
 - Acceptance criteria:
+  - Consume the `10-MILESTONE-REVIEW.md` deferred-gate list before any cutover decision
   - Define the production rollout order from the current external handoff to native commerce
   - Define emergency disable or rollback triggers for native checkout
   - Keep the cutover plan separate from sandbox implementation work
@@ -20,9 +23,19 @@
 - Linked milestone: Go-Live / Launch Hardening
 - Acceptance criteria:
   - Cover runtime, secrets, Stripe, D1, shipping, reconciliation, monitoring, and communications
+  - Include Stripe Access Gate evidence, BOX NOW Portal Gate evidence, and Native Checkout Gate setup
   - Name required approvers and the stop/go gate
   - Stay implementation-aware enough to use the sandbox milestone evidence directly
 - Human review stop: approve final launch gate format
+
+### BL-17: Account-backed external gate validation
+
+- Linked milestone: Go-Live / Launch Hardening
+- Acceptance criteria:
+  - Capture real Stripe test-mode checkout, webhook, and return-state evidence
+  - Capture BOX NOW partner or sandbox portal fulfillment evidence for a paid Greek locker order
+  - Keep the evidence separate from local stripe-mock and signed-fixture validation
+- Human review stop: approve whether the external gates are satisfied
 
 ## Ready For Future v2 Milestones
 

@@ -36,7 +36,7 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - [x] **Phase 7.1: Cloudflare Pages Static Frontend Migration** - Move the static Astro frontend from GitHub Pages to Cloudflare Pages before webhook/order/shipping verification depends on stable Cloudflare-hosted origins
 - [x] **Phase 8: Webhook Orders And Stock** - Make payment truth and stock mutation Worker-owned, webhook-authoritative, and idempotent (non-secret backend groundwork may proceed before real Stripe account access)
 - [ ] **Phase 9: Greece-Only BOX NOW Shipping** - Add the approved locker-selection gate and thin fulfillment data contract (local implementation complete; BOX NOW portal validation deferred)
-- [ ] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow where account access allows and prepare the go-live handoff package
+- [ ] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow where account access allows and prepare the go-live handoff package (review package complete; external gates remain pending)
 
 ## Phase Details
 
@@ -280,15 +280,16 @@ Plans:
 - [ ] 10-03: Run sandbox end-to-end checkout, webhook, stock, and shipping evidence pass (deferred until the Stripe Access Gate and BOX NOW Portal Gate can both be satisfied)
 - [x] 10-04: Run security, OpenAPI, browser, and no-secret release audit
 - [x] 10-04.1: Add Worker-owned native checkout feature gate
-- [ ] 10-05: Produce milestone review package and go-live handoff
+- [x] 10-05: Produce milestone review package and go-live handoff
 
 ## Future Milestone Seeds
 
 ### Go-Live / Launch Hardening
 
 - Production cutover remains a separate milestone
-- Consumes the sandbox evidence and support docs produced by this milestone
-- Covers live-mode keys, production rollout, emergency disable strategy, comms, and final stop/go review
+- Consumes `10-MILESTONE-REVIEW.md`, sandbox readiness evidence, local UAT evidence, and the deferred external-gate checklist produced by this milestone
+- Covers Stripe Access Gate completion, BOX NOW Portal Gate completion, Cloudflare Flagship `FLAGS` setup, live-mode keys, production rollout, emergency disable strategy, comms, and final stop/go review
+- Must not start until human review accepts the prepared package and explicitly carries forward the open gates
 
 ## Progress
 
@@ -307,4 +308,4 @@ Because Stripe account access and BOX NOW portal access are unavailable, non-sec
 | 7.1. Cloudflare Pages Static Frontend Migration                | 5/5            | Completed | 2026-04-29 |
 | 8. Webhook Orders And Stock                                    | 8/8            | Completed | 2026-04-26 |
 | 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred  |            |
-| 10. Sandbox Verification And Release Gate                      | 4/6            | Active    |            |
+| 10. Sandbox Verification And Release Gate                      | 5/6            | Active    |            |
