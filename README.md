@@ -300,6 +300,10 @@ pnpm audit:commerce-boundaries
 - Local checkout mode is controlled by `PUBLIC_CHECKOUT_CLIENT_MODE`.
   - `stripe` uses real Stripe.js embedded Checkout and requires `PUBLIC_STRIPE_PUBLISHABLE_KEY`.
   - `mock` skips Stripe.js and renders a local mock checkout panel after `StartCheckout`.
+- Native checkout availability is controlled by the Worker-owned `native_checkout_enabled` feature gate, exposed to the
+  browser only as sanitized `/api/store/capabilities` state.
+- The feature gate is a runtime switch, not an environment replacement. Worker environments still isolate D1 data,
+  secrets, webhook endpoints, and return origins.
 - Cloudflare Pages production builds use GitHub Actions variables for browser-safe public env:
   - `PUBLIC_BACKEND_BASE_URL`
   - `PUBLIC_STRIPE_PUBLISHABLE_KEY`
@@ -317,6 +321,8 @@ pnpm audit:commerce-boundaries
 - The account-level `workers.dev` subdomain is owned in Cloudflare, not in this repo, so the Worker name is the repo-controlled stable portion of the sandbox hostname.
 - The frontend must not guess production or sandbox backend origins in code.
 - Worker secrets, D1 bindings, Stripe secret keys, Cloudflare Access config, and CI credentials remain backend/server-side only.
+- Cloudflare Flagship setup uses binding name `FLAGS` and flag key `native_checkout_enabled`. Do not commit a Flagship
+  app ID until the app exists and that non-secret account-specific value is explicitly approved.
 
 ## Protected operator hostname contract
 
@@ -443,6 +449,8 @@ cp apps/backend/.dev.vars.example apps/backend/.dev.vars
 - `apps/backend/.dev.vars` is local-only, ignored by git, and must never be committed.
 - Missing backend runtime secrets are acceptable only for local work that does not exercise those routes.
 - Current Stripe-backed checkout routes require `STRIPE_SECRET_KEY` before creating or reading Checkout Sessions.
+- Hosted Worker checkout fails closed if the `FLAGS` binding is absent or feature evaluation fails; local/mock checkout
+  remains enabled by default for no-account development.
 - Checkout session creation and split-port browser API reads accept origins only from `CHECKOUT_RETURN_ORIGINS`; configured origins include local static dev, Cloudflare Pages, and the GitHub Pages rollback origin.
 - The static checkout shell also requires `PUBLIC_STRIPE_PUBLISHABLE_KEY` before it can mount embedded Checkout in the browser.
 - `stripe-mock` mode does not require `PUBLIC_STRIPE_PUBLISHABLE_KEY` or `apps/backend/.dev.vars` because the Worker `mock` env binds harmless local Stripe mock configuration and the browser renders the local mock checkout panel instead of loading Stripe.js.

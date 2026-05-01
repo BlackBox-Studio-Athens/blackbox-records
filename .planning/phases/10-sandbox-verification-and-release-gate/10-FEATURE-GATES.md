@@ -10,8 +10,8 @@ endpoints, checkout return origins, and release evidence.
 
 ## First Gate
 
-| Gate | Flag key | Owner | Default without provider |
-| ---- | -------- | ----- | ------------------------ |
+| Gate                 | Flag key                  | Owner          | Default without provider                              |
+| -------------------- | ------------------------- | -------------- | ----------------------------------------------------- |
 | Native Checkout Gate | `native_checkout_enabled` | Worker Backend | Enabled in local/mock; disabled in sandbox/production |
 
 ## Cloudflare Contract

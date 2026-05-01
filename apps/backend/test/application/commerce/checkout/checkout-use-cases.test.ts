@@ -4,6 +4,7 @@ import {
   CheckoutConfigurationError,
   CheckoutShippingSelectionError,
   CheckoutUnavailableError,
+  NativeCheckoutDisabledError,
   listVariantOffersForStoreItem,
   readCheckoutState,
   readStoreOffer,
@@ -244,6 +245,31 @@ describe('checkout use cases', () => {
     ).rejects.toBeInstanceOf(CheckoutShippingSelectionError);
 
     expect(checkoutGateway.createEmbeddedCheckoutSession).not.toHaveBeenCalled();
+  });
+
+  it('rejects disabled native checkout before Stripe or order writes', async () => {
+    await expect(
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        stripeMappings,
+        checkoutGateway,
+        orders,
+        {
+          returnUrl: 'https://example.com/return',
+          shippingLocker,
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+        {
+          isNativeCheckoutEnabled: async () => false,
+        },
+      ),
+    ).rejects.toBeInstanceOf(NativeCheckoutDisabledError);
+
+    expect(checkoutGateway.createEmbeddedCheckoutSession).not.toHaveBeenCalled();
+    expect(orders.records.size).toBe(0);
   });
 
   it('rejects non-Greece shipping lockers before starting checkout', async () => {

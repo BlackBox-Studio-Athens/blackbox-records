@@ -4,6 +4,7 @@ import {
   CheckoutConfigurationError,
   CheckoutShippingSelectionError,
   CheckoutUnavailableError,
+  NativeCheckoutDisabledError,
   StoreItemNotFoundError,
   VariantMismatchError,
 } from '../../src/application/commerce/checkout';
@@ -12,6 +13,7 @@ import { createHttpApp } from '../../src/interfaces/http/app';
 const mockDisconnect = vi.fn(async () => {});
 const mockReadStoreOffer = vi.fn();
 const mockListVariantOffersForStoreItem = vi.fn();
+const mockReadStoreCapabilities = vi.fn();
 const mockStartCheckout = vi.fn();
 const mockReadCheckoutState = vi.fn();
 
@@ -22,11 +24,13 @@ vi.mock('../../src/interfaces/http/routes/public-commerce-services', () => ({
       CheckoutConfigurationError,
       CheckoutShippingSelectionError,
       CheckoutUnavailableError,
+      NativeCheckoutDisabledError,
       StoreItemNotFoundError,
       VariantMismatchError,
     },
     listVariantOffersForStoreItem: mockListVariantOffersForStoreItem,
     readCheckoutState: mockReadCheckoutState,
+    readStoreCapabilities: mockReadStoreCapabilities,
     readStoreOffer: mockReadStoreOffer,
     startCheckout: mockStartCheckout,
   }),
@@ -78,6 +82,27 @@ describe('public commerce routes', () => {
       canCheckout: true,
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
+    });
+  });
+
+  it('returns browser-safe store capability state', async () => {
+    mockReadStoreCapabilities.mockResolvedValueOnce({
+      nativeCheckout: {
+        enabled: false,
+        unavailableReason: 'Native checkout is temporarily unavailable.',
+      },
+    });
+
+    const app = createHttpApp();
+    const response = await app.request('http://backend.test/api/store/capabilities', {}, testBindings);
+
+    expect(mockReadStoreCapabilities).toHaveBeenCalledOnce();
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      nativeCheckout: {
+        enabled: false,
+        unavailableReason: 'Native checkout is temporarily unavailable.',
+      },
     });
   });
 
@@ -295,6 +320,34 @@ describe('public commerce routes', () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: 'A valid Greece BOX NOW locker is required before checkout.',
+    });
+  });
+
+  it('maps disabled native checkout to a public service-unavailable response', async () => {
+    mockStartCheckout.mockRejectedValueOnce(new NativeCheckoutDisabledError());
+
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://backend.test/api/checkout/sessions',
+      {
+        body: JSON.stringify({
+          shippingLocker,
+          storeItemSlug: 'disintegration-black-vinyl-lp',
+          variantId: 'variant_barren-point_standard',
+        }),
+        headers: {
+          origin: 'https://blackbox.example',
+          referer: 'https://blackbox.example/store/disintegration-black-vinyl-lp/checkout/',
+          'content-type': 'application/json',
+        },
+        method: 'POST',
+      },
+      testBindings,
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: 'Native checkout is temporarily unavailable.',
     });
   });
 

@@ -2,8 +2,10 @@ import {
   CheckoutConfigurationError,
   CheckoutShippingSelectionError,
   CheckoutUnavailableError,
+  NativeCheckoutDisabledError,
   listVariantOffersForStoreItem,
   readCheckoutState,
+  readStoreCapabilities,
   readStoreOffer,
   startCheckout,
   StoreItemNotFoundError,
@@ -19,6 +21,7 @@ import {
   PrismaStoreItemOptionRepository,
   PrismaVariantStripeMappingRepository,
 } from '../../../infrastructure/persistence/prisma';
+import { createFeatureFlagReader } from '../../../infrastructure/feature-flags';
 import { createStripeCheckoutGateway } from '../../../infrastructure/stripe';
 
 export function createPublicCommerceServices(bindings: AppBindings) {
@@ -35,6 +38,7 @@ export function createPublicCommerceServices(bindings: AppBindings) {
       CheckoutConfigurationError,
       CheckoutShippingSelectionError,
       CheckoutUnavailableError,
+      NativeCheckoutDisabledError,
       StoreItemNotFoundError,
       VariantMismatchError,
     },
@@ -42,6 +46,7 @@ export function createPublicCommerceServices(bindings: AppBindings) {
       listVariantOffersForStoreItem(storeItems, itemAvailability, stock, storeItemSlug),
     readCheckoutState: async (checkoutSessionId: string) =>
       readCheckoutState(createStripeCheckoutGateway(bindings), orders, checkoutSessionId),
+    readStoreCapabilities: async () => readStoreCapabilities(createFeatureFlagReader(bindings)),
     readStoreOffer: async (storeItemSlug: string) => readStoreOffer(storeItems, itemAvailability, stock, storeItemSlug),
     startCheckout: async (command: {
       returnUrl: string;
@@ -57,6 +62,7 @@ export function createPublicCommerceServices(bindings: AppBindings) {
         createStripeCheckoutGateway(bindings),
         orders,
         command,
+        createFeatureFlagReader(bindings),
       ),
   };
 }

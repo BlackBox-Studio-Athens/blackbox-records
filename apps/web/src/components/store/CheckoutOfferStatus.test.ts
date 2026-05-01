@@ -18,9 +18,17 @@ const initialAvailability: CheckoutOfferInitialAvailability = {
   priceDisplay: '€20',
 };
 
+const enabledStoreCapabilities = {
+  nativeCheckout: {
+    enabled: true,
+    unavailableReason: null,
+  },
+};
+
 describe('CheckoutOfferStatus helpers', () => {
   it('calls public Worker offer and variant reads for the current store item', async () => {
     const api: PublicCheckoutApi = {
+      readStoreCapabilities: vi.fn(async () => enabledStoreCapabilities),
       readCheckoutState: vi.fn(),
       readStoreOffer: vi.fn(async () => ({
         availability: {
@@ -47,6 +55,7 @@ describe('CheckoutOfferStatus helpers', () => {
 
     const state = await loadCheckoutOfferState(api, 'disintegration-black-vinyl-lp');
 
+    expect(api.readStoreCapabilities).toHaveBeenCalledOnce();
     expect(api.readStoreOffer).toHaveBeenCalledWith('disintegration-black-vinyl-lp');
     expect(api.readStoreOfferVariants).toHaveBeenCalledWith('disintegration-black-vinyl-lp');
     expect(api.startCheckout).not.toHaveBeenCalled();
@@ -63,6 +72,7 @@ describe('CheckoutOfferStatus helpers', () => {
     expect(
       createCheckoutOfferView({
         kind: 'ready',
+        capabilities: enabledStoreCapabilities,
         offer: {
           availability: {
             label: 'Available',
@@ -95,10 +105,53 @@ describe('CheckoutOfferStatus helpers', () => {
     });
   });
 
+  it('blocks payment when Worker capabilities disable native checkout', () => {
+    expect(
+      createCheckoutOfferView({
+        kind: 'ready',
+        capabilities: {
+          nativeCheckout: {
+            enabled: false,
+            unavailableReason: 'Native checkout is temporarily unavailable.',
+          },
+        },
+        offer: {
+          availability: {
+            label: 'Available',
+            status: 'available',
+          },
+          canCheckout: true,
+          storeItemSlug: 'disintegration-black-vinyl-lp',
+          variantId: 'variant_barren-point_standard',
+        },
+        variants: [
+          {
+            availability: {
+              label: 'Available',
+              status: 'available',
+            },
+            canCheckout: true,
+            storeItemSlug: 'disintegration-black-vinyl-lp',
+            variantId: 'variant_barren-point_standard',
+          },
+        ],
+      }),
+    ).toEqual({
+      badgeLabel: 'Checkout paused',
+      canStartCheckout: false,
+      detail: 'Native checkout is temporarily unavailable.',
+      isReady: false,
+      statusLabel: 'Available',
+      tone: 'unavailable',
+      variantId: 'variant_barren-point_standard',
+    });
+  });
+
   it('renders unavailable Worker state without a payment action', () => {
     expect(
       createCheckoutOfferView({
         kind: 'ready',
+        capabilities: enabledStoreCapabilities,
         offer: {
           availability: {
             label: 'Sold Out',
@@ -122,6 +175,7 @@ describe('CheckoutOfferStatus helpers', () => {
 
   it('renders visible backend error state', async () => {
     const api: PublicCheckoutApi = {
+      readStoreCapabilities: vi.fn(async () => enabledStoreCapabilities),
       readCheckoutState: vi.fn(),
       readStoreOffer: vi.fn(async () => {
         throw new PublicCheckoutApiError(404, 'Store item not found.');
@@ -163,6 +217,7 @@ describe('CheckoutOfferStatus helpers', () => {
       clientSecret: 'cs_test_client_secret',
     }));
     const api: PublicCheckoutApi = {
+      readStoreCapabilities: vi.fn(async () => enabledStoreCapabilities),
       readCheckoutState: vi.fn(),
       readStoreOffer: vi.fn(),
       readStoreOfferVariants: vi.fn(),
@@ -199,6 +254,7 @@ describe('CheckoutOfferStatus helpers', () => {
 
   it('does not start checkout before a Greek locker is selected', async () => {
     const api: PublicCheckoutApi = {
+      readStoreCapabilities: vi.fn(async () => enabledStoreCapabilities),
       readCheckoutState: vi.fn(),
       readStoreOffer: vi.fn(),
       readStoreOfferVariants: vi.fn(),
@@ -228,6 +284,7 @@ describe('CheckoutOfferStatus helpers', () => {
 
   it('does not start checkout with a non-Greece locker selection', async () => {
     const api: PublicCheckoutApi = {
+      readStoreCapabilities: vi.fn(async () => enabledStoreCapabilities),
       readCheckoutState: vi.fn(),
       readStoreOffer: vi.fn(),
       readStoreOfferVariants: vi.fn(),
@@ -263,6 +320,7 @@ describe('CheckoutOfferStatus helpers', () => {
     expect(
       createCheckoutOfferView({
         kind: 'ready',
+        capabilities: enabledStoreCapabilities,
         offer: {
           availability: {
             label: 'Available',
@@ -287,6 +345,7 @@ describe('CheckoutOfferStatus helpers', () => {
   it('keeps shopper-facing checkout status copy free of implementation terms', () => {
     const readyView = createCheckoutOfferView({
       kind: 'ready',
+      capabilities: enabledStoreCapabilities,
       offer: {
         availability: {
           label: 'Available',
@@ -318,6 +377,7 @@ describe('CheckoutOfferStatus helpers', () => {
 
   it('does not start checkout when the Stripe publishable key is missing', async () => {
     const api: PublicCheckoutApi = {
+      readStoreCapabilities: vi.fn(async () => enabledStoreCapabilities),
       readCheckoutState: vi.fn(),
       readStoreOffer: vi.fn(),
       readStoreOfferVariants: vi.fn(),
@@ -347,6 +407,7 @@ describe('CheckoutOfferStatus helpers', () => {
 
   it('does not mount checkout when the Worker returns no client secret', async () => {
     const api: PublicCheckoutApi = {
+      readStoreCapabilities: vi.fn(async () => enabledStoreCapabilities),
       readCheckoutState: vi.fn(),
       readStoreOffer: vi.fn(),
       readStoreOfferVariants: vi.fn(),
@@ -377,6 +438,7 @@ describe('CheckoutOfferStatus helpers', () => {
 
   it('keeps checkout start API errors visible without mounting Stripe', async () => {
     const api: PublicCheckoutApi = {
+      readStoreCapabilities: vi.fn(async () => enabledStoreCapabilities),
       readCheckoutState: vi.fn(),
       readStoreOffer: vi.fn(),
       readStoreOfferVariants: vi.fn(),

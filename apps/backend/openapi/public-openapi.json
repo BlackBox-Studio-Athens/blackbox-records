@@ -6,6 +6,36 @@
   },
   "components": {
     "schemas": {
+      "StoreCapabilities": {
+        "type": "object",
+        "properties": {
+          "nativeCheckout": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "unavailableReason": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "enabled",
+              "unavailableReason"
+            ]
+          }
+        },
+        "required": [
+          "nativeCheckout"
+        ]
+      },
       "PublicStoreOffer": {
         "type": "object",
         "properties": {
@@ -200,6 +230,25 @@
     "parameters": {}
   },
   "paths": {
+    "/api/store/capabilities": {
+      "get": {
+        "tags": [
+          "Store"
+        ],
+        "responses": {
+          "200": {
+            "description": "Browser-safe public store capability state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreCapabilities"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/store/items/{storeItemSlug}": {
       "get": {
         "tags": [
@@ -330,6 +379,16 @@
           },
           "409": {
             "description": "Checkout unavailable or not configured.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCommerceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Native checkout is temporarily unavailable.",
             "content": {
               "application/json": {
                 "schema": {

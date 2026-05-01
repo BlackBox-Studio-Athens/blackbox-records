@@ -2,6 +2,7 @@ import {
   PublicCheckoutApiError,
   type PublicCheckoutApi,
   type PublicStoreOffer,
+  type StoreCapabilities,
 } from '../../lib/backend/public-checkout-api';
 import type { EmbeddedCheckoutAdapter, EmbeddedCheckoutMount } from '../../lib/backend/stripe-embedded-checkout';
 import {
@@ -30,6 +31,7 @@ export type CheckoutOfferStatusView = {
 export type CheckoutOfferLoadState =
   | {
       kind: 'ready';
+      capabilities: StoreCapabilities;
       offer: PublicStoreOffer;
       variants: PublicStoreOffer[];
     }
@@ -43,13 +45,15 @@ export async function loadCheckoutOfferState(
   storeItemSlug: string,
 ): Promise<CheckoutOfferLoadState> {
   try {
-    const [offer, variants] = await Promise.all([
+    const [capabilities, offer, variants] = await Promise.all([
+      api.readStoreCapabilities(),
       api.readStoreOffer(storeItemSlug),
       api.readStoreOfferVariants(storeItemSlug),
     ]);
 
     return {
       kind: 'ready',
+      capabilities,
       offer,
       variants,
     };
@@ -111,6 +115,18 @@ export function createCheckoutOfferView(loadState: CheckoutOfferLoadState): Chec
       statusLabel: loadState.offer.availability.label,
       tone: 'error',
       variantId: null,
+    };
+  }
+
+  if (!loadState.capabilities.nativeCheckout.enabled) {
+    return {
+      badgeLabel: 'Checkout paused',
+      canStartCheckout: false,
+      detail: loadState.capabilities.nativeCheckout.unavailableReason ?? 'Checkout is temporarily unavailable.',
+      isReady: false,
+      statusLabel: loadState.offer.availability.label,
+      tone: 'unavailable',
+      variantId: loadState.offer.variantId,
     };
   }
 

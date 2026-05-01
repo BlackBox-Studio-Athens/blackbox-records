@@ -132,6 +132,9 @@ Read these first before editing:
 - Future BOX NOW credentials are Worker runtime secrets or out-of-band operator credentials only. Never put BOX NOW credentials in Astro `PUBLIC_*` env, Cloudflare Pages public build variables, generated frontend clients, static content, or committed seed files.
 - `STRIPE_API_BASE_URL` is an optional backend runtime variable for local Stripe API overrides; the committed Wrangler `mock` and `mock-api` envs bind it to `http://127.0.0.1:12110` for the local official stripe-mock proxy.
 - `PUBLIC_CHECKOUT_CLIENT_MODE` is the browser checkout mode switch. Use `stripe` for real Stripe.js and `mock` only for the local stripe-mock flow.
+- Native checkout availability is controlled by the Worker-owned `native_checkout_enabled` feature gate. The browser may read `/api/store/capabilities`, but it must not receive provider names, flag keys, Stripe IDs, D1 bindings, or internal evaluation errors.
+- Feature gates do not replace Worker environments. Sandbox and production still isolate D1 data, secrets, webhook endpoints, checkout return origins, and release evidence.
+- Cloudflare Flagship setup uses binding name `FLAGS`; do not commit a Flagship app ID to `wrangler.jsonc` until the app exists and the non-secret account-specific ID is explicitly approved.
 - Checkout return origins and split-port browser API CORS origins are allowlisted through the Worker runtime variable `CHECKOUT_RETURN_ORIGINS`; never trust browser-submitted or arbitrary `Referer` origins.
 - Cloudflare Pages production origin is `https://blackbox-records-web.pages.dev`; add preview origins only as exact emitted origins during validation, never as `*.pages.dev`.
 - The static checkout shell uses browser-safe `PUBLIC_STRIPE_PUBLISHABLE_KEY` to initialize Stripe.js; never expose `STRIPE_SECRET_KEY` through Astro public env.

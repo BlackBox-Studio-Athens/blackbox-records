@@ -27,6 +27,30 @@ describe('resolvePublicCheckoutApiBaseUrl', () => {
 });
 
 describe('createPublicCheckoutApi', () => {
+  it('reads browser-safe store capabilities through the public Worker route', async () => {
+    const capabilities = {
+      nativeCheckout: {
+        enabled: false,
+        unavailableReason: 'Native checkout is temporarily unavailable.',
+      },
+    };
+    const fetchStub = vi.fn(
+      async (_url: string, _init?: RequestInit) => new Response(JSON.stringify(capabilities), { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchStub);
+
+    const api = createPublicCheckoutApi('');
+    const result = await api.readStoreCapabilities();
+
+    expect(result).toEqual(capabilities);
+    expect(fetchStub).toHaveBeenCalledWith(
+      '/api/store/capabilities',
+      expect.objectContaining({
+        method: 'GET',
+      }),
+    );
+  });
+
   it('reads store offers through same-origin checkout routes by default', async () => {
     const offer = {
       availability: {

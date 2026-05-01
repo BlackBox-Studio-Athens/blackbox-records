@@ -38,6 +38,15 @@ const storeOfferSchema = z
   })
   .openapi('PublicStoreOffer');
 
+const storeCapabilitiesSchema = z
+  .object({
+    nativeCheckout: z.object({
+      enabled: z.boolean(),
+      unavailableReason: z.union([z.string(), z.null()]),
+    }),
+  })
+  .openapi('StoreCapabilities');
+
 function createCheckoutShippingLockerSchema() {
   return z.object({
     country_code: z.enum(['GR']),
@@ -97,6 +106,22 @@ const getStoreItemRoute = createRoute({
         },
       },
       description: 'Store item not found.',
+    },
+  },
+  tags: ['Store'],
+});
+
+const getStoreCapabilitiesRoute = createRoute({
+  method: 'get',
+  path: '/api/store/capabilities',
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: storeCapabilitiesSchema,
+        },
+      },
+      description: 'Browser-safe public store capability state.',
     },
   },
   tags: ['Store'],
@@ -174,6 +199,14 @@ const postCheckoutSessionRoute = createRoute({
       },
       description: 'Checkout unavailable or not configured.',
     },
+    503: {
+      content: {
+        'application/json': {
+          schema: errorSchema,
+        },
+      },
+      description: 'Native checkout is temporarily unavailable.',
+    },
   },
   tags: ['Checkout'],
 });
@@ -206,6 +239,16 @@ const getCheckoutStateRoute = createRoute({
 });
 
 export function registerPublicCommerceRoutes(app: AppOpenApi): void {
+  app.openapi(getStoreCapabilitiesRoute, async (context) => {
+    const services = createPublicCommerceServices(context.env);
+
+    try {
+      return context.json(await services.readStoreCapabilities(), 200);
+    } finally {
+      await services.disconnect();
+    }
+  });
+
   app.openapi(getStoreItemRoute, async (context) => {
     const services = createPublicCommerceServices(context.env);
 
@@ -274,6 +317,10 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
 
       if (error instanceof services.errors.CheckoutShippingSelectionError) {
         return context.json({ error: error.message }, 400);
+      }
+
+      if (error instanceof services.errors.NativeCheckoutDisabledError) {
+        return context.json({ error: error.message }, 503);
       }
 
       if (

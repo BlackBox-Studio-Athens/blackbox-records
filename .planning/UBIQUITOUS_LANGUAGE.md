@@ -31,7 +31,7 @@ records a terminology change here first.
 | **Local stripe-mock API** | Local official `stripe-mock` process/proxy used to validate Stripe SDK request shape without a real Stripe account.         | fake Stripe, test Stripe        |
 | **Mock Checkout Panel**   | Local frontend mock handoff panel used when `PUBLIC_CHECKOUT_CLIENT_MODE=mock`. It is not Stripe Embedded Checkout.         | fake payment page               |
 | **Stripe Access Gate**    | Deferred real Stripe validation requiring test keys, real Price IDs, webhook secret, products/prices, and sandbox evidence. | Stripe blocker, payment blocker |
-| **Native Checkout Gate**  | Worker-owned runtime feature gate for enabling or disabling native checkout before Stripe Session creation.                  | frontend checkout flag          |
+| **Native Checkout Gate**  | Worker-owned runtime feature gate for enabling or disabling native checkout before Stripe Session creation.                 | frontend checkout flag          |
 | **Feature Gate**          | Worker-evaluated runtime capability switch. It does not replace environment isolation or own secrets.                       | feature toggle, browser flag    |
 | **CheckoutOrder**         | D1 order row tracking checkout session identity, item/variant identity, payment state, and lifecycle timestamps.            | order row, payment row          |
 | **Stripe Webhook**        | Verified Stripe event route that is the authoritative paid/non-paid signal for CheckoutOrder and stock mutation.            | callback, payment notification  |

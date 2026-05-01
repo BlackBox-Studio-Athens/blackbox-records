@@ -57,6 +57,15 @@ export type paths = {
                         "application/json": components["schemas"]["PublicCommerceError"];
                     };
                 };
+                /** @description Native checkout is temporarily unavailable. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PublicCommerceError"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -99,6 +108,41 @@ export type paths = {
                     };
                     content: {
                         "application/json": components["schemas"]["PublicCommerceError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/store/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Browser-safe public store capability state. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StoreCapabilities"];
                     };
                 };
             };
@@ -250,6 +294,12 @@ export type components = {
         };
         StartCheckoutResponse: {
             clientSecret: string;
+        };
+        StoreCapabilities: {
+            nativeCheckout: {
+                enabled: boolean;
+                unavailableReason: string | null;
+            };
         };
     };
     responses: never;

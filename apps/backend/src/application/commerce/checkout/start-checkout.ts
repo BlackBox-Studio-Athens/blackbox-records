@@ -10,11 +10,13 @@ import type {
 import {
   CheckoutConfigurationError,
   CheckoutUnavailableError,
+  NativeCheckoutDisabledError,
   StoreItemNotFoundError,
   VariantMismatchError,
 } from './errors';
 import { createPendingCheckoutOrder } from '../orders';
 import { validateCheckoutShippingLocker } from './checkout-shipping';
+import type { FeatureFlagReader } from './feature-gates';
 import type { CheckoutGateway, CheckoutShippingLockerSnapshot, EmbeddedCheckoutSession } from './types';
 
 export type StartCheckoutCommand = {
@@ -22,6 +24,10 @@ export type StartCheckoutCommand = {
   shippingLocker: CheckoutShippingLockerSnapshot;
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
+};
+
+const enabledFeatureFlags: FeatureFlagReader = {
+  isNativeCheckoutEnabled: async () => true,
 };
 
 export async function startCheckout(
@@ -32,7 +38,12 @@ export async function startCheckout(
   checkoutGateway: CheckoutGateway,
   orders: OrderStateRepository,
   command: StartCheckoutCommand,
+  featureFlags: FeatureFlagReader = enabledFeatureFlags,
 ): Promise<EmbeddedCheckoutSession> {
+  if (!(await featureFlags.isNativeCheckoutEnabled())) {
+    throw new NativeCheckoutDisabledError();
+  }
+
   const shippingLocker = validateCheckoutShippingLocker(command.shippingLocker);
 
   const storeItem = await storeItems.findByStoreItemSlug(command.storeItemSlug);

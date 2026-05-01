@@ -4,6 +4,7 @@ import { getPublicBackendBaseUrl } from './public-backend-config';
 
 export type PublicStoreOffer = PublicApiComponents['schemas']['PublicStoreOffer'];
 export type PublicStoreOfferAvailability = PublicApiComponents['schemas']['PublicStoreOfferAvailability'];
+export type StoreCapabilities = PublicApiComponents['schemas']['StoreCapabilities'];
 export type CheckoutState = PublicApiComponents['schemas']['CheckoutState'];
 export type StartCheckoutBody = PublicApiComponents['schemas']['StartCheckoutBody'];
 export type StartCheckoutResponse = PublicApiComponents['schemas']['StartCheckoutResponse'];
@@ -15,6 +16,7 @@ type OpenApiErrorLike = {
 };
 
 export interface PublicCheckoutApi {
+  readStoreCapabilities(): Promise<StoreCapabilities>;
   readStoreOffer(storeItemSlug: string): Promise<PublicStoreOffer>;
   readStoreOfferVariants(storeItemSlug: string): Promise<PublicStoreOffer[]>;
   startCheckout(body: StartCheckoutBody): Promise<StartCheckoutResponse>;
@@ -43,6 +45,7 @@ export function createPublicCheckoutApi(
   const backendBaseUrl = resolvePublicCheckoutApiBaseUrl(configuredBackendBaseUrl);
   const fetcher = createPublicApiFetcher(backendBaseUrl);
 
+  const readStoreCapabilitiesRequest = fetcher.path('/api/store/capabilities').method('get').create();
   const readStoreOfferRequest = fetcher.path('/api/store/items/{storeItemSlug}').method('get').create();
   const readStoreOfferVariantsRequest = fetcher
     .path('/api/store/items/{storeItemSlug}/variants')
@@ -55,6 +58,12 @@ export function createPublicCheckoutApi(
     .create();
 
   return {
+    async readStoreCapabilities() {
+      return readPublicCheckoutResponse(
+        () => readStoreCapabilitiesRequest({}),
+        'Could not load checkout capabilities.',
+      );
+    },
     async readStoreOffer(storeItemSlug: string) {
       return readPublicCheckoutResponse(
         () => readStoreOfferRequest({ storeItemSlug }),

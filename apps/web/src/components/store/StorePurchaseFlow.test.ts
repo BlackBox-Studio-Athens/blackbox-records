@@ -233,6 +233,15 @@ function createMemoryStorage() {
 
 function createCheckoutFetchStub() {
   return vi.fn(async (url: string, init?: RequestInit) => {
+    if (url === '/api/store/capabilities') {
+      return jsonResponse({
+        nativeCheckout: {
+          enabled: true,
+          unavailableReason: null,
+        },
+      });
+    }
+
     if (url === '/api/store/items/disintegration-black-vinyl-lp') {
       return jsonResponse({
         availability: {
