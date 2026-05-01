@@ -59,6 +59,7 @@ records a terminology change here first.
 | **Greece-Only Shipping**     | Phase 9 shipping boundary: `country_code = GR` and no non-Greece delivery path in this milestone.                                             | domestic shipping, EU shipping   |
 | **Manual Fulfillment**       | v1 operator handoff through the BOX NOW partner portal after payment.                                                                         | fulfillment automation           |
 | **BOX NOW Credentials**      | Partner/API credentials that belong only in Worker runtime secrets or out-of-band operator tooling.                                           | public locker config             |
+| **BOX NOW Portal Gate**      | Deferred real BOX NOW validation requiring partner/sandbox portal access, a sandbox-paid Greek order, accepted locker shipment, and evidence. | shipping blocker, portal blocker |
 
 ## Relationships
 
@@ -75,6 +76,8 @@ records a terminology change here first.
 - Phase 9 Greece-Only Shipping requires a BOX NOW Locker before payment and persists only the Shipping Locker Snapshot.
 - Manual Fulfillment uses paid CheckoutOrder data and the Shipping Locker Snapshot without storing raw BOX NOW payloads
   or credentials.
+- Local signed-fixture evidence validates the Manual Fulfillment handoff shape. It does not satisfy the BOX NOW Portal
+  Gate.
 - Cloudflare Pages serves the Static Astro Frontend. The Worker Backend owns dynamic commerce, D1, Stripe, webhooks, and
   protected operator APIs.
 - GSD Source Of Truth chooses the Current Plan. Validation Evidence either completes that plan or records a Deferred
@@ -87,6 +90,7 @@ records a terminology change here first.
 - "A Stripe Webhook paid transition decrements OnlineStock once through StockChange."
 - "The Static Astro Frontend must not receive BOX NOW Credentials or Stripe secret keys."
 - "07-16 is a Deferred Gate until the Stripe Access Gate can be satisfied."
+- "09-06 is a Deferred Gate until the BOX NOW Portal Gate can be satisfied."
 - "Run Browser Use Validation for rendered checkout UI; DevTools MCP is fallback-only."
 
 ## Flagged ambiguities
@@ -104,5 +108,7 @@ records a terminology change here first.
 - **Sandbox:** Say `Cloudflare sandbox Worker`, `Stripe test mode`, or `Pages preview` instead of bare "sandbox."
 - **Manual Fulfillment vs fulfillment automation:** Phase 9 allows manual partner-portal work only. Automated shipment
   creation is out of scope.
+- **Local handoff evidence vs BOX NOW Portal Gate:** Local mock checkout plus signed webhook fixtures prove the handoff
+  shape only. Real portal fulfillment evidence still requires BOX NOW partner/sandbox portal access.
 - **Cloudflare Pages vs Worker Backend:** Pages serves static frontend assets. The Worker owns all dynamic commerce
   behavior and secrets.

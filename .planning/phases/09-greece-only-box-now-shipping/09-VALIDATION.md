@@ -93,7 +93,7 @@ Manual UI validation:
 - Return recap evidence: the return route displayed `ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234` and `Locker ID 4 · Greece-only BOX NOW`; payment state still displayed `open` because official `stripe-mock` is stateless and does not make session retrieval reflect the signed local webhook fixture.
 - Console evidence: no warnings or errors were recorded beyond expected Vite/Astro debug logs and React DevTools info messages.
 - Evidence: The approved v1 data boundary remains unchanged: only `locker_id`, `country_code`, and `locker_name_or_label` may be used for the shipping locker snapshot.
-- Blocker: real `SHIP-03` completion requires BOX NOW partner or sandbox portal access. That access is not available, so `09-06`, Phase 9, and `SHIP-03` remain open.
+- Deferred gate: real `SHIP-03` completion requires the `BOX NOW Portal Gate`: BOX NOW partner or sandbox portal access, a sandbox-paid Greek order, accepted manual locker shipment, and recorded portal evidence. That access is not available, so `09-06`, Phase 9, and `SHIP-03` remain open while no-account Phase 10 preparation may proceed.
 - No BOX NOW API calls, partner credentials, label/voucher persistence, D1 schema changes, frontend behavior changes, generated API client changes, Stripe changes, or production cutover changed.
 - Validation: targeted simulator/webhook tests; `pnpm --filter @blackbox/backend d1:check:stripe-mock:local`; local DevTools MCP fallback smoke; `git diff --check`; `pnpm test:unit`; `pnpm check`; `pnpm build`.
 

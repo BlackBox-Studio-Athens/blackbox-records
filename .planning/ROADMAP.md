@@ -35,8 +35,8 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - [ ] **Phase 7: Worker Checkout And Stripe Sandbox Flow** - Implement Worker-owned checkout APIs and connect the frontend checkout route to Stripe sandbox (mock/contract implementation complete; real Stripe account validation deferred)
 - [x] **Phase 7.1: Cloudflare Pages Static Frontend Migration** - Move the static Astro frontend from GitHub Pages to Cloudflare Pages before webhook/order/shipping verification depends on stable Cloudflare-hosted origins
 - [x] **Phase 8: Webhook Orders And Stock** - Make payment truth and stock mutation Worker-owned, webhook-authoritative, and idempotent (non-secret backend groundwork may proceed before real Stripe account access)
-- [ ] **Phase 9: Greece-Only BOX NOW Shipping** - Add the approved locker-selection gate and thin fulfillment data contract
-- [ ] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow and prepare the go-live handoff package
+- [ ] **Phase 9: Greece-Only BOX NOW Shipping** - Add the approved locker-selection gate and thin fulfillment data contract (local implementation complete; BOX NOW portal validation deferred)
+- [ ] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow where account access allows and prepare the go-live handoff package
 
 ## Phase Details
 
@@ -252,12 +252,18 @@ Plans:
 - [x] 09-03: Add backend checkout preflight for Greece-only locker selection
 - [x] 09-04: Persist the thin locker snapshot on checkout/order state
 - [x] 09-05: Surface selected locker state in checkout return/order recap
-- [ ] 09-06: Document manual BOX NOW fulfillment and sandbox validation
+- [ ] 09-06: Document manual BOX NOW fulfillment and sandbox validation (deferred until BOX NOW partner/sandbox portal access exists)
+
+BOX NOW portal deferred gate:
+
+- Do now without BOX NOW account: local mock checkout, Greece-only checkout gate, thin locker snapshot persistence, return recap, internal order readback, manual handoff docs, signed webhook fixtures, and local UAT checklist work.
+- Prepare now, validate later: partner-portal handoff checklist, expected operator source-of-truth fields, local paid-order evidence, and production/go-live gap notes.
+- Blocked until BOX NOW portal access: operator login, sandbox-paid Greek order fulfillment through the BOX NOW partner portal, accepted locker shipment evidence, and `SHIP-03` completion.
 
 ### Phase 10: Sandbox Verification And Release Gate
 
-**Goal**: Prove the implemented dual-deploy sandbox flow and package the milestone outcome for the go-live milestone.
-**Depends on**: Phase 9
+**Goal**: Prove the implemented dual-deploy sandbox flow where account access allows and package the milestone outcome for the go-live milestone.
+**Depends on**: Phase 9 local implementation plus the deferred Stripe Access Gate and BOX NOW Portal Gate for full sandbox/release evidence
 **Requirements**: OPER-01, OPER-02
 **Success Criteria** (what must be TRUE):
 
@@ -287,7 +293,7 @@ Plans:
 
 **Execution Order:**  
 Nominal phase order remains `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 7.1 → 8 → 9 → 10`.
-Because Stripe account access is unavailable, non-secret Phase 8 backend groundwork may proceed after Phase 7 mock/contract completion. Phase 7.1 and the deferred Stripe access gate remain required before hosted sandbox/release evidence.
+Because Stripe account access and BOX NOW portal access are unavailable, non-secret backend, shipping, local UAT, and audit work may proceed after local mock/contract completion. Phase 7.1 is complete, while the deferred Stripe Access Gate and BOX NOW Portal Gate remain required before full hosted sandbox/release evidence.
 
 | Phase                                                          | Plans Complete | Status    | Completed  |
 | -------------------------------------------------------------- | -------------- | --------- | ---------- |
@@ -299,5 +305,5 @@ Because Stripe account access is unavailable, non-secret Phase 8 backend groundw
 | 7. Worker Checkout And Stripe Sandbox Flow                     | 15/16          | Deferred  | 2026-04-25 |
 | 7.1. Cloudflare Pages Static Frontend Migration                | 5/5            | Completed | 2026-04-29 |
 | 8. Webhook Orders And Stock                                    | 8/8            | Completed | 2026-04-26 |
-| 9. Greece-Only BOX NOW Shipping                                | 5/6            | Active    |            |
+| 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred  |            |
 | 10. Sandbox Verification And Release Gate                      | 0/5            | Planned   |            |
