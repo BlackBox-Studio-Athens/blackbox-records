@@ -74,8 +74,8 @@ Browser validation must use Browser Use first:
 Post a signed local paid webhook fixture for that checkout session:
 
 ```powershell
-$env:LOCAL_CHECKOUT_SESSION_ID = "<checkout session id>"
-pnpm --filter @blackbox/backend exec tsx -e "import { simulateStripeWebhook } from './scripts/simulate-stripe-webhook.ts'; const result = await simulateStripeWebhook({ checkoutSessionId: process.env.LOCAL_CHECKOUT_SESSION_ID, endpointUrl: 'http://127.0.0.1:8787/api/stripe/webhooks', type: 'checkout.session.completed', webhookSecret: 'whsec_local_mock' }); console.log(result.status); console.log(result.body); if (result.status < 200 || result.status >= 300) process.exit(1);"
+$env:STRIPE_WEBHOOK_CHECKOUT_SESSION_ID = "<checkout session id>"
+pnpm stripe:webhook:simulate:local checkout.session.completed
 ```
 
 Read back the paid order through the internal route:

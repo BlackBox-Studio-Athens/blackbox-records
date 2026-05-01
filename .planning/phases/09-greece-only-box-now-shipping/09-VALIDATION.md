@@ -78,14 +78,24 @@ Manual UI validation:
 
 ## 09-06 Document Manual BOX NOW Fulfillment And Sandbox Validation
 
-- Result: prepared but blocked.
+- Result: local evidence passed; real sandbox portal validation blocked.
 - Evidence: `09-MANUAL-FULFILLMENT.md` documents the manual BOX NOW partner-portal handoff from Worker-owned paid order state and persisted `shippingLocker` snapshot.
 - Evidence: The documented operator source of truth is the Worker-owned `CheckoutOrder` readback, not browser state, screenshots, query parameters, or raw BOX NOW payloads.
 - Evidence: The local validation path covers the no-Stripe/no-BOX-NOW contract using `pnpm dev:stack:stripe-mock`, the BOX NOW FAQ test locker, a signed local paid webhook fixture, internal order readback, and checkout return recap.
+- Evidence: `pnpm --filter @blackbox/backend d1:check:stripe-mock:local` passed with `29/29` store items ready.
+- Browser Use fallback: Browser Use was attempted first, but the installed Browser Use plugin path was missing `scripts/browser-client.mjs`, so DevTools MCP was used as the documented fallback.
+- Local UI evidence: DevTools MCP opened `/blackbox-records/store/disintegration-black-vinyl-lp/checkout/`, confirmed payment was blocked before locker selection, selected the BOX NOW test locker, and reached the local mock checkout panel.
+- Local request evidence: `StartCheckout` sent only `shippingLocker`, `storeItemSlug`, and `variantId`; the `shippingLocker` snapshot was `locker_id = 4`, `country_code = GR`, and `locker_name_or_label = ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234`.
+- Local order evidence: D1 persisted `checkoutSessionId = cs_test_QcU0uf6k4GvBInZ` as `pending_payment` with the same locker snapshot.
+- Local webhook evidence: `$env:STRIPE_WEBHOOK_CHECKOUT_SESSION_ID = "cs_test_QcU0uf6k4GvBInZ"; pnpm stripe:webhook:simulate:local checkout.session.completed` returned `HTTP 200` with `{ "received": true }`.
+- Local paid-order evidence: protected internal order readback returned `status = paid`, `paidAt = 2026-05-01T00:21:46.982Z`, and the same persisted BOX NOW locker snapshot.
+- Local idempotency evidence: replaying the signed paid fixture returned `HTTP 200`, `StockChange` remained at one `checkout_paid` row for `cs_test_QcU0uf6k4GvBInZ`, and stock for `variant_barren-point_standard` remained `98/98`.
+- Return recap evidence: the return route displayed `ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234` and `Locker ID 4 · Greece-only BOX NOW`; payment state still displayed `open` because official `stripe-mock` is stateless and does not make session retrieval reflect the signed local webhook fixture.
+- Console evidence: no warnings or errors were recorded beyond expected Vite/Astro debug logs and React DevTools info messages.
 - Evidence: The approved v1 data boundary remains unchanged: only `locker_id`, `country_code`, and `locker_name_or_label` may be used for the shipping locker snapshot.
 - Blocker: real `SHIP-03` completion requires BOX NOW partner or sandbox portal access. That access is not available, so `09-06`, Phase 9, and `SHIP-03` remain open.
 - No BOX NOW API calls, partner credentials, label/voucher persistence, D1 schema changes, frontend behavior changes, generated API client changes, Stripe changes, or production cutover changed.
-- Validation: `git diff --check`; `pnpm check`.
+- Validation: targeted simulator/webhook tests; `pnpm --filter @blackbox/backend d1:check:stripe-mock:local`; local DevTools MCP fallback smoke; `git diff --check`; `pnpm test:unit`; `pnpm check`; `pnpm build`.
 
 ## Explicit Non-Goals
 

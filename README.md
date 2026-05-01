@@ -139,6 +139,8 @@ Official `stripe-mock` is stateless and does not emit webhooks, so webhook check
 pnpm stripe:webhook:simulate:local
 ```
 
+Set `STRIPE_WEBHOOK_CHECKOUT_SESSION_ID` before running the simulator when the fixture must target a Browser-created local checkout session.
+
 Run the Astro frontend explicitly:
 
 ```sh
