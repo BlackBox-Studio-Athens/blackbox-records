@@ -135,6 +135,8 @@ Read these first before editing:
 - Native checkout availability is controlled by the Worker-owned `native_checkout_enabled` feature gate. The browser may read `/api/store/capabilities`, but it must not receive provider names, flag keys, Stripe IDs, D1 bindings, or internal evaluation errors.
 - Feature gates do not replace Worker environments. Sandbox and production still isolate D1 data, secrets, webhook endpoints, checkout return origins, and release evidence.
 - Cloudflare Flagship setup uses binding name `FLAGS`; do not commit a Flagship app ID to `wrangler.jsonc` until the app exists and the non-secret account-specific ID is explicitly approved.
+- Browser cart state is convenience state only. Keep it behind `apps/web/src/lib/store-cart.ts`, use native `localStorage` for the current browser-only scope, and do not add Zustand, Redux Persist, Dexie, IndexedDB wrappers, or cart SaaS libraries unless carts become account-backed, cross-device, large/offline, or operationally authoritative.
+- Future multi-item cart work should use the canonical terms `CartDraft`, `CartLine`, `CartQuantity`, and `Browser Cart State`. The Worker must validate every line and quantity before Stripe Checkout; browser cart state must not contain Stripe Price IDs, stock authority, payment state, order state, D1 fields, or backend runtime secrets.
 - Checkout return origins and split-port browser API CORS origins are allowlisted through the Worker runtime variable `CHECKOUT_RETURN_ORIGINS`; never trust browser-submitted or arbitrary `Referer` origins.
 - Cloudflare Pages production origin is `https://blackbox-records-web.pages.dev`; add preview origins only as exact emitted origins during validation, never as `*.pages.dev`.
 - The static checkout shell uses browser-safe `PUBLIC_STRIPE_PUBLISHABLE_KEY` to initialize Stripe.js; never expose `STRIPE_SECRET_KEY` through Astro public env.
@@ -149,6 +151,7 @@ Read these first before editing:
 - Manual fulfillment handoff and local validation steps live in `.planning/phases/09-greece-only-box-now-shipping/09-MANUAL-FULFILLMENT.md`.
 - Phase 7 requires shopper-facing store URLs to describe the sellable item option, not legacy release shorthand. The old `barren-point` local smoke route is a compatibility alias for the canonical `Disintegration` / `Black Vinyl LP` route.
 - Phase 7 cart UX should be Shopify-familiar but BlackBox-owned: cart icon, single-item cart drawer, order summary, and checkout CTA using Astro/React/shadcn. Do not implement true multi-item cart, quantity controls, discount codes, or browser-owned commerce authority in this milestone.
+- The planned no-account multi-item cart workstream is documented in `.planning/phases/10-sandbox-verification-and-release-gate/10-MULTI-ITEM-CART-WORKSTREAM.md`; it must remain separate from Stripe Access Gate and BOX NOW Portal Gate completion.
 
 ### Required command policy
 

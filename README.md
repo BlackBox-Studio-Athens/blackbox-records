@@ -304,6 +304,12 @@ pnpm audit:commerce-boundaries
   browser only as sanitized `/api/store/capabilities` state.
 - The feature gate is a runtime switch, not an environment replacement. Worker environments still isolate D1 data,
   secrets, webhook endpoints, and return origins.
+- Browser cart state is convenience state only. The current implementation stores a single browser-safe cart item in
+  native `localStorage`; the planned multi-item CartDraft workstream should keep that dependency-free storage primitive
+  behind the cart module unless carts become account-backed, cross-device, or operationally authoritative.
+- Browser cart state must never contain Stripe Price IDs, stock authority, payment state, order state, D1 fields, or
+  backend runtime secrets. The Worker must re-read authoritative availability, OnlineStock, and Stripe mappings before
+  checkout.
 - Cloudflare Pages production builds use GitHub Actions variables for browser-safe public env:
   - `PUBLIC_BACKEND_BASE_URL`
   - `PUBLIC_STRIPE_PUBLISHABLE_KEY`

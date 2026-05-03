@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
 stopped_at: Milestone review package complete; external gates and human approval pending
-last_updated: '2026-05-01T06:45:00+03:00'
-last_activity: 2026-05-01 -- Completed milestone review package and go-live handoff while keeping external gates pending
+last_updated: '2026-05-04T00:00:00+03:00'
+last_activity: 2026-05-04 -- Added no-account multi-item cart and quantity workstream plus browser cart storage policy
 progress:
   total_phases: 10
   completed_phases: 7
@@ -32,8 +32,8 @@ Current Plan: 5
 Total Plans in Phase: 6
 Status: Active
 Progress: 95%
-Last Activity: 2026-05-01
-Last Activity Description: The Phase 10 milestone review package now summarizes implemented architecture, local and sandbox readiness evidence, deferred external gates, and the Go-Live / Launch Hardening handoff.
+Last Activity: 2026-05-04
+Last Activity Description: The GSD backlog now promotes multi-item cart and quantity work into a concrete no-account workstream, while native browser localStorage remains the approved browser-only cart storage primitive.
 Paused At: Milestone review package complete; external gates and human approval pending
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed while real Stripe-account validation remains explicitly deferred. Phase 8 now has the schema-only `CheckoutOrder` lifecycle table, internal order repository/application seams, a dependency-free typed transition guard, a fixture-tested Stripe webhook raw-body route contract, an optional official `stripe-mock` API local checkout simulation harness, shared Stripe Checkout Session reconciliation, pending order creation from Worker-owned checkout start, idempotent paid webhook handling that decrements stock only on the first paid transition, non-paid/needs-review handling that never mutates stock, and Access-protected order readback for low-volume reconciliation. Phase 7.1 completed the Cloudflare Pages static artifact contract, GitHub Pages rollback posture, Direct Upload CI workflow, browser-safe Pages build env contract, exact checkout return-origin allowlist guidance, Cloudflare-root Astro base-path correction, Browser Use hosted validation, and canonical hosting docs. Phase 9 now has the BOX NOW Greece-only shipping data and secret contract locked, a frontend-only locker gate before payment, Worker-owned checkout preflight that requires the minimal Greek locker snapshot before payment starts, D1-backed CheckoutOrder persistence for the approved thin locker snapshot, shopper-facing checkout return recap of the Worker-owned selected locker state, and local signed-fixture evidence for the manual handoff. Phase 10 now has a no-account local UAT checklist, sandbox readiness evidence, a deferred `10-03` full sandbox e2e gate, `10-04` no-account release audit evidence, a completed `10-04.1` Native Checkout Gate, and a `10-05` milestone review package that links evidence, blockers, and the Go-Live / Launch Hardening handoff. The Stripe Access Gate and BOX NOW Portal Gate remain deferred, so full sandbox release approval still requires external account evidence and human approval.
@@ -66,7 +66,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mo
 **Recent Trend:**
 
 - Last 5 plans: 10-01, 10-02, 10-04, 10-04.1, 10-05
-- Trend: The Cloudflare Pages migration is complete, Phase 9 now has local BOX NOW shipping implementation and handoff evidence, and Phase 10 now has a repeatable local full-loop UAT checklist, sandbox D1 readiness, no-account release audit evidence, a Worker-owned Native Checkout Gate, and a milestone review package. Real Stripe validation remains deferred until account access exists, and real BOX NOW portal validation remains deferred until portal access exists.
+- Trend: The Cloudflare Pages migration is complete, Phase 9 now has local BOX NOW shipping implementation and handoff evidence, and Phase 10 now has a repeatable local full-loop UAT checklist, sandbox D1 readiness, no-account release audit evidence, a Worker-owned Native Checkout Gate, and a milestone review package. Real Stripe validation remains deferred until account access exists, real BOX NOW portal validation remains deferred until portal access exists, and multi-item cart plus quantity work is now captured as a no-account expansion workstream.
 
 ## Accumulated Context
 
@@ -123,6 +123,8 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mo
 - Phase 10 plan 4 added a deterministic commerce boundary audit and recorded no-account release audit evidence: generated API parity, public/internal OpenAPI separation, Browser Use local checks for store/checkout/return/stock/shell navigation, and explicit limits around local stripe-mock and Access-protected stock API behavior.
 - Phase 10 plan 4.1 added the Worker-owned Native Checkout Gate so native checkout can be disabled at runtime through Cloudflare Flagship without replacing Worker environment isolation; the browser sees only sanitized capability state from `/api/store/capabilities`.
 - Phase 10 plan 5 produced the milestone review package and go-live handoff. The package links implemented architecture, evidence, deferred gates, and Go-Live / Launch Hardening seeds without claiming the Stripe Access Gate, BOX NOW Portal Gate, `10-03`, `OPER-01`, or `SHIP-03` passed.
+- The no-account cart expansion workstream now promotes `BL-13` into concrete multi-item and CartQuantity planning. It can proceed without Stripe or BOX NOW account access, but real multi-line Stripe evidence remains behind the Stripe Access Gate.
+- Browser Cart State remains convenience-only state. Native `localStorage` stays the approved storage primitive until carts become account-backed, cross-device, large/offline, or operationally authoritative.
 
 ## Decisions Made
 
@@ -165,6 +167,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mo
 - Use `10-LOCAL-UAT.md` as the local no-account UAT checklist until external access exists.
 - Use `10-SANDBOX-READINESS.md` as the latest sandbox readiness evidence and blocker record before attempting `10-03`.
 - Use `10-MILESTONE-REVIEW.md` as the prepared human review package without claiming the deferred Stripe Access Gate, BOX NOW Portal Gate, or `10-03` sandbox e2e gate passed.
+- Use `10-MULTI-ITEM-CART-WORKSTREAM.md` when planning multi-item cart, quantity controls, Worker-owned multi-line checkout validation, order-line persistence, and paid-webhook stock decrement per line.
 
 ## Blockers
 

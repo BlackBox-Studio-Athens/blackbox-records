@@ -23,6 +23,10 @@ records a terminology change here first.
 
 | Canonical term            | Meaning                                                                                                                     | Aliases to avoid                |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| **Browser Cart State**    | Browser-only convenience state for cart display and routing, never authoritative for price, stock, payment, or order state. | cart authority, checkout state  |
+| **CartDraft**             | Browser-held draft of one or more intended checkout lines before the Worker validates them through StartCheckout.           | cart order, pending order       |
+| **CartLine**              | One intended cart entry for a StoreItemOption and Variant plus a requested CartQuantity.                                    | line item, basket row           |
+| **CartQuantity**          | Shopper-requested quantity for one CartLine that the Worker must validate against OnlineStock before checkout.              | item count, stock quantity      |
 | **Checkout Request**      | Public shopper API input containing app-owned item identity plus the approved Shipping Locker Snapshot.                     | payment payload                 |
 | **StartCheckout**         | Worker application action and public API path that validates checkout input and creates the Stripe Checkout Session.        | create checkout, start payment  |
 | **ReadCheckoutState**     | Worker application action and public API path that reports backend-known checkout status to the browser.                    | payment status check            |
@@ -70,8 +74,10 @@ records a terminology change here first.
 - A StoreItemOption maps to a backend Variant.
 - A Variant owns Stock and exposes OnlineStock to checkout.
 - A Variant can have one Stripe Price Mapping, but Stripe Price IDs never belong in frontend payloads.
-- StartCheckout reads a StoreOffer and creates a Checkout Session only when ItemAvailability, OnlineStock, Stripe
-  mapping, Native Checkout Gate, and Shipping Locker Snapshot are valid.
+- Browser Cart State may hold a CartDraft, but the Worker must validate every CartLine and CartQuantity before
+  checkout.
+- StartCheckout reads StoreOffer data and creates a Checkout Session only when ItemAvailability, OnlineStock, Stripe
+  mapping, Native Checkout Gate, and Shipping Locker Snapshot are valid for the requested checkout line or lines.
 - Local stripe-mock API validates Stripe SDK request shape. The Mock Checkout Panel validates local browser handoff.
   Neither satisfies the Stripe Access Gate.
 - Stripe Webhook events update CheckoutOrder and are the only paid-signal path that may decrement Stock.
@@ -89,6 +95,8 @@ records a terminology change here first.
 
 - "StartCheckout must reject the request until a valid Shipping Locker Snapshot is present."
 - "The checkout return screen should call ReadCheckoutState and show the selected BOX NOW Locker from CheckoutOrder."
+- "The CartDraft can contain CartLines, but Browser Cart State is not price, stock, payment, or order authority."
+- "StartCheckout must validate each CartQuantity against OnlineStock before creating Stripe line items."
 - "A Stripe Webhook paid transition decrements OnlineStock once through StockChange."
 - "The Static Astro Frontend must not receive BOX NOW Credentials or Stripe secret keys."
 - "07-16 is a Deferred Gate until the Stripe Access Gate can be satisfied."
@@ -117,3 +125,7 @@ records a terminology change here first.
   behavior and secrets.
 - **Feature Gate vs environment:** Feature Gates are runtime capability switches. Worker environments still isolate
   D1 data, secrets, webhook endpoints, return origins, and release evidence.
+- **Browser Cart State vs CheckoutOrder:** Browser Cart State is a convenience draft. CheckoutOrder is the Worker/D1
+  operational record created only after StartCheckout succeeds.
+- **CartQuantity vs OnlineStock:** CartQuantity is shopper intent. OnlineStock is the Worker/D1 checkout-facing stock
+  value that constrains whether the requested quantity may proceed.
