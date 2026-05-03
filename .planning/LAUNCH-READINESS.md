@@ -47,6 +47,7 @@ Primary handoff input: `.planning/phases/10-sandbox-verification-and-release-gat
 ## Cutover
 
 - [ ] Cutover sequence from the current external storefront handoff to native commerce is documented
+- [ ] Cart scope is explicitly approved: either launch with the current single-item cart or complete the multi-item CartDraft and CartQuantity workstream first
 - [ ] Emergency disable conditions are documented
 - [ ] Operator comms/support plan is documented
 - [ ] Human approval checkpoints are named

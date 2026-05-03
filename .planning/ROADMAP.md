@@ -289,7 +289,16 @@ Plans:
 - Production cutover remains a separate milestone
 - Consumes `10-MILESTONE-REVIEW.md`, sandbox readiness evidence, local UAT evidence, and the deferred external-gate checklist produced by this milestone
 - Covers Stripe Access Gate completion, BOX NOW Portal Gate completion, Cloudflare Flagship `FLAGS` setup, live-mode keys, production rollout, emergency disable strategy, comms, and final stop/go review
+- Must explicitly decide whether native commerce launches with the current single-item cart scope or first completes the no-account multi-item CartDraft and CartQuantity workstream
 - Must not start until human review accepts the prepared package and explicitly carries forward the open gates
+
+### No-Account Cart Expansion Workstream
+
+- May proceed while Stripe account access and BOX NOW portal access remain unavailable
+- Consumes `BL-13` and `.planning/phases/10-sandbox-verification-and-release-gate/10-MULTI-ITEM-CART-WORKSTREAM.md`
+- Covers multi-line browser cart state, quantity controls, Worker-owned multi-line checkout validation, additive order-line persistence, and paid-webhook stock decrement per line
+- Keeps stock reservation separate in `BL-14`; the first multi-item implementation still decrements only after verified paid webhook transition unless a later reservation plan changes that
+- Does not satisfy the Stripe Access Gate, BOX NOW Portal Gate, `10-03`, `OPER-01`, or `SHIP-03`
 
 ## Progress
 

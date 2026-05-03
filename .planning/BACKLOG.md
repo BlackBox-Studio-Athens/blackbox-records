@@ -37,15 +37,22 @@ Start from `.planning/phases/10-sandbox-verification-and-release-gate/10-MILESTO
   - Keep the evidence separate from local stripe-mock and signed-fixture validation
 - Human review stop: approve whether the external gates are satisfied
 
-## Ready For Future v2 Milestones
+## Ready For No-Account Commerce Expansion
 
 ### BL-13: Cart and multi-item checkout
 
-- Linked milestone: v2+
+- Linked milestone: Go-Live / Launch Hardening or a no-account cart expansion slice before external account gates clear
 - Acceptance criteria:
-  - Define cart semantics that fit the existing shell and Stripe flow
-  - Confirm stock implications for multi-item checkout
-  - Keep single-item `Buy Now` behavior stable while designing the expansion
+  - Define `CartDraft`, `CartLine`, and `CartQuantity` semantics that fit the existing shell and Worker-owned checkout
+  - Replace the current single-item cart drawer with multi-line cart state, quantity controls, item removal, and a multi-line order summary
+  - Keep browser cart state non-authoritative and limited to app-safe display/routing fields plus `storeItemSlug`, `variantId`, and `quantity`
+  - Evolve `StartCheckout` so the Worker re-reads availability, OnlineStock, and Stripe Price Mapping for every line before creating a Checkout Session
+  - Add additive order-line persistence, preferably `CheckoutOrderLine`, instead of overloading current single-item `CheckoutOrder` fields
+  - Preserve paid-webhook idempotency by decrementing stock exactly once for each paid CheckoutOrderLine
+  - Keep one BOX NOW Locker per CheckoutOrder unless a later shipping plan explicitly supports split shipments
+  - Validate locally with stripe-mock and Browser Use; defer real multi-line Stripe evidence until the Stripe Access Gate is satisfied
+- Planning artifact: `.planning/phases/10-sandbox-verification-and-release-gate/10-MULTI-ITEM-CART-WORKSTREAM.md`
+- Human review stop: approve whether native commerce launches as current single-item scope or waits for multi-item quantity scope
 
 ### BL-14: Stock reservation design
 
@@ -54,6 +61,8 @@ Start from `.planning/phases/10-sandbox-verification-and-release-gate/10-MILESTO
   - Define reservation lifecycle and expiry behavior
   - Define oversell reduction strategy
   - Compare added complexity against actual order volume
+
+## Ready For Future v2 Milestones
 
 ### BL-15: Automated BOX NOW fulfillment
 
