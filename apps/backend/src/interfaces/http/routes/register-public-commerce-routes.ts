@@ -59,11 +59,21 @@ const checkoutShippingLockerSchema = createCheckoutShippingLockerSchema().strict
 
 const checkoutStateShippingLockerSchema = createCheckoutShippingLockerSchema().openapi('CheckoutStateShippingLocker');
 
-const startCheckoutBodySchema = z
+const startCheckoutLineSchema = z
   .object({
-    shippingLocker: checkoutShippingLockerSchema,
+    quantity: z.number().int().min(1).max(9),
     storeItemSlug: z.string().trim().min(1),
     variantId: z.string().trim().min(1),
+  })
+  .strict()
+  .openapi('StartCheckoutLine');
+
+const startCheckoutBodySchema = z
+  .object({
+    lines: z.array(startCheckoutLineSchema).min(1).optional(),
+    shippingLocker: checkoutShippingLockerSchema,
+    storeItemSlug: z.string().trim().min(1).optional(),
+    variantId: z.string().trim().min(1).optional(),
   })
   .strict()
   .openapi('StartCheckoutBody');
@@ -288,16 +298,34 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
 
     try {
       const body = context.req.valid('json');
+      const lines =
+        body.lines ??
+        (body.storeItemSlug && body.variantId
+          ? [
+              {
+                quantity: 1,
+                storeItemSlug: body.storeItemSlug,
+                variantId: body.variantId,
+              },
+            ]
+          : []);
+      const primaryLine = lines[0];
+
+      if (!primaryLine) {
+        return context.json({ error: 'Checkout requires at least one cart line.' }, 400);
+      }
+
       const checkoutSession = await services.startCheckout({
+        ...(body.lines ? { lines } : {}),
         returnUrl: createCheckoutReturnUrl(
           context.req.raw.headers,
           context.req.url,
-          body.storeItemSlug,
+          primaryLine.storeItemSlug,
           context.env.CHECKOUT_RETURN_ORIGINS,
         ),
         shippingLocker: body.shippingLocker,
-        storeItemSlug: body.storeItemSlug,
-        variantId: body.variantId,
+        storeItemSlug: primaryLine.storeItemSlug,
+        variantId: primaryLine.variantId,
       });
 
       return context.json(

@@ -75,7 +75,7 @@ const summaryItem = {
             <span class="font-display text-2xl tracking-[0.08em]">{priceLabel}</span>
           </summary>
           <div class="border-t border-border/70 p-4">
-            <CheckoutOrderSummary {...summaryItem} />
+            <CheckoutOrderSummary client:load {...summaryItem} />
           </div>
         </details>
       </div>
@@ -108,7 +108,7 @@ const summaryItem = {
 
       <aside class="hidden lg:block">
         <div class="sticky top-[calc(var(--header-height)+2rem)]">
-          <CheckoutOrderSummary {...summaryItem} />
+          <CheckoutOrderSummary client:load {...summaryItem} />
         </div>
       </aside>
     </div>

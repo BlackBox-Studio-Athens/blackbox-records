@@ -262,6 +262,7 @@ export type CheckoutOrderWhereInput = {
   needsReviewAt?: Prisma.DateTimeNullableFilter<"CheckoutOrder"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"CheckoutOrder"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CheckoutOrder"> | Date | string
+  lines?: Prisma.CheckoutOrderLineListRelationFilter
 }
 
 export type CheckoutOrderOrderByWithRelationInput = {
@@ -280,6 +281,7 @@ export type CheckoutOrderOrderByWithRelationInput = {
   needsReviewAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  lines?: Prisma.CheckoutOrderLineOrderByRelationAggregateInput
 }
 
 export type CheckoutOrderWhereUniqueInput = Prisma.AtLeast<{
@@ -301,6 +303,7 @@ export type CheckoutOrderWhereUniqueInput = Prisma.AtLeast<{
   needsReviewAt?: Prisma.DateTimeNullableFilter<"CheckoutOrder"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"CheckoutOrder"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CheckoutOrder"> | Date | string
+  lines?: Prisma.CheckoutOrderLineListRelationFilter
 }, "id" | "checkoutSessionId">
 
 export type CheckoutOrderOrderByWithAggregationInput = {
@@ -361,6 +364,7 @@ export type CheckoutOrderCreateInput = {
   needsReviewAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  lines?: Prisma.CheckoutOrderLineCreateNestedManyWithoutOrderInput
 }
 
 export type CheckoutOrderUncheckedCreateInput = {
@@ -379,6 +383,7 @@ export type CheckoutOrderUncheckedCreateInput = {
   needsReviewAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  lines?: Prisma.CheckoutOrderLineUncheckedCreateNestedManyWithoutOrderInput
 }
 
 export type CheckoutOrderUpdateInput = {
@@ -397,6 +402,7 @@ export type CheckoutOrderUpdateInput = {
   needsReviewAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lines?: Prisma.CheckoutOrderLineUpdateManyWithoutOrderNestedInput
 }
 
 export type CheckoutOrderUncheckedUpdateInput = {
@@ -415,6 +421,7 @@ export type CheckoutOrderUncheckedUpdateInput = {
   needsReviewAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  lines?: Prisma.CheckoutOrderLineUncheckedUpdateManyWithoutOrderNestedInput
 }
 
 export type CheckoutOrderCreateManyInput = {
@@ -525,6 +532,11 @@ export type CheckoutOrderMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type CheckoutOrderScalarRelationFilter = {
+  is?: Prisma.CheckoutOrderWhereInput
+  isNot?: Prisma.CheckoutOrderWhereInput
+}
+
 export type EnumOrderStatusFieldUpdateOperationsInput = {
   set?: $Enums.OrderStatus
 }
@@ -533,6 +545,137 @@ export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
 }
 
+export type CheckoutOrderCreateNestedOneWithoutLinesInput = {
+  create?: Prisma.XOR<Prisma.CheckoutOrderCreateWithoutLinesInput, Prisma.CheckoutOrderUncheckedCreateWithoutLinesInput>
+  connectOrCreate?: Prisma.CheckoutOrderCreateOrConnectWithoutLinesInput
+  connect?: Prisma.CheckoutOrderWhereUniqueInput
+}
+
+export type CheckoutOrderUpdateOneRequiredWithoutLinesNestedInput = {
+  create?: Prisma.XOR<Prisma.CheckoutOrderCreateWithoutLinesInput, Prisma.CheckoutOrderUncheckedCreateWithoutLinesInput>
+  connectOrCreate?: Prisma.CheckoutOrderCreateOrConnectWithoutLinesInput
+  upsert?: Prisma.CheckoutOrderUpsertWithoutLinesInput
+  connect?: Prisma.CheckoutOrderWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CheckoutOrderUpdateToOneWithWhereWithoutLinesInput, Prisma.CheckoutOrderUpdateWithoutLinesInput>, Prisma.CheckoutOrderUncheckedUpdateWithoutLinesInput>
+}
+
+export type CheckoutOrderCreateWithoutLinesInput = {
+  id?: string
+  storeItemSlug: string
+  variantId: string
+  checkoutSessionId: string
+  stripePaymentIntentId?: string | null
+  shippingLockerId?: string | null
+  shippingLockerCountryCode?: string | null
+  shippingLockerNameOrLabel?: string | null
+  status: $Enums.OrderStatus
+  statusUpdatedAt: Date | string
+  paidAt?: Date | string | null
+  notPaidAt?: Date | string | null
+  needsReviewAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type CheckoutOrderUncheckedCreateWithoutLinesInput = {
+  id?: string
+  storeItemSlug: string
+  variantId: string
+  checkoutSessionId: string
+  stripePaymentIntentId?: string | null
+  shippingLockerId?: string | null
+  shippingLockerCountryCode?: string | null
+  shippingLockerNameOrLabel?: string | null
+  status: $Enums.OrderStatus
+  statusUpdatedAt: Date | string
+  paidAt?: Date | string | null
+  notPaidAt?: Date | string | null
+  needsReviewAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type CheckoutOrderCreateOrConnectWithoutLinesInput = {
+  where: Prisma.CheckoutOrderWhereUniqueInput
+  create: Prisma.XOR<Prisma.CheckoutOrderCreateWithoutLinesInput, Prisma.CheckoutOrderUncheckedCreateWithoutLinesInput>
+}
+
+export type CheckoutOrderUpsertWithoutLinesInput = {
+  update: Prisma.XOR<Prisma.CheckoutOrderUpdateWithoutLinesInput, Prisma.CheckoutOrderUncheckedUpdateWithoutLinesInput>
+  create: Prisma.XOR<Prisma.CheckoutOrderCreateWithoutLinesInput, Prisma.CheckoutOrderUncheckedCreateWithoutLinesInput>
+  where?: Prisma.CheckoutOrderWhereInput
+}
+
+export type CheckoutOrderUpdateToOneWithWhereWithoutLinesInput = {
+  where?: Prisma.CheckoutOrderWhereInput
+  data: Prisma.XOR<Prisma.CheckoutOrderUpdateWithoutLinesInput, Prisma.CheckoutOrderUncheckedUpdateWithoutLinesInput>
+}
+
+export type CheckoutOrderUpdateWithoutLinesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
+  variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  checkoutSessionId?: Prisma.StringFieldUpdateOperationsInput | string
+  stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerCountryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerNameOrLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  statusUpdatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  notPaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  needsReviewAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type CheckoutOrderUncheckedUpdateWithoutLinesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
+  variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  checkoutSessionId?: Prisma.StringFieldUpdateOperationsInput | string
+  stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerCountryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerNameOrLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+  statusUpdatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  notPaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  needsReviewAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+
+/**
+ * Count Type CheckoutOrderCountOutputType
+ */
+
+export type CheckoutOrderCountOutputType = {
+  lines: number
+}
+
+export type CheckoutOrderCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  lines?: boolean | CheckoutOrderCountOutputTypeCountLinesArgs
+}
+
+/**
+ * CheckoutOrderCountOutputType without action
+ */
+export type CheckoutOrderCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CheckoutOrderCountOutputType
+   */
+  select?: Prisma.CheckoutOrderCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * CheckoutOrderCountOutputType without action
+ */
+export type CheckoutOrderCountOutputTypeCountLinesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CheckoutOrderLineWhereInput
+}
 
 
 export type CheckoutOrderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -551,6 +694,8 @@ export type CheckoutOrderSelect<ExtArgs extends runtime.Types.Extensions.Interna
   needsReviewAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  lines?: boolean | Prisma.CheckoutOrder$linesArgs<ExtArgs>
+  _count?: boolean | Prisma.CheckoutOrderCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["checkoutOrder"]>
 
 export type CheckoutOrderSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -608,10 +753,18 @@ export type CheckoutOrderSelectScalar = {
 }
 
 export type CheckoutOrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "storeItemSlug" | "variantId" | "checkoutSessionId" | "stripePaymentIntentId" | "shippingLockerId" | "shippingLockerCountryCode" | "shippingLockerNameOrLabel" | "status" | "statusUpdatedAt" | "paidAt" | "notPaidAt" | "needsReviewAt" | "createdAt" | "updatedAt", ExtArgs["result"]["checkoutOrder"]>
+export type CheckoutOrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  lines?: boolean | Prisma.CheckoutOrder$linesArgs<ExtArgs>
+  _count?: boolean | Prisma.CheckoutOrderCountOutputTypeDefaultArgs<ExtArgs>
+}
+export type CheckoutOrderIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type CheckoutOrderIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
 
 export type $CheckoutOrderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "CheckoutOrder"
-  objects: {}
+  objects: {
+    lines: Prisma.$CheckoutOrderLinePayload<ExtArgs>[]
+  }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     storeItemSlug: string
@@ -1022,6 +1175,7 @@ readonly fields: CheckoutOrderFieldRefs;
  */
 export interface Prisma__CheckoutOrderClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  lines<T extends Prisma.CheckoutOrder$linesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CheckoutOrder$linesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CheckoutOrderLinePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1083,6 +1237,10 @@ export type CheckoutOrderFindUniqueArgs<ExtArgs extends runtime.Types.Extensions
    */
   omit?: Prisma.CheckoutOrderOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CheckoutOrderInclude<ExtArgs> | null
+  /**
    * Filter, which CheckoutOrder to fetch.
    */
   where: Prisma.CheckoutOrderWhereUniqueInput
@@ -1101,6 +1259,10 @@ export type CheckoutOrderFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Ext
    */
   omit?: Prisma.CheckoutOrderOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CheckoutOrderInclude<ExtArgs> | null
+  /**
    * Filter, which CheckoutOrder to fetch.
    */
   where: Prisma.CheckoutOrderWhereUniqueInput
@@ -1118,6 +1280,10 @@ export type CheckoutOrderFindFirstArgs<ExtArgs extends runtime.Types.Extensions.
    * Omit specific fields from the CheckoutOrder
    */
   omit?: Prisma.CheckoutOrderOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CheckoutOrderInclude<ExtArgs> | null
   /**
    * Filter, which CheckoutOrder to fetch.
    */
@@ -1167,6 +1333,10 @@ export type CheckoutOrderFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Exte
    */
   omit?: Prisma.CheckoutOrderOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CheckoutOrderInclude<ExtArgs> | null
+  /**
    * Filter, which CheckoutOrder to fetch.
    */
   where?: Prisma.CheckoutOrderWhereInput
@@ -1215,6 +1385,10 @@ export type CheckoutOrderFindManyArgs<ExtArgs extends runtime.Types.Extensions.I
    */
   omit?: Prisma.CheckoutOrderOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CheckoutOrderInclude<ExtArgs> | null
+  /**
    * Filter, which CheckoutOrders to fetch.
    */
   where?: Prisma.CheckoutOrderWhereInput
@@ -1257,6 +1431,10 @@ export type CheckoutOrderCreateArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Omit specific fields from the CheckoutOrder
    */
   omit?: Prisma.CheckoutOrderOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CheckoutOrderInclude<ExtArgs> | null
   /**
    * The data needed to create a CheckoutOrder.
    */
@@ -1303,6 +1481,10 @@ export type CheckoutOrderUpdateArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Omit specific fields from the CheckoutOrder
    */
   omit?: Prisma.CheckoutOrderOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CheckoutOrderInclude<ExtArgs> | null
   /**
    * The data needed to update a CheckoutOrder.
    */
@@ -1370,6 +1552,10 @@ export type CheckoutOrderUpsertArgs<ExtArgs extends runtime.Types.Extensions.Int
    */
   omit?: Prisma.CheckoutOrderOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CheckoutOrderInclude<ExtArgs> | null
+  /**
    * The filter to search for the CheckoutOrder to update in case it exists.
    */
   where: Prisma.CheckoutOrderWhereUniqueInput
@@ -1396,6 +1582,10 @@ export type CheckoutOrderDeleteArgs<ExtArgs extends runtime.Types.Extensions.Int
    */
   omit?: Prisma.CheckoutOrderOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CheckoutOrderInclude<ExtArgs> | null
+  /**
    * Filter which CheckoutOrder to delete.
    */
   where: Prisma.CheckoutOrderWhereUniqueInput
@@ -1416,6 +1606,30 @@ export type CheckoutOrderDeleteManyArgs<ExtArgs extends runtime.Types.Extensions
 }
 
 /**
+ * CheckoutOrder.lines
+ */
+export type CheckoutOrder$linesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CheckoutOrderLine
+   */
+  select?: Prisma.CheckoutOrderLineSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CheckoutOrderLine
+   */
+  omit?: Prisma.CheckoutOrderLineOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CheckoutOrderLineInclude<ExtArgs> | null
+  where?: Prisma.CheckoutOrderLineWhereInput
+  orderBy?: Prisma.CheckoutOrderLineOrderByWithRelationInput | Prisma.CheckoutOrderLineOrderByWithRelationInput[]
+  cursor?: Prisma.CheckoutOrderLineWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CheckoutOrderLineScalarFieldEnum | Prisma.CheckoutOrderLineScalarFieldEnum[]
+}
+
+/**
  * CheckoutOrder without action
  */
 export type CheckoutOrderDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1427,4 +1641,8 @@ export type CheckoutOrderDefaultArgs<ExtArgs extends runtime.Types.Extensions.In
    * Omit specific fields from the CheckoutOrder
    */
   omit?: Prisma.CheckoutOrderOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CheckoutOrderInclude<ExtArgs> | null
 }

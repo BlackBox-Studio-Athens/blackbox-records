@@ -7,12 +7,19 @@ import type {
 } from '../../../domain/commerce/repositories';
 
 export type CreatePendingCheckoutOrderCommand = {
+  lines?: CreatePendingCheckoutOrderLineCommand[];
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
   checkoutSessionId: string;
   shippingLocker: ShippingLockerSnapshot;
   stripePaymentIntentId?: string | null;
   createdAt?: Date;
+};
+
+export type CreatePendingCheckoutOrderLineCommand = {
+  quantity: number;
+  storeItemSlug: StoreItemSlug;
+  variantId: VariantId;
 };
 
 export function createPendingCheckoutOrder(

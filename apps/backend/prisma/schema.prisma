@@ -104,7 +104,21 @@ model CheckoutOrder {
   needsReviewAt             DateTime?
   createdAt                 DateTime    @default(now())
   updatedAt                 DateTime    @updatedAt
+  lines                     CheckoutOrderLine[]
 
   @@index([variantId, status])
   @@index([status, createdAt])
+}
+
+model CheckoutOrderLine {
+  id            String        @id @default(cuid())
+  orderId       String
+  storeItemSlug String
+  variantId     String
+  quantity      Int
+  createdAt     DateTime      @default(now())
+  order         CheckoutOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([variantId])
 }

@@ -50,3 +50,16 @@ idempotency, and stock semantics.
 - Discount codes, cart notes, customer accounts, or production cutover.
 - Real Stripe multi-line Checkout evidence until real Stripe test-mode access exists.
 - BOX NOW partner-portal fulfillment evidence until portal access exists.
+
+## Implementation Note - 2026-05-08
+
+- Browser cart state now uses canonical `blackbox.storeCart.v2` storage with v1 read migration, multi-line `CartDraft`
+  helpers, per-line `CartQuantity` controls, and drawer/checkout summary rendering for multiple lines.
+- Public checkout now accepts `lines: [{ storeItemSlug, variantId, quantity }]` beside the existing Shipping Locker
+  Snapshot, while retaining single-line compatibility during transition.
+- Worker checkout validation re-reads store item option, availability, online stock, and Stripe Price Mapping for every
+  line before creating one Stripe line item per cart line.
+- D1/Prisma now has additive `CheckoutOrderLine` persistence, and paid webhook reconciliation decrements stock per paid
+  order line after the once-only order transition.
+- This does not satisfy the Stripe Access Gate, BOX NOW Portal Gate, `10-03`, `OPER-01`, or `SHIP-03`; command and
+  Browser Use validation are still blocked in this session by the local shell runner setup failure.

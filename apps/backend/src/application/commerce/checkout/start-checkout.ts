@@ -17,11 +17,23 @@ import {
 import { createPendingCheckoutOrder } from '../orders';
 import { validateCheckoutShippingLocker } from './checkout-shipping';
 import type { FeatureFlagReader } from './feature-gates';
-import type { CheckoutGateway, CheckoutShippingLockerSnapshot, EmbeddedCheckoutSession } from './types';
+import type {
+  CheckoutGateway,
+  CheckoutShippingLockerSnapshot,
+  EmbeddedCheckoutSession,
+  EmbeddedCheckoutSessionLineItem,
+} from './types';
 
 export type StartCheckoutCommand = {
+  lines?: StartCheckoutLineCommand[];
   returnUrl: string;
   shippingLocker: CheckoutShippingLockerSnapshot;
+  storeItemSlug?: StoreItemSlug;
+  variantId?: VariantId;
+};
+
+export type StartCheckoutLineCommand = {
+  quantity: number;
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
 };
@@ -29,6 +41,44 @@ export type StartCheckoutCommand = {
 const enabledFeatureFlags: FeatureFlagReader = {
   isNativeCheckoutEnabled: async () => true,
 };
+
+function legacySingleCheckoutLine(command: StartCheckoutCommand): StartCheckoutLineCommand[] {
+  if (!command.storeItemSlug || !command.variantId) return [];
+
+  return [
+    {
+      quantity: 1,
+      storeItemSlug: command.storeItemSlug,
+      variantId: command.variantId,
+    },
+  ];
+}
+
+function validateCheckoutQuantity(quantity: number): number {
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 9) {
+    throw new CheckoutUnavailableError();
+  }
+
+  return quantity;
+}
+
+function mergeCheckoutLines(lines: StartCheckoutLineCommand[]): StartCheckoutLineCommand[] {
+  const mergedLines = new Map<string, StartCheckoutLineCommand>();
+
+  for (const line of lines) {
+    const key = `${line.storeItemSlug}:${line.variantId}`;
+    const existingLine = mergedLines.get(key);
+    const quantity = validateCheckoutQuantity(line.quantity);
+
+    mergedLines.set(key, {
+      quantity: validateCheckoutQuantity((existingLine?.quantity ?? 0) + quantity),
+      storeItemSlug: line.storeItemSlug,
+      variantId: line.variantId,
+    });
+  }
+
+  return [...mergedLines.values()];
+}
 
 export async function startCheckout(
   storeItems: StoreItemOptionRepository,
@@ -45,47 +95,80 @@ export async function startCheckout(
   }
 
   const shippingLocker = validateCheckoutShippingLocker(command.shippingLocker);
+  const requestedLines = mergeCheckoutLines(
+    command.lines && command.lines.length > 0 ? command.lines : legacySingleCheckoutLine(command),
+  );
 
-  const storeItem = await storeItems.findByStoreItemSlug(command.storeItemSlug);
-
-  if (!storeItem) {
-    throw new StoreItemNotFoundError(command.storeItemSlug);
-  }
-
-  if (storeItem.variantId !== command.variantId) {
-    throw new VariantMismatchError();
-  }
-
-  const availability = await itemAvailability.findByVariantId(command.variantId);
-
-  if (!availability || availability.status !== 'available' || !availability.canBuy) {
+  if (requestedLines.length === 0) {
     throw new CheckoutUnavailableError();
   }
 
-  const currentStock = await stock.findByVariantId(command.variantId);
+  const validatedLines: EmbeddedCheckoutSessionLineItem[] = [];
 
-  if (!currentStock || currentStock.onlineQuantity <= 0) {
-    throw new CheckoutUnavailableError();
+  for (const line of requestedLines) {
+    const quantity = validateCheckoutQuantity(line.quantity);
+    const storeItem = await storeItems.findByStoreItemSlug(line.storeItemSlug);
+
+    if (!storeItem) {
+      throw new StoreItemNotFoundError(line.storeItemSlug);
+    }
+
+    if (storeItem.variantId !== line.variantId) {
+      throw new VariantMismatchError();
+    }
+
+    const availability = await itemAvailability.findByVariantId(line.variantId);
+
+    if (!availability || availability.status !== 'available' || !availability.canBuy) {
+      throw new CheckoutUnavailableError();
+    }
+
+    const currentStock = await stock.findByVariantId(line.variantId);
+
+    if (!currentStock || currentStock.onlineQuantity < quantity) {
+      throw new CheckoutUnavailableError();
+    }
+
+    const stripeMapping = await variantStripeMappings.findByVariantId(line.variantId);
+
+    if (!stripeMapping) {
+      throw new CheckoutConfigurationError();
+    }
+
+    validatedLines.push({
+      quantity,
+      storeItemSlug: line.storeItemSlug,
+      stripePriceId: stripeMapping.stripePriceId,
+      variantId: line.variantId,
+    });
   }
 
-  const stripeMapping = await variantStripeMappings.findByVariantId(command.variantId);
+  const checkoutSession = await checkoutGateway.createEmbeddedCheckoutSession(
+    validatedLines.length === 1
+      ? {
+          returnUrl: command.returnUrl,
+          storeItemSlug: validatedLines[0]!.storeItemSlug,
+          stripePriceId: validatedLines[0]!.stripePriceId,
+          variantId: validatedLines[0]!.variantId,
+        }
+      : {
+          lineItems: validatedLines,
+          returnUrl: command.returnUrl,
+        },
+  );
 
-  if (!stripeMapping) {
-    throw new CheckoutConfigurationError();
-  }
-
-  const checkoutSession = await checkoutGateway.createEmbeddedCheckoutSession({
-    returnUrl: command.returnUrl,
-    storeItemSlug: command.storeItemSlug,
-    stripePriceId: stripeMapping.stripePriceId,
-    variantId: command.variantId,
-  });
+  const primaryLine = validatedLines[0]!;
 
   await createPendingCheckoutOrder(orders, {
     checkoutSessionId: checkoutSession.checkoutSessionId,
+    lines: validatedLines.map((line) => ({
+      quantity: line.quantity,
+      storeItemSlug: line.storeItemSlug,
+      variantId: line.variantId,
+    })),
     shippingLocker,
-    storeItemSlug: command.storeItemSlug,
-    variantId: command.variantId,
+    storeItemSlug: primaryLine.storeItemSlug,
+    variantId: primaryLine.variantId,
   });
 
   return checkoutSession;

@@ -9,6 +9,7 @@ import {
   type EmbeddedCheckoutAdapter,
   type EmbeddedCheckoutMount,
 } from '@/lib/backend/stripe-embedded-checkout';
+import { readStoreCartState } from '@/lib/store-cart';
 import { cn } from '@/lib/utils';
 import {
   createCheckoutOfferView,
@@ -101,6 +102,7 @@ export default function CheckoutOfferStatus({
     const checkoutState = await startEmbeddedCheckout({
       api: checkoutApi,
       checkoutAdapter: embeddedCheckoutAdapter,
+      lines: readStoreCartState(window.localStorage).lines,
       lockerSelection: shippingGateView.selectedLocker,
       mountTarget,
       storeItemSlug,

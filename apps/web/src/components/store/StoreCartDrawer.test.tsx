@@ -71,6 +71,15 @@ describe('StoreCartDrawer', () => {
           orderState: 'paid',
           actorEmail: 'operator@example.com',
         } as StoreCartItem & Record<string, unknown>,
+        lines: [
+          {
+            ...cartItem,
+            quantity: 1,
+            stripePriceId: 'price_secret',
+            d1Id: 'store_item_option_1',
+            stockCount: 99,
+          } as StoreCartItem & { quantity: number } & Record<string, unknown>,
+        ],
       },
       resolveHref,
     );

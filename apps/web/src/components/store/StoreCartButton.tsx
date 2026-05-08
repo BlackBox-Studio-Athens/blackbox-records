@@ -10,7 +10,7 @@ type StoreCartButtonProps = {
 
 export default function StoreCartButton({ cartState, onClick }: StoreCartButtonProps) {
   const cartCount = getStoreCartCount(cartState);
-  const label = cartCount === 1 ? 'Cart, 1 item' : 'Cart';
+  const label = cartCount === 0 ? 'Cart' : `Cart, ${cartCount} ${cartCount === 1 ? 'item' : 'items'}`;
 
   return (
     <button

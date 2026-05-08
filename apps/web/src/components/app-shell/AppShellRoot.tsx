@@ -26,6 +26,8 @@ import type { SiteNavigationItem } from '@/lib/site-data';
 import {
   addStoreCartItem,
   createEmptyStoreCartState,
+  decrementStoreCartItem,
+  incrementStoreCartItem,
   readStoreCartState,
   removeStoreCartItem,
   sanitizeStoreCartItem,
@@ -432,7 +434,7 @@ export default function AppShellRoot({
       const item = sanitizeStoreCartItem((event as CustomEvent<unknown>).detail);
       if (!item) return;
 
-      applyStoreCartState(addStoreCartItem(item));
+      applyStoreCartState(addStoreCartItem(item, readStoreCartState(getStoreCartBrowserStorage())));
       setIsStoreCartDrawerOpen(true);
     }
 
@@ -1626,8 +1628,10 @@ export default function AppShellRoot({
         open={isStoreCartDrawerOpen}
         resolveHref={createProjectRelativeUrl}
         onContinueShopping={() => setIsStoreCartDrawerOpen(false)}
+        onDecrementItem={(variantId) => applyStoreCartState(decrementStoreCartItem(variantId, storeCartState))}
+        onIncrementItem={(variantId) => applyStoreCartState(incrementStoreCartItem(variantId, storeCartState))}
         onOpenChange={setIsStoreCartDrawerOpen}
-        onRemoveItem={() => applyStoreCartState(removeStoreCartItem())}
+        onRemoveItem={(variantId) => applyStoreCartState(removeStoreCartItem(variantId, storeCartState))}
       />
 
       <div

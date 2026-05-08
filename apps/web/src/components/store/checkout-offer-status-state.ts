@@ -10,6 +10,7 @@ import {
   readCheckoutShippingGateError,
   type CheckoutLockerSelection,
 } from './checkout-shipping-step-state';
+import type { CartLine } from '../../lib/store-cart';
 
 export type CheckoutOfferInitialAvailability = {
   label: string;
@@ -154,6 +155,7 @@ export type EmbeddedCheckoutStartState =
 export type EmbeddedCheckoutStartInput = {
   api: PublicCheckoutApi;
   checkoutAdapter: EmbeddedCheckoutAdapter;
+  lines?: CartLine[];
   lockerSelection: CheckoutLockerSelection | null;
   mountTarget: HTMLElement;
   storeItemSlug: string;
@@ -163,6 +165,7 @@ export type EmbeddedCheckoutStartInput = {
 export async function startEmbeddedCheckout({
   api,
   checkoutAdapter,
+  lines,
   lockerSelection,
   mountTarget,
   storeItemSlug,
@@ -196,7 +199,22 @@ export async function startEmbeddedCheckout({
   }
 
   try {
+    const checkoutLines =
+      lines && lines.length > 0
+        ? lines.map((line) => ({
+            quantity: line.quantity,
+            storeItemSlug: line.storeItemSlug,
+            variantId: line.variantId,
+          }))
+        : [];
+    const shouldSendMultiLineContract =
+      checkoutLines.length > 1 ||
+      (checkoutLines.length === 1 &&
+        (checkoutLines[0]!.quantity !== 1 ||
+          checkoutLines[0]!.storeItemSlug !== storeItemSlug ||
+          checkoutLines[0]!.variantId !== variantId));
     const { clientSecret } = await api.startCheckout({
+      ...(shouldSendMultiLineContract ? { lines: checkoutLines } : {}),
       shippingLocker: {
         ...shippingLocker,
         country_code: 'GR',

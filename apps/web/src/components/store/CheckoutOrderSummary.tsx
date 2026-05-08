@@ -1,7 +1,10 @@
 import * as React from 'react';
 
+import { useEffect, useState } from 'react';
+
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { readStoreCartState, type CartLine } from '@/lib/store-cart';
 import { cn } from '@/lib/utils';
 
 export type CheckoutOrderSummaryInput = {
@@ -28,16 +31,44 @@ export const CHECKOUT_ORDER_SUMMARY_COPY = {
   title: 'Order Summary',
 } as const;
 
-export function createCheckoutOrderSummaryView(input: CheckoutOrderSummaryInput): CheckoutOrderSummaryView {
+export function createCheckoutOrderSummaryView(
+  input: CheckoutOrderSummaryInput,
+  cartLines: CartLine[] = [],
+): CheckoutOrderSummaryView {
   return {
     ...input,
     securePaymentCopy: CHECKOUT_ORDER_SUMMARY_COPY.securePayment,
-    subtotalDisplay: input.priceDisplay,
+    subtotalDisplay:
+      cartLines.length <= 1
+        ? (cartLines[0]?.priceDisplay ?? input.priceDisplay)
+        : `${cartLines.reduce((total, line) => total + line.quantity, 0)} items`,
   };
 }
 
 export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
-  const view = createCheckoutOrderSummaryView(props);
+  const [cartLines, setCartLines] = useState<CartLine[]>([]);
+  const view = createCheckoutOrderSummaryView(props, cartLines);
+  const lines =
+    cartLines.length > 0
+      ? cartLines
+      : [
+          {
+            availabilityLabel: props.availabilityLabel,
+            image: props.image,
+            imageAlt: props.imageAlt,
+            optionLabel: props.optionLabel,
+            priceDisplay: props.priceDisplay,
+            quantity: 1,
+            storeItemSlug: props.itemHref,
+            subtitle: props.subtitle,
+            title: props.title,
+            variantId: 'checkout-summary-static-line',
+          },
+        ];
+
+  useEffect(() => {
+    setCartLines(readStoreCartState(window.localStorage).lines);
+  }, []);
 
   return (
     <Card className="rounded-none border-border/70 bg-[#101010] shadow-none" data-checkout-order-summary>
@@ -59,26 +90,35 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
           </Badge>
         </div>
 
-        <article className="grid grid-cols-[84px_1fr] gap-4">
-          <div className="aspect-square overflow-hidden border border-border/70 bg-muted/20">
-            {view.image ? (
-              <img className="h-full w-full object-cover" src={view.image} alt={view.imageAlt || view.title} />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center px-2 text-center text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                No image
+        <div className="space-y-4">
+          {lines.map((line) => (
+            <article className="grid grid-cols-[84px_1fr] gap-4" key={line.variantId}>
+              <div className="aspect-square overflow-hidden border border-border/70 bg-muted/20">
+                {line.image ? (
+                  <img className="h-full w-full object-cover" src={line.image} alt={line.imageAlt || line.title} />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center px-2 text-center text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                    No image
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          <div className="min-w-0 space-y-2">
-            <p className="font-display text-2xl uppercase tracking-[0.09em] text-foreground">{view.title}</p>
-            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{view.subtitle}</p>
-            {view.optionLabel && (
-              <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{view.optionLabel}</p>
-            )}
-            <p className="font-display text-2xl uppercase tracking-[0.08em] text-foreground">{view.priceDisplay}</p>
-          </div>
-        </article>
+              <div className="min-w-0 space-y-2">
+                <p className="font-display text-2xl uppercase tracking-[0.09em] text-foreground">{line.title}</p>
+                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{line.subtitle}</p>
+                {line.optionLabel && (
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{line.optionLabel}</p>
+                )}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="font-display text-2xl uppercase tracking-[0.08em] text-foreground">
+                    {line.priceDisplay}
+                  </p>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Qty {line.quantity}</p>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
 
         <div className="space-y-3 border-t border-border/60 pt-4">
           <div className="flex items-center justify-between gap-4">

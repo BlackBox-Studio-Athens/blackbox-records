@@ -22,15 +22,32 @@ export type CheckoutOrderRecord = {
   needsReviewAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  lines?: CheckoutOrderLineRecord[];
+};
+
+export type CheckoutOrderLineRecord = {
+  id: string;
+  orderId: string;
+  storeItemSlug: StoreItemSlug;
+  variantId: VariantId;
+  quantity: number;
+  createdAt: Date;
 };
 
 export type CreatePendingCheckoutOrderInput = {
+  lines?: CreatePendingCheckoutOrderLineInput[];
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
   checkoutSessionId: string;
   shippingLocker: ShippingLockerSnapshot;
   stripePaymentIntentId?: string | null;
   createdAt?: Date;
+};
+
+export type CreatePendingCheckoutOrderLineInput = {
+  quantity: number;
+  storeItemSlug: StoreItemSlug;
+  variantId: VariantId;
 };
 
 export type CheckoutOrderTransitionInput = {

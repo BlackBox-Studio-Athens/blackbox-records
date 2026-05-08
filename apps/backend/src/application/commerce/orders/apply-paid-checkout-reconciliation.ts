@@ -89,33 +89,53 @@ export async function applyPaidCheckoutReconciliation(
     };
   }
 
-  const currentStock = await stock.findByVariantId(transitionResult.order.variantId);
+  const orderLines = transitionResult.order.lines?.length
+    ? transitionResult.order.lines
+    : [
+        {
+          createdAt: transitionResult.order.createdAt,
+          id: transitionResult.order.id,
+          orderId: transitionResult.order.id,
+          quantity: 1,
+          storeItemSlug: transitionResult.order.storeItemSlug,
+          variantId: transitionResult.order.variantId,
+        },
+      ];
+  const savedStockRecords: StockRecord[] = [];
+  const stockChangeRecords: StockChangeRecord[] = [];
 
-  if (!currentStock || currentStock.quantity <= 0 || currentStock.onlineQuantity <= 0) {
-    return {
-      kind: 'stock_unavailable',
-      order: transitionResult.order,
-      reason: 'Paid checkout cannot decrement unavailable stock.',
-    };
+  for (const line of orderLines) {
+    const currentStock = await stock.findByVariantId(line.variantId);
+
+    if (!currentStock || currentStock.quantity < line.quantity || currentStock.onlineQuantity < line.quantity) {
+      return {
+        kind: 'stock_unavailable',
+        order: transitionResult.order,
+        reason: 'Paid checkout cannot decrement unavailable stock.',
+      };
+    }
+
+    const savedStock = await stock.save(line.variantId, {
+      onlineQuantity: currentStock.onlineQuantity - line.quantity,
+      quantity: currentStock.quantity - line.quantity,
+    });
+    const stockChange = await stockChanges.record({
+      actorEmail: 'stripe-webhook',
+      notes: `Checkout session ${checkoutSessionId}`,
+      quantityDelta: -line.quantity,
+      reason: 'checkout_paid',
+      recordedAt: appliedAt,
+      variantId: line.variantId,
+    });
+
+    savedStockRecords.push(savedStock);
+    stockChangeRecords.push(stockChange);
   }
-
-  const savedStock = await stock.save(transitionResult.order.variantId, {
-    onlineQuantity: currentStock.onlineQuantity - 1,
-    quantity: currentStock.quantity - 1,
-  });
-  const stockChange = await stockChanges.record({
-    actorEmail: 'stripe-webhook',
-    notes: `Checkout session ${checkoutSessionId}`,
-    quantityDelta: -1,
-    reason: 'checkout_paid',
-    recordedAt: appliedAt,
-    variantId: transitionResult.order.variantId,
-  });
 
   return {
     kind: 'applied',
     order: transitionResult.order,
-    stock: savedStock,
-    stockChange,
+    stock: savedStockRecords[0]!,
+    stockChange: stockChangeRecords[0]!,
   };
 }

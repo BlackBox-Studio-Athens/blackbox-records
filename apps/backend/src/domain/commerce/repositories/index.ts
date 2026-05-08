@@ -11,6 +11,7 @@ export type {
   ItemAvailabilityStatus,
 } from './item-availability-repository';
 export type {
+  CheckoutOrderLineRecord,
   CheckoutOrderRecord,
   CheckoutOrderTransitionInput,
   CreatePendingCheckoutOrderInput,

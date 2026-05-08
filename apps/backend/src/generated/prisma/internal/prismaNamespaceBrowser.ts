@@ -55,7 +55,8 @@ export const ModelName = {
   Stock: 'Stock',
   StockChange: 'StockChange',
   StockCount: 'StockCount',
-  CheckoutOrder: 'CheckoutOrder'
+  CheckoutOrder: 'CheckoutOrder',
+  CheckoutOrderLine: 'CheckoutOrderLine'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -163,6 +164,18 @@ export const CheckoutOrderScalarFieldEnum = {
 } as const
 
 export type CheckoutOrderScalarFieldEnum = (typeof CheckoutOrderScalarFieldEnum)[keyof typeof CheckoutOrderScalarFieldEnum]
+
+
+export const CheckoutOrderLineScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  storeItemSlug: 'storeItemSlug',
+  variantId: 'variantId',
+  quantity: 'quantity',
+  createdAt: 'createdAt'
+} as const
+
+export type CheckoutOrderLineScalarFieldEnum = (typeof CheckoutOrderLineScalarFieldEnum)[keyof typeof CheckoutOrderLineScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -18,7 +18,15 @@ export type StoreOffer = {
 };
 
 export type EmbeddedCheckoutSessionRequest = {
+  lineItems?: EmbeddedCheckoutSessionLineItem[];
   returnUrl: string;
+  storeItemSlug?: StoreItemSlug;
+  stripePriceId?: StripePriceId;
+  variantId?: VariantId;
+};
+
+export type EmbeddedCheckoutSessionLineItem = {
+  quantity: number;
   storeItemSlug: StoreItemSlug;
   stripePriceId: StripePriceId;
   variantId: VariantId;

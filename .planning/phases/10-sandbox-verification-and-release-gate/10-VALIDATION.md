@@ -83,3 +83,13 @@
 - Evidence: the Go-Live / Launch Hardening handoff identifies the next milestone seeds: Stripe Access Gate completion, BOX NOW Portal Gate completion, Cloudflare Flagship `FLAGS` setup, production Worker secrets/origins/D1/Access posture, native-checkout rollout, and rollback through the Native Checkout Gate.
 - Boundary: `07-16`, `09-06`, `10-03`, `OPER-01`, and `SHIP-03` remain pending/deferred. The package does not claim real Stripe test-mode evidence, real BOX NOW portal fulfillment evidence, full hosted sandbox e2e evidence, or production cutover.
 - Validation: `rg` evidence/reference check, `git diff --check`, and `pnpm check`.
+
+## No-Account Multi-Item Cart Expansion - 2026-05-08
+
+- Result: implementation added, validation blocked by local shell runner setup failure.
+- Evidence added in code: browser `CartDraft` v2 migration and quantity helpers, multi-line cart drawer controls, cart-backed checkout summary, public checkout `lines` request contract, Worker per-line checkout validation, additive `CheckoutOrderLine` migration/model, Stripe line item creation per cart line, and paid webhook stock decrement per persisted order line.
+- Boundary: this remains no-account convenience cart work. It does not satisfy the Stripe Access Gate, BOX NOW Portal Gate, `10-03`, `OPER-01`, or `SHIP-03`.
+- Browser Use blocker: the native Browser Use path was unavailable through the installed MCP surface; Agentify navigation returned `missing_electron_binary`. DevTools MCP was used as the documented fallback.
+- DevTools MCP fallback evidence: `pnpm dev:stack:stripe-mock` launched local D1, official local `stripe-mock`, Worker mock mode on `127.0.0.1:8787`, and static Astro on `127.0.0.1:4321`.
+- DevTools MCP fallback evidence: `/blackbox-records/store/` rendered, `Disintegration` opened, Add To Cart opened the cart drawer, quantity controls changed the drawer to `3`, checkout summary rendered `QTY 3`, BOX NOW Test Locker selection unlocked payment, and Mock Checkout Panel mounted.
+- DevTools MCP fallback evidence: the checkout POST to `/api/checkout/sessions` returned HTTP 200 and sent `lines: [{ storeItemSlug: "disintegration-black-vinyl-lp", variantId: "variant_barren-point_standard", quantity: 3 }]` with the BOX NOW Test Locker snapshot. Console warnings/errors were empty.

@@ -21,17 +21,30 @@ export class StripeCheckoutGateway implements CheckoutGateway {
   public async createEmbeddedCheckoutSession(
     request: EmbeddedCheckoutSessionRequest,
   ): Promise<EmbeddedCheckoutSession> {
+    const lineItems =
+      request.lineItems ??
+      (request.storeItemSlug && request.stripePriceId && request.variantId
+        ? [
+            {
+              quantity: 1,
+              storeItemSlug: request.storeItemSlug,
+              stripePriceId: request.stripePriceId,
+              variantId: request.variantId,
+            },
+          ]
+        : []);
+    const primaryLine = lineItems[0];
     const session = await this.stripe.checkout.sessions.create({
-      line_items: [
-        {
-          price: request.stripePriceId,
-          quantity: 1,
-        },
-      ],
-      metadata: {
-        storeItemSlug: request.storeItemSlug,
-        variantId: request.variantId,
-      },
+      line_items: lineItems.map((line) => ({
+        price: line.stripePriceId,
+        quantity: line.quantity,
+      })),
+      metadata: primaryLine
+        ? {
+            storeItemSlug: primaryLine.storeItemSlug,
+            variantId: primaryLine.variantId,
+          }
+        : undefined,
       mode: 'payment',
       return_url: request.returnUrl,
       ui_mode: 'embedded_page',

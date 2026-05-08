@@ -288,7 +288,13 @@ export type components = {
             status: "available" | "sold_out";
         };
         StartCheckoutBody: {
+            lines?: components["schemas"]["StartCheckoutLine"][];
             shippingLocker: components["schemas"]["CheckoutShippingLocker"];
+            storeItemSlug?: string;
+            variantId?: string;
+        };
+        StartCheckoutLine: {
+            quantity: number;
             storeItemSlug: string;
             variantId: string;
         };

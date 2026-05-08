@@ -1,4 +1,5 @@
-export const STORE_CART_STORAGE_KEY = 'blackbox.storeCart.v1';
+export const STORE_CART_STORAGE_KEY = 'blackbox.storeCart.v2';
+export const LEGACY_STORE_CART_STORAGE_KEY = 'blackbox.storeCart.v1';
 export const STORE_CART_ADD_ITEM_EVENT = 'blackbox:store-cart:add-item';
 export const STORE_CART_OPEN_REQUESTED_EVENT = 'blackbox:store-cart:open-requested';
 
@@ -14,7 +15,18 @@ export type StoreCartItem = {
   variantId: string;
 };
 
+export type CartQuantity = number;
+
+export type CartLine = StoreCartItem & {
+  quantity: CartQuantity;
+};
+
+export type CartDraft = {
+  lines: CartLine[];
+};
+
 export type StoreCartState = {
+  lines: CartLine[];
   item: StoreCartItem | null;
 };
 
@@ -31,6 +43,8 @@ const REQUIRED_STRING_FIELDS = [
 
 const OPTIONAL_STRING_FIELDS = ['image', 'imageAlt', 'optionLabel'] as const satisfies readonly (keyof StoreCartItem)[];
 
+export const STORE_CART_MAX_QUANTITY = 9;
+
 function readStringField(value: Record<string, unknown>, field: keyof StoreCartItem) {
   const fieldValue = value[field];
   return typeof fieldValue === 'string' ? fieldValue : null;
@@ -41,11 +55,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function createEmptyStoreCartState(): StoreCartState {
-  return { item: null };
+  return { item: null, lines: [] };
 }
 
-export function getStoreCartCount(state: StoreCartState): 0 | 1 {
-  return state.item ? 1 : 0;
+export function getStoreCartCount(state: StoreCartState): number {
+  return normalizeStoreCartState(state).lines.reduce((total, line) => total + line.quantity, 0);
 }
 
 export function createStoreCartCheckoutPath(item: StoreCartItem): string {
@@ -68,13 +82,118 @@ export function sanitizeStoreCartItem(value: unknown): StoreCartItem | null {
   return item;
 }
 
-export function addStoreCartItem(item: StoreCartItem): StoreCartState {
-  const sanitizedItem = sanitizeStoreCartItem(item);
-  return { item: sanitizedItem };
+export function sanitizeCartQuantity(value: unknown): CartQuantity {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 1;
+  return Math.min(STORE_CART_MAX_QUANTITY, Math.max(1, Math.floor(value)));
 }
 
-export function removeStoreCartItem(): StoreCartState {
+export function sanitizeCartLine(value: unknown): CartLine | null {
+  const item = sanitizeStoreCartItem(value);
+  if (!item) return null;
+
+  const quantity = isRecord(value) ? sanitizeCartQuantity(value.quantity) : 1;
+  return { ...item, quantity };
+}
+
+export function normalizeStoreCartState(state: StoreCartState | CartDraft): StoreCartState {
+  const lines = Array.isArray(state.lines)
+    ? state.lines.map(sanitizeCartLine).filter((line): line is CartLine => line !== null)
+    : [];
+  const firstLine = lines[0] ?? null;
+  const item = firstLine
+    ? {
+        availabilityLabel: firstLine.availabilityLabel,
+        image: firstLine.image,
+        imageAlt: firstLine.imageAlt,
+        optionLabel: firstLine.optionLabel,
+        priceDisplay: firstLine.priceDisplay,
+        storeItemSlug: firstLine.storeItemSlug,
+        subtitle: firstLine.subtitle,
+        title: firstLine.title,
+        variantId: firstLine.variantId,
+      }
+    : null;
+
+  return { item, lines };
+}
+
+export function addStoreCartItem(
+  item: StoreCartItem,
+  state: StoreCartState = createEmptyStoreCartState(),
+): StoreCartState {
+  const sanitizedItem = sanitizeStoreCartItem(item);
+  if (!sanitizedItem) return normalizeStoreCartState(state);
+
+  const currentState = normalizeStoreCartState(state);
+  const existingLine = currentState.lines.find((line) => line.variantId === sanitizedItem.variantId);
+
+  if (existingLine) {
+    return normalizeStoreCartState({
+      lines: currentState.lines.map((line) =>
+        line.variantId === sanitizedItem.variantId
+          ? { ...line, ...sanitizedItem, quantity: sanitizeCartQuantity(line.quantity + 1) }
+          : line,
+      ),
+    });
+  }
+
+  return normalizeStoreCartState({
+    lines: [...currentState.lines, { ...sanitizedItem, quantity: 1 }],
+  });
+}
+
+export function setStoreCartItemQuantity(
+  variantId: string,
+  quantity: unknown,
+  state: StoreCartState = createEmptyStoreCartState(),
+): StoreCartState {
+  const sanitizedQuantity = sanitizeCartQuantity(quantity);
+  const currentState = normalizeStoreCartState(state);
+
+  return normalizeStoreCartState({
+    lines: currentState.lines.map((line) =>
+      line.variantId === variantId ? { ...line, quantity: sanitizedQuantity } : line,
+    ),
+  });
+}
+
+export function incrementStoreCartItem(
+  variantId: string,
+  state: StoreCartState = createEmptyStoreCartState(),
+): StoreCartState {
+  const currentState = normalizeStoreCartState(state);
+  const line = currentState.lines.find((candidate) => candidate.variantId === variantId);
+  if (!line) return currentState;
+
+  return setStoreCartItemQuantity(variantId, line.quantity + 1, currentState);
+}
+
+export function decrementStoreCartItem(
+  variantId: string,
+  state: StoreCartState = createEmptyStoreCartState(),
+): StoreCartState {
+  const currentState = normalizeStoreCartState(state);
+  const line = currentState.lines.find((candidate) => candidate.variantId === variantId);
+  if (!line) return currentState;
+
+  if (line.quantity <= 1) return removeStoreCartItem(variantId, currentState);
+
+  return setStoreCartItemQuantity(variantId, line.quantity - 1, currentState);
+}
+
+export function clearStoreCart(): StoreCartState {
   return createEmptyStoreCartState();
+}
+
+export function removeStoreCartItem(
+  variantId?: string,
+  state: StoreCartState = createEmptyStoreCartState(),
+): StoreCartState {
+  if (!variantId) return createEmptyStoreCartState();
+
+  return normalizeStoreCartState({
+    lines: normalizeStoreCartState(state).lines.filter((line) => line.variantId !== variantId),
+  });
 }
 
 export function parseStoreCartState(serializedState: string | null): StoreCartState {
@@ -84,21 +203,32 @@ export function parseStoreCartState(serializedState: string | null): StoreCartSt
     const parsedState = JSON.parse(serializedState) as unknown;
     if (!isRecord(parsedState)) return createEmptyStoreCartState();
 
-    return { item: sanitizeStoreCartItem(parsedState.item) };
+    if (Array.isArray(parsedState.lines)) {
+      return normalizeStoreCartState({
+        lines: parsedState.lines.map(sanitizeCartLine).filter((line): line is CartLine => line !== null),
+      });
+    }
+
+    const legacyItem = sanitizeStoreCartItem(parsedState.item);
+    if (!legacyItem) return createEmptyStoreCartState();
+
+    return normalizeStoreCartState({ lines: [{ ...legacyItem, quantity: 1 }] });
   } catch {
     return createEmptyStoreCartState();
   }
 }
 
 export function serializeStoreCartState(state: StoreCartState): string {
-  return JSON.stringify({ item: sanitizeStoreCartItem(state.item) });
+  return JSON.stringify({ lines: normalizeStoreCartState(state).lines });
 }
 
 export function readStoreCartState(storage: StoreCartStorage | undefined): StoreCartState {
   if (!storage) return createEmptyStoreCartState();
 
   try {
-    return parseStoreCartState(storage.getItem(STORE_CART_STORAGE_KEY));
+    return parseStoreCartState(
+      storage.getItem(STORE_CART_STORAGE_KEY) ?? storage.getItem(LEGACY_STORE_CART_STORAGE_KEY),
+    );
   } catch {
     return createEmptyStoreCartState();
   }
@@ -108,13 +238,16 @@ export function writeStoreCartState(storage: StoreCartStorage | undefined, state
   if (!storage) return;
 
   try {
-    const cartCount = getStoreCartCount(state);
+    const normalizedState = normalizeStoreCartState(state);
+    const cartCount = getStoreCartCount(normalizedState);
     if (cartCount === 0) {
       storage.removeItem(STORE_CART_STORAGE_KEY);
+      storage.removeItem(LEGACY_STORE_CART_STORAGE_KEY);
       return;
     }
 
-    storage.setItem(STORE_CART_STORAGE_KEY, serializeStoreCartState(state));
+    storage.setItem(STORE_CART_STORAGE_KEY, serializeStoreCartState(normalizedState));
+    storage.removeItem(LEGACY_STORE_CART_STORAGE_KEY);
   } catch {
     // Cart state is a browser convenience only; storage failures must not block checkout browsing.
   }

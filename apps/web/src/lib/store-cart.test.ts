@@ -8,6 +8,7 @@ import {
   parseStoreCartState,
   readStoreCartState,
   removeStoreCartItem,
+  STORE_CART_MAX_QUANTITY,
   STORE_CART_STORAGE_KEY,
   type StoreCartItem,
   writeStoreCartState,
@@ -43,11 +44,11 @@ describe('store cart state', () => {
   it('starts empty with count 0', () => {
     const state = createEmptyStoreCartState();
 
-    expect(state).toEqual({ item: null });
+    expect(state).toEqual({ item: null, lines: [] });
     expect(getStoreCartCount(state)).toBe(0);
   });
 
-  it('adds the canonical item option as a single cart item', () => {
+  it('adds the canonical item option as a CartLine', () => {
     const state = addStoreCartItem(canonicalItem);
 
     expect(getStoreCartCount(state)).toBe(1);
@@ -56,23 +57,66 @@ describe('store cart state', () => {
       variantId: 'variant_barren-point_standard',
       optionLabel: 'Black Vinyl LP',
     });
+    expect(state.lines).toEqual([{ ...canonicalItem, quantity: 1 }]);
   });
 
-  it('replaces the previous item instead of adding another line', () => {
+  it('adds a second store item as a second CartLine', () => {
     const firstState = addStoreCartItem(canonicalItem);
-    const secondState = addStoreCartItem({
-      ...canonicalItem,
-      storeItemSlug: 'afterglow-tape',
-      title: 'Afterglow Tape',
-      variantId: 'variant_afterglow-tape_standard',
-    });
+    const secondState = addStoreCartItem(
+      {
+        ...canonicalItem,
+        storeItemSlug: 'afterglow-tape',
+        title: 'Afterglow Tape',
+        variantId: 'variant_afterglow-tape_standard',
+      },
+      firstState,
+    );
 
     expect(getStoreCartCount(firstState)).toBe(1);
-    expect(getStoreCartCount(secondState)).toBe(1);
-    expect(secondState.item?.storeItemSlug).toBe('afterglow-tape');
+    expect(getStoreCartCount(secondState)).toBe(2);
+    expect(secondState.lines.map((line) => line.storeItemSlug)).toEqual([
+      'disintegration-black-vinyl-lp',
+      'afterglow-tape',
+    ]);
   });
 
-  it('removes the item and returns to empty', () => {
+  it('merges duplicate variants by increasing CartQuantity', () => {
+    const firstState = addStoreCartItem(canonicalItem);
+    const secondState = addStoreCartItem(canonicalItem, firstState);
+
+    expect(getStoreCartCount(secondState)).toBe(2);
+    expect(secondState.lines).toHaveLength(1);
+    expect(secondState.lines[0]?.quantity).toBe(2);
+  });
+
+  it('caps CartQuantity at the maximum browser quantity', () => {
+    let state = addStoreCartItem(canonicalItem);
+    for (let index = 0; index < STORE_CART_MAX_QUANTITY + 2; index += 1) {
+      state = addStoreCartItem(canonicalItem, state);
+    }
+
+    expect(state.lines[0]?.quantity).toBe(STORE_CART_MAX_QUANTITY);
+    expect(getStoreCartCount(state)).toBe(STORE_CART_MAX_QUANTITY);
+  });
+
+  it('removes one CartLine without clearing the whole draft', () => {
+    const firstState = addStoreCartItem(canonicalItem);
+    const secondState = addStoreCartItem(
+      {
+        ...canonicalItem,
+        storeItemSlug: 'afterglow-tape',
+        title: 'Afterglow Tape',
+        variantId: 'variant_afterglow-tape_standard',
+      },
+      firstState,
+    );
+    const finalState = removeStoreCartItem('variant_barren-point_standard', secondState);
+
+    expect(getStoreCartCount(finalState)).toBe(1);
+    expect(finalState.item?.storeItemSlug).toBe('afterglow-tape');
+  });
+
+  it('removes the whole draft when no variant id is provided', () => {
     expect(removeStoreCartItem()).toEqual(createEmptyStoreCartState());
     expect(getStoreCartCount(removeStoreCartItem())).toBe(0);
   });
@@ -100,7 +144,19 @@ describe('store cart state', () => {
     expect(rawValue).not.toContain('cs_secret');
     expect(rawValue).not.toContain('paid');
     expect(rawValue).not.toContain('operator@example.com');
-    expect(readStoreCartState(storage)).toEqual({ item: canonicalItem });
+    expect(readStoreCartState(storage)).toEqual({
+      item: canonicalItem,
+      lines: [{ ...canonicalItem, quantity: 1 }],
+    });
+  });
+
+  it('migrates the legacy single-item storage shape to a CartDraft', () => {
+    const state = parseStoreCartState(JSON.stringify({ item: canonicalItem }));
+
+    expect(state).toEqual({
+      item: canonicalItem,
+      lines: [{ ...canonicalItem, quantity: 1 }],
+    });
   });
 
   it('falls back to empty cart for malformed storage', () => {
