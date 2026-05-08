@@ -3,6 +3,8 @@ import * as React from 'react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   createStoreCartCheckoutPath,
+  getCartLineTotalDisplay,
+  getCartSubtotalDisplay,
   getStoreCartCount,
   normalizeStoreCartState,
   type StoreCartState,
@@ -36,11 +38,7 @@ export function createStoreCartDrawerView(cartState: StoreCartState, resolveHref
     checkoutHref: primaryLine ? resolveHref(createStoreCartCheckoutPath(primaryLine)) : null,
     item: primaryLine,
     itemCount: getStoreCartCount(state),
-    subtotalDisplay: primaryLine
-      ? state.lines.length === 1
-        ? primaryLine.priceDisplay
-        : `${getStoreCartCount(state)} items`
-      : null,
+    subtotalDisplay: getCartSubtotalDisplay(state.lines),
   };
 
   Object.defineProperty(view, 'lines', {
@@ -123,7 +121,16 @@ export default function StoreCartDrawer({
                         )}
                       </div>
                       <div className="flex items-center justify-between gap-4">
-                        <p className="font-display text-2xl uppercase tracking-[0.08em]">{line.priceDisplay}</p>
+                        <div className="space-y-1 text-right">
+                          <p className="font-display text-2xl uppercase tracking-[0.08em]">
+                            {getCartLineTotalDisplay(line)}
+                          </p>
+                          {line.quantity > 1 && (
+                            <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                              {line.priceDisplay} each
+                            </p>
+                          )}
+                        </div>
                         <button
                           type="button"
                           className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"

@@ -136,6 +136,7 @@ export async function startCheckout(
     }
 
     validatedLines.push({
+      adjustableQuantityMaximum: Math.min(currentStock.onlineQuantity, 9),
       quantity,
       storeItemSlug: line.storeItemSlug,
       stripePriceId: stripeMapping.stripePriceId,
@@ -143,19 +144,10 @@ export async function startCheckout(
     });
   }
 
-  const checkoutSession = await checkoutGateway.createEmbeddedCheckoutSession(
-    validatedLines.length === 1
-      ? {
-          returnUrl: command.returnUrl,
-          storeItemSlug: validatedLines[0]!.storeItemSlug,
-          stripePriceId: validatedLines[0]!.stripePriceId,
-          variantId: validatedLines[0]!.variantId,
-        }
-      : {
-          lineItems: validatedLines,
-          returnUrl: command.returnUrl,
-        },
-  );
+  const checkoutSession = await checkoutGateway.createEmbeddedCheckoutSession({
+    lineItems: validatedLines,
+    returnUrl: command.returnUrl,
+  });
 
   const primaryLine = validatedLines[0]!;
 
@@ -163,6 +155,7 @@ export async function startCheckout(
     checkoutSessionId: checkoutSession.checkoutSessionId,
     lines: validatedLines.map((line) => ({
       quantity: line.quantity,
+      stripePriceId: line.stripePriceId,
       storeItemSlug: line.storeItemSlug,
       variantId: line.variantId,
     })),

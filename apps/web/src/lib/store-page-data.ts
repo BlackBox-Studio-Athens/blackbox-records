@@ -34,6 +34,8 @@ export function createStoreCartItemForStorePage(
     image,
     imageAlt: storeItem.imageAlt,
     optionLabel: primaryAvailability.optionLabel,
+    priceAmountMinor: primaryAvailability.price.amountMinor,
+    priceCurrencyCode: primaryAvailability.price.currencyCode,
     priceDisplay: primaryAvailability.price.display,
     storeItemSlug: storeItem.slug,
     subtitle: storeItem.subtitle,

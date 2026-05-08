@@ -210,7 +210,7 @@ export type StockCountGroupByOutputType = {
   _max: StockCountMaxAggregateOutputType | null
 }
 
-type GetStockCountGroupByPayload<T extends StockCountGroupByArgs> = Prisma.PrismaPromise<
+export type GetStockCountGroupByPayload<T extends StockCountGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<StockCountGroupByOutputType, T['by']> &
       {
@@ -1060,6 +1060,11 @@ export type StockCountFindManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Skip the first `n` StockCounts.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of StockCounts.
+   */
   distinct?: Prisma.StockCountScalarFieldEnum | Prisma.StockCountScalarFieldEnum[]
 }
 

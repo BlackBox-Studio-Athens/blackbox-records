@@ -158,7 +158,7 @@ export type VariantStripeMappingGroupByOutputType = {
   _max: VariantStripeMappingMaxAggregateOutputType | null
 }
 
-type GetVariantStripeMappingGroupByPayload<T extends VariantStripeMappingGroupByArgs> = Prisma.PrismaPromise<
+export type GetVariantStripeMappingGroupByPayload<T extends VariantStripeMappingGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<VariantStripeMappingGroupByOutputType, T['by']> &
       {
@@ -954,6 +954,11 @@ export type VariantStripeMappingFindManyArgs<ExtArgs extends runtime.Types.Exten
    * Skip the first `n` VariantStripeMappings.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of VariantStripeMappings.
+   */
   distinct?: Prisma.VariantStripeMappingScalarFieldEnum | Prisma.VariantStripeMappingScalarFieldEnum[]
 }
 

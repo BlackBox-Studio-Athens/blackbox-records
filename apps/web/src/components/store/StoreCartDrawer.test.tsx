@@ -8,6 +8,8 @@ const cartItem: StoreCartItem = {
   image: '/blackbox-records/assets/disintegration.jpg',
   imageAlt: 'Disintegration by Afterwise',
   optionLabel: 'Black Vinyl LP',
+  priceAmountMinor: 2000,
+  priceCurrencyCode: 'EUR',
   priceDisplay: '€20',
   storeItemSlug: 'disintegration-black-vinyl-lp',
   subtitle: 'Afterwise',
@@ -31,7 +33,7 @@ describe('StoreCartDrawer', () => {
     expect(createStoreCartDrawerView(addStoreCartItem(cartItem), resolveHref)).toMatchObject({
       checkoutHref: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
       itemCount: 1,
-      subtotalDisplay: '€20',
+      subtotalDisplay: '€20.00',
     });
   });
 
@@ -53,9 +55,16 @@ describe('StoreCartDrawer', () => {
       subtitle: 'Afterwise',
       title: 'Disintegration',
     });
-    expect(view.subtotalDisplay).toBe('€20');
+    expect(view.subtotalDisplay).toBe('€20.00');
     expect(view.checkoutHref).toBe('/blackbox-records/store/disintegration-black-vinyl-lp/checkout/');
     expect(STORE_CART_DRAWER_COPY.remove).toBe('Remove');
+  });
+
+  it('uses CartQuantity when calculating the drawer subtotal', () => {
+    const view = createStoreCartDrawerView(addStoreCartItem(cartItem, addStoreCartItem(cartItem)), resolveHref);
+
+    expect(view.itemCount).toBe(2);
+    expect(view.subtotalDisplay).toBe('€40.00');
   });
 
   it('does not render forbidden checkout, Stripe, D1, stock, or order fields', () => {

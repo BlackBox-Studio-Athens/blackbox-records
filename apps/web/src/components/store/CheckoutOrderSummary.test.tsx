@@ -15,9 +15,13 @@ const summaryInput: CheckoutOrderSummaryInput = {
   imageAlt: 'Disintegration by Afterwise',
   itemHref: '/blackbox-records/store/disintegration-black-vinyl-lp/',
   optionLabel: 'Black Vinyl LP',
+  priceAmountMinor: 2800,
+  priceCurrencyCode: 'EUR',
   priceDisplay: '€28.00',
+  storeItemSlug: 'disintegration-black-vinyl-lp',
   subtitle: 'Afterwise',
   title: 'Disintegration',
+  variantId: 'variant_barren-point_standard',
 };
 
 describe('CheckoutOrderSummary', () => {
@@ -54,6 +58,22 @@ describe('CheckoutOrderSummary', () => {
       availabilityLabel: 'Sold Out',
       canBuy: false,
       subtotalDisplay: 'Price soon',
+    });
+  });
+
+  it('uses CartQuantity when calculating checkout subtotal display', () => {
+    expect(
+      createCheckoutOrderSummaryView(summaryInput, [
+        {
+          ...summaryInput,
+          availabilityLabel: 'Available',
+          quantity: 2,
+          storeItemSlug: 'disintegration-black-vinyl-lp',
+          variantId: 'variant_barren-point_standard',
+        },
+      ]),
+    ).toMatchObject({
+      subtotalDisplay: '€56.00',
     });
   });
 

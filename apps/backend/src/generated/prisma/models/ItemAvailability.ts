@@ -158,7 +158,7 @@ export type ItemAvailabilityGroupByOutputType = {
   _max: ItemAvailabilityMaxAggregateOutputType | null
 }
 
-type GetItemAvailabilityGroupByPayload<T extends ItemAvailabilityGroupByArgs> = Prisma.PrismaPromise<
+export type GetItemAvailabilityGroupByPayload<T extends ItemAvailabilityGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<ItemAvailabilityGroupByOutputType, T['by']> &
       {
@@ -962,6 +962,11 @@ export type ItemAvailabilityFindManyArgs<ExtArgs extends runtime.Types.Extension
    * Skip the first `n` ItemAvailabilities.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of ItemAvailabilities.
+   */
   distinct?: Prisma.ItemAvailabilityScalarFieldEnum | Prisma.ItemAvailabilityScalarFieldEnum[]
 }
 

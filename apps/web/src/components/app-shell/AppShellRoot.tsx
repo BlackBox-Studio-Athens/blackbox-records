@@ -11,6 +11,7 @@ import { derivePlayerPresentationState, OPEN_PLAYER_ACTION_LABEL } from '@/compo
 import ServicesInquiryForm from '@/components/services/ServicesInquiryForm';
 import StoreCartButton from '@/components/store/StoreCartButton';
 import StoreCartDrawer from '@/components/store/StoreCartDrawer';
+import { CHECKOUT_CART_UPDATED_EVENT } from '@/components/store/CheckoutOrderSummary';
 import { Spinner } from '@/components/ui/spinner';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { createProjectRelativeUrl, resolveLinkAttributes } from '@/config/site';
@@ -442,14 +443,20 @@ export default function AppShellRoot({
       setIsStoreCartDrawerOpen(true);
     }
 
+    function handleCheckoutCartUpdated() {
+      setStoreCartState(readStoreCartState(getStoreCartBrowserStorage()));
+    }
+
     setStoreCartState(readStoreCartState(getStoreCartBrowserStorage()));
     syncStoreCartHeaderContainer();
     window.addEventListener(STORE_CART_ADD_ITEM_EVENT, handleStoreCartAddItem);
+    window.addEventListener(CHECKOUT_CART_UPDATED_EVENT, handleCheckoutCartUpdated);
     window.addEventListener(STORE_CART_OPEN_REQUESTED_EVENT, handleStoreCartOpenRequested);
     window.addEventListener('pageshow', syncStoreCartHeaderContainer);
 
     return () => {
       window.removeEventListener(STORE_CART_ADD_ITEM_EVENT, handleStoreCartAddItem);
+      window.removeEventListener(CHECKOUT_CART_UPDATED_EVENT, handleCheckoutCartUpdated);
       window.removeEventListener(STORE_CART_OPEN_REQUESTED_EVENT, handleStoreCartOpenRequested);
       window.removeEventListener('pageshow', syncStoreCartHeaderContainer);
     };

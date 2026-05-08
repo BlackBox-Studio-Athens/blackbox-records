@@ -206,7 +206,7 @@ export type StockChangeGroupByOutputType = {
   _max: StockChangeMaxAggregateOutputType | null
 }
 
-type GetStockChangeGroupByPayload<T extends StockChangeGroupByArgs> = Prisma.PrismaPromise<
+export type GetStockChangeGroupByPayload<T extends StockChangeGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<StockChangeGroupByOutputType, T['by']> &
       {
@@ -1058,6 +1058,11 @@ export type StockChangeFindManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Skip the first `n` StockChanges.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of StockChanges.
+   */
   distinct?: Prisma.StockChangeScalarFieldEnum | Prisma.StockChangeScalarFieldEnum[]
 }
 

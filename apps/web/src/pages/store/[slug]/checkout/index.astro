@@ -24,6 +24,8 @@ const initialCheckoutAvailability = {
   canBuy,
   label: availabilityLabel,
   optionLabel: primaryAvailability?.optionLabel ?? null,
+  priceAmountMinor: primaryAvailability?.price.amountMinor,
+  priceCurrencyCode: primaryAvailability?.price.currencyCode,
   priceDisplay: priceLabel,
 };
 const summaryItem = {
@@ -33,9 +35,13 @@ const summaryItem = {
   imageAlt: storeItem.imageAlt,
   itemHref: storeItem.storePath,
   optionLabel: primaryAvailability?.optionLabel ?? null,
+  priceAmountMinor: primaryAvailability?.price.amountMinor,
+  priceCurrencyCode: primaryAvailability?.price.currencyCode,
   priceDisplay: priceLabel,
+  storeItemSlug: storeItem.slug,
   subtitle: storeItem.subtitle,
   title: storeItem.title,
+  variantId: primaryAvailability?.variantId ?? '',
 };
 ---
 

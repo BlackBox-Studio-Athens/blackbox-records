@@ -1,13 +1,14 @@
 import type { CheckoutReconciliation } from '../checkout';
 import type {
   CheckoutOrderRecord,
+  CheckoutOrderLineRecord,
   StockChangeRecord,
   StockChangeRepository,
   StockRecord,
   StockRepository,
   OrderStateRepository,
 } from '../../../domain/commerce/repositories';
-import { CheckoutOrderNotFoundError, InvalidOrderTransitionError } from './errors';
+import { InvalidOrderTransitionError } from './errors';
 import { transitionCheckoutOrder } from './transition-checkout-order';
 
 export type ApplyPaidCheckoutReconciliationResult =
@@ -30,6 +31,11 @@ export type ApplyPaidCheckoutReconciliationResult =
       reason: string;
     }
   | {
+      kind: 'needs_review';
+      order: CheckoutOrderRecord;
+      reason: string;
+    }
+  | {
       kind: 'replay';
       order: CheckoutOrderRecord;
     }
@@ -45,6 +51,7 @@ export async function applyPaidCheckoutReconciliation(
   stockChanges: StockChangeRepository,
   reconciliation: CheckoutReconciliation,
   appliedAt = new Date(),
+  finalizedLineItems: FinalizedPaidCheckoutLineItem[] = [],
 ): Promise<ApplyPaidCheckoutReconciliationResult> {
   if (reconciliation.recommendedOrderStatus !== 'paid') {
     return {
@@ -54,6 +61,43 @@ export async function applyPaidCheckoutReconciliation(
   }
 
   const checkoutSessionId = reconciliation.source.checkoutSessionId;
+  const currentOrder = await orders.findByCheckoutSessionId(checkoutSessionId);
+
+  if (!currentOrder) {
+    return {
+      checkoutSessionId,
+      kind: 'missing_order',
+    };
+  }
+
+  const orderLines = readOrderLines(currentOrder);
+  const finalizedOrderLines = reconcileFinalizedLineItems(orderLines, finalizedLineItems);
+
+  if (!finalizedOrderLines) {
+    try {
+      const transitionResult = await transitionCheckoutOrder(orders, {
+        checkoutSessionId,
+        stripePaymentIntentId: reconciliation.source.stripePaymentIntentId,
+        toStatus: 'needs_review',
+        transitionedAt: appliedAt,
+      });
+
+      return {
+        kind: 'needs_review',
+        order: transitionResult.order,
+        reason: 'Paid checkout line items could not be reconciled.',
+      };
+    } catch (error) {
+      if (error instanceof InvalidOrderTransitionError) {
+        return {
+          kind: 'rejected',
+          reason: error.message,
+        };
+      }
+
+      throw error;
+    }
+  }
 
   let transitionResult: Awaited<ReturnType<typeof transitionCheckoutOrder>>;
 
@@ -65,13 +109,6 @@ export async function applyPaidCheckoutReconciliation(
       transitionedAt: appliedAt,
     });
   } catch (error) {
-    if (error instanceof CheckoutOrderNotFoundError) {
-      return {
-        checkoutSessionId,
-        kind: 'missing_order',
-      };
-    }
-
     if (error instanceof InvalidOrderTransitionError) {
       return {
         kind: 'rejected',
@@ -89,22 +126,10 @@ export async function applyPaidCheckoutReconciliation(
     };
   }
 
-  const orderLines = transitionResult.order.lines?.length
-    ? transitionResult.order.lines
-    : [
-        {
-          createdAt: transitionResult.order.createdAt,
-          id: transitionResult.order.id,
-          orderId: transitionResult.order.id,
-          quantity: 1,
-          storeItemSlug: transitionResult.order.storeItemSlug,
-          variantId: transitionResult.order.variantId,
-        },
-      ];
   const savedStockRecords: StockRecord[] = [];
   const stockChangeRecords: StockChangeRecord[] = [];
 
-  for (const line of orderLines) {
+  for (const line of finalizedOrderLines) {
     const currentStock = await stock.findByVariantId(line.variantId);
 
     if (!currentStock || currentStock.quantity < line.quantity || currentStock.onlineQuantity < line.quantity) {
@@ -138,4 +163,62 @@ export async function applyPaidCheckoutReconciliation(
     stock: savedStockRecords[0]!,
     stockChange: stockChangeRecords[0]!,
   };
+}
+
+export type FinalizedPaidCheckoutLineItem = {
+  quantity: number;
+  stripePriceId: string;
+};
+
+function readOrderLines(order: CheckoutOrderRecord): CheckoutOrderLineRecord[] {
+  return order.lines?.length
+    ? order.lines
+    : [
+        {
+          createdAt: order.createdAt,
+          id: order.id,
+          orderId: order.id,
+          quantity: 1,
+          storeItemSlug: order.storeItemSlug,
+          stripePriceId: null,
+          variantId: order.variantId,
+        },
+      ];
+}
+
+function reconcileFinalizedLineItems(
+  orderLines: CheckoutOrderLineRecord[],
+  finalizedLineItems: FinalizedPaidCheckoutLineItem[],
+): CheckoutOrderLineRecord[] | null {
+  if (finalizedLineItems.length === 0) return orderLines;
+
+  const finalizedQuantityByStripePriceId = new Map<string, number>();
+
+  for (const lineItem of finalizedLineItems) {
+    if (!Number.isInteger(lineItem.quantity) || lineItem.quantity < 1) return null;
+
+    finalizedQuantityByStripePriceId.set(
+      lineItem.stripePriceId,
+      (finalizedQuantityByStripePriceId.get(lineItem.stripePriceId) ?? 0) + lineItem.quantity,
+    );
+  }
+
+  const reconciledLines: CheckoutOrderLineRecord[] = [];
+
+  for (const line of orderLines) {
+    if (!line.stripePriceId || !finalizedQuantityByStripePriceId.has(line.stripePriceId)) {
+      return null;
+    }
+
+    reconciledLines.push({
+      ...line,
+      quantity: finalizedQuantityByStripePriceId.get(line.stripePriceId)!,
+    });
+  }
+
+  if (reconciledLines.length !== finalizedQuantityByStripePriceId.size) {
+    return null;
+  }
+
+  return reconciledLines;
 }

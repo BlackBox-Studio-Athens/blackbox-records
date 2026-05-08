@@ -19,6 +19,8 @@ const canonicalItem: StoreCartItem = {
   image: '/blackbox-records/assets/disintegration.jpg',
   imageAlt: 'Disintegration by Afterwise',
   optionLabel: 'Black Vinyl LP',
+  priceAmountMinor: 2000,
+  priceCurrencyCode: 'EUR',
   priceDisplay: '€20',
   storeItemSlug: 'disintegration-black-vinyl-lp',
   subtitle: 'Afterwise',
@@ -89,6 +91,23 @@ describe('store cart state', () => {
     expect(secondState.lines[0]?.quantity).toBe(2);
   });
 
+  it('calculates display totals from browser-safe price fields', async () => {
+    const { getCartLineTotalDisplay, getCartSubtotalDisplay } = await import('./store-cart');
+    const state = addStoreCartItem(canonicalItem, addStoreCartItem(canonicalItem));
+
+    expect(getCartLineTotalDisplay(state.lines[0]!)).toBe('€40.00');
+    expect(getCartSubtotalDisplay(state.lines)).toBe('€40.00');
+  });
+
+  it('falls back to quantity-aware display text for legacy cart lines without structured price fields', async () => {
+    const { getCartLineTotalDisplay, getCartSubtotalDisplay } = await import('./store-cart');
+    const { priceAmountMinor: _priceAmountMinor, priceCurrencyCode: _priceCurrencyCode, ...legacyItem } = canonicalItem;
+    const state = addStoreCartItem(legacyItem, addStoreCartItem(legacyItem));
+
+    expect(getCartLineTotalDisplay(state.lines[0]!)).toBe('€20 x 2');
+    expect(getCartSubtotalDisplay(state.lines)).toBe('€20 x 2');
+  });
+
   it('caps CartQuantity at the maximum browser quantity', () => {
     let state = addStoreCartItem(canonicalItem);
     for (let index = 0; index < STORE_CART_MAX_QUANTITY + 2; index += 1) {
@@ -138,6 +157,8 @@ describe('store cart state', () => {
 
     const rawValue = storage.getItem(STORE_CART_STORAGE_KEY);
     expect(rawValue).toContain('disintegration-black-vinyl-lp');
+    expect(rawValue).toContain('priceAmountMinor');
+    expect(rawValue).toContain('priceCurrencyCode');
     expect(rawValue).not.toContain('price_secret');
     expect(rawValue).not.toContain('store_item_option_1');
     expect(rawValue).not.toContain('stockCount');

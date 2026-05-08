@@ -20,6 +20,7 @@ import {
   type CheckoutOfferStatusView,
 } from './checkout-offer-status-state';
 import CheckoutShippingStep from './CheckoutShippingStep';
+import { CHECKOUT_CART_UPDATED_EVENT } from './CheckoutOrderSummary';
 import { createCheckoutShippingGateView, type CheckoutLockerSelection } from './checkout-shipping-step-state';
 
 interface CheckoutOfferStatusProps {
@@ -74,6 +75,14 @@ export default function CheckoutOfferStatus({
     return () => {
       checkoutSessionRef.current?.destroy();
       checkoutSessionRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener(CHECKOUT_CART_UPDATED_EVENT, resetMountedCheckout);
+
+    return () => {
+      window.removeEventListener(CHECKOUT_CART_UPDATED_EVENT, resetMountedCheckout);
     };
   }, []);
 

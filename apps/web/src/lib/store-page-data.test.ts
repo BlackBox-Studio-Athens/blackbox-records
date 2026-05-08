@@ -232,6 +232,8 @@ describe('store page data helper', () => {
       image: '/blackbox-records/_astro/disintegration.webp',
       imageAlt: 'Disintegration cover',
       optionLabel: 'Black Vinyl LP',
+      priceAmountMinor: 2800,
+      priceCurrencyCode: 'EUR',
       priceDisplay: 'EUR 28.00',
       storeItemSlug: 'disintegration-black-vinyl-lp',
       subtitle: 'Afterwise',

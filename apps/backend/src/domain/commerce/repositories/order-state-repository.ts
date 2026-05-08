@@ -1,4 +1,4 @@
-import type { StoreItemSlug, VariantId } from '../ids';
+import type { StoreItemSlug, StripePriceId, VariantId } from '../ids';
 
 export type OrderStatus = 'pending_payment' | 'paid' | 'not_paid' | 'needs_review';
 
@@ -28,6 +28,7 @@ export type CheckoutOrderRecord = {
 export type CheckoutOrderLineRecord = {
   id: string;
   orderId: string;
+  stripePriceId: StripePriceId | null;
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
   quantity: number;
@@ -46,6 +47,7 @@ export type CreatePendingCheckoutOrderInput = {
 
 export type CreatePendingCheckoutOrderLineInput = {
   quantity: number;
+  stripePriceId?: StripePriceId | null;
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
 };

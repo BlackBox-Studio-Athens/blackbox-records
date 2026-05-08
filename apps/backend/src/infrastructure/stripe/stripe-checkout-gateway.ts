@@ -36,6 +36,11 @@ export class StripeCheckoutGateway implements CheckoutGateway {
     const primaryLine = lineItems[0];
     const session = await this.stripe.checkout.sessions.create({
       line_items: lineItems.map((line) => ({
+        adjustable_quantity: {
+          enabled: true,
+          maximum: line.adjustableQuantityMaximum ?? line.quantity,
+          minimum: 1,
+        },
         price: line.stripePriceId,
         quantity: line.quantity,
       })),
@@ -64,6 +69,19 @@ export class StripeCheckoutGateway implements CheckoutGateway {
     const session = await this.stripe.checkout.sessions.retrieve(checkoutSessionId);
 
     return toStripeCheckoutSessionState(session);
+  }
+
+  public async readCheckoutSessionLineItems(checkoutSessionId: string) {
+    const lineItems = await this.stripe.checkout.sessions.listLineItems(checkoutSessionId, {
+      limit: 100,
+    });
+
+    return lineItems.data
+      .map((lineItem) => ({
+        quantity: lineItem.quantity ?? 0,
+        stripePriceId: lineItem.price?.id ?? '',
+      }))
+      .filter((lineItem) => lineItem.quantity > 0 && lineItem.stripePriceId);
   }
 }
 

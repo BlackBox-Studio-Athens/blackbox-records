@@ -26,10 +26,16 @@ export type EmbeddedCheckoutSessionRequest = {
 };
 
 export type EmbeddedCheckoutSessionLineItem = {
+  adjustableQuantityMaximum?: number;
   quantity: number;
   storeItemSlug: StoreItemSlug;
   stripePriceId: StripePriceId;
   variantId: VariantId;
+};
+
+export type FinalizedCheckoutSessionLineItem = {
+  quantity: number;
+  stripePriceId: StripePriceId;
 };
 
 export type CheckoutShippingLockerSnapshot = {
@@ -64,5 +70,6 @@ export type CheckoutState = {
 
 export interface CheckoutGateway {
   createEmbeddedCheckoutSession(request: EmbeddedCheckoutSessionRequest): Promise<EmbeddedCheckoutSession>;
+  readCheckoutSessionLineItems(checkoutSessionId: string): Promise<FinalizedCheckoutSessionLineItem[]>;
   readCheckoutSession(checkoutSessionId: string): Promise<StripeCheckoutSessionState>;
 }

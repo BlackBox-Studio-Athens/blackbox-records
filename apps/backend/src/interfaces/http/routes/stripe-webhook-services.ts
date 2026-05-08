@@ -6,6 +6,7 @@ import {
 } from '../../../application/commerce/orders';
 import type { CheckoutReconciliation } from '../../../application/commerce/checkout';
 import type { AppBindings } from '../../../env';
+import { createStripeCheckoutGateway } from '../../../infrastructure/stripe';
 import {
   createPrismaClient,
   PrismaOrderStateRepository,
@@ -18,6 +19,7 @@ export function createStripeWebhookServices(bindings: AppBindings) {
   const orders = new PrismaOrderStateRepository(prisma);
   const stock = new PrismaStockRepository(prisma);
   const stockChanges = new PrismaStockChangeRepository(prisma);
+  const checkoutGateway = createStripeCheckoutGateway(bindings);
 
   return {
     applyNonPaidCheckoutReconciliation: (
@@ -26,7 +28,11 @@ export function createStripeWebhookServices(bindings: AppBindings) {
     applyPaidCheckoutReconciliation: (
       reconciliation: CheckoutReconciliation,
     ): Promise<ApplyPaidCheckoutReconciliationResult> =>
-      applyPaidCheckoutReconciliation(orders, stock, stockChanges, reconciliation),
+      checkoutGateway
+        .readCheckoutSessionLineItems(reconciliation.source.checkoutSessionId)
+        .then((lineItems) =>
+          applyPaidCheckoutReconciliation(orders, stock, stockChanges, reconciliation, new Date(), lineItems),
+        ),
     disconnect: async () => prisma.$disconnect(),
   };
 }

@@ -39,6 +39,7 @@ export type CheckoutOrderLineMinAggregateOutputType = {
   orderId: string | null
   storeItemSlug: string | null
   variantId: string | null
+  stripePriceId: string | null
   quantity: number | null
   createdAt: Date | null
 }
@@ -48,6 +49,7 @@ export type CheckoutOrderLineMaxAggregateOutputType = {
   orderId: string | null
   storeItemSlug: string | null
   variantId: string | null
+  stripePriceId: string | null
   quantity: number | null
   createdAt: Date | null
 }
@@ -57,6 +59,7 @@ export type CheckoutOrderLineCountAggregateOutputType = {
   orderId: number
   storeItemSlug: number
   variantId: number
+  stripePriceId: number
   quantity: number
   createdAt: number
   _all: number
@@ -76,6 +79,7 @@ export type CheckoutOrderLineMinAggregateInputType = {
   orderId?: true
   storeItemSlug?: true
   variantId?: true
+  stripePriceId?: true
   quantity?: true
   createdAt?: true
 }
@@ -85,6 +89,7 @@ export type CheckoutOrderLineMaxAggregateInputType = {
   orderId?: true
   storeItemSlug?: true
   variantId?: true
+  stripePriceId?: true
   quantity?: true
   createdAt?: true
 }
@@ -94,6 +99,7 @@ export type CheckoutOrderLineCountAggregateInputType = {
   orderId?: true
   storeItemSlug?: true
   variantId?: true
+  stripePriceId?: true
   quantity?: true
   createdAt?: true
   _all?: true
@@ -190,6 +196,7 @@ export type CheckoutOrderLineGroupByOutputType = {
   orderId: string
   storeItemSlug: string
   variantId: string
+  stripePriceId: string | null
   quantity: number
   createdAt: Date
   _count: CheckoutOrderLineCountAggregateOutputType | null
@@ -199,7 +206,7 @@ export type CheckoutOrderLineGroupByOutputType = {
   _max: CheckoutOrderLineMaxAggregateOutputType | null
 }
 
-type GetCheckoutOrderLineGroupByPayload<T extends CheckoutOrderLineGroupByArgs> = Prisma.PrismaPromise<
+export type GetCheckoutOrderLineGroupByPayload<T extends CheckoutOrderLineGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<CheckoutOrderLineGroupByOutputType, T['by']> &
       {
@@ -222,6 +229,7 @@ export type CheckoutOrderLineWhereInput = {
   orderId?: Prisma.StringFilter<"CheckoutOrderLine"> | string
   storeItemSlug?: Prisma.StringFilter<"CheckoutOrderLine"> | string
   variantId?: Prisma.StringFilter<"CheckoutOrderLine"> | string
+  stripePriceId?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
   quantity?: Prisma.IntFilter<"CheckoutOrderLine"> | number
   createdAt?: Prisma.DateTimeFilter<"CheckoutOrderLine"> | Date | string
   order?: Prisma.XOR<Prisma.CheckoutOrderScalarRelationFilter, Prisma.CheckoutOrderWhereInput>
@@ -232,6 +240,7 @@ export type CheckoutOrderLineOrderByWithRelationInput = {
   orderId?: Prisma.SortOrder
   storeItemSlug?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
+  stripePriceId?: Prisma.SortOrderInput | Prisma.SortOrder
   quantity?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   order?: Prisma.CheckoutOrderOrderByWithRelationInput
@@ -245,6 +254,7 @@ export type CheckoutOrderLineWhereUniqueInput = Prisma.AtLeast<{
   orderId?: Prisma.StringFilter<"CheckoutOrderLine"> | string
   storeItemSlug?: Prisma.StringFilter<"CheckoutOrderLine"> | string
   variantId?: Prisma.StringFilter<"CheckoutOrderLine"> | string
+  stripePriceId?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
   quantity?: Prisma.IntFilter<"CheckoutOrderLine"> | number
   createdAt?: Prisma.DateTimeFilter<"CheckoutOrderLine"> | Date | string
   order?: Prisma.XOR<Prisma.CheckoutOrderScalarRelationFilter, Prisma.CheckoutOrderWhereInput>
@@ -255,6 +265,7 @@ export type CheckoutOrderLineOrderByWithAggregationInput = {
   orderId?: Prisma.SortOrder
   storeItemSlug?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
+  stripePriceId?: Prisma.SortOrderInput | Prisma.SortOrder
   quantity?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.CheckoutOrderLineCountOrderByAggregateInput
@@ -272,6 +283,7 @@ export type CheckoutOrderLineScalarWhereWithAggregatesInput = {
   orderId?: Prisma.StringWithAggregatesFilter<"CheckoutOrderLine"> | string
   storeItemSlug?: Prisma.StringWithAggregatesFilter<"CheckoutOrderLine"> | string
   variantId?: Prisma.StringWithAggregatesFilter<"CheckoutOrderLine"> | string
+  stripePriceId?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrderLine"> | string | null
   quantity?: Prisma.IntWithAggregatesFilter<"CheckoutOrderLine"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"CheckoutOrderLine"> | Date | string
 }
@@ -280,6 +292,7 @@ export type CheckoutOrderLineCreateInput = {
   id?: string
   storeItemSlug: string
   variantId: string
+  stripePriceId?: string | null
   quantity: number
   createdAt?: Date | string
   order: Prisma.CheckoutOrderCreateNestedOneWithoutLinesInput
@@ -290,6 +303,7 @@ export type CheckoutOrderLineUncheckedCreateInput = {
   orderId: string
   storeItemSlug: string
   variantId: string
+  stripePriceId?: string | null
   quantity: number
   createdAt?: Date | string
 }
@@ -298,6 +312,7 @@ export type CheckoutOrderLineUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   order?: Prisma.CheckoutOrderUpdateOneRequiredWithoutLinesNestedInput
@@ -308,6 +323,7 @@ export type CheckoutOrderLineUncheckedUpdateInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -317,6 +333,7 @@ export type CheckoutOrderLineCreateManyInput = {
   orderId: string
   storeItemSlug: string
   variantId: string
+  stripePriceId?: string | null
   quantity: number
   createdAt?: Date | string
 }
@@ -325,6 +342,7 @@ export type CheckoutOrderLineUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -334,6 +352,7 @@ export type CheckoutOrderLineUncheckedUpdateManyInput = {
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
   storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -353,6 +372,7 @@ export type CheckoutOrderLineCountOrderByAggregateInput = {
   orderId?: Prisma.SortOrder
   storeItemSlug?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
+  stripePriceId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -366,6 +386,7 @@ export type CheckoutOrderLineMaxOrderByAggregateInput = {
   orderId?: Prisma.SortOrder
   storeItemSlug?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
+  stripePriceId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -375,6 +396,7 @@ export type CheckoutOrderLineMinOrderByAggregateInput = {
   orderId?: Prisma.SortOrder
   storeItemSlug?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
+  stripePriceId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
@@ -429,6 +451,7 @@ export type CheckoutOrderLineCreateWithoutOrderInput = {
   id?: string
   storeItemSlug: string
   variantId: string
+  stripePriceId?: string | null
   quantity: number
   createdAt?: Date | string
 }
@@ -437,6 +460,7 @@ export type CheckoutOrderLineUncheckedCreateWithoutOrderInput = {
   id?: string
   storeItemSlug: string
   variantId: string
+  stripePriceId?: string | null
   quantity: number
   createdAt?: Date | string
 }
@@ -474,6 +498,7 @@ export type CheckoutOrderLineScalarWhereInput = {
   orderId?: Prisma.StringFilter<"CheckoutOrderLine"> | string
   storeItemSlug?: Prisma.StringFilter<"CheckoutOrderLine"> | string
   variantId?: Prisma.StringFilter<"CheckoutOrderLine"> | string
+  stripePriceId?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
   quantity?: Prisma.IntFilter<"CheckoutOrderLine"> | number
   createdAt?: Prisma.DateTimeFilter<"CheckoutOrderLine"> | Date | string
 }
@@ -482,6 +507,7 @@ export type CheckoutOrderLineCreateManyOrderInput = {
   id?: string
   storeItemSlug: string
   variantId: string
+  stripePriceId?: string | null
   quantity: number
   createdAt?: Date | string
 }
@@ -490,6 +516,7 @@ export type CheckoutOrderLineUpdateWithoutOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -498,6 +525,7 @@ export type CheckoutOrderLineUncheckedUpdateWithoutOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -506,6 +534,7 @@ export type CheckoutOrderLineUncheckedUpdateManyWithoutOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -517,6 +546,7 @@ export type CheckoutOrderLineSelect<ExtArgs extends runtime.Types.Extensions.Int
   orderId?: boolean
   storeItemSlug?: boolean
   variantId?: boolean
+  stripePriceId?: boolean
   quantity?: boolean
   createdAt?: boolean
   order?: boolean | Prisma.CheckoutOrderDefaultArgs<ExtArgs>
@@ -527,6 +557,7 @@ export type CheckoutOrderLineSelectCreateManyAndReturn<ExtArgs extends runtime.T
   orderId?: boolean
   storeItemSlug?: boolean
   variantId?: boolean
+  stripePriceId?: boolean
   quantity?: boolean
   createdAt?: boolean
   order?: boolean | Prisma.CheckoutOrderDefaultArgs<ExtArgs>
@@ -537,6 +568,7 @@ export type CheckoutOrderLineSelectUpdateManyAndReturn<ExtArgs extends runtime.T
   orderId?: boolean
   storeItemSlug?: boolean
   variantId?: boolean
+  stripePriceId?: boolean
   quantity?: boolean
   createdAt?: boolean
   order?: boolean | Prisma.CheckoutOrderDefaultArgs<ExtArgs>
@@ -547,11 +579,12 @@ export type CheckoutOrderLineSelectScalar = {
   orderId?: boolean
   storeItemSlug?: boolean
   variantId?: boolean
+  stripePriceId?: boolean
   quantity?: boolean
   createdAt?: boolean
 }
 
-export type CheckoutOrderLineOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderId" | "storeItemSlug" | "variantId" | "quantity" | "createdAt", ExtArgs["result"]["checkoutOrderLine"]>
+export type CheckoutOrderLineOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderId" | "storeItemSlug" | "variantId" | "stripePriceId" | "quantity" | "createdAt", ExtArgs["result"]["checkoutOrderLine"]>
 export type CheckoutOrderLineInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   order?: boolean | Prisma.CheckoutOrderDefaultArgs<ExtArgs>
 }
@@ -572,6 +605,7 @@ export type $CheckoutOrderLinePayload<ExtArgs extends runtime.Types.Extensions.I
     orderId: string
     storeItemSlug: string
     variantId: string
+    stripePriceId: string | null
     quantity: number
     createdAt: Date
   }, ExtArgs["result"]["checkoutOrderLine"]>
@@ -1002,6 +1036,7 @@ export interface CheckoutOrderLineFieldRefs {
   readonly orderId: Prisma.FieldRef<"CheckoutOrderLine", 'String'>
   readonly storeItemSlug: Prisma.FieldRef<"CheckoutOrderLine", 'String'>
   readonly variantId: Prisma.FieldRef<"CheckoutOrderLine", 'String'>
+  readonly stripePriceId: Prisma.FieldRef<"CheckoutOrderLine", 'String'>
   readonly quantity: Prisma.FieldRef<"CheckoutOrderLine", 'Int'>
   readonly createdAt: Prisma.FieldRef<"CheckoutOrderLine", 'DateTime'>
 }
@@ -1200,6 +1235,11 @@ export type CheckoutOrderLineFindManyArgs<ExtArgs extends runtime.Types.Extensio
    * Skip the first `n` CheckoutOrderLines.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of CheckoutOrderLines.
+   */
   distinct?: Prisma.CheckoutOrderLineScalarFieldEnum | Prisma.CheckoutOrderLineScalarFieldEnum[]
 }
 

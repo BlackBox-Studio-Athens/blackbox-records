@@ -8,6 +8,8 @@ export type StoreCartItem = {
   image: string | null;
   imageAlt: string | null;
   optionLabel: string | null;
+  priceAmountMinor?: number | undefined;
+  priceCurrencyCode?: string | undefined;
   priceDisplay: string;
   storeItemSlug: string;
   subtitle: string;
@@ -44,10 +46,16 @@ const REQUIRED_STRING_FIELDS = [
 const OPTIONAL_STRING_FIELDS = ['image', 'imageAlt', 'optionLabel'] as const satisfies readonly (keyof StoreCartItem)[];
 
 export const STORE_CART_MAX_QUANTITY = 9;
+const DEFAULT_CART_LOCALE = 'en-US';
 
 function readStringField(value: Record<string, unknown>, field: keyof StoreCartItem) {
   const fieldValue = value[field];
   return typeof fieldValue === 'string' ? fieldValue : null;
+}
+
+function readPositiveIntegerField(value: Record<string, unknown>, field: keyof StoreCartItem) {
+  const fieldValue = value[field];
+  return typeof fieldValue === 'number' && Number.isInteger(fieldValue) && fieldValue >= 0 ? fieldValue : null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -78,6 +86,12 @@ export function sanitizeStoreCartItem(value: unknown): StoreCartItem | null {
   for (const field of OPTIONAL_STRING_FIELDS) {
     item[field] = readStringField(value, field);
   }
+  const priceAmountMinor = readPositiveIntegerField(value, 'priceAmountMinor');
+  const priceCurrencyCode = readStringField(value, 'priceCurrencyCode')?.trim().toUpperCase() ?? null;
+  if (priceAmountMinor !== null && priceCurrencyCode) {
+    item.priceAmountMinor = priceAmountMinor;
+    item.priceCurrencyCode = priceCurrencyCode;
+  }
 
   return item;
 }
@@ -101,7 +115,7 @@ export function normalizeStoreCartState(state: StoreCartState | CartDraft): Stor
     : [];
   const firstLine = lines[0] ?? null;
   const item = firstLine
-    ? {
+    ? ({
         availabilityLabel: firstLine.availabilityLabel,
         image: firstLine.image,
         imageAlt: firstLine.imageAlt,
@@ -111,10 +125,55 @@ export function normalizeStoreCartState(state: StoreCartState | CartDraft): Stor
         subtitle: firstLine.subtitle,
         title: firstLine.title,
         variantId: firstLine.variantId,
-      }
+        ...(typeof firstLine.priceAmountMinor === 'number' && firstLine.priceCurrencyCode
+          ? {
+              priceAmountMinor: firstLine.priceAmountMinor,
+              priceCurrencyCode: firstLine.priceCurrencyCode,
+            }
+          : {}),
+      } satisfies StoreCartItem)
     : null;
 
   return { item, lines };
+}
+
+export function formatCartMoney(amountMinor: number, currencyCode: string): string {
+  return new Intl.NumberFormat(DEFAULT_CART_LOCALE, {
+    currency: currencyCode,
+    currencyDisplay: 'narrowSymbol',
+    style: 'currency',
+  }).format(amountMinor / 100);
+}
+
+export function getCartLineTotalDisplay(line: CartLine): string {
+  if (typeof line.priceAmountMinor === 'number' && line.priceCurrencyCode) {
+    return formatCartMoney(line.priceAmountMinor * line.quantity, line.priceCurrencyCode);
+  }
+
+  return line.quantity > 1 ? `${line.priceDisplay} x ${line.quantity}` : line.priceDisplay;
+}
+
+export function getCartSubtotalDisplay(lines: CartLine[]): string | null {
+  if (!lines.length) return null;
+
+  const currencyCode = lines[0]?.priceCurrencyCode;
+  const canCalculateSubtotal = Boolean(
+    currencyCode &&
+    lines.every((line) => typeof line.priceAmountMinor === 'number' && line.priceCurrencyCode === currencyCode),
+  );
+
+  if (canCalculateSubtotal && currencyCode) {
+    return formatCartMoney(
+      lines.reduce((total, line) => total + (line.priceAmountMinor ?? 0) * line.quantity, 0),
+      currencyCode,
+    );
+  }
+
+  if (lines.length === 1) {
+    return getCartLineTotalDisplay(lines[0]!);
+  }
+
+  return `${lines.reduce((total, line) => total + line.quantity, 0)} items`;
 }
 
 export function addStoreCartItem(

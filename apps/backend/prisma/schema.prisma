@@ -114,10 +114,12 @@ model CheckoutOrderLine {
   orderId       String
   storeItemSlug String
   variantId     String
+  stripePriceId String?
   quantity      Int
   createdAt     DateTime      @default(now())
   order         CheckoutOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+  @@index([stripePriceId])
   @@index([variantId])
 }

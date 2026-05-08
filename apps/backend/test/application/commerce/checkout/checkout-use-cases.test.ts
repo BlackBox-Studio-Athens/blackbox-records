@@ -186,6 +186,7 @@ describe('checkout use cases', () => {
         checkoutSessionId: 'cs_test_123',
         clientSecret: 'cs_test_123_secret_abc',
       })),
+      readCheckoutSessionLineItems: vi.fn(async () => []),
       readCheckoutSession: vi.fn(async () => ({
         checkoutSessionId: 'cs_test_123',
         paymentStatus: 'paid' as const,
@@ -371,10 +372,16 @@ describe('checkout use cases', () => {
     });
 
     expect(checkoutGateway.createEmbeddedCheckoutSession).toHaveBeenCalledWith({
+      lineItems: [
+        {
+          adjustableQuantityMaximum: 2,
+          quantity: 1,
+          storeItemSlug: 'disintegration-black-vinyl-lp',
+          stripePriceId: 'price_test_barren_point',
+          variantId: 'variant_barren-point_standard',
+        },
+      ],
       returnUrl: 'https://example.com/return',
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      stripePriceId: 'price_test_barren_point',
-      variantId: 'variant_barren-point_standard',
     });
     expect(orders.records.get('cs_test_123')).toEqual(
       expect.objectContaining({
@@ -385,6 +392,38 @@ describe('checkout use cases', () => {
         variantId: 'variant_barren-point_standard',
       }),
     );
+  });
+
+  it('starts embedded Checkout with requested CartQuantity and stock-capped adjustable quantity', async () => {
+    await expect(
+      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
+        lines: [
+          {
+            quantity: 2,
+            storeItemSlug: storeItem.storeItemSlug,
+            variantId: storeItem.variantId,
+          },
+        ],
+        returnUrl: 'https://example.com/return',
+        shippingLocker,
+      }),
+    ).resolves.toEqual({
+      checkoutSessionId: 'cs_test_123',
+      clientSecret: 'cs_test_123_secret_abc',
+    });
+
+    expect(checkoutGateway.createEmbeddedCheckoutSession).toHaveBeenCalledWith({
+      lineItems: [
+        {
+          adjustableQuantityMaximum: 2,
+          quantity: 2,
+          storeItemSlug: 'disintegration-black-vinyl-lp',
+          stripePriceId: 'price_test_barren_point',
+          variantId: 'variant_barren-point_standard',
+        },
+      ],
+      returnUrl: 'https://example.com/return',
+    });
   });
 
   it('maps Stripe Checkout Session status into app-owned return state without D1 writes', async () => {

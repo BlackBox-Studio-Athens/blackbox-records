@@ -55,6 +55,7 @@ function mapCheckoutOrder(record: {
 type CheckoutOrderLineRow = {
   id: string;
   orderId: string;
+  stripePriceId: string | null;
   storeItemSlug: string;
   variantId: string;
   quantity: number;
@@ -67,6 +68,7 @@ function mapCheckoutOrderLine(row: CheckoutOrderLineRow): CheckoutOrderLineRecor
     id: row.id,
     orderId: row.orderId,
     quantity: row.quantity,
+    stripePriceId: row.stripePriceId,
     storeItemSlug: row.storeItemSlug,
     variantId: row.variantId,
   };
@@ -169,11 +171,12 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
       const id = crypto.randomUUID();
 
       await this.prisma.$executeRawUnsafe(
-        'INSERT INTO "CheckoutOrderLine" ("id", "orderId", "storeItemSlug", "variantId", "quantity", "createdAt") VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO "CheckoutOrderLine" ("id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "quantity", "createdAt") VALUES (?, ?, ?, ?, ?, ?, ?)',
         id,
         orderId,
         line.storeItemSlug,
         line.variantId,
+        line.stripePriceId ?? null,
         line.quantity,
         createdAt,
       );
@@ -183,6 +186,7 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
         id,
         orderId,
         quantity: line.quantity,
+        stripePriceId: line.stripePriceId ?? null,
         storeItemSlug: line.storeItemSlug,
         variantId: line.variantId,
       });
@@ -193,7 +197,7 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
 
   private async readCheckoutOrderLines(orderId: string): Promise<CheckoutOrderLineRecord[]> {
     const rows = await this.prisma.$queryRawUnsafe<CheckoutOrderLineRow[]>(
-      'SELECT "id", "orderId", "storeItemSlug", "variantId", "quantity", "createdAt" FROM "CheckoutOrderLine" WHERE "orderId" = ? ORDER BY "createdAt" ASC, "id" ASC',
+      'SELECT "id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "quantity", "createdAt" FROM "CheckoutOrderLine" WHERE "orderId" = ? ORDER BY "createdAt" ASC, "id" ASC',
       orderId,
     );
 

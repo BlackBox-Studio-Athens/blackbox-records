@@ -4,7 +4,15 @@ import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { readStoreCartState, type CartLine } from '@/lib/store-cart';
+import {
+  decrementStoreCartItem,
+  getCartLineTotalDisplay,
+  getCartSubtotalDisplay,
+  incrementStoreCartItem,
+  readStoreCartState,
+  writeStoreCartState,
+  type CartLine,
+} from '@/lib/store-cart';
 import { cn } from '@/lib/utils';
 
 export type CheckoutOrderSummaryInput = {
@@ -14,9 +22,13 @@ export type CheckoutOrderSummaryInput = {
   imageAlt: string;
   itemHref: string;
   optionLabel: string | null;
+  priceAmountMinor?: number | undefined;
+  priceCurrencyCode?: string | undefined;
   priceDisplay: string;
+  storeItemSlug?: string | undefined;
   subtitle: string;
   title: string;
+  variantId?: string | undefined;
 };
 
 export type CheckoutOrderSummaryView = CheckoutOrderSummaryInput & {
@@ -30,6 +42,7 @@ export const CHECKOUT_ORDER_SUMMARY_COPY = {
   subtotal: 'Subtotal',
   title: 'Order Summary',
 } as const;
+export const CHECKOUT_CART_UPDATED_EVENT = 'blackbox:checkout-cart-updated';
 
 export function createCheckoutOrderSummaryView(
   input: CheckoutOrderSummaryInput,
@@ -38,37 +51,51 @@ export function createCheckoutOrderSummaryView(
   return {
     ...input,
     securePaymentCopy: CHECKOUT_ORDER_SUMMARY_COPY.securePayment,
-    subtotalDisplay:
-      cartLines.length <= 1
-        ? (cartLines[0]?.priceDisplay ?? input.priceDisplay)
-        : `${cartLines.reduce((total, line) => total + line.quantity, 0)} items`,
+    subtotalDisplay: getCartSubtotalDisplay(cartLines) ?? input.priceDisplay,
   };
 }
 
 export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
   const view = createCheckoutOrderSummaryView(props, cartLines);
-  const lines =
-    cartLines.length > 0
-      ? cartLines
-      : [
-          {
-            availabilityLabel: props.availabilityLabel,
-            image: props.image,
-            imageAlt: props.imageAlt,
-            optionLabel: props.optionLabel,
-            priceDisplay: props.priceDisplay,
-            quantity: 1,
-            storeItemSlug: props.itemHref,
-            subtitle: props.subtitle,
-            title: props.title,
-            variantId: 'checkout-summary-static-line',
-          },
-        ];
+  const fallbackLine: CartLine = {
+    availabilityLabel: props.availabilityLabel,
+    image: props.image,
+    imageAlt: props.imageAlt,
+    optionLabel: props.optionLabel,
+    priceDisplay: props.priceDisplay,
+    quantity: 1,
+    storeItemSlug: props.storeItemSlug || props.itemHref,
+    subtitle: props.subtitle,
+    title: props.title,
+    variantId: props.variantId || 'checkout-summary-static-line',
+    ...(typeof props.priceAmountMinor === 'number' && props.priceCurrencyCode
+      ? {
+          priceAmountMinor: props.priceAmountMinor,
+          priceCurrencyCode: props.priceCurrencyCode,
+        }
+      : {}),
+  };
+  const lines = cartLines.length > 0 ? cartLines : [fallbackLine];
 
   useEffect(() => {
     setCartLines(readStoreCartState(window.localStorage).lines);
   }, []);
+
+  function updateCartLineQuantity(variantId: string, direction: 'decrement' | 'increment') {
+    const currentState = readStoreCartState(window.localStorage);
+    const editableState = currentState.lines.some((line) => line.variantId === variantId)
+      ? currentState
+      : { item: fallbackLine, lines: [fallbackLine] };
+    const nextState =
+      direction === 'increment'
+        ? incrementStoreCartItem(variantId, editableState)
+        : decrementStoreCartItem(variantId, editableState);
+
+    writeStoreCartState(window.localStorage, nextState);
+    setCartLines(nextState.lines);
+    window.dispatchEvent(new CustomEvent(CHECKOUT_CART_UPDATED_EVENT, { detail: nextState }));
+  }
 
   return (
     <Card className="rounded-none border-border/70 bg-[#101010] shadow-none" data-checkout-order-summary>
@@ -110,10 +137,37 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
                   <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{line.optionLabel}</p>
                 )}
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="font-display text-2xl uppercase tracking-[0.08em] text-foreground">
-                    {line.priceDisplay}
-                  </p>
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Qty {line.quantity}</p>
+                  <div className="space-y-1">
+                    <p className="font-display text-2xl uppercase tracking-[0.08em] text-foreground">
+                      {getCartLineTotalDisplay(line)}
+                    </p>
+                    {line.quantity > 1 && (
+                      <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                        {line.priceDisplay} each
+                      </p>
+                    )}
+                  </div>
+                  <div className="inline-flex h-9 items-stretch border border-border/70">
+                    <button
+                      type="button"
+                      className="w-9 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      onClick={() => updateCartLineQuantity(line.variantId, 'decrement')}
+                      aria-label={`Decrease quantity for ${line.title}`}
+                    >
+                      -
+                    </button>
+                    <span className="inline-flex min-w-9 items-center justify-center border-x border-border/70 px-2 text-xs font-semibold tabular-nums">
+                      {line.quantity}
+                    </span>
+                    <button
+                      type="button"
+                      className="w-9 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      onClick={() => updateCartLineQuantity(line.variantId, 'increment')}
+                      aria-label={`Increase quantity for ${line.title}`}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
             </article>

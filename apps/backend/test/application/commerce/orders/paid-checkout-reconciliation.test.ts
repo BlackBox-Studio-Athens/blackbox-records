@@ -39,6 +39,17 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
       stripePaymentIntentId: input.stripePaymentIntentId ?? null,
       updatedAt: createdAt,
       variantId: input.variantId,
+      lines: (input.lines ?? [{ quantity: 1, storeItemSlug: input.storeItemSlug, variantId: input.variantId }]).map(
+        (line, index) => ({
+          createdAt,
+          id: `order_line_${index + 1}`,
+          orderId: `order_${this.records.size + 1}`,
+          quantity: line.quantity,
+          stripePriceId: line.stripePriceId ?? null,
+          storeItemSlug: line.storeItemSlug,
+          variantId: line.variantId,
+        }),
+      ),
     };
 
     this.records.set(record.checkoutSessionId, record);
@@ -151,6 +162,14 @@ describe('paid checkout reconciliation', () => {
     stockChanges = new InMemoryStockChangeRepository();
     await createPendingCheckoutOrder(orders, {
       checkoutSessionId: 'cs_test_123',
+      lines: [
+        {
+          quantity: 1,
+          stripePriceId: 'price_test_barren_point',
+          storeItemSlug: 'disintegration-black-vinyl-lp',
+          variantId,
+        },
+      ],
       shippingLocker,
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId,
@@ -253,6 +272,45 @@ describe('paid checkout reconciliation', () => {
         status: 'paid',
       }),
       reason: 'Paid checkout cannot decrement unavailable stock.',
+    });
+    expect(stock.saveCalls).toBe(0);
+    expect(stockChanges.records).toHaveLength(0);
+  });
+
+  it('uses finalized Stripe line item quantities before decrementing paid stock', async () => {
+    const result = await applyPaidCheckoutReconciliation(orders, stock, stockChanges, paidReconciliation(), appliedAt, [
+      {
+        quantity: 2,
+        stripePriceId: 'price_test_barren_point',
+      },
+    ]);
+
+    expect(result).toMatchObject({
+      kind: 'applied',
+      stock: {
+        onlineQuantity: 0,
+        quantity: 1,
+      },
+      stockChange: {
+        quantityDelta: -2,
+      },
+    });
+  });
+
+  it('moves paid checkout to needs_review when finalized Stripe line items cannot be mapped', async () => {
+    await expect(
+      applyPaidCheckoutReconciliation(orders, stock, stockChanges, paidReconciliation(), appliedAt, [
+        {
+          quantity: 2,
+          stripePriceId: 'price_unmapped',
+        },
+      ]),
+    ).resolves.toEqual({
+      kind: 'needs_review',
+      order: expect.objectContaining({
+        status: 'needs_review',
+      }),
+      reason: 'Paid checkout line items could not be reconciled.',
     });
     expect(stock.saveCalls).toBe(0);
     expect(stockChanges.records).toHaveLength(0);

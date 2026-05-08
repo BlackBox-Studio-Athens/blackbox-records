@@ -18,6 +18,7 @@ export type CreatePendingCheckoutOrderCommand = {
 
 export type CreatePendingCheckoutOrderLineCommand = {
   quantity: number;
+  stripePriceId?: string | null;
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
 };

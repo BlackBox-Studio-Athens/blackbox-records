@@ -114,6 +114,8 @@ describe('store purchase happy path', () => {
       image: '/disintegration.jpg',
       imageAlt: 'Disintegration by Afterwise',
       optionLabel: 'Black Vinyl LP',
+      priceAmountMinor: 2800,
+      priceCurrencyCode: 'EUR',
       priceDisplay: '€28.00',
       storeItemSlug: 'disintegration-black-vinyl-lp',
       subtitle: 'Afterwise',
@@ -142,6 +144,8 @@ describe('store purchase happy path', () => {
       checkoutHref: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
       item: {
         optionLabel: 'Black Vinyl LP',
+        priceAmountMinor: 2800,
+        priceCurrencyCode: 'EUR',
         priceDisplay: '€28.00',
         subtitle: 'Afterwise',
         title: 'Disintegration',
