@@ -341,11 +341,13 @@ This is an iframe boundary, not an app bug.
 
 ## MCP usage
 
-- For code-heavy TypeScript work, activate this repo in Serena, read Serena initial instructions if needed, run `check_onboarding_performed`, and list relevant memories before large edits.
-- Prefer Serena symbol tools for definitions, references, call relationships, and whole-symbol edits.
-- Use normal shell tools for broad text search, docs/YAML/JSON, generated artifacts, package scripts, and validation commands.
-- If an expected Serena tool is not visible, use `tool_search` before falling back to shell-only inspection.
-- Treat an empty Serena `find_referencing_symbols` result as inconclusive in this monorepo; confirm with Serena `search_for_pattern` or shell `rg` before deciding a symbol is unused.
+- Use Serena only for semantic TypeScript work: finding references, symbol-aware edits, refactors, architectural changes, impact tracing, or large codebase navigation.
+- When Serena is warranted, use the workflow: `activate_project`, read initial instructions if needed, `check_onboarding_performed`, list/read relevant memories, then use `get_symbols_overview` or `find_symbol`.
+- Use `find_referencing_symbols` for impact checks; if it returns empty, confirm with Serena `search_for_pattern` or RTK-wrapped `rg` before treating a symbol as unused.
+- If `find_symbol`, `find_referencing_symbols`, `search_for_pattern`, `read_memory`, or `check_onboarding_performed` is missing, call `tool_search` for the exact Serena tool before falling back.
+- Use RTK-wrapped PowerShell commands for simple search, small file reads, docs/YAML/JSON, generated artifacts, package scripts, diffs, logs, validation, tests, and builds.
+- Do not use Serena for routine/simple work, and do not use `rtk rg` as a substitute when the task genuinely needs Serena symbol navigation.
+- Keep Serena shell execution unfavored; run shell commands through Codex PowerShell with RTK when output may be noisy.
 - WebStorm users who want richer local reference results may set `language_backend: JetBrains` in ignored `.serena/project.local.yml` and restart Serena. Keep committed `.serena/project.yml` portable with the default LSP backend.
 - Browser Use is mandatory for local or hosted rendered UI checks.
 - DevTools MCP is fallback-only for browser validation. Use it only when Browser Use is unavailable, fails to initialize, or lacks a needed inspection capability, and record the Browser Use failure reason in validation notes.
