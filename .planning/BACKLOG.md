@@ -62,6 +62,22 @@ Start from `.planning/phases/10-sandbox-verification-and-release-gate/10-MILESTO
   - Define oversell reduction strategy
   - Compare added complexity against actual order volume
 
+## Ready For Website Editorial Improvements
+
+### BL-18: Website editorial and catalog UX improvements
+
+- Linked milestone: Website Editorial And Catalog UX Improvements
+- Planning artifact: `.planning/phases/11-website-editorial-and-catalog-ux-improvements/`
+- Source input: partner handwritten website notes captured on 2026-05-12
+- Acceptance criteria:
+  - Rework artist detail planning around richer biographies, profile links, videos, latest release context, previous releases, and existing player behavior
+  - Replace the homepage Latest Releases module with News while keeping other homepage sections by default
+  - Add a latest-release feature/banner to the Releases page
+  - Add display-only release date and format grouping support for Distro, including 12-inch vinyl, 7-inch vinyl, and CDs
+  - Clean Distro descriptions without changing StoreItem identity, checkout authority, stock authority, Stripe mappings, or order/shipping behavior
+  - Require `pnpm test:unit`, `pnpm check`, `pnpm build`, and Browser Use rendered validation when implemented
+- Human review stop: approve supplied wireframe/mockup direction before implementation if a GPT Image 2 mockup is created
+
 ## Ready For Future v2 Milestones
 
 ### BL-15: Automated BOX NOW fulfillment

@@ -6,18 +6,23 @@ unless a plan explicitly records a terminology change here first.
 
 ## Storefront and Catalog
 
-| Canonical term           | Meaning                                                                                                                               | Aliases to avoid              |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| **Artist**               | Editorial content entry for a label artist or band in the Astro content collection.                                                   | band record                   |
-| **Release**              | Editorial music release entry, usually tied to an Artist and optionally projected into the Storefront.                                | album record                  |
-| **Distro Entry**         | Editorial distro catalog entry for non-release shop inventory that can become a StoreItem.                                            | merch entry, distro item      |
-| **Storefront**           | Shopper-facing static `/store/` experience owned by Astro.                                                                            | shop, storefront app          |
-| **StoreItem**            | Shopper-facing sellable item identity assembled from release or distro content.                                                       | product, shop item            |
-| **StoreItemOption**      | The sellable option under a StoreItem, such as a vinyl color or format, that maps to a Variant.                                       | SKU option, product option    |
-| **Variant**              | Backend sellable unit connected to stock, Stripe price mapping, checkout, and order state.                                            | SKU, price item               |
-| **Stripe Price Mapping** | Backend-only mapping from Variant to Stripe Price ID used by the Worker when creating Checkout Sessions.                              | frontend price id, product id |
-| **ItemAvailability**     | Backend-owned availability state for a StoreItemOption, including checkout eligibility and stock-facing status.                       | availability blob             |
-| **StoreOffer** (updated) | Worker-read aggregate that combines StoreItem, StoreItemOption, ItemAvailability, OnlineStock, and Stripe Price Mapping for checkout. | offer, checkout offer         |
+| Canonical term             | Meaning                                                                                                                               | Aliases to avoid              |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| **Artist**                 | Editorial content entry for a label artist or band in the Astro content collection.                                                   | band record                   |
+| **Release**                | Editorial music release entry, usually tied to an Artist and optionally projected into the Storefront.                                | album record                  |
+| **Distro Entry**           | Editorial distro catalog entry for non-release shop inventory that can become a StoreItem.                                            | merch entry, distro item      |
+| **Storefront**             | Shopper-facing static `/store/` experience owned by Astro.                                                                            | shop, storefront app          |
+| **StoreItem**              | Shopper-facing sellable item identity assembled from release or distro content.                                                       | product, shop item            |
+| **StoreItemOption**        | The sellable option under a StoreItem, such as a vinyl color or format, that maps to a Variant.                                       | SKU option, product option    |
+| **Variant**                | Backend sellable unit connected to stock, Stripe price mapping, checkout, and order state.                                            | SKU, price item               |
+| **Stripe Price Mapping**   | Backend-only mapping from Variant to Stripe Price ID used by the Worker when creating Checkout Sessions.                              | frontend price id, product id |
+| **ItemAvailability**       | Backend-owned availability state for a StoreItemOption, including checkout eligibility and stock-facing status.                       | availability blob             |
+| **StoreOffer** (updated)   | Worker-read aggregate that combines StoreItem, StoreItemOption, ItemAvailability, OnlineStock, and Stripe Price Mapping for checkout. | offer, checkout offer         |
+| **Artist Profile Link**    | Optional editorial link rendered on an Artist detail page, such as official site, social, or listening profile.                       | artist CTA, random link       |
+| **Artist Video**           | Optional editorial video embed or link rendered on an Artist detail page without owning music-player session state.                   | artist media blob             |
+| **Distro Format Group**    | Display grouping for Distro Entries by physical format, such as 12-inch vinyl, 7-inch vinyl, CDs, Clothes, or Tapes.                  | product category, SKU group   |
+| **Release Feature Banner** | Editorial feature area on the Releases page that promotes the latest Release before the catalog grid.                                 | hero product, promo card      |
+| **Homepage News Module**   | Homepage section backed by News entries that replaces the former Latest Releases homepage module.                                     | updates block                 |
 
 ## Checkout and Payment
 

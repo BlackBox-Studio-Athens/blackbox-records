@@ -37,6 +37,7 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - [x] **Phase 8: Webhook Orders And Stock** - Make payment truth and stock mutation Worker-owned, webhook-authoritative, and idempotent (non-secret backend groundwork may proceed before real Stripe account access)
 - [ ] **Phase 9: Greece-Only BOX NOW Shipping** - Add the approved locker-selection gate and thin fulfillment data contract (local implementation complete; BOX NOW portal validation deferred)
 - [ ] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow where account access allows and prepare the go-live handoff package (review package complete; external gates remain pending)
+- [ ] **Phase 11: Website Editorial And Catalog UX Improvements** - Convert partner website notes into static-site editorial, artist, release, homepage, and distro/catalog improvements without changing commerce authority
 
 ## Phase Details
 
@@ -282,6 +283,27 @@ Plans:
 - [x] 10-04.1: Add Worker-owned native checkout feature gate
 - [x] 10-05: Produce milestone review package and go-live handoff
 
+### Phase 11: Website Editorial And Catalog UX Improvements
+
+**Goal**: Improve the static Astro site's editorial and catalog experience using partner notes as source input, while preserving the existing app shell, player model, and commerce authority boundaries.
+**Depends on**: Phase 6 static content/storefront foundations; independent of deferred Stripe Access Gate and BOX NOW Portal Gate
+**Requirements**: SITE-ARTIST-01, SITE-RELEASE-01, SITE-HOME-01, SITE-DISTRO-01, SITE-DISTRO-02, SITE-DISTRO-03, SITE-VERIFY-01
+**Success Criteria** (what must be TRUE):
+
+1. Artist pages support richer profile content, links, videos, previous releases, and latest-release listen/player context without moving player ownership out of the app shell.
+2. Homepage freshness comes from News replacing the Latest Releases module, and `/releases/` promotes the latest release through a top feature/banner.
+3. Distro/catalog entries can show release dates, group vinyl by 12-inch and 7-inch formats, include CDs, and use cleaned editorial descriptions without changing StoreItem, checkout, stock, or order authority.
+   **Plans**: 5 plans
+   **Review gate**: Human review required before implementation if a GPT Image 2 wireframe/mockup is supplied or if homepage simplification beyond the News replacement is proposed.
+
+Plans:
+
+- [ ] 11-01: Extend editorial content models
+- [ ] 11-02: Rework artist detail pages
+- [ ] 11-03: Add homepage News and latest release feature
+- [ ] 11-04: Improve Distro catalog grouping and copy
+- [ ] 11-05: Verify editorial and catalog UX improvements
+
 ## Future Milestone Seeds
 
 ### Go-Live / Launch Hardening
@@ -300,11 +322,19 @@ Plans:
 - Keeps stock reservation separate in `BL-14`; the first multi-item implementation still decrements only after verified paid webhook transition unless a later reservation plan changes that
 - Does not satisfy the Stripe Access Gate, BOX NOW Portal Gate, `10-03`, `OPER-01`, or `SHIP-03`
 
+### Website Editorial And Catalog UX Improvements
+
+- May proceed as a static-site UI/content phase without waiting for Stripe account access or BOX NOW portal access
+- Consumes `BL-18` and `.planning/phases/11-website-editorial-and-catalog-ux-improvements/`
+- Covers richer artist profile content, artist links/videos, previous releases, app-shell player continuity, homepage News replacing Latest Releases, latest-release feature banner on `/releases/`, and Distro release-date/format grouping
+- Keeps checkout, order, stock, Stripe, D1, webhook, BOX NOW, and feature-gate authority unchanged
+- Treats "hide all sections from main page?" as an unresolved note, not accepted implementation scope
+
 ## Progress
 
 **Execution Order:**  
 Nominal phase order remains `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 7.1 → 8 → 9 → 10`.
-Because Stripe account access and BOX NOW portal access are unavailable, non-secret backend, shipping, local UAT, and audit work may proceed after local mock/contract completion. Phase 7.1 is complete, while the deferred Stripe Access Gate and BOX NOW Portal Gate remain required before full hosted sandbox/release evidence.
+Because Stripe account access and BOX NOW portal access are unavailable, non-secret backend, shipping, local UAT, and audit work may proceed after local mock/contract completion. Phase 7.1 is complete, while the deferred Stripe Access Gate and BOX NOW Portal Gate remain required before full hosted sandbox/release evidence. Phase 11 is a separate static-site editorial/catalog phase and is not required to close the Phase 10 commerce release gate.
 
 | Phase                                                          | Plans Complete | Status    | Completed  |
 | -------------------------------------------------------------- | -------------- | --------- | ---------- |
@@ -318,3 +348,4 @@ Because Stripe account access and BOX NOW portal access are unavailable, non-sec
 | 8. Webhook Orders And Stock                                    | 8/8            | Completed | 2026-04-26 |
 | 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred  |            |
 | 10. Sandbox Verification And Release Gate                      | 5/6            | Active    |            |
+| 11. Website Editorial And Catalog UX Improvements              | 0/5            | Planned   |            |
