@@ -339,6 +339,11 @@ This is an iframe boundary, not an app bug.
 - Use those terms in GSD plans, test names, route/use-case names, UI copy, validation notes, ADRs, and handoff summaries.
 - If a task needs a new domain term or changes an existing meaning, update `.planning/UBIQUITOUS_LANGUAGE.md` in the same change instead of introducing synonyms ad hoc.
 
+## GSD usage notes
+
+- Repo GSD config intentionally keeps flat planning mode and `workflow.use_worktrees = false` for Codex v1.41.2, because Codex cannot provide Claude-style isolated subagent worktrees.
+- While `07-16`, `09-06`, and `10-03` remain deferred external gates, use explicit phase or plan arguments for GSD commands instead of relying on implicit current-phase detection.
+
 ## MCP usage
 
 - Use Serena only for semantic TypeScript work: finding references, symbol-aware edits, refactors, architectural changes, impact tracing, or large codebase navigation.
@@ -348,7 +353,7 @@ This is an iframe boundary, not an app bug.
 - Use RTK-wrapped PowerShell commands for simple search, small file reads, docs/YAML/JSON, generated artifacts, package scripts, diffs, logs, validation, tests, and builds.
 - Do not use Serena for routine/simple work, and do not use `rtk rg` as a substitute when the task genuinely needs Serena symbol navigation.
 - Keep Serena shell execution unfavored; run shell commands through Codex PowerShell with RTK when output may be noisy.
-- WebStorm users who want richer local reference results may set `language_backend: JetBrains` in ignored `.serena/project.local.yml` and restart Serena. Keep committed `.serena/project.yml` portable with the default LSP backend.
+- Keep Serena on the default LSP backend unless the paid Serena JetBrains plugin is installed and verified. JetBrains IDE MCP is separate and must not be treated as Serena's semantic backend.
 - Browser Use is mandatory for local or hosted rendered UI checks.
 - DevTools MCP is fallback-only for browser validation. Use it only when Browser Use is unavailable, fails to initialize, or lacks a needed inspection capability, and record the Browser Use failure reason in validation notes.
 

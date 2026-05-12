@@ -104,3 +104,13 @@
 - DevTools MCP fallback evidence: `/blackbox-records/store/disintegration-black-vinyl-lp/` and `/blackbox-records/store/afterglow-tape/` rendered. Add To Cart opened the cart drawer for both items, quantity controls changed Disintegration to `2`, and the drawer/checkout summary rendered `3 ITEMS`.
 - DevTools MCP fallback evidence: BOX NOW Test Locker selection unlocked payment, and the local mock checkout state mounted with `Mock Checkout Started`.
 - DevTools MCP fallback evidence: the checkout POST to `/api/checkout/sessions` returned HTTP 200 and sent `lines: [{ storeItemSlug: "disintegration-black-vinyl-lp", variantId: "variant_barren-point_standard", quantity: 2 }, { storeItemSlug: "afterglow-tape", variantId: "variant_afterglow-tape_standard", quantity: 1 }]` with the BOX NOW Test Locker snapshot. Console warnings/errors were empty.
+
+## GSD v1.41.2 Repo Migration - 2026-05-12
+
+- Result: complete for repo-level GSD configuration and operating notes; no app runtime behavior changed.
+- Evidence: the shared Codex GSD runtime is `gsd-sdk v1.41.2`, and this repo remains in flat GSD mode with no `.planning/workstreams/` adoption.
+- Evidence: `.planning/config.json` now disables `workflow.use_worktrees` for Codex-safe execution, because v1.41.2 fails closed when Codex execute-phase would otherwise assume unsupported isolated worktrees.
+- Evidence: `.planning/config.json` now makes the review/security/post-planning gates explicit: `workflow.code_review = true`, `workflow.code_review_depth = "standard"`, `workflow.security_enforcement = true`, `workflow.security_block_on = "high"`, `workflow.post_planning_gaps = true`, and `features.thinking_partner = true`.
+- Boundary: `parallelization` remains `false`, `workflow.text_mode` remains `false`, `commit_docs` remains `true`, `model_profile` remains `balanced`, and no `context_window = 1000000` override was added.
+- Deferred-gate note: `gsd-sdk query init.progress` still reports Phase 7 as the first incomplete phase because `07-16` is intentionally deferred behind Stripe account access. That does not change the current human focus: Phase 10 remains the active review/gate phase until the Stripe Access Gate and BOX NOW Portal Gate are satisfied or moved to a later milestone.
+- Validation: `gsd-sdk query validate.health` returned `healthy`; `gsd-sdk query workstream.list` returned flat mode; `gsd-sdk query init.progress` was reviewed and its deferred-phase behavior is documented here instead of papered over by marking blocked plans complete.

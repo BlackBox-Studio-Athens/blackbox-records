@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: Stripe Sandbox Integration
 status: active
 stopped_at: Milestone review package complete; external gates and human approval pending
-last_updated: '2026-05-04T00:00:00+03:00'
-last_activity: 2026-05-04 -- Added no-account multi-item cart and quantity workstream plus browser cart storage policy
+last_updated: '2026-05-12T00:00:00+03:00'
+last_activity: 2026-05-12 -- Migrated repo GSD settings for v1.41.2 Codex-safe execution while preserving flat planning mode and deferred external gates
 progress:
   total_phases: 10
   completed_phases: 7
@@ -32,11 +32,13 @@ Current Plan: 5
 Total Plans in Phase: 6
 Status: Active
 Progress: 95%
-Last Activity: 2026-05-04
-Last Activity Description: The GSD backlog now promotes multi-item cart and quantity work into a concrete no-account workstream, while native browser localStorage remains the approved browser-only cart storage primitive.
+Last Activity: 2026-05-12
+Last Activity Description: Repo GSD settings now use v1.41.2 Codex-safe sequential execution with explicit review/security/post-planning gates, flat planning mode, and deferred external-gate caveats preserved.
 Paused At: Milestone review package complete; external gates and human approval pending
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed while real Stripe-account validation remains explicitly deferred. Phase 8 now has the schema-only `CheckoutOrder` lifecycle table, internal order repository/application seams, a dependency-free typed transition guard, a fixture-tested Stripe webhook raw-body route contract, an optional official `stripe-mock` API local checkout simulation harness, shared Stripe Checkout Session reconciliation, pending order creation from Worker-owned checkout start, idempotent paid webhook handling that decrements stock only on the first paid transition, non-paid/needs-review handling that never mutates stock, and Access-protected order readback for low-volume reconciliation. Phase 7.1 completed the Cloudflare Pages static artifact contract, GitHub Pages rollback posture, Direct Upload CI workflow, browser-safe Pages build env contract, exact checkout return-origin allowlist guidance, Cloudflare-root Astro base-path correction, Browser Use hosted validation, and canonical hosting docs. Phase 9 now has the BOX NOW Greece-only shipping data and secret contract locked, a frontend-only locker gate before payment, Worker-owned checkout preflight that requires the minimal Greek locker snapshot before payment starts, D1-backed CheckoutOrder persistence for the approved thin locker snapshot, shopper-facing checkout return recap of the Worker-owned selected locker state, and local signed-fixture evidence for the manual handoff. Phase 10 now has a no-account local UAT checklist, sandbox readiness evidence, a deferred `10-03` full sandbox e2e gate, `10-04` no-account release audit evidence, a completed `10-04.1` Native Checkout Gate, and a `10-05` milestone review package that links evidence, blockers, and the Go-Live / Launch Hardening handoff. The Stripe Access Gate and BOX NOW Portal Gate remain deferred, so full sandbox release approval still requires external account evidence and human approval.
+
+GSD v1.41.2 operating note: this repo stays in flat planning mode and disables GSD worktree isolation for Codex because Codex cannot provide Claude-style isolated subagent worktrees. While `07-16`, `09-06`, and `10-03` remain deferred external gates, SDK progress helpers may surface Phase 7 as the first incomplete phase even though the current human focus remains Phase 10. Use explicit phase or plan arguments for GSD commands instead of relying on implicit current-phase selection until those external gates are satisfied or intentionally moved to a later milestone.
 
 ## Performance Metrics
 
