@@ -5,10 +5,10 @@ import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  decrementStoreCartItem,
+  decrementCartLineQuantityByVariant,
   getCartLineTotalDisplay,
   getCartSubtotalDisplay,
-  incrementStoreCartItem,
+  incrementCartLineQuantityByVariant,
   readStoreCartState,
   writeStoreCartState,
   type CartLine,
@@ -86,11 +86,11 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
     const currentState = readStoreCartState(window.localStorage);
     const editableState = currentState.lines.some((line) => line.variantId === variantId)
       ? currentState
-      : { item: fallbackLine, lines: [fallbackLine] };
+      : { primaryLineItem: fallbackLine, lines: [fallbackLine] };
     const nextState =
       direction === 'increment'
-        ? incrementStoreCartItem(variantId, editableState)
-        : decrementStoreCartItem(variantId, editableState);
+        ? incrementCartLineQuantityByVariant(variantId, editableState)
+        : decrementCartLineQuantityByVariant(variantId, editableState);
 
     writeStoreCartState(window.localStorage, nextState);
     setCartLines(nextState.lines);

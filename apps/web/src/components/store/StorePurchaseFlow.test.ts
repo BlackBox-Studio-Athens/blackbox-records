@@ -64,14 +64,14 @@ import {
   readStoreCartState,
   STORE_CART_ADD_ITEM_EVENT,
   STORE_CART_STORAGE_KEY,
-  type StoreCartItem,
+  type CartLineItemSnapshot,
   writeStoreCartState,
 } from '@/lib/store-cart';
 import { createStoreCartDrawerView } from './StoreCartDrawer';
 import { requestStoreCartAddItem } from './StoreItemPurchaseActions';
 import { createCheckoutOfferView, loadCheckoutOfferState, startEmbeddedCheckout } from './checkout-offer-status-state';
 import { LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION } from './checkout-shipping-step-state';
-import { createStoreCartItemForStorePage, getStorePageEntryBySlug } from '../../lib/store-page-data';
+import { createCartLineItemSnapshotForStorePage, getStorePageEntryBySlug } from '../../lib/store-page-data';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -103,7 +103,7 @@ describe('store purchase happy path', () => {
     });
     expect(pageEntry).not.toBeNull();
 
-    const cartItem = createStoreCartItemForStorePage(
+    const cartItem = createCartLineItemSnapshotForStorePage(
       pageEntry!.storeItem,
       pageEntry!.primaryAvailability,
       readImageSrc(pageEntry!.storeItem.image),
@@ -125,9 +125,9 @@ describe('store purchase happy path', () => {
 
     // Act: Add To Cart emits the real cart event, then the app stores the resulting single-item cart.
     const eventTarget = new EventTarget();
-    let emittedCartItem: StoreCartItem | null = null;
+    let emittedCartItem: CartLineItemSnapshot | null = null;
     eventTarget.addEventListener(STORE_CART_ADD_ITEM_EVENT, (event) => {
-      emittedCartItem = (event as CustomEvent<StoreCartItem>).detail;
+      emittedCartItem = (event as CustomEvent<CartLineItemSnapshot>).detail;
     });
 
     expect(requestStoreCartAddItem(cartItem!, eventTarget)).toBe(true);
@@ -142,7 +142,7 @@ describe('store purchase happy path', () => {
     expect(getStoreCartCount(persistedCartState)).toBe(1);
     expect(drawerView).toMatchObject({
       checkoutHref: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
-      item: {
+      primaryLineItem: {
         optionLabel: 'Black Vinyl LP',
         priceAmountMinor: 2800,
         priceCurrencyCode: 'EUR',
@@ -154,12 +154,12 @@ describe('store purchase happy path', () => {
       subtotalDisplay: '€28.00',
     });
 
-    // Act: the checkout shell uses the real public API client and checkout state helpers.
+    // Act: the checkout shell uses the real public API client and ReadCheckoutState helpers.
     const fetchStub = createCheckoutFetchStub();
     vi.stubGlobal('fetch', fetchStub);
     const api = createPublicCheckoutApi('');
 
-    const loadState = await loadCheckoutOfferState(api, persistedCartState.item!.storeItemSlug);
+    const loadState = await loadCheckoutOfferState(api, persistedCartState.primaryLineItem!.storeItemSlug);
     const checkoutView = createCheckoutOfferView(loadState);
 
     expect(checkoutView).toMatchObject({
@@ -174,7 +174,7 @@ describe('store purchase happy path', () => {
       checkoutAdapter: createMockEmbeddedCheckoutAdapter(),
       lockerSelection: LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION,
       mountTarget,
-      storeItemSlug: persistedCartState.item!.storeItemSlug,
+      storeItemSlug: persistedCartState.primaryLineItem!.storeItemSlug,
       variantId: checkoutView.variantId!,
     });
 

@@ -7,7 +7,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl } from '@/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import {
-  createStoreCartItemForStorePage,
+  createCartLineItemSnapshotForStorePage,
   type StorePageEntry,
   createStorePageStaticPaths,
 } from '@/lib/store-page-data';
@@ -28,7 +28,7 @@ const priceLabel = primaryAvailability?.price.display || 'Price soon';
 const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
 const itemTypeLabel = storeItem.sourceKind === 'release' ? 'Release' : 'Item';
 const canBuy = primaryAvailability?.canBuy ?? false;
-const cartItem = createStoreCartItemForStorePage(storeItem, primaryAvailability, storeItem.image.src);
+const cartItem = createCartLineItemSnapshotForStorePage(storeItem, primaryAvailability, storeItem.image.src);
 const cartSeed = {
   availabilityLabel,
   image: storeItem.image.src,

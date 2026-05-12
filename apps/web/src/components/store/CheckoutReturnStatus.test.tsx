@@ -32,7 +32,7 @@ describe('CheckoutReturnStatus', () => {
     expect(readCheckoutSessionIdFromSearch('?session_id=')).toBeNull();
   });
 
-  it('loads checkout state through the public checkout API seam', async () => {
+  it('loads ReadCheckoutState through the public checkout API seam', async () => {
     const api: Pick<PublicCheckoutApi, 'readCheckoutState'> = {
       readCheckoutState: vi.fn(async () => checkoutState),
     };
@@ -59,7 +59,7 @@ describe('CheckoutReturnStatus', () => {
     ['processing', 'Payment Processing', 'Processing', false],
     ['expired', 'Checkout Expired', 'Expired', false],
     ['unknown', 'Checkout State Unknown', 'Unknown', false],
-  ] as const)('maps %s checkout state to app-owned shopper copy', (state, title, badgeLabel, isFinal) => {
+  ] as const)('maps %s ReadCheckoutState output to app-owned shopper copy', (state, title, badgeLabel, isFinal) => {
     expect(
       createCheckoutReturnStatusView({
         checkoutState: {

@@ -140,7 +140,7 @@ describe('createPublicCheckoutApi', () => {
     );
   });
 
-  it('reads checkout state with the Worker-owned shipping locker recap', async () => {
+  it('reads ReadCheckoutState with the Worker-owned shipping locker recap', async () => {
     const checkoutState = {
       checkoutSessionId: 'cs_test_123',
       paymentStatus: 'paid',

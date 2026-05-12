@@ -27,11 +27,11 @@ import type { SiteNavigationItem } from '@/lib/site-data';
 import {
   addStoreCartItem,
   createEmptyStoreCartState,
-  decrementStoreCartItem,
-  incrementStoreCartItem,
+  decrementCartLineQuantityByVariant,
+  incrementCartLineQuantityByVariant,
   readStoreCartState,
-  removeStoreCartItem,
-  sanitizeStoreCartItem,
+  removeCartLineByVariant,
+  parseCartLineItemSnapshot,
   STORE_CART_ADD_ITEM_EVENT,
   STORE_CART_OPEN_REQUESTED_EVENT,
   type StoreCartState,
@@ -432,7 +432,7 @@ export default function AppShellRoot({
     };
 
     function handleStoreCartAddItem(event: Event) {
-      const item = sanitizeStoreCartItem((event as CustomEvent<unknown>).detail);
+      const item = parseCartLineItemSnapshot((event as CustomEvent<unknown>).detail);
       if (!item) return;
 
       applyStoreCartState(addStoreCartItem(item, readStoreCartState(getStoreCartBrowserStorage())));
@@ -1635,10 +1635,14 @@ export default function AppShellRoot({
         open={isStoreCartDrawerOpen}
         resolveHref={createProjectRelativeUrl}
         onContinueShopping={() => setIsStoreCartDrawerOpen(false)}
-        onDecrementItem={(variantId) => applyStoreCartState(decrementStoreCartItem(variantId, storeCartState))}
-        onIncrementItem={(variantId) => applyStoreCartState(incrementStoreCartItem(variantId, storeCartState))}
+        onDecrementItem={(variantId) =>
+          applyStoreCartState(decrementCartLineQuantityByVariant(variantId, storeCartState))
+        }
+        onIncrementItem={(variantId) =>
+          applyStoreCartState(incrementCartLineQuantityByVariant(variantId, storeCartState))
+        }
         onOpenChange={setIsStoreCartDrawerOpen}
-        onRemoveItem={(variantId) => applyStoreCartState(removeStoreCartItem(variantId, storeCartState))}
+        onRemoveItem={(variantId) => applyStoreCartState(removeCartLineByVariant(variantId, storeCartState))}
       />
 
       <div

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { createStoreCartDrawerView, STORE_CART_DRAWER_COPY } from './StoreCartDrawer';
-import { addStoreCartItem, createEmptyStoreCartState, type StoreCartItem } from '../../lib/store-cart';
+import { addStoreCartItem, createEmptyStoreCartState, type CartLineItemSnapshot } from '../../lib/store-cart';
 
-const cartItem: StoreCartItem = {
+const cartItem: CartLineItemSnapshot = {
   availabilityLabel: 'Available',
   image: '/blackbox-records/assets/disintegration.jpg',
   imageAlt: 'Disintegration by Afterwise',
@@ -23,7 +23,7 @@ describe('StoreCartDrawer', () => {
   it('creates an empty drawer view without checkout route', () => {
     expect(createStoreCartDrawerView(createEmptyStoreCartState(), resolveHref)).toEqual({
       checkoutHref: null,
-      item: null,
+      primaryLineItem: null,
       itemCount: 0,
       subtotalDisplay: null,
     });
@@ -44,11 +44,11 @@ describe('StoreCartDrawer', () => {
     expect(STORE_CART_DRAWER_COPY.shipping).toBe('Greece-only BOX NOW locker shipping is confirmed at checkout.');
   });
 
-  it('represents exactly one filled line item with subtotal and checkout action data', () => {
+  it('represents exactly one filled CartLine with subtotal and checkout action data', () => {
     const view = createStoreCartDrawerView(addStoreCartItem(cartItem), resolveHref);
 
     expect(view.itemCount).toBe(1);
-    expect(view.item).toMatchObject({
+    expect(view.primaryLineItem).toMatchObject({
       availabilityLabel: 'Available',
       optionLabel: 'Black Vinyl LP',
       priceDisplay: '€20',
@@ -70,7 +70,7 @@ describe('StoreCartDrawer', () => {
   it('does not render forbidden checkout, Stripe, D1, stock, or order fields', () => {
     const view = createStoreCartDrawerView(
       {
-        item: {
+        primaryLineItem: {
           ...cartItem,
           stripePriceId: 'price_secret',
           d1Id: 'store_item_option_1',
@@ -79,7 +79,7 @@ describe('StoreCartDrawer', () => {
           clientSecret: 'cs_secret_client',
           orderState: 'paid',
           actorEmail: 'operator@example.com',
-        } as StoreCartItem & Record<string, unknown>,
+        } as CartLineItemSnapshot & Record<string, unknown>,
         lines: [
           {
             ...cartItem,
@@ -87,7 +87,7 @@ describe('StoreCartDrawer', () => {
             stripePriceId: 'price_secret',
             d1Id: 'store_item_option_1',
             stockCount: 99,
-          } as StoreCartItem & { quantity: number } & Record<string, unknown>,
+          } as CartLineItemSnapshot & { quantity: number } & Record<string, unknown>,
         ],
       },
       resolveHref,

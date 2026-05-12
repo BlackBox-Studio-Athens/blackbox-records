@@ -6,16 +6,16 @@ import {
   type PublicCheckoutApi,
   type PublicStoreOffer,
 } from '@/lib/backend/public-checkout-api';
-import { STORE_CART_ADD_ITEM_EVENT, type StoreCartItem } from '@/lib/store-cart';
+import { STORE_CART_ADD_ITEM_EVENT, type CartLineItemSnapshot } from '@/lib/store-cart';
 
-export type StoreItemCartSeed = Omit<StoreCartItem, 'availabilityLabel' | 'variantId'> & {
+export type StoreItemCartSeed = Omit<CartLineItemSnapshot, 'availabilityLabel' | 'variantId'> & {
   availabilityLabel: string;
   variantId: string | null;
 };
 
 type StoreItemPurchaseActionsProps = {
   api?: PublicCheckoutApi;
-  cartItem: StoreCartItem | null;
+  cartItem: CartLineItemSnapshot | null;
   cartSeed: StoreItemCartSeed;
 };
 
@@ -25,18 +25,18 @@ export const STORE_ITEM_PURCHASE_ACTION_COPY = {
   unavailable: 'Currently Unavailable',
 } as const;
 
-export function requestStoreCartAddItem(item: StoreCartItem, eventTarget: EventTarget = window) {
+export function requestStoreCartAddItem(item: CartLineItemSnapshot, eventTarget: EventTarget = window) {
   return eventTarget.dispatchEvent(
-    new CustomEvent<StoreCartItem>(STORE_CART_ADD_ITEM_EVENT, {
+    new CustomEvent<CartLineItemSnapshot>(STORE_CART_ADD_ITEM_EVENT, {
       detail: item,
     }),
   );
 }
 
-export function createStoreCartItemFromWorkerOffer(
+export function createCartLineItemSnapshotFromWorkerOffer(
   cartSeed: StoreItemCartSeed,
   offer: PublicStoreOffer,
-): StoreCartItem | null {
+): CartLineItemSnapshot | null {
   if (!offer.canCheckout || !offer.variantId.trim()) {
     return null;
   }
@@ -50,7 +50,7 @@ export function createStoreCartItemFromWorkerOffer(
 }
 
 export default function StoreItemPurchaseActions({ api, cartItem, cartSeed }: StoreItemPurchaseActionsProps) {
-  const [resolvedCartItem, setResolvedCartItem] = React.useState<StoreCartItem | null>(cartItem);
+  const [resolvedCartItem, setResolvedCartItem] = React.useState<CartLineItemSnapshot | null>(cartItem);
   const [isChecking, setIsChecking] = React.useState(!cartItem);
 
   React.useEffect(() => {
@@ -60,7 +60,7 @@ export default function StoreItemPurchaseActions({ api, cartItem, cartSeed }: St
     async function loadWorkerOffer() {
       try {
         const offer = await checkoutApi.readStoreOffer(cartSeed.storeItemSlug);
-        const workerCartItem = createStoreCartItemFromWorkerOffer(cartSeed, offer);
+        const workerCartItem = createCartLineItemSnapshotFromWorkerOffer(cartSeed, offer);
 
         if (isActive) {
           setResolvedCartItem(workerCartItem ?? cartItem);

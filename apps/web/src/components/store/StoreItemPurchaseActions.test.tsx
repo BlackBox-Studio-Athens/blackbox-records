@@ -2,15 +2,15 @@ import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
-import { STORE_CART_ADD_ITEM_EVENT, type StoreCartItem } from '@/lib/store-cart';
+import { STORE_CART_ADD_ITEM_EVENT, type CartLineItemSnapshot } from '@/lib/store-cart';
 import StoreItemPurchaseActions, {
-  createStoreCartItemFromWorkerOffer,
+  createCartLineItemSnapshotFromWorkerOffer,
   requestStoreCartAddItem,
   STORE_ITEM_PURCHASE_ACTION_COPY,
   type StoreItemCartSeed,
 } from './StoreItemPurchaseActions';
 
-const cartItem: StoreCartItem = {
+const cartItem: CartLineItemSnapshot = {
   availabilityLabel: 'Available',
   image: '/blackbox-records/assets/disintegration.jpg',
   imageAlt: 'Disintegration by Afterwise',
@@ -48,10 +48,10 @@ describe('StoreItemPurchaseActions', () => {
 
   it('dispatches the browser-safe cart item through the existing cart event', () => {
     const eventTarget = new EventTarget();
-    let receivedDetail: StoreCartItem | null = null;
+    let receivedDetail: CartLineItemSnapshot | null = null;
 
     eventTarget.addEventListener(STORE_CART_ADD_ITEM_EVENT, (event) => {
-      receivedDetail = (event as CustomEvent<StoreCartItem>).detail;
+      receivedDetail = (event as CustomEvent<CartLineItemSnapshot>).detail;
     });
 
     expect(requestStoreCartAddItem(cartItem, eventTarget)).toBe(true);
@@ -62,8 +62,8 @@ describe('StoreItemPurchaseActions', () => {
     expect(JSON.stringify(receivedDetail)).not.toContain('stockCount');
   });
 
-  it('creates a browser-safe cart item from Worker checkout readiness', () => {
-    const workerCartItem = createStoreCartItemFromWorkerOffer(cartSeed, {
+  it('creates a browser-safe CartLineItemSnapshot from Worker checkout readiness', () => {
+    const workerCartItem = createCartLineItemSnapshotFromWorkerOffer(cartSeed, {
       availability: {
         label: 'Available',
         status: 'available',
@@ -81,9 +81,9 @@ describe('StoreItemPurchaseActions', () => {
     expect(JSON.stringify(workerCartItem)).not.toContain('clientSecret');
   });
 
-  it('does not create a cart item from unavailable Worker state', () => {
+  it('does not create a CartLineItemSnapshot from unavailable Worker state', () => {
     expect(
-      createStoreCartItemFromWorkerOffer(cartSeed, {
+      createCartLineItemSnapshotFromWorkerOffer(cartSeed, {
         availability: {
           label: 'Unavailable',
           status: 'sold_out',

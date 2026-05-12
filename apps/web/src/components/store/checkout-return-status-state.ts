@@ -41,7 +41,7 @@ export async function loadCheckoutReturnState(
   } catch (error) {
     return {
       kind: 'error',
-      message: error instanceof Error ? error.message : 'Could not load checkout state.',
+      message: error instanceof Error ? error.message : 'Could not load checkout status.',
     };
   }
 }
@@ -52,7 +52,7 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
   if (state.kind === 'loading') {
     return {
       badgeLabel: 'Checking',
-      detail: 'Checking checkout state with the payment server.',
+      detail: 'Checking checkout status with the payment server.',
       isFinal: false,
       shippingLocker,
       title: 'Checking Checkout',

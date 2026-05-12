@@ -1,6 +1,6 @@
 import { getStoreItemBySlug, listStoreItems, type StoreItem } from './catalog-data';
 import { getPrimaryAvailabilityForStoreItem, type ItemAvailability } from './item-availability';
-import type { StoreCartItem } from './store-cart';
+import type { CartLineItemSnapshot } from './store-cart';
 
 export type StorePageEntry = {
   storeItem: StoreItem;
@@ -20,11 +20,11 @@ export async function getStorePageEntryBySlug(slug: string): Promise<StorePageEn
   };
 }
 
-export function createStoreCartItemForStorePage(
+export function createCartLineItemSnapshotForStorePage(
   storeItem: StoreItem,
   primaryAvailability: ItemAvailability | null,
   image: string | null,
-): StoreCartItem | null {
+): CartLineItemSnapshot | null {
   if (!primaryAvailability?.canBuy) {
     return null;
   }

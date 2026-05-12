@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  createStoreCartItemForStorePage,
+  createCartLineItemSnapshotForStorePage,
   createStorePageStaticPaths,
   getStorePageEntryBySlug,
 } from './store-page-data';
@@ -200,8 +200,8 @@ describe('store page data helper', () => {
     ]);
   });
 
-  it('creates a browser-safe cart item for an eligible store page', () => {
-    const cartItem = createStoreCartItemForStorePage(
+  it('creates a browser-safe CartLineItemSnapshot for an eligible store page', () => {
+    const cartItem = createCartLineItemSnapshotForStorePage(
       {
         slug: 'disintegration-black-vinyl-lp',
         sourceKind: 'release',
@@ -246,8 +246,8 @@ describe('store page data helper', () => {
     expect(JSON.stringify(cartItem)).not.toContain('clientSecret');
   });
 
-  it('does not create a cart item for unavailable store pages', () => {
-    const cartItem = createStoreCartItemForStorePage(
+  it('does not create a CartLineItemSnapshot for unavailable store pages', () => {
+    const cartItem = createCartLineItemSnapshotForStorePage(
       {
         slug: 'afterglow-tape',
         sourceKind: 'distro',

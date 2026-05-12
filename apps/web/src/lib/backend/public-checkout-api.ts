@@ -82,7 +82,7 @@ export function createPublicCheckoutApi(
     async readCheckoutState(checkoutSessionId: string) {
       return readPublicCheckoutResponse(
         () => readCheckoutStateRequest({ checkoutSessionId }),
-        'Could not load checkout state.',
+        'Could not load checkout status.',
       );
     },
   };

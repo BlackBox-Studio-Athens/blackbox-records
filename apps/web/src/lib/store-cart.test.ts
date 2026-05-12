@@ -3,18 +3,18 @@ import { describe, expect, it } from 'vitest';
 import {
   addStoreCartItem,
   createEmptyStoreCartState,
-  createStoreCartCheckoutPath,
+  createCheckoutPathForCartLineItem,
   getStoreCartCount,
-  parseStoreCartState,
+  parseSerializedStoreCartState,
   readStoreCartState,
-  removeStoreCartItem,
+  removeCartLineByVariant,
   STORE_CART_MAX_QUANTITY,
   STORE_CART_STORAGE_KEY,
-  type StoreCartItem,
+  type CartLineItemSnapshot,
   writeStoreCartState,
 } from './store-cart';
 
-const canonicalItem: StoreCartItem = {
+const canonicalItem: CartLineItemSnapshot = {
   availabilityLabel: 'Available',
   image: '/blackbox-records/assets/disintegration.jpg',
   imageAlt: 'Disintegration by Afterwise',
@@ -46,7 +46,7 @@ describe('store cart state', () => {
   it('starts empty with count 0', () => {
     const state = createEmptyStoreCartState();
 
-    expect(state).toEqual({ item: null, lines: [] });
+    expect(state).toEqual({ primaryLineItem: null, lines: [] });
     expect(getStoreCartCount(state)).toBe(0);
   });
 
@@ -54,7 +54,7 @@ describe('store cart state', () => {
     const state = addStoreCartItem(canonicalItem);
 
     expect(getStoreCartCount(state)).toBe(1);
-    expect(state.item).toMatchObject({
+    expect(state.primaryLineItem).toMatchObject({
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
       optionLabel: 'Black Vinyl LP',
@@ -129,15 +129,15 @@ describe('store cart state', () => {
       },
       firstState,
     );
-    const finalState = removeStoreCartItem('variant_barren-point_standard', secondState);
+    const finalState = removeCartLineByVariant('variant_barren-point_standard', secondState);
 
     expect(getStoreCartCount(finalState)).toBe(1);
-    expect(finalState.item?.storeItemSlug).toBe('afterglow-tape');
+    expect(finalState.primaryLineItem?.storeItemSlug).toBe('afterglow-tape');
   });
 
   it('removes the whole draft when no variant id is provided', () => {
-    expect(removeStoreCartItem()).toEqual(createEmptyStoreCartState());
-    expect(getStoreCartCount(removeStoreCartItem())).toBe(0);
+    expect(removeCartLineByVariant()).toEqual(createEmptyStoreCartState());
+    expect(getStoreCartCount(removeCartLineByVariant())).toBe(0);
   });
 
   it('round-trips browser storage with only approved fields', () => {
@@ -151,7 +151,7 @@ describe('store cart state', () => {
       clientSecret: 'cs_secret_client',
       orderState: 'paid',
       actorEmail: 'operator@example.com',
-    } as StoreCartItem & Record<string, unknown>);
+    } as CartLineItemSnapshot & Record<string, unknown>);
 
     writeStoreCartState(storage, state);
 
@@ -166,25 +166,25 @@ describe('store cart state', () => {
     expect(rawValue).not.toContain('paid');
     expect(rawValue).not.toContain('operator@example.com');
     expect(readStoreCartState(storage)).toEqual({
-      item: canonicalItem,
       lines: [{ ...canonicalItem, quantity: 1 }],
+      primaryLineItem: canonicalItem,
     });
   });
 
   it('migrates the legacy single-item storage shape to a CartDraft', () => {
-    const state = parseStoreCartState(JSON.stringify({ item: canonicalItem }));
+    const state = parseSerializedStoreCartState(JSON.stringify({ item: canonicalItem }));
 
     expect(state).toEqual({
-      item: canonicalItem,
       lines: [{ ...canonicalItem, quantity: 1 }],
+      primaryLineItem: canonicalItem,
     });
   });
 
   it('falls back to empty cart for malformed storage', () => {
-    expect(parseStoreCartState('{not json')).toEqual(createEmptyStoreCartState());
-    expect(parseStoreCartState(JSON.stringify({ item: { storeItemSlug: 'missing-required-fields' } }))).toEqual(
-      createEmptyStoreCartState(),
-    );
+    expect(parseSerializedStoreCartState('{not json')).toEqual(createEmptyStoreCartState());
+    expect(
+      parseSerializedStoreCartState(JSON.stringify({ item: { storeItemSlug: 'missing-required-fields' } })),
+    ).toEqual(createEmptyStoreCartState());
   });
 
   it('removes browser storage when writing an empty cart', () => {
@@ -198,11 +198,11 @@ describe('store cart state', () => {
   it('never promotes the legacy release id to the cart item slug', () => {
     const state = addStoreCartItem(canonicalItem);
 
-    expect(state.item?.storeItemSlug).toBe('disintegration-black-vinyl-lp');
-    expect(state.item?.storeItemSlug).not.toBe('barren-point');
+    expect(state.primaryLineItem?.storeItemSlug).toBe('disintegration-black-vinyl-lp');
+    expect(state.primaryLineItem?.storeItemSlug).not.toBe('barren-point');
   });
 
   it('generates the canonical checkout route from the item option slug', () => {
-    expect(createStoreCartCheckoutPath(canonicalItem)).toBe('/store/disintegration-black-vinyl-lp/checkout/');
+    expect(createCheckoutPathForCartLineItem(canonicalItem)).toBe('/store/disintegration-black-vinyl-lp/checkout/');
   });
 });
