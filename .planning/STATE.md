@@ -8,7 +8,7 @@ current_plan: 5
 status: paused
 stopped_at: Phase 11 context gathered
 paused_at: Milestone review package complete; external gates and human approval pending
-last_updated: "2026-05-12T10:45:19.626Z"
+last_updated: '2026-05-12T10:45:19.626Z'
 last_activity: 2026-05-12 -- Phase 11 planning complete
 progress:
   total_phases: 11

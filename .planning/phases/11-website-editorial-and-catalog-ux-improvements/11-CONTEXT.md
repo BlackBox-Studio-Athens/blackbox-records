@@ -13,6 +13,7 @@ This phase does not alter Worker checkout, D1 stock, Stripe, BOX NOW, webhooks, 
 </domain>
 
 <spec_lock>
+
 ## Requirements Locked Via SPEC.md
 
 **7 requirements are locked.** See `11-SPEC.md` for full requirements, boundaries, and acceptance criteria.
@@ -70,6 +71,7 @@ Downstream agents MUST read `.planning/phases/11-website-editorial-and-catalog-u
 </decisions>
 
 <canonical_refs>
+
 ## Canonical References
 
 **Downstream agents MUST read these before planning or implementing.**
@@ -99,6 +101,7 @@ Downstream agents MUST read `.planning/phases/11-website-editorial-and-catalog-u
 </canonical_refs>
 
 <code_context>
+
 ## Existing Code Insights
 
 ### Reusable Assets
@@ -153,5 +156,5 @@ Downstream agents MUST read `.planning/phases/11-website-editorial-and-catalog-u
 
 ---
 
-*Phase: 11-website-editorial-and-catalog-ux-improvements*
-*Context gathered: 2026-05-12T13:07:27.5299211+03:00*
+_Phase: 11-website-editorial-and-catalog-ux-improvements_
+_Context gathered: 2026-05-12T13:07:27.5299211+03:00_

@@ -299,16 +299,20 @@ Plans:
 Plans:
 
 **Wave 1**
+
 - [ ] 11-01: Extend editorial content models
 
-**Wave 2** *(blocked on Wave 1 completion)*
+**Wave 2** _(blocked on Wave 1 completion)_
+
 - [ ] 11-02: Rework artist detail pages
 - [ ] 11-03: Add homepage News and latest release feature
 
-**Wave 3** *(blocked on Wave 2 completion)*
+**Wave 3** _(blocked on Wave 2 completion)_
+
 - [ ] 11-04: Improve Distro catalog grouping and copy
 
-**Wave 4** *(blocked on Wave 3 completion)*
+**Wave 4** _(blocked on Wave 3 completion)_
+
 - [ ] 11-05: Verify editorial and catalog UX improvements
 
 ## Future Milestone Seeds
