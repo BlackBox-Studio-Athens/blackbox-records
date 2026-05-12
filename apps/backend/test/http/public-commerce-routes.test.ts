@@ -351,7 +351,7 @@ describe('public commerce routes', () => {
     });
   });
 
-  it('returns app-owned checkout state for return and retry UI', async () => {
+  it('returns app-owned ReadCheckoutState output for return and retry UI', async () => {
     mockReadCheckoutState.mockResolvedValueOnce({
       checkoutSessionId: 'cs_test_123',
       paymentStatus: 'paid',

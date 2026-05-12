@@ -21,7 +21,7 @@ export class StripeCheckoutGateway implements CheckoutGateway {
   public async createEmbeddedCheckoutSession(
     request: EmbeddedCheckoutSessionRequest,
   ): Promise<EmbeddedCheckoutSession> {
-    const lineItems =
+    const resolvedLineItems =
       request.lineItems ??
       (request.storeItemSlug && request.stripePriceId && request.variantId
         ? [
@@ -33,21 +33,21 @@ export class StripeCheckoutGateway implements CheckoutGateway {
             },
           ]
         : []);
-    const primaryLine = lineItems[0];
+    const metadataLineItem = resolvedLineItems[0];
     const session = await this.stripe.checkout.sessions.create({
-      line_items: lineItems.map((line) => ({
+      line_items: resolvedLineItems.map((lineItem) => ({
         adjustable_quantity: {
           enabled: true,
-          maximum: line.adjustableQuantityMaximum ?? line.quantity,
+          maximum: lineItem.adjustableQuantityMaximum ?? lineItem.quantity,
           minimum: 1,
         },
-        price: line.stripePriceId,
-        quantity: line.quantity,
+        price: lineItem.stripePriceId,
+        quantity: lineItem.quantity,
       })),
-      metadata: primaryLine
+      metadata: metadataLineItem
         ? {
-            storeItemSlug: primaryLine.storeItemSlug,
-            variantId: primaryLine.variantId,
+            storeItemSlug: metadataLineItem.storeItemSlug,
+            variantId: metadataLineItem.variantId,
           }
         : undefined,
       mode: 'payment',
@@ -72,11 +72,11 @@ export class StripeCheckoutGateway implements CheckoutGateway {
   }
 
   public async readCheckoutSessionLineItems(checkoutSessionId: string) {
-    const lineItems = await this.stripe.checkout.sessions.listLineItems(checkoutSessionId, {
+    const stripeLineItemsResponse = await this.stripe.checkout.sessions.listLineItems(checkoutSessionId, {
       limit: 100,
     });
 
-    return lineItems.data
+    return stripeLineItemsResponse.data
       .map((lineItem) => ({
         quantity: lineItem.quantity ?? 0,
         stripePriceId: lineItem.price?.id ?? '',
@@ -113,10 +113,10 @@ export function createStripeClientOptions(stripeApiBaseUrl?: string): StripeClie
     ...options,
     host: baseUrl.hostname,
     port: Number(baseUrl.port || (baseUrl.protocol === 'https:' ? 443 : 80)),
-    protocol: parseStripeProtocol(baseUrl.protocol),
+    protocol: normalizeStripeProtocol(baseUrl.protocol),
   };
 }
 
-function parseStripeProtocol(protocol: string): StripeProtocol {
+function normalizeStripeProtocol(protocol: string): StripeProtocol {
   return protocol === 'http:' ? 'http' : DEFAULT_STRIPE_PROTOCOL;
 }

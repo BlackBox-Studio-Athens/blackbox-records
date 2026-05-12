@@ -70,12 +70,12 @@ export async function applyPaidCheckoutReconciliation(
     };
   }
 
-  const orderLines = readOrderLines(currentOrder);
-  const finalizedOrderLines = reconcileFinalizedLineItems(orderLines, finalizedLineItems);
+  const persistedOrderLines = readCheckoutOrderLines(currentOrder);
+  const reconciledOrderLines = reconcileFinalizedLineItems(persistedOrderLines, finalizedLineItems);
 
-  if (!finalizedOrderLines) {
+  if (!reconciledOrderLines) {
     try {
-      const transitionResult = await transitionCheckoutOrder(orders, {
+      const orderTransitionResult = await transitionCheckoutOrder(orders, {
         checkoutSessionId,
         stripePaymentIntentId: reconciliation.source.stripePaymentIntentId,
         toStatus: 'needs_review',
@@ -84,7 +84,7 @@ export async function applyPaidCheckoutReconciliation(
 
       return {
         kind: 'needs_review',
-        order: transitionResult.order,
+        order: orderTransitionResult.order,
         reason: 'Paid checkout line items could not be reconciled.',
       };
     } catch (error) {
@@ -99,10 +99,10 @@ export async function applyPaidCheckoutReconciliation(
     }
   }
 
-  let transitionResult: Awaited<ReturnType<typeof transitionCheckoutOrder>>;
+  let orderTransitionResult: Awaited<ReturnType<typeof transitionCheckoutOrder>>;
 
   try {
-    transitionResult = await transitionCheckoutOrder(orders, {
+    orderTransitionResult = await transitionCheckoutOrder(orders, {
       checkoutSessionId,
       stripePaymentIntentId: reconciliation.source.stripePaymentIntentId,
       toStatus: 'paid',
@@ -119,49 +119,53 @@ export async function applyPaidCheckoutReconciliation(
     throw error;
   }
 
-  if (!transitionResult.transitioned) {
+  if (!orderTransitionResult.transitioned) {
     return {
       kind: 'replay',
-      order: transitionResult.order,
+      order: orderTransitionResult.order,
     };
   }
 
-  const savedStockRecords: StockRecord[] = [];
-  const stockChangeRecords: StockChangeRecord[] = [];
+  const updatedStockRecords: StockRecord[] = [];
+  const recordedStockChangeRecords: StockChangeRecord[] = [];
 
-  for (const line of finalizedOrderLines) {
-    const currentStock = await stock.findByVariantId(line.variantId);
+  for (const orderLine of reconciledOrderLines) {
+    const currentStock = await stock.findByVariantId(orderLine.variantId);
 
-    if (!currentStock || currentStock.quantity < line.quantity || currentStock.onlineQuantity < line.quantity) {
+    if (
+      !currentStock ||
+      currentStock.quantity < orderLine.quantity ||
+      currentStock.onlineQuantity < orderLine.quantity
+    ) {
       return {
         kind: 'stock_unavailable',
-        order: transitionResult.order,
+        order: orderTransitionResult.order,
         reason: 'Paid checkout cannot decrement unavailable stock.',
       };
     }
 
-    const savedStock = await stock.save(line.variantId, {
-      onlineQuantity: currentStock.onlineQuantity - line.quantity,
-      quantity: currentStock.quantity - line.quantity,
+    const updatedStock = await stock.save(orderLine.variantId, {
+      onlineQuantity: currentStock.onlineQuantity - orderLine.quantity,
+      quantity: currentStock.quantity - orderLine.quantity,
     });
-    const stockChange = await stockChanges.record({
+    const recordedStockChange = await stockChanges.record({
       actorEmail: 'stripe-webhook',
       notes: `Checkout session ${checkoutSessionId}`,
-      quantityDelta: -line.quantity,
+      quantityDelta: -orderLine.quantity,
       reason: 'checkout_paid',
       recordedAt: appliedAt,
-      variantId: line.variantId,
+      variantId: orderLine.variantId,
     });
 
-    savedStockRecords.push(savedStock);
-    stockChangeRecords.push(stockChange);
+    updatedStockRecords.push(updatedStock);
+    recordedStockChangeRecords.push(recordedStockChange);
   }
 
   return {
     kind: 'applied',
-    order: transitionResult.order,
-    stock: savedStockRecords[0]!,
-    stockChange: stockChangeRecords[0]!,
+    order: orderTransitionResult.order,
+    stock: updatedStockRecords[0]!,
+    stockChange: recordedStockChangeRecords[0]!,
   };
 }
 
@@ -170,7 +174,7 @@ export type FinalizedPaidCheckoutLineItem = {
   stripePriceId: string;
 };
 
-function readOrderLines(order: CheckoutOrderRecord): CheckoutOrderLineRecord[] {
+function readCheckoutOrderLines(order: CheckoutOrderRecord): CheckoutOrderLineRecord[] {
   return order.lines?.length
     ? order.lines
     : [
@@ -194,12 +198,13 @@ function reconcileFinalizedLineItems(
 
   const finalizedQuantityByStripePriceId = new Map<string, number>();
 
-  for (const lineItem of finalizedLineItems) {
-    if (!Number.isInteger(lineItem.quantity) || lineItem.quantity < 1) return null;
+  for (const providerFinalizedLineItem of finalizedLineItems) {
+    if (!Number.isInteger(providerFinalizedLineItem.quantity) || providerFinalizedLineItem.quantity < 1) return null;
 
     finalizedQuantityByStripePriceId.set(
-      lineItem.stripePriceId,
-      (finalizedQuantityByStripePriceId.get(lineItem.stripePriceId) ?? 0) + lineItem.quantity,
+      providerFinalizedLineItem.stripePriceId,
+      (finalizedQuantityByStripePriceId.get(providerFinalizedLineItem.stripePriceId) ?? 0) +
+        providerFinalizedLineItem.quantity,
     );
   }
 
