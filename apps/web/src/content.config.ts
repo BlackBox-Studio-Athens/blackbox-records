@@ -13,6 +13,23 @@ const artists = defineCollection({
       image: image(),
       image_alt: z.string().optional(),
       bio: z.string(),
+      profile_links: z
+        .array(
+          z.object({
+            label: z.string(),
+            url: z.string().url(),
+          }),
+        )
+        .optional(),
+      videos: z
+        .array(
+          z.object({
+            title: z.string(),
+            youtube_video_id: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
+            description: z.string().optional(),
+          }),
+        )
+        .optional(),
       upcoming_release: z.string().optional(),
       shop_collection_handle: z.string().optional(),
       section_label: z.string().optional(),
