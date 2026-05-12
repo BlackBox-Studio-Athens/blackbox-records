@@ -1644,6 +1644,87 @@
     margin-inline: auto;
   }
 
+  .home-news-grid {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .releases-latest-feature-section {
+    margin-top: 0.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .releases-latest-feature {
+    display: grid;
+    gap: 1rem;
+    align-items: center;
+    border-top: 1px solid #2b2b2b;
+    border-bottom: 1px solid #2b2b2b;
+    padding-block: 1rem;
+  }
+
+  .releases-latest-feature__artwork-link {
+    display: block;
+    width: min(100%, 10rem);
+    color: inherit;
+  }
+
+  .releases-latest-feature__artwork {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border: 1px solid #2b2b2b;
+    background: #111111;
+  }
+
+  .releases-latest-feature__copy {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .releases-latest-feature__label,
+  .releases-latest-feature__meta {
+    margin: 0;
+    color: var(--muted-foreground);
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .releases-latest-feature__title {
+    width: fit-content;
+    color: var(--foreground);
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 9vw, 4.2rem);
+    line-height: 0.9;
+    letter-spacing: 0.055em;
+    text-transform: uppercase;
+  }
+
+  .releases-latest-feature__title:hover,
+  .releases-latest-feature__title:focus-visible {
+    color: var(--foreground);
+    text-decoration: underline;
+    text-decoration-color: rgba(245, 245, 245, 0.45);
+    text-underline-offset: 0.16em;
+  }
+
+  .releases-latest-feature__summary {
+    max-width: 42rem;
+    margin: 0.35rem 0 0;
+    color: rgba(214, 214, 214, 0.82);
+    font-size: 0.94rem;
+    line-height: 1.65;
+  }
+
+  .releases-latest-feature__actions {
+    display: flex;
+    align-items: center;
+  }
+
   .release-card-tile--framed {
     display: flex;
     height: 100%;
@@ -3167,6 +3248,10 @@ body.is-app-shell-overlay-open {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .home-news-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .distro-home-grid,
   .distro-group-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3238,6 +3323,20 @@ body.is-app-shell-overlay-open {
 
   .artist-video-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .releases-latest-feature {
+    grid-template-columns: minmax(8.5rem, 10rem) minmax(0, 1fr);
+    gap: 1.25rem;
+    padding-block: 1.15rem;
+  }
+
+  .releases-latest-feature__artwork-link {
+    width: 100%;
+  }
+
+  .releases-latest-feature__actions {
+    grid-column: 2;
   }
 
   .music-streaming-service-embedded-player-mini-player {
@@ -3350,6 +3449,11 @@ body.is-app-shell-overlay-open {
     gap: 1.5rem;
   }
 
+  .home-news-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+
   .distro-home-grid,
   .distro-group-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3383,6 +3487,17 @@ body.is-app-shell-overlay-open {
 
   .artist-video-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .releases-latest-feature {
+    grid-template-columns: 11.5rem minmax(0, 1fr) auto;
+    gap: 1.5rem;
+    padding-block: 1.25rem;
+  }
+
+  .releases-latest-feature__actions {
+    grid-column: auto;
+    justify-content: flex-end;
   }
 
   .artist-previous-release-list {

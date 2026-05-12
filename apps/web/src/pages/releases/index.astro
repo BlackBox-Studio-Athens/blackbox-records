@@ -1,16 +1,79 @@
 ---
+import { Image } from 'astro:assets';
 import InternalPageHero from '@/components/InternalPageHero.astro';
 import ReleaseCard from '@/components/cards/ReleaseCard.astro';
+import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
-import { listArtistProfiles, listReleaseCatalog, mapArtistProfilesById } from '@/lib/catalog-data';
+import {
+  createReleaseDetailPath,
+  listArtistProfiles,
+  listReleaseCatalog,
+  mapArtistProfilesById,
+  resolveReleaseArtistDisplayName,
+} from '@/lib/catalog-data';
+import { formatYear } from '@/utils/content';
+import { buildEmbeddedPlayerData } from '@/utils/music';
 
 const artistProfiles = await listArtistProfiles();
 const releaseCatalogEntries = await listReleaseCatalog();
 const artistProfileById = mapArtistProfilesById(artistProfiles);
+const latestReleaseEntry = releaseCatalogEntries[0];
+const latestReleaseArtist = latestReleaseEntry ? artistProfileById.get(latestReleaseEntry.data.artist.id) : undefined;
+const latestReleaseArtistName = latestReleaseEntry
+  ? resolveReleaseArtistDisplayName(latestReleaseEntry, latestReleaseArtist)
+  : '';
+const latestReleasePlayerData = latestReleaseEntry
+  ? buildEmbeddedPlayerData(latestReleaseEntry.data, `${latestReleaseEntry.data.title} - ${latestReleaseArtistName}`)
+  : null;
 ---
 
 <SiteLayout pageTitle="Releases" pageDescription="Releases and label catalog.">
   <InternalPageHero sectionLabel="Releases" title="Releases" />
+  {
+    latestReleaseEntry && (
+      <section class="layout-container releases-latest-feature-section">
+        <article class="releases-latest-feature">
+          <a
+            class="releases-latest-feature__artwork-link"
+            href={createReleaseDetailPath(latestReleaseEntry)}
+            data-astro-prefetch
+          >
+            <Image
+              src={latestReleaseEntry.data.cover_image}
+              alt={latestReleaseEntry.data.cover_image_alt || latestReleaseEntry.data.title}
+              class="releases-latest-feature__artwork"
+              sizes="(min-width: 1024px) 12rem, (min-width: 640px) 11rem, 100vw"
+            />
+          </a>
+          <div class="releases-latest-feature__copy">
+            <p class="releases-latest-feature__label">Latest release</p>
+            <a
+              class="releases-latest-feature__title"
+              href={createReleaseDetailPath(latestReleaseEntry)}
+              data-astro-prefetch
+            >
+              {latestReleaseEntry.data.title}
+            </a>
+            <p class="releases-latest-feature__meta">
+              {latestReleaseArtistName} / {formatYear(latestReleaseEntry.data.release_date)}
+            </p>
+            {latestReleaseEntry.data.summary && (
+              <p class="releases-latest-feature__summary">{latestReleaseEntry.data.summary}</p>
+            )}
+          </div>
+          {latestReleasePlayerData?.hasProvider && (
+            <div class="releases-latest-feature__actions">
+              <MusicStreamingServiceListenTrigger
+                embeddedPlayerData={latestReleasePlayerData}
+                tone="accent"
+                variant="standalone"
+              />
+            </div>
+          )}
+        </article>
+      </section>
+    )
+  }
   <section class="layout-container">
     <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
       {

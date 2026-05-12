@@ -8,11 +8,11 @@
   },
   "sections": [
     {
-      "type": "latest_releases",
-      "section_label": "Latest Releases",
-      "title": "Latest Releases",
-      "link_text": "View All",
-      "link_url": "/releases/"
+      "type": "news",
+      "section_label": "News",
+      "title": "News",
+      "link_text": "Read News",
+      "link_url": "/news/"
     },
     {
       "type": "artists",

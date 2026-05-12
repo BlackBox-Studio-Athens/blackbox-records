@@ -142,7 +142,7 @@ const home = defineCollection({
       sections: z.array(
         z.discriminatedUnion('type', [
           z.object({
-            type: z.literal('latest_releases'),
+            type: z.literal('news'),
             section_label: z.string(),
             title: z.string(),
             link_text: z.string(),

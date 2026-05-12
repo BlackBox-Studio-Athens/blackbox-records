@@ -2,27 +2,27 @@
 import ArtistCard from '@/components/cards/ArtistCard.astro';
 import DistroCard from '@/components/cards/DistroCard.astro';
 import HomeHero from '@/components/hero/HomeHero.astro';
-import ReleaseCard from '@/components/cards/ReleaseCard.astro';
+import NewsCard from '@/components/cards/NewsCard.astro';
 import NewsletterSignup from '@/components/NewsletterSignup.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { Image } from 'astro:assets';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl } from '@/config/site';
-import { listArtistProfiles, listDistroEntries, listReleaseCatalog, mapArtistProfilesById } from '@/lib/catalog-data';
+import { listArtistProfiles, listDistroEntries, listNewsArticles, listReleaseCatalog } from '@/lib/catalog-data';
 import { getContentSection, getHomeContent, getLabelSettings } from '@/lib/site-data';
 import { cn } from '@/lib/utils';
 import { calculateCountryCount, calculateYearsActive } from '@/utils/content';
 
 const artistProfiles = await listArtistProfiles();
 const releaseCatalogEntries = await listReleaseCatalog();
+const newsArticles = await listNewsArticles();
 const distroEntries = await listDistroEntries();
-const artistProfileById = mapArtistProfilesById(artistProfiles);
-const latestReleaseEntries = releaseCatalogEntries.slice(0, 3);
+const latestNewsArticles = newsArticles.slice(0, 3);
 const featuredArtistProfiles = artistProfiles.slice(0, 3);
 const featuredDistroEntries = distroEntries.slice(0, 3);
 const [homeContent, labelSettings] = await Promise.all([getHomeContent(), getLabelSettings()]);
-const homeLatestReleases = getContentSection(homeContent.sections, 'latest_releases');
+const homeNews = getContentSection(homeContent.sections, 'news');
 const homeArtists = getContentSection(homeContent.sections, 'artists');
 const homeDistro = getContentSection(homeContent.sections, 'distro');
 const homeJourney = getContentSection(homeContent.sections, 'journey');
@@ -41,29 +41,28 @@ const allReleasesCount = releaseCatalogEntries.length;
   />
 
   {
-    homeLatestReleases && (
-      <section class="featured-releases-section layout-container mt-16" id="featured-releases">
+    homeNews && latestNewsArticles.length > 0 && (
+      <section class="home-news-section layout-container mt-16" id="news">
         <div class="home-section-header home-section-header--split mb-6 sm:mb-8">
           <div class="home-section-header__lead">
-            <h2 class="home-section-header__title">{homeLatestReleases.title}</h2>
+            <h2 class="home-section-header__title">{homeNews.title}</h2>
             <span class="home-section-header__rule" aria-hidden="true" />
           </div>
           <a
-            href={createProjectRelativeUrl(homeLatestReleases.link_url)}
+            href={createProjectRelativeUrl(homeNews.link_url)}
             data-astro-prefetch
             class={cn(
               buttonVariants({ variant: 'ghost', size: 'sm' }),
               'home-section-header__action rounded-md px-2 text-xs tracking-[0.14em] uppercase text-muted-foreground hover:text-foreground',
             )}
           >
-            {homeLatestReleases.link_text} <span aria-hidden="true">→</span>
+            {homeNews.link_text} <span aria-hidden="true">→</span>
           </a>
         </div>
-        <div class="featured-releases-grid">
-          {latestReleaseEntries.map((releaseEntry) => {
-            const artistProfile = artistProfileById.get(releaseEntry.data.artist.id);
-            return <ReleaseCard release={releaseEntry} artist={artistProfile} variant="framed-artwork" />;
-          })}
+        <div class="home-news-grid">
+          {latestNewsArticles.map((newsArticle) => (
+            <NewsCard item={newsArticle} />
+          ))}
         </div>
       </section>
     )
