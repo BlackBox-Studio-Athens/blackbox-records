@@ -1255,9 +1255,12 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
           widget: 'select',
           hint: 'Choose the shelf this item appears under.',
           options: [
-            { label: 'Vinyls', value: 'Vinyls' },
+            { label: 'Vinyl 12-inch', value: 'Vinyl 12-inch' },
+            { label: 'Vinyl 7-inch', value: 'Vinyl 7-inch' },
+            { label: 'CDs', value: 'CDs' },
             { label: 'Clothes', value: 'Clothes' },
             { label: 'Tapes', value: 'Tapes' },
+            { label: 'Other', value: 'Other' },
           ],
         }),
         buildField({
@@ -1303,6 +1306,14 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
           widget: 'string',
           required: false,
           hint: 'Optional short format note, such as "LP" or "Black tee".',
+        }),
+        buildField({
+          label: 'Release date',
+          name: 'release_date',
+          widget: 'datetime',
+          required: false,
+          hint: 'Optional known release date. Leave empty when unknown; do not infer from description text.',
+          extras: ['date_format: YYYY-MM-DD', 'time_format: false'],
         }),
         buildField({
           label: 'Order',

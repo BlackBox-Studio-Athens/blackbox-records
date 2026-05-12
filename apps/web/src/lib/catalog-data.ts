@@ -148,7 +148,8 @@ export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEnt
 
 export function createStoreItemFromDistroEntry(distroEntry: DistroCatalogEntry): StoreItem {
   const slug = distroEntry.id;
-  const metadata = [distroEntry.data.group, distroEntry.data.format].filter(Boolean) as string[];
+  const releaseYear = distroEntry.data.release_date ? String(distroEntry.data.release_date.getFullYear()) : null;
+  const metadata = [distroEntry.data.group, releaseYear, distroEntry.data.format].filter(Boolean) as string[];
 
   return {
     slug,

@@ -75,12 +75,14 @@ const news = defineCollection({
     }),
 });
 
+const distroGroupValues = ['Vinyl 12-inch', 'Vinyl 7-inch', 'CDs', 'Clothes', 'Tapes', 'Other'] as const;
+
 const distro = defineCollection({
   loader: glob({ pattern: '**/*.json', base: './src/content/distro' }),
   schema: ({ image }) =>
     z.object({
       title: z.string(),
-      group: z.enum(['Vinyls', 'Clothes', 'Tapes']),
+      group: z.enum(distroGroupValues),
       artist_or_label: z.string(),
       image: image(),
       image_alt: z.string(),
@@ -88,6 +90,7 @@ const distro = defineCollection({
       fourthwall_url: z.string().url(),
       eyebrow: z.string().optional(),
       format: z.string().optional(),
+      release_date: z.coerce.date().optional(),
       order: z.number().int().nonnegative(),
     }),
 });
