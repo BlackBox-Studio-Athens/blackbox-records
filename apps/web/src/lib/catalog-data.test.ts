@@ -83,13 +83,23 @@ describe('groupDistroEntries', () => {
   it('returns distro groups in the intended editorial order and omits empty groups', () => {
     const entries = [
       { data: { group: 'Tapes', order: 5, title: 'C' } },
-      { data: { group: 'Vinyls', order: 1, title: 'A' } },
-      { data: { group: 'Clothes', order: 3, title: 'B' } },
+      { data: { group: 'Other', order: 6, title: 'F' } },
+      { data: { group: 'Clothes', order: 3, title: 'D' } },
+      { data: { group: 'Vinyl 7-inch', order: 2, title: 'B' } },
+      { data: { group: 'CDs', order: 4, title: 'E' } },
+      { data: { group: 'Vinyl 12-inch', order: 1, title: 'A' } },
     ] as any;
 
     const groups = groupDistroEntries(entries);
 
-    expect(groups.map((group) => group.groupName)).toEqual(['Vinyls', 'Clothes', 'Tapes']);
+    expect(groups.map((group) => group.groupName)).toEqual([
+      'Vinyl 12-inch',
+      'Vinyl 7-inch',
+      'CDs',
+      'Clothes',
+      'Tapes',
+      'Other',
+    ]);
     expect(groups[0]?.entries).toHaveLength(1);
     expect(groups[1]?.entries).toHaveLength(1);
     expect(groups[2]?.entries).toHaveLength(1);
@@ -138,6 +148,7 @@ describe('StoreItem projection contract', () => {
         group: 'Tapes',
         image: { src: '/afterglow.jpg' },
         image_alt: 'Afterglow tape',
+        release_date: new Date('2021-06-07T00:00:00.000Z'),
         summary: 'Small-run cassette.',
         title: 'Afterglow Tape',
       },
@@ -146,9 +157,30 @@ describe('StoreItem projection contract', () => {
     expect(storeItem.sourceKind).toBe('distro');
     expect(storeItem.storePath).toBe('/blackbox-records/store/afterglow-tape/');
     expect(storeItem.checkoutPath).toBe('/blackbox-records/store/afterglow-tape/checkout/');
-    expect(storeItem.metadata).toEqual(['Tapes', 'Cassette']);
+    expect(storeItem.metadata).toEqual(['Tapes', '2021', 'Cassette']);
     expect(storeItem).not.toHaveProperty('fourthwall_url');
     expect(storeItem).not.toHaveProperty('merch_url');
+  });
+
+  it('omits unknown distro release dates from store item metadata', () => {
+    const storeItem = createStoreItemFromDistroEntry({
+      id: 'afterglow-tape',
+      data: {
+        artist_or_label: 'Afterglow',
+        eyebrow: 'Tape',
+        format: 'Cassette',
+        fourthwall_url: 'https://blackboxrecords-shop.fourthwall.com/collections/all',
+        group: 'Tapes',
+        image: { src: '/afterglow.jpg' },
+        image_alt: 'Afterglow tape',
+        summary: 'Small-run cassette.',
+        title: 'Afterglow Tape',
+      },
+    } as any);
+
+    expect(storeItem.metadata).toEqual(['Tapes', 'Cassette']);
+    expect(storeItem.metadata).not.toContain('Unknown');
+    expect(storeItem.metadata).not.toContain('TBA');
   });
 
   it('treats current releases as native store candidates regardless of legacy merch metadata', async () => {
