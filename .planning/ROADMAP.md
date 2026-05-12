@@ -305,7 +305,7 @@ Plans:
 **Wave 2** _(blocked on Wave 1 completion)_
 
 - [x] 11-02: Rework artist detail pages
-- [ ] 11-03: Add homepage News and latest release feature
+- [x] 11-03: Add homepage News and latest release feature
 
 **Wave 3** _(blocked on Wave 2 completion)_
 
@@ -359,4 +359,4 @@ Because Stripe account access and BOX NOW portal access are unavailable, non-sec
 | 8. Webhook Orders And Stock                                    | 8/8            | Completed   | 2026-04-26 |
 | 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred    |            |
 | 10. Sandbox Verification And Release Gate                      | 5/6            | Active      |            |
-| 11. Website Editorial And Catalog UX Improvements              | 2/5 | In Progress|  |
+| 11. Website Editorial And Catalog UX Improvements              | 3/5            | In Progress |            |
