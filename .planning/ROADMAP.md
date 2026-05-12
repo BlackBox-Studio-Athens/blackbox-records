@@ -37,7 +37,7 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - [x] **Phase 8: Webhook Orders And Stock** - Make payment truth and stock mutation Worker-owned, webhook-authoritative, and idempotent (non-secret backend groundwork may proceed before real Stripe account access)
 - [ ] **Phase 9: Greece-Only BOX NOW Shipping** - Add the approved locker-selection gate and thin fulfillment data contract (local implementation complete; BOX NOW portal validation deferred)
 - [ ] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow where account access allows and prepare the go-live handoff package (review package complete; external gates remain pending)
-- [ ] **Phase 11: Website Editorial And Catalog UX Improvements** - Convert partner website notes into static-site editorial, artist, release, homepage, and distro/catalog improvements without changing commerce authority
+- [x] **Phase 11: Website Editorial And Catalog UX Improvements** - Convert partner website notes into static-site editorial, artist, release, homepage, and distro/catalog improvements without changing commerce authority (completed 2026-05-12)
 
 ## Phase Details
 
@@ -313,7 +313,7 @@ Plans:
 
 **Wave 4** _(blocked on Wave 3 completion)_
 
-- [ ] 11-05: Verify editorial and catalog UX improvements
+- [x] 11-05: Verify editorial and catalog UX improvements
 
 ## Future Milestone Seeds
 
@@ -347,16 +347,16 @@ Plans:
 Nominal phase order remains `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 7.1 → 8 → 9 → 10`.
 Because Stripe account access and BOX NOW portal access are unavailable, non-secret backend, shipping, local UAT, and audit work may proceed after local mock/contract completion. Phase 7.1 is complete, while the deferred Stripe Access Gate and BOX NOW Portal Gate remain required before full hosted sandbox/release evidence. Phase 11 is a separate static-site editorial/catalog phase and is not required to close the Phase 10 commerce release gate.
 
-| Phase                                                          | Plans Complete | Status      | Completed  |
-| -------------------------------------------------------------- | -------------- | ----------- | ---------- |
-| 5. Worker Backend Platform And Deployment Plumbing             | 6/6            | Completed   | 2026-04-20 |
-| 5.1. Commerce Domain Architecture And Source-Of-Truth Research | 4/4            | Completed   | 2026-04-20 |
-| 6. Static Storefront Slice                                     | 7/7            | Completed   | 2026-04-21 |
-| 6.1. Worker Commerce State Foundation                          | 4/4            | Completed   | 2026-04-22 |
-| 6.1.1. Internal Stock Operations And Operator Access           | 4/4            | Completed   | 2026-04-24 |
-| 7. Worker Checkout And Stripe Sandbox Flow                     | 15/16          | Deferred    | 2026-04-25 |
-| 7.1. Cloudflare Pages Static Frontend Migration                | 5/5            | Completed   | 2026-04-29 |
-| 8. Webhook Orders And Stock                                    | 8/8            | Completed   | 2026-04-26 |
-| 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred    |            |
-| 10. Sandbox Verification And Release Gate                      | 5/6            | Active      |            |
-| 11. Website Editorial And Catalog UX Improvements              | 4/5            | In Progress |            |
+| Phase                                                          | Plans Complete | Status    | Completed  |
+| -------------------------------------------------------------- | -------------- | --------- | ---------- |
+| 5. Worker Backend Platform And Deployment Plumbing             | 6/6            | Completed | 2026-04-20 |
+| 5.1. Commerce Domain Architecture And Source-Of-Truth Research | 4/4            | Completed | 2026-04-20 |
+| 6. Static Storefront Slice                                     | 7/7            | Completed | 2026-04-21 |
+| 6.1. Worker Commerce State Foundation                          | 4/4            | Completed | 2026-04-22 |
+| 6.1.1. Internal Stock Operations And Operator Access           | 4/4            | Completed | 2026-04-24 |
+| 7. Worker Checkout And Stripe Sandbox Flow                     | 15/16          | Deferred  | 2026-04-25 |
+| 7.1. Cloudflare Pages Static Frontend Migration                | 5/5            | Completed | 2026-04-29 |
+| 8. Webhook Orders And Stock                                    | 8/8            | Completed | 2026-04-26 |
+| 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred  |            |
+| 10. Sandbox Verification And Release Gate                      | 5/6            | Active    |            |
+| 11. Website Editorial And Catalog UX Improvements              | 5/5            | Complete  | 2026-05-12 |
