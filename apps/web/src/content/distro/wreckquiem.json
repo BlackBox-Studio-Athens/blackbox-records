@@ -1,7 +1,8 @@
 {
   "image_alt": "Wreckquiem front",
   "$schema": "../../../.astro/collections/distro.schema.json",
-  "summary": "released June 7, 2021\n\nGenre: alternative / punk\n\nCountry: Greece\n\nThree Way Plane has played alternative and noise rock since 2004, steadily out of Athens.\n",
+  "summary": "Three Way Plane carry their Athens alternative, punk, and noise-rock line into Wreckquiem.",
+  "release_date": "2021-06-07",
   "order": 14,
   "artist_or_label": "Three Way Plane",
   "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",

@@ -1,7 +1,8 @@
 {
   "image_alt": "UnKraut front",
   "$schema": "../../../.astro/collections/distro.schema.json",
-  "summary": "Released: December 10, 2021\n\nGenre: kraut rock / space rock / heavy psych\n\nCountry: Austria\n\nSpeck keeps UnKraut's space kraut energy from 2019 in Austria.\n",
+  "summary": "Speck keep UnKraut's Austrian space-kraut and heavy-psych energy locked into a long-form record.",
+  "release_date": "2021-12-10",
   "order": 12,
   "artist_or_label": "Speck",
   "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",

@@ -4,6 +4,7 @@ import type { CollectionEntry } from 'astro:content';
 import { Card, CardContent } from '@/components/ui/card';
 import { createStoreItemFromDistroEntry } from '@/lib/catalog-data';
 import { cn } from '@/lib/utils';
+import { formatMonthYear } from '@/utils/content';
 
 interface Props {
   item: CollectionEntry<'distro'>;
@@ -13,6 +14,11 @@ interface Props {
 const { item, variant = 'page' } = Astro.props;
 const storeItem = createStoreItemFromDistroEntry(item);
 const isHomeVariant = variant === 'home';
+const metadataItems = [
+  item.data.eyebrow || null,
+  item.data.format || item.data.group,
+  item.data.release_date ? formatMonthYear(item.data.release_date) : null,
+].filter(Boolean);
 ---
 
 <a
@@ -33,12 +39,15 @@ const isHomeVariant = variant === 'home';
     </div>
     <CardContent className={cn('distro-card__content', isHomeVariant ? 'space-y-2 p-4' : 'space-y-3 p-5')}>
       <div class="space-y-2">
-        <div
-          class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] uppercase tracking-[0.16em] text-muted-foreground"
-        >
-          {item.data.eyebrow && <span>{item.data.eyebrow}</span>}
-          {item.data.format && <span class="text-[#8a8a8a]">{item.data.format}</span>}
-        </div>
+        {
+          metadataItems.length > 0 && (
+            <div class="distro-card__metadata-row">
+              {metadataItems.map((metadataItem) => (
+                <span>{metadataItem}</span>
+              ))}
+            </div>
+          )
+        }
         <h3 class="distro-card__title">{item.data.title}</h3>
         <p class="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">{item.data.artist_or_label}</p>
       </div>

@@ -1,7 +1,7 @@
 {
   "image_alt": "Bloed - Tranen",
   "$schema": "../../../.astro/collections/distro.schema.json",
-  "summary": "Genre: Metal\n\nCountry: Belgium\n\nThree siblings from Oostend describe Tranen as blood, sweat, and tears across Belgian metal.\n",
+  "summary": "Belgian metal from three siblings in Oostend, carrying the blood, sweat, and tears behind Tranen into the grooves.",
   "order": 1,
   "artist_or_label": "Bloed",
   "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",

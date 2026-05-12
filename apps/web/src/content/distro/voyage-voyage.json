@@ -1,7 +1,8 @@
 {
   "image_alt": "Voyage Voyage front",
   "$schema": "../../../.astro/collections/distro.schema.json",
-  "summary": "Released November 8, 2019\n\nGenre: experimental rock / math-rock\n\nCountry: Switzerland\n\nZaperlipopette!'s Voyage Voyage keeps the experimental rock and math-rock focus from Switzerland.\n",
+  "summary": "Zaperlipopette! keep their Swiss experimental rock and math-rock focus sharp on Voyage Voyage.",
+  "release_date": "2019-11-08",
   "order": 5,
   "artist_or_label": "Zaperlipopette!",
   "fourthwall_url": "https://blackboxrecords-shop.fourthwall.com/collections/all",
