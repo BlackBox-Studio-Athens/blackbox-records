@@ -1,4 +1,7 @@
 ---
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import { Image } from 'astro:assets';
 import { createAbsoluteSiteUrl, createProjectRelativeUrl } from '@/config/site';
 import {
@@ -16,6 +19,7 @@ type FontCandidate = {
   name: string;
   fontFamily: string;
   opticalScale: number;
+  fileName?: string;
 };
 
 const pageTitle = 'Blackbox Records | Header Type Studies';
@@ -23,6 +27,12 @@ const pageDescription =
   'A noindex typography draft page for reviewing display-header directions against real BlackBox Records content.';
 const pageUrl = createAbsoluteSiteUrl('/demo/header-type-studies/');
 const faviconUrl = createProjectRelativeUrl('/favicon.ico');
+const selfHostedFontBaseUrl = createProjectRelativeUrl('/assets/fonts/type-studies/');
+const selfHostedFontDirectory = new URL('../../../public/assets/fonts/type-studies/', import.meta.url);
+
+function hasSelfHostedFontFile(fileName: string) {
+  return existsSync(fileURLToPath(new URL(fileName, selfHostedFontDirectory)));
+}
 
 const [artistProfiles, releaseCatalog, newsArticles, distroEntries] = await Promise.all([
   listArtistProfiles(),
@@ -111,15 +121,96 @@ const fontCandidates = [
     fontFamily: 'Barlow Condensed',
     opticalScale: 1,
   },
+  {
+    id: '13',
+    name: 'Veneer',
+    fontFamily: 'Veneer',
+    opticalScale: 1.02,
+    fileName: 'veneer_regular.woff2',
+  },
+  {
+    id: '14',
+    name: 'Knockout 94 Ultimate Sumo',
+    fontFamily: 'Knockout 94 Ultimate Sumo',
+    opticalScale: 0.92,
+    fileName: 'Knockout-94-Ultimate-Sumo.woff2',
+  },
+  {
+    id: '15',
+    name: 'Knockout 74 Full Sumo',
+    fontFamily: 'Knockout 74 Full Sumo',
+    opticalScale: 0.95,
+    fileName: 'Knockout-74-Full-Sumo.woff2',
+  },
+  {
+    id: '16',
+    name: 'Garage Gothic Bold',
+    fontFamily: 'Garage Gothic Bold',
+    opticalScale: 1,
+    fileName: 'GarageGothic-Bold.woff2',
+  },
+  {
+    id: '17',
+    name: 'Bureau Grot UltraBlack',
+    fontFamily: 'Bureau Grot UltraBlack',
+    opticalScale: 0.9,
+    fileName: 'BureauGrot-UltraBlack.woff2',
+  },
+  {
+    id: '18',
+    name: 'Druk Condensed Super',
+    fontFamily: 'Druk Condensed Super',
+    opticalScale: 0.88,
+    fileName: 'DrukCond-Super.woff2',
+  },
+  {
+    id: '19',
+    name: 'Druk Wide Heavy',
+    fontFamily: 'Druk Wide Heavy',
+    opticalScale: 0.76,
+    fileName: 'DrukWide-Heavy.woff2',
+  },
+  {
+    id: '20',
+    name: 'Obviously Extd Black',
+    fontFamily: 'Obviously Extd Black',
+    opticalScale: 0.78,
+    fileName: 'Obviously-Extd-Black.woff2',
+  },
 ] satisfies FontCandidate[];
 
-const previewCandidates = fontCandidates.map(({ id, name, fontFamily, opticalScale }) => ({
+const reviewedCandidates = fontCandidates.map((candidate) => ({
+  ...candidate,
+  isMissing: candidate.fileName ? !hasSelfHostedFontFile(candidate.fileName) : false,
+}));
+
+const previewCandidates = reviewedCandidates.map(({ id, name, fontFamily, isMissing, opticalScale }) => ({
   fontFamily,
   id,
+  isMissing,
   name,
   opticalScale,
 }));
 const previewCandidateJson = JSON.stringify(previewCandidates);
+
+const selfHostedFontFaceCss = fontCandidates
+  .flatMap((candidate) => {
+    if (!candidate.fileName || !hasSelfHostedFontFile(candidate.fileName)) {
+      return [];
+    }
+
+    const format = candidate.fileName.endsWith('.ttf') ? 'truetype' : 'woff2';
+
+    return `
+@font-face {
+  font-family: '${candidate.fontFamily}';
+  src: url('${selfHostedFontBaseUrl}${candidate.fileName}') format('${format}');
+  font-display: swap;
+  font-style: normal;
+  font-weight: 900;
+}`;
+  })
+  .join('\n');
 
 const mockReleaseTitle = releaseEntry?.data.title || 'Disintegration';
 const mockReleaseArtist = releaseEntry
@@ -162,6 +253,7 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
       href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Barlow+Condensed:wght@800&family=Bebas+Neue&family=Changa:wght@800&family=Inter:wght@300;400;500;600;700&family=League+Gothic&family=Metal+Mania&family=Oswald:wght@700&family=Road+Rage&family=Rubik+Glitch&family=Saira+Condensed:wght@800&family=Staatliches&family=Teko:wght@700&display=swap"
       rel="stylesheet"
     />
+    <style is:inline set:html={selfHostedFontFaceCss}></style>
     <script id="font-preview-candidates" is:inline type="application/json" set:html={previewCandidateJson} />
   </head>
   <body>
@@ -241,8 +333,8 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
 
       <section class="study-grid" aria-label="Typography candidates">
         {
-          fontCandidates.map((study) => (
-            <article class="study-card">
+          reviewedCandidates.map((study) => (
+            <article class:list={['study-card', study.isMissing && 'is-missing']}>
               <p class="study-card__sample" style={`--candidate-font: '${study.fontFamily}', var(--font-current);`}>
                 Release
               </p>
@@ -251,8 +343,9 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
                 type="button"
                 data-font-preview-button
                 data-font-id={study.id}
-                aria-label={`Apply ${study.name}`}
+                aria-label={`Apply ${study.name}${study.isMissing ? ', add licensed woff2 file first' : ''}`}
                 aria-pressed="false"
+                disabled={study.isMissing}
               >
                 {study.name}
               </button>
@@ -381,7 +474,7 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
           button.addEventListener('click', () => {
             const candidate = candidateById.get(button.dataset.fontId);
 
-            if (!candidate) {
+            if (!candidate || candidate.isMissing) {
               return;
             }
 
@@ -728,6 +821,16 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
   .study-card__preview-button[aria-pressed='true'] {
     border-color: var(--muted-strong);
     background: var(--panel-strong);
+  }
+
+  .study-card__preview-button:disabled {
+    cursor: not-allowed;
+    color: var(--muted);
+    opacity: 0.56;
+  }
+
+  .is-missing .study-card__sample {
+    color: rgba(243, 241, 237, 0.62);
   }
 
   @media (max-width: 1100px) {
