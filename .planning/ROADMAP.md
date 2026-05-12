@@ -309,7 +309,7 @@ Plans:
 
 **Wave 3** _(blocked on Wave 2 completion)_
 
-- [ ] 11-04: Improve Distro catalog grouping and copy
+- [x] 11-04: Improve Distro catalog grouping and copy
 
 **Wave 4** _(blocked on Wave 3 completion)_
 
@@ -359,4 +359,4 @@ Because Stripe account access and BOX NOW portal access are unavailable, non-sec
 | 8. Webhook Orders And Stock                                    | 8/8            | Completed   | 2026-04-26 |
 | 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred    |            |
 | 10. Sandbox Verification And Release Gate                      | 5/6            | Active      |            |
-| 11. Website Editorial And Catalog UX Improvements              | 3/5            | In Progress |            |
+| 11. Website Editorial And Catalog UX Improvements              | 4/5            | In Progress |            |
