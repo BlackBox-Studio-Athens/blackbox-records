@@ -1,12 +1,9 @@
 ---
 import { createProjectRelativeUrl, resolveLinkAttributes, siteConfig } from '@/config/site';
-import FacebookIcon from '@/components/icons/FacebookIcon.astro';
-import InstagramIcon from '@/components/icons/InstagramIcon.astro';
-import LinktreeIcon from '@/components/icons/LinktreeIcon.astro';
+import SocialIcon from '@/components/icons/SocialIcon.astro';
 import { getFooterNavigationItems, getLabelSettings, getSocialItems } from '@/lib/site-data';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Disc3, Globe2 } from 'lucide-react';
 
 const [footerNavigationItems, socialItems, labelSettings] = await Promise.all([
   getFooterNavigationItems(),
@@ -20,25 +17,7 @@ const copyrightYears =
 const showEstablishedYear = establishedYear > 0 && establishedYear <= currentYear;
 const footerDescription = siteConfig.description;
 const footerLabel = labelSettings.label_name || siteConfig.title;
-const footerSocialItems = socialItems
-  .filter((item) => item.url.trim() && item.url.trim() !== '#')
-  .map((item) => {
-    const normalizedTitle = item.title.trim().toLowerCase();
-    const iconName = normalizedTitle.includes('insta')
-      ? 'instagram'
-      : normalizedTitle.includes('face')
-        ? 'facebook'
-        : normalizedTitle.includes('link')
-          ? 'linktree'
-          : normalizedTitle.includes('band')
-            ? 'bandcamp'
-            : 'generic';
-
-    return {
-      ...item,
-      iconName,
-    };
-  });
+const footerSocialItems = socialItems.filter((item) => item.url.trim() && item.url.trim() !== '#');
 ---
 
 <footer class="site-footer-shell mt-12 border-t border-border">
@@ -67,15 +46,7 @@ const footerSocialItems = socialItems
                   aria-label={item.title}
                   title={item.title}
                 >
-                  {item.iconName === 'instagram' ? <InstagramIcon class="site-footer-social-icon" /> : null}
-                  {item.iconName === 'facebook' ? <FacebookIcon class="site-footer-social-icon" /> : null}
-                  {item.iconName === 'linktree' ? <LinktreeIcon class="site-footer-social-icon" /> : null}
-                  {item.iconName === 'bandcamp' ? (
-                    <Disc3 className="site-footer-social-icon" aria-hidden="true" />
-                  ) : null}
-                  {item.iconName === 'generic' ? (
-                    <Globe2 className="site-footer-social-icon" aria-hidden="true" />
-                  ) : null}
+                  <SocialIcon title={item.title} class="site-footer-social-icon" />
                   <span class="accessibility-visually-hidden-text">{item.title}</span>
                 </a>
               );

@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 
+import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
@@ -27,16 +28,6 @@ const releaseYear = formatYear(release.data.release_date);
 const embeddedPlayerTitle = `${release.data.title} — ${artistName}`;
 const embeddedPlayerData = buildEmbeddedPlayerData(release.data, embeddedPlayerTitle);
 const commerceLink = await getReleaseCommerceLink(release);
-
-const playerAttributes = embeddedPlayerData.hasProvider
-  ? {
-      'data-music-streaming-service-embedded-player-card': true,
-      'data-music-streaming-service-embedded-player-title': embeddedPlayerData.title,
-      'data-music-streaming-service-embedded-player-bandcamp-embed-url':
-        embeddedPlayerData.bandcampEmbedUrl || undefined,
-      'data-music-streaming-service-embedded-player-tidal-embed-url': embeddedPlayerData.tidalEmbedUrl || undefined,
-    }
-  : {};
 ---
 
 <section class="layout-container pt-14">
@@ -100,17 +91,12 @@ const playerAttributes = embeddedPlayerData.hasProvider
           }
           {
             embeddedPlayerData.hasProvider && (
-              <button
-                class={cn(
-                  buttonVariants({ variant: 'outline', size: 'lg' }),
-                  'rounded-md px-6 uppercase tracking-[0.12em]',
-                )}
-                type="button"
-                data-music-streaming-service-embedded-player-trigger
-                {...playerAttributes}
-              >
-                Listen
-              </button>
+              <MusicStreamingServiceListenTrigger
+                embeddedPlayerData={embeddedPlayerData}
+                includeCardAttribute
+                tone="accent"
+                variant="standalone"
+              />
             )
           }
         </div>

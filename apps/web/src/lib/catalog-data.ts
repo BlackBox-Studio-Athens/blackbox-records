@@ -33,6 +33,10 @@ const releaseStoreItemSlugByReleaseId: Record<string, string> = {
   caregivers: 'caregivers-vinyl',
 };
 
+const releaseDetailSlugByReleaseId: Record<string, string> = {
+  'barren-point': 'disintegration',
+};
+
 function sortArtistProfilesByName(left: ArtistProfileEntry, right: ArtistProfileEntry) {
   return left.data.title.localeCompare(right.data.title);
 }
@@ -98,6 +102,14 @@ export function mapArtistProfilesById(artistProfiles: ArtistProfileEntry[]) {
 
 export async function listReleaseCatalogByArtistId(artistId: string) {
   return (await listReleaseCatalog()).filter((releaseEntry) => releaseEntry.data.artist.id === artistId);
+}
+
+export function getReleaseDetailSlug(releaseEntry: ReleaseCatalogEntry) {
+  return releaseDetailSlugByReleaseId[releaseEntry.id] || releaseEntry.id;
+}
+
+export function createReleaseDetailPath(releaseEntry: ReleaseCatalogEntry) {
+  return createProjectRelativeUrl(`/releases/${getReleaseDetailSlug(releaseEntry)}/`);
 }
 
 export async function resolveArtistProfileForRelease(releaseEntry: ReleaseCatalogEntry) {
@@ -199,7 +211,7 @@ export async function createArtistDetailStaticPaths() {
 
 export async function createReleaseDetailStaticPaths() {
   return (await listReleaseCatalog()).map((releaseEntry) => ({
-    params: { slug: releaseEntry.id },
+    params: { slug: getReleaseDetailSlug(releaseEntry) },
     props: { release: releaseEntry },
   }));
 }

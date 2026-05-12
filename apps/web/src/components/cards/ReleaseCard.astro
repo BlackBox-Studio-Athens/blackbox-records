@@ -1,8 +1,9 @@
 ---
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
-import { createProjectRelativeUrl } from '@/config/site';
+import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import { Card, CardContent } from '@/components/ui/card';
+import { createReleaseDetailPath } from '@/lib/catalog-data';
 import { formatYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/utils/music';
 
@@ -34,7 +35,7 @@ const dataAttributes = embeddedPlayerData.hasProvider
 
 <a
   class="release-card-link group block h-full"
-  href={createProjectRelativeUrl(`/releases/${release.id}/`)}
+  href={createReleaseDetailPath(release)}
   data-astro-prefetch
   {...dataAttributes}
 >
@@ -65,13 +66,11 @@ const dataAttributes = embeddedPlayerData.hasProvider
         <div class="release-card-meta-row absolute inset-x-0 bottom-0 px-2.5 py-3">
           {
             embeddedPlayerData.hasProvider && (
-              <div
-                class="release-card-listen-trigger inline-flex items-center border transition-[background-color,box-shadow,transform] duration-200"
-                data-music-streaming-service-embedded-player-trigger
-              >
-                <span class="release-card-listen-trigger__indicator" aria-hidden="true" />
-                Listen
-              </div>
+              <MusicStreamingServiceListenTrigger
+                as="span"
+                embeddedPlayerData={embeddedPlayerData}
+                includePlayerData={false}
+              />
             )
           }
           <span

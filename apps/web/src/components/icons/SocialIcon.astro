@@ -1,0 +1,31 @@
+---
+import { Disc3, Globe2 } from 'lucide-react';
+
+import FacebookIcon from '@/components/icons/FacebookIcon.astro';
+import InstagramIcon from '@/components/icons/InstagramIcon.astro';
+import LinktreeIcon from '@/components/icons/LinktreeIcon.astro';
+
+interface Props {
+  title: string;
+  class?: string;
+}
+
+const { title, class: className } = Astro.props as Props;
+const iconClassName = className || '';
+const normalizedTitle = title.trim().toLowerCase();
+const iconName = normalizedTitle.includes('insta')
+  ? 'instagram'
+  : normalizedTitle.includes('face')
+    ? 'facebook'
+    : normalizedTitle.includes('link')
+      ? 'linktree'
+      : normalizedTitle.includes('band')
+        ? 'bandcamp'
+        : 'generic';
+---
+
+{iconName === 'instagram' ? <InstagramIcon class={iconClassName} /> : null}
+{iconName === 'facebook' ? <FacebookIcon class={iconClassName} /> : null}
+{iconName === 'linktree' ? <LinktreeIcon class={iconClassName} /> : null}
+{iconName === 'bandcamp' ? <Disc3 className={iconClassName} aria-hidden="true" /> : null}
+{iconName === 'generic' ? <Globe2 className={iconClassName} aria-hidden="true" /> : null}

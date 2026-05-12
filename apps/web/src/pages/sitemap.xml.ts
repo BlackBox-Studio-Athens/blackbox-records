@@ -1,5 +1,5 @@
 import { createAbsoluteSiteUrl } from '@/config/site';
-import { listArtistProfiles, listNewsArticles, listReleaseCatalog } from '@/lib/catalog-data';
+import { getReleaseDetailSlug, listArtistProfiles, listNewsArticles, listReleaseCatalog } from '@/lib/catalog-data';
 
 export async function GET() {
   const artists = await listArtistProfiles();
@@ -8,7 +8,7 @@ export async function GET() {
 
   const staticPaths = ['/', '/about/', '/artists/', '/distro/', '/releases/', '/news/', '/services/', '/store/'];
   const artistPaths = artists.map((artist) => `/artists/${artist.data.slug}/`);
-  const releasePaths = releases.map((release) => `/releases/${release.id}/`);
+  const releasePaths = releases.map((release) => `/releases/${getReleaseDetailSlug(release)}/`);
   const newsPaths = news.map((item) => `/news/${item.id}/`);
 
   const allPaths = [...staticPaths, ...artistPaths, ...releasePaths, ...newsPaths];
