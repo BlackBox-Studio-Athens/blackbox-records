@@ -23,6 +23,7 @@ node_modules/.vite/
 **/.dev.vars
 *.pem
 apps/backend/prisma/seeds/local-stripe-test-state.sql
+apps/web/public/local-fonts/type-studies/
 
 # Logs and temporary files
 *.log

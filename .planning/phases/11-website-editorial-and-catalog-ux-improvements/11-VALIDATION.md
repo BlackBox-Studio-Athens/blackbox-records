@@ -68,24 +68,24 @@ Phase 11 is ready for execution only when all plans include deterministic valida
 
 ### Tooling Note
 
-Browser Use was not exposed in this Codex session. DevTools MCP was used as the local rendered-validation fallback, and this note should not be treated as Browser Use evidence.
+Native Browser Use control was unavailable in this Codex session because the required Node REPL `js` execution tool was not exposed after tool discovery. DevTools MCP was used as the local rendered-validation fallback after restarting the profile-specific DevTools Chrome process that had locked `C:\Users\SVall\.cache\chrome-devtools-mcp\chrome-profile`. This note should not be treated as native Browser Use evidence.
 
 ### Deterministic Commands
 
 - `pnpm test:unit` - passed: 24 web test files / 144 tests, 28 backend test files / 146 tests, 1 API client test file / 2 tests.
 - `pnpm check` - passed. Astro reported the existing Zod deprecation hints for `z.string().url()` and `z.string().email()`, with 0 errors and 0 warnings.
-- `pnpm build` - passed, 114 static pages built.
+- `pnpm build` - passed, 115 static pages built.
 
 ### Rendered Acceptance Evidence
 
-- Direct Afterwise artist route: rendered `Afterwise`, four story paragraphs, three profile/action links, one YouTube `youtube-nocookie.com` embed, no previous-release section, canonical `/blackbox-records/releases/disintegration/` release link, and no horizontal overflow.
+- Direct Afterwise artist route: rendered `Afterwise`, long-form story copy, three profile/action links, one YouTube `youtube-nocookie.com` embed, no previous-release section, canonical `/blackbox-records/releases/disintegration/` release link, and no horizontal overflow on narrow and desktop widths.
 - Direct Afterwise player check: Listen opened the app-shell player overlay and loaded the Bandcamp iframe `https://afterwise.bandcamp.com/track/silverfeedssilence`.
-- App-shell artist overlay: clicking Afterwise from `/blackbox-records/artists/` opened the shell overlay, rendered the enriched artist content, preserved the canonical Disintegration link, rendered the YouTube embed, and kept no horizontal overflow.
+- App-shell artist overlay: clicking Afterwise from `/blackbox-records/artists/` opened the shell overlay, rendered the enriched artist content, preserved the canonical Disintegration link, rendered the YouTube embed, and kept the original roster page underneath.
 - App-shell overlay player check: overlay Listen opened the player while the artist overlay remained open.
-- Homepage News strip: rendered the News section and archive link, kept News out of global header navigation, and had no horizontal overflow on the narrow viewport.
-- Releases route: rendered the latest-release feature before the grid, linked to `/blackbox-records/releases/disintegration/`, included the shared Listen trigger, preserved two release cards in the grid, and had no horizontal overflow on the narrow viewport.
-- Distro route: rendered available groups in order as `Vinyl 12-inch`, `Vinyl 7-inch`, `Clothes`, `Tapes`; omitted empty `CDs` and fallback `Other`; rendered ten explicit month/year metadata rows; showed no visible `Vinyls`, `vinyls`, `TBA`, `Unknown`, or `TBD`; and had no horizontal overflow on the narrow viewport.
-- DevTools console: no errors or warnings on checked routes.
+- Homepage News strip: rendered the News section and archive link, kept News out of global header navigation, and had no horizontal overflow on narrow and desktop widths.
+- Releases route: rendered the latest-release feature before the two-card release grid, linked to `/blackbox-records/releases/disintegration/`, included the shared Listen trigger, and had no horizontal overflow on narrow and desktop widths.
+- Distro route: rendered available groups in order as `Vinyl 12-inch`, `Vinyl 7-inch`, `Clothes`, `Tapes`; omitted empty `CDs` and fallback `Other`; rendered ten explicit month/year metadata rows; showed no visible `Vinyls`, `vinyls`, `TBA`, `Unknown`, or `TBD`; and had no horizontal overflow on narrow and desktop widths.
+- DevTools console: no errors, warnings, or issues on checked routes.
 
 ### Content Limitation
 
