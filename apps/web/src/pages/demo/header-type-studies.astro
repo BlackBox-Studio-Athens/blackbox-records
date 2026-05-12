@@ -161,21 +161,21 @@ const fontCandidates = [
     name: 'Druk Condensed Super',
     fontFamily: 'Druk Condensed Super',
     opticalScale: 0.88,
-    fileName: 'DrukCond-Super.woff2',
+    fileName: 'DrukCond-Super-Trial.otf',
   },
   {
     id: '19',
     name: 'Druk Wide Heavy',
     fontFamily: 'Druk Wide Heavy',
     opticalScale: 0.76,
-    fileName: 'DrukWide-Heavy.woff2',
+    fileName: 'DrukWide-Heavy-Trial.otf',
   },
   {
     id: '20',
     name: 'Obviously Extd Black',
     fontFamily: 'Obviously Extd Black',
     opticalScale: 0.78,
-    fileName: 'Obviously-Extd-Black.woff2',
+    fileName: 'Obviously-Extd-Black.otf',
   },
 ] satisfies FontCandidate[];
 
@@ -199,7 +199,8 @@ const selfHostedFontFaceCss = fontCandidates
       return [];
     }
 
-    const format = candidate.fileName.endsWith('.ttf') ? 'truetype' : 'woff2';
+    const extension = candidate.fileName.split('.').pop();
+    const format = extension === 'ttf' ? 'truetype' : extension === 'otf' ? 'opentype' : 'woff2';
 
     return `
 @font-face {
@@ -294,7 +295,7 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
 
             <div class="mock-site__copy">
               <p class="mock-site__label">Latest release</p>
-              <h3 id="mock-release-title" class="mock-site__title">
+              <h3 id="mock-release-title" class="mock-site__title" style="overflow: hidden;">
                 <span class="mock-site__title-reference" data-font-preview-title-reference aria-hidden="true">
                   {mockReleaseTitle}
                 </span>
@@ -432,7 +433,7 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
 
               const widthFit = Math.min(titleTargetRect.width / rect.width, (frameWidth * 0.98) / rect.width);
               const heightFit = titleTargetRect.height / rect.height;
-              const fitX = Number.isFinite(widthFit) ? Math.min(1.35, Math.max(0.38, widthFit)) : 1;
+              const fitX = Number.isFinite(widthFit) ? Math.min(2.2, Math.max(0.08, widthFit)) : 1;
               const fitY = Number.isFinite(heightFit) ? Math.min(1.22, Math.max(0.72, heightFit)) : 1;
 
               previewRoot.style.setProperty('--active-preview-title-fit-x', fitX.toFixed(4));
@@ -670,6 +671,7 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
     line-height: 1;
     margin-top: 0.55rem;
     font-size: var(--mock-display-xl);
+    overflow: hidden;
     position: relative;
     white-space: nowrap;
   }
