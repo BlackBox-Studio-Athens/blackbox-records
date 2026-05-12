@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Stripe Sandbox Integration
-current_phase: 10
-current_phase_name: Sandbox Verification And Release Gate
-current_plan: 5
+current_phase: 11
+current_phase_name: website-editorial-and-catalog-ux-improvements
+current_plan: 2
 status: paused
-stopped_at: Phase 11 context gathered
+stopped_at: Completed 11-01-PLAN.md
 paused_at: Milestone review package complete; external gates and human approval pending
-last_updated: '2026-05-12T10:45:19.626Z'
-last_activity: 2026-05-12 -- Phase 11 planning complete
+last_updated: '2026-05-12T11:06:43.885Z'
+last_activity: 2026-05-12
 progress:
   total_phases: 11
   completed_phases: 0
   total_plans: 71
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 1
 ---
 
 # Project State
@@ -25,19 +25,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-21)
 
 **Core value:** Ship a minimal native commerce flow that is operationally safe: the static site owns storefront presentation, the Worker backend owns dynamic commerce behavior, Stripe owns sellable items/pricing/payment, server routes own secrets and mutations, and stock changes happen only after verified webhooks.
-**Current focus:** Phase 10: Sandbox Verification And Release Gate
+**Current focus:** Phase 11 — website-editorial-and-catalog-ux-improvements
 
 ## Current Position
 
-Current Phase: 10
-Current Phase Name: Sandbox Verification And Release Gate
+Phase: 11 (website-editorial-and-catalog-ux-improvements) — EXECUTING
+Plan: 2 of 5
+Current Phase: 11
+Current Phase Name: website-editorial-and-catalog-ux-improvements
 Total Phases: 10
-Current Plan: 5
+Current Plan: 2
 Total Plans in Phase: 5
 Status: Ready to execute
-Progress: 95%
-Last activity: 2026-05-12 -- Phase 11 planning complete
-Last Activity Description: Phase 11 planning complete — 5 plans ready
+Progress: [░░░░░░░░░░] 1%
+Last activity: 2026-05-12
+Last Activity Description: Phase 11 execution started
 Paused At: Milestone review package complete; external gates and human approval pending
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mock, contract, frontend cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to proceed while real Stripe-account validation remains explicitly deferred. Phase 8 now has the schema-only `CheckoutOrder` lifecycle table, internal order repository/application seams, a dependency-free typed transition guard, a fixture-tested Stripe webhook raw-body route contract, an optional official `stripe-mock` API local checkout simulation harness, shared Stripe Checkout Session reconciliation, pending order creation from Worker-owned checkout start, idempotent paid webhook handling that decrements stock only on the first paid transition, non-paid/needs-review handling that never mutates stock, and Access-protected order readback for low-volume reconciliation. Phase 7.1 completed the Cloudflare Pages static artifact contract, GitHub Pages rollback posture, Direct Upload CI workflow, browser-safe Pages build env contract, exact checkout return-origin allowlist guidance, Cloudflare-root Astro base-path correction, Browser Use hosted validation, and canonical hosting docs. Phase 9 now has the BOX NOW Greece-only shipping data and secret contract locked, a frontend-only locker gate before payment, Worker-owned checkout preflight that requires the minimal Greek locker snapshot before payment starts, D1-backed CheckoutOrder persistence for the approved thin locker snapshot, shopper-facing checkout return recap of the Worker-owned selected locker state, and local signed-fixture evidence for the manual handoff. Phase 10 now has a no-account local UAT checklist, sandbox readiness evidence, a deferred `10-03` full sandbox e2e gate, `10-04` no-account release audit evidence, a completed `10-04.1` Native Checkout Gate, and a `10-05` milestone review package that links evidence, blockers, and the Go-Live / Launch Hardening handoff. The Stripe Access Gate and BOX NOW Portal Gate remain deferred, so full sandbox release approval still requires external account evidence and human approval.
@@ -73,6 +75,8 @@ GSD v1.41.2 operating note: this repo stays in flat planning mode and disables G
 
 - Last 5 plans: 10-01, 10-02, 10-04, 10-04.1, 10-05
 - Trend: The Cloudflare Pages migration is complete, Phase 9 now has local BOX NOW shipping implementation and handoff evidence, and Phase 10 now has a repeatable local full-loop UAT checklist, sandbox D1 readiness, no-account release audit evidence, a Worker-owned Native Checkout Gate, and a milestone review package. Real Stripe validation remains deferred until account access exists, real BOX NOW portal validation remains deferred until portal access exists, and multi-item cart plus quantity work is now captured as a no-account expansion workstream.
+
+| Phase 11 P01 | ~35min | 3 tasks | 35 files |
 
 ## Accumulated Context
 
@@ -188,6 +192,6 @@ GSD v1.41.2 operating note: this repo stays in flat planning mode and disables G
 
 ## Session
 
-**Last Date:** 2026-05-12T10:11:32.640Z
-**Stopped At:** Phase 11 context gathered
-**Resume File:** .planning/phases/11-website-editorial-and-catalog-ux-improvements/11-CONTEXT.md
+**Last Date:** 2026-05-12T11:06:43.872Z
+**Stopped At:** Completed 11-01-PLAN.md
+**Resume File:** None
