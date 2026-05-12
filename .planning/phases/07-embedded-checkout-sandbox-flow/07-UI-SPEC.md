@@ -38,7 +38,7 @@ The Phase 7 buying path becomes:
 
 1. Store item page shows editorial item detail, price, and availability.
 2. Shopper clicks `Add To Cart`.
-3. A cart drawer opens with one line item, subtotal, and checkout action.
+3. A cart drawer opens with one CartLine, subtotal, and checkout action.
 4. Header cart icon shows count `1`.
 5. Shopper clicks `Checkout`.
 6. Checkout page shows an order summary and mounts Stripe embedded Checkout.
@@ -49,7 +49,7 @@ The Phase 7 buying path becomes:
 In scope:
 
 - Single-item cart icon and cart drawer.
-- One active line item at a time.
+- One active CartLine at a time.
 - Remove item.
 - Continue shopping.
 - Checkout CTA from drawer and PDP.
@@ -59,8 +59,8 @@ In scope:
 
 Out of scope:
 
-- True multi-item cart.
-- Quantity controls.
+- Multi-line StoreCart behavior; BL-13 later covers no-account multi-line StoreCart cleanup outside this Phase 7 UI scope.
+- Quantity controls; BL-13 later covers local no-account CartQuantity behavior outside this Phase 7 UI scope.
 - Discount codes.
 - Customer accounts.
 - Shipping forms before Phase 9.
@@ -202,7 +202,7 @@ Cart state is single-item and replace-on-add. Adding a second item replaces the 
 - Browser route for the seeded item uses the new canonical item-option slug.
 - Legacy `/store/barren-point/` resolves to the canonical item-option URL.
 - Header cart icon opens cart drawer.
-- Add To Cart updates the cart count and drawer line item.
+- Add To Cart updates the cart count and drawer CartLine.
 - Remove resets the cart state.
 - Checkout CTA routes to the canonical checkout page.
 - Checkout page summary matches the cart line and Worker offer state.

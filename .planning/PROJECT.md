@@ -70,7 +70,7 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - Stock reservation before payment confirmation
 - Browser-side writes to stock or authoritative order state
 - A full operator dashboard, ERP, or warehouse management layer
-- True multi-item cart or multi-carrier shipping
+- Release approval for real Stripe multi-line checkout evidence or multi-carrier shipping
 
 ## Context
 

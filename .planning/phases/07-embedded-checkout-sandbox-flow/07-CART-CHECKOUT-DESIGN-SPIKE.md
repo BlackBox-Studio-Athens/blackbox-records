@@ -8,7 +8,7 @@ Lock the shopper-facing cart and checkout interaction model before `07-05` imple
 
 - Shopify Dawn-style cart drawer structure:
   - drawer/sheet opened from a header cart icon
-  - line item image, title, option label, price, remove action
+  - CartLine image, title, option label, price, remove action
   - subtotal block
   - clear checkout action
   - continue-shopping escape

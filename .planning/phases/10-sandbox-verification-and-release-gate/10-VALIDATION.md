@@ -84,12 +84,23 @@
 - Boundary: `07-16`, `09-06`, `10-03`, `OPER-01`, and `SHIP-03` remain pending/deferred. The package does not claim real Stripe test-mode evidence, real BOX NOW portal fulfillment evidence, full hosted sandbox e2e evidence, or production cutover.
 - Validation: `rg` evidence/reference check, `git diff --check`, and `pnpm check`.
 
-## No-Account Multi-Item Cart Expansion - 2026-05-08
+## No-Account Multi-Item Cart Expansion - 2026-05-12
 
-- Result: implementation added, validation blocked by local shell runner setup failure.
-- Evidence added in code: browser `CartDraft` v2 migration and quantity helpers, multi-line cart drawer controls, cart-backed checkout summary, public checkout `lines` request contract, Worker per-line checkout validation, additive `CheckoutOrderLine` migration/model, Stripe line item creation per cart line, and paid webhook stock decrement per persisted order line.
+- Result: complete for no-account StoreCart command validation; external release gates remain deferred.
+- Evidence added in code: StoreCart `CartDraft` v2 migration and quantity helpers, multi-line cart drawer controls, cart-backed checkout summary, public checkout `lines` request contract, Worker per-CartLine checkout validation, additive `CheckoutOrderLine` migration/model, Stripe line item creation per CartLine, and paid webhook stock decrement per persisted order line.
+- Naming repair evidence: remaining legacy item-field fallout was repaired after the accepted `primaryLineItem` rename. `createStoreCartDrawerView` now exposes `primaryLineItem`, store-page and Worker-offer builders are named for `CartLineItemSnapshot`, and legacy serialized `{ item: ... }` migration parsing remains intact.
+- Validation: targeted StoreCart slice passed:
+  `pnpm --filter @blackbox/web exec vitest run src/lib/store-cart.test.ts src/components/store/StoreCartDrawer.test.tsx src/components/store/StorePurchaseFlow.test.ts src/components/store/StoreItemPurchaseActions.test.tsx src/lib/store-page-data.test.ts`
+  with 5 test files and 32 tests passing.
+- Validation: targeted paid-checkout reconciliation test passed:
+  `pnpm --filter @blackbox/backend exec vitest run test/application/commerce/orders/paid-checkout-reconciliation.test.ts test/http/public-commerce-routes.test.ts`
+  with 2 test files and 19 tests passing.
+- Validation: `pnpm test:unit` passed with web 24 files / 143 tests, backend 28 files / 146 tests, and api-client 1 file / 2 tests.
+- Validation: `pnpm check` passed after formatting the reported files; Astro check reported existing Zod deprecation hints but ended with 0 errors.
+- Validation: `pnpm build` passed and built 114 static pages.
 - Boundary: this remains no-account convenience cart work. It does not satisfy the Stripe Access Gate, BOX NOW Portal Gate, `10-03`, `OPER-01`, or `SHIP-03`.
-- Browser Use blocker: the native Browser Use path was unavailable through the installed MCP surface; Agentify navigation returned `missing_electron_binary`. DevTools MCP was used as the documented fallback.
+- Browser Use blocker: Agentify navigation returned `missing_electron_binary`, so Browser Use could not run in this environment. DevTools MCP was used as the documented fallback.
 - DevTools MCP fallback evidence: `pnpm dev:stack:stripe-mock` launched local D1, official local `stripe-mock`, Worker mock mode on `127.0.0.1:8787`, and static Astro on `127.0.0.1:4321`.
-- DevTools MCP fallback evidence: `/blackbox-records/store/` rendered, `Disintegration` opened, Add To Cart opened the cart drawer, quantity controls changed the drawer to `3`, checkout summary rendered `QTY 3`, BOX NOW Test Locker selection unlocked payment, and Mock Checkout Panel mounted.
-- DevTools MCP fallback evidence: the checkout POST to `/api/checkout/sessions` returned HTTP 200 and sent `lines: [{ storeItemSlug: "disintegration-black-vinyl-lp", variantId: "variant_barren-point_standard", quantity: 3 }]` with the BOX NOW Test Locker snapshot. Console warnings/errors were empty.
+- DevTools MCP fallback evidence: `/blackbox-records/store/disintegration-black-vinyl-lp/` and `/blackbox-records/store/afterglow-tape/` rendered. Add To Cart opened the cart drawer for both items, quantity controls changed Disintegration to `2`, and the drawer/checkout summary rendered `3 ITEMS`.
+- DevTools MCP fallback evidence: BOX NOW Test Locker selection unlocked payment, and the local mock checkout state mounted with `Mock Checkout Started`.
+- DevTools MCP fallback evidence: the checkout POST to `/api/checkout/sessions` returned HTTP 200 and sent `lines: [{ storeItemSlug: "disintegration-black-vinyl-lp", variantId: "variant_barren-point_standard", quantity: 2 }, { storeItemSlug: "afterglow-tape", variantId: "variant_afterglow-tape_standard", quantity: 1 }]` with the BOX NOW Test Locker snapshot. Console warnings/errors were empty.

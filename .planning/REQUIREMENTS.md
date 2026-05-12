@@ -91,16 +91,16 @@ Phase `09-01` locks the BOX NOW data and secret contract only. `SHIP-01` landed 
 
 ## Out of Scope
 
-| Feature                                                    | Reason                                                                                                                                         |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Production cutover in this milestone                       | Deferred to the Go-Live milestone so sandbox implementation and launch risk stay separate                                                      |
-| Live-mode Stripe keys or real-money processing             | This milestone stays in sandbox                                                                                                                |
-| Browser-side writes to orders or stock                     | Violates the trust boundary for payment and stock state                                                                                        |
-| Stock reservation in v1                                    | Explicitly deferred to keep the first release simple and authoritative on payment webhook success                                              |
-| True multi-item cart                                       | This milestone may add a single-item cart-like UX, cart icon, and cart drawer, but multiple line items and quantity management remain deferred |
-| Non-Greece shipping paths                                  | Greece-only BOX NOW is the approved v1 shipping scope                                                                                          |
-| Automated BOX NOW fulfillment                              | Manual partner-portal fulfillment is sufficient for projected low volume                                                                       |
-| Full operator dashboard / OMS beyond thin stock operations | Low order volume does not justify the maintenance cost yet                                                                                     |
+| Feature                                                    | Reason                                                                                                                                                         |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Production cutover in this milestone                       | Deferred to the Go-Live milestone so sandbox implementation and launch risk stay separate                                                                      |
+| Live-mode Stripe keys or real-money processing             | This milestone stays in sandbox                                                                                                                                |
+| Browser-side writes to orders or stock                     | Violates the trust boundary for payment and stock state                                                                                                        |
+| Stock reservation in v1                                    | Explicitly deferred to keep the first release simple and authoritative on payment webhook success                                                              |
+| Release-approved multi-line checkout evidence              | BL-13 landed no-account multi-line StoreCart locally; real Stripe multi-line evidence and production approval remain behind the Stripe Access Gate and Go-Live |
+| Non-Greece shipping paths                                  | Greece-only BOX NOW is the approved v1 shipping scope                                                                                                          |
+| Automated BOX NOW fulfillment                              | Manual partner-portal fulfillment is sufficient for projected low volume                                                                                       |
+| Full operator dashboard / OMS beyond thin stock operations | Low order volume does not justify the maintenance cost yet                                                                                                     |
 
 ## Traceability
 

@@ -296,7 +296,7 @@ Plans:
 
 - May proceed while Stripe account access and BOX NOW portal access remain unavailable
 - Consumes `BL-13` and `.planning/phases/10-sandbox-verification-and-release-gate/10-MULTI-ITEM-CART-WORKSTREAM.md`
-- Covers multi-line browser cart state, quantity controls, Worker-owned multi-line checkout validation, additive order-line persistence, and paid-webhook stock decrement per line
+- Covers multi-line StoreCart state, quantity controls, Worker-owned multi-line checkout validation, additive order-line persistence, and paid-webhook stock decrement per CartLine
 - Keeps stock reservation separate in `BL-14`; the first multi-item implementation still decrements only after verified paid webhook transition unless a later reservation plan changes that
 - Does not satisfy the Stripe Access Gate, BOX NOW Portal Gate, `10-03`, `OPER-01`, or `SHIP-03`
 

@@ -124,7 +124,7 @@ Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, and 8 are complete. Phase 7 mo
 - Phase 10 plan 4.1 added the Worker-owned Native Checkout Gate so native checkout can be disabled at runtime through Cloudflare Flagship without replacing Worker environment isolation; the browser sees only sanitized capability state from `/api/store/capabilities`.
 - Phase 10 plan 5 produced the milestone review package and go-live handoff. The package links implemented architecture, evidence, deferred gates, and Go-Live / Launch Hardening seeds without claiming the Stripe Access Gate, BOX NOW Portal Gate, `10-03`, `OPER-01`, or `SHIP-03` passed.
 - The no-account cart expansion workstream now promotes `BL-13` into concrete multi-item and CartQuantity planning. It can proceed without Stripe or BOX NOW account access, but real multi-line Stripe evidence remains behind the Stripe Access Gate.
-- Browser Cart State remains convenience-only state. Native `localStorage` stays the approved storage primitive until carts become account-backed, cross-device, large/offline, or operationally authoritative.
+- StoreCart remains convenience-only state. Native `localStorage` stays the approved storage primitive until carts become account-backed, cross-device, large/offline, or operationally authoritative.
 
 ## Decisions Made
 

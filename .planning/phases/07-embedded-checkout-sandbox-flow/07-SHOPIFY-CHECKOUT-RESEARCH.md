@@ -24,7 +24,7 @@ Research enough Shopify-style buying conventions to guide a BlackBox-owned cart 
 
 - Header cart icon with count badge.
 - Single-item cart drawer opened after Add To Cart.
-- Drawer line item with image, artist/release title, option label, price, availability, remove action, and Checkout CTA.
+- Drawer CartLine with image, artist/release title, option label, price, availability, remove action, and Checkout CTA.
 - Checkout page two-column desktop layout with a Shopify-like order summary on the side and embedded Stripe Checkout as the primary form area.
 - Mobile checkout order summary collapse.
 - Continue shopping/back-to-store affordance.
@@ -35,7 +35,7 @@ Research enough Shopify-style buying conventions to guide a BlackBox-owned cart 
 - Do not copy Dawn Liquid, CSS, icons, or theme assets.
 - Do not add multi-item cart, quantity stepper, discount code, customer accounts, cart notes, or shipping forms in Phase 7.
 - Do not try to restyle Stripe's embedded payment internals beyond the supported Stripe surface.
-- Do not make browser cart state authoritative for price, stock, payment, or order state.
+- Do not make StoreCart authoritative for price, stock, payment, or order state.
 
 ## Design Implication
 

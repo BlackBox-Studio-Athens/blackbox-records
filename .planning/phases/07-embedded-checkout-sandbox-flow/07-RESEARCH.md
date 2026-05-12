@@ -41,7 +41,7 @@ See `07-SHOPIFY-CHECKOUT-RESEARCH.md` for the UI research pass.
 
 Key conclusions:
 
-- Use free Shopify theme patterns as familiarity references, especially Dawn's cart drawer, line item, subtotal, continue shopping, and checkout CTA structure.
+- Use free Shopify theme patterns as familiarity references, especially Dawn's cart drawer, CartLine, subtotal, continue shopping, and checkout CTA structure.
 - Do not copy Shopify theme code, Liquid, CSS, or visual assets.
 - Keep the BlackBox implementation Astro/React/shadcn-native.
 - Keep shopper-facing item option URLs canonical before cart work; `/store/disintegration-black-vinyl-lp/` is the canonical smoke item and `/store/barren-point/` is compatibility-only.

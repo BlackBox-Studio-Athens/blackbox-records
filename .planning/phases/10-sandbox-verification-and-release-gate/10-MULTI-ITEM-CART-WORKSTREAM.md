@@ -10,9 +10,9 @@ This workstream is not production cutover and does not satisfy `07-16`, `09-06`,
 
 ## Scope
 
-- Add multi-line browser cart state with quantity controls.
-- Preserve browser cart state as convenience state only.
-- Keep native browser `localStorage` behind the cart module unless cart state becomes account-backed, cross-device, or
+- Add multi-line StoreCart state with quantity controls.
+- Preserve StoreCart as convenience state only.
+- Keep native browser `localStorage` behind the cart module unless StoreCart becomes account-backed, cross-device, or
   operationally authoritative.
 - Evolve `StartCheckout` from one StoreItemOption to one or more CartLines.
 - Add D1 order-line persistence through an additive `CheckoutOrderLine` model/table.
@@ -57,9 +57,25 @@ idempotency, and stock semantics.
   helpers, per-line `CartQuantity` controls, and drawer/checkout summary rendering for multiple lines.
 - Public checkout now accepts `lines: [{ storeItemSlug, variantId, quantity }]` beside the existing Shipping Locker
   Snapshot, while retaining single-line compatibility during transition.
-- Worker checkout validation re-reads store item option, availability, online stock, and Stripe Price Mapping for every
-  line before creating one Stripe line item per cart line.
+- Worker checkout validation re-reads StoreItemOption, ItemAvailability, OnlineStock, and Stripe Price Mapping for every
+  CartLine before creating one Stripe line item per CartLine.
 - D1/Prisma now has additive `CheckoutOrderLine` persistence, and paid webhook reconciliation decrements stock per paid
   order line after the once-only order transition.
-- This does not satisfy the Stripe Access Gate, BOX NOW Portal Gate, `10-03`, `OPER-01`, or `SHIP-03`; command and
-  Browser Use validation are still blocked in this session by the local shell runner setup failure.
+- This does not satisfy the Stripe Access Gate, BOX NOW Portal Gate, `10-03`, `OPER-01`, or `SHIP-03`.
+
+## Validation Update - 2026-05-12
+
+- StoreCart naming fallout was repaired after the `primaryLineItem` rename. Remaining view/test references now use
+  `StoreCartState.primaryLineItem`, and snapshot builders are named for `CartLineItemSnapshot`.
+- Targeted StoreCart validation passed:
+  `pnpm --filter @blackbox/web exec vitest run src/lib/store-cart.test.ts src/components/store/StoreCartDrawer.test.tsx src/components/store/StorePurchaseFlow.test.ts src/components/store/StoreItemPurchaseActions.test.tsx src/lib/store-page-data.test.ts`
+  with 5 test files and 32 tests passing.
+- Targeted paid-checkout reconciliation validation passed:
+  `pnpm --filter @blackbox/backend exec vitest run test/application/commerce/orders/paid-checkout-reconciliation.test.ts test/http/public-commerce-routes.test.ts`
+  with 2 test files and 19 tests passing.
+- Required repo validation passed: `pnpm test:unit`, `pnpm check`, and `pnpm build`.
+- Browser Use validation was attempted through Agentify navigation and failed with `missing_electron_binary`.
+- DevTools MCP fallback validation used the running `pnpm dev:stack:stripe-mock` stack. It added Disintegration and
+  Afterglow Cassette, adjusted Disintegration to quantity 2, verified drawer and checkout count `3 ITEMS`, selected the
+  BOX NOW Test Locker, mounted the local mock checkout state, and confirmed the checkout POST sent `lines` with
+  `disintegration-black-vinyl-lp` quantity 2 plus `afterglow-tape` quantity 1. Console warnings/errors were empty.

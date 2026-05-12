@@ -44,8 +44,8 @@ Start from `.planning/phases/10-sandbox-verification-and-release-gate/10-MILESTO
 - Linked milestone: Go-Live / Launch Hardening or a no-account cart expansion slice before external account gates clear
 - Acceptance criteria:
   - Define `CartDraft`, `CartLine`, and `CartQuantity` semantics that fit the existing shell and Worker-owned checkout
-  - Replace the current single-item cart drawer with multi-line cart state, quantity controls, item removal, and a multi-line order summary
-  - Keep browser cart state non-authoritative and limited to app-safe display/routing fields plus `storeItemSlug`, `variantId`, and `quantity`
+  - Replace the current single-item cart drawer with multi-line StoreCart state, quantity controls, item removal, and a multi-line order summary
+  - Keep StoreCart non-authoritative and limited to app-safe display/routing fields plus `storeItemSlug`, `variantId`, and `quantity`
   - Evolve `StartCheckout` so the Worker re-reads availability, OnlineStock, and Stripe Price Mapping for every line before creating a Checkout Session
   - Add additive order-line persistence, preferably `CheckoutOrderLine`, instead of overloading current single-item `CheckoutOrder` fields
   - Preserve paid-webhook idempotency by decrementing stock exactly once for each paid CheckoutOrderLine
