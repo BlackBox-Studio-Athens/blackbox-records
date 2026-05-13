@@ -39,7 +39,7 @@
   --header-height: 80px;
   --header-padding-x-mobile: 18px;
   --header-padding-x-desktop: 32px;
-  --header-logo-size: 56px;
+  --header-logo-size: 64px;
   --header-nav-font-size: 12px;
   --header-nav-letter-spacing: 2.4px;
   --header-nav-gap: 2.5rem;
@@ -630,8 +630,8 @@
   }
 
   .site-footer-logo {
-    width: 3.1rem;
-    height: 3.1rem;
+    width: 3.5rem;
+    height: 3.5rem;
     object-fit: contain;
   }
 
@@ -2982,7 +2982,7 @@ body.is-app-shell-overlay-open {
   :root {
     --header-height: 80px;
     --header-padding-x-desktop: 32px;
-    --header-logo-size: 56px;
+    --header-logo-size: 64px;
     --header-nav-font-size: 12px;
     --header-nav-letter-spacing: 2.4px;
     --header-nav-gap: 2.5rem;
@@ -3020,8 +3020,8 @@ body.is-app-shell-overlay-open {
   }
 
   .site-footer-logo {
-    width: 4.25rem;
-    height: 4.25rem;
+    width: 4.75rem;
+    height: 4.75rem;
   }
 
   .site-footer-description {

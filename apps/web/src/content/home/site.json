@@ -20,35 +20,6 @@
       "title": "Artists",
       "button_text": "View Full Roster",
       "button_link": "/artists/"
-    },
-    {
-      "type": "distro",
-      "section_label": "Distro",
-      "title": "Distro",
-      "link_text": "View All Distro",
-      "link_url": "/distro/"
-    },
-    {
-      "type": "journey",
-      "section_label": "About",
-      "title": "The Journey",
-      "image": "82595464_463239531016270_2951598789640585216_n.jpg",
-      "image_alt": "About BlackBox Records",
-      "paragraphs": [
-        "We are part of the Blackbox Collective. ",
-        "Started the label because in a messed up world, music is what keeps people together.",
-        "This is a DIY-driven team putting our efforts together to do some good for the sake of bands who want to keep being creative and releasing music. "
-      ],
-      "stats": [
-        {
-          "key": "artists",
-          "label": "Artists"
-        },
-        {
-          "key": "releases",
-          "label": "Releases"
-        }
-      ]
     }
   ]
 }
