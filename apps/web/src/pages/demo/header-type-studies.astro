@@ -193,11 +193,11 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
 
             <div class="mock-site__copy">
               <p class="mock-site__label">Latest release</p>
-              <h3 id="mock-release-title" class="mock-site__title" style="overflow: hidden;">
-                <span class="mock-site__title-reference" data-font-preview-title-reference aria-hidden="true">
+              <h3 id="mock-release-title" class="mock-site__title" data-font-fit-frame style="overflow: hidden;">
+                <span class="font-fit__reference" data-font-fit-reference aria-hidden="true">
                   {mockReleaseTitle}
                 </span>
-                <span data-font-preview-title-text>{mockReleaseTitle}</span>
+                <span class="font-fit__text" data-font-fit-text>{mockReleaseTitle}</span>
               </h3>
               <p class="mock-site__meta">
                 {mockReleaseArtist} / {mockReleaseYear} / {mockReleaseFormats}
@@ -213,17 +213,26 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
           <div class="mock-site__related" aria-label="Related site item rows">
             <article>
               <p class="mock-site__label">Artist</p>
-              <h4 class="mock-site__card-title">{mockArtistTitle}</h4>
+              <h4 class="mock-site__card-title" data-font-fit-frame>
+                <span class="font-fit__reference" data-font-fit-reference aria-hidden="true">{mockArtistTitle}</span>
+                <span class="font-fit__text" data-font-fit-text>{mockArtistTitle}</span>
+              </h4>
               <p class="mock-site__meta">{mockReleaseArtist}</p>
             </article>
             <article>
               <p class="mock-site__label">Distro</p>
-              <h4 class="mock-site__card-title">{mockDistroTitle}</h4>
+              <h4 class="mock-site__card-title" data-font-fit-frame>
+                <span class="font-fit__reference" data-font-fit-reference aria-hidden="true">{mockDistroTitle}</span>
+                <span class="font-fit__text" data-font-fit-text>{mockDistroTitle}</span>
+              </h4>
               <p class="mock-site__meta">{mockDistroMeta}</p>
             </article>
             <article>
               <p class="mock-site__label">News</p>
-              <h4 class="mock-site__card-title">{mockNewsTitle}</h4>
+              <h4 class="mock-site__card-title" data-font-fit-frame>
+                <span class="font-fit__reference" data-font-fit-reference aria-hidden="true">{mockNewsTitle}</span>
+                <span class="font-fit__text" data-font-fit-text>{mockNewsTitle}</span>
+              </h4>
               <p class="mock-site__meta">BlackBox Records</p>
             </article>
           </div>
@@ -234,8 +243,17 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
         {
           reviewedCandidates.map((study) => (
             <article class:list={['study-card', study.isMissing && 'is-missing']}>
-              <p class="study-card__sample" style={`--candidate-font: '${study.fontFamily}', var(--font-current);`}>
-                Release
+              <p
+                class="study-card__sample"
+                data-study-fit-frame
+                style={`--candidate-font: '${study.fontFamily}', var(--font-current);`}
+              >
+                <span class="font-fit__reference" data-study-fit-reference aria-hidden="true">
+                  Release
+                </span>
+                <span class="font-fit__text" data-study-fit-text>
+                  Release
+                </span>
               </p>
               <button
                 class="study-card__preview-button"
@@ -258,9 +276,8 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
         const candidateDataElement = document.getElementById('font-preview-candidates');
         const previewRoot = document.querySelector('[data-font-preview-root]');
         const previewLabel = document.querySelector('[data-font-preview-label]');
-        const previewTitleFrame = previewRoot?.querySelector('.mock-site__title');
-        const previewTitleReference = previewRoot?.querySelector('[data-font-preview-title-reference]');
-        const previewTitleText = previewRoot?.querySelector('[data-font-preview-title-text]');
+        const previewFitFrames = Array.from(previewRoot?.querySelectorAll('[data-font-fit-frame]') || []);
+        const studyFitFrames = Array.from(document.querySelectorAll('[data-study-fit-frame]'));
         const baselineButton = document.querySelector('[data-font-preview-baseline]');
         const previewButtons = Array.from(document.querySelectorAll('[data-font-preview-button]'));
 
@@ -283,80 +300,81 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
           name: 'Bebas Neue',
           opticalScale: 1,
         };
-        let titleTargetRect;
 
         function createFontStack(fontFamily) {
           return `'${fontFamily}', var(--font-current)`;
         }
 
-        function resetTitleFit() {
-          previewRoot.style.setProperty('--active-preview-title-fit-x', '1');
-          previewRoot.style.setProperty('--active-preview-title-fit-y', '1');
+        function resetFit(frame) {
+          frame.style.setProperty('--font-fit-x', '1');
+          frame.style.setProperty('--font-fit-y', '1');
         }
 
-        function measurePreviewTitleTarget() {
-          if (!previewTitleReference) {
+        function fitFrame(frame, referenceSelector, textSelector) {
+          const reference = frame.querySelector(referenceSelector);
+          const text = frame.querySelector(textSelector);
+
+          if (!reference || !text) {
             return;
           }
 
-          const rect = previewTitleReference.getBoundingClientRect();
+          resetFit(frame);
 
-          if (rect.width > 0 && rect.height > 0) {
-            titleTargetRect = {
-              height: rect.height,
-              width: rect.width,
-            };
-          }
-        }
+          const referenceRect = reference.getBoundingClientRect();
+          const textRect = text.getBoundingClientRect();
+          const frameWidth = frame.clientWidth;
 
-        function fitPreviewTitle() {
-          if (!previewTitleFrame || !previewTitleText) {
+          if (referenceRect.width <= 0 || referenceRect.height <= 0 || textRect.width <= 0 || textRect.height <= 0) {
             return;
           }
 
-          resetTitleFit();
+          const widthFit = Math.min(referenceRect.width / textRect.width, (frameWidth * 0.98) / textRect.width);
+          const heightFit = referenceRect.height / textRect.height;
+          const fitX = Number.isFinite(widthFit) ? Math.min(2.2, Math.max(0.08, widthFit)) : 1;
+          const fitY = Number.isFinite(heightFit) ? Math.min(1.35, Math.max(0.62, heightFit)) : 1;
 
+          frame.style.setProperty('--font-fit-x', fitX.toFixed(4));
+          frame.style.setProperty('--font-fit-y', fitY.toFixed(4));
+        }
+
+        function fitPreviewText() {
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              if (!titleTargetRect) {
-                measurePreviewTitleTarget();
-              }
-
-              const rect = previewTitleText.getBoundingClientRect();
-              const frameWidth = previewTitleFrame.clientWidth;
-
-              if (!titleTargetRect || rect.width <= 0 || rect.height <= 0 || frameWidth <= 0) {
-                return;
-              }
-
-              const widthFit = Math.min(titleTargetRect.width / rect.width, (frameWidth * 0.98) / rect.width);
-              const heightFit = titleTargetRect.height / rect.height;
-              const fitX = Number.isFinite(widthFit) ? Math.min(2.2, Math.max(0.08, widthFit)) : 1;
-              const fitY = Number.isFinite(heightFit) ? Math.min(1.22, Math.max(0.72, heightFit)) : 1;
-
-              previewRoot.style.setProperty('--active-preview-title-fit-x', fitX.toFixed(4));
-              previewRoot.style.setProperty('--active-preview-title-fit-y', fitY.toFixed(4));
+              previewFitFrames.forEach((frame) => {
+                fitFrame(frame, '[data-font-fit-reference]', '[data-font-fit-text]');
+              });
             });
           });
         }
 
-        function schedulePreviewTitleFit(fontFamily) {
-          fitPreviewTitle();
-          window.setTimeout(fitPreviewTitle, 90);
-          window.setTimeout(fitPreviewTitle, 220);
-          window.setTimeout(fitPreviewTitle, 420);
+        function fitStudySamples() {
+          studyFitFrames.forEach((frame) => {
+            fitFrame(frame, '[data-study-fit-reference]', '[data-study-fit-text]');
+          });
+        }
+
+        function scheduleTextFit(fontFamily) {
+          fitPreviewText();
+          fitStudySamples();
+          window.setTimeout(fitPreviewText, 90);
+          window.setTimeout(fitStudySamples, 90);
+          window.setTimeout(fitPreviewText, 220);
+          window.setTimeout(fitStudySamples, 220);
+          window.setTimeout(fitPreviewText, 420);
+          window.setTimeout(fitStudySamples, 420);
           document.fonts
             ?.load(`1em "${fontFamily.replace(/"/g, '')}"`)
             .then(() => {
-              fitPreviewTitle();
-              window.setTimeout(fitPreviewTitle, 90);
+              fitPreviewText();
+              fitStudySamples();
+              window.setTimeout(fitPreviewText, 90);
+              window.setTimeout(fitStudySamples, 90);
             })
             .catch(() => {});
         }
 
         function setActiveCandidate(candidate) {
           previewRoot.style.setProperty('--active-preview-font', createFontStack(candidate.fontFamily));
-          previewRoot.style.setProperty('--active-preview-scale', String(candidate.opticalScale || 1));
           previewLabel.textContent = `Previewing: ${candidate.name}`;
 
           baselineButton?.setAttribute('aria-pressed', candidate.id === 'baseline' ? 'true' : 'false');
@@ -365,8 +383,13 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
             button.setAttribute('aria-pressed', button.dataset.fontId === candidate.id ? 'true' : 'false');
           });
 
-          schedulePreviewTitleFit(candidate.fontFamily);
-          document.fonts?.ready.then(fitPreviewTitle).catch(() => {});
+          scheduleTextFit(candidate.fontFamily);
+          document.fonts?.ready
+            .then(() => {
+              fitPreviewText();
+              fitStudySamples();
+            })
+            .catch(() => {});
         }
 
         previewButtons.forEach((button) => {
@@ -387,12 +410,15 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
 
         document.fonts?.ready
           .then(() => {
-            resetTitleFit();
-            measurePreviewTitleTarget();
-            fitPreviewTitle();
+            fitPreviewText();
+            fitStudySamples();
           })
-          .catch(fitPreviewTitle);
-        fitPreviewTitle();
+          .catch(() => {
+            fitPreviewText();
+            fitStudySamples();
+          });
+        fitPreviewText();
+        fitStudySamples();
       })();
     </script>
   </body>
@@ -452,9 +478,6 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
 
   .mock-preview {
     --active-preview-font: var(--font-current);
-    --active-preview-scale: 1;
-    --active-preview-title-fit-x: 1;
-    --active-preview-title-fit-y: 1;
     --mock-display-xl: clamp(3.2rem, 5.8vw, 4.4rem);
     --mock-display-md: clamp(1.65rem, 3.2vw, 2.5rem);
   }
@@ -512,6 +535,8 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
 
   .mock-site__title,
   .mock-site__card-title {
+    --font-fit-x: 1;
+    --font-fit-y: 1;
     margin: 0;
     font-family: var(--active-preview-font);
     font-weight: 400;
@@ -574,19 +599,18 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
     white-space: nowrap;
   }
 
-  .mock-site__title [data-font-preview-title-text] {
+  .font-fit__text {
     display: inline-block;
     max-width: none;
-    transform: scale(var(--active-preview-title-fit-x), var(--active-preview-title-fit-y));
+    transform: scale(var(--font-fit-x), var(--font-fit-y));
     transform-origin: left center;
     white-space: nowrap;
   }
 
-  .mock-site__title-reference {
+  .font-fit__reference {
     position: absolute;
     inset: 0 auto auto 0;
     display: inline-block;
-    font-family: var(--font-current);
     pointer-events: none;
     transform: none;
     visibility: hidden;
@@ -594,9 +618,15 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
   }
 
   .mock-site__card-title {
+    position: relative;
     margin-top: 0.5rem;
-    font-size: calc(var(--mock-display-md) * var(--active-preview-scale));
+    font-size: var(--mock-display-md);
     overflow-wrap: anywhere;
+  }
+
+  .mock-site__title .font-fit__reference,
+  .mock-site__card-title .font-fit__reference {
+    font-family: var(--font-current);
   }
 
   .mock-site__meta,
@@ -684,6 +714,8 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
   }
 
   .study-card__sample {
+    --font-fit-x: 1;
+    --font-fit-y: 1;
     min-width: 0;
     margin: 0;
     color: var(--text);
@@ -695,6 +727,15 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
     text-overflow: clip;
     text-transform: uppercase;
     white-space: nowrap;
+    position: relative;
+  }
+
+  .study-card__sample .font-fit__reference {
+    font-family: var(--font-current);
+  }
+
+  .study-card__sample .font-fit__text {
+    font-family: var(--candidate-font);
   }
 
   .study-card__preview-button {
