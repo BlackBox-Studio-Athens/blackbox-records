@@ -5,9 +5,15 @@ vi.mock('astro:config/client', () => ({
   site: 'https://blackbox-studio-athens.github.io',
 }));
 
-import { readDocumentShellPageSnapshot, updateDocumentMetadata } from './shell-page-snapshot';
+import {
+  applyDocumentShellPageSnapshot,
+  cacheDocumentShellPageSnapshot,
+  readDocumentShellPageSnapshot,
+  updateDocumentMetadata,
+} from './shell-page-snapshot';
 
 class FakeElement {
+  public className = '';
   public innerHTML: string;
   public href = '';
   public content = '';
@@ -108,5 +114,98 @@ describe('shell page snapshots', () => {
     expect(targetDocument.title).toBe('Store | BlackBox');
     expect(description.content).toBe('Store page');
     expect(canonical.href).toBe('https://example.test/blackbox-records/store/');
+  });
+
+  it('caches a readable document snapshot through the shell page cache seam', () => {
+    const cacheSnapshot = vi.fn();
+
+    const snapshot = cacheDocumentShellPageSnapshot({
+      currentHref: 'https://example.test/blackbox-records/',
+      href: 'https://example.test/blackbox-records/releases/',
+      shellPageCache: { cacheSnapshot },
+      targetDocument: createSnapshotDocument(),
+    });
+
+    expect(snapshot?.pathname).toBe('/releases/');
+    expect(cacheSnapshot).toHaveBeenCalledWith(snapshot);
+  });
+
+  it('returns null without touching the cache when no main element can be read', () => {
+    const cacheSnapshot = vi.fn();
+
+    const snapshot = cacheDocumentShellPageSnapshot({
+      currentHref: 'https://example.test/blackbox-records/',
+      href: 'https://example.test/blackbox-records/releases/',
+      shellPageCache: { cacheSnapshot },
+      targetDocument: {
+        querySelector: () => null,
+        title: 'Missing main',
+      } as unknown as Document,
+    });
+
+    expect(snapshot).toBeNull();
+    expect(cacheSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('applies snapshot main content, metadata, href, and active pathname callbacks', () => {
+    const main = new FakeElement();
+    const description = new FakeElement();
+    const canonical = new FakeElement();
+    const onHrefApplied = vi.fn();
+    const onPathnameApplied = vi.fn();
+    const targetDocument = {
+      head: {
+        querySelector(selector: string) {
+          if (selector === 'meta[name="description"]') return description;
+          if (selector === 'link[rel="canonical"]') return canonical;
+          return null;
+        },
+      },
+      title: '',
+    } as unknown as Document;
+
+    const applied = applyDocumentShellPageSnapshot({
+      getMainElement: () => main as unknown as HTMLElement,
+      onHrefApplied,
+      onPathnameApplied,
+      pageSnapshot: {
+        canonicalHref: 'https://example.test/blackbox-records/artists/',
+        href: 'https://example.test/blackbox-records/artists/',
+        mainClassName: 'artists-page',
+        mainHtml: '<section>Artists</section>',
+        pageDescription: 'Artists',
+        pathname: '/artists/',
+        title: 'Artists | BlackBox',
+      },
+      targetDocument,
+    });
+
+    expect(applied).toBe(true);
+    expect(main.className).toBe('artists-page');
+    expect(main.innerHTML).toBe('<section>Artists</section>');
+    expect(targetDocument.title).toBe('Artists | BlackBox');
+    expect(description.content).toBe('Artists');
+    expect(canonical.href).toBe('https://example.test/blackbox-records/artists/');
+    expect(onHrefApplied).toHaveBeenCalledWith('https://example.test/blackbox-records/artists/');
+    expect(onPathnameApplied).toHaveBeenCalledWith('/artists/');
+  });
+
+  it('does not apply a snapshot when the shell main element is missing', () => {
+    const applied = applyDocumentShellPageSnapshot({
+      getMainElement: () => null,
+      onHrefApplied: vi.fn(),
+      onPathnameApplied: vi.fn(),
+      pageSnapshot: {
+        canonicalHref: 'https://example.test/blackbox-records/artists/',
+        href: 'https://example.test/blackbox-records/artists/',
+        mainClassName: 'artists-page',
+        mainHtml: '<section>Artists</section>',
+        pageDescription: 'Artists',
+        pathname: '/artists/',
+        title: 'Artists | BlackBox',
+      },
+    });
+
+    expect(applied).toBe(false);
   });
 });

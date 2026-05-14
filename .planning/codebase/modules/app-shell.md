@@ -18,7 +18,7 @@ sections while acting as the future thin composition root over smaller shell sub
 
 ## Internal Implementation Area
 
-- shell page snapshot parsing plus the `shell-page-loader` request/cache seam
+- shell page snapshot parsing/application plus the `shell-page-loader` request/cache seam
 - overlay history behavior plus the `overlay-fragment-loader` request/cache seam and `overlay-history` history seam
 - shell transition state and focus or scroll resets
 - portal reinjection details plus the `shell-portal-targets` route-scoped target helper
@@ -56,7 +56,7 @@ sections while acting as the future thin composition root over smaller shell sub
 ## Tests Required Before Refactors
 
 - routing helper tests
-- shell snapshot parser tests
+- shell snapshot parser and application tests
 - shell page loader tests
 - overlay fragment loader tests
 - overlay history tests

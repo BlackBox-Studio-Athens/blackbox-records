@@ -351,6 +351,7 @@ Plans:
 - Plan `12-08` moves player iframe DOM/cache mechanics into the closed `player` module while preserving shell-owned
   player behavior
 - Plan `12-09` moves route-scoped portal target synchronization behind an internal app-shell helper
+- Plan `12-10` moves shell page snapshot caching/application details into the existing snapshot seam
 - Exists to make later large refactors safer and more reviewable before production cutover work begins
 
 ### Go-Live / Launch Hardening
@@ -397,4 +398,4 @@ Because Stripe account access and BOX NOW portal access are unavailable, non-sec
 | 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred  |            |
 | 10. Sandbox Verification And Release Gate                      | 5/6            | Active    |            |
 | 11. Website Editorial And Catalog UX Improvements              | 5/5            | Complete  | 2026-05-12 |
-| 12. Modulith Boundary Hardening Planning                       | 6/9            | Active    |            |
+| 12. Modulith Boundary Hardening Planning                       | 7/10           | Active    |            |

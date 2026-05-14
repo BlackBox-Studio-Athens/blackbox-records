@@ -38,8 +38,8 @@ import {
   waitForAnimationFrames,
 } from '@/components/app-shell/shell-navigation';
 import {
-  readDocumentShellPageSnapshot,
-  updateDocumentMetadata,
+  applyDocumentShellPageSnapshot,
+  cacheDocumentShellPageSnapshot,
   type ShellPageSnapshot,
 } from '@/components/app-shell/shell-page-snapshot';
 import { createShellPageSnapshotLoader } from '@/components/app-shell/shell-page-loader';
@@ -268,23 +268,23 @@ export default function AppShellRoot({
   }
 
   function cacheDocumentSnapshot(href = renderedPageHrefRef.current || window.location.href) {
-    const pageSnapshot = readDocumentShellPageSnapshot(document, href);
-    if (!pageSnapshot) return null;
-
-    shellPageLoader.cacheSnapshot(pageSnapshot);
-    return pageSnapshot;
+    return cacheDocumentShellPageSnapshot({
+      href,
+      shellPageCache: shellPageLoader,
+      targetDocument: document,
+    });
   }
 
   function applyShellPageSnapshot(pageSnapshot: ShellPageSnapshot) {
-    const mainElement = getCurrentMainElement();
-    if (!mainElement) return false;
-
-    mainElement.className = pageSnapshot.mainClassName;
-    mainElement.innerHTML = pageSnapshot.mainHtml;
-    renderedPageHrefRef.current = pageSnapshot.href;
-    updateDocumentMetadata(pageSnapshot);
-    syncShellNavigationState(pageSnapshot.pathname);
-    return true;
+    return applyDocumentShellPageSnapshot({
+      getMainElement: getCurrentMainElement,
+      onHrefApplied: (href) => {
+        renderedPageHrefRef.current = href;
+      },
+      onPathnameApplied: syncShellNavigationState,
+      pageSnapshot,
+      targetDocument: document,
+    });
   }
 
   useEffect(() => {

@@ -10,6 +10,10 @@ export type ShellPageSnapshot = {
   title: string;
 };
 
+type ShellPageSnapshotCache = {
+  cacheSnapshot: (pageSnapshot: ShellPageSnapshot) => void;
+};
+
 export function readDocumentShellPageSnapshot(
   targetDocument: Document,
   href: string,
@@ -43,6 +47,48 @@ export function readDocumentShellPageSnapshot(
     pathname: normalizeAppPathname(resolvedUrl.pathname),
     title: targetDocument.title,
   };
+}
+
+export function cacheDocumentShellPageSnapshot({
+  currentHref,
+  href,
+  shellPageCache,
+  targetDocument = document,
+}: {
+  currentHref?: string;
+  href: string;
+  shellPageCache: ShellPageSnapshotCache;
+  targetDocument?: Document;
+}) {
+  const pageSnapshot = readDocumentShellPageSnapshot(targetDocument, href, currentHref);
+  if (!pageSnapshot) return null;
+
+  shellPageCache.cacheSnapshot(pageSnapshot);
+  return pageSnapshot;
+}
+
+export function applyDocumentShellPageSnapshot({
+  getMainElement = () => document.querySelector<HTMLElement>('main[data-app-shell-main]'),
+  onHrefApplied,
+  onPathnameApplied,
+  pageSnapshot,
+  targetDocument,
+}: {
+  getMainElement?: () => HTMLElement | null;
+  onHrefApplied?: (href: string) => void;
+  onPathnameApplied?: (pathname: string) => void;
+  pageSnapshot: ShellPageSnapshot;
+  targetDocument?: Document;
+}) {
+  const mainElement = getMainElement();
+  if (!mainElement) return false;
+
+  mainElement.className = pageSnapshot.mainClassName;
+  mainElement.innerHTML = pageSnapshot.mainHtml;
+  onHrefApplied?.(pageSnapshot.href);
+  updateDocumentMetadata(pageSnapshot, targetDocument ?? document);
+  onPathnameApplied?.(pageSnapshot.pathname);
+  return true;
 }
 
 export function updateDocumentMetadata(pageSnapshot: ShellPageSnapshot, targetDocument: Document = document) {
