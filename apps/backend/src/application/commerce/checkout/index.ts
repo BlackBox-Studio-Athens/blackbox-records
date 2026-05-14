@@ -14,6 +14,7 @@ export { reconcileCheckoutSession } from './reconcile-checkout-session';
 export { startCheckout } from './start-checkout';
 export type { FeatureFlagReader, StoreCapabilities } from './feature-gates';
 export type { CheckoutReconciliation } from './reconcile-checkout-session';
+export type { StartCheckoutCommand, StartCheckoutLineCommand } from './start-checkout';
 export type {
   CheckoutGateway,
   CheckoutShippingLockerSnapshot,

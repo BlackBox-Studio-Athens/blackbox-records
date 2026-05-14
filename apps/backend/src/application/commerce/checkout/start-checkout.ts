@@ -14,7 +14,7 @@ import {
   StoreItemNotFoundError,
   VariantMismatchError,
 } from './errors';
-import { createPendingCheckoutOrder } from '../orders';
+import { createPendingCheckoutOrder } from '../orders/create-pending-checkout-order';
 import { validateCheckoutShippingLocker } from './checkout-shipping';
 import type { FeatureFlagReader } from './feature-gates';
 import type {

@@ -1,0 +1,67 @@
+import { describe, expect, it } from 'vitest';
+
+import { CheckoutConfigurationError } from '../../src/application/commerce/checkout';
+import {
+  createPublicCheckoutReturnUrl,
+  readAllowedCheckoutReturnOrigins,
+} from '../../src/interfaces/http/routes/public-checkout-return-url';
+
+describe('public checkout return URL policy', () => {
+  it('preserves an allowed checkout referer including a base path', () => {
+    const headers = new Headers({
+      origin: 'https://blackbox.example',
+      referer: 'https://blackbox.example/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
+    });
+
+    expect(
+      createPublicCheckoutReturnUrl(
+        headers,
+        'http://backend.test/api/checkout/sessions',
+        'disintegration-black-vinyl-lp',
+        'https://blackbox.example',
+      ),
+    ).toBe(
+      'https://blackbox.example/blackbox-records/store/disintegration-black-vinyl-lp/checkout/return?session_id={CHECKOUT_SESSION_ID}',
+    );
+  });
+
+  it('falls back to the allowed origin when the referer is malformed', () => {
+    const headers = new Headers({
+      origin: 'https://blackbox.example',
+      referer: 'not-a-url',
+    });
+
+    expect(
+      createPublicCheckoutReturnUrl(
+        headers,
+        'http://backend.test/api/checkout/sessions',
+        'disintegration-black-vinyl-lp',
+        'https://blackbox.example',
+      ),
+    ).toBe(
+      'https://blackbox.example/store/disintegration-black-vinyl-lp/checkout/return?session_id={CHECKOUT_SESSION_ID}',
+    );
+  });
+
+  it('rejects fallback origins outside the configured allowlist', () => {
+    const headers = new Headers({
+      origin: 'https://evil.example',
+      referer: 'https://evil.example/store/disintegration-black-vinyl-lp/checkout/',
+    });
+
+    expect(() =>
+      createPublicCheckoutReturnUrl(
+        headers,
+        'http://backend.test/api/checkout/sessions',
+        'disintegration-black-vinyl-lp',
+        'https://blackbox.example',
+      ),
+    ).toThrow(CheckoutConfigurationError);
+  });
+
+  it('ignores malformed configured origins and normalizes allowed origins', () => {
+    expect([
+      ...readAllowedCheckoutReturnOrigins(' https://blackbox.example/path , not-a-url, http://127.0.0.1:4321 '),
+    ]).toEqual(['https://blackbox.example', 'http://127.0.0.1:4321']);
+  });
+});

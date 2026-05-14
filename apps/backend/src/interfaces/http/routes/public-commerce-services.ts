@@ -10,7 +10,7 @@ import {
   startCheckout,
   StoreItemNotFoundError,
   VariantMismatchError,
-  type CheckoutShippingLockerSnapshot,
+  type StartCheckoutCommand,
 } from '../../../application/commerce/checkout';
 import type { AppBindings } from '../../../env';
 import {
@@ -48,12 +48,7 @@ export function createPublicCommerceServices(bindings: AppBindings) {
       readCheckoutState(createStripeCheckoutGateway(bindings), orders, checkoutSessionId),
     readStoreCapabilities: async () => readStoreCapabilities(createFeatureFlagReader(bindings)),
     readStoreOffer: async (storeItemSlug: string) => readStoreOffer(storeItems, itemAvailability, stock, storeItemSlug),
-    startCheckout: async (command: {
-      returnUrl: string;
-      shippingLocker: CheckoutShippingLockerSnapshot;
-      storeItemSlug: string;
-      variantId: string;
-    }) =>
+    startCheckout: async (command: StartCheckoutCommand) =>
       startCheckout(
         storeItems,
         itemAvailability,

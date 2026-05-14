@@ -1,4 +1,4 @@
-import type { CheckoutReconciliation } from '../checkout';
+import type { CheckoutReconciliation } from '../checkout/reconcile-checkout-session';
 import type {
   CheckoutOrderRecord,
   CheckoutOrderLineRecord,

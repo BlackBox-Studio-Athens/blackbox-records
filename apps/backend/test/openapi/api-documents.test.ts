@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { internalContractPaths } from '../../src/interfaces/http/contracts/internal-contracts';
+import { publicContractPaths } from '../../src/interfaces/http/contracts/public-contracts';
 import { getInternalOpenApiDocument, getPublicOpenApiDocument } from '../../src/interfaces/http/openapi/api-documents';
 
 describe('OpenAPI documents', () => {
@@ -8,13 +10,7 @@ describe('OpenAPI documents', () => {
 
     expect(document.info.title).toBe('BlackBox Records Public API');
     expect(document.openapi).toBe('3.1.0');
-    expect(Object.keys(document.paths ?? {})).toEqual([
-      '/api/store/capabilities',
-      '/api/store/items/{storeItemSlug}',
-      '/api/store/items/{storeItemSlug}/variants',
-      '/api/checkout/sessions',
-      '/api/checkout/sessions/{checkoutSessionId}/state',
-    ]);
+    expect(Object.keys(document.paths ?? {})).toEqual(publicContractPaths);
   });
 
   it('emits the internal API document', () => {
@@ -22,14 +18,6 @@ describe('OpenAPI documents', () => {
 
     expect(document.info.title).toBe('BlackBox Records Internal API');
     expect(document.openapi).toBe('3.1.0');
-    expect(Object.keys(document.paths ?? {})).toEqual([
-      '/api/internal/orders',
-      '/api/internal/orders/checkout-sessions/{checkoutSessionId}',
-      '/api/internal/variants',
-      '/api/internal/variants/{variantId}/stock',
-      '/api/internal/variants/{variantId}/stock/history',
-      '/api/internal/variants/{variantId}/stock/changes',
-      '/api/internal/variants/{variantId}/stock/counts',
-    ]);
+    expect(Object.keys(document.paths ?? {})).toEqual(internalContractPaths);
   });
 });
