@@ -14,6 +14,13 @@ import {
   type PlayerProvider,
   type PlayerProviderId,
 } from '@/components/app-shell/player-provider-data';
+import {
+  DEFAULT_MAX_CACHED_PLAYER_IFRAMES,
+  markPlayerIframeAsActive,
+  resolvePlayerIframe,
+  retirePlayerSession,
+  type ActivePlayerSession,
+} from '@/components/app-shell/player-iframe-session';
 import ServicesInquiryForm from '@/components/services/ServicesInquiryForm';
 import StoreCartButton from '@/components/store/StoreCartButton';
 import StoreCartDrawer from '@/components/store/StoreCartDrawer';
@@ -80,16 +87,6 @@ type OverlayState = {
   route: OverlayRoute;
 };
 
-type ActivePlayerSession = {
-  embedUrl: string;
-  embedLayout: PlayerEmbedLayout;
-  hasEmbedInteraction: boolean;
-  iframeElement: HTMLIFrameElement;
-  providerId: PlayerProviderId;
-  releaseTitle: string;
-  status: 'minimized' | 'modal-open';
-};
-
 type AppShellRootProps = {
   mobileNavigationItems: SiteNavigationItem[];
   servicesInquiryEmail: string;
@@ -111,7 +108,6 @@ const EMBED_PROVIDER_WARMUP_ORIGINS: Record<PlayerProviderId, string[]> = {
   bandcamp: ['https://bandcamp.com'],
   tidal: ['https://embed.tidal.com', 'https://tidal.com'],
 };
-const MAX_CACHED_IFRAMES = 6;
 const ROUTE_LOADING_RESET_DELAY_MS = 120;
 
 function readPlayerProviders(element: HTMLElement) {
@@ -413,36 +409,8 @@ export default function AppShellRoot({
     }, ROUTE_LOADING_RESET_DELAY_MS);
   }
 
-  function markIframeAsActive(activeIframeElement: HTMLIFrameElement) {
-    const frameHostElement = iframeFrameHostRef.current;
-    if (!frameHostElement) return;
-
-    Array.from(
-      frameHostElement.querySelectorAll<HTMLIFrameElement>('[data-music-streaming-service-embedded-player-iframe]'),
-    ).forEach((iframeElement) => {
-      iframeElement.dataset.state = iframeElement === activeIframeElement ? 'active' : 'inactive';
-    });
-  }
-
-  function pruneIframeCache(activeEmbedUrl = '') {
-    const iframeCache = iframeCacheByEmbedUrlRef.current;
-    if (iframeCache.size <= MAX_CACHED_IFRAMES) return;
-
-    for (const [embedUrl, iframeElement] of iframeCache) {
-      if (embedUrl === activeEmbedUrl) continue;
-      iframeElement.remove();
-      iframeCache.delete(embedUrl);
-
-      if (iframeCache.size <= MAX_CACHED_IFRAMES) {
-        return;
-      }
-    }
-  }
-
   function retireActivePlayerSession(activeSession: ActivePlayerSession | null) {
-    if (!activeSession) return;
-    iframeCacheByEmbedUrlRef.current.delete(activeSession.embedUrl);
-    activeSession.iframeElement.remove();
+    retirePlayerSession(iframeCacheByEmbedUrlRef.current, activeSession);
   }
 
   function updatePlayerUiFromSession(activeSession: ActivePlayerSession | null) {
@@ -506,69 +474,29 @@ export default function AppShellRoot({
       frameHostElement.appendChild(activeSession.iframeElement);
     }
 
-    markIframeAsActive(activeSession.iframeElement);
+    markPlayerIframeAsActive(frameHostElement, activeSession.iframeElement);
     updatePlayerUiFromSession(activeSession);
-  }
-
-  function createIframe(provider: PlayerProvider, releaseTitle: string) {
-    const iframeElement = document.createElement('iframe');
-    iframeElement.allow =
-      provider.id === 'bandcamp'
-        ? 'autoplay; encrypted-media; fullscreen; web-share'
-        : 'autoplay; encrypted-media; fullscreen; clipboard-write https://embed.tidal.com https://tidal.com; web-share';
-    iframeElement.className = 'music-streaming-service-embedded-player-iframe border-0';
-    iframeElement.dataset.musicStreamingServiceEmbeddedPlayerIframe = '';
-    iframeElement.dataset.musicStreamingServiceEmbeddedPlayerEmbedUrl = provider.embedUrl;
-    iframeElement.dataset.musicStreamingServiceEmbeddedPlayerProvider = provider.id;
-    iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState = 'loading';
-    iframeElement.dataset.state = 'inactive';
-    iframeElement.loading = 'eager';
-    iframeElement.referrerPolicy = 'strict-origin-when-cross-origin';
-    iframeElement.title = releaseTitle ? `${releaseTitle} player` : 'Music player';
-    iframeElement.src = provider.embedUrl;
-
-    iframeElement.addEventListener('load', () => {
-      iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState = 'loaded';
-      if (activePlayerSessionRef.current?.embedUrl !== provider.embedUrl) return;
-      setIsPlayerLoading(false);
-      updatePlayerUiFromSession(activePlayerSessionRef.current);
-    });
-
-    iframeElement.addEventListener('error', () => {
-      iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState = 'error';
-      if (activePlayerSessionRef.current?.embedUrl !== provider.embedUrl) return;
-      setIsPlayerLoading(false);
-      updatePlayerUiFromSession(activePlayerSessionRef.current);
-    });
-
-    iframeElement.addEventListener('focus', () => {
-      markActivePlayerSessionAsInteracted(provider.embedUrl);
-    });
-
-    return iframeElement;
   }
 
   function resolveIframe(provider: PlayerProvider, releaseTitle: string) {
     const frameHostElement = iframeFrameHostRef.current;
     if (!frameHostElement) return null;
 
-    const cachedIframeElement = iframeCacheByEmbedUrlRef.current.get(provider.embedUrl) || null;
-    if (cachedIframeElement) {
-      if (!frameHostElement.contains(cachedIframeElement)) {
-        frameHostElement.appendChild(cachedIframeElement);
-      }
-      markIframeAsActive(cachedIframeElement);
-      iframeCacheByEmbedUrlRef.current.delete(provider.embedUrl);
-      iframeCacheByEmbedUrlRef.current.set(provider.embedUrl, cachedIframeElement);
-      return cachedIframeElement;
-    }
-
-    const iframeElement = createIframe(provider, releaseTitle);
-    frameHostElement.appendChild(iframeElement);
-    markIframeAsActive(iframeElement);
-    iframeCacheByEmbedUrlRef.current.set(provider.embedUrl, iframeElement);
-    pruneIframeCache(provider.embedUrl);
-    return iframeElement;
+    return resolvePlayerIframe({
+      callbacks: {
+        onInteraction: markActivePlayerSessionAsInteracted,
+        onLoadStateChange: (embedUrl) => {
+          if (activePlayerSessionRef.current?.embedUrl !== embedUrl) return;
+          setIsPlayerLoading(false);
+          updatePlayerUiFromSession(activePlayerSessionRef.current);
+        },
+      },
+      frameHostElement,
+      iframeCache: iframeCacheByEmbedUrlRef.current,
+      maxCachedIframes: DEFAULT_MAX_CACHED_PLAYER_IFRAMES,
+      provider,
+      releaseTitle,
+    });
   }
 
   function warmProviderOrigins(providers: PlayerProvider[]) {
@@ -614,7 +542,6 @@ export default function AppShellRoot({
     setActivePlayerEmbedLayout(provider.embedLayout);
     setActivePlayerTitle(releaseTitle);
     setIsPlayerLoading(iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState !== 'loaded');
-    markIframeAsActive(iframeElement);
     updatePlayerUiFromSession(nextSession);
   }
 

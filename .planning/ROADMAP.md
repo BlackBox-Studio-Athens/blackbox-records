@@ -348,6 +348,8 @@ Plans:
   overlay state, history, focus, and fallback navigation in the shell composition root
 - Plan `12-07` extracts overlay history mechanics while leaving overlay state, focus policy, and popstate branching in
   the shell composition root
+- Plan `12-08` moves player iframe DOM/cache mechanics into the closed `player` module while preserving shell-owned
+  player behavior
 - Exists to make later large refactors safer and more reviewable before production cutover work begins
 
 ### Go-Live / Launch Hardening
@@ -394,4 +396,4 @@ Because Stripe account access and BOX NOW portal access are unavailable, non-sec
 | 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred  |            |
 | 10. Sandbox Verification And Release Gate                      | 5/6            | Active    |            |
 | 11. Website Editorial And Catalog UX Improvements              | 5/5            | Complete  | 2026-05-12 |
-| 12. Modulith Boundary Hardening Planning                       | 4/7            | Active    |            |
+| 12. Modulith Boundary Hardening Planning                       | 5/8            | Active    |            |

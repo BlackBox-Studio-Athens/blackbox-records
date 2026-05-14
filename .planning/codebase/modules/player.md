@@ -9,6 +9,8 @@ routes and cards.
 
 - `apps/web/src/components/app-shell/player-provider-data.ts`
 - `apps/web/src/components/app-shell/player-provider-data.test.ts`
+- `apps/web/src/components/app-shell/player-iframe-session.ts`
+- `apps/web/src/components/app-shell/player-iframe-session.test.ts`
 - `apps/web/src/components/app-shell/player-session-machine.ts`
 - `apps/web/src/components/app-shell/player-session-machine.test.ts`
 - `apps/web/src/components/app-shell/player-session-ui.ts`
@@ -20,6 +22,7 @@ routes and cards.
 ## Provided Interface
 
 - listen-trigger rendering contract
+- player iframe session/cache helpers
 - player session reducer and presentation state
 - provider descriptor data
 
@@ -27,6 +30,7 @@ routes and cards.
 
 - embed URL building details
 - provider warmup and label details
+- iframe DOM attributes, cache pruning, and active/inactive iframe marking
 - player session state derivation internals
 
 ## Allowed Dependencies
@@ -47,12 +51,13 @@ routes and cards.
 
 ## Verification Strategy
 
-- keep unit coverage on session machine, UI derivation, provider data, and music helper output
+- keep unit coverage on iframe session/cache helpers, session machine, UI derivation, provider data, and music helper output
 - prevent shopper-facing modules from owning iframe or session state directly
 
 ## Tests Required Before Refactors
 
 - existing player helper tests
+- `player-iframe-session.test.ts`
 - `utils/music.test.ts`
 - Browser Use listen-trigger compatibility checks when touched through the shell
 
