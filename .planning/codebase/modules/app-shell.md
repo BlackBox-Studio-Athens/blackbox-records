@@ -18,7 +18,7 @@ sections while acting as the future thin composition root over smaller shell sub
 
 ## Internal Implementation Area
 
-- shell page snapshot parsing and caching
+- shell page snapshot parsing plus the `shell-page-loader` request/cache seam
 - overlay cache and overlay history behavior
 - shell transition state and focus or scroll resets
 - portal reinjection details
@@ -57,6 +57,7 @@ sections while acting as the future thin composition root over smaller shell sub
 
 - routing helper tests
 - shell snapshot parser tests
+- shell page loader tests
 - overlay history tests
 - Browser Use shell acceptance checks
 

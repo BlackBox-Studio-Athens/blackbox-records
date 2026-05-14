@@ -4,18 +4,18 @@ milestone: v1.2
 milestone_name: Modulith Boundary Hardening
 current_phase: 12
 current_phase_name: modulith-boundary-hardening-planning
-current_plan: 1
-status: paused
-stopped_at: Activated v1.2
-paused_at: Milestone switched to v1.2; ready to start Phase 12 execution
-last_updated: '2026-05-14T13:20:00.000Z'
-last_activity: 2026-05-14
+current_plan: 5
+status: active
+stopped_at: Completed 12-05 app-shell boundary hardening
+paused_at: ''
+last_updated: '2026-05-15T00:00:00.000Z'
+last_activity: 2026-05-15
 progress:
   total_phases: 12
   completed_phases: 8
-  total_plans: 4
-  completed_plans: 0
-  percent: 0
+  total_plans: 5
+  completed_plans: 2
+  percent: 40
 ---
 
 # Project State
@@ -32,17 +32,17 @@ routes own secrets and mutations, and stock changes happen only after verified w
 ## Current Position
 
 Phase: 12 (modulith-boundary-hardening-planning) - ACTIVE
-Plan: 1 of 4
+Plan: 5 of 5
 Current Phase: 12
 Current Phase Name: modulith-boundary-hardening-planning
 Total Phases: 12
-Current Plan: 1
-Total Plans in Phase: 4
-Status: Milestone activated - ready for Phase 12 execution
-Progress: [â–ˆâ–‘â–‘â–‘â–‘â–‘â–‘â–‘â–‘â–‘] 0%
-Last activity: 2026-05-14
-Last Activity Description: v1.2 promoted to the active milestone
-Paused At: Milestone switched to v1.2; ready to start Phase 12 execution
+Current Plan: 5
+Total Plans in Phase: 5
+Status: Active - 12-05 app-shell boundary hardening completed
+Progress: [####------] 40%
+Last activity: 2026-05-15
+Last Activity Description: 12-05 completed app-shell helper characterization and shell page loader extraction
+Paused At:
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, 8, and 11 are complete. Phase 7 mock, contract, frontend
 cart/checkout, return UI, all-items local mock readiness, and Browser Use local mock UAT work is complete enough to
@@ -94,7 +94,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 | 9     | 5/6   | Deferred  | 2026-04-30 |
 | 10    | 5/6   | Deferred  | 2026-05-01 |
 | 11    | 5/5   | Completed | 2026-05-12 |
-| 12    | 0/4   | Active    | 2026-05-14 |
+| 12    | 2/5   | Active    | 2026-05-15 |
 
 **Recent Trend:**
 
@@ -129,6 +129,11 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   repositories.
 - The backend now has a typed Access-header extraction seam for `actor_email` on the future protected operator
   hostname.
+- Phase 12 plan 12-04 completed the legacy-open governance slice: `cms-admin` now has explicit temporary-open closure
+  criteria, the manifest validator rejects missing open-temporary metadata or unapproved open-temporary modules, and
+  repo guidance locks one approved Phase 12 execution slice per branch without enabling Codex worktrees.
+- Phase 12 plan 12-05 completed the app-shell boundary-hardening slice: shell section navigation and shell page loader
+  behavior are characterized, and shell page fetch/cache/de-duplication now lives outside `AppShellRoot`.
 - The backend now persists `Stock`, `StockChange`, and `StockCount` in D1 and exposes internal stock lookup/write
   routes under `/api/internal/variants/*`.
 - The static Astro app now serves the protected stock operations UI at `/stock/`, using `/stock/?variantId=<variantId>`
@@ -287,7 +292,8 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of
   the completed Phase 6.1 foundation.
-- Start Phase 12 with the boundary-manifest and verifier slice before deeper commerce refactors.
+- Continue Phase 12 through the approved `12-05` app-shell slice; `12-04` governance is complete and deeper refactors
+  should still respect the boundary manifest and verifier rules.
 - Complete the deferred Stripe access validation gate before sandbox/release approval.
 - Choose the Phase 9 shipping mode and complete the deferred BOX NOW Portal Gate before marking Phase 9, `09-06`, or
   `SHIP-01` through `SHIP-03` complete.
@@ -320,6 +326,6 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 
 ## Session
 
-**Last Date:** 2026-05-14T13:20:00.000Z
-**Stopped At:** Activated v1.2
+**Last Date:** 2026-05-15T00:00:00.000Z
+**Stopped At:** Completed 12-05 app-shell boundary hardening
 **Resume File:** None

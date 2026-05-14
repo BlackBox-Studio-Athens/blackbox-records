@@ -35,6 +35,7 @@ import {
   updateDocumentMetadata,
   type ShellPageSnapshot,
 } from '@/components/app-shell/shell-page-snapshot';
+import { createShellPageSnapshotLoader } from '@/components/app-shell/shell-page-loader';
 import {
   connectStoreCartBridge,
   getStoreCartBrowserStorage,
@@ -206,6 +207,14 @@ export default function AppShellRoot({
   const renderedPagePathnameRef = useRef(
     typeof window === 'undefined' ? '' : normalizeAppPathname(window.location.pathname),
   );
+  const shellPageLoader = useMemo(
+    () =>
+      createShellPageSnapshotLoader({
+        cache: shellPageCacheRef.current,
+        inFlightRequests: shellPageInFlightRequestsRef.current,
+      }),
+    [],
+  );
 
   const providerLogoUrls = useMemo(
     () => ({
@@ -258,7 +267,7 @@ export default function AppShellRoot({
     const pageSnapshot = readDocumentShellPageSnapshot(document, href);
     if (!pageSnapshot) return null;
 
-    shellPageCacheRef.current.set(pageSnapshot.pathname, pageSnapshot);
+    shellPageLoader.cacheSnapshot(pageSnapshot);
     return pageSnapshot;
   }
 
@@ -747,57 +756,8 @@ export default function AppShellRoot({
     }
   }
 
-  async function fetchShellPageSnapshot(pathname: string, href: string, signal?: AbortSignal) {
-    const normalizedPathname = normalizeAppPathname(pathname);
-    const cachedSnapshot = shellPageCacheRef.current.get(normalizedPathname);
-    if (cachedSnapshot) return cachedSnapshot;
-
-    const existingRequest = shellPageInFlightRequestsRef.current.get(normalizedPathname);
-    if (existingRequest) {
-      return existingRequest;
-    }
-
-    const request = fetch(href, {
-      credentials: 'same-origin',
-      headers: {
-        accept: 'text/html',
-      },
-      signal: signal ?? null,
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error(`Shell page request failed for ${normalizedPathname}`);
-        }
-
-        const html = await response.text();
-        const parsedDocument = new DOMParser().parseFromString(html, 'text/html');
-        const pageSnapshot = readDocumentShellPageSnapshot(parsedDocument, response.url || href);
-
-        if (!pageSnapshot) {
-          throw new Error(`Shell page snapshot is not available for ${normalizedPathname}`);
-        }
-
-        shellPageCacheRef.current.set(normalizedPathname, pageSnapshot);
-        return pageSnapshot;
-      })
-      .finally(() => {
-        shellPageInFlightRequestsRef.current.delete(normalizedPathname);
-      });
-
-    shellPageInFlightRequestsRef.current.set(normalizedPathname, request);
-    return request;
-  }
-
   async function prefetchShellSectionHref(href: string) {
-    const resolvedUrl = new URL(href, window.location.href);
-    const route = parseShellSectionRoute(resolvedUrl.pathname);
-    if (!route || shellPageCacheRef.current.has(route.pathname)) return;
-
-    try {
-      await fetchShellPageSnapshot(route.pathname, resolvedUrl.toString());
-    } catch {
-      // Ignore speculative prefetch failures and let click fallback to real navigation.
-    }
+    await shellPageLoader.prefetchHref(href);
   }
 
   async function openShellSectionHref(
@@ -835,7 +795,7 @@ export default function AppShellRoot({
     const abortController = new AbortController();
     shellPageAbortControllerRef.current = abortController;
 
-    const cachedSnapshot = shellPageCacheRef.current.get(route.pathname) || null;
+    const cachedSnapshot = shellPageLoader.getCachedSnapshot(route.pathname);
     if (!cachedSnapshot) {
       setIsRouteLoading(true);
     }
@@ -846,7 +806,7 @@ export default function AppShellRoot({
     try {
       const pageSnapshot =
         cachedSnapshot ||
-        (await fetchShellPageSnapshot(route.pathname, resolvedUrl.toString(), abortController.signal));
+        (await shellPageLoader.fetchSnapshot(route.pathname, resolvedUrl.toString(), abortController.signal));
 
       if (abortController.signal.aborted) {
         return true;
@@ -892,7 +852,7 @@ export default function AppShellRoot({
   }
 
   async function restoreCachedShellPage(pathname: string, options?: { source?: ShellNavigationSource }) {
-    const pageSnapshot = shellPageCacheRef.current.get(normalizeAppPathname(pathname));
+    const pageSnapshot = shellPageLoader.getCachedSnapshot(pathname);
     if (!pageSnapshot) return false;
     const route = parseShellSectionRoute(pathname);
     const sectionTransitionToken = route
@@ -1233,7 +1193,7 @@ export default function AppShellRoot({
       const nextShellSectionRoute = parseShellSectionRoute(window.location.pathname);
       const nextNormalizedPathname = normalizeAppPathname(window.location.pathname);
       const historyState = window.history.state || {};
-      const hasCachedShellPage = shellPageCacheRef.current.has(nextNormalizedPathname);
+      const hasCachedShellPage = shellPageLoader.hasCachedSnapshot(nextNormalizedPathname);
 
       if (historyState.__appShellOverlay && nextOverlayRoute) {
         void openOverlayHref(window.location.href, {

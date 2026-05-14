@@ -339,6 +339,11 @@ Plans:
 - Produces explicit module-boundary execution slices for `app-shell`, `cms-admin`, public commerce HTTP, backend
   commerce modules, and the residual `platform-shared` bucket
 - Keeps `.planning/config.json` `parallelization: false`
+- Plan `12-04` completed the legacy-open governance slice: only `app-shell` and `cms-admin` may be initial
+  `open-temporary` modules, temporary-open modules require hard-closure metadata, and future Phase 12 execution remains
+  one approved slice per branch or local commit cluster
+- Plan `12-05` is the approved app-shell boundary-hardening slice: it adds shell helper characterization coverage and
+  extracts the shell page loader seam without changing shopper-facing shell behavior
 - Exists to make later large refactors safer and more reviewable before production cutover work begins
 
 ### Go-Live / Launch Hardening
@@ -385,3 +390,4 @@ Because Stripe account access and BOX NOW portal access are unavailable, non-sec
 | 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred  |            |
 | 10. Sandbox Verification And Release Gate                      | 5/6            | Active    |            |
 | 11. Website Editorial And Catalog UX Improvements              | 5/5            | Complete  | 2026-05-12 |
+| 12. Modulith Boundary Hardening Planning                       | 1/4            | Active    |            |
