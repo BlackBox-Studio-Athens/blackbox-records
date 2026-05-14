@@ -4,18 +4,18 @@ milestone: v1.2
 milestone_name: Modulith Boundary Hardening
 current_phase: 12
 current_phase_name: modulith-boundary-hardening-planning
-current_plan: 11
+current_plan: 12
 status: active
-stopped_at: Completed 12-11 route loading indicator timer boundary hardening
+stopped_at: Completed 12-12 player provider warmup boundary hardening
 paused_at: ''
 last_updated: '2026-05-15T00:00:00.000Z'
 last_activity: 2026-05-15
 progress:
   total_phases: 12
   completed_phases: 8
-  total_plans: 11
-  completed_plans: 8
-  percent: 73
+  total_plans: 12
+  completed_plans: 9
+  percent: 75
 ---
 
 # Project State
@@ -32,16 +32,16 @@ routes own secrets and mutations, and stock changes happen only after verified w
 ## Current Position
 
 Phase: 12 (modulith-boundary-hardening-planning) - ACTIVE
-Plan: 11 of 11
+Plan: 12 of 12
 Current Phase: 12
 Current Phase Name: modulith-boundary-hardening-planning
 Total Phases: 12
-Current Plan: 11
-Total Plans in Phase: 11
-Status: Active - 12-11 route loading indicator timer boundary hardening completed
-Progress: [#######---] 73%
+Current Plan: 12
+Total Plans in Phase: 12
+Status: Active - 12-12 player provider warmup boundary hardening completed
+Progress: [########--] 75%
 Last activity: 2026-05-15
-Last Activity Description: 12-11 completed route loading indicator timer characterization and extraction
+Last Activity Description: 12-12 completed player provider warmup characterization and extraction
 Paused At:
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, 8, and 11 are complete. Phase 7 mock, contract, frontend
@@ -94,7 +94,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 | 9     | 5/6   | Deferred  | 2026-04-30 |
 | 10    | 5/6   | Deferred  | 2026-05-01 |
 | 11    | 5/5   | Completed | 2026-05-12 |
-| 12    | 8/11  | Active    | 2026-05-15 |
+| 12    | 9/12  | Active    | 2026-05-15 |
 
 **Recent Trend:**
 
@@ -146,6 +146,8 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   details are characterized and live in `shell-page-snapshot`.
 - Phase 12 plan 12-11 completed the route loading indicator timer boundary-hardening slice: timeout cleanup and delayed
   close mechanics are characterized and live in `route-loading-indicator`.
+- Phase 12 plan 12-12 completed the player provider warmup boundary-hardening slice: preconnect and DNS-prefetch details
+  are characterized and live in the closed `player` module.
 - The backend now persists `Stock`, `StockChange`, and `StockCount` in D1 and exposes internal stock lookup/write
   routes under `/api/internal/variants/*`.
 - The static Astro app now serves the protected stock operations UI at `/stock/`, using `/stock/?variantId=<variantId>`
@@ -304,7 +306,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of
   the completed Phase 6.1 foundation.
-- Continue Phase 12 through the next approved app-shell or cms-admin slice; `12-04` through `12-11` are complete and
+- Continue Phase 12 through the next approved app-shell or cms-admin slice; `12-04` through `12-12` are complete and
   deeper refactors should still respect the boundary manifest and verifier rules.
 - Complete the deferred Stripe access validation gate before sandbox/release approval.
 - Choose the Phase 9 shipping mode and complete the deferred BOX NOW Portal Gate before marking Phase 9, `09-06`, or
@@ -339,5 +341,5 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 ## Session
 
 **Last Date:** 2026-05-15T00:00:00.000Z
-**Stopped At:** Completed 12-11 route loading indicator timer boundary hardening
+**Stopped At:** Completed 12-12 player provider warmup boundary hardening
 **Resume File:** None

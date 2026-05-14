@@ -88,6 +88,7 @@
       "providedEntrypoints": [
         "apps/web/src/components/music/MusicStreamingServiceListenTrigger.astro",
         "apps/web/src/components/app-shell/player-provider-data.ts",
+        "apps/web/src/components/app-shell/player-provider-warmup.ts",
         "apps/web/src/components/app-shell/player-iframe-session.ts",
         "apps/web/src/components/app-shell/player-session-machine.ts",
         "apps/web/src/components/app-shell/player-session-ui.ts",

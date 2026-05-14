@@ -21,6 +21,7 @@ import {
   retirePlayerSession,
   type ActivePlayerSession,
 } from '@/components/app-shell/player-iframe-session';
+import { warmPlayerProviderOrigins } from '@/components/app-shell/player-provider-warmup';
 import ServicesInquiryForm from '@/components/services/ServicesInquiryForm';
 import StoreCartButton from '@/components/store/StoreCartButton';
 import StoreCartDrawer from '@/components/store/StoreCartDrawer';
@@ -109,10 +110,6 @@ const OVERLAY_KIND_LABELS: Record<OverlayRoute['kind'], string> = {
   news: 'news',
   releases: 'release',
 };
-const EMBED_PROVIDER_WARMUP_ORIGINS: Record<PlayerProviderId, string[]> = {
-  bandcamp: ['https://bandcamp.com'],
-  tidal: ['https://embed.tidal.com', 'https://tidal.com'],
-};
 function readPlayerProviders(element: HTMLElement) {
   return buildPlayerProviders({
     bandcampEmbedUrl: element.dataset.musicStreamingServiceEmbeddedPlayerBandcampEmbedUrl,
@@ -128,18 +125,6 @@ function selectDefaultPlayerProvider(providers: PlayerProvider[]) {
   const providerById = new Map(providers.map((provider) => [provider.id, provider]));
   const preferredProviderId = EMBED_PROVIDER_PRIORITY.find((providerId) => providerById.has(providerId));
   return preferredProviderId ? providerById.get(preferredProviderId) || providers[0] : providers[0];
-}
-
-function appendHeadLink(rel: string, href: string, useCrossOrigin: boolean) {
-  if (!document.head || document.head.querySelector(`link[rel="${rel}"][href="${href}"]`)) return;
-
-  const linkElement = document.createElement('link');
-  linkElement.rel = rel;
-  linkElement.href = href;
-  if (useCrossOrigin) {
-    linkElement.crossOrigin = 'anonymous';
-  }
-  document.head.appendChild(linkElement);
 }
 
 export default function AppShellRoot({
@@ -476,14 +461,11 @@ export default function AppShellRoot({
   }
 
   function warmProviderOrigins(providers: PlayerProvider[]) {
-    providers
-      .flatMap((provider) => EMBED_PROVIDER_WARMUP_ORIGINS[provider.id] || [])
-      .forEach((origin) => {
-        if (!origin || warmedOriginsRef.current.has(origin)) return;
-        appendHeadLink('preconnect', origin, true);
-        appendHeadLink('dns-prefetch', origin, false);
-        warmedOriginsRef.current.add(origin);
-      });
+    warmPlayerProviderOrigins({
+      providers,
+      targetDocument: document,
+      warmedOrigins: warmedOriginsRef.current,
+    });
   }
 
   function applyPlayerProvider(

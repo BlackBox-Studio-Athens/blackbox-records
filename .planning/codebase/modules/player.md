@@ -9,6 +9,8 @@ routes and cards.
 
 - `apps/web/src/components/app-shell/player-provider-data.ts`
 - `apps/web/src/components/app-shell/player-provider-data.test.ts`
+- `apps/web/src/components/app-shell/player-provider-warmup.ts`
+- `apps/web/src/components/app-shell/player-provider-warmup.test.ts`
 - `apps/web/src/components/app-shell/player-iframe-session.ts`
 - `apps/web/src/components/app-shell/player-iframe-session.test.ts`
 - `apps/web/src/components/app-shell/player-session-machine.ts`
@@ -25,11 +27,13 @@ routes and cards.
 - player iframe session/cache helpers
 - player session reducer and presentation state
 - provider descriptor data
+- provider origin warmup helpers
 
 ## Internal Implementation Area
 
 - embed URL building details
 - provider warmup and label details
+- provider origin preconnect and DNS-prefetch details
 - iframe DOM attributes, cache pruning, and active/inactive iframe marking
 - player session state derivation internals
 
@@ -51,13 +55,15 @@ routes and cards.
 
 ## Verification Strategy
 
-- keep unit coverage on iframe session/cache helpers, session machine, UI derivation, provider data, and music helper output
+- keep unit coverage on iframe session/cache helpers, session machine, UI derivation, provider data, provider warmup, and
+  music helper output
 - prevent shopper-facing modules from owning iframe or session state directly
 
 ## Tests Required Before Refactors
 
 - existing player helper tests
 - `player-iframe-session.test.ts`
+- `player-provider-warmup.test.ts`
 - `utils/music.test.ts`
 - Browser Use listen-trigger compatibility checks when touched through the shell
 
