@@ -5,26 +5,64 @@ type ReleaseLike = {
   tidal_url?: string | undefined;
 };
 
+const BANDCAMP_EMBED_HOSTNAME = 'bandcamp.com';
+const BANDCAMP_EMBED_PATH_PREFIX = '/EmbeddedPlayer/';
+const BANDCAMP_EMBED_ID_PATTERN = /(?:^|\/)(album|track)=\d+(?:\/|$)/;
+const TIDAL_PUBLIC_HOSTNAME = 'tidal.com';
+const TIDAL_EMBED_PATH_BY_ENTITY_TYPE: Record<string, string> = {
+  album: 'albums',
+  track: 'tracks',
+  playlist: 'playlists',
+  video: 'videos',
+};
+
+export function buildBandcampEmbedUrl(bandcampEmbedUrl?: string) {
+  if (!bandcampEmbedUrl) return '';
+
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(bandcampEmbedUrl);
+  } catch {
+    return '';
+  }
+
+  if (parsedUrl.protocol !== 'https:') return '';
+  if (parsedUrl.hostname !== BANDCAMP_EMBED_HOSTNAME) return '';
+  if (!parsedUrl.pathname.startsWith(BANDCAMP_EMBED_PATH_PREFIX)) return '';
+  if (!BANDCAMP_EMBED_ID_PATTERN.test(parsedUrl.pathname)) return '';
+
+  return parsedUrl.toString();
+}
+
 export function buildTidalEmbedUrl(tidalUrl?: string) {
   if (!tidalUrl) return '';
-  const tidalUrlClean = tidalUrl.split('?')[0] || '';
-  const tidalUrlParts = tidalUrlClean.split('/').filter(Boolean);
-  const tidalId = tidalUrlParts[tidalUrlParts.length - 1] || '';
 
-  let tidalEmbedPath = '';
-  if (tidalUrlClean.includes('/album/')) tidalEmbedPath = 'albums';
-  else if (tidalUrlClean.includes('/track/')) tidalEmbedPath = 'tracks';
-  else if (tidalUrlClean.includes('/playlist/')) tidalEmbedPath = 'playlists';
-  else if (tidalUrlClean.includes('/video/')) tidalEmbedPath = 'videos';
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(tidalUrl);
+  } catch {
+    return '';
+  }
 
+  if (parsedUrl.protocol !== 'https:') return '';
+  if (parsedUrl.hostname !== TIDAL_PUBLIC_HOSTNAME) return '';
+
+  const tidalUrlParts = parsedUrl.pathname.split('/').filter(Boolean);
+  const entityTypeIndex = tidalUrlParts[0] === 'browse' ? 1 : 0;
+  const entityType = tidalUrlParts[entityTypeIndex] || '';
+  const tidalId = tidalUrlParts[entityTypeIndex + 1] || '';
+  if (!entityType || !tidalId) return '';
+
+  const tidalEmbedPath = TIDAL_EMBED_PATH_BY_ENTITY_TYPE[entityType] || '';
   if (!tidalEmbedPath || !tidalId) return '';
 
   return `https://embed.tidal.com/${tidalEmbedPath}/${tidalId}?coverInitially=true&disableAnalytics=true`;
 }
 
 export function buildEmbeddedPlayerData(release: ReleaseLike, title?: string) {
+  const bandcampEmbedUrl = buildBandcampEmbedUrl(release.bandcamp_embed_url);
   const tidalEmbedUrl = buildTidalEmbedUrl(release.tidal_url);
-  const hasProvider = Boolean(release.bandcamp_embed_url || tidalEmbedUrl);
+  const hasProvider = Boolean(bandcampEmbedUrl || tidalEmbedUrl);
 
   if (!hasProvider) {
     return {
@@ -38,7 +76,7 @@ export function buildEmbeddedPlayerData(release: ReleaseLike, title?: string) {
   return {
     hasProvider,
     title: title || '',
-    bandcampEmbedUrl: release.bandcamp_embed_url || '',
+    bandcampEmbedUrl,
     tidalEmbedUrl,
   };
 }

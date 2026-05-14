@@ -8,6 +8,12 @@ import {
   reducePlayerSessionMachine,
 } from '@/components/app-shell/player-session-machine';
 import { derivePlayerPresentationState, OPEN_PLAYER_ACTION_LABEL } from '@/components/app-shell/player-session-ui';
+import {
+  buildPlayerProviders,
+  type PlayerEmbedLayout,
+  type PlayerProvider,
+  type PlayerProviderId,
+} from '@/components/app-shell/player-provider-data';
 import ServicesInquiryForm from '@/components/services/ServicesInquiryForm';
 import StoreCartButton from '@/components/store/StoreCartButton';
 import StoreCartDrawer from '@/components/store/StoreCartDrawer';
@@ -39,12 +45,6 @@ import {
 } from '@/lib/store-cart';
 import { isCurrentPath } from '@/utils/urls';
 
-type PlayerProviderId = 'bandcamp' | 'tidal';
-type PlayerProvider = {
-  id: PlayerProviderId;
-  embedUrl: string;
-};
-
 type OverlayState = {
   backgroundHref: string;
   href: string;
@@ -55,6 +55,7 @@ type OverlayState = {
 
 type ActivePlayerSession = {
   embedUrl: string;
+  embedLayout: PlayerEmbedLayout;
   hasEmbedInteraction: boolean;
   iframeElement: HTMLIFrameElement;
   providerId: PlayerProviderId;
@@ -114,7 +115,7 @@ const SHELL_SECTION_LABELS: Record<ShellSectionKind, string> = {
 };
 const EMBED_PROVIDER_WARMUP_ORIGINS: Record<PlayerProviderId, string[]> = {
   bandcamp: ['https://bandcamp.com'],
-  tidal: ['https://embed.tidal.com'],
+  tidal: ['https://embed.tidal.com', 'https://tidal.com'],
 };
 const MAX_CACHED_IFRAMES = 6;
 const ROUTE_LOADING_RESET_DELAY_MS = 120;
@@ -183,18 +184,10 @@ function isNavigableShellSectionAnchor(anchorElement: HTMLAnchorElement) {
 }
 
 function readPlayerProviders(element: HTMLElement) {
-  const providers: PlayerProvider[] = [];
-  const bandcampEmbedUrl = element.dataset.musicStreamingServiceEmbeddedPlayerBandcampEmbedUrl;
-  const tidalEmbedUrl = element.dataset.musicStreamingServiceEmbeddedPlayerTidalEmbedUrl;
-
-  if (bandcampEmbedUrl) {
-    providers.push({ id: 'bandcamp', embedUrl: bandcampEmbedUrl });
-  }
-  if (tidalEmbedUrl) {
-    providers.push({ id: 'tidal', embedUrl: tidalEmbedUrl });
-  }
-
-  return providers;
+  return buildPlayerProviders({
+    bandcampEmbedUrl: element.dataset.musicStreamingServiceEmbeddedPlayerBandcampEmbedUrl,
+    tidalEmbedUrl: element.dataset.musicStreamingServiceEmbeddedPlayerTidalEmbedUrl,
+  });
 }
 
 function readPlayerTitle(element: HTMLElement) {
@@ -273,6 +266,7 @@ export default function AppShellRoot({
   const [isPlayerLoading, setIsPlayerLoading] = useState(false);
   const [playerProviders, setPlayerProviders] = useState<PlayerProvider[]>([]);
   const [activePlayerProviderId, setActivePlayerProviderId] = useState<PlayerProviderId | ''>('');
+  const [activePlayerEmbedLayout, setActivePlayerEmbedLayout] = useState<PlayerEmbedLayout | ''>('');
   const [activePlayerTitle, setActivePlayerTitle] = useState('');
   const [isMiniPlayerVisible, setIsMiniPlayerVisible] = useState(false);
   const [miniPlayerStatusLabel, setMiniPlayerStatusLabel] = useState('Player Ready');
@@ -716,6 +710,7 @@ export default function AppShellRoot({
   function updatePlayerUiFromSession(activeSession: ActivePlayerSession | null) {
     if (!activeSession) {
       setActivePlayerProviderId('');
+      setActivePlayerEmbedLayout('');
       setActivePlayerTitle('');
       setPlayerProviders([]);
       const presentation = derivePlayerPresentationState({
@@ -732,6 +727,7 @@ export default function AppShellRoot({
     }
 
     setActivePlayerProviderId(activeSession.providerId);
+    setActivePlayerEmbedLayout(activeSession.embedLayout);
     setActivePlayerTitle(activeSession.releaseTitle);
     const isLoaded = activeSession.iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState === 'loaded';
     const presentation = derivePlayerPresentationState({
@@ -778,7 +774,10 @@ export default function AppShellRoot({
 
   function createIframe(provider: PlayerProvider, releaseTitle: string) {
     const iframeElement = document.createElement('iframe');
-    iframeElement.allow = 'autoplay; encrypted-media; fullscreen; clipboard-write https://embed.tidal.com; web-share';
+    iframeElement.allow =
+      provider.id === 'bandcamp'
+        ? 'autoplay; encrypted-media; fullscreen; web-share'
+        : 'autoplay; encrypted-media; fullscreen; clipboard-write https://embed.tidal.com https://tidal.com; web-share';
     iframeElement.className = 'music-streaming-service-embedded-player-iframe border-0';
     iframeElement.dataset.musicStreamingServiceEmbeddedPlayerIframe = '';
     iframeElement.dataset.musicStreamingServiceEmbeddedPlayerEmbedUrl = provider.embedUrl;
@@ -863,6 +862,7 @@ export default function AppShellRoot({
 
     const nextSession: ActivePlayerSession = {
       embedUrl: provider.embedUrl,
+      embedLayout: provider.embedLayout,
       hasEmbedInteraction: false,
       iframeElement,
       providerId: provider.id,
@@ -873,6 +873,7 @@ export default function AppShellRoot({
     activePlayerSessionRef.current = nextSession;
     providerSelectionByTitleRef.current.set(releaseTitle, provider.id);
     setActivePlayerProviderId(provider.id);
+    setActivePlayerEmbedLayout(provider.embedLayout);
     setActivePlayerTitle(releaseTitle);
     setIsPlayerLoading(iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState !== 'loaded');
     markIframeAsActive(iframeElement);
@@ -1729,6 +1730,7 @@ export default function AppShellRoot({
           className="music-streaming-service-embedded-player-modal-card"
           role="dialog"
           data-music-streaming-service-embedded-player-active-provider={activePlayerProviderId}
+          data-music-streaming-service-embedded-player-embed-layout={activePlayerEmbedLayout}
           data-music-streaming-service-embedded-player-loading={isPlayerLoading ? 'true' : 'false'}
         >
           <h2 className="accessibility-visually-hidden-text" id="music-streaming-service-embedded-player-modal-title">

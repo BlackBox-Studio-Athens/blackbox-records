@@ -1188,14 +1188,14 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
           name: 'bandcamp_embed_url',
           widget: 'string',
           required: false,
-          hint: 'Embed URL from Bandcamp, not the public album page URL.',
+          hint: 'Paste the iframe src from Bandcamp Share/Embed, not the public album or track page URL.',
         }),
         buildField({
           label: 'Tidal URL',
           name: 'tidal_url',
           widget: 'string',
           required: false,
-          hint: 'Full Tidal share URL including https://.',
+          hint: 'Full Tidal album, track, playlist, or video URL including https://. Artist profile URLs are not embedded players.',
         }),
         buildField({
           label: 'Summary',

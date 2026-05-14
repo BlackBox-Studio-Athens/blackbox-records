@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Blackbox Records">
+  <g fill="none" stroke="#f2f2f2" stroke-linejoin="round" stroke-width="30">
+    <path d="M256 70 438 174 256 278 74 174Z" />
+    <path d="M74 174v164l182 104 182-104V174" />
+    <path d="M256 278v164" />
+    <path d="M327 318 393 280v128l-66 38Z" />
+  </g>
+</svg>

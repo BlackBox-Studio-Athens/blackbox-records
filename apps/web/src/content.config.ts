@@ -2,6 +2,16 @@ import { defineCollection, reference } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
+import { buildBandcampEmbedUrl, buildTidalEmbedUrl } from './utils/music';
+
+const bandcampEmbedUrl = z.string().refine((value) => buildBandcampEmbedUrl(value) === value, {
+  message: 'Use the official Bandcamp iframe src from Share/Embed. Public album or track URLs are not valid embeds.',
+});
+
+const tidalUrl = z.string().refine((value) => buildTidalEmbedUrl(value) !== '', {
+  message: 'Use a Tidal album, track, playlist, or video URL. Artist profile URLs are not embedded players.',
+});
+
 const artists = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/artists' }),
   schema: ({ image }) =>
@@ -47,8 +57,8 @@ const releases = defineCollection({
       cover_image_alt: z.string().optional(),
       merch_url: z.string().optional(),
       shop_collection_handle: z.string().optional(),
-      bandcamp_embed_url: z.string().optional(),
-      tidal_url: z.string().optional(),
+      bandcamp_embed_url: bandcampEmbedUrl.optional(),
+      tidal_url: tidalUrl.optional(),
       summary: z.string().optional(),
       formats: z.array(z.string()).optional(),
       credits: z

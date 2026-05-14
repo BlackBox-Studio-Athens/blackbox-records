@@ -1,7 +1,7 @@
 ---
 import '@/styles/global.css';
 
-import { createProjectRelativeUrl, siteConfig } from '@/config/site';
+import { createProjectRelativeUrl, siteBrandAssets, siteConfig } from '@/config/site';
 
 interface Props {
   pageTitle: string;
@@ -19,7 +19,9 @@ const { pageTitle, pageDescription, redirectUrl } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{`${pageTitle} | ${siteConfig.title}`}</title>
     <meta name="description" content={pageDescription} />
-    <link rel="icon" href={createProjectRelativeUrl('/assets/images/brand/logo.png')} />
+    <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconSvg)} type="image/svg+xml" sizes="any" />
+    <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconPng96)} type="image/png" sizes="96x96" />
+    <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconIco)} sizes="any" />
     <meta content={`0; url=${redirectUrl}`} http-equiv="refresh" />
     <link rel="canonical" href={redirectUrl} />
     <script is:inline data-redirect-url={redirectUrl}>

@@ -39,7 +39,9 @@
   --header-height: 80px;
   --header-padding-x-mobile: 18px;
   --header-padding-x-desktop: 32px;
-  --header-logo-size: 64px;
+  --header-brand-logo-aspect-ratio: 256 / 63;
+  --header-brand-logo-inline-size: clamp(9rem, 42vw, 9.6rem);
+  --header-brand-logo-max-inline-size: calc(100vw - 8rem);
   --header-nav-font-size: 12px;
   --header-nav-letter-spacing: 2.4px;
   --header-nav-gap: 2.5rem;
@@ -227,6 +229,19 @@
 
   .accessibility-visually-hidden-text {
     @apply sr-only;
+  }
+
+  .header-brand-link {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+  }
+
+  .header-brand-logo {
+    aspect-ratio: var(--header-brand-logo-aspect-ratio);
+    inline-size: min(var(--header-brand-logo-inline-size), var(--header-brand-logo-max-inline-size));
+    block-size: auto;
+    object-fit: contain;
   }
 
   .header-nav-link {
@@ -1882,6 +1897,7 @@
     position: relative;
     display: inline-grid;
     flex: none;
+    box-sizing: border-box;
     width: var(--music-listen-chamber-size);
     height: var(--music-listen-chamber-size);
     place-items: center;
@@ -1903,6 +1919,7 @@
 
   .music-listen-trigger__indicator::before,
   .music-listen-trigger__indicator::after {
+    box-sizing: border-box;
     content: '';
     border-radius: inherit;
     pointer-events: none;
@@ -1915,7 +1932,7 @@
     width: var(--music-listen-core-size);
     height: var(--music-listen-core-size);
     background: radial-gradient(
-      circle at 35% 35%,
+      circle at center,
       color-mix(in srgb, var(--music-listen-core-color) 92%, rgba(245, 245, 245, 0.42)) 0 18%,
       var(--music-listen-core-color) 19% 40%,
       color-mix(in srgb, var(--music-listen-core-color) 72%, transparent) 68%,
@@ -1926,12 +1943,10 @@
 
   .music-listen-trigger__indicator::after {
     position: absolute;
-    inset: 0;
-    width: calc(var(--music-listen-chamber-size) - 2px);
-    height: calc(var(--music-listen-chamber-size) - 2px);
-    margin: auto;
+    inset: 1px;
     border: 1px solid var(--music-listen-ring-color);
     opacity: 0;
+    transform-origin: center;
     transform: scale(0.82);
     animation: release-listen-halo-primary 1.9s cubic-bezier(0.22, 1, 0.36, 1) infinite;
   }
@@ -2563,6 +2578,13 @@
     );
   }
 
+  .music-streaming-service-embedded-player-modal-card[data-music-streaming-service-embedded-player-embed-layout='bandcamp-track'] {
+    --music-player-frame-height: min(
+      36rem,
+      calc(100dvh - max(env(safe-area-inset-top), 0.75rem) - max(env(safe-area-inset-bottom), 0.75rem) - 8.5rem)
+    );
+  }
+
   .music-streaming-service-embedded-player-modal-card[data-music-streaming-service-embedded-player-active-provider='tidal'] {
     --music-player-modal-max-width: min(100%, 34rem);
     --music-player-frame-width: min(100%, 100%);
@@ -2830,13 +2852,13 @@ body.is-app-shell-overlay-open {
       0 0 1.05rem rgba(245, 245, 245, 0.12),
       inset 0 0 0 1px rgba(245, 245, 245, 0.05);
     outline: none;
-    transform: translateY(-1px);
+    transform: none;
   }
 
   .music-listen-trigger:active {
     color: var(--music-listen-text-color);
     border-color: var(--music-listen-border-color-hover);
-    transform: translateY(0);
+    transform: none;
   }
 
   .music-listen-trigger:hover .music-listen-trigger__indicator,
@@ -2844,7 +2866,7 @@ body.is-app-shell-overlay-open {
   .music-listen-trigger:active .music-listen-trigger__indicator {
     opacity: 1;
     border-color: color-mix(in srgb, var(--music-listen-ring-color) 74%, rgba(245, 245, 245, 0.18));
-    transform: scale(1.04);
+    transform: none;
     box-shadow:
       0 0 0 0.5px rgba(245, 245, 245, 0.2),
       0 0 0.8rem color-mix(in srgb, var(--music-listen-ring-color) 42%, transparent);
@@ -2982,7 +3004,8 @@ body.is-app-shell-overlay-open {
   :root {
     --header-height: 80px;
     --header-padding-x-desktop: 32px;
-    --header-logo-size: 64px;
+    --header-brand-logo-inline-size: clamp(9rem, 18vw, 9.6rem);
+    --header-brand-logo-max-inline-size: 9.6rem;
     --header-nav-font-size: 12px;
     --header-nav-letter-spacing: 2.4px;
     --header-nav-gap: 2.5rem;
@@ -3034,6 +3057,13 @@ body.is-app-shell-overlay-open {
     justify-content: flex-start;
     gap: 0.35rem 1rem;
     overflow: visible;
+  }
+}
+
+@media (min-width: 64rem) {
+  :root {
+    --header-brand-logo-inline-size: clamp(9.25rem, 13vw, 9.6rem);
+    --header-nav-gap: clamp(1.75rem, 2.9vw, 2.5rem);
   }
 }
 
@@ -3153,6 +3183,13 @@ body.is-app-shell-overlay-open {
     padding-top: 0.35rem;
     padding-inline: 0.85rem;
   }
+
+  .music-streaming-service-embedded-player-modal-card[data-music-streaming-service-embedded-player-embed-layout='bandcamp-track'] {
+    --music-player-frame-height: min(
+      36rem,
+      calc(100dvh - max(env(safe-area-inset-top), 0.75rem) - max(env(safe-area-inset-bottom), 0.75rem) - 7.6rem)
+    );
+  }
 }
 
 @media (min-width: 40rem) {
@@ -3254,6 +3291,10 @@ body.is-app-shell-overlay-open {
     --music-player-modal-max-width: min(100%, 30rem);
     --music-player-frame-width: min(100%, 21.875rem);
     --music-player-frame-height: clamp(34rem, 76vh, 39.25rem);
+  }
+
+  .music-streaming-service-embedded-player-modal-card[data-music-streaming-service-embedded-player-embed-layout='bandcamp-track'] {
+    --music-player-frame-height: clamp(28rem, 54vh, 30rem);
   }
 
   .music-streaming-service-embedded-player-modal-card[data-music-streaming-service-embedded-player-active-provider='tidal'] {

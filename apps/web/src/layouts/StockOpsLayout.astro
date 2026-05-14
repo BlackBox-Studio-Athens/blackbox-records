@@ -1,7 +1,7 @@
 ---
 import '@/styles/global.css';
 
-import { createProjectRelativeUrl, siteConfig } from '@/config/site';
+import { createProjectRelativeUrl, siteBrandAssets, siteConfig } from '@/config/site';
 
 interface Props {
   pageTitle: string;
@@ -20,7 +20,9 @@ const htmlTitle = `${pageTitle} | ${siteConfig.title}`;
     <title>{htmlTitle}</title>
     <meta name="description" content={pageDescription} />
     <meta name="robots" content="noindex, nofollow" />
-    <link rel="icon" href={createProjectRelativeUrl('/assets/images/brand/logo.png')} />
+    <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconSvg)} type="image/svg+xml" sizes="any" />
+    <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconPng96)} type="image/png" sizes="96x96" />
+    <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconIco)} sizes="any" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
     <link

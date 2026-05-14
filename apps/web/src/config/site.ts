@@ -8,6 +8,14 @@ export const siteConfig = {
   shopUrl: 'https://blackboxrecords-shop.fourthwall.com',
 } as const;
 
+export const siteBrandAssets = {
+  badgeLogo: '/assets/images/brand/logo.png',
+  wordmarkLogo: '/assets/images/brand/logo-horizontal.png',
+  faviconSvg: '/favicon.svg',
+  faviconPng96: '/favicon-96x96.png',
+  faviconIco: '/favicon.ico',
+} as const;
+
 function normalizePath(path = '/') {
   return path.startsWith('/') ? path : `/${path}`;
 }

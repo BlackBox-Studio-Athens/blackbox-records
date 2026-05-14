@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { Image } from 'astro:assets';
-import { createAbsoluteSiteUrl, createProjectRelativeUrl } from '@/config/site';
+import { createAbsoluteSiteUrl, createProjectRelativeUrl, siteBrandAssets } from '@/config/site';
 import {
   listArtistProfiles,
   listDistroEntries,
@@ -26,7 +26,9 @@ const pageTitle = 'Blackbox Records | Header Type Studies';
 const pageDescription =
   'A noindex typography draft page for reviewing display-header directions against real BlackBox Records content.';
 const pageUrl = createAbsoluteSiteUrl('/demo/header-type-studies/');
-const faviconUrl = createProjectRelativeUrl('/favicon.ico');
+const faviconSvgUrl = createProjectRelativeUrl(siteBrandAssets.faviconSvg);
+const faviconPngUrl = createProjectRelativeUrl(siteBrandAssets.faviconPng96);
+const faviconIcoUrl = createProjectRelativeUrl(siteBrandAssets.faviconIco);
 const selfHostedFontBaseUrl = createProjectRelativeUrl('/assets/fonts/type-studies/');
 const selfHostedFontDirectory = new URL('../../../public/assets/fonts/type-studies/', import.meta.url);
 
@@ -144,7 +146,9 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
     <meta property="og:url" content={pageUrl} />
     <meta name="twitter:card" content="summary" />
     <meta name="theme-color" content="#050505" />
-    <link rel="icon" href={faviconUrl} sizes="any" />
+    <link rel="icon" href={faviconSvgUrl} type="image/svg+xml" sizes="any" />
+    <link rel="icon" href={faviconPngUrl} type="image/png" sizes="96x96" />
+    <link rel="icon" href={faviconIcoUrl} sizes="any" />
     <title>{pageTitle}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
