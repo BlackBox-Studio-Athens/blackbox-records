@@ -86,6 +86,7 @@ import {
   clearRouteLoadingTimer as clearScheduledRouteLoadingTimer,
   scheduleRouteLoadingStop,
 } from './route-loading-indicator';
+import { scrollShellTargetIntoView } from './shell-target-scroll';
 
 type OverlayState = {
   backgroundHref: string;
@@ -717,33 +718,12 @@ export default function AppShellRoot({
   }
 
   function scrollToTargetId(targetId: string, triggerElement?: HTMLElement | null) {
-    const overlayScrollRoot =
-      triggerElement && overlayScrollContainerRef.current?.contains(triggerElement)
-        ? overlayScrollContainerRef.current
-        : null;
-    const targetElement =
-      overlayScrollRoot?.querySelector<HTMLElement>(`[id="${targetId}"]`) ||
-      document.querySelector<HTMLElement>(`[id="${targetId}"]`);
-
-    if (!targetElement) return false;
-
-    if (overlayScrollRoot && overlayScrollRoot.contains(targetElement)) {
-      const overlayScrollRootRect = overlayScrollRoot.getBoundingClientRect();
-      const targetRect = targetElement.getBoundingClientRect();
-      const nextScrollTop = overlayScrollRoot.scrollTop + (targetRect.top - overlayScrollRootRect.top) - 16;
-
-      overlayScrollRoot.scrollTo({
-        top: Math.max(nextScrollTop, 0),
-        behavior: 'smooth',
-      });
-    } else {
-      targetElement.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }
-
-    return true;
+    return scrollShellTargetIntoView({
+      documentRoot: document,
+      overlayScrollContainer: overlayScrollContainerRef.current,
+      targetId,
+      triggerElement,
+    });
   }
 
   function closeOverlayState({ restoreFocus = true } = {}) {
