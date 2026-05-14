@@ -2,7 +2,12 @@
 
 ## Overview
 
-This roadmap covers milestone `v1.1`, the Stripe Sandbox Integration milestone. The goal is to add native commerce to the existing Astro site using a Cloudflare-fronted dual-runtime monorepo model:
+This roadmap now treats milestone `v1.2`, Modulith Boundary Hardening, as the active milestone. The earlier `v1.1`
+Stripe Sandbox Integration work remains partially open behind deferred external gates, while the current focus shifts to
+the architecture hardening needed to make later refactors smaller, cheaper, and easier to review.
+
+The historical v1.1 goal was to add native commerce to the existing Astro site using a Cloudflare-fronted dual-runtime
+monorepo model:
 
 - the Astro site remains a static frontend, now hosted canonically on Cloudflare Pages with GitHub Pages kept as rollback/legacy
 - a separate Cloudflare Worker backend is added in-repo for dynamic commerce APIs, Stripe integration, webhooks, and D1 state
@@ -11,14 +16,14 @@ Cloudflare Pages is now the canonical static frontend host after Phase 7.1 valid
 
 The UI contracts for the store flow and BOX NOW locker flow were approved in the archived pre-sandbox milestone. Re-run `$gsd-ui-phase` only if implementation work materially changes those approved shopper flows.
 
-## Milestone v1.1: Stripe Sandbox Integration
+## Milestone v1.2: Modulith Boundary Hardening
 
 ## Milestone Position
 
-- **Current milestone:** Stripe Sandbox Integration
-- **Starts at:** Phase 5
-- **Ends after:** Phase 10 approval
-- **Next milestone:** Go-Live / Launch Hardening
+- **Current milestone:** Modulith Boundary Hardening
+- **Starts at:** Phase 12
+- **Ends after:** the approved Phase 12 hardening slices are executed or explicitly deferred
+- **Previous milestone:** v1.1 Stripe Sandbox Integration (deferred external gates remain open)
 
 ## Phases
 
@@ -35,9 +40,10 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - [ ] **Phase 7: Worker Checkout And Stripe Sandbox Flow** - Implement Worker-owned checkout APIs and connect the frontend checkout route to Stripe sandbox (mock/contract implementation complete; real Stripe account validation deferred)
 - [x] **Phase 7.1: Cloudflare Pages Static Frontend Migration** - Move the static Astro frontend from GitHub Pages to Cloudflare Pages before webhook/order/shipping verification depends on stable Cloudflare-hosted origins
 - [x] **Phase 8: Webhook Orders And Stock** - Make payment truth and stock mutation Worker-owned, webhook-authoritative, and idempotent (non-secret backend groundwork may proceed before real Stripe account access)
-- [ ] **Phase 9: Greece-Only BOX NOW Shipping** - Add the approved locker-selection gate and thin fulfillment data contract (local implementation complete; BOX NOW portal validation deferred)
+- [ ] **Phase 9: Greece-Only BOX NOW Shipping** - Lock the Greece-only BOX NOW shipping contract and choose between manual address fulfillment or `boxnow-js`-backed automation (current locker-first implementation is prototype-only; final shipping mode still pending)
 - [ ] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow where account access allows and prepare the go-live handoff package (review package complete; external gates remain pending)
 - [x] **Phase 11: Website Editorial And Catalog UX Improvements** - Convert partner website notes into static-site editorial, artist, release, homepage, and distro/catalog improvements without changing commerce authority (completed 2026-05-12)
+- [ ] **Phase 12: Modulith Boundary Hardening Planning** - Activate the TypeScript-native boundary stack and execution slices that make later refactors safer before revisiting the deferred commerce gates
 
 ## Phase Details
 
@@ -235,16 +241,21 @@ Plans:
 
 ### Phase 9: Greece-Only BOX NOW Shipping
 
-**Goal**: Add the approved Greece-only locker gate before payment and keep fulfillment low-maintenance.
+**Goal**: Lock the Greece-only BOX NOW shipping contract, choose the shipping mode, and keep fulfillment low-maintenance.
 **Depends on**: Phase 8
 **Requirements**: SHIP-01, SHIP-02, SHIP-03
 **Success Criteria** (what must be TRUE):
 
-1. Greece-only shoppers must select a BOX NOW locker before entering payment.
-2. Paid orders persist only the approved thin locker snapshot.
-3. Fulfillment remains manual through the BOX NOW partner portal.
+1. Phase 9 chooses one explicit Greece-only BOX NOW path: manual address-based fulfillment or approved automation via `boxnow-js`.
+2. The chosen path exposes only the minimum Worker-owned shipping data needed to fulfill Greek orders.
+3. BOX NOW fulfillment stays low-maintenance without exposing BOX NOW secrets or shifting shipping authority to browser code.
    **Plans**: 6 plans
-   **Review gate**: Human review required if implementation drifts from the approved locker UX or expands shipping scope.
+   **Review gate**: Human review required if implementation drifts from the chosen shipping mode, expands shipping scope, or proposes BOX NOW automation outside `boxnow-js`.
+
+Current implementation note:
+
+- Plans `09-02` through `09-05` currently reflect a locker-first prototype branch.
+- If manual-address fulfillment is chosen, reopen or replace that prototype work before marking Phase 9 complete.
 
 Plans:
 
@@ -253,13 +264,17 @@ Plans:
 - [x] 09-03: Add backend checkout preflight for Greece-only locker selection
 - [x] 09-04: Persist the thin locker snapshot on checkout/order state
 - [x] 09-05: Surface selected locker state in checkout return/order recap
-- [ ] 09-06: Document manual BOX NOW fulfillment and sandbox validation (deferred until BOX NOW partner/sandbox portal access exists)
+- [ ] 09-06: Document manual BOX NOW fulfillment and sandbox validation (deferred until the shipping mode is chosen and BOX NOW partner/sandbox portal access exists)
 
-BOX NOW portal deferred gate:
+Remaining Phase 9 gates:
 
-- Do now without BOX NOW account: local mock checkout, Greece-only checkout gate, thin locker snapshot persistence, return recap, internal order readback, manual handoff docs, signed webhook fixtures, and local UAT checklist work.
-- Prepare now, validate later: partner-portal handoff checklist, expected operator source-of-truth fields, local paid-order evidence, and production/go-live gap notes.
-- Blocked until BOX NOW portal access: operator login, sandbox-paid Greek order fulfillment through the BOX NOW partner portal, accepted locker shipment evidence, and `SHIP-03` completion.
+- Decide the Phase 9 shipping mode:
+  - manual-address fulfillment (default)
+  - `boxnow-js`-backed BOX NOW automation
+- Do now without BOX NOW account: document both branches, keep manual fulfillment low-maintenance, and treat existing locker-first work as prototype evidence only.
+- If manual-address fulfillment is chosen: capture and validate the Worker-owned address/contact handoff needed for manual portal shipment.
+- If automated fulfillment is chosen: open a follow-up integration slice that consumes `boxnow-js` rather than adding ad hoc BOX NOW logic here.
+- Blocked until BOX NOW portal access: operator login and a sandbox-paid Greek order fulfilled through the chosen path, with recorded evidence and `SHIP-03` completion.
 
 ### Phase 10: Sandbox Verification And Release Gate
 
@@ -315,11 +330,21 @@ Plans:
 
 - [x] 11-05: Verify editorial and catalog UX improvements
 
-## Future Milestone Seeds
+## Active And Future Milestones
+
+### v1.2 Modulith Boundary Hardening
+
+- Active milestone that sits between the deferred sandbox milestone and Go-Live / Launch Hardening
+- Consumes `BL-19`, `ADR-004`, `.planning/codebase/MODULES.md`, and the Phase 12 planning artifacts
+- Produces explicit module-boundary execution slices for `app-shell`, `cms-admin`, public commerce HTTP, backend
+  commerce modules, and the residual `platform-shared` bucket
+- Keeps `.planning/config.json` `parallelization: false`
+- Exists to make later large refactors safer and more reviewable before production cutover work begins
 
 ### Go-Live / Launch Hardening
 
 - Production cutover remains a separate milestone
+- Starts only after the planned v1.2 hardening milestone or an explicit decision to skip it
 - Consumes `10-MILESTONE-REVIEW.md`, sandbox readiness evidence, local UAT evidence, and the deferred external-gate checklist produced by this milestone
 - Covers Stripe Access Gate completion, BOX NOW Portal Gate completion, Cloudflare Flagship `FLAGS` setup, live-mode keys, production rollout, emergency disable strategy, comms, and final stop/go review
 - Must explicitly decide whether native commerce launches with the current single-item cart scope or first completes the no-account multi-item CartDraft and CartQuantity workstream

@@ -34,7 +34,7 @@ unless a plan explicitly records a terminology change here first.
 | **CartLineItemSnapshot** (new) | Client-held identity and display snapshot copied into a CartLine for rendering and checkout routing.                             | StoreCart item, product snapshot, item blob |
 | **Primary Line Item** (new)    | Compatibility projection of the first CartLineItemSnapshot when single-line checkout UI still needs one representative item.     | item, primary item, first item              |
 | **CartQuantity**               | Shopper-requested quantity for one CartLine that the Worker must validate against OnlineStock before checkout.                   | item count, stock quantity                  |
-| **Checkout Request** (updated) | Public shopper API input containing app-owned item identity, requested CartQuantity, and the approved Shipping Locker Snapshot.  | payment payload                             |
+| **Checkout Request** (updated) | Public shopper API input containing app-owned item identity, requested CartQuantity, and the approved shipping-mode data.        | payment payload                             |
 | **StartCheckout**              | Worker application action and public API path that validates checkout input and creates the Stripe Checkout Session.             | create checkout, start payment              |
 | **ReadCheckoutState**          | Worker application action and public API path that reports backend-known checkout status to the client.                          | payment status check                        |
 | **Checkout Session**           | Stripe Checkout Session created by the Worker and mounted through Embedded Checkout.                                             | payment session                             |
@@ -64,29 +64,44 @@ unless a plan explicitly records a terminology change here first.
 
 ## Shipping and Fulfillment
 
-| Canonical term               | Meaning                                                                                                                                           | Aliases to avoid                 |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| **BOX NOW Locker**           | Shopper-selected Greek BOX NOW locker used for v1 delivery.                                                                                       | pickup point, parcel locker      |
-| **Shipping Locker Snapshot** | Minimal persisted locker data: `locker_id`, `country_code`, and `locker_name_or_label`.                                                           | locker payload, BOX NOW response |
-| **BOX NOW Test Locker**      | Local/test locker snapshot from the BOX NOW FAQ: `locker_id = 4`, `country_code = GR`, and `locker_name_or_label = ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234`. | fake locker, default locker      |
-| **Greece-Only Shipping**     | Phase 9 shipping boundary: `country_code = GR` and no non-Greece delivery path in this milestone.                                                 | domestic shipping, EU shipping   |
-| **Manual Fulfillment**       | v1 operator handoff through the BOX NOW partner portal after payment.                                                                             | fulfillment automation           |
-| **BOX NOW Credentials**      | Partner/API credentials that belong only in Worker runtime secrets or out-of-band operator tooling.                                               | public locker config             |
-| **BOX NOW Portal Gate**      | Deferred real BOX NOW validation requiring partner/sandbox portal access, a sandbox-paid Greek order, accepted locker shipment, and evidence.     | shipping blocker, portal blocker |
+| Canonical term               | Meaning                                                                                                                                  | Aliases to avoid                      |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **Shipping Mode**            | Explicit Phase 9 choice between manual-address fulfillment and automated BOX NOW fulfillment via `boxnow-js`.                            | implicit default, maybe later         |
+| **Order Shipping Address**   | Greek delivery address plus any required recipient/contact data used for non-automated BOX NOW shipment creation.                        | full BOX NOW payload, locker payload  |
+| **BOX NOW Locker**           | Shopper-selected Greek BOX NOW locker used only if the automation/locker flow is chosen.                                                 | default shipping input, parcel locker |
+| **Shipping Locker Snapshot** | Minimal persisted BOX NOW-specific locker data for an approved automation path: `locker_id`, `country_code`, and `locker_name_or_label`. | universal shipping state              |
+| **BOX NOW Test Locker**      | Local/test locker snapshot used only for the current locker-first prototype branch.                                                      | default locker, final shipping mode   |
+| **Greece-Only Shipping**     | Phase 9 shipping boundary: Greece only and no non-Greece delivery path in this milestone.                                                | domestic shipping, EU shipping        |
+| **Manual Fulfillment**       | Operator handoff through the BOX NOW partner portal using Worker-owned paid order state and the chosen shipping-mode data.               | fulfillment automation                |
+| **BOX NOW Credentials**      | Partner/API credentials that belong only in Worker runtime secrets or out-of-band operator tooling.                                      | public locker config                  |
+| **BOX NOW Portal Gate**      | Deferred real BOX NOW validation requiring partner/sandbox portal access and evidence for the chosen shipping path.                      | shipping blocker, portal blocker      |
 
 ## Hosting, Validation, and Planning
 
-| Canonical term                   | Meaning                                                                                                                     | Aliases to avoid                         |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| **Static Astro Frontend** (new)  | Prebuilt Astro site served by Cloudflare Pages or GitHub Pages rollback without owning dynamic commerce authority.          | frontend app, Pages backend              |
-| **Worker Backend** (new)         | Cloudflare Worker that owns dynamic commerce APIs, D1, Stripe, webhooks, secrets, and protected operator APIs.              | backend app, Pages Functions             |
-| **Cloudflare Pages** (new)       | Canonical static deployment target for the Static Astro Frontend.                                                           | production backend, Pages Functions host |
-| **GitHub Pages Rollback** (new)  | Legacy rollback deployment target for the Static Astro Frontend.                                                            | primary GitHub Pages site                |
-| **Current Plan** (new)           | Active GSD phase or milestone plan that defines the work being executed now.                                                | latest idea, current doc                 |
-| **GSD Source of Truth** (new)    | Planning artifact set that decides the Current Plan, accepted decisions, blockers, and required evidence.                   | notes, scratch plan                      |
-| **Validation Evidence** (new)    | Recorded proof that a plan's required checks or acceptance criteria passed, including blockers when a gate cannot pass yet. | test output, proof, evidence blob        |
-| **Deferred Gate** (new)          | Explicitly recorded external or environment-dependent gate that cannot pass yet and must not be reported as complete.       | blocker, postponed check                 |
-| **Browser Use Validation** (new) | Rendered UI verification performed with the native Codex Windows app Browser Use plugin.                                    | browser check, DevTools validation       |
+| Canonical term                      | Meaning                                                                                                                                                 | Aliases to avoid                         |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| **Application Module** (new)        | Explicitly declared functional module in this monorepo, with one responsibility, a provided interface, hidden internals, and named dependencies.        | area, bucket, random folder              |
+| **Provided Interface** (new)        | The only surface another Application Module may import or call directly.                                                                                | public random file, any exported symbol  |
+| **Internal Implementation** (new)   | Files and types inside an Application Module that must not be imported across module boundaries.                                                        | accessible internals, deep import target |
+| **Required Dependency** (new)       | Another Application Module or Named Interface that a module is explicitly allowed to depend on.                                                         | incidental import, convenient shortcut   |
+| **Named Interface** (new)           | An explicitly documented secondary module surface beyond the root provided interface, typically a future `api.ts` or `spi.ts`.                          | deep import, helper path                 |
+| **Module Canvas** (new)             | The planning document that records one Application Module's responsibility, owned paths, interfaces, dependencies, events, tests, and migration status. | module note, rough sketch                |
+| **Closed Module** (new)             | An Application Module whose internals are not meant to be imported across module boundaries.                                                            | normal module, default bucket            |
+| **Open-Temporary Module** (new)     | A legacy Application Module that is temporarily allowed broader internal coupling while a closing slice is planned.                                     | permanent exception, shared mess         |
+| **Split-Pending Module** (new)      | A residual Application Module whose current owned paths are still too broad and must be reduced in later slices.                                        | catch-all forever, misc module           |
+| **Boundary Manifest** (new)         | The one repo machine-readable file that future lint and graph tooling reads for module ownership, dependencies, entrypoints, and statuses.              | loose note, optional spreadsheet         |
+| **Root-First Entrypoint** (new)     | The rule that every module should expose one obvious root import target before introducing any secondary named interface.                               | random export path, deep import default  |
+| **Compatibility Facade** (new)      | A temporary forwarding surface that keeps old import paths alive after a boundary split; disallowed by the current Phase 12 decisions.                  | harmless alias, migration convenience    |
+| **Directory-First Ownership** (new) | The rule that modules own directories or stable file groups by default, with only a short explicit exception list.                                      | file-by-file micromanagement             |
+| **Static Astro Frontend** (new)     | Prebuilt Astro site served by Cloudflare Pages or GitHub Pages rollback without owning dynamic commerce authority.                                      | frontend app, Pages backend              |
+| **Worker Backend** (new)            | Cloudflare Worker that owns dynamic commerce APIs, D1, Stripe, webhooks, secrets, and protected operator APIs.                                          | backend app, Pages Functions             |
+| **Cloudflare Pages** (new)          | Canonical static deployment target for the Static Astro Frontend.                                                                                       | production backend, Pages Functions host |
+| **GitHub Pages Rollback** (new)     | Legacy rollback deployment target for the Static Astro Frontend.                                                                                        | primary GitHub Pages site                |
+| **Current Plan** (new)              | Active GSD phase or milestone plan that defines the work being executed now.                                                                            | latest idea, current doc                 |
+| **GSD Source of Truth** (new)       | Planning artifact set that decides the Current Plan, accepted decisions, blockers, and required evidence.                                               | notes, scratch plan                      |
+| **Validation Evidence** (new)       | Recorded proof that a plan's required checks or acceptance criteria passed, including blockers when a gate cannot pass yet.                             | test output, proof, evidence blob        |
+| **Deferred Gate** (new)             | Explicitly recorded external or environment-dependent gate that cannot pass yet and must not be reported as complete.                                   | blocker, postponed check                 |
+| **Browser Use Validation** (new)    | Rendered UI verification performed with the native Codex Windows app Browser Use plugin.                                                                | browser check, DevTools validation       |
 
 ## Relationships
 
@@ -99,17 +114,25 @@ unless a plan explicitly records a terminology change here first.
 - A CartLine contains a CartLineItemSnapshot and a CartQuantity.
 - A Primary Line Item is derived from the first CartLineItemSnapshot and exists only for single-line compatibility.
 - StartCheckout reads StoreOffer data and creates a Checkout Session only when ItemAvailability, OnlineStock, Stripe
-  Price Mapping, Native Checkout Gate, and Shipping Locker Snapshot are valid for the requested CartLine or CartLines.
+  Price Mapping, Native Checkout Gate, and the chosen shipping-mode data are valid for the requested CartLine or
+  CartLines.
 - The Worker must validate every CartLine and CartQuantity before checkout; StoreCart and CartLineItemSnapshot are not
   price, stock, payment, or order authority.
+- Every Application Module exposes a Provided Interface and hides its Internal Implementation.
+- Required Dependencies must target another module's Provided Interface or Named Interface, never an arbitrary internal
+  path.
+- The Boundary Manifest is the tooling input; `MODULES.md` and Module Canvases are the human review surfaces.
+- Closed Modules reject cross-module internal imports by default.
+- Open-Temporary Modules require explicit exit criteria in their Module Canvas before execution begins.
+- Root-First Entrypoints are the default import target; Compatibility Facades are not the default migration strategy.
 - Local stripe-mock API validates Stripe SDK request shape. The Mock Checkout Panel validates local client handoff.
   Neither satisfies the Stripe Access Gate.
 - Stripe Webhook events update CheckoutOrder and are the only paid-signal path that may decrement Stock.
-- Phase 9 Greece-Only Shipping requires a BOX NOW Locker before payment and persists only the Shipping Locker Snapshot.
-- Manual Fulfillment uses paid CheckoutOrder data and the Shipping Locker Snapshot without storing raw BOX NOW payloads
-  or credentials.
-- Local signed-fixture evidence validates the Manual Fulfillment handoff shape. It does not satisfy the BOX NOW Portal
-  Gate.
+- Phase 9 Greece-Only Shipping now requires an explicit Shipping Mode.
+- Manual Fulfillment uses paid CheckoutOrder data plus the chosen shipping-mode data without storing raw BOX NOW
+  payloads or credentials.
+- If automation is chosen, the implementation must route through `boxnow-js`.
+- Local signed-fixture evidence may validate a prototype handoff shape. It does not satisfy the BOX NOW Portal Gate.
 - Cloudflare Pages serves the Static Astro Frontend. The Worker Backend owns dynamic commerce, D1, Stripe, webhooks,
   secrets, and protected operator APIs.
 - GSD Source of Truth chooses the Current Plan. Validation Evidence either completes that plan or records a Deferred
@@ -146,14 +169,16 @@ unless a plan explicitly records a terminology change here first.
 - **Stock vs OnlineStock:** Stock is the D1 source-of-truth record; OnlineStock is the conservative checkout-facing
   quantity.
 - **Checkout Session vs CheckoutOrder:** Checkout Session is Stripe-owned; CheckoutOrder is the Worker/D1 record.
-- **BOX NOW Locker vs Shipping Locker Snapshot:** BOX NOW Locker is the selected pickup point; Shipping Locker Snapshot
-  is the minimal persisted data.
+- **Order Shipping Address vs Shipping Locker Snapshot:** Order Shipping Address is the non-automated delivery data.
+  Shipping Locker Snapshot is BOX NOW-specific metadata for an approved automation path only.
 - **Mock vs Stripe test mode:** Local stripe-mock and Mock Checkout Panel are no-secret development tools. Stripe test
   mode requires a real Stripe account, keys, Price IDs, and webhook secret.
 - **Sandbox:** Say `Cloudflare sandbox Worker`, `Stripe test mode`, or `Pages preview` instead of bare "sandbox."
-- **Manual Fulfillment vs fulfillment automation:** Phase 9 allows manual partner-portal work only. Automated shipment
-  creation is out of scope.
-- **Local handoff evidence vs BOX NOW Portal Gate:** Local mock checkout plus signed webhook fixtures prove the handoff
+- **Manual Fulfillment vs fulfillment automation:** Manual Fulfillment is the Phase 9 default baseline. Automated
+  shipment creation requires an explicit decision and must route through `boxnow-js`.
+- **Prototype evidence vs final Phase 9 contract:** The current locker-first local implementation is prototype evidence,
+  not the only acceptable final Phase 9 outcome.
+- **Local handoff evidence vs BOX NOW Portal Gate:** Local mock checkout plus signed webhook fixtures prove a handoff
   shape only. Real portal fulfillment evidence still requires BOX NOW partner/sandbox portal access.
 - **Cloudflare Pages vs Worker Backend:** Pages serves static frontend assets. The Worker owns all dynamic commerce
   behavior and secrets.

@@ -4,6 +4,20 @@
 **Date:** 2026-04-19  
 **Scope:** Future work outside the active sandbox implementation roadmap.
 
+## Ready For Pre-Go-Live Architecture Hardening
+
+### BL-19: Modulith boundary hardening planning
+
+- Linked milestone: v1.2 Modulith Boundary Hardening
+- Acceptance criteria:
+  - Add a planning-only milestone that sits after the active v1.1 sandbox milestone and before Go-Live / Launch Hardening.
+  - Create `.planning/phases/12-modulith-boundary-hardening-planning/` with context, research, spec, four plan docs, and validation.
+  - Define an explicit module map for `app-shell`, `player`, `storefront-catalog`, `store-cart`, `checkout-web`, `cms-admin`, `public-commerce-http`, `checkout-core`, `orders`, `stock`, `operator-stock`, and `platform-shared`.
+  - Create one module canvas per module plus an ADR that translates Spring Modulith ideas into repo-local rules for module boundaries, named interfaces, temporary-open modules, and verification.
+  - Keep `.planning/config.json` `parallelization: false`, keep `workflow.use_worktrees = false`, and leave the active v1.1 roadmap/status untouched.
+  - Run `pnpm check` and `pnpm test:unit` after the planning docs land.
+- Human review stop: approve the module map, temporary-open exceptions, and future execution slices before any refactor starts.
+
 ## Ready For Future Go-Live Milestone
 
 Start from `.planning/phases/10-sandbox-verification-and-release-gate/10-MILESTONE-REVIEW.md`.
