@@ -19,7 +19,7 @@ sections while acting as the future thin composition root over smaller shell sub
 ## Internal Implementation Area
 
 - shell page snapshot parsing plus the `shell-page-loader` request/cache seam
-- overlay history behavior plus the `overlay-fragment-loader` request/cache seam
+- overlay history behavior plus the `overlay-fragment-loader` request/cache seam and `overlay-history` history seam
 - shell transition state and focus or scroll resets
 - portal reinjection details
 

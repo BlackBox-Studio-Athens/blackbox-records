@@ -66,6 +66,11 @@ import {
 } from '@/lib/store-cart';
 import { isCurrentPath } from '@/utils/urls';
 import { createOverlayFragmentLoader } from './overlay-fragment-loader';
+import {
+  closeOverlayWithHistoryBack as closeOverlayHistoryWithBack,
+  collapseOverlayHistoryToBackground as collapseOverlayHistoryEntryToBackground,
+  writeOverlayHistoryState,
+} from './overlay-history';
 
 type OverlayState = {
   backgroundHref: string;
@@ -83,12 +88,6 @@ type ActivePlayerSession = {
   providerId: PlayerProviderId;
   releaseTitle: string;
   status: 'minimized' | 'modal-open';
-};
-
-type ShellOverlayHistoryState = {
-  __appShellOverlay: true;
-  backgroundHref: string;
-  pathname: string;
 };
 
 type AppShellRootProps = {
@@ -889,48 +888,11 @@ export default function AppShellRoot({
   }
 
   function closeOverlayWithHistoryBack() {
-    if (window.history.state?.__appShellOverlay) {
-      window.history.back();
-      return;
-    }
-
-    closeOverlayState();
+    closeOverlayHistoryWithBack(window.history, closeOverlayState);
   }
 
   function collapseOverlayHistoryToBackground() {
-    const currentOverlayState = overlayStateRef.current;
-    if (!currentOverlayState) return;
-
-    const currentHistoryState = window.history.state || {};
-    window.history.replaceState(
-      {
-        ...currentHistoryState,
-        __appShellOverlay: false,
-      },
-      '',
-      currentOverlayState.backgroundHref,
-    );
-    closeOverlayState({ restoreFocus: false });
-  }
-
-  function writeOverlayHistoryState(options: {
-    historyMode: 'push' | 'replace';
-    href: string;
-    backgroundHref: string;
-    pathname: string;
-  }) {
-    const nextHistoryState: ShellOverlayHistoryState = {
-      __appShellOverlay: true,
-      backgroundHref: options.backgroundHref,
-      pathname: options.pathname,
-    };
-
-    if (options.historyMode === 'push') {
-      window.history.pushState(nextHistoryState, '', options.href);
-      return;
-    }
-
-    window.history.replaceState(nextHistoryState, '', options.href);
+    collapseOverlayHistoryEntryToBackground(window.history, overlayStateRef.current, closeOverlayState);
   }
 
   async function openOverlayHref(
@@ -956,7 +918,7 @@ export default function AppShellRoot({
     });
 
     if (options?.pushHistory || options?.replaceHistory) {
-      writeOverlayHistoryState({
+      writeOverlayHistoryState(window.history, {
         historyMode: options?.pushHistory ? 'push' : 'replace',
         href: resolvedUrl.toString(),
         backgroundHref,
