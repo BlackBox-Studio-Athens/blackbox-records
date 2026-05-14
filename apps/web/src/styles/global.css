@@ -1683,14 +1683,15 @@
   }
 
   .releases-latest-feature-section {
-    margin-top: 0.5rem;
-    margin-bottom: 2.5rem;
+    margin-top: clamp(1rem, 3vw, 2rem);
+    margin-bottom: clamp(2.25rem, 5vw, 4rem);
   }
 
   .releases-latest-feature {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
-    align-items: center;
+    align-items: stretch;
     border-top: 1px solid #2b2b2b;
     border-bottom: 1px solid #2b2b2b;
     padding-block: 1rem;
@@ -1698,11 +1699,13 @@
 
   .releases-latest-feature__artwork-link {
     display: block;
-    width: min(100%, 10rem);
+    width: 100%;
+    min-width: 0;
     color: inherit;
   }
 
   .releases-latest-feature__artwork {
+    display: block;
     aspect-ratio: 1 / 1;
     width: 100%;
     height: auto;
@@ -1712,28 +1715,35 @@
   }
 
   .releases-latest-feature__copy {
-    display: grid;
-    gap: 0.35rem;
+    display: flex;
     min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    border-top: 1px solid #2b2b2b;
+    border-bottom: 1px solid #2b2b2b;
+    padding-block: 1rem;
   }
 
   .releases-latest-feature__label,
-  .releases-latest-feature__meta {
+  .releases-latest-feature__meta,
+  .releases-latest-feature__upcoming-meta {
     margin: 0;
     color: var(--muted-foreground);
     font-size: 0.72rem;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.12em;
     line-height: 1.2;
     text-transform: uppercase;
   }
 
   .releases-latest-feature__title {
     width: fit-content;
+    margin-top: 0.5rem;
     color: var(--foreground);
     font-family: var(--font-display);
-    font-size: clamp(2.4rem, 9vw, 4.2rem);
+    font-size: clamp(3.4rem, 18vw, 6.5rem);
     line-height: 0.9;
-    letter-spacing: 0.055em;
+    letter-spacing: 0.04em;
+    overflow-wrap: anywhere;
     text-transform: uppercase;
   }
 
@@ -1746,16 +1756,82 @@
   }
 
   .releases-latest-feature__summary {
-    max-width: 42rem;
-    margin: 0.35rem 0 0;
-    color: rgba(214, 214, 214, 0.82);
-    font-size: 0.94rem;
+    max-width: 58ch;
+    margin: 1rem 0 0;
+    color: rgba(214, 214, 214, 0.86);
+    font-size: 1rem;
     line-height: 1.65;
   }
 
   .releases-latest-feature__actions {
     display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
     align-items: center;
+    margin-top: 1.2rem;
+  }
+
+  .releases-latest-feature__action-link {
+    display: inline-flex;
+    min-height: 2.35rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(245, 245, 245, 0.42);
+    padding: 0.65rem 0.95rem;
+    color: rgba(245, 245, 245, 0.86);
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.12em;
+    line-height: 1;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition:
+      border-color 0.16s ease,
+      background-color 0.16s ease,
+      color 0.16s ease;
+  }
+
+  .releases-latest-feature__action-link:hover,
+  .releases-latest-feature__action-link:focus-visible {
+    border-color: rgba(245, 245, 245, 0.88);
+    background-color: rgba(245, 245, 245, 0.08);
+    color: rgb(245, 245, 245);
+    outline: none;
+  }
+
+  .releases-latest-feature__action-link:focus-visible {
+    outline: 1px solid rgba(245, 245, 245, 0.78);
+    outline-offset: 3px;
+  }
+
+  .releases-latest-feature__upcoming {
+    border-top: 1px solid #2b2b2b;
+    padding-top: 1rem;
+  }
+
+  .releases-latest-feature__upcoming-title {
+    display: inline-block;
+    margin-top: 0.45rem;
+    color: #f2efea;
+    font-family: var(--font-display);
+    font-size: clamp(2.25rem, 12vw, 3rem);
+    line-height: 0.95;
+    letter-spacing: 0.04em;
+    overflow-wrap: anywhere;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .releases-latest-feature__upcoming-title:hover,
+  .releases-latest-feature__upcoming-title:focus-visible {
+    text-decoration: underline;
+    text-decoration-color: rgba(245, 245, 245, 0.45);
+    text-underline-offset: 0.16em;
+  }
+
+  .releases-latest-feature__upcoming-meta {
+    margin-top: 0.45rem;
+    color: rgba(245, 245, 245, 0.66);
   }
 
   .release-card-tile--framed {
@@ -3385,16 +3461,16 @@ body.is-app-shell-overlay-open {
   }
 
   .releases-latest-feature {
-    grid-template-columns: minmax(8.5rem, 10rem) minmax(0, 1fr);
-    gap: 1.25rem;
-    padding-block: 1.15rem;
+    grid-template-columns: minmax(15rem, 0.9fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    padding-block: 1.25rem;
   }
 
   .releases-latest-feature__artwork-link {
     width: 100%;
   }
 
-  .releases-latest-feature__actions {
+  .releases-latest-feature__upcoming {
     grid-column: 2;
   }
 
@@ -3549,14 +3625,13 @@ body.is-app-shell-overlay-open {
   }
 
   .releases-latest-feature {
-    grid-template-columns: 11.5rem minmax(0, 1fr) auto;
-    gap: 1.5rem;
-    padding-block: 1.25rem;
+    grid-template-columns: minmax(18rem, 0.95fr) minmax(0, 1fr);
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+    padding-block: 1.5rem;
   }
 
   .releases-latest-feature__actions {
-    grid-column: auto;
-    justify-content: flex-end;
+    justify-content: flex-start;
   }
 
   .artist-previous-release-list {

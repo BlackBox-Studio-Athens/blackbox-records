@@ -11,13 +11,17 @@ import {
   mapArtistProfilesById,
   resolveReleaseArtistDisplayName,
 } from '@/lib/catalog-data';
-import { formatYear } from '@/utils/content';
+import { getReleaseCommerceLink } from '@/lib/release-commerce';
+import { splitReleaseCatalogByAvailability } from '@/lib/release-feature';
+import { formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/utils/music';
 
 const artistProfiles = await listArtistProfiles();
 const releaseCatalogEntries = await listReleaseCatalog();
 const artistProfileById = mapArtistProfilesById(artistProfiles);
-const latestReleaseEntry = releaseCatalogEntries[0];
+const { outNowReleases, upcomingReleases } = splitReleaseCatalogByAvailability(releaseCatalogEntries);
+const latestReleaseEntry = outNowReleases[0] || releaseCatalogEntries[0];
+const upcomingReleaseEntry = upcomingReleases.find((releaseEntry) => releaseEntry !== latestReleaseEntry);
 const latestReleaseArtist = latestReleaseEntry ? artistProfileById.get(latestReleaseEntry.data.artist.id) : undefined;
 const latestReleaseArtistName = latestReleaseEntry
   ? resolveReleaseArtistDisplayName(latestReleaseEntry, latestReleaseArtist)
@@ -25,6 +29,24 @@ const latestReleaseArtistName = latestReleaseEntry
 const latestReleasePlayerData = latestReleaseEntry
   ? buildEmbeddedPlayerData(latestReleaseEntry.data, `${latestReleaseEntry.data.title} - ${latestReleaseArtistName}`)
   : null;
+const latestReleaseCommerceLink = latestReleaseEntry ? await getReleaseCommerceLink(latestReleaseEntry) : null;
+const latestReleaseDetailPath = latestReleaseEntry ? createReleaseDetailPath(latestReleaseEntry) : '';
+const latestReleaseLabel = latestReleaseEntry === outNowReleases[0] ? 'Latest out now' : 'Next release';
+const hasLatestReleaseActions = Boolean(latestReleasePlayerData?.hasProvider || latestReleaseCommerceLink);
+const upcomingReleaseArtist = upcomingReleaseEntry
+  ? artistProfileById.get(upcomingReleaseEntry.data.artist.id)
+  : undefined;
+const upcomingReleaseArtistName = upcomingReleaseEntry
+  ? resolveReleaseArtistDisplayName(upcomingReleaseEntry, upcomingReleaseArtist)
+  : '';
+
+function formatReleaseDate(value: Date) {
+  return value.toLocaleDateString('en-US', { day: '2-digit', month: 'short', timeZone: 'UTC', year: 'numeric' });
+}
+
+function formatReleaseFormats(formats: string[] | undefined) {
+  return formats?.length ? formats.join(' / ') : 'Release';
+}
 ---
 
 <SiteLayout pageTitle="Releases" pageDescription="Releases and label catalog.">
@@ -33,42 +55,65 @@ const latestReleasePlayerData = latestReleaseEntry
     latestReleaseEntry && (
       <section class="layout-container releases-latest-feature-section">
         <article class="releases-latest-feature">
-          <a
-            class="releases-latest-feature__artwork-link"
-            href={createReleaseDetailPath(latestReleaseEntry)}
-            data-astro-prefetch
-          >
+          <a class="releases-latest-feature__artwork-link" href={latestReleaseDetailPath} data-astro-prefetch>
             <Image
               src={latestReleaseEntry.data.cover_image}
               alt={latestReleaseEntry.data.cover_image_alt || latestReleaseEntry.data.title}
               class="releases-latest-feature__artwork"
-              sizes="(min-width: 1024px) 12rem, (min-width: 640px) 11rem, 100vw"
+              sizes="(min-width: 1100px) 42vw, 100vw"
             />
           </a>
           <div class="releases-latest-feature__copy">
-            <p class="releases-latest-feature__label">Latest release</p>
-            <a
-              class="releases-latest-feature__title"
-              href={createReleaseDetailPath(latestReleaseEntry)}
-              data-astro-prefetch
-            >
+            <p class="releases-latest-feature__label">{latestReleaseLabel}</p>
+            <a class="releases-latest-feature__title" href={latestReleaseDetailPath} data-astro-prefetch>
               {latestReleaseEntry.data.title}
             </a>
             <p class="releases-latest-feature__meta">
-              {latestReleaseArtistName} / {formatYear(latestReleaseEntry.data.release_date)}
+              {latestReleaseArtistName} / {formatMonthYear(latestReleaseEntry.data.release_date)} /{' '}
+              {formatReleaseFormats(latestReleaseEntry.data.formats)}
             </p>
             {latestReleaseEntry.data.summary && (
               <p class="releases-latest-feature__summary">{latestReleaseEntry.data.summary}</p>
             )}
+            {hasLatestReleaseActions && (
+              <div class="releases-latest-feature__actions">
+                {latestReleasePlayerData?.hasProvider && (
+                  <MusicStreamingServiceListenTrigger
+                    embeddedPlayerData={latestReleasePlayerData}
+                    tone="accent"
+                    variant="standalone"
+                  />
+                )}
+                <a class="releases-latest-feature__action-link" href={latestReleaseDetailPath} data-astro-prefetch>
+                  View Release
+                </a>
+                {latestReleaseCommerceLink && (
+                  <a
+                    class="releases-latest-feature__action-link"
+                    href={latestReleaseCommerceLink.href}
+                    rel={latestReleaseCommerceLink.rel}
+                    target={latestReleaseCommerceLink.target}
+                  >
+                    {latestReleaseCommerceLink.label}
+                  </a>
+                )}
+              </div>
+            )}
           </div>
-          {latestReleasePlayerData?.hasProvider && (
-            <div class="releases-latest-feature__actions">
-              <MusicStreamingServiceListenTrigger
-                embeddedPlayerData={latestReleasePlayerData}
-                tone="accent"
-                variant="standalone"
-              />
-            </div>
+          {upcomingReleaseEntry && (
+            <aside class="releases-latest-feature__upcoming" aria-label="Upcoming release">
+              <p class="releases-latest-feature__label">Upcoming</p>
+              <a
+                class="releases-latest-feature__upcoming-title"
+                href={createReleaseDetailPath(upcomingReleaseEntry)}
+                data-astro-prefetch
+              >
+                {upcomingReleaseEntry.data.title}
+              </a>
+              <p class="releases-latest-feature__upcoming-meta">
+                {upcomingReleaseArtistName} / {formatReleaseDate(upcomingReleaseEntry.data.release_date)}
+              </p>
+            </aside>
           )}
         </article>
       </section>
