@@ -79,6 +79,10 @@ import {
   collapseOverlayHistoryToBackground as collapseOverlayHistoryEntryToBackground,
   writeOverlayHistoryState,
 } from './overlay-history';
+import {
+  clearRouteLoadingTimer as clearScheduledRouteLoadingTimer,
+  scheduleRouteLoadingStop,
+} from './route-loading-indicator';
 
 type OverlayState = {
   backgroundHref: string;
@@ -109,8 +113,6 @@ const EMBED_PROVIDER_WARMUP_ORIGINS: Record<PlayerProviderId, string[]> = {
   bandcamp: ['https://bandcamp.com'],
   tidal: ['https://embed.tidal.com', 'https://tidal.com'],
 };
-const ROUTE_LOADING_RESET_DELAY_MS = 120;
-
 function readPlayerProviders(element: HTMLElement) {
   return buildPlayerProviders({
     bandcampEmbedUrl: element.dataset.musicStreamingServiceEmbeddedPlayerBandcampEmbedUrl,
@@ -372,18 +374,15 @@ export default function AppShellRoot({
   }, [activeShellPathname]);
 
   function clearRouteLoadingTimer() {
-    if (routeLoadingTimerRef.current) {
-      window.clearTimeout(routeLoadingTimerRef.current);
-      routeLoadingTimerRef.current = null;
-    }
+    clearScheduledRouteLoadingTimer(routeLoadingTimerRef, window);
   }
 
   function stopRouteLoadingSoon() {
-    clearRouteLoadingTimer();
-    routeLoadingTimerRef.current = window.setTimeout(() => {
-      setIsRouteLoading(false);
-      routeLoadingTimerRef.current = null;
-    }, ROUTE_LOADING_RESET_DELAY_MS);
+    scheduleRouteLoadingStop({
+      scheduler: window,
+      setRouteLoading: setIsRouteLoading,
+      timerRef: routeLoadingTimerRef,
+    });
   }
 
   function retireActivePlayerSession(activeSession: ActivePlayerSession | null) {
