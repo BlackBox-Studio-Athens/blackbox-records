@@ -17,7 +17,35 @@ import {
 import ServicesInquiryForm from '@/components/services/ServicesInquiryForm';
 import StoreCartButton from '@/components/store/StoreCartButton';
 import StoreCartDrawer from '@/components/store/StoreCartDrawer';
-import { CHECKOUT_CART_UPDATED_EVENT } from '@/components/store/CheckoutOrderSummary';
+import {
+  isModifiedEvent,
+  isNavigableOverlayAnchor,
+  isNavigableShellSectionAnchor,
+  markCurrentHistoryEntryForShellSection,
+  resolveInternalUrl,
+  resolveShellNavigationSource,
+  SHELL_SECTION_LABELS,
+  syncDesktopNavigationState,
+  type ShellNavigationSource,
+  type ShellSectionHistoryState,
+  waitForAnimationFrames,
+} from '@/components/app-shell/shell-navigation';
+import {
+  readDocumentShellPageSnapshot,
+  updateDocumentMetadata,
+  type ShellPageSnapshot,
+} from '@/components/app-shell/shell-page-snapshot';
+import {
+  connectStoreCartBridge,
+  getStoreCartBrowserStorage,
+  persistStoreCartState,
+} from '@/components/app-shell/store-cart-bridge';
+import {
+  clearShellPageTransition,
+  createShellSectionTransitionController,
+  scrollShellViewportToTop,
+  triggerShellPageEnterTransition,
+} from '@/components/app-shell/shell-transition';
 import { Spinner } from '@/components/ui/spinner';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { createProjectRelativeUrl, resolveLinkAttributes } from '@/config/site';
@@ -27,21 +55,14 @@ import {
   parseOverlayRoute,
   parseShellSectionRoute,
   type OverlayRoute,
-  type ShellSectionKind,
 } from '@/lib/app-shell/routing';
 import type { SiteNavigationItem } from '@/lib/site-data';
 import {
-  addStoreCartItem,
   createEmptyStoreCartState,
   decrementCartLineQuantityByVariant,
   incrementCartLineQuantityByVariant,
-  readStoreCartState,
   removeCartLineByVariant,
-  parseCartLineItemSnapshot,
-  STORE_CART_ADD_ITEM_EVENT,
-  STORE_CART_OPEN_REQUESTED_EVENT,
   type StoreCartState,
-  writeStoreCartState,
 } from '@/lib/store-cart';
 import { isCurrentPath } from '@/utils/urls';
 
@@ -69,23 +90,6 @@ type ShellOverlayHistoryState = {
   pathname: string;
 };
 
-type ShellSectionHistoryState = {
-  __appShellSection: true;
-  pathname: string;
-};
-
-type ShellNavigationSource = 'footer' | 'header' | 'history' | 'mobile-nav' | 'programmatic';
-
-type ShellPageSnapshot = {
-  canonicalHref: string;
-  href: string;
-  mainClassName: string;
-  mainHtml: string;
-  pageDescription: string;
-  pathname: string;
-  title: string;
-};
-
 type AppShellRootProps = {
   mobileNavigationItems: SiteNavigationItem[];
   servicesInquiryEmail: string;
@@ -103,85 +107,12 @@ const OVERLAY_KIND_LABELS: Record<OverlayRoute['kind'], string> = {
   news: 'news',
   releases: 'release',
 };
-const SHELL_SECTION_LABELS: Record<ShellSectionKind, string> = {
-  about: 'About',
-  artists: 'Artists',
-  distro: 'Distro',
-  home: 'Home',
-  news: 'News',
-  releases: 'Releases',
-  services: 'Services',
-  store: 'Store',
-};
 const EMBED_PROVIDER_WARMUP_ORIGINS: Record<PlayerProviderId, string[]> = {
   bandcamp: ['https://bandcamp.com'],
   tidal: ['https://embed.tidal.com', 'https://tidal.com'],
 };
 const MAX_CACHED_IFRAMES = 6;
 const ROUTE_LOADING_RESET_DELAY_MS = 120;
-const SHELL_SECTION_TRANSITION_MIN_VISIBLE_MS = 180;
-const SHELL_SECTION_TRANSITION_REVEAL_MS = 150;
-
-function isModifiedEvent(event: MouseEvent) {
-  return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
-}
-
-function resolveInternalUrl(anchorElement: HTMLAnchorElement) {
-  try {
-    return new URL(anchorElement.href, window.location.href);
-  } catch {
-    return null;
-  }
-}
-
-function waitForAnimationFrames(count = 1) {
-  return new Promise<void>((resolve) => {
-    function step(remainingFrames: number) {
-      window.requestAnimationFrame(() => {
-        if (remainingFrames <= 1) {
-          resolve();
-          return;
-        }
-
-        step(remainingFrames - 1);
-      });
-    }
-
-    step(count);
-  });
-}
-
-function resolveShellNavigationSource(
-  anchorElement: HTMLAnchorElement,
-  isMobileNavigationLink: boolean,
-): ShellNavigationSource {
-  if (isMobileNavigationLink) return 'mobile-nav';
-  if (anchorElement.closest('footer')) return 'footer';
-  if (anchorElement.closest('header')) return 'header';
-  return 'programmatic';
-}
-
-function isNavigableOverlayAnchor(anchorElement: HTMLAnchorElement) {
-  if (anchorElement.target && anchorElement.target !== '_self') return false;
-  if (anchorElement.hasAttribute('download')) return false;
-  if (anchorElement.hasAttribute('data-astro-reload')) return false;
-
-  const resolvedUrl = resolveInternalUrl(anchorElement);
-  if (!resolvedUrl || resolvedUrl.origin !== window.location.origin) return false;
-
-  return parseOverlayRoute(resolvedUrl.pathname) !== null;
-}
-
-function isNavigableShellSectionAnchor(anchorElement: HTMLAnchorElement) {
-  if (anchorElement.target && anchorElement.target !== '_self') return false;
-  if (anchorElement.hasAttribute('download')) return false;
-  if (anchorElement.hasAttribute('data-astro-reload')) return false;
-
-  const resolvedUrl = resolveInternalUrl(anchorElement);
-  if (!resolvedUrl || resolvedUrl.origin !== window.location.origin) return false;
-
-  return parseShellSectionRoute(resolvedUrl.pathname) !== null;
-}
 
 function readPlayerProviders(element: HTMLElement) {
   return buildPlayerProviders({
@@ -210,45 +141,6 @@ function appendHeadLink(rel: string, href: string, useCrossOrigin: boolean) {
     linkElement.crossOrigin = 'anonymous';
   }
   document.head.appendChild(linkElement);
-}
-
-function getStoreCartBrowserStorage() {
-  try {
-    return window.localStorage;
-  } catch {
-    return undefined;
-  }
-}
-
-function readDocumentShellPageSnapshot(targetDocument: Document, href: string): ShellPageSnapshot | null {
-  const mainElement =
-    targetDocument.querySelector<HTMLElement>('main[data-app-shell-main]') ||
-    targetDocument.querySelector<HTMLElement>('main#main');
-
-  if (!mainElement) return null;
-
-  const mainElementClone = mainElement.cloneNode(true) as HTMLElement;
-  mainElementClone.querySelectorAll<HTMLElement>('[data-artists-roster-filters]').forEach((placeholderElement) => {
-    placeholderElement.innerHTML = '';
-  });
-  mainElementClone.querySelectorAll<HTMLElement>('[data-services-inquiry-form]').forEach((placeholderElement) => {
-    placeholderElement.innerHTML = '';
-  });
-
-  const resolvedUrl = new URL(href, window.location.href);
-  const canonicalHref =
-    targetDocument.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href || resolvedUrl.toString();
-  const pageDescription = targetDocument.querySelector<HTMLMetaElement>('meta[name="description"]')?.content || '';
-
-  return {
-    canonicalHref,
-    href: resolvedUrl.toString(),
-    mainClassName: mainElement.getAttribute('class') || '',
-    mainHtml: mainElementClone.innerHTML,
-    pageDescription,
-    pathname: normalizeAppPathname(resolvedUrl.pathname),
-    title: targetDocument.title,
-  };
 }
 
 export default function AppShellRoot({
@@ -322,6 +214,26 @@ export default function AppShellRoot({
     }),
     [],
   );
+  const shellSectionTransition = useMemo(
+    () =>
+      createShellSectionTransitionController({
+        timerRef: shellSectionTransitionTimerRef,
+        tokenRef: shellSectionTransitionTokenRef,
+        startedAtRef: shellSectionTransitionStartedAtRef,
+        setNavigationSource: setShellNavigationSource,
+        setState: setShellSectionTransitionState,
+        setTarget: setShellSectionTransitionTarget,
+      }),
+    [],
+  );
+  const shellPageTransition = useMemo(
+    () => ({
+      frameRef: shellPageTransitionFrameRef,
+      getMainElement: getCurrentMainElement,
+      timerRef: shellPageTransitionTimerRef,
+    }),
+    [],
+  );
 
   overlayStateRef.current = overlayState;
 
@@ -329,63 +241,17 @@ export default function AppShellRoot({
     setStoreCartState(nextState);
     if (typeof window === 'undefined') return;
 
-    writeStoreCartState(getStoreCartBrowserStorage(), nextState);
+    persistStoreCartState(getStoreCartBrowserStorage(), nextState);
   }
 
   function getCurrentMainElement() {
     return document.querySelector<HTMLElement>('main[data-app-shell-main]');
   }
 
-  function updateDocumentMetadata(pageSnapshot: ShellPageSnapshot) {
-    if (pageSnapshot.title) {
-      document.title = pageSnapshot.title;
-    }
-
-    const descriptionMetaElement = document.head.querySelector<HTMLMetaElement>('meta[name="description"]');
-    if (descriptionMetaElement && pageSnapshot.pageDescription) {
-      descriptionMetaElement.content = pageSnapshot.pageDescription;
-    }
-
-    const canonicalLinkElement = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-    if (canonicalLinkElement && pageSnapshot.canonicalHref) {
-      canonicalLinkElement.href = pageSnapshot.canonicalHref;
-    }
-  }
-
-  function syncDesktopNavigationState(pathname: string) {
-    document.querySelectorAll<HTMLAnchorElement>('.header-nav-link[href]').forEach((anchorElement) => {
-      const anchorPathname = normalizeAppPathname(
-        anchorElement.dataset.navigationPathname || new URL(anchorElement.href, window.location.href).pathname,
-      );
-      const isActive = isCurrentPath(pathname, anchorPathname);
-
-      if (isActive) {
-        anchorElement.setAttribute('aria-current', 'page');
-      } else {
-        anchorElement.removeAttribute('aria-current');
-      }
-    });
-  }
-
   function syncShellNavigationState(pathname: string) {
     renderedPagePathnameRef.current = pathname;
     setActiveShellPathname(pathname);
     syncDesktopNavigationState(pathname);
-  }
-
-  function markCurrentHistoryEntryForShellSection(pathname: string, href = window.location.href) {
-    const shellSectionRoute = parseShellSectionRoute(pathname);
-    if (!shellSectionRoute) return;
-
-    window.history.replaceState(
-      {
-        ...(window.history.state || {}),
-        __appShellSection: true,
-        pathname: shellSectionRoute.pathname,
-      } satisfies ShellSectionHistoryState,
-      '',
-      href,
-    );
   }
 
   function cacheDocumentSnapshot(href = renderedPageHrefRef.current || window.location.href) {
@@ -421,39 +287,14 @@ export default function AppShellRoot({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const syncStoreCartHeaderContainer = () => {
-      setStoreCartHeaderContainer(document.querySelector<HTMLElement>('[data-store-cart-header-root]'));
-    };
-
-    function handleStoreCartAddItem(event: Event) {
-      const item = parseCartLineItemSnapshot((event as CustomEvent<unknown>).detail);
-      if (!item) return;
-
-      applyStoreCartState(addStoreCartItem(item, readStoreCartState(getStoreCartBrowserStorage())));
-      setIsStoreCartDrawerOpen(true);
-    }
-
-    function handleStoreCartOpenRequested() {
-      setIsStoreCartDrawerOpen(true);
-    }
-
-    function handleCheckoutCartUpdated() {
-      setStoreCartState(readStoreCartState(getStoreCartBrowserStorage()));
-    }
-
-    setStoreCartState(readStoreCartState(getStoreCartBrowserStorage()));
-    syncStoreCartHeaderContainer();
-    window.addEventListener(STORE_CART_ADD_ITEM_EVENT, handleStoreCartAddItem);
-    window.addEventListener(CHECKOUT_CART_UPDATED_EVENT, handleCheckoutCartUpdated);
-    window.addEventListener(STORE_CART_OPEN_REQUESTED_EVENT, handleStoreCartOpenRequested);
-    window.addEventListener('pageshow', syncStoreCartHeaderContainer);
-
-    return () => {
-      window.removeEventListener(STORE_CART_ADD_ITEM_EVENT, handleStoreCartAddItem);
-      window.removeEventListener(CHECKOUT_CART_UPDATED_EVENT, handleCheckoutCartUpdated);
-      window.removeEventListener(STORE_CART_OPEN_REQUESTED_EVENT, handleStoreCartOpenRequested);
-      window.removeEventListener('pageshow', syncStoreCartHeaderContainer);
-    };
+    return connectStoreCartBridge({
+      eventTarget: window,
+      queryHeaderRoot: () => document.querySelector<HTMLElement>('[data-store-cart-header-root]'),
+      readStorage: getStoreCartBrowserStorage,
+      setStoreCartDrawerOpen: setIsStoreCartDrawerOpen,
+      setStoreCartHeaderContainer,
+      setStoreCartState,
+    });
   }, []);
 
   useEffect(() => {
@@ -546,125 +387,6 @@ export default function AppShellRoot({
       window.clearTimeout(routeLoadingTimerRef.current);
       routeLoadingTimerRef.current = null;
     }
-  }
-
-  function clearShellSectionTransitionTimer() {
-    if (shellSectionTransitionTimerRef.current !== null) {
-      window.clearTimeout(shellSectionTransitionTimerRef.current);
-      shellSectionTransitionTimerRef.current = null;
-    }
-  }
-
-  function resetShellSectionTransitionState() {
-    clearShellSectionTransitionTimer();
-    setShellSectionTransitionState('closed');
-    setShellSectionTransitionTarget('');
-    setShellNavigationSource('programmatic');
-  }
-
-  function clearShellPageTransition(mainElement?: HTMLElement | null) {
-    if (shellPageTransitionFrameRef.current !== null) {
-      window.cancelAnimationFrame(shellPageTransitionFrameRef.current);
-      shellPageTransitionFrameRef.current = null;
-    }
-
-    if (shellPageTransitionTimerRef.current !== null) {
-      window.clearTimeout(shellPageTransitionTimerRef.current);
-      shellPageTransitionTimerRef.current = null;
-    }
-
-    const targetMainElement = mainElement || getCurrentMainElement();
-    targetMainElement?.removeAttribute('data-shell-page-transition-state');
-  }
-
-  function blurNavigationSourceElement(sourceElement?: HTMLElement | null) {
-    sourceElement?.blur();
-  }
-
-  function focusShellMainAfterSwap() {
-    const mainElement = getCurrentMainElement();
-    if (!mainElement) return;
-
-    try {
-      mainElement.focus({ preventScroll: true });
-    } catch {
-      mainElement.focus();
-    }
-  }
-
-  function beginShellSectionTransition(target: string, source: ShellNavigationSource) {
-    clearShellSectionTransitionTimer();
-    const nextToken = shellSectionTransitionTokenRef.current + 1;
-    shellSectionTransitionTokenRef.current = nextToken;
-    shellSectionTransitionStartedAtRef.current = performance.now();
-    setShellSectionTransitionTarget(target);
-    setShellNavigationSource(source);
-    setShellSectionTransitionState('entering');
-    return nextToken;
-  }
-
-  async function finishShellSectionTransition(transitionToken: number) {
-    const elapsed = performance.now() - shellSectionTransitionStartedAtRef.current;
-    const remainingVisibleDuration = Math.max(0, SHELL_SECTION_TRANSITION_MIN_VISIBLE_MS - elapsed);
-
-    if (remainingVisibleDuration > 0) {
-      await new Promise<void>((resolve) => {
-        shellSectionTransitionTimerRef.current = window.setTimeout(() => {
-          shellSectionTransitionTimerRef.current = null;
-          resolve();
-        }, remainingVisibleDuration);
-      });
-    }
-
-    if (transitionToken !== shellSectionTransitionTokenRef.current) return;
-
-    setShellSectionTransitionState('revealing');
-
-    await new Promise<void>((resolve) => {
-      shellSectionTransitionTimerRef.current = window.setTimeout(() => {
-        shellSectionTransitionTimerRef.current = null;
-        resolve();
-      }, SHELL_SECTION_TRANSITION_REVEAL_MS);
-    });
-
-    if (transitionToken !== shellSectionTransitionTokenRef.current) return;
-
-    resetShellSectionTransitionState();
-  }
-
-  function triggerShellPageEnterTransition() {
-    const mainElement = getCurrentMainElement();
-    if (!mainElement) return;
-
-    clearShellPageTransition(mainElement);
-    mainElement.setAttribute('data-shell-page-transition-state', 'enter');
-
-    shellPageTransitionFrameRef.current = window.requestAnimationFrame(() => {
-      shellPageTransitionFrameRef.current = null;
-      mainElement.setAttribute('data-shell-page-transition-state', 'enter-active');
-    });
-
-    shellPageTransitionTimerRef.current = window.setTimeout(() => {
-      mainElement.removeAttribute('data-shell-page-transition-state');
-      shellPageTransitionTimerRef.current = null;
-    }, 260);
-  }
-
-  async function scrollShellViewportToTop(sourceElement?: HTMLElement | null) {
-    const forceScrollTop = () => {
-      window.scrollTo(0, 0);
-      window.scrollTo({ top: 0, behavior: 'auto' });
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    };
-
-    blurNavigationSourceElement(sourceElement);
-    forceScrollTop();
-    await waitForAnimationFrames(1);
-    focusShellMainAfterSwap();
-    forceScrollTop();
-    await waitForAnimationFrames(2);
-    forceScrollTop();
   }
 
   function stopRouteLoadingSoon() {
@@ -1099,7 +821,10 @@ export default function AppShellRoot({
     const currentPathname = currentSnapshot?.pathname || normalizeAppPathname(window.location.pathname);
     if (route.pathname === currentPathname) {
       syncShellNavigationState(currentPathname);
-      await scrollShellViewportToTop(options?.sourceElement);
+      await scrollShellViewportToTop({
+        getMainElement: getCurrentMainElement,
+        sourceElement: options?.sourceElement,
+      });
       if (options?.historyMode === 'replace') {
         markCurrentHistoryEntryForShellSection(route.pathname, resolvedUrl.toString());
       }
@@ -1115,7 +840,7 @@ export default function AppShellRoot({
       setIsRouteLoading(true);
     }
 
-    const sectionTransitionToken = beginShellSectionTransition(SHELL_SECTION_LABELS[route.kind], navigationSource);
+    const sectionTransitionToken = shellSectionTransition.begin(SHELL_SECTION_LABELS[route.kind], navigationSource);
     await waitForAnimationFrames(2);
 
     try {
@@ -1142,9 +867,12 @@ export default function AppShellRoot({
         markCurrentHistoryEntryForShellSection(route.pathname, resolvedUrl.toString());
       }
 
-      await scrollShellViewportToTop(options?.sourceElement);
-      triggerShellPageEnterTransition();
-      await finishShellSectionTransition(sectionTransitionToken);
+      await scrollShellViewportToTop({
+        getMainElement: getCurrentMainElement,
+        sourceElement: options?.sourceElement,
+      });
+      triggerShellPageEnterTransition(shellPageTransition);
+      await shellSectionTransition.finish(sectionTransitionToken);
 
       return true;
     } catch {
@@ -1152,7 +880,7 @@ export default function AppShellRoot({
         return true;
       }
 
-      resetShellSectionTransitionState();
+      shellSectionTransition.reset();
       window.location.assign(resolvedUrl.toString());
       return false;
     } finally {
@@ -1168,7 +896,7 @@ export default function AppShellRoot({
     if (!pageSnapshot) return false;
     const route = parseShellSectionRoute(pathname);
     const sectionTransitionToken = route
-      ? beginShellSectionTransition(SHELL_SECTION_LABELS[route.kind], options?.source || 'history')
+      ? shellSectionTransition.begin(SHELL_SECTION_LABELS[route.kind], options?.source || 'history')
       : null;
 
     if (sectionTransitionToken !== null) {
@@ -1177,14 +905,14 @@ export default function AppShellRoot({
 
     const applied = applyShellPageSnapshot(pageSnapshot);
     if (!applied) {
-      resetShellSectionTransitionState();
+      shellSectionTransition.reset();
       return false;
     }
 
-    await scrollShellViewportToTop();
-    triggerShellPageEnterTransition();
+    await scrollShellViewportToTop({ getMainElement: getCurrentMainElement });
+    triggerShellPageEnterTransition(shellPageTransition);
     if (sectionTransitionToken !== null) {
-      await finishShellSectionTransition(sectionTransitionToken);
+      await shellSectionTransition.finish(sectionTransitionToken);
     }
 
     stopRouteLoadingSoon();
@@ -1559,8 +1287,8 @@ export default function AppShellRoot({
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('blur', handleWindowBlur);
       clearRouteLoadingTimer();
-      clearShellPageTransition();
-      resetShellSectionTransitionState();
+      clearShellPageTransition(shellPageTransition);
+      shellSectionTransition.reset();
       overlayAbortControllerRef.current?.abort();
       shellPageAbortControllerRef.current?.abort();
 
