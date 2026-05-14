@@ -17,8 +17,18 @@ formats:
   - CD
   - Digital
 credits:
-  - role: Produced by Jim Spanos
+  - role: Artist
+    name: Afterwise
+  - role: Lead single
+    name: SilverFeedsSilence
+  - role: Engineering, recording, and mixing by
+    name: Jim Spanos
+  - role: Recorded and mixed at
+    name: BlackBox Studio, Athens, Greece
+  - role: Mastered by
+    name: Nikos Dimitrakakos and Jim Spanos
+  - role: Mastered at
+    name: Unreal Studio, Athens, Greece
+  - role: Released by
     name: BlackBox Records
-  - role: 'Artwork by @jtakakart '
-    name: BlackBox Studio
 ---
