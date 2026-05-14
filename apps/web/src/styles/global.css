@@ -1749,10 +1749,8 @@
 
   .releases-latest-feature__title:hover,
   .releases-latest-feature__title:focus-visible {
-    color: var(--foreground);
-    text-decoration: underline;
-    text-decoration-color: rgba(245, 245, 245, 0.45);
-    text-underline-offset: 0.16em;
+    color: rgba(245, 245, 245, 0.84);
+    text-decoration: none;
   }
 
   .releases-latest-feature__summary {
@@ -1824,9 +1822,8 @@
 
   .releases-latest-feature__upcoming-title:hover,
   .releases-latest-feature__upcoming-title:focus-visible {
-    text-decoration: underline;
-    text-decoration-color: rgba(245, 245, 245, 0.45);
-    text-underline-offset: 0.16em;
+    color: rgba(245, 245, 245, 0.84);
+    text-decoration: none;
   }
 
   .releases-latest-feature__upcoming-meta {
