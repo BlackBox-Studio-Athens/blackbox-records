@@ -18,4 +18,15 @@ summary: |-
   Artwork and layout by Healitwithsilver
 formats:
   - Vinyl
+credits:
+  - role: Music written and performed by
+    name: Chronoboros
+  - role: Lyrics written by
+    name: Nikos Zalimoglou
+  - role: Recorded live at
+    name: Ignite Music Studio
+  - role: Recorded, mixed, and mastered by
+    name: George Christoforidis
+  - role: Artwork and layout by
+    name: Healitwithsilver
 ---
