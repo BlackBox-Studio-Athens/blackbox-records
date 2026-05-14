@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildPlayerProviders, resolvePlayerEmbedLayout } from './player-provider-data';
+import {
+  buildPlayerProviders,
+  readPlayerProvidersFromElement,
+  readPlayerTitleFromElement,
+  resolvePlayerEmbedLayout,
+  selectDefaultPlayerProvider,
+} from './player-provider-data';
 
 const afterwiseBandcampEmbedUrl =
   'https://bandcamp.com/EmbeddedPlayer/track=2461449138/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/tracklist=false/transparent=true/';
@@ -59,5 +65,51 @@ describe('player provider data', () => {
       },
     ]);
     expect(buildPlayerProviders({})).toEqual([]);
+  });
+
+  it('reads provider data from the rendered listen trigger element dataset', () => {
+    const element = {
+      dataset: {
+        musicStreamingServiceEmbeddedPlayerBandcampEmbedUrl: afterwiseBandcampEmbedUrl,
+        musicStreamingServiceEmbeddedPlayerTidalEmbedUrl: afterwiseTidalEmbedUrl,
+      },
+    } as unknown as HTMLElement;
+
+    expect(readPlayerProvidersFromElement(element)).toEqual([
+      {
+        embedLayout: 'bandcamp-track',
+        id: 'bandcamp',
+        embedUrl: afterwiseBandcampEmbedUrl,
+      },
+      {
+        embedLayout: 'tidal',
+        id: 'tidal',
+        embedUrl: afterwiseTidalEmbedUrl,
+      },
+    ]);
+  });
+
+  it('reads the player title from the rendered listen trigger element dataset', () => {
+    expect(
+      readPlayerTitleFromElement({
+        dataset: { musicStreamingServiceEmbeddedPlayerTitle: 'Disintegration' },
+      } as unknown as HTMLElement),
+    ).toBe('Disintegration');
+    expect(readPlayerTitleFromElement({ dataset: {} } as unknown as HTMLElement)).toBe('');
+  });
+
+  it('selects Bandcamp as the default provider when both providers exist', () => {
+    const providers = buildPlayerProviders({
+      bandcampEmbedUrl: afterwiseBandcampEmbedUrl,
+      tidalEmbedUrl: afterwiseTidalEmbedUrl,
+    });
+
+    expect(selectDefaultPlayerProvider(providers)).toMatchObject({ id: 'bandcamp' });
+  });
+
+  it('falls back to the available provider when the preferred provider is missing', () => {
+    const providers = buildPlayerProviders({ tidalEmbedUrl: afterwiseTidalEmbedUrl });
+
+    expect(selectDefaultPlayerProvider(providers)).toMatchObject({ id: 'tidal' });
   });
 });

@@ -27,11 +27,13 @@ routes and cards.
 - player iframe session/cache helpers
 - player session reducer and presentation state
 - provider descriptor data
+- rendered listen-trigger dataset readers and default-provider selection
 - provider origin warmup helpers
 
 ## Internal Implementation Area
 
 - embed URL building details
+- player trigger dataset parsing and provider priority
 - provider warmup and label details
 - provider origin preconnect and DNS-prefetch details
 - iframe DOM attributes, cache pruning, and active/inactive iframe marking

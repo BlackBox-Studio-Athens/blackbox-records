@@ -9,7 +9,9 @@ import {
 } from '@/components/app-shell/player-session-machine';
 import { derivePlayerPresentationState, OPEN_PLAYER_ACTION_LABEL } from '@/components/app-shell/player-session-ui';
 import {
-  buildPlayerProviders,
+  readPlayerProvidersFromElement,
+  readPlayerTitleFromElement,
+  selectDefaultPlayerProvider,
   type PlayerEmbedLayout,
   type PlayerProvider,
   type PlayerProviderId,
@@ -100,7 +102,6 @@ type AppShellRootProps = {
   siteTitle: string;
 };
 
-const EMBED_PROVIDER_PRIORITY: PlayerProviderId[] = ['bandcamp', 'tidal'];
 const EMBED_PROVIDER_LABELS: Record<PlayerProviderId, string> = {
   bandcamp: 'Bandcamp',
   tidal: 'Tidal',
@@ -110,23 +111,6 @@ const OVERLAY_KIND_LABELS: Record<OverlayRoute['kind'], string> = {
   news: 'news',
   releases: 'release',
 };
-function readPlayerProviders(element: HTMLElement) {
-  return buildPlayerProviders({
-    bandcampEmbedUrl: element.dataset.musicStreamingServiceEmbeddedPlayerBandcampEmbedUrl,
-    tidalEmbedUrl: element.dataset.musicStreamingServiceEmbeddedPlayerTidalEmbedUrl,
-  });
-}
-
-function readPlayerTitle(element: HTMLElement) {
-  return element.dataset.musicStreamingServiceEmbeddedPlayerTitle || '';
-}
-
-function selectDefaultPlayerProvider(providers: PlayerProvider[]) {
-  const providerById = new Map(providers.map((provider) => [provider.id, provider]));
-  const preferredProviderId = EMBED_PROVIDER_PRIORITY.find((providerId) => providerById.has(providerId));
-  return preferredProviderId ? providerById.get(preferredProviderId) || providers[0] : providers[0];
-}
-
 export default function AppShellRoot({
   mobileNavigationItems,
   servicesInquiryEmail,
@@ -566,10 +550,10 @@ export default function AppShellRoot({
       window.requestAnimationFrame(() => modalCloseButtonRef.current?.focus());
     };
 
-    const providers = readPlayerProviders(playerElement);
+    const providers = readPlayerProvidersFromElement(playerElement);
     if (providers.length === 0) return;
 
-    const releaseTitle = readPlayerTitle(playerElement);
+    const releaseTitle = readPlayerTitleFromElement(playerElement);
     const activeSession = activePlayerSessionRef.current;
     const isSameRelease = Boolean(activeSession && activeSession.releaseTitle === releaseTitle);
 
@@ -899,7 +883,7 @@ export default function AppShellRoot({
           playerTriggerElement.closest<HTMLElement>('[data-music-streaming-service-embedded-player-card]') ||
           playerTriggerElement;
 
-        if (readPlayerProviders(playerElement).length > 0) {
+        if (readPlayerProvidersFromElement(playerElement).length > 0) {
           event.preventDefault();
           openPlayerModal(playerTriggerElement, playerElement);
         }
@@ -959,7 +943,7 @@ export default function AppShellRoot({
 
       const playerElement = eventTarget.closest<HTMLElement>('[data-music-streaming-service-embedded-player-card]');
       if (playerElement) {
-        warmProviderOrigins(readPlayerProviders(playerElement));
+        warmProviderOrigins(readPlayerProvidersFromElement(playerElement));
       }
 
       const anchorElement = eventTarget.closest<HTMLAnchorElement>('a[href]');
