@@ -343,6 +343,9 @@ This is an iframe boundary, not an app bug.
 
 - Repo GSD config intentionally keeps flat planning mode and `workflow.use_worktrees = false` for Codex v1.41.2, because Codex cannot provide Claude-style isolated subagent worktrees.
 - While `07-16`, `09-06`, and `10-03` remain deferred external gates, use explicit phase or plan arguments for GSD commands instead of relying on implicit current-phase detection.
+- Phase 12 boundary changes must keep `.planning/codebase/MODULES.md`, `.planning/codebase/modules/*.md`, and `.planning/codebase/module-boundaries.manifest.json` in sync whenever ownership, entrypoints, status, allowed dependencies, or exception policy changes.
+- Phase 12 execution slices stay one approved slice per branch or local commit cluster; do not enable `.planning/config.json` parallelization or `workflow.use_worktrees`.
+- Do not add temporary compatibility facades during boundary work; move callers to documented root entrypoints or named interfaces in the same slice.
 
 ## MCP usage
 

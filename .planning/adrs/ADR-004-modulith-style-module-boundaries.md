@@ -52,6 +52,11 @@ boundary rules are project-level. The closer TypeScript-native fit is:
   - `eslint-plugin-boundaries` as the primary import and entrypoint rule layer
   - `dependency-cruiser` as the primary cycle and dependency-graph rule layer
   - existing repo gates such as `pnpm check`, `pnpm test:unit`, and `pnpm audit:commerce-boundaries`
+- Human review reads `.planning/codebase/MODULES.md` and `.planning/codebase/modules/*.md`; tooling reads
+  `.planning/codebase/module-boundaries.manifest.json`. Ownership, entrypoint, status, dependency, or exception-policy
+  changes must keep those surfaces in sync.
+- The only approved initial `open-temporary` modules are `app-shell` and `cms-admin`; each must carry manifest metadata
+  for why it is open, how it closes, and what is forbidden while open.
 - Boundary checks should fail fast once execution slices put a covered area under the new rules.
 - Temporary compatibility facades are out of policy. A boundary slice must move callers to the new root entrypoint
   inside the same change.
@@ -73,12 +78,14 @@ boundary rules are project-level. The closer TypeScript-native fit is:
 
 - `.planning/codebase/MODULES.md` and `.planning/codebase/modules/*.md` become the human review docs for the future
   refactor.
-- `.planning/codebase/module-boundaries.manifest.json` becomes the future tooling input for boundary enforcement.
+- `.planning/codebase/module-boundaries.manifest.json` becomes the tooling input for boundary enforcement.
 - `.planning/UBIQUITOUS_LANGUAGE.md` must carry the module terminology used by future plans, tests, and ADRs.
 - Future execution slices should be one branch at a time, manually managed, with no change to
   `.planning/config.json` `parallelization: false`.
 - Any future large refactor that bypasses the module canvases, manifest, allowed dependencies, or temporary-open exit
   criteria should be treated as out of policy.
+- A module must not be marked `open-temporary` unless the manifest validator accepts it and the matching canvas explains
+  the closure path.
 - Nx may still be introduced later for task orchestration or caching, but the Phase 12 boundary model does not depend
   on it.
 

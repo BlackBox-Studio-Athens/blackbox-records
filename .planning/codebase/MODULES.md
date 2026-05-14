@@ -36,9 +36,12 @@ boundary stack:
 
 - `MODULES.md` is the human-readable module map.
 - `.planning/codebase/modules/*.md` are the human-readable per-module canvases.
-- `.planning/codebase/module-boundaries.manifest.json` is the machine-readable enforcement source for future tooling.
+- `.planning/codebase/module-boundaries.manifest.json` is the machine-readable enforcement source for tooling.
 
 All three surfaces must move together when module ownership, entrypoints, statuses, or allowed dependencies change.
+Human review should start from `MODULES.md` and the module canvases; lint, dependency graph checks, and manifest audits
+read the JSON manifest. A change that updates only the Markdown docs or only the manifest is incomplete unless it is
+purely editorial and cannot affect ownership, entrypoints, status, dependencies, or exception policy.
 
 ## Canonical Module Table
 
@@ -106,8 +109,18 @@ All three surfaces must move together when module ownership, entrypoints, status
 
 - `open-temporary` is allowed only for legacy hotspots with explicit exit criteria.
 - `split-pending` is allowed only for residual shared buckets that are supposed to shrink.
-- New modules should not start as `open-temporary` without a written justification and follow-up closure plan.
+- The approved initial `open-temporary` set is only `app-shell` and `cms-admin`.
+- Every `open-temporary` module must carry manifest metadata for its temporary reason, exit criteria, and forbidden moves
+  while open.
+- New modules must not start as `open-temporary` without a new planning decision and manifest validator update.
 - Covered module roots should fail fast under the boundary stack; do not hide boundary work behind audit-only drift.
+
+## Branch And Review Policy
+
+- Use one approved execution slice per branch or local commit cluster.
+- Keep branch creation and sequencing manual while this repo uses Codex flat planning mode.
+- Do not enable `.planning/config.json` parallelization or `workflow.use_worktrees` for Phase 12 slices.
+- Do not add temporary compatibility facades; move callers to documented entrypoints inside the same slice.
 
 ## Verification Targets
 

@@ -19,6 +19,7 @@ shopper-facing modules.
 ## Internal Implementation Area
 
 - Decap YAML generation
+- content-schema-aware field and collection mapping
 - auth and base-path mapping details
 - media route and asset resolution details
 
@@ -56,9 +57,22 @@ shopper-facing modules.
 
 `open-temporary`
 
+`cms-admin` remains open-temporary because the current admin surface still combines Decap route surfaces, YAML
+generation, content-schema awareness, hosted auth/base-path handling, and admin media routing inside one legacy hotspot.
+That exception is temporary, not a general license to grow the module.
+
 ## Exit Criteria
 
+- separate `/admin/`, `/admin/config.yml`, and `/admin/media/**` route surfaces from config-building internals
 - split Decap YAML builder from route/auth/base-path concerns
-- isolate schema-field generation from deployment/runtime wiring
+- isolate content-schema-aware field generation from deployment/runtime wiring
 - reduce `decap-config.ts` from a large mixed string builder into smaller bounded helpers
 - expose explicit admin entrypoints instead of leaving route consumers coupled to mixed implementation files
+
+## Forbidden While Open
+
+- do not move shopper-facing catalog, checkout, stock, order, Stripe, D1, or BOX NOW behavior into `cms-admin`
+- do not widen ownership beyond `apps/web/src/pages/admin/**` and `apps/web/src/lib/admin/**`
+- do not add temporary compatibility facades for old deep imports
+- do not add new `open-temporary` modules as a convenience escape hatch
+- do not split `decap-config.ts` until the split has direct coverage for generated config output and route behavior

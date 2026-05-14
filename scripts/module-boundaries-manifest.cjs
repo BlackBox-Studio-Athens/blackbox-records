@@ -15,6 +15,7 @@ const WALK_IGNORES = new Set([
   '.vite',
   'coverage',
 ]);
+const APPROVED_OPEN_TEMPORARY_MODULES = new Set(['app-shell', 'cms-admin']);
 
 function toPosixPath(value) {
   return value.split(path.sep).join('/');
@@ -58,6 +59,14 @@ function dedupe(values) {
 
 function flattenValues(record) {
   return Object.values(record ?? {}).flatMap((value) => (Array.isArray(value) ? value : [value]));
+}
+
+function isNonEmptyString(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isNonEmptyStringArray(value) {
+  return Array.isArray(value) && value.length > 0 && value.every(isNonEmptyString);
 }
 
 function readJson(filePath) {
@@ -403,6 +412,22 @@ function validateManifest(manifest = loadModuleBoundariesManifest()) {
   }
 
   for (const [moduleName, moduleDefinition] of getModuleEntries(manifest)) {
+    if (moduleDefinition.status === 'open-temporary') {
+      if (!APPROVED_OPEN_TEMPORARY_MODULES.has(moduleName)) {
+        errors.push(`Module ${moduleName} is open-temporary but is not in the approved initial open-temporary set`);
+      }
+
+      for (const metadataField of ['temporaryOpenReason', 'exitCriteria', 'forbiddenWhileOpen']) {
+        const fieldValue = moduleDefinition[metadataField];
+        const isValid =
+          metadataField === 'temporaryOpenReason' ? isNonEmptyString(fieldValue) : isNonEmptyStringArray(fieldValue);
+
+        if (!isValid) {
+          errors.push(`Module ${moduleName} open-temporary metadata missing non-empty ${metadataField}`);
+        }
+      }
+    }
+
     for (const dependencyName of moduleDefinition.allowedDependencies ?? []) {
       if (!moduleNames.has(dependencyName)) {
         errors.push(`Module ${moduleName} allows unknown module dependency: ${dependencyName}`);
