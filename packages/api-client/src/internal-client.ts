@@ -1,6 +1,10 @@
 import { Fetcher } from 'openapi-typescript-fetch';
 
-import type { paths as InternalApiPaths } from './generated/internal/schema';
+import type {
+  components as InternalApiComponents,
+  operations as InternalApiOperations,
+  paths as InternalApiPaths,
+} from './generated/internal/schema';
 
 export function createInternalApiFetcher(baseUrl: string) {
   const fetcher = Fetcher.for<InternalApiPaths>();
@@ -13,3 +17,4 @@ export function createInternalApiFetcher(baseUrl: string) {
 }
 
 export type InternalApiFetcher = ReturnType<typeof createInternalApiFetcher>;
+export type { InternalApiComponents, InternalApiOperations, InternalApiPaths };

@@ -1,6 +1,10 @@
 import { Fetcher } from 'openapi-typescript-fetch';
 
-import type { paths as PublicApiPaths } from './generated/public/schema';
+import type {
+  components as PublicApiComponents,
+  operations as PublicApiOperations,
+  paths as PublicApiPaths,
+} from './generated/public/schema';
 
 export function createPublicApiFetcher(baseUrl: string) {
   const fetcher = Fetcher.for<PublicApiPaths>();
@@ -13,3 +17,4 @@ export function createPublicApiFetcher(baseUrl: string) {
 }
 
 export type PublicApiFetcher = ReturnType<typeof createPublicApiFetcher>;
+export type { PublicApiComponents, PublicApiOperations, PublicApiPaths };

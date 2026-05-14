@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./public": "./src/public-client.ts",
+    "./internal": "./src/internal-client.ts"
   },
   "scripts": {
     "generate": "pnpm exec tsx scripts/generate-api-client.ts",

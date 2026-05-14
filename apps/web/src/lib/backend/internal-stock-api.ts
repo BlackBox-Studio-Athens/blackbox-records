@@ -1,4 +1,4 @@
-import type { InternalApiComponents } from './api-client';
+import type { InternalApiComponents } from '@blackbox/api-client/internal';
 import { getPublicBackendBaseUrl } from './public-backend-config';
 
 export type InternalVariantSummary = InternalApiComponents['schemas']['InternalVariantSummary'];

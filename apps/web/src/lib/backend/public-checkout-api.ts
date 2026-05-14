@@ -1,4 +1,4 @@
-import { createPublicApiFetcher, type PublicApiComponents } from '@blackbox/api-client';
+import { createPublicApiFetcher, type PublicApiComponents } from '@blackbox/api-client/public';
 
 import { getPublicBackendBaseUrl } from './public-backend-config';
 

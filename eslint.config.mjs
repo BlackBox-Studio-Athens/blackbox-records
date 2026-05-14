@@ -1,9 +1,14 @@
 import js from '@eslint/js';
+import { createRequire } from 'node:module';
 import eslintConfigPrettier from 'eslint-config-prettier';
 import astro from 'eslint-plugin-astro';
+import boundaries from 'eslint-plugin-boundaries';
 import tseslint from 'typescript-eslint';
 
 const typeScriptFiles = ['**/*.{ts,tsx,mts,cts}'];
+const require = createRequire(import.meta.url);
+const { buildEslintBoundaryConfig, loadModuleBoundariesManifest } = require('./scripts/module-boundaries-manifest.cjs');
+const boundaryConfig = buildEslintBoundaryConfig(loadModuleBoundariesManifest());
 
 export default tseslint.config(
   {
@@ -79,6 +84,42 @@ export default tseslint.config(
       'no-undef': 'off',
       'no-var': 'error',
       'prefer-const': 'error',
+    },
+  },
+  {
+    files: boundaryConfig.files,
+    plugins: {
+      boundaries,
+    },
+    settings: {
+      'boundaries/elements': boundaryConfig.descriptors,
+      'boundaries/ignore': ['**/*.test.*', '**/*.spec.*', '**/test/**'],
+      'import/resolver': {
+        typescript: {
+          project: ['tsconfig.boundaries.json', 'apps/backend/tsconfig.json', 'packages/api-client/tsconfig.json'],
+        },
+      },
+    },
+    rules: {
+      'boundaries/no-unknown-files': 'error',
+      'boundaries/dependencies': [
+        'error',
+        {
+          default: 'disallow',
+          rules: boundaryConfig.dependencyRules,
+        },
+      ],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@blackbox/api-client/src/*', '@blackbox/api-client/src/**'],
+              message: 'Use @blackbox/api-client package exports instead of deep source imports.',
+            },
+          ],
+        },
+      ],
     },
   },
   {
