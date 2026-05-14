@@ -23,6 +23,7 @@ interface Props {
   layoutType?: string;
   pageDate?: Date;
   redirectUrl?: string;
+  robots?: string;
 }
 
 const {
@@ -39,6 +40,7 @@ const {
   layoutType,
   pageDate,
   redirectUrl,
+  robots,
 } = Astro.props;
 
 const [labelSettings, socialItems] = await Promise.all([getLabelSettings(), getSocialItems()]);
@@ -71,6 +73,7 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{htmlTitle}</title>
     <meta name="description" content={metadataDescription} />
+    {robots && <meta name="robots" content={robots} />}
     <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconSvg)} type="image/svg+xml" sizes="any" />
     <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconPng96)} type="image/png" sizes="96x96" />
     <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconIco)} sizes="any" />

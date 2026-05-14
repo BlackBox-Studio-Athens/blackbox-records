@@ -1,0 +1,796 @@
+---
+import { Image } from 'astro:assets';
+
+import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
+import { createAbsoluteSiteUrl } from '@/config/site';
+import SiteLayout from '@/layouts/SiteLayout.astro';
+import {
+  createReleaseDetailPath,
+  listArtistProfiles,
+  listReleaseCatalog,
+  mapArtistProfilesById,
+  resolveReleaseArtistDisplayName,
+} from '@/lib/catalog-data';
+import { getReleaseCommerceLink } from '@/lib/release-commerce';
+import { splitReleaseCatalogByAvailability } from '@/lib/release-feature';
+import { formatMonthYear, formatYear } from '@/utils/content';
+import { buildEmbeddedPlayerData } from '@/utils/music';
+
+const pageTitle = 'Release Feature Drafts';
+const pageDescription =
+  'A noindex review page with three latest-out-now release presentation drafts for BlackBox Records.';
+const pageUrl = createAbsoluteSiteUrl('/demo/release-feature-drafts/');
+const releaseCatalogEntries = await listReleaseCatalog();
+const artistProfiles = await listArtistProfiles();
+const artistProfileById = mapArtistProfilesById(artistProfiles);
+const { outNowReleases, upcomingReleases } = splitReleaseCatalogByAvailability(releaseCatalogEntries);
+
+function formatReleaseDate(value: Date) {
+  return value.toLocaleDateString('en-US', {
+    day: '2-digit',
+    month: 'short',
+    timeZone: 'UTC',
+    year: 'numeric',
+  });
+}
+
+function formatReleaseFormats(formats: string[] | undefined) {
+  return formats?.length ? formats.join(' / ') : 'Release';
+}
+
+const releaseModels = await Promise.all(
+  releaseCatalogEntries.map(async (releaseEntry) => {
+    const artistProfile = artistProfileById.get(releaseEntry.data.artist.id);
+    const artistName = resolveReleaseArtistDisplayName(releaseEntry, artistProfile);
+    const detailPath = createReleaseDetailPath(releaseEntry);
+    const commerceLink = await getReleaseCommerceLink(releaseEntry);
+    const playerData = buildEmbeddedPlayerData(releaseEntry.data, `${releaseEntry.data.title} - ${artistName}`);
+
+    return {
+      artistName,
+      commerceLink,
+      detailPath,
+      formattedDate: formatReleaseDate(releaseEntry.data.release_date),
+      formattedFormats: formatReleaseFormats(releaseEntry.data.formats),
+      monthYear: formatMonthYear(releaseEntry.data.release_date),
+      playerData,
+      releaseEntry,
+      year: formatYear(releaseEntry.data.release_date),
+    };
+  }),
+);
+
+const releaseModelById = new Map(releaseModels.map((releaseModel) => [releaseModel.releaseEntry.id, releaseModel]));
+const latestOutNowModel = outNowReleases[0] ? releaseModelById.get(outNowReleases[0].id) : null;
+
+function isReleaseModel(
+  releaseModel: (typeof releaseModels)[number] | undefined,
+): releaseModel is (typeof releaseModels)[number] {
+  return Boolean(releaseModel);
+}
+
+const upcomingModels = upcomingReleases
+  .map((releaseEntry) => releaseModelById.get(releaseEntry.id))
+  .filter(isReleaseModel);
+const primaryUpcomingModel = upcomingModels[0] || null;
+const archiveModels = releaseModels.slice(0, 8);
+---
+
+<SiteLayout
+  pageTitle={pageTitle}
+  pageDescription={pageDescription}
+  robots="noindex, nofollow"
+  mainClass="release-feature-drafts-main"
+>
+  <section class="release-draft-board" aria-labelledby="release-draft-board-title">
+    <header class="release-draft-board__header">
+      <p class="release-draft-board__section">Release feature drafts</p>
+      <h1 id="release-draft-board-title">Latest out now</h1>
+      <p>
+        Three review directions for `/releases/`, using the current rule that future-dated releases move into an
+        upcoming shelf instead of taking the latest slot.
+      </p>
+      <p class="release-draft-board__source">{new URL(pageUrl).pathname}</p>
+    </header>
+
+    {
+      latestOutNowModel ? (
+        <div class="release-draft-stack">
+          <article class="release-draft release-draft--feature-wall" aria-labelledby="draft-feature-wall-title">
+            <div class="release-draft__label-row">
+              <p>Draft A</p>
+              <p>Feature Wall</p>
+            </div>
+            <section class="feature-wall" aria-labelledby="draft-feature-wall-title">
+              <a class="feature-wall__artwork-link" href={latestOutNowModel.detailPath} data-astro-prefetch>
+                <Image
+                  src={latestOutNowModel.releaseEntry.data.cover_image}
+                  alt={latestOutNowModel.releaseEntry.data.cover_image_alt || latestOutNowModel.releaseEntry.data.title}
+                  class="feature-wall__artwork"
+                  sizes="(min-width: 1100px) 42vw, 100vw"
+                />
+              </a>
+
+              <div class="feature-wall__copy">
+                <p class="release-draft__kicker">Latest out now</p>
+                <h2 id="draft-feature-wall-title">{latestOutNowModel.releaseEntry.data.title}</h2>
+                <p class="release-draft__meta">
+                  {latestOutNowModel.artistName} / {latestOutNowModel.monthYear} / {latestOutNowModel.formattedFormats}
+                </p>
+                {latestOutNowModel.releaseEntry.data.summary && (
+                  <p class="feature-wall__summary">{latestOutNowModel.releaseEntry.data.summary}</p>
+                )}
+                <div class="release-draft__actions">
+                  <MusicStreamingServiceListenTrigger
+                    embeddedPlayerData={latestOutNowModel.playerData}
+                    tone="accent"
+                    variant="standalone"
+                  />
+                  <a href={latestOutNowModel.detailPath} data-astro-prefetch>
+                    View release
+                  </a>
+                  {latestOutNowModel.commerceLink && (
+                    <a
+                      href={latestOutNowModel.commerceLink.href}
+                      rel={latestOutNowModel.commerceLink.rel}
+                      target={latestOutNowModel.commerceLink.target}
+                    >
+                      {latestOutNowModel.commerceLink.label}
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {primaryUpcomingModel && (
+                <aside class="feature-wall__upcoming" aria-label="Upcoming release">
+                  <p class="release-draft__kicker">Upcoming</p>
+                  <a href={primaryUpcomingModel.detailPath} data-astro-prefetch>
+                    {primaryUpcomingModel.releaseEntry.data.title}
+                  </a>
+                  <p>
+                    {primaryUpcomingModel.artistName} / {primaryUpcomingModel.formattedDate}
+                  </p>
+                </aside>
+              )}
+            </section>
+          </article>
+
+          <article class="release-draft release-draft--discography" aria-labelledby="draft-discography-title">
+            <div class="release-draft__label-row">
+              <p>Draft B</p>
+              <p>Discography Sheet</p>
+            </div>
+            <section class="discography-sheet" aria-labelledby="draft-discography-title">
+              <div class="discography-sheet__feature">
+                <a class="discography-sheet__artwork-link" href={latestOutNowModel.detailPath} data-astro-prefetch>
+                  <Image
+                    src={latestOutNowModel.releaseEntry.data.cover_image}
+                    alt={
+                      latestOutNowModel.releaseEntry.data.cover_image_alt || latestOutNowModel.releaseEntry.data.title
+                    }
+                    class="discography-sheet__artwork"
+                    sizes="(min-width: 1100px) 18rem, 100vw"
+                  />
+                </a>
+                <div class="discography-sheet__copy">
+                  <p class="release-draft__kicker">Latest out now</p>
+                  <h2 id="draft-discography-title">{latestOutNowModel.releaseEntry.data.title}</h2>
+                  <p class="release-draft__meta">{latestOutNowModel.artistName}</p>
+                  <dl class="discography-sheet__facts">
+                    <div>
+                      <dt>Release date</dt>
+                      <dd>{latestOutNowModel.formattedDate}</dd>
+                    </div>
+                    <div>
+                      <dt>Format</dt>
+                      <dd>{latestOutNowModel.formattedFormats}</dd>
+                    </div>
+                    <div>
+                      <dt>Status</dt>
+                      <dd>Out now</dd>
+                    </div>
+                  </dl>
+                  <div class="release-draft__actions">
+                    <MusicStreamingServiceListenTrigger
+                      embeddedPlayerData={latestOutNowModel.playerData}
+                      tone="accent"
+                      variant="standalone"
+                    />
+                    <a href={latestOutNowModel.detailPath} data-astro-prefetch>
+                      View release
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <div class="discography-sheet__archive" aria-label="Release archive preview">
+                <div class="discography-sheet__archive-header">
+                  <p>Artist</p>
+                  <p>Title</p>
+                  <p>Date</p>
+                  <p>Format</p>
+                </div>
+                {archiveModels.map((releaseModel) => (
+                  <a class="discography-sheet__archive-row" href={releaseModel.detailPath} data-astro-prefetch>
+                    <span>{releaseModel.artistName}</span>
+                    <span>{releaseModel.releaseEntry.data.title}</span>
+                    <span>{releaseModel.year}</span>
+                    <span>{releaseModel.formattedFormats}</span>
+                  </a>
+                ))}
+              </div>
+            </section>
+          </article>
+
+          <article class="release-draft release-draft--drop-shelf" aria-labelledby="draft-drop-shelf-title">
+            <div class="release-draft__label-row">
+              <p>Draft C</p>
+              <p>Drop Shelf</p>
+            </div>
+            <section class="drop-shelf" aria-labelledby="draft-drop-shelf-title">
+              <div class="drop-shelf__primary">
+                <div class="drop-shelf__media">
+                  <a class="drop-shelf__artwork-link" href={latestOutNowModel.detailPath} data-astro-prefetch>
+                    <Image
+                      src={latestOutNowModel.releaseEntry.data.cover_image}
+                      alt={
+                        latestOutNowModel.releaseEntry.data.cover_image_alt || latestOutNowModel.releaseEntry.data.title
+                      }
+                      class="drop-shelf__artwork"
+                      sizes="(min-width: 1100px) 24rem, 100vw"
+                    />
+                  </a>
+                  <span class="drop-shelf__record" aria-hidden="true" />
+                </div>
+                <div class="drop-shelf__copy">
+                  <p class="release-draft__kicker">Latest out now</p>
+                  <h2 id="draft-drop-shelf-title">{latestOutNowModel.releaseEntry.data.title}</h2>
+                  <p class="release-draft__meta">
+                    {latestOutNowModel.artistName} / {latestOutNowModel.formattedFormats}
+                  </p>
+                  <div class="release-draft__actions release-draft__actions--wide">
+                    <MusicStreamingServiceListenTrigger
+                      embeddedPlayerData={latestOutNowModel.playerData}
+                      tone="accent"
+                      variant="standalone"
+                    />
+                    {latestOutNowModel.commerceLink && (
+                      <a
+                        href={latestOutNowModel.commerceLink.href}
+                        rel={latestOutNowModel.commerceLink.rel}
+                        target={latestOutNowModel.commerceLink.target}
+                      >
+                        View in store
+                      </a>
+                    )}
+                    <a href={latestOutNowModel.detailPath} data-astro-prefetch>
+                      View release
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {primaryUpcomingModel && (
+                <aside class="drop-shelf__upcoming" aria-label="Upcoming release shelf">
+                  <p class="release-draft__kicker">Upcoming / pre-order</p>
+                  <div class="drop-shelf__upcoming-grid">
+                    <a class="drop-shelf__upcoming-artwork" href={primaryUpcomingModel.detailPath} data-astro-prefetch>
+                      <Image
+                        src={primaryUpcomingModel.releaseEntry.data.cover_image}
+                        alt={
+                          primaryUpcomingModel.releaseEntry.data.cover_image_alt ||
+                          primaryUpcomingModel.releaseEntry.data.title
+                        }
+                        class="drop-shelf__artwork"
+                        sizes="(min-width: 1100px) 13rem, 38vw"
+                      />
+                    </a>
+                    <div>
+                      <h3>{primaryUpcomingModel.releaseEntry.data.title}</h3>
+                      <p class="release-draft__meta">
+                        {primaryUpcomingModel.artistName} / {primaryUpcomingModel.formattedDate}
+                      </p>
+                      <div class="release-draft__actions">
+                        <MusicStreamingServiceListenTrigger
+                          embeddedPlayerData={primaryUpcomingModel.playerData}
+                          tone="neutral"
+                          variant="standalone"
+                          label="Listen"
+                        />
+                        {primaryUpcomingModel.commerceLink && (
+                          <a
+                            href={primaryUpcomingModel.commerceLink.href}
+                            rel={primaryUpcomingModel.commerceLink.rel}
+                            target={primaryUpcomingModel.commerceLink.target}
+                          >
+                            Pre-order
+                          </a>
+                        )}
+                        <a href={primaryUpcomingModel.detailPath} data-astro-prefetch>
+                          View release
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </aside>
+              )}
+            </section>
+          </article>
+        </div>
+      ) : (
+        <p class="release-draft-board__empty">No out-now release is available for this build date.</p>
+      )
+    }
+  </section>
+</SiteLayout>
+
+<style>
+  :global(.release-feature-drafts-main) {
+    background: #050505;
+  }
+
+  .release-draft-board {
+    width: min(100% - 2rem, 92rem);
+    margin: 0 auto;
+    padding: 2rem 0 4rem;
+    color: #f2efea;
+  }
+
+  .release-draft-board__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.8rem 1rem;
+    align-items: end;
+    border-bottom: 1px solid #2b2b2b;
+    padding-bottom: 1rem;
+  }
+
+  .release-draft-board__header h1,
+  .feature-wall__copy h2,
+  .discography-sheet__copy h2,
+  .drop-shelf__copy h2,
+  .drop-shelf__upcoming h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 400;
+    line-height: 0.9;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .release-draft-board__header h1 {
+    font-size: 4.5rem;
+  }
+
+  .release-draft-board__header p {
+    max-width: 66ch;
+    margin: 0;
+    color: rgba(214, 214, 214, 0.82);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .release-draft-board__section,
+  .release-draft__label-row,
+  .release-draft__kicker,
+  .release-draft__meta,
+  .discography-sheet__archive-header {
+    color: rgba(245, 245, 245, 0.68);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    line-height: 1.35;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .release-draft-board__source {
+    margin: 0;
+    border: 1px solid #2b2b2b;
+    padding: 0.6rem 0.7rem;
+    color: #f2efea;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    line-height: 1;
+  }
+
+  .release-draft-stack {
+    display: grid;
+    gap: 1.6rem;
+    margin-top: 1.6rem;
+  }
+
+  .release-draft {
+    border: 1px solid #2b2b2b;
+    background: #0d0d0d;
+  }
+
+  .release-draft__label-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid #2b2b2b;
+    padding: 0.75rem 0.9rem;
+  }
+
+  .release-draft__label-row p,
+  .release-draft__kicker,
+  .release-draft__meta {
+    margin: 0;
+  }
+
+  .release-draft__kicker {
+    color: #db4d33;
+  }
+
+  .release-draft__meta {
+    margin-top: 0.65rem;
+  }
+
+  .release-draft__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .release-draft__actions a {
+    display: inline-flex;
+    min-height: 2.45rem;
+    align-items: center;
+    border: 1px solid #383838;
+    padding: 0 0.75rem;
+    color: #f2efea;
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    line-height: 1;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .release-draft__actions a:hover,
+  .release-draft__actions a:focus-visible {
+    border-color: #f2efea;
+  }
+
+  .feature-wall {
+    display: grid;
+    grid-template-columns: minmax(18rem, 0.95fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: stretch;
+    padding: 1.25rem;
+  }
+
+  .feature-wall__artwork-link,
+  .discography-sheet__artwork-link,
+  .drop-shelf__artwork-link,
+  .drop-shelf__upcoming-artwork {
+    display: block;
+    min-width: 0;
+    color: inherit;
+  }
+
+  .feature-wall__artwork,
+  .discography-sheet__artwork,
+  .drop-shelf__artwork {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: 1px solid #2b2b2b;
+    background: #111111;
+  }
+
+  .feature-wall__artwork {
+    aspect-ratio: 1;
+  }
+
+  .feature-wall__copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    border-top: 1px solid #2b2b2b;
+    border-bottom: 1px solid #2b2b2b;
+    padding: 1.25rem 0;
+  }
+
+  .feature-wall__copy h2 {
+    margin-top: 0.5rem;
+    font-size: 6.5rem;
+    overflow-wrap: anywhere;
+  }
+
+  .feature-wall__summary {
+    max-width: 58ch;
+    margin: 1rem 0 0;
+    color: rgba(214, 214, 214, 0.86);
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  .feature-wall__upcoming {
+    grid-column: 2;
+    border-top: 1px solid #2b2b2b;
+    padding-top: 1rem;
+  }
+
+  .feature-wall__upcoming a {
+    display: inline-block;
+    margin-top: 0.45rem;
+    color: #f2efea;
+    font-family: var(--font-display);
+    font-size: 2rem;
+    line-height: 0.95;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .feature-wall__upcoming p:last-child {
+    margin: 0.45rem 0 0;
+    color: rgba(245, 245, 245, 0.66);
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .discography-sheet {
+    padding: 1rem;
+  }
+
+  .discography-sheet__feature {
+    display: grid;
+    grid-template-columns: minmax(12rem, 18rem) minmax(0, 1fr);
+    gap: 1.25rem;
+    border-bottom: 1px solid #2b2b2b;
+    padding-bottom: 1rem;
+  }
+
+  .discography-sheet__artwork {
+    aspect-ratio: 1;
+  }
+
+  .discography-sheet__copy h2 {
+    margin-top: 0.45rem;
+    font-size: 4.7rem;
+    overflow-wrap: anywhere;
+  }
+
+  .discography-sheet__facts {
+    display: grid;
+    gap: 1px;
+    margin: 1rem 0 0;
+    background: #2b2b2b;
+  }
+
+  .discography-sheet__facts div {
+    display: grid;
+    grid-template-columns: 9rem minmax(0, 1fr);
+    gap: 1rem;
+    background: #0d0d0d;
+    padding: 0.6rem 0;
+  }
+
+  .discography-sheet__facts dt,
+  .discography-sheet__facts dd {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    line-height: 1.45;
+    text-transform: uppercase;
+  }
+
+  .discography-sheet__facts dt {
+    color: rgba(245, 245, 245, 0.52);
+  }
+
+  .discography-sheet__facts dd {
+    color: #f2efea;
+  }
+
+  .discography-sheet__archive {
+    margin-top: 1rem;
+  }
+
+  .discography-sheet__archive-header,
+  .discography-sheet__archive-row {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 0.45fr 1fr;
+    gap: 1rem;
+    border-bottom: 1px solid #242424;
+    padding: 0.65rem 0;
+  }
+
+  .discography-sheet__archive-header p {
+    margin: 0;
+  }
+
+  .discography-sheet__archive-row {
+    color: rgba(245, 245, 245, 0.84);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    line-height: 1.35;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .discography-sheet__archive-row:hover,
+  .discography-sheet__archive-row:focus-visible {
+    color: #f2efea;
+    background: #121212;
+  }
+
+  .drop-shelf {
+    padding: 1rem;
+  }
+
+  .drop-shelf__primary {
+    display: grid;
+    grid-template-columns: minmax(18rem, 0.9fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: center;
+    border-bottom: 1px solid #2b2b2b;
+    padding-bottom: 1rem;
+  }
+
+  .drop-shelf__media {
+    position: relative;
+    min-width: 0;
+  }
+
+  .drop-shelf__artwork-link {
+    position: relative;
+    z-index: 1;
+    width: 82%;
+  }
+
+  .drop-shelf__record {
+    position: absolute;
+    inset: 10% 2% 10% auto;
+    display: block;
+    aspect-ratio: 1;
+    width: 42%;
+    border: 1px solid #2b2b2b;
+    border-radius: 50%;
+    background: #101010;
+    box-shadow:
+      inset 0 0 0 1rem #151515,
+      inset 0 0 0 1.08rem #242424,
+      inset 0 0 0 2.2rem #101010,
+      inset 0 0 0 2.28rem #242424,
+      inset 0 0 0 4.4rem #111111;
+  }
+
+  .drop-shelf__copy h2 {
+    margin-top: 0.5rem;
+    font-size: 5.8rem;
+    overflow-wrap: anywhere;
+  }
+
+  .release-draft__actions--wide {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .release-draft__actions--wide :global(.music-listen-trigger),
+  .release-draft__actions--wide a {
+    justify-content: center;
+  }
+
+  .drop-shelf__upcoming {
+    padding-top: 1rem;
+  }
+
+  .drop-shelf__upcoming-grid {
+    display: grid;
+    grid-template-columns: minmax(9rem, 13rem) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: center;
+    margin-top: 0.65rem;
+  }
+
+  .drop-shelf__upcoming h3 {
+    font-size: 3rem;
+    overflow-wrap: anywhere;
+  }
+
+  .drop-shelf__upcoming-artwork .drop-shelf__artwork {
+    aspect-ratio: 1;
+  }
+
+  .release-draft-board__empty {
+    margin: 2rem 0 0;
+    color: rgba(245, 245, 245, 0.72);
+  }
+
+  @media (max-width: 72rem) {
+    .release-draft-board__header,
+    .feature-wall,
+    .discography-sheet__feature,
+    .drop-shelf__primary {
+      grid-template-columns: 1fr;
+    }
+
+    .release-draft-board__header h1 {
+      font-size: 4rem;
+    }
+
+    .feature-wall__copy h2,
+    .drop-shelf__copy h2 {
+      font-size: 5rem;
+    }
+
+    .feature-wall__upcoming {
+      grid-column: auto;
+    }
+
+    .drop-shelf__artwork-link {
+      width: 74%;
+    }
+
+    .drop-shelf__record {
+      width: 38%;
+    }
+  }
+
+  @media (max-width: 48rem) {
+    .release-draft-board {
+      width: min(100% - 1rem, 92rem);
+      padding-top: 1rem;
+    }
+
+    .release-draft-board__header h1 {
+      font-size: 3.1rem;
+    }
+
+    .feature-wall,
+    .discography-sheet,
+    .drop-shelf {
+      padding: 0.7rem;
+    }
+
+    .feature-wall__copy h2,
+    .discography-sheet__copy h2,
+    .drop-shelf__copy h2 {
+      font-size: 3.6rem;
+    }
+
+    .discography-sheet__facts div,
+    .discography-sheet__archive-header,
+    .discography-sheet__archive-row {
+      grid-template-columns: 1fr;
+      gap: 0.25rem;
+    }
+
+    .discography-sheet__archive-header {
+      display: none;
+    }
+
+    .release-draft__actions,
+    .release-draft__actions--wide,
+    .drop-shelf__upcoming-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .release-draft__actions :global(.music-listen-trigger),
+    .release-draft__actions a {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .drop-shelf__artwork-link {
+      width: 100%;
+    }
+
+    .drop-shelf__record {
+      display: none;
+    }
+
+    .drop-shelf__upcoming h3,
+    .feature-wall__upcoming a {
+      font-size: 2.45rem;
+    }
+  }
+</style>
