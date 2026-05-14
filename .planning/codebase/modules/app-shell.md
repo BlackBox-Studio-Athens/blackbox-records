@@ -21,7 +21,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell page snapshot parsing plus the `shell-page-loader` request/cache seam
 - overlay history behavior plus the `overlay-fragment-loader` request/cache seam and `overlay-history` history seam
 - shell transition state and focus or scroll resets
-- portal reinjection details
+- portal reinjection details plus the `shell-portal-targets` route-scoped target helper
 
 ## Allowed Dependencies
 
@@ -60,6 +60,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell page loader tests
 - overlay fragment loader tests
 - overlay history tests
+- shell portal target tests
 - Browser Use shell acceptance checks
 
 ## Migration Status

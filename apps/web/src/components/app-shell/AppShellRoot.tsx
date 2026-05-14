@@ -43,6 +43,7 @@ import {
   type ShellPageSnapshot,
 } from '@/components/app-shell/shell-page-snapshot';
 import { createShellPageSnapshotLoader } from '@/components/app-shell/shell-page-loader';
+import { connectShellPortalTarget } from '@/components/app-shell/shell-portal-targets';
 import {
   connectStoreCartBridge,
   getStoreCartBrowserStorage,
@@ -312,49 +313,25 @@ export default function AppShellRoot({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    if (!isCurrentPath(activeShellPathname, '/artists/')) {
-      setArtistsRosterFiltersContainer(null);
-      return;
-    }
-
-    let animationFrameId = 0;
-
-    const syncArtistsRosterFiltersContainer = () => {
-      setArtistsRosterFiltersContainer(document.querySelector<HTMLElement>('[data-artists-roster-filters]'));
-    };
-
-    syncArtistsRosterFiltersContainer();
-    animationFrameId = window.requestAnimationFrame(syncArtistsRosterFiltersContainer);
-
-    return () => {
-      if (animationFrameId) {
-        window.cancelAnimationFrame(animationFrameId);
-      }
-    };
+    return connectShellPortalTarget({
+      activePathname: activeShellPathname,
+      queryTarget: () => document.querySelector<HTMLElement>('[data-artists-roster-filters]'),
+      scheduler: window,
+      setTarget: setArtistsRosterFiltersContainer,
+      targetPathname: '/artists/',
+    });
   }, [activeShellPathname]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    if (!isCurrentPath(activeShellPathname, '/services/')) {
-      setServicesInquiryContainer(null);
-      return;
-    }
-
-    let animationFrameId = 0;
-
-    const syncServicesInquiryContainer = () => {
-      setServicesInquiryContainer(document.querySelector<HTMLElement>('[data-services-inquiry-form]'));
-    };
-
-    syncServicesInquiryContainer();
-    animationFrameId = window.requestAnimationFrame(syncServicesInquiryContainer);
-
-    return () => {
-      if (animationFrameId) {
-        window.cancelAnimationFrame(animationFrameId);
-      }
-    };
+    return connectShellPortalTarget({
+      activePathname: activeShellPathname,
+      queryTarget: () => document.querySelector<HTMLElement>('[data-services-inquiry-form]'),
+      scheduler: window,
+      setTarget: setServicesInquiryContainer,
+      targetPathname: '/services/',
+    });
   }, [activeShellPathname]);
 
   useEffect(() => {
