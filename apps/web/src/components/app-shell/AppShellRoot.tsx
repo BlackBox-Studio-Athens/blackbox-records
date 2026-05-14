@@ -51,7 +51,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { createProjectRelativeUrl, resolveLinkAttributes } from '@/config/site';
 import {
-  buildOverlayFragmentUrl,
   normalizeAppPathname,
   parseOverlayRoute,
   parseShellSectionRoute,
@@ -66,6 +65,7 @@ import {
   type StoreCartState,
 } from '@/lib/store-cart';
 import { isCurrentPath } from '@/utils/urls';
+import { createOverlayFragmentLoader } from './overlay-fragment-loader';
 
 type OverlayState = {
   backgroundHref: string;
@@ -212,6 +212,14 @@ export default function AppShellRoot({
       createShellPageSnapshotLoader({
         cache: shellPageCacheRef.current,
         inFlightRequests: shellPageInFlightRequestsRef.current,
+      }),
+    [],
+  );
+  const overlayFragmentLoader = useMemo(
+    () =>
+      createOverlayFragmentLoader({
+        cache: overlayCacheRef.current,
+        inFlightRequests: overlayInFlightRequestsRef.current,
       }),
     [],
   );
@@ -707,53 +715,8 @@ export default function AppShellRoot({
     focusPlayerModalCloseButtonSoon();
   }
 
-  async function fetchOverlayHtml(pathname: string, signal?: AbortSignal) {
-    const cachedHtml = overlayCacheRef.current.get(pathname);
-    if (cachedHtml) return cachedHtml;
-
-    const existingRequest = overlayInFlightRequestsRef.current.get(pathname);
-    if (existingRequest) {
-      return existingRequest;
-    }
-
-    const fragmentUrl = buildOverlayFragmentUrl(pathname);
-    if (!fragmentUrl) {
-      throw new Error(`Overlay fragment is not available for ${pathname}`);
-    }
-
-    const request = fetch(fragmentUrl, {
-      credentials: 'same-origin',
-      headers: {
-        accept: 'text/html',
-      },
-      signal: signal ?? null,
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error(`Overlay fragment request failed for ${pathname}`);
-        }
-        const html = await response.text();
-        overlayCacheRef.current.set(pathname, html);
-        return html;
-      })
-      .finally(() => {
-        overlayInFlightRequestsRef.current.delete(pathname);
-      });
-
-    overlayInFlightRequestsRef.current.set(pathname, request);
-    return request;
-  }
-
   async function prefetchOverlayHref(href: string) {
-    const resolvedUrl = new URL(href, window.location.href);
-    const route = parseOverlayRoute(resolvedUrl.pathname);
-    if (!route || overlayCacheRef.current.has(route.pathname)) return;
-
-    try {
-      await fetchOverlayHtml(route.pathname);
-    } catch {
-      // Ignore speculative prefetch failures and let click fallback to real navigation.
-    }
+    await overlayFragmentLoader.prefetchHref(href);
   }
 
   async function prefetchShellSectionHref(href: string) {
@@ -983,7 +946,7 @@ export default function AppShellRoot({
     overlayAbortControllerRef.current = abortController;
 
     const backgroundHref = options?.backgroundHref || overlayStateRef.current?.backgroundHref || window.location.href;
-    const cachedHtml = overlayCacheRef.current.get(route.pathname) || '';
+    const cachedHtml = overlayFragmentLoader.getCachedHtml(route.pathname);
     setOverlayState({
       backgroundHref,
       href: resolvedUrl.toString(),
@@ -1002,7 +965,7 @@ export default function AppShellRoot({
     }
 
     try {
-      const html = cachedHtml || (await fetchOverlayHtml(route.pathname, abortController.signal));
+      const html = cachedHtml || (await overlayFragmentLoader.fetchHtml(route.pathname, abortController.signal));
       setOverlayState((currentState) =>
         currentState?.route.pathname === route.pathname
           ? {

@@ -344,6 +344,8 @@ Plans:
   one approved slice per branch or local commit cluster
 - Plan `12-05` is the approved app-shell boundary-hardening slice: it adds shell helper characterization coverage and
   extracts the shell page loader seam without changing shopper-facing shell behavior
+- Plan `12-06` continues app-shell boundary hardening by extracting the overlay fragment loader seam while leaving
+  overlay state, history, focus, and fallback navigation in the shell composition root
 - Exists to make later large refactors safer and more reviewable before production cutover work begins
 
 ### Go-Live / Launch Hardening
@@ -390,4 +392,4 @@ Because Stripe account access and BOX NOW portal access are unavailable, non-sec
 | 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred  |            |
 | 10. Sandbox Verification And Release Gate                      | 5/6            | Active    |            |
 | 11. Website Editorial And Catalog UX Improvements              | 5/5            | Complete  | 2026-05-12 |
-| 12. Modulith Boundary Hardening Planning                       | 1/4            | Active    |            |
+| 12. Modulith Boundary Hardening Planning                       | 3/6            | Active    |            |
