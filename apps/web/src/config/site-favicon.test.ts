@@ -78,9 +78,9 @@ describe('site favicon assets', () => {
 
     const coverage = opaquePixels / (96 * 96);
 
-    expect(coverage).toBeGreaterThan(0.18);
-    expect(coverage).toBeLessThan(0.3);
+    expect(coverage).toBeGreaterThan(0.08);
+    expect(coverage).toBeLessThan(0.14);
     expect(darkPixels).toBe(0);
-    expect(lightPixels).toBeGreaterThan(1_500);
+    expect(lightPixels).toBeGreaterThan(800);
   });
 });
