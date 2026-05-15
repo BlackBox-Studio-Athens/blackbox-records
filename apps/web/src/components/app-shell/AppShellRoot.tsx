@@ -88,6 +88,7 @@ import {
 } from './route-loading-indicator';
 import { syncShellBodyStateClasses } from './shell-body-state';
 import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './shell-hero-scroll-progress';
+import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './shell-overlay-focus';
 import { scrollShellTargetIntoView } from './shell-target-scroll';
 
 type OverlayState = {
@@ -684,12 +685,6 @@ export default function AppShellRoot({
     return true;
   }
 
-  function restoreOverlayTriggerFocus() {
-    if (overlayTriggerElementRef.current?.isConnected) {
-      overlayTriggerElementRef.current.focus();
-    }
-  }
-
   function scrollToTargetId(targetId: string, triggerElement?: HTMLElement | null) {
     return scrollShellTargetIntoView({
       documentRoot: document,
@@ -705,7 +700,10 @@ export default function AppShellRoot({
     setOverlayState(null);
 
     if (restoreFocus) {
-      window.requestAnimationFrame(() => restoreOverlayTriggerFocus());
+      scheduleOverlayTriggerFocusRestore({
+        getTriggerElement: () => overlayTriggerElementRef.current,
+        scheduler: window,
+      });
     }
   }
 
@@ -759,9 +757,10 @@ export default function AppShellRoot({
             }
           : currentState,
       );
-      window.requestAnimationFrame(() => {
-        overlayScrollContainerRef.current?.scrollTo({ top: 0, behavior: 'auto' });
-        overlayCloseButtonRef.current?.focus();
+      scheduleOverlayContentFocus({
+        getCloseButton: () => overlayCloseButtonRef.current,
+        getScrollContainer: () => overlayScrollContainerRef.current,
+        scheduler: window,
       });
       return true;
     } catch {

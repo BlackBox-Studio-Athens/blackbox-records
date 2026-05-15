@@ -19,7 +19,8 @@ sections while acting as the future thin composition root over smaller shell sub
 ## Internal Implementation Area
 
 - shell page snapshot parsing/application plus the `shell-page-loader` request/cache seam
-- overlay history behavior plus the `overlay-fragment-loader` request/cache seam and `overlay-history` history seam
+- overlay history behavior plus the `overlay-fragment-loader` request/cache seam, `overlay-history` history seam, and
+  overlay focus scheduling
 - shell transition state, route loading timer mechanics, target scrolling, body state classes, hero scroll progress, and
   focus or scroll resets
 - portal reinjection details plus the `shell-portal-targets` route-scoped target helper
@@ -64,6 +65,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - route loading indicator tests
 - shell target scroll tests
 - overlay fragment loader tests
+- overlay focus tests
 - overlay history tests
 - shell portal target tests
 - Browser Use shell acceptance checks
