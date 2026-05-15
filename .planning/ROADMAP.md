@@ -360,6 +360,7 @@ Plans:
 - Plan `12-16` moves homepage hero scroll-progress coordination into an internal app-shell helper
 - Plan `12-17` moves overlay focus scheduling into an internal app-shell helper
 - Plan `12-18` moves shell scroll-restoration setup and cleanup into an internal app-shell helper
+- Plan `12-19` moves shell document/window listener attachment and cleanup into an internal app-shell helper
 - Exists to make later large refactors safer and more reviewable before production cutover work begins
 
 ### Go-Live / Launch Hardening
@@ -406,4 +407,4 @@ Because Stripe account access and BOX NOW portal access are unavailable, non-sec
 | 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred  |            |
 | 10. Sandbox Verification And Release Gate                      | 5/6            | Active    |            |
 | 11. Website Editorial And Catalog UX Improvements              | 5/5            | Complete  | 2026-05-12 |
-| 12. Modulith Boundary Hardening Planning                       | 15/18          | Active    |            |
+| 12. Modulith Boundary Hardening Planning                       | 16/19          | Active    |            |

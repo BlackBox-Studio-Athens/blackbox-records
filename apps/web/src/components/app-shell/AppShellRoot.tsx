@@ -87,6 +87,7 @@ import {
   scheduleRouteLoadingStop,
 } from './route-loading-indicator';
 import { syncShellBodyStateClasses } from './shell-body-state';
+import { connectShellDocumentListeners } from './shell-document-listeners';
 import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './shell-hero-scroll-progress';
 import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './shell-overlay-focus';
 import { enableManualShellScrollRestoration } from './shell-scroll-restoration';
@@ -974,20 +975,19 @@ export default function AppShellRoot({
       }, 0);
     }
 
-    document.addEventListener('click', handleDocumentClick, true);
-    document.addEventListener('pointerover', handleDocumentPointerOver);
-    document.addEventListener('focusin', handleDocumentFocusIn);
-    document.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('popstate', handlePopState);
-    window.addEventListener('blur', handleWindowBlur);
+    const disconnectShellDocumentListeners = connectShellDocumentListeners({
+      documentTarget: document,
+      onBlur: handleWindowBlur,
+      onClick: handleDocumentClick,
+      onFocusIn: handleDocumentFocusIn,
+      onKeyDown: handleKeyDown,
+      onPointerOver: handleDocumentPointerOver,
+      onPopState: handlePopState,
+      windowTarget: window,
+    });
 
     return () => {
-      document.removeEventListener('click', handleDocumentClick, true);
-      document.removeEventListener('pointerover', handleDocumentPointerOver);
-      document.removeEventListener('focusin', handleDocumentFocusIn);
-      document.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('blur', handleWindowBlur);
+      disconnectShellDocumentListeners();
       clearRouteLoadingTimer();
       clearShellPageTransition(shellPageTransition);
       shellSectionTransition.reset();
