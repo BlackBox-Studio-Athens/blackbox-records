@@ -27,6 +27,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell `popstate` routing decisions
 - shell Escape-key dismissal priority
 - shell document click target classification
+- shell anchor-click navigation routing
 - shell document/window listener attachment for persistent navigation, overlay, and player events
 - player shell view-state derivation while player session behavior remains shell-owned from the user perspective
 - player modal focus scheduling and trigger focus restoration for shell-owned player controls
@@ -93,6 +94,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell popstate navigation tests
 - shell escape dismissal tests
 - shell document click intent tests
+- shell anchor click navigation tests
 - Browser Use shell acceptance checks
 
 ## Migration Status

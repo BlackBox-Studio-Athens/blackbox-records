@@ -83,6 +83,7 @@ import {
   clearRouteLoadingTimer as clearScheduledRouteLoadingTimer,
   scheduleRouteLoadingStop,
 } from './route-loading-indicator';
+import { routeShellAnchorClickNavigation } from './shell-anchor-click-navigation';
 import { syncShellBodyStateClasses } from './shell-body-state';
 import { restoreCachedShellPageSnapshot } from './shell-cached-page-restoration';
 import { resolveShellDocumentClickIntent } from './shell-document-click-intent';
@@ -802,40 +803,26 @@ export default function AppShellRoot({
 
       if (!anchorElement) return;
 
-      const resolvedUrl = resolveInternalUrl(anchorElement);
-      if (!resolvedUrl || resolvedUrl.origin !== window.location.origin) return;
-      const isMobileNavigationLink = Boolean(anchorElement.closest('[data-app-shell-mobile-navigation]'));
-
-      if (isMobileNavigationLink) {
-        setIsMobileNavigationOpen(false);
-      }
-
-      if (isNavigableShellSectionAnchor(anchorElement)) {
-        event.preventDefault();
-        const navigationSource = resolveShellNavigationSource(anchorElement, isMobileNavigationLink);
-        void openShellSectionHref(resolvedUrl.toString(), {
-          historyMode: 'push',
-          source: navigationSource,
-          sourceElement: anchorElement,
-        });
-        return;
-      }
-
-      if (isNavigableOverlayAnchor(anchorElement)) {
-        event.preventDefault();
-        overlayTriggerElementRef.current = anchorElement;
-        void openOverlayHref(resolvedUrl.toString(), {
-          backgroundHref: overlayStateRef.current?.backgroundHref || window.location.href,
-          pushHistory: true,
-        });
-        return;
-      }
-
-      if (overlayStateRef.current && !anchorElement.hasAttribute('data-astro-reload')) {
-        event.preventDefault();
-        collapseOverlayHistoryToBackground();
-        window.location.assign(resolvedUrl.toString());
-      }
+      routeShellAnchorClickNavigation({
+        anchorElement,
+        closeMobileNavigation: () => setIsMobileNavigationOpen(false),
+        collapseOverlayHistoryToBackground,
+        currentHref: window.location.href,
+        currentOrigin: window.location.origin,
+        getOverlayBackgroundHref: () => overlayStateRef.current?.backgroundHref,
+        hasOverlayState: () => overlayStateRef.current !== null,
+        isNavigableOverlayAnchor,
+        isNavigableShellSectionAnchor,
+        navigateDocumentTo: (href) => window.location.assign(href),
+        openOverlayHref,
+        openShellSectionHref,
+        preventDefault: () => event.preventDefault(),
+        resolveInternalUrl,
+        resolveShellNavigationSource,
+        setOverlayTriggerElement: (element) => {
+          overlayTriggerElementRef.current = element;
+        },
+      });
     }
 
     function primeMusicAndOverlayPrefetch(eventTarget: EventTarget | null) {
