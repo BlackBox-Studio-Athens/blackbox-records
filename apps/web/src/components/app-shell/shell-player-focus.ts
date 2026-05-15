@@ -3,6 +3,13 @@ type PlayerFocusScheduler = {
 };
 
 type FocusableElement = Pick<HTMLElement, 'focus'>;
+type ConnectedFocusableElement = Pick<HTMLElement, 'focus' | 'isConnected'>;
+
+export function restoreConnectedPlayerTriggerFocus(triggerElement: ConnectedFocusableElement | null) {
+  if (triggerElement?.isConnected) {
+    triggerElement.focus();
+  }
+}
 
 export function schedulePlayerModalCloseButtonFocus({
   getCloseButton,

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { schedulePlayerModalCloseButtonFocus } from './shell-player-focus';
+import { restoreConnectedPlayerTriggerFocus, schedulePlayerModalCloseButtonFocus } from './shell-player-focus';
 
 function createScheduler() {
   const callbacks = new Map<number, FrameRequestCallback>();
@@ -47,5 +47,29 @@ describe('schedulePlayerModalCloseButtonFocus', () => {
     });
 
     expect(() => scheduler.flush()).not.toThrow();
+  });
+});
+
+describe('restoreConnectedPlayerTriggerFocus', () => {
+  it('focuses a connected player trigger', () => {
+    const triggerElement = {
+      focus: vi.fn(),
+      isConnected: true,
+    };
+
+    restoreConnectedPlayerTriggerFocus(triggerElement);
+
+    expect(triggerElement.focus).toHaveBeenCalledOnce();
+  });
+
+  it('does not focus a disconnected player trigger', () => {
+    const triggerElement = {
+      focus: vi.fn(),
+      isConnected: false,
+    };
+
+    restoreConnectedPlayerTriggerFocus(triggerElement);
+
+    expect(triggerElement.focus).not.toHaveBeenCalled();
   });
 });
