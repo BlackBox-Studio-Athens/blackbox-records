@@ -26,6 +26,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell document/window listener attachment for persistent navigation, overlay, and player events
 - player shell view-state derivation while player session behavior remains shell-owned from the user perspective
 - player modal focus scheduling and trigger focus restoration for shell-owned player controls
+- player session-machine input derivation for shell-owned player controls
 - portal reinjection details plus the `shell-portal-targets` route-scoped target helper
 
 ## Allowed Dependencies
@@ -75,6 +76,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell portal target tests
 - shell player view-state tests
 - shell player focus tests
+- shell player session-machine state tests
 - Browser Use shell acceptance checks
 
 ## Migration Status

@@ -3,10 +3,7 @@ import { createPortal } from 'react-dom';
 import { Square, X } from 'lucide-react';
 
 import ArtistsRosterFilters from '@/components/artists/ArtistsRosterFilters';
-import {
-  IDLE_PLAYER_SESSION_MACHINE_STATE,
-  reducePlayerSessionMachine,
-} from '@/components/app-shell/player-session-machine';
+import { reducePlayerSessionMachine } from '@/components/app-shell/player-session-machine';
 import { OPEN_PLAYER_ACTION_LABEL } from '@/components/app-shell/player-session-ui';
 import {
   readPlayerProvidersFromElement,
@@ -91,6 +88,7 @@ import { connectShellDocumentListeners } from './shell-document-listeners';
 import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './shell-hero-scroll-progress';
 import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './shell-overlay-focus';
 import { restoreConnectedPlayerTriggerFocus, schedulePlayerModalCloseButtonFocus } from './shell-player-focus';
+import { derivePlayerSessionMachineState } from './shell-player-session-machine-state';
 import { derivePlayerShellViewState, PLAYER_PROVIDER_LABELS } from './shell-player-view-state';
 import { enableManualShellScrollRestoration } from './shell-scroll-restoration';
 import { scrollShellTargetIntoView } from './shell-target-scroll';
@@ -461,17 +459,9 @@ export default function AppShellRoot({
 
   function closePlayerModal() {
     const activeSession = activePlayerSessionRef.current;
-    const nextSessionState = reducePlayerSessionMachine(
-      activeSession
-        ? {
-            hasEmbedInteraction: activeSession.hasEmbedInteraction,
-            hasSession: true,
-            isLoaded: activeSession.iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState === 'loaded',
-            status: activeSession.status,
-          }
-        : IDLE_PLAYER_SESSION_MACHINE_STATE,
-      { type: 'dismiss-requested' },
-    );
+    const nextSessionState = reducePlayerSessionMachine(derivePlayerSessionMachineState(activeSession), {
+      type: 'dismiss-requested',
+    });
 
     if (activeSession && nextSessionState.hasSession && nextSessionState.status === 'minimized') {
       minimizePlayerSession();
@@ -485,15 +475,9 @@ export default function AppShellRoot({
     const activeSession = activePlayerSessionRef.current;
     if (!activeSession) return;
 
-    activeSession.status = reducePlayerSessionMachine(
-      {
-        hasEmbedInteraction: activeSession.hasEmbedInteraction,
-        hasSession: true,
-        isLoaded: activeSession.iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState === 'loaded',
-        status: activeSession.status,
-      },
-      { type: 'reopen-requested' },
-    ).status as ActivePlayerSession['status'];
+    activeSession.status = reducePlayerSessionMachine(derivePlayerSessionMachineState(activeSession), {
+      type: 'reopen-requested',
+    }).status as ActivePlayerSession['status'];
     setIsPlayerModalOpen(true);
     syncActivePlayerSessionIntoFrameHost();
     schedulePlayerModalCloseButtonFocus({
