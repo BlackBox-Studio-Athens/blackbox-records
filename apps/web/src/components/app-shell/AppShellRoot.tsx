@@ -7,7 +7,7 @@ import {
   IDLE_PLAYER_SESSION_MACHINE_STATE,
   reducePlayerSessionMachine,
 } from '@/components/app-shell/player-session-machine';
-import { derivePlayerPresentationState, OPEN_PLAYER_ACTION_LABEL } from '@/components/app-shell/player-session-ui';
+import { OPEN_PLAYER_ACTION_LABEL } from '@/components/app-shell/player-session-ui';
 import {
   readPlayerProvidersFromElement,
   readPlayerTitleFromElement,
@@ -90,6 +90,7 @@ import { syncShellBodyStateClasses } from './shell-body-state';
 import { connectShellDocumentListeners } from './shell-document-listeners';
 import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './shell-hero-scroll-progress';
 import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './shell-overlay-focus';
+import { derivePlayerShellViewState, PLAYER_PROVIDER_LABELS } from './shell-player-view-state';
 import { enableManualShellScrollRestoration } from './shell-scroll-restoration';
 import { scrollShellTargetIntoView } from './shell-target-scroll';
 
@@ -108,10 +109,6 @@ type AppShellRootProps = {
   siteTitle: string;
 };
 
-const EMBED_PROVIDER_LABELS: Record<PlayerProviderId, string> = {
-  bandcamp: 'Bandcamp',
-  tidal: 'Tidal',
-};
 const OVERLAY_KIND_LABELS: Record<OverlayRoute['kind'], string> = {
   artists: 'artist',
   news: 'news',
@@ -337,39 +334,18 @@ export default function AppShellRoot({
 
   function updatePlayerUiFromSession(activeSession: ActivePlayerSession | null) {
     if (!activeSession) {
-      setActivePlayerProviderId('');
-      setActivePlayerEmbedLayout('');
-      setActivePlayerTitle('');
       setPlayerProviders([]);
-      const presentation = derivePlayerPresentationState({
-        hasEmbedInteraction: false,
-        hasSession: false,
-        isLoaded: false,
-      });
-      setIsPlayerLoading(presentation.isLoading);
-      setIsMiniPlayerVisible(presentation.isMiniPlayerVisible);
-      setMiniPlayerStatusLabel(presentation.miniPlayerStatusLabel);
-      setPlayerModalDismissActionLabel(presentation.closeActionLabel);
-      setPlayerModalDismissAriaLabel(presentation.closeActionAriaLabel);
-      return;
     }
 
-    setActivePlayerProviderId(activeSession.providerId);
-    setActivePlayerEmbedLayout(activeSession.embedLayout);
-    setActivePlayerTitle(activeSession.releaseTitle);
-    const isLoaded = activeSession.iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState === 'loaded';
-    const presentation = derivePlayerPresentationState({
-      hasEmbedInteraction: activeSession.hasEmbedInteraction,
-      hasSession: true,
-      isLoaded,
-      providerLabel: EMBED_PROVIDER_LABELS[activeSession.providerId],
-      status: activeSession.status,
-    });
-    setIsPlayerLoading(presentation.isLoading);
-    setIsMiniPlayerVisible(presentation.isMiniPlayerVisible);
-    setMiniPlayerStatusLabel(presentation.miniPlayerStatusLabel);
-    setPlayerModalDismissActionLabel(presentation.closeActionLabel);
-    setPlayerModalDismissAriaLabel(presentation.closeActionAriaLabel);
+    const viewState = derivePlayerShellViewState(activeSession);
+    setActivePlayerProviderId(viewState.activePlayerProviderId);
+    setActivePlayerEmbedLayout(viewState.activePlayerEmbedLayout);
+    setActivePlayerTitle(viewState.activePlayerTitle);
+    setIsPlayerLoading(viewState.isPlayerLoading);
+    setIsMiniPlayerVisible(viewState.isMiniPlayerVisible);
+    setMiniPlayerStatusLabel(viewState.miniPlayerStatusLabel);
+    setPlayerModalDismissActionLabel(viewState.playerModalDismissActionLabel);
+    setPlayerModalDismissAriaLabel(viewState.playerModalDismissAriaLabel);
   }
 
   function markActivePlayerSessionAsInteracted(embedUrl: string) {
@@ -1189,7 +1165,7 @@ export default function AppShellRoot({
                     className="music-streaming-service-embedded-player-provider-button music-streaming-service-embedded-player-provider-button--has-logo inline-flex min-h-10 items-center justify-center rounded-md px-4 transition-colors"
                     type="button"
                     data-state={activePlayerProviderId === providerId ? 'active' : 'inactive'}
-                    aria-label={EMBED_PROVIDER_LABELS[providerId]}
+                    aria-label={PLAYER_PROVIDER_LABELS[providerId]}
                     hidden={!provider}
                     aria-pressed={activePlayerProviderId === providerId}
                     onClick={() => {
@@ -1203,7 +1179,7 @@ export default function AppShellRoot({
                       alt=""
                       aria-hidden="true"
                     />
-                    <span className="accessibility-visually-hidden-text">{EMBED_PROVIDER_LABELS[providerId]}</span>
+                    <span className="accessibility-visually-hidden-text">{PLAYER_PROVIDER_LABELS[providerId]}</span>
                   </button>
                 );
               })}

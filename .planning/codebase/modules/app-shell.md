@@ -24,6 +24,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell transition state, route loading timer mechanics, target scrolling, body state classes, hero scroll progress, and
   focus, scroll-restoration, or scroll resets
 - shell document/window listener attachment for persistent navigation, overlay, and player events
+- player shell view-state derivation while player session behavior remains shell-owned from the user perspective
 - portal reinjection details plus the `shell-portal-targets` route-scoped target helper
 
 ## Allowed Dependencies
@@ -71,6 +72,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - overlay focus tests
 - overlay history tests
 - shell portal target tests
+- shell player view-state tests
 - Browser Use shell acceptance checks
 
 ## Migration Status

@@ -4,18 +4,18 @@ milestone: v1.2
 milestone_name: Modulith Boundary Hardening
 current_phase: 12
 current_phase_name: modulith-boundary-hardening-planning
-current_plan: 19
+current_plan: 20
 status: active
-stopped_at: Completed 12-19 shell document listener boundary hardening
+stopped_at: Completed 12-20 player shell view state boundary hardening
 paused_at: ''
 last_updated: '2026-05-15T00:00:00.000Z'
 last_activity: 2026-05-15
 progress:
   total_phases: 12
   completed_phases: 8
-  total_plans: 19
-  completed_plans: 16
-  percent: 84
+  total_plans: 20
+  completed_plans: 17
+  percent: 85
 ---
 
 # Project State
@@ -32,16 +32,16 @@ routes own secrets and mutations, and stock changes happen only after verified w
 ## Current Position
 
 Phase: 12 (modulith-boundary-hardening-planning) - ACTIVE
-Plan: 19 of 19
+Plan: 20 of 20
 Current Phase: 12
 Current Phase Name: modulith-boundary-hardening-planning
 Total Phases: 12
-Current Plan: 19
-Total Plans in Phase: 19
-Status: Active - 12-19 shell document listener boundary hardening complete
-Progress: [########--] 84%
+Current Plan: 20
+Total Plans in Phase: 20
+Status: Active - 12-20 player shell view state boundary hardening complete
+Progress: [#########-] 85%
 Last activity: 2026-05-15
-Last Activity Description: 12-19 completed shell document listener characterization and extraction
+Last Activity Description: 12-20 completed player shell view state characterization and extraction
 Paused At:
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, 8, and 11 are complete. Phase 7 mock, contract, frontend
@@ -94,7 +94,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 | 9     | 5/6   | Deferred  | 2026-04-30 |
 | 10    | 5/6   | Deferred  | 2026-05-01 |
 | 11    | 5/5   | Completed | 2026-05-12 |
-| 12    | 16/19 | Active    | 2026-05-15 |
+| 12    | 17/20 | Active    | 2026-05-15 |
 
 **Recent Trend:**
 
@@ -163,6 +163,8 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   and cleanup are characterized and live in an internal `app-shell` helper.
 - Phase 12 plan 12-19 completed the shell document listener boundary-hardening slice: document/window listener
   registration and cleanup are characterized and live in an internal `app-shell` helper.
+- Phase 12 plan 12-20 completed the player shell view-state boundary-hardening slice: idle, loading, and minimized
+  player UI state derivation is characterized and lives in an app-shell-owned helper.
 - The backend now persists `Stock`, `StockChange`, and `StockCount` in D1 and exposes internal stock lookup/write
   routes under `/api/internal/variants/*`.
 - The static Astro app now serves the protected stock operations UI at `/stock/`, using `/stock/?variantId=<variantId>`
@@ -321,7 +323,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of
   the completed Phase 6.1 foundation.
-- Continue Phase 12 through the next approved app-shell or cms-admin slice; `12-04` through `12-19` are complete and
+- Continue Phase 12 through the next approved app-shell or cms-admin slice; `12-04` through `12-20` are complete and
   deeper refactors should still respect the boundary manifest and verifier rules.
 - Complete the deferred Stripe access validation gate before sandbox/release approval.
 - Choose the Phase 9 shipping mode and complete the deferred BOX NOW Portal Gate before marking Phase 9, `09-06`, or
@@ -356,5 +358,5 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 ## Session
 
 **Last Date:** 2026-05-15T00:00:00.000Z
-**Stopped At:** Completed 12-19 shell document listener boundary hardening
+**Stopped At:** Completed 12-20 player shell view state boundary hardening
 **Resume File:** None
