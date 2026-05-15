@@ -93,6 +93,7 @@ import { restoreConnectedPlayerTriggerFocus, schedulePlayerModalCloseButtonFocus
 import { schedulePlayerIframeBlurInteractionCheck } from './shell-player-iframe-blur-interaction';
 import { derivePlayerSessionMachineState } from './shell-player-session-machine-state';
 import { derivePlayerShellViewState, PLAYER_PROVIDER_LABELS } from './shell-player-view-state';
+import { routeShellPopStateNavigation } from './shell-popstate-navigation';
 import { primeShellPrefetchIntent } from './shell-prefetch-intent';
 import { syncShellRenderedNavigationState } from './shell-rendered-navigation-state';
 import { enableManualShellScrollRestoration } from './shell-scroll-restoration';
@@ -881,37 +882,17 @@ export default function AppShellRoot({
     }
 
     function handlePopState() {
-      setIsMobileNavigationOpen(false);
-      const nextOverlayRoute = parseOverlayRoute(window.location.pathname);
-      const nextShellSectionRoute = parseShellSectionRoute(window.location.pathname);
-      const nextNormalizedPathname = normalizeAppPathname(window.location.pathname);
-      const historyState = window.history.state || {};
-      const hasCachedShellPage = shellPageLoader.hasCachedSnapshot(nextNormalizedPathname);
-
-      if (historyState.__appShellOverlay && nextOverlayRoute) {
-        void openOverlayHref(window.location.href, {
-          backgroundHref: historyState.backgroundHref || window.location.href,
-          replaceHistory: false,
-        });
-        return;
-      }
-
-      if (nextShellSectionRoute) {
-        void openShellSectionHref(window.location.href, {
-          historyMode: 'none',
-          source: 'history',
-        });
-        return;
-      }
-
-      if (hasCachedShellPage) {
-        void restoreCachedShellPage(nextNormalizedPathname, {
-          source: 'history',
-        });
-        return;
-      }
-
-      closeOverlayState({ restoreFocus: false });
+      routeShellPopStateNavigation({
+        closeMobileNavigation: () => setIsMobileNavigationOpen(false),
+        closeOverlayState,
+        currentHref: window.location.href,
+        currentPathname: window.location.pathname,
+        hasCachedShellPage: shellPageLoader.hasCachedSnapshot,
+        historyState: window.history.state || {},
+        openOverlayHref,
+        openShellSectionHref,
+        restoreCachedShellPage,
+      });
     }
 
     function handleWindowBlur() {
