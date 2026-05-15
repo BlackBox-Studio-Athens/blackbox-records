@@ -105,6 +105,7 @@ activation of v1.2 execution ahead of the current v1.1 milestone, and adopting N
 - `.planning/ROADMAP.md`
 - `.planning/STATE.md`
 - `.planning/UBIQUITOUS_LANGUAGE.md`
+- `.planning/phases/12-modulith-boundary-hardening-planning/12-REFACTOR-ENDGOAL.md`
 - `.planning/codebase/ARCHITECTURE.md`
 - `.planning/codebase/CONCERNS.md`
 - `.planning/codebase/STRUCTURE.md`

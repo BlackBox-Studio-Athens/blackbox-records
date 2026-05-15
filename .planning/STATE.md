@@ -193,6 +193,10 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 - Phase 12 plan 12-32 completed the shell document click intent boundary-hardening slice: mobile-nav, player-control,
   player-trigger, scroll-target, and anchor target classification are characterized and live in an internal `app-shell`
   helper.
+- Phase 12 now has an explicit refactor end-goal document at
+  `.planning/phases/12-modulith-boundary-hardening-planning/12-REFACTOR-ENDGOAL.md`; remaining slices should aim at thin
+  app-shell composition, explicit `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard
+  `eslint-plugin-boundaries` enforcement rather than generic file shrinking.
 - The backend now persists `Stock`, `StockChange`, and `StockCount` in D1 and exposes internal stock lookup/write
   routes under `/api/internal/variants/*`.
 - The static Astro app now serves the protected stock operations UI at `/stock/`, using `/stock/?variantId=<variantId>`
