@@ -87,6 +87,7 @@ import {
   scheduleRouteLoadingStop,
 } from './route-loading-indicator';
 import { syncShellBodyStateClasses } from './shell-body-state';
+import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './shell-hero-scroll-progress';
 import { scrollShellTargetIntoView } from './shell-target-scroll';
 
 type OverlayState = {
@@ -308,38 +309,11 @@ export default function AppShellRoot({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    let animationFrameId = 0;
-    let currentHeroElement: HTMLElement | null = null;
-
-    const applyHeroScrollProgress = () => {
-      animationFrameId = 0;
-      currentHeroElement = document.querySelector<HTMLElement>('#homepage-hero-section');
-
-      if (!currentHeroElement || !isCurrentPath(activeShellPathname, '/')) return;
-
-      const heroRect = currentHeroElement.getBoundingClientRect();
-      const fadeDistance = Math.max(window.innerHeight * 0.42, heroRect.height * 0.32);
-      const progress = Math.min(Math.max(-heroRect.top / fadeDistance, 0), 1);
-      currentHeroElement.style.setProperty('--homepage-hero-scroll-progress', progress.toFixed(4));
-    };
-
-    const queueHeroScrollSync = () => {
-      if (animationFrameId) return;
-      animationFrameId = window.requestAnimationFrame(applyHeroScrollProgress);
-    };
-
-    queueHeroScrollSync();
-    window.addEventListener('scroll', queueHeroScrollSync, { passive: true });
-    window.addEventListener('resize', queueHeroScrollSync);
-
-    return () => {
-      window.removeEventListener('scroll', queueHeroScrollSync);
-      window.removeEventListener('resize', queueHeroScrollSync);
-      if (animationFrameId) {
-        window.cancelAnimationFrame(animationFrameId);
-      }
-      currentHeroElement?.style.removeProperty('--homepage-hero-scroll-progress');
-    };
+    return connectHomepageHeroScrollProgress({
+      activePathname: activeShellPathname,
+      queryHeroElement: () => document.querySelector<HTMLElement>(HOMEPAGE_HERO_SELECTOR),
+      scheduler: window,
+    });
   }, [activeShellPathname]);
 
   function clearRouteLoadingTimer() {

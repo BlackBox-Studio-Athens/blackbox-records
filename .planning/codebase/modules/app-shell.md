@@ -20,7 +20,8 @@ sections while acting as the future thin composition root over smaller shell sub
 
 - shell page snapshot parsing/application plus the `shell-page-loader` request/cache seam
 - overlay history behavior plus the `overlay-fragment-loader` request/cache seam and `overlay-history` history seam
-- shell transition state, route loading timer mechanics, target scrolling, body state classes, and focus or scroll resets
+- shell transition state, route loading timer mechanics, target scrolling, body state classes, hero scroll progress, and
+  focus or scroll resets
 - portal reinjection details plus the `shell-portal-targets` route-scoped target helper
 
 ## Allowed Dependencies
@@ -57,6 +58,7 @@ sections while acting as the future thin composition root over smaller shell sub
 
 - routing helper tests
 - shell body state tests
+- shell hero scroll progress tests
 - shell snapshot parser and application tests
 - shell page loader tests
 - route loading indicator tests
