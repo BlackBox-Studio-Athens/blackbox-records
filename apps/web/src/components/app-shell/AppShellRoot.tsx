@@ -45,9 +45,9 @@ import {
 import { createShellPageSnapshotLoader } from '@/components/app-shell/shell-page-loader';
 import { connectShellPortalTarget } from '@/components/app-shell/shell-portal-targets';
 import {
+  applyStoreCartStateAndPersist,
   connectStoreCartBridge,
   getStoreCartBrowserStorage,
-  persistStoreCartState,
 } from '@/components/app-shell/store-cart-bridge';
 import {
   clearShellPageTransition,
@@ -224,10 +224,11 @@ export default function AppShellRoot({
   overlayStateRef.current = overlayState;
 
   function applyStoreCartState(nextState: StoreCartState) {
-    setStoreCartState(nextState);
-    if (typeof window === 'undefined') return;
-
-    persistStoreCartState(getStoreCartBrowserStorage(), nextState);
+    applyStoreCartStateAndPersist({
+      readStorage: getStoreCartBrowserStorage,
+      setStoreCartState,
+      state: nextState,
+    });
   }
 
   function getCurrentMainElement() {

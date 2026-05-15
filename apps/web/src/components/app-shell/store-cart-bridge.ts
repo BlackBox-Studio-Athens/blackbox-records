@@ -11,6 +11,12 @@ import {
 
 type StoreCartBrowserStorage = Parameters<typeof readStoreCartState>[0];
 
+type ApplyStoreCartStateOptions = {
+  readStorage: () => StoreCartBrowserStorage;
+  setStoreCartState: (state: StoreCartState) => void;
+  state: StoreCartState;
+};
+
 type StoreCartBridgeOptions = {
   eventTarget: Window;
   queryHeaderRoot: () => HTMLElement | null;
@@ -30,6 +36,11 @@ export function getStoreCartBrowserStorage(): Storage | undefined {
 
 export function persistStoreCartState(storage: StoreCartBrowserStorage, state: StoreCartState) {
   writeStoreCartState(storage, state);
+}
+
+export function applyStoreCartStateAndPersist({ readStorage, setStoreCartState, state }: ApplyStoreCartStateOptions) {
+  setStoreCartState(state);
+  persistStoreCartState(readStorage(), state);
 }
 
 export function connectStoreCartBridge({

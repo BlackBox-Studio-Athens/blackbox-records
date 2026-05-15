@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { CHECKOUT_CART_UPDATED_EVENT } from '@/components/store/CheckoutOrderSummary';
 import {
+  addStoreCartItem,
   createEmptyStoreCartState,
   readStoreCartState,
   STORE_CART_ADD_ITEM_EVENT,
@@ -10,7 +11,7 @@ import {
   type StoreCartState,
 } from '@/lib/store-cart';
 
-import { connectStoreCartBridge } from './store-cart-bridge';
+import { applyStoreCartStateAndPersist, connectStoreCartBridge } from './store-cart-bridge';
 
 function createMemoryStorage(): Storage {
   const values = new Map<string, string>();
@@ -52,6 +53,38 @@ const cartItem: CartLineItemSnapshot = {
 };
 
 describe('store cart bridge', () => {
+  it('applies StoreCart state and persists it through the configured storage', () => {
+    const storage = createMemoryStorage();
+    const nextState = addStoreCartItem(cartItem, addStoreCartItem(cartItem));
+    const seenStates: StoreCartState[] = [];
+
+    applyStoreCartStateAndPersist({
+      readStorage: () => storage,
+      setStoreCartState: (state) => {
+        seenStates.push(state);
+      },
+      state: nextState,
+    });
+
+    expect(seenStates).toEqual([nextState]);
+    expect(readStoreCartState(storage).lines).toMatchObject([{ variantId: cartItem.variantId, quantity: 2 }]);
+  });
+
+  it('still applies StoreCart state when browser storage is unavailable', () => {
+    const nextState = addStoreCartItem(cartItem, addStoreCartItem(cartItem));
+    const seenStates: StoreCartState[] = [];
+
+    applyStoreCartStateAndPersist({
+      readStorage: () => undefined,
+      setStoreCartState: (state) => {
+        seenStates.push(state);
+      },
+      state: nextState,
+    });
+
+    expect(seenStates).toEqual([nextState]);
+  });
+
   it('persists add-item events and opens the cart drawer', () => {
     const eventTarget = new EventTarget() as Window;
     const storage = createMemoryStorage();

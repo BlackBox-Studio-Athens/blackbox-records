@@ -365,6 +365,7 @@ Plans:
 - Plan `12-21` moves player modal close-button focus scheduling into an internal app-shell helper
 - Plan `12-22` moves player trigger focus restoration into the existing player focus helper
 - Plan `12-23` moves player session-machine input derivation into an internal app-shell helper
+- Plan `12-24` moves StoreCart state application and persistence into the existing StoreCart bridge
 - Exists to make later large refactors safer and more reviewable before production cutover work begins
 
 ### Go-Live / Launch Hardening
@@ -411,4 +412,4 @@ Because Stripe account access and BOX NOW portal access are unavailable, non-sec
 | 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred  |            |
 | 10. Sandbox Verification And Release Gate                      | 5/6            | Active    |            |
 | 11. Website Editorial And Catalog UX Improvements              | 5/5            | Complete  | 2026-05-12 |
-| 12. Modulith Boundary Hardening Planning                       | 20/23          | Active    |            |
+| 12. Modulith Boundary Hardening Planning                       | 21/24          | Active    |            |
