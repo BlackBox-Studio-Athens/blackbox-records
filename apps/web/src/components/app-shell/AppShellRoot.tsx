@@ -90,6 +90,7 @@ import { syncShellBodyStateClasses } from './shell-body-state';
 import { connectShellDocumentListeners } from './shell-document-listeners';
 import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './shell-hero-scroll-progress';
 import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './shell-overlay-focus';
+import { schedulePlayerModalCloseButtonFocus } from './shell-player-focus';
 import { derivePlayerShellViewState, PLAYER_PROVIDER_LABELS } from './shell-player-view-state';
 import { enableManualShellScrollRestoration } from './shell-scroll-restoration';
 import { scrollShellTargetIntoView } from './shell-target-scroll';
@@ -495,12 +496,18 @@ export default function AppShellRoot({
     ).status as ActivePlayerSession['status'];
     setIsPlayerModalOpen(true);
     syncActivePlayerSessionIntoFrameHost();
-    window.requestAnimationFrame(() => modalCloseButtonRef.current?.focus());
+    schedulePlayerModalCloseButtonFocus({
+      getCloseButton: () => modalCloseButtonRef.current,
+      scheduler: window,
+    });
   }
 
   function openPlayerModal(triggerElement: HTMLElement, playerElement: HTMLElement) {
     const focusPlayerModalCloseButtonSoon = () => {
-      window.requestAnimationFrame(() => modalCloseButtonRef.current?.focus());
+      schedulePlayerModalCloseButtonFocus({
+        getCloseButton: () => modalCloseButtonRef.current,
+        scheduler: window,
+      });
     };
 
     const providers = readPlayerProvidersFromElement(playerElement);
