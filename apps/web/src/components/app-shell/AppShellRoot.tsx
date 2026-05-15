@@ -85,6 +85,7 @@ import {
 } from './route-loading-indicator';
 import { syncShellBodyStateClasses } from './shell-body-state';
 import { restoreCachedShellPageSnapshot } from './shell-cached-page-restoration';
+import { resolveShellDocumentClickIntent } from './shell-document-click-intent';
 import { connectShellDocumentListeners } from './shell-document-listeners';
 import { handleShellEscapeDismissal } from './shell-escape-dismissal';
 import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './shell-hero-scroll-progress';
@@ -747,68 +748,58 @@ export default function AppShellRoot({
     function handleDocumentClick(event: MouseEvent) {
       if (event.defaultPrevented || isModifiedEvent(event)) return;
 
-      const eventTarget = event.target;
-      if (!(eventTarget instanceof Element)) return;
+      const clickIntent = resolveShellDocumentClickIntent(event.target, {
+        readPlayerProvidersFromElement,
+      });
 
-      const mobileNavigationTrigger = eventTarget.closest<HTMLElement>('[data-app-shell-mobile-navigation-trigger]');
-      if (mobileNavigationTrigger) {
+      if (clickIntent.kind === 'mobile-navigation-trigger') {
         event.preventDefault();
         setIsMobileNavigationOpen((currentState) => !currentState);
         return;
       }
 
-      const playerModalDismissTrigger = eventTarget.closest<HTMLElement>(
-        '[data-music-streaming-service-embedded-player-modal-dismiss]',
-      );
-      if (playerModalDismissTrigger) {
+      if (clickIntent.kind === 'player-modal-dismiss') {
         event.preventDefault();
         closePlayerModal();
         return;
       }
 
-      const miniPlayerOpenTrigger = eventTarget.closest<HTMLElement>(
-        '[data-music-streaming-service-embedded-player-mini-player-open]',
-      );
-      if (miniPlayerOpenTrigger) {
+      if (clickIntent.kind === 'mini-player-open') {
         event.preventDefault();
         reopenPlayerModal();
         return;
       }
 
-      const miniPlayerStopTrigger = eventTarget.closest<HTMLElement>(
-        '[data-music-streaming-service-embedded-player-mini-player-stop]',
-      );
-      if (miniPlayerStopTrigger) {
+      if (clickIntent.kind === 'mini-player-stop') {
         event.preventDefault();
         stopPlayerSession({ restoreFocus: true });
         return;
       }
 
-      const playerTriggerElement = eventTarget.closest<HTMLElement>(
-        '[data-music-streaming-service-embedded-player-trigger]',
-      );
-      if (playerTriggerElement) {
-        const playerElement =
-          playerTriggerElement.closest<HTMLElement>('[data-music-streaming-service-embedded-player-card]') ||
-          playerTriggerElement;
-
-        if (readPlayerProvidersFromElement(playerElement).length > 0) {
-          event.preventDefault();
-          openPlayerModal(playerTriggerElement, playerElement);
-        }
+      if (clickIntent.kind === 'player-trigger') {
+        event.preventDefault();
+        openPlayerModal(clickIntent.triggerElement, clickIntent.playerElement);
         return;
       }
 
-      const scrollTargetTrigger = eventTarget.closest<HTMLElement>('[data-scroll-to-target]');
-      if (scrollTargetTrigger) {
-        const targetId = scrollTargetTrigger.dataset.scrollToTarget;
-        if (targetId && scrollToTargetId(targetId, scrollTargetTrigger)) {
+      if (clickIntent.kind === 'player-trigger-without-providers') {
+        return;
+      }
+
+      const anchorElement =
+        clickIntent.kind === 'anchor'
+          ? clickIntent.anchorElement
+          : clickIntent.kind === 'scroll-target'
+            ? clickIntent.anchorElement
+            : null;
+
+      if (clickIntent.kind === 'scroll-target') {
+        if (scrollToTargetId(clickIntent.targetId, clickIntent.triggerElement)) {
           event.preventDefault();
           return;
         }
       }
 
-      const anchorElement = eventTarget.closest<HTMLAnchorElement>('a[href]');
       if (!anchorElement) return;
 
       const resolvedUrl = resolveInternalUrl(anchorElement);
