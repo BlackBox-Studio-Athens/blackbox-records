@@ -87,6 +87,7 @@ import { syncShellBodyStateClasses } from './shell-body-state';
 import { connectShellDocumentListeners } from './shell-document-listeners';
 import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './shell-hero-scroll-progress';
 import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './shell-overlay-focus';
+import { syncPlayerSessionFrameHost } from './shell-player-frame-host';
 import { restoreConnectedPlayerTriggerFocus, schedulePlayerModalCloseButtonFocus } from './shell-player-focus';
 import { schedulePlayerIframeBlurInteractionCheck } from './shell-player-iframe-blur-interaction';
 import { derivePlayerSessionMachineState } from './shell-player-session-machine-state';
@@ -366,16 +367,12 @@ export default function AppShellRoot({
   }
 
   function syncActivePlayerSessionIntoFrameHost() {
-    const activeSession = activePlayerSessionRef.current;
-    const frameHostElement = iframeFrameHostRef.current;
-    if (!activeSession || !frameHostElement) return;
-
-    if (!frameHostElement.contains(activeSession.iframeElement)) {
-      frameHostElement.appendChild(activeSession.iframeElement);
-    }
-
-    markPlayerIframeAsActive(frameHostElement, activeSession.iframeElement);
-    updatePlayerUiFromSession(activeSession);
+    syncPlayerSessionFrameHost({
+      activeSession: activePlayerSessionRef.current,
+      frameHostElement: iframeFrameHostRef.current,
+      markIframeAsActive: markPlayerIframeAsActive,
+      updatePlayerUiFromSession,
+    });
   }
 
   function resolveIframe(provider: PlayerProvider, releaseTitle: string) {
