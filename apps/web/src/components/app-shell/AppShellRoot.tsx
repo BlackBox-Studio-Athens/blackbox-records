@@ -88,6 +88,7 @@ import { connectShellDocumentListeners } from './shell-document-listeners';
 import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './shell-hero-scroll-progress';
 import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './shell-overlay-focus';
 import { restoreConnectedPlayerTriggerFocus, schedulePlayerModalCloseButtonFocus } from './shell-player-focus';
+import { schedulePlayerIframeBlurInteractionCheck } from './shell-player-iframe-blur-interaction';
 import { derivePlayerSessionMachineState } from './shell-player-session-machine-state';
 import { derivePlayerShellViewState, PLAYER_PROVIDER_LABELS } from './shell-player-view-state';
 import { primeShellPrefetchIntent } from './shell-prefetch-intent';
@@ -926,14 +927,12 @@ export default function AppShellRoot({
     }
 
     function handleWindowBlur() {
-      window.setTimeout(() => {
-        const activeSession = activePlayerSessionRef.current;
-        if (!activeSession || activeSession.status !== 'modal-open') return;
-
-        if (document.activeElement === activeSession.iframeElement) {
-          markActivePlayerSessionAsInteracted(activeSession.embedUrl);
-        }
-      }, 0);
+      schedulePlayerIframeBlurInteractionCheck({
+        getActiveElement: () => document.activeElement,
+        getActiveSession: () => activePlayerSessionRef.current,
+        markPlayerSessionAsInteracted: markActivePlayerSessionAsInteracted,
+        scheduler: window,
+      });
     }
 
     const disconnectShellDocumentListeners = connectShellDocumentListeners({
