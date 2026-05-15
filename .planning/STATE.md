@@ -4,17 +4,17 @@ milestone: v1.2
 milestone_name: Modulith Boundary Hardening
 current_phase: 12
 current_phase_name: modulith-boundary-hardening-planning
-current_plan: 30
+current_plan: 31
 status: active
-stopped_at: Completed 12-30 shell popstate navigation boundary hardening
+stopped_at: Completed 12-31 shell Escape dismissal boundary hardening
 paused_at: ''
 last_updated: '2026-05-16T00:00:00.000Z'
 last_activity: 2026-05-16
 progress:
   total_phases: 12
   completed_phases: 8
-  total_plans: 30
-  completed_plans: 27
+  total_plans: 31
+  completed_plans: 28
   percent: 90
 ---
 
@@ -32,16 +32,16 @@ routes own secrets and mutations, and stock changes happen only after verified w
 ## Current Position
 
 Phase: 12 (modulith-boundary-hardening-planning) - ACTIVE
-Plan: 30 of 30
+Plan: 31 of 31
 Current Phase: 12
 Current Phase Name: modulith-boundary-hardening-planning
 Total Phases: 12
-Current Plan: 30
-Total Plans in Phase: 30
-Status: Active - 12-30 shell popstate navigation boundary hardening complete
+Current Plan: 31
+Total Plans in Phase: 31
+Status: Active - 12-31 shell Escape dismissal boundary hardening complete
 Progress: [#########-] 90%
 Last activity: 2026-05-16
-Last Activity Description: 12-30 completed shell popstate navigation characterization and extraction
+Last Activity Description: 12-31 completed shell Escape dismissal characterization and extraction
 Paused At:
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, 8, and 11 are complete. Phase 7 mock, contract, frontend
@@ -188,6 +188,8 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 - Phase 12 plan 12-30 completed the shell popstate navigation boundary-hardening slice: overlay history restoration,
   shell-section history routing, cached page restoration, and fallback overlay close behavior are characterized and live
   in an internal `app-shell` helper.
+- Phase 12 plan 12-31 completed the shell Escape dismissal boundary-hardening slice: player-modal priority, overlay
+  dismissal, non-Escape no-op, and idle no-op behavior are characterized and live in an internal `app-shell` helper.
 - The backend now persists `Stock`, `StockChange`, and `StockCount` in D1 and exposes internal stock lookup/write
   routes under `/api/internal/variants/*`.
 - The static Astro app now serves the protected stock operations UI at `/stock/`, using `/stock/?variantId=<variantId>`
@@ -346,7 +348,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of
   the completed Phase 6.1 foundation.
-- Continue Phase 12 through the next approved app-shell or cms-admin slice; `12-04` through `12-30` are complete and
+- Continue Phase 12 through the next approved app-shell or cms-admin slice; `12-04` through `12-31` are complete and
   deeper refactors should still respect the boundary manifest and verifier rules.
 - Complete the deferred Stripe access validation gate before sandbox/release approval.
 - Choose the Phase 9 shipping mode and complete the deferred BOX NOW Portal Gate before marking Phase 9, `09-06`, or
@@ -381,5 +383,5 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 ## Session
 
 **Last Date:** 2026-05-16T00:00:00.000Z
-**Stopped At:** Completed 12-30 shell popstate navigation boundary hardening
+**Stopped At:** Completed 12-31 shell Escape dismissal boundary hardening
 **Resume File:** None

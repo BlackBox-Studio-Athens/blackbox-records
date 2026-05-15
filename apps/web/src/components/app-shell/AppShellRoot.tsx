@@ -86,6 +86,7 @@ import {
 import { syncShellBodyStateClasses } from './shell-body-state';
 import { restoreCachedShellPageSnapshot } from './shell-cached-page-restoration';
 import { connectShellDocumentListeners } from './shell-document-listeners';
+import { handleShellEscapeDismissal } from './shell-escape-dismissal';
 import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './shell-hero-scroll-progress';
 import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './shell-overlay-focus';
 import { syncPlayerSessionFrameHost } from './shell-player-frame-host';
@@ -867,18 +868,14 @@ export default function AppShellRoot({
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== 'Escape') return;
-
-      if (isPlayerModalOpen) {
-        event.preventDefault();
-        closePlayerModal();
-        return;
-      }
-
-      if (overlayStateRef.current) {
-        event.preventDefault();
-        closeOverlayWithHistoryBack();
-      }
+      handleShellEscapeDismissal({
+        closeOverlayWithHistoryBack,
+        closePlayerModal,
+        hasOverlayState: () => overlayStateRef.current !== null,
+        isPlayerModalOpen,
+        key: event.key,
+        preventDefault: () => event.preventDefault(),
+      });
     }
 
     function handlePopState() {

@@ -372,6 +372,7 @@ Plans:
 - Plan `12-28` moves shell rendered navigation state synchronization into an internal app-shell helper
 - Plan `12-29` moves cached shell page restoration orchestration into an internal app-shell helper
 - Plan `12-30` moves shell `popstate` routing decisions into an internal app-shell helper
+- Plan `12-31` moves shell Escape-key dismissal priority into an internal app-shell helper
 - Exists to make later large refactors safer and more reviewable before production cutover work begins
 
 ### Go-Live / Launch Hardening
