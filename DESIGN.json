@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-14T14:12:19.3430716+03:00",
+  "title": "Design System: BlackBox Records",
+  "extensions": {
+    "colorMeta": {
+      "void-background": {
+        "role": "neutral",
+        "displayName": "Void Background",
+        "canonical": "#0d0d0d",
+        "tonalRamp": ["#050505", "#0d0d0d", "#141414", "#262626", "#3a3a3a", "#6b6b6b", "#b3b3b3", "#f5f5f5"]
+      },
+      "ink-foreground": {
+        "role": "primary",
+        "displayName": "Ink Foreground",
+        "canonical": "#f5f5f5",
+        "tonalRamp": ["#262626", "#3a3a3a", "#6b6b6b", "#8f8f8f", "#b3b3b3", "#d0d0d0", "#e5e5e5", "#f5f5f5"]
+      },
+      "store-blood": {
+        "role": "secondary",
+        "displayName": "Store Blood",
+        "canonical": "#922f3f",
+        "tonalRamp": ["#240b10", "#3c121a", "#5b1d28", "#742633", "#922f3f", "#b4465a", "#cf6b80", "#efd0d8"]
+      },
+      "services-rose": {
+        "role": "secondary",
+        "displayName": "Services Rose",
+        "canonical": "#8a495a",
+        "tonalRamp": ["#231016", "#3b1d27", "#57303b", "#704050", "#8a495a", "#a76376", "#c78997", "#efd6dd"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Poster-scale identity, route heroes, feature banners, and large editorial names."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Readable label copy, service text, checkout explanations, and artist/profile prose."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Uppercase metadata, section kickers, navigation labels, and status labels."
+      }
+    },
+    "shadows": [
+      {
+        "name": "catalog-rest",
+        "value": "none",
+        "purpose": "Default repeated cards and catalog surfaces."
+      },
+      {
+        "name": "music-trigger-glow",
+        "value": "0 0 0 1px rgba(245, 245, 245, 0.12), 0 0 1.05rem rgba(245, 245, 245, 0.12), inset 0 0 0 1px rgba(245, 245, 245, 0.05)",
+        "purpose": "Hover and focus emphasis for listen controls."
+      },
+      {
+        "name": "overlay-panel",
+        "value": "0 28px 90px rgba(0, 0, 0, 0.56)",
+        "purpose": "Modal and overlay surfaces above the document."
+      },
+      {
+        "name": "mini-player",
+        "value": "0 14px 30px rgba(0, 0, 0, 0.32)",
+        "purpose": "Floating music-player continuity surface."
+      }
+    ],
+    "motion": [
+      {
+        "name": "standard-state",
+        "value": "0.2s ease",
+        "purpose": "Default color and border state changes."
+      },
+      {
+        "name": "image-hover",
+        "value": "0.45s ease",
+        "purpose": "Subtle artwork scale on catalog cards."
+      },
+      {
+        "name": "shell-transition",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Route veil and player/listen emphasis."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "40rem"
+      },
+      {
+        "name": "md",
+        "value": "48rem"
+      },
+      {
+        "name": "lg",
+        "value": "64rem"
+      },
+      {
+        "name": "xl",
+        "value": "80rem"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Decisive public action for checkout, cart, and strong CTAs.",
+      "html": "<button class=\"ds-button-primary\">Checkout</button>",
+      "css": ".ds-button-primary { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; border: 0; border-radius: 0; background: #f5f5f5; color: #090909; padding: 0.75rem 1rem; font-family: Inter, Helvetica Neue, Arial, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; transition: background-color 0.2s ease, color 0.2s ease; } .ds-button-primary:hover { background: rgba(245, 245, 245, 0.88); } .ds-button-primary:focus-visible { outline: 3px solid rgba(245, 245, 245, 0.5); outline-offset: 2px; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action for cart, return, back, and utility paths.",
+      "html": "<button class=\"ds-button-outline\">Continue Browsing</button>",
+      "css": ".ds-button-outline { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; border: 1px solid rgba(245, 245, 245, 0.18); border-radius: 0; background: transparent; color: #f5f5f5; padding: 0.75rem 1rem; font-family: Inter, Helvetica Neue, Arial, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; transition: background-color 0.2s ease, border-color 0.2s ease; } .ds-button-outline:hover { background: #161616; border-color: #262626; } .ds-button-outline:focus-visible { outline: 3px solid rgba(245, 245, 245, 0.5); outline-offset: 2px; }"
+    },
+    {
+      "name": "Catalog Card",
+      "kind": "card",
+      "refersTo": "catalog-card",
+      "description": "Hard-edged image-led tile for artists, releases, news, distro, and store entries.",
+      "html": "<article class=\"ds-catalog-card\"><div class=\"ds-catalog-card__media\"></div><div class=\"ds-catalog-card__body\"><p class=\"ds-catalog-card__meta\">Vinyl / 2026</p><h3>Disintegration</h3><p>Black Vinyl LP</p></div></article>",
+      "css": ".ds-catalog-card { overflow: hidden; border: 1px solid #2b2b2b; border-radius: 0; background: #141414; color: #f5f5f5; box-shadow: none; transition: background-color 0.22s ease, border-color 0.22s ease; } .ds-catalog-card:hover { background: #161616; border-color: #3a3a3a; } .ds-catalog-card__media { aspect-ratio: 1; border-bottom: 1px solid #2b2b2b; background: #0f0f0f; } .ds-catalog-card__body { display: grid; gap: 0.5rem; padding: 1.25rem; } .ds-catalog-card__meta { margin: 0; color: #b3b3b3; font-family: Inter, Helvetica Neue, Arial, sans-serif; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; } .ds-catalog-card h3 { margin: 0; color: #f5f5f5; font-family: Bebas Neue, Impact, sans-serif; font-size: 2rem; font-weight: 400; line-height: 1; letter-spacing: 0.08em; text-transform: uppercase; } .ds-catalog-card p { margin: 0; color: #b3b3b3; font-family: Inter, Helvetica Neue, Arial, sans-serif; font-size: 0.875rem; line-height: 1.6; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Quiet form field for filters, service inquiry, and operator-adjacent utility screens.",
+      "html": "<label class=\"ds-field\"><span>Email</span><input class=\"ds-input\" placeholder=\"you@example.com\" /></label>",
+      "css": ".ds-field { display: grid; gap: 0.5rem; color: #f5f5f5; font-family: Inter, Helvetica Neue, Arial, sans-serif; } .ds-field span { color: #b3b3b3; font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase; } .ds-input { height: 40px; width: 100%; border: 1px solid #262626; border-radius: 0.225rem; background: #0d0d0d; color: #f5f5f5; padding: 0.5rem 0.75rem; font-size: 0.875rem; outline: none; } .ds-input::placeholder { color: #b3b3b3; } .ds-input:focus-visible { border-color: #c78997; box-shadow: 0 0 0 3px rgba(138, 73, 90, 0.18); }"
+    },
+    {
+      "name": "Header Navigation Link",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Compact shell navigation link with active underline.",
+      "html": "<a class=\"ds-nav-link\" href=\"#\" aria-current=\"page\">Releases</a>",
+      "css": ".ds-nav-link { position: relative; display: inline-flex; color: #b3b3b3; font-family: Inter, Helvetica Neue, Arial, sans-serif; font-size: 12px; letter-spacing: 2.4px; line-height: 1; padding-bottom: 6.4px; text-decoration: none; text-transform: uppercase; transition: color 0.2s ease; } .ds-nav-link::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: #f5f5f5; transform: scaleX(0); transform-origin: left; transition: transform 0.2s ease; } .ds-nav-link:hover, .ds-nav-link:focus-visible, .ds-nav-link[aria-current='page'] { color: #f5f5f5; } .ds-nav-link[aria-current='page']::after { transform: scaleX(1); } .ds-nav-link:focus-visible { outline: 3px solid rgba(245, 245, 245, 0.5); outline-offset: 3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Working Distro Table",
+    "overview": "BlackBox Records should feel like a physical label surface translated to the web: black record sleeves, photocopied show listings, practical service notes, a curated distro table, and a player that stays out of the way until the listener asks for it. The system is dark by default because the site is built around music imagery, night venues, record artwork, and focused browsing.\n\nThe visual system is editorial first and commercial second. Storefront, checkout, shipping, and service inquiry screens must stay inside the same monochrome language instead of turning into a generic ecommerce product flow. The work should feel direct and label-operated, not corporate, cute, or algorithmically polished.",
+    "keyCharacteristics": [
+      "Monochrome surfaces with low-contrast tonal layering.",
+      "Condensed uppercase display type for identity and section rhythm.",
+      "Sparse rose and blood accents reserved for services and store intent.",
+      "Square or hard-edged cards, flat by default, with image motion used carefully.",
+      "Content-owned copy and metadata, never debug labels or backend identifiers."
+    ],
+    "rules": [
+      {
+        "name": "The Monochrome Owns The Page Rule",
+        "body": "Black, charcoal, off-white, and gray must carry the screen. Accent color clarifies a route or action; it must not recolor the whole product.",
+        "section": "colors"
+      },
+      {
+        "name": "The Commerce Is Subordinate Rule",
+        "body": "Store Blood can identify the store path, but checkout UI must still look like BlackBox, not a payment provider, marketplace, or Shopify theme.",
+        "section": "colors"
+      },
+      {
+        "name": "The Poster Over Dashboard Rule",
+        "body": "Use Bebas Neue for identity and rhythm, not for dense controls. When a surface is operational, reduce display scale before it starts reading as a poster.",
+        "section": "typography"
+      },
+      {
+        "name": "The Metadata Is Quiet Rule",
+        "body": "Labels may be uppercase and tracked, but they stay small. Do not let metadata compete with release, artist, or item names.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat By Default Rule",
+        "body": "Repeated content cards do not lift. They shift border and background only.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Shadow Means Floating Rule",
+        "body": "If a surface has a heavy shadow, it must be a modal, overlay, mini player, or similarly floating UI.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do preserve the monochrome BlackBox visual language unless the task explicitly changes the visual direction.",
+      "Do use Store Blood only for store and checkout context, and Services Rose only for service and inquiry context.",
+      "Do keep release, artist, distro, and news cards square, flat, and image-led.",
+      "Do keep checkout and shipping states understandable through text, structure, and disabled/action states, not color alone.",
+      "Do validate rendered UI changes with Browser Use first, with DevTools only as the documented fallback.",
+      "Do respect reduced-motion preferences for hero animation, route transitions, overlays, player UI, and card effects."
+    ],
+    "donts": [
+      "Don't make public pages look like a generic ecommerce grid, SaaS landing page, polished corporate music platform, Shopify clone, marketplace catalog, or debug-heavy admin UI.",
+      "Don't introduce pastel ecommerce styling, neon music-app cliches, crypto/nightclub gradients, glassmorphism, decorative metric blocks, or fake urgency.",
+      "Don't expose Stripe IDs, stock counts, backend identifiers, BOX NOW raw payloads, or internal runtime details in shopper-facing UI.",
+      "Don't add rounded card-heavy layouts where a hard editorial frame or full-width section is more appropriate.",
+      "Don't use side-stripe borders, gradient text, or repeated icon-card grids as a shortcut for hierarchy.",
+      "Don't move player behavior into page-local scripts or break shell-owned top-level navigation continuity."
+    ]
+  }
+}
