@@ -28,6 +28,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - player modal focus scheduling and trigger focus restoration for shell-owned player controls
 - player session-machine input derivation for shell-owned player controls
 - StoreCart state application and persistence through the StoreCart bridge
+- shell prefetch intent classification for player origin warmup and route/overlay prefetch
 - portal reinjection details plus the `shell-portal-targets` route-scoped target helper
 
 ## Allowed Dependencies
@@ -78,6 +79,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell player view-state tests
 - shell player focus tests
 - shell player session-machine state tests
+- shell prefetch intent tests
 - Browser Use shell acceptance checks
 
 ## Migration Status

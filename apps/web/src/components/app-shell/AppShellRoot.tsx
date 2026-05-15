@@ -90,6 +90,7 @@ import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from 
 import { restoreConnectedPlayerTriggerFocus, schedulePlayerModalCloseButtonFocus } from './shell-player-focus';
 import { derivePlayerSessionMachineState } from './shell-player-session-machine-state';
 import { derivePlayerShellViewState, PLAYER_PROVIDER_LABELS } from './shell-player-view-state';
+import { primeShellPrefetchIntent } from './shell-prefetch-intent';
 import { enableManualShellScrollRestoration } from './shell-scroll-restoration';
 import { scrollShellTargetIntoView } from './shell-target-scroll';
 
@@ -856,23 +857,15 @@ export default function AppShellRoot({
     }
 
     function primeMusicAndOverlayPrefetch(eventTarget: EventTarget | null) {
-      if (!(eventTarget instanceof Element)) return;
-
-      const playerElement = eventTarget.closest<HTMLElement>('[data-music-streaming-service-embedded-player-card]');
-      if (playerElement) {
-        warmProviderOrigins(readPlayerProvidersFromElement(playerElement));
-      }
-
-      const anchorElement = eventTarget.closest<HTMLAnchorElement>('a[href]');
-      if (anchorElement) {
-        if (isNavigableShellSectionAnchor(anchorElement)) {
-          void prefetchShellSectionHref(anchorElement.href);
-        }
-
-        if (isNavigableOverlayAnchor(anchorElement)) {
-          void prefetchOverlayHref(anchorElement.href);
-        }
-      }
+      primeShellPrefetchIntent({
+        eventTarget,
+        isNavigableOverlayAnchor,
+        isNavigableShellSectionAnchor,
+        prefetchOverlayHref,
+        prefetchShellSectionHref,
+        readPlayerProvidersFromElement,
+        warmProviderOrigins,
+      });
     }
 
     function handleDocumentPointerOver(event: PointerEvent) {
