@@ -86,6 +86,7 @@ import {
   clearRouteLoadingTimer as clearScheduledRouteLoadingTimer,
   scheduleRouteLoadingStop,
 } from './route-loading-indicator';
+import { syncShellBodyStateClasses } from './shell-body-state';
 import { scrollShellTargetIntoView } from './shell-target-scroll';
 
 type OverlayState = {
@@ -260,13 +261,11 @@ export default function AppShellRoot({
   }
 
   useEffect(() => {
-    document.body.classList.toggle('is-music-streaming-service-embedded-player-modal-open', isPlayerModalOpen);
-    document.body.classList.toggle('is-app-shell-overlay-open', overlayState !== null);
-
-    return () => {
-      document.body.classList.remove('is-music-streaming-service-embedded-player-modal-open');
-      document.body.classList.remove('is-app-shell-overlay-open');
-    };
+    return syncShellBodyStateClasses({
+      bodyClassList: document.body.classList,
+      isOverlayOpen: overlayState !== null,
+      isPlayerModalOpen,
+    });
   }, [isPlayerModalOpen, overlayState]);
 
   useEffect(() => {
