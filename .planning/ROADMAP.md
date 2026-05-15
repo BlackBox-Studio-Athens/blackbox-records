@@ -403,4 +403,4 @@ Because Stripe account access and BOX NOW portal access are unavailable, non-sec
 | 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred  |            |
 | 10. Sandbox Verification And Release Gate                      | 5/6            | Active    |            |
 | 11. Website Editorial And Catalog UX Improvements              | 5/5            | Complete  | 2026-05-12 |
-| 12. Modulith Boundary Hardening Planning                       | 11/15          | Active    |            |
+| 12. Modulith Boundary Hardening Planning                       | 12/15          | Active    |            |
