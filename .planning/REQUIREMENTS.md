@@ -52,11 +52,17 @@
 
 ### Shipping & Fulfillment
 
-- [x] **SHIP-01**: Greece-only shoppers must select a BOX NOW locker before entering payment.
-- [x] **SHIP-02**: Paid orders store only `locker_id`, `country_code`, and `locker_name_or_label` as BOX NOW metadata.
-- [ ] **SHIP-03**: Operator can fulfill sandbox-paid Greek orders manually through the BOX NOW partner portal.
+- [ ] **SHIP-01**: Greece-only checkout/order flow captures the minimum shipping data required by the chosen BOX NOW
+      fulfillment mode before payment or fulfillment handoff.
+- [ ] **SHIP-02**: Paid orders expose only the minimum Worker-owned shipping data required for the chosen BOX NOW path;
+      BOX NOW-specific metadata is allowed only for an approved automation path.
+- [ ] **SHIP-03**: Team can fulfill sandbox-paid Greek orders through the chosen BOX NOW path, either manual
+      address-based portal fulfillment or approved automation built on `boxnow-js`.
 
-Phase `09-01` locks the BOX NOW data and secret contract only. `SHIP-01` landed through the frontend locker gate and Worker checkout preflight. `SHIP-02` landed when the pending checkout order began persisting only the approved thin locker snapshot. `09-06` now documents the manual fulfillment handoff and local signed-fixture validation path. `SHIP-03` remains pending behind the `BOX NOW Portal Gate` until BOX NOW partner or sandbox portal access exists and a sandbox-paid Greek order is fulfilled through that portal.
+Phase `09-01` still locks the BOX NOW secret boundary. Historical plans `09-02` through `09-05` currently implement a
+locker-first prototype branch. After the 2026-05-14 Phase 9 revision, `SHIP-01` through `SHIP-03` remain open until
+the project explicitly chooses between manual-address fulfillment and `boxnow-js`-backed automation and validates the
+chosen path.
 
 ### Security & Operations
 
@@ -133,8 +139,8 @@ Phase `09-01` locks the BOX NOW data and secret contract only. `SHIP-01` landed 
 | ORDR-02     | Phase 8     | Pending   |
 | ORDR-03     | Phase 8     | Pending   |
 | ORDR-04     | Phase 8     | Pending   |
-| SHIP-01     | Phase 9     | Completed |
-| SHIP-02     | Phase 9     | Completed |
+| SHIP-01     | Phase 9     | Pending   |
+| SHIP-02     | Phase 9     | Pending   |
 | SHIP-03     | Phase 9     | Pending   |
 | SECU-01     | Phase 5     | Completed |
 | SECU-02     | Phase 8     | Completed |

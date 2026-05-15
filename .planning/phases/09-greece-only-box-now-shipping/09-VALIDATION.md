@@ -78,10 +78,10 @@ Manual UI validation:
 
 ## 09-06 Document Manual BOX NOW Fulfillment And Sandbox Validation
 
-- Result: local evidence passed; real sandbox portal validation blocked.
-- Evidence: `09-MANUAL-FULFILLMENT.md` documents the manual BOX NOW partner-portal handoff from Worker-owned paid order state and persisted `shippingLocker` snapshot.
-- Evidence: The documented operator source of truth is the Worker-owned `CheckoutOrder` readback, not browser state, screenshots, query parameters, or raw BOX NOW payloads.
-- Evidence: The local validation path covers the no-Stripe/no-BOX-NOW contract using `pnpm dev:stack:stripe-mock`, the BOX NOW FAQ test locker, a signed local paid webhook fixture, internal order readback, and checkout return recap.
+- Result: locker-first local prototype evidence passed; final Phase 9 closure remains open.
+- Evidence: `09-MANUAL-FULFILLMENT.md` now defines the manual-address baseline and the mandatory `boxnow-js` boundary for any future automation.
+- Evidence: The documented operator source of truth remains Worker-owned order state and the chosen shipping-mode data, not browser state, screenshots, query parameters, or raw BOX NOW payloads.
+- Evidence: The current local validation path still covers the locker-first prototype branch using `pnpm dev:stack:stripe-mock`, the BOX NOW FAQ test locker, a signed local paid webhook fixture, internal order readback, and checkout return recap.
 - Evidence: `pnpm --filter @blackbox/backend d1:check:stripe-mock:local` passed with `29/29` store items ready.
 - Browser Use fallback: Browser Use was attempted first, but the installed Browser Use plugin path was missing `scripts/browser-client.mjs`, so DevTools MCP was used as the documented fallback.
 - Local UI evidence: DevTools MCP opened `/blackbox-records/store/disintegration-black-vinyl-lp/checkout/`, confirmed payment was blocked before locker selection, selected the BOX NOW test locker, and reached the local mock checkout panel.
@@ -92,8 +92,8 @@ Manual UI validation:
 - Local idempotency evidence: replaying the signed paid fixture returned `HTTP 200`, `StockChange` remained at one `checkout_paid` row for `cs_test_QcU0uf6k4GvBInZ`, and stock for `variant_barren-point_standard` remained `98/98`.
 - Return recap evidence: the return route displayed `ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234` and `Locker ID 4 · Greece-only BOX NOW`; payment state still displayed `open` because official `stripe-mock` is stateless and does not make session retrieval reflect the signed local webhook fixture.
 - Console evidence: no warnings or errors were recorded beyond expected Vite/Astro debug logs and React DevTools info messages.
-- Evidence: The approved v1 data boundary remains unchanged: only `locker_id`, `country_code`, and `locker_name_or_label` may be used for the shipping locker snapshot.
-- Deferred gate: real `SHIP-03` completion requires the `BOX NOW Portal Gate`: BOX NOW partner or sandbox portal access, a sandbox-paid Greek order, accepted manual locker shipment, and recorded portal evidence. That access is not available, so `09-06`, Phase 9, and `SHIP-03` remain open while no-account Phase 10 preparation may proceed.
+- Evidence: The locker-first prototype still keeps BOX NOW-specific persistence capped at `locker_id`, `country_code`, and `locker_name_or_label`.
+- Deferred gate: real `SHIP-03` completion now requires both the explicit shipping-mode choice and the `BOX NOW Portal Gate`. If the project chooses manual-address fulfillment, replace this locker-first validation with address-based order evidence. If the project chooses automation, use `boxnow-js` and collect real BOX NOW evidence through that path. Those conditions are not satisfied, so `09-06`, Phase 9, and `SHIP-03` remain open while no-account Phase 10 preparation may proceed.
 - No BOX NOW API calls, partner credentials, label/voucher persistence, D1 schema changes, frontend behavior changes, generated API client changes, Stripe changes, or production cutover changed.
 - Validation: targeted simulator/webhook tests; `pnpm --filter @blackbox/backend d1:check:stripe-mock:local`; local DevTools MCP fallback smoke; `git diff --check`; `pnpm test:unit`; `pnpm check`; `pnpm build`.
 

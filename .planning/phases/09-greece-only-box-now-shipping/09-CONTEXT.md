@@ -1,39 +1,61 @@
 # Phase 9: Greece-Only BOX NOW Shipping - Context
 
-**Gathered:** 2026-04-29
-**Status:** Active
+**Gathered:** 2026-04-29  
+**Updated:** 2026-05-14  
+**Status:** Revised
 
 <domain>
 ## Phase Boundary
 
-Phase 9 adds the approved Greece-only BOX NOW locker gate before payment and keeps fulfillment intentionally thin. The static Astro frontend may render the shopper-facing locker step, but the Worker remains responsible for checkout preflight, order persistence, secrets, and later fulfillment integration decisions.
+Phase 9 establishes the Greece-only BOX NOW shipping boundary and the shipping-mode decision for native commerce.
+The static Astro frontend may render shopper-facing shipping state, but the Worker remains responsible for checkout
+preflight, order persistence, secrets, and any future automation boundary.
 
-This phase does not expand shipping beyond Greece, does not automate BOX NOW fulfillment, and does not move BOX NOW credentials into browser-visible configuration.
+Phase 9 now allows two explicit end states:
+
+- **Manual-address fulfillment (default):** paid orders expose the Greek delivery address and any required
+  recipient/contact data needed for a human to create a BOX NOW shipment manually.
+- **Automated BOX NOW fulfillment (optional):** if the project later automates BOX NOW, it must do so through the
+  dedicated `C:\Users\SVall\WebstormProjects\boxnow-js` repository rather than a one-off in-repo integration.
+
+This phase does not expand shipping beyond Greece, does not move BOX NOW credentials into browser-visible
+configuration, and does not allow a bespoke BOX NOW client inside this repo that bypasses `boxnow-js`.
 
 </domain>
 
 <decisions>
 ## Implementation Decisions
 
-- **D-01:** v1 shipping is Greece-only through BOX NOW lockers.
-- **D-02:** Payment must stay blocked until a valid Greek locker is selected.
-- **D-03:** The approved locker snapshot is limited to `locker_id`, `country_code`, and `locker_name_or_label`.
-- **D-04:** `country_code` must represent Greece as `GR`; non-Greece shipping paths are out of scope for this milestone.
-- **D-05:** BOX NOW credentials belong only in Worker runtime secrets or out-of-band operator tooling, never Astro `PUBLIC_*` env.
-- **D-06:** Fulfillment remains manual through the BOX NOW partner portal for v1.
-- **D-07:** Browser-selected locker data is checkout input until the Worker validates and persists it; the browser is not shipping, payment, or order authority.
-- **D-08:** Local/mock BOX NOW testing uses the BOX NOW FAQ test locker: `locker_id = 4`, `country_code = GR`, and `locker_name_or_label = ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234`.
+- **D-01:** v1 shipping remains Greece-only through BOX NOW.
+- **D-02:** Phase 9 must choose one explicit shipping mode before closure: manual-address fulfillment or automated BOX
+  NOW fulfillment via `boxnow-js`.
+- **D-03:** Manual-address fulfillment is the default baseline and does not require BOX NOW locker selection or BOX NOW
+  API/widget automation.
+- **D-04:** Manual-address fulfillment needs only the delivery address and any required recipient/contact data needed
+  for a human to create the shipment; it must not invent extra BOX NOW-specific persistence without a concrete reason.
+- **D-05:** If automation is chosen, `C:\Users\SVall\WebstormProjects\boxnow-js` is the mandatory integration base.
+- **D-06:** BOX NOW credentials belong only in Worker runtime secrets or out-of-band operator tooling, never Astro
+  `PUBLIC_*` env.
+- **D-07:** The browser is not shipping, payment, or order authority in either path.
+- **D-08:** If the automated path needs BOX NOW-specific order persistence, the approved ceiling stays
+  `locker_id`, `country_code`, and `locker_name_or_label` until a later decision expands it.
+- **D-09:** The current locker-first sandbox implementation is an automation-oriented prototype branch, not the only
+  acceptable final Phase 9 end state.
 
 </decisions>
 
 <specifics>
 ## Specific Ideas
 
-- Keep the checkout flow fail-closed: if locker selection is unavailable or invalid, do not start payment.
-- Keep the shopper UI simple: one Greece-only BOX NOW choice, selected locker summary, and clear blocked-state copy if the locker picker cannot be used.
-- Persist only the minimum data needed for low-volume manual fulfillment; do not store raw BOX NOW payloads, full addresses, coordinates, parcel labels, voucher IDs, or automation state in v1 unless a later task proves a concrete need.
-- Keep future BOX NOW API/widget setup separate from this contract step. Exact binding names and account-specific values are deferred until the integration task that needs them.
-- Treat Phase 9 implementation as independent from real Stripe account access until final sandbox validation. Stripe remains the payment provider, but the shipping contract can be documented and locally tested without Stripe keys.
+- Keep the product decision explicit: do not leave Phase 9 half-manual and half-automated.
+- If the project stays manual, capture only the address/contact data that operators need to create a BOX NOW shipment
+  manually; do not fake future automation requirements.
+- If the project later automates BOX NOW, keep browser/widget code non-secret and keep server-side BOX NOW API access
+  behind the Worker or approved operator tooling, using `boxnow-js` as the integration base.
+- Keep the checkout flow fail-closed only for the chosen shipping-mode requirements; do not preserve a locker-first
+  requirement if the final path is manual-address fulfillment.
+- Treat the current locker-first local implementation as useful prototype evidence, but not as the only acceptable
+  release contract.
 
 </specifics>
 
@@ -45,12 +67,12 @@ This phase does not expand shipping beyond Greece, does not automate BOX NOW ful
 - `.planning/REQUIREMENTS.md`
 - `.planning/UBIQUITOUS_LANGUAGE.md`
 - `.planning/adrs/ADR-003-boxnow-and-cutover.md`
-- `.planning/archive/v1.0-pre-sandbox-planning/phases/04-box-now-locker-shipping-slice/04-UI-SPEC.md`
 - `.planning/phases/09-greece-only-box-now-shipping/09-BOX-NOW-CONTRACT.md`
+- `C:\Users\SVall\WebstormProjects\boxnow-js\README.md`
 
 </canonical_refs>
 
 ---
 
 _Phase: 09-greece-only-box-now-shipping_  
-_Context gathered: 2026-04-29_
+_Context gathered: 2026-04-29; revised: 2026-05-14_

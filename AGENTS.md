@@ -144,10 +144,12 @@ Read these first before editing:
 - Checkout creation is Worker-owned through a backend Stripe gateway seam; route files must not instantiate Stripe directly.
 - Stripe Checkout Sessions are the approved v1 payment creation path, using embedded Checkout (`ui_mode: embedded_page` on the current Stripe API version).
 - The web checkout shell mounts Stripe embedded Checkout from the Worker-returned `clientSecret`; browser payloads must stay limited to app identities such as `storeItemSlug` and `variantId`.
-- Phase 9 shipping is Greece only via BOX NOW lockers. Payment must stay blocked until a valid Greek locker is selected; future order persistence may store only `locker_id`, `country_code` with v1 value `GR`, and `locker_name_or_label`.
-- Local/mock BOX NOW testing must use the BOX NOW FAQ test locker: `locker_id = 4`, `country_code = GR`, and `locker_name_or_label = ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234`.
-- Do not persist raw BOX NOW widget/API payloads, full locker addresses, coordinates, voucher IDs, label URLs, tracking automation state, or partner-portal credentials in v1.
-- BOX NOW fulfillment remains manual through the partner portal until a later milestone explicitly adds automation.
+- Phase 9 shipping remains Greece-only through BOX NOW. The default Phase 9 end state is manual fulfillment from Worker-owned paid order state plus the delivery address/contact data needed to create a BOX NOW shipment.
+- The current locker-first sandbox flow is a prototype branch, not the only valid Phase 9 outcome. If BOX NOW automation is later approved, it must use `C:\Users\SVall\WebstormProjects\boxnow-js`.
+- For an approved automation path, any BOX NOW-specific order persistence remains capped at `locker_id`, `country_code` with v1 value `GR`, and `locker_name_or_label` until a later phase expands it.
+- The local/mock BOX NOW FAQ test locker is for the current locker-first prototype only: `locker_id = 4`, `country_code = GR`, and `locker_name_or_label = ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234`.
+- Do not persist raw BOX NOW widget/API payloads, unapproved address/locker payload dumps, voucher IDs, label URLs, tracking automation state, or partner-portal credentials in v1.
+- BOX NOW fulfillment remains manual by default; automation requires an explicit later slice using `boxnow-js`.
 - Manual fulfillment handoff and local validation steps live in `.planning/phases/09-greece-only-box-now-shipping/09-MANUAL-FULFILLMENT.md`.
 - Phase 7 requires shopper-facing store URLs to describe the sellable item option, not legacy release shorthand. The old `barren-point` local smoke route is a compatibility alias for the canonical `Disintegration` / `Black Vinyl LP` route.
 - Phase 7 cart UX should be Shopify-familiar but BlackBox-owned: cart icon, single-item cart drawer, order summary, and checkout CTA using Astro/React/shadcn. Do not implement true multi-item cart, quantity controls, discount codes, or browser-owned commerce authority in this milestone.
@@ -353,7 +355,8 @@ This is an iframe boundary, not an app bug.
 - When Serena is warranted, use the workflow: `activate_project`, read initial instructions if needed, `check_onboarding_performed`, list/read relevant memories, then use `get_symbols_overview` or `find_symbol`.
 - Use `find_referencing_symbols` for impact checks; if it returns empty, confirm with Serena `search_for_pattern` or RTK-wrapped `rg` before treating a symbol as unused.
 - If `find_symbol`, `find_referencing_symbols`, `search_for_pattern`, `read_memory`, or `check_onboarding_performed` is missing, call `tool_search` for the exact Serena tool before falling back.
-- Use RTK-wrapped PowerShell commands for simple search, small file reads, docs/YAML/JSON, generated artifacts, package scripts, diffs, logs, validation, tests, and builds.
+- Use RTK-wrapped PowerShell commands for simple search, discovery reads, docs/YAML/JSON orientation, generated artifact discovery, package scripts, diffs, logs, validation, tests, and builds.
+- `.planning` files are good RTK first-pass candidates: use `rtk read <doc> --max-lines N -n` or `rtk smart <doc>`, not RTK-wrapped `Get-Content ... | Select-Object -First N`. Exact-read the relevant lines before changing planning source-of-truth or citing a decision. Source, config, schema, test, migration, and generated-contract behavior must be confirmed with exact bounded reads or Serena when semantic navigation is genuinely needed.
 - Do not use Serena for routine/simple work, and do not use `rtk rg` as a substitute when the task genuinely needs Serena symbol navigation.
 - Keep Serena shell execution unfavored; run shell commands through Codex PowerShell with RTK when output may be noisy.
 - Keep Serena on the default LSP backend unless the paid Serena JetBrains plugin is installed and verified. JetBrains IDE MCP is separate and must not be treated as Serena's semantic backend.
