@@ -21,8 +21,8 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell page snapshot parsing/application plus the `shell-page-loader` request/cache seam
 - overlay history behavior plus the `overlay-fragment-loader` request/cache seam, `overlay-history` history seam, and
   overlay focus scheduling
-- shell transition state, route loading timer mechanics, target scrolling, body state classes, hero scroll progress, and
-  focus, scroll-restoration, or scroll resets
+- shell transition state, cached page restoration, route loading timer mechanics, target scrolling, body state classes,
+  hero scroll progress, and focus, scroll-restoration, or scroll resets
 - shell rendered navigation state synchronization
 - shell document/window listener attachment for persistent navigation, overlay, and player events
 - player shell view-state derivation while player session behavior remains shell-owned from the user perspective
@@ -86,6 +86,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell player session-machine state tests
 - shell prefetch intent tests
 - shell rendered navigation state tests
+- shell cached page restoration tests
 - Browser Use shell acceptance checks
 
 ## Migration Status

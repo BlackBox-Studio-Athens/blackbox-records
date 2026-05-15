@@ -84,6 +84,7 @@ import {
   scheduleRouteLoadingStop,
 } from './route-loading-indicator';
 import { syncShellBodyStateClasses } from './shell-body-state';
+import { restoreCachedShellPageSnapshot } from './shell-cached-page-restoration';
 import { connectShellDocumentListeners } from './shell-document-listeners';
 import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './shell-hero-scroll-progress';
 import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './shell-overlay-focus';
@@ -631,31 +632,17 @@ export default function AppShellRoot({
   }
 
   async function restoreCachedShellPage(pathname: string, options?: { source?: ShellNavigationSource }) {
-    const pageSnapshot = shellPageLoader.getCachedSnapshot(pathname);
-    if (!pageSnapshot) return false;
-    const route = parseShellSectionRoute(pathname);
-    const sectionTransitionToken = route
-      ? shellSectionTransition.begin(SHELL_SECTION_LABELS[route.kind], options?.source || 'history')
-      : null;
-
-    if (sectionTransitionToken !== null) {
-      await waitForAnimationFrames(2);
-    }
-
-    const applied = applyShellPageSnapshot(pageSnapshot);
-    if (!applied) {
-      shellSectionTransition.reset();
-      return false;
-    }
-
-    await scrollShellViewportToTop({ getMainElement: getCurrentMainElement });
-    triggerShellPageEnterTransition(shellPageTransition);
-    if (sectionTransitionToken !== null) {
-      await shellSectionTransition.finish(sectionTransitionToken);
-    }
-
-    stopRouteLoadingSoon();
-    return true;
+    return restoreCachedShellPageSnapshot({
+      applyShellPageSnapshot,
+      getCachedSnapshot: shellPageLoader.getCachedSnapshot,
+      pathname,
+      scrollShellViewportToTop: () => scrollShellViewportToTop({ getMainElement: getCurrentMainElement }),
+      shellSectionTransition,
+      source: options?.source,
+      stopRouteLoadingSoon,
+      triggerShellPageEnterTransition: () => triggerShellPageEnterTransition(shellPageTransition),
+      waitForAnimationFrames,
+    });
   }
 
   function scrollToTargetId(targetId: string, triggerElement?: HTMLElement | null) {

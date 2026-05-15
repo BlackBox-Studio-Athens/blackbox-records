@@ -370,6 +370,7 @@ Plans:
 - Plan `12-26` moves player iframe blur interaction detection into an internal app-shell helper
 - Plan `12-27` moves player frame-host synchronization into an internal app-shell helper
 - Plan `12-28` moves shell rendered navigation state synchronization into an internal app-shell helper
+- Plan `12-29` moves cached shell page restoration orchestration into an internal app-shell helper
 - Exists to make later large refactors safer and more reviewable before production cutover work begins
 
 ### Go-Live / Launch Hardening
