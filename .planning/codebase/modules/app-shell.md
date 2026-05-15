@@ -23,6 +23,7 @@ sections while acting as the future thin composition root over smaller shell sub
   overlay focus scheduling
 - shell transition state, route loading timer mechanics, target scrolling, body state classes, hero scroll progress, and
   focus, scroll-restoration, or scroll resets
+- shell rendered navigation state synchronization
 - shell document/window listener attachment for persistent navigation, overlay, and player events
 - player shell view-state derivation while player session behavior remains shell-owned from the user perspective
 - player modal focus scheduling and trigger focus restoration for shell-owned player controls
@@ -84,6 +85,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell player frame-host tests
 - shell player session-machine state tests
 - shell prefetch intent tests
+- shell rendered navigation state tests
 - Browser Use shell acceptance checks
 
 ## Migration Status

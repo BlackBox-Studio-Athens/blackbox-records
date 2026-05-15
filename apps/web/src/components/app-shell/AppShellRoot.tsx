@@ -93,6 +93,7 @@ import { schedulePlayerIframeBlurInteractionCheck } from './shell-player-iframe-
 import { derivePlayerSessionMachineState } from './shell-player-session-machine-state';
 import { derivePlayerShellViewState, PLAYER_PROVIDER_LABELS } from './shell-player-view-state';
 import { primeShellPrefetchIntent } from './shell-prefetch-intent';
+import { syncShellRenderedNavigationState } from './shell-rendered-navigation-state';
 import { enableManualShellScrollRestoration } from './shell-scroll-restoration';
 import { scrollShellTargetIntoView } from './shell-target-scroll';
 
@@ -239,9 +240,12 @@ export default function AppShellRoot({
   }
 
   function syncShellNavigationState(pathname: string) {
-    renderedPagePathnameRef.current = pathname;
-    setActiveShellPathname(pathname);
-    syncDesktopNavigationState(pathname);
+    syncShellRenderedNavigationState({
+      pathname,
+      renderedPagePathnameRef,
+      setActiveShellPathname,
+      syncDesktopNavigationState,
+    });
   }
 
   function cacheDocumentSnapshot(href = renderedPageHrefRef.current || window.location.href) {

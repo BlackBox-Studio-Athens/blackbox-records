@@ -4,17 +4,17 @@ milestone: v1.2
 milestone_name: Modulith Boundary Hardening
 current_phase: 12
 current_phase_name: modulith-boundary-hardening-planning
-current_plan: 27
+current_plan: 28
 status: active
-stopped_at: Completed 12-27 player frame host boundary hardening
+stopped_at: Completed 12-28 shell rendered navigation state boundary hardening
 paused_at: ''
 last_updated: '2026-05-15T00:00:00.000Z'
 last_activity: 2026-05-15
 progress:
   total_phases: 12
   completed_phases: 8
-  total_plans: 27
-  completed_plans: 24
+  total_plans: 28
+  completed_plans: 25
   percent: 89
 ---
 
@@ -32,16 +32,16 @@ routes own secrets and mutations, and stock changes happen only after verified w
 ## Current Position
 
 Phase: 12 (modulith-boundary-hardening-planning) - ACTIVE
-Plan: 27 of 27
+Plan: 28 of 28
 Current Phase: 12
 Current Phase Name: modulith-boundary-hardening-planning
 Total Phases: 12
-Current Plan: 27
-Total Plans in Phase: 27
-Status: Active - 12-27 player frame host boundary hardening complete
+Current Plan: 28
+Total Plans in Phase: 28
+Status: Active - 12-28 shell rendered navigation state boundary hardening complete
 Progress: [#########-] 89%
 Last activity: 2026-05-15
-Last Activity Description: 12-27 completed player frame-host synchronization characterization and extraction
+Last Activity Description: 12-28 completed shell rendered navigation state characterization and extraction
 Paused At:
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, 8, and 11 are complete. Phase 7 mock, contract, frontend
@@ -94,7 +94,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 | 9     | 5/6   | Deferred  | 2026-04-30 |
 | 10    | 5/6   | Deferred  | 2026-05-01 |
 | 11    | 5/5   | Completed | 2026-05-12 |
-| 12    | 24/27 | Active    | 2026-05-15 |
+| 12    | 25/28 | Active    | 2026-05-15 |
 
 **Recent Trend:**
 
@@ -179,6 +179,9 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   detection is characterized and lives in an internal `app-shell` helper.
 - Phase 12 plan 12-27 completed the player frame-host boundary-hardening slice: active iframe host append/mark/update
   behavior is characterized and lives in an internal `app-shell` helper.
+- Phase 12 plan 12-28 completed the shell rendered navigation state boundary-hardening slice: rendered pathname,
+  React-active pathname, and desktop navigation synchronization are characterized and live in an internal `app-shell`
+  helper.
 - The backend now persists `Stock`, `StockChange`, and `StockCount` in D1 and exposes internal stock lookup/write
   routes under `/api/internal/variants/*`.
 - The static Astro app now serves the protected stock operations UI at `/stock/`, using `/stock/?variantId=<variantId>`
@@ -337,7 +340,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of
   the completed Phase 6.1 foundation.
-- Continue Phase 12 through the next approved app-shell or cms-admin slice; `12-04` through `12-27` are complete and
+- Continue Phase 12 through the next approved app-shell or cms-admin slice; `12-04` through `12-28` are complete and
   deeper refactors should still respect the boundary manifest and verifier rules.
 - Complete the deferred Stripe access validation gate before sandbox/release approval.
 - Choose the Phase 9 shipping mode and complete the deferred BOX NOW Portal Gate before marking Phase 9, `09-06`, or
@@ -372,5 +375,5 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 ## Session
 
 **Last Date:** 2026-05-15T00:00:00.000Z
-**Stopped At:** Completed 12-27 player frame host boundary hardening
+**Stopped At:** Completed 12-28 shell rendered navigation state boundary hardening
 **Resume File:** None
