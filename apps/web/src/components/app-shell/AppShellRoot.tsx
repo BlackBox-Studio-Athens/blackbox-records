@@ -89,6 +89,7 @@ import {
 import { syncShellBodyStateClasses } from './shell-body-state';
 import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './shell-hero-scroll-progress';
 import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './shell-overlay-focus';
+import { enableManualShellScrollRestoration } from './shell-scroll-restoration';
 import { scrollShellTargetIntoView } from './shell-target-scroll';
 
 type OverlayState = {
@@ -775,12 +776,7 @@ export default function AppShellRoot({
   }
 
   useEffect(() => {
-    const previousScrollRestoration =
-      typeof window.history.scrollRestoration === 'string' ? window.history.scrollRestoration : null;
-
-    if ('scrollRestoration' in window.history) {
-      window.history.scrollRestoration = 'manual';
-    }
+    const restoreShellScrollRestoration = enableManualShellScrollRestoration(window.history);
 
     renderedPageHrefRef.current = window.location.href;
     syncShellNavigationState(normalizeAppPathname(window.location.pathname));
@@ -998,9 +994,7 @@ export default function AppShellRoot({
       overlayAbortControllerRef.current?.abort();
       shellPageAbortControllerRef.current?.abort();
 
-      if (previousScrollRestoration !== null) {
-        window.history.scrollRestoration = previousScrollRestoration;
-      }
+      restoreShellScrollRestoration();
     };
   }, [isPlayerModalOpen]);
 
