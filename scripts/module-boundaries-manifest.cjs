@@ -454,8 +454,16 @@ function validateManifest(manifest = loadModuleBoundariesManifest()) {
       }
     }
 
-    if (moduleName === 'platform-shared' && (moduleDefinition.allowedDependencies ?? []).length > 0) {
-      errors.push('platform-shared must not depend on business modules');
+    if (moduleName === 'platform-shared') {
+      if ((moduleDefinition.allowedDependencies ?? []).length > 0) {
+        errors.push('platform-shared must not depend on business modules');
+      }
+
+      for (const entry of [...(moduleDefinition.roots ?? []), ...getModuleEntrypointFiles(moduleDefinition)]) {
+        if (entry.startsWith('apps/backend/src/domain/commerce/')) {
+          errors.push(`platform-shared must not own backend commerce domain code: ${entry}`);
+        }
+      }
     }
   }
 

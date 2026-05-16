@@ -67,4 +67,18 @@ describe('Module boundaries manifest', () => {
       'Module stock is open-temporary but is not in the approved open-temporary set',
     );
   });
+
+  it('rejects platform-shared ownership of backend commerce domain contracts', () => {
+    const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
+      modules: Record<string, Record<string, unknown>>;
+    };
+    manifest.modules['platform-shared'].roots = [
+      ...((manifest.modules['platform-shared'].roots as string[]) ?? []),
+      'apps/backend/src/domain/commerce/repositories/**',
+    ];
+
+    expect(validateManifest(manifest)).toContain(
+      'platform-shared must not own backend commerce domain code: apps/backend/src/domain/commerce/repositories/**',
+    );
+  });
 });

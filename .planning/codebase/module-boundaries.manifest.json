@@ -202,6 +202,17 @@
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
+    "commerce-domain": {
+      "status": "closed",
+      "roots": ["apps/backend/src/domain/commerce/ids.ts", "apps/backend/src/domain/commerce/repositories/**"],
+      "providedEntrypoints": ["apps/backend/src/domain/commerce/repositories/index.ts"],
+      "namedInterfaces": {
+        "repository-spi": "apps/backend/src/domain/commerce/repositories/index.ts"
+      },
+      "allowedDependencies": [],
+      "allowedWorkspaceInterfaces": {},
+      "ownershipExceptions": []
+    },
     "checkout-core": {
       "status": "closed",
       "roots": [
@@ -217,7 +228,7 @@
       "namedInterfaces": {
         "repository-spi": "apps/backend/src/application/commerce/checkout/index.ts"
       },
-      "allowedDependencies": ["orders", "stock", "platform-shared"],
+      "allowedDependencies": ["commerce-domain", "orders", "stock", "platform-shared"],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
@@ -236,7 +247,7 @@
       "namedInterfaces": {
         "internal-order-routes": "apps/backend/src/interfaces/http/routes/register-internal-order-routes.ts"
       },
-      "allowedDependencies": ["checkout-core", "stock", "platform-shared"],
+      "allowedDependencies": ["commerce-domain", "checkout-core", "stock", "platform-shared"],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
@@ -247,7 +258,7 @@
       "namedInterfaces": {
         "repository-spi": "apps/backend/src/application/commerce/stock/index.ts"
       },
-      "allowedDependencies": ["platform-shared"],
+      "allowedDependencies": ["commerce-domain", "platform-shared"],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
@@ -285,8 +296,6 @@
         "apps/web/src/lib/backend/api-client.ts",
         "apps/web/src/lib/backend/public-backend-config.ts",
         "apps/backend/src/env.ts",
-        "apps/backend/src/domain/commerce/ids.ts",
-        "apps/backend/src/domain/commerce/repositories/**",
         "apps/backend/src/interfaces/http/auth/index.ts",
         "apps/backend/src/interfaces/http/auth/operator-identity.ts",
         "apps/backend/src/interfaces/http/error-handler.ts",
@@ -306,15 +315,6 @@
         "apps/web/src/lib/backend/public-backend-config.ts",
         "apps/web/src/lib/utils.ts",
         "apps/web/src/utils/urls.ts",
-        "apps/backend/src/domain/commerce/ids.ts",
-        "apps/backend/src/domain/commerce/repositories/item-availability-repository.ts",
-        "apps/backend/src/domain/commerce/repositories/index.ts",
-        "apps/backend/src/domain/commerce/repositories/order-state-repository.ts",
-        "apps/backend/src/domain/commerce/repositories/stock-change-repository.ts",
-        "apps/backend/src/domain/commerce/repositories/stock-count-repository.ts",
-        "apps/backend/src/domain/commerce/repositories/stock-repository.ts",
-        "apps/backend/src/domain/commerce/repositories/store-item-option-repository.ts",
-        "apps/backend/src/domain/commerce/repositories/variant-stripe-mapping-repository.ts",
         "apps/backend/src/env.ts",
         "apps/backend/src/interfaces/http/auth/index.ts",
         "apps/backend/src/interfaces/http/auth/operator-identity.ts",

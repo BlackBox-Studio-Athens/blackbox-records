@@ -9,9 +9,6 @@ backend read model used to derive checkout-ready store offers.
 
 - `apps/backend/src/application/commerce/checkout/**`
 - `apps/backend/src/application/commerce/readers/store-offer-reader.ts`
-- `apps/backend/src/domain/commerce/repositories/item-availability-repository.ts`
-- `apps/backend/src/domain/commerce/repositories/store-item-option-repository.ts`
-- `apps/backend/src/domain/commerce/repositories/variant-stripe-mapping-repository.ts`
 - `apps/backend/test/application/commerce/checkout/**`
 - `apps/backend/test/application/commerce/readers/store-offer-reader.test.ts`
 
@@ -30,12 +27,13 @@ backend read model used to derive checkout-ready store offers.
 
 - `orders`
 - `stock`
+- `commerce-domain`
 - `platform-shared`
 
 ## Named Interfaces / SPI Surfaces
 
 - root API through `application/commerce/checkout/index.ts`
-- SPI surfaces through repository interfaces in `domain/commerce/repositories/`
+- repository SPI through the `commerce-domain` provided interface
 
 ## Published Events
 

@@ -408,6 +408,8 @@ Plans:
 - Plan `12-57` re-measured test/check performance after the module migrations, kept the fast Vitest loops native, and
   switched root type checks to native pnpm parallel package execution without custom scripts, Nx, or weakened boundary
   enforcement
+- Plan `12-58` extracts backend commerce IDs and repository port contracts from `platform-shared` into a closed
+  `commerce-domain` module and hardens the manifest validator against moving them back
 - Phase 12 refactor end goal is now documented in `12-REFACTOR-ENDGOAL.md`: thin app-shell composition, explicit
   `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard `eslint-plugin-boundaries` enforcement
 - Exists to make later large refactors safer and more reviewable before production cutover work begins

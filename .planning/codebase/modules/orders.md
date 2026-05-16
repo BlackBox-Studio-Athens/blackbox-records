@@ -8,7 +8,6 @@ low-volume manual review.
 ## Owned Files And Directories
 
 - `apps/backend/src/application/commerce/orders/**`
-- `apps/backend/src/domain/commerce/repositories/order-state-repository.ts`
 - `apps/backend/src/interfaces/http/routes/register-internal-order-routes.ts`
 - `apps/backend/src/interfaces/http/routes/internal-order-services.ts`
 - `apps/backend/test/application/commerce/orders/**`
@@ -28,6 +27,7 @@ low-volume manual review.
 ## Allowed Dependencies
 
 - `stock`
+- `commerce-domain`
 - `platform-shared`
 
 ## Named Interfaces / SPI Surfaces

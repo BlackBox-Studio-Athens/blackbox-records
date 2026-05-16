@@ -8,9 +8,6 @@ cases.
 ## Owned Files And Directories
 
 - `apps/backend/src/application/commerce/stock/**`
-- `apps/backend/src/domain/commerce/repositories/stock-repository.ts`
-- `apps/backend/src/domain/commerce/repositories/stock-change-repository.ts`
-- `apps/backend/src/domain/commerce/repositories/stock-count-repository.ts`
 - `apps/backend/test/application/commerce/stock/**`
 
 ## Provided Interface
@@ -25,12 +22,13 @@ cases.
 
 ## Allowed Dependencies
 
+- `commerce-domain`
 - `platform-shared`
 
 ## Named Interfaces / SPI Surfaces
 
 - root API through `application/commerce/stock/index.ts`
-- SPI surfaces through stock repository interfaces
+- repository SPI through the `commerce-domain` provided interface
 
 ## Published Events
 

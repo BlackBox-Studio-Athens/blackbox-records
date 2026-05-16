@@ -54,6 +54,7 @@ purely editorial and cannot affect ownership, entrypoints, status, dependencies,
 | `checkout-web`         | `closed`        | checkout pages, checkout UI state, public checkout browser adapters                                              | shopper checkout routes and browser-safe checkout client |
 | `cms-admin`            | `closed`        | `apps/web/src/pages/admin/`, `apps/web/src/lib/admin/`                                                           | `/admin/` surfaces and Decap config/media routes         |
 | `public-commerce-http` | `closed`        | public Worker HTTP routes and public contracts, with client access exposed through `@blackbox/api-client/public` | `/api/store/*`, `/api/checkout/*`, public OpenAPI/client |
+| `commerce-domain`      | `closed`        | backend commerce IDs and repository port contracts                                                               | backend commerce repository SPI                          |
 | `checkout-core`        | `closed`        | `apps/backend/src/application/commerce/checkout/`                                                                | checkout use-case API                                    |
 | `orders`               | `closed`        | `apps/backend/src/application/commerce/orders/`, order readback HTTP                                             | order lifecycle and reconciliation APIs                  |
 | `stock`                | `closed`        | `apps/backend/src/application/commerce/stock/`                                                                   | stock read/write use-case API                            |
@@ -77,9 +78,10 @@ purely editorial and cannot affect ownership, entrypoints, status, dependencies,
 - `checkout-web` -> `store-cart`, `storefront-catalog`, `public-commerce-http`, `platform-shared`
 - `cms-admin` -> `storefront-catalog`, `platform-shared`
 - `public-commerce-http` -> `checkout-core`, `orders`, `stock`, `platform-shared`
-- `checkout-core` -> `orders`, `stock`, `platform-shared`
-- `orders` -> `stock`, `platform-shared`
-- `stock` -> `platform-shared`
+- `commerce-domain` -> no business-module dependencies
+- `checkout-core` -> `commerce-domain`, `orders`, `stock`, `platform-shared`
+- `orders` -> `commerce-domain`, `stock`, `platform-shared`
+- `stock` -> `commerce-domain`, `platform-shared`
 - `operator-stock` -> `stock`, `orders`, `platform-shared`
 - `platform-shared` -> no business-module dependencies
 
@@ -103,6 +105,7 @@ purely editorial and cannot affect ownership, entrypoints, status, dependencies,
 - Shared artifacts still need an explicit owner module.
 - A generated or shared artifact does not need to pretend to be an ordinary business module when a package or
   platform-shared boundary is the right fit.
+- Backend commerce IDs and repository port contracts belong to `commerce-domain`, not `platform-shared`.
 - `platform-shared` remains strict bootstrap-only and must not become a business-logic catch-all.
 
 ## Exception Policy
@@ -141,6 +144,7 @@ Future hardening work should enforce this document through:
 - [checkout-web](modules/checkout-web.md)
 - [cms-admin](modules/cms-admin.md)
 - [public-commerce-http](modules/public-commerce-http.md)
+- [commerce-domain](modules/commerce-domain.md)
 - [checkout-core](modules/checkout-core.md)
 - [orders](modules/orders.md)
 - [stock](modules/stock.md)
