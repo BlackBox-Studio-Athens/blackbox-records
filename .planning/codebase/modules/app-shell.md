@@ -21,6 +21,8 @@ sections while acting as the future thin composition root over smaller shell sub
 - app-shell internal organization now follows the Phase 12 AppShellRoot strategy: `navigation`, `overlay`,
   `player-shell`, `store-cart`, and `dom` folders hold extracted helper/test pairs
 - shell page snapshot parsing/application plus the `shell-page-loader` request/cache seam
+- shell-section navigation orchestration for route parsing, snapshot cache/fetch, transition, history, scroll reset, and
+  fallback document navigation
 - overlay history behavior plus the `overlay-fragment-loader` request/cache seam, `overlay-history` history seam, and
   overlay focus scheduling
 - shell transition state, cached page restoration, route loading timer mechanics, target scrolling, body state classes,

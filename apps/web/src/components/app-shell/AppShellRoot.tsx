@@ -30,10 +30,8 @@ import {
   markCurrentHistoryEntryForShellSection,
   resolveInternalUrl,
   resolveShellNavigationSource,
-  SHELL_SECTION_LABELS,
   syncDesktopNavigationState,
   type ShellNavigationSource,
-  type ShellSectionHistoryState,
   waitForAnimationFrames,
 } from '@/components/app-shell/navigation/shell-navigation';
 import {
@@ -57,12 +55,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { createProjectRelativeUrl, resolveLinkAttributes } from '@/config/site';
-import {
-  normalizeAppPathname,
-  parseOverlayRoute,
-  parseShellSectionRoute,
-  type OverlayRoute,
-} from '@/lib/app-shell/routing';
+import { normalizeAppPathname, parseOverlayRoute, type OverlayRoute } from '@/lib/app-shell/routing';
 import type { SiteNavigationItem } from '@/lib/site-data';
 import {
   createEmptyStoreCartState,
@@ -102,6 +95,7 @@ import { derivePlayerShellViewState, PLAYER_PROVIDER_LABELS } from './player-she
 import { routeShellPopStateNavigation } from './navigation/shell-popstate-navigation';
 import { primeShellPrefetchIntent } from './navigation/shell-prefetch-intent';
 import { syncShellRenderedNavigationState } from './navigation/shell-rendered-navigation-state';
+import { openShellSectionNavigation } from './navigation/shell-section-navigation';
 import { enableManualShellScrollRestoration } from './navigation/shell-scroll-restoration';
 import { scrollShellTargetIntoView } from './navigation/shell-target-scroll';
 
@@ -553,87 +547,33 @@ export default function AppShellRoot({
       sourceElement?: HTMLElement | null;
     },
   ) {
-    const resolvedUrl = new URL(href, window.location.href);
-    const route = parseShellSectionRoute(resolvedUrl.pathname);
-    if (!route) return false;
-    const navigationSource = options?.source || 'programmatic';
-
-    if (overlayStateRef.current) {
-      collapseOverlayHistoryToBackground();
-    }
-
-    const currentSnapshot = cacheDocumentSnapshot();
-    const currentPathname = currentSnapshot?.pathname || normalizeAppPathname(window.location.pathname);
-    if (route.pathname === currentPathname) {
-      syncShellNavigationState(currentPathname);
-      await scrollShellViewportToTop({
-        getMainElement: getCurrentMainElement,
-        sourceElement: options?.sourceElement,
-      });
-      if (options?.historyMode === 'replace') {
-        markCurrentHistoryEntryForShellSection(route.pathname, resolvedUrl.toString());
-      }
-      return true;
-    }
-
-    shellPageAbortControllerRef.current?.abort();
-    const abortController = new AbortController();
-    shellPageAbortControllerRef.current = abortController;
-
-    const cachedSnapshot = shellPageLoader.getCachedSnapshot(route.pathname);
-    if (!cachedSnapshot) {
-      setIsRouteLoading(true);
-    }
-
-    const sectionTransitionToken = shellSectionTransition.begin(SHELL_SECTION_LABELS[route.kind], navigationSource);
-    await waitForAnimationFrames(2);
-
-    try {
-      const pageSnapshot =
-        cachedSnapshot ||
-        (await shellPageLoader.fetchSnapshot(route.pathname, resolvedUrl.toString(), abortController.signal));
-
-      if (abortController.signal.aborted) {
-        return true;
-      }
-
-      const applied = applyShellPageSnapshot(pageSnapshot);
-      if (!applied) {
-        throw new Error(`Unable to apply shell page snapshot for ${route.pathname}`);
-      }
-
-      if (options?.historyMode === 'push') {
-        window.history.pushState(
-          { __appShellSection: true, pathname: route.pathname } satisfies ShellSectionHistoryState,
-          '',
-          resolvedUrl.toString(),
-        );
-      } else if (options?.historyMode === 'replace') {
-        markCurrentHistoryEntryForShellSection(route.pathname, resolvedUrl.toString());
-      }
-
-      await scrollShellViewportToTop({
-        getMainElement: getCurrentMainElement,
-        sourceElement: options?.sourceElement,
-      });
-      triggerShellPageEnterTransition(shellPageTransition);
-      await shellSectionTransition.finish(sectionTransitionToken);
-
-      return true;
-    } catch {
-      if (abortController.signal.aborted) {
-        return true;
-      }
-
-      shellSectionTransition.reset();
-      window.location.assign(resolvedUrl.toString());
-      return false;
-    } finally {
-      if (shellPageAbortControllerRef.current === abortController) {
-        shellPageAbortControllerRef.current = null;
-      }
-      stopRouteLoadingSoon();
-    }
+    return openShellSectionNavigation({
+      activeAbortControllerRef: shellPageAbortControllerRef,
+      applyShellPageSnapshot,
+      cacheDocumentSnapshot,
+      collapseOverlayHistoryToBackground,
+      currentHref: window.location.href,
+      currentPathname: window.location.pathname,
+      hasOverlayState: () => Boolean(overlayStateRef.current),
+      historyMode: options?.historyMode,
+      href,
+      navigateDocumentTo: (nextHref) => {
+        window.location.assign(nextHref);
+      },
+      scrollShellViewportToTop: (scrollOptions) =>
+        scrollShellViewportToTop({
+          getMainElement: getCurrentMainElement,
+          sourceElement: scrollOptions?.sourceElement,
+        }),
+      setIsRouteLoading,
+      shellPageLoader,
+      shellSectionTransition,
+      source: options?.source,
+      sourceElement: options?.sourceElement,
+      stopRouteLoadingSoon,
+      syncShellNavigationState,
+      triggerShellPageEnterTransition: () => triggerShellPageEnterTransition(shellPageTransition),
+    });
   }
 
   async function restoreCachedShellPage(pathname: string, options?: { source?: ShellNavigationSource }) {
