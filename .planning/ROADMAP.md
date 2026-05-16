@@ -40,8 +40,8 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - [ ] **Phase 7: Worker Checkout And Stripe Sandbox Flow** - Implement Worker-owned checkout APIs and connect the frontend checkout route to Stripe sandbox (mock/contract implementation complete; real Stripe account validation deferred)
 - [x] **Phase 7.1: Cloudflare Pages Static Frontend Migration** - Move the static Astro frontend from GitHub Pages to Cloudflare Pages before webhook/order/shipping verification depends on stable Cloudflare-hosted origins
 - [x] **Phase 8: Webhook Orders And Stock** - Make payment truth and stock mutation Worker-owned, webhook-authoritative, and idempotent (non-secret backend groundwork may proceed before real Stripe account access)
-- [ ] **Phase 9: Greece-Only BOX NOW Shipping** - Lock the Greece-only BOX NOW shipping contract and choose between manual address fulfillment or `boxnow-js`-backed automation (current locker-first implementation is prototype-only; final shipping mode still pending)
-- [ ] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow where account access allows and prepare the go-live handoff package (review package complete; external gates remain pending)
+- [x] **Phase 9: Greece-Only BOX NOW Shipping** - Lock the Greece-only BOX NOW shipping contract around manual address fulfillment while leaving `boxnow-js` automation as a later explicit reopen-only choice
+- [ ] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow where account access allows and prepare the go-live handoff package (review package complete; Stripe external gate remains pending)
 - [x] **Phase 11: Website Editorial And Catalog UX Improvements** - Convert partner website notes into static-site editorial, artist, release, homepage, and distro/catalog improvements without changing commerce authority (completed 2026-05-12)
 - [x] **Phase 12: Modulith Boundary Hardening Planning** - Activate the TypeScript-native boundary stack and execution slices that make later refactors safer before revisiting the deferred commerce gates
 
@@ -249,13 +249,14 @@ Plans:
 1. Phase 9 chooses one explicit Greece-only BOX NOW path: manual address-based fulfillment or approved automation via `boxnow-js`.
 2. The chosen path exposes only the minimum Worker-owned shipping data needed to fulfill Greek orders.
 3. BOX NOW fulfillment stays low-maintenance without exposing BOX NOW secrets or shifting shipping authority to browser code.
-   **Plans**: 6 plans
+   **Plans**: 7 plans
    **Review gate**: Human review required if implementation drifts from the chosen shipping mode, expands shipping scope, or proposes BOX NOW automation outside `boxnow-js`.
 
 Current implementation note:
 
-- Plans `09-02` through `09-05` currently reflect a locker-first prototype branch.
-- If manual-address fulfillment is chosen, reopen or replace that prototype work before marking Phase 9 complete.
+- Plans `09-02` through `09-05` reflect the historical locker-first prototype branch.
+- Plan `09-07` chooses the manual-address path for new checkout starts and replaces the live locker requirement with
+  Stripe-collected Greek shipping details plus manual BOX NOW fulfillment.
 
 Plans:
 
@@ -264,22 +265,21 @@ Plans:
 - [x] 09-03: Add backend checkout preflight for Greece-only locker selection
 - [x] 09-04: Persist the thin locker snapshot on checkout/order state
 - [x] 09-05: Surface selected locker state in checkout return/order recap
-- [ ] 09-06: Document manual BOX NOW fulfillment and sandbox validation (deferred until the shipping mode is chosen and BOX NOW partner/sandbox portal access exists)
+- [x] 09-06: Document manual BOX NOW fulfillment and sandbox validation
+- [x] 09-07: Choose manual-address BOX NOW fulfillment and refactor checkout away from locker-first starts
 
-Remaining Phase 9 gates:
+Phase 9 closure:
 
-- Decide the Phase 9 shipping mode:
-  - manual-address fulfillment (default)
-  - `boxnow-js`-backed BOX NOW automation
-- Do now without BOX NOW account: document both branches, keep manual fulfillment low-maintenance, and treat existing locker-first work as prototype evidence only.
-- If manual-address fulfillment is chosen: capture and validate the Worker-owned address/contact handoff needed for manual portal shipment.
-- If automated fulfillment is chosen: open a follow-up integration slice that consumes `boxnow-js` rather than adding ad hoc BOX NOW logic here.
-- Blocked until BOX NOW portal access: operator login and a sandbox-paid Greek order fulfilled through the chosen path, with recorded evidence and `SHIP-03` completion.
+- Chosen Phase 9 shipping mode: manual-address fulfillment.
+- Do now without BOX NOW account: keep manual fulfillment low-maintenance, treat existing locker-first work as prototype evidence only, and avoid BOX NOW automation in this repo.
+- Manual-address implementation: Stripe Checkout collects Greek address/contact details; operators create BOX NOW shipments manually from paid order/payment tooling.
+- Current GSD status: BOX NOW is done for the current manual v1 scope. Do not reopen BOX NOW work unless the user explicitly asks to fully integrate after access exists.
+- If automated fulfillment is later reopened: open a follow-up integration slice that consumes `boxnow-js` rather than adding ad hoc BOX NOW logic here.
 
 ### Phase 10: Sandbox Verification And Release Gate
 
 **Goal**: Prove the implemented dual-deploy sandbox flow where account access allows and package the milestone outcome for the go-live milestone.
-**Depends on**: Phase 9 local implementation plus the deferred Stripe Access Gate and BOX NOW Portal Gate for full sandbox/release evidence
+**Depends on**: Phase 9 manual implementation plus the deferred Stripe Access Gate for full sandbox/release evidence
 **Requirements**: OPER-01, OPER-02
 **Success Criteria** (what must be TRUE):
 
@@ -293,7 +293,7 @@ Plans:
 
 - [x] 10-01: Create local full-loop UAT checklist and scripts
 - [x] 10-02: Verify sandbox deployment, secrets, D1, and Stripe mapping readiness
-- [ ] 10-03: Run sandbox end-to-end checkout, webhook, stock, and shipping evidence pass (deferred until the Stripe Access Gate and BOX NOW Portal Gate can both be satisfied)
+- [ ] 10-03: Run sandbox end-to-end checkout, webhook, stock, and shipping evidence pass (deferred until the Stripe Access Gate can be satisfied)
 - [x] 10-04: Run security, OpenAPI, browser, and no-secret release audit
 - [x] 10-04.1: Add Worker-owned native checkout feature gate
 - [x] 10-05: Produce milestone review package and go-live handoff
@@ -301,7 +301,7 @@ Plans:
 ### Phase 11: Website Editorial And Catalog UX Improvements
 
 **Goal**: Improve the static Astro site's editorial and catalog experience using partner notes as source input, while preserving the existing app shell, player model, and commerce authority boundaries.
-**Depends on**: Phase 6 static content/storefront foundations; independent of deferred Stripe Access Gate and BOX NOW Portal Gate
+**Depends on**: Phase 6 static content/storefront foundations; independent of the deferred Stripe Access Gate
 **Requirements**: SITE-ARTIST-01, SITE-RELEASE-01, SITE-HOME-01, SITE-DISTRO-01, SITE-DISTRO-02, SITE-DISTRO-03, SITE-VERIFY-01
 **Success Criteria** (what must be TRUE):
 
@@ -420,6 +420,9 @@ Plans:
   composition root without changing shell behavior
 - Plan `12-63` completes the Phase 12 audit: every manifest module is closed, the approved open-temporary set is empty,
   `eslint-plugin-boundaries` remains a hard gate, and the next extractions would be cosmetic without a new decision
+- Follow-up entrypoint hardening keeps the Phase 12 module set closed while making `index.ts` the default provided
+  interface, `api.ts` a secondary consumer API shape, and `spi.ts` the only provider-implemented contract shape; the
+  manifest audit now rejects stale SPI entrypoints and unapproved module-level `ports/` or `adapters/` directories
 - Phase 12 refactor end goal is now documented in `12-REFACTOR-ENDGOAL.md`: thin app-shell composition, explicit
   `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard `eslint-plugin-boundaries` enforcement
 - Exists to make later large refactors safer and more reviewable before production cutover work begins
@@ -429,21 +432,21 @@ Plans:
 - Production cutover remains a separate milestone
 - Starts only after the planned v1.2 hardening milestone or an explicit decision to skip it
 - Consumes `10-MILESTONE-REVIEW.md`, sandbox readiness evidence, local UAT evidence, and the deferred external-gate checklist produced by this milestone
-- Covers Stripe Access Gate completion, BOX NOW Portal Gate completion, Cloudflare Flagship `FLAGS` setup, live-mode keys, production rollout, emergency disable strategy, comms, and final stop/go review
+- Covers Stripe Access Gate completion, optional BOX NOW reopen-only integration if access exists, Cloudflare Flagship `FLAGS` setup, live-mode keys, production rollout, emergency disable strategy, comms, and final stop/go review
 - Must explicitly decide whether native commerce launches with the current single-item cart scope or first completes the no-account multi-item CartDraft and CartQuantity workstream
 - Must not start until human review accepts the prepared package and explicitly carries forward the open gates
 
 ### No-Account Cart Expansion Workstream
 
-- May proceed while Stripe account access and BOX NOW portal access remain unavailable
+- May proceed while Stripe account access remains unavailable
 - Consumes `BL-13` and `.planning/phases/10-sandbox-verification-and-release-gate/10-MULTI-ITEM-CART-WORKSTREAM.md`
 - Covers multi-line StoreCart state, quantity controls, Worker-owned multi-line checkout validation, additive order-line persistence, and paid-webhook stock decrement per CartLine
 - Keeps stock reservation separate in `BL-14`; the first multi-item implementation still decrements only after verified paid webhook transition unless a later reservation plan changes that
-- Does not satisfy the Stripe Access Gate, BOX NOW Portal Gate, `10-03`, `OPER-01`, or `SHIP-03`
+- Does not satisfy the Stripe Access Gate, `10-03`, or `OPER-01`
 
 ### Website Editorial And Catalog UX Improvements
 
-- May proceed as a static-site UI/content phase without waiting for Stripe account access or BOX NOW portal access
+- May proceed as a static-site UI/content phase without waiting for Stripe account access
 - Consumes `BL-18` and `.planning/phases/11-website-editorial-and-catalog-ux-improvements/`
 - Covers richer artist profile content, artist links/videos, previous releases, app-shell player continuity, homepage News replacing Latest Releases, latest-release feature banner on `/releases/`, and Distro release-date/format grouping
 - Keeps checkout, order, stock, Stripe, D1, webhook, BOX NOW, and feature-gate authority unchanged
@@ -453,7 +456,7 @@ Plans:
 
 **Execution Order:**  
 Nominal phase order remains `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 7.1 → 8 → 9 → 10`.
-Because Stripe account access and BOX NOW portal access are unavailable, non-secret backend, shipping, local UAT, and audit work may proceed after local mock/contract completion. Phase 7.1 is complete, while the deferred Stripe Access Gate and BOX NOW Portal Gate remain required before full hosted sandbox/release evidence. Phase 11 is a separate static-site editorial/catalog phase and is not required to close the Phase 10 commerce release gate.
+Because Stripe account access is unavailable, non-secret backend, shipping, local UAT, and audit work may proceed after local mock/contract completion. Phase 7.1 is complete, while the deferred Stripe Access Gate remains required before full hosted sandbox/release evidence. BOX NOW is closed for the current manual v1 scope and should reopen only if the user explicitly asks for full integration after access exists. Phase 11 is a separate static-site editorial/catalog phase and is not required to close the Phase 10 commerce release gate.
 
 | Phase                                                          | Plans Complete | Status    | Completed  |
 | -------------------------------------------------------------- | -------------- | --------- | ---------- |
@@ -465,7 +468,7 @@ Because Stripe account access and BOX NOW portal access are unavailable, non-sec
 | 7. Worker Checkout And Stripe Sandbox Flow                     | 15/16          | Deferred  | 2026-04-25 |
 | 7.1. Cloudflare Pages Static Frontend Migration                | 5/5            | Completed | 2026-04-29 |
 | 8. Webhook Orders And Stock                                    | 8/8            | Completed | 2026-04-26 |
-| 9. Greece-Only BOX NOW Shipping                                | 5/6            | Deferred  |            |
+| 9. Greece-Only BOX NOW Shipping                                | 7/7            | Completed | 2026-05-17 |
 | 10. Sandbox Verification And Release Gate                      | 5/6            | Active    |            |
 | 11. Website Editorial And Catalog UX Improvements              | 5/5            | Complete  | 2026-05-12 |
 | 12. Modulith Boundary Hardening Planning                       | 25/28          | Active    |            |

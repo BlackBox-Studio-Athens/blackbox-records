@@ -27,6 +27,9 @@ Primary handoff input: `.planning/phases/10-sandbox-verification-and-release-gat
 - [ ] Embedded Checkout request shape is documented
 - [ ] Required webhook events and idempotency rules are documented
 - [ ] Success/cancel/return-page behavior is documented as non-authoritative
+- [ ] Physical-goods tax category maps to `General - Tangible Goods (txcd_99999999)` for vinyl, cassettes, CDs, shirts, and merch
+- [ ] `txcd_10000000` is rejected for shipped physical goods unless tax/accounting review explicitly approves it
+- [x] Existing sandbox Stripe Products are set to `txcd_99999999` in Stripe before sandbox checkout evidence is claimed
 - [ ] Stripe Access Gate evidence is captured with real test keys, Price mappings, webhook secret, and Browser Use validation
 
 ## D1
@@ -38,11 +41,11 @@ Primary handoff input: `.planning/phases/10-sandbox-verification-and-release-gat
 
 ## BOX NOW
 
-- [ ] Greek locker-selection UX is approved
-- [ ] Required locker metadata is defined
-- [ ] v1 fulfillment depth is approved
-- [ ] Manual partner-portal fulfillment path exists if automation remains deferred
-- [ ] BOX NOW Portal Gate evidence is captured from partner or sandbox portal fulfillment
+- [x] Current v1 fulfillment depth is approved as manual address-based BOX NOW fulfillment
+- [x] Stripe-collected Greek address/contact handoff is the current shipping surface
+- [x] Legacy locker metadata remains prototype/future automation evidence only
+- [x] Manual partner-portal fulfillment path exists for projected low volume
+- [ ] Optional BOX NOW Reopen Gate evidence is captured only if the user explicitly reopens full integration after access exists
 
 ## Cutover
 
@@ -56,5 +59,5 @@ Primary handoff input: `.planning/phases/10-sandbox-verification-and-release-gat
 
 - [ ] Sandbox implementation milestone approved
 - [ ] Stripe sandbox evidence reviewed
-- [ ] BOX NOW sandbox fulfillment evidence reviewed
+- [x] BOX NOW manual v1 scope reviewed as closed for now
 - [ ] Final stop/go reviewers identified

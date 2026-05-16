@@ -2,15 +2,19 @@
 
 ## Status
 
-This document now defines the non-automated Phase 9 baseline. It does not prove the repo already captures the required
-address/contact data. If BlackBox later chooses BOX NOW automation instead, that work must be built through
-`C:\Users\SVall\WebstormProjects\boxnow-js`, and this manual path stops being the primary Phase 9 closure route.
+This document now defines the non-automated Phase 9 baseline. Plan `09-07` chooses this path for new checkout starts by
+letting Stripe Checkout collect the Greek shipping address/contact details before payment. If BlackBox later chooses BOX
+NOW automation instead, that work must be built through `C:\Users\SVall\WebstormProjects\boxnow-js`, and this manual
+path stops being the primary Phase 9 closure route.
 
-Do not mark `SHIP-03` or `09-06` complete until:
+Current GSD status: complete for the manual v1 scope. `09-06`, Phase 9, and `SHIP-01` through `SHIP-03` are closed for
+now. Do not reopen BOX NOW portal/API integration unless the user explicitly asks after BOX NOW access exists.
 
-- the shipping mode is explicitly chosen
-- an operator can use the chosen path for a sandbox-paid Greek order
-- the result is recorded in `09-VALIDATION.md`
+If reopened later, the next slice must validate:
+
+- operator access to the BOX NOW partner/sandbox portal
+- a paid Greek order fulfilled through the approved manual address/contact surface or through `boxnow-js` automation
+- recorded out-of-band portal/API result evidence without committing credentials, vouchers, labels, or raw portal output
 
 ## Source Of Truth
 
@@ -19,7 +23,7 @@ Use Worker-owned order state as the operational source of truth.
 - The order must be `paid` before any BOX NOW shipment is created.
 - The non-automated path uses the paid order plus the approved address/contact surface needed for a human to create the
   shipment manually.
-- Missing address/contact data means the order needs review.
+- Missing address/contact data in the approved payment or operations tooling means the order needs review.
 - Do not create a BOX NOW shipment from browser state, notes, screenshots, query parameters, or the historical
   locker-first prototype alone.
 - If the project later chooses automation, use `boxnow-js`; do not grow a bespoke BOX NOW client inside this repo.
@@ -62,27 +66,13 @@ Forbidden in Phase 9 order state and frontend public config:
 
 ## Validation Path
 
-The current local Phase 9 evidence still reflects the historical locker-first prototype branch. That evidence remains
-useful as prototype proof, but it does not close the revised Phase 9 contract by itself.
+The current Phase 9 closure evidence is the implemented manual-address checkout path:
 
-If the project chooses the non-automated path, replace the prototype validation with evidence that:
+- Stripe Checkout collects Greek shipping address/contact details before payment.
+- Public `StartCheckout` no longer accepts browser-selected `shippingLocker`.
+- New pending checkout orders persist `shippingLocker: null`.
+- Operators create BOX NOW shipments manually from paid order/payment tooling.
+- The historical locker-first local evidence remains prototype proof only.
 
-- checkout/order flow exposes the required delivery address and recipient/contact data for operators
-- the paid order readback lets an operator reconstruct the shipment manually
-- a sandbox-paid Greek order can be fulfilled manually through the BOX NOW portal from that data
-- repeated paid webhook delivery does not mutate stock twice
-
-If the project chooses the automated path, open a follow-up implementation slice that consumes `boxnow-js` and validate
-that path directly.
-
-## Remaining External Validation
-
-`SHIP-03` remains blocked until the shipping mode is chosen and BOX NOW partner or sandbox portal access exists.
-
-Required later evidence:
-
-- operator can sign in to the BOX NOW partner or sandbox portal
-- a sandbox-paid Greek order can be recreated from the chosen Worker-owned shipping surface
-- voucher/label/tracking output is handled out-of-band and not committed
-- if automation is chosen, the integration uses `boxnow-js`
-- any production go-live gaps are recorded before Phase 10 approval
+Future full integration evidence is out of current scope. If reopened, validate that path directly and keep all BOX NOW
+credentials, vouchers, labels, tracking output, and raw portal/API payloads out of the repo.

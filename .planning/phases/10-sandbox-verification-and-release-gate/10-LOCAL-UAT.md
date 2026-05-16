@@ -2,9 +2,11 @@
 
 ## Purpose
 
-This checklist proves the no-account native commerce loop locally. It uses the official local `stripe-mock` API path, the Mock Checkout Panel, the BOX NOW Test Locker, signed webhook fixtures, local D1, and protected internal order readback.
+This checklist proves the no-account native commerce loop locally. It uses the official local `stripe-mock` API path, the
+Mock Checkout Panel, Stripe Checkout shipping-address collection, signed webhook fixtures, local D1, and protected
+internal order readback.
 
-This is not Stripe test-mode evidence and not BOX NOW portal evidence. It prepares repeatable local UAT while the Stripe Access Gate and BOX NOW Portal Gate remain deferred.
+This is not Stripe test-mode evidence. It prepares repeatable local UAT while the Stripe Access Gate remains deferred.
 
 ## Prerequisites
 
@@ -49,12 +51,11 @@ http://127.0.0.1:4321/blackbox-records/store/disintegration-black-vinyl-lp/check
 
 Verify:
 
-- payment is blocked before locker selection
-- the BOX NOW Test Locker can be selected
-- the payment action becomes available only after that locker selection
+- the shipping step describes manual BOX NOW fulfillment
+- payment opens without a browser-selected BOX NOW locker
 - the Mock Checkout Panel starts through Worker-owned `StartCheckout`
-- the checkout request sends only `storeItemSlug`, `variantId`, and `shippingLocker`
-- the `shippingLocker` snapshot is `locker_id = 4`, `country_code = GR`, and `locker_name_or_label = ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234`
+- the checkout request sends only app-owned item identity or CartLines, not `shippingLocker`
+- the Stripe Checkout Session request uses Greece-only shipping-address collection and phone collection
 - browser console output has no checkout errors
 
 Capture the checkout session id from the mock checkout return URL or network response.
@@ -81,9 +82,8 @@ curl.exe -H "cf-access-authenticated-user-email: local-operator@example.com" "ht
 Expected order state:
 
 - `status` is `paid`
-- `shippingLocker.locker_id` is `4`
-- `shippingLocker.country_code` is `GR`
-- `shippingLocker.locker_name_or_label` is `ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234`
+- `shippingLocker` is `null` for new manual-address checkout starts
+- address/contact details are collected in Stripe/payment tooling for manual BOX NOW portal fulfillment
 
 ## Replay Idempotency Check
 
@@ -115,13 +115,13 @@ http://127.0.0.1:4321/blackbox-records/store/disintegration-black-vinyl-lp/check
 
 Expected recap:
 
-- the selected BOX NOW Test Locker appears from Worker-owned order state
-- missing locker state, if tested with older rows, shows support-oriented needs-review copy
+- the return page shows manual BOX NOW fulfillment/needs-review copy when no legacy locker snapshot exists
+- legacy rows with a persisted locker snapshot may still render the old locker recap for prototype evidence
 - payment state may still display `open` in local `stripe-mock` mode because official `stripe-mock` is stateless and does not make session retrieval reflect the signed webhook fixture
 
 ## Known Limits
 
 - This local loop does not satisfy the Stripe Access Gate.
-- This local loop does not satisfy the BOX NOW Portal Gate.
+- BOX NOW is closed for the current manual v1 scope; this local loop does not reopen future portal/API integration.
 - This local loop does not prove Cloudflare sandbox Worker, remote D1, real Stripe Checkout, real Stripe webhooks, or BOX NOW partner-portal fulfillment.
 - Production cutover remains out of scope.

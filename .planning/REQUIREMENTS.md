@@ -52,17 +52,17 @@
 
 ### Shipping & Fulfillment
 
-- [ ] **SHIP-01**: Greece-only checkout/order flow captures the minimum shipping data required by the chosen BOX NOW
+- [x] **SHIP-01**: Greece-only checkout/order flow captures the minimum shipping data required by the chosen BOX NOW
       fulfillment mode before payment or fulfillment handoff.
-- [ ] **SHIP-02**: Paid orders expose only the minimum Worker-owned shipping data required for the chosen BOX NOW path;
+- [x] **SHIP-02**: Paid orders expose only the minimum Worker-owned shipping data required for the chosen BOX NOW path;
       BOX NOW-specific metadata is allowed only for an approved automation path.
-- [ ] **SHIP-03**: Team can fulfill sandbox-paid Greek orders through the chosen BOX NOW path, either manual
-      address-based portal fulfillment or approved automation built on `boxnow-js`.
+- [x] **SHIP-03**: Team has a current manual-address BOX NOW fulfillment path for paid Greek orders; full
+      partner-portal/API integration is reopen-only future work after access exists.
 
-Phase `09-01` still locks the BOX NOW secret boundary. Historical plans `09-02` through `09-05` currently implement a
-locker-first prototype branch. After the 2026-05-14 Phase 9 revision, `SHIP-01` through `SHIP-03` remain open until
-the project explicitly chooses between manual-address fulfillment and `boxnow-js`-backed automation and validates the
-chosen path.
+Phase `09-01` still locks the BOX NOW secret boundary. Historical plans `09-02` through `09-05` implemented a
+locker-first prototype branch. Plan `09-07` chooses manual-address fulfillment for new checkout starts, and Phase 9 is
+closed for the current v1 manual scope. Do not reopen BOX NOW work unless the user explicitly asks to fully integrate
+after BOX NOW access exists.
 
 ### Security & Operations
 
@@ -71,7 +71,7 @@ chosen path.
 - [ ] **OPER-01**: Team can validate the full sandbox path from static `/store/` browse through Worker checkout, webhook-confirmed paid order, and D1 state changes.
 - [ ] **OPER-02**: Milestone ends with a human review package that captures sandbox evidence, open production gaps, and explicit handoff to the go-live milestone.
 
-`10-MILESTONE-REVIEW.md` now prepares the `OPER-02` review package and go-live handoff. `OPER-02` remains pending until human review accepts the package, and `OPER-01` remains pending until the Stripe Access Gate and BOX NOW Portal Gate can both be satisfied.
+`10-MILESTONE-REVIEW.md` now prepares the `OPER-02` review package and go-live handoff. `OPER-02` remains pending until human review accepts the package, and `OPER-01` remains pending until the Stripe Access Gate can be satisfied.
 
 ## v2 Requirements
 
@@ -139,9 +139,9 @@ chosen path.
 | ORDR-02     | Phase 8     | Pending   |
 | ORDR-03     | Phase 8     | Pending   |
 | ORDR-04     | Phase 8     | Pending   |
-| SHIP-01     | Phase 9     | Pending   |
-| SHIP-02     | Phase 9     | Pending   |
-| SHIP-03     | Phase 9     | Pending   |
+| SHIP-01     | Phase 9     | Completed |
+| SHIP-02     | Phase 9     | Completed |
+| SHIP-03     | Phase 9     | Completed |
 | SECU-01     | Phase 5     | Completed |
 | SECU-02     | Phase 8     | Completed |
 | OPER-01     | Phase 10    | Pending   |
@@ -156,4 +156,4 @@ chosen path.
 ---
 
 _Requirements defined: 2026-04-19_
-_Last updated: 2026-05-01 after preparing the milestone review package while keeping external gates pending_
+_Last updated: 2026-05-17 after closing BOX NOW for the current manual v1 scope_

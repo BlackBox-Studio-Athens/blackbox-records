@@ -27,7 +27,7 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - Worker-backed D1 + Prisma foundation before Stripe checkout integration
 - protected internal stock operations surface on a separate backend hostname for label staff
 - D1-led stock ledger around `Variant`, `Stock`, `StockChange`, and `StockCount`, with a conservative `OnlineStock` quantity for the public storefront
-- Greece-only BOX NOW locker selection before payment
+- Greece-only manual BOX NOW fulfillment with Stripe-collected address/contact details before payment
 - Shopify-familiar single-item cart affordances and Stripe embedded Checkout in sandbox with Worker-created Checkout Sessions
 - all-current-items local mock checkout readiness for current distro and release items without treating fake local stock as real label inventory
 - completed Cloudflare Pages static frontend migration before webhook/order/shipping verification depends on final hosted origins
@@ -59,7 +59,7 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - [ ] Make stripe-mock local checkout readiness cover every current distro and release item with clearly fake local stock
 - [ ] Use D1 only for stock, order lifecycle, and internal mappings, with server-owned writes
 - [ ] Treat spreadsheets as temporary capture/reporting only, never as an authoritative stock system
-- [ ] Enforce Greece-only BOX NOW locker selection before payment in v1
+- [ ] Enforce Greece-only manual BOX NOW fulfillment with address/contact collection before payment in v1
 - [x] Completed the static frontend migration from GitHub Pages to Cloudflare Pages after checkout wiring and before webhook/order/shipping verification
 - [ ] Finish the milestone with sandbox validation evidence and a clear handoff to the go-live milestone
 

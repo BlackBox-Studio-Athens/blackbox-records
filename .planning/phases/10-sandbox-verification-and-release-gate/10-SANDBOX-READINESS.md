@@ -6,7 +6,7 @@ Last checked: 2026-05-01T05:01:41+03:00
 
 `10-02` verified the current sandbox posture without changing runtime code, applying migrations, writing remote D1 data, setting secrets, or introducing account-specific Stripe or BOX NOW values.
 
-The Cloudflare sandbox Worker deployment path exists and sandbox D1 is now bound, migrated through the current repo schema, and seeded with the non-secret base commerce rows. The remaining blockers for full end-to-end sandbox UAT are external or deliberately deferred: Worker sandbox Stripe secrets are absent, real Stripe mappings are absent, Stripe test preflight is blocked by missing account credentials, and BOX NOW partner/sandbox portal validation remains unavailable.
+The Cloudflare sandbox Worker deployment path exists and sandbox D1 is now bound, migrated through the current repo schema, and seeded with the non-secret base commerce rows. The remaining blockers for full end-to-end sandbox UAT are external or deliberately deferred: Worker sandbox Stripe secrets are absent, real Stripe mappings are absent, and Stripe test preflight is blocked by missing account credentials. BOX NOW is closed for the current manual v1 scope and should reopen only if the user explicitly requests full integration after access exists.
 
 ## Cloudflare Worker Sandbox
 
@@ -75,9 +75,11 @@ Stripe mapping readiness:
 
 Required later evidence remains unchanged: real `pk_test_*`, `sk_test_*`, real `price_*`, `STRIPE_WEBHOOK_SECRET`, Stripe products/prices, webhook endpoint setup, sandbox Worker URL, real Checkout mount, and webhook/payment evidence.
 
-## BOX NOW Portal Gate
+## BOX NOW Reopen Gate
 
-BOX NOW partner/sandbox portal access is still unavailable. `09-06`, Phase 9 completion, and `SHIP-03` remain pending until an operator can fulfill a sandbox-paid Greek order through the BOX NOW partner portal and record the result.
+BOX NOW partner/sandbox portal access is not part of the active blocker set anymore. `09-06`, Phase 9, and `SHIP-03`
+are complete for the current manual v1 scope. Reopen this gate only if the user explicitly asks to fully integrate BOX
+NOW after access exists.
 
 ## Current Sandbox Readiness Decision
 
@@ -94,6 +96,6 @@ Not ready:
 - Worker sandbox Stripe secrets.
 - Real Stripe test checkout preflight.
 - Real Stripe price mappings.
-- BOX NOW portal fulfillment evidence.
+- Optional BOX NOW portal/API fulfillment evidence only if the reopen gate is explicitly activated.
 
-`10-02` remains complete because the readiness pass was executed and blockers were captured. `10-03` is a deferred external gate for full sandbox evidence until the Stripe Access Gate and BOX NOW Portal Gate are satisfied. `10-04` no-account audit work may proceed around that gate, but it does not satisfy `OPER-01`.
+`10-02` remains complete because the readiness pass was executed and blockers were captured. `10-03` is a deferred external gate for full sandbox evidence until the Stripe Access Gate is satisfied. `10-04` no-account audit work may proceed around that gate, but it does not satisfy `OPER-01`.

@@ -2,11 +2,10 @@
 
 ## Summary
 
-This is a no-account commerce expansion workstream that may proceed while the Stripe Access Gate and BOX NOW Portal
-Gate remain deferred. It upgrades the current single-item cart convenience layer into a multi-line CartDraft with
+This is a no-account commerce expansion workstream that may proceed while the Stripe Access Gate remains deferred. It upgrades the current single-item cart convenience layer into a multi-line CartDraft with
 CartQuantity controls, then makes the Worker validate every line before checkout.
 
-This workstream is not production cutover and does not satisfy `07-16`, `09-06`, `10-03`, `OPER-01`, or `SHIP-03`.
+This workstream is not production cutover and does not satisfy `07-16`, `10-03`, or `OPER-01`.
 
 ## Scope
 
@@ -17,14 +16,14 @@ This workstream is not production cutover and does not satisfy `07-16`, `09-06`,
 - Evolve `StartCheckout` from one StoreItemOption to one or more CartLines.
 - Add D1 order-line persistence through an additive `CheckoutOrderLine` model/table.
 - Decrement stock once per paid CheckoutOrderLine after verified paid webhook transition.
-- Keep one BOX NOW Locker per CheckoutOrder unless a later shipping plan explicitly introduces split shipments.
+- Keep one manual BOX NOW shipping surface per CheckoutOrder unless a later shipping plan explicitly introduces split shipments.
 
 ## Required Future Plans
 
 1. Define CartDraft, CartLine, CartQuantity, max quantity, merge-on-add behavior, remove behavior, and v1-to-v2 browser
    storage migration.
 2. Update cart drawer, header count, PDP add-to-cart, checkout order summary, and tests for multi-line quantities.
-3. Change public checkout request shape to send cart lines plus the existing Shipping Locker Snapshot.
+3. Change public checkout request shape to send cart lines without adding browser-owned shipping data.
 4. Update Worker validation so it re-reads ItemAvailability, OnlineStock, and Stripe Price Mapping for every CartLine.
 5. Add `CheckoutOrderLine` persistence and internal readback without overloading current single-item CheckoutOrder
    fields.
@@ -46,22 +45,22 @@ idempotency, and stock semantics.
 
 - Stock reservation before payment.
 - Account-backed or cross-device carts.
-- Split shipments or multiple BOX NOW Lockers per order.
+- Split shipments, multiple shipping destinations, or multiple BOX NOW lockers per order.
 - Discount codes, cart notes, customer accounts, or production cutover.
 - Real Stripe multi-line Checkout evidence until real Stripe test-mode access exists.
-- BOX NOW partner-portal fulfillment evidence until portal access exists.
+- Future BOX NOW portal/API fulfillment evidence unless the user explicitly reopens full integration after access exists.
 
 ## Implementation Note - 2026-05-08
 
 - Browser cart state now uses canonical `blackbox.storeCart.v2` storage with v1 read migration, multi-line `CartDraft`
   helpers, per-line `CartQuantity` controls, and drawer/checkout summary rendering for multiple lines.
-- Public checkout now accepts `lines: [{ storeItemSlug, variantId, quantity }]` beside the existing Shipping Locker
-  Snapshot, while retaining single-line compatibility during transition.
+- Public checkout now accepts `lines: [{ storeItemSlug, variantId, quantity }]` while retaining single-line
+  compatibility during transition.
 - Worker checkout validation re-reads StoreItemOption, ItemAvailability, OnlineStock, and Stripe Price Mapping for every
   CartLine before creating one Stripe line item per CartLine.
 - D1/Prisma now has additive `CheckoutOrderLine` persistence, and paid webhook reconciliation decrements stock per paid
   order line after the once-only order transition.
-- This does not satisfy the Stripe Access Gate, BOX NOW Portal Gate, `10-03`, `OPER-01`, or `SHIP-03`.
+- This does not satisfy the Stripe Access Gate, `10-03`, or `OPER-01`.
 
 ## Validation Update - 2026-05-12
 
@@ -77,5 +76,5 @@ idempotency, and stock semantics.
 - Browser Use validation was attempted through Agentify navigation and failed with `missing_electron_binary`.
 - DevTools MCP fallback validation used the running `pnpm dev:stack:stripe-mock` stack. It added Disintegration and
   Afterglow Cassette, adjusted Disintegration to quantity 2, verified drawer and checkout count `3 ITEMS`, selected the
-  BOX NOW Test Locker, mounted the local mock checkout state, and confirmed the checkout POST sent `lines` with
-  `disintegration-black-vinyl-lp` quantity 2 plus `afterglow-tape` quantity 1. Console warnings/errors were empty.
+  historical BOX NOW Test Locker, mounted the local mock checkout state, and confirmed the checkout POST sent `lines`
+  with `disintegration-black-vinyl-lp` quantity 2 plus `afterglow-tape` quantity 1. Console warnings/errors were empty.

@@ -9,7 +9,7 @@
 
 BlackBox Records already has the public storefront, shell routing, and content pipeline in place. The current milestone should therefore avoid architectural drift and focus on implementing the pre-approved commerce slice on Cloudflare Workers + D1 in Stripe sandbox, without touching live production checkout.
 
-The implementation stack is now settled. Astro keeps the storefront. Cloudflare Workers hosts the live server routes. D1 stores only stock and order lifecycle state. Stripe owns product, price, checkout, and payment authority. BOX NOW remains a Greece-only, pre-payment locker selection step with manual partner-portal fulfillment.
+The implementation stack is now settled. Astro keeps the storefront. Cloudflare Workers hosts the live server routes. D1 stores only stock and order lifecycle state. Stripe owns product, price, checkout, payment authority, and manual-path Greek address/contact collection. BOX NOW remains Greece-only with manual partner-portal fulfillment.
 
 The main risks are still boundary mistakes, not design mistakes: using stale Stripe embedded Checkout terminology, letting browser code mutate authoritative state, overloading the Worker runtime with unnecessary dynamic rendering, or letting sandbox work bleed into production launch work. The roadmap should therefore move from runtime and secret plumbing into the storefront slice, checkout flow, webhook-backed state, shipping gate, and finally sandbox verification evidence.
 
@@ -29,7 +29,7 @@ The main risks are still boundary mistakes, not design mistakes: using stale Str
 - Single-item `Buy Now` flow only
 - Dedicated checkout route with embedded Checkout
 - Webhook-authoritative D1 orders and post-payment stock decrement
-- Greece-only BOX NOW locker selection before payment
+- Greece-only manual BOX NOW fulfillment with Stripe-collected address/contact details before payment
 - End-to-end sandbox validation before the go-live milestone begins
 
 ### Architecture Approach
@@ -39,7 +39,7 @@ Use the current Astro routes as the canonical UI surface and introduce a narrow 
 1. Worker-backed server routes create Checkout Sessions and verify webhooks.
 2. D1 stores only minimal order and stock state.
 3. Stripe remains the authority for product, price, and payment state.
-4. BOX NOW contributes only the pre-payment locker choice and thin paid-order metadata.
+4. BOX NOW contributes no browser-owned live input on the manual path; operators fulfill from paid order/payment tooling.
 
 ### Watch Out For
 

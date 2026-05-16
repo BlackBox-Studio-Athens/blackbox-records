@@ -64,44 +64,47 @@ unless a plan explicitly records a terminology change here first.
 
 ## Shipping and Fulfillment
 
-| Canonical term               | Meaning                                                                                                                                  | Aliases to avoid                      |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| **Shipping Mode**            | Explicit Phase 9 choice between manual-address fulfillment and automated BOX NOW fulfillment via `boxnow-js`.                            | implicit default, maybe later         |
-| **Order Shipping Address**   | Greek delivery address plus any required recipient/contact data used for non-automated BOX NOW shipment creation.                        | full BOX NOW payload, locker payload  |
-| **BOX NOW Locker**           | Shopper-selected Greek BOX NOW locker used only if the automation/locker flow is chosen.                                                 | default shipping input, parcel locker |
-| **Shipping Locker Snapshot** | Minimal persisted BOX NOW-specific locker data for an approved automation path: `locker_id`, `country_code`, and `locker_name_or_label`. | universal shipping state              |
-| **BOX NOW Test Locker**      | Local/test locker snapshot used only for the current locker-first prototype branch.                                                      | default locker, final shipping mode   |
-| **Greece-Only Shipping**     | Phase 9 shipping boundary: Greece only and no non-Greece delivery path in this milestone.                                                | domestic shipping, EU shipping        |
-| **Manual Fulfillment**       | Operator handoff through the BOX NOW partner portal using Worker-owned paid order state and the chosen shipping-mode data.               | fulfillment automation                |
-| **BOX NOW Credentials**      | Partner/API credentials that belong only in Worker runtime secrets or out-of-band operator tooling.                                      | public locker config                  |
-| **BOX NOW Portal Gate**      | Deferred real BOX NOW validation requiring partner/sandbox portal access and evidence for the chosen shipping path.                      | shipping blocker, portal blocker      |
+| Canonical term               | Meaning                                                                                                                                  | Aliases to avoid                        |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **Shipping Mode**            | Explicit Phase 9 choice between manual-address fulfillment and automated BOX NOW fulfillment via `boxnow-js`.                            | implicit default, maybe later           |
+| **Order Shipping Address**   | Greek delivery address plus any required recipient/contact data used for non-automated BOX NOW shipment creation.                        | full BOX NOW payload, locker payload    |
+| **BOX NOW Locker**           | Shopper-selected Greek BOX NOW locker used only if the automation/locker flow is chosen.                                                 | default shipping input, parcel locker   |
+| **Shipping Locker Snapshot** | Minimal persisted BOX NOW-specific locker data for an approved automation path: `locker_id`, `country_code`, and `locker_name_or_label`. | universal shipping state                |
+| **BOX NOW Test Locker**      | Local/test locker snapshot used only for the current locker-first prototype branch.                                                      | default locker, final shipping mode     |
+| **Greece-Only Shipping**     | Phase 9 shipping boundary: Greece only and no non-Greece delivery path in this milestone.                                                | domestic shipping, EU shipping          |
+| **Manual Fulfillment**       | Operator handoff through the BOX NOW partner portal using Worker-owned paid order state and the chosen shipping-mode data.               | fulfillment automation                  |
+| **BOX NOW Credentials**      | Partner/API credentials that belong only in Worker runtime secrets or out-of-band operator tooling.                                      | public locker config                    |
+| **BOX NOW Reopen Gate**      | Future-only gate for full BOX NOW portal/API integration after access exists and the user explicitly reopens the work.                   | active shipping blocker, portal blocker |
+| **Stripe Product Tax Code**  | Stripe Tax product classification used for tax calculation; physical shipped goods use `General - Tangible Goods (txcd_99999999)`.       | product category guess, tax preset      |
 
 ## Hosting, Validation, and Planning
 
-| Canonical term                      | Meaning                                                                                                                                                 | Aliases to avoid                         |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| **Application Module** (new)        | Explicitly declared functional module in this monorepo, with one responsibility, a provided interface, hidden internals, and named dependencies.        | area, bucket, random folder              |
-| **Provided Interface** (new)        | The only surface another Application Module may import or call directly.                                                                                | public random file, any exported symbol  |
-| **Internal Implementation** (new)   | Files and types inside an Application Module that must not be imported across module boundaries.                                                        | accessible internals, deep import target |
-| **Required Dependency** (new)       | Another Application Module or Named Interface that a module is explicitly allowed to depend on.                                                         | incidental import, convenient shortcut   |
-| **Named Interface** (new)           | An explicitly documented secondary module surface beyond the root provided interface, typically a future `api.ts` or `spi.ts`.                          | deep import, helper path                 |
-| **Module Canvas** (new)             | The planning document that records one Application Module's responsibility, owned paths, interfaces, dependencies, events, tests, and migration status. | module note, rough sketch                |
-| **Closed Module** (new)             | An Application Module whose internals are not meant to be imported across module boundaries.                                                            | normal module, default bucket            |
-| **Open-Temporary Module** (new)     | A legacy Application Module that is temporarily allowed broader internal coupling while a closing slice is planned.                                     | permanent exception, shared mess         |
-| **Split-Pending Module** (new)      | A residual Application Module whose current owned paths are still too broad and must be reduced in later slices.                                        | catch-all forever, misc module           |
-| **Boundary Manifest** (new)         | The one repo machine-readable file that future lint and graph tooling reads for module ownership, dependencies, entrypoints, and statuses.              | loose note, optional spreadsheet         |
-| **Root-First Entrypoint** (new)     | The rule that every module should expose one obvious root import target before introducing any secondary named interface.                               | random export path, deep import default  |
-| **Compatibility Facade** (new)      | A temporary forwarding surface that keeps old import paths alive after a boundary split; disallowed by the current Phase 12 decisions.                  | harmless alias, migration convenience    |
-| **Directory-First Ownership** (new) | The rule that modules own directories or stable file groups by default, with only a short explicit exception list.                                      | file-by-file micromanagement             |
-| **Static Astro Frontend** (new)     | Prebuilt Astro site served by Cloudflare Pages or GitHub Pages rollback without owning dynamic commerce authority.                                      | frontend app, Pages backend              |
-| **Worker Backend** (new)            | Cloudflare Worker that owns dynamic commerce APIs, D1, Stripe, webhooks, secrets, and protected operator APIs.                                          | backend app, Pages Functions             |
-| **Cloudflare Pages** (new)          | Canonical static deployment target for the Static Astro Frontend.                                                                                       | production backend, Pages Functions host |
-| **GitHub Pages Rollback** (new)     | Legacy rollback deployment target for the Static Astro Frontend.                                                                                        | primary GitHub Pages site                |
-| **Current Plan** (new)              | Active GSD phase or milestone plan that defines the work being executed now.                                                                            | latest idea, current doc                 |
-| **GSD Source of Truth** (new)       | Planning artifact set that decides the Current Plan, accepted decisions, blockers, and required evidence.                                               | notes, scratch plan                      |
-| **Validation Evidence** (new)       | Recorded proof that a plan's required checks or acceptance criteria passed, including blockers when a gate cannot pass yet.                             | test output, proof, evidence blob        |
-| **Deferred Gate** (new)             | Explicitly recorded external or environment-dependent gate that cannot pass yet and must not be reported as complete.                                   | blocker, postponed check                 |
-| **Browser Use Validation** (new)    | Rendered UI verification performed with the native Codex Windows app Browser Use plugin.                                                                | browser check, DevTools validation       |
+| Canonical term                      | Meaning                                                                                                                                                                              | Aliases to avoid                         |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| **Application Module** (new)        | Explicitly declared functional module in this monorepo, with one responsibility, a provided interface, hidden internals, and named dependencies.                                     | area, bucket, random folder              |
+| **Provided Interface** (new)        | The only surface another Application Module may import or call directly.                                                                                                             | public random file, any exported symbol  |
+| **Internal Implementation** (new)   | Files and types inside an Application Module that must not be imported across module boundaries.                                                                                     | accessible internals, deep import target |
+| **Required Dependency** (new)       | Another Application Module or Named Interface that a module is explicitly allowed to depend on.                                                                                      | incidental import, convenient shortcut   |
+| **Named Interface** (new)           | An explicitly documented secondary module surface beyond the root provided interface; use `api.ts` for secondary consumer APIs and `spi.ts` only for provider-implemented contracts. | deep import, helper path                 |
+| **SPI Entrypoint** (new)            | A `spi.ts` Named Interface that defines a contract implemented by another module, such as repository or gateway contracts.                                                           | default ports folder, adapter interface  |
+| **Infrastructure Adapter** (new)    | Module-owned infrastructure implementation of an SPI or external SDK boundary, exposed through its module interface or kept internal.                                                | per-module adapters pattern              |
+| **Module Canvas** (new)             | The planning document that records one Application Module's responsibility, owned paths, interfaces, dependencies, events, tests, and migration status.                              | module note, rough sketch                |
+| **Closed Module** (new)             | An Application Module whose internals are not meant to be imported across module boundaries.                                                                                         | normal module, default bucket            |
+| **Open-Temporary Module** (new)     | A legacy Application Module that is temporarily allowed broader internal coupling while a closing slice is planned.                                                                  | permanent exception, shared mess         |
+| **Split-Pending Module** (new)      | A residual Application Module whose current owned paths are still too broad and must be reduced in later slices.                                                                     | catch-all forever, misc module           |
+| **Boundary Manifest** (new)         | The one repo machine-readable file that future lint and graph tooling reads for module ownership, dependencies, entrypoints, and statuses.                                           | loose note, optional spreadsheet         |
+| **Root-First Entrypoint** (new)     | The rule that every module should expose one obvious root import target before introducing any secondary named interface.                                                            | random export path, deep import default  |
+| **Compatibility Facade** (new)      | A temporary forwarding surface that keeps old import paths alive after a boundary split; disallowed by the current Phase 12 decisions.                                               | harmless alias, migration convenience    |
+| **Directory-First Ownership** (new) | The rule that modules own directories or stable file groups by default, with only a short explicit exception list.                                                                   | file-by-file micromanagement             |
+| **Static Astro Frontend** (new)     | Prebuilt Astro site served by Cloudflare Pages or GitHub Pages rollback without owning dynamic commerce authority.                                                                   | frontend app, Pages backend              |
+| **Worker Backend** (new)            | Cloudflare Worker that owns dynamic commerce APIs, D1, Stripe, webhooks, secrets, and protected operator APIs.                                                                       | backend app, Pages Functions             |
+| **Cloudflare Pages** (new)          | Canonical static deployment target for the Static Astro Frontend.                                                                                                                    | production backend, Pages Functions host |
+| **GitHub Pages Rollback** (new)     | Legacy rollback deployment target for the Static Astro Frontend.                                                                                                                     | primary GitHub Pages site                |
+| **Current Plan** (new)              | Active GSD phase or milestone plan that defines the work being executed now.                                                                                                         | latest idea, current doc                 |
+| **GSD Source of Truth** (new)       | Planning artifact set that decides the Current Plan, accepted decisions, blockers, and required evidence.                                                                            | notes, scratch plan                      |
+| **Validation Evidence** (new)       | Recorded proof that a plan's required checks or acceptance criteria passed, including blockers when a gate cannot pass yet.                                                          | test output, proof, evidence blob        |
+| **Deferred Gate** (new)             | Explicitly recorded external or environment-dependent gate that cannot pass yet and must not be reported as complete.                                                                | blocker, postponed check                 |
+| **Browser Use Validation** (new)    | Rendered UI verification performed with the native Codex Windows app Browser Use plugin.                                                                                             | browser check, DevTools validation       |
 
 ## Relationships
 
@@ -123,16 +126,19 @@ unless a plan explicitly records a terminology change here first.
   path.
 - The Boundary Manifest is the tooling input; `MODULES.md` and Module Canvases are the human review surfaces.
 - Closed Modules reject cross-module internal imports by default.
+- SPI Entrypoints are the only approved shape for provider-implemented contracts; do not add generic `ports/` or
+  `adapters/` directories without an explicit Boundary Manifest exception.
 - Open-Temporary Modules require explicit exit criteria in their Module Canvas before execution begins.
 - Root-First Entrypoints are the default import target; Compatibility Facades are not the default migration strategy.
 - Local stripe-mock API validates Stripe SDK request shape. The Mock Checkout Panel validates local client handoff.
   Neither satisfies the Stripe Access Gate.
 - Stripe Webhook events update CheckoutOrder and are the only paid-signal path that may decrement Stock.
 - Phase 9 Greece-Only Shipping now requires an explicit Shipping Mode.
-- Manual Fulfillment uses paid CheckoutOrder data plus the chosen shipping-mode data without storing raw BOX NOW
-  payloads or credentials.
-- If automation is chosen, the implementation must route through `boxnow-js`.
-- Local signed-fixture evidence may validate a prototype handoff shape. It does not satisfy the BOX NOW Portal Gate.
+- Manual Fulfillment uses paid CheckoutOrder/payment-tooling data plus the chosen shipping-mode data without storing raw
+  BOX NOW payloads or credentials.
+- If automation is reopened, the implementation must route through `boxnow-js`.
+- Local signed-fixture evidence may validate a prototype handoff shape. Current manual BOX NOW scope is closed; full
+  portal/API evidence belongs only to the BOX NOW Reopen Gate.
 - Cloudflare Pages serves the Static Astro Frontend. The Worker Backend owns dynamic commerce, D1, Stripe, webhooks,
   secrets, and protected operator APIs.
 - GSD Source of Truth chooses the Current Plan. Validation Evidence either completes that plan or records a Deferred
@@ -178,8 +184,9 @@ unless a plan explicitly records a terminology change here first.
   shipment creation requires an explicit decision and must route through `boxnow-js`.
 - **Prototype evidence vs final Phase 9 contract:** The current locker-first local implementation is prototype evidence,
   not the only acceptable final Phase 9 outcome.
-- **Local handoff evidence vs BOX NOW Portal Gate:** Local mock checkout plus signed webhook fixtures prove a handoff
-  shape only. Real portal fulfillment evidence still requires BOX NOW partner/sandbox portal access.
+- **Local handoff evidence vs BOX NOW Reopen Gate:** Local mock checkout plus signed webhook fixtures prove a handoff
+  shape. Current manual BOX NOW scope is closed; real portal/API evidence is future-only after access exists and the
+  user explicitly reopens the work.
 - **Cloudflare Pages vs Worker Backend:** Pages serves static frontend assets. The Worker owns all dynamic commerce
   behavior and secrets.
 - **Feature Gate vs environment:** Feature Gates are runtime capability switches. Worker environments still isolate D1

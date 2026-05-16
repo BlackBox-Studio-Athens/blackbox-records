@@ -78,7 +78,7 @@ Manual UI validation:
 
 ## 09-06 Document Manual BOX NOW Fulfillment And Sandbox Validation
 
-- Result: locker-first local prototype evidence passed; final Phase 9 closure remains open.
+- Result: complete for the current manual v1 BOX NOW scope.
 - Evidence: `09-MANUAL-FULFILLMENT.md` now defines the manual-address baseline and the mandatory `boxnow-js` boundary for any future automation.
 - Evidence: The documented operator source of truth remains Worker-owned order state and the chosen shipping-mode data, not browser state, screenshots, query parameters, or raw BOX NOW payloads.
 - Evidence: The current local validation path still covers the locker-first prototype branch using `pnpm dev:stack:stripe-mock`, the BOX NOW FAQ test locker, a signed local paid webhook fixture, internal order readback, and checkout return recap.
@@ -93,7 +93,9 @@ Manual UI validation:
 - Return recap evidence: the return route displayed `ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234` and `Locker ID 4 · Greece-only BOX NOW`; payment state still displayed `open` because official `stripe-mock` is stateless and does not make session retrieval reflect the signed local webhook fixture.
 - Console evidence: no warnings or errors were recorded beyond expected Vite/Astro debug logs and React DevTools info messages.
 - Evidence: The locker-first prototype still keeps BOX NOW-specific persistence capped at `locker_id`, `country_code`, and `locker_name_or_label`.
-- Deferred gate: real `SHIP-03` completion now requires both the explicit shipping-mode choice and the `BOX NOW Portal Gate`. If the project chooses manual-address fulfillment, replace this locker-first validation with address-based order evidence. If the project chooses automation, use `boxnow-js` and collect real BOX NOW evidence through that path. Those conditions are not satisfied, so `09-06`, Phase 9, and `SHIP-03` remain open while no-account Phase 10 preparation may proceed.
+- Closure decision: plan `09-07` chooses manual-address fulfillment as the current BOX NOW path. `09-06`, Phase 9, and
+  `SHIP-01` through `SHIP-03` are now closed for the current manual v1 scope. Full BOX NOW portal/API integration is
+  reopen-only future work after access exists.
 - No BOX NOW API calls, partner credentials, label/voucher persistence, D1 schema changes, frontend behavior changes, generated API client changes, Stripe changes, or production cutover changed.
 - Validation: targeted simulator/webhook tests; `pnpm --filter @blackbox/backend d1:check:stripe-mock:local`; local DevTools MCP fallback smoke; `git diff --check`; `pnpm test:unit`; `pnpm check`; `pnpm build`.
 
@@ -104,3 +106,17 @@ Manual UI validation:
 - No automated delivery request, voucher, label, or tracking creation.
 - No BOX NOW fulfillment, tracking page, or deployment change.
 - No real Stripe validation or production cutover.
+
+## 09-07 Choose Manual-Address BOX NOW Fulfillment And Refactor Checkout
+
+- Result: complete for the current manual v1 BOX NOW scope.
+- Evidence: `StartCheckout` no longer requires or accepts `shippingLocker` in the public request schema.
+- Evidence: Checkout-core no longer runs the BOX NOW locker-selection validator before creating a Stripe Checkout Session.
+- Evidence: New pending checkout orders are created with `shippingLocker: null`; legacy nullable locker readback remains available for old/prototype rows.
+- Evidence: Stripe Checkout Session creation now enables `shipping_address_collection.allowed_countries = ['GR']` and `phone_number_collection.enabled = true`.
+- Evidence: The checkout shipping step now renders manual BOX NOW fulfillment copy and no locker picker/test-locker control.
+- Evidence: Generated public OpenAPI/API-client artifacts were regenerated after removing the start-checkout `shippingLocker` input.
+- Closure decision: no BOX NOW partner/sandbox portal evidence is required to keep the current manual path closed. Reopen
+  only if the user explicitly asks for full BOX NOW integration after access exists.
+- No BOX NOW API calls, BOX NOW credentials, voucher/label/tracking persistence, custom Astro address form, D1 address schema, migration rewrite, or production cutover changed.
+- Validation: `pnpm generate:api`; targeted code search for removed locker-gate contracts; `pnpm test:unit`; `pnpm check`; `pnpm build`.

@@ -79,7 +79,7 @@ Responsibilities:
 
 - represent orders with the approved minimal states: `pending_payment`, `paid`, `not_paid`, `needs_review`
 - store stock counts
-- attach the thinnest approved BOX NOW metadata for paid Greek orders
+- keep paid Greek orders fulfillable through the manual BOX NOW path without browser-owned BOX NOW metadata
 - enforce idempotent updates so paid stock decrement happens once
 
 What not to do:
@@ -92,13 +92,13 @@ What not to do:
 
 Purpose:
 
-- add the approved Greece-only locker selection step before payment
+- add the approved Greece-only manual shipping step before payment
 
 Responsibilities:
 
 - gate the native checkout flow to Greece only
-- capture locker choice before session creation
-- persist only `locker_id`, `country_code`, and `locker_name_or_label`
+- let Stripe Checkout collect Greek address/contact details before payment
+- keep legacy locker snapshot persistence only for prototype/history rows unless automation is explicitly chosen
 - keep fulfillment manual in the partner portal
 
 What not to do:

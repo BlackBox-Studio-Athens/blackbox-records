@@ -6,13 +6,13 @@ current_phase: 12
 current_phase_name: modulith-boundary-hardening-planning
 current_plan: 63
 status: active
-stopped_at: Completed Phase 12 boundary-hardening audit
+stopped_at: Completed repo-wide modulith entrypoint refactor
 paused_at: ''
 last_updated: '2026-05-16T00:00:00.000Z'
 last_activity: 2026-05-16
 progress:
   total_phases: 12
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 62
   completed_plans: 59
 ---
@@ -40,7 +40,7 @@ Total Plans in Phase: 63
 Status: Complete - Phase 12 boundary hardening achieved
 Progress: [##########] 100%
 Last activity: 2026-05-16
-Last Activity Description: 12-63 completed the Phase 12 boundary-hardening audit
+Last Activity Description: Repo-wide modulith entrypoint refactor split root APIs from SPI surfaces
 Paused At:
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, 8, and 11 are complete. Phase 7 mock, contract, frontend
@@ -53,18 +53,17 @@ start, idempotent paid webhook handling that decrements stock only on the first 
 handling that never mutates stock, and Access-protected order readback for low-volume reconciliation. Phase 7.1
 completed the Cloudflare Pages static artifact contract, GitHub Pages rollback posture, Direct Upload CI workflow,
 browser-safe Pages build env contract, exact checkout return-origin allowlist guidance, Cloudflare-root Astro base-path
-correction, Browser Use hosted validation, and canonical hosting docs. Phase 9 currently has a locker-first prototype
-branch: the BOX NOW secret boundary, frontend locker gate, Worker preflight, thin locker snapshot persistence, return
-recap, and local signed-fixture evidence. On 2026-05-14 the phase contract was revised so that this prototype is no
-longer the only acceptable end state; final Phase 9 closure now requires choosing between manual-address fulfillment
-and `boxnow-js`-backed automation. Phase 10 now has a no-account local UAT checklist, sandbox readiness evidence, a
+correction, Browser Use hosted validation, and canonical hosting docs. Phase 9 now chooses and closes the manual-address
+BOX NOW path for new checkout starts; the earlier locker-first branch remains prototype evidence only. Stripe Checkout
+collects Greek address/contact details, new `StartCheckout` calls do not accept `shippingLocker`, and full BOX NOW
+portal/API integration is reopen-only future work after access exists. Phase 10 now has a no-account local UAT checklist, sandbox readiness evidence, a
 deferred `10-03` full sandbox e2e gate, `10-04` no-account release audit evidence, a completed `10-04.1` Native
 Checkout Gate, and a `10-05` milestone review package that links evidence, blockers, and the Go-Live / Launch
-Hardening handoff. The Stripe Access Gate and BOX NOW Portal Gate remain deferred, so full sandbox release approval
-still requires external account evidence and human approval.
+Hardening handoff. The Stripe Access Gate remains deferred, so full sandbox release approval still requires external
+Stripe evidence and human approval.
 
 GSD v1.41.2 operating note: this repo stays in flat planning mode and disables GSD worktree isolation for Codex
-because Codex cannot provide Claude-style isolated subagent worktrees. While `07-16`, `09-06`, and `10-03` remain
+because Codex cannot provide Claude-style isolated subagent worktrees. While `07-16` and `10-03` remain
 deferred external gates, SDK progress helpers may still surface older incomplete sandbox phases. Use explicit phase or
 plan arguments for GSD commands; the current human focus is now Phase 12.
 
@@ -90,7 +89,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 | 7     | 15/16 | Deferred  | 2026-04-25 |
 | 7.1   | 5/5   | Completed | 2026-04-29 |
 | 8     | 8/8   | Completed | 2026-04-26 |
-| 9     | 5/6   | Deferred  | 2026-04-30 |
+| 9     | 7/7   | Completed | 2026-05-17 |
 | 10    | 5/6   | Deferred  | 2026-05-01 |
 | 11    | 5/5   | Completed | 2026-05-12 |
 | 12    | 47/50 | Active    | 2026-05-16 |
@@ -98,8 +97,8 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 **Recent Trend:**
 
 - Last 5 plans: 10-02, 10-04, 10-04.1, 10-05, milestone activation
-- Trend: The Cloudflare Pages migration and sandbox groundwork are in place, but external Stripe/BOX NOW gates remain
-  deferred. The active milestone has now shifted to Phase 12 so boundary enforcement and modulith-style hardening can
+- Trend: The Cloudflare Pages migration and sandbox groundwork are in place, but external Stripe validation remains
+  deferred. BOX NOW is closed for the current manual v1 scope. The active milestone has now shifted to Phase 12 so boundary enforcement and modulith-style hardening can
   land before more commerce refactors.
 
 | Phase 11 P01 | ~35min | 3 tasks | 35 files |
@@ -289,6 +288,10 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 - Phase 12 plan 12-63 completed the boundary-hardening audit: every manifest module is closed, the approved
   open-temporary set is empty, `eslint-plugin-boundaries` remains a hard gate, and further extraction would be cosmetic
   without a new decision.
+- Follow-up repo-wide modulith entrypoint refactor split backend commerce identity aliases onto the `commerce-domain`
+  root interface, moved repository and checkout provider contracts to explicit `spi.ts` named interfaces, and hardened the
+  manifest validator so `*-spi` surfaces must target `spi.ts` and unapproved module-level `ports/` or `adapters/`
+  directories fail the boundary audit.
 - Phase 12 now has an explicit refactor end-goal document at
   `.planning/phases/12-modulith-boundary-hardening-planning/12-REFACTOR-ENDGOAL.md`; remaining slices should aim at thin
   app-shell composition, explicit `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard
@@ -365,38 +368,38 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   checkout mount and payment evidence remain deferred to the Stripe access gate.
 - Phase 7.1 plan 5 retired GitHub Pages as canonical hosting in docs after Cloudflare Pages acceptance. GitHub Pages
   remains a rollback/legacy workflow and Astro default path, not the canonical static frontend host.
-- Phase 9 plan 1 locked the BOX NOW shipping contract: v1 is Greece-only, payment stays blocked until a valid Greek
-  locker is selected, future paid-order shipping persistence is limited to `locker_id`, `country_code`, and
-  `locker_name_or_label`, BOX NOW credentials remain Worker runtime secrets or out-of-band operator credentials, and
-  fulfillment stays manual through the BOX NOW partner portal.
+- Phase 9 plan 1 locked the original BOX NOW shipping contract: v1 is Greece-only, BOX NOW credentials remain Worker
+  runtime secrets or out-of-band operator credentials, and fulfillment stays manual. Later plan `09-07` replaced the
+  live locker-first checkout requirement with manual address-based fulfillment.
 - Phase 9 plan 2 added the frontend-only BOX NOW locker gate to the checkout route. Local mock mode can select a
   deterministic Greek locker before payment, non-mock mode fails closed until the real BOX NOW picker exists, and
   `StartCheckout` still sends only `storeItemSlug` and `variantId`.
-- Phase 9 plan 3 added Worker-owned checkout preflight for Greece-only BOX NOW locker selection. `StartCheckout` now
-  requires a minimal `shippingLocker` snapshot before Stripe Checkout Session creation, but paid-order shipping
-  persistence remains deferred.
+- Phase 9 plan 3 added Worker-owned checkout preflight for the historical Greece-only BOX NOW locker-selection branch.
+  Plan `09-07` later removed `shippingLocker` from new public `StartCheckout` calls.
 - Phase 9 plan 4 added nullable D1/Prisma `CheckoutOrder` fields for the approved thin BOX NOW locker snapshot,
   persists that snapshot when checkout starts, and exposes it through protected internal order readback for manual
   fulfillment/reconciliation.
 - Phase 9 plan 5 extended public `ReadCheckoutState` with the nullable Worker-owned `shippingLocker` snapshot and
   renders selected-locker or needs-review recap copy on the checkout return UI.
-- Phase 9 plan 6 has local evidence for the manual BOX NOW fulfillment handoff using the local mock checkout, signed
-  paid webhook fixture, internal paid order readback, idempotent stock decrement replay, and return locker recap. It is
-  now a deferred `BOX NOW Portal Gate` until BOX NOW partner/sandbox portal validation can prove `SHIP-03`.
+- Phase 9 plan 6 documented the manual BOX NOW fulfillment handoff and local prototype evidence. On 2026-05-17 it was
+  accepted as complete for the current manual v1 scope; partner-portal/API integration is reopen-only future work after access exists.
 - On 2026-05-14, Phase 9 was revised: the locker-first sandbox slice is now treated as prototype evidence only, and
   final closure must explicitly choose between manual-address fulfillment and `boxnow-js`-backed automation.
+- Phase 9 plan 7 chose manual-address BOX NOW fulfillment for new checkout starts: the checkout UI no longer requires a
+  browser-selected locker, public `StartCheckout` no longer accepts `shippingLocker`, checkout-core writes new pending
+  orders with `shippingLocker: null`, and Stripe Checkout collects Greek shipping address plus phone details for manual
+  operator fulfillment.
 - Phase 10 plan 1 added a repeatable local full-loop UAT checklist for the no-account path: local D1, official local
   `stripe-mock`, Mock Checkout Panel, BOX NOW Test Locker, signed paid webhook fixture, protected internal order
   readback, checkout return recap, and replay idempotency checks.
 - Phase 10 plan 2 recorded sandbox readiness evidence: Worker sandbox deployment lookup succeeds, Cloudflare/GitHub CI
   credentials are present by name, sandbox D1 can be inspected by database name, but binding-scoped `COMMERCE_DB`
   remote commands are blocked by missing `database_id`, migration `0004` is not applied, key commerce tables are
-  empty, Worker Stripe secrets are absent, real Stripe mappings are absent, and BOX NOW portal evidence remains
-  unavailable.
+  empty, Worker Stripe secrets are absent, and real Stripe mappings are absent. BOX NOW portal evidence is no longer an
+  active blocker for the current manual v1 scope.
 - Phase 10 plan 3 prep bound sandbox `COMMERCE_DB` to the existing sandbox D1 database, applied migration `0004`,
   applied the non-secret base commerce seed, and redeployed the sandbox Worker with the D1 binding. `10-03` itself is
-  now a deferred external gate and remains unchecked until the Stripe Access Gate and BOX NOW Portal Gate can both be
-  satisfied.
+  now a deferred external gate and remains unchecked until the Stripe Access Gate can be satisfied.
 - Phase 10 plan 4 added a deterministic commerce boundary audit and recorded no-account release audit evidence:
   generated API parity, public/internal OpenAPI separation, Browser Use local checks for
   store/checkout/return/stock/shell navigation, and explicit limits around local stripe-mock and Access-protected
@@ -406,7 +409,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   from `/api/store/capabilities`.
 - Phase 10 plan 5 produced the milestone review package and go-live handoff. The package links implemented
   architecture, evidence, deferred gates, and Go-Live / Launch Hardening seeds without claiming the Stripe Access Gate,
-  BOX NOW Portal Gate, `10-03`, `OPER-01`, or `SHIP-03` passed.
+  `10-03`, or `OPER-01` passed.
 - The no-account cart expansion workstream now promotes `BL-13` into concrete multi-item and CartQuantity planning. It
   can proceed without Stripe or BOX NOW account access, but real multi-line Stripe evidence remains behind the Stripe
   Access Gate.
@@ -454,12 +457,12 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 - Treat Phase 12 as complete; any further boundary hardening should start as a new approved slice or milestone and should
   still respect the boundary manifest and verifier rules.
 - Complete the deferred Stripe access validation gate before sandbox/release approval.
-- Choose the Phase 9 shipping mode and complete the deferred BOX NOW Portal Gate before marking Phase 9, `09-06`, or
-  `SHIP-01` through `SHIP-03` complete.
+- Treat Phase 9, `09-06`, and `SHIP-01` through `SHIP-03` as complete for the current manual v1 BOX NOW scope.
+- Do not reopen BOX NOW portal/API integration unless the user explicitly asks after access exists.
 - Use `10-LOCAL-UAT.md` as the local no-account UAT checklist until external access exists.
 - Use `10-SANDBOX-READINESS.md` as the latest sandbox readiness evidence and blocker record before attempting `10-03`.
-- Use `10-MILESTONE-REVIEW.md` as the prepared human review package without claiming the deferred Stripe Access Gate,
-  BOX NOW Portal Gate, or `10-03` sandbox e2e gate passed.
+- Use `10-MILESTONE-REVIEW.md` as the prepared human review package without claiming the deferred Stripe Access Gate or
+  `10-03` sandbox e2e gate passed.
 - Use `10-MULTI-ITEM-CART-WORKSTREAM.md` when planning multi-item cart, quantity controls, Worker-owned multi-line
   checkout validation, order-line persistence, and paid-webhook stock decrement per line.
 
@@ -473,9 +476,8 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 - Phase 7 must still avoid production cutover and should remain sandbox-first.
 - Real Stripe-account validation is blocked until Stripe account access, test keys, test Price IDs, webhook secret, and
   sandbox endpoint configuration exist. Do not commit any account-specific Stripe values.
-- Real BOX NOW portal validation is blocked until BOX NOW partner/sandbox portal access exists and a sandbox-paid Greek
-  order can be fulfilled through the chosen path. Do not commit BOX NOW credentials, voucher data, labels, or raw
-  portal output.
+- BOX NOW portal/API integration is not active work. Reopen it only on explicit user instruction after BOX NOW access
+  exists; still never commit BOX NOW credentials, voucher data, labels, or raw portal output.
 - Cloudflare Pages production and `pages/no-stripe-validation` preview deploys now pass through GitHub Actions, serve
   root-based assets, and pass Browser Use hosted smoke. Real Stripe checkout mount evidence remains blocked on Stripe
   account access for a real test `PUBLIC_STRIPE_PUBLISHABLE_KEY`, backend Stripe secrets, Price mappings, and webhook

@@ -384,17 +384,18 @@ pnpm audit:commerce-boundaries
 
 ## BOX NOW shipping contract
 
-- Phase 9 shipping is Greece only via BOX NOW lockers.
-- Payment must remain unavailable until a valid Greek locker is selected.
-- Local/mock BOX NOW testing must use the BOX NOW FAQ test locker: `locker_id = 4`, `country_code = GR`, and `locker_name_or_label = ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234`.
-- Future paid-order shipping persistence is limited to the approved thin locker snapshot:
+- Phase 9 shipping is Greece only with manual BOX NOW fulfillment.
+- New checkout starts do not require or accept browser-selected BOX NOW locker data.
+- Stripe Checkout collects the Greek shipping address and phone before payment through `shipping_address_collection` and `phone_number_collection`.
+- Operators create BOX NOW shipments manually from paid order/payment tooling; BOX NOW voucher, label, tracking, and portal output stay out of the repo until a later milestone explicitly adds fulfillment persistence.
+- Existing nullable locker snapshot fields remain legacy/prototype readback only:
   - `locker_id`
   - `country_code` with v1 value `GR`
   - `locker_name_or_label`
-- Do not persist raw BOX NOW widget/API payloads, full locker addresses, coordinates, voucher IDs, label URLs, tracking automation state, or partner-portal credentials in v1.
-- Fulfillment remains manual through the BOX NOW partner portal until a later milestone explicitly adds automation.
+- Do not persist raw BOX NOW widget/API payloads, unapproved address or locker payload dumps, coordinates, voucher IDs, label URLs, tracking automation state, or partner-portal credentials in v1.
+- Any future BOX NOW automation must use `C:\Users\SVall\WebstormProjects\boxnow-js`; do not add a bespoke BOX NOW client here.
 - Operator handoff and local validation steps live in `.planning/phases/09-greece-only-box-now-shipping/09-MANUAL-FULFILLMENT.md`.
-- Astro may render the shopper-facing locker step, but the Worker owns checkout preflight, validation, order persistence, secrets, and any future BOX NOW server integration.
+- Astro may render the shopper-facing shipping step, but the Worker owns checkout preflight, validation, order state, secrets, and any future BOX NOW server integration.
 
 ## D1 migration workflow
 

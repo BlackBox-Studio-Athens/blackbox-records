@@ -37,7 +37,7 @@ Start from `.planning/phases/10-sandbox-verification-and-release-gate/10-MILESTO
 - Linked milestone: Go-Live / Launch Hardening
 - Acceptance criteria:
   - Cover runtime, secrets, Stripe, D1, shipping, reconciliation, monitoring, and communications
-  - Include Stripe Access Gate evidence, BOX NOW Portal Gate evidence, and Native Checkout Gate setup
+  - Include Stripe Access Gate evidence, Native Checkout Gate setup, and optional BOX NOW reopen-only integration evidence if explicitly reopened
   - Name required approvers and the stop/go gate
   - Stay implementation-aware enough to use the sandbox milestone evidence directly
 - Human review stop: approve final launch gate format
@@ -47,9 +47,22 @@ Start from `.planning/phases/10-sandbox-verification-and-release-gate/10-MILESTO
 - Linked milestone: Go-Live / Launch Hardening
 - Acceptance criteria:
   - Capture real Stripe test-mode checkout, webhook, and return-state evidence
-  - Capture BOX NOW partner or sandbox portal fulfillment evidence for a paid Greek locker order
+  - Capture BOX NOW partner/API evidence only if the user explicitly reopens full BOX NOW integration after access exists
   - Keep the evidence separate from local stripe-mock and signed-fixture validation
 - Human review stop: approve whether the external gates are satisfied
+
+### BL-20: Stripe Tax product category decision
+
+- Status: Done
+- Linked milestone: Go-Live / Launch Hardening
+- Decision: current launch StoreItems use the `physical_goods` tax category and always map to `General - Tangible Goods (txcd_99999999)`.
+- Acceptance criteria:
+  - Keep the physical-goods tax category mapped to `General - Tangible Goods (txcd_99999999)` for vinyl records, cassettes, CDs, shirts, and other merch
+  - Explicitly reject `General - Electronically Supplied Services (txcd_10000000)` for shipped physical goods unless a qualified tax/accounting review says otherwise
+  - Fix existing sandbox Stripe Products directly in Stripe so their Product tax code is `txcd_99999999`, without committing account-specific Stripe values
+  - Require a new explicit tax-category policy before future digital goods can be mapped or sold
+- Initial evidence: Stripe docs describe `txcd_10000000` as digital/electronically supplied services, while physical-goods docs say `General - Tangible Goods (txcd_99999999)` can be used for most shipped physical goods.
+- Human review stop: approve any future non-physical tax-category policy before real products/prices are created or migrated for that category
 
 ## Ready For No-Account Commerce Expansion
 
@@ -63,7 +76,7 @@ Start from `.planning/phases/10-sandbox-verification-and-release-gate/10-MILESTO
   - Evolve `StartCheckout` so the Worker re-reads availability, OnlineStock, and Stripe Price Mapping for every line before creating a Checkout Session
   - Add additive order-line persistence, preferably `CheckoutOrderLine`, instead of overloading current single-item `CheckoutOrder` fields
   - Preserve paid-webhook idempotency by decrementing stock exactly once for each paid CheckoutOrderLine
-  - Keep one BOX NOW Locker per CheckoutOrder unless a later shipping plan explicitly supports split shipments
+  - Keep one manual BOX NOW shipping surface per CheckoutOrder unless a later shipping plan explicitly supports split shipments
   - Validate locally with stripe-mock and Browser Use; defer real multi-line Stripe evidence until the Stripe Access Gate is satisfied
 - Planning artifact: `.planning/phases/10-sandbox-verification-and-release-gate/10-MULTI-ITEM-CART-WORKSTREAM.md`
 - Human review stop: approve whether native commerce launches as current single-item scope or waits for multi-item quantity scope
@@ -97,6 +110,7 @@ Start from `.planning/phases/10-sandbox-verification-and-release-gate/10-MILESTO
 ### BL-15: Automated BOX NOW fulfillment
 
 - Linked milestone: v2+
+- Status: reopen-only; do not start unless the user explicitly asks after BOX NOW access exists.
 - Acceptance criteria:
   - Compare manual partner-portal fulfillment with API-assisted automation
   - Define the minimum additional data required for automation

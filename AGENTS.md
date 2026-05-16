@@ -145,6 +145,7 @@ Read these first before editing:
 - Stripe Checkout Sessions are the approved v1 payment creation path, using embedded Checkout (`ui_mode: embedded_page` on the current Stripe API version).
 - The web checkout shell mounts Stripe embedded Checkout from the Worker-returned `clientSecret`; browser payloads must stay limited to app identities such as `storeItemSlug` and `variantId`.
 - Phase 9 shipping remains Greece-only through BOX NOW. The default Phase 9 end state is manual fulfillment from Worker-owned paid order state plus the delivery address/contact data needed to create a BOX NOW shipment.
+- New manual-address checkout starts let Stripe Checkout collect Greek shipping address/contact details before payment; do not reintroduce browser-selected BOX NOW locker data into `StartCheckout`.
 - The current locker-first sandbox flow is a prototype branch, not the only valid Phase 9 outcome. If BOX NOW automation is later approved, it must use `C:\Users\SVall\WebstormProjects\boxnow-js`.
 - For an approved automation path, any BOX NOW-specific order persistence remains capped at `locker_id`, `country_code` with v1 value `GR`, and `locker_name_or_label` until a later phase expands it.
 - The local/mock BOX NOW FAQ test locker is for the current locker-first prototype only: `locker_id = 4`, `country_code = GR`, and `locker_name_or_label = ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234`.
@@ -153,7 +154,7 @@ Read these first before editing:
 - Manual fulfillment handoff and local validation steps live in `.planning/phases/09-greece-only-box-now-shipping/09-MANUAL-FULFILLMENT.md`.
 - Phase 7 requires shopper-facing store URLs to describe the sellable item option, not legacy release shorthand. The old `barren-point` local smoke route is a compatibility alias for the canonical `Disintegration` / `Black Vinyl LP` route.
 - Phase 7 cart UX should be Shopify-familiar but BlackBox-owned: cart icon, single-item cart drawer, order summary, and checkout CTA using Astro/React/shadcn. Do not implement true multi-item cart, quantity controls, discount codes, or browser-owned commerce authority in this milestone.
-- The planned no-account multi-item cart workstream is documented in `.planning/phases/10-sandbox-verification-and-release-gate/10-MULTI-ITEM-CART-WORKSTREAM.md`; it must remain separate from Stripe Access Gate and BOX NOW Portal Gate completion.
+- The planned no-account multi-item cart workstream is documented in `.planning/phases/10-sandbox-verification-and-release-gate/10-MULTI-ITEM-CART-WORKSTREAM.md`; it must remain separate from Stripe Access Gate completion and any future BOX NOW reopen-only integration.
 
 ### Required command policy
 

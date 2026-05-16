@@ -4,16 +4,16 @@
 
 The `v1.1` Stripe Sandbox Integration milestone has produced a native commerce implementation that is ready for no-account local review and future account-backed validation. The static Astro frontend is hosted canonically on Cloudflare Pages, while the separate Worker backend owns checkout, D1 state, Stripe integration, webhooks, order lifecycle, stock mutation, internal operator APIs, and runtime secrets.
 
-This package is a handoff document, not production approval. Full release approval remains blocked by the Stripe Access Gate and the BOX NOW Portal Gate.
+This package is a handoff document, not production approval. Full release approval remains blocked by the Stripe Access Gate. BOX NOW is closed for the current manual v1 scope and should reopen only if the user explicitly asks for full integration after access exists.
 
 ## Implemented Architecture
 
 - Static frontend: Cloudflare Pages serves the prebuilt Astro artifact from `apps/web/dist`; GitHub Pages remains rollback/legacy.
 - Worker backend: Hono + TypeScript owns public shopper APIs, protected internal APIs, D1/Prisma access, Stripe Checkout creation, webhook verification, order lifecycle, stock mutation, and feature gates.
 - Contracts: public and internal OpenAPI documents remain separated, with generated frontend API clients and a commerce boundary audit guarding browser/server separation.
-- Checkout: `StartCheckout` is Worker-owned, validates the selected StoreItemOption, OnlineStock, Stripe mapping, Native Checkout Gate, and Shipping Locker Snapshot before creating a Checkout Session.
+- Checkout: `StartCheckout` is Worker-owned and validates the selected StoreItemOption, OnlineStock, Stripe mapping, and Native Checkout Gate before creating a Checkout Session.
 - Orders and stock: verified Stripe webhook fixtures drive CheckoutOrder transitions; the paid transition decrements stock once, and non-paid states leave stock untouched.
-- Shipping: Greece-only BOX NOW selection is required before checkout; persisted shipping data is limited to the thin Shipping Locker Snapshot.
+- Shipping: Greece-only manual BOX NOW fulfillment is the live path; Stripe Checkout collects Greek address/contact details before payment, while legacy Shipping Locker Snapshot readback remains prototype evidence only.
 - Runtime controls: the Native Checkout Gate is Worker-owned, locally enabled by default, and fail-closed for hosted environments without the Cloudflare Flagship `FLAGS` binding.
 
 ## Evidence Index
@@ -28,7 +28,7 @@ Validated locally without external accounts:
 
 - Local D1 prepare, seed, and readiness checks.
 - Official local `stripe-mock` API stack and Mock Checkout Panel.
-- BOX NOW Test Locker selection before payment.
+- Manual BOX NOW fulfillment shipping step before payment.
 - Signed local Stripe webhook fixture delivery.
 - Protected internal order readback for a paid order.
 - Checkout return recap from Worker-owned order state.
@@ -50,10 +50,8 @@ Prepared in Cloudflare sandbox:
 These items remain open and must not be claimed as passed by this milestone package:
 
 - `07-16`: real local and sandbox checkout loop with real Stripe test mappings.
-- `09-06`: manual BOX NOW sandbox fulfillment through the partner portal.
 - `10-03`: hosted sandbox end-to-end checkout, webhook, stock, and shipping evidence.
 - `OPER-01`: full sandbox path validation.
-- `SHIP-03`: operator fulfillment of sandbox-paid Greek orders through BOX NOW.
 
 Stripe Access Gate requirements:
 
@@ -66,24 +64,24 @@ Stripe Access Gate requirements:
 - sandbox Worker URL
 - Browser Use evidence against real Stripe test mode
 
-BOX NOW Portal Gate requirements:
+BOX NOW reopen-only requirements:
 
-- BOX NOW partner or sandbox portal access
-- sandbox-paid Greek order
-- accepted manual locker shipment
-- recorded portal result or rejection evidence
+- user explicitly asks to reopen BOX NOW integration after access exists
+- BOX NOW partner or sandbox portal access, or approved API access
+- accepted manual Greek shipment from the approved address/contact surface, or approved automation through `boxnow-js`
+- recorded out-of-band portal/API result or rejection evidence without committing credentials, vouchers, labels, or raw payloads
 
 ## Go-Live / Launch Hardening Handoff
 
 The next milestone should start from this package and stay separate from the sandbox milestone. Recommended phase seeds:
 
 1. Satisfy the Stripe Access Gate with real test-mode keys, Price mappings, webhook secret, and Browser Use evidence.
-2. Satisfy the BOX NOW Portal Gate with partner-portal fulfillment evidence for a sandbox-paid Greek locker order.
-3. Configure Cloudflare Flagship for the Worker `FLAGS` binding and `native_checkout_enabled` flag.
-4. Lock production Worker secrets, exact checkout return origins, D1 target, and Cloudflare Access posture.
-5. Define production rollout order for enabling native checkout behind the Native Checkout Gate.
-6. Define rollback and emergency disable using Worker environment isolation plus the Native Checkout Gate.
-7. Finalize operator support notes for paid order review, stock reconciliation, BOX NOW manual fulfillment, and shopper support.
+2. Configure Cloudflare Flagship for the Worker `FLAGS` binding and `native_checkout_enabled` flag.
+3. Lock production Worker secrets, exact checkout return origins, D1 target, and Cloudflare Access posture.
+4. Define production rollout order for enabling native checkout behind the Native Checkout Gate.
+5. Define rollback and emergency disable using Worker environment isolation plus the Native Checkout Gate.
+6. Finalize operator support notes for paid order review, stock reconciliation, BOX NOW manual fulfillment, and shopper support.
+7. Reopen BOX NOW portal/API integration only on explicit user instruction after access exists.
 
 ## Review Decision
 
@@ -98,6 +96,5 @@ Ready for human review:
 Not ready for release approval:
 
 - Full Stripe test-mode evidence.
-- Full BOX NOW portal fulfillment evidence.
 - Full hosted sandbox e2e evidence.
 - Production cutover.
