@@ -1,7 +1,8 @@
 import { getCollection } from 'astro:content';
 import type { APIRoute } from 'astro';
 
-import { buildDecapConfig, resolveDecapSiteRootUrl, shouldUseLocalDecapBackend } from '@/lib/admin/decap-config';
+import { buildDecapConfig } from '@/lib/admin/decap-config';
+import { resolveDecapSiteRootUrl, shouldUseLocalDecapBackend } from '@/lib/admin/decap-runtime-config';
 import { createProjectRelativeUrl } from '@/config/site';
 
 export const prerender = true;

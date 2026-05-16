@@ -4,17 +4,17 @@ milestone: v1.2
 milestone_name: Modulith Boundary Hardening
 current_phase: 12
 current_phase_name: modulith-boundary-hardening-planning
-current_plan: 42
+current_plan: 43
 status: active
-stopped_at: Completed 12-42 Decap YAML builder extraction
+stopped_at: Completed 12-43 Decap runtime config extraction
 paused_at: ''
 last_updated: '2026-05-16T00:00:00.000Z'
 last_activity: 2026-05-16
 progress:
   total_phases: 12
   completed_phases: 8
-  total_plans: 42
-  completed_plans: 39
+  total_plans: 43
+  completed_plans: 40
   percent: 93
 ---
 
@@ -32,16 +32,16 @@ routes own secrets and mutations, and stock changes happen only after verified w
 ## Current Position
 
 Phase: 12 (modulith-boundary-hardening-planning) - ACTIVE
-Plan: 42 of 42
+Plan: 43 of 43
 Current Phase: 12
 Current Phase Name: modulith-boundary-hardening-planning
 Total Phases: 12
-Current Plan: 42
-Total Plans in Phase: 42
-Status: Active - 12-42 Decap YAML builder extraction complete
+Current Plan: 43
+Total Plans in Phase: 43
+Status: Active - 12-43 Decap runtime config extraction complete
 Progress: [#########-] 93%
 Last activity: 2026-05-16
-Last Activity Description: 12-42 extracted Decap YAML builder
+Last Activity Description: 12-43 extracted Decap runtime config
 Paused At:
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, 8, and 11 are complete. Phase 7 mock, contract, frontend
@@ -94,7 +94,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 | 9     | 5/6   | Deferred  | 2026-04-30 |
 | 10    | 5/6   | Deferred  | 2026-05-01 |
 | 11    | 5/5   | Completed | 2026-05-12 |
-| 12    | 27/30 | Active    | 2026-05-16 |
+| 12    | 28/31 | Active    | 2026-05-16 |
 
 **Recent Trend:**
 
@@ -226,6 +226,9 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 - Phase 12 plan 12-42 extracted generic Decap YAML field and collection rendering into
   `apps/web/src/lib/admin/decap-yaml-builder.ts`, added direct builder characterization tests, and reduced
   `decap-config.ts` from 1,375 to 1,133 lines.
+- Phase 12 plan 12-43 extracted Decap local-backend and site-root URL decisions into
+  `apps/web/src/lib/admin/decap-runtime-config.ts`, moved the runtime characterization tests next to that seam, and
+  reduced `decap-config.ts` from 1,133 to 1,088 lines.
 - Phase 12 now has an explicit refactor end-goal document at
   `.planning/phases/12-modulith-boundary-hardening-planning/12-REFACTOR-ENDGOAL.md`; remaining slices should aim at thin
   app-shell composition, explicit `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard
@@ -388,7 +391,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of
   the completed Phase 6.1 foundation.
-- Continue Phase 12 through the next approved app-shell or cms-admin refactor slice; `12-04` through `12-42` are complete
+- Continue Phase 12 through the next approved app-shell or cms-admin refactor slice; `12-04` through `12-43` are complete
   and deeper refactors should still respect the boundary manifest and verifier rules.
 - Complete the deferred Stripe access validation gate before sandbox/release approval.
 - Choose the Phase 9 shipping mode and complete the deferred BOX NOW Portal Gate before marking Phase 9, `09-06`, or
@@ -423,5 +426,5 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 ## Session
 
 **Last Date:** 2026-05-16T00:00:00.000Z
-**Stopped At:** Completed 12-42 Decap YAML builder extraction
+**Stopped At:** Completed 12-43 Decap runtime config extraction
 **Resume File:** None
