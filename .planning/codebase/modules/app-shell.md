@@ -18,6 +18,8 @@ sections while acting as the future thin composition root over smaller shell sub
 
 ## Internal Implementation Area
 
+- app-shell internal organization follows the Phase 12 AppShellRoot strategy: `navigation`, `overlay`, `player-shell`,
+  `store-cart`, and `dom` folders are the preferred destinations for extracted helper/test pairs
 - shell page snapshot parsing/application plus the `shell-page-loader` request/cache seam
 - overlay history behavior plus the `overlay-fragment-loader` request/cache seam, `overlay-history` history seam, and
   overlay focus scheduling
@@ -105,7 +107,8 @@ sections while acting as the future thin composition root over smaller shell sub
 
 ## Exit Criteria
 
-- `AppShellRoot.tsx` becomes a thin composition root
+- `AppShellRoot.tsx` becomes a thin composition root, with a Phase 12 target of 800-900 lines and no shallow wrapper
+  extractions
 - routing, overlay, history, and StoreCart bridge logic live in extracted internal modules
 - shell behavior has direct automated coverage beyond player helper tests
 - callers depend on explicit shell entrypoints instead of deep imports into extracted helpers
