@@ -91,7 +91,9 @@ Keep the fast path boring while Phase 12 refactors are still module-internal:
    sequencing behind a named helper or hook-shaped coordinator.
 3. **Overlay open coordination:** move overlay open request sequencing and cache/focus/history coordination behind a
    named helper.
-4. **Player lifecycle coordination:** after folder organization, reassess whether `applyPlayerProvider`,
+4. **Shell document event routing:** move click, prefetch, Escape, popstate, and iframe-blur routing into a DOM
+   coordinator while keeping refs/state in `AppShellRoot`.
+5. **Player lifecycle coordination:** after folder organization, reassess whether `applyPlayerProvider`,
    `retireActivePlayerSession`, and related root-owned player lifecycle steps can move without hiding React-owned refs.
-5. **StoreCart bridge:** keep StoreCart browser convenience state non-authoritative while reducing root-local drawer
+6. **StoreCart bridge:** keep StoreCart browser convenience state non-authoritative while reducing root-local drawer
    synchronization only if the extracted seam stays testable.

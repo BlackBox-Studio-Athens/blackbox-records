@@ -31,6 +31,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell `popstate` routing decisions
 - shell Escape-key dismissal priority
 - shell document click target classification
+- shell document/window event routing for click, prefetch, Escape, popstate, and iframe-blur behavior
 - shell anchor-click navigation routing
 - shell document/window listener attachment for persistent navigation, overlay, and player events
 - player shell view-state derivation while player session behavior remains shell-owned from the user perspective
@@ -101,6 +102,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell popstate navigation tests
 - shell escape dismissal tests
 - shell document click intent tests
+- shell document event routing tests
 - shell anchor click navigation tests
 - shell player modal open request tests
 - Browser Use shell acceptance checks

@@ -24,12 +24,7 @@ import ServicesInquiryForm from '@/components/services/ServicesInquiryForm';
 import StoreCartButton from '@/components/store/StoreCartButton';
 import StoreCartDrawer from '@/components/store/StoreCartDrawer';
 import {
-  isModifiedEvent,
-  isNavigableOverlayAnchor,
-  isNavigableShellSectionAnchor,
   markCurrentHistoryEntryForShellSection,
-  resolveInternalUrl,
-  resolveShellNavigationSource,
   syncDesktopNavigationState,
   type ShellNavigationSource,
   waitForAnimationFrames,
@@ -74,12 +69,9 @@ import {
   clearRouteLoadingTimer as clearScheduledRouteLoadingTimer,
   scheduleRouteLoadingStop,
 } from './navigation/route-loading-indicator';
-import { routeShellAnchorClickNavigation } from './navigation/shell-anchor-click-navigation';
 import { syncShellBodyStateClasses } from './dom/shell-body-state';
 import { restoreCachedShellPageSnapshot } from './navigation/shell-cached-page-restoration';
-import { resolveShellDocumentClickIntent } from './navigation/shell-document-click-intent';
-import { connectShellDocumentListeners } from './dom/shell-document-listeners';
-import { handleShellEscapeDismissal } from './dom/shell-escape-dismissal';
+import { connectShellDocumentEventRouting } from './dom/shell-document-event-routing';
 import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './dom/shell-hero-scroll-progress';
 import { openShellOverlayNavigation, type ShellOverlayState } from './overlay/shell-overlay-navigation';
 import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './overlay/shell-overlay-focus';
@@ -88,12 +80,9 @@ import {
   restoreConnectedPlayerTriggerFocus,
   schedulePlayerModalCloseButtonFocus,
 } from './player-shell/shell-player-focus';
-import { schedulePlayerIframeBlurInteractionCheck } from './player-shell/shell-player-iframe-blur-interaction';
 import { resolvePlayerModalOpenRequest } from './player-shell/shell-player-modal-open-request';
 import { derivePlayerSessionMachineState } from './player-shell/shell-player-session-machine-state';
 import { derivePlayerShellViewState, PLAYER_PROVIDER_LABELS } from './player-shell/shell-player-view-state';
-import { routeShellPopStateNavigation } from './navigation/shell-popstate-navigation';
-import { primeShellPrefetchIntent } from './navigation/shell-prefetch-intent';
 import { syncShellRenderedNavigationState } from './navigation/shell-rendered-navigation-state';
 import { openShellSectionNavigation } from './navigation/shell-section-navigation';
 import { enableManualShellScrollRestoration } from './navigation/shell-scroll-restoration';
@@ -651,147 +640,41 @@ export default function AppShellRoot({
     cacheDocumentSnapshot();
     markCurrentHistoryEntryForShellSection(window.location.pathname);
 
-    function handleDocumentClick(event: MouseEvent) {
-      if (event.defaultPrevented || isModifiedEvent(event)) return;
-
-      const clickIntent = resolveShellDocumentClickIntent(event.target, {
-        readPlayerProvidersFromElement,
-      });
-
-      if (clickIntent.kind === 'mobile-navigation-trigger') {
-        event.preventDefault();
-        setIsMobileNavigationOpen((currentState) => !currentState);
-        return;
-      }
-
-      if (clickIntent.kind === 'player-modal-dismiss') {
-        event.preventDefault();
-        closePlayerModal();
-        return;
-      }
-
-      if (clickIntent.kind === 'mini-player-open') {
-        event.preventDefault();
-        reopenPlayerModal();
-        return;
-      }
-
-      if (clickIntent.kind === 'mini-player-stop') {
-        event.preventDefault();
-        stopPlayerSession({ restoreFocus: true });
-        return;
-      }
-
-      if (clickIntent.kind === 'player-trigger') {
-        event.preventDefault();
-        openPlayerModal(clickIntent.triggerElement, clickIntent.playerElement);
-        return;
-      }
-
-      if (clickIntent.kind === 'player-trigger-without-providers') {
-        return;
-      }
-
-      const anchorElement =
-        clickIntent.kind === 'anchor'
-          ? clickIntent.anchorElement
-          : clickIntent.kind === 'scroll-target'
-            ? clickIntent.anchorElement
-            : null;
-
-      if (clickIntent.kind === 'scroll-target') {
-        if (scrollToTargetId(clickIntent.targetId, clickIntent.triggerElement)) {
-          event.preventDefault();
-          return;
-        }
-      }
-
-      if (!anchorElement) return;
-
-      routeShellAnchorClickNavigation({
-        anchorElement,
-        closeMobileNavigation: () => setIsMobileNavigationOpen(false),
-        collapseOverlayHistoryToBackground,
-        currentHref: window.location.href,
-        currentOrigin: window.location.origin,
-        getOverlayBackgroundHref: () => overlayStateRef.current?.backgroundHref,
-        hasOverlayState: () => overlayStateRef.current !== null,
-        isNavigableOverlayAnchor,
-        isNavigableShellSectionAnchor,
-        navigateDocumentTo: (href) => window.location.assign(href),
-        openOverlayHref,
-        openShellSectionHref,
-        preventDefault: () => event.preventDefault(),
-        resolveInternalUrl,
-        resolveShellNavigationSource,
-        setOverlayTriggerElement: (element) => {
-          overlayTriggerElementRef.current = element;
-        },
-      });
-    }
-
-    function primeMusicAndOverlayPrefetch(eventTarget: EventTarget | null) {
-      primeShellPrefetchIntent({
-        eventTarget,
-        isNavigableOverlayAnchor,
-        isNavigableShellSectionAnchor,
-        prefetchOverlayHref,
-        prefetchShellSectionHref,
-        readPlayerProvidersFromElement,
-        warmProviderOrigins,
-      });
-    }
-
-    function handleDocumentPointerOver(event: PointerEvent) {
-      primeMusicAndOverlayPrefetch(event.target);
-    }
-
-    function handleDocumentFocusIn(event: FocusEvent) {
-      primeMusicAndOverlayPrefetch(event.target);
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      handleShellEscapeDismissal({
-        closeOverlayWithHistoryBack,
-        closePlayerModal,
-        hasOverlayState: () => overlayStateRef.current !== null,
-        isPlayerModalOpen,
-        key: event.key,
-        preventDefault: () => event.preventDefault(),
-      });
-    }
-
-    function handlePopState() {
-      routeShellPopStateNavigation({
-        closeMobileNavigation: () => setIsMobileNavigationOpen(false),
-        closeOverlayState,
-        currentHref: window.location.href,
-        currentPathname: window.location.pathname,
-        hasCachedShellPage: shellPageLoader.hasCachedSnapshot,
-        historyState: window.history.state || {},
-        openOverlayHref,
-        openShellSectionHref,
-        restoreCachedShellPage,
-      });
-    }
-
-    function handleWindowBlur() {
-      schedulePlayerIframeBlurInteractionCheck({
-        getActiveElement: () => document.activeElement,
-        getActiveSession: () => activePlayerSessionRef.current,
-        markPlayerSessionAsInteracted: markActivePlayerSessionAsInteracted,
-        scheduler: window,
-      });
-    }
-
-    const disconnectShellDocumentListeners = connectShellDocumentListeners({
+    const disconnectShellDocumentListeners = connectShellDocumentEventRouting({
+      closeMobileNavigation: () => setIsMobileNavigationOpen(false),
+      closeOverlayState,
+      closeOverlayWithHistoryBack,
+      closePlayerModal,
+      collapseOverlayHistoryToBackground,
+      currentHref: () => window.location.href,
+      currentOrigin: () => window.location.origin,
+      currentPathname: () => window.location.pathname,
       documentTarget: document,
-      onBlur: handleWindowBlur,
-      onClick: handleDocumentClick,
-      onFocusIn: handleDocumentFocusIn,
-      onKeyDown: handleKeyDown,
-      onPointerOver: handleDocumentPointerOver,
-      onPopState: handlePopState,
+      getActiveElement: () => document.activeElement,
+      getActivePlayerSession: () => activePlayerSessionRef.current,
+      getHistoryState: () => window.history.state || {},
+      getOverlayBackgroundHref: () => overlayStateRef.current?.backgroundHref,
+      hasCachedShellPage: shellPageLoader.hasCachedSnapshot,
+      hasOverlayState: () => overlayStateRef.current !== null,
+      isPlayerModalOpen: () => isPlayerModalOpen,
+      markActivePlayerSessionAsInteracted,
+      navigateDocumentTo: (href) => window.location.assign(href),
+      openOverlayHref,
+      openPlayerModal,
+      openShellSectionHref,
+      prefetchOverlayHref,
+      prefetchShellSectionHref,
+      readPlayerProvidersFromElement,
+      reopenPlayerModal,
+      restoreCachedShellPage,
+      scheduler: window,
+      scrollToTargetId,
+      setMobileNavigationOpen: setIsMobileNavigationOpen,
+      setOverlayTriggerElement: (element) => {
+        overlayTriggerElementRef.current = element;
+      },
+      stopPlayerSession,
+      warmProviderOrigins,
       windowTarget: window,
     });
 
