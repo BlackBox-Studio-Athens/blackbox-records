@@ -405,6 +405,8 @@ Plans:
 - Plan `12-54` moves News collection wiring into a focused `cms-admin` helper with direct tests
 - Plan `12-55` closes the `cms-admin` temporary-open exception in the manifest, validator, tests, and module canvases
 - Plan `12-56` closes the `app-shell` temporary-open exception and leaves no approved temporary-open modules
+- Plan `12-57` immediately re-measures test/check performance after the module migrations and decides whether a
+  native, low-complexity speed improvement is justified without custom scripts, Nx, or weakened boundary enforcement
 - Phase 12 refactor end goal is now documented in `12-REFACTOR-ENDGOAL.md`: thin app-shell composition, explicit
   `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard `eslint-plugin-boundaries` enforcement
 - Exists to make later large refactors safer and more reviewable before production cutover work begins
