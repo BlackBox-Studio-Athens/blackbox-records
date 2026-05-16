@@ -19,6 +19,7 @@ shopper-facing modules.
 ## Internal Implementation Area
 
 - Decap YAML generation
+- generic Decap YAML field and collection rendering
 - content-schema-aware field and collection mapping
 - auth and base-path mapping details
 - media route and asset resolution details
@@ -50,6 +51,7 @@ shopper-facing modules.
 ## Tests Required Before Refactors
 
 - `apps/web/src/lib/admin/decap-config.test.ts`
+- `apps/web/src/lib/admin/decap-yaml-builder.test.ts`
 - route-level output checks for `/admin/config.yml`
 - targeted `/admin/` rendered validation when admin behavior changes
 

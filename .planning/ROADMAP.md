@@ -387,6 +387,8 @@ Plans:
 - Plan `12-40` moves shell document/window event routing into `dom/shell-document-event-routing`
 - Plan `12-41` moves shell player session lifecycle coordination into `player-shell/shell-player-session-controller`
   and brings `AppShellRoot.tsx` into the Phase 12 target size band
+- Plan `12-42` starts `cms-admin` hotspot closure by moving generic Decap YAML field and collection rendering into a
+  tested helper
 - Phase 12 refactor end goal is now documented in `12-REFACTOR-ENDGOAL.md`: thin app-shell composition, explicit
   `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard `eslint-plugin-boundaries` enforcement
 - Exists to make later large refactors safer and more reviewable before production cutover work begins

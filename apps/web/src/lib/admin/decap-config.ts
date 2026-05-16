@@ -1,7 +1,15 @@
-export type DecapArtistOption = {
-  label: string;
-  value: string;
-};
+import {
+  buildField,
+  buildFieldMapping,
+  buildFileCollection,
+  buildFolderCollection,
+  buildSchemaField,
+  escapeYamlScalar,
+  indentYamlBlock,
+  type DecapSelectOption,
+} from './decap-yaml-builder';
+
+export type DecapArtistOption = DecapSelectOption;
 
 export type BuildDecapConfigOptions = {
   artistOptions: DecapArtistOption[];
@@ -17,258 +25,8 @@ export type BuildDecapConfigOptions = {
   siteRootUrl: string;
 };
 
-type BaseFieldConfig = {
-  label: string;
-  name: string;
-  widget: string;
-  hint?: string;
-  required?: boolean;
-  extras?: string[];
-};
-
-type ListTypeConfig = {
-  label: string;
-  name: string;
-  summary?: string;
-  collapsed?: boolean;
-  fields: string[];
-};
-
-type BlockFieldConfig = BaseFieldConfig & {
-  collapsed?: boolean;
-  summary?: string;
-  fields?: string[];
-  field?: string;
-  types?: ListTypeConfig[];
-  typeKey?: string;
-  options?: DecapArtistOption[];
-};
-
-type FileEntryConfig = {
-  name: string;
-  label: string;
-  file: string;
-  mediaFolder?: string;
-  publicFolder?: string;
-  fields: string[];
-};
-
-type FileCollectionConfig = {
-  name: string;
-  label: string;
-  create: boolean;
-  delete: boolean;
-  files: FileEntryConfig[];
-};
-
-type FolderCollectionConfig = {
-  name: string;
-  label: string;
-  folder: string;
-  create: boolean;
-  delete: boolean;
-  extension: string;
-  format: string;
-  identifierField: string;
-  summary: string;
-  fields: string[];
-  mediaFolder?: string;
-  publicFolder?: string;
-  slug?: string;
-};
-
 function ensureTrailingSlash(value: string): string {
   return value.endsWith('/') ? value : `${value}/`;
-}
-
-function escapeYamlScalar(value: string): string {
-  return JSON.stringify(value);
-}
-
-function indentBlock(value: string, spaces: number): string {
-  const pad = ' '.repeat(spaces);
-  return value
-    .split('\n')
-    .map((line) => `${pad}${line}`)
-    .join('\n');
-}
-
-function buildArtistOptionsYaml(options: DecapArtistOption[], indentSpaces = 4): string {
-  return options
-    .map(
-      (option) =>
-        `${' '.repeat(indentSpaces)}- { label: ${escapeYamlScalar(option.label)}, value: ${escapeYamlScalar(option.value)} }`,
-    )
-    .join('\n');
-}
-
-function buildFieldMapping(config: BaseFieldConfig): string {
-  const lines = [
-    `label: ${escapeYamlScalar(config.label)}`,
-    `name: ${escapeYamlScalar(config.name)}`,
-    `widget: ${config.widget}`,
-  ];
-
-  if (config.required === false) {
-    lines.push('required: false');
-  }
-
-  if (config.hint) {
-    lines.push(`hint: ${escapeYamlScalar(config.hint)}`);
-  }
-
-  if (config.extras?.length) {
-    lines.push(...config.extras);
-  }
-
-  return lines.join('\n');
-}
-
-function buildListType(config: ListTypeConfig): string {
-  const lines = [
-    `- label: ${escapeYamlScalar(config.label)}`,
-    `  name: ${escapeYamlScalar(config.name)}`,
-    '  widget: object',
-  ];
-
-  if (config.collapsed ?? true) {
-    lines.push('  collapsed: true');
-  }
-
-  if (config.summary) {
-    lines.push(`  summary: ${escapeYamlScalar(config.summary)}`);
-  }
-
-  lines.push('  fields:');
-  lines.push(...config.fields.map((field) => indentBlock(field, 4)));
-
-  return lines.join('\n');
-}
-
-function buildField(config: BlockFieldConfig): string {
-  const lines = [
-    `- label: ${escapeYamlScalar(config.label)}`,
-    `  name: ${escapeYamlScalar(config.name)}`,
-    `  widget: ${config.widget}`,
-  ];
-
-  if (config.required === false) {
-    lines.push('  required: false');
-  }
-
-  if (config.hint) {
-    lines.push(`  hint: ${escapeYamlScalar(config.hint)}`);
-  }
-
-  if (config.collapsed) {
-    lines.push('  collapsed: true');
-  }
-
-  if (config.summary) {
-    lines.push(`  summary: ${escapeYamlScalar(config.summary)}`);
-  }
-
-  if (config.extras?.length) {
-    lines.push(...config.extras.map((extra) => `  ${extra}`));
-  }
-
-  if (config.options?.length) {
-    lines.push('  options:');
-    lines.push(buildArtistOptionsYaml(config.options, 4));
-  }
-
-  if (config.types?.length) {
-    lines.push(`  typeKey: ${escapeYamlScalar(config.typeKey || 'type')}`);
-    lines.push('  types:');
-    lines.push(...config.types.map((type) => indentBlock(buildListType(type), 4)));
-  }
-
-  if (config.field) {
-    lines.push('  field:');
-    lines.push(indentBlock(config.field, 4));
-  }
-
-  if (config.fields?.length) {
-    lines.push('  fields:');
-    lines.push(...config.fields.map((field) => indentBlock(field, 4)));
-  }
-
-  return lines.join('\n');
-}
-
-function buildSchemaField(schemaPath: string): string {
-  return buildField({
-    label: 'Schema',
-    name: '$schema',
-    widget: 'hidden',
-    extras: [`default: ${escapeYamlScalar(schemaPath)}`],
-  });
-}
-
-function buildFileEntry(config: FileEntryConfig): string {
-  const lines = [
-    `- name: ${escapeYamlScalar(config.name)}`,
-    `  label: ${escapeYamlScalar(config.label)}`,
-    `  file: ${escapeYamlScalar(config.file)}`,
-  ];
-
-  if (config.mediaFolder) {
-    lines.push(`  media_folder: ${escapeYamlScalar(config.mediaFolder)}`);
-  }
-
-  if (config.publicFolder) {
-    lines.push(`  public_folder: ${escapeYamlScalar(config.publicFolder)}`);
-  }
-
-  lines.push('  fields:');
-  lines.push(...config.fields.map((field) => indentBlock(field, 4)));
-
-  return lines.join('\n');
-}
-
-function buildFileCollection(config: FileCollectionConfig): string {
-  const lines = [
-    `- name: ${escapeYamlScalar(config.name)}`,
-    `  label: ${escapeYamlScalar(config.label)}`,
-    `  create: ${config.create}`,
-    `  delete: ${config.delete}`,
-    '  files:',
-  ];
-
-  lines.push(...config.files.map((file) => indentBlock(buildFileEntry(file), 4)));
-
-  return lines.join('\n');
-}
-
-function buildFolderCollection(config: FolderCollectionConfig): string {
-  const lines = [
-    `- name: ${escapeYamlScalar(config.name)}`,
-    `  label: ${escapeYamlScalar(config.label)}`,
-    `  folder: ${escapeYamlScalar(config.folder)}`,
-    `  create: ${config.create}`,
-    `  delete: ${config.delete}`,
-    `  extension: ${config.extension}`,
-    `  format: ${config.format}`,
-    `  identifier_field: ${escapeYamlScalar(config.identifierField)}`,
-  ];
-
-  if (config.slug) {
-    lines.push(`  slug: ${escapeYamlScalar(config.slug)}`);
-  }
-
-  if (config.mediaFolder) {
-    lines.push(`  media_folder: ${escapeYamlScalar(config.mediaFolder)}`);
-  }
-
-  if (config.publicFolder) {
-    lines.push(`  public_folder: ${escapeYamlScalar(config.publicFolder)}`);
-  }
-
-  lines.push(`  summary: ${escapeYamlScalar(config.summary)}`);
-  lines.push('  fields:');
-  lines.push(...config.fields.map((field) => indentBlock(field, 4)));
-
-  return lines.join('\n');
 }
 
 export function resolveDecapSiteRootUrl(options: {
@@ -1371,5 +1129,5 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
     }),
   ];
 
-  return `${backendConfig}\n\npublish_mode: simple\nmedia_folder: src/content/uploads\n${authConfig}\n\nsite_url: ${escapeYamlScalar(options.siteRootUrl)}\ndisplay_url: ${escapeYamlScalar(options.siteRootUrl)}\nlogo_url: ${escapeYamlScalar(options.logoUrl)}\neditor:\n  preview: true\n\ncollections:\n${indentBlock(collections.join('\n\n'), 2)}\n`;
+  return `${backendConfig}\n\npublish_mode: simple\nmedia_folder: src/content/uploads\n${authConfig}\n\nsite_url: ${escapeYamlScalar(options.siteRootUrl)}\ndisplay_url: ${escapeYamlScalar(options.siteRootUrl)}\nlogo_url: ${escapeYamlScalar(options.logoUrl)}\neditor:\n  preview: true\n\ncollections:\n${indentYamlBlock(collections.join('\n\n'), 2)}\n`;
 }
