@@ -1,14 +1,9 @@
-import {
-  buildField,
-  buildFolderCollection,
-  escapeYamlScalar,
-  indentYamlBlock,
-  type DecapSelectOption,
-} from './decap-yaml-builder';
+import { escapeYamlScalar, indentYamlBlock, type DecapSelectOption } from './decap-yaml-builder';
 import { buildAboutFields } from './decap-about-fields';
 import { buildArtistCollection } from './decap-artist-collection';
 import { buildDistroCollection } from './decap-distro-collection';
 import { buildHomeFields } from './decap-home-fields';
+import { buildNewsCollection } from './decap-news-collection';
 import { buildPageFileCollections } from './decap-page-collections';
 import { buildReleaseCollection } from './decap-release-collection';
 import { buildSettingsFields } from './decap-settings-fields';
@@ -51,51 +46,7 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
     buildArtistCollection(),
     buildReleaseCollection(options.artistOptions),
     buildDistroCollection(),
-    buildFolderCollection({
-      name: 'news',
-      label: 'News',
-      folder: 'src/content/news',
-      create: true,
-      delete: true,
-      extension: 'md',
-      format: 'frontmatter',
-      identifierField: 'title',
-      mediaFolder: '.',
-      publicFolder: './',
-      summary: '{{title}} - {{date}}',
-      fields: [
-        buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Article title.' }),
-        buildField({
-          label: 'Date',
-          name: 'date',
-          widget: 'datetime',
-          hint: 'Publish date for the card and article header. Example: 2026-05-12.',
-          extras: ['date_format: YYYY-MM-DD', 'time_format: false'],
-        }),
-        buildField({ label: 'Summary', name: 'summary', widget: 'text', hint: 'Short teaser used in listing cards.' }),
-        buildField({
-          label: 'Image',
-          name: 'image',
-          widget: 'image',
-          hint: 'Lead image for the news card and article header.',
-        }),
-        buildField({
-          label: 'Image alt',
-          name: 'image_alt',
-          widget: 'string',
-          required: false,
-          hint: 'Describe the news image for screen readers.',
-        }),
-        buildField({
-          label: 'Section label',
-          name: 'section_label',
-          widget: 'string',
-          required: false,
-          hint: 'Optional small label shown above the article title.',
-        }),
-        buildField({ label: 'Body', name: 'body', widget: 'markdown', hint: 'Main article body in Markdown.' }),
-      ],
-    }),
+    buildNewsCollection(),
   ];
 
   return `${backendConfig}\n\npublish_mode: simple\nmedia_folder: src/content/uploads\n${authConfig}\n\nsite_url: ${escapeYamlScalar(options.siteRootUrl)}\ndisplay_url: ${escapeYamlScalar(options.siteRootUrl)}\nlogo_url: ${escapeYamlScalar(options.logoUrl)}\neditor:\n  preview: true\n\ncollections:\n${indentYamlBlock(collections.join('\n\n'), 2)}\n`;
