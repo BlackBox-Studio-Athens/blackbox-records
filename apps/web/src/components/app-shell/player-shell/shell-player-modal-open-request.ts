@@ -1,5 +1,5 @@
-import type { ActivePlayerSession } from './player-iframe-session';
-import { selectDefaultPlayerProvider, type PlayerProvider, type PlayerProviderId } from './player-provider-data';
+import type { ActivePlayerSession } from '../player-iframe-session';
+import { selectDefaultPlayerProvider, type PlayerProvider, type PlayerProviderId } from '../player-provider-data';
 
 export type PlayerModalOpenRequest =
   | {

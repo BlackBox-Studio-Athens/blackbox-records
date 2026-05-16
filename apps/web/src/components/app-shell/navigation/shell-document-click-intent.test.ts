@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { resolveShellDocumentClickIntent } from './shell-document-click-intent';
-import type { PlayerProvider } from './player-provider-data';
+import type { PlayerProvider } from '../player-provider-data';
 
 const selectors = {
   anchor: 'a[href]',

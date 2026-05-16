@@ -1,4 +1,4 @@
-import type { PlayerProvider } from './player-provider-data';
+import type { PlayerProvider } from '../player-provider-data';
 
 const MOBILE_NAVIGATION_TRIGGER_SELECTOR = '[data-app-shell-mobile-navigation-trigger]';
 const PLAYER_MODAL_DISMISS_SELECTOR = '[data-music-streaming-service-embedded-player-modal-dismiss]';

@@ -1,4 +1,4 @@
-import type { ActivePlayerSession } from './player-iframe-session';
+import type { ActivePlayerSession } from '../player-iframe-session';
 
 type PlayerIframeBlurScheduler = Pick<Window, 'setTimeout'>;
 

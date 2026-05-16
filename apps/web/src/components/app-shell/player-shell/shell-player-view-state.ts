@@ -1,6 +1,6 @@
-import type { ActivePlayerSession } from './player-iframe-session';
-import type { PlayerEmbedLayout, PlayerProviderId } from './player-provider-data';
-import { derivePlayerPresentationState } from './player-session-ui';
+import type { ActivePlayerSession } from '../player-iframe-session';
+import type { PlayerEmbedLayout, PlayerProviderId } from '../player-provider-data';
+import { derivePlayerPresentationState } from '../player-session-ui';
 
 export const PLAYER_PROVIDER_LABELS: Record<PlayerProviderId, string> = {
   bandcamp: 'Bandcamp',

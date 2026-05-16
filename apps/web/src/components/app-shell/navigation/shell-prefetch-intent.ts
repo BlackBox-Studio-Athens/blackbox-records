@@ -1,4 +1,4 @@
-import type { PlayerProvider } from './player-provider-data';
+import type { PlayerProvider } from '../player-provider-data';
 
 type ShellPrefetchIntentOptions = {
   eventTarget: EventTarget | null;

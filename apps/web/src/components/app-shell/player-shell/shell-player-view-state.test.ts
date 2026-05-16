@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ActivePlayerSession } from './player-iframe-session';
+import type { ActivePlayerSession } from '../player-iframe-session';
 import { derivePlayerShellViewState } from './shell-player-view-state';
 
 function createActiveSession({

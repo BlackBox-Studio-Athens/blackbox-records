@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ActivePlayerSession } from './player-iframe-session';
-import { IDLE_PLAYER_SESSION_MACHINE_STATE } from './player-session-machine';
+import type { ActivePlayerSession } from '../player-iframe-session';
+import { IDLE_PLAYER_SESSION_MACHINE_STATE } from '../player-session-machine';
 import { derivePlayerSessionMachineState } from './shell-player-session-machine-state';
 
 function createActiveSession({

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { ActivePlayerSession } from './player-iframe-session';
+import type { ActivePlayerSession } from '../player-iframe-session';
 import { syncPlayerSessionFrameHost } from './shell-player-frame-host';
 
 function createActiveSession(iframeElement = {} as HTMLIFrameElement): ActivePlayerSession {

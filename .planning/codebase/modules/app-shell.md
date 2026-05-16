@@ -18,8 +18,8 @@ sections while acting as the future thin composition root over smaller shell sub
 
 ## Internal Implementation Area
 
-- app-shell internal organization follows the Phase 12 AppShellRoot strategy: `navigation`, `overlay`, `player-shell`,
-  `store-cart`, and `dom` folders are the preferred destinations for extracted helper/test pairs
+- app-shell internal organization now follows the Phase 12 AppShellRoot strategy: `navigation`, `overlay`,
+  `player-shell`, `store-cart`, and `dom` folders hold extracted helper/test pairs
 - shell page snapshot parsing/application plus the `shell-page-loader` request/cache seam
 - overlay history behavior plus the `overlay-fragment-loader` request/cache seam, `overlay-history` history seam, and
   overlay focus scheduling
@@ -40,6 +40,8 @@ sections while acting as the future thin composition root over smaller shell sub
 - StoreCart state application and persistence through the StoreCart bridge
 - shell prefetch intent classification for player origin warmup and route/overlay prefetch
 - portal reinjection details plus the `shell-portal-targets` route-scoped target helper
+- the closed `player` module's `player-*` files remain at the app-shell root until a separate manifest-aware move is
+  approved
 
 ## Allowed Dependencies
 

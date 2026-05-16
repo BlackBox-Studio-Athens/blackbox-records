@@ -35,25 +35,25 @@ import {
   type ShellNavigationSource,
   type ShellSectionHistoryState,
   waitForAnimationFrames,
-} from '@/components/app-shell/shell-navigation';
+} from '@/components/app-shell/navigation/shell-navigation';
 import {
   applyDocumentShellPageSnapshot,
   cacheDocumentShellPageSnapshot,
   type ShellPageSnapshot,
-} from '@/components/app-shell/shell-page-snapshot';
-import { createShellPageSnapshotLoader } from '@/components/app-shell/shell-page-loader';
-import { connectShellPortalTarget } from '@/components/app-shell/shell-portal-targets';
+} from '@/components/app-shell/navigation/shell-page-snapshot';
+import { createShellPageSnapshotLoader } from '@/components/app-shell/navigation/shell-page-loader';
+import { connectShellPortalTarget } from '@/components/app-shell/dom/shell-portal-targets';
 import {
   applyStoreCartStateAndPersist,
   connectStoreCartBridge,
   getStoreCartBrowserStorage,
-} from '@/components/app-shell/store-cart-bridge';
+} from '@/components/app-shell/store-cart/store-cart-bridge';
 import {
   clearShellPageTransition,
   createShellSectionTransitionController,
   scrollShellViewportToTop,
   triggerShellPageEnterTransition,
-} from '@/components/app-shell/shell-transition';
+} from '@/components/app-shell/navigation/shell-transition';
 import { Spinner } from '@/components/ui/spinner';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { createProjectRelativeUrl, resolveLinkAttributes } from '@/config/site';
@@ -72,35 +72,38 @@ import {
   type StoreCartState,
 } from '@/lib/store-cart';
 import { isCurrentPath } from '@/utils/urls';
-import { createOverlayFragmentLoader } from './overlay-fragment-loader';
+import { createOverlayFragmentLoader } from './overlay/overlay-fragment-loader';
 import {
   closeOverlayWithHistoryBack as closeOverlayHistoryWithBack,
   collapseOverlayHistoryToBackground as collapseOverlayHistoryEntryToBackground,
   writeOverlayHistoryState,
-} from './overlay-history';
+} from './overlay/overlay-history';
 import {
   clearRouteLoadingTimer as clearScheduledRouteLoadingTimer,
   scheduleRouteLoadingStop,
-} from './route-loading-indicator';
-import { routeShellAnchorClickNavigation } from './shell-anchor-click-navigation';
-import { syncShellBodyStateClasses } from './shell-body-state';
-import { restoreCachedShellPageSnapshot } from './shell-cached-page-restoration';
-import { resolveShellDocumentClickIntent } from './shell-document-click-intent';
-import { connectShellDocumentListeners } from './shell-document-listeners';
-import { handleShellEscapeDismissal } from './shell-escape-dismissal';
-import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './shell-hero-scroll-progress';
-import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './shell-overlay-focus';
-import { syncPlayerSessionFrameHost } from './shell-player-frame-host';
-import { restoreConnectedPlayerTriggerFocus, schedulePlayerModalCloseButtonFocus } from './shell-player-focus';
-import { schedulePlayerIframeBlurInteractionCheck } from './shell-player-iframe-blur-interaction';
-import { resolvePlayerModalOpenRequest } from './shell-player-modal-open-request';
-import { derivePlayerSessionMachineState } from './shell-player-session-machine-state';
-import { derivePlayerShellViewState, PLAYER_PROVIDER_LABELS } from './shell-player-view-state';
-import { routeShellPopStateNavigation } from './shell-popstate-navigation';
-import { primeShellPrefetchIntent } from './shell-prefetch-intent';
-import { syncShellRenderedNavigationState } from './shell-rendered-navigation-state';
-import { enableManualShellScrollRestoration } from './shell-scroll-restoration';
-import { scrollShellTargetIntoView } from './shell-target-scroll';
+} from './navigation/route-loading-indicator';
+import { routeShellAnchorClickNavigation } from './navigation/shell-anchor-click-navigation';
+import { syncShellBodyStateClasses } from './dom/shell-body-state';
+import { restoreCachedShellPageSnapshot } from './navigation/shell-cached-page-restoration';
+import { resolveShellDocumentClickIntent } from './navigation/shell-document-click-intent';
+import { connectShellDocumentListeners } from './dom/shell-document-listeners';
+import { handleShellEscapeDismissal } from './dom/shell-escape-dismissal';
+import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './dom/shell-hero-scroll-progress';
+import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './overlay/shell-overlay-focus';
+import { syncPlayerSessionFrameHost } from './player-shell/shell-player-frame-host';
+import {
+  restoreConnectedPlayerTriggerFocus,
+  schedulePlayerModalCloseButtonFocus,
+} from './player-shell/shell-player-focus';
+import { schedulePlayerIframeBlurInteractionCheck } from './player-shell/shell-player-iframe-blur-interaction';
+import { resolvePlayerModalOpenRequest } from './player-shell/shell-player-modal-open-request';
+import { derivePlayerSessionMachineState } from './player-shell/shell-player-session-machine-state';
+import { derivePlayerShellViewState, PLAYER_PROVIDER_LABELS } from './player-shell/shell-player-view-state';
+import { routeShellPopStateNavigation } from './navigation/shell-popstate-navigation';
+import { primeShellPrefetchIntent } from './navigation/shell-prefetch-intent';
+import { syncShellRenderedNavigationState } from './navigation/shell-rendered-navigation-state';
+import { enableManualShellScrollRestoration } from './navigation/shell-scroll-restoration';
+import { scrollShellTargetIntoView } from './navigation/shell-target-scroll';
 
 type OverlayState = {
   backgroundHref: string;

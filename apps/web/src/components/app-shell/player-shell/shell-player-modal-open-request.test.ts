@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ActivePlayerSession } from './player-iframe-session';
-import type { PlayerProvider } from './player-provider-data';
+import type { ActivePlayerSession } from '../player-iframe-session';
+import type { PlayerProvider } from '../player-provider-data';
 import { resolvePlayerModalOpenRequest } from './shell-player-modal-open-request';
 
 function createProvider(id: PlayerProvider['id'], embedUrl = `https://${id}.test/embed`): PlayerProvider {

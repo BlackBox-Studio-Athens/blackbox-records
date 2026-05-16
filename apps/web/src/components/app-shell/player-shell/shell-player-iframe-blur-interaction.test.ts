@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { ActivePlayerSession } from './player-iframe-session';
+import type { ActivePlayerSession } from '../player-iframe-session';
 import { schedulePlayerIframeBlurInteractionCheck } from './shell-player-iframe-blur-interaction';
 
 function createScheduler() {

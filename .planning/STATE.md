@@ -4,18 +4,18 @@ milestone: v1.2
 milestone_name: Modulith Boundary Hardening
 current_phase: 12
 current_phase_name: modulith-boundary-hardening-planning
-current_plan: 35
+current_plan: 36
 status: active
-stopped_at: Completed 12-35 AppShellRoot refactor strategy
+stopped_at: Completed 12-36 app-shell internal folder organization
 paused_at: ''
 last_updated: '2026-05-16T00:00:00.000Z'
 last_activity: 2026-05-16
 progress:
   total_phases: 12
   completed_phases: 8
-  total_plans: 35
-  completed_plans: 32
-  percent: 91
+  total_plans: 36
+  completed_plans: 33
+  percent: 92
 ---
 
 # Project State
@@ -32,16 +32,16 @@ routes own secrets and mutations, and stock changes happen only after verified w
 ## Current Position
 
 Phase: 12 (modulith-boundary-hardening-planning) - ACTIVE
-Plan: 35 of 35
+Plan: 36 of 36
 Current Phase: 12
 Current Phase Name: modulith-boundary-hardening-planning
 Total Phases: 12
-Current Plan: 35
-Total Plans in Phase: 35
-Status: Active - 12-35 AppShellRoot refactor strategy complete
-Progress: [#########-] 91%
+Current Plan: 36
+Total Plans in Phase: 36
+Status: Active - 12-36 app-shell internal folder organization complete
+Progress: [#########-] 92%
 Last activity: 2026-05-16
-Last Activity Description: 12-35 documented AppShellRoot refactor target and app-shell folder strategy
+Last Activity Description: 12-36 organized app-shell helper/test pairs into behavior folders
 Paused At:
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, 8, and 11 are complete. Phase 7 mock, contract, frontend
@@ -203,6 +203,9 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   Phase 12 target is 800-900 lines, the app-shell internals should move toward `navigation`, `overlay`, `player-shell`,
   `store-cart`, and `dom` folders, and remaining code-motion slices should stay under `eslint-plugin-boundaries` plus the
   normal repo gates.
+- Phase 12 plan 12-36 organized already-tested app-shell-owned helper/test pairs into `navigation`, `overlay`,
+  `player-shell`, `store-cart`, and `dom` folders while keeping `AppShell.astro`, `AppShellRoot.tsx`, and the closed
+  `player` module's `player-*` files at the app-shell root.
 - Phase 12 now has an explicit refactor end-goal document at
   `.planning/phases/12-modulith-boundary-hardening-planning/12-REFACTOR-ENDGOAL.md`; remaining slices should aim at thin
   app-shell composition, explicit `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard
@@ -365,7 +368,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of
   the completed Phase 6.1 foundation.
-- Continue Phase 12 through the next approved app-shell or cms-admin slice; `12-04` through `12-35` are complete and
+- Continue Phase 12 through the next approved app-shell or cms-admin slice; `12-04` through `12-36` are complete and
   deeper refactors should still respect the boundary manifest and verifier rules.
 - Complete the deferred Stripe access validation gate before sandbox/release approval.
 - Choose the Phase 9 shipping mode and complete the deferred BOX NOW Portal Gate before marking Phase 9, `09-06`, or
@@ -400,5 +403,5 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 ## Session
 
 **Last Date:** 2026-05-16T00:00:00.000Z
-**Stopped At:** Completed 12-35 AppShellRoot refactor strategy
+**Stopped At:** Completed 12-36 app-shell internal folder organization
 **Resume File:** None
