@@ -43,7 +43,7 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - [ ] **Phase 9: Greece-Only BOX NOW Shipping** - Lock the Greece-only BOX NOW shipping contract and choose between manual address fulfillment or `boxnow-js`-backed automation (current locker-first implementation is prototype-only; final shipping mode still pending)
 - [ ] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow where account access allows and prepare the go-live handoff package (review package complete; external gates remain pending)
 - [x] **Phase 11: Website Editorial And Catalog UX Improvements** - Convert partner website notes into static-site editorial, artist, release, homepage, and distro/catalog improvements without changing commerce authority (completed 2026-05-12)
-- [ ] **Phase 12: Modulith Boundary Hardening Planning** - Activate the TypeScript-native boundary stack and execution slices that make later refactors safer before revisiting the deferred commerce gates
+- [x] **Phase 12: Modulith Boundary Hardening Planning** - Activate the TypeScript-native boundary stack and execution slices that make later refactors safer before revisiting the deferred commerce gates
 
 ## Phase Details
 
@@ -334,7 +334,7 @@ Plans:
 
 ### v1.2 Modulith Boundary Hardening
 
-- Active milestone that sits between the deferred sandbox milestone and Go-Live / Launch Hardening
+- Completed milestone that sits between the deferred sandbox milestone and Go-Live / Launch Hardening
 - Consumes `BL-19`, `ADR-004`, `.planning/codebase/MODULES.md`, and the Phase 12 planning artifacts
 - Produces explicit module-boundary execution slices for `app-shell`, `cms-admin`, public commerce HTTP, backend
   commerce modules, and the residual `platform-shared` bucket
@@ -418,6 +418,8 @@ Plans:
   closed infrastructure modules, then closes `platform-shared`
 - Plan `12-62` extracts app-shell JSX render surfaces into a `view` folder so `AppShellRoot.tsx` stays a thinner
   composition root without changing shell behavior
+- Plan `12-63` completes the Phase 12 audit: every manifest module is closed, the approved open-temporary set is empty,
+  `eslint-plugin-boundaries` remains a hard gate, and the next extractions would be cosmetic without a new decision
 - Phase 12 refactor end goal is now documented in `12-REFACTOR-ENDGOAL.md`: thin app-shell composition, explicit
   `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard `eslint-plugin-boundaries` enforcement
 - Exists to make later large refactors safer and more reviewable before production cutover work begins

@@ -9,12 +9,16 @@ source: 12-RESEARCH.md
 
 ## Test Infrastructure
 
-This planning-only phase uses the existing repo gates:
+This phase started as planning-only and then expanded into approved boundary-hardening execution slices. The final
+execution package uses the existing repo gates:
 
 - `pnpm check`
 - `pnpm test:unit`
+- `pnpm build`
+- `pnpm audit:module-boundaries`
+- `pnpm depcruise:boundaries`
 
-No Browser Use run is required because this phase does not change rendered UI or runtime behavior.
+Browser Use is required for shell/admin-visible behavior when rendered shell surfaces are moved.
 
 ## Artifact Checklist
 
@@ -57,3 +61,23 @@ Phase 12 is valid only when:
 - The new milestone should be planned only, not active.
 - The final Phase 12 package now locks a TypeScript-native boundary stack centered on `eslint-plugin-boundaries`,
   `dependency-cruiser`, explicit root entrypoints, and one repo machine-readable manifest.
+
+## Execution Closure Run - 2026-05-16
+
+### Deterministic Commands
+
+- `pnpm audit:module-boundaries`
+- `pnpm depcruise:boundaries`
+- `pnpm test:unit`
+- `pnpm check`
+- `pnpm build`
+
+### Closure Notes
+
+- Every module in `.planning/codebase/module-boundaries.manifest.json` is `closed`.
+- `APPROVED_OPEN_TEMPORARY_MODULES` is empty in `scripts/module-boundaries-manifest.cjs`.
+- `eslint-plugin-boundaries` remains wired through `eslint.config.mjs` with `boundaries/no-unknown-files` and
+  `boundaries/dependencies` as errors.
+- `AppShellRoot.tsx` is 591 lines and now acts as a thin shell composition root.
+- Browser Use acceptance for `12-62` covered header, footer, and mobile shell navigation, overlay open/close,
+  player open/minimize/reopen/stop, StoreCart drawer open/close, and checkout CTA routing.
