@@ -6,7 +6,7 @@ current_phase: 12
 current_phase_name: modulith-boundary-hardening-planning
 current_plan: 45
 status: active
-stopped_at: Added immediate 12-45 test performance follow-up analysis
+stopped_at: Completed 12-45 test performance follow-up analysis
 paused_at: ''
 last_updated: '2026-05-16T00:00:00.000Z'
 last_activity: 2026-05-16
@@ -14,8 +14,8 @@ progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 45
-  completed_plans: 41
-  percent: 92
+  completed_plans: 42
+  percent: 93
 ---
 
 # Project State
@@ -38,10 +38,10 @@ Current Phase Name: modulith-boundary-hardening-planning
 Total Phases: 12
 Current Plan: 45
 Total Plans in Phase: 45
-Status: Active - 12-45 test performance follow-up analysis planned
-Progress: [#########-] 92%
+Status: Active - 12-45 test performance follow-up analysis complete
+Progress: [#########-] 93%
 Last activity: 2026-05-16
-Last Activity Description: 12-45 test performance follow-up analysis added
+Last Activity Description: 12-45 test performance follow-up analysis completed
 Paused At:
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, 8, and 11 are complete. Phase 7 mock, contract, frontend
@@ -74,8 +74,8 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 **Velocity:**
 
 - Total plans completed: 63
-- Total plans remaining: 8
-- Completed plan ratio: 63/71
+- Total plans remaining: 7
+- Completed plan ratio: 64/71
 - Average duration: -
 - Total execution time: -
 
@@ -94,7 +94,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 | 9     | 5/6   | Deferred  | 2026-04-30 |
 | 10    | 5/6   | Deferred  | 2026-05-01 |
 | 11    | 5/5   | Completed | 2026-05-12 |
-| 12    | 29/33 | Active    | 2026-05-16 |
+| 12    | 30/33 | Active    | 2026-05-16 |
 
 **Recent Trend:**
 
@@ -232,9 +232,10 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 - Phase 12 plan 12-44 extracted homepage-specific Decap field generation into
   `apps/web/src/lib/admin/decap-home-fields.ts`, added direct homepage field characterization tests, and reduced
   `decap-config.ts` from 1,088 to 889 lines.
-- Phase 12 plan 12-45 is now the immediate next slice: re-measure test and check performance after the newer module
-  splits, analyze the TypeScript/ESLint multiple-project warning path, and decide whether native pnpm, Vitest,
-  TypeScript, Astro, or ESLint configuration can improve feedback speed without custom scripts or unnecessary topology.
+- Phase 12 plan 12-45 completed the test-performance follow-up analysis: focused module Vitest loops and native pnpm
+  parallel `test:unit` remain the approved fast path, `pnpm check:types` is the largest measured check path, and the
+  ESLint import resolver now uses the existing single `tsconfig.boundaries.json` project instead of suppressing the
+  multiple-project warning.
 - Phase 12 now has an explicit refactor end-goal document at
   `.planning/phases/12-modulith-boundary-hardening-planning/12-REFACTOR-ENDGOAL.md`; remaining slices should aim at thin
   app-shell composition, explicit `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard
@@ -397,9 +398,8 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of
   the completed Phase 6.1 foundation.
-- Run the immediate Phase 12 `12-45` test-performance follow-up analysis before the next app-shell or `cms-admin`
-  refactor slice; `12-04` through `12-44` are complete and deeper refactors should still respect the boundary manifest
-  and verifier rules.
+- Continue Phase 12 through the next approved app-shell or `cms-admin` refactor slice; `12-04` through `12-45` are
+  complete and deeper refactors should still respect the boundary manifest and verifier rules.
 - Complete the deferred Stripe access validation gate before sandbox/release approval.
 - Choose the Phase 9 shipping mode and complete the deferred BOX NOW Portal Gate before marking Phase 9, `09-06`, or
   `SHIP-01` through `SHIP-03` complete.
@@ -433,5 +433,5 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 ## Session
 
 **Last Date:** 2026-05-16T00:00:00.000Z
-**Stopped At:** Added immediate 12-45 test performance follow-up analysis
+**Stopped At:** Completed 12-45 test performance follow-up analysis
 **Resume File:** None

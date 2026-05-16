@@ -96,8 +96,7 @@ export default tseslint.config(
       'boundaries/ignore': ['**/*.test.*', '**/*.spec.*', '**/test/**'],
       'import/resolver': {
         typescript: {
-          project: ['tsconfig.boundaries.json', 'apps/backend/tsconfig.json', 'packages/api-client/tsconfig.json'],
-          noWarnOnMultipleProjects: true,
+          project: 'tsconfig.boundaries.json',
         },
       },
     },
