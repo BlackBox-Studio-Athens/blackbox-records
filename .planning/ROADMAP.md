@@ -382,8 +382,8 @@ Plans:
 - Plan `12-37` moves shell-section navigation orchestration into `navigation/shell-section-navigation`
 - Plan `12-38` moves overlay open coordination into `overlay/shell-overlay-navigation` and defers Nx/submodule
   formalization per user decision
-- Plan `12-39` is the immediate test-performance analysis slice: measure the Phase 12 feedback loop and decide whether
-  native Vitest, pnpm, TypeScript, or Astro options can improve speed without custom scripts or avoidable tooling
+- Plan `12-39` measured the Phase 12 test feedback loop and switched the root unit gate to native pnpm parallel package
+  tests without custom scripts, Nx, or new dependencies
 - Phase 12 refactor end goal is now documented in `12-REFACTOR-ENDGOAL.md`: thin app-shell composition, explicit
   `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard `eslint-plugin-boundaries` enforcement
 - Exists to make later large refactors safer and more reviewable before production cutover work begins

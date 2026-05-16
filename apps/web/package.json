@@ -13,6 +13,7 @@
     "build": "astro build --root .",
     "preview": "astro preview --root .",
     "check": "astro check --root .",
+    "test": "vitest run",
     "test:unit": "vitest run",
     "astro": "astro"
   },

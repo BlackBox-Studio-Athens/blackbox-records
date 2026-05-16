@@ -6,7 +6,7 @@ current_phase: 12
 current_phase_name: modulith-boundary-hardening-planning
 current_plan: 39
 status: active
-stopped_at: Queued 12-39 test performance analysis
+stopped_at: Completed 12-39 test performance analysis
 paused_at: ''
 last_updated: '2026-05-16T00:00:00.000Z'
 last_activity: 2026-05-16
@@ -14,7 +14,7 @@ progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 39
-  completed_plans: 35
+  completed_plans: 36
   percent: 92
 ---
 
@@ -38,10 +38,10 @@ Current Phase Name: modulith-boundary-hardening-planning
 Total Phases: 12
 Current Plan: 39
 Total Plans in Phase: 39
-Status: Active - 12-39 test performance analysis queued
+Status: Active - 12-39 test performance analysis complete
 Progress: [#########-] 92%
 Last activity: 2026-05-16
-Last Activity Description: 12-39 queued test performance analysis
+Last Activity Description: 12-39 completed test performance analysis
 Paused At:
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, 8, and 11 are complete. Phase 7 mock, contract, frontend
@@ -213,9 +213,10 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   non-overlay href rejection, cached/loading state seeding, history writes, fragment fetch, stale-route protection,
   document fallback, and abort handling, reduced `AppShellRoot.tsx` from 1,150 to 1,114 lines, and recorded the user
   decision to defer both internal-submodule formalization and Nx adoption for now.
-- Phase 12 plan 12-39 is queued as the immediate test-performance analysis slice. It will measure the Phase 12 feedback
-  loop and decide whether native Vitest, pnpm, TypeScript, or Astro options can improve speed without custom scripts,
-  avoidable tooling, or reintroducing Nx before the user approves it.
+- Phase 12 plan 12-39 completed the immediate test-performance analysis slice. Focused app-shell Vitest commands remain
+  the fast seam loop, the web package now exposes the native `test` lifecycle like backend/api-client, and root
+  `pnpm test:unit` now runs the three package test suites through native pnpm filtered parallel execution without custom
+  scripts, Nx, or new dependencies.
 - Phase 12 now has an explicit refactor end-goal document at
   `.planning/phases/12-modulith-boundary-hardening-planning/12-REFACTOR-ENDGOAL.md`; remaining slices should aim at thin
   app-shell composition, explicit `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard
@@ -378,8 +379,8 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of
   the completed Phase 6.1 foundation.
-- Continue Phase 12 with `12-39` test performance analysis before the next app-shell or cms-admin refactor slice; `12-04`
-  through `12-38` are complete and deeper refactors should still respect the boundary manifest and verifier rules.
+- Continue Phase 12 through the next approved app-shell or cms-admin refactor slice; `12-04` through `12-39` are complete
+  and deeper refactors should still respect the boundary manifest and verifier rules.
 - Complete the deferred Stripe access validation gate before sandbox/release approval.
 - Choose the Phase 9 shipping mode and complete the deferred BOX NOW Portal Gate before marking Phase 9, `09-06`, or
   `SHIP-01` through `SHIP-03` complete.
@@ -413,5 +414,5 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 ## Session
 
 **Last Date:** 2026-05-16T00:00:00.000Z
-**Stopped At:** Queued 12-39 test performance analysis
+**Stopped At:** Completed 12-39 test performance analysis
 **Resume File:** None

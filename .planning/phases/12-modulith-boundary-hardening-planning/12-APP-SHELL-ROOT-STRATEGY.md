@@ -78,6 +78,7 @@ Keep the fast path boring while Phase 12 refactors are still module-internal:
 - Use `pnpm --filter @blackbox/web exec vitest run src/components/app-shell` as the package-scoped regression loop for
   AppShellRoot and its extracted shell helpers before running repository-wide gates.
 - Keep `pnpm test:unit`, `pnpm check`, and `pnpm build` as required completion gates for behavior-changing slices.
+  `pnpm test:unit` now uses pnpm's native filtered parallel package execution; do not replace it with a custom runner.
 - Do not introduce custom scripts, Nx, project graph caching, or repo-wide TypeScript reference reshaping just to speed up
   the current shell refactor. Revisit those only if repeated Phase 12 timings show the simple package-scoped loop is not
   enough.
