@@ -1,4 +1,4 @@
-import type { StockRecord, StockRepository, StockState } from '../../../domain/commerce/repositories';
+import type { StockRecord, StockRepository, StockState } from '../../../domain/commerce/repositories/spi';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapStock(record: {

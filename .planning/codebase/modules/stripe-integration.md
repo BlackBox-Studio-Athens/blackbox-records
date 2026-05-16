@@ -26,7 +26,8 @@ verification.
 
 ## Named Interfaces / SPI Surfaces
 
-- `apps/backend/src/infrastructure/stripe/index.ts`
+- none; this module implements the `checkout-core` checkout SPI and exposes Stripe construction through its root provided
+  interface
 
 ## Published Events
 

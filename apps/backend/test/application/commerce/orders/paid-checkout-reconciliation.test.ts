@@ -17,7 +17,7 @@ import type {
   StockChangeRepository,
   StockRecord,
   StockRepository,
-} from '../../../../src/domain/commerce/repositories';
+} from '../../../../src/domain/commerce/repositories/spi';
 
 class InMemoryOrderStateRepository implements OrderStateRepository {
   public readonly records = new Map<string, CheckoutOrderRecord>();

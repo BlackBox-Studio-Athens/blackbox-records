@@ -1,4 +1,4 @@
-import type { CheckoutOrderRecord, OrderStateRepository, OrderStatus } from '../../../domain/commerce/repositories';
+import type { CheckoutOrderRecord, OrderStateRepository, OrderStatus } from '../../../domain/commerce/repositories/spi';
 
 export type ReadRecentCheckoutOrdersQuery = {
   limit: number;

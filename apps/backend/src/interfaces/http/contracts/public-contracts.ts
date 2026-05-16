@@ -43,17 +43,13 @@ const storeCapabilitiesSchema = z
   })
   .openapi('StoreCapabilities');
 
-function createCheckoutShippingLockerSchema() {
-  return z.object({
+const checkoutStateShippingLockerSchema = z
+  .object({
     country_code: z.enum(['GR']),
     locker_id: z.string().trim().min(1),
     locker_name_or_label: z.string().trim().min(1),
-  });
-}
-
-const checkoutShippingLockerSchema = createCheckoutShippingLockerSchema().strict().openapi('CheckoutShippingLocker');
-
-const checkoutStateShippingLockerSchema = createCheckoutShippingLockerSchema().openapi('CheckoutStateShippingLocker');
+  })
+  .openapi('CheckoutStateShippingLocker');
 
 const startCheckoutLineSchema = z
   .object({
@@ -67,7 +63,6 @@ const startCheckoutLineSchema = z
 const startCheckoutBodySchema = z
   .object({
     lines: z.array(startCheckoutLineSchema).min(1).optional(),
-    shippingLocker: checkoutShippingLockerSchema,
     storeItemSlug: z.string().trim().min(1).optional(),
     variantId: z.string().trim().min(1).optional(),
   })

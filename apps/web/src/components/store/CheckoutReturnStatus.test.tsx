@@ -88,7 +88,7 @@ describe('CheckoutReturnStatus', () => {
     });
   });
 
-  it('shows a support-oriented needs-review recap when Worker state has no locker snapshot', () => {
+  it('shows manual BOX NOW fulfillment recap when Worker state has no locker snapshot', () => {
     expect(
       createCheckoutReturnStatusView({
         checkoutState: {
@@ -98,8 +98,8 @@ describe('CheckoutReturnStatus', () => {
         kind: 'ready',
       }).shippingLocker,
     ).toMatchObject({
-      kind: 'needs_review',
-      label: 'Locker Needs Review',
+      kind: 'manual',
+      label: 'Manual BOX NOW Fulfillment',
     });
   });
 

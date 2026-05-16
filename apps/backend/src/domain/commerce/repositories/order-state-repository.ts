@@ -40,7 +40,7 @@ export type CreatePendingCheckoutOrderInput = {
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
   checkoutSessionId: string;
-  shippingLocker: ShippingLockerSnapshot;
+  shippingLocker: ShippingLockerSnapshot | null;
   stripePaymentIntentId?: string | null;
   createdAt?: Date;
 };

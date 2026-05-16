@@ -7,6 +7,7 @@ import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export type LocalMockStoreItem = {
+  taxCategory: 'physical_goods';
   sourceId: string;
   sourceKind: 'release' | 'distro';
   storeItemSlug: string;
@@ -49,6 +50,7 @@ export async function readReleaseStoreItems(directory: string): Promise<LocalMoc
     const storeItemSlug = releaseStoreItemSlugByReleaseId[sourceId] ?? sourceId;
 
     storeItems.push({
+      taxCategory: 'physical_goods',
       sourceId,
       sourceKind: 'release',
       storeItemSlug,
@@ -69,6 +71,7 @@ export async function readDistroStoreItems(directory: string): Promise<LocalMock
     const content = JSON.parse(await readFile(path.join(directory, fileName), 'utf8')) as { title?: unknown };
 
     storeItems.push({
+      taxCategory: 'physical_goods',
       sourceId,
       sourceKind: 'distro',
       storeItemSlug: sourceId,

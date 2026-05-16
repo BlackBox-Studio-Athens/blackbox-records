@@ -1,6 +1,5 @@
 import {
   CheckoutConfigurationError,
-  CheckoutShippingSelectionError,
   CheckoutUnavailableError,
   NativeCheckoutDisabledError,
   listVariantOffersForStoreItem,
@@ -36,7 +35,6 @@ export function createPublicCommerceServices(bindings: AppBindings) {
     disconnect: async () => prisma.$disconnect(),
     errors: {
       CheckoutConfigurationError,
-      CheckoutShippingSelectionError,
       CheckoutUnavailableError,
       NativeCheckoutDisabledError,
       StoreItemNotFoundError,

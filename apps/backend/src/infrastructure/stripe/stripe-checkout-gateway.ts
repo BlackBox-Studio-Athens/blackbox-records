@@ -5,7 +5,7 @@ import type {
   EmbeddedCheckoutSession,
   EmbeddedCheckoutSessionRequest,
   StripeCheckoutSessionState,
-} from '../../application/commerce/checkout';
+} from '../../application/commerce/checkout/spi';
 import { CheckoutConfigurationError } from '../../application/commerce/checkout';
 import type { AppBindings } from '../../env';
 import { toStripeCheckoutSessionState } from './stripe-checkout-session-state';
@@ -51,7 +51,13 @@ export class StripeCheckoutGateway implements CheckoutGateway {
           }
         : undefined,
       mode: 'payment',
+      phone_number_collection: {
+        enabled: true,
+      },
       return_url: request.returnUrl,
+      shipping_address_collection: {
+        allowed_countries: ['GR'],
+      },
       ui_mode: 'embedded_page',
     });
 

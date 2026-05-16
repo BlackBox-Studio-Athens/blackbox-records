@@ -19,18 +19,21 @@ describe('local mock commerce seed generator', () => {
     expect(storeItems).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          taxCategory: 'physical_goods',
           sourceId: 'barren-point',
           sourceKind: 'release',
           storeItemSlug: 'disintegration-black-vinyl-lp',
           variantId: 'variant_barren-point_standard',
         }),
         expect.objectContaining({
+          taxCategory: 'physical_goods',
           sourceId: 'caregivers',
           sourceKind: 'release',
           storeItemSlug: 'caregivers-vinyl',
           variantId: 'variant_caregivers-vinyl_standard',
         }),
         expect.objectContaining({
+          taxCategory: 'physical_goods',
           sourceId: 'afterglow-tape',
           sourceKind: 'distro',
           storeItemSlug: 'afterglow-tape',
@@ -53,12 +56,14 @@ describe('local mock commerce seed generator', () => {
 
       await expect(readReleaseStoreItems(tempDir)).resolves.toEqual([
         expect.objectContaining({
+          taxCategory: 'physical_goods',
           sourceId: 'caregivers',
           sourceKind: 'release',
           storeItemSlug: 'caregivers-vinyl',
           variantId: 'variant_caregivers-vinyl_standard',
         }),
         expect.objectContaining({
+          taxCategory: 'physical_goods',
           sourceId: 'future-release',
           sourceKind: 'release',
           storeItemSlug: 'future-release',
@@ -79,12 +84,14 @@ describe('local mock commerce seed generator', () => {
 
       await expect(readDistroStoreItems(tempDir)).resolves.toEqual([
         expect.objectContaining({
+          taxCategory: 'physical_goods',
           sourceId: '___',
           sourceKind: 'distro',
           storeItemSlug: '___',
           variantId: 'variant_____standard',
         }),
         expect.objectContaining({
+          taxCategory: 'physical_goods',
           sourceId: 'afterglow-tape',
           sourceKind: 'distro',
           storeItemSlug: 'afterglow-tape',
@@ -99,6 +106,7 @@ describe('local mock commerce seed generator', () => {
   it('generates idempotent local-only mock commerce SQL for all required D1 tables', () => {
     const sql = createLocalMockCommerceSql([
       {
+        taxCategory: 'physical_goods',
         sourceId: 'caregivers',
         sourceKind: 'release',
         storeItemSlug: 'caregivers-vinyl',
@@ -106,6 +114,7 @@ describe('local mock commerce seed generator', () => {
         variantId: 'variant_caregivers-vinyl_standard',
       },
       {
+        taxCategory: 'physical_goods',
         sourceId: 'afterglow-tape',
         sourceKind: 'distro',
         storeItemSlug: 'afterglow-tape',

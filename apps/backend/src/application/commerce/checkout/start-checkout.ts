@@ -3,10 +3,9 @@ import type {
   OrderStateRepository,
   StockRepository,
   StoreItemOptionRepository,
-  StoreItemSlug,
-  VariantId,
   VariantStripeMappingRepository,
-} from '../../../domain/commerce/repositories';
+} from '../../../domain/commerce/repositories/spi';
+import type { StoreItemSlug, VariantId } from '../../../domain/commerce';
 import {
   CheckoutConfigurationError,
   CheckoutUnavailableError,
@@ -15,19 +14,16 @@ import {
   VariantMismatchError,
 } from './errors';
 import { createPendingCheckoutOrder } from '../orders/create-pending-checkout-order';
-import { validateCheckoutShippingLocker } from './checkout-shipping';
-import type { FeatureFlagReader } from './feature-gates';
 import type {
   CheckoutGateway,
-  CheckoutShippingLockerSnapshot,
   EmbeddedCheckoutSession,
   EmbeddedCheckoutSessionLineItem,
-} from './types';
+  FeatureFlagReader,
+} from './spi';
 
 export type StartCheckoutCommand = {
   lines?: StartCheckoutLineCommand[];
   returnUrl: string;
-  shippingLocker: CheckoutShippingLockerSnapshot;
   storeItemSlug?: StoreItemSlug;
   variantId?: VariantId;
 };
@@ -94,7 +90,6 @@ export async function startCheckout(
     throw new NativeCheckoutDisabledError();
   }
 
-  const shippingLocker = validateCheckoutShippingLocker(command.shippingLocker);
   const requestedLines = mergeCheckoutLines(
     command.lines && command.lines.length > 0 ? command.lines : legacySingleCheckoutLine(command),
   );
@@ -159,7 +154,7 @@ export async function startCheckout(
       storeItemSlug: line.storeItemSlug,
       variantId: line.variantId,
     })),
-    shippingLocker,
+    shippingLocker: null,
     storeItemSlug: primaryLine.storeItemSlug,
     variantId: primaryLine.variantId,
   });

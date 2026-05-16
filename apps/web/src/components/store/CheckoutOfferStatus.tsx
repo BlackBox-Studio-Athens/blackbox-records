@@ -21,7 +21,7 @@ import {
 } from './checkout-offer-status-state';
 import CheckoutShippingStep from './CheckoutShippingStep';
 import { CHECKOUT_CART_UPDATED_EVENT } from './CheckoutOrderSummary';
-import { createCheckoutShippingGateView, type CheckoutLockerSelection } from './checkout-shipping-step-state';
+import { createCheckoutShippingGateView } from './checkout-shipping-step-state';
 
 interface CheckoutOfferStatusProps {
   checkoutClientMode?: string;
@@ -42,15 +42,11 @@ export default function CheckoutOfferStatus({
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutMounted, setCheckoutMounted] = useState(false);
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
-  const [lockerSelection, setLockerSelection] = useState<CheckoutLockerSelection | null>(null);
   const checkoutMountRef = useRef<HTMLDivElement | null>(null);
   const checkoutSessionRef = useRef<EmbeddedCheckoutMount | null>(null);
   const itemOptionLabel =
     initialAvailability.optionLabel || (view.variantId ? 'Selected option' : 'Checking item option');
-  const shippingGateView = createCheckoutShippingGateView({
-    checkoutClientMode,
-    lockerSelection,
-  });
+  const shippingGateView = createCheckoutShippingGateView(checkoutClientMode);
 
   useEffect(() => {
     let isActive = true;
@@ -92,7 +88,7 @@ export default function CheckoutOfferStatus({
     const mountTarget = checkoutMountRef.current;
 
     if (!shippingGateView.canContinueToPayment) {
-      setCheckoutError('Select a Greece BOX NOW locker before payment opens.');
+      setCheckoutError('Shipping details are collected during Stripe Checkout.');
       return;
     }
 
@@ -112,7 +108,6 @@ export default function CheckoutOfferStatus({
       api: checkoutApi,
       checkoutAdapter: embeddedCheckoutAdapter,
       lines: readStoreCartState(window.localStorage).lines,
-      lockerSelection: shippingGateView.selectedLocker,
       mountTarget,
       storeItemSlug,
       variantId: view.variantId,
@@ -136,24 +131,9 @@ export default function CheckoutOfferStatus({
     setCheckoutError(null);
   }
 
-  function handleSelectLocker(nextLockerSelection: CheckoutLockerSelection) {
-    resetMountedCheckout();
-    setLockerSelection(nextLockerSelection);
-  }
-
-  function handleChangeLocker() {
-    resetMountedCheckout();
-    setLockerSelection(null);
-  }
-
   return (
     <div className="space-y-4" data-checkout-offer-status>
-      <CheckoutShippingStep
-        checkoutClientMode={checkoutClientMode}
-        lockerSelection={lockerSelection}
-        onChangeLocker={handleChangeLocker}
-        onSelectLocker={handleSelectLocker}
-      />
+      <CheckoutShippingStep checkoutClientMode={checkoutClientMode} />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Payment status</p>
@@ -202,7 +182,7 @@ export default function CheckoutOfferStatus({
             ) : (
               <p className="text-xs leading-relaxed text-muted-foreground">
                 {view.canStartCheckout
-                  ? 'Payment opens only after a Greece BOX NOW locker is selected.'
+                  ? 'Payment opens after the checkout session is ready.'
                   : 'Payment opens only after this item is confirmed as buyable.'}
               </p>
             )}

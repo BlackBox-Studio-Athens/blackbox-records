@@ -22,12 +22,6 @@ export class CheckoutConfigurationError extends Error {
   }
 }
 
-export class CheckoutShippingSelectionError extends Error {
-  public constructor() {
-    super('A valid Greece BOX NOW locker is required before checkout.');
-  }
-}
-
 export class NativeCheckoutDisabledError extends Error {
   public constructor() {
     super('Native checkout is temporarily unavailable.');

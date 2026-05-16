@@ -85,6 +85,7 @@ describe('store page data helper', () => {
     mockCatalogData.listStoreItems.mockResolvedValue([
       {
         slug: 'disintegration-black-vinyl-lp',
+        taxCategory: 'physical_goods',
         sourceKind: 'release',
         sourceId: 'barren-point',
         title: 'Disintegration',
@@ -99,6 +100,7 @@ describe('store page data helper', () => {
       },
       {
         slug: 'afterglow-tape',
+        taxCategory: 'physical_goods',
         sourceKind: 'distro',
         sourceId: 'afterglow-tape',
         title: 'Afterglow Tape',
@@ -113,6 +115,7 @@ describe('store page data helper', () => {
       },
       {
         slug: 'caregivers-vinyl',
+        taxCategory: 'physical_goods',
         sourceKind: 'release',
         sourceId: 'caregivers',
         title: 'Caregivers',
@@ -204,6 +207,7 @@ describe('store page data helper', () => {
     const cartItem = createCartLineItemSnapshotForStorePage(
       {
         slug: 'disintegration-black-vinyl-lp',
+        taxCategory: 'physical_goods',
         sourceKind: 'release',
         sourceId: 'barren-point',
         title: 'Disintegration',
@@ -250,6 +254,7 @@ describe('store page data helper', () => {
     const cartItem = createCartLineItemSnapshotForStorePage(
       {
         slug: 'afterglow-tape',
+        taxCategory: 'physical_goods',
         sourceKind: 'distro',
         sourceId: 'afterglow-tape',
         title: 'Afterglow Tape',

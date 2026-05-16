@@ -1,4 +1,4 @@
-import type { OrderStatus } from '../../../domain/commerce/repositories';
+import type { OrderStatus } from '../../../domain/commerce/repositories/spi';
 
 export type OrderTransitionOrigin = 'server' | 'browser_read';
 

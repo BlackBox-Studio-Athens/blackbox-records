@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  reconcileCheckoutSession,
-  type StripeCheckoutSessionState,
-} from '../../../../src/application/commerce/checkout';
+import { reconcileCheckoutSession } from '../../../../src/application/commerce/checkout';
+import type { StripeCheckoutSessionState } from '../../../../src/application/commerce/checkout/spi';
 
 function session(input: Partial<StripeCheckoutSessionState>): StripeCheckoutSessionState {
   return {

@@ -1,6 +1,7 @@
-import type { OrderStateRepository } from '../../../domain/commerce/repositories';
+import type { OrderStateRepository } from '../../../domain/commerce/repositories/spi';
 import { reconcileCheckoutSession } from './reconcile-checkout-session';
-import type { CheckoutGateway, CheckoutState } from './types';
+import type { CheckoutGateway } from './spi';
+import type { CheckoutState } from './types';
 
 export async function readCheckoutState(
   checkoutGateway: CheckoutGateway,

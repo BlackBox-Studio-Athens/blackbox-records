@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   CheckoutConfigurationError,
-  CheckoutShippingSelectionError,
   CheckoutUnavailableError,
   NativeCheckoutDisabledError,
   listVariantOffersForStoreItem,
@@ -11,8 +10,8 @@ import {
   startCheckout,
   StoreItemNotFoundError,
   VariantMismatchError,
-  type CheckoutGateway,
 } from '../../../../src/application/commerce/checkout';
+import type { CheckoutGateway } from '../../../../src/application/commerce/checkout/spi';
 import type {
   CheckoutOrderRecord,
   CheckoutOrderTransitionInput,
@@ -28,7 +27,7 @@ import type {
   StoreItemSourceRef,
   VariantStripeMappingRecord,
   VariantStripeMappingRepository,
-} from '../../../../src/domain/commerce/repositories';
+} from '../../../../src/domain/commerce/repositories/spi';
 
 class InMemoryStoreItemOptionRepository implements StoreItemOptionRepository {
   public constructor(private readonly records: StoreItemOptionRecord[]) {}
@@ -162,11 +161,6 @@ describe('checkout use cases', () => {
     storeItemSlug: 'disintegration-black-vinyl-lp',
     variantId: 'variant_barren-point_standard',
   };
-  const shippingLocker = {
-    country_code: 'GR',
-    locker_id: '4',
-    locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
-  };
 
   let storeItems: InMemoryStoreItemOptionRepository;
   let itemAvailability: InMemoryItemAvailabilityRepository;
@@ -235,17 +229,22 @@ describe('checkout use cases', () => {
     ]);
   });
 
-  it('rejects missing shipping locker data before starting checkout', async () => {
+  it('starts checkout without a browser-selected locker for manual BOX NOW fulfillment', async () => {
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         returnUrl: 'https://example.com/return',
-        shippingLocker: null as never,
         storeItemSlug: storeItem.storeItemSlug,
         variantId: storeItem.variantId,
       }),
-    ).rejects.toBeInstanceOf(CheckoutShippingSelectionError);
+    ).resolves.toEqual({
+      checkoutSessionId: 'cs_test_123',
+      clientSecret: 'cs_test_123_secret_abc',
+    });
 
-    expect(checkoutGateway.createEmbeddedCheckoutSession).not.toHaveBeenCalled();
+    expect(orders.records.get('cs_test_123')).toMatchObject({
+      shippingLocker: null,
+      status: 'pending_payment',
+    });
   });
 
   it('rejects disabled native checkout before Stripe or order writes', async () => {
@@ -259,7 +258,6 @@ describe('checkout use cases', () => {
         orders,
         {
           returnUrl: 'https://example.com/return',
-          shippingLocker,
           storeItemSlug: storeItem.storeItemSlug,
           variantId: storeItem.variantId,
         },
@@ -273,45 +271,10 @@ describe('checkout use cases', () => {
     expect(orders.records.size).toBe(0);
   });
 
-  it('rejects non-Greece shipping lockers before starting checkout', async () => {
-    await expect(
-      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
-        returnUrl: 'https://example.com/return',
-        shippingLocker: {
-          country_code: 'DE',
-          locker_id: 'locker_berlin',
-          locker_name_or_label: 'Berlin Locker',
-        },
-        storeItemSlug: storeItem.storeItemSlug,
-        variantId: storeItem.variantId,
-      }),
-    ).rejects.toBeInstanceOf(CheckoutShippingSelectionError);
-
-    expect(checkoutGateway.createEmbeddedCheckoutSession).not.toHaveBeenCalled();
-  });
-
-  it('rejects blank shipping locker fields before starting checkout', async () => {
-    await expect(
-      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
-        returnUrl: 'https://example.com/return',
-        shippingLocker: {
-          country_code: 'GR',
-          locker_id: ' ',
-          locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
-        },
-        storeItemSlug: storeItem.storeItemSlug,
-        variantId: storeItem.variantId,
-      }),
-    ).rejects.toBeInstanceOf(CheckoutShippingSelectionError);
-
-    expect(checkoutGateway.createEmbeddedCheckoutSession).not.toHaveBeenCalled();
-  });
-
   it('rejects unknown store items before starting checkout', async () => {
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         returnUrl: 'https://example.com/return',
-        shippingLocker,
         storeItemSlug: 'unknown',
         variantId: storeItem.variantId,
       }),
@@ -322,7 +285,6 @@ describe('checkout use cases', () => {
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         returnUrl: 'https://example.com/return',
-        shippingLocker,
         storeItemSlug: storeItem.storeItemSlug,
         variantId: 'variant_other',
       }),
@@ -338,7 +300,6 @@ describe('checkout use cases', () => {
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         returnUrl: 'https://example.com/return',
-        shippingLocker,
         storeItemSlug: storeItem.storeItemSlug,
         variantId: storeItem.variantId,
       }),
@@ -351,7 +312,6 @@ describe('checkout use cases', () => {
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         returnUrl: 'https://example.com/return',
-        shippingLocker,
         storeItemSlug: storeItem.storeItemSlug,
         variantId: storeItem.variantId,
       }),
@@ -362,7 +322,6 @@ describe('checkout use cases', () => {
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         returnUrl: 'https://example.com/return',
-        shippingLocker,
         storeItemSlug: storeItem.storeItemSlug,
         variantId: storeItem.variantId,
       }),
@@ -386,7 +345,7 @@ describe('checkout use cases', () => {
     expect(orders.records.get('cs_test_123')).toEqual(
       expect.objectContaining({
         checkoutSessionId: 'cs_test_123',
-        shippingLocker,
+        shippingLocker: null,
         status: 'pending_payment',
         storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_barren-point_standard',
@@ -405,7 +364,6 @@ describe('checkout use cases', () => {
           },
         ],
         returnUrl: 'https://example.com/return',
-        shippingLocker,
       }),
     ).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
@@ -438,10 +396,9 @@ describe('checkout use cases', () => {
     expect(checkoutGateway.readCheckoutSession).toHaveBeenCalledWith('cs_test_123');
   });
 
-  it('surfaces the persisted shipping locker snapshot for checkout return recap', async () => {
+  it('surfaces manual BOX NOW return state without a persisted locker snapshot', async () => {
     await startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
       returnUrl: 'https://example.com/return',
-      shippingLocker,
       storeItemSlug: storeItem.storeItemSlug,
       variantId: storeItem.variantId,
     });
@@ -449,7 +406,7 @@ describe('checkout use cases', () => {
     await expect(readCheckoutState(checkoutGateway, orders, 'cs_test_123')).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
       paymentStatus: 'paid',
-      shippingLocker,
+      shippingLocker: null,
       state: 'paid',
       status: 'complete',
     });

@@ -97,8 +97,13 @@ purely editorial and cannot affect ownership, entrypoints, status, dependencies,
 
 - The root provided interface is the default import target.
 - Any extra exposed surface must be declared as a named interface in the owning module canvas and manifest.
-- Planned TypeScript shapes include `index.ts`, `api.ts`, and `spi.ts`.
+- `index.ts` is the normal provided interface shape.
+- `api.ts` is allowed only for a documented secondary consumer-facing API.
+- `spi.ts` is allowed only for provider-implemented contracts, such as repository contracts or gateway contracts that an
+  infrastructure module implements.
 - A file path is not a named interface just because it is exported today.
+- Do not introduce generic module-level `ports/` or `adapters/` folders unless the boundary manifest explicitly approves
+  that exception; infrastructure adapters should be modules or internal implementation details.
 - Temporary compatibility facades are out of policy for future boundary slices.
 
 ### Real package boundaries
@@ -113,7 +118,8 @@ purely editorial and cannot affect ownership, entrypoints, status, dependencies,
 - Shared artifacts still need an explicit owner module.
 - A generated or shared artifact does not need to pretend to be an ordinary business module when a package or
   platform-shared boundary is the right fit.
-- Backend commerce IDs and repository port contracts belong to `commerce-domain`, not `platform-shared`.
+- Backend commerce IDs belong to the `commerce-domain` root interface, and repository SPI contracts belong to the
+  `commerce-domain` `spi.ts` named interface, not `platform-shared`.
 - `platform-shared` remains strict bootstrap-only and must not become a business-logic catch-all.
 
 ## Exception Policy

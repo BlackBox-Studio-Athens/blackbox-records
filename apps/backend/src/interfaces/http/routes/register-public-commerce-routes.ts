@@ -84,7 +84,6 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
           primaryLine.storeItemSlug,
           context.env.CHECKOUT_RETURN_ORIGINS,
         ),
-        shippingLocker: body.shippingLocker,
         storeItemSlug: primaryLine.storeItemSlug,
         variantId: primaryLine.variantId,
       });
@@ -101,10 +100,6 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
       }
 
       if (error instanceof services.errors.VariantMismatchError) {
-        return context.json({ error: error.message }, 400);
-      }
-
-      if (error instanceof services.errors.CheckoutShippingSelectionError) {
         return context.json({ error: error.message }, 400);
       }
 

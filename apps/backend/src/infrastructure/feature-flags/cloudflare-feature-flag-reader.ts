@@ -1,7 +1,7 @@
 import type { Client as OpenFeatureClient } from '@openfeature/server-sdk';
 import type { FlagshipBinding } from '@cloudflare/flagship/server';
 
-import type { FeatureFlagReader } from '../../application/commerce/checkout';
+import type { FeatureFlagReader } from '../../application/commerce/checkout/spi';
 import type { AppBindings, AppEnvironment } from '../../env';
 
 export const NATIVE_CHECKOUT_ENABLED_FLAG = 'native_checkout_enabled';

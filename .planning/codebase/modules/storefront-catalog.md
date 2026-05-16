@@ -15,6 +15,7 @@ store item routes.
 - `apps/web/src/lib/item-availability.ts`
 - `apps/web/src/lib/release-commerce.ts`
 - `apps/web/src/lib/release-feature.ts`
+- `apps/web/src/lib/store-tax-category.ts`
 - `apps/web/src/pages/index.astro`
 - `apps/web/src/pages/artists/**`
 - `apps/web/src/pages/releases/**`
@@ -30,12 +31,14 @@ store item routes.
 - browser-safe content and catalog projections
 - canonical route props and route builders
 - shopper-facing `StoreItem` and display metadata projections
+- store tax-category policy for browser-safe Stripe Tax classification
 
 ## Internal Implementation Area
 
 - collection sorting and grouping rules
 - release and Distro projection heuristics
 - editorial normalization and fallback logic
+- tax-category to Stripe Tax code classification for static store products
 
 ## Allowed Dependencies
 
@@ -69,6 +72,7 @@ store item routes.
 - `apps/web/src/lib/item-availability.test.ts`
 - `apps/web/src/lib/store-collection.test.ts`
 - `apps/web/src/lib/store-page-data.test.ts`
+- `apps/web/src/lib/store-tax-category.test.ts`
 - Browser Use checks for catalog, detail, and store item routes
 
 ## Migration Status

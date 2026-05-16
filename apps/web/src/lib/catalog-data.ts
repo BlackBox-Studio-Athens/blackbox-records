@@ -1,6 +1,7 @@
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
 
 import { createProjectRelativeUrl } from '../config/site';
+import type { StoreItemTaxCategory } from './store-tax-category';
 export { groupDistroEntries } from './distro-data';
 
 export type ArtistProfileEntry = CollectionEntry<'artists'>;
@@ -10,6 +11,7 @@ export type DistroCatalogEntry = CollectionEntry<'distro'>;
 export type StoreItemSourceKind = 'release' | 'distro';
 export type StoreItem = {
   slug: string;
+  taxCategory: StoreItemTaxCategory;
   sourceKind: StoreItemSourceKind;
   sourceId: string;
   title: string;
@@ -145,6 +147,7 @@ export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEnt
 
   return {
     slug,
+    taxCategory: 'physical_goods',
     sourceKind: 'release',
     sourceId: releaseEntry.id,
     title: releaseEntry.data.title,
@@ -165,6 +168,7 @@ export function createStoreItemFromDistroEntry(distroEntry: DistroCatalogEntry):
 
   return {
     slug,
+    taxCategory: 'physical_goods',
     sourceKind: 'distro',
     sourceId: distroEntry.id,
     title: distroEntry.data.title,

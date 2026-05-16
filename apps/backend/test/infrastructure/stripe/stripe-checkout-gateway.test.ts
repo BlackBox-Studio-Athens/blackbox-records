@@ -70,6 +70,12 @@ describe('StripeCheckoutGateway', () => {
             quantity: 2,
           },
         ],
+        phone_number_collection: {
+          enabled: true,
+        },
+        shipping_address_collection: {
+          allowed_countries: ['GR'],
+        },
       }),
     );
   });

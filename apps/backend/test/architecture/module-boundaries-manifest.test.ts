@@ -146,4 +146,31 @@ describe('Module boundaries manifest', () => {
       'platform-shared must not own Stripe integration code: apps/backend/src/infrastructure/stripe/index.ts',
     );
   });
+
+  it('requires named SPI surfaces to target spi.ts entrypoints', () => {
+    const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
+      modules: Record<string, Record<string, unknown>>;
+    };
+    manifest.modules['commerce-domain'].namedInterfaces = {
+      'repository-spi': 'apps/backend/src/domain/commerce/repositories/not-spi.ts',
+    };
+
+    expect(validateManifest(manifest)).toContain(
+      'Module commerce-domain named SPI repository-spi must target a spi.ts entrypoint: apps/backend/src/domain/commerce/repositories/not-spi.ts',
+    );
+  });
+
+  it('rejects unapproved module-level ports and adapters directories', () => {
+    const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
+      modules: Record<string, Record<string, unknown>>;
+    };
+    manifest.modules['checkout-core'].roots = [
+      ...((manifest.modules['checkout-core'].roots as string[]) ?? []),
+      'apps/backend/src/application/commerce/checkout/adapters/**',
+    ];
+
+    expect(validateManifest(manifest)).toContain(
+      'Module checkout-core declares unapproved ports/adapters path: apps/backend/src/application/commerce/checkout/adapters/**',
+    );
+  });
 });

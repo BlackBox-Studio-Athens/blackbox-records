@@ -6,7 +6,7 @@ import type {
   ListRecentCheckoutOrdersInput,
   OrderStateRepository,
   OrderStatus,
-} from '../../../domain/commerce/repositories';
+} from '../../../domain/commerce/repositories/spi';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapCheckoutOrder(record: {
@@ -83,9 +83,9 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
       data: {
         checkoutSessionId: input.checkoutSessionId,
         createdAt,
-        shippingLockerCountryCode: input.shippingLocker.country_code,
-        shippingLockerId: input.shippingLocker.locker_id,
-        shippingLockerNameOrLabel: input.shippingLocker.locker_name_or_label,
+        shippingLockerCountryCode: input.shippingLocker?.country_code ?? null,
+        shippingLockerId: input.shippingLocker?.locker_id ?? null,
+        shippingLockerNameOrLabel: input.shippingLocker?.locker_name_or_label ?? null,
         status: 'pending_payment',
         statusUpdatedAt: createdAt,
         storeItemSlug: input.storeItemSlug,

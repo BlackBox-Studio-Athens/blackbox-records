@@ -1,9 +1,5 @@
-import type {
-  ShippingLockerSnapshot,
-  StoreItemSlug,
-  StripePriceId,
-  VariantId,
-} from '../../../domain/commerce/repositories';
+import type { ShippingLockerSnapshot } from '../../../domain/commerce/repositories/spi';
+import type { StoreItemSlug, StripePriceId, VariantId } from '../../../domain/commerce';
 
 export type StoreOfferAvailability = {
   status: 'available' | 'sold_out';
@@ -36,12 +32,6 @@ export type EmbeddedCheckoutSessionLineItem = {
 export type FinalizedCheckoutSessionLineItem = {
   quantity: number;
   stripePriceId: StripePriceId;
-};
-
-export type CheckoutShippingLockerSnapshot = {
-  locker_id: string;
-  country_code: string;
-  locker_name_or_label: string;
 };
 
 export type EmbeddedCheckoutSession = {

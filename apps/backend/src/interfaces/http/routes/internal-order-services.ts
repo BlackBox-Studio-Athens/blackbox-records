@@ -1,5 +1,5 @@
 import { readCheckoutOrder, readRecentCheckoutOrders } from '../../../application/commerce/orders';
-import type { OrderStatus } from '../../../domain/commerce/repositories';
+import type { OrderStatus } from '../../../domain/commerce/repositories/spi';
 import type { AppBindings } from '../../../env';
 import { createPrismaClient, PrismaOrderStateRepository } from '../../../infrastructure/persistence/prisma';
 

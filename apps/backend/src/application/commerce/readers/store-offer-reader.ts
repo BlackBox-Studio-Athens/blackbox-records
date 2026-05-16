@@ -2,9 +2,8 @@ import type {
   ItemAvailabilityRecord,
   ItemAvailabilityRepository,
   StoreItemOptionRepository,
-  StoreItemSlug,
-  VariantId,
-} from '../../../domain/commerce/repositories';
+} from '../../../domain/commerce/repositories/spi';
+import type { StoreItemSlug, VariantId } from '../../../domain/commerce';
 
 export type StoreOffer = {
   storeItemSlug: StoreItemSlug;

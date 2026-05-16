@@ -7,7 +7,7 @@ import type {
   StockRecord,
   StockRepository,
   OrderStateRepository,
-} from '../../../domain/commerce/repositories';
+} from '../../../domain/commerce/repositories/spi';
 import { InvalidOrderTransitionError } from './errors';
 import { transitionCheckoutOrder } from './transition-checkout-order';
 

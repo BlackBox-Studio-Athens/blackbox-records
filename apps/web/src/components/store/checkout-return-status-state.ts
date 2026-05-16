@@ -18,7 +18,7 @@ export type CheckoutReturnStatusView = {
 export type CheckoutReturnShippingLockerView =
   | { kind: 'hidden' }
   | { detail: string; kind: 'selected'; label: string }
-  | { detail: string; kind: 'needs_review'; label: string };
+  | { detail: string; kind: 'manual'; label: string };
 
 export function readCheckoutSessionIdFromSearch(search: string): string | null {
   const sessionId = new URLSearchParams(search).get('session_id')?.trim();
@@ -145,10 +145,9 @@ function createCheckoutReturnShippingLockerView(state: CheckoutReturnLoadState):
 
   if (!locker) {
     return {
-      detail:
-        'We could not confirm the selected BOX NOW locker for this checkout. Contact the label before fulfillment.',
-      kind: 'needs_review',
-      label: 'Locker Needs Review',
+      detail: 'Stripe collected the shipping details. The label will create the BOX NOW shipment manually.',
+      kind: 'manual',
+      label: 'Manual BOX NOW Fulfillment',
     };
   }
 

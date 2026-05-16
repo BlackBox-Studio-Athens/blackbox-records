@@ -1,4 +1,7 @@
-import type { VariantStripeMappingRecord, VariantStripeMappingRepository } from '../../../domain/commerce/repositories';
+import type {
+  VariantStripeMappingRecord,
+  VariantStripeMappingRepository,
+} from '../../../domain/commerce/repositories/spi';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapVariantStripeMapping(record: { stripePriceId: string; variantId: string }): VariantStripeMappingRecord {

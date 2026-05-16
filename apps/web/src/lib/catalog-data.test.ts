@@ -123,6 +123,7 @@ describe('StoreItem projection contract', () => {
 
     expect(storeItem).toEqual({
       slug: 'caregivers-vinyl',
+      taxCategory: 'physical_goods',
       sourceKind: 'release',
       sourceId: 'caregivers',
       title: 'Caregivers',
@@ -155,6 +156,7 @@ describe('StoreItem projection contract', () => {
     } as any);
 
     expect(storeItem.sourceKind).toBe('distro');
+    expect(storeItem.taxCategory).toBe('physical_goods');
     expect(storeItem.storePath).toBe('/blackbox-records/store/afterglow-tape/');
     expect(storeItem.checkoutPath).toBe('/blackbox-records/store/afterglow-tape/checkout/');
     expect(storeItem.metadata).toEqual(['Tapes', '2021', 'Cassette']);
@@ -205,6 +207,11 @@ describe('StoreItem projection contract', () => {
       ['disintegration-black-vinyl-lp', 'release'],
       ['caregivers-vinyl', 'release'],
       ['afterglow-tape', 'distro'],
+    ]);
+    expect(storeItems.map((storeItem) => storeItem.taxCategory)).toEqual([
+      'physical_goods',
+      'physical_goods',
+      'physical_goods',
     ]);
   });
 

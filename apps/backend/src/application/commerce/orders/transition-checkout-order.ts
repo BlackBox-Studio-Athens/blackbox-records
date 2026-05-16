@@ -1,4 +1,4 @@
-import type { CheckoutOrderRecord, OrderStateRepository, OrderStatus } from '../../../domain/commerce/repositories';
+import type { CheckoutOrderRecord, OrderStateRepository, OrderStatus } from '../../../domain/commerce/repositories/spi';
 import { CheckoutOrderNotFoundError, InvalidOrderTransitionError } from './errors';
 import { evaluateOrderTransition, type OrderTransitionOrigin } from './order-state';
 

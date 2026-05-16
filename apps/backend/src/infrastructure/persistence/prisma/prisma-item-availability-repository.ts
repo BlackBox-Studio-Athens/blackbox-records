@@ -1,4 +1,4 @@
-import type { ItemAvailabilityRecord, ItemAvailabilityRepository } from '../../../domain/commerce/repositories';
+import type { ItemAvailabilityRecord, ItemAvailabilityRepository } from '../../../domain/commerce/repositories/spi';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapItemAvailability(record: {

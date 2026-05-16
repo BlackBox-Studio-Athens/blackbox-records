@@ -2,7 +2,7 @@ import type {
   StoreItemOptionRecord,
   StoreItemOptionRepository,
   StoreItemSourceRef,
-} from '../../../domain/commerce/repositories';
+} from '../../../domain/commerce/repositories/spi';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapStoreItemOption(record: {

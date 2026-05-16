@@ -1,4 +1,4 @@
-import type { StockRepository, StoreItemOptionRepository } from '../../../domain/commerce/repositories';
+import type { StockRepository, StoreItemOptionRepository } from '../../../domain/commerce/repositories/spi';
 import { VariantNotFoundError } from './errors';
 import type { VariantStockDetail } from './types';
 

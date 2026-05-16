@@ -27,7 +27,7 @@ export const STORE_CART_DRAWER_COPY = {
   emptyDetail: 'Add store items to review the cart draft before checkout.',
   emptyTitle: 'Your cart is empty',
   remove: 'Remove',
-  shipping: 'Greece-only BOX NOW locker shipping is confirmed at checkout.',
+  shipping: 'Greece-only shipping details are collected during checkout.',
   subtotal: 'Subtotal',
 } as const;
 

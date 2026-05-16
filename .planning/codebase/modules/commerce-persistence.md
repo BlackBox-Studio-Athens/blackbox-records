@@ -25,7 +25,8 @@ Own backend Prisma/D1 adapter construction and Prisma-backed implementations of 
 
 ## Named Interfaces / SPI Surfaces
 
-- `apps/backend/src/infrastructure/persistence/prisma/index.ts`
+- none; this module implements the `commerce-domain` repository SPI and exposes its Prisma construction through its root
+  provided interface
 
 ## Published Events
 

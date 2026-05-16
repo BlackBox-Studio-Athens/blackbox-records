@@ -5,11 +5,6 @@ import {
   type StoreCapabilities,
 } from '../../lib/backend/public-checkout-api';
 import type { EmbeddedCheckoutAdapter, EmbeddedCheckoutMount } from '../../lib/backend/stripe-embedded-checkout';
-import {
-  normalizeCheckoutLockerSelection,
-  readCheckoutShippingGateError,
-  type CheckoutLockerSelection,
-} from './checkout-shipping-step-state';
 import type { CartLine } from '../../lib/store-cart';
 
 export type CheckoutOfferInitialAvailability = {
@@ -156,7 +151,6 @@ export type EmbeddedCheckoutStartInput = {
   api: PublicCheckoutApi;
   checkoutAdapter: EmbeddedCheckoutAdapter;
   lines?: CartLine[];
-  lockerSelection: CheckoutLockerSelection | null;
   mountTarget: HTMLElement;
   storeItemSlug: string;
   variantId: string;
@@ -166,29 +160,10 @@ export async function startEmbeddedCheckout({
   api,
   checkoutAdapter,
   lines,
-  lockerSelection,
   mountTarget,
   storeItemSlug,
   variantId,
 }: EmbeddedCheckoutStartInput): Promise<EmbeddedCheckoutStartState> {
-  const shippingGateError = readCheckoutShippingGateError(lockerSelection);
-
-  if (shippingGateError) {
-    return {
-      kind: 'error',
-      message: shippingGateError,
-    };
-  }
-
-  const shippingLocker = normalizeCheckoutLockerSelection(lockerSelection);
-
-  if (!shippingLocker || shippingLocker.country_code !== 'GR') {
-    return {
-      kind: 'error',
-      message: 'Select a Greece BOX NOW locker before payment opens.',
-    };
-  }
-
   const configurationError = checkoutAdapter.getConfigurationError();
 
   if (configurationError) {
@@ -215,10 +190,6 @@ export async function startEmbeddedCheckout({
           checkoutLines[0]!.variantId !== variantId));
     const { clientSecret } = await api.startCheckout({
       ...(shouldSendMultiLineContract ? { lines: checkoutLines } : {}),
-      shippingLocker: {
-        ...shippingLocker,
-        country_code: 'GR',
-      },
       storeItemSlug,
       variantId,
     });

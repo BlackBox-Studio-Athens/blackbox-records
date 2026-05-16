@@ -3,7 +3,7 @@ import type {
   StockCountRecord,
   StockRecord,
   StoreItemOptionRecord,
-} from '../../../domain/commerce/repositories';
+} from '../../../domain/commerce/repositories/spi';
 
 export type VariantSummary = StoreItemOptionRecord;
 

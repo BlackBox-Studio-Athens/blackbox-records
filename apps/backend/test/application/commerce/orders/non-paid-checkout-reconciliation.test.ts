@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import {
-  reconcileCheckoutSession,
-  type StripeCheckoutPaymentStatus,
-  type StripeCheckoutSessionStatus,
-} from '../../../../src/application/commerce/checkout';
+import { reconcileCheckoutSession } from '../../../../src/application/commerce/checkout';
+import type {
+  StripeCheckoutPaymentStatus,
+  StripeCheckoutSessionStatus,
+} from '../../../../src/application/commerce/checkout/spi';
 import {
   applyNonPaidCheckoutReconciliation,
   createPendingCheckoutOrder,
@@ -16,7 +16,7 @@ import type {
   CreatePendingCheckoutOrderInput,
   OrderStateRepository,
   OrderStatus,
-} from '../../../../src/domain/commerce/repositories';
+} from '../../../../src/domain/commerce/repositories/spi';
 
 class InMemoryOrderStateRepository implements OrderStateRepository {
   public readonly records = new Map<string, CheckoutOrderRecord>();

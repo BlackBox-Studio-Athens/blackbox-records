@@ -21,7 +21,7 @@ import type {
   StoreItemOptionRecord,
   StoreItemOptionRepository,
   StoreItemSourceRef,
-} from '../../../../src/domain/commerce/repositories';
+} from '../../../../src/domain/commerce/repositories/spi';
 
 class InMemoryStoreItemOptionRepository implements StoreItemOptionRepository {
   public constructor(private readonly storeItems: StoreItemOptionRecord[]) {}

@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   CheckoutConfigurationError,
-  CheckoutShippingSelectionError,
   CheckoutUnavailableError,
   NativeCheckoutDisabledError,
   StoreItemNotFoundError,
@@ -22,7 +21,6 @@ vi.mock('../../src/interfaces/http/routes/public-commerce-services', () => ({
     disconnect: mockDisconnect,
     errors: {
       CheckoutConfigurationError,
-      CheckoutShippingSelectionError,
       CheckoutUnavailableError,
       NativeCheckoutDisabledError,
       StoreItemNotFoundError,
@@ -152,7 +150,7 @@ describe('public commerce routes', () => {
     });
   });
 
-  it('starts embedded checkout with app identity and a minimal shipping locker snapshot', async () => {
+  it('starts embedded checkout with app identity only for manual BOX NOW fulfillment', async () => {
     mockStartCheckout.mockResolvedValueOnce({
       checkoutSessionId: 'cs_test_123',
       clientSecret: 'cs_test_123_secret_abc',
@@ -163,7 +161,6 @@ describe('public commerce routes', () => {
       'http://backend.test/api/checkout/sessions',
       {
         body: JSON.stringify({
-          shippingLocker,
           storeItemSlug: 'disintegration-black-vinyl-lp',
           variantId: 'variant_barren-point_standard',
         }),
@@ -180,7 +177,6 @@ describe('public commerce routes', () => {
     expect(mockStartCheckout).toHaveBeenCalledWith({
       returnUrl:
         'https://blackbox.example/blackbox-records/store/disintegration-black-vinyl-lp/checkout/return?session_id={CHECKOUT_SESSION_ID}',
-      shippingLocker,
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
     });
@@ -190,7 +186,12 @@ describe('public commerce routes', () => {
     });
   });
 
-  it('rejects checkout starts without a shipping locker snapshot before calling the application service', async () => {
+  it('accepts checkout starts without a shipping locker snapshot', async () => {
+    mockStartCheckout.mockResolvedValueOnce({
+      checkoutSessionId: 'cs_test_123',
+      clientSecret: 'cs_test_123_secret_abc',
+    });
+
     const app = createHttpApp();
     const response = await app.request(
       'http://backend.test/api/checkout/sessions',
@@ -209,8 +210,8 @@ describe('public commerce routes', () => {
       testBindings,
     );
 
-    expect(mockStartCheckout).not.toHaveBeenCalled();
-    expect(response.status).toBe(400);
+    expect(mockStartCheckout).toHaveBeenCalledOnce();
+    expect(response.status).toBe(200);
   });
 
   it('rejects checkout return URLs from unapproved origins', async () => {
@@ -219,7 +220,6 @@ describe('public commerce routes', () => {
       'http://backend.test/api/checkout/sessions',
       {
         body: JSON.stringify({
-          shippingLocker,
           storeItemSlug: 'disintegration-black-vinyl-lp',
           variantId: 'variant_barren-point_standard',
         }),
@@ -246,7 +246,6 @@ describe('public commerce routes', () => {
       'http://backend.test/api/checkout/sessions',
       {
         body: JSON.stringify({
-          shippingLocker,
           storeItemSlug: 'disintegration-black-vinyl-lp',
           variantId: 'variant_barren-point_standard',
         }),
@@ -275,7 +274,6 @@ describe('public commerce routes', () => {
       'http://backend.test/api/checkout/sessions',
       {
         body: JSON.stringify({
-          shippingLocker,
           storeItemSlug: 'disintegration-black-vinyl-lp',
           variantId: 'variant_barren-point_standard',
         }),
@@ -295,34 +293,6 @@ describe('public commerce routes', () => {
     });
   });
 
-  it('maps invalid shipping locker selections to a public non-500 response', async () => {
-    mockStartCheckout.mockRejectedValueOnce(new CheckoutShippingSelectionError());
-
-    const app = createHttpApp();
-    const response = await app.request(
-      'http://backend.test/api/checkout/sessions',
-      {
-        body: JSON.stringify({
-          shippingLocker,
-          storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_barren-point_standard',
-        }),
-        headers: {
-          origin: 'https://blackbox.example',
-          referer: 'https://blackbox.example/store/disintegration-black-vinyl-lp/checkout/',
-          'content-type': 'application/json',
-        },
-        method: 'POST',
-      },
-      testBindings,
-    );
-
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({
-      error: 'A valid Greece BOX NOW locker is required before checkout.',
-    });
-  });
-
   it('maps disabled native checkout to a public service-unavailable response', async () => {
     mockStartCheckout.mockRejectedValueOnce(new NativeCheckoutDisabledError());
 
@@ -331,7 +301,6 @@ describe('public commerce routes', () => {
       'http://backend.test/api/checkout/sessions',
       {
         body: JSON.stringify({
-          shippingLocker,
           storeItemSlug: 'disintegration-black-vinyl-lp',
           variantId: 'variant_barren-point_standard',
         }),

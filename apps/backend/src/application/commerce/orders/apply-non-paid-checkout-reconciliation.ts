@@ -1,5 +1,5 @@
 import type { CheckoutReconciliation } from '../checkout/reconcile-checkout-session';
-import type { CheckoutOrderRecord, OrderStateRepository, OrderStatus } from '../../../domain/commerce/repositories';
+import type { CheckoutOrderRecord, OrderStateRepository, OrderStatus } from '../../../domain/commerce/repositories/spi';
 import { CheckoutOrderNotFoundError, InvalidOrderTransitionError } from './errors';
 import { transitionCheckoutOrder } from './transition-checkout-order';
 

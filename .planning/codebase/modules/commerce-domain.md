@@ -8,11 +8,12 @@ persistence adapters. This module is the backend commerce domain contract surfac
 ## Owned Files And Directories
 
 - `apps/backend/src/domain/commerce/ids.ts`
+- `apps/backend/src/domain/commerce/index.ts`
 - `apps/backend/src/domain/commerce/repositories/**`
 
 ## Provided Interface
 
-- `apps/backend/src/domain/commerce/repositories/index.ts`
+- `apps/backend/src/domain/commerce/index.ts`
 
 ## Internal Implementation Area
 
@@ -25,7 +26,7 @@ persistence adapters. This module is the backend commerce domain contract surfac
 
 ## Named Interfaces / SPI Surfaces
 
-- repository SPI through `apps/backend/src/domain/commerce/repositories/index.ts`
+- repository SPI through `apps/backend/src/domain/commerce/repositories/spi.ts`
 
 ## Published Events
 
@@ -39,6 +40,7 @@ persistence adapters. This module is the backend commerce domain contract surfac
 
 - keep repository contracts free of persistence implementation details
 - keep canonical commerce IDs independent from Stripe raw IDs or D1 implementation details
+- keep identity aliases on the root provided interface and repository contracts on the SPI named interface
 - reject ownership drift back into `platform-shared`
 
 ## Tests Required Before Refactors

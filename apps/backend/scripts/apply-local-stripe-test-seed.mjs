@@ -16,14 +16,49 @@ if (!existsSync(seedPath)) {
   process.exit(1);
 }
 
-const result = spawnSync(
-  process.platform === 'win32' ? 'wrangler.cmd' : 'wrangler',
-  ['d1', 'execute', 'COMMERCE_DB', '--local', '--file', './prisma/seeds/local-stripe-test-state.sql', '--json'],
-  {
-    cwd: backendDir,
-    shell: false,
-    stdio: 'inherit',
-  },
-);
+const command =
+  process.platform === 'win32'
+    ? {
+        command: 'cmd.exe',
+        args: [
+          '/d',
+          '/s',
+          '/c',
+          'pnpm',
+          'exec',
+          'wrangler',
+          'd1',
+          'execute',
+          'COMMERCE_DB',
+          '--local',
+          '--file',
+          './prisma/seeds/local-stripe-test-state.sql',
+          '--json',
+        ],
+      }
+    : {
+        command: 'pnpm',
+        args: [
+          'exec',
+          'wrangler',
+          'd1',
+          'execute',
+          'COMMERCE_DB',
+          '--local',
+          '--file',
+          './prisma/seeds/local-stripe-test-state.sql',
+          '--json',
+        ],
+      };
+
+const result = spawnSync(command.command, command.args, {
+  cwd: backendDir,
+  shell: false,
+  stdio: 'inherit',
+});
+
+if (result.error) {
+  console.error(result.error.message);
+}
 
 process.exit(result.status ?? 1);

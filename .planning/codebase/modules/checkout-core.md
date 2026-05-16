@@ -33,6 +33,7 @@ backend read model used to derive checkout-ready store offers.
 ## Named Interfaces / SPI Surfaces
 
 - root API through `application/commerce/checkout/index.ts`
+- checkout provider SPI through `application/commerce/checkout/spi.ts`
 - repository SPI through the `commerce-domain` provided interface
 
 ## Published Events
@@ -48,6 +49,7 @@ backend read model used to derive checkout-ready store offers.
 - preserve application-level tests for checkout use cases and reconciliation
 - keep route layers dependent on exported checkout APIs, not internal helper files
 - prevent Stripe or persistence implementation details from leaking through the provided interface
+- keep gateway and feature-flag contracts on the checkout SPI, not the root checkout API
 
 ## Tests Required Before Refactors
 

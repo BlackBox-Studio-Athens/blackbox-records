@@ -2,8 +2,8 @@ import type {
   ItemAvailabilityRepository,
   StockRepository,
   StoreItemOptionRepository,
-  StoreItemSlug,
-} from '../../../domain/commerce/repositories';
+} from '../../../domain/commerce/repositories/spi';
+import type { StoreItemSlug } from '../../../domain/commerce';
 import type { StoreOffer } from './types';
 
 function unavailableOffer(storeItemSlug: StoreItemSlug, variantId: string, label: string): StoreOffer {

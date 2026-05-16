@@ -70,7 +70,6 @@ import {
 import { createStoreCartDrawerView } from './StoreCartDrawer';
 import { requestStoreCartAddItem } from './StoreItemPurchaseActions';
 import { createCheckoutOfferView, loadCheckoutOfferState, startEmbeddedCheckout } from './checkout-offer-status-state';
-import { LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION } from './checkout-shipping-step-state';
 import { createCartLineItemSnapshotForStorePage, getStorePageEntryBySlug } from '../../lib/store-page-data';
 
 afterEach(() => {
@@ -172,13 +171,12 @@ describe('store purchase happy path', () => {
     const handoffState = await startEmbeddedCheckout({
       api,
       checkoutAdapter: createMockEmbeddedCheckoutAdapter(),
-      lockerSelection: LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION,
       mountTarget,
       storeItemSlug: persistedCartState.primaryLineItem!.storeItemSlug,
       variantId: checkoutView.variantId!,
     });
 
-    // Assert: checkout starts with app identity plus the minimal locker snapshot, and the handoff does not render secrets.
+    // Assert: checkout starts with app identity only, and the handoff does not render secrets.
     expect(handoffState.kind).toBe('mounted');
     expect(mountTarget.textContent).toContain('Mock Checkout Started');
     expect(mountTarget.textContent).not.toContain('cs_mock_secret_variant_barren-point_standard');
@@ -186,7 +184,6 @@ describe('store purchase happy path', () => {
       '/api/checkout/sessions',
       expect.objectContaining({
         body: JSON.stringify({
-          shippingLocker: LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION,
           storeItemSlug: 'disintegration-black-vinyl-lp',
           variantId: 'variant_barren-point_standard',
         }),
@@ -194,16 +191,12 @@ describe('store purchase happy path', () => {
       }),
     );
     expect(readJsonBody(fetchStub, '/api/checkout/sessions')).not.toHaveProperty('locker_id');
-    expect(readJsonBody(fetchStub, '/api/checkout/sessions')).toHaveProperty(
-      'shippingLocker',
-      LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION,
-    );
+    expect(readJsonBody(fetchStub, '/api/checkout/sessions')).not.toHaveProperty('shippingLocker');
 
     const browserOwnedPayload = JSON.stringify({
       cart: persistedCartState,
       checkoutBody: readJsonBody(fetchStub, '/api/checkout/sessions'),
       drawer: drawerView,
-      lockerSelection: LOCAL_MOCK_BOX_NOW_LOCKER_SELECTION,
     });
 
     expect(browserOwnedPayload).not.toContain('price_mock_');

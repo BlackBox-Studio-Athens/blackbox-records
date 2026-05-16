@@ -5,7 +5,7 @@ import type {
   ItemAvailabilityRepository,
   StoreItemOptionRecord,
   StoreItemOptionRepository,
-} from '../../../../src/domain/commerce/repositories';
+} from '../../../../src/domain/commerce/repositories/spi';
 import { StoreOfferReader } from '../../../../src/application/commerce/readers';
 
 describe('StoreOfferReader', () => {

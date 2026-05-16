@@ -45,8 +45,11 @@ boundary rules are project-level. The closer TypeScript-native fit is:
 - Modules are **closed by default**.
 - `app-shell` and `cms-admin` are the initial **open-temporary** exceptions.
 - `platform-shared` is a **split-pending** residual module that must stay strict bootstrap-only and shrink over time.
-- Extra exposed module surfaces must be represented as **Named Interfaces** and later implemented as explicit TS entry
-  points such as `index.ts`, `api.ts`, or `spi.ts`.
+- Extra exposed module surfaces must be represented as **Named Interfaces** and implemented with explicit TypeScript
+  entrypoints: `index.ts` for the default provided interface, `api.ts` only for secondary consumer-facing APIs, and
+  `spi.ts` only for provider-implemented contracts.
+- Modules must not default to internal `ports/` and `adapters/` folder structures; infrastructure adapters are either
+  their own Application Modules or internal implementation details unless the boundary manifest approves an exception.
 - The future boundary stack will use:
   - a one repo machine-readable manifest at `.planning/codebase/module-boundaries.manifest.json`
   - `eslint-plugin-boundaries` as the primary import and entrypoint rule layer
@@ -71,6 +74,8 @@ boundary rules are project-level. The closer TypeScript-native fit is:
 - `eslint-plugin-boundaries` is a closer fit than Nx for enforcing in-app module ownership and entrypoint rules.
 - `dependency-cruiser` is stronger than plain lint rules for cycle and graph-shape enforcement.
 - Root-first entrypoints allow AI agents to see one obvious legal import target instead of many accidental ones.
+- Treating `spi.ts` as the only contract-provider shape keeps ports/adapters useful at real infrastructure boundaries
+  without forcing every Application Module into a mini clean-architecture layout.
 - Planning-first milestone work preserves the active v1.1 sandbox roadmap while preparing a safer post-sandbox
   hardening sequence.
 

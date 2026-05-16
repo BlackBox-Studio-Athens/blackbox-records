@@ -2,7 +2,7 @@ import type {
   RecordStockChangeInput,
   StockChangeRecord,
   StockChangeRepository,
-} from '../../../domain/commerce/repositories';
+} from '../../../domain/commerce/repositories/spi';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapStockChange(record: {

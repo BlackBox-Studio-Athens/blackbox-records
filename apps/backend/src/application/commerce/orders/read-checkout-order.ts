@@ -1,4 +1,4 @@
-import type { CheckoutOrderRecord, OrderStateRepository } from '../../../domain/commerce/repositories';
+import type { CheckoutOrderRecord, OrderStateRepository } from '../../../domain/commerce/repositories/spi';
 
 export function readCheckoutOrder(
   orders: OrderStateRepository,

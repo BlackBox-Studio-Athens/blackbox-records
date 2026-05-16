@@ -4,7 +4,7 @@ import type {
   StripeCheckoutPaymentStatus,
   StripeCheckoutSessionState,
   StripeCheckoutSessionStatus,
-} from '../../application/commerce/checkout';
+} from '../../application/commerce/checkout/spi';
 
 export function toStripeCheckoutSessionState(session: Stripe.Checkout.Session): StripeCheckoutSessionState {
   return {

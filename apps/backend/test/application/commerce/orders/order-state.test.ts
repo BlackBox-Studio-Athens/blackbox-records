@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { evaluateOrderTransition } from '../../../../src/application/commerce/orders';
-import type { OrderStatus } from '../../../../src/domain/commerce/repositories';
+import type { OrderStatus } from '../../../../src/domain/commerce/repositories/spi';
 
 describe('order transition guard', () => {
   it.each([

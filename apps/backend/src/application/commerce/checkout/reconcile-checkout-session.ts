@@ -1,5 +1,6 @@
-import type { OrderStatus } from '../../../domain/commerce/repositories';
-import type { CheckoutState, StripeCheckoutSessionState } from './types';
+import type { OrderStatus } from '../../../domain/commerce/repositories/spi';
+import type { StripeCheckoutSessionState } from './spi';
+import type { CheckoutState } from './types';
 
 export type CheckoutReconciliation = {
   checkoutState: CheckoutState;

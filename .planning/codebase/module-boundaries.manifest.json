@@ -12,6 +12,12 @@
   "entrypointPolicy": {
     "default": "root-first",
     "allowedNamedEntrypoints": ["api.ts", "spi.ts"],
+    "namedEntrypointRules": {
+      "api.ts": "secondary-consumer-api-only",
+      "spi.ts": "provider-implemented-contracts-only"
+    },
+    "disallowedModuleDirectoryNames": ["ports", "adapters"],
+    "approvedModuleDirectoryNameExceptions": {},
     "workspacePackageExportsArePreferredForRealPackages": true
   },
   "verification": {
@@ -125,6 +131,7 @@
         "apps/web/src/lib/item-availability.ts",
         "apps/web/src/lib/release-commerce.ts",
         "apps/web/src/lib/release-feature.ts",
+        "apps/web/src/lib/store-tax-category.ts",
         "apps/web/src/pages/index.astro",
         "apps/web/src/pages/artists/**",
         "apps/web/src/pages/releases/**",
@@ -244,10 +251,14 @@
     },
     "commerce-domain": {
       "status": "closed",
-      "roots": ["apps/backend/src/domain/commerce/ids.ts", "apps/backend/src/domain/commerce/repositories/**"],
-      "providedEntrypoints": ["apps/backend/src/domain/commerce/repositories/index.ts"],
+      "roots": [
+        "apps/backend/src/domain/commerce/index.ts",
+        "apps/backend/src/domain/commerce/ids.ts",
+        "apps/backend/src/domain/commerce/repositories/**"
+      ],
+      "providedEntrypoints": ["apps/backend/src/domain/commerce/index.ts"],
       "namedInterfaces": {
-        "repository-spi": "apps/backend/src/domain/commerce/repositories/index.ts"
+        "repository-spi": "apps/backend/src/domain/commerce/repositories/spi.ts"
       },
       "allowedDependencies": [],
       "allowedWorkspaceInterfaces": {},
@@ -257,9 +268,7 @@
       "status": "closed",
       "roots": ["apps/backend/src/infrastructure/persistence/prisma/**"],
       "providedEntrypoints": ["apps/backend/src/infrastructure/persistence/prisma/index.ts"],
-      "namedInterfaces": {
-        "prisma-repositories": "apps/backend/src/infrastructure/persistence/prisma/index.ts"
-      },
+      "namedInterfaces": {},
       "allowedDependencies": ["commerce-domain", "platform-shared"],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
@@ -268,9 +277,7 @@
       "status": "closed",
       "roots": ["apps/backend/src/infrastructure/stripe/**"],
       "providedEntrypoints": ["apps/backend/src/infrastructure/stripe/index.ts"],
-      "namedInterfaces": {
-        "stripe-checkout-gateway": "apps/backend/src/infrastructure/stripe/index.ts"
-      },
+      "namedInterfaces": {},
       "allowedDependencies": ["checkout-core", "platform-shared"],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
@@ -288,7 +295,7 @@
         "apps/backend/src/infrastructure/feature-flags/index.ts"
       ],
       "namedInterfaces": {
-        "repository-spi": "apps/backend/src/application/commerce/checkout/index.ts"
+        "checkout-spi": "apps/backend/src/application/commerce/checkout/spi.ts"
       },
       "allowedDependencies": ["commerce-domain", "orders", "stock", "platform-shared"],
       "allowedWorkspaceInterfaces": {},
@@ -324,9 +331,7 @@
       "status": "closed",
       "roots": ["apps/backend/src/application/commerce/stock/**"],
       "providedEntrypoints": ["apps/backend/src/application/commerce/stock/index.ts"],
-      "namedInterfaces": {
-        "repository-spi": "apps/backend/src/application/commerce/stock/index.ts"
-      },
+      "namedInterfaces": {},
       "allowedDependencies": ["commerce-domain", "platform-shared"],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []

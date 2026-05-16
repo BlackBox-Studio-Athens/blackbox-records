@@ -16,6 +16,7 @@ const WALK_IGNORES = new Set([
   'coverage',
 ]);
 const APPROVED_OPEN_TEMPORARY_MODULES = new Set([]);
+const DEFAULT_DISALLOWED_MODULE_DIRECTORY_NAMES = ['ports', 'adapters'];
 
 function toPosixPath(value) {
   return value.split(path.sep).join('/');
@@ -372,6 +373,19 @@ function isPatternMatched(filePath, patterns) {
   return patterns.some((pattern) => globToRegExp(pattern).test(filePath));
 }
 
+function hasPathSegment(filePath, segmentName) {
+  return toPosixPath(filePath).split('/').includes(segmentName);
+}
+
+function hasDisallowedModuleDirectory(filePath, directoryNames) {
+  return directoryNames.some((directoryName) => hasPathSegment(filePath, directoryName));
+}
+
+function isModuleDirectoryExceptionApproved(manifest, moduleName, filePath) {
+  const approvedExceptions = manifest.entrypointPolicy?.approvedModuleDirectoryNameExceptions?.[moduleName] ?? [];
+  return isPatternMatched(filePath, approvedExceptions);
+}
+
 function validateManifest(manifest = loadModuleBoundariesManifest()) {
   const errors = [];
   const allFiles = listRepoFiles();
@@ -412,6 +426,14 @@ function validateManifest(manifest = loadModuleBoundariesManifest()) {
   }
 
   for (const [moduleName, moduleDefinition] of getModuleEntries(manifest)) {
+    for (const [interfaceName, interfaceFile] of Object.entries(moduleDefinition.namedInterfaces ?? {})) {
+      if (interfaceName.endsWith('-spi') && !interfaceFile.endsWith('/spi.ts')) {
+        errors.push(
+          `Module ${moduleName} named SPI ${interfaceName} must target a spi.ts entrypoint: ${interfaceFile}`,
+        );
+      }
+    }
+
     if (moduleDefinition.status === 'open-temporary') {
       if (!APPROVED_OPEN_TEMPORARY_MODULES.has(moduleName)) {
         errors.push(`Module ${moduleName} is open-temporary but is not in the approved open-temporary set`);
@@ -490,12 +512,30 @@ function validateManifest(manifest = loadModuleBoundariesManifest()) {
   for (const ownedEntry of getOwnedEntries(manifest)) {
     for (const rootPattern of ownedEntry.roots) {
       const matches = allFiles.filter((filePath) => globToRegExp(rootPattern).test(filePath));
+      const disallowedDirectoryNames =
+        manifest.entrypointPolicy?.disallowedModuleDirectoryNames ?? DEFAULT_DISALLOWED_MODULE_DIRECTORY_NAMES;
+
+      if (
+        ownedEntry.kind === 'module' &&
+        hasDisallowedModuleDirectory(rootPattern, disallowedDirectoryNames) &&
+        !isModuleDirectoryExceptionApproved(manifest, ownedEntry.name, rootPattern)
+      ) {
+        errors.push(`Module ${ownedEntry.name} declares unapproved ports/adapters path: ${rootPattern}`);
+      }
 
       if (matches.length === 0) {
         errors.push(`${ownedEntry.kind} ${ownedEntry.name} root pattern matched no files: ${rootPattern}`);
       }
 
       for (const filePath of matches) {
+        if (
+          ownedEntry.kind === 'module' &&
+          hasDisallowedModuleDirectory(filePath, disallowedDirectoryNames) &&
+          !isModuleDirectoryExceptionApproved(manifest, ownedEntry.name, filePath)
+        ) {
+          errors.push(`Module ${ownedEntry.name} contains unapproved ports/adapters file: ${filePath}`);
+        }
+
         const owners = ownershipMap.get(filePath) ?? [];
         owners.push(ownedEntry);
         ownershipMap.set(filePath, owners);

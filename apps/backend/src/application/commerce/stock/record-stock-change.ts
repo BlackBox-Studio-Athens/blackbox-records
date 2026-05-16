@@ -2,7 +2,7 @@ import type {
   StockChangeRepository,
   StockRepository,
   StoreItemOptionRepository,
-} from '../../../domain/commerce/repositories';
+} from '../../../domain/commerce/repositories/spi';
 import { InvalidStockOperationError, VariantNotFoundError } from './errors';
 import type { RecordedStockChange } from './types';
 

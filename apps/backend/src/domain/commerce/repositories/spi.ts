@@ -1,4 +1,3 @@
-export type { StoreItemSlug, StripePriceId, VariantId } from '../ids';
 export type {
   StoreItemOptionRecord,
   StoreItemOptionRepository,

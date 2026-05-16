@@ -1,6 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
 
-import type { CheckoutOrderRecord, OrderStatus } from '../../../domain/commerce/repositories';
+import type { CheckoutOrderRecord, OrderStatus } from '../../../domain/commerce/repositories/spi';
 import type { AppOpenApi } from '../../../env';
 import { readOperatorIdentityFromAccessHeaders } from '../auth';
 import { createInternalOrderServices } from './internal-order-services';

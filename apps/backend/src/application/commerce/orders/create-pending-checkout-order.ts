@@ -2,16 +2,15 @@ import type {
   CheckoutOrderRecord,
   OrderStateRepository,
   ShippingLockerSnapshot,
-  StoreItemSlug,
-  VariantId,
-} from '../../../domain/commerce/repositories';
+} from '../../../domain/commerce/repositories/spi';
+import type { StoreItemSlug, VariantId } from '../../../domain/commerce';
 
 export type CreatePendingCheckoutOrderCommand = {
   lines?: CreatePendingCheckoutOrderLineCommand[];
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
   checkoutSessionId: string;
-  shippingLocker: ShippingLockerSnapshot;
+  shippingLocker: ShippingLockerSnapshot | null;
   stripePaymentIntentId?: string | null;
   createdAt?: Date;
 };
