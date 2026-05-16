@@ -97,6 +97,7 @@ export default tseslint.config(
       'import/resolver': {
         typescript: {
           project: ['tsconfig.boundaries.json', 'apps/backend/tsconfig.json', 'packages/api-client/tsconfig.json'],
+          noWarnOnMultipleProjects: true,
         },
       },
     },

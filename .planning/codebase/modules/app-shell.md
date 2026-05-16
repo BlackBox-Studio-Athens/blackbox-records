@@ -24,7 +24,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell-section navigation orchestration for route parsing, snapshot cache/fetch, transition, history, scroll reset, and
   fallback document navigation
 - overlay history behavior plus the `overlay-fragment-loader` request/cache seam, `overlay-history` history seam, and
-  overlay focus scheduling
+  overlay open coordination and overlay focus scheduling
 - shell transition state, cached page restoration, route loading timer mechanics, target scrolling, body state classes,
   hero scroll progress, and focus, scroll-restoration, or scroll resets
 - shell rendered navigation state synchronization

@@ -55,7 +55,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { createProjectRelativeUrl, resolveLinkAttributes } from '@/config/site';
-import { normalizeAppPathname, parseOverlayRoute, type OverlayRoute } from '@/lib/app-shell/routing';
+import { normalizeAppPathname, type OverlayRoute } from '@/lib/app-shell/routing';
 import type { SiteNavigationItem } from '@/lib/site-data';
 import {
   createEmptyStoreCartState,
@@ -69,7 +69,6 @@ import { createOverlayFragmentLoader } from './overlay/overlay-fragment-loader';
 import {
   closeOverlayWithHistoryBack as closeOverlayHistoryWithBack,
   collapseOverlayHistoryToBackground as collapseOverlayHistoryEntryToBackground,
-  writeOverlayHistoryState,
 } from './overlay/overlay-history';
 import {
   clearRouteLoadingTimer as clearScheduledRouteLoadingTimer,
@@ -82,6 +81,7 @@ import { resolveShellDocumentClickIntent } from './navigation/shell-document-cli
 import { connectShellDocumentListeners } from './dom/shell-document-listeners';
 import { handleShellEscapeDismissal } from './dom/shell-escape-dismissal';
 import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './dom/shell-hero-scroll-progress';
+import { openShellOverlayNavigation, type ShellOverlayState } from './overlay/shell-overlay-navigation';
 import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './overlay/shell-overlay-focus';
 import { syncPlayerSessionFrameHost } from './player-shell/shell-player-frame-host';
 import {
@@ -99,13 +99,7 @@ import { openShellSectionNavigation } from './navigation/shell-section-navigatio
 import { enableManualShellScrollRestoration } from './navigation/shell-scroll-restoration';
 import { scrollShellTargetIntoView } from './navigation/shell-target-scroll';
 
-type OverlayState = {
-  backgroundHref: string;
-  href: string;
-  html: string;
-  isLoading: boolean;
-  route: OverlayRoute;
-};
+type OverlayState = ShellOverlayState;
 
 type AppShellRootProps = {
   mobileNavigationItems: SiteNavigationItem[];
@@ -624,59 +618,29 @@ export default function AppShellRoot({
     href: string,
     options?: { backgroundHref?: string; pushHistory?: boolean; replaceHistory?: boolean },
   ) {
-    const resolvedUrl = new URL(href, window.location.href);
-    const route = parseOverlayRoute(resolvedUrl.pathname);
-    if (!route) return false;
-
-    overlayAbortControllerRef.current?.abort();
-    const abortController = new AbortController();
-    overlayAbortControllerRef.current = abortController;
-
-    const backgroundHref = options?.backgroundHref || overlayStateRef.current?.backgroundHref || window.location.href;
-    const cachedHtml = overlayFragmentLoader.getCachedHtml(route.pathname);
-    setOverlayState({
-      backgroundHref,
-      href: resolvedUrl.toString(),
-      html: cachedHtml,
-      isLoading: !cachedHtml,
-      route,
+    return openShellOverlayNavigation({
+      activeAbortControllerRef: overlayAbortControllerRef,
+      backgroundHref: options?.backgroundHref,
+      closeOverlayState,
+      currentHref: window.location.href,
+      getCurrentOverlayState: () => overlayStateRef.current,
+      history: window.history,
+      href,
+      navigateDocumentTo: (nextHref) => {
+        window.location.assign(nextHref);
+      },
+      overlayFragmentLoader,
+      pushHistory: options?.pushHistory,
+      replaceHistory: options?.replaceHistory,
+      scheduleOverlayContentFocus: () => {
+        scheduleOverlayContentFocus({
+          getCloseButton: () => overlayCloseButtonRef.current,
+          getScrollContainer: () => overlayScrollContainerRef.current,
+          scheduler: window,
+        });
+      },
+      setOverlayState,
     });
-
-    if (options?.pushHistory || options?.replaceHistory) {
-      writeOverlayHistoryState(window.history, {
-        historyMode: options?.pushHistory ? 'push' : 'replace',
-        href: resolvedUrl.toString(),
-        backgroundHref,
-        pathname: route.pathname,
-      });
-    }
-
-    try {
-      const html = cachedHtml || (await overlayFragmentLoader.fetchHtml(route.pathname, abortController.signal));
-      setOverlayState((currentState) =>
-        currentState?.route.pathname === route.pathname
-          ? {
-              ...currentState,
-              html,
-              isLoading: false,
-            }
-          : currentState,
-      );
-      scheduleOverlayContentFocus({
-        getCloseButton: () => overlayCloseButtonRef.current,
-        getScrollContainer: () => overlayScrollContainerRef.current,
-        scheduler: window,
-      });
-      return true;
-    } catch {
-      if (abortController.signal.aborted) {
-        return true;
-      }
-
-      closeOverlayState({ restoreFocus: false });
-      window.location.assign(resolvedUrl.toString());
-      return false;
-    }
   }
 
   useEffect(() => {
