@@ -398,6 +398,7 @@ Plans:
 - Plan `12-47` moves Services-page Decap field generation into a focused `cms-admin` helper with direct tests
 - Plan `12-48` moves Settings Decap field generation into a focused `cms-admin` helper with direct tests
 - Plan `12-49` moves Home/About/Services/Settings file-collection wiring into a focused `cms-admin` helper with direct tests
+- Plan `12-50` moves Navigation/Socials collection wiring into a focused `cms-admin` helper with direct tests
 - Phase 12 refactor end goal is now documented in `12-REFACTOR-ENDGOAL.md`: thin app-shell composition, explicit
   `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard `eslint-plugin-boundaries` enforcement
 - Exists to make later large refactors safer and more reviewable before production cutover work begins
