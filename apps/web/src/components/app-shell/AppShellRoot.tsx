@@ -8,7 +8,6 @@ import { OPEN_PLAYER_ACTION_LABEL } from '@/components/app-shell/player-session-
 import {
   readPlayerProvidersFromElement,
   readPlayerTitleFromElement,
-  selectDefaultPlayerProvider,
   type PlayerEmbedLayout,
   type PlayerProvider,
   type PlayerProviderId,
@@ -94,6 +93,7 @@ import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from 
 import { syncPlayerSessionFrameHost } from './shell-player-frame-host';
 import { restoreConnectedPlayerTriggerFocus, schedulePlayerModalCloseButtonFocus } from './shell-player-focus';
 import { schedulePlayerIframeBlurInteractionCheck } from './shell-player-iframe-blur-interaction';
+import { resolvePlayerModalOpenRequest } from './shell-player-modal-open-request';
 import { derivePlayerSessionMachineState } from './shell-player-session-machine-state';
 import { derivePlayerShellViewState, PLAYER_PROVIDER_LABELS } from './shell-player-view-state';
 import { routeShellPopStateNavigation } from './shell-popstate-navigation';
@@ -504,13 +504,16 @@ export default function AppShellRoot({
     };
 
     const providers = readPlayerProvidersFromElement(playerElement);
-    if (providers.length === 0) return;
-
     const releaseTitle = readPlayerTitleFromElement(playerElement);
-    const activeSession = activePlayerSessionRef.current;
-    const isSameRelease = Boolean(activeSession && activeSession.releaseTitle === releaseTitle);
+    const playerModalOpenRequest = resolvePlayerModalOpenRequest({
+      activeSession: activePlayerSessionRef.current,
+      cachedProviderId: providerSelectionByTitleRef.current.get(releaseTitle),
+      providers,
+      releaseTitle,
+    });
+    if (playerModalOpenRequest.kind === 'without-provider') return;
 
-    if (activeSession && !isSameRelease) {
+    if (playerModalOpenRequest.kind === 'new-provider' && playerModalOpenRequest.shouldStopActiveSession) {
       stopPlayerSession({ restoreFocus: false });
     }
 
@@ -520,19 +523,14 @@ export default function AppShellRoot({
     setActivePlayerTitle(releaseTitle);
     setIsPlayerModalOpen(true);
 
-    if (activePlayerSessionRef.current && isSameRelease) {
-      activePlayerSessionRef.current.status = 'modal-open';
+    if (playerModalOpenRequest.kind === 'reuse-active-session') {
+      playerModalOpenRequest.activeSession.status = 'modal-open';
       syncActivePlayerSessionIntoFrameHost();
       focusPlayerModalCloseButtonSoon();
       return;
     }
 
-    const cachedProviderId = providerSelectionByTitleRef.current.get(releaseTitle);
-    const cachedProvider = providers.find((provider) => provider.id === cachedProviderId);
-    const nextProvider = cachedProvider || selectDefaultPlayerProvider(providers);
-    if (!nextProvider) return;
-
-    applyPlayerProvider(nextProvider, releaseTitle, { nextStatus: 'modal-open' });
+    applyPlayerProvider(playerModalOpenRequest.nextProvider, releaseTitle, { nextStatus: 'modal-open' });
     focusPlayerModalCloseButtonSoon();
   }
 

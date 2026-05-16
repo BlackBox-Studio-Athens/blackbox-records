@@ -31,6 +31,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell document/window listener attachment for persistent navigation, overlay, and player events
 - player shell view-state derivation while player session behavior remains shell-owned from the user perspective
 - player modal focus scheduling and trigger focus restoration for shell-owned player controls
+- player modal open request decision-making for shell-owned player controls
 - player session-machine input derivation for shell-owned player controls
 - player iframe blur interaction detection for shell-owned player controls
 - player frame-host synchronization for shell-owned player controls
@@ -95,6 +96,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell escape dismissal tests
 - shell document click intent tests
 - shell anchor click navigation tests
+- shell player modal open request tests
 - Browser Use shell acceptance checks
 
 ## Migration Status

@@ -375,6 +375,7 @@ Plans:
 - Plan `12-31` moves shell Escape-key dismissal priority into an internal app-shell helper
 - Plan `12-32` moves shell document click target classification into an internal app-shell helper
 - Plan `12-33` moves shell anchor-click navigation routing into an internal app-shell helper
+- Plan `12-34` moves player modal open request decision-making into an internal app-shell helper
 - Phase 12 refactor end goal is now documented in `12-REFACTOR-ENDGOAL.md`: thin app-shell composition, explicit
   `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard `eslint-plugin-boundaries` enforcement
 - Exists to make later large refactors safer and more reviewable before production cutover work begins
