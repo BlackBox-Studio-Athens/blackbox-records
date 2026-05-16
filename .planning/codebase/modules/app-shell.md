@@ -40,6 +40,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - player session-machine input derivation for shell-owned player controls
 - player iframe blur interaction detection for shell-owned player controls
 - player frame-host synchronization for shell-owned player controls
+- player session lifecycle coordination for shell-owned player controls
 - StoreCart state application and persistence through the StoreCart bridge
 - shell prefetch intent classification for player origin warmup and route/overlay prefetch
 - portal reinjection details plus the `shell-portal-targets` route-scoped target helper
@@ -105,6 +106,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell document event routing tests
 - shell anchor click navigation tests
 - shell player modal open request tests
+- shell player session controller tests
 - Browser Use shell acceptance checks
 
 ## Migration Status

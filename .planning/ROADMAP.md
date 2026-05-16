@@ -385,6 +385,8 @@ Plans:
 - Plan `12-39` measured the Phase 12 test feedback loop and switched the root unit gate to native pnpm parallel package
   tests without custom scripts, Nx, or new dependencies
 - Plan `12-40` moves shell document/window event routing into `dom/shell-document-event-routing`
+- Plan `12-41` moves shell player session lifecycle coordination into `player-shell/shell-player-session-controller`
+  and brings `AppShellRoot.tsx` into the Phase 12 target size band
 - Phase 12 refactor end goal is now documented in `12-REFACTOR-ENDGOAL.md`: thin app-shell composition, explicit
   `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard `eslint-plugin-boundaries` enforcement
 - Exists to make later large refactors safer and more reviewable before production cutover work begins

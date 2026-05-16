@@ -3,23 +3,14 @@ import { createPortal } from 'react-dom';
 import { Square, X } from 'lucide-react';
 
 import ArtistsRosterFilters from '@/components/artists/ArtistsRosterFilters';
-import { reducePlayerSessionMachine } from '@/components/app-shell/player-session-machine';
 import { OPEN_PLAYER_ACTION_LABEL } from '@/components/app-shell/player-session-ui';
 import {
   readPlayerProvidersFromElement,
-  readPlayerTitleFromElement,
   type PlayerEmbedLayout,
   type PlayerProvider,
   type PlayerProviderId,
 } from '@/components/app-shell/player-provider-data';
-import {
-  DEFAULT_MAX_CACHED_PLAYER_IFRAMES,
-  markPlayerIframeAsActive,
-  resolvePlayerIframe,
-  retirePlayerSession,
-  type ActivePlayerSession,
-} from '@/components/app-shell/player-iframe-session';
-import { warmPlayerProviderOrigins } from '@/components/app-shell/player-provider-warmup';
+import { type ActivePlayerSession } from '@/components/app-shell/player-iframe-session';
 import ServicesInquiryForm from '@/components/services/ServicesInquiryForm';
 import StoreCartButton from '@/components/store/StoreCartButton';
 import StoreCartDrawer from '@/components/store/StoreCartDrawer';
@@ -75,14 +66,8 @@ import { connectShellDocumentEventRouting } from './dom/shell-document-event-rou
 import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './dom/shell-hero-scroll-progress';
 import { openShellOverlayNavigation, type ShellOverlayState } from './overlay/shell-overlay-navigation';
 import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './overlay/shell-overlay-focus';
-import { syncPlayerSessionFrameHost } from './player-shell/shell-player-frame-host';
-import {
-  restoreConnectedPlayerTriggerFocus,
-  schedulePlayerModalCloseButtonFocus,
-} from './player-shell/shell-player-focus';
-import { resolvePlayerModalOpenRequest } from './player-shell/shell-player-modal-open-request';
-import { derivePlayerSessionMachineState } from './player-shell/shell-player-session-machine-state';
-import { derivePlayerShellViewState, PLAYER_PROVIDER_LABELS } from './player-shell/shell-player-view-state';
+import { createShellPlayerSessionController } from './player-shell/shell-player-session-controller';
+import { PLAYER_PROVIDER_LABELS } from './player-shell/shell-player-view-state';
 import { syncShellRenderedNavigationState } from './navigation/shell-rendered-navigation-state';
 import { openShellSectionNavigation } from './navigation/shell-section-navigation';
 import { enableManualShellScrollRestoration } from './navigation/shell-scroll-restoration';
@@ -320,199 +305,37 @@ export default function AppShellRoot({
     });
   }
 
-  function retireActivePlayerSession(activeSession: ActivePlayerSession | null) {
-    retirePlayerSession(iframeCacheByEmbedUrlRef.current, activeSession);
-  }
-
-  function updatePlayerUiFromSession(activeSession: ActivePlayerSession | null) {
-    if (!activeSession) {
-      setPlayerProviders([]);
-    }
-
-    const viewState = derivePlayerShellViewState(activeSession);
-    setActivePlayerProviderId(viewState.activePlayerProviderId);
-    setActivePlayerEmbedLayout(viewState.activePlayerEmbedLayout);
-    setActivePlayerTitle(viewState.activePlayerTitle);
-    setIsPlayerLoading(viewState.isPlayerLoading);
-    setIsMiniPlayerVisible(viewState.isMiniPlayerVisible);
-    setMiniPlayerStatusLabel(viewState.miniPlayerStatusLabel);
-    setPlayerModalDismissActionLabel(viewState.playerModalDismissActionLabel);
-    setPlayerModalDismissAriaLabel(viewState.playerModalDismissAriaLabel);
-  }
-
-  function markActivePlayerSessionAsInteracted(embedUrl: string) {
-    const activeSession = activePlayerSessionRef.current;
-    if (!activeSession || activeSession.embedUrl !== embedUrl || activeSession.hasEmbedInteraction) return;
-
-    activeSession.hasEmbedInteraction = true;
-    updatePlayerUiFromSession(activeSession);
-  }
-
-  function markActivePlayerSurfaceAsInteracted() {
-    const activeSession = activePlayerSessionRef.current;
-    if (!activeSession) return;
-
-    markActivePlayerSessionAsInteracted(activeSession.embedUrl);
-  }
-
-  function syncActivePlayerSessionIntoFrameHost() {
-    syncPlayerSessionFrameHost({
-      activeSession: activePlayerSessionRef.current,
-      frameHostElement: iframeFrameHostRef.current,
-      markIframeAsActive: markPlayerIframeAsActive,
-      updatePlayerUiFromSession,
-    });
-  }
-
-  function resolveIframe(provider: PlayerProvider, releaseTitle: string) {
-    const frameHostElement = iframeFrameHostRef.current;
-    if (!frameHostElement) return null;
-
-    return resolvePlayerIframe({
-      callbacks: {
-        onInteraction: markActivePlayerSessionAsInteracted,
-        onLoadStateChange: (embedUrl) => {
-          if (activePlayerSessionRef.current?.embedUrl !== embedUrl) return;
-          setIsPlayerLoading(false);
-          updatePlayerUiFromSession(activePlayerSessionRef.current);
-        },
-      },
-      frameHostElement,
-      iframeCache: iframeCacheByEmbedUrlRef.current,
-      maxCachedIframes: DEFAULT_MAX_CACHED_PLAYER_IFRAMES,
-      provider,
-      releaseTitle,
-    });
-  }
-
-  function warmProviderOrigins(providers: PlayerProvider[]) {
-    warmPlayerProviderOrigins({
-      providers,
-      targetDocument: document,
-      warmedOrigins: warmedOriginsRef.current,
-    });
-  }
-
-  function applyPlayerProvider(
-    provider: PlayerProvider,
-    releaseTitle: string,
-    options?: {
-      nextStatus?: ActivePlayerSession['status'];
-    },
-  ) {
-    const activeSession = activePlayerSessionRef.current;
-    if (activeSession && activeSession.embedUrl && activeSession.embedUrl !== provider.embedUrl) {
-      retireActivePlayerSession(activeSession);
-      activePlayerSessionRef.current = null;
-    }
-
-    const iframeElement = resolveIframe(provider, releaseTitle);
-    if (!iframeElement) return;
-
-    const nextSession: ActivePlayerSession = {
-      embedUrl: provider.embedUrl,
-      embedLayout: provider.embedLayout,
-      hasEmbedInteraction: false,
-      iframeElement,
-      providerId: provider.id,
-      releaseTitle,
-      status: options?.nextStatus ?? (isPlayerModalOpen ? 'modal-open' : 'minimized'),
-    };
-
-    activePlayerSessionRef.current = nextSession;
-    providerSelectionByTitleRef.current.set(releaseTitle, provider.id);
-    setActivePlayerProviderId(provider.id);
-    setActivePlayerEmbedLayout(provider.embedLayout);
-    setActivePlayerTitle(releaseTitle);
-    setIsPlayerLoading(iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState !== 'loaded');
-    updatePlayerUiFromSession(nextSession);
-  }
-
-  function stopPlayerSession({ restoreFocus = true } = {}) {
-    retireActivePlayerSession(activePlayerSessionRef.current);
-    activePlayerSessionRef.current = null;
-    setIsPlayerModalOpen(false);
-    updatePlayerUiFromSession(null);
-
-    if (restoreFocus) {
-      restoreConnectedPlayerTriggerFocus(activePlayerTriggerElementRef.current);
-    }
-  }
-
-  function minimizePlayerSession() {
-    if (!activePlayerSessionRef.current) return;
-    activePlayerSessionRef.current.status = 'minimized';
-    setIsPlayerModalOpen(false);
-    updatePlayerUiFromSession(activePlayerSessionRef.current);
-  }
-
-  function closePlayerModal() {
-    const activeSession = activePlayerSessionRef.current;
-    const nextSessionState = reducePlayerSessionMachine(derivePlayerSessionMachineState(activeSession), {
-      type: 'dismiss-requested',
-    });
-
-    if (activeSession && nextSessionState.hasSession && nextSessionState.status === 'minimized') {
-      minimizePlayerSession();
-      return;
-    }
-
-    stopPlayerSession({ restoreFocus: true });
-  }
-
-  function reopenPlayerModal() {
-    const activeSession = activePlayerSessionRef.current;
-    if (!activeSession) return;
-
-    activeSession.status = reducePlayerSessionMachine(derivePlayerSessionMachineState(activeSession), {
-      type: 'reopen-requested',
-    }).status as ActivePlayerSession['status'];
-    setIsPlayerModalOpen(true);
-    syncActivePlayerSessionIntoFrameHost();
-    schedulePlayerModalCloseButtonFocus({
-      getCloseButton: () => modalCloseButtonRef.current,
-      scheduler: window,
-    });
-  }
-
-  function openPlayerModal(triggerElement: HTMLElement, playerElement: HTMLElement) {
-    const focusPlayerModalCloseButtonSoon = () => {
-      schedulePlayerModalCloseButtonFocus({
-        getCloseButton: () => modalCloseButtonRef.current,
-        scheduler: window,
-      });
-    };
-
-    const providers = readPlayerProvidersFromElement(playerElement);
-    const releaseTitle = readPlayerTitleFromElement(playerElement);
-    const playerModalOpenRequest = resolvePlayerModalOpenRequest({
-      activeSession: activePlayerSessionRef.current,
-      cachedProviderId: providerSelectionByTitleRef.current.get(releaseTitle),
-      providers,
-      releaseTitle,
-    });
-    if (playerModalOpenRequest.kind === 'without-provider') return;
-
-    if (playerModalOpenRequest.kind === 'new-provider' && playerModalOpenRequest.shouldStopActiveSession) {
-      stopPlayerSession({ restoreFocus: false });
-    }
-
-    activePlayerTriggerElementRef.current = triggerElement;
-    warmProviderOrigins(providers);
-    setPlayerProviders(providers);
-    setActivePlayerTitle(releaseTitle);
-    setIsPlayerModalOpen(true);
-
-    if (playerModalOpenRequest.kind === 'reuse-active-session') {
-      playerModalOpenRequest.activeSession.status = 'modal-open';
-      syncActivePlayerSessionIntoFrameHost();
-      focusPlayerModalCloseButtonSoon();
-      return;
-    }
-
-    applyPlayerProvider(playerModalOpenRequest.nextProvider, releaseTitle, { nextStatus: 'modal-open' });
-    focusPlayerModalCloseButtonSoon();
-  }
+  const {
+    applyPlayerProvider,
+    closePlayerModal,
+    markActivePlayerSessionAsInteracted,
+    markActivePlayerSurfaceAsInteracted,
+    openPlayerModal,
+    reopenPlayerModal,
+    stopPlayerSession,
+    warmProviderOrigins,
+  } = createShellPlayerSessionController({
+    activePlayerSessionRef,
+    activePlayerTriggerElementRef,
+    getIsPlayerModalOpen: () => isPlayerModalOpen,
+    getScheduler: () => window,
+    getTargetDocument: () => document,
+    iframeCacheByEmbedUrlRef,
+    iframeFrameHostRef,
+    modalCloseButtonRef,
+    providerSelectionByTitleRef,
+    setActivePlayerEmbedLayout,
+    setActivePlayerProviderId,
+    setActivePlayerTitle,
+    setIsMiniPlayerVisible,
+    setIsPlayerLoading,
+    setIsPlayerModalOpen,
+    setMiniPlayerStatusLabel,
+    setPlayerModalDismissActionLabel,
+    setPlayerModalDismissAriaLabel,
+    setPlayerProviders,
+    warmedOriginsRef,
+  });
 
   async function prefetchOverlayHref(href: string) {
     await overlayFragmentLoader.prefetchHref(href);

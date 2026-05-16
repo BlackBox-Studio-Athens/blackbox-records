@@ -8,12 +8,11 @@ created: 2026-05-16
 
 ## Current Evidence
 
-- `AppShellRoot.tsx` is currently 1,207 lines after slice `12-34`.
+- `AppShellRoot.tsx` is currently 820 lines after slice `12-41`, inside the Phase 12 target band.
 - The app-shell implementation folder is too flat: many behavior helpers and their tests sit directly under
   `apps/web/src/components/app-shell/`, which makes ownership harder to scan even though many helpers are now tested.
-- Serena symbol overview still shows `AppShellRoot` owning orchestration-heavy functions for shell page application,
-  overlay opening, shell-section navigation, player lifecycle coordination, StoreCart state application, route loading,
-  and event/effect wiring.
+- Serena symbol overview now shows `AppShellRoot` closer to a composition root, with the remaining direct ownership mostly
+  in React state/refs, StoreCart drawer bridge wiring, route loading, and event/effect wiring.
 
 ## Realistic Size Goal
 
@@ -92,8 +91,9 @@ Keep the fast path boring while Phase 12 refactors are still module-internal:
 3. **Overlay open coordination:** move overlay open request sequencing and cache/focus/history coordination behind a
    named helper.
 4. **Shell document event routing:** move click, prefetch, Escape, popstate, and iframe-blur routing into a DOM
-   coordinator while keeping refs/state in `AppShellRoot`.
+   coordinator while keeping refs/state in `AppShellRoot`. Completed in `12-40`.
 5. **Player lifecycle coordination:** after folder organization, reassess whether `applyPlayerProvider`,
    `retireActivePlayerSession`, and related root-owned player lifecycle steps can move without hiding React-owned refs.
+   Completed in `12-41`.
 6. **StoreCart bridge:** keep StoreCart browser convenience state non-authoritative while reducing root-local drawer
    synchronization only if the extracted seam stays testable.
