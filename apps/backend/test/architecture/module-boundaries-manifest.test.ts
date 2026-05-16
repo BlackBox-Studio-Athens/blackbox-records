@@ -19,10 +19,24 @@ describe('Module boundaries manifest', () => {
     const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
       modules: Record<string, Record<string, unknown>>;
     };
-    delete manifest.modules['cms-admin'].temporaryOpenReason;
+    delete manifest.modules['app-shell'].temporaryOpenReason;
 
     expect(validateManifest(manifest)).toContain(
-      'Module cms-admin open-temporary metadata missing non-empty temporaryOpenReason',
+      'Module app-shell open-temporary metadata missing non-empty temporaryOpenReason',
+    );
+  });
+
+  it('rejects reopening cms-admin as a temporary module', () => {
+    const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
+      modules: Record<string, Record<string, unknown>>;
+    };
+    manifest.modules['cms-admin'].status = 'open-temporary';
+    manifest.modules['cms-admin'].temporaryOpenReason = 'Temporary test reason.';
+    manifest.modules['cms-admin'].exitCriteria = ['Close the temporary test exception.'];
+    manifest.modules['cms-admin'].forbiddenWhileOpen = ['Do not keep the temporary test exception.'];
+
+    expect(validateManifest(manifest)).toContain(
+      'Module cms-admin is open-temporary but is not in the approved initial open-temporary set',
     );
   });
 

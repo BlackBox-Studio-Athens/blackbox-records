@@ -52,7 +52,7 @@ purely editorial and cannot affect ownership, entrypoints, status, dependencies,
 | `storefront-catalog`   | `closed`         | shopper-facing content query, catalog projection, cards/detail, and non-checkout store routes                    | browser-safe catalog and route-projection surfaces          |
 | `store-cart`           | `closed`         | `apps/web/src/lib/store-cart.ts`, StoreCart button and drawer                                                    | `@/lib/store-cart` plus cart UI surfaces                    |
 | `checkout-web`         | `closed`         | checkout pages, checkout UI state, public checkout browser adapters                                              | shopper checkout routes and browser-safe checkout client    |
-| `cms-admin`            | `open-temporary` | `apps/web/src/pages/admin/`, `apps/web/src/lib/admin/`                                                           | `/admin/` surfaces and Decap config/media routes            |
+| `cms-admin`            | `closed`         | `apps/web/src/pages/admin/`, `apps/web/src/lib/admin/`                                                           | `/admin/` surfaces and Decap config/media routes            |
 | `public-commerce-http` | `closed`         | public Worker HTTP routes and public contracts, with client access exposed through `@blackbox/api-client/public` | `/api/store/*`, `/api/checkout/*`, public OpenAPI/client    |
 | `checkout-core`        | `closed`         | `apps/backend/src/application/commerce/checkout/`                                                                | checkout use-case API                                       |
 | `orders`               | `closed`         | `apps/backend/src/application/commerce/orders/`, order readback HTTP                                             | order lifecycle and reconciliation APIs                     |
@@ -109,7 +109,7 @@ purely editorial and cannot affect ownership, entrypoints, status, dependencies,
 
 - `open-temporary` is allowed only for legacy hotspots with explicit exit criteria.
 - `split-pending` is allowed only for residual shared buckets that are supposed to shrink.
-- The approved initial `open-temporary` set is only `app-shell` and `cms-admin`.
+- The remaining approved `open-temporary` set is only `app-shell`.
 - Every `open-temporary` module must carry manifest metadata for its temporary reason, exit criteria, and forbidden moves
   while open.
 - New modules must not start as `open-temporary` without a new planning decision and manifest validator update.

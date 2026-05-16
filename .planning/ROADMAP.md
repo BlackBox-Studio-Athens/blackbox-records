@@ -403,6 +403,7 @@ Plans:
 - Plan `12-52` moves Release collection wiring into a focused `cms-admin` helper with direct tests
 - Plan `12-53` moves Distro collection wiring into a focused `cms-admin` helper with direct tests
 - Plan `12-54` moves News collection wiring into a focused `cms-admin` helper with direct tests
+- Plan `12-55` closes the `cms-admin` temporary-open exception in the manifest, validator, tests, and module canvases
 - Phase 12 refactor end goal is now documented in `12-REFACTOR-ENDGOAL.md`: thin app-shell composition, explicit
   `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard `eslint-plugin-boundaries` enforcement
 - Exists to make later large refactors safer and more reviewable before production cutover work begins

@@ -68,24 +68,23 @@ shopper-facing modules.
 
 ## Migration Status
 
-`open-temporary`
+`closed`
 
-`cms-admin` remains open-temporary because the current admin surface still combines Decap route surfaces, YAML
-generation, content-schema awareness, hosted auth/base-path handling, and admin media routing inside one legacy hotspot.
-That exception is temporary, not a general license to grow the module.
+`cms-admin` no longer carries the temporary-open exception. The admin route surfaces, runtime/base-path decisions, Decap
+YAML builder, page/collection field generation, and media route are split into explicit files with direct tests for the
+generated config behavior.
 
-## Exit Criteria
+## Closure Evidence
 
-- separate `/admin/`, `/admin/config.yml`, and `/admin/media/**` route surfaces from config-building internals
-- split Decap YAML builder from route/auth/base-path concerns
-- isolate content-schema-aware field generation from deployment/runtime wiring
-- reduce `decap-config.ts` from a large mixed string builder into smaller bounded helpers
-- expose explicit admin entrypoints instead of leaving route consumers coupled to mixed implementation files
+- `/admin/`, `/admin/config.yml`, and `/admin/media/**` are declared module entrypoints.
+- `decap-runtime-config.ts` owns hosted/local auth and base-path decisions.
+- `decap-yaml-builder.ts` owns generic YAML field and collection rendering.
+- page, site chrome, artist, release, distro, news, and settings/admin field generation are isolated behind tested helpers.
+- `decap-config.ts` is a small composition root for backend/auth/site-root YAML and collection assembly.
 
-## Forbidden While Open
+## Forbidden Moves
 
 - do not move shopper-facing catalog, checkout, stock, order, Stripe, D1, or BOX NOW behavior into `cms-admin`
 - do not widen ownership beyond `apps/web/src/pages/admin/**` and `apps/web/src/lib/admin/**`
 - do not add temporary compatibility facades for old deep imports
 - do not add new `open-temporary` modules as a convenience escape hatch
-- do not split `decap-config.ts` until the split has direct coverage for generated config output and route behavior

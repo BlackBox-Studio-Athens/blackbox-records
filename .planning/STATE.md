@@ -4,18 +4,18 @@ milestone: v1.2
 milestone_name: Modulith Boundary Hardening
 current_phase: 12
 current_phase_name: modulith-boundary-hardening-planning
-current_plan: 54
+current_plan: 55
 status: active
-stopped_at: Completed 12-54 Decap news collection extraction
+stopped_at: Completed 12-55 cms-admin temporary-open closure
 paused_at: ''
 last_updated: '2026-05-16T00:00:00.000Z'
 last_activity: 2026-05-16
 progress:
   total_phases: 12
   completed_phases: 8
-  total_plans: 54
-  completed_plans: 51
-  percent: 94
+  total_plans: 55
+  completed_plans: 52
+  percent: 95
 ---
 
 # Project State
@@ -32,16 +32,16 @@ routes own secrets and mutations, and stock changes happen only after verified w
 ## Current Position
 
 Phase: 12 (modulith-boundary-hardening-planning) - ACTIVE
-Plan: 54 of 54
+Plan: 55 of 55
 Current Phase: 12
 Current Phase Name: modulith-boundary-hardening-planning
 Total Phases: 12
-Current Plan: 54
-Total Plans in Phase: 54
-Status: Active - 12-54 Decap news collection extraction complete
-Progress: [#########-] 94%
+Current Plan: 55
+Total Plans in Phase: 55
+Status: Active - 12-55 cms-admin temporary-open closure complete
+Progress: [#########-] 95%
 Last activity: 2026-05-16
-Last Activity Description: 12-54 extracted Decap news collection
+Last Activity Description: 12-55 closed cms-admin temporary-open exception
 Paused At:
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, 8, and 11 are complete. Phase 7 mock, contract, frontend
@@ -73,9 +73,9 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 
 **Velocity:**
 
-- Total plans completed: 73
+- Total plans completed: 74
 - Total plans remaining: 7
-- Completed plan ratio: 73/80
+- Completed plan ratio: 74/81
 - Average duration: -
 - Total execution time: -
 
@@ -94,7 +94,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 | 9     | 5/6   | Deferred  | 2026-04-30 |
 | 10    | 5/6   | Deferred  | 2026-05-01 |
 | 11    | 5/5   | Completed | 2026-05-12 |
-| 12    | 39/42 | Active    | 2026-05-16 |
+| 12    | 40/43 | Active    | 2026-05-16 |
 
 **Recent Trend:**
 
@@ -263,6 +263,9 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 - Phase 12 plan 12-54 extracted News collection wiring into
   `apps/web/src/lib/admin/decap-news-collection.ts`, added direct news collection characterization tests, and reduced
   `decap-config.ts` from 102 to 53 lines.
+- Phase 12 plan 12-55 closed the `cms-admin` temporary-open exception: the module boundary manifest now marks
+  `cms-admin` as closed, declares `/admin/media/**` as an explicit entrypoint, and the manifest validator now approves
+  only `app-shell` as a remaining temporary-open module.
 - Phase 12 now has an explicit refactor end-goal document at
   `.planning/phases/12-modulith-boundary-hardening-planning/12-REFACTOR-ENDGOAL.md`; remaining slices should aim at thin
   app-shell composition, explicit `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard
@@ -425,7 +428,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of
   the completed Phase 6.1 foundation.
-- Continue Phase 12 through the next approved app-shell or `cms-admin` refactor slice; `12-04` through `12-54` are
+- Continue Phase 12 through the next approved app-shell or `cms-admin` refactor slice; `12-04` through `12-55` are
   complete and deeper refactors should still respect the boundary manifest and verifier rules.
 - Complete the deferred Stripe access validation gate before sandbox/release approval.
 - Choose the Phase 9 shipping mode and complete the deferred BOX NOW Portal Gate before marking Phase 9, `09-06`, or
@@ -460,5 +463,5 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 ## Session
 
 **Last Date:** 2026-05-16T00:00:00.000Z
-**Stopped At:** Completed 12-54 Decap news collection extraction
+**Stopped At:** Completed 12-55 cms-admin temporary-open closure
 **Resume File:** None

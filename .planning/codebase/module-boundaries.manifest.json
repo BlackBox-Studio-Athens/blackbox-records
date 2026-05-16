@@ -174,20 +174,13 @@
       "ownershipExceptions": []
     },
     "cms-admin": {
-      "status": "open-temporary",
-      "temporaryOpenReason": "cms-admin is a legacy Decap hotspot where admin route surfaces, Decap YAML generation, content-schema awareness, hosted auth/base-path handling, and media routing still meet in one temporary boundary.",
-      "exitCriteria": [
-        "Admin route surfaces, Decap YAML generation, content-schema-aware field generation, hosted auth/base-path handling, and media routing have explicit boundaries.",
-        "decap-config.ts is reduced from a large mixed string builder into smaller bounded helpers with tests.",
-        "cms-admin exposes explicit admin entrypoints instead of relying on route consumers coupled to mixed implementation files."
-      ],
-      "forbiddenWhileOpen": [
-        "Do not move shopper-facing catalog, checkout, stock, order, Stripe, D1, or BOX NOW behavior into cms-admin.",
-        "Do not widen cms-admin ownership beyond apps/web/src/pages/admin/** and apps/web/src/lib/admin/**.",
-        "Do not add temporary compatibility facades or new open-temporary modules to avoid closing this hotspot."
-      ],
+      "status": "closed",
       "roots": ["apps/web/src/pages/admin/**", "apps/web/src/lib/admin/**"],
-      "providedEntrypoints": ["apps/web/src/pages/admin/index.astro", "apps/web/src/pages/admin/config.yml.ts"],
+      "providedEntrypoints": [
+        "apps/web/src/pages/admin/index.astro",
+        "apps/web/src/pages/admin/config.yml.ts",
+        "apps/web/src/pages/admin/media/[collection]/[asset].ts"
+      ],
       "namedInterfaces": {},
       "allowedDependencies": ["storefront-catalog", "platform-shared"],
       "allowedWorkspaceInterfaces": {},

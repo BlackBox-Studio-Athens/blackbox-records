@@ -15,7 +15,7 @@ const WALK_IGNORES = new Set([
   '.vite',
   'coverage',
 ]);
-const APPROVED_OPEN_TEMPORARY_MODULES = new Set(['app-shell', 'cms-admin']);
+const APPROVED_OPEN_TEMPORARY_MODULES = new Set(['app-shell']);
 
 function toPosixPath(value) {
   return value.split(path.sep).join('/');
