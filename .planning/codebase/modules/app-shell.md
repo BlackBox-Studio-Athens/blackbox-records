@@ -19,7 +19,7 @@ sections while acting as the future thin composition root over smaller shell sub
 ## Internal Implementation Area
 
 - app-shell internal organization now follows the Phase 12 AppShellRoot strategy: `navigation`, `overlay`,
-  `player-shell`, `store-cart`, and `dom` folders hold extracted helper/test pairs
+  `player-shell`, `store-cart`, `dom`, and `view` folders hold extracted helper/test pairs
 - shell page snapshot parsing/application plus the `shell-page-loader` request/cache seam
 - shell-section navigation orchestration for route parsing, snapshot cache/fetch, transition, history, scroll reset, and
   fallback document navigation
@@ -42,6 +42,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - player frame-host synchronization for shell-owned player controls
 - player session lifecycle coordination for shell-owned player controls
 - StoreCart state application and persistence through the StoreCart bridge
+- JSX-only render surfaces for mobile navigation, overlay chrome, player chrome, and shell portals live under `view`
 - shell prefetch intent classification for player origin warmup and route/overlay prefetch
 - portal reinjection details plus the `shell-portal-targets` route-scoped target helper
 - the closed `player` module's `player-*` files remain at the app-shell root until a separate manifest-aware move is
@@ -107,6 +108,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - shell anchor click navigation tests
 - shell player modal open request tests
 - shell player session controller tests
+- shell view render tests
 - Browser Use shell acceptance checks
 
 ## Migration Status
@@ -115,7 +117,7 @@ sections while acting as the future thin composition root over smaller shell sub
 
 ## Closure Evidence
 
-- `AppShellRoot.tsx` is inside the Phase 12 target band at 820 lines and remains focused on React composition, state, refs,
+- `AppShellRoot.tsx` is inside the Phase 12 target band at 591 lines and remains focused on React composition, state, refs,
   and rendering.
 - routing, overlay, history, scroll/focus, prefetch, player coordination, and StoreCart bridge behavior live in named
   internal helpers with direct tests.

@@ -416,6 +416,8 @@ Plans:
   `operator-auth` module and hardens the manifest validator against moving it back
 - Plan `12-61` extracts backend Prisma/D1 persistence adapters and Stripe SDK integration from `platform-shared` into
   closed infrastructure modules, then closes `platform-shared`
+- Plan `12-62` extracts app-shell JSX render surfaces into a `view` folder so `AppShellRoot.tsx` stays a thinner
+  composition root without changing shell behavior
 - Phase 12 refactor end goal is now documented in `12-REFACTOR-ENDGOAL.md`: thin app-shell composition, explicit
   `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard `eslint-plugin-boundaries` enforcement
 - Exists to make later large refactors safer and more reviewable before production cutover work begins

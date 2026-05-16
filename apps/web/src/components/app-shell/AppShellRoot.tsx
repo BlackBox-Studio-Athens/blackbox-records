@@ -1,9 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { Square, X } from 'lucide-react';
 
-import ArtistsRosterFilters from '@/components/artists/ArtistsRosterFilters';
-import { OPEN_PLAYER_ACTION_LABEL } from '@/components/app-shell/player-session-ui';
 import {
   readPlayerProvidersFromElement,
   type PlayerEmbedLayout,
@@ -11,8 +7,6 @@ import {
   type PlayerProviderId,
 } from '@/components/app-shell/player-provider-data';
 import { type ActivePlayerSession } from '@/components/app-shell/player-iframe-session';
-import ServicesInquiryForm from '@/components/services/ServicesInquiryForm';
-import StoreCartButton from '@/components/store/StoreCartButton';
 import StoreCartDrawer from '@/components/store/StoreCartDrawer';
 import {
   markCurrentHistoryEntryForShellSection,
@@ -38,10 +32,8 @@ import {
   scrollShellViewportToTop,
   triggerShellPageEnterTransition,
 } from '@/components/app-shell/navigation/shell-transition';
-import { Spinner } from '@/components/ui/spinner';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { createProjectRelativeUrl, resolveLinkAttributes } from '@/config/site';
-import { normalizeAppPathname, type OverlayRoute } from '@/lib/app-shell/routing';
+import { createProjectRelativeUrl } from '@/config/site';
+import { normalizeAppPathname } from '@/lib/app-shell/routing';
 import type { SiteNavigationItem } from '@/lib/site-data';
 import {
   createEmptyStoreCartState,
@@ -50,7 +42,6 @@ import {
   removeCartLineByVariant,
   type StoreCartState,
 } from '@/lib/store-cart';
-import { isCurrentPath } from '@/utils/urls';
 import { createOverlayFragmentLoader } from './overlay/overlay-fragment-loader';
 import {
   closeOverlayWithHistoryBack as closeOverlayHistoryWithBack,
@@ -67,11 +58,14 @@ import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './dom
 import { openShellOverlayNavigation, type ShellOverlayState } from './overlay/shell-overlay-navigation';
 import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './overlay/shell-overlay-focus';
 import { createShellPlayerSessionController } from './player-shell/shell-player-session-controller';
-import { PLAYER_PROVIDER_LABELS } from './player-shell/shell-player-view-state';
 import { syncShellRenderedNavigationState } from './navigation/shell-rendered-navigation-state';
 import { openShellSectionNavigation } from './navigation/shell-section-navigation';
 import { enableManualShellScrollRestoration } from './navigation/shell-scroll-restoration';
 import { scrollShellTargetIntoView } from './navigation/shell-target-scroll';
+import MobileNavigationSheet from './view/MobileNavigationSheet';
+import ShellOverlayPanel from './view/ShellOverlayPanel';
+import ShellPlayerSurface from './view/ShellPlayerSurface';
+import ShellPortalOutlets from './view/ShellPortalOutlets';
 
 type OverlayState = ShellOverlayState;
 
@@ -82,11 +76,6 @@ type AppShellRootProps = {
   siteTitle: string;
 };
 
-const OVERLAY_KIND_LABELS: Record<OverlayRoute['kind'], string> = {
-  artists: 'artist',
-  news: 'news',
-  releases: 'release',
-};
 export default function AppShellRoot({
   mobileNavigationItems,
   servicesInquiryEmail,
@@ -515,64 +504,14 @@ export default function AppShellRoot({
 
   return (
     <>
-      <Sheet open={isMobileNavigationOpen} onOpenChange={setIsMobileNavigationOpen}>
-        <SheetContent
-          side="right"
-          className="top-[var(--header-height)] bottom-auto h-[calc(100dvh-var(--header-height))] w-[min(92vw,320px)] border-l border-border/80 bg-background/95 pt-6"
-        >
-          <div className="flex h-full flex-col gap-6">
-            <SheetHeader>
-              <SheetTitle className="font-display text-3xl tracking-[0.1em] uppercase">Menu</SheetTitle>
-              <SheetDescription className="text-xs tracking-[0.16em] uppercase">{siteTitle}</SheetDescription>
-            </SheetHeader>
-
-            <nav className="grid gap-1" aria-label="Mobile" data-app-shell-mobile-navigation>
-              {mobileNavigationItems.map((item) => {
-                const navigationIsActive = activeShellPathname ? isCurrentPath(activeShellPathname, item.url) : false;
-                const linkAttributes = resolveLinkAttributes(item.url);
-                const isServicesNavigationItem = item.url === '/services/';
-                const isStoreNavigationItem = item.url === '/store/';
-
-                return (
-                  <a
-                    key={item.id}
-                    href={linkAttributes.href}
-                    target={linkAttributes.target}
-                    rel={linkAttributes.rel}
-                    data-astro-prefetch={linkAttributes.shouldPrefetch ? true : undefined}
-                    aria-current={navigationIsActive ? 'page' : undefined}
-                    data-services-navigation-link={isServicesNavigationItem ? 'true' : undefined}
-                    data-store-navigation-link={isStoreNavigationItem ? 'true' : undefined}
-                    className={[
-                      'relative inline-flex min-h-11 items-center border-b border-border/70 py-1 text-[12px] font-medium uppercase tracking-[0.2em] transition-colors',
-                      isStoreNavigationItem
-                        ? 'border-l-2 border-l-[var(--store-accent-active)] pl-3 text-[var(--store-accent-active)] hover:text-[var(--store-accent-hover)]'
-                        : isServicesNavigationItem
-                          ? navigationIsActive
-                            ? 'border-l-2 border-l-[var(--services-accent-active)] pl-3 text-[var(--services-accent-active)]'
-                            : 'text-foreground/90 hover:text-[var(--services-accent-hover)]'
-                          : navigationIsActive
-                            ? 'border-l-2 border-l-foreground/85 pl-3 text-foreground'
-                            : 'text-foreground/90 hover:text-foreground',
-                    ].join(' ')}
-                    onClick={() => setIsMobileNavigationOpen(false)}
-                  >
-                    {item.title}
-                  </a>
-                );
-              })}
-            </nav>
-
-            <button
-              className="mt-auto w-full text-[11px] tracking-[0.18em] uppercase text-muted-foreground transition-colors hover:text-foreground"
-              type="button"
-              onClick={() => setIsMobileNavigationOpen(false)}
-            >
-              Close
-            </button>
-          </div>
-        </SheetContent>
-      </Sheet>
+      <MobileNavigationSheet
+        activeShellPathname={activeShellPathname}
+        items={mobileNavigationItems}
+        onNavigate={() => setIsMobileNavigationOpen(false)}
+        onOpenChange={setIsMobileNavigationOpen}
+        open={isMobileNavigationOpen}
+        siteTitle={siteTitle}
+      />
 
       <StoreCartDrawer
         cartState={storeCartState}
@@ -605,216 +544,48 @@ export default function AppShellRoot({
         aria-hidden="true"
       ></div>
 
-      <div
-        className="app-shell-content-overlay"
-        data-state={overlayState ? 'open' : 'closed'}
-        aria-hidden={overlayState ? 'false' : 'true'}
-      >
-        <div className="app-shell-content-overlay__backdrop" onClick={closeOverlayWithHistoryBack}></div>
-        <div
-          className="app-shell-content-overlay__panel"
-          role="dialog"
-          aria-modal="true"
-          aria-busy={overlayState?.isLoading ? 'true' : 'false'}
-        >
-          <div className="app-shell-content-overlay__header">
-            <span className="app-shell-content-overlay__eyebrow">
-              {overlayState ? OVERLAY_KIND_LABELS[overlayState.route.kind] : 'detail'}
-            </span>
-            <button
-              ref={overlayCloseButtonRef}
-              className="app-shell-content-overlay__close-button"
-              type="button"
-              aria-label="Close detail view"
-              onClick={closeOverlayWithHistoryBack}
-            >
-              <X className="size-4" />
-            </button>
-          </div>
-          <div ref={overlayScrollContainerRef} className="app-shell-content-overlay__scroll-region">
-            {overlayState?.isLoading ? (
-              <div className="app-shell-content-overlay__loading-state" role="status" aria-live="polite">
-                <div className="music-streaming-service-embedded-player-loading-card">
-                  <div className="music-streaming-service-embedded-player-loading-card-status">
-                    <Spinner className="size-3.5 text-foreground/72" />
-                    <span>loading</span>
-                  </div>
-                  <div className="music-streaming-service-embedded-player-loading-card-bars" aria-hidden="true">
-                    <span className="music-streaming-service-embedded-player-loading-card-bar music-streaming-service-embedded-player-loading-card-bar--long"></span>
-                    <span className="music-streaming-service-embedded-player-loading-card-bar music-streaming-service-embedded-player-loading-card-bar--short"></span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              overlayState?.html && (
-                <div
-                  className="app-shell-content-overlay__content"
-                  dangerouslySetInnerHTML={{ __html: overlayState.html }}
-                />
-              )
-            )}
-          </div>
-        </div>
-      </div>
+      <ShellOverlayPanel
+        closeButtonRef={overlayCloseButtonRef}
+        onClose={closeOverlayWithHistoryBack}
+        overlayState={overlayState}
+        scrollContainerRef={overlayScrollContainerRef}
+      />
 
-      <div
-        className="music-streaming-service-embedded-player-modal-overlay"
-        data-state={isPlayerModalOpen ? 'open' : 'closed'}
-        onClick={(event) => {
+      <ShellPlayerSurface
+        activePlayerEmbedLayout={activePlayerEmbedLayout}
+        activePlayerProviderId={activePlayerProviderId}
+        activePlayerTitle={activePlayerTitle}
+        applyPlayerProvider={applyPlayerProvider}
+        iframeFrameHostRef={iframeFrameHostRef}
+        isMiniPlayerVisible={isMiniPlayerVisible}
+        isPlayerLoading={isPlayerLoading}
+        isPlayerModalOpen={isPlayerModalOpen}
+        markActivePlayerSurfaceAsInteracted={markActivePlayerSurfaceAsInteracted}
+        miniPlayerStatusLabel={miniPlayerStatusLabel}
+        modalCloseButtonRef={modalCloseButtonRef}
+        onModalBackdropClick={(event) => {
           if (event.target === event.currentTarget) {
             closePlayerModal();
           }
         }}
-      >
-        <div
-          aria-labelledby="music-streaming-service-embedded-player-modal-title"
-          aria-modal="true"
-          aria-busy={isPlayerLoading ? 'true' : 'false'}
-          className="music-streaming-service-embedded-player-modal-card"
-          role="dialog"
-          data-music-streaming-service-embedded-player-active-provider={activePlayerProviderId}
-          data-music-streaming-service-embedded-player-embed-layout={activePlayerEmbedLayout}
-          data-music-streaming-service-embedded-player-loading={isPlayerLoading ? 'true' : 'false'}
-        >
-          <h2 className="accessibility-visually-hidden-text" id="music-streaming-service-embedded-player-modal-title">
-            Music player
-          </h2>
-          <div className="music-streaming-service-embedded-player-modal-header">
-            <div className="music-streaming-service-embedded-player-modal-topbar">
-              <button
-                ref={modalCloseButtonRef}
-                aria-label={playerModalDismissAriaLabel}
-                className="music-streaming-service-embedded-player-modal-close-button"
-                data-music-streaming-service-embedded-player-modal-dismiss
-                type="button"
-              >
-                {playerModalDismissActionLabel}
-              </button>
-            </div>
-            <div
-              className="music-streaming-service-embedded-player-provider-switcher grid grid-cols-2 gap-2"
-              hidden={playerProviders.length < 2}
-            >
-              {(['bandcamp', 'tidal'] as PlayerProviderId[]).map((providerId) => {
-                const provider = playerProviders.find((item) => item.id === providerId);
+        playerModalDismissActionLabel={playerModalDismissActionLabel}
+        playerModalDismissAriaLabel={playerModalDismissAriaLabel}
+        playerProviders={playerProviders}
+        providerLogoUrls={providerLogoUrls}
+      />
 
-                return (
-                  <button
-                    key={providerId}
-                    className="music-streaming-service-embedded-player-provider-button music-streaming-service-embedded-player-provider-button--has-logo inline-flex min-h-10 items-center justify-center rounded-md px-4 transition-colors"
-                    type="button"
-                    data-state={activePlayerProviderId === providerId ? 'active' : 'inactive'}
-                    aria-label={PLAYER_PROVIDER_LABELS[providerId]}
-                    hidden={!provider}
-                    aria-pressed={activePlayerProviderId === providerId}
-                    onClick={() => {
-                      if (!provider) return;
-                      applyPlayerProvider(provider, activePlayerTitle);
-                    }}
-                  >
-                    <img
-                      className="music-streaming-service-embedded-player-provider-button-logo h-4 w-auto"
-                      src={providerLogoUrls[providerId]}
-                      alt=""
-                      aria-hidden="true"
-                    />
-                    <span className="accessibility-visually-hidden-text">{PLAYER_PROVIDER_LABELS[providerId]}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div
-            className="music-streaming-service-embedded-player-modal-frame"
-            onPointerDownCapture={markActivePlayerSurfaceAsInteracted}
-            onMouseDownCapture={markActivePlayerSurfaceAsInteracted}
-            onTouchStartCapture={markActivePlayerSurfaceAsInteracted}
-          >
-            <div
-              className="music-streaming-service-embedded-player-modal-loading-state absolute inset-0 flex items-center justify-center bg-background/92 px-3 py-3 text-center"
-              role="status"
-              aria-live="polite"
-            >
-              <div className="music-streaming-service-embedded-player-loading-card">
-                <div className="music-streaming-service-embedded-player-loading-card-status">
-                  <Spinner className="size-3.5 text-foreground/72" />
-                  <span>loading</span>
-                </div>
-                <div className="music-streaming-service-embedded-player-loading-card-bars" aria-hidden="true">
-                  <span className="music-streaming-service-embedded-player-loading-card-bar music-streaming-service-embedded-player-loading-card-bar--long"></span>
-                  <span className="music-streaming-service-embedded-player-loading-card-bar music-streaming-service-embedded-player-loading-card-bar--short"></span>
-                </div>
-              </div>
-            </div>
-            <div
-              ref={iframeFrameHostRef}
-              className="music-streaming-service-embedded-player-modal-frame-host flex w-full justify-center"
-            ></div>
-          </div>
-        </div>
-      </div>
-
-      <div
-        className="music-streaming-service-embedded-player-mini-player"
-        data-state={isMiniPlayerVisible ? 'open' : 'closed'}
-      >
-        <div className="music-streaming-service-embedded-player-mini-player-copy">
-          <p className="music-streaming-service-embedded-player-mini-player-provider uppercase text-muted-foreground">
-            {miniPlayerStatusLabel}
-          </p>
-          <p className="music-streaming-service-embedded-player-mini-player-title text-foreground/92">
-            {activePlayerTitle}
-          </p>
-        </div>
-        <div className="music-streaming-service-embedded-player-mini-player-actions">
-          <button
-            aria-label="Open player"
-            className="music-streaming-service-embedded-player-mini-player-action inline-flex min-h-9 items-center whitespace-nowrap rounded-full border border-border/80 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/78 transition-colors hover:bg-accent hover:text-accent-foreground"
-            data-music-streaming-service-embedded-player-mini-player-open
-            type="button"
-          >
-            {OPEN_PLAYER_ACTION_LABEL}
-          </button>
-          <button
-            aria-label="Stop player"
-            className="music-streaming-service-embedded-player-mini-player-action music-streaming-service-embedded-player-mini-player-action--icon inline-flex min-h-9 items-center whitespace-nowrap rounded-full border border-border/80 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            data-music-streaming-service-embedded-player-mini-player-stop
-            type="button"
-          >
-            <Square className="size-3 fill-current" aria-hidden="true" strokeWidth={0} />
-          </button>
-        </div>
-      </div>
-
-      {artistsRosterFiltersContainer
-        ? createPortal(
-            <ArtistsRosterFilters key={activeShellPathname} pageKey={activeShellPathname} />,
-            artistsRosterFiltersContainer,
-          )
-        : null}
-
-      {servicesInquiryContainer
-        ? createPortal(
-            <ServicesInquiryForm
-              key={activeShellPathname}
-              email={servicesInquiryEmail}
-              submitText={servicesInquirySubmitText}
-            />,
-            servicesInquiryContainer,
-          )
-        : null}
-
-      {storeCartHeaderContainer
-        ? createPortal(
-            <StoreCartButton
-              cartState={storeCartState}
-              onClick={() => {
-                setIsStoreCartDrawerOpen(true);
-              }}
-            />,
-            storeCartHeaderContainer,
-          )
-        : null}
+      <ShellPortalOutlets
+        activeShellPathname={activeShellPathname}
+        artistsRosterFiltersContainer={artistsRosterFiltersContainer}
+        onOpenStoreCart={() => {
+          setIsStoreCartDrawerOpen(true);
+        }}
+        servicesInquiryContainer={servicesInquiryContainer}
+        servicesInquiryEmail={servicesInquiryEmail}
+        servicesInquirySubmitText={servicesInquirySubmitText}
+        storeCartHeaderContainer={storeCartHeaderContainer}
+        storeCartState={storeCartState}
+      />
     </>
   );
 }
