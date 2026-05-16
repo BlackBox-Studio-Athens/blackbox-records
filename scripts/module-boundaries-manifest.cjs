@@ -455,6 +455,10 @@ function validateManifest(manifest = loadModuleBoundariesManifest()) {
     }
 
     if (moduleName === 'platform-shared') {
+      if (moduleDefinition.status !== 'closed') {
+        errors.push('platform-shared must remain closed after Phase 12 closure');
+      }
+
       if ((moduleDefinition.allowedDependencies ?? []).length > 0) {
         errors.push('platform-shared must not depend on business modules');
       }
@@ -470,6 +474,14 @@ function validateManifest(manifest = loadModuleBoundariesManifest()) {
 
         if (entry.startsWith('apps/backend/src/interfaces/http/auth/')) {
           errors.push(`platform-shared must not own operator auth code: ${entry}`);
+        }
+
+        if (entry.startsWith('apps/backend/src/infrastructure/persistence/prisma/')) {
+          errors.push(`platform-shared must not own backend persistence adapters: ${entry}`);
+        }
+
+        if (entry.startsWith('apps/backend/src/infrastructure/stripe/')) {
+          errors.push(`platform-shared must not own Stripe integration code: ${entry}`);
         }
       }
     }

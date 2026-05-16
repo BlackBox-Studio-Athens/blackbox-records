@@ -45,23 +45,25 @@ purely editorial and cannot affect ownership, entrypoints, status, dependencies,
 
 ## Canonical Module Table
 
-| Module                 | Status          | Primary owned roots                                                                                              | Provided interface                                       |
-| ---------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `app-shell`            | `closed`        | `apps/web/src/components/app-shell/`, `apps/web/src/lib/app-shell/`                                              | `AppShell.astro` and the thin shell composition root     |
-| `player`               | `closed`        | `apps/web/src/components/app-shell/player-*`, `apps/web/src/components/music/`, `apps/web/src/utils/music.ts`    | listen-trigger and player session surfaces               |
-| `ui-foundation`        | `closed`        | `apps/web/src/components/ui/`, `apps/web/src/lib/utils.ts`                                                       | shared frontend UI primitives and `cn` helper            |
-| `storefront-catalog`   | `closed`        | shopper-facing content query, catalog projection, cards/detail, and non-checkout store routes                    | browser-safe catalog and route-projection surfaces       |
-| `store-cart`           | `closed`        | `apps/web/src/lib/store-cart.ts`, StoreCart button and drawer                                                    | `@/lib/store-cart` plus cart UI surfaces                 |
-| `checkout-web`         | `closed`        | checkout pages, checkout UI state, public checkout browser adapters                                              | shopper checkout routes and browser-safe checkout client |
-| `cms-admin`            | `closed`        | `apps/web/src/pages/admin/`, `apps/web/src/lib/admin/`                                                           | `/admin/` surfaces and Decap config/media routes         |
-| `public-commerce-http` | `closed`        | public Worker HTTP routes and public contracts, with client access exposed through `@blackbox/api-client/public` | `/api/store/*`, `/api/checkout/*`, public OpenAPI/client |
-| `commerce-domain`      | `closed`        | backend commerce IDs and repository port contracts                                                               | backend commerce repository SPI                          |
-| `checkout-core`        | `closed`        | `apps/backend/src/application/commerce/checkout/`                                                                | checkout use-case API                                    |
-| `orders`               | `closed`        | `apps/backend/src/application/commerce/orders/`, order readback HTTP                                             | order lifecycle and reconciliation APIs                  |
-| `stock`                | `closed`        | `apps/backend/src/application/commerce/stock/`                                                                   | stock read/write use-case API                            |
-| `operator-auth`        | `closed`        | `apps/backend/src/interfaces/http/auth/`                                                                         | protected operator identity parser                       |
-| `operator-stock`       | `closed`        | protected stock UI and internal stock routes, with client access exposed through `@blackbox/api-client/internal` | `/stock/` and `/api/internal/*` stock-facing surfaces    |
-| `platform-shared`      | `split-pending` | shared config, bootstrap, public client-factory, and residual foundation code                                    | shared factories and bootstrap helpers only              |
+| Module                 | Status   | Primary owned roots                                                                                              | Provided interface                                       |
+| ---------------------- | -------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `app-shell`            | `closed` | `apps/web/src/components/app-shell/`, `apps/web/src/lib/app-shell/`                                              | `AppShell.astro` and the thin shell composition root     |
+| `player`               | `closed` | `apps/web/src/components/app-shell/player-*`, `apps/web/src/components/music/`, `apps/web/src/utils/music.ts`    | listen-trigger and player session surfaces               |
+| `ui-foundation`        | `closed` | `apps/web/src/components/ui/`, `apps/web/src/lib/utils.ts`                                                       | shared frontend UI primitives and `cn` helper            |
+| `storefront-catalog`   | `closed` | shopper-facing content query, catalog projection, cards/detail, and non-checkout store routes                    | browser-safe catalog and route-projection surfaces       |
+| `store-cart`           | `closed` | `apps/web/src/lib/store-cart.ts`, StoreCart button and drawer                                                    | `@/lib/store-cart` plus cart UI surfaces                 |
+| `checkout-web`         | `closed` | checkout pages, checkout UI state, public checkout browser adapters                                              | shopper checkout routes and browser-safe checkout client |
+| `cms-admin`            | `closed` | `apps/web/src/pages/admin/`, `apps/web/src/lib/admin/`                                                           | `/admin/` surfaces and Decap config/media routes         |
+| `public-commerce-http` | `closed` | public Worker HTTP routes and public contracts, with client access exposed through `@blackbox/api-client/public` | `/api/store/*`, `/api/checkout/*`, public OpenAPI/client |
+| `commerce-domain`      | `closed` | backend commerce IDs and repository port contracts                                                               | backend commerce repository SPI                          |
+| `commerce-persistence` | `closed` | `apps/backend/src/infrastructure/persistence/prisma/`                                                            | Prisma-backed commerce repository adapters               |
+| `stripe-integration`   | `closed` | `apps/backend/src/infrastructure/stripe/`                                                                        | Stripe Checkout and webhook SDK adapter                  |
+| `checkout-core`        | `closed` | `apps/backend/src/application/commerce/checkout/`                                                                | checkout use-case API                                    |
+| `orders`               | `closed` | `apps/backend/src/application/commerce/orders/`, order readback HTTP                                             | order lifecycle and reconciliation APIs                  |
+| `stock`                | `closed` | `apps/backend/src/application/commerce/stock/`                                                                   | stock read/write use-case API                            |
+| `operator-auth`        | `closed` | `apps/backend/src/interfaces/http/auth/`                                                                         | protected operator identity parser                       |
+| `operator-stock`       | `closed` | protected stock UI and internal stock routes, with client access exposed through `@blackbox/api-client/internal` | `/stock/` and `/api/internal/*` stock-facing surfaces    |
+| `platform-shared`      | `closed` | shared config, bootstrap, public client-factory, and residual foundation code                                    | shared factories and bootstrap helpers only              |
 
 ## Dependency Rules
 
@@ -80,13 +82,15 @@ purely editorial and cannot affect ownership, entrypoints, status, dependencies,
 - `store-cart` -> `ui-foundation`, `platform-shared`
 - `checkout-web` -> `store-cart`, `storefront-catalog`, `public-commerce-http`, `ui-foundation`, `platform-shared`
 - `cms-admin` -> `storefront-catalog`, `platform-shared`
-- `public-commerce-http` -> `checkout-core`, `orders`, `stock`, `platform-shared`
+- `public-commerce-http` -> `checkout-core`, `orders`, `stock`, `commerce-persistence`, `stripe-integration`, `platform-shared`
 - `commerce-domain` -> no business-module dependencies
+- `commerce-persistence` -> `commerce-domain`, `platform-shared`
+- `stripe-integration` -> `checkout-core`, `platform-shared`
 - `checkout-core` -> `commerce-domain`, `orders`, `stock`, `platform-shared`
-- `orders` -> `commerce-domain`, `stock`, `operator-auth`, `platform-shared`
+- `orders` -> `commerce-domain`, `stock`, `operator-auth`, `commerce-persistence`, `platform-shared`
 - `stock` -> `commerce-domain`, `platform-shared`
 - `operator-auth` -> no business-module dependencies
-- `operator-stock` -> `stock`, `orders`, `operator-auth`, `ui-foundation`, `platform-shared`
+- `operator-stock` -> `stock`, `orders`, `operator-auth`, `commerce-persistence`, `ui-foundation`, `platform-shared`
 - `platform-shared` -> no business-module dependencies
 
 ## Entrypoint Policy
@@ -150,6 +154,8 @@ Future hardening work should enforce this document through:
 - [cms-admin](modules/cms-admin.md)
 - [public-commerce-http](modules/public-commerce-http.md)
 - [commerce-domain](modules/commerce-domain.md)
+- [commerce-persistence](modules/commerce-persistence.md)
+- [stripe-integration](modules/stripe-integration.md)
 - [checkout-core](modules/checkout-core.md)
 - [orders](modules/orders.md)
 - [stock](modules/stock.md)

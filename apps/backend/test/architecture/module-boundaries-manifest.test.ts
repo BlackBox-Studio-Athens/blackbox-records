@@ -68,6 +68,15 @@ describe('Module boundaries manifest', () => {
     );
   });
 
+  it('rejects reopening platform-shared after closure', () => {
+    const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
+      modules: Record<string, Record<string, unknown>>;
+    };
+    manifest.modules['platform-shared'].status = 'split-pending';
+
+    expect(validateManifest(manifest)).toContain('platform-shared must remain closed after Phase 12 closure');
+  });
+
   it('rejects platform-shared ownership of backend commerce domain contracts', () => {
     const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
       modules: Record<string, Record<string, unknown>>;
@@ -107,6 +116,34 @@ describe('Module boundaries manifest', () => {
 
     expect(validateManifest(manifest)).toContain(
       'platform-shared must not own operator auth code: apps/backend/src/interfaces/http/auth/index.ts',
+    );
+  });
+
+  it('rejects platform-shared ownership of backend persistence adapters', () => {
+    const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
+      modules: Record<string, Record<string, unknown>>;
+    };
+    manifest.modules['platform-shared'].providedEntrypoints = [
+      ...((manifest.modules['platform-shared'].providedEntrypoints as string[]) ?? []),
+      'apps/backend/src/infrastructure/persistence/prisma/index.ts',
+    ];
+
+    expect(validateManifest(manifest)).toContain(
+      'platform-shared must not own backend persistence adapters: apps/backend/src/infrastructure/persistence/prisma/index.ts',
+    );
+  });
+
+  it('rejects platform-shared ownership of Stripe integration code', () => {
+    const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
+      modules: Record<string, Record<string, unknown>>;
+    };
+    manifest.modules['platform-shared'].providedEntrypoints = [
+      ...((manifest.modules['platform-shared'].providedEntrypoints as string[]) ?? []),
+      'apps/backend/src/infrastructure/stripe/index.ts',
+    ];
+
+    expect(validateManifest(manifest)).toContain(
+      'platform-shared must not own Stripe integration code: apps/backend/src/infrastructure/stripe/index.ts',
     );
   });
 });

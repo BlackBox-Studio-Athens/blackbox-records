@@ -230,7 +230,15 @@
       "namedInterfaces": {
         "public-contracts": "apps/backend/src/interfaces/http/contracts/public-contracts.ts"
       },
-      "allowedDependencies": ["checkout-core", "orders", "operator-stock", "stock", "platform-shared"],
+      "allowedDependencies": [
+        "checkout-core",
+        "orders",
+        "operator-stock",
+        "stock",
+        "commerce-persistence",
+        "stripe-integration",
+        "platform-shared"
+      ],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
@@ -242,6 +250,28 @@
         "repository-spi": "apps/backend/src/domain/commerce/repositories/index.ts"
       },
       "allowedDependencies": [],
+      "allowedWorkspaceInterfaces": {},
+      "ownershipExceptions": []
+    },
+    "commerce-persistence": {
+      "status": "closed",
+      "roots": ["apps/backend/src/infrastructure/persistence/prisma/**"],
+      "providedEntrypoints": ["apps/backend/src/infrastructure/persistence/prisma/index.ts"],
+      "namedInterfaces": {
+        "prisma-repositories": "apps/backend/src/infrastructure/persistence/prisma/index.ts"
+      },
+      "allowedDependencies": ["commerce-domain", "platform-shared"],
+      "allowedWorkspaceInterfaces": {},
+      "ownershipExceptions": []
+    },
+    "stripe-integration": {
+      "status": "closed",
+      "roots": ["apps/backend/src/infrastructure/stripe/**"],
+      "providedEntrypoints": ["apps/backend/src/infrastructure/stripe/index.ts"],
+      "namedInterfaces": {
+        "stripe-checkout-gateway": "apps/backend/src/infrastructure/stripe/index.ts"
+      },
+      "allowedDependencies": ["checkout-core", "platform-shared"],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
@@ -279,7 +309,14 @@
       "namedInterfaces": {
         "internal-order-routes": "apps/backend/src/interfaces/http/routes/register-internal-order-routes.ts"
       },
-      "allowedDependencies": ["commerce-domain", "checkout-core", "stock", "operator-auth", "platform-shared"],
+      "allowedDependencies": [
+        "commerce-domain",
+        "checkout-core",
+        "stock",
+        "operator-auth",
+        "commerce-persistence",
+        "platform-shared"
+      ],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
@@ -321,14 +358,21 @@
       "namedInterfaces": {
         "internal-contracts": "apps/backend/src/interfaces/http/contracts/internal-contracts.ts"
       },
-      "allowedDependencies": ["stock", "orders", "operator-auth", "ui-foundation", "platform-shared"],
+      "allowedDependencies": [
+        "stock",
+        "orders",
+        "operator-auth",
+        "commerce-persistence",
+        "ui-foundation",
+        "platform-shared"
+      ],
       "allowedWorkspaceInterfaces": {
         "@blackbox/api-client": ["./internal"]
       },
       "ownershipExceptions": []
     },
     "platform-shared": {
-      "status": "split-pending",
+      "status": "closed",
       "roots": [
         "apps/web/src/config/site.ts",
         "apps/web/src/utils/urls.ts",
@@ -336,8 +380,7 @@
         "apps/web/src/lib/backend/public-backend-config.ts",
         "apps/backend/src/env.ts",
         "apps/backend/src/interfaces/http/error-handler.ts",
-        "apps/backend/src/interfaces/http/not-found-handler.ts",
-        "apps/backend/src/infrastructure/persistence/prisma/create-prisma-client.ts"
+        "apps/backend/src/interfaces/http/not-found-handler.ts"
       ],
       "providedEntrypoints": [
         "apps/web/src/config/site.ts",
@@ -346,9 +389,7 @@
         "apps/web/src/utils/urls.ts",
         "apps/backend/src/env.ts",
         "apps/backend/src/interfaces/http/error-handler.ts",
-        "apps/backend/src/interfaces/http/not-found-handler.ts",
-        "apps/backend/src/infrastructure/persistence/prisma/index.ts",
-        "apps/backend/src/infrastructure/stripe/index.ts"
+        "apps/backend/src/interfaces/http/not-found-handler.ts"
       ],
       "namedInterfaces": {},
       "allowedDependencies": [],

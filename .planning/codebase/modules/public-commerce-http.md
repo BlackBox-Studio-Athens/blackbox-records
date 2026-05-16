@@ -36,6 +36,8 @@ ownership tied to that surface.
 - `checkout-core`
 - `orders`
 - `stock`
+- `commerce-persistence`
+- `stripe-integration`
 - `platform-shared`
 
 ## Named Interfaces / SPI Surfaces

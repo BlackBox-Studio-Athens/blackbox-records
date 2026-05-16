@@ -414,6 +414,8 @@ Plans:
   module and hardens the manifest validator against moving them back
 - Plan `12-60` extracts Cloudflare Access operator identity parsing from `platform-shared` into a closed
   `operator-auth` module and hardens the manifest validator against moving it back
+- Plan `12-61` extracts backend Prisma/D1 persistence adapters and Stripe SDK integration from `platform-shared` into
+  closed infrastructure modules, then closes `platform-shared`
 - Phase 12 refactor end goal is now documented in `12-REFACTOR-ENDGOAL.md`: thin app-shell composition, explicit
   `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard `eslint-plugin-boundaries` enforcement
 - Exists to make later large refactors safer and more reviewable before production cutover work begins

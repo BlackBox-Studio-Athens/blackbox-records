@@ -36,6 +36,7 @@ to talk to that protected surface.
 - `stock`
 - `orders`
 - `operator-auth`
+- `commerce-persistence`
 - `ui-foundation`
 - `platform-shared`
 

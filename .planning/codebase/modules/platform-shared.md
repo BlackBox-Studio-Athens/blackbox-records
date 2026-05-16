@@ -12,25 +12,20 @@ client factories, and other truly cross-cutting non-business seams.
 - `apps/web/src/lib/backend/api-client.ts`
 - `apps/web/src/lib/backend/public-backend-config.ts`
 - `apps/backend/src/env.ts`
-- `apps/backend/src/interfaces/http/app.ts`
 - `apps/backend/src/interfaces/http/error-handler.ts`
 - `apps/backend/src/interfaces/http/not-found-handler.ts`
-- `apps/backend/src/infrastructure/feature-flags/**`
-- `apps/backend/src/infrastructure/persistence/prisma/create-prisma-client.ts`
-- `packages/api-client/src/index.ts`
-- `packages/api-client/src/client-factories.test.ts`
 
 ## Provided Interface
 
-- shared API-client root exports
 - backend app bootstrap and cross-cutting HTTP plumbing
 - base-path and URL helper surfaces
+- public backend API client configuration
 
 ## Internal Implementation Area
 
 - framework bootstrap details
 - shared helper implementation details
-- environment and feature-flag wiring details
+- environment wiring details
 
 ## Allowed Dependencies
 
@@ -63,7 +58,7 @@ client factories, and other truly cross-cutting non-business seams.
 
 ## Migration Status
 
-`split-pending`
+`closed`
 
 ## Exit Criteria
 
@@ -72,4 +67,6 @@ client factories, and other truly cross-cutting non-business seams.
 - backend commerce IDs and repository contracts stay in `commerce-domain`
 - frontend UI primitives and `cn` stay in `ui-foundation`
 - operator identity parsing stays in `operator-auth`
+- Prisma-backed repository adapters stay in `commerce-persistence`
+- Stripe SDK integration stays in `stripe-integration`
 - the module stays dependency-light and non-authoritative
