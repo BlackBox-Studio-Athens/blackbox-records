@@ -391,6 +391,7 @@ Plans:
   tested helper
 - Plan `12-43` separates Decap runtime/base-path decisions from generated YAML assembly for the `/admin/config.yml`
   route
+- Plan `12-44` moves homepage-specific Decap field generation into a focused `cms-admin` helper with direct tests
 - Phase 12 refactor end goal is now documented in `12-REFACTOR-ENDGOAL.md`: thin app-shell composition, explicit
   `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard `eslint-plugin-boundaries` enforcement
 - Exists to make later large refactors safer and more reviewable before production cutover work begins
