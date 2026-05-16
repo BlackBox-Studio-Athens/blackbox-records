@@ -55,6 +55,7 @@ shopper-facing modules.
 - `apps/web/src/lib/admin/decap-runtime-config.test.ts`
 - `apps/web/src/lib/admin/decap-home-fields.test.ts`
 - `apps/web/src/lib/admin/decap-about-fields.test.ts`
+- `apps/web/src/lib/admin/decap-services-fields.test.ts`
 - route-level output checks for `/admin/config.yml`
 - targeted `/admin/` rendered validation when admin behavior changes
 
