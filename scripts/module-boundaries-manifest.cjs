@@ -463,6 +463,10 @@ function validateManifest(manifest = loadModuleBoundariesManifest()) {
         if (entry.startsWith('apps/backend/src/domain/commerce/')) {
           errors.push(`platform-shared must not own backend commerce domain code: ${entry}`);
         }
+
+        if (entry.startsWith('apps/web/src/components/ui/') || entry === 'apps/web/src/lib/utils.ts') {
+          errors.push(`platform-shared must not own frontend UI foundation code: ${entry}`);
+        }
       }
     }
   }

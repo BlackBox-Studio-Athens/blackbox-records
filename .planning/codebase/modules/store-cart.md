@@ -27,6 +27,7 @@ becoming a source of commerce authority.
 
 ## Allowed Dependencies
 
+- `ui-foundation`
 - `platform-shared`
 
 ## Named Interfaces / SPI Surfaces

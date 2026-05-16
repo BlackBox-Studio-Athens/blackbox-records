@@ -49,6 +49,7 @@ purely editorial and cannot affect ownership, entrypoints, status, dependencies,
 | ---------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | `app-shell`            | `closed`        | `apps/web/src/components/app-shell/`, `apps/web/src/lib/app-shell/`                                              | `AppShell.astro` and the thin shell composition root     |
 | `player`               | `closed`        | `apps/web/src/components/app-shell/player-*`, `apps/web/src/components/music/`, `apps/web/src/utils/music.ts`    | listen-trigger and player session surfaces               |
+| `ui-foundation`        | `closed`        | `apps/web/src/components/ui/`, `apps/web/src/lib/utils.ts`                                                       | shared frontend UI primitives and `cn` helper            |
 | `storefront-catalog`   | `closed`        | shopper-facing content query, catalog projection, cards/detail, and non-checkout store routes                    | browser-safe catalog and route-projection surfaces       |
 | `store-cart`           | `closed`        | `apps/web/src/lib/store-cart.ts`, StoreCart button and drawer                                                    | `@/lib/store-cart` plus cart UI surfaces                 |
 | `checkout-web`         | `closed`        | checkout pages, checkout UI state, public checkout browser adapters                                              | shopper checkout routes and browser-safe checkout client |
@@ -71,18 +72,19 @@ purely editorial and cannot affect ownership, entrypoints, status, dependencies,
 
 ### Initial allowed dependency matrix
 
-- `app-shell` -> `player`, `store-cart`, `checkout-web`, `storefront-catalog`, `platform-shared`
-- `player` -> `platform-shared`
-- `storefront-catalog` -> `player`, `store-cart`, `checkout-web`, `platform-shared`
-- `store-cart` -> `platform-shared`
-- `checkout-web` -> `store-cart`, `storefront-catalog`, `public-commerce-http`, `platform-shared`
+- `app-shell` -> `player`, `store-cart`, `checkout-web`, `storefront-catalog`, `ui-foundation`, `platform-shared`
+- `player` -> `ui-foundation`, `platform-shared`
+- `ui-foundation` -> no business-module dependencies
+- `storefront-catalog` -> `player`, `store-cart`, `checkout-web`, `ui-foundation`, `platform-shared`
+- `store-cart` -> `ui-foundation`, `platform-shared`
+- `checkout-web` -> `store-cart`, `storefront-catalog`, `public-commerce-http`, `ui-foundation`, `platform-shared`
 - `cms-admin` -> `storefront-catalog`, `platform-shared`
 - `public-commerce-http` -> `checkout-core`, `orders`, `stock`, `platform-shared`
 - `commerce-domain` -> no business-module dependencies
 - `checkout-core` -> `commerce-domain`, `orders`, `stock`, `platform-shared`
 - `orders` -> `commerce-domain`, `stock`, `platform-shared`
 - `stock` -> `commerce-domain`, `platform-shared`
-- `operator-stock` -> `stock`, `orders`, `platform-shared`
+- `operator-stock` -> `stock`, `orders`, `ui-foundation`, `platform-shared`
 - `platform-shared` -> no business-module dependencies
 
 ## Entrypoint Policy
@@ -139,6 +141,7 @@ Future hardening work should enforce this document through:
 
 - [app-shell](modules/app-shell.md)
 - [player](modules/player.md)
+- [ui-foundation](modules/ui-foundation.md)
 - [storefront-catalog](modules/storefront-catalog.md)
 - [store-cart](modules/store-cart.md)
 - [checkout-web](modules/checkout-web.md)

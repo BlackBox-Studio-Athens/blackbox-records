@@ -63,7 +63,14 @@
       "roots": ["apps/web/src/components/app-shell/**", "apps/web/src/lib/app-shell/**"],
       "providedEntrypoints": ["apps/web/src/components/app-shell/AppShell.astro"],
       "namedInterfaces": {},
-      "allowedDependencies": ["player", "store-cart", "checkout-web", "storefront-catalog", "platform-shared"],
+      "allowedDependencies": [
+        "player",
+        "store-cart",
+        "checkout-web",
+        "storefront-catalog",
+        "ui-foundation",
+        "platform-shared"
+      ],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": ["apps/web/src/components/app-shell/player-*.ts"]
     },
@@ -84,7 +91,26 @@
         "apps/web/src/utils/music.ts"
       ],
       "namedInterfaces": {},
-      "allowedDependencies": ["platform-shared"],
+      "allowedDependencies": ["ui-foundation", "platform-shared"],
+      "allowedWorkspaceInterfaces": {},
+      "ownershipExceptions": []
+    },
+    "ui-foundation": {
+      "status": "closed",
+      "roots": ["apps/web/src/components/ui/**", "apps/web/src/lib/utils.ts"],
+      "providedEntrypoints": [
+        "apps/web/src/components/ui/badge.tsx",
+        "apps/web/src/components/ui/button.tsx",
+        "apps/web/src/components/ui/card.tsx",
+        "apps/web/src/components/ui/grid-pattern.astro",
+        "apps/web/src/components/ui/input.tsx",
+        "apps/web/src/components/ui/sheet.tsx",
+        "apps/web/src/components/ui/spinner.tsx",
+        "apps/web/src/components/ui/textarea.tsx",
+        "apps/web/src/lib/utils.ts"
+      ],
+      "namedInterfaces": {},
+      "allowedDependencies": [],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
@@ -117,7 +143,7 @@
         "apps/web/src/components/services/ServicesInquiryForm.tsx"
       ],
       "namedInterfaces": {},
-      "allowedDependencies": ["player", "store-cart", "checkout-web", "platform-shared"],
+      "allowedDependencies": ["player", "store-cart", "checkout-web", "ui-foundation", "platform-shared"],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
@@ -134,7 +160,7 @@
         "apps/web/src/components/store/StoreCartDrawer.tsx"
       ],
       "namedInterfaces": {},
-      "allowedDependencies": ["platform-shared"],
+      "allowedDependencies": ["ui-foundation", "platform-shared"],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
@@ -156,7 +182,13 @@
       "namedInterfaces": {
         "browser-checkout-api": "apps/web/src/lib/backend/public-checkout-api.ts"
       },
-      "allowedDependencies": ["storefront-catalog", "store-cart", "public-commerce-http", "platform-shared"],
+      "allowedDependencies": [
+        "storefront-catalog",
+        "store-cart",
+        "public-commerce-http",
+        "ui-foundation",
+        "platform-shared"
+      ],
       "allowedWorkspaceInterfaces": {
         "@blackbox/api-client": ["./public"]
       },
@@ -280,7 +312,7 @@
       "namedInterfaces": {
         "internal-contracts": "apps/backend/src/interfaces/http/contracts/internal-contracts.ts"
       },
-      "allowedDependencies": ["stock", "orders", "platform-shared"],
+      "allowedDependencies": ["stock", "orders", "ui-foundation", "platform-shared"],
       "allowedWorkspaceInterfaces": {
         "@blackbox/api-client": ["./internal"]
       },
@@ -290,9 +322,7 @@
       "status": "split-pending",
       "roots": [
         "apps/web/src/config/site.ts",
-        "apps/web/src/components/ui/**",
         "apps/web/src/utils/urls.ts",
-        "apps/web/src/lib/utils.ts",
         "apps/web/src/lib/backend/api-client.ts",
         "apps/web/src/lib/backend/public-backend-config.ts",
         "apps/backend/src/env.ts",
@@ -304,16 +334,8 @@
       ],
       "providedEntrypoints": [
         "apps/web/src/config/site.ts",
-        "apps/web/src/components/ui/badge.tsx",
-        "apps/web/src/components/ui/button.tsx",
-        "apps/web/src/components/ui/card.tsx",
-        "apps/web/src/components/ui/input.tsx",
-        "apps/web/src/components/ui/sheet.tsx",
-        "apps/web/src/components/ui/spinner.tsx",
-        "apps/web/src/components/ui/textarea.tsx",
         "apps/web/src/lib/backend/api-client.ts",
         "apps/web/src/lib/backend/public-backend-config.ts",
-        "apps/web/src/lib/utils.ts",
         "apps/web/src/utils/urls.ts",
         "apps/backend/src/env.ts",
         "apps/backend/src/interfaces/http/auth/index.ts",

@@ -8,9 +8,7 @@ client factories, and other truly cross-cutting non-business seams.
 ## Owned Files And Directories
 
 - `apps/web/src/config/site.ts`
-- `apps/web/src/components/ui/**`
 - `apps/web/src/utils/urls.ts`
-- `apps/web/src/lib/utils.ts`
 - `apps/web/src/lib/backend/api-client.ts`
 - `apps/web/src/lib/backend/public-backend-config.ts`
 - `apps/backend/src/env.ts`
@@ -72,4 +70,5 @@ client factories, and other truly cross-cutting non-business seams.
 - residual helper code is minimized to true bootstrap or factory concerns only
 - any leaked business behavior is moved into the owning module
 - backend commerce IDs and repository contracts stay in `commerce-domain`
+- frontend UI primitives and `cn` stay in `ui-foundation`
 - the module stays dependency-light and non-authoritative

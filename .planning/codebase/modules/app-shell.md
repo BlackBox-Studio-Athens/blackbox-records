@@ -53,6 +53,7 @@ sections while acting as the future thin composition root over smaller shell sub
 - `store-cart`
 - `checkout-web`
 - `storefront-catalog`
+- `ui-foundation`
 - `platform-shared`
 
 ## Named Interfaces / SPI Surfaces

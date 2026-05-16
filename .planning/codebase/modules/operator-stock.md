@@ -37,6 +37,7 @@ to talk to that protected surface.
 
 - `stock`
 - `orders`
+- `ui-foundation`
 - `platform-shared`
 
 ## Named Interfaces / SPI Surfaces

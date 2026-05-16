@@ -81,4 +81,18 @@ describe('Module boundaries manifest', () => {
       'platform-shared must not own backend commerce domain code: apps/backend/src/domain/commerce/repositories/**',
     );
   });
+
+  it('rejects platform-shared ownership of frontend UI foundation code', () => {
+    const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
+      modules: Record<string, Record<string, unknown>>;
+    };
+    manifest.modules['platform-shared'].providedEntrypoints = [
+      ...((manifest.modules['platform-shared'].providedEntrypoints as string[]) ?? []),
+      'apps/web/src/components/ui/button.tsx',
+    ];
+
+    expect(validateManifest(manifest)).toContain(
+      'platform-shared must not own frontend UI foundation code: apps/web/src/components/ui/button.tsx',
+    );
+  });
 });

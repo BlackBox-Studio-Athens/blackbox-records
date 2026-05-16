@@ -42,6 +42,7 @@ store item routes.
 - `player`
 - `store-cart`
 - `checkout-web`
+- `ui-foundation`
 - `platform-shared`
 
 ## Named Interfaces / SPI Surfaces

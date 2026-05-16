@@ -41,6 +41,7 @@ routes and cards.
 
 ## Allowed Dependencies
 
+- `ui-foundation`
 - `platform-shared`
 
 ## Named Interfaces / SPI Surfaces

@@ -43,6 +43,7 @@ checkout return behavior.
 - `storefront-catalog`
 - `store-cart`
 - `public-commerce-http`
+- `ui-foundation`
 - `platform-shared`
 
 ## Named Interfaces / SPI Surfaces
