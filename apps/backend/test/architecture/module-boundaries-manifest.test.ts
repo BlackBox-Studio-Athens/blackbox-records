@@ -95,4 +95,18 @@ describe('Module boundaries manifest', () => {
       'platform-shared must not own frontend UI foundation code: apps/web/src/components/ui/button.tsx',
     );
   });
+
+  it('rejects platform-shared ownership of operator auth code', () => {
+    const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
+      modules: Record<string, Record<string, unknown>>;
+    };
+    manifest.modules['platform-shared'].providedEntrypoints = [
+      ...((manifest.modules['platform-shared'].providedEntrypoints as string[]) ?? []),
+      'apps/backend/src/interfaces/http/auth/index.ts',
+    ];
+
+    expect(validateManifest(manifest)).toContain(
+      'platform-shared must not own operator auth code: apps/backend/src/interfaces/http/auth/index.ts',
+    );
+  });
 });

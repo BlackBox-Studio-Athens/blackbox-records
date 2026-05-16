@@ -4,17 +4,17 @@ milestone: v1.2
 milestone_name: Modulith Boundary Hardening
 current_phase: 12
 current_phase_name: modulith-boundary-hardening-planning
-current_plan: 59
+current_plan: 60
 status: active
-stopped_at: Completed 12-59 UI foundation boundary extraction
+stopped_at: Completed 12-60 operator-auth boundary extraction
 paused_at: ''
 last_updated: '2026-05-16T00:00:00.000Z'
 last_activity: 2026-05-16
 progress:
   total_phases: 12
   completed_phases: 8
-  total_plans: 59
-  completed_plans: 56
+  total_plans: 60
+  completed_plans: 57
 ---
 
 # Project State
@@ -31,16 +31,16 @@ routes own secrets and mutations, and stock changes happen only after verified w
 ## Current Position
 
 Phase: 12 (modulith-boundary-hardening-planning) - ACTIVE
-Plan: 59 of 59
+Plan: 60 of 60
 Current Phase: 12
 Current Phase Name: modulith-boundary-hardening-planning
 Total Phases: 12
-Current Plan: 59
-Total Plans in Phase: 59
-Status: Active - 12-59 UI foundation boundary extraction complete
+Current Plan: 60
+Total Plans in Phase: 60
+Status: Active - 12-60 operator-auth boundary extraction complete
 Progress: [#########-] 95%
 Last activity: 2026-05-16
-Last Activity Description: 12-59 extracted ui-foundation from platform-shared
+Last Activity Description: 12-60 extracted operator-auth from platform-shared
 Paused At:
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, 8, and 11 are complete. Phase 7 mock, contract, frontend
@@ -72,9 +72,9 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 
 **Velocity:**
 
-- Total plans completed: 78
+- Total plans completed: 79
 - Total plans remaining: 7
-- Completed plan ratio: 78/85
+- Completed plan ratio: 79/86
 - Average duration: -
 - Total execution time: -
 
@@ -93,7 +93,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 | 9     | 5/6   | Deferred  | 2026-04-30 |
 | 10    | 5/6   | Deferred  | 2026-05-01 |
 | 11    | 5/5   | Completed | 2026-05-12 |
-| 12    | 44/47 | Active    | 2026-05-16 |
+| 12    | 45/48 | Active    | 2026-05-16 |
 
 **Recent Trend:**
 
@@ -277,6 +277,9 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 - Phase 12 plan 12-59 extracted shared frontend UI primitives and `cn` from `platform-shared` into a closed
   `ui-foundation` module, updated frontend consumer dependencies to use that module, and hardened the manifest validator
   against moving frontend UI foundation code back into `platform-shared`.
+- Phase 12 plan 12-60 extracted Cloudflare Access operator identity parsing from `platform-shared` into a closed
+  `operator-auth` module, updated internal order and operator stock dependencies to use that module, and hardened the
+  manifest validator against moving operator auth code back into `platform-shared`.
 - Phase 12 now has an explicit refactor end-goal document at
   `.planning/phases/12-modulith-boundary-hardening-planning/12-REFACTOR-ENDGOAL.md`; remaining slices should aim at thin
   app-shell composition, explicit `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard
@@ -439,7 +442,7 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
   backend APIs.
 - Preserve the current `StoreItem` and `ItemAvailability` storefront contracts while later backend APIs grow on top of
   the completed Phase 6.1 foundation.
-- Continue Phase 12 through the next approved boundary-hardening refactor slice; `12-04` through `12-59` are complete and
+- Continue Phase 12 through the next approved boundary-hardening refactor slice; `12-04` through `12-60` are complete and
   deeper refactors should still respect the boundary manifest and verifier rules.
 - Complete the deferred Stripe access validation gate before sandbox/release approval.
 - Choose the Phase 9 shipping mode and complete the deferred BOX NOW Portal Gate before marking Phase 9, `09-06`, or
@@ -474,5 +477,5 @@ plan arguments for GSD commands; the current human focus is now Phase 12.
 ## Session
 
 **Last Date:** 2026-05-16T00:00:00.000Z
-**Stopped At:** Completed 12-59 UI foundation boundary extraction
+**Stopped At:** Completed 12-60 operator-auth boundary extraction
 **Resume File:** None

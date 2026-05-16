@@ -279,7 +279,7 @@
       "namedInterfaces": {
         "internal-order-routes": "apps/backend/src/interfaces/http/routes/register-internal-order-routes.ts"
       },
-      "allowedDependencies": ["commerce-domain", "checkout-core", "stock", "platform-shared"],
+      "allowedDependencies": ["commerce-domain", "checkout-core", "stock", "operator-auth", "platform-shared"],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
@@ -291,6 +291,15 @@
         "repository-spi": "apps/backend/src/application/commerce/stock/index.ts"
       },
       "allowedDependencies": ["commerce-domain", "platform-shared"],
+      "allowedWorkspaceInterfaces": {},
+      "ownershipExceptions": []
+    },
+    "operator-auth": {
+      "status": "closed",
+      "roots": ["apps/backend/src/interfaces/http/auth/**"],
+      "providedEntrypoints": ["apps/backend/src/interfaces/http/auth/index.ts"],
+      "namedInterfaces": {},
+      "allowedDependencies": [],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
@@ -312,7 +321,7 @@
       "namedInterfaces": {
         "internal-contracts": "apps/backend/src/interfaces/http/contracts/internal-contracts.ts"
       },
-      "allowedDependencies": ["stock", "orders", "ui-foundation", "platform-shared"],
+      "allowedDependencies": ["stock", "orders", "operator-auth", "ui-foundation", "platform-shared"],
       "allowedWorkspaceInterfaces": {
         "@blackbox/api-client": ["./internal"]
       },
@@ -326,8 +335,6 @@
         "apps/web/src/lib/backend/api-client.ts",
         "apps/web/src/lib/backend/public-backend-config.ts",
         "apps/backend/src/env.ts",
-        "apps/backend/src/interfaces/http/auth/index.ts",
-        "apps/backend/src/interfaces/http/auth/operator-identity.ts",
         "apps/backend/src/interfaces/http/error-handler.ts",
         "apps/backend/src/interfaces/http/not-found-handler.ts",
         "apps/backend/src/infrastructure/persistence/prisma/create-prisma-client.ts"
@@ -338,8 +345,6 @@
         "apps/web/src/lib/backend/public-backend-config.ts",
         "apps/web/src/utils/urls.ts",
         "apps/backend/src/env.ts",
-        "apps/backend/src/interfaces/http/auth/index.ts",
-        "apps/backend/src/interfaces/http/auth/operator-identity.ts",
         "apps/backend/src/interfaces/http/error-handler.ts",
         "apps/backend/src/interfaces/http/not-found-handler.ts",
         "apps/backend/src/infrastructure/persistence/prisma/index.ts",

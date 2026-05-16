@@ -71,4 +71,5 @@ client factories, and other truly cross-cutting non-business seams.
 - any leaked business behavior is moved into the owning module
 - backend commerce IDs and repository contracts stay in `commerce-domain`
 - frontend UI primitives and `cn` stay in `ui-foundation`
+- operator identity parsing stays in `operator-auth`
 - the module stays dependency-light and non-authoritative

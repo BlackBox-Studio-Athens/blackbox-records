@@ -28,6 +28,7 @@ low-volume manual review.
 
 - `stock`
 - `commerce-domain`
+- `operator-auth`
 - `platform-shared`
 
 ## Named Interfaces / SPI Surfaces

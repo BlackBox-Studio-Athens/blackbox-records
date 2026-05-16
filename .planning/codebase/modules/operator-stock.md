@@ -11,7 +11,6 @@ to talk to that protected surface.
 - `apps/web/src/components/stock/StockOperationsApp.tsx`
 - `apps/web/src/lib/backend/internal-stock-api.ts`
 - `apps/web/src/lib/backend/internal-stock-api.test.ts`
-- `apps/backend/src/interfaces/http/auth/operator-identity.ts`
 - `apps/backend/src/interfaces/http/contracts/internal-contracts.ts`
 - `apps/backend/src/interfaces/http/routes/register-internal-stock-routes.ts`
 - `apps/backend/src/interfaces/http/routes/internal-stock-services.ts`
@@ -29,7 +28,6 @@ to talk to that protected surface.
 
 ## Internal Implementation Area
 
-- Access identity parsing details
 - internal stock UI state orchestration
 - internal stock route wiring details
 
@@ -37,6 +35,7 @@ to talk to that protected surface.
 
 - `stock`
 - `orders`
+- `operator-auth`
 - `ui-foundation`
 - `platform-shared`
 

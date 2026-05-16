@@ -59,6 +59,7 @@ purely editorial and cannot affect ownership, entrypoints, status, dependencies,
 | `checkout-core`        | `closed`        | `apps/backend/src/application/commerce/checkout/`                                                                | checkout use-case API                                    |
 | `orders`               | `closed`        | `apps/backend/src/application/commerce/orders/`, order readback HTTP                                             | order lifecycle and reconciliation APIs                  |
 | `stock`                | `closed`        | `apps/backend/src/application/commerce/stock/`                                                                   | stock read/write use-case API                            |
+| `operator-auth`        | `closed`        | `apps/backend/src/interfaces/http/auth/`                                                                         | protected operator identity parser                       |
 | `operator-stock`       | `closed`        | protected stock UI and internal stock routes, with client access exposed through `@blackbox/api-client/internal` | `/stock/` and `/api/internal/*` stock-facing surfaces    |
 | `platform-shared`      | `split-pending` | shared config, bootstrap, public client-factory, and residual foundation code                                    | shared factories and bootstrap helpers only              |
 
@@ -82,9 +83,10 @@ purely editorial and cannot affect ownership, entrypoints, status, dependencies,
 - `public-commerce-http` -> `checkout-core`, `orders`, `stock`, `platform-shared`
 - `commerce-domain` -> no business-module dependencies
 - `checkout-core` -> `commerce-domain`, `orders`, `stock`, `platform-shared`
-- `orders` -> `commerce-domain`, `stock`, `platform-shared`
+- `orders` -> `commerce-domain`, `stock`, `operator-auth`, `platform-shared`
 - `stock` -> `commerce-domain`, `platform-shared`
-- `operator-stock` -> `stock`, `orders`, `ui-foundation`, `platform-shared`
+- `operator-auth` -> no business-module dependencies
+- `operator-stock` -> `stock`, `orders`, `operator-auth`, `ui-foundation`, `platform-shared`
 - `platform-shared` -> no business-module dependencies
 
 ## Entrypoint Policy
@@ -151,5 +153,6 @@ Future hardening work should enforce this document through:
 - [checkout-core](modules/checkout-core.md)
 - [orders](modules/orders.md)
 - [stock](modules/stock.md)
+- [operator-auth](modules/operator-auth.md)
 - [operator-stock](modules/operator-stock.md)
 - [platform-shared](modules/platform-shared.md)
