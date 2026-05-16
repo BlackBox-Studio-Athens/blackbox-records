@@ -59,18 +59,7 @@
   },
   "modules": {
     "app-shell": {
-      "status": "open-temporary",
-      "temporaryOpenReason": "AppShellRoot is a legacy mixed composition root that still owns shell routing, overlays, history, player coordination, and StoreCart bridge behavior until those seams are characterized and extracted.",
-      "exitCriteria": [
-        "AppShellRoot becomes a thin composition root over explicit shell seams.",
-        "Routing, overlay, history, player coordination, and StoreCart bridge behavior have stable entrypoints and direct coverage.",
-        "External callers import only documented shell entrypoints instead of deep helper paths."
-      ],
-      "forbiddenWhileOpen": [
-        "Do not widen app-shell ownership beyond the documented shell roots.",
-        "Do not add new open-temporary peer modules as a convenience escape hatch.",
-        "Do not introduce temporary compatibility facades for old deep imports."
-      ],
+      "status": "closed",
       "roots": ["apps/web/src/components/app-shell/**", "apps/web/src/lib/app-shell/**"],
       "providedEntrypoints": ["apps/web/src/components/app-shell/AppShell.astro"],
       "namedInterfaces": {},

@@ -14,7 +14,7 @@ sections while acting as the future thin composition root over smaller shell sub
 ## Provided Interface
 
 - `AppShell.astro` as the shell mount surface
-- the future thin `AppShellRoot` composition root for persistent shell behavior
+- the thin `AppShellRoot` composition root for persistent shell behavior
 
 ## Internal Implementation Area
 
@@ -58,7 +58,6 @@ sections while acting as the future thin composition root over smaller shell sub
 ## Named Interfaces / SPI Surfaces
 
 - none today
-- planned future seams: `snapshot`, `overlay`, `history`, and `cart-bridge`
 
 ## Published Events
 
@@ -111,12 +110,13 @@ sections while acting as the future thin composition root over smaller shell sub
 
 ## Migration Status
 
-`open-temporary`
+`closed`
 
-## Exit Criteria
+## Closure Evidence
 
-- `AppShellRoot.tsx` becomes a thin composition root, with a Phase 12 target of 800-900 lines and no shallow wrapper
-  extractions
-- routing, overlay, history, and StoreCart bridge logic live in extracted internal modules
-- shell behavior has direct automated coverage beyond player helper tests
-- callers depend on explicit shell entrypoints instead of deep imports into extracted helpers
+- `AppShellRoot.tsx` is inside the Phase 12 target band at 820 lines and remains focused on React composition, state, refs,
+  and rendering.
+- routing, overlay, history, scroll/focus, prefetch, player coordination, and StoreCart bridge behavior live in named
+  internal helpers with direct tests.
+- external callers use `AppShell.astro` as the documented shell mount surface; shell internals are not published as
+  compatibility facades.

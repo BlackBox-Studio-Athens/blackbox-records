@@ -15,7 +15,7 @@ const WALK_IGNORES = new Set([
   '.vite',
   'coverage',
 ]);
-const APPROVED_OPEN_TEMPORARY_MODULES = new Set(['app-shell']);
+const APPROVED_OPEN_TEMPORARY_MODULES = new Set([]);
 
 function toPosixPath(value) {
   return value.split(path.sep).join('/');
@@ -414,7 +414,7 @@ function validateManifest(manifest = loadModuleBoundariesManifest()) {
   for (const [moduleName, moduleDefinition] of getModuleEntries(manifest)) {
     if (moduleDefinition.status === 'open-temporary') {
       if (!APPROVED_OPEN_TEMPORARY_MODULES.has(moduleName)) {
-        errors.push(`Module ${moduleName} is open-temporary but is not in the approved initial open-temporary set`);
+        errors.push(`Module ${moduleName} is open-temporary but is not in the approved open-temporary set`);
       }
 
       for (const metadataField of ['temporaryOpenReason', 'exitCriteria', 'forbiddenWhileOpen']) {

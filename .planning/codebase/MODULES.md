@@ -45,20 +45,20 @@ purely editorial and cannot affect ownership, entrypoints, status, dependencies,
 
 ## Canonical Module Table
 
-| Module                 | Status           | Primary owned roots                                                                                              | Provided interface                                          |
-| ---------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `app-shell`            | `open-temporary` | `apps/web/src/components/app-shell/`, `apps/web/src/lib/app-shell/`                                              | `AppShell.astro` and the future thin shell composition root |
-| `player`               | `closed`         | `apps/web/src/components/app-shell/player-*`, `apps/web/src/components/music/`, `apps/web/src/utils/music.ts`    | listen-trigger and player session surfaces                  |
-| `storefront-catalog`   | `closed`         | shopper-facing content query, catalog projection, cards/detail, and non-checkout store routes                    | browser-safe catalog and route-projection surfaces          |
-| `store-cart`           | `closed`         | `apps/web/src/lib/store-cart.ts`, StoreCart button and drawer                                                    | `@/lib/store-cart` plus cart UI surfaces                    |
-| `checkout-web`         | `closed`         | checkout pages, checkout UI state, public checkout browser adapters                                              | shopper checkout routes and browser-safe checkout client    |
-| `cms-admin`            | `closed`         | `apps/web/src/pages/admin/`, `apps/web/src/lib/admin/`                                                           | `/admin/` surfaces and Decap config/media routes            |
-| `public-commerce-http` | `closed`         | public Worker HTTP routes and public contracts, with client access exposed through `@blackbox/api-client/public` | `/api/store/*`, `/api/checkout/*`, public OpenAPI/client    |
-| `checkout-core`        | `closed`         | `apps/backend/src/application/commerce/checkout/`                                                                | checkout use-case API                                       |
-| `orders`               | `closed`         | `apps/backend/src/application/commerce/orders/`, order readback HTTP                                             | order lifecycle and reconciliation APIs                     |
-| `stock`                | `closed`         | `apps/backend/src/application/commerce/stock/`                                                                   | stock read/write use-case API                               |
-| `operator-stock`       | `closed`         | protected stock UI and internal stock routes, with client access exposed through `@blackbox/api-client/internal` | `/stock/` and `/api/internal/*` stock-facing surfaces       |
-| `platform-shared`      | `split-pending`  | shared config, bootstrap, public client-factory, and residual foundation code                                    | shared factories and bootstrap helpers only                 |
+| Module                 | Status          | Primary owned roots                                                                                              | Provided interface                                       |
+| ---------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `app-shell`            | `closed`        | `apps/web/src/components/app-shell/`, `apps/web/src/lib/app-shell/`                                              | `AppShell.astro` and the thin shell composition root     |
+| `player`               | `closed`        | `apps/web/src/components/app-shell/player-*`, `apps/web/src/components/music/`, `apps/web/src/utils/music.ts`    | listen-trigger and player session surfaces               |
+| `storefront-catalog`   | `closed`        | shopper-facing content query, catalog projection, cards/detail, and non-checkout store routes                    | browser-safe catalog and route-projection surfaces       |
+| `store-cart`           | `closed`        | `apps/web/src/lib/store-cart.ts`, StoreCart button and drawer                                                    | `@/lib/store-cart` plus cart UI surfaces                 |
+| `checkout-web`         | `closed`        | checkout pages, checkout UI state, public checkout browser adapters                                              | shopper checkout routes and browser-safe checkout client |
+| `cms-admin`            | `closed`        | `apps/web/src/pages/admin/`, `apps/web/src/lib/admin/`                                                           | `/admin/` surfaces and Decap config/media routes         |
+| `public-commerce-http` | `closed`        | public Worker HTTP routes and public contracts, with client access exposed through `@blackbox/api-client/public` | `/api/store/*`, `/api/checkout/*`, public OpenAPI/client |
+| `checkout-core`        | `closed`        | `apps/backend/src/application/commerce/checkout/`                                                                | checkout use-case API                                    |
+| `orders`               | `closed`        | `apps/backend/src/application/commerce/orders/`, order readback HTTP                                             | order lifecycle and reconciliation APIs                  |
+| `stock`                | `closed`        | `apps/backend/src/application/commerce/stock/`                                                                   | stock read/write use-case API                            |
+| `operator-stock`       | `closed`        | protected stock UI and internal stock routes, with client access exposed through `@blackbox/api-client/internal` | `/stock/` and `/api/internal/*` stock-facing surfaces    |
+| `platform-shared`      | `split-pending` | shared config, bootstrap, public client-factory, and residual foundation code                                    | shared factories and bootstrap helpers only              |
 
 ## Dependency Rules
 
@@ -109,7 +109,7 @@ purely editorial and cannot affect ownership, entrypoints, status, dependencies,
 
 - `open-temporary` is allowed only for legacy hotspots with explicit exit criteria.
 - `split-pending` is allowed only for residual shared buckets that are supposed to shrink.
-- The remaining approved `open-temporary` set is only `app-shell`.
+- There are no remaining approved `open-temporary` modules.
 - Every `open-temporary` module must carry manifest metadata for its temporary reason, exit criteria, and forbidden moves
   while open.
 - New modules must not start as `open-temporary` without a new planning decision and manifest validator update.

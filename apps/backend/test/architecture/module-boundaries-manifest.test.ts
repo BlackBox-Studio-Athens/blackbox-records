@@ -19,10 +19,24 @@ describe('Module boundaries manifest', () => {
     const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
       modules: Record<string, Record<string, unknown>>;
     };
-    delete manifest.modules['app-shell'].temporaryOpenReason;
+    manifest.modules.stock.status = 'open-temporary';
 
     expect(validateManifest(manifest)).toContain(
-      'Module app-shell open-temporary metadata missing non-empty temporaryOpenReason',
+      'Module stock open-temporary metadata missing non-empty temporaryOpenReason',
+    );
+  });
+
+  it('rejects reopening app-shell as a temporary module', () => {
+    const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
+      modules: Record<string, Record<string, unknown>>;
+    };
+    manifest.modules['app-shell'].status = 'open-temporary';
+    manifest.modules['app-shell'].temporaryOpenReason = 'Temporary test reason.';
+    manifest.modules['app-shell'].exitCriteria = ['Close the temporary test exception.'];
+    manifest.modules['app-shell'].forbiddenWhileOpen = ['Do not keep the temporary test exception.'];
+
+    expect(validateManifest(manifest)).toContain(
+      'Module app-shell is open-temporary but is not in the approved open-temporary set',
     );
   });
 
@@ -36,7 +50,7 @@ describe('Module boundaries manifest', () => {
     manifest.modules['cms-admin'].forbiddenWhileOpen = ['Do not keep the temporary test exception.'];
 
     expect(validateManifest(manifest)).toContain(
-      'Module cms-admin is open-temporary but is not in the approved initial open-temporary set',
+      'Module cms-admin is open-temporary but is not in the approved open-temporary set',
     );
   });
 
@@ -50,7 +64,7 @@ describe('Module boundaries manifest', () => {
     manifest.modules.stock.forbiddenWhileOpen = ['Do not keep the temporary test exception.'];
 
     expect(validateManifest(manifest)).toContain(
-      'Module stock is open-temporary but is not in the approved initial open-temporary set',
+      'Module stock is open-temporary but is not in the approved open-temporary set',
     );
   });
 });
