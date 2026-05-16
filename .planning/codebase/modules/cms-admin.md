@@ -60,6 +60,7 @@ shopper-facing modules.
 - `apps/web/src/lib/admin/decap-page-collections.test.ts`
 - `apps/web/src/lib/admin/decap-site-chrome-collections.test.ts`
 - `apps/web/src/lib/admin/decap-artist-collection.test.ts`
+- `apps/web/src/lib/admin/decap-release-collection.test.ts`
 - route-level output checks for `/admin/config.yml`
 - targeted `/admin/` rendered validation when admin behavior changes
 
