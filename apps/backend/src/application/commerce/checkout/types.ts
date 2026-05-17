@@ -13,16 +13,16 @@ export type StoreOffer = {
   canCheckout: boolean;
 };
 
-export type EmbeddedCheckoutSessionRequest = {
-  lineItems?: EmbeddedCheckoutSessionLineItem[];
-  returnUrl: string;
+export type HostedCheckoutSessionRequest = {
+  cancelUrl: string;
+  lineItems?: CheckoutSessionLineItem[];
+  successUrl: string;
   storeItemSlug?: StoreItemSlug;
   stripePriceId?: StripePriceId;
   variantId?: VariantId;
 };
 
-export type EmbeddedCheckoutSessionLineItem = {
-  adjustableQuantityMaximum?: number;
+export type CheckoutSessionLineItem = {
   quantity: number;
   storeItemSlug: StoreItemSlug;
   stripePriceId: StripePriceId;
@@ -34,9 +34,9 @@ export type FinalizedCheckoutSessionLineItem = {
   stripePriceId: StripePriceId;
 };
 
-export type EmbeddedCheckoutSession = {
+export type HostedCheckoutSession = {
   checkoutSessionId: string;
-  clientSecret: string;
+  checkoutUrl: string;
 };
 
 export type StripeCheckoutSessionStatus = 'open' | 'complete' | 'expired' | null;
@@ -59,7 +59,7 @@ export type CheckoutState = {
 };
 
 export interface CheckoutGateway {
-  createEmbeddedCheckoutSession(request: EmbeddedCheckoutSessionRequest): Promise<EmbeddedCheckoutSession>;
+  createHostedCheckoutSession(request: HostedCheckoutSessionRequest): Promise<HostedCheckoutSession>;
   readCheckoutSessionLineItems(checkoutSessionId: string): Promise<FinalizedCheckoutSessionLineItem[]>;
   readCheckoutSession(checkoutSessionId: string): Promise<StripeCheckoutSessionState>;
 }

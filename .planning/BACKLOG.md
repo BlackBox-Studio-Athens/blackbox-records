@@ -64,6 +64,26 @@ Start from `.planning/phases/10-sandbox-verification-and-release-gate/10-MILESTO
 - Initial evidence: Stripe docs describe `txcd_10000000` as digital/electronically supplied services, while physical-goods docs say `General - Tangible Goods (txcd_99999999)` can be used for most shipped physical goods.
 - Human review stop: approve any future non-physical tax-category policy before real products/prices are created or migrated for that category
 
+### BL-21: Declined and expired Checkout Session lifecycle
+
+- Linked milestone: Go-Live / Launch Hardening
+- Acceptance criteria:
+  - Research whether declined sandbox Checkout attempts should remain `pending_payment` in app order state or transition to `not_paid`.
+  - Research whether Stripe `checkout.session.expired`, failed PaymentIntent events, or another verified Stripe signal should drive unpaid-order transitions.
+  - Define what operator/support evidence is needed before implementing any declined, expired, or abandoned-session lifecycle change.
+  - Preserve paid-order webhook authority and idempotent stock decrement semantics.
+- Human review stop: approve the unpaid-session state policy before implementation.
+
+### BL-22: Stripe payment method policy research
+
+- Linked milestone: Go-Live / Launch Hardening
+- Acceptance criteria:
+  - Research whether production Checkout should remove `payment_method_types: ['card']` and rely on Stripe dynamic payment methods.
+  - Preserve deterministic sandbox smoke coverage for card success, 3D Secure, and decline scenarios even if production allows dynamic payment methods.
+  - Define whether the card-only setting should be sandbox-smoke-only, environment-specific, or removed entirely.
+  - Record buyer-experience, fraud/risk, testability, and Greece-only shipping tradeoffs before implementation.
+- Human review stop: approve the production payment-method policy before changing Checkout Session creation.
+
 ## Ready For No-Account Commerce Expansion
 
 ### BL-13: Cart and multi-item checkout

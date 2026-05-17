@@ -101,10 +101,12 @@ describe('createPublicCheckoutApi', () => {
     );
   });
 
-  it('posts checkout payloads as JSON and returns the embedded checkout secret', async () => {
+  it('posts checkout payloads as JSON and returns the hosted checkout URL', async () => {
     const fetchStub = vi.fn(
       async (_url: string, _init?: RequestInit) =>
-        new Response(JSON.stringify({ clientSecret: 'seti_test_123' }), { status: 200 }),
+        new Response(JSON.stringify({ checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123' }), {
+          status: 200,
+        }),
     );
     vi.stubGlobal('fetch', fetchStub);
 
@@ -114,7 +116,7 @@ describe('createPublicCheckoutApi', () => {
       variantId: 'variant_barren-point_standard',
     });
 
-    expect(result).toEqual({ clientSecret: 'seti_test_123' });
+    expect(result).toEqual({ checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123' });
     expect(fetchStub).toHaveBeenCalledWith(
       '/api/checkout/sessions',
       expect.objectContaining({

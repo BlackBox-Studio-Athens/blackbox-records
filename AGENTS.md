@@ -56,6 +56,7 @@ Read these first before editing:
 - Full local stack with mock Stripe mode: `pnpm dev:stack:stripe-mock`
 - Alias for the same official stripe-mock API mode: `pnpm dev:stack:stripe-mock-api`
 - Real Stripe test checkout preflight: `pnpm checkout:preflight:stripe-test`
+- At-will automated Stripe sandbox Playwright smoke: `pnpm smoke:stripe-sandbox`
 - Local signed Stripe webhook fixture simulator: `pnpm stripe:webhook:simulate:local`
 - Backend local D1 smoke check: `pnpm --filter @blackbox/backend d1:smoke:local`
 - Backend local D1 seed apply: `pnpm --filter @blackbox/backend d1:seed:local`
@@ -86,6 +87,7 @@ Read these first before editing:
 - The canonical committed IDE launcher is `.run/BlackBox Local Stack.run.xml`.
 - It must keep running the root script `pnpm dev:stack:stripe-mock` so the default local stack works without real Stripe keys.
 - Do not add more committed WebStorm run configurations unless the user explicitly asks; keep the IDE surface to one working local-stack entry.
+- The explicitly requested additional committed IDE launcher is `.run/Stripe Sandbox Smoke.run.xml`; it must keep running the automated Playwright command `pnpm smoke:stripe-sandbox -- --scenario all` and must not require committing Stripe secrets or evidence.
 - The root script `pnpm dev:backend:mock` must keep running the backend package script `pnpm --filter @blackbox/backend dev:mock`.
 - `pnpm site:dev` must keep the site on `http://127.0.0.1:4321/blackbox-records/`.
 - If that port is unavailable, the launcher should fail clearly rather than silently drifting to another port.
@@ -94,9 +96,10 @@ Read these first before editing:
 - The stack launcher scripts must run D1 migrations and seed SQL before starting the Worker/static site.
 - Keep `BlackBox Local Stack` working whenever frontend env, backend env, ports, checkout setup, D1 migrations, seed files, or WebStorm run configs change. If a change breaks the canonical launcher, fix the launcher or docs in the same commit.
 - The deterministic local mock checkout smoke path is `http://127.0.0.1:4321/blackbox-records/store/disintegration-black-vinyl-lp/checkout/`; stripe-mock mode now seeds every current visible store item with fake local checkout state.
-- `pnpm dev:stack:stripe-test` is the real local checkout path and requires `PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, and ignored local Stripe test Price mappings.
-- Run `pnpm checkout:preflight:stripe-test` before `pnpm dev:stack:stripe-test`; it verifies the real Stripe test publishable key, backend local secret file, ignored local Price mapping seed, and gitignore protection without printing secrets.
-- `pnpm dev:stack:stripe-mock` starts official `stripe-mock` locally through Go, points the real Stripe SDK at the local proxy on `http://127.0.0.1:12110`, generates local-only fake `Stock`, `ItemAvailability`, and `price_mock_*` mappings for every current store item, and renders a frontend mock checkout panel. It must not require Docker or `apps/backend/.dev.vars`. It is not a real embedded Checkout browser substitute, and the generated 99/99 stock values are not real inventory counts.
+- `pnpm dev:stack:stripe-test` is the real local checkout path and requires `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and ignored local Stripe test Price mappings.
+- Run `pnpm checkout:preflight:stripe-test` before `pnpm dev:stack:stripe-test`; it verifies the backend local secret file, ignored local Price mapping seed, and gitignore protection without printing secrets.
+- `pnpm smoke:stripe-sandbox` is sandbox-only and automated through Playwright. It requires the deployed Pages site, sandbox Worker, sandbox D1 real Price mappings/stock, sandbox Worker Stripe secret names, and a separately running `stripe listen --forward-to <sandbox-worker>/api/stripe/webhooks` whose signing secret matches the sandbox Worker secret.
+- `pnpm dev:stack:stripe-mock` starts official `stripe-mock` locally through Go, points the real Stripe SDK at the local proxy on `http://127.0.0.1:12110`, generates local-only fake `Stock`, `ItemAvailability`, and `price_mock_*` mappings for every current store item, and returns a local-only mock Checkout URL. It must not require Docker or `apps/backend/.dev.vars`. It is not a real Stripe-hosted Checkout browser substitute, and the generated 99/99 stock values are not real inventory counts.
 - `pnpm dev:stack:stripe-mock-api` is kept as a terminal alias for the same official stripe-mock API path. Do not reintroduce the old in-process mock gateway as the default local stack.
 - `pnpm stripe-mock:local` owns the local dev-only compatibility proxy. Mock-specific patches for official `stripe-mock` limitations belong there or in tests/scripts, not in production checkout/order use cases.
 - `pnpm stripe:webhook:simulate:local` posts a signed local checkout-session fixture to `/api/stripe/webhooks` using the fake local `whsec_local_mock` secret. Set `STRIPE_WEBHOOK_CHECKOUT_SESSION_ID` when it must target a Browser-created local checkout session. Use it only for local webhook contract checks.
@@ -131,7 +134,7 @@ Read these first before editing:
 - The current backend-local secret contract is `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
 - Future BOX NOW credentials are Worker runtime secrets or out-of-band operator credentials only. Never put BOX NOW credentials in Astro `PUBLIC_*` env, Cloudflare Pages public build variables, generated frontend clients, static content, or committed seed files.
 - `STRIPE_API_BASE_URL` is an optional backend runtime variable for local Stripe API overrides; the committed Wrangler `mock` and `mock-api` envs bind it to `http://127.0.0.1:12110` for the local official stripe-mock proxy.
-- `PUBLIC_CHECKOUT_CLIENT_MODE` is the browser checkout mode switch. Use `stripe` for real Stripe.js and `mock` only for the local stripe-mock flow.
+- `PUBLIC_CHECKOUT_CLIENT_MODE` is the browser checkout mode switch. Use `stripe` for real hosted Stripe Checkout and `mock` only for the local stripe-mock flow.
 - Native checkout availability is controlled by the Worker-owned `native_checkout_enabled` feature gate. The browser may read `/api/store/capabilities`, but it must not receive provider names, flag keys, Stripe IDs, D1 bindings, or internal evaluation errors.
 - Feature gates do not replace Worker environments. Sandbox and production still isolate D1 data, secrets, webhook endpoints, checkout return origins, and release evidence.
 - Cloudflare Flagship setup uses binding name `FLAGS`; do not commit a Flagship app ID to `wrangler.jsonc` until the app exists and the non-secret account-specific ID is explicitly approved.
@@ -139,11 +142,11 @@ Read these first before editing:
 - Future multi-item cart work should use the canonical terms `StoreCart`, `CartDraft`, `CartLine`, `CartLineItemSnapshot`, `Primary Line Item`, and `CartQuantity`. The Worker must validate every CartLine and CartQuantity before Stripe Checkout; StoreCart must not contain Stripe Price IDs, stock authority, payment state, order state, D1 fields, or backend runtime secrets.
 - Checkout return origins and split-port browser API CORS origins are allowlisted through the Worker runtime variable `CHECKOUT_RETURN_ORIGINS`; never trust browser-submitted or arbitrary `Referer` origins.
 - Cloudflare Pages production origin is `https://blackbox-records-web.pages.dev`; add preview origins only as exact emitted origins during validation, never as `*.pages.dev`.
-- The static checkout shell uses browser-safe `PUBLIC_STRIPE_PUBLISHABLE_KEY` to initialize Stripe.js; never expose `STRIPE_SECRET_KEY` through Astro public env.
+- The static checkout shell redirects to the Worker-returned hosted Checkout URL; never expose `STRIPE_SECRET_KEY` through Astro public env.
 - Public shopper checkout APIs now live under `/api/store/*` and `/api/checkout/*`.
 - Checkout creation is Worker-owned through a backend Stripe gateway seam; route files must not instantiate Stripe directly.
-- Stripe Checkout Sessions are the approved v1 payment creation path, using embedded Checkout (`ui_mode: embedded_page` on the current Stripe API version).
-- The web checkout shell mounts Stripe embedded Checkout from the Worker-returned `clientSecret`; browser payloads must stay limited to app identities such as `storeItemSlug` and `variantId`.
+- Stripe Checkout Sessions are the approved v1 payment creation path, using Stripe-hosted Checkout redirect with Worker-created `success_url` and `cancel_url`.
+- The web checkout shell redirects to the hosted Checkout `checkoutUrl`; browser payloads must stay limited to app identities such as `storeItemSlug` and `variantId`.
 - Phase 9 shipping remains Greece-only through BOX NOW. The default Phase 9 end state is manual fulfillment from Worker-owned paid order state plus the delivery address/contact data needed to create a BOX NOW shipment.
 - New manual-address checkout starts let Stripe Checkout collect Greek shipping address/contact details before payment; do not reintroduce browser-selected BOX NOW locker data into `StartCheckout`.
 - The current locker-first sandbox flow is a prototype branch, not the only valid Phase 9 outcome. If BOX NOW automation is later approved, it must use `C:\Users\SVall\WebstormProjects\boxnow-js`.
@@ -185,7 +188,7 @@ Read these first before editing:
 - Do not change `site` or `base` behavior unless the task explicitly requires deployment URL changes.
 - Cloudflare Pages hosting must keep the frontend static and deploy only the prebuilt `apps/web/dist` artifact.
 - The Cloudflare Pages workflow must run `pnpm test:unit`, `pnpm check`, and `pnpm build` before Direct Upload to the `blackbox-records-web` Pages project.
-- The Cloudflare Pages workflow may pass only non-secret build-target env plus browser-safe public Astro env into the build: `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, `PUBLIC_BACKEND_BASE_URL`, and `PUBLIC_STRIPE_PUBLISHABLE_KEY`; keep production `PUBLIC_CHECKOUT_CLIENT_MODE` unset.
+- The Cloudflare Pages workflow may pass only non-secret build-target env plus browser-safe public Astro env into the build: `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, and `PUBLIC_BACKEND_BASE_URL`; keep production `PUBLIC_CHECKOUT_CLIENT_MODE` unset.
 - Cloudflare Pages deploys must run through `.github/workflows/cloudflare-pages.yml`. Manual local `wrangler pages deploy` is diagnostic only and is not Phase 7.1 acceptance evidence.
 - Cloudflare Pages must not own backend routes, Pages Functions, D1 access, Stripe secrets, webhooks, operator auth, stock mutations, order state, or future BOX NOW runtime secrets.
 - GitHub Pages remains rollback/legacy only after Phase `07.1-05`; do not delete it without an explicit follow-up task.
@@ -345,7 +348,7 @@ This is an iframe boundary, not an app bug.
 ## GSD usage notes
 
 - Repo GSD config intentionally keeps flat planning mode and `workflow.use_worktrees = false` for Codex v1.41.2, because Codex cannot provide Claude-style isolated subagent worktrees.
-- While `07-16`, `09-06`, and `10-03` remain deferred external gates, use explicit phase or plan arguments for GSD commands instead of relying on implicit current-phase detection.
+- `07-16` and `10-03` are complete for Stripe sandbox UAT. Use explicit phase or plan arguments if older GSD progress helpers surface pre-access deferred-gate history.
 - Phase 12 boundary changes must keep `.planning/codebase/MODULES.md`, `.planning/codebase/modules/*.md`, and `.planning/codebase/module-boundaries.manifest.json` in sync whenever ownership, entrypoints, status, allowed dependencies, or exception policy changes.
 - Phase 12 execution slices stay one approved slice per branch or local commit cluster; do not enable `.planning/config.json` parallelization or `workflow.use_worktrees`.
 - Do not add temporary compatibility facades during boundary work; move callers to documented root entrypoints or named interfaces in the same slice.

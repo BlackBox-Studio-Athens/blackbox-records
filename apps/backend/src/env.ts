@@ -8,6 +8,7 @@ export type AppBindings = {
   COMMERCE_DB: D1Database;
   CHECKOUT_RETURN_ORIGINS?: string;
   FLAGS?: FlagshipBinding;
+  NATIVE_CHECKOUT_ENABLED?: string;
   STRIPE_API_BASE_URL?: string;
   STRIPE_SECRET_KEY: string;
   STRIPE_WEBHOOK_SECRET?: string;

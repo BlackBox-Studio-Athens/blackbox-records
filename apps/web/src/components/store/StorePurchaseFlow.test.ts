@@ -56,7 +56,6 @@ vi.mock('astro:config/client', () => ({
 }));
 
 import { createPublicCheckoutApi } from '@/lib/backend/public-checkout-api';
-import { createMockEmbeddedCheckoutAdapter } from '@/lib/backend/stripe-embedded-checkout';
 import { listStoreCollectionEntries } from '@/lib/store-collection';
 import {
   addStoreCartItem,
@@ -69,7 +68,7 @@ import {
 } from '@/lib/store-cart';
 import { createStoreCartDrawerView } from './StoreCartDrawer';
 import { requestStoreCartAddItem } from './StoreItemPurchaseActions';
-import { createCheckoutOfferView, loadCheckoutOfferState, startEmbeddedCheckout } from './checkout-offer-status-state';
+import { createCheckoutOfferView, loadCheckoutOfferState, startHostedCheckout } from './checkout-offer-status-state';
 import { createCartLineItemSnapshotForStorePage, getStorePageEntryBySlug } from '../../lib/store-page-data';
 
 afterEach(() => {
@@ -77,7 +76,7 @@ afterEach(() => {
 });
 
 describe('store purchase happy path', () => {
-  it('lets a customer discover an item, add it to cart, and reach the embedded checkout handoff', async () => {
+  it('lets a customer discover an item, add it to cart, and reach the hosted checkout handoff', async () => {
     // Arrange: the customer starts from real store collection/page data.
     const storeEntries = await listStoreCollectionEntries();
     const selectedEntry = storeEntries.find((entry) => entry.storeItem.slug === 'disintegration-black-vinyl-lp');
@@ -167,19 +166,17 @@ describe('store purchase happy path', () => {
       variantId: 'variant_barren-point_standard',
     });
 
-    const mountTarget = createMountTargetStub();
-    const handoffState = await startEmbeddedCheckout({
+    const handoffState = await startHostedCheckout({
       api,
-      checkoutAdapter: createMockEmbeddedCheckoutAdapter(),
-      mountTarget,
       storeItemSlug: persistedCartState.primaryLineItem!.storeItemSlug,
       variantId: checkoutView.variantId!,
     });
 
     // Assert: checkout starts with app identity only, and the handoff does not render secrets.
-    expect(handoffState.kind).toBe('mounted');
-    expect(mountTarget.textContent).toContain('Mock Checkout Started');
-    expect(mountTarget.textContent).not.toContain('cs_mock_secret_variant_barren-point_standard');
+    expect(handoffState).toEqual({
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_mock_variant_barren-point_standard',
+      kind: 'redirect',
+    });
     expect(fetchStub).toHaveBeenCalledWith(
       '/api/checkout/sessions',
       expect.objectContaining({
@@ -267,21 +264,12 @@ function createCheckoutFetchStub() {
 
     if (url === '/api/checkout/sessions' && init?.method === 'POST') {
       return jsonResponse({
-        clientSecret: 'cs_mock_secret_variant_barren-point_standard',
+        checkoutUrl: 'https://checkout.stripe.test/session/cs_mock_variant_barren-point_standard',
       });
     }
 
     return jsonResponse({ error: `Unhandled request: ${url}` }, 404);
   });
-}
-
-function createMountTargetStub(): HTMLElement {
-  return {
-    className: '',
-    removeAttribute: vi.fn(),
-    setAttribute: vi.fn(),
-    textContent: '',
-  } as unknown as HTMLElement;
 }
 
 function jsonResponse(body: unknown, status = 200) {

@@ -3,8 +3,8 @@
 ## Overview
 
 This roadmap now treats milestone `v1.2`, Modulith Boundary Hardening, as the active milestone. The earlier `v1.1`
-Stripe Sandbox Integration work remains partially open behind deferred external gates, while the current focus shifts to
-the architecture hardening needed to make later refactors smaller, cheaper, and easier to review.
+Stripe Sandbox Integration work is complete for sandbox UAT, while production go-live remains deferred. The current focus
+also includes the architecture hardening needed to make later refactors smaller, cheaper, and easier to review.
 
 The historical v1.1 goal was to add native commerce to the existing Astro site using a Cloudflare-fronted dual-runtime
 monorepo model:
@@ -23,7 +23,7 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - **Current milestone:** Modulith Boundary Hardening
 - **Starts at:** Phase 12
 - **Ends after:** the approved Phase 12 hardening slices are executed or explicitly deferred
-- **Previous milestone:** v1.1 Stripe Sandbox Integration (deferred external gates remain open)
+- **Previous milestone:** v1.1 Stripe Sandbox Integration (sandbox UAT ready; production go-live deferred)
 
 ## Phases
 
@@ -37,11 +37,11 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - [x] **Phase 6: Static Storefront Slice** - Replace the legacy `/shop/` redirect with a canonical `/store/` static storefront built from shared editorial content and a stable store projection
 - [x] **Phase 6.1: Worker Commerce State Foundation** - Introduce D1 + Prisma in the separate Worker backend behind repository and API boundaries before checkout work
 - [x] **Phase 6.1.1: Internal Stock Operations And Operator Access** - Add protected staff-only stock tooling and operator auth before checkout depends on live stock
-- [ ] **Phase 7: Worker Checkout And Stripe Sandbox Flow** - Implement Worker-owned checkout APIs and connect the frontend checkout route to Stripe sandbox (mock/contract implementation complete; real Stripe account validation deferred)
+- [x] **Phase 7: Worker Checkout And Stripe Sandbox Flow** - Implement Worker-owned checkout APIs and connect the frontend checkout route to Stripe sandbox
 - [x] **Phase 7.1: Cloudflare Pages Static Frontend Migration** - Move the static Astro frontend from GitHub Pages to Cloudflare Pages before webhook/order/shipping verification depends on stable Cloudflare-hosted origins
 - [x] **Phase 8: Webhook Orders And Stock** - Make payment truth and stock mutation Worker-owned, webhook-authoritative, and idempotent (non-secret backend groundwork may proceed before real Stripe account access)
 - [x] **Phase 9: Greece-Only BOX NOW Shipping** - Lock the Greece-only BOX NOW shipping contract around manual address fulfillment while leaving `boxnow-js` automation as a later explicit reopen-only choice
-- [ ] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow where account access allows and prepare the go-live handoff package (review package complete; Stripe external gate remains pending)
+- [x] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow and prepare the go-live handoff package
 - [x] **Phase 11: Website Editorial And Catalog UX Improvements** - Convert partner website notes into static-site editorial, artist, release, homepage, and distro/catalog improvements without changing commerce authority (completed 2026-05-12)
 - [x] **Phase 12: Modulith Boundary Hardening Planning** - Activate the TypeScript-native boundary stack and execution slices that make later refactors safer before revisiting the deferred commerce gates
 
@@ -162,8 +162,8 @@ Plans:
 
 1. The Worker backend exposes the required StoreItem/Variant lookup, ReadCheckoutState, and StartCheckout endpoints using the approved domain contracts and the locked backend conventions.
 2. Shopper-facing store URLs describe the sellable item/option being purchased, not legacy release shorthand or backend mapping names.
-3. The static frontend provides a familiar single-item cart affordance, cart icon, cart drawer/summary, and checkout page layout before mounting embedded Stripe Checkout.
-4. The static frontend checkout route mounts embedded Checkout using data and session state obtained through the Worker backend, not directly from Stripe, and return/retry state reads Worker-owned CheckoutState instead of raw Stripe browser contracts.
+3. The static frontend provides a familiar single-item cart affordance, cart icon, cart drawer/summary, and checkout page layout before redirecting to Stripe-hosted Checkout.
+4. The static frontend checkout route starts hosted Checkout using data and session state obtained through the Worker backend, not directly from Stripe, and return/retry state reads Worker-owned CheckoutState instead of raw Stripe browser contracts.
 5. The checkout path is testable locally with stripe-mock for all-current-items no-network checkout readiness; real Stripe test mapping validation is preserved as a deferred access gate.
 6. Every current distro entry and release entry is treated as a real sellable store candidate for local mock checkout readiness, while unknown real quantities remain uncounted until staff records stock through D1-backed stock operations.
    **Plans**: 16 plans
@@ -174,25 +174,24 @@ Plans:
 - [x] 07-01: Implement Worker APIs for item lookup, variant lookup, ReadCheckoutState, and StartCheckout
 - [x] 07-02: Add the frontend public checkout API client seam
 - [x] 07-03: Wire the checkout shell to Worker offer and variant reads
-- [x] 07-04: Mount embedded Stripe Checkout from Worker-created sessions
+- [x] 07-04: Start hosted Stripe Checkout from Worker-created sessions
 - [x] 07-05: Correct shopper-facing item option URLs and legacy slug redirects
 - [x] 07-06: Add the storefront cart icon and single-item cart state seam
 - [x] 07-07: Build the Shopify-inspired cart drawer and item summary
 - [x] 07-08: Refactor PDP and checkout entry actions around Add To Cart and Checkout
-- [x] 07-09: Rebuild the checkout page into a familiar Shopify-like order summary plus embedded Checkout layout
+- [x] 07-09: Rebuild the checkout page into a familiar Shopify-like order summary plus hosted Checkout handoff layout
 - [x] 07-10: Add checkout return and retry state UI through ReadCheckoutState
 - [x] 07-11: Harden checkout browser states, unavailable handling, cart edge cases, and no-secret guarantees
 - [x] 07-12: Treat all current distro and release entries as sellable store candidates
 - [x] 07-13: Generate local mock commerce state for every current store item
 - [x] 07-14: Add all-items local mock checkout readiness checks
 - [x] 07-15: Run local mock checkout UAT across representative item types
-- [ ] 07-16: Validate the local and sandbox checkout loop with real Stripe sandbox mappings (deferred until Stripe account access exists)
+- [x] 07-16: Validate the local and sandbox checkout loop with real Stripe sandbox mappings
 
-Stripe access deferred gate:
+Stripe sandbox UAT gate:
 
-- Do now without Stripe account: local mock checkout, checkout contracts, generated clients, cart/checkout integration tests, D1/Prisma order schema, repository seams, typed transition guards, fixture-based webhook route shape, docs, and Browser Use checks against `pnpm dev:stack:stripe-mock`.
-- Prepare now, validate later: Stripe setup checklist, webhook fixture tests, preflight checks, sandbox runbook, and expected non-committed mapping/secrets docs.
-- Blocked until Stripe access: real Checkout mount against Stripe, real products/prices, real webhook signing, remote sandbox payment evidence, and Phase 10 full sandbox release evidence.
+- Completed for sandbox/test mode: real Checkout against Stripe, real test-mode products/prices, real webhook signing, remote sandbox payment evidence, and Phase 10 sandbox UAT evidence.
+- Still not production approval: live-mode keys, production products/prices, production webhook endpoint, production D1, and final go-live controls remain in Go-Live / Launch Hardening.
 
 ### Phase 7.1: Cloudflare Pages Static Frontend Migration (INSERTED)
 
@@ -293,7 +292,7 @@ Plans:
 
 - [x] 10-01: Create local full-loop UAT checklist and scripts
 - [x] 10-02: Verify sandbox deployment, secrets, D1, and Stripe mapping readiness
-- [ ] 10-03: Run sandbox end-to-end checkout, webhook, stock, and shipping evidence pass (deferred until the Stripe Access Gate can be satisfied)
+- [x] 10-03: Run sandbox end-to-end checkout, webhook, stock, and shipping evidence pass
 - [x] 10-04: Run security, OpenAPI, browser, and no-secret release audit
 - [x] 10-04.1: Add Worker-owned native checkout feature gate
 - [x] 10-05: Produce milestone review package and go-live handoff
@@ -432,7 +431,7 @@ Plans:
 - Production cutover remains a separate milestone
 - Starts only after the planned v1.2 hardening milestone or an explicit decision to skip it
 - Consumes `10-MILESTONE-REVIEW.md`, sandbox readiness evidence, local UAT evidence, and the deferred external-gate checklist produced by this milestone
-- Covers Stripe Access Gate completion, optional BOX NOW reopen-only integration if access exists, Cloudflare Flagship `FLAGS` setup, live-mode keys, production rollout, emergency disable strategy, comms, and final stop/go review
+- Covers optional BOX NOW reopen-only integration if access exists, Cloudflare Flagship `FLAGS` setup, live-mode keys, production rollout, emergency disable strategy, comms, and final stop/go review
 - Must explicitly decide whether native commerce launches with the current single-item cart scope or first completes the no-account multi-item CartDraft and CartQuantity workstream
 - Must not start until human review accepts the prepared package and explicitly carries forward the open gates
 
@@ -456,7 +455,7 @@ Plans:
 
 **Execution Order:**  
 Nominal phase order remains `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 7.1 → 8 → 9 → 10`.
-Because Stripe account access is unavailable, non-secret backend, shipping, local UAT, and audit work may proceed after local mock/contract completion. Phase 7.1 is complete, while the deferred Stripe Access Gate remains required before full hosted sandbox/release evidence. BOX NOW is closed for the current manual v1 scope and should reopen only if the user explicitly asks for full integration after access exists. Phase 11 is a separate static-site editorial/catalog phase and is not required to close the Phase 10 commerce release gate.
+Because Stripe sandbox access is now available, hosted sandbox UAT evidence may proceed through the GitHub Pages sandbox surface and sandbox Worker. Production live-mode cutover remains deferred to Go-Live / Launch Hardening. BOX NOW is closed for the current manual v1 scope and should reopen only if the user explicitly asks for full integration after access exists. Phase 11 is a separate static-site editorial/catalog phase and is not required to close the Phase 10 commerce release gate.
 
 | Phase                                                          | Plans Complete | Status    | Completed  |
 | -------------------------------------------------------------- | -------------- | --------- | ---------- |

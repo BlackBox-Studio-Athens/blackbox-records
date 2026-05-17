@@ -37,6 +37,37 @@ export function createPublicCheckoutReturnUrl(
   return `${originUrl.origin}/store/${encodeURIComponent(storeItemSlug)}/checkout/return?session_id={CHECKOUT_SESSION_ID}`;
 }
 
+export function createPublicCheckoutCancelUrl(
+  headers: Headers,
+  requestUrl: string,
+  storeItemSlug: string,
+  configuredReturnOrigins?: string,
+): string {
+  const allowedOrigins = readAllowedCheckoutReturnOrigins(configuredReturnOrigins);
+  const referer = headers.get('referer');
+
+  if (referer) {
+    const refererUrl = parseUrl(referer);
+
+    if (refererUrl) {
+      const checkoutPath = refererUrl.pathname.endsWith('/') ? refererUrl.pathname : `${refererUrl.pathname}/`;
+
+      if (allowedOrigins.has(refererUrl.origin) && isCheckoutPathForStoreItem(checkoutPath, storeItemSlug)) {
+        return `${refererUrl.origin}${checkoutPath}`;
+      }
+    }
+  }
+
+  const origin = headers.get('origin') ?? new URL(requestUrl).origin;
+  const originUrl = parseUrl(origin);
+
+  if (!originUrl || !allowedOrigins.has(originUrl.origin)) {
+    throw new CheckoutConfigurationError('Checkout return URL is not allowed.');
+  }
+
+  return `${originUrl.origin}/store/${encodeURIComponent(storeItemSlug)}/checkout/`;
+}
+
 export function readAllowedCheckoutReturnOrigins(configuredReturnOrigins?: string): Set<string> {
   const configuredOrigins = configuredReturnOrigins
     ?.split(',')

@@ -28,7 +28,7 @@ describe('CheckoutOrderSummary', () => {
   it('creates a direct-load order summary view from static item data', () => {
     expect(createCheckoutOrderSummaryView(summaryInput)).toEqual({
       ...summaryInput,
-      securePaymentCopy: 'Payment is handled securely by Stripe.',
+      securePaymentCopy: 'Payment opens on Stripe. BlackBox never sees card details.',
       subtotalDisplay: '€28.00',
     });
   });
@@ -42,7 +42,7 @@ describe('CheckoutOrderSummary', () => {
     expect(markup).toContain('Black Vinyl LP');
     expect(markup).toContain('Subtotal');
     expect(markup).toContain('€28.00');
-    expect(markup).toContain('Payment is handled securely by Stripe.');
+    expect(markup).toContain('Payment opens on Stripe. BlackBox never sees card details.');
     expect(markup).toContain('/blackbox-records/store/disintegration-black-vinyl-lp/');
   });
 

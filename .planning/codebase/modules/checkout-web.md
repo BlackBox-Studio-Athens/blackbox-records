@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-Own the shopper-facing checkout browser flow from offer readiness through shipping step, embedded checkout mounting, and
+Own the shopper-facing checkout browser flow from offer readiness through shipping step, hosted Checkout redirect, and
 checkout return behavior.
 
 ## Owned Files And Directories
@@ -24,19 +24,18 @@ checkout return behavior.
 - `apps/web/src/pages/store/[slug]/checkout/**`
 - `apps/web/src/lib/backend/public-backend-config.ts`
 - `apps/web/src/lib/backend/public-checkout-api.ts`
-- `apps/web/src/lib/backend/stripe-embedded-checkout.ts`
 
 ## Provided Interface
 
 - shopper checkout routes
 - browser-safe checkout API adapter
-- embedded checkout mounting surface
+- hosted Checkout redirect surface
 
 ## Internal Implementation Area
 
 - checkout reset behavior
 - shipping-step UI state details
-- embedded checkout mount and teardown details
+- hosted checkout start and redirect details
 
 ## Allowed Dependencies
 

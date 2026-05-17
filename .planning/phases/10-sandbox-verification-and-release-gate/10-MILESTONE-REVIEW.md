@@ -2,13 +2,13 @@
 
 ## Summary
 
-The `v1.1` Stripe Sandbox Integration milestone has produced a native commerce implementation that is ready for no-account local review and future account-backed validation. The static Astro frontend is hosted canonically on Cloudflare Pages, while the separate Worker backend owns checkout, D1 state, Stripe integration, webhooks, order lifecycle, stock mutation, internal operator APIs, and runtime secrets.
+The `v1.1` Stripe Sandbox Integration milestone has produced a native commerce implementation that is ready for sandbox UAT. The static Astro frontend is hosted canonically on Cloudflare Pages, GitHub Pages now serves as a sandbox UAT surface, and the separate Worker backend owns checkout, D1 state, Stripe integration, webhooks, order lifecycle, stock mutation, internal operator APIs, and runtime secrets.
 
-This package is a handoff document, not production approval. Full release approval remains blocked by the Stripe Access Gate. BOX NOW is closed for the current manual v1 scope and should reopen only if the user explicitly asks for full integration after access exists.
+This package is a handoff document, not production approval. Stripe test-mode sandbox evidence is complete for UAT, while live-mode launch remains deferred to Go-Live / Launch Hardening. BOX NOW is closed for the current manual v1 scope and should reopen only if the user explicitly asks for full integration after access exists.
 
 ## Implemented Architecture
 
-- Static frontend: Cloudflare Pages serves the prebuilt Astro artifact from `apps/web/dist`; GitHub Pages remains rollback/legacy.
+- Static frontend: Cloudflare Pages serves the canonical prebuilt Astro artifact from `apps/web/dist`; GitHub Pages remains rollback/legacy and now publishes the sandbox UAT build from `main`.
 - Worker backend: Hono + TypeScript owns public shopper APIs, protected internal APIs, D1/Prisma access, Stripe Checkout creation, webhook verification, order lifecycle, stock mutation, and feature gates.
 - Contracts: public and internal OpenAPI documents remain separated, with generated frontend API clients and a commerce boundary audit guarding browser/server separation.
 - Checkout: `StartCheckout` is Worker-owned and validates the selected StoreItemOption, OnlineStock, Stripe mapping, and Native Checkout Gate before creating a Checkout Session.
@@ -43,26 +43,22 @@ Prepared in Cloudflare sandbox:
 - Sandbox `COMMERCE_DB` binding is configured.
 - Sandbox D1 is migrated through `0004`.
 - Sandbox D1 has the non-secret base commerce seed.
-- Real Stripe mapping count remains `0`, which is expected until Stripe access exists.
+- Real Stripe sandbox mappings exist outside committed seed files.
+- Automated smoke run `20260517102558` passed paid, 3DS, and decline scenarios against hosted Stripe sandbox Checkout.
 
 ## Deferred Gates
 
-These items remain open and must not be claimed as passed by this milestone package:
+These items are now satisfied for sandbox/test mode:
 
-- `07-16`: real local and sandbox checkout loop with real Stripe test mappings.
-- `10-03`: hosted sandbox end-to-end checkout, webhook, stock, and shipping evidence.
+- `07-16`: real sandbox checkout loop with real Stripe test mappings.
+- `10-03`: hosted sandbox end-to-end checkout, webhook, stock, and manual shipping handoff evidence.
 - `OPER-01`: full sandbox path validation.
 
-Stripe Access Gate requirements:
+These items remain open for production go-live:
 
-- real `pk_test_*`
-- real `sk_test_*`
-- real `price_*`
-- `STRIPE_WEBHOOK_SECRET`
-- Stripe products/prices
-- webhook endpoint setup
-- sandbox Worker URL
-- Browser Use evidence against real Stripe test mode
+- live-mode Stripe keys, products, prices, webhook endpoint, and webhook secret
+- production Worker secrets, exact checkout return origins, D1 target, and Native Checkout Gate rollout
+- production operator/support playbooks and final stop/go approval
 
 BOX NOW reopen-only requirements:
 
@@ -75,9 +71,9 @@ BOX NOW reopen-only requirements:
 
 The next milestone should start from this package and stay separate from the sandbox milestone. Recommended phase seeds:
 
-1. Satisfy the Stripe Access Gate with real test-mode keys, Price mappings, webhook secret, and Browser Use evidence.
-2. Configure Cloudflare Flagship for the Worker `FLAGS` binding and `native_checkout_enabled` flag.
-3. Lock production Worker secrets, exact checkout return origins, D1 target, and Cloudflare Access posture.
+1. Configure Cloudflare Flagship for the Worker `FLAGS` binding and `native_checkout_enabled` flag.
+2. Lock production Worker secrets, exact checkout return origins, D1 target, and Cloudflare Access posture.
+3. Create live-mode Stripe products, prices, webhook endpoint, and webhook secret.
 4. Define production rollout order for enabling native checkout behind the Native Checkout Gate.
 5. Define rollback and emergency disable using Worker environment isolation plus the Native Checkout Gate.
 6. Finalize operator support notes for paid order review, stock reconciliation, BOX NOW manual fulfillment, and shopper support.
@@ -88,13 +84,12 @@ The next milestone should start from this package and stay separate from the san
 Ready for human review:
 
 - Architecture and no-account local evidence.
-- Sandbox D1 readiness.
+- Sandbox D1 readiness and hosted Stripe sandbox smoke evidence.
 - Security and no-secret audit evidence.
 - Runtime feature-gate pattern.
 - Go-live handoff inputs.
 
 Not ready for release approval:
 
-- Full Stripe test-mode evidence.
-- Full hosted sandbox e2e evidence.
+- Production live-mode Stripe readiness.
 - Production cutover.

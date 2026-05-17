@@ -92,7 +92,6 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
         env: {
           PUBLIC_BACKEND_BASE_URL: `http://127.0.0.1:${BACKEND_PORT}`,
           PUBLIC_CHECKOUT_CLIENT_MODE: 'mock',
-          PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_test_mock',
         },
         name: 'Static site',
         waitForPort: STATIC_PORT,
@@ -123,7 +122,6 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
         env: {
           PUBLIC_BACKEND_BASE_URL: `http://127.0.0.1:${BACKEND_PORT}`,
           PUBLIC_CHECKOUT_CLIENT_MODE: 'mock',
-          PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_test_mock',
         },
         name: 'Static site',
         waitForPort: STATIC_PORT,
@@ -141,14 +139,10 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
 
 export function readRequiredEnvironmentIssues(
   mode: LocalStackMode,
-  env = process.env,
+  _env = process.env,
   devVarKeys = readDevVars(),
 ): string[] {
   const issues: string[] = [];
-
-  if (mode === 'stripe-test' && !env.PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim()) {
-    issues.push('PUBLIC_STRIPE_PUBLISHABLE_KEY is required for dev:stack:stripe-test.');
-  }
 
   if (mode === 'stripe-test' && !devVarKeys.has('STRIPE_SECRET_KEY')) {
     issues.push('apps/backend/.dev.vars must define STRIPE_SECRET_KEY for dev:stack:stripe-test.');

@@ -1,12 +1,12 @@
 # Phase 10 Sandbox Readiness Evidence
 
-Last checked: 2026-05-01T05:01:41+03:00
+Last checked: 2026-05-17T13:27:01+03:00
 
 ## Summary
 
-`10-02` verified the current sandbox posture without changing runtime code, applying migrations, writing remote D1 data, setting secrets, or introducing account-specific Stripe or BOX NOW values.
+`10-02` originally verified the sandbox posture without changing runtime code. The later Stripe access pass completed the sandbox/test-mode setup needed for UAT.
 
-The Cloudflare sandbox Worker deployment path exists and sandbox D1 is now bound, migrated through the current repo schema, and seeded with the non-secret base commerce rows. The remaining blockers for full end-to-end sandbox UAT are external or deliberately deferred: Worker sandbox Stripe secrets are absent, real Stripe mappings are absent, and Stripe test preflight is blocked by missing account credentials. BOX NOW is closed for the current manual v1 scope and should reopen only if the user explicitly requests full integration after access exists.
+The Cloudflare sandbox Worker deployment path exists, sandbox D1 is bound and migrated through the current repo schema, real Stripe sandbox mappings exist, Worker sandbox Stripe secret names are configured, and the automated hosted Checkout smoke passed. BOX NOW remains manual for the current v1 scope and should reopen only if the user explicitly requests full integration after access exists.
 
 ## Cloudflare Worker Sandbox
 
@@ -46,7 +46,7 @@ Read-only row counts:
 
 Stripe mapping readiness:
 
-- Real Stripe mapping count in sandbox D1 is `0`.
+- Real Stripe sandbox mappings exist in sandbox D1.
 - No `price_*` values are recorded in this repo evidence.
 
 ## GitHub Actions And Pages Variables
@@ -54,26 +54,25 @@ Stripe mapping readiness:
 - `gh workflow list` shows the Cloudflare Pages deploy workflow and Worker sandbox deploy workflow are active.
 - Recent Cloudflare Pages workflow runs succeeded for `main` and `pages/no-stripe-validation`.
 - `gh variable list` shows `CLOUDFLARE_ACCOUNT_ID` and `PUBLIC_BACKEND_BASE_URL` are configured.
-- `PUBLIC_STRIPE_PUBLISHABLE_KEY` is not configured, which is expected while the Stripe Access Gate is deferred.
+- Hosted Checkout no longer requires `PUBLIC_STRIPE_PUBLISHABLE_KEY`; Stripe readiness now depends on Worker secrets, webhook secret, and real Price mappings.
 - `gh secret list` shows `CLOUDFLARE_API_TOKEN` is configured.
 - Secret values were not read or recorded.
 
 ## Worker Sandbox Secrets
 
-- `pnpm --filter @blackbox/backend exec wrangler secret list --env sandbox` returned an empty list.
-- `STRIPE_SECRET_KEY` is not configured for sandbox.
-- `STRIPE_WEBHOOK_SECRET` is not configured for sandbox.
-- This is expected while the Stripe Access Gate is deferred.
+- `STRIPE_SECRET_KEY` is configured for sandbox.
+- `STRIPE_WEBHOOK_SECRET` is configured for sandbox.
+- Secret values were not read or recorded.
 
 ## Stripe Access Gate
 
-`pnpm checkout:preflight:stripe-test` failed for the expected no-account reasons:
+Stripe Access Gate is satisfied for sandbox/test mode:
 
-- `PUBLIC_STRIPE_PUBLISHABLE_KEY` is not set to a real `pk_test_*` value.
-- `apps/backend/.dev.vars` is absent for the real Stripe local stack.
-- `apps/backend/prisma/seeds/local-stripe-test-state.sql` is absent and still requires real test `price_*` values.
-
-Required later evidence remains unchanged: real `pk_test_*`, `sk_test_*`, real `price_*`, `STRIPE_WEBHOOK_SECRET`, Stripe products/prices, webhook endpoint setup, sandbox Worker URL, real Checkout mount, and webhook/payment evidence.
+- real Stripe test-mode keys are configured outside git
+- real Stripe test-mode Price mappings exist in sandbox D1
+- the sandbox Worker webhook secret matches the active Stripe CLI listener used for evidence
+- hosted Checkout, 3DS, declines, webhook reconciliation, and D1 paid-order evidence were validated by the automated smoke
+- raw evidence remains ignored under `.codex-artifacts/stripe-sandbox-smoke/20260517102558/`
 
 ## BOX NOW Reopen Gate
 
@@ -90,12 +89,13 @@ Ready:
 - Binding-scoped remote D1 inspection through `COMMERCE_DB`.
 - Sandbox D1 migration parity with the current repo schema.
 - Non-secret base commerce rows in sandbox `StoreItemOption` and `Stock`.
+- Real Stripe sandbox mappings and Worker secret names.
+- Hosted Stripe sandbox UAT smoke with paid, 3DS, and decline scenarios.
 
 Not ready:
 
-- Worker sandbox Stripe secrets.
-- Real Stripe test checkout preflight.
-- Real Stripe price mappings.
+- Production live-mode checkout.
+- Production D1 cutover.
 - Optional BOX NOW portal/API fulfillment evidence only if the reopen gate is explicitly activated.
 
-`10-02` remains complete because the readiness pass was executed and blockers were captured. `10-03` is a deferred external gate for full sandbox evidence until the Stripe Access Gate is satisfied. `10-04` no-account audit work may proceed around that gate, but it does not satisfy `OPER-01`.
+`10-02` remains complete as the readiness pass. `10-03` is complete for sandbox/test mode. Production release approval remains deferred to Go-Live / Launch Hardening.

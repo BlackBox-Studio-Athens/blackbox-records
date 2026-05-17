@@ -2,10 +2,10 @@
 
 ## Summary
 
-This is a no-account commerce expansion workstream that may proceed while the Stripe Access Gate remains deferred. It upgrades the current single-item cart convenience layer into a multi-line CartDraft with
+This is a no-account commerce expansion workstream that was planned before hosted Stripe sandbox evidence existed. It upgrades the current single-item cart convenience layer into a multi-line CartDraft with
 CartQuantity controls, then makes the Worker validate every line before checkout.
 
-This workstream is not production cutover and does not satisfy `07-16`, `10-03`, or `OPER-01`.
+This workstream is not production cutover. Any separate multi-line hosted Stripe evidence belongs in a focused follow-up or Go-Live / Launch Hardening slice.
 
 ## Scope
 
@@ -28,8 +28,8 @@ This workstream is not production cutover and does not satisfy `07-16`, `10-03`,
 5. Add `CheckoutOrderLine` persistence and internal readback without overloading current single-item CheckoutOrder
    fields.
 6. Update paid webhook stock decrement to apply one idempotent stock decrement per CheckoutOrderLine.
-7. Validate with local stripe-mock and Browser Use; defer real multi-line Stripe evidence until the Stripe Access Gate
-   is satisfied.
+7. Validate with local stripe-mock and Browser Use; add real multi-line Stripe evidence only in a focused follow-up or
+   Go-Live / Launch Hardening slice.
 
 ## Storage Policy
 
@@ -47,7 +47,7 @@ idempotency, and stock semantics.
 - Account-backed or cross-device carts.
 - Split shipments, multiple shipping destinations, or multiple BOX NOW lockers per order.
 - Discount codes, cart notes, customer accounts, or production cutover.
-- Real Stripe multi-line Checkout evidence until real Stripe test-mode access exists.
+- Real Stripe multi-line Checkout evidence unless a focused follow-up explicitly adds it.
 - Future BOX NOW portal/API fulfillment evidence unless the user explicitly reopens full integration after access exists.
 
 ## Implementation Note - 2026-05-08
@@ -60,7 +60,7 @@ idempotency, and stock semantics.
   CartLine before creating one Stripe line item per CartLine.
 - D1/Prisma now has additive `CheckoutOrderLine` persistence, and paid webhook reconciliation decrements stock per paid
   order line after the once-only order transition.
-- This does not satisfy the Stripe Access Gate, `10-03`, or `OPER-01`.
+- This does not add production approval or live-mode checkout readiness.
 
 ## Validation Update - 2026-05-12
 

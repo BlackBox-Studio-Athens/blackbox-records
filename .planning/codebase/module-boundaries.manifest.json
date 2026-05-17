@@ -178,8 +178,7 @@
         "apps/web/src/components/store/Checkout*.tsx",
         "apps/web/src/components/store/StoreItemPurchaseActions.tsx",
         "apps/web/src/pages/store/[slug]/checkout/**",
-        "apps/web/src/lib/backend/public-checkout-api.ts",
-        "apps/web/src/lib/backend/stripe-embedded-checkout.ts"
+        "apps/web/src/lib/backend/public-checkout-api.ts"
       ],
       "providedEntrypoints": [
         "apps/web/src/lib/backend/public-checkout-api.ts",

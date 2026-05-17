@@ -6,7 +6,7 @@ import {
   getStoreItemVariantsRoute,
   postCheckoutSessionRoute,
 } from '../contracts/public-contracts';
-import { createPublicCheckoutReturnUrl } from './public-checkout-return-url';
+import { createPublicCheckoutCancelUrl, createPublicCheckoutReturnUrl } from './public-checkout-return-url';
 import { createPublicCommerceServices } from './public-commerce-services';
 
 export function registerPublicCommerceRoutes(app: AppOpenApi): void {
@@ -77,8 +77,14 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
       }
 
       const checkoutSession = await services.startCheckout({
+        cancelUrl: createPublicCheckoutCancelUrl(
+          context.req.raw.headers,
+          context.req.url,
+          primaryLine.storeItemSlug,
+          context.env.CHECKOUT_RETURN_ORIGINS,
+        ),
         ...(body.lines ? { lines } : {}),
-        returnUrl: createPublicCheckoutReturnUrl(
+        successUrl: createPublicCheckoutReturnUrl(
           context.req.raw.headers,
           context.req.url,
           primaryLine.storeItemSlug,
@@ -90,7 +96,7 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
 
       return context.json(
         {
-          clientSecret: checkoutSession.clientSecret,
+          checkoutUrl: checkoutSession.checkoutUrl,
         },
         200,
       );

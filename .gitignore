@@ -17,6 +17,9 @@ cachedData/
 files/
 node_modules/.astro/
 node_modules/.vite/
+.codex-artifacts/
+.env.local
+**/.env.local
 
 # Local secrets and account-specific checkout data
 .dev.vars

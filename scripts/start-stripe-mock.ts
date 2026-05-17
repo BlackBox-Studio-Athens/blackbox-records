@@ -9,17 +9,7 @@ export const STRIPE_MOCK_HTTPS_PORT = 12112;
 export const STRIPE_MOCK_UPSTREAM_ORIGIN = `http://127.0.0.1:${STRIPE_MOCK_HTTP_PORT}`;
 
 export function patchStripeMockRequest(input: { body: string; method?: string; url?: string }): string {
-  if (!isCheckoutSessionCreate(input)) {
-    return input.body;
-  }
-
-  const params = new URLSearchParams(input.body);
-
-  if (params.get('ui_mode') === 'embedded_page') {
-    params.set('ui_mode', 'embedded');
-  }
-
-  return params.toString();
+  return input.body;
 }
 
 export function patchStripeMockResponse(input: {
@@ -41,8 +31,11 @@ export function patchStripeMockResponse(input: {
   const requestParams = new URLSearchParams(input.requestBody);
   const variantId = requestParams.get('metadata[variantId]') ?? 'local';
 
-  if (!responseJson.client_secret) {
-    responseJson.client_secret = `cs_mock_secret_${toSafeStripeMockFragment(variantId)}`;
+  if (!responseJson.url) {
+    const sessionId = typeof responseJson.id === 'string' ? responseJson.id : null;
+    const fragment = sessionId ? toSafeStripeMockFragment(sessionId) : toSafeStripeMockFragment(variantId);
+
+    responseJson.url = `https://checkout.stripe.test/session/${fragment}`;
   }
 
   return JSON.stringify(responseJson);

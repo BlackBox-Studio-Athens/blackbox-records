@@ -21,7 +21,7 @@ export type paths = {
                 };
             };
             responses: {
-                /** @description Created an embedded Stripe Checkout Session. */
+                /** @description Created a hosted Stripe Checkout Session. */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -292,7 +292,8 @@ export type components = {
             variantId: string;
         };
         StartCheckoutResponse: {
-            clientSecret: string;
+            /** Format: uri */
+            checkoutUrl: string;
         };
         StoreCapabilities: {
             nativeCheckout: {

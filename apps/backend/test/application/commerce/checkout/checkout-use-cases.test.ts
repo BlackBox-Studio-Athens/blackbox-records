@@ -176,9 +176,9 @@ describe('checkout use cases', () => {
     stripeMappings = new InMemoryVariantStripeMappingRepository();
     orders = new InMemoryOrderStateRepository();
     checkoutGateway = {
-      createEmbeddedCheckoutSession: vi.fn(async () => ({
+      createHostedCheckoutSession: vi.fn(async () => ({
         checkoutSessionId: 'cs_test_123',
-        clientSecret: 'cs_test_123_secret_abc',
+        checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
       })),
       readCheckoutSessionLineItems: vi.fn(async () => []),
       readCheckoutSession: vi.fn(async () => ({
@@ -232,13 +232,14 @@ describe('checkout use cases', () => {
   it('starts checkout without a browser-selected locker for manual BOX NOW fulfillment', async () => {
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
-        returnUrl: 'https://example.com/return',
+        cancelUrl: 'https://example.com/checkout',
+        successUrl: 'https://example.com/return',
         storeItemSlug: storeItem.storeItemSlug,
         variantId: storeItem.variantId,
       }),
     ).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
-      clientSecret: 'cs_test_123_secret_abc',
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
     });
 
     expect(orders.records.get('cs_test_123')).toMatchObject({
@@ -257,7 +258,8 @@ describe('checkout use cases', () => {
         checkoutGateway,
         orders,
         {
-          returnUrl: 'https://example.com/return',
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
           storeItemSlug: storeItem.storeItemSlug,
           variantId: storeItem.variantId,
         },
@@ -267,14 +269,15 @@ describe('checkout use cases', () => {
       ),
     ).rejects.toBeInstanceOf(NativeCheckoutDisabledError);
 
-    expect(checkoutGateway.createEmbeddedCheckoutSession).not.toHaveBeenCalled();
+    expect(checkoutGateway.createHostedCheckoutSession).not.toHaveBeenCalled();
     expect(orders.records.size).toBe(0);
   });
 
   it('rejects unknown store items before starting checkout', async () => {
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
-        returnUrl: 'https://example.com/return',
+        cancelUrl: 'https://example.com/checkout',
+        successUrl: 'https://example.com/return',
         storeItemSlug: 'unknown',
         variantId: storeItem.variantId,
       }),
@@ -284,7 +287,8 @@ describe('checkout use cases', () => {
   it('rejects variants that do not belong to the requested store item', async () => {
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
-        returnUrl: 'https://example.com/return',
+        cancelUrl: 'https://example.com/checkout',
+        successUrl: 'https://example.com/return',
         storeItemSlug: storeItem.storeItemSlug,
         variantId: 'variant_other',
       }),
@@ -299,7 +303,8 @@ describe('checkout use cases', () => {
 
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
-        returnUrl: 'https://example.com/return',
+        cancelUrl: 'https://example.com/checkout',
+        successUrl: 'https://example.com/return',
         storeItemSlug: storeItem.storeItemSlug,
         variantId: storeItem.variantId,
       }),
@@ -311,36 +316,38 @@ describe('checkout use cases', () => {
 
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
-        returnUrl: 'https://example.com/return',
+        cancelUrl: 'https://example.com/checkout',
+        successUrl: 'https://example.com/return',
         storeItemSlug: storeItem.storeItemSlug,
         variantId: storeItem.variantId,
       }),
     ).rejects.toBeInstanceOf(CheckoutConfigurationError);
   });
 
-  it('starts embedded Checkout with the mapped Stripe price', async () => {
+  it('starts hosted Checkout with the mapped Stripe price', async () => {
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
-        returnUrl: 'https://example.com/return',
+        cancelUrl: 'https://example.com/checkout',
+        successUrl: 'https://example.com/return',
         storeItemSlug: storeItem.storeItemSlug,
         variantId: storeItem.variantId,
       }),
     ).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
-      clientSecret: 'cs_test_123_secret_abc',
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
     });
 
-    expect(checkoutGateway.createEmbeddedCheckoutSession).toHaveBeenCalledWith({
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledWith({
       lineItems: [
         {
-          adjustableQuantityMaximum: 2,
           quantity: 1,
           storeItemSlug: 'disintegration-black-vinyl-lp',
           stripePriceId: 'price_test_barren_point',
           variantId: 'variant_barren-point_standard',
         },
       ],
-      returnUrl: 'https://example.com/return',
+      cancelUrl: 'https://example.com/checkout',
+      successUrl: 'https://example.com/return',
     });
     expect(orders.records.get('cs_test_123')).toEqual(
       expect.objectContaining({
@@ -353,7 +360,7 @@ describe('checkout use cases', () => {
     );
   });
 
-  it('starts embedded Checkout with requested CartQuantity and stock-capped adjustable quantity', async () => {
+  it('starts hosted Checkout with requested CartQuantity and fixed Stripe quantity', async () => {
     await expect(
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         lines: [
@@ -363,24 +370,25 @@ describe('checkout use cases', () => {
             variantId: storeItem.variantId,
           },
         ],
-        returnUrl: 'https://example.com/return',
+        cancelUrl: 'https://example.com/checkout',
+        successUrl: 'https://example.com/return',
       }),
     ).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
-      clientSecret: 'cs_test_123_secret_abc',
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
     });
 
-    expect(checkoutGateway.createEmbeddedCheckoutSession).toHaveBeenCalledWith({
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledWith({
       lineItems: [
         {
-          adjustableQuantityMaximum: 2,
           quantity: 2,
           storeItemSlug: 'disintegration-black-vinyl-lp',
           stripePriceId: 'price_test_barren_point',
           variantId: 'variant_barren-point_standard',
         },
       ],
-      returnUrl: 'https://example.com/return',
+      cancelUrl: 'https://example.com/checkout',
+      successUrl: 'https://example.com/return',
     });
   });
 
@@ -398,7 +406,8 @@ describe('checkout use cases', () => {
 
   it('surfaces manual BOX NOW return state without a persisted locker snapshot', async () => {
     await startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
-      returnUrl: 'https://example.com/return',
+      cancelUrl: 'https://example.com/checkout',
+      successUrl: 'https://example.com/return',
       storeItemSlug: storeItem.storeItemSlug,
       variantId: storeItem.variantId,
     });

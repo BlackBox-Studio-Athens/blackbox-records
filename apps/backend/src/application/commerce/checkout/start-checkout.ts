@@ -14,16 +14,12 @@ import {
   VariantMismatchError,
 } from './errors';
 import { createPendingCheckoutOrder } from '../orders/create-pending-checkout-order';
-import type {
-  CheckoutGateway,
-  EmbeddedCheckoutSession,
-  EmbeddedCheckoutSessionLineItem,
-  FeatureFlagReader,
-} from './spi';
+import type { CheckoutSessionLineItem, CheckoutGateway, FeatureFlagReader, HostedCheckoutSession } from './spi';
 
 export type StartCheckoutCommand = {
+  cancelUrl: string;
   lines?: StartCheckoutLineCommand[];
-  returnUrl: string;
+  successUrl: string;
   storeItemSlug?: StoreItemSlug;
   variantId?: VariantId;
 };
@@ -85,7 +81,7 @@ export async function startCheckout(
   orders: OrderStateRepository,
   command: StartCheckoutCommand,
   featureFlags: FeatureFlagReader = enabledFeatureFlags,
-): Promise<EmbeddedCheckoutSession> {
+): Promise<HostedCheckoutSession> {
   if (!(await featureFlags.isNativeCheckoutEnabled())) {
     throw new NativeCheckoutDisabledError();
   }
@@ -98,7 +94,7 @@ export async function startCheckout(
     throw new CheckoutUnavailableError();
   }
 
-  const validatedLines: EmbeddedCheckoutSessionLineItem[] = [];
+  const validatedLines: CheckoutSessionLineItem[] = [];
 
   for (const line of requestedLines) {
     const quantity = validateCheckoutQuantity(line.quantity);
@@ -131,7 +127,6 @@ export async function startCheckout(
     }
 
     validatedLines.push({
-      adjustableQuantityMaximum: Math.min(currentStock.onlineQuantity, 9),
       quantity,
       storeItemSlug: line.storeItemSlug,
       stripePriceId: stripeMapping.stripePriceId,
@@ -139,9 +134,10 @@ export async function startCheckout(
     });
   }
 
-  const checkoutSession = await checkoutGateway.createEmbeddedCheckoutSession({
+  const checkoutSession = await checkoutGateway.createHostedCheckoutSession({
+    cancelUrl: command.cancelUrl,
     lineItems: validatedLines,
-    returnUrl: command.returnUrl,
+    successUrl: command.successUrl,
   });
 
   const primaryLine = validatedLines[0]!;

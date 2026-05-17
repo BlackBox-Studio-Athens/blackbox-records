@@ -29,9 +29,9 @@
 
 ### Checkout & Payment
 
-- [x] **CHKO-01**: Shopper can start single-item checkout from store item detail using a Worker-created Checkout Session with Stripe embedded Checkout (`ui_mode: embedded_page` on the current Stripe API version), with Checkout Sessions as the only approved v1 payment-creation API.
+- [x] **CHKO-01**: Shopper can start single-item checkout from store item detail using a Worker-created hosted Stripe Checkout Session, with Checkout Sessions as the only approved v1 payment-creation API.
 - [ ] **CHKO-02**: Shopper can complete or retry checkout through dedicated in-site checkout and return states that retrieve status through Worker-owned APIs without treating the browser as payment authority.
-- [ ] **CHKO-03**: Team can validate Worker-backed `StartCheckout`, embedded mount, and Worker-owned return-page/ReadCheckoutState flow in Stripe sandbox and local webhook testing.
+- [ ] **CHKO-03**: Team can validate Worker-backed `StartCheckout`, hosted Checkout redirect, and Worker-owned return-page/ReadCheckoutState flow in Stripe sandbox and local webhook testing.
 - [ ] **CHKO-04**: Shopper-facing store URLs, cart affordances, and checkout layout feel familiar to Shopify buyers while remaining a single-item flow with Worker-owned checkout authority.
 - [ ] **CHKO-05**: Team can run a local no-network mock checkout readiness path for every current distro and release store item using fake local stock and mock Stripe mappings, without treating that fake stock as real inventory.
 
@@ -68,10 +68,10 @@ after BOX NOW access exists.
 
 - [x] **SECU-01**: Stripe secrets, webhook secrets, and D1 access remain server-only in the Worker backend and local development.
 - [x] **SECU-02**: Browser code never writes authoritative stock or paid-order state.
-- [ ] **OPER-01**: Team can validate the full sandbox path from static `/store/` browse through Worker checkout, webhook-confirmed paid order, and D1 state changes.
-- [ ] **OPER-02**: Milestone ends with a human review package that captures sandbox evidence, open production gaps, and explicit handoff to the go-live milestone.
+- [x] **OPER-01**: Team can validate the full sandbox path from static `/store/` browse through Worker checkout, webhook-confirmed paid order, and D1 state changes.
+- [x] **OPER-02**: Milestone ends with a human review package that captures sandbox evidence, open production gaps, and explicit handoff to the go-live milestone.
 
-`10-MILESTONE-REVIEW.md` now prepares the `OPER-02` review package and go-live handoff. `OPER-02` remains pending until human review accepts the package, and `OPER-01` remains pending until the Stripe Access Gate can be satisfied.
+`10-MILESTONE-REVIEW.md` now prepares the `OPER-02` review package and go-live handoff. `OPER-01` and `OPER-02` are satisfied for sandbox UAT only; production go-live remains deferred.
 
 ## v2 Requirements
 
@@ -97,16 +97,16 @@ after BOX NOW access exists.
 
 ## Out of Scope
 
-| Feature                                                    | Reason                                                                                                                                                         |
-| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Production cutover in this milestone                       | Deferred to the Go-Live milestone so sandbox implementation and launch risk stay separate                                                                      |
-| Live-mode Stripe keys or real-money processing             | This milestone stays in sandbox                                                                                                                                |
-| Browser-side writes to orders or stock                     | Violates the trust boundary for payment and stock state                                                                                                        |
-| Stock reservation in v1                                    | Explicitly deferred to keep the first release simple and authoritative on payment webhook success                                                              |
-| Release-approved multi-line checkout evidence              | BL-13 landed no-account multi-line StoreCart locally; real Stripe multi-line evidence and production approval remain behind the Stripe Access Gate and Go-Live |
-| Non-Greece shipping paths                                  | Greece-only BOX NOW is the approved v1 shipping scope                                                                                                          |
-| Automated BOX NOW fulfillment                              | Manual partner-portal fulfillment is sufficient for projected low volume                                                                                       |
-| Full operator dashboard / OMS beyond thin stock operations | Low order volume does not justify the maintenance cost yet                                                                                                     |
+| Feature                                                    | Reason                                                                                                              |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Production cutover in this milestone                       | Deferred to the Go-Live milestone so sandbox implementation and launch risk stay separate                           |
+| Live-mode Stripe keys or real-money processing             | This milestone stays in sandbox                                                                                     |
+| Browser-side writes to orders or stock                     | Violates the trust boundary for payment and stock state                                                             |
+| Stock reservation in v1                                    | Explicitly deferred to keep the first release simple and authoritative on payment webhook success                   |
+| Release-approved multi-line checkout evidence              | BL-13 landed no-account multi-line StoreCart locally; production approval remains behind Go-Live / Launch Hardening |
+| Non-Greece shipping paths                                  | Greece-only BOX NOW is the approved v1 shipping scope                                                               |
+| Automated BOX NOW fulfillment                              | Manual partner-portal fulfillment is sufficient for projected low volume                                            |
+| Full operator dashboard / OMS beyond thin stock operations | Low order volume does not justify the maintenance cost yet                                                          |
 
 ## Traceability
 

@@ -58,7 +58,7 @@ const summaryItem = {
         <div class="space-y-2">
           <h1 class="font-display text-5xl tracking-[0.08em] uppercase text-foreground sm:text-6xl">Checkout</h1>
           <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Review the item, confirm Greece-only shipping, then open secure payment through Stripe.
+            Review the item, confirm Greece-only shipping, then pay through Stripe.
           </p>
         </div>
       </div>
@@ -71,7 +71,7 @@ const summaryItem = {
       </a>
     </div>
 
-    <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] xl:grid-cols-[minmax(0,1fr)_27rem]">
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] xl:grid-cols-[minmax(40rem,1fr)_27rem]">
       <div class="lg:hidden">
         <details class="group border border-border/70 bg-card/45" open>
           <summary
@@ -91,9 +91,9 @@ const summaryItem = {
           <div class="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-5">
             <div class="space-y-2">
               <p class="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Checkout</p>
-              <h2 class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">Shipping / Payment</h2>
+              <h2 class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">Shipping & Payment</h2>
             </div>
-            <span class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Cart / Checkout</span>
+            <span class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Secure Stripe Checkout</span>
           </div>
 
           <CheckoutOfferStatus

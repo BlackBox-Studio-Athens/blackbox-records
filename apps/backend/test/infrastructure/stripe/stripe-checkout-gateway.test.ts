@@ -24,10 +24,10 @@ describe('createStripeClientOptions', () => {
 });
 
 describe('StripeCheckoutGateway', () => {
-  it('creates embedded Checkout Sessions with adjustable quantities', async () => {
+  it('creates hosted Checkout Sessions with fixed quantities', async () => {
     const create = vi.fn(async () => ({
-      client_secret: 'cs_test_secret',
       id: 'cs_test_123',
+      url: 'https://checkout.stripe.test/session/cs_test_123',
     }));
     const gateway = new StripeCheckoutGateway({
       checkout: {
@@ -40,43 +40,47 @@ describe('StripeCheckoutGateway', () => {
     } as never);
 
     await expect(
-      gateway.createEmbeddedCheckoutSession({
+      gateway.createHostedCheckoutSession({
         lineItems: [
           {
-            adjustableQuantityMaximum: 7,
             quantity: 2,
             storeItemSlug: 'disintegration-black-vinyl-lp',
             stripePriceId: 'price_test_barren_point',
             variantId: 'variant_barren-point_standard',
           },
         ],
-        returnUrl: 'https://blackbox.example/return',
+        cancelUrl: 'https://blackbox.example/checkout',
+        successUrl: 'https://blackbox.example/return',
       }),
     ).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
-      clientSecret: 'cs_test_secret',
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
     });
 
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({
         line_items: [
           {
-            adjustable_quantity: {
-              enabled: true,
-              maximum: 7,
-              minimum: 1,
-            },
             price: 'price_test_barren_point',
             quantity: 2,
           },
         ],
+        cancel_url: 'https://blackbox.example/checkout',
+        locale: 'en',
+        payment_method_types: ['card'],
         phone_number_collection: {
           enabled: true,
         },
         shipping_address_collection: {
           allowed_countries: ['GR'],
         },
+        success_url: 'https://blackbox.example/return',
       }),
     );
+    const createCalls = create.mock.calls as unknown as Array<[{ line_items: unknown[] }]>;
+    const createPayload = createCalls[0]?.[0];
+
+    expect(createPayload).not.toHaveProperty('ui_mode');
+    expect(createPayload?.line_items[0]).not.toHaveProperty('adjustable_quantity');
   });
 });

@@ -41,7 +41,7 @@ The Phase 7 buying path becomes:
 3. A cart drawer opens with one CartLine, subtotal, and checkout action.
 4. Header cart icon shows count `1`.
 5. Shopper clicks `Checkout`.
-6. Checkout page shows an order summary and mounts Stripe embedded Checkout.
+6. Checkout page shows an order summary and redirects to Stripe-hosted Checkout.
 7. Return/retry pages read `CheckoutState` from the Worker.
 
 ## Scope Boundary
@@ -117,11 +117,11 @@ Use shadcn `Sheet`.
 ### Checkout Page
 
 - Desktop: two-column layout.
-  - Left/main column: checkout step status and embedded Stripe mount.
-  - Right column: order summary with image, title, option, price, subtotal, availability.
+  - Left/main column: checkout step status and Stripe-hosted payment handoff.
+  - Right column: order summary with image, title, option, price, and subtotal.
 - Mobile:
   - Collapsible order summary at the top.
-  - Embedded Checkout below.
+  - Stripe-hosted payment handoff below.
 - Direct checkout page loads must recover without prior cart state by reading static item data and Worker offer state.
 - Add familiar breadcrumbs or step labels only if they are truthful:
   - `Cart`
@@ -206,6 +206,6 @@ Cart state is single-item and replace-on-add. Adding a second item replaces the 
 - Remove resets the cart state.
 - Checkout CTA routes to the canonical checkout page.
 - Checkout page summary matches the cart line and Worker offer state.
-- Embedded Checkout still starts through Worker `StartCheckout`.
+- Hosted Checkout still starts through Worker `StartCheckout`.
 - Browser payloads still include only app identities, not Stripe price IDs or secrets.
 - Mobile cart drawer and checkout summary are usable.

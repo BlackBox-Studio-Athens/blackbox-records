@@ -18,7 +18,7 @@ The migration target is intentionally minimal. The browser must not become a tru
 - **Stripe-to-app state normalization** is expressed as one backend-owned reconciliation use case shared by ReadCheckoutState and verified webhook handling.
 - **Verified Stripe webhooks** are authoritative for order-paid transitions and stock decrement.
 - **v1 does not reserve stock** before payment confirmation.
-- **Embedded Checkout API shape** follows current Stripe docs: `ui_mode: embedded`, `return_url`, and optional `redirect_on_completion` tuning.
+- **Checkout Session API shape** uses Stripe-hosted Checkout redirect with Worker-created `success_url` and `cancel_url`.
 
 ## Rationale
 
@@ -40,6 +40,6 @@ The migration target is intentionally minimal. The browser must not become a tru
 
 ## References
 
-- [Stripe embedded Checkout build guide](https://docs.stripe.com/payments/checkout/build-subscriptions?payment-ui=embedded-form)
-- [Stripe custom success / redirect behavior](https://docs.stripe.com/payments/checkout/custom-success-page?payment-ui=embedded-form)
+- [Stripe hosted Checkout quickstart](https://docs.stripe.com/checkout/quickstart)
+- [Stripe custom success / redirect behavior](https://docs.stripe.com/payments/checkout/custom-success-page)
 - [Stripe checkout fulfillment](https://docs.stripe.com/checkout/fulfillment?payment-ui=embedded-form)

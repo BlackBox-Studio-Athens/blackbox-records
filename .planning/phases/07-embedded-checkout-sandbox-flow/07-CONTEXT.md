@@ -24,16 +24,16 @@ Phase 7 implements Worker-owned checkout APIs and connects the static frontend c
 
 - **D-01:** The Worker backend creates Checkout Sessions.
 - **D-02:** The frontend checkout route consumes Worker APIs, not direct Stripe secret APIs.
-- **D-03:** Embedded Checkout remains the approved shopper-facing form factor.
+- **D-03:** Stripe-hosted Checkout redirect is the approved MVP shopper-facing form factor.
 - **D-04:** Return and retry pages remain non-authoritative for payment truth.
 - **D-05:** Webhook authority remains deferred to Phase 8, but Phase 7 must already be shaped for that backend contract.
 - **D-06:** Checkout Sessions are the only approved v1 shopper payment-creation API; raw PaymentIntents or Payment Element flows stay out of scope unless a later phase explicitly re-approves them.
 - **D-07:** Return and retry pages retrieve CheckoutState through a Worker-owned checkout-state endpoint; raw Stripe query params and raw Stripe IDs are not the durable frontend contract.
 - **D-08:** Phase 7 APIs must already be shaped so Phase 8 can reuse one backend-owned reconciliation use case across ReadCheckoutState and verified webhook handling.
-- **D-09:** On Stripe API `2026-04-22.dahlia`, embedded Checkout is represented by `ui_mode: embedded_page`; older docs may refer to this as embedded Checkout.
+- **D-09:** The MVP checkout contract uses Stripe-hosted Checkout with Worker-created `success_url` and `cancel_url`; embedded Checkout references are superseded for this slice.
 - **D-10:** Checkout return URLs and split-port browser API calls must be constrained by the Worker-side `CHECKOUT_RETURN_ORIGINS` allowlist and expected `/store/<slug>/checkout/` route shape; arbitrary browser `Referer` origins are not trusted.
-- **D-11:** Local checkout validation has two explicit modes: `dev:stack:stripe-test` for real Stripe test keys and real test Price mappings, and `dev:stack:stripe-mock` for official local `stripe-mock` API request-shape simulation plus a frontend mock checkout panel.
-- **D-12:** Local mock Stripe mode is not a real embedded Checkout browser substitute. It must never be documented as a successful end-to-end payment flow.
+- **D-11:** Local checkout validation has two explicit modes: `dev:stack:stripe-test` for real Stripe test keys and real test Price mappings, and `dev:stack:stripe-mock` for official local `stripe-mock` API request-shape simulation plus a local-only mock Checkout URL.
+- **D-12:** Local mock Stripe mode is not a real Stripe-hosted Checkout browser substitute. It must never be documented as a successful end-to-end payment flow.
 - **D-13:** Shopper-facing store URLs must describe the item option being purchased, not legacy release shorthand. The `barren-point` route for Afterwise's `Disintegration` Black Vinyl LP is now a legacy alias for `/store/disintegration-black-vinyl-lp/`.
 - **D-14:** Phase 7 now includes a single-item cart-like experience with a cart icon, cart drawer, checkout CTA, and familiar checkout summary. This is not a true multi-item cart and does not add quantity management.
 - **D-15:** The cart and checkout UI may draw inspiration from free Shopify themes such as Dawn, but implementation must use BlackBox visual language and repo-owned Astro/React/shadcn components instead of copying Shopify theme code.
@@ -42,6 +42,7 @@ Phase 7 implements Worker-owned checkout APIs and connects the static frontend c
 - **D-18:** Local stripe-mock mode may seed fake development `Stock`, `OnlineStock`, `ItemAvailability`, and `price_mock_*` mappings for every current item so the local no-network buying path can be exercised.
 - **D-19:** Fake local stock is not a label inventory count. Sandbox and production buyability still require staff-recorded D1 stock counts and real Stripe mappings.
 - **D-20:** Real Stripe test-mode coverage for every current item is deferred; Phase 7 only requires all-items coverage in mock mode plus selected real Stripe sandbox mappings for final validation.
+- **D-21:** At-will real Stripe sandbox smoke validation uses a no-browser-automation coordinator. The script may preflight, auto-detect or start local services, print checkout/scenario instructions, and inspect local D1 after manual payment, but the human owns Stripe-hosted Checkout form entry, 3D Secure interaction, and any visual/browser acceptance evidence.
 
 </decisions>
 

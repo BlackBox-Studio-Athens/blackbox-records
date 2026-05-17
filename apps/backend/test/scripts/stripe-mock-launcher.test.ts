@@ -3,40 +3,38 @@ import { describe, expect, it } from 'vitest';
 import { patchStripeMockRequest, patchStripeMockResponse } from '../../../../scripts/start-stripe-mock';
 
 describe('stripe-mock local launcher proxy', () => {
-  it('rewrites only the current SDK embedded Checkout enum for stripe-mock compatibility', () => {
+  it('leaves hosted Checkout requests unchanged', () => {
     const body = new URLSearchParams({
+      cancel_url: 'http://127.0.0.1:4321/checkout',
       mode: 'payment',
-      return_url: 'http://127.0.0.1:4321/return',
-      ui_mode: 'embedded_page',
+      success_url: 'http://127.0.0.1:4321/return',
     }).toString();
 
     expect(
-      new URLSearchParams(
-        patchStripeMockRequest({
-          body,
-          method: 'POST',
-          url: '/v1/checkout/sessions',
-        }),
-      ).get('ui_mode'),
-    ).toBe('embedded');
+      patchStripeMockRequest({
+        body,
+        method: 'POST',
+        url: '/v1/checkout/sessions',
+      }),
+    ).toBe(body);
   });
 
   it('leaves non-checkout requests unchanged', () => {
     expect(
       patchStripeMockRequest({
-        body: 'ui_mode=embedded_page',
+        body: 'mode=payment',
         method: 'POST',
         url: '/v1/charges',
       }),
-    ).toBe('ui_mode=embedded_page');
+    ).toBe('mode=payment');
   });
 
-  it('adds a local-only client secret when stripe-mock returns null for embedded checkout', () => {
+  it('adds a local-only hosted Checkout URL when stripe-mock returns null for redirect checkout', () => {
     const patched = patchStripeMockResponse({
       body: JSON.stringify({
-        client_secret: null,
         id: 'cs_test_fixture',
         object: 'checkout.session',
+        url: null,
       }),
       method: 'POST',
       requestBody: new URLSearchParams({
@@ -47,8 +45,8 @@ describe('stripe-mock local launcher proxy', () => {
 
     expect(JSON.parse(patched) as unknown).toEqual(
       expect.objectContaining({
-        client_secret: 'cs_mock_secret_variant_barren_point_standard',
         id: 'cs_test_fixture',
+        url: 'https://checkout.stripe.test/session/cs_test_fixture',
       }),
     );
   });

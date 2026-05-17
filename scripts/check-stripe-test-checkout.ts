@@ -24,13 +24,8 @@ export function checkStripeTestCheckoutPreflight(
   input: StripeTestCheckoutPreflightInput,
 ): StripeTestCheckoutPreflightResult {
   const issues: string[] = [];
-  const publishableKey = input.env.PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() ?? '';
   const stripeSecretKey = input.devVarsText ? readDotEnvValue(input.devVarsText, 'STRIPE_SECRET_KEY') : null;
   const seedSqlText = input.seedSqlText?.trim() ?? '';
-
-  if (!isRealStripeTestPublishableKey(publishableKey)) {
-    issues.push('PUBLIC_STRIPE_PUBLISHABLE_KEY must be set to a real Stripe test publishable key (pk_test_...).');
-  }
 
   if (!input.devVarsText) {
     issues.push(`${devVarsRelativePath} must exist for dev:stack:stripe-test.`);
@@ -75,12 +70,15 @@ export function formatStripeTestCheckoutPreflightReport(result: StripeTestChecko
     'Required setup:',
     '1. Copy apps/backend/.dev.vars.example to apps/backend/.dev.vars.',
     '2. Set STRIPE_SECRET_KEY in apps/backend/.dev.vars to a real sk_test_ value.',
-    '3. Set PUBLIC_STRIPE_PUBLISHABLE_KEY in this shell to the matching pk_test_ value.',
-    `4. Copy ${seedExampleRelativePath} to ${seedRelativePath} and add a real Stripe test Price ID.`,
+    `3. Copy ${seedExampleRelativePath} to ${seedRelativePath} and add a real Stripe test Price ID.`,
   ].join('\n');
 }
 
-function readDotEnvValue(text: string, key: string): string | null {
+function readDotEnvValue(text: string | null, key: string): string | null {
+  if (!text) {
+    return null;
+  }
+
   for (const line of text.split(/\r?\n/)) {
     const trimmed = line.trim();
 
@@ -107,10 +105,6 @@ function readDotEnvValue(text: string, key: string): string | null {
   }
 
   return null;
-}
-
-function isRealStripeTestPublishableKey(value: string): boolean {
-  return value.startsWith('pk_test_') && value !== 'pk_test_mock';
 }
 
 function isRealStripeTestSecretKey(value: string): boolean {

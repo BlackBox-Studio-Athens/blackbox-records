@@ -28,6 +28,8 @@ GitHub Pages remains a rollback/legacy static deployment and keeps the repo defa
 - `site`: `https://blackbox-studio-athens.github.io`
 - `base`: `/blackbox-records/`
 
+For label-member sandbox UAT, the GitHub Pages URL is intentionally wired to the sandbox Worker on every `main` push. Tester instructions live in [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md). This is Stripe test mode only and is not production go-live approval.
+
 ## Navigation model
 
 - Top-level sections (`/`, `/distro/`, `/artists/`, `/releases/`, `/services/`, `/about/`) are shell-routed in the browser and swapped in-place.
@@ -104,10 +106,19 @@ That canonical path remains the fastest smoke path. Legacy `/store/barren-point/
 Run the full local commerce stack with real Stripe test mode:
 
 ```powershell
-$env:PUBLIC_STRIPE_PUBLISHABLE_KEY = "pk_test_..."
 pnpm checkout:preflight:stripe-test
 pnpm dev:stack:stripe-test
 ```
+
+Run the at-will automated Stripe sandbox smoke:
+
+```sh
+pnpm smoke:stripe-sandbox -- --scenario all
+```
+
+The smoke runner is intentionally not part of CI. It targets the deployed Cloudflare Pages + sandbox Worker path, drives Stripe-hosted Checkout with Playwright, checks sandbox D1 remotely through Wrangler, and writes ignored evidence to `.codex-artifacts/stripe-sandbox-smoke/<run-id>/`.
+
+Supported scenarios are `happy_path_paid`, `three_d_secure`, `card_declined`, `insufficient_funds`, `expired_card`, `incorrect_cvc`, `processing_error`, and `all`. The committed JetBrains run configuration `Stripe Sandbox Smoke` runs `--scenario all`. Stripe’s current test card reference lives at <https://docs.stripe.com/testing#cards>. Keep `stripe listen --forward-to https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev/api/stripe/webhooks` running separately, and make sure the sandbox Worker `STRIPE_WEBHOOK_SECRET` matches that listener for paid-order evidence.
 
 Before using `dev:stack:stripe-test`:
 
@@ -123,9 +134,9 @@ Run the full local commerce stack with stripe-mock:
 pnpm dev:stack:stripe-mock
 ```
 
-This mode runs official `stripe-mock` locally through `go run github.com/stripe/stripe-mock@latest`, points the Worker Stripe SDK at a local compatibility proxy on `http://127.0.0.1:12110`, generates local-only mock commerce state for every current store item, and renders a local mock checkout panel in the browser. It validates backend checkout flow control and Stripe API request shape, but it is not a real embedded Checkout browser experience. It requires Go, but it does not require Docker, real Stripe keys, or `apps/backend/.dev.vars`.
+This mode runs official `stripe-mock` locally through `go run github.com/stripe/stripe-mock@latest`, points the Worker Stripe SDK at a local compatibility proxy on `http://127.0.0.1:12110`, generates local-only mock commerce state for every current store item, and returns a local-only mock Checkout URL. It validates backend checkout flow control and Stripe API request shape, but it is not a real Stripe-hosted Checkout browser experience. It requires Go, but it does not require Docker, real Stripe keys, or `apps/backend/.dev.vars`.
 
-The first run may download and compile `stripe-mock` through Go. Official `stripe-mock` currently differs from the Stripe SDK enum for embedded Checkout and returns a null `client_secret`, so the local proxy applies only those dev-only compatibility patches before the Worker receives the response. Production checkout code still sends the real Stripe SDK request shape.
+The first run may download and compile `stripe-mock` through Go. Official `stripe-mock` can return a null hosted Checkout `url`, so the local proxy applies a dev-only URL patch before the Worker receives the response. Production checkout code still sends the real Stripe SDK request shape.
 
 Run the explicit alias for the same official stripe-mock API stack:
 
@@ -237,8 +248,8 @@ Current Worker scope:
 - the static Astro app now exposes the protected stock operations UI at `/stock/`
 - D1-backed `Stock`, `StockChange`, and `StockCount` now back the operator stock ledger contract
 - public store-offer and checkout API routes now exist under `/api/store/*` and `/api/checkout/*`
-- checkout creation is Worker-owned and uses Stripe embedded Checkout Sessions through a backend gateway seam
-- the static checkout shell mounts Stripe embedded Checkout from Worker-created sessions
+- checkout creation is Worker-owned and uses hosted Stripe Checkout Sessions through a backend gateway seam
+- the static checkout shell redirects to Stripe-hosted Checkout from Worker-created sessions
 - `pnpm dev:stack:stripe-test` prepares local D1, applies the ignored real Stripe test mapping seed, starts the Worker, and starts the static site
 - `pnpm dev:stack:stripe-mock` prepares local D1, generates local-only mock commerce state for every current store item, starts official `stripe-mock` through Go, starts the Worker with the Stripe SDK pointed at the local mock API proxy, and starts the static site in mock checkout mode
 - no webhook order authority, stock decrement, or frontend D1 wiring yet
@@ -296,10 +307,9 @@ pnpm audit:commerce-boundaries
 ## Frontend-to-Worker URL contract
 
 - The browser-facing Astro app owns `PUBLIC_BACKEND_BASE_URL` for Worker discovery.
-- The browser also owns `PUBLIC_STRIPE_PUBLISHABLE_KEY` so Stripe.js can initialize embedded Checkout.
 - Local checkout mode is controlled by `PUBLIC_CHECKOUT_CLIENT_MODE`.
-  - `stripe` uses real Stripe.js embedded Checkout and requires `PUBLIC_STRIPE_PUBLISHABLE_KEY`.
-  - `mock` skips Stripe.js and renders a local mock checkout panel after `StartCheckout`.
+  - `stripe` asks the Worker to create a hosted Stripe Checkout Session and redirects to the returned `checkoutUrl`.
+  - `mock` asks the Worker to create a local mock checkout session and redirects to the local-only mock Checkout URL.
 - Native checkout availability is controlled by the Worker-owned `native_checkout_enabled` feature gate, exposed to the
   browser only as sanitized `/api/store/capabilities` state.
 - The feature gate is a runtime switch, not an environment replacement. Worker environments still isolate D1 data,
@@ -312,7 +322,6 @@ pnpm audit:commerce-boundaries
   checkout.
 - Cloudflare Pages production builds use GitHub Actions variables for browser-safe public env:
   - `PUBLIC_BACKEND_BASE_URL`
-  - `PUBLIC_STRIPE_PUBLISHABLE_KEY`
 - Cloudflare Pages production builds also set non-secret Astro build-target env:
   - `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev`
   - `ASTRO_BASE_PATH=/`
@@ -380,7 +389,6 @@ pnpm audit:commerce-boundaries
 - `apps/backend/prisma/schema.prisma` includes a local placeholder SQLite URL only to satisfy the current Prisma 6 CLI; Worker runtime access still goes through `env.COMMERCE_DB`.
 - Future privileged backend-only values such as BOX NOW credentials also remain runtime-only until the phases that introduce them.
 - `PUBLIC_BACKEND_BASE_URL` remains the only browser-facing backend env.
-- `PUBLIC_STRIPE_PUBLISHABLE_KEY` is safe browser configuration for Stripe.js and must not be confused with `STRIPE_SECRET_KEY`.
 
 ## BOX NOW shipping contract
 
@@ -459,8 +467,8 @@ cp apps/backend/.dev.vars.example apps/backend/.dev.vars
 - Hosted Worker checkout fails closed if the `FLAGS` binding is absent or feature evaluation fails; local/mock checkout
   remains enabled by default for no-account development.
 - Checkout session creation and split-port browser API reads accept origins only from `CHECKOUT_RETURN_ORIGINS`; configured origins include local static dev, Cloudflare Pages, and the GitHub Pages rollback origin.
-- The static checkout shell also requires `PUBLIC_STRIPE_PUBLISHABLE_KEY` before it can mount embedded Checkout in the browser.
-- `stripe-mock` mode does not require `PUBLIC_STRIPE_PUBLISHABLE_KEY` or `apps/backend/.dev.vars` because the Worker `mock` env binds harmless local Stripe mock configuration and the browser renders the local mock checkout panel instead of loading Stripe.js.
+- The static checkout shell does not load Stripe.js or receive a Checkout `client_secret`; it redirects to the Worker-returned hosted Checkout URL.
+- `stripe-mock` mode does not require `apps/backend/.dev.vars` because the Worker `mock` env binds harmless local Stripe mock configuration and the browser redirects to a local-only mock Checkout URL.
 
 CI/deploy credentials and public build variables:
 
@@ -470,11 +478,10 @@ CI/deploy credentials and public build variables:
 - `ASTRO_BASE_PATH`
 - Cloudflare Pages project name: `blackbox-records-web`
 - `PUBLIC_BACKEND_BASE_URL`
-- `PUBLIC_STRIPE_PUBLISHABLE_KEY`
 
 - `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are only for authenticating CI or a developer into Cloudflare for deployment.
 - `ASTRO_SITE_URL` and `ASTRO_BASE_PATH` are non-secret static build target values. Cloudflare Pages uses `https://blackbox-records-web.pages.dev` plus `/`; GitHub Pages rollback uses `https://blackbox-studio-athens.github.io` plus `/blackbox-records/`.
-- `PUBLIC_BACKEND_BASE_URL` and `PUBLIC_STRIPE_PUBLISHABLE_KEY` are browser-visible build variables for the static Astro frontend.
+- `PUBLIC_BACKEND_BASE_URL` is the browser-visible backend discovery variable for the static Astro frontend.
 - None of these values are the Worker's runtime business secrets.
 - Deployed runtime secrets terminate as Cloudflare Worker secrets/bindings, not as browser env vars and not as GitHub-only config.
 
@@ -502,9 +509,10 @@ CI/deploy credentials and public build variables:
   - `pnpm test:unit`
   - `pnpm check`
   - `pnpm build`
+- The build step passes `PUBLIC_BACKEND_BASE_URL` from the GitHub repository variable so the GitHub Pages URL can serve as the public Stripe sandbox UAT surface.
 - Pushes go directly to `main` in this repo.
 - If CI fails on `main`, GitHub Pages does not publish the broken rollback revision; fix it with a follow-up commit or revert the bad commit on `main`.
-- GitHub Pages is no longer the canonical static host after Phase 7.1 acceptance, but it remains available as a rollback/legacy deployment path until a later cutover explicitly disables it.
+- GitHub Pages is no longer the canonical static host after Phase 7.1 acceptance, but it remains available as a rollback/legacy deployment path and sandbox UAT surface until a later cutover explicitly disables it.
 
 ## Cloudflare Pages canonical deployment
 
@@ -513,10 +521,10 @@ CI/deploy credentials and public build variables:
 - Cloudflare Pages Direct Upload acceptance is handled by `.github/workflows/cloudflare-pages.yml`, not by local manual `wrangler pages deploy`.
 - The workflow runs `pnpm test:unit`, `pnpm check`, and `pnpm build` before uploading `apps/web/dist` to the `blackbox-records-web` Pages project.
 - The workflow sets Cloudflare-root static build values with `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/`.
-- The workflow passes only browser-safe public Astro variables into the frontend runtime: `PUBLIC_BACKEND_BASE_URL` and `PUBLIC_STRIPE_PUBLISHABLE_KEY`.
+- The workflow passes only browser-safe public Astro variables into the frontend runtime: `PUBLIC_BACKEND_BASE_URL`.
 - The Worker remains separate and owns `/api/*`, Stripe secrets, webhooks, D1, stock operations, order state, and future BOX NOW work.
 - Do not introduce Pages Functions, SSR, D1 access, backend routes, or runtime business secrets into the Pages project.
-- Browser-safe Pages variables are limited to `PUBLIC_BACKEND_BASE_URL`, `PUBLIC_STRIPE_PUBLISHABLE_KEY`, and non-production `PUBLIC_CHECKOUT_CLIENT_MODE` only when deliberately testing mock mode outside production.
+- Browser-safe Pages variables are limited to `PUBLIC_BACKEND_BASE_URL` and non-production `PUBLIC_CHECKOUT_CLIENT_MODE` only when deliberately testing mock mode outside production.
 - Required CI/project names are documented in `.planning/phases/07.1-cloudflare-pages-static-frontend-migration/07.1-CLOUDFLARE-PAGES-CONTRACT.md`; account-specific IDs, tokens, and domains stay out of git.
 
 ## Content model
@@ -694,11 +702,12 @@ If a source crops badly, replace the source image rather than adding focal-point
 
 ## WebStorm run configuration
 
-- `.run/BlackBox Local Stack.run.xml` is the only committed WebStorm launcher for now.
+- `.run/BlackBox Local Stack.run.xml` is the canonical committed local-stack launcher.
+- `.run/Stripe Sandbox Smoke.run.xml` is the at-will automated Playwright sandbox checkout launcher and runs `pnpm smoke:stripe-sandbox -- --scenario all`.
 - It runs `pnpm dev:stack:stripe-mock`, which starts local D1 prep, local official `stripe-mock` through Go, the local Worker backend pointed at the local stripe-mock proxy, and the local Astro frontend without Docker or real Stripe keys.
 - Real Stripe test mode remains available from the terminal through `pnpm dev:stack:stripe-test`.
 - `pnpm dev:stack:stripe-mock-api` is a terminal alias for the same official stripe-mock API path; do not add a second WebStorm launcher for it unless explicitly requested.
-- Focused backend/frontend scripts remain available from the terminal, not committed IDE run configs.
+- Other focused backend/frontend scripts remain available from the terminal, not committed IDE run configs.
 - The static-site launcher remains pinned to `http://127.0.0.1:4321/blackbox-records/`.
 - If port `4321` is already in use, the static-site launcher fails fast instead of silently switching ports.
 - Local D1 comes from Wrangler automatically during Worker dev; no separate D1 process is part of the run-config flow.

@@ -5,7 +5,7 @@
 - Worker-owned StoreItem/Variant lookup and StartCheckout APIs exist.
 - Worker-owned checkout-status retrieval exists for return/retry states.
 - Static frontend checkout route uses backend APIs, not Stripe secrets.
-- Embedded Checkout mounts and returns cleanly in sandbox.
+- Hosted Checkout redirects and returns cleanly in sandbox.
 - Browser pages remain non-authoritative for paid state.
 - Shopper-facing checkout URLs describe the sellable item option rather than legacy release shorthand.
 - Cart icon, cart drawer, and checkout summary remain single-item and do not introduce browser-owned commerce authority.
@@ -29,8 +29,8 @@
 
 ## 07-09 Validation Evidence
 
-- 2026-04-25: Checkout page was rebuilt around a Shopify-like order summary and payment panel. Direct checkout loads render `Order Summary`, the canonical item option, subtotal, secure Stripe copy, and the existing Worker-read embedded Checkout island without relying on StoreCart state.
-- 2026-04-25: Codex Browser Use verified `/blackbox-records/store/disintegration-black-vinyl-lp/checkout/` through the local stripe-mock stack. The page rendered `Order Summary`, `Disintegration`, `Afterwise`, `Black Vinyl LP`, `Subtotal`, secure Stripe copy, checkout status, and the embedded Checkout mount; clicking `Checkout` rendered the local `Mock Checkout Started` handoff panel with no browser console errors.
+- 2026-04-25: Checkout page was rebuilt around a Shopify-like order summary and payment panel. Direct checkout loads render `Order Summary`, the canonical item option, subtotal, secure Stripe copy, and the Worker-read checkout status without relying on StoreCart state.
+- 2026-04-25: Codex Browser Use verified `/blackbox-records/store/disintegration-black-vinyl-lp/checkout/` through the local stripe-mock stack. The page rendered `Order Summary`, `Disintegration`, `Afterwise`, `Black Vinyl LP`, `Subtotal`, secure Stripe copy, and checkout status; clicking `Checkout` rendered the local mock handoff with no browser console errors.
 
 ## 07-10 Validation Evidence
 
@@ -67,17 +67,16 @@
 
 ## 07-16 Validation Attempt
 
-- 2026-04-25: Added `pnpm checkout:preflight:stripe-test` so real Stripe test checkout validation fails before starting servers when local-only setup is incomplete. The command checks the browser publishable key, backend `.dev.vars` secret, ignored local Stripe test seed, and gitignore protection without printing secret values.
-- 2026-04-25: `pnpm checkout:preflight:stripe-test` is currently blocked on this machine: `PUBLIC_STRIPE_PUBLISHABLE_KEY` is unset, `apps/backend/.dev.vars` is missing, and ignored `apps/backend/prisma/seeds/local-stripe-test-state.sql` is missing. Because real Stripe test credentials and a real test Price mapping are unavailable, 07-16 is not complete and no Stripe sandbox Browser Use evidence has been recorded.
-- Smallest next action: add local-only `pk_test_*`, `sk_test_*`, and `price_*` values following README setup, rerun `pnpm checkout:preflight:stripe-test`, then run the local stripe-test stack and Browser Use validation. Sandbox validation still also requires Cloudflare sandbox access plus a real sandbox `VariantStripeMapping` applied without committing Price IDs.
+- 2026-04-25: Added `pnpm checkout:preflight:stripe-test` so real Stripe test checkout validation fails before starting servers when local-only setup is incomplete. The command checks the backend `.dev.vars` secret, ignored local Stripe test seed, and gitignore protection without printing secret values.
+- 2026-04-25: `pnpm checkout:preflight:stripe-test` was blocked on this machine because `apps/backend/.dev.vars` and ignored `apps/backend/prisma/seeds/local-stripe-test-state.sql` were missing. Because real Stripe test credentials and a real test Price mapping were unavailable, 07-16 was not complete and no Stripe sandbox Browser Use evidence was recorded at that time.
+- 2026-05-17: Stripe sandbox access, Worker secrets, sandbox Price mappings, and automated hosted Checkout smoke evidence now satisfy 07-16 for sandbox/test mode.
 
-## Stripe Access Deferred Gate
+## Stripe Sandbox UAT Gate
 
-- 2026-04-25: GSD was rescoped because Stripe account access is not currently available. Real Stripe Checkout validation, real products/prices, real webhook signing, remote sandbox payment evidence, and Phase 10 full sandbox evidence are deferred until access exists.
-- Do now without Stripe account: D1/Prisma order schema, repository seams, typed transition guard, generated API/client contract checks, fixture-based webhook route shape, docs, and local Browser Use smoke checks through `pnpm dev:stack:stripe-mock`.
-- Prepare now, validate later: Stripe setup checklist, preflight checks, ignored mapping seed examples, fixture tests, sandbox runbook, and expected non-committed secrets/mappings documentation.
-- This rescope does not treat real Stripe validation as passed. It only unblocks non-secret Phase 8 backend order groundwork while preserving 07-16 as a required validation gate before sandbox/release approval.
+- 2026-05-17: Real Stripe sandbox Checkout validation, real products/prices, real webhook signing, remote sandbox payment evidence, and Phase 10 sandbox evidence are complete for sandbox UAT.
+- Raw evidence remains ignored under `.codex-artifacts/stripe-sandbox-smoke/`.
+- This does not approve live-mode payments, production D1, production deployment switch, or BOX NOW automation.
 
 ---
 
-_Validation completed: 2026-04-20; Shopify UX validation addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25; 07-08 Browser Use verification added: 2026-04-25; 07-09 checkout summary Browser Use evidence added: 2026-04-25; 07-10 checkout return Browser Use evidence added: 2026-04-25; 07-11 checkout browser hardening evidence added: 2026-04-25; 07-12 store candidacy Browser Use evidence added: 2026-04-25; 07-13 local mock commerce seed evidence added: 2026-04-25; 07-14 local mock readiness command evidence added: 2026-04-25; 07-15 local mock Browser Use UAT evidence added: 2026-04-25; 07-16 preflight blocker recorded: 2026-04-25; Stripe access deferred gate recorded: 2026-04-25_
+_Validation completed: 2026-04-20; Shopify UX validation addendum added: 2026-04-24; all-items mock readiness addendum added: 2026-04-25; 07-08 Browser Use verification added: 2026-04-25; 07-09 checkout summary Browser Use evidence added: 2026-04-25; 07-10 checkout return Browser Use evidence added: 2026-04-25; 07-11 checkout browser hardening evidence added: 2026-04-25; 07-12 store candidacy Browser Use evidence added: 2026-04-25; 07-13 local mock commerce seed evidence added: 2026-04-25; 07-14 local mock readiness command evidence added: 2026-04-25; 07-15 local mock Browser Use UAT evidence added: 2026-04-25; 07-16 preflight blocker recorded: 2026-04-25; Stripe sandbox UAT gate satisfied: 2026-05-17_

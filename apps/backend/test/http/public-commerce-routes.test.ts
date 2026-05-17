@@ -150,10 +150,10 @@ describe('public commerce routes', () => {
     });
   });
 
-  it('starts embedded checkout with app identity only for manual BOX NOW fulfillment', async () => {
+  it('starts hosted Checkout with app identity only for manual BOX NOW fulfillment', async () => {
     mockStartCheckout.mockResolvedValueOnce({
       checkoutSessionId: 'cs_test_123',
-      clientSecret: 'cs_test_123_secret_abc',
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
     });
 
     const app = createHttpApp();
@@ -175,21 +175,22 @@ describe('public commerce routes', () => {
     );
 
     expect(mockStartCheckout).toHaveBeenCalledWith({
-      returnUrl:
+      cancelUrl: 'https://blackbox.example/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
+      successUrl:
         'https://blackbox.example/blackbox-records/store/disintegration-black-vinyl-lp/checkout/return?session_id={CHECKOUT_SESSION_ID}',
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
     });
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      clientSecret: 'cs_test_123_secret_abc',
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
     });
   });
 
   it('accepts checkout starts without a shipping locker snapshot', async () => {
     mockStartCheckout.mockResolvedValueOnce({
       checkoutSessionId: 'cs_test_123',
-      clientSecret: 'cs_test_123_secret_abc',
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
     });
 
     const app = createHttpApp();

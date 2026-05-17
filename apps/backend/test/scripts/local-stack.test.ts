@@ -88,29 +88,16 @@ describe('local stack launcher plan', () => {
     ]);
   });
 
-  it('requires a publishable key only for the real Stripe test stack', () => {
-    expect(
-      readRequiredEnvironmentIssues(
-        'stripe-test',
-        {
-          PUBLIC_STRIPE_PUBLISHABLE_KEY: '',
-        },
-        new Set(['STRIPE_SECRET_KEY']),
-      ),
-    ).toContain('PUBLIC_STRIPE_PUBLISHABLE_KEY is required for dev:stack:stripe-test.');
-
-    expect(readRequiredEnvironmentIssues('stripe-mock', {}, new Set(['STRIPE_SECRET_KEY']))).not.toContain(
-      'PUBLIC_STRIPE_PUBLISHABLE_KEY is required for dev:stack:stripe-test.',
-    );
-    expect(readRequiredEnvironmentIssues('stripe-mock-api', {}, new Set(['STRIPE_SECRET_KEY']))).not.toContain(
-      'PUBLIC_STRIPE_PUBLISHABLE_KEY is required for dev:stack:stripe-test.',
-    );
+  it('does not require a publishable key for hosted Checkout redirect stacks', () => {
+    expect(readRequiredEnvironmentIssues('stripe-test', {}, new Set(['STRIPE_SECRET_KEY']))).toEqual([]);
+    expect(readRequiredEnvironmentIssues('stripe-mock', {}, new Set(['STRIPE_SECRET_KEY']))).toEqual([]);
+    expect(readRequiredEnvironmentIssues('stripe-mock-api', {}, new Set(['STRIPE_SECRET_KEY']))).toEqual([]);
   });
 
   it('requires a backend Stripe secret only for the real Stripe test stack', () => {
-    expect(
-      readRequiredEnvironmentIssues('stripe-test', { PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_test_key' }, new Set()),
-    ).toContain('apps/backend/.dev.vars must define STRIPE_SECRET_KEY for dev:stack:stripe-test.');
+    expect(readRequiredEnvironmentIssues('stripe-test', {}, new Set())).toContain(
+      'apps/backend/.dev.vars must define STRIPE_SECRET_KEY for dev:stack:stripe-test.',
+    );
 
     expect(readRequiredEnvironmentIssues('stripe-mock', {}, new Set())).toEqual([]);
     expect(readRequiredEnvironmentIssues('stripe-mock-api', {}, new Set())).toEqual([]);

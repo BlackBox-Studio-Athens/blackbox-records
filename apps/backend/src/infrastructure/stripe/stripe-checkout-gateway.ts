@@ -2,8 +2,8 @@ import Stripe from 'stripe';
 
 import type {
   CheckoutGateway,
-  EmbeddedCheckoutSession,
-  EmbeddedCheckoutSessionRequest,
+  HostedCheckoutSession,
+  HostedCheckoutSessionRequest,
   StripeCheckoutSessionState,
 } from '../../application/commerce/checkout/spi';
 import { CheckoutConfigurationError } from '../../application/commerce/checkout';
@@ -18,9 +18,7 @@ type StripeProtocol = NonNullable<StripeClientOptions['protocol']>;
 export class StripeCheckoutGateway implements CheckoutGateway {
   public constructor(private readonly stripe: Stripe) {}
 
-  public async createEmbeddedCheckoutSession(
-    request: EmbeddedCheckoutSessionRequest,
-  ): Promise<EmbeddedCheckoutSession> {
+  public async createHostedCheckoutSession(request: HostedCheckoutSessionRequest): Promise<HostedCheckoutSession> {
     const resolvedLineItems =
       request.lineItems ??
       (request.storeItemSlug && request.stripePriceId && request.variantId
@@ -36,38 +34,35 @@ export class StripeCheckoutGateway implements CheckoutGateway {
     const metadataLineItem = resolvedLineItems[0];
     const session = await this.stripe.checkout.sessions.create({
       line_items: resolvedLineItems.map((lineItem) => ({
-        adjustable_quantity: {
-          enabled: true,
-          maximum: lineItem.adjustableQuantityMaximum ?? lineItem.quantity,
-          minimum: 1,
-        },
         price: lineItem.stripePriceId,
         quantity: lineItem.quantity,
       })),
+      cancel_url: request.cancelUrl,
       metadata: metadataLineItem
         ? {
             storeItemSlug: metadataLineItem.storeItemSlug,
             variantId: metadataLineItem.variantId,
           }
         : undefined,
+      locale: 'en',
       mode: 'payment',
+      payment_method_types: ['card'],
       phone_number_collection: {
         enabled: true,
       },
-      return_url: request.returnUrl,
       shipping_address_collection: {
         allowed_countries: ['GR'],
       },
-      ui_mode: 'embedded_page',
+      success_url: request.successUrl,
     });
 
-    if (!session.client_secret) {
-      throw new CheckoutConfigurationError('Stripe did not return a Checkout client secret.');
+    if (!session.url) {
+      throw new CheckoutConfigurationError('Stripe did not return a hosted Checkout URL.');
     }
 
     return {
       checkoutSessionId: session.id,
-      clientSecret: session.client_secret,
+      checkoutUrl: session.url,
     };
   }
 

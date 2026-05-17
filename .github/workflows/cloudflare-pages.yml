@@ -53,7 +53,6 @@ jobs:
           ASTRO_SITE_URL: https://blackbox-records-web.pages.dev
           ASTRO_BASE_PATH: /
           PUBLIC_BACKEND_BASE_URL: ${{ vars.PUBLIC_BACKEND_BASE_URL }}
-          PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ vars.PUBLIC_STRIPE_PUBLISHABLE_KEY }}
         run: pnpm build
 
       - name: Deploy static frontend to Cloudflare Pages

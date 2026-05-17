@@ -71,7 +71,7 @@ const startCheckoutBodySchema = z
 
 const startCheckoutResponseSchema = z
   .object({
-    clientSecret: z.string(),
+    checkoutUrl: z.string().url(),
   })
   .openapi('StartCheckoutResponse');
 
@@ -174,7 +174,7 @@ export const postCheckoutSessionRoute = createRoute({
           schema: startCheckoutResponseSchema,
         },
       },
-      description: 'Created an embedded Stripe Checkout Session.',
+      description: 'Created a hosted Stripe Checkout Session.',
     },
     400: {
       content: {

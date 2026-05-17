@@ -6,7 +6,7 @@ This checklist proves the no-account native commerce loop locally. It uses the o
 Mock Checkout Panel, Stripe Checkout shipping-address collection, signed webhook fixtures, local D1, and protected
 internal order readback.
 
-This is not Stripe test-mode evidence. It prepares repeatable local UAT while the Stripe Access Gate remains deferred.
+This is not Stripe test-mode evidence. It remains the repeatable local UAT path; hosted Stripe sandbox evidence is recorded separately in `10-VALIDATION.md`.
 
 ## Prerequisites
 
@@ -121,7 +121,7 @@ Expected recap:
 
 ## Known Limits
 
-- This local loop does not satisfy the Stripe Access Gate.
+- This local loop is not the hosted Stripe sandbox evidence; use `10-VALIDATION.md` for the completed sandbox UAT gate.
 - BOX NOW is closed for the current manual v1 scope; this local loop does not reopen future portal/API integration.
 - This local loop does not prove Cloudflare sandbox Worker, remote D1, real Stripe Checkout, real Stripe webhooks, or BOX NOW partner-portal fulfillment.
 - Production cutover remains out of scope.

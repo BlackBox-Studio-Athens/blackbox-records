@@ -92,12 +92,13 @@
       "StartCheckoutResponse": {
         "type": "object",
         "properties": {
-          "clientSecret": {
-            "type": "string"
+          "checkoutUrl": {
+            "type": "string",
+            "format": "uri"
           }
         },
         "required": [
-          "clientSecret"
+          "checkoutUrl"
         ]
       },
       "StartCheckoutBody": {
@@ -346,7 +347,7 @@
         },
         "responses": {
           "200": {
-            "description": "Created an embedded Stripe Checkout Session.",
+            "description": "Created a hosted Stripe Checkout Session.",
             "content": {
               "application/json": {
                 "schema": {

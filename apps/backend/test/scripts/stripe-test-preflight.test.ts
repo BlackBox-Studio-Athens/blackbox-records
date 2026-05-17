@@ -7,9 +7,7 @@ import {
 
 const validInput = {
   devVarsText: 'STRIPE_SECRET_KEY=sk_test_real_secret\n',
-  env: {
-    PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_test_real_publishable',
-  },
+  env: {},
   gitignoreText: 'apps/backend/prisma/seeds/local-stripe-test-state.sql\n',
   seedSqlText: "INSERT INTO VariantStripeMapping VALUES ('variant', 'variant_barren-point_standard', 'price_real');",
 };
@@ -20,24 +18,6 @@ describe('Stripe test checkout preflight', () => {
 
     expect(result.issues).toEqual([]);
     expect(formatStripeTestCheckoutPreflightReport(result)).toBe('Stripe test checkout preflight OK.');
-  });
-
-  it('requires a real Stripe test publishable key', () => {
-    expect(
-      checkStripeTestCheckoutPreflight({
-        ...validInput,
-        env: {},
-      }).issues,
-    ).toContain('PUBLIC_STRIPE_PUBLISHABLE_KEY must be set to a real Stripe test publishable key (pk_test_...).');
-
-    expect(
-      checkStripeTestCheckoutPreflight({
-        ...validInput,
-        env: {
-          PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_test_mock',
-        },
-      }).issues,
-    ).toContain('PUBLIC_STRIPE_PUBLISHABLE_KEY must be set to a real Stripe test publishable key (pk_test_...).');
   });
 
   it('requires a real Stripe test secret key in backend dev vars', () => {
@@ -114,6 +94,5 @@ describe('Stripe test checkout preflight', () => {
     expect(report).toContain('Stripe test checkout preflight failed:');
     expect(report).toContain('Set STRIPE_SECRET_KEY in apps/backend/.dev.vars to a real sk_test_ value.');
     expect(report).not.toContain('sk_test_real_secret');
-    expect(report).not.toContain('pk_test_real_publishable');
   });
 });

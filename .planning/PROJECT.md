@@ -28,7 +28,7 @@ Ship a minimal native commerce flow that is operationally safe: the static site 
 - protected internal stock operations surface on a separate backend hostname for label staff
 - D1-led stock ledger around `Variant`, `Stock`, `StockChange`, and `StockCount`, with a conservative `OnlineStock` quantity for the public storefront
 - Greece-only manual BOX NOW fulfillment with Stripe-collected address/contact details before payment
-- Shopify-familiar single-item cart affordances and Stripe embedded Checkout in sandbox with Worker-created Checkout Sessions
+- Shopify-familiar single-item cart affordances and Stripe-hosted Checkout in sandbox with Worker-created Checkout Sessions
 - all-current-items local mock checkout readiness for current distro and release items without treating fake local stock as real label inventory
 - completed Cloudflare Pages static frontend migration before webhook/order/shipping verification depends on final hosted origins
 - D1-backed order and stock state driven by verified Stripe webhooks hitting the Worker backend
@@ -98,7 +98,7 @@ The new inserted Phase 5.1 is the architecture gate for this split. It must lock
 
 Current repo facts shape that decision. `releases` already reference `artists`, while `distro` carries editorial card content and Fourthwall URLs but no sellable identity or stock model. That makes a projection layer necessary. The projection should not stuff temporary commerce fields directly into the editorial collections. Instead, it should produce a stable `StoreItem` view and link that to sellable `Variant` identities through Worker-side mappings.
 
-That frontend projection layer is now live. `/store/` is the canonical native storefront route, `/shop/` is a compatibility redirect, release pages route into canonical store PDPs when mapped, distro cards route into the same PDP system, and the static checkout shell is in place for the later Worker-backed embedded Checkout flow. Phase 7 corrected the first route-identity problem: a shopper buying the Black Vinyl LP option for Afterwise's `Disintegration` now sees `/store/disintegration-black-vinyl-lp/`, while legacy `/store/barren-point/` remains a compatibility redirect.
+That frontend projection layer is now live. `/store/` is the canonical native storefront route, `/shop/` is a compatibility redirect, release pages route into canonical store PDPs when mapped, distro cards route into the same PDP system, and the static checkout shell is in place for the Worker-backed hosted Checkout flow. Phase 7 corrected the first route-identity problem: a shopper buying the Black Vinyl LP option for Afterwise's `Disintegration` now sees `/store/disintegration-black-vinyl-lp/`, while legacy `/store/barren-point/` remains a compatibility redirect.
 
 Current inventory knowledge also shapes Phase 7. The current site items are real sellable items across both distro and releases, but real quantities are not yet counted. Local stripe-mock checkout readiness may therefore use fake development stock and mock Stripe mappings for every current item so the buying path is testable, while sandbox and production buyability still require staff-recorded D1 stock counts and real Stripe mappings.
 

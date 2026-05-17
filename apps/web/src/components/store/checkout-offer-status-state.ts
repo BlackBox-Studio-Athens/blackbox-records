@@ -4,7 +4,6 @@ import {
   type PublicStoreOffer,
   type StoreCapabilities,
 } from '../../lib/backend/public-checkout-api';
-import type { EmbeddedCheckoutAdapter, EmbeddedCheckoutMount } from '../../lib/backend/stripe-embedded-checkout';
 import type { CartLine } from '../../lib/store-cart';
 
 export type CheckoutOfferInitialAvailability = {
@@ -67,9 +66,7 @@ export function createInitialCheckoutOfferView(
   return {
     badgeLabel: 'Checking checkout',
     canStartCheckout: false,
-    detail: initialAvailability.canBuy
-      ? 'Confirming checkout eligibility before payment opens.'
-      : 'Static store data says this item is not currently buyable.',
+    detail: initialAvailability.canBuy ? 'Checking secure checkout.' : 'This item is not currently buyable.',
     isReady: false,
     statusLabel: initialAvailability.label,
     tone: 'loading',
@@ -129,7 +126,7 @@ export function createCheckoutOfferView(loadState: CheckoutOfferLoadState): Chec
   return {
     badgeLabel: 'Checkout ready',
     canStartCheckout: true,
-    detail: `Checkout is ready for ${loadState.variants.length} item option${loadState.variants.length === 1 ? '' : 's'}.`,
+    detail: 'You will finish payment on Stripe.',
     isReady: true,
     statusLabel: loadState.offer.availability.label,
     tone: 'ready',
@@ -137,42 +134,29 @@ export function createCheckoutOfferView(loadState: CheckoutOfferLoadState): Chec
   };
 }
 
-export type EmbeddedCheckoutStartState =
+export type HostedCheckoutStartState =
   | {
-      kind: 'mounted';
-      mount: EmbeddedCheckoutMount;
+      checkoutUrl: string;
+      kind: 'redirect';
     }
   | {
       kind: 'error';
       message: string;
     };
 
-export type EmbeddedCheckoutStartInput = {
+export type HostedCheckoutStartInput = {
   api: PublicCheckoutApi;
-  checkoutAdapter: EmbeddedCheckoutAdapter;
   lines?: CartLine[];
-  mountTarget: HTMLElement;
   storeItemSlug: string;
   variantId: string;
 };
 
-export async function startEmbeddedCheckout({
+export async function startHostedCheckout({
   api,
-  checkoutAdapter,
   lines,
-  mountTarget,
   storeItemSlug,
   variantId,
-}: EmbeddedCheckoutStartInput): Promise<EmbeddedCheckoutStartState> {
-  const configurationError = checkoutAdapter.getConfigurationError();
-
-  if (configurationError) {
-    return {
-      kind: 'error',
-      message: configurationError,
-    };
-  }
-
+}: HostedCheckoutStartInput): Promise<HostedCheckoutStartState> {
   try {
     const checkoutLines =
       lines && lines.length > 0
@@ -188,27 +172,22 @@ export async function startEmbeddedCheckout({
         (checkoutLines[0]!.quantity !== 1 ||
           checkoutLines[0]!.storeItemSlug !== storeItemSlug ||
           checkoutLines[0]!.variantId !== variantId));
-    const { clientSecret } = await api.startCheckout({
+    const { checkoutUrl } = await api.startCheckout({
       ...(shouldSendMultiLineContract ? { lines: checkoutLines } : {}),
       storeItemSlug,
       variantId,
     });
 
-    if (typeof clientSecret !== 'string' || !clientSecret.trim()) {
+    if (typeof checkoutUrl !== 'string' || !checkoutUrl.trim()) {
       return {
         kind: 'error',
-        message: 'Checkout could not be opened. Please retry shortly.',
+        message: 'Stripe checkout could not be opened. Please retry shortly.',
       };
     }
 
-    const mount = await checkoutAdapter.mountEmbeddedCheckout({
-      clientSecret,
-      mountTarget,
-    });
-
     return {
-      kind: 'mounted',
-      mount,
+      checkoutUrl,
+      kind: 'redirect',
     };
   } catch (error) {
     return {

@@ -1,10 +1,10 @@
 export type { FeatureFlagReader } from './feature-gates';
 export type {
   CheckoutGateway,
-  EmbeddedCheckoutSession,
-  EmbeddedCheckoutSessionLineItem,
-  EmbeddedCheckoutSessionRequest,
+  CheckoutSessionLineItem,
   FinalizedCheckoutSessionLineItem,
+  HostedCheckoutSession,
+  HostedCheckoutSessionRequest,
   StripeCheckoutPaymentStatus,
   StripeCheckoutSessionState,
   StripeCheckoutSessionStatus,
