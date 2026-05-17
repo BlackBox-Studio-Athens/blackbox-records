@@ -19,23 +19,23 @@ colors:
   store-blood-active: '#cf6b80'
 typography:
   display:
-    fontFamily: 'Bebas Neue, Impact, sans-serif'
-    fontSize: 'clamp(3.2rem, 14vw, 5.6rem)'
-    fontWeight: 400
-    lineHeight: 0.96
+    fontFamily: 'Veneer, Bebas Neue, Impact, sans-serif'
+    fontSize: 'clamp(2.35rem, 8.5vw, 4.15rem)'
+    fontWeight: 900
+    lineHeight: 0.98
     letterSpacing: '0.04em'
   headline:
-    fontFamily: 'Bebas Neue, Impact, sans-serif'
-    fontSize: 'clamp(2rem, 10vw, 3.1rem)'
-    fontWeight: 400
-    lineHeight: 0.96
-    letterSpacing: '0.06em'
+    fontFamily: 'Veneer, Bebas Neue, Impact, sans-serif'
+    fontSize: 'clamp(1.7rem, 6vw, 2.65rem)'
+    fontWeight: 900
+    lineHeight: 0.98
+    letterSpacing: '0.04em'
   title:
-    fontFamily: 'Bebas Neue, Impact, sans-serif'
-    fontSize: '2rem'
-    fontWeight: 400
-    lineHeight: 1
-    letterSpacing: '0.08em'
+    fontFamily: 'Veneer, Bebas Neue, Impact, sans-serif'
+    fontSize: 'clamp(1.55rem, 4.6vw, 2.05rem)'
+    fontWeight: 900
+    lineHeight: 0.98
+    letterSpacing: '0.035em'
   body:
     fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif'
     fontSize: '0.95rem'
@@ -140,24 +140,25 @@ The palette is near-black and off-white with two muted red families for section-
 
 ## 3. Typography
 
-**Display Font:** Bebas Neue, with Impact and sans-serif fallback.
+**Brand Display Font:** Veneer, with Bebas Neue, Impact, and sans-serif fallback.
+**UI Display Font:** Bebas Neue, with Impact and sans-serif fallback.
 **Body Font:** Inter, with Helvetica Neue, Arial, and sans-serif fallback.
 **Label/Mono Font:** Geist Mono, with Courier New and monospace fallback.
 
-**Character:** Display type is compressed, loud, and poster-like. Body type is quiet, practical, and readable, with labels pushed into uppercase tracking for editorial metadata.
+**Character:** Brand display type is physical, letterpress, loud, and poster-like. UI display type stays compressed and clean for dense cards and controls. Body type is quiet, practical, and readable, with labels pushed into uppercase tracking for editorial metadata.
 
 ### Hierarchy
 
-- **Display** (400, `clamp(3.2rem, 14vw, 5.6rem)`, 0.96 line-height): Home, artist, release, checkout, and section-defining headings.
-- **Headline** (400, `clamp(2rem, 10vw, 3.1rem)`, 0.96 line-height): Route intros, group headings, service panels, and feature banners.
-- **Title** (400, `2rem`, 1 line-height): Card titles, cart item titles, order summaries, and compact panels.
+- **Display** (900, `clamp(2.35rem, 8.5vw, 4.15rem)`, 0.98 line-height): Veneer for homepage hero, public route heroes, artist detail H1s, and major release/artist feature titles.
+- **Headline** (900, `clamp(1.7rem, 6vw, 2.65rem)`, 0.98 line-height): Veneer for public section titles, distro group headings, service offering titles, and editorial route panels.
+- **Title** (900, `clamp(1.55rem, 4.6vw, 2.05rem)`, 0.98 line-height): Veneer for public artist, release, distro, store, and service content titles.
 - **Body** (400, `0.95rem`, 1.7 line-height): Paragraph copy, service descriptions, checkout explanations, and artist profile text. Keep long prose near 65 to 75 characters per line.
 - **Label** (500, `0.72rem`, 0.22em tracking): Eyebrows, metadata, nav labels, status labels, and section kickers.
 - **Mono** (400, `0.74rem`, 0.12em tracking): Technical-feeling but public-safe small metadata where monospace is already used.
 
 ### Named Rules
 
-**The Poster Over Dashboard Rule.** Use Bebas Neue for identity and rhythm, not for dense controls. When a surface is operational, reduce display scale before it starts reading as a poster.
+**The Public Title Rule.** Veneer owns public content titles: artist names, release names, distro/store item names, service offering titles, group headings, route heroes, and major editorial feature titles. Bebas Neue remains the compact UI display face for navigation, buttons, prices, cart, checkout, stock operations, order summaries, metadata-heavy panels, and any surface where texture would slow scanning.
 
 **The Metadata Is Quiet Rule.** Labels may be uppercase and tracked, but they stay small. Do not let metadata compete with release, artist, or item names.
 
@@ -228,7 +229,7 @@ The embedded player is a shell-level continuity feature, not page-local decorati
 
 ### Signature Component: Catalog Tile
 
-Catalog tiles are hard-edged, image-led modules. They use square artwork frames, muted metadata rows, large Bebas Neue titles, and subtle image scale on hover. Do not turn them into rounded ecommerce product cards.
+Catalog tiles are hard-edged, image-led modules. They use square artwork frames, muted metadata rows, Veneer content titles, and subtle image scale on hover. Do not turn them into rounded ecommerce product cards.
 
 ## 6. Do's and Don'ts
 

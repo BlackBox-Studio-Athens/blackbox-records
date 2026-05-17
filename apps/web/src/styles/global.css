@@ -11,7 +11,7 @@
   --radius-xl: calc(var(--radius) + 4px);
 
   --font-sans: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-  --font-display: 'Bebas Neue', 'Impact', sans-serif;
+  --font-display: var(--font-display-ui);
   --font-mono: 'Geist Mono', 'Courier New', monospace;
 
   --color-background: var(--background);
@@ -36,6 +36,8 @@
 
 :root {
   --radius: 0.35rem;
+  --font-display-ui: 'Bebas Neue', 'Impact', sans-serif;
+  --font-display-brand: 'Veneer', 'Bebas Neue', 'Impact', sans-serif;
   --header-height: 80px;
   --header-padding-x-mobile: 18px;
   --header-padding-x-desktop: 32px;
@@ -297,6 +299,64 @@
     @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
   }
 
+  .brand-display-title {
+    font-family: var(--font-display-brand);
+    font-size: clamp(2.35rem, 8.5vw, 4.15rem);
+    line-height: 0.98;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .brand-feature-title {
+    font-family: var(--font-display-brand);
+    font-size: clamp(2.65rem, 12vw, 4.85rem);
+    line-height: 0.94;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .brand-section-title {
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.7rem, 6vw, 2.65rem);
+    line-height: 0.98;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .brand-card-title {
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.55rem, 4.6vw, 2.05rem);
+    line-height: 0.98;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .brand-card-title--compact {
+    font-size: clamp(1.1rem, 3vw, 1.45rem);
+    line-height: 1.04;
+    letter-spacing: 0.03em;
+  }
+
+  .internal-page-hero__title {
+    font-family: var(--font-display-brand);
+    font-size: clamp(2.35rem, 8.5vw, 4.15rem);
+    line-height: 0.98;
+    letter-spacing: 0.035em;
+    text-wrap: balance;
+  }
+
+  .release-detail-page-title {
+    font-family: var(--font-display-brand);
+    font-size: clamp(2.35rem, 8.5vw, 4.15rem);
+    line-height: 0.98;
+    letter-spacing: 0.035em;
+    text-wrap: balance;
+  }
+
   .surface-card {
     @apply border-border/70 bg-card/85;
   }
@@ -352,10 +412,10 @@
   }
 
   .services-page-intro__title {
-    font-family: var(--font-display);
-    font-size: clamp(2.65rem, 13vw, 4.55rem);
-    line-height: 0.94;
-    letter-spacing: 0.068em;
+    font-family: var(--font-display-brand);
+    font-size: clamp(2.15rem, 9.5vw, 3.35rem);
+    line-height: 0.98;
+    letter-spacing: 0.035em;
     text-transform: uppercase;
     color: var(--foreground);
   }
@@ -448,11 +508,12 @@
   .services-service-section__media-title,
   .services-process-section__title,
   .services-inquiry-section__title {
-    font-family: var(--font-display);
-    font-size: clamp(2rem, 9.5vw, 3.1rem);
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.7rem, 6vw, 2.65rem);
     line-height: 0.98;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
+    text-wrap: balance;
   }
 
   .services-service-section__panel {
@@ -533,11 +594,12 @@
   }
 
   .services-process-card__title {
-    font-family: var(--font-display);
-    font-size: 1.4rem;
-    line-height: 1;
-    letter-spacing: 0.06em;
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.15rem, 3vw, 1.45rem);
+    line-height: 1.04;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
+    text-wrap: balance;
   }
 
   .services-inquiry-section {
@@ -811,11 +873,12 @@
   }
 
   .distro-card__title {
-    font-family: var(--font-display);
-    font-size: clamp(1.7rem, 5vw, 2.4rem);
-    letter-spacing: 0.04em;
-    line-height: 0.96;
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.55rem, 4.6vw, 2.05rem);
+    letter-spacing: 0.035em;
+    line-height: 0.98;
     text-transform: uppercase;
+    text-wrap: balance;
     color: var(--foreground);
   }
 
@@ -863,13 +926,21 @@
     text-transform: uppercase;
   }
 
-  .distro-page-intro__title,
-  .distro-group-section__title {
-    font-family: var(--font-display);
-    font-size: clamp(2rem, 10vw, 3.1rem);
-    letter-spacing: 0.06em;
-    line-height: 0.96;
+  .distro-page-intro__title {
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.7rem, 7vw, 2.35rem);
+    letter-spacing: 0.035em;
+    line-height: 0.98;
     text-transform: uppercase;
+  }
+
+  .distro-group-section__title {
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.7rem, 6vw, 2.65rem);
+    letter-spacing: 0.04em;
+    line-height: 0.98;
+    text-transform: uppercase;
+    text-wrap: balance;
   }
 
   .distro-page-intro__copy,
@@ -1015,10 +1086,10 @@
 
   .artist-latest-teaser__title {
     color: var(--foreground);
-    font-family: var(--font-display);
-    font-size: 1.05rem;
-    line-height: 1.12;
-    letter-spacing: 0.055em;
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.1rem, 3vw, 1.45rem);
+    line-height: 1.04;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
     text-wrap: balance;
   }
@@ -1136,10 +1207,10 @@
 
   .artist-detail-title {
     margin: 0;
-    font-family: var(--font-display);
-    font-size: clamp(3.2rem, 14vw, 5.6rem);
-    line-height: 0.88;
-    letter-spacing: 0.025em;
+    font-family: var(--font-display-brand);
+    font-size: clamp(2.45rem, 10vw, 4.2rem);
+    line-height: 0.94;
+    letter-spacing: 0.015em;
     text-transform: none;
     text-wrap: balance;
   }
@@ -1293,11 +1364,13 @@
 
   .artist-latest-release-panel__title {
     color: var(--foreground);
-    font-family: var(--font-display);
-    font-size: clamp(2rem, 8vw, 3rem);
-    line-height: 0.92;
-    letter-spacing: 0.04em;
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.7rem, 6vw, 2.55rem);
+    line-height: 0.98;
+    letter-spacing: 0.035em;
     text-decoration: none;
+    text-transform: uppercase;
+    text-wrap: balance;
   }
 
   .artist-latest-release-panel__title:hover,
@@ -1388,11 +1461,12 @@
 
   .artist-detail-section-title {
     margin: 0;
-    font-family: var(--font-display);
-    font-size: clamp(2.25rem, 8vw, 4rem);
-    line-height: 0.94;
-    letter-spacing: 0.07em;
+    font-family: var(--font-display-brand);
+    font-size: clamp(2rem, 7vw, 3.4rem);
+    line-height: 0.98;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
+    text-wrap: balance;
   }
 
   .artist-detail-discography-grid {
@@ -1436,10 +1510,10 @@
 
   .artist-previous-release__title {
     overflow: hidden;
-    font-family: var(--font-display);
-    font-size: 1.55rem;
-    line-height: 0.96;
-    letter-spacing: 0.05em;
+    font-family: var(--font-display-brand);
+    font-size: 1.35rem;
+    line-height: 1;
+    letter-spacing: 0.03em;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -1489,10 +1563,10 @@
 
   .artist-detail-empty-state__label {
     color: var(--foreground);
-    font-family: var(--font-display);
-    font-size: 1.35rem;
-    line-height: 1;
-    letter-spacing: 0.08em;
+    font-family: var(--font-display-brand);
+    font-size: 1.2rem;
+    line-height: 1.04;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
   }
 
@@ -1557,10 +1631,10 @@
 
   .artist-detail-route-link__label {
     color: inherit;
-    font-family: var(--font-display);
-    font-size: clamp(1.8rem, 8vw, 2.35rem);
-    line-height: 0.9;
-    letter-spacing: 0.055em;
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.55rem, 6vw, 2rem);
+    line-height: 0.98;
+    letter-spacing: 0.035em;
     text-transform: uppercase;
   }
 
@@ -1638,10 +1712,11 @@
   .home-section-header__title {
     margin: 0;
     color: var(--foreground);
-    font-family: var(--font-display);
-    font-size: clamp(2.2rem, 5.6vw, 3.35rem);
-    line-height: 0.94;
-    letter-spacing: 0.045em;
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.7rem, 6vw, 2.65rem);
+    line-height: 0.98;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     text-wrap: balance;
   }
 
@@ -1739,10 +1814,10 @@
     width: fit-content;
     margin-top: 0.5rem;
     color: var(--foreground);
-    font-family: var(--font-display);
-    font-size: clamp(3.4rem, 18vw, 6.5rem);
-    line-height: 0.9;
-    letter-spacing: 0.04em;
+    font-family: var(--font-display-brand);
+    font-size: clamp(2.65rem, 12vw, 4.85rem);
+    line-height: 0.94;
+    letter-spacing: 0.025em;
     overflow-wrap: anywhere;
     text-transform: uppercase;
   }
@@ -1811,10 +1886,10 @@
     display: inline-block;
     margin-top: 0.45rem;
     color: #f2efea;
-    font-family: var(--font-display);
-    font-size: clamp(2.25rem, 12vw, 3rem);
-    line-height: 0.95;
-    letter-spacing: 0.04em;
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.9rem, 8vw, 2.55rem);
+    line-height: 0.98;
+    letter-spacing: 0.035em;
     overflow-wrap: anywhere;
     text-decoration: none;
     text-transform: uppercase;
@@ -2768,10 +2843,10 @@
     max-width: min(28rem, 88vw);
     margin: 0;
     color: rgba(245, 245, 245, 0.86);
-    font-family: var(--font-display);
-    font-size: clamp(2.2rem, 9.4vw, 4.5rem);
-    line-height: 0.96;
-    letter-spacing: 0.06em;
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.8rem, 7vw, 3.35rem);
+    line-height: 0.98;
+    letter-spacing: 0.035em;
     text-transform: uppercase;
     text-wrap: balance;
     text-shadow: 0 0 20px rgba(0, 0, 0, 0.38);
@@ -2818,7 +2893,14 @@
   }
 
   .rich-text-content h2 {
-    @apply mt-10 font-display text-3xl tracking-[0.08em] uppercase text-foreground;
+    margin-top: 2.5rem;
+    color: var(--foreground);
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.55rem, 4.6vw, 2.05rem);
+    line-height: 0.98;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+    text-wrap: balance;
   }
 
   .rich-text-content p {
@@ -2850,11 +2932,25 @@
   }
 
   .news-markdown-content h2 {
-    @apply mt-10 font-display text-3xl tracking-[0.08em] uppercase text-foreground;
+    margin-top: 2.5rem;
+    color: var(--foreground);
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.55rem, 4.6vw, 2.05rem);
+    line-height: 0.98;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+    text-wrap: balance;
   }
 
   .news-markdown-content h3 {
-    @apply mt-8 font-display text-2xl tracking-[0.05em] uppercase text-foreground;
+    margin-top: 2rem;
+    color: var(--foreground);
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.1rem, 3vw, 1.45rem);
+    line-height: 1.04;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    text-wrap: balance;
   }
 
   .news-markdown-content a {
@@ -2986,8 +3082,8 @@ body.is-app-shell-overlay-open {
 
   .homepage-hero-section__tagline-text {
     max-width: min(18rem, 82vw);
-    font-size: clamp(1.7rem, 10vw, 2.5rem);
-    line-height: 0.98;
+    font-size: clamp(1.55rem, 9vw, 2.2rem);
+    line-height: 1;
   }
 
   .homepage-hero-section__scroll-indicator {
@@ -3002,8 +3098,8 @@ body.is-app-shell-overlay-open {
   }
 
   .artist-detail-title {
-    font-size: clamp(2.8rem, 14vw, 3.7rem);
-    letter-spacing: 0.05em;
+    font-size: clamp(2.55rem, 12vw, 3.25rem);
+    letter-spacing: 0.025em;
   }
 
   .artist-detail-prose p,
@@ -3563,7 +3659,7 @@ body.is-app-shell-overlay-open {
   }
 
   .artist-detail--page .artist-detail-title {
-    font-size: clamp(4.4rem, 7vw, 6.8rem);
+    font-size: clamp(3.8rem, 6vw, 5.95rem);
   }
 
   .artist-detail--page .artist-detail-hero__copy {

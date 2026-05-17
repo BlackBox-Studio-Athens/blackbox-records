@@ -53,6 +53,7 @@ const metadataImagePath = typeof metadataImageRaw === 'string' ? metadataImageRa
 const metadataImage = metadataImagePath.includes('://') ? metadataImagePath : createAbsoluteSiteUrl(metadataImagePath);
 const metadataImageAlt = coverImageAlt || imageAlt || siteConfig.socialImageAlt || siteConfig.title;
 const metadataType = layoutType === 'news' ? 'article' : 'website';
+const veneerFontUrl = createProjectRelativeUrl('/assets/fonts/brand/veneer_regular.woff2');
 const orgName = labelSettings.label_name || siteConfig.title;
 const orgUrl = labelSettings.url || createAbsoluteSiteUrl('/');
 const orgLogo = labelSettings.logo?.includes('://') ? labelSettings.logo : createAbsoluteSiteUrl(labelSettings.logo);
@@ -117,6 +118,8 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
       })}
     />
 
+    <link rel="preload" href={veneerFontUrl} as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="stylesheet" href={createProjectRelativeUrl('/assets/fonts/brand/veneer.css')} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
     <link

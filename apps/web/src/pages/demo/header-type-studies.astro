@@ -14,12 +14,15 @@ import {
 } from '@/lib/catalog-data';
 import { formatYear } from '@/utils/content';
 
+type SelfHostedFontDirectory = 'brand' | 'type-studies';
+
 type FontCandidate = {
   id: string;
   name: string;
   fontFamily: string;
   opticalScale: number;
   fileName?: string;
+  directory?: SelfHostedFontDirectory;
 };
 
 const pageTitle = 'Blackbox Records | Header Type Studies';
@@ -29,11 +32,18 @@ const pageUrl = createAbsoluteSiteUrl('/demo/header-type-studies/');
 const faviconSvgUrl = createProjectRelativeUrl(siteBrandAssets.faviconSvg);
 const faviconPngUrl = createProjectRelativeUrl(siteBrandAssets.faviconPng96);
 const faviconIcoUrl = createProjectRelativeUrl(siteBrandAssets.faviconIco);
-const selfHostedFontBaseUrl = createProjectRelativeUrl('/assets/fonts/type-studies/');
-const selfHostedFontDirectory = new URL('../../../public/assets/fonts/type-studies/', import.meta.url);
+const selfHostedFontDirectories = {
+  brand: {
+    directory: new URL('../../../public/assets/fonts/brand/', import.meta.url),
+  },
+  'type-studies': {
+    directory: new URL('../../../public/assets/fonts/type-studies/', import.meta.url),
+  },
+};
 
-function hasSelfHostedFontFile(fileName: string) {
-  return existsSync(fileURLToPath(new URL(fileName, selfHostedFontDirectory)));
+function hasSelfHostedFont(fileName: string, directory: SelfHostedFontDirectory = 'type-studies') {
+  const fontDirectory = selfHostedFontDirectories[directory];
+  return existsSync(fileURLToPath(new URL(fileName, fontDirectory.directory)));
 }
 
 const [artistProfiles, releaseCatalog, newsArticles, distroEntries] = await Promise.all([
@@ -68,6 +78,7 @@ const fontCandidates = [
     name: 'Veneer',
     fontFamily: 'Veneer',
     opticalScale: 1.02,
+    directory: 'brand',
     fileName: 'veneer_regular.woff2',
   },
   {
@@ -81,7 +92,7 @@ const fontCandidates = [
 
 const reviewedCandidates = fontCandidates.map((candidate) => ({
   ...candidate,
-  isMissing: candidate.fileName ? !hasSelfHostedFontFile(candidate.fileName) : false,
+  isMissing: candidate.fileName ? !hasSelfHostedFont(candidate.fileName, candidate.directory) : false,
 }));
 
 const previewCandidates = reviewedCandidates.map(({ id, name, fontFamily, isMissing, opticalScale }) => ({
@@ -92,26 +103,6 @@ const previewCandidates = reviewedCandidates.map(({ id, name, fontFamily, isMiss
   opticalScale,
 }));
 const previewCandidateJson = JSON.stringify(previewCandidates);
-
-const selfHostedFontFaceCss = fontCandidates
-  .flatMap((candidate) => {
-    if (!candidate.fileName || !hasSelfHostedFontFile(candidate.fileName)) {
-      return [];
-    }
-
-    const extension = candidate.fileName.split('.').pop();
-    const format = extension === 'ttf' ? 'truetype' : extension === 'otf' ? 'opentype' : 'woff2';
-
-    return `
-@font-face {
-  font-family: '${candidate.fontFamily}';
-  src: url('${selfHostedFontBaseUrl}${candidate.fileName}') format('${format}');
-  font-display: swap;
-  font-style: normal;
-  font-weight: 900;
-}`;
-  })
-  .join('\n');
 
 const mockReleaseTitle = releaseEntry?.data.title || 'Disintegration';
 const mockReleaseArtist = releaseEntry
@@ -156,7 +147,8 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Changa:wght@800&family=Inter:wght@300;400;500;600;700&family=Road+Rage&display=swap"
       rel="stylesheet"
     />
-    <style is:inline set:html={selfHostedFontFaceCss}></style>
+    <link rel="stylesheet" href={createProjectRelativeUrl('/assets/fonts/brand/veneer.css')} />
+    <link rel="stylesheet" href={createProjectRelativeUrl('/assets/fonts/type-studies/druk-text-wide.css')} />
     <script id="font-preview-candidates" is:inline type="application/json" set:html={previewCandidateJson} />
   </head>
   <body>

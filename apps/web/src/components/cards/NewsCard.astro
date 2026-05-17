@@ -25,7 +25,7 @@ const { item, showSummary = true } = Astro.props;
     </div>
     <CardContent className="space-y-3 p-5">
       <p class="text-[11px] tracking-[0.18em] uppercase text-muted-foreground">{formatMonthYear(item.data.date)}</p>
-      <h3 class="font-display text-3xl tracking-[0.04em] text-foreground">{item.data.title}</h3>
+      <h3 class="brand-card-title text-foreground">{item.data.title}</h3>
       {showSummary && <p class="text-sm leading-relaxed text-muted-foreground">{item.data.summary}</p>}
     </CardContent>
   </Card>

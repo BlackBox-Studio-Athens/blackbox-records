@@ -1,0 +1,7 @@
+@font-face {
+  font-family: 'Druk Text Wide Medium';
+  src: url('./DrukTextWide-Medium-Trial.otf') format('opentype');
+  font-display: swap;
+  font-style: normal;
+  font-weight: 900;
+}

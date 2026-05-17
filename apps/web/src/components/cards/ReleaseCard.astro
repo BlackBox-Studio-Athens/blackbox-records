@@ -87,11 +87,7 @@ const dataAttributes = embeddedPlayerData.hasProvider
         : 'release-card-copy space-y-2 p-5'}
     >
       <p class="release-card-year-text">{formatYear(release.data.release_date)}</p>
-      <h3
-        class={isArtistDiscography
-          ? 'font-display text-[2.2rem] tracking-[0.08em] uppercase text-foreground sm:text-[2.45rem]'
-          : 'font-display text-3xl tracking-[0.08em] uppercase text-foreground'}
-      >
+      <h3 class="brand-card-title text-foreground">
         {release.data.title.toUpperCase()}
       </h3>
       {
