@@ -99,13 +99,11 @@ describe('store cart state', () => {
     expect(getCartSubtotalDisplay(state.lines)).toBe('€40.00');
   });
 
-  it('falls back to quantity-aware display text for legacy cart lines without structured price fields', async () => {
-    const { getCartLineTotalDisplay, getCartSubtotalDisplay } = await import('./store-cart');
+  it('drops legacy cart lines without structured price fields', () => {
     const { priceAmountMinor: _priceAmountMinor, priceCurrencyCode: _priceCurrencyCode, ...legacyItem } = canonicalItem;
-    const state = addStoreCartItem(legacyItem, addStoreCartItem(legacyItem));
+    const state = addStoreCartItem(legacyItem as CartLineItemSnapshot);
 
-    expect(getCartLineTotalDisplay(state.lines[0]!)).toBe('€20 x 2');
-    expect(getCartSubtotalDisplay(state.lines)).toBe('€20 x 2');
+    expect(state).toEqual(createEmptyStoreCartState());
   });
 
   it('caps CartQuantity at the maximum browser quantity', () => {

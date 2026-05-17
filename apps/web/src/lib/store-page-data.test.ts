@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createCartLineItemSnapshotForStorePage,
+  createPricedCartSeedForStorePage,
   createStorePageStaticPaths,
   getStorePageEntryBySlug,
 } from './store-page-data';
@@ -22,6 +23,16 @@ vi.mock('./catalog-data', () => ({
 
 vi.mock('./item-availability', () => ({
   getPrimaryAvailabilityForStoreItem: mockItemAvailability.getPrimaryAvailabilityForStoreItem,
+  hasStructuredItemPrice: (price: { amountMinor?: unknown; currencyCode?: unknown } | null | undefined) =>
+    Boolean(price && typeof price.amountMinor === 'number' && typeof price.currencyCode === 'string'),
+  isPricedItemAvailability: (availability: { availability?: { status?: string }; canBuy?: boolean; price?: unknown }) =>
+    Boolean(
+      availability?.canBuy &&
+      availability.availability?.status === 'available' &&
+      availability.price &&
+      typeof (availability.price as { amountMinor?: unknown }).amountMinor === 'number' &&
+      typeof (availability.price as { currencyCode?: unknown }).currencyCode === 'string',
+    ),
 }));
 
 describe('store page data helper', () => {
@@ -151,7 +162,7 @@ describe('store page data helper', () => {
         variantId: 'variant_caregivers-vinyl_standard',
         storeItemSlug: 'caregivers-vinyl',
         optionLabel: null,
-        price: { amountMinor: 0, currencyCode: 'EUR', display: 'Price soon' },
+        price: { display: 'Price soon' },
         availability: { status: 'sold_out', label: 'Unavailable' },
         canBuy: false,
       });
@@ -279,5 +290,72 @@ describe('store page data helper', () => {
     );
 
     expect(cartItem).toBeNull();
+  });
+
+  it('creates a priced cart seed for Worker-confirmed checkout without making sold out static pages buyable', () => {
+    const storeItem = {
+      slug: 'afterglow-tape',
+      taxCategory: 'physical_goods' as const,
+      sourceKind: 'distro' as const,
+      sourceId: 'afterglow-tape',
+      title: 'Afterglow Tape',
+      subtitle: 'Various Artists',
+      summary: 'Distributed release.',
+      image: { src: '/afterglow.jpg', width: 1, height: 1, format: 'jpg' as const },
+      imageAlt: 'Afterglow Tape cover',
+      eyebrow: 'Distro',
+      metadata: ['Cassette'],
+      storePath: '/blackbox-records/store/afterglow-tape/',
+      checkoutPath: '/blackbox-records/store/afterglow-tape/checkout/',
+    };
+    const availability = {
+      variantId: 'variant_afterglow-tape_standard',
+      storeItemSlug: 'afterglow-tape',
+      optionLabel: 'Cassette',
+      price: { amountMinor: 1400, currencyCode: 'EUR', display: 'EUR 14.00' },
+      availability: { status: 'sold_out' as const, label: 'Sold Out' },
+      canBuy: false as const,
+    };
+
+    expect(createCartLineItemSnapshotForStorePage(storeItem, availability, '/afterglow.webp')).toBeNull();
+    expect(createPricedCartSeedForStorePage(storeItem, availability, '/afterglow.webp')).toMatchObject({
+      priceAmountMinor: 1400,
+      priceCurrencyCode: 'EUR',
+      storeItemSlug: 'afterglow-tape',
+      variantId: 'variant_afterglow-tape_standard',
+    });
+  });
+
+  it('does not create a priced cart seed for Price soon store pages', () => {
+    const storeItem = {
+      slug: 'aftermaths',
+      taxCategory: 'physical_goods' as const,
+      sourceKind: 'distro' as const,
+      sourceId: 'aftermaths',
+      title: 'Aftermaths',
+      subtitle: 'Indoctrinate',
+      summary: 'Distributed release.',
+      image: { src: '/aftermaths.jpg', width: 1, height: 1, format: 'jpg' as const },
+      imageAlt: 'Aftermaths cover',
+      eyebrow: 'Distro',
+      metadata: [],
+      storePath: '/blackbox-records/store/aftermaths/',
+      checkoutPath: '/blackbox-records/store/aftermaths/checkout/',
+    };
+
+    expect(
+      createPricedCartSeedForStorePage(
+        storeItem,
+        {
+          variantId: 'variant_aftermaths_standard',
+          storeItemSlug: 'aftermaths',
+          optionLabel: null,
+          price: { display: 'Price soon' },
+          availability: { status: 'sold_out', label: 'Unavailable' },
+          canBuy: false,
+        },
+        '/aftermaths.webp',
+      ),
+    ).toBeNull();
   });
 });

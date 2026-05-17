@@ -10,6 +10,8 @@ const cartItem = {
   image: '/blackbox-records/assets/disintegration.jpg',
   imageAlt: 'Disintegration by Afterwise',
   optionLabel: 'Black Vinyl LP',
+  priceAmountMinor: 2000,
+  priceCurrencyCode: 'EUR',
   priceDisplay: '€20',
   storeItemSlug: 'disintegration-black-vinyl-lp',
   subtitle: 'Afterwise',

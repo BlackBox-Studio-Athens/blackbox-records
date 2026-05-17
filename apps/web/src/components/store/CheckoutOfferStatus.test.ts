@@ -7,7 +7,14 @@ import {
   startHostedCheckout,
   type CheckoutOfferInitialAvailability,
 } from './checkout-offer-status-state';
+import {
+  createCheckoutCartItemSummary,
+  createStripeCheckoutCtaView,
+  STRIPE_CHECKOUT_BADGE_SRC,
+  STRIPE_CHECKOUT_CTA_COPY,
+} from './CheckoutOfferStatus';
 import { PublicCheckoutApiError, type PublicCheckoutApi } from '../../lib/backend/public-checkout-api';
+import type { CartLineItemSnapshot } from '../../lib/store-cart';
 
 const initialAvailability: CheckoutOfferInitialAvailability = {
   canBuy: true,
@@ -23,7 +30,65 @@ const enabledStoreCapabilities = {
   },
 };
 
+const cartItem: CartLineItemSnapshot = {
+  availabilityLabel: 'Available',
+  image: '/blackbox-records/assets/disintegration.jpg',
+  imageAlt: 'Disintegration by Afterwise',
+  optionLabel: 'Black Vinyl LP',
+  priceAmountMinor: 2800,
+  priceCurrencyCode: 'EUR',
+  priceDisplay: '€28.00',
+  storeItemSlug: 'disintegration-black-vinyl-lp',
+  subtitle: 'Afterwise',
+  title: 'Disintegration',
+  variantId: 'variant_barren-point_standard',
+};
+
 describe('CheckoutOfferStatus helpers', () => {
+  it('uses Stripe-aware CTA copy and the self-hosted official badge asset', () => {
+    expect(createStripeCheckoutCtaView(false)).toEqual({
+      badgeSrc: STRIPE_CHECKOUT_BADGE_SRC,
+      label: STRIPE_CHECKOUT_CTA_COPY,
+    });
+    expect(createStripeCheckoutCtaView(false).label).toBe('Continue to Stripe Checkout');
+    expect(createStripeCheckoutCtaView(false).label).not.toBe('Pay Securely With Stripe');
+    expect(createStripeCheckoutCtaView(true)).toEqual({
+      badgeSrc: null,
+      label: 'Opening Stripe',
+    });
+  });
+
+  it('summarizes checkout item text from the current StoreCart lines', () => {
+    expect(createCheckoutCartItemSummary([{ ...cartItem, quantity: 1 }])).toEqual({
+      label: 'Item',
+      value: 'Disintegration / Black Vinyl LP',
+    });
+    expect(
+      createCheckoutCartItemSummary([
+        { ...cartItem, quantity: 1 },
+        {
+          ...cartItem,
+          optionLabel: 'Cassette',
+          quantity: 1,
+          storeItemSlug: 'afterglow-tape',
+          title: 'Afterglow',
+          variantId: 'variant_afterglow-tape_standard',
+        },
+      ]),
+    ).toEqual({
+      label: 'Cart',
+      value: '2 items in cart',
+    });
+    expect(createCheckoutCartItemSummary([], cartItem)).toEqual({
+      label: 'Item',
+      value: 'Disintegration / Black Vinyl LP',
+    });
+    expect(createCheckoutCartItemSummary([])).toEqual({
+      label: 'Cart',
+      value: 'Cart is empty',
+    });
+  });
+
   it('calls public Worker offer and variant reads for the current store item', async () => {
     const api: PublicCheckoutApi = {
       readStoreCapabilities: vi.fn(async () => enabledStoreCapabilities),

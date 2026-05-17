@@ -8,8 +8,8 @@ export type CartLineItemSnapshot = {
   image: string | null;
   imageAlt: string | null;
   optionLabel: string | null;
-  priceAmountMinor?: number | undefined;
-  priceCurrencyCode?: string | undefined;
+  priceAmountMinor: number;
+  priceCurrencyCode: string;
   priceDisplay: string;
   storeItemSlug: string;
   subtitle: string;
@@ -92,10 +92,10 @@ export function parseCartLineItemSnapshot(value: unknown): CartLineItemSnapshot 
   }
   const priceAmountMinor = readPositiveIntegerField(value, 'priceAmountMinor');
   const priceCurrencyCode = readStringField(value, 'priceCurrencyCode')?.trim().toUpperCase() ?? null;
-  if (priceAmountMinor !== null && priceCurrencyCode) {
-    lineItemSnapshot.priceAmountMinor = priceAmountMinor;
-    lineItemSnapshot.priceCurrencyCode = priceCurrencyCode;
-  }
+  if (priceAmountMinor === null || !priceCurrencyCode) return null;
+
+  lineItemSnapshot.priceAmountMinor = priceAmountMinor;
+  lineItemSnapshot.priceCurrencyCode = priceCurrencyCode;
 
   return lineItemSnapshot;
 }
@@ -129,12 +129,8 @@ export function normalizeStoreCartState(state: StoreCartState | CartDraft): Stor
         subtitle: firstLine.subtitle,
         title: firstLine.title,
         variantId: firstLine.variantId,
-        ...(typeof firstLine.priceAmountMinor === 'number' && firstLine.priceCurrencyCode
-          ? {
-              priceAmountMinor: firstLine.priceAmountMinor,
-              priceCurrencyCode: firstLine.priceCurrencyCode,
-            }
-          : {}),
+        priceAmountMinor: firstLine.priceAmountMinor,
+        priceCurrencyCode: firstLine.priceCurrencyCode,
       } satisfies CartLineItemSnapshot)
     : null;
 
@@ -150,21 +146,14 @@ export function formatCartMoney(amountMinor: number, currencyCode: string): stri
 }
 
 export function getCartLineTotalDisplay(line: CartLine): string {
-  if (typeof line.priceAmountMinor === 'number' && line.priceCurrencyCode) {
-    return formatCartMoney(line.priceAmountMinor * line.quantity, line.priceCurrencyCode);
-  }
-
-  return line.quantity > 1 ? `${line.priceDisplay} x ${line.quantity}` : line.priceDisplay;
+  return formatCartMoney(line.priceAmountMinor * line.quantity, line.priceCurrencyCode);
 }
 
 export function getCartSubtotalDisplay(lines: CartLine[]): string | null {
   if (!lines.length) return null;
 
   const currencyCode = lines[0]?.priceCurrencyCode;
-  const canCalculateSubtotal = Boolean(
-    currencyCode &&
-    lines.every((line) => typeof line.priceAmountMinor === 'number' && line.priceCurrencyCode === currencyCode),
-  );
+  const canCalculateSubtotal = Boolean(currencyCode && lines.every((line) => line.priceCurrencyCode === currencyCode));
 
   if (canCalculateSubtotal && currencyCode) {
     return formatCartMoney(

@@ -1,13 +1,14 @@
 ---
 import { Image } from 'astro:assets';
 
-import StoreItemPurchaseActions, { type StoreItemCartSeed } from '@/components/store/StoreItemPurchaseActions';
+import StoreItemPurchaseActions from '@/components/store/StoreItemPurchaseActions';
 import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl } from '@/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import {
   createCartLineItemSnapshotForStorePage,
+  createPricedCartSeedForStorePage,
   type StorePageEntry,
   createStorePageStaticPaths,
 } from '@/lib/store-page-data';
@@ -29,17 +30,7 @@ const availabilityLabel = primaryAvailability?.availability.label || 'Unavailabl
 const itemTypeLabel = storeItem.sourceKind === 'release' ? 'Release' : 'Item';
 const canBuy = primaryAvailability?.canBuy ?? false;
 const cartItem = createCartLineItemSnapshotForStorePage(storeItem, primaryAvailability, storeItem.image.src);
-const cartSeed = {
-  availabilityLabel,
-  image: storeItem.image.src,
-  imageAlt: storeItem.imageAlt,
-  optionLabel: primaryAvailability?.optionLabel ?? storeItem.metadata.at(-1) ?? 'Standard',
-  priceDisplay: priceLabel,
-  storeItemSlug: storeItem.slug,
-  subtitle: storeItem.subtitle,
-  title: storeItem.title,
-  variantId: primaryAvailability?.variantId ?? null,
-} satisfies StoreItemCartSeed;
+const cartSeed = createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
 ---
 
 <SiteLayout

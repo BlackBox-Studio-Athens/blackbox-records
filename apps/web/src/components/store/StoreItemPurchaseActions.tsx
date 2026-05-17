@@ -16,7 +16,7 @@ export type StoreItemCartSeed = Omit<CartLineItemSnapshot, 'availabilityLabel' |
 type StoreItemPurchaseActionsProps = {
   api?: PublicCheckoutApi;
   cartItem: CartLineItemSnapshot | null;
-  cartSeed: StoreItemCartSeed;
+  cartSeed: StoreItemCartSeed | null;
 };
 
 export const STORE_ITEM_PURCHASE_ACTION_COPY = {
@@ -34,10 +34,10 @@ export function requestStoreCartAddItem(item: CartLineItemSnapshot, eventTarget:
 }
 
 export function createCartLineItemSnapshotFromWorkerOffer(
-  cartSeed: StoreItemCartSeed,
+  cartSeed: StoreItemCartSeed | null,
   offer: PublicStoreOffer,
 ): CartLineItemSnapshot | null {
-  if (!offer.canCheckout || !offer.variantId.trim()) {
+  if (!cartSeed || !offer.canCheckout || !offer.variantId.trim()) {
     return null;
   }
 
@@ -51,16 +51,23 @@ export function createCartLineItemSnapshotFromWorkerOffer(
 
 export default function StoreItemPurchaseActions({ api, cartItem, cartSeed }: StoreItemPurchaseActionsProps) {
   const [resolvedCartItem, setResolvedCartItem] = React.useState<CartLineItemSnapshot | null>(cartItem);
-  const [isChecking, setIsChecking] = React.useState(!cartItem);
+  const [isChecking, setIsChecking] = React.useState(!cartItem && Boolean(cartSeed));
 
   React.useEffect(() => {
+    if (!cartSeed) {
+      setResolvedCartItem(null);
+      setIsChecking(false);
+      return;
+    }
+
     let isActive = true;
+    const pricedCartSeed = cartSeed;
     const checkoutApi = api ?? createPublicCheckoutApi();
 
     async function loadWorkerOffer() {
       try {
-        const offer = await checkoutApi.readStoreOffer(cartSeed.storeItemSlug);
-        const workerCartItem = createCartLineItemSnapshotFromWorkerOffer(cartSeed, offer);
+        const offer = await checkoutApi.readStoreOffer(pricedCartSeed.storeItemSlug);
+        const workerCartItem = createCartLineItemSnapshotFromWorkerOffer(pricedCartSeed, offer);
 
         if (isActive) {
           setResolvedCartItem(workerCartItem ?? cartItem);

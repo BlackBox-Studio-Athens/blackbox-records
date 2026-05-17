@@ -15,6 +15,8 @@ const cartItem: CartLineItemSnapshot = {
   image: '/blackbox-records/assets/disintegration.jpg',
   imageAlt: 'Disintegration by Afterwise',
   optionLabel: 'Black Vinyl LP',
+  priceAmountMinor: 2800,
+  priceCurrencyCode: 'EUR',
   priceDisplay: '€28.00',
   storeItemSlug: 'disintegration-black-vinyl-lp',
   subtitle: 'Afterwise',
@@ -91,6 +93,20 @@ describe('StoreItemPurchaseActions', () => {
         canCheckout: false,
         storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_barren-point_standard',
+      }),
+    ).toBeNull();
+  });
+
+  it('does not create a CartLineItemSnapshot when the static page has no priced seed', () => {
+    expect(
+      createCartLineItemSnapshotFromWorkerOffer(null, {
+        availability: {
+          label: 'Available',
+          status: 'available',
+        },
+        canCheckout: true,
+        storeItemSlug: 'aftermaths',
+        variantId: 'variant_aftermaths_standard',
       }),
     ).toBeNull();
   });

@@ -10,7 +10,7 @@ describe('CheckoutShippingStep', () => {
     expect(createCheckoutShippingGateView('stripe')).toMatchObject({
       badgeLabel: 'Greece only',
       canContinueToPayment: true,
-      title: 'Shipping',
+      title: 'Delivery details',
       tone: 'ready',
     });
   });
@@ -27,6 +27,7 @@ describe('CheckoutShippingStep', () => {
     const markup = renderToStaticMarkup(<CheckoutShippingStep checkoutClientMode="stripe" />);
 
     expect(markup).toContain('Shipping');
+    expect(markup).toContain('Delivery details');
     expect(markup).toContain('Greece only');
     expect(markup).toContain('Stripe collects the shipping address. The label arranges BOX NOW after payment.');
     expect(markup).toContain('No locker selection is needed before payment.');

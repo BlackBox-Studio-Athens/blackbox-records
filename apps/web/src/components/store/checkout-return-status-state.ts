@@ -8,6 +8,7 @@ export type CheckoutReturnLoadState =
 
 export type CheckoutReturnStatusView = {
   badgeLabel: string;
+  confirmationDetails: CheckoutReturnConfirmationDetailsView | null;
   detail: string;
   isFinal: boolean;
   kicker: string;
@@ -17,10 +18,17 @@ export type CheckoutReturnStatusView = {
   tone: 'loading' | 'success' | 'attention' | 'error';
 };
 
-export type CheckoutReturnShippingLockerView =
-  | { kind: 'hidden' }
-  | { detail: string; kind: 'selected'; label: string }
-  | { detail: string; kind: 'manual'; label: string };
+export type CheckoutReturnConfirmationDetailsView = {
+  heading: string;
+  items: CheckoutReturnConfirmationDetailView[];
+};
+
+export type CheckoutReturnConfirmationDetailView = {
+  label: string;
+  value: string;
+};
+
+export type CheckoutReturnShippingLockerView = { kind: 'hidden' } | { detail: string; kind: 'selected'; label: string };
 
 export function readCheckoutSessionIdFromSearch(search: string): string | null {
   const sessionId = new URLSearchParams(search).get('session_id')?.trim();
@@ -54,6 +62,7 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
   if (state.kind === 'loading') {
     return {
       badgeLabel: 'Checking',
+      confirmationDetails: null,
       detail: 'We are confirming the latest payment status before showing your order result.',
       isFinal: false,
       kicker: 'Payment Status',
@@ -67,6 +76,7 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
   if (state.kind === 'missing_session') {
     return {
       badgeLabel: 'Needs Retry',
+      confirmationDetails: null,
       detail: 'This return link is incomplete, so we cannot confirm a payment from it.',
       isFinal: false,
       kicker: 'Return Link',
@@ -80,6 +90,7 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
   if (state.kind === 'error') {
     return {
       badgeLabel: 'Needs Retry',
+      confirmationDetails: null,
       detail: state.message,
       isFinal: false,
       kicker: 'Status Unavailable',
@@ -93,12 +104,13 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
   if (state.checkoutState.state === 'paid') {
     return {
       badgeLabel: 'Confirmed',
+      confirmationDetails: createCheckoutReturnConfirmationDetailsView(state.checkoutState),
       detail: 'Payment is confirmed and your order is recorded.',
       isFinal: true,
       kicker: 'Order Complete',
-      nextStep: 'The label will prepare the shipment manually through BOX NOW.',
+      nextStep: 'BlackBox will prepare the shipment manually and contact you if anything is needed.',
       shippingLocker,
-      title: 'Order Confirmed',
+      title: 'Thanks for the order',
       tone: 'success',
     };
   }
@@ -106,6 +118,7 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
   if (state.checkoutState.state === 'processing') {
     return {
       badgeLabel: 'Processing',
+      confirmationDetails: null,
       detail: 'Stripe is still processing the payment.',
       isFinal: false,
       kicker: 'Payment Pending',
@@ -119,6 +132,7 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
   if (state.checkoutState.state === 'expired') {
     return {
       badgeLabel: 'Expired',
+      confirmationDetails: null,
       detail: 'The payment session expired before a payment was confirmed.',
       isFinal: false,
       kicker: 'Session Expired',
@@ -132,6 +146,7 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
   if (state.checkoutState.state === 'open') {
     return {
       badgeLabel: 'Open',
+      confirmationDetails: null,
       detail: 'The payment session has not finished yet.',
       isFinal: false,
       kicker: 'Payment Not Finished',
@@ -144,6 +159,7 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
 
   return {
     badgeLabel: 'Unknown',
+    confirmationDetails: null,
     detail: 'The payment status is not clear yet.',
     isFinal: false,
     kicker: 'Status Unclear',
@@ -151,6 +167,32 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
     shippingLocker,
     title: 'We Could Not Confirm Payment',
     tone: 'error',
+  };
+}
+
+function createCheckoutReturnConfirmationDetailsView(
+  checkoutState: CheckoutState,
+): CheckoutReturnConfirmationDetailsView {
+  return {
+    heading: 'Confirmation details',
+    items: [
+      {
+        label: 'Status',
+        value: 'Payment confirmed',
+      },
+      {
+        label: 'Reference',
+        value: checkoutState.checkoutSessionId,
+      },
+      {
+        label: 'Delivery',
+        value: 'BOX NOW arranged manually by BlackBox',
+      },
+      {
+        label: 'Receipt',
+        value: 'Stripe will email the payment receipt if an email address was provided at checkout.',
+      },
+    ],
   };
 }
 
@@ -162,11 +204,7 @@ function createCheckoutReturnShippingLockerView(state: CheckoutReturnLoadState):
   const locker = state.checkoutState.shippingLocker;
 
   if (!locker) {
-    return {
-      detail: 'Shipping details were collected in Stripe. The label will arrange BOX NOW manually.',
-      kind: 'manual',
-      label: 'BOX NOW arranged by the label',
-    };
+    return { kind: 'hidden' };
   }
 
   return {

@@ -58,25 +58,24 @@ export function createCheckoutOrderSummaryView(
 export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
   const view = createCheckoutOrderSummaryView(props, cartLines);
-  const fallbackLine: CartLine = {
-    availabilityLabel: props.availabilityLabel,
-    image: props.image,
-    imageAlt: props.imageAlt,
-    optionLabel: props.optionLabel,
-    priceDisplay: props.priceDisplay,
-    quantity: 1,
-    storeItemSlug: props.storeItemSlug || props.itemHref,
-    subtitle: props.subtitle,
-    title: props.title,
-    variantId: props.variantId || 'checkout-summary-static-line',
-    ...(typeof props.priceAmountMinor === 'number' && props.priceCurrencyCode
+  const fallbackLine: CartLine | null =
+    typeof props.priceAmountMinor === 'number' && props.priceCurrencyCode
       ? {
+          availabilityLabel: props.availabilityLabel,
+          image: props.image,
+          imageAlt: props.imageAlt,
+          optionLabel: props.optionLabel,
           priceAmountMinor: props.priceAmountMinor,
           priceCurrencyCode: props.priceCurrencyCode,
+          priceDisplay: props.priceDisplay,
+          quantity: 1,
+          storeItemSlug: props.storeItemSlug || props.itemHref,
+          subtitle: props.subtitle,
+          title: props.title,
+          variantId: props.variantId || 'checkout-summary-static-line',
         }
-      : {}),
-  };
-  const lines = cartLines.length > 0 ? cartLines : [fallbackLine];
+      : null;
+  const lines = cartLines.length > 0 ? cartLines : fallbackLine ? [fallbackLine] : [];
 
   useEffect(() => {
     setCartLines(readStoreCartState(window.localStorage).lines);
@@ -86,7 +85,9 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
     const currentState = readStoreCartState(window.localStorage);
     const editableState = currentState.lines.some((line) => line.variantId === variantId)
       ? currentState
-      : { primaryLineItem: fallbackLine, lines: [fallbackLine] };
+      : fallbackLine
+        ? { primaryLineItem: fallbackLine, lines: [fallbackLine] }
+        : currentState;
     const nextState =
       direction === 'increment'
         ? incrementCartLineQuantityByVariant(variantId, editableState)

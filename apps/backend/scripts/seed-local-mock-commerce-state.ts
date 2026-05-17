@@ -7,6 +7,7 @@ import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export type LocalMockStoreItem = {
+  mockCheckoutEnabled: boolean;
   taxCategory: 'physical_goods';
   sourceId: string;
   sourceKind: 'release' | 'distro';
@@ -28,6 +29,7 @@ const releaseStoreItemSlugByReleaseId: Record<string, string> = {
 const releaseVariantIdByReleaseId: Record<string, string> = {
   'barren-point': 'variant_barren-point_standard',
 };
+const mockCheckoutStoreItemSlugs = new Set(['afterglow-tape', 'disintegration-black-vinyl-lp']);
 
 const mockQuantity = 99;
 
@@ -50,6 +52,7 @@ export async function readReleaseStoreItems(directory: string): Promise<LocalMoc
     const storeItemSlug = releaseStoreItemSlugByReleaseId[sourceId] ?? sourceId;
 
     storeItems.push({
+      mockCheckoutEnabled: mockCheckoutStoreItemSlugs.has(storeItemSlug),
       taxCategory: 'physical_goods',
       sourceId,
       sourceKind: 'release',
@@ -71,6 +74,7 @@ export async function readDistroStoreItems(directory: string): Promise<LocalMock
     const content = JSON.parse(await readFile(path.join(directory, fileName), 'utf8')) as { title?: unknown };
 
     storeItems.push({
+      mockCheckoutEnabled: mockCheckoutStoreItemSlugs.has(sourceId),
       taxCategory: 'physical_goods',
       sourceId,
       sourceKind: 'distro',
@@ -178,8 +182,8 @@ function createItemAvailabilitySql(storeItems: LocalMockStoreItem[]): string {
         formatValues([
           `item_availability_${toSqlIdFragment(storeItem.storeItemSlug)}`,
           storeItem.variantId,
-          'available',
-          true,
+          storeItem.mockCheckoutEnabled ? 'available' : 'sold_out',
+          storeItem.mockCheckoutEnabled,
           'CURRENT_TIMESTAMP',
         ]),
       )
@@ -207,8 +211,8 @@ function createStockSql(storeItems: LocalMockStoreItem[]): string {
         formatValues([
           `stock_${toSqlIdFragment(storeItem.storeItemSlug)}`,
           storeItem.variantId,
-          mockQuantity,
-          mockQuantity,
+          storeItem.mockCheckoutEnabled ? mockQuantity : 0,
+          storeItem.mockCheckoutEnabled ? mockQuantity : 0,
           'CURRENT_TIMESTAMP',
           'CURRENT_TIMESTAMP',
         ]),
@@ -222,6 +226,11 @@ function createStockSql(storeItems: LocalMockStoreItem[]): string {
 }
 
 function createVariantStripeMappingSql(storeItems: LocalMockStoreItem[]): string {
+  const checkoutEnabledStoreItems = storeItems.filter((storeItem) => storeItem.mockCheckoutEnabled);
+  if (checkoutEnabledStoreItems.length === 0) {
+    return '';
+  }
+
   return [
     'INSERT INTO "VariantStripeMapping" (',
     '    "id",',
@@ -231,7 +240,7 @@ function createVariantStripeMappingSql(storeItems: LocalMockStoreItem[]): string
     '    "updatedAt"',
     ')',
     'VALUES',
-    storeItems
+    checkoutEnabledStoreItems
       .map((storeItem) =>
         formatValues([
           `variant_stripe_mapping_${toSqlIdFragment(storeItem.storeItemSlug)}_mock`,

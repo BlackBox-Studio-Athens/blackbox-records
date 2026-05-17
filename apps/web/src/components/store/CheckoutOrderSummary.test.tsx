@@ -47,8 +47,13 @@ describe('CheckoutOrderSummary', () => {
   });
 
   it('keeps unavailable items visible without changing the subtotal source', () => {
+    const {
+      priceAmountMinor: _priceAmountMinor,
+      priceCurrencyCode: _priceCurrencyCode,
+      ...unpricedSummaryInput
+    } = summaryInput;
     const view = createCheckoutOrderSummaryView({
-      ...summaryInput,
+      ...unpricedSummaryInput,
       availabilityLabel: 'Sold Out',
       canBuy: false,
       priceDisplay: 'Price soon',
@@ -67,6 +72,8 @@ describe('CheckoutOrderSummary', () => {
         {
           ...summaryInput,
           availabilityLabel: 'Available',
+          priceAmountMinor: 2800,
+          priceCurrencyCode: 'EUR',
           quantity: 2,
           storeItemSlug: 'disintegration-black-vinyl-lp',
           variantId: 'variant_barren-point_standard',
@@ -75,6 +82,25 @@ describe('CheckoutOrderSummary', () => {
     ).toMatchObject({
       subtotalDisplay: '€56.00',
     });
+  });
+
+  it('renders the full line total for Afterglow Cassette quantity changes', () => {
+    const view = createCheckoutOrderSummaryView(summaryInput, [
+      {
+        ...summaryInput,
+        optionLabel: 'Cassette',
+        priceAmountMinor: 1400,
+        priceCurrencyCode: 'EUR',
+        priceDisplay: '€14.00',
+        quantity: 2,
+        storeItemSlug: 'afterglow-tape',
+        title: 'Afterglow',
+        variantId: 'variant_afterglow-tape_standard',
+      },
+    ]);
+
+    expect(view.subtotalDisplay).toBe('€28.00');
+    expect(view.subtotalDisplay).not.toBe('€14.00 x 2');
   });
 
   it('does not require forbidden checkout, Stripe, D1, stock, order, or actor fields', () => {

@@ -57,16 +57,17 @@ export function checkLocalMockCommerceReadiness(
   storeItems: LocalMockStoreItem[],
   rows: LocalMockReadinessRow[],
 ): LocalMockReadinessResult {
+  const checkoutEnabledStoreItems = storeItems.filter((storeItem) => storeItem.mockCheckoutEnabled);
   const rowsBySlug = new Map(rows.map((row) => [row.storeItemSlug, row]));
-  const issues = storeItems.flatMap((storeItem) =>
+  const issues = checkoutEnabledStoreItems.flatMap((storeItem) =>
     findStoreItemIssues(storeItem, rowsBySlug.get(storeItem.storeItemSlug)),
   );
   const slugsWithIssues = new Set(issues.map((issue) => issue.storeItemSlug));
 
   return {
     issues,
-    readyItems: storeItems.filter((storeItem) => !slugsWithIssues.has(storeItem.storeItemSlug)).length,
-    totalItems: storeItems.length,
+    readyItems: checkoutEnabledStoreItems.filter((storeItem) => !slugsWithIssues.has(storeItem.storeItemSlug)).length,
+    totalItems: checkoutEnabledStoreItems.length,
   };
 }
 

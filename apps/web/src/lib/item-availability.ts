@@ -3,21 +3,43 @@ import { getStoreItemBySlug, type StoreItem } from './catalog-data';
 export type StoreItemSlug = StoreItem['slug'];
 export type ItemAvailabilityStatus = 'available' | 'sold_out';
 
-export type ItemAvailability = {
+export type ItemPrice = {
+  amountMinor: number;
+  currencyCode: string;
+  display: string;
+};
+
+export type PendingItemPrice = {
+  amountMinor?: never;
+  currencyCode?: never;
+  display: string;
+};
+
+export type BuyableItemAvailability = {
   variantId: string;
   storeItemSlug: StoreItemSlug;
   optionLabel: string | null;
-  price: {
-    amountMinor: number;
-    currencyCode: string;
-    display: string;
+  price: ItemPrice;
+  availability: {
+    status: 'available';
+    label: string;
   };
+  canBuy: true;
+};
+
+export type UnbuyableItemAvailability = {
+  variantId: string;
+  storeItemSlug: StoreItemSlug;
+  optionLabel: string | null;
+  price: ItemPrice | PendingItemPrice;
   availability: {
     status: ItemAvailabilityStatus;
     label: string;
   };
-  canBuy: boolean;
+  canBuy: false;
 };
+
+export type ItemAvailability = BuyableItemAvailability | UnbuyableItemAvailability;
 
 // Phase 6 keeps temporary offer-state fixtures in code so editorial collections remain presentation-only.
 const availabilityByStoreItemSlug: Record<StoreItemSlug, ItemAvailability[]> = {
@@ -63,8 +85,6 @@ function createFallbackItemAvailability(storeItem: StoreItem): ItemAvailability 
     storeItemSlug: storeItem.slug,
     optionLabel: null,
     price: {
-      amountMinor: 0,
-      currencyCode: 'EUR',
       display: 'Price soon',
     },
     availability: {
@@ -73,6 +93,27 @@ function createFallbackItemAvailability(storeItem: StoreItem): ItemAvailability 
     },
     canBuy: false,
   };
+}
+
+export function hasStructuredItemPrice(price: ItemAvailability['price'] | null | undefined): price is ItemPrice {
+  return Boolean(
+    price &&
+    typeof price.amountMinor === 'number' &&
+    Number.isInteger(price.amountMinor) &&
+    price.amountMinor >= 0 &&
+    typeof price.currencyCode === 'string' &&
+    price.currencyCode.trim(),
+  );
+}
+
+export function isPricedItemAvailability(
+  availability: ItemAvailability | null | undefined,
+): availability is BuyableItemAvailability {
+  return Boolean(
+    availability?.canBuy &&
+    availability.availability.status === 'available' &&
+    hasStructuredItemPrice(availability.price),
+  );
 }
 
 export async function listAvailabilityForStoreItem(slug: StoreItemSlug): Promise<ItemAvailability[]> {

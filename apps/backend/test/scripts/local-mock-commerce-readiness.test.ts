@@ -10,6 +10,7 @@ import { type LocalMockStoreItem } from '../../scripts/seed-local-mock-commerce-
 
 const storeItems: LocalMockStoreItem[] = [
   {
+    mockCheckoutEnabled: true,
     taxCategory: 'physical_goods',
     sourceId: 'caregivers',
     sourceKind: 'release',
@@ -18,6 +19,7 @@ const storeItems: LocalMockStoreItem[] = [
     variantId: 'variant_caregivers-vinyl_standard',
   },
   {
+    mockCheckoutEnabled: true,
     taxCategory: 'physical_goods',
     sourceId: 'afterglow-tape',
     sourceKind: 'distro',

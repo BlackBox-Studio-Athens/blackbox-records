@@ -19,6 +19,7 @@ describe('local mock commerce seed generator', () => {
     expect(storeItems).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          mockCheckoutEnabled: true,
           taxCategory: 'physical_goods',
           sourceId: 'barren-point',
           sourceKind: 'release',
@@ -26,6 +27,7 @@ describe('local mock commerce seed generator', () => {
           variantId: 'variant_barren-point_standard',
         }),
         expect.objectContaining({
+          mockCheckoutEnabled: false,
           taxCategory: 'physical_goods',
           sourceId: 'caregivers',
           sourceKind: 'release',
@@ -33,6 +35,7 @@ describe('local mock commerce seed generator', () => {
           variantId: 'variant_caregivers-vinyl_standard',
         }),
         expect.objectContaining({
+          mockCheckoutEnabled: true,
           taxCategory: 'physical_goods',
           sourceId: 'afterglow-tape',
           sourceKind: 'distro',
@@ -56,6 +59,7 @@ describe('local mock commerce seed generator', () => {
 
       await expect(readReleaseStoreItems(tempDir)).resolves.toEqual([
         expect.objectContaining({
+          mockCheckoutEnabled: false,
           taxCategory: 'physical_goods',
           sourceId: 'caregivers',
           sourceKind: 'release',
@@ -63,6 +67,7 @@ describe('local mock commerce seed generator', () => {
           variantId: 'variant_caregivers-vinyl_standard',
         }),
         expect.objectContaining({
+          mockCheckoutEnabled: false,
           taxCategory: 'physical_goods',
           sourceId: 'future-release',
           sourceKind: 'release',
@@ -84,6 +89,7 @@ describe('local mock commerce seed generator', () => {
 
       await expect(readDistroStoreItems(tempDir)).resolves.toEqual([
         expect.objectContaining({
+          mockCheckoutEnabled: false,
           taxCategory: 'physical_goods',
           sourceId: '___',
           sourceKind: 'distro',
@@ -91,6 +97,7 @@ describe('local mock commerce seed generator', () => {
           variantId: 'variant_____standard',
         }),
         expect.objectContaining({
+          mockCheckoutEnabled: true,
           taxCategory: 'physical_goods',
           sourceId: 'afterglow-tape',
           sourceKind: 'distro',
@@ -106,6 +113,7 @@ describe('local mock commerce seed generator', () => {
   it('generates idempotent local-only mock commerce SQL for all required D1 tables', () => {
     const sql = createLocalMockCommerceSql([
       {
+        mockCheckoutEnabled: false,
         taxCategory: 'physical_goods',
         sourceId: 'caregivers',
         sourceKind: 'release',
@@ -114,6 +122,7 @@ describe('local mock commerce seed generator', () => {
         variantId: 'variant_caregivers-vinyl_standard',
       },
       {
+        mockCheckoutEnabled: true,
         taxCategory: 'physical_goods',
         sourceId: 'afterglow-tape',
         sourceKind: 'distro',
@@ -131,9 +140,12 @@ describe('local mock commerce seed generator', () => {
     expect(sql).toContain("'caregivers-vinyl'");
     expect(sql).toContain("'variant_caregivers-vinyl_standard'");
     expect(sql).toContain("'available'");
+    expect(sql).toContain("'sold_out'");
     expect(sql).toContain('TRUE');
+    expect(sql).toContain('FALSE');
     expect(sql).toContain('99');
-    expect(sql).toContain("'price_mock_caregivers_vinyl'");
+    expect(sql).toContain("'price_mock_afterglow_tape'");
+    expect(sql).not.toContain("'price_mock_caregivers_vinyl'");
     expect(sql).toContain('not real inventory evidence');
     expect(sql).not.toContain('price_replace_with_real_stripe_test_price');
     expect(sql).not.toContain('sk_test');

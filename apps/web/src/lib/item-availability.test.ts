@@ -83,7 +83,12 @@ vi.mock('astro:config/client', () => ({
   site: 'https://blackbox-studio-athens.github.io',
 }));
 
-import { getPrimaryAvailabilityForStoreItem, listAvailabilityForStoreItem } from './item-availability';
+import {
+  getPrimaryAvailabilityForStoreItem,
+  hasStructuredItemPrice,
+  isPricedItemAvailability,
+  listAvailabilityForStoreItem,
+} from './item-availability';
 
 describe('ItemAvailability adapter', () => {
   it('resolves one stable temporary item availability record for a native store item slug', async () => {
@@ -117,8 +122,6 @@ describe('ItemAvailability adapter', () => {
       storeItemSlug: 'aftermaths',
       optionLabel: null,
       price: {
-        amountMinor: 0,
-        currencyCode: 'EUR',
         display: 'Price soon',
       },
       availability: {
@@ -133,8 +136,6 @@ describe('ItemAvailability adapter', () => {
       storeItemSlug: 'caregivers-vinyl',
       optionLabel: null,
       price: {
-        amountMinor: 0,
-        currencyCode: 'EUR',
         display: 'Price soon',
       },
       availability: {
@@ -153,6 +154,16 @@ describe('ItemAvailability adapter', () => {
       currencyCode: 'EUR',
       display: '€28.00',
     });
+  });
+
+  it('keeps Price soon out of the structured cart price path', async () => {
+    const aftermathsAvailability = await getPrimaryAvailabilityForStoreItem('aftermaths');
+    const disintegrationAvailability = await getPrimaryAvailabilityForStoreItem('disintegration-black-vinyl-lp');
+
+    expect(hasStructuredItemPrice(aftermathsAvailability?.price)).toBe(false);
+    expect(isPricedItemAvailability(aftermathsAvailability)).toBe(false);
+    expect(hasStructuredItemPrice(disintegrationAvailability?.price)).toBe(true);
+    expect(isPricedItemAvailability(disintegrationAvailability)).toBe(true);
   });
 
   it('marks sold-out variants as unavailable to buy', async () => {

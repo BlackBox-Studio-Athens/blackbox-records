@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { createPublicCheckoutApi, type PublicCheckoutApi } from '@/lib/backend/public-checkout-api';
-import { readStoreCartState } from '@/lib/store-cart';
+import { getStoreCartCount, readStoreCartState, type CartLine, type CartLineItemSnapshot } from '@/lib/store-cart';
 import { cn } from '@/lib/utils';
 import {
   createCheckoutOfferView,
@@ -20,23 +20,67 @@ import { createCheckoutShippingGateView } from './checkout-shipping-step-state';
 
 interface CheckoutOfferStatusProps {
   checkoutClientMode?: string;
+  fallbackLineItem?: CartLineItemSnapshot | null;
   initialAvailability: CheckoutOfferInitialAvailability;
   storeItemSlug: string;
   api?: PublicCheckoutApi;
 }
 
+export type CheckoutCartItemSummary = {
+  label: 'Cart' | 'Item';
+  value: string;
+};
+
+export const STRIPE_CHECKOUT_CTA_COPY = 'Continue to Stripe Checkout';
+export const STRIPE_CHECKOUT_BADGE_SRC = `${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/assets/vendor/stripe/powered-by-stripe.svg`;
+
+export function createStripeCheckoutCtaView(isStartingCheckout: boolean) {
+  return {
+    badgeSrc: isStartingCheckout ? null : STRIPE_CHECKOUT_BADGE_SRC,
+    label: isStartingCheckout ? 'Opening Stripe' : STRIPE_CHECKOUT_CTA_COPY,
+  };
+}
+
+export function createCheckoutCartItemSummary(
+  cartLines: CartLine[],
+  fallbackLineItem: CartLineItemSnapshot | null = null,
+): CheckoutCartItemSummary {
+  if (cartLines.length > 1) {
+    return {
+      label: 'Cart',
+      value: `${getStoreCartCount({ lines: cartLines, primaryLineItem: cartLines[0] ?? null })} items in cart`,
+    };
+  }
+
+  const line = cartLines[0] ?? fallbackLineItem;
+  if (line) {
+    return {
+      label: 'Item',
+      value: [line.title, line.optionLabel].filter(Boolean).join(' / '),
+    };
+  }
+
+  return {
+    label: 'Cart',
+    value: 'Cart is empty',
+  };
+}
+
 export default function CheckoutOfferStatus({
   api,
   checkoutClientMode = import.meta.env.PUBLIC_CHECKOUT_CLIENT_MODE,
+  fallbackLineItem = null,
   initialAvailability,
   storeItemSlug,
 }: CheckoutOfferStatusProps) {
   const [view, setView] = useState<CheckoutOfferStatusView>(() => createInitialCheckoutOfferView(initialAvailability));
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
-  const itemOptionLabel =
-    initialAvailability.optionLabel || (view.variantId ? 'Selected option' : 'Checking item option');
+  const [cartLines, setCartLines] = useState<CartLine[]>([]);
+  const itemSummary = createCheckoutCartItemSummary(cartLines, fallbackLineItem);
+  const ctaView = createStripeCheckoutCtaView(isStartingCheckout);
   const shippingGateView = createCheckoutShippingGateView(checkoutClientMode);
+  const hasCheckoutLine = cartLines.length > 0 || Boolean(fallbackLineItem);
 
   useEffect(() => {
     let isActive = true;
@@ -58,10 +102,16 @@ export default function CheckoutOfferStatus({
   }, [api, storeItemSlug]);
 
   useEffect(() => {
-    window.addEventListener(CHECKOUT_CART_UPDATED_EVENT, clearCheckoutError);
+    function syncCartState() {
+      setCartLines(readStoreCartState(window.localStorage).lines);
+      clearCheckoutError();
+    }
+
+    syncCartState();
+    window.addEventListener(CHECKOUT_CART_UPDATED_EVENT, syncCartState);
 
     return () => {
-      window.removeEventListener(CHECKOUT_CART_UPDATED_EVENT, clearCheckoutError);
+      window.removeEventListener(CHECKOUT_CART_UPDATED_EVENT, syncCartState);
     };
   }, []);
 
@@ -78,12 +128,18 @@ export default function CheckoutOfferStatus({
       return;
     }
 
+    const currentCartLines = readStoreCartState(window.localStorage).lines;
+    if (currentCartLines.length === 0 && !fallbackLineItem) {
+      setCheckoutError('Add a priced item to the cart before checkout.');
+      return;
+    }
+
     setCheckoutError(null);
     setIsStartingCheckout(true);
 
     const checkoutState = await startHostedCheckout({
       api: checkoutApi,
-      lines: readStoreCartState(window.localStorage).lines,
+      lines: currentCartLines,
       storeItemSlug,
       variantId: view.variantId,
     });
@@ -133,8 +189,8 @@ export default function CheckoutOfferStatus({
 
           <div className="grid gap-px border border-border/70 bg-border/70 sm:grid-cols-2">
             <div className="bg-background/85 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Item</p>
-              <p className="text-xs uppercase tracking-[0.16em] text-foreground">{itemOptionLabel}</p>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{itemSummary.label}</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-foreground">{itemSummary.value}</p>
             </div>
             <div className="bg-background/85 px-4 py-3">
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Shipping</p>
@@ -145,23 +201,32 @@ export default function CheckoutOfferStatus({
           <div className="space-y-4">
             <p className="text-sm leading-relaxed text-muted-foreground">{view.detail}</p>
 
-            {view.canStartCheckout && shippingGateView.canContinueToPayment ? (
+            {view.canStartCheckout && shippingGateView.canContinueToPayment && hasCheckoutLine ? (
               <Button
                 type="button"
                 size="lg"
-                className="w-full rounded-none uppercase tracking-[0.16em] sm:w-auto sm:min-w-72"
+                className="inline-flex w-full gap-3 rounded-none uppercase tracking-[0.16em] sm:w-auto sm:min-w-72"
                 disabled={isStartingCheckout}
                 onClick={() => {
                   void handleStartCheckout();
                 }}
               >
-                {isStartingCheckout ? 'Opening Stripe' : 'Pay Securely With Stripe'}
+                {ctaView.badgeSrc ? (
+                  <>
+                    <span>{ctaView.label}</span>
+                    <img className="h-[18px] w-auto" src={ctaView.badgeSrc} alt="" aria-hidden="true" />
+                  </>
+                ) : (
+                  ctaView.label
+                )}
               </Button>
             ) : (
               <p className="text-xs leading-relaxed text-muted-foreground">
-                {view.canStartCheckout
-                  ? 'Stripe opens after checkout is ready.'
-                  : 'Payment opens only after this item is confirmed as buyable.'}
+                {!hasCheckoutLine
+                  ? 'Add a priced item to the cart before checkout.'
+                  : view.canStartCheckout
+                    ? 'Stripe opens after checkout is ready.'
+                    : 'Payment opens only after this item is confirmed as buyable.'}
               </p>
             )}
 

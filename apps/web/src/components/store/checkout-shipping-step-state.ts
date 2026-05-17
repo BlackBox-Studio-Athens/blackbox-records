@@ -9,7 +9,7 @@ export type CheckoutShippingGateView = {
 export const CHECKOUT_SHIPPING_COPY = {
   readyBadge: 'Greece only',
   readyDetail: 'Stripe collects the shipping address. The label arranges BOX NOW after payment.',
-  stepTitle: 'Shipping',
+  stepTitle: 'Delivery details',
 } as const;
 
 export function createCheckoutShippingGateView(checkoutClientMode: string | undefined): CheckoutShippingGateView {
