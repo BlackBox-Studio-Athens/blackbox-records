@@ -26,6 +26,14 @@ Start from the store, open an item, add it to the cart, and continue to checkout
 
 Use any realistic Greek shipping address and phone number in Stripe Checkout. The address is only sandbox test data.
 
+Expected UAT checkout items:
+
+- `Disintegration - Black Vinyl LP`
+- `Afterglow Cassette`
+- `Aftermaths`
+
+Sandbox UAT stock starts high so multiple testers can complete checkouts. Successful sandbox payments still decrement sandbox stock, just like the production flow will.
+
 ### Successful Payment
 
 - Card number: `4242 4242 4242 4242`

@@ -10,6 +10,8 @@ export type CheckoutReturnStatusView = {
   badgeLabel: string;
   detail: string;
   isFinal: boolean;
+  kicker: string;
+  nextStep: string;
   shippingLocker: CheckoutReturnShippingLockerView;
   title: string;
   tone: 'loading' | 'success' | 'attention' | 'error';
@@ -52,10 +54,12 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
   if (state.kind === 'loading') {
     return {
       badgeLabel: 'Checking',
-      detail: 'Checking checkout status with the payment server.',
+      detail: 'We are confirming the latest payment status before showing your order result.',
       isFinal: false,
+      kicker: 'Payment Status',
+      nextStep: 'This usually takes a moment. Keep this tab open.',
       shippingLocker,
-      title: 'Checking Checkout',
+      title: 'Confirming Payment',
       tone: 'loading',
     };
   }
@@ -63,10 +67,12 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
   if (state.kind === 'missing_session') {
     return {
       badgeLabel: 'Needs Retry',
-      detail: 'This return link is missing a checkout session. You can retry checkout from the item page.',
+      detail: 'This return link is incomplete, so we cannot confirm a payment from it.',
       isFinal: false,
+      kicker: 'Return Link',
+      nextStep: 'Go back to the item and start checkout again.',
       shippingLocker,
-      title: 'Checkout Link Incomplete',
+      title: 'Return Link Incomplete',
       tone: 'attention',
     };
   }
@@ -76,19 +82,23 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
       badgeLabel: 'Needs Retry',
       detail: state.message,
       isFinal: false,
+      kicker: 'Status Unavailable',
+      nextStep: 'If you saw a payment complete in Stripe, contact the label before trying again.',
       shippingLocker,
-      title: 'Checkout State Unavailable',
+      title: 'We Could Not Confirm Payment',
       tone: 'error',
     };
   }
 
   if (state.checkoutState.state === 'paid') {
     return {
-      badgeLabel: 'Paid',
-      detail: 'Payment is confirmed. Final order handling is completed by the secure backend flow.',
+      badgeLabel: 'Confirmed',
+      detail: 'Payment is confirmed and your order is recorded.',
       isFinal: true,
+      kicker: 'Order Complete',
+      nextStep: 'The label will prepare the shipment manually through BOX NOW.',
       shippingLocker,
-      title: 'Payment Confirmed',
+      title: 'Order Confirmed',
       tone: 'success',
     };
   }
@@ -96,8 +106,10 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
   if (state.checkoutState.state === 'processing') {
     return {
       badgeLabel: 'Processing',
-      detail: 'Payment is still processing. Check again shortly before retrying checkout.',
+      detail: 'Stripe is still processing the payment.',
       isFinal: false,
+      kicker: 'Payment Pending',
+      nextStep: 'Wait a short while before retrying, so you do not start a duplicate payment.',
       shippingLocker,
       title: 'Payment Processing',
       tone: 'attention',
@@ -107,8 +119,10 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
   if (state.checkoutState.state === 'expired') {
     return {
       badgeLabel: 'Expired',
-      detail: 'The checkout session expired before payment finished. You can retry checkout safely.',
+      detail: 'The payment session expired before a payment was confirmed.',
       isFinal: false,
+      kicker: 'Session Expired',
+      nextStep: 'You can safely start checkout again from the item page.',
       shippingLocker,
       title: 'Checkout Expired',
       tone: 'attention',
@@ -118,20 +132,24 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
   if (state.checkoutState.state === 'open') {
     return {
       badgeLabel: 'Open',
-      detail: 'Checkout is still open. Continue or retry checkout when you are ready.',
+      detail: 'The payment session has not finished yet.',
       isFinal: false,
+      kicker: 'Payment Not Finished',
+      nextStep: 'Return to checkout if you still want to complete the order.',
       shippingLocker,
-      title: 'Checkout Still Open',
+      title: 'Payment Not Finished',
       tone: 'attention',
     };
   }
 
   return {
     badgeLabel: 'Unknown',
-    detail: 'Checkout state is not clear yet. Retry checkout or contact the label if payment completed.',
+    detail: 'The payment status is not clear yet.',
     isFinal: false,
+    kicker: 'Status Unclear',
+    nextStep: 'If Stripe showed a completed payment, contact the label before retrying.',
     shippingLocker,
-    title: 'Checkout State Unknown',
+    title: 'We Could Not Confirm Payment',
     tone: 'error',
   };
 }
@@ -145,9 +163,9 @@ function createCheckoutReturnShippingLockerView(state: CheckoutReturnLoadState):
 
   if (!locker) {
     return {
-      detail: 'Stripe collected the shipping details. The label will create the BOX NOW shipment manually.',
+      detail: 'Shipping details were collected in Stripe. The label will arrange BOX NOW manually.',
       kind: 'manual',
-      label: 'Manual BOX NOW Fulfillment',
+      label: 'BOX NOW arranged by the label',
     };
   }
 

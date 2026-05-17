@@ -42,6 +42,16 @@ function parseAllowedOrigins(value: string | undefined) {
     (value || '')
       .split(',')
       .map((origin) => origin.trim())
-      .filter(Boolean),
+      .filter(Boolean)
+      .map((origin) => parseUrl(origin)?.origin)
+      .filter((origin): origin is string => Boolean(origin)),
   );
+}
+
+function parseUrl(value: string): URL | null {
+  try {
+    return new URL(value);
+  } catch {
+    return null;
+  }
 }

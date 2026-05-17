@@ -56,7 +56,7 @@ export default function CheckoutReturnStatus({ api, checkoutPath, itemPath, stor
   return (
     <section className="space-y-5" data-checkout-return-status>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Checkout Return</p>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{view.kicker}</p>
         <span
           className={cn(
             'inline-flex border px-2 py-1 text-[10px] uppercase tracking-[0.18em]',
@@ -74,6 +74,7 @@ export default function CheckoutReturnStatus({ api, checkoutPath, itemPath, stor
         <div className="space-y-3">
           <h2 className="font-display text-4xl uppercase tracking-[0.08em] text-foreground">{view.title}</h2>
           <p className="text-sm leading-6 text-muted-foreground">{view.detail}</p>
+          <p className="text-sm leading-6 text-foreground">{view.nextStep}</p>
         </div>
 
         {view.shippingLocker.kind !== 'hidden' && (
@@ -86,13 +87,24 @@ export default function CheckoutReturnStatus({ api, checkoutPath, itemPath, stor
             )}
             data-checkout-return-locker-recap
           >
-            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">BOX NOW shipping</p>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Shipping</p>
             <p className="text-sm font-medium leading-6 text-foreground">{view.shippingLocker.label}</p>
             <p className="text-xs leading-5 text-muted-foreground">{view.shippingLocker.detail}</p>
           </div>
         )}
 
         <div className="grid gap-3 sm:grid-cols-2">
+          <a
+            className={cn(
+              'inline-flex min-h-11 items-center justify-center px-4 text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors',
+              view.isFinal
+                ? 'bg-foreground text-background hover:bg-foreground/88'
+                : 'border border-border/80 text-foreground hover:bg-accent hover:text-accent-foreground',
+            )}
+            href={storePath}
+          >
+            {CHECKOUT_RETURN_ACTION_COPY.continueShopping}
+          </a>
           {!view.isFinal && (
             <a
               className="inline-flex min-h-11 items-center justify-center bg-foreground px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-background transition-colors hover:bg-foreground/88"
@@ -101,25 +113,21 @@ export default function CheckoutReturnStatus({ api, checkoutPath, itemPath, stor
               {CHECKOUT_RETURN_ACTION_COPY.retryCheckout}
             </a>
           )}
-          <button
-            type="button"
-            className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            onClick={() => requestStoreCartOpen()}
-          >
-            {CHECKOUT_RETURN_ACTION_COPY.backToCart}
-          </button>
           <a
             className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             href={itemPath}
           >
             {CHECKOUT_RETURN_ACTION_COPY.backToItem}
           </a>
-          <a
-            className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            href={storePath}
-          >
-            {CHECKOUT_RETURN_ACTION_COPY.continueShopping}
-          </a>
+          {!view.isFinal && (
+            <button
+              type="button"
+              className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              onClick={() => requestStoreCartOpen()}
+            >
+              {CHECKOUT_RETURN_ACTION_COPY.backToCart}
+            </button>
+          )}
         </div>
       </div>
     </section>

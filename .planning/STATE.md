@@ -408,6 +408,10 @@ explicit phase or plan arguments for GSD commands; the current human focus is no
 - Phase 10 plan 5 produced the milestone review package and go-live handoff. The package links implemented
   architecture, sandbox evidence, remaining production gates, and Go-Live / Launch Hardening seeds without claiming
   production cutover.
+- Phase 10 plan 6 fixed the GitHub Pages hosted Checkout return base-path bug, deployed sandbox Worker version
+  `3c996856-1285-43f3-8391-7307f5b0888e`, and verified smoke run `20260517123136` returned paid Checkout to
+  `/blackbox-records/store/.../checkout/return/?session_id=...`. The return page now uses buyer-facing order status
+  copy while still reading payment state from the Worker.
 - The no-account cart expansion workstream now promotes `BL-13` into concrete multi-item and CartQuantity planning. It
   can proceed without BOX NOW account access, but production multi-line checkout approval remains behind Go-Live /
   Launch Hardening.

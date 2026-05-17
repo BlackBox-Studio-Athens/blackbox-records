@@ -34,19 +34,19 @@ const summaryItem = {
 ---
 
 <SiteLayout
-  pageTitle={`${storeItem.title} Checkout Return | Store`}
-  pageDescription={`Checkout return state for ${storeItem.title} by ${storeItem.subtitle}.`}
+  pageTitle={`${storeItem.title} Order Status | Store`}
+  pageDescription={`Payment and order status for ${storeItem.title} by ${storeItem.subtitle}.`}
 >
   <section class="layout-container pt-14 pb-8">
     <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
       <div class="space-y-3">
         <Badge variant="outline" className="border-border/70 bg-background/80 text-xs tracking-[0.15em] uppercase">
-          Return
+          Order
         </Badge>
         <div class="space-y-2">
-          <h1 class="font-display text-5xl tracking-[0.08em] uppercase text-foreground sm:text-6xl">Checkout Return</h1>
+          <h1 class="font-display text-5xl tracking-[0.08em] uppercase text-foreground sm:text-6xl">Order Status</h1>
           <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Payment state is read from the Worker. Browser query parameters are never treated as order truth.
+            We confirm payment with the secure order system before showing the final result.
           </p>
         </div>
       </div>
@@ -64,10 +64,10 @@ const summaryItem = {
         <CardContent className="grid gap-6 p-5 sm:p-6 lg:p-8">
           <div class="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-5">
             <div class="space-y-2">
-              <p class="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Return</p>
-              <h2 class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">Checkout State</h2>
+              <p class="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Payment</p>
+              <h2 class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">Confirmation</h2>
             </div>
-            <span class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Cart / Checkout / Return</span>
+            <span class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Store / Checkout / Order</span>
           </div>
 
           <CheckoutReturnStatus

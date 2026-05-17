@@ -86,6 +86,18 @@
 - Boundary: the package now includes real Stripe test-mode sandbox evidence but still does not claim production cutover, live-mode readiness, or future BOX NOW automation.
 - Validation: `rg` evidence/reference check, `git diff --check`, and `pnpm check`.
 
+## 10-06 Fix Hosted Checkout Return Base Path And Buyer Success Page
+
+- Result: complete for sandbox UAT hardening, not production go-live.
+- Reported issue: successful Stripe Checkout redirected to `https://blackbox-studio-athens.github.io/store/disintegration-black-vinyl-lp/checkout/return?...`, missing the GitHub Pages `/blackbox-records` base path and producing GitHub Pages 404.
+- Fix: checkout return/cancel URL generation now preserves configured site bases such as `https://blackbox-studio-athens.github.io/blackbox-records` while CORS still normalizes those configured values to browser origins.
+- UX evidence: the return route now uses buyer-facing order status copy such as `Order Confirmed`, keeps Worker-read payment state as the authority, and avoids visible implementation copy such as `Checkout State`.
+- Hosted evidence: `pnpm smoke:stripe-sandbox -- --scenario all --site-url https://blackbox-studio-athens.github.io/blackbox-records --worker-url https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev` passed as run `20260517123136`.
+- Fixed return evidence: run `20260517123136` returned paid Checkout to `https://blackbox-studio-athens.github.io/blackbox-records/store/disintegration-black-vinyl-lp/checkout/return/?session_id=...`.
+- Browser Use blocker: Agentify navigation returned `missing_electron_binary`; DevTools/Playwright fallback evidence was used where rendered hosted checks were needed.
+- Validation: targeted backend return/CORS tests passed, targeted return status tests passed, `pnpm test:unit` passed, `pnpm check` passed, `pnpm build` passed, and `pnpm deploy:backend:sandbox` deployed Worker version `3c996856-1285-43f3-8391-7307f5b0888e`.
+- Boundary: no production/live Stripe, production D1, or browser-owned paid-order authority was introduced.
+
 ## No-Account Multi-Item Cart Expansion - 2026-05-12
 
 - Result: complete for no-account StoreCart command validation; external release gates remain deferred.

@@ -296,6 +296,7 @@ Plans:
 - [x] 10-04: Run security, OpenAPI, browser, and no-secret release audit
 - [x] 10-04.1: Add Worker-owned native checkout feature gate
 - [x] 10-05: Produce milestone review package and go-live handoff
+- [x] 10-06: Fix hosted Checkout return base path and buyer success page
 
 ### Phase 11: Website Editorial And Catalog UX Improvements
 

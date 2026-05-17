@@ -53,6 +53,25 @@ describe('createHttpApp', () => {
     expect(response.headers.get('access-control-allow-origin')).toBe('http://127.0.0.1:4321');
   });
 
+  it('allows browser origins when checkout return config includes a base path', async () => {
+    const app = createHttpApp();
+
+    const response = await app.request(
+      'http://backend.test/api/nope',
+      {
+        headers: {
+          Origin: 'https://blackbox-studio-athens.github.io',
+        },
+      },
+      {
+        ...testBindings,
+        CHECKOUT_RETURN_ORIGINS: 'https://blackbox-studio-athens.github.io/blackbox-records',
+      },
+    );
+
+    expect(response.headers.get('access-control-allow-origin')).toBe('https://blackbox-studio-athens.github.io');
+  });
+
   it('does not allow arbitrary browser origins on API routes', async () => {
     const app = createHttpApp();
 

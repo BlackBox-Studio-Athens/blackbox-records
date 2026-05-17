@@ -54,11 +54,11 @@ describe('CheckoutReturnStatus', () => {
   });
 
   it.each([
-    ['paid', 'Payment Confirmed', 'Paid', true],
-    ['open', 'Checkout Still Open', 'Open', false],
+    ['paid', 'Order Confirmed', 'Confirmed', true],
+    ['open', 'Payment Not Finished', 'Open', false],
     ['processing', 'Payment Processing', 'Processing', false],
     ['expired', 'Checkout Expired', 'Expired', false],
-    ['unknown', 'Checkout State Unknown', 'Unknown', false],
+    ['unknown', 'We Could Not Confirm Payment', 'Unknown', false],
   ] as const)('maps %s ReadCheckoutState output to app-owned shopper copy', (state, title, badgeLabel, isFinal) => {
     expect(
       createCheckoutReturnStatusView({
@@ -99,7 +99,7 @@ describe('CheckoutReturnStatus', () => {
       }).shippingLocker,
     ).toMatchObject({
       kind: 'manual',
-      label: 'Manual BOX NOW Fulfillment',
+      label: 'BOX NOW arranged by the label',
     });
   });
 
@@ -115,7 +115,7 @@ describe('CheckoutReturnStatus', () => {
       />,
     );
 
-    expect(html).toContain('Checkout Return');
+    expect(html).toContain('Payment Status');
     expect(html).toContain(CHECKOUT_RETURN_ACTION_COPY.retryCheckout);
     expect(html).toContain(CHECKOUT_RETURN_ACTION_COPY.backToCart);
     expect(html).toContain(CHECKOUT_RETURN_ACTION_COPY.backToItem);
@@ -123,6 +123,8 @@ describe('CheckoutReturnStatus', () => {
     expect(html).not.toContain('redirect_status');
     expect(html).not.toContain('payment_intent');
     expect(html).not.toContain('StartCheckout');
+    expect(html).not.toContain('session_id');
+    expect(html).not.toContain('Checkout State');
   });
 
   it('dispatches a browser-only cart open request', () => {
