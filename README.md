@@ -538,6 +538,7 @@ Content is managed in the repo through Astro content collections, and Decap CMS 
 - Home copy: `apps/web/src/content/home/*.json`
 - About copy: `apps/web/src/content/about/*.json`
 - Services copy: `apps/web/src/content/services/*.json`
+- Newsletter copy: `apps/web/src/content/newsletter/*.json`
 - Navigation: `apps/web/src/content/navigation/*.json`
 - Social links: `apps/web/src/content/socials/*.json`
 - Site settings: `apps/web/src/content/settings/*.json`
@@ -660,6 +661,7 @@ The CMS edits the same Astro content files already used by the site:
   - `home`
   - `about`
   - `services`
+  - `newsletter`
   - `settings`
 - Folder collections:
   - `navigation`

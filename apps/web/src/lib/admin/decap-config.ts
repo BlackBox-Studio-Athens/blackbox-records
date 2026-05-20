@@ -4,6 +4,7 @@ import { buildArtistCollection } from './decap-artist-collection';
 import { buildDistroCollection } from './decap-distro-collection';
 import { buildHomeFields } from './decap-home-fields';
 import { buildNewsCollection } from './decap-news-collection';
+import { buildNewsletterFields } from './decap-newsletter-fields';
 import { buildPageFileCollections } from './decap-page-collections';
 import { buildReleaseCollection } from './decap-release-collection';
 import { buildSettingsFields } from './decap-settings-fields';
@@ -39,9 +40,10 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
   const aboutFields = buildAboutFields();
   const servicesFields = buildServicesFields();
   const settingsFields = buildSettingsFields();
+  const newsletterFields = buildNewsletterFields();
 
   const collections = [
-    ...buildPageFileCollections({ homeFields, aboutFields, servicesFields, settingsFields }),
+    ...buildPageFileCollections({ homeFields, aboutFields, servicesFields, settingsFields, newsletterFields }),
     ...buildSiteChromeCollections(),
     buildArtistCollection(),
     buildReleaseCollection(options.artistOptions),

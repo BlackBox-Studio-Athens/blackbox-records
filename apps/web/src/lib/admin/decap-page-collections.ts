@@ -5,6 +5,7 @@ type BuildPageFileCollectionsOptions = {
   aboutFields: string[];
   servicesFields: string[];
   settingsFields: string[];
+  newsletterFields: string[];
 };
 
 export function buildPageFileCollections({
@@ -12,6 +13,7 @@ export function buildPageFileCollections({
   aboutFields,
   servicesFields,
   settingsFields,
+  newsletterFields,
 }: BuildPageFileCollectionsOptions) {
   return [
     buildFileCollection({
@@ -59,6 +61,20 @@ export function buildPageFileCollections({
           mediaFolder: '.',
           publicFolder: './',
           fields: servicesFields,
+        },
+      ],
+    }),
+    buildFileCollection({
+      name: 'newsletter',
+      label: 'Newsletter',
+      create: false,
+      delete: false,
+      files: [
+        {
+          name: 'newsletter-site',
+          label: 'Newsletter Content',
+          file: 'src/content/newsletter/site.json',
+          fields: newsletterFields,
         },
       ],
     }),

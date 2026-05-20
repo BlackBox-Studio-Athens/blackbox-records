@@ -24,6 +24,8 @@ describe('buildDecapConfig', () => {
     expect(yaml).toContain('folder: "src/content/releases"');
     expect(yaml).toContain('value: "mass-culture"');
     expect(yaml).toContain('summary: "{{fields.tagline}}"');
+    expect(yaml).toContain('file: "src/content/newsletter/site.json"');
+    expect(yaml).toContain('default: "../../../.astro/collections/newsletter.schema.json"');
     expect(yaml).toContain('hint: "Short line over the hero still. Example: \\"Heavy music on record.\\""');
     expect(yaml).toContain('hint: "Pick the matching artist entry so Astro references stay valid."');
     expect(yaml).toContain('summary: "{{fields.title}}"');

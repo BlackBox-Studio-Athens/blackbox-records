@@ -139,6 +139,18 @@ const settings = defineCollection({
   }),
 });
 
+const newsletter = defineCollection({
+  loader: glob({ pattern: '**/*.json', base: './src/content/newsletter' }),
+  schema: z.object({
+    section_label: z.string(),
+    title: z.string(),
+    description: z.string(),
+    placeholder: z.string(),
+    button_label: z.string(),
+    note: z.string(),
+  }),
+});
+
 const home = defineCollection({
   loader: glob({ pattern: '**/*.json', base: './src/content/home' }),
   schema: ({ image }) =>
@@ -302,6 +314,7 @@ export const collections = {
   navigation,
   socials,
   settings,
+  newsletter,
   home,
   about,
   services,

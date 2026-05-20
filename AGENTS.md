@@ -235,6 +235,7 @@ Read these first before editing:
 - Homepage copy: `apps/web/src/content/home/site.json`
 - About page copy: `apps/web/src/content/about/site.json`
 - Services page copy: `apps/web/src/content/services/site.json`
+- Newsletter copy: `apps/web/src/content/newsletter/site.json`
 
 All JSON collection entries include `$schema` links to Astro-generated collection schemas for editor/CMS validation.
 
@@ -244,7 +245,7 @@ All JSON collection entries include `$schema` links to Astro-generated collectio
 - Collection-owned images for artists/releases/news use Astro `image()`
 - Home/about decorative images also use Astro `image()`
 - Artists and releases may carry an optional `shop_collection_handle` for future Fourthwall collection linking
-- Home/about/settings/navigation/socials use structured JSON collections
+- Home/about/services/newsletter/settings/navigation/socials use structured JSON collections
 - Query helpers live in `apps/web/src/lib/site-data.ts`
 
 ### Artist image standard

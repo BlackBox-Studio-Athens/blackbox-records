@@ -17,6 +17,7 @@ export type SiteSocialItem = {
 };
 
 export type SiteLabelSettings = CollectionEntry<'settings'>['data'];
+export type NewsletterContent = CollectionEntry<'newsletter'>['data'];
 export type HomeContent = CollectionEntry<'home'>['data'];
 export type AboutContent = CollectionEntry<'about'>['data'];
 export type ServicesContent = CollectionEntry<'services'>['data'];
@@ -69,6 +70,15 @@ export async function getLabelSettings(): Promise<SiteLabelSettings> {
   }
 
   return siteSettings.data;
+}
+
+export async function getNewsletterContent(): Promise<NewsletterContent> {
+  const newsletterContent = await getEntry('newsletter', 'site');
+  if (!newsletterContent) {
+    throw new Error('Missing newsletter content entry at src/content/newsletter/site.json.');
+  }
+
+  return newsletterContent.data;
 }
 
 export async function getHomeContent(): Promise<HomeContent> {

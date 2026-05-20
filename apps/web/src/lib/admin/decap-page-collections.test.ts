@@ -9,6 +9,7 @@ describe('Decap page file collections', () => {
       aboutFields: ['about-field'],
       servicesFields: ['services-field'],
       settingsFields: ['settings-field'],
+      newsletterFields: ['newsletter-field'],
     }).join('\n');
 
     expect(yaml).toContain('name: "home"');
@@ -23,5 +24,8 @@ describe('Decap page file collections', () => {
     expect(yaml).toContain('name: "settings"');
     expect(yaml).toContain('file: "src/content/settings/site.json"');
     expect(yaml).toContain('settings-field');
+    expect(yaml).toContain('name: "newsletter"');
+    expect(yaml).toContain('file: "src/content/newsletter/site.json"');
+    expect(yaml).toContain('newsletter-field');
   });
 });

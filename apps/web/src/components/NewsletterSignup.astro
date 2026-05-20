@@ -1,8 +1,8 @@
 ---
-import { newsletterContent } from '@/data/newsletter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getNewsletterContent } from '@/lib/site-data';
 
 interface Props {
   id?: string;
@@ -10,6 +10,7 @@ interface Props {
 }
 
 const { id, formId = 'newsletter-email' } = Astro.props;
+const newsletterContent = await getNewsletterContent();
 ---
 
 <section class="layout-container mt-16" id={id}>
