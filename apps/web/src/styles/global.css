@@ -341,6 +341,15 @@
     letter-spacing: 0.03em;
   }
 
+  .brand-cart-line-title {
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.2rem, 3.2vw, 1.55rem);
+    line-height: 1.02;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
   .internal-page-hero__title {
     font-family: var(--font-display-brand);
     font-size: clamp(2.35rem, 8.5vw, 4.15rem);

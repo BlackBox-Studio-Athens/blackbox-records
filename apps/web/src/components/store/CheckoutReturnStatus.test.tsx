@@ -146,15 +146,21 @@ describe('CheckoutReturnStatus', () => {
     expect(html).toContain('Thanks for the order');
     expect(html).toContain('Confirmed');
     expect(html).toContain('Payment is confirmed and your order is recorded.');
-    expect(html).toContain('Confirmation details');
-    expect(html).toContain('Payment confirmed');
-    expect(html).toContain('cs_mock_variant_barren-point_standard');
-    expect(html).toContain('BOX NOW arranged manually by BlackBox');
-    expect(html).toContain('Stripe will email the payment receipt if an email address was provided at checkout.');
     expect(html).toContain('What happens next');
-    expect(html).toContain('BlackBox will prepare the shipment manually and contact you if anything is needed.');
+    expect(html).toContain('Receipt');
+    expect(html).toContain('Check the email used at checkout for the Stripe payment receipt.');
+    expect(html).toContain('Fulfillment');
+    expect(html).toContain('BlackBox will prepare the shipment manually.');
+    expect(html).toContain('Delivery');
+    expect(html).toContain('BOX NOW details will follow once the shipment is arranged.');
     expect(html.match(/Continue Shopping/g)).toHaveLength(1);
     expect(html.match(/BOX NOW/g)).toHaveLength(1);
+    expect(html).not.toContain('Reference');
+    expect(html).not.toContain('cs_mock');
+    expect(html).not.toContain('cs_test');
+    expect(html).not.toContain('cs_live');
+    expect(html).not.toContain('checkoutSessionId');
+    expect(html).not.toContain('Payment confirmed');
     expect(html).not.toContain(CHECKOUT_RETURN_ACTION_COPY.retryCheckout);
     expect(html).not.toContain(CHECKOUT_RETURN_ACTION_COPY.backToCart);
     expect(html).not.toContain(CHECKOUT_RETURN_ACTION_COPY.backToItem);
@@ -181,6 +187,7 @@ describe('CheckoutReturnStatus', () => {
     expect(html).toContain(CHECKOUT_RETURN_ACTION_COPY.backToCart);
     expect(html).toContain(CHECKOUT_RETURN_ACTION_COPY.backToItem);
     expect(html).not.toContain('Confirmation details');
+    expect(html).not.toContain('What happens next');
     expect(html).not.toContain('Payment confirmed');
   });
 

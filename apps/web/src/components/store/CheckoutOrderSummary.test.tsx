@@ -46,6 +46,16 @@ describe('CheckoutOrderSummary', () => {
     expect(markup).toContain('/blackbox-records/store/disintegration-black-vinyl-lp/');
   });
 
+  it('uses Veneer only for checkout line item names', () => {
+    const markup = renderToStaticMarkup(<CheckoutOrderSummary {...summaryInput} />);
+
+    expect(markup).toContain('brand-cart-line-title text-foreground');
+    expect(markup.match(/brand-cart-line-title/g)).toHaveLength(1);
+    expect(markup).toContain('€28.00');
+    expect(markup).toContain(CHECKOUT_ORDER_SUMMARY_COPY.subtotal);
+    expect(markup).toContain(CHECKOUT_ORDER_SUMMARY_COPY.backToItem);
+  });
+
   it('keeps unavailable items visible without changing the subtotal source', () => {
     const {
       priceAmountMinor: _priceAmountMinor,

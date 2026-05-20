@@ -158,7 +158,7 @@ The palette is near-black and off-white with two muted red families for section-
 
 ### Named Rules
 
-**The Public Title Rule.** Veneer owns public content titles: artist names, release names, distro/store item names, service offering titles, group headings, route heroes, and major editorial feature titles. Bebas Neue remains the compact UI display face for navigation, buttons, prices, cart, checkout, stock operations, order summaries, metadata-heavy panels, and any surface where texture would slow scanning.
+**The Public Title Rule.** Veneer owns public content titles: artist names, release names, distro/store item names, cart and checkout line item names, service offering titles, group headings, route heroes, and major editorial feature titles. Bebas Neue remains the compact UI display face for navigation, buttons, prices, cart/checkout chrome, totals, controls, labels, stock operations, order-state surfaces, metadata-heavy panels, and any surface where texture would slow scanning.
 
 **The Metadata Is Quiet Rule.** Labels may be uppercase and tracked, but they stay small. Do not let metadata compete with release, artist, or item names.
 

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { CheckCircle2, PackageCheck, ReceiptText, Truck, type LucideIcon } from 'lucide-react';
 
 import { createPublicCheckoutApi, type PublicCheckoutApi } from '@/lib/backend/public-checkout-api';
 import { createEmptyStoreCartState, STORE_CART_OPEN_REQUESTED_EVENT, writeStoreCartState } from '@/lib/store-cart';
@@ -87,56 +88,87 @@ export default function CheckoutReturnStatus({ api, checkoutPath, itemPath, stor
 
 export function CheckoutSuccessScreen({ storePath, view }: { storePath: string; view: CheckoutReturnStatusView }) {
   return (
-    <section className="mx-auto max-w-3xl space-y-8" data-checkout-return-status data-checkout-success-screen>
+    <section className="mx-auto max-w-5xl space-y-6" data-checkout-return-status data-checkout-success-screen>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{view.kicker}</p>
         <CheckoutReturnBadge view={view} />
       </div>
 
-      <div className="border border-border/70 bg-card/35 p-6 sm:p-8">
-        <div className="max-w-2xl space-y-5">
-          <h1 className="font-display text-5xl uppercase tracking-[0.08em] text-foreground sm:text-6xl">
-            {view.title}
-          </h1>
-          <p className="text-base leading-7 text-muted-foreground">{view.detail}</p>
+      <div className="grid overflow-hidden border border-border/70 bg-card/35 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.8fr)]">
+        <div className="flex min-h-[25rem] flex-col justify-between p-6 sm:p-8 lg:p-10">
+          <div className="space-y-7">
+            <div
+              className="flex size-16 items-center justify-center border border-emerald-300/45 bg-emerald-300/10 text-emerald-100 sm:size-20"
+              aria-hidden="true"
+            >
+              <CheckCircle2 className="size-9 sm:size-11" strokeWidth={1.7} />
+            </div>
+
+            <div className="max-w-2xl space-y-5">
+              <h1 className="font-display text-6xl uppercase leading-none tracking-[0.08em] text-foreground sm:text-7xl lg:text-8xl">
+                {view.title}
+              </h1>
+              <p className="max-w-xl text-lg leading-8 text-muted-foreground">{view.detail}</p>
+            </div>
+          </div>
+
+          <div className="mt-10 border-t border-border/60 pt-5">
+            <a
+              className="inline-flex min-h-11 w-full items-center justify-center bg-foreground px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-background transition-colors hover:bg-foreground/88 sm:w-auto sm:min-w-64"
+              href={storePath}
+            >
+              {CHECKOUT_RETURN_ACTION_COPY.continueShopping}
+            </a>
+          </div>
         </div>
 
-        {view.confirmationDetails && (
-          <div className="mt-8 border-t border-border/60 pt-5" data-checkout-confirmation-details>
-            <h2 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-              {view.confirmationDetails.heading}
-            </h2>
-            <dl className="mt-4 grid gap-px border border-border/70 bg-border/70 sm:grid-cols-2">
-              {view.confirmationDetails.items.map((item) => (
-                <div className="min-w-0 bg-background p-4" key={item.label}>
-                  <dt className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{item.label}</dt>
-                  <dd className="mt-2 [overflow-wrap:anywhere] text-sm font-medium leading-6 text-foreground">
-                    {item.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        )}
-
-        {view.nextStep && (
-          <div className="mt-5 border border-border/70 bg-background/35 p-4" data-checkout-next-step>
-            <h2 className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">What happens next</h2>
-            <p className="mt-2 text-sm leading-6 text-foreground">{view.nextStep}</p>
-          </div>
-        )}
-
-        <div className="mt-8 border-t border-border/60 pt-5">
-          <a
-            className="inline-flex min-h-11 w-full items-center justify-center bg-foreground px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-background transition-colors hover:bg-foreground/88 sm:w-auto sm:min-w-64"
-            href={storePath}
-          >
-            {CHECKOUT_RETURN_ACTION_COPY.continueShopping}
-          </a>
-        </div>
+        {view.nextSteps && <CheckoutSuccessNextSteps view={view} />}
       </div>
     </section>
   );
+}
+
+function CheckoutSuccessNextSteps({ view }: { view: CheckoutReturnStatusView }) {
+  if (!view.nextSteps) return null;
+
+  const { heading, items } = view.nextSteps;
+
+  return (
+    <aside
+      className="border-t border-border/70 bg-[#101010] p-6 sm:p-8 lg:border-t-0 lg:border-l"
+      data-checkout-next-steps
+    >
+      <h2 className="font-display text-3xl uppercase tracking-[0.08em] text-foreground">{heading}</h2>
+      <ol className="mt-7 space-y-0">
+        {items.map((item, index) => (
+          <li className="grid grid-cols-[2.75rem_1fr] gap-4" key={item.label}>
+            <div className="relative flex justify-center">
+              <div className="z-10 flex size-11 items-center justify-center border border-border/80 bg-background text-foreground">
+                <CheckoutNextStepIcon icon={item.icon} />
+              </div>
+              {index < items.length - 1 && (
+                <div className="absolute top-11 bottom-0 w-px bg-border/80" aria-hidden="true" />
+              )}
+            </div>
+            <div className="min-w-0 border-b border-border/55 pb-6 last:border-b-0">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{item.label}</p>
+              <p className="mt-2 text-sm leading-6 text-foreground">{item.value}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </aside>
+  );
+}
+
+function CheckoutNextStepIcon({ icon }: { icon: 'receipt' | 'fulfillment' | 'delivery' }) {
+  const Icon: LucideIcon = {
+    delivery: Truck,
+    fulfillment: PackageCheck,
+    receipt: ReceiptText,
+  }[icon];
+
+  return <Icon className="size-5" strokeWidth={1.7} aria-hidden="true" />;
 }
 
 export function CheckoutReturnStatusScreen({

@@ -1,6 +1,8 @@
+import * as React from 'react';
 import { describe, expect, it } from 'vitest';
+import { renderToStaticMarkup } from 'react-dom/server';
 
-import { createStoreCartDrawerView, STORE_CART_DRAWER_COPY } from './StoreCartDrawer';
+import { createStoreCartDrawerView, STORE_CART_DRAWER_COPY, StoreCartDrawerPanel } from './StoreCartDrawer';
 import { addStoreCartItem, createEmptyStoreCartState, type CartLineItemSnapshot } from '../../lib/store-cart';
 
 const cartItem: CartLineItemSnapshot = {
@@ -58,6 +60,25 @@ describe('StoreCartDrawer', () => {
     expect(view.subtotalDisplay).toBe('€20.00');
     expect(view.checkoutHref).toBe('/blackbox-records/store/disintegration-black-vinyl-lp/checkout/');
     expect(STORE_CART_DRAWER_COPY.remove).toBe('Remove');
+  });
+
+  it('uses Veneer only for cart line item names', () => {
+    const markup = renderToStaticMarkup(
+      <StoreCartDrawerPanel
+        cartState={addStoreCartItem(cartItem)}
+        onContinueShopping={() => undefined}
+        onDecrementItem={() => undefined}
+        onIncrementItem={() => undefined}
+        onRemoveItem={() => undefined}
+        renderHeader={false}
+        resolveHref={resolveHref}
+      />,
+    );
+
+    expect(markup).toContain('brand-cart-line-title text-foreground');
+    expect(markup.match(/brand-cart-line-title/g)).toHaveLength(1);
+    expect(markup).toContain('€20.00');
+    expect(markup).toContain(STORE_CART_DRAWER_COPY.checkout);
   });
 
   it('uses CartQuantity when calculating the drawer subtotal', () => {

@@ -132,7 +132,7 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
               </div>
 
               <div className="min-w-0 space-y-2">
-                <p className="font-display text-2xl uppercase tracking-[0.09em] text-foreground">{line.title}</p>
+                <p className="brand-cart-line-title text-foreground">{line.title}</p>
                 <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{line.subtitle}</p>
                 {line.optionLabel && (
                   <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{line.optionLabel}</p>
