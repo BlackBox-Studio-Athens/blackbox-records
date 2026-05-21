@@ -6,7 +6,7 @@ import {
 } from '../../../../scripts/check-stripe-test-checkout';
 
 const validInput = {
-  devVarsText: 'STRIPE_SECRET_KEY=sk_test_real_secret\n',
+  devVarsText: 'STRIPE_SECRET_KEY=sk_test_real_secret\nSTRIPE_PAYMENT_METHOD_CONFIGURATION_ID=pmc_test_123\n',
   env: {},
   gitignoreText: 'apps/backend/prisma/seeds/local-stripe-test-state.sql\n',
   seedSqlText: "INSERT INTO VariantStripeMapping VALUES ('variant', 'variant_barren-point_standard', 'price_real');",
@@ -36,6 +36,15 @@ describe('Stripe test checkout preflight', () => {
     ).toContain(
       'apps/backend/.dev.vars must define STRIPE_SECRET_KEY with a real Stripe test secret key (sk_test_...).',
     );
+  });
+
+  it('requires a Stripe Payment Method Configuration ID in backend dev vars', () => {
+    expect(
+      checkStripeTestCheckoutPreflight({
+        ...validInput,
+        devVarsText: 'STRIPE_SECRET_KEY=sk_test_real_secret\n',
+      }).issues,
+    ).toContain('apps/backend/.dev.vars must define STRIPE_PAYMENT_METHOD_CONFIGURATION_ID with a pmc_... value.');
   });
 
   it('requires an ignored local Stripe test seed with a non-placeholder real price id', () => {
@@ -93,6 +102,9 @@ describe('Stripe test checkout preflight', () => {
 
     expect(report).toContain('Stripe test checkout preflight failed:');
     expect(report).toContain('Set STRIPE_SECRET_KEY in apps/backend/.dev.vars to a real sk_test_ value.');
+    expect(report).toContain(
+      'Set STRIPE_PAYMENT_METHOD_CONFIGURATION_ID in apps/backend/.dev.vars to the test-mode Payment Method Configuration ID.',
+    );
     expect(report).not.toContain('sk_test_real_secret');
   });
 });

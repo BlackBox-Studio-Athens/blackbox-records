@@ -148,6 +148,10 @@ export function readRequiredEnvironmentIssues(
     issues.push('apps/backend/.dev.vars must define STRIPE_SECRET_KEY for dev:stack:stripe-test.');
   }
 
+  if (mode === 'stripe-test' && !devVarKeys.has('STRIPE_PAYMENT_METHOD_CONFIGURATION_ID')) {
+    issues.push('apps/backend/.dev.vars must define STRIPE_PAYMENT_METHOD_CONFIGURATION_ID for dev:stack:stripe-test.');
+  }
+
   return issues;
 }
 

@@ -7,6 +7,7 @@ const testBindings: AppBindings = {
   APP_ENV: 'local',
   CHECKOUT_RETURN_ORIGINS: 'http://127.0.0.1:4321,http://localhost:4321',
   COMMERCE_DB: {} as D1Database,
+  STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: 'pmc_test_blackbox_checkout',
   STRIPE_SECRET_KEY: 'sk_test_mock',
 };
 

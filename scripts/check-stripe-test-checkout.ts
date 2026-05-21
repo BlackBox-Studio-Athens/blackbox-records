@@ -25,6 +25,9 @@ export function checkStripeTestCheckoutPreflight(
 ): StripeTestCheckoutPreflightResult {
   const issues: string[] = [];
   const stripeSecretKey = input.devVarsText ? readDotEnvValue(input.devVarsText, 'STRIPE_SECRET_KEY') : null;
+  const paymentMethodConfigurationId = input.devVarsText
+    ? readDotEnvValue(input.devVarsText, 'STRIPE_PAYMENT_METHOD_CONFIGURATION_ID')
+    : null;
   const seedSqlText = input.seedSqlText?.trim() ?? '';
 
   if (!input.devVarsText) {
@@ -33,6 +36,10 @@ export function checkStripeTestCheckoutPreflight(
     issues.push(
       `${devVarsRelativePath} must define STRIPE_SECRET_KEY with a real Stripe test secret key (sk_test_...).`,
     );
+  }
+
+  if (input.devVarsText && !isStripePaymentMethodConfigurationId(paymentMethodConfigurationId ?? '')) {
+    issues.push(`${devVarsRelativePath} must define STRIPE_PAYMENT_METHOD_CONFIGURATION_ID with a pmc_... value.`);
   }
 
   if (!input.seedSqlText) {
@@ -70,7 +77,8 @@ export function formatStripeTestCheckoutPreflightReport(result: StripeTestChecko
     'Required setup:',
     '1. Copy apps/backend/.dev.vars.example to apps/backend/.dev.vars.',
     '2. Set STRIPE_SECRET_KEY in apps/backend/.dev.vars to a real sk_test_ value.',
-    `3. Copy ${seedExampleRelativePath} to ${seedRelativePath} and add a real Stripe test Price ID.`,
+    '3. Set STRIPE_PAYMENT_METHOD_CONFIGURATION_ID in apps/backend/.dev.vars to the test-mode Payment Method Configuration ID.',
+    `4. Copy ${seedExampleRelativePath} to ${seedRelativePath} and add a real Stripe test Price ID.`,
   ].join('\n');
 }
 
@@ -119,6 +127,10 @@ function containsRealStripeTestPriceId(value: string): boolean {
 
     return priceId !== placeholderPriceId && !priceId.startsWith('price_mock_');
   });
+}
+
+function isStripePaymentMethodConfigurationId(value: string): boolean {
+  return value.startsWith('pmc_');
 }
 
 function readOptionalFile(relativePath: string): string | null {

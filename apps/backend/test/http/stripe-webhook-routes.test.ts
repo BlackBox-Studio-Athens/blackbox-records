@@ -31,6 +31,7 @@ const webhookSecret = 'whsec_fixture_secret';
 const testBindings = {
   APP_ENV: 'local' as const,
   COMMERCE_DB: {} as D1Database,
+  STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: 'pmc_test_blackbox_checkout',
   STRIPE_SECRET_KEY: 'sk_test_123',
   STRIPE_WEBHOOK_SECRET: webhookSecret,
 };

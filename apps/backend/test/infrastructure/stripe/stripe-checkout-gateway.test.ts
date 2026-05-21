@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { CheckoutConfigurationError } from '../../../src/application/commerce/checkout';
+import type { AppBindings } from '../../../src/env';
 import {
+  createStripeCheckoutGateway,
   createStripeClientOptions,
   StripeCheckoutGateway,
 } from '../../../src/infrastructure/stripe/stripe-checkout-gateway';
@@ -29,15 +32,18 @@ describe('StripeCheckoutGateway', () => {
       id: 'cs_test_123',
       url: 'https://checkout.stripe.test/session/cs_test_123',
     }));
-    const gateway = new StripeCheckoutGateway({
-      checkout: {
-        sessions: {
-          create,
-          retrieve: vi.fn(),
-          listLineItems: vi.fn(),
+    const gateway = new StripeCheckoutGateway(
+      {
+        checkout: {
+          sessions: {
+            create,
+            retrieve: vi.fn(),
+            listLineItems: vi.fn(),
+          },
         },
-      },
-    } as never);
+      } as never,
+      'pmc_test_blackbox_checkout',
+    );
 
     await expect(
       gateway.createHostedCheckoutSession({
@@ -67,7 +73,7 @@ describe('StripeCheckoutGateway', () => {
         ],
         cancel_url: 'https://blackbox.example/checkout',
         locale: 'en',
-        payment_method_types: ['card'],
+        payment_method_configuration: 'pmc_test_blackbox_checkout',
         phone_number_collection: {
           enabled: true,
         },
@@ -81,6 +87,22 @@ describe('StripeCheckoutGateway', () => {
     const createPayload = createCalls[0]?.[0];
 
     expect(createPayload).not.toHaveProperty('ui_mode');
+    expect(createPayload).not.toHaveProperty('payment_method_types');
     expect(createPayload?.line_items[0]).not.toHaveProperty('adjustable_quantity');
+  });
+
+  it('requires a configured Payment Method Configuration ID before Checkout Session creation', () => {
+    const bindings: Pick<
+      AppBindings,
+      'STRIPE_API_BASE_URL' | 'STRIPE_PAYMENT_METHOD_CONFIGURATION_ID' | 'STRIPE_SECRET_KEY'
+    > = {
+      STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ' ',
+      STRIPE_SECRET_KEY: 'sk_test_123',
+    };
+
+    expect(() => createStripeCheckoutGateway(bindings)).toThrow(CheckoutConfigurationError);
+    expect(() => createStripeCheckoutGateway(bindings)).toThrow(
+      'Stripe Payment Method Configuration ID is not configured.',
+    );
   });
 });

@@ -10,6 +10,7 @@ export type AppBindings = {
   FLAGS?: FlagshipBinding;
   NATIVE_CHECKOUT_ENABLED?: string;
   STRIPE_API_BASE_URL?: string;
+  STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: string;
   STRIPE_SECRET_KEY: string;
   STRIPE_WEBHOOK_SECRET?: string;
 };

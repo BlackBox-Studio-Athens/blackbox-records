@@ -16,7 +16,10 @@ type StripeClientOptions = NonNullable<ConstructorParameters<typeof Stripe>[1]>;
 type StripeProtocol = NonNullable<StripeClientOptions['protocol']>;
 
 export class StripeCheckoutGateway implements CheckoutGateway {
-  public constructor(private readonly stripe: Stripe) {}
+  public constructor(
+    private readonly stripe: Stripe,
+    private readonly paymentMethodConfigurationId: string,
+  ) {}
 
   public async createHostedCheckoutSession(request: HostedCheckoutSessionRequest): Promise<HostedCheckoutSession> {
     const resolvedLineItems =
@@ -46,7 +49,7 @@ export class StripeCheckoutGateway implements CheckoutGateway {
         : undefined,
       locale: 'en',
       mode: 'payment',
-      payment_method_types: ['card'],
+      payment_method_configuration: this.paymentMethodConfigurationId,
       phone_number_collection: {
         enabled: true,
       },
@@ -87,14 +90,19 @@ export class StripeCheckoutGateway implements CheckoutGateway {
 }
 
 export function createStripeCheckoutGateway(
-  bindings: Pick<AppBindings, 'STRIPE_API_BASE_URL' | 'STRIPE_SECRET_KEY'>,
+  bindings: Pick<AppBindings, 'STRIPE_API_BASE_URL' | 'STRIPE_PAYMENT_METHOD_CONFIGURATION_ID' | 'STRIPE_SECRET_KEY'>,
 ): CheckoutGateway {
   if (!bindings.STRIPE_SECRET_KEY) {
     throw new CheckoutConfigurationError('Stripe secret key is not configured.');
   }
 
+  if (!bindings.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID?.trim()) {
+    throw new CheckoutConfigurationError('Stripe Payment Method Configuration ID is not configured.');
+  }
+
   return new StripeCheckoutGateway(
     new Stripe(bindings.STRIPE_SECRET_KEY, createStripeClientOptions(bindings.STRIPE_API_BASE_URL)),
+    bindings.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID,
   );
 }
 
