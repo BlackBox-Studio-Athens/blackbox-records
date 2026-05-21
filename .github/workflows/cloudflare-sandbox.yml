@@ -45,5 +45,11 @@ jobs:
       - name: Run workspace checks
         run: pnpm check
 
+      - name: Verify Stripe payment method policy
+        env:
+          STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: pnpm stripe:payment-methods:verify
+
       - name: Deploy Worker sandbox
         run: pnpm deploy:backend:sandbox
