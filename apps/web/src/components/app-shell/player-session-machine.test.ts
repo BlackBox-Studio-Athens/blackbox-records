@@ -91,4 +91,26 @@ describe('player session machine', () => {
     expect(stoppedState).toEqual(IDLE_PLAYER_SESSION_MACHINE_STATE);
     expect(deriveUi(stoppedState).miniPlayerStatusLabel).toBe('Player Ready');
   });
+
+  it('keeps session-scoped events as no-ops when there is no active session', () => {
+    const events = [
+      { type: 'iframe-loaded' },
+      { type: 'player-surface-interacted' },
+      { type: 'dismiss-requested' },
+      { type: 'reopen-requested' },
+    ] as const;
+
+    for (const event of events) {
+      expect(reducePlayerSessionMachine(IDLE_PLAYER_SESSION_MACHINE_STATE, event)).toBe(
+        IDLE_PLAYER_SESSION_MACHINE_STATE,
+      );
+    }
+  });
+
+  it('keeps unknown events as no-ops', () => {
+    const openState = reducePlayerSessionMachine(IDLE_PLAYER_SESSION_MACHINE_STATE, { type: 'session-opened' });
+    const invalidEvent = { type: 'unknown-player-event' } as never;
+
+    expect(reducePlayerSessionMachine(openState, invalidEvent)).toBe(openState);
+  });
 });
