@@ -124,9 +124,10 @@ Before using `dev:stack:stripe-test`:
 
 1. Copy `apps/backend/.dev.vars.example` to `apps/backend/.dev.vars`.
 2. Fill `STRIPE_SECRET_KEY` with a real Stripe `sk_test_...` value.
-3. Copy `apps/backend/prisma/seeds/local-stripe-test-state.sql.example` to the ignored `apps/backend/prisma/seeds/local-stripe-test-state.sql`.
-4. Replace the example `price_...` value with a real Stripe test Price ID.
-5. Run `pnpm checkout:preflight:stripe-test` to verify the local-only setup before starting servers.
+3. Fill `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` with the test-mode Payment Method Configuration ID.
+4. Copy `apps/backend/prisma/seeds/local-stripe-test-state.sql.example` to the ignored `apps/backend/prisma/seeds/local-stripe-test-state.sql`.
+5. Replace the example `price_...` value with a real Stripe test Price ID.
+6. Run `pnpm checkout:preflight:stripe-test` to verify the local-only setup before starting servers.
 
 Run the full local commerce stack with stripe-mock:
 
@@ -373,6 +374,8 @@ pnpm audit:commerce-boundaries
 - The current backend-local runtime secret contract is:
   - `STRIPE_SECRET_KEY`
   - `STRIPE_WEBHOOK_SECRET`
+- The required backend Stripe checkout configuration binding is:
+  - `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`
 - Future BOX NOW credentials remain Worker runtime secrets or out-of-band operator credentials. They must not be exposed through Astro `PUBLIC_*` env, Cloudflare Pages public build variables, generated frontend clients, static content, or committed seed files.
 - The optional backend-local Stripe mock/test override is:
   - `STRIPE_API_BASE_URL`
@@ -463,7 +466,8 @@ cp apps/backend/.dev.vars.example apps/backend/.dev.vars
 - Verify the local D1 binding with `pnpm --filter @blackbox/backend d1:smoke:local`.
 - `apps/backend/.dev.vars` is local-only, ignored by git, and must never be committed.
 - Missing backend runtime secrets are acceptable only for local work that does not exercise those routes.
-- Current Stripe-backed checkout routes require `STRIPE_SECRET_KEY` before creating or reading Checkout Sessions.
+- Current Stripe-backed checkout routes require `STRIPE_SECRET_KEY` and `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` before
+  creating or reading Checkout Sessions.
 - Hosted Worker checkout fails closed if the `FLAGS` binding is absent or feature evaluation fails; local/mock checkout
   remains enabled by default for no-account development.
 - Checkout session creation and split-port browser API reads accept origins only from `CHECKOUT_RETURN_ORIGINS`; configured origins include local static dev, Cloudflare Pages, and the GitHub Pages rollback origin.

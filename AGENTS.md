@@ -96,8 +96,8 @@ Read these first before editing:
 - The stack launcher scripts must run D1 migrations and seed SQL before starting the Worker/static site.
 - Keep `BlackBox Local Stack` working whenever frontend env, backend env, ports, checkout setup, D1 migrations, seed files, or WebStorm run configs change. If a change breaks the canonical launcher, fix the launcher or docs in the same commit.
 - The deterministic local mock checkout smoke path is `http://127.0.0.1:4321/blackbox-records/store/disintegration-black-vinyl-lp/checkout/`; stripe-mock mode now seeds every current visible store item with fake local checkout state.
-- `pnpm dev:stack:stripe-test` is the real local checkout path and requires `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and ignored local Stripe test Price mappings.
-- Run `pnpm checkout:preflight:stripe-test` before `pnpm dev:stack:stripe-test`; it verifies the backend local secret file, ignored local Price mapping seed, and gitignore protection without printing secrets.
+- `pnpm dev:stack:stripe-test` is the real local checkout path and requires `STRIPE_SECRET_KEY`, `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`, `STRIPE_WEBHOOK_SECRET`, and ignored local Stripe test Price mappings.
+- Run `pnpm checkout:preflight:stripe-test` before `pnpm dev:stack:stripe-test`; it verifies the backend local secret/config file, ignored local Price mapping seed, and gitignore protection without printing secrets.
 - `pnpm smoke:stripe-sandbox` is sandbox-only and automated through Playwright. It requires the deployed Pages site, sandbox Worker, sandbox D1 real Price mappings/stock, sandbox Worker Stripe secret names, and a separately running `stripe listen --forward-to <sandbox-worker>/api/stripe/webhooks` whose signing secret matches the sandbox Worker secret.
 - `pnpm dev:stack:stripe-mock` starts official `stripe-mock` locally through Go, points the real Stripe SDK at the local proxy on `http://127.0.0.1:12110`, generates local-only fake `Stock`, `ItemAvailability`, and `price_mock_*` mappings for every current store item, and returns a local-only mock Checkout URL. It must not require Docker or `apps/backend/.dev.vars`. It is not a real Stripe-hosted Checkout browser substitute, and the generated 99/99 stock values are not real inventory counts.
 - `pnpm dev:stack:stripe-mock-api` is kept as a terminal alias for the same official stripe-mock API path. Do not reintroduce the old in-process mock gateway as the default local stack.
@@ -131,9 +131,10 @@ Read these first before editing:
 - D1 is the stock source of truth. Spreadsheets are temporary capture/reporting only; operators reconcile offline movement through `/stock/` using `StockChange` for known deltas and `StockCount` for recounts.
 - `OnlineStock` is the conservative checkout-facing quantity and may be lower than physical `Stock`.
 - Do not introduce `prisma migrate dev`, `prisma db push`, or `prisma migrate deploy` into this repo workflow.
-- The current backend-local secret contract is `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
+- The current backend-local secret/config contract is `STRIPE_SECRET_KEY`, `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`, and `STRIPE_WEBHOOK_SECRET`.
 - Future BOX NOW credentials are Worker runtime secrets or out-of-band operator credentials only. Never put BOX NOW credentials in Astro `PUBLIC_*` env, Cloudflare Pages public build variables, generated frontend clients, static content, or committed seed files.
 - `STRIPE_API_BASE_URL` is an optional backend runtime variable for local Stripe API overrides; the committed Wrangler `mock` and `mock-api` envs bind it to `http://127.0.0.1:12110` for the local official stripe-mock proxy.
+- `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` is a required backend runtime variable for Stripe-backed checkout; missing or blank values fail at gateway construction.
 - `PUBLIC_CHECKOUT_CLIENT_MODE` is the browser checkout mode switch. Use `stripe` for real hosted Stripe Checkout and `mock` only for the local stripe-mock flow.
 - Native checkout availability is controlled by the Worker-owned `native_checkout_enabled` feature gate. The browser may read `/api/store/capabilities`, but it must not receive provider names, flag keys, Stripe IDs, D1 bindings, or internal evaluation errors.
 - Feature gates do not replace Worker environments. Sandbox and production still isolate D1 data, secrets, webhook endpoints, checkout return origins, and release evidence.
@@ -348,7 +349,7 @@ This is an iframe boundary, not an app bug.
 
 ## GSD usage notes
 
-- Repo GSD config intentionally keeps flat planning mode and `workflow.use_worktrees = false` for Codex v1.41.2, because Codex cannot provide Claude-style isolated subagent worktrees.
+- Repo GSD config intentionally keeps flat planning mode and `workflow.use_worktrees = false` for GSD v1.42.3 on Codex CLI 0.130.0, because Codex cannot provide Claude-style isolated subagent worktrees.
 - `07-16` and `10-03` are complete for Stripe sandbox UAT. Use explicit phase or plan arguments if older GSD progress helpers surface pre-access deferred-gate history.
 - Phase 12 boundary changes must keep `.planning/codebase/MODULES.md`, `.planning/codebase/modules/*.md`, and `.planning/codebase/module-boundaries.manifest.json` in sync whenever ownership, entrypoints, status, allowed dependencies, or exception policy changes.
 - Phase 12 execution slices stay one approved slice per branch or local commit cluster; do not enable `.planning/config.json` parallelization or `workflow.use_worktrees`.
