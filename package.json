@@ -18,6 +18,7 @@
     "dev:stack:stripe-mock": "tsx scripts/start-local-stack.ts stripe-mock",
     "dev:stack:stripe-mock-api": "tsx scripts/start-local-stack.ts stripe-mock-api",
     "checkout:preflight:stripe-test": "tsx scripts/check-stripe-test-checkout.ts",
+    "stripe:payment-methods:verify": "tsx scripts/verify-stripe-payment-method-configuration.ts",
     "smoke:stripe-sandbox": "tsx scripts/smoke-stripe-sandbox.ts",
     "stripe:webhook:simulate:local": "pnpm --filter @blackbox/backend webhook:simulate:local",
     "deploy:backend:sandbox": "pnpm --filter @blackbox/backend deploy:sandbox",
