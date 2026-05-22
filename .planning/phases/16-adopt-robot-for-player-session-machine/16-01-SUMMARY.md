@@ -28,8 +28,8 @@ completed: 2026-05-22
 
 ## Task Commits
 
-| Commit               | Description                                                              |
-| -------------------- | ------------------------------------------------------------------------ |
+| Commit  | Description                                                              |
+| ------- | ------------------------------------------------------------------------ |
 | f441474 | Add Robot-backed player session reducer and Phase 16 validation evidence |
 
 ## Deviations from Plan

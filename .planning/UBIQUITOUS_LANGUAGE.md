@@ -26,30 +26,34 @@ unless a plan explicitly records a terminology change here first.
 
 ## Checkout and Payment
 
-| Canonical term                 | Meaning                                                                                                                          | Aliases to avoid                            |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| **StoreCart** (updated)        | Client-held cart concept for Storefront clients, currently stored in browser storage and never authoritative for commerce state. | browser cart state, cart authority          |
-| **CartDraft** (updated)        | StoreCart payload containing one or more intended checkout lines before the Worker validates them through StartCheckout.         | cart order, pending order                   |
-| **CartLine**                   | One intended cart entry for a StoreItemOption and Variant plus a requested CartQuantity.                                         | line item, basket row                       |
-| **CartLineItemSnapshot** (new) | Client-held identity and display snapshot copied into a CartLine for rendering and checkout routing.                             | StoreCart item, product snapshot, item blob |
-| **Primary Line Item** (new)    | Compatibility projection of the first CartLineItemSnapshot when single-line checkout UI still needs one representative item.     | item, primary item, first item              |
-| **CartQuantity**               | Shopper-requested quantity for one CartLine that the Worker must validate against OnlineStock before checkout.                   | item count, stock quantity                  |
-| **Checkout Request** (updated) | Public shopper API input containing app-owned item identity, requested CartQuantity, and the approved shipping-mode data.        | payment payload                             |
-| **StartCheckout**              | Worker application action and public API path that validates checkout input and creates the Stripe Checkout Session.             | create checkout, start payment              |
-| **ReadCheckoutState**          | Worker application action and public API path that reports backend-known checkout status to the client.                          | payment status check                        |
-| **Checkout Session**           | Stripe Checkout Session created by the Worker and exposed to the shopper as a hosted Checkout redirect URL.                      | payment session                             |
-| **Hosted Checkout**            | Stripe-hosted payment page reached from the static checkout shell through the Worker-returned `checkoutUrl`.                     | embedded checkout, hosted payment form      |
-| **Local stripe-mock API**      | Local official `stripe-mock` process/proxy used to validate Stripe SDK request shape without a real Stripe account.              | fake Stripe, test Stripe                    |
-| **Mock Checkout URL**          | Local-only Checkout URL returned when `PUBLIC_CHECKOUT_CLIENT_MODE=mock`; it is not real Hosted Checkout.                        | fake payment page                           |
-| **Stripe Access Gate**         | Real Stripe test-mode validation gate now satisfied for sandbox UAT; live-mode production launch remains separate.               | Stripe blocker, payment blocker             |
-| **Native Checkout Gate**       | Worker-owned runtime feature gate for enabling or disabling native checkout before Checkout Session creation.                    | frontend checkout flag                      |
-| **Feature Gate**               | Worker-evaluated runtime capability switch that does not replace environment isolation or own secrets.                           | feature toggle, browser flag                |
-| **CheckoutOrder**              | D1 order row tracking checkout session identity, item/variant identity, payment state, and lifecycle timestamps.                 | order row, payment row                      |
-| **Stripe Webhook**             | Verified Stripe event route that is the authoritative paid/non-paid signal for CheckoutOrder and stock mutation.                 | callback, payment notification              |
-| **pending_payment**            | Persisted CheckoutOrder state after checkout starts and before a terminal Stripe outcome.                                        | open, waiting                               |
-| **paid**                       | Persisted CheckoutOrder state after a verified paid Stripe signal.                                                               | complete, successful                        |
-| **not_paid**                   | Persisted non-paid CheckoutOrder state for cancelled, expired, or unpaid sessions.                                               | failed, unpaid                              |
-| **needs_review**               | Persisted CheckoutOrder state for ambiguous or unsupported payment events requiring operator attention.                          | error state, manual review                  |
+| Canonical term                     | Meaning                                                                                                                                                                          | Aliases to avoid                            |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| **StoreCart** (updated)            | Client-held cart concept for Storefront clients, currently stored in browser storage and never authoritative for commerce state.                                                 | browser cart state, cart authority          |
+| **CartDraft** (updated)            | StoreCart payload containing one or more intended checkout lines before the Worker validates them through StartCheckout.                                                         | cart order, pending order                   |
+| **CartLine**                       | One intended cart entry for a StoreItemOption and Variant plus a requested CartQuantity.                                                                                         | line item, basket row                       |
+| **CartLineItemSnapshot** (new)     | Client-held identity and display snapshot copied into a CartLine for rendering and checkout routing.                                                                             | StoreCart item, product snapshot, item blob |
+| **Primary Line Item** (new)        | Compatibility projection of the first CartLineItemSnapshot when single-line checkout UI still needs one representative item.                                                     | item, primary item, first item              |
+| **CartQuantity**                   | Shopper-requested quantity for one CartLine that the Worker must validate against OnlineStock before checkout.                                                                   | item count, stock quantity                  |
+| **Checkout Request** (updated)     | Public shopper API input containing app-owned item identity, requested CartQuantity, and the approved shipping-mode data.                                                        | payment payload                             |
+| **StartCheckout**                  | Worker application action and public API path that validates checkout input and creates the Stripe Checkout Session.                                                             | create checkout, start payment              |
+| **ReadCheckoutState**              | Worker application action and public API path that reports backend-known checkout status to the client.                                                                          | payment status check                        |
+| **Checkout Session**               | Stripe Checkout Session created by the Worker and exposed to the shopper as a hosted Checkout redirect URL.                                                                      | payment session                             |
+| **Hosted Checkout**                | Stripe-hosted payment page reached from the static checkout shell through the Worker-returned `checkoutUrl`.                                                                     | embedded checkout, hosted payment form      |
+| **Dynamic Payment Methods**        | Stripe Checkout mode where the Worker does not hardcode `payment_method_types` and Stripe ranks eligible configured payment methods for the buyer.                               | automatic payment methods                   |
+| **Payment Method Configuration**   | Stripe account configuration selected by Checkout to control which dynamic payment methods are offered for a scenario such as BlackBox merch checkout.                           | payment method config, Stripe PMC           |
+| **Banned Payment Method**          | Payment method family that BlackBox must not display in Checkout, including PayPal, Klarna/BNPL, and bank-debit or mandate-style methods.                                        | blocked payment method, disallowed method   |
+| **Local stripe-mock API**          | Local official `stripe-mock` process/proxy used to validate Stripe SDK request shape without a real Stripe account.                                                              | fake Stripe, test Stripe                    |
+| **Mock Checkout URL**              | Local-only Checkout URL returned when `PUBLIC_CHECKOUT_CLIENT_MODE=mock`; it is not real Hosted Checkout.                                                                        | fake payment page                           |
+| **Stripe Sandbox Gate**            | Real Stripe test-mode validation gate now satisfied for sandbox UAT.                                                                                                             | Stripe Access Gate, test payment blocker    |
+| **Production Stripe Go-Live Gate** | Live-mode Stripe launch gate blocked on live credentials, live Products/Prices, final domain, production webhook wiring, production Worker/D1 configuration, and final approval. | live Stripe blocker, payment blocker        |
+| **Native Checkout Gate**           | Worker-owned runtime feature gate for enabling or disabling native checkout before Checkout Session creation.                                                                    | frontend checkout flag                      |
+| **Feature Gate**                   | Worker-evaluated runtime capability switch that does not replace environment isolation or own secrets.                                                                           | feature toggle, browser flag                |
+| **CheckoutOrder**                  | D1 order row tracking checkout session identity, item/variant identity, payment state, and lifecycle timestamps.                                                                 | order row, payment row                      |
+| **Stripe Webhook**                 | Verified Stripe event route that is the authoritative paid/non-paid signal for CheckoutOrder and stock mutation.                                                                 | callback, payment notification              |
+| **pending_payment**                | Persisted CheckoutOrder state after checkout starts and before a terminal Stripe outcome.                                                                                        | open, waiting                               |
+| **paid**                           | Persisted CheckoutOrder state after a verified paid Stripe signal.                                                                                                               | complete, successful                        |
+| **not_paid**                       | Persisted non-paid CheckoutOrder state for cancelled, expired, or unpaid sessions.                                                                                               | failed, unpaid                              |
+| **needs_review**                   | Persisted CheckoutOrder state for ambiguous or unsupported payment events requiring operator attention.                                                                          | error state, manual review                  |
 
 ## Stock Operations
 
@@ -64,18 +68,26 @@ unless a plan explicitly records a terminology change here first.
 
 ## Shipping and Fulfillment
 
-| Canonical term               | Meaning                                                                                                                                  | Aliases to avoid                        |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| **Shipping Mode**            | Explicit Phase 9 choice between manual-address fulfillment and automated BOX NOW fulfillment via `boxnow-js`.                            | implicit default, maybe later           |
-| **Order Shipping Address**   | Greek delivery address plus any required recipient/contact data used for non-automated BOX NOW shipment creation.                        | full BOX NOW payload, locker payload    |
-| **BOX NOW Locker**           | Shopper-selected Greek BOX NOW locker used only if the automation/locker flow is chosen.                                                 | default shipping input, parcel locker   |
-| **Shipping Locker Snapshot** | Minimal persisted BOX NOW-specific locker data for an approved automation path: `locker_id`, `country_code`, and `locker_name_or_label`. | universal shipping state                |
-| **BOX NOW Test Locker**      | Local/test locker snapshot used only for the current locker-first prototype branch.                                                      | default locker, final shipping mode     |
-| **Greece-Only Shipping**     | Phase 9 shipping boundary: Greece only and no non-Greece delivery path in this milestone.                                                | domestic shipping, EU shipping          |
-| **Manual Fulfillment**       | Operator handoff through the BOX NOW partner portal using Worker-owned paid order state and the chosen shipping-mode data.               | fulfillment automation                  |
-| **BOX NOW Credentials**      | Partner/API credentials that belong only in Worker runtime secrets or out-of-band operator tooling.                                      | public locker config                    |
-| **BOX NOW Reopen Gate**      | Future-only gate for full BOX NOW portal/API integration after access exists and the user explicitly reopens the work.                   | active shipping blocker, portal blocker |
-| **Stripe Product Tax Code**  | Stripe Tax product classification used for tax calculation; physical shipped goods use `General - Tangible Goods (txcd_99999999)`.       | product category guess, tax preset      |
+| Canonical term               | Meaning                                                                                                                                       | Aliases to avoid                        |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| **Shipping Mode**            | Explicit Phase 9 choice between manual-address fulfillment and automated BOX NOW fulfillment via `boxnow-js`.                                 | implicit default, maybe later           |
+| **Order Shipping Address**   | Greek delivery address plus any required recipient/contact data used for non-automated BOX NOW shipment creation.                             | full BOX NOW payload, locker payload    |
+| **BOX NOW Locker**           | Shopper-selected Greek BOX NOW locker used only if the automation/locker flow is chosen.                                                      | default shipping input, parcel locker   |
+| **Shipping Locker Snapshot** | Minimal persisted BOX NOW-specific locker data for an approved automation path: `locker_id`, `country_code`, and `locker_name_or_label`.      | universal shipping state                |
+| **BOX NOW Test Locker**      | Local/test locker snapshot used only for the current locker-first prototype branch.                                                           | default locker, final shipping mode     |
+| **Greece-Only Shipping**     | Phase 9 shipping boundary: Greece only and no non-Greece delivery path in that completed milestone.                                           | domestic shipping, EU shipping          |
+| **Non-Greece Shipping**      | Post-MVP Phase 14 shipping path for EU destinations where country is not `GR`, fulfilled through a courier-flow provider rather than BOX NOW. | international shipping, abroad shipping |
+| **Shiplemon Shipping**       | Worker-owned Shiplemon rate, quote, label, tracking, and shipment flow for Non-Greece Shipping.                                               | Shiplemon checkout, provider checkout   |
+| **Shipping Package Profile** | Worker-owned package dimensions and weight for a Variant, used to request Shiplemon rates.                                                    | package defaults, shipping guess        |
+| **Shipping Quote**           | Worker-owned pre-payment Shiplemon rate snapshot exposed to the browser only through an opaque `shippingQuoteId` and display fields.          | raw rate, provider rate                 |
+| **Shiplemon Shipment**       | Internal fulfillment record created after paid CheckoutOrder review and operator confirmation from the selected Shipping Quote.               | delivery order, shipping order          |
+| **Shipment Label**           | Internal Shiplemon label or label URL used by operators and never exposed through public shopper APIs.                                        | public label, voucher link              |
+| **Customs Declaration**      | Non-EU shipment data required for customs, planned only after supported product/package data exists.                                          | random invoice data, customs blob       |
+| **Manual Fulfillment**       | Operator handoff through the BOX NOW partner portal using Worker-owned paid order state and the chosen shipping-mode data.                    | fulfillment automation                  |
+| **BOX NOW Credentials**      | Partner/API credentials that belong only in Worker runtime secrets or out-of-band operator tooling.                                           | public locker config                    |
+| **Shiplemon Credentials**    | API key and Shiplemon runtime configuration that belong only in Worker runtime secrets or ignored local files.                                | public shipping key                     |
+| **BOX NOW Reopen Gate**      | Future-only gate for full BOX NOW portal/API integration after access exists and the user explicitly reopens the work.                        | active shipping blocker, portal blocker |
+| **Stripe Product Tax Code**  | Stripe Tax product classification used for tax calculation; physical shipped goods use `General - Tangible Goods (txcd_99999999)`.            | product category guess, tax preset      |
 
 ## Hosting, Validation, and Planning
 
@@ -137,6 +149,9 @@ unless a plan explicitly records a terminology change here first.
 - Manual Fulfillment uses paid CheckoutOrder/payment-tooling data plus the chosen shipping-mode data without storing raw
   BOX NOW payloads or credentials.
 - If automation is reopened, the implementation must route through `boxnow-js`.
+- Non-Greece Shipping uses Shiplemon Shipping and must not reuse BOX NOW Locker or Shipping Locker Snapshot terminology.
+- A Shipping Quote is the only browser-safe representation of a Shiplemon rate. Raw provider rate IDs stay Worker-owned.
+- A Shiplemon Shipment is created only after verified payment and operator ready-to-ship confirmation.
 - Local signed-fixture evidence may validate a prototype handoff shape. Current manual BOX NOW scope is closed; full
   portal/API evidence belongs only to the BOX NOW Reopen Gate.
 - Cloudflare Pages serves the Static Astro Frontend. The Worker Backend owns dynamic commerce, D1, Stripe, webhooks,
@@ -187,6 +202,12 @@ unless a plan explicitly records a terminology change here first.
 - **Local handoff evidence vs BOX NOW Reopen Gate:** Local mock checkout plus signed webhook fixtures prove a handoff
   shape. Current manual BOX NOW scope is closed; real portal/API evidence is future-only after access exists and the
   user explicitly reopens the work.
+- **Non-Greece Shipping vs BOX NOW:** Non-Greece Shipping is the post-MVP Phase 14 Shiplemon path. BOX NOW remains the
+  Greece-only manual v1 path unless explicitly reopened.
+- **Shipping Quote vs Shiplemon rate:** Shipping Quote is app-owned and browser-safe. The Shiplemon raw rate ID stays
+  behind the Worker.
+- **Shiplemon Shipment vs CheckoutOrder:** CheckoutOrder is payment/order state. Shiplemon Shipment is fulfillment state
+  created after verified payment and operator ready-to-ship confirmation.
 - **Cloudflare Pages vs Worker Backend:** Pages serves static frontend assets. The Worker owns all dynamic commerce
   behavior and secrets.
 - **Feature Gate vs environment:** Feature Gates are runtime capability switches. Worker environments still isolate D1

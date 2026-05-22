@@ -8,6 +8,7 @@ persistence adapters. This module is the backend commerce domain contract surfac
 ## Owned Files And Directories
 
 - `apps/backend/src/domain/commerce/ids.ts`
+- `apps/backend/src/domain/commerce/quantities.ts`
 - `apps/backend/src/domain/commerce/index.ts`
 - `apps/backend/src/domain/commerce/repositories/**`
 
@@ -19,6 +20,7 @@ persistence adapters. This module is the backend commerce domain contract surfac
 
 - individual repository contract files
 - canonical backend commerce identity aliases
+- canonical backend commerce quantity value objects
 
 ## Allowed Dependencies
 

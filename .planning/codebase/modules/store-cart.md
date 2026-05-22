@@ -9,6 +9,8 @@ becoming a source of commerce authority.
 
 - `apps/web/src/lib/store-cart.ts`
 - `apps/web/src/lib/store-cart.test.ts`
+- `apps/web/src/lib/money.ts`
+- `apps/web/src/lib/money.test.ts`
 - `apps/web/src/components/store/StoreCartButton.tsx`
 - `apps/web/src/components/store/StoreCartButton.test.tsx`
 - `apps/web/src/components/store/StoreCartDrawer.tsx`
@@ -23,6 +25,7 @@ becoming a source of commerce authority.
 
 - storage parsing and serialization details
 - quantity normalization and subtotal formatting
+- cart-owned Money value object API until Dinero is adopted behind that API
 - future storage migration helpers
 
 ## Allowed Dependencies

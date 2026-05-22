@@ -131,6 +131,7 @@
         "apps/web/src/lib/item-availability.ts",
         "apps/web/src/lib/release-commerce.ts",
         "apps/web/src/lib/release-feature.ts",
+        "apps/web/src/lib/slugs.ts",
         "apps/web/src/lib/store-tax-category.ts",
         "apps/web/src/pages/index.astro",
         "apps/web/src/pages/artists/**",
@@ -144,6 +145,7 @@
       ],
       "providedEntrypoints": [
         "apps/web/src/lib/catalog-data.ts",
+        "apps/web/src/lib/slugs.ts",
         "apps/web/src/lib/site-data.ts",
         "apps/web/src/lib/store-page-data.ts",
         "apps/web/src/components/artists/ArtistsRosterFilters.tsx",
@@ -158,6 +160,7 @@
       "status": "closed",
       "roots": [
         "apps/web/src/lib/store-cart.ts",
+        "apps/web/src/lib/money.ts",
         "apps/web/src/components/store/StoreCartButton.tsx",
         "apps/web/src/components/store/StoreCartDrawer.tsx"
       ],
@@ -253,6 +256,7 @@
       "roots": [
         "apps/backend/src/domain/commerce/index.ts",
         "apps/backend/src/domain/commerce/ids.ts",
+        "apps/backend/src/domain/commerce/quantities.ts",
         "apps/backend/src/domain/commerce/repositories/**"
       ],
       "providedEntrypoints": ["apps/backend/src/domain/commerce/index.ts"],

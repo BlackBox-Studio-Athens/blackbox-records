@@ -45,8 +45,10 @@ Start from `.planning/phases/10-sandbox-verification-and-release-gate/10-MILESTO
 ### BL-17: Account-backed external gate validation
 
 - Linked milestone: Go-Live / Launch Hardening
+- Status: Partially done for sandbox/test mode; production/live remains blocked on live Stripe access, final domain, production webhook wiring, and final cutover configuration.
 - Acceptance criteria:
-  - Capture real Stripe test-mode checkout, webhook, and return-state evidence
+  - Keep the completed real Stripe test-mode checkout, webhook, and return-state evidence as sandbox UAT evidence
+  - Capture production/live Stripe evidence only after live Stripe credentials, live Products/Prices, final domain, production webhook endpoint, and production Worker/D1 configuration are connected
   - Capture BOX NOW partner/API evidence only if the user explicitly reopens full BOX NOW integration after access exists
   - Keep the evidence separate from local stripe-mock and signed-fixture validation
 - Human review stop: approve whether the external gates are satisfied
@@ -66,28 +68,39 @@ Start from `.planning/phases/10-sandbox-verification-and-release-gate/10-MILESTO
 
 ### BL-21: Declined and expired Checkout Session lifecycle
 
+- Status: Current implementation accepted for v1 unless production evidence shows a support/reconciliation gap.
+- Decision: expired Checkout Sessions transition the app-owned CheckoutOrder to `not_paid`; card-decline attempts remain `pending_payment` while the Stripe Checkout Session is still open and only become non-paid after a verified Stripe non-paid signal such as session expiry.
 - Linked milestone: Go-Live / Launch Hardening
 - Acceptance criteria:
-  - Research whether declined sandbox Checkout attempts should remain `pending_payment` in app order state or transition to `not_paid`.
-  - Research whether Stripe `checkout.session.expired`, failed PaymentIntent events, or another verified Stripe signal should drive unpaid-order transitions.
-  - Define what operator/support evidence is needed before implementing any declined, expired, or abandoned-session lifecycle change.
+  - Preserve the current policy unless live/sandbox evidence proves operators need a more granular declined/abandoned state
+  - Treat `checkout.session.expired` as the verified signal that closes an unpaid CheckoutOrder as `not_paid`
+  - Keep open declined attempts in `pending_payment` until Stripe emits a terminal or non-paid signal
+  - Define what operator/support evidence is needed before adding more granular declined, failed, or abandoned-session lifecycle states
   - Preserve paid-order webhook authority and idempotent stock decrement semantics.
-- Human review stop: approve the unpaid-session state policy before implementation.
+- Human review stop: approve any future change away from pending-until-expired before implementation.
 
-### BL-22: Stripe payment method policy research
+### BL-22: Stripe dynamic payment methods policy
 
+- Status: Approved for planning; implementation deferred.
+- Decision: Production Checkout should use Stripe dynamic payment methods through a named Payment Method Configuration. Buyer-visible methods are limited to card rails, Apple Pay, Google Pay, and Link. Never show PayPal, Klarna, BNPL methods, or bank-debit style methods.
 - Linked milestone: Go-Live / Launch Hardening
 - Acceptance criteria:
-  - Research whether production Checkout should remove `payment_method_types: ['card']` and rely on Stripe dynamic payment methods.
-  - Preserve deterministic sandbox smoke coverage for card success, 3D Secure, and decline scenarios even if production allows dynamic payment methods.
-  - Define whether the card-only setting should be sandbox-smoke-only, environment-specific, or removed entirely.
-  - Record buyer-experience, fraud/risk, testability, and Greece-only shipping tradeoffs before implementation.
-- Human review stop: approve the production payment-method policy before changing Checkout Session creation.
+  - Create or update a named Stripe Payment Method Configuration such as `BlackBox merch checkout` through Stripe CLI/API where supported.
+  - Enable only the approved positive set when configurable: `card`, `apple_pay`, `google_pay`, and `link`.
+  - Disable PayPal, Klarna, all BNPL-style methods, and bank-debit/mandate-style methods when present in the Stripe configuration response.
+  - Verify through Stripe CLI/API that banned methods are either unavailable or have effective display preference `off`.
+  - Remove `payment_method_types: ['card']` from Checkout Session creation only in the implementation slice, and pass a Worker-owned `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` when configured.
+  - Preserve deterministic sandbox smoke coverage for card success, 3D Secure, decline, and expired-card scenarios even if production uses dynamic payment methods.
+- Planning artifacts: `.planning/phases/13-stripe-dynamic-payment-methods-policy/13-CONTEXT.md`,
+  `.planning/phases/13-stripe-dynamic-payment-methods-policy/13-01-PLAN.md`
+- Human review stop: approve Stripe CLI/API evidence and any Dashboard-only account activation gaps before implementation changes Checkout Session creation.
 
 ## Ready For No-Account Commerce Expansion
 
 ### BL-13: Cart and multi-item checkout
 
+- Status: Done for the no-account v1 launch scope.
+- Decision: Native commerce is now multi-item and will stay multi-item. Do not return to the earlier single-item launch scope.
 - Linked milestone: Go-Live / Launch Hardening or a no-account cart expansion slice before external account gates clear
 - Acceptance criteria:
   - Define `CartDraft`, `CartLine`, and `CartQuantity` semantics that fit the existing shell and Worker-owned checkout
@@ -97,9 +110,9 @@ Start from `.planning/phases/10-sandbox-verification-and-release-gate/10-MILESTO
   - Add additive order-line persistence, preferably `CheckoutOrderLine`, instead of overloading current single-item `CheckoutOrder` fields
   - Preserve paid-webhook idempotency by decrementing stock exactly once for each paid CheckoutOrderLine
   - Keep one manual BOX NOW shipping surface per CheckoutOrder unless a later shipping plan explicitly supports split shipments
-  - Validate locally with stripe-mock and Browser Use; defer real multi-line Stripe evidence until the Stripe Access Gate is satisfied
+  - Validate locally with stripe-mock and Browser Use; keep production/live multi-line checkout evidence behind the production Stripe go-live gate
 - Planning artifact: `.planning/phases/10-sandbox-verification-and-release-gate/10-MULTI-ITEM-CART-WORKSTREAM.md`
-- Human review stop: approve whether native commerce launches as current single-item scope or waits for multi-item quantity scope
+- Human review stop: complete; multi-item quantity scope is the approved path.
 
 ### BL-14: Stock reservation design
 
@@ -138,8 +151,17 @@ Start from `.planning/phases/10-sandbox-verification-and-release-gate/10-MILESTO
 
 ### BL-16: Non-Greece shipping path
 
-- Linked milestone: v2+
+- Linked milestone: Post-MVP / Phase 14
+- Status: Promoted to a post-MVP Phase 14 plan. It must not block checkout launch readiness unless explicitly
+  reactivated.
+- Decision: The next non-Greece shipping path is a Shiplemon courier-flow integration, not a BOX NOW reopen or locker
+  model.
 - Acceptance criteria:
-  - Define how non-Greece shipping fits the current checkout architecture
-  - Avoid redesigning the Greece-only MVP flow just to add a second path
-  - Document whether the next shipping path is another locker model or a courier flow
+  - Define how Shiplemon quote, package-profile, shipment, label, tracking, and customs data fit the current checkout
+    architecture
+  - Avoid redesigning or reopening the Greece-only manual BOX NOW path
+  - Keep Shiplemon credentials, raw rate IDs, shipment IDs, labels, invoices, and raw provider payloads Worker-owned
+  - Make non-Greece checkout fail closed when package profiles, Shiplemon credentials, supported rates, or valid quotes
+    are missing
+- Planning artifacts: `.planning/phases/14-shiplemon-non-greece-shipping-integration/14-CONTEXT.md`,
+  `.planning/phases/14-shiplemon-non-greece-shipping-integration/14-01-PLAN.md`

@@ -88,7 +88,8 @@ after BOX NOW access exists.
 ### Shipping & Fulfillment
 
 - **V2SH-01**: Paid Greek orders can create BOX NOW delivery requests automatically instead of relying on manual portal steps.
-- **V2SH-02**: Team can support non-Greece shipping flows without redesigning the whole commerce stack.
+- **V2SH-02**: Post-MVP team can support Shiplemon-powered non-Greece shipping flows without redesigning the whole
+  commerce stack or reopening the Greece-only BOX NOW path.
 
 ### Operator Tooling
 
@@ -97,16 +98,16 @@ after BOX NOW access exists.
 
 ## Out of Scope
 
-| Feature                                                    | Reason                                                                                                              |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Production cutover in this milestone                       | Deferred to the Go-Live milestone so sandbox implementation and launch risk stay separate                           |
-| Live-mode Stripe keys or real-money processing             | This milestone stays in sandbox                                                                                     |
-| Browser-side writes to orders or stock                     | Violates the trust boundary for payment and stock state                                                             |
-| Stock reservation in v1                                    | Explicitly deferred to keep the first release simple and authoritative on payment webhook success                   |
-| Release-approved multi-line checkout evidence              | BL-13 landed no-account multi-line StoreCart locally; production approval remains behind Go-Live / Launch Hardening |
-| Non-Greece shipping paths                                  | Greece-only BOX NOW is the approved v1 shipping scope                                                               |
-| Automated BOX NOW fulfillment                              | Manual partner-portal fulfillment is sufficient for projected low volume                                            |
-| Full operator dashboard / OMS beyond thin stock operations | Low order volume does not justify the maintenance cost yet                                                          |
+| Feature                                                                          | Reason                                                                                                                                                                                       |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Production cutover in this milestone                                             | Deferred to the Go-Live milestone so sandbox implementation and launch risk stay separate                                                                                                    |
+| Live-mode Stripe keys or real-money processing                                   | This milestone stays in sandbox                                                                                                                                                              |
+| Browser-side writes to orders or stock                                           | Violates the trust boundary for payment and stock state                                                                                                                                      |
+| Stock reservation in v1                                                          | Explicitly deferred to keep the first release simple and authoritative on payment webhook success                                                                                            |
+| Production/live multi-line checkout evidence                                     | BL-13 landed no-account multi-line StoreCart; live evidence waits for live Stripe, final domain wiring, production webhook configuration, and Go-Live / Launch Hardening                     |
+| Production/live non-Greece shipping launch before post-MVP Phase 14 reactivation | Shiplemon planning may exist now, but public production enablement waits for explicit post-MVP reactivation, Shiplemon credentials, package profiles, sandbox evidence, and go-live approval |
+| Automated BOX NOW fulfillment                                                    | Manual partner-portal fulfillment is sufficient for projected low volume                                                                                                                     |
+| Full operator dashboard / OMS beyond thin stock operations                       | Low order volume does not justify the maintenance cost yet                                                                                                                                   |
 
 ## Traceability
 
@@ -142,6 +143,7 @@ after BOX NOW access exists.
 | SHIP-01     | Phase 9     | Completed |
 | SHIP-02     | Phase 9     | Completed |
 | SHIP-03     | Phase 9     | Completed |
+| V2SH-02     | Phase 14    | Post-MVP  |
 | SECU-01     | Phase 5     | Completed |
 | SECU-02     | Phase 8     | Completed |
 | OPER-01     | Phase 10    | Pending   |
@@ -156,4 +158,4 @@ after BOX NOW access exists.
 ---
 
 _Requirements defined: 2026-04-19_
-_Last updated: 2026-05-17 after closing BOX NOW for the current manual v1 scope_
+_Last updated: 2026-05-21 after marking Shiplemon non-Greece shipping as post-MVP_

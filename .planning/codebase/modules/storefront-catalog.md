@@ -15,6 +15,7 @@ store item routes.
 - `apps/web/src/lib/item-availability.ts`
 - `apps/web/src/lib/release-commerce.ts`
 - `apps/web/src/lib/release-feature.ts`
+- `apps/web/src/lib/slugs.ts`
 - `apps/web/src/lib/store-tax-category.ts`
 - `apps/web/src/pages/index.astro`
 - `apps/web/src/pages/artists/**`
@@ -38,6 +39,7 @@ store item routes.
 - collection sorting and grouping rules
 - release and Distro projection heuristics
 - editorial normalization and fallback logic
+- slug generation, validation, and committed catalog slug collision checks
 - tax-category to Stripe Tax code classification for static store products
 
 ## Allowed Dependencies
@@ -70,6 +72,7 @@ store item routes.
 
 - `apps/web/src/lib/catalog-data.test.ts`
 - `apps/web/src/lib/item-availability.test.ts`
+- `apps/web/src/lib/slugs.test.ts`
 - `apps/web/src/lib/store-collection.test.ts`
 - `apps/web/src/lib/store-page-data.test.ts`
 - `apps/web/src/lib/store-tax-category.test.ts`

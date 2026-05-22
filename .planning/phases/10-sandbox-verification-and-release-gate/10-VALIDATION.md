@@ -119,11 +119,11 @@
 - DevTools MCP fallback evidence: BOX NOW Test Locker selection unlocked payment, and the local mock checkout state mounted with `Mock Checkout Started`.
 - DevTools MCP fallback evidence: the checkout POST to `/api/checkout/sessions` returned HTTP 200 and sent `lines: [{ storeItemSlug: "disintegration-black-vinyl-lp", variantId: "variant_barren-point_standard", quantity: 2 }, { storeItemSlug: "afterglow-tape", variantId: "variant_afterglow-tape_standard", quantity: 1 }]` with the BOX NOW Test Locker snapshot. Console warnings/errors were empty.
 
-## GSD v1.41.2 Repo Migration - 2026-05-12
+## GSD v1.42.3 Repo Migration - 2026-05-20
 
 - Result: complete for repo-level GSD configuration and operating notes; no app runtime behavior changed.
-- Evidence: the shared Codex GSD runtime is `gsd-sdk v1.41.2`, and this repo remains in flat GSD mode with no `.planning/workstreams/` adoption.
-- Evidence: `.planning/config.json` now disables `workflow.use_worktrees` for Codex-safe execution, because v1.41.2 fails closed when Codex execute-phase would otherwise assume unsupported isolated worktrees.
+- Evidence: the shared Codex GSD runtime is `gsd-sdk v1.42.3`, and this repo remains in flat GSD mode with no `.planning/workstreams/` adoption.
+- Evidence: `.planning/config.json` keeps `workflow.use_worktrees` disabled for Codex-safe execution, because current GSD releases fail closed when Codex execute-phase would otherwise assume unsupported isolated worktrees.
 - Evidence: `.planning/config.json` now makes the review/security/post-planning gates explicit: `workflow.code_review = true`, `workflow.code_review_depth = "standard"`, `workflow.security_enforcement = true`, `workflow.security_block_on = "high"`, `workflow.post_planning_gaps = true`, and `features.thinking_partner = true`.
 - Boundary: `parallelization` remains `false`, `workflow.text_mode` remains `false`, `commit_docs` remains `true`, `model_profile` remains `balanced`, and no `context_window = 1000000` override was added.
 - Sandbox-gate note: older GSD progress output may still reflect pre-access deferred-gate history, but active planning now records `07-16`, `10-03`, and `OPER-01` as satisfied for sandbox UAT.

@@ -2,9 +2,9 @@
 
 ## Overview
 
-This roadmap now treats milestone `v1.2`, Modulith Boundary Hardening, as the active milestone. The earlier `v1.1`
-Stripe Sandbox Integration work is complete for sandbox UAT, while production go-live remains deferred. The current focus
-also includes the architecture hardening needed to make later refactors smaller, cheaper, and easier to review.
+This roadmap now treats milestone `v1.3`, Checkout Launch Readiness, as the active milestone. The earlier `v1.1`
+Stripe Sandbox Integration work is complete for sandbox UAT, `v1.2` Modulith Boundary Hardening is complete, and
+production go-live remains deferred.
 
 The historical v1.1 goal was to add native commerce to the existing Astro site using a Cloudflare-fronted dual-runtime
 monorepo model:
@@ -20,10 +20,19 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 
 ## Milestone Position
 
-- **Current milestone:** Modulith Boundary Hardening
+- **Completed milestone:** Modulith Boundary Hardening
 - **Starts at:** Phase 12
 - **Ends after:** the approved Phase 12 hardening slices are executed or explicitly deferred
 - **Previous milestone:** v1.1 Stripe Sandbox Integration (sandbox UAT ready; production go-live deferred)
+
+## Milestone v1.3: Checkout Launch Readiness
+
+## Milestone Position
+
+- **Current milestone:** Checkout Launch Readiness
+- **Starts at:** Phase 13
+- **Ends after:** dynamic payment method policy is verified or explicitly deferred
+- **Previous milestone:** v1.2 Modulith Boundary Hardening (complete)
 
 ## Phases
 
@@ -44,6 +53,12 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - [x] **Phase 10: Sandbox Verification And Release Gate** - Prove the dual-deploy sandbox flow and prepare the go-live handoff package
 - [x] **Phase 11: Website Editorial And Catalog UX Improvements** - Convert partner website notes into static-site editorial, artist, release, homepage, and distro/catalog improvements without changing commerce authority (completed 2026-05-12)
 - [x] **Phase 12: Modulith Boundary Hardening Planning** - Activate the TypeScript-native boundary stack and execution slices that make later refactors safer before revisiting the deferred commerce gates
+- [ ] **Phase 13: Stripe Dynamic Payment Methods Policy** - Configure Stripe dynamic payment methods for BlackBox checkout while banning PayPal, Klarna, BNPL, and bank-debit style methods
+- [ ] **Phase 14: Shiplemon Non-Greece Shipping Integration** - Post-MVP phase for Worker-owned Shiplemon quotes and operator-confirmed shipment creation for EU destinations outside Greece
+- [ ] **Phase 15: Adopt Sharp Asset QA** - Formalize Sharp as the repo asset-quality tool for static image validation without changing the runtime hosting model
+- [x] **Phase 16: Adopt Robot For Player Session Machine** - Replace the hand-rolled player session reducer with the latest `robot3` state machine while preserving player behavior
+- [ ] **Phase 17: Adopt Slugify For Slug Tooling** - Centralize slug generation and validation around `@sindresorhus/slugify` without silently changing existing public URLs
+- [ ] **Phase 18: Remove Valibot And Standardize On Zod** - Prove there is no direct Valibot app usage, replace any direct usage with Zod, and document any unavoidable transitive dependency
 
 ## Phase Details
 
@@ -332,8 +347,9 @@ Plans:
 
 ## Active And Future Milestones
 
-### v1.2 Modulith Boundary Hardening
+### Phase 12: Modulith Boundary Hardening Planning
 
+- Milestone: v1.2 Modulith Boundary Hardening
 - Completed milestone that sits between the deferred sandbox milestone and Go-Live / Launch Hardening
 - Consumes `BL-19`, `ADR-004`, `.planning/codebase/MODULES.md`, and the Phase 12 planning artifacts
 - Produces explicit module-boundary execution slices for `app-shell`, `cms-admin`, public commerce HTTP, backend
@@ -427,22 +443,69 @@ Plans:
   `cms-admin` seams, closed commerce modules, strict `platform-shared`, and hard `eslint-plugin-boundaries` enforcement
 - Exists to make later large refactors safer and more reviewable before production cutover work begins
 
+### Phase 13: Stripe Dynamic Payment Methods Policy
+
+**Goal**: Enable Stripe dynamic payment methods for BlackBox checkout through a named Payment Method Configuration while
+guaranteeing buyers never see PayPal, Klarna, BNPL, or bank-debit style methods.
+**Depends on**: Phase 12, completed sandbox/test Stripe evidence, and the approved BL-22 payment-method policy.
+**Requirements**: CHKO-03, ORDR-04
+**Success Criteria** (what must be TRUE):
+
+1. GSD discussion, context, research, plan, and validation artifacts describe the dynamic payment method policy clearly
+   enough for implementation without re-deciding product intent.
+2. The future implementation path automates all feasible Stripe CLI/API configuration work before falling back to
+   Dashboard-only steps.
+3. The future backend path removes hardcoded card-only Checkout configuration, uses a Worker-owned Payment Method
+   Configuration ID when present, and keeps deterministic card-based smoke coverage.
+   **Plans**: 1 plan
+   **Review gate**: Human review required before Stripe CLI/API mutation or Checkout Session creation changes.
+
+Plans:
+
+- [ ] 13-01: Configure and wire dynamic payment methods
+
+### Phase 14: Shiplemon Non-Greece Shipping Integration
+
+**Status**: Post-MVP / deferred from the active checkout-launch readiness scope.
+**Goal**: Add a Worker-owned Shiplemon shipping path for EU destinations outside Greece while preserving the existing
+Greece-only manual BOX NOW path.
+**Depends on**: Phase 13, completed multi-item CartDraft/CartQuantity scope, and the approved BL-16 non-Greece shipping
+backlog item.
+**Requirements**: V2SH-02
+**Success Criteria** (what must be TRUE):
+
+1. GSD discussion, context, research, plan, and validation artifacts define Shiplemon as the non-Greece courier-flow
+   provider without reopening BOX NOW.
+2. The future implementation path keeps Shiplemon quotes, raw rate IDs, shipment IDs, labels, and credentials
+   Worker-owned.
+3. The future checkout path quotes non-Greece shipping before payment, charges the selected shipping amount through
+   Hosted Checkout, and creates Shiplemon shipments only after verified payment and operator ready-to-ship confirmation.
+   **Plans**: 1 plan
+   **Review gate**: Human review required before moving this post-MVP phase back into active scope, adding Shiplemon
+   credentials, package-profile data, public quote APIs, or shipment automation.
+
+Plans:
+
+- [ ] 14-01: Integrate Shiplemon non-Greece shipping (post-MVP; stale until replanned against updated context)
+
 ### Go-Live / Launch Hardening
 
 - Production cutover remains a separate milestone
 - Starts only after the planned v1.2 hardening milestone or an explicit decision to skip it
 - Consumes `10-MILESTONE-REVIEW.md`, sandbox readiness evidence, local UAT evidence, and the deferred external-gate checklist produced by this milestone
-- Covers optional BOX NOW reopen-only integration if access exists, Cloudflare Flagship `FLAGS` setup, live-mode keys, production rollout, emergency disable strategy, comms, and final stop/go review
-- Must explicitly decide whether native commerce launches with the current single-item cart scope or first completes the no-account multi-item CartDraft and CartQuantity workstream
+- Covers optional BOX NOW reopen-only integration if access exists, post-MVP Shiplemon production enablement only if Phase
+  14 is explicitly reactivated, Cloudflare Flagship `FLAGS` setup, live-mode keys, final domain wiring, production
+  rollout, emergency disable strategy, comms, and final stop/go review
+- Launches with the approved multi-item CartDraft and CartQuantity scope; do not return to the earlier single-item checkout scope
 - Must not start until human review accepts the prepared package and explicitly carries forward the open gates
 
 ### No-Account Cart Expansion Workstream
 
-- May proceed while Stripe account access remains unavailable
+- Done for the no-account v1 launch scope; future cart work should build on the multi-item model
 - Consumes `BL-13` and `.planning/phases/10-sandbox-verification-and-release-gate/10-MULTI-ITEM-CART-WORKSTREAM.md`
 - Covers multi-line StoreCart state, quantity controls, Worker-owned multi-line checkout validation, additive order-line persistence, and paid-webhook stock decrement per CartLine
 - Keeps stock reservation separate in `BL-14`; the first multi-item implementation still decrements only after verified paid webhook transition unless a later reservation plan changes that
-- Does not satisfy the Stripe Access Gate, `10-03`, or `OPER-01`
+- Does not satisfy production/live Stripe go-live evidence or `OPER-01`
 
 ### Website Editorial And Catalog UX Improvements
 
@@ -455,8 +518,12 @@ Plans:
 ## Progress
 
 **Execution Order:**  
-Nominal phase order remains `5 → 5.1 → 6 → 6.1 → 6.1.1 → 7 → 7.1 → 8 → 9 → 10`.
-Because Stripe sandbox access is now available, hosted sandbox UAT evidence may proceed through the GitHub Pages sandbox surface and sandbox Worker. Production live-mode cutover remains deferred to Go-Live / Launch Hardening. BOX NOW is closed for the current manual v1 scope and should reopen only if the user explicitly asks for full integration after access exists. Phase 11 is a separate static-site editorial/catalog phase and is not required to close the Phase 10 commerce release gate.
+Nominal MVP/launch-readiness order remains `5 -> 5.1 -> 6 -> 6.1 -> 6.1.1 -> 7 -> 7.1 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13`.
+Phase 14 is post-MVP and should not block checkout launch readiness. Stripe sandbox UAT evidence is complete. Phase 13
+covers dynamic payment methods. Production live-mode cutover remains deferred to Go-Live / Launch Hardening.
+BOX NOW is closed for the current manual v1 scope and should reopen only if the user explicitly asks for full integration
+after access exists. Phases 15-18 are independent dependency/tooling adoption follow-ups and do not block checkout launch
+readiness unless explicitly activated.
 
 | Phase                                                          | Plans Complete | Status    | Completed  |
 | -------------------------------------------------------------- | -------------- | --------- | ---------- |
@@ -469,6 +536,80 @@ Because Stripe sandbox access is now available, hosted sandbox UAT evidence may 
 | 7.1. Cloudflare Pages Static Frontend Migration                | 5/5            | Completed | 2026-04-29 |
 | 8. Webhook Orders And Stock                                    | 8/8            | Completed | 2026-04-26 |
 | 9. Greece-Only BOX NOW Shipping                                | 7/7            | Completed | 2026-05-17 |
-| 10. Sandbox Verification And Release Gate                      | 5/6            | Active    |            |
+| 10. Sandbox Verification And Release Gate                      | 5/6            | UAT Ready | 2026-05-17 |
 | 11. Website Editorial And Catalog UX Improvements              | 5/5            | Complete  | 2026-05-12 |
-| 12. Modulith Boundary Hardening Planning                       | 25/28          | Active    |            |
+| 12. Modulith Boundary Hardening Planning                       | 63/63          | Complete  | 2026-05-16 |
+| 13. Stripe Dynamic Payment Methods Policy                      | 0/1            | Planned   |            |
+| 14. Shiplemon Non-Greece Shipping Integration                  | 0/1            | Post-MVP  |            |
+| 15. Adopt Sharp Asset QA                                       | 0/1            | Planned   |            |
+| 16. Adopt Robot For Player Session Machine                     | 1/1            | Complete  | 2026-05-22 |
+| 17. Adopt Slugify For Slug Tooling                             | 1/1            | Complete  | 2026-05-22 |
+| 18. Remove Valibot And Standardize On Zod                      | 0/1            | Planned   |            |
+
+### Phase 15: Adopt Sharp Asset QA
+
+**Goal:** Formalize Sharp as the repo-owned image asset quality gate for static assets, content images, and favicon metadata while preserving Astro's existing image pipeline.
+**Requirements**: TOOL-15
+**Depends on:** Phase 12
+**Success Criteria** (what must be TRUE):
+
+1. The repo has a focused Sharp-backed asset check for image dimensions, aspect ratios, favicon metadata, and actionable failures.
+2. Existing Astro image handling remains the runtime image path; this phase does not introduce an image CDN, dynamic image API, or Worker image processing.
+3. The new asset check is wired into package scripts and documented with a fast targeted command plus the normal `pnpm test:unit`, `pnpm check`, and `pnpm build` gate.
+   **Plans**: 1 plan
+   **Review gate**: Human review required only if the script proposes changing existing public assets or route-visible image paths.
+
+Plans:
+
+- [ ] 15-01: Add the Sharp-backed asset QA script and tests
+
+### Phase 16: Adopt Robot For Player Session Machine
+
+**Goal:** Replace the hand-rolled app-shell player session reducer with the latest `robot3` package while keeping the existing modal/miniplayer/session semantics intact.
+**Requirements**: TOOL-16
+**Depends on:** Phase 12
+**Success Criteria** (what must be TRUE):
+
+1. `apps/web/src/components/app-shell/player-session-machine.ts` is backed by `robot3@^1.2.0` or newer latest-compatible version at implementation time.
+2. Existing player session behavior is preserved: load before mini-player eligibility, embed interaction before minimize, reopen, stop, and invalid-event no-op behavior.
+3. Existing player/app-shell focused tests remain green and the full repo behavior gate runs after implementation.
+   **Plans**: 1 plan
+   **Review gate**: Human review required if the replacement changes player UX or introduces new player states beyond the existing behavior.
+
+Plans:
+
+- [x] 16-01: Replace the player session reducer with a Robot state machine
+
+### Phase 17: Adopt Slugify For Slug Tooling
+
+**Goal:** Centralize slug generation, validation, and editor/tooling conventions around `@sindresorhus/slugify` while preserving existing route contracts.
+**Requirements**: TOOL-17
+**Depends on:** Phase 12
+**Success Criteria** (what must be TRUE):
+
+1. Slug generation used by repo tooling, CMS/admin config helpers, and fallback slug code flows through one BlackBox-owned wrapper around `@sindresorhus/slugify`.
+2. Existing public slugs and route aliases are treated as canonical data; this phase must not silently rename content files, public URLs, D1 mappings, Stripe mappings, or store item identities.
+3. Tests cover accented/symbol-heavy names, duplicate/collision handling where applicable, and the known legacy release/store slug separation.
+   **Plans**: 1 plan
+   **Review gate**: Human review required before any generated slug replaces an existing committed slug.
+
+Plans:
+
+- [x] 17-01: Add centralized slug tooling and migrate slug-generation call sites
+
+### Phase 18: Remove Valibot And Standardize On Zod
+
+**Goal:** Standardize repo-authored runtime validation on Zod, prove there is no direct Valibot app usage, and document any unavoidable third-party transitive Valibot dependency instead of pretending it can be removed from the lockfile.
+**Requirements**: TOOL-18
+**Depends on:** Phase 12
+**Success Criteria** (what must be TRUE):
+
+1. No repo-authored source imports Valibot; any direct usage found during implementation is replaced with Zod.
+2. Backend OpenAPI contracts keep using `@hono/zod-openapi`; Astro content schemas keep using `astro/zod`; StoreCart and money parsing keep using direct Zod.
+3. If Valibot remains only as a Prisma transitive dependency, docs and dependency evidence record that boundary clearly and no package.json adds Valibot directly.
+   **Plans**: 1 plan
+   **Review gate**: Human review required if removing Valibot would require downgrading/replacing Prisma or weakening generated-client/OpenAPI validation.
+
+Plans:
+
+- [ ] 18-01: Audit Valibot usage, remove direct usage, and lock Zod as the validator standard
