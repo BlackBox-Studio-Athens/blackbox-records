@@ -27,7 +27,7 @@ const artists = defineCollection({
         .array(
           z.object({
             label: z.string(),
-            url: z.string().url(),
+            url: z.url(),
           }),
         )
         .optional(),
@@ -97,7 +97,7 @@ const distro = defineCollection({
       image: image(),
       image_alt: z.string(),
       summary: z.string(),
-      fourthwall_url: z.string().url(),
+      fourthwall_url: z.url(),
       eyebrow: z.string().optional(),
       format: z.string().optional(),
       release_date: z.coerce.date().optional(),
@@ -130,7 +130,7 @@ const settings = defineCollection({
   schema: z.object({
     label_name: z.string(),
     established_year: z.number().int().positive(),
-    url: z.string().url(),
+    url: z.url(),
     logo: z.string(),
     location: z.object({
       locality: z.string(),
@@ -277,7 +277,7 @@ const services = defineCollection({
                 bullets: z.array(z.string()).min(2),
                 contact_note: z.string(),
                 partner_name: z.string().optional(),
-                partner_url: z.string().url().optional(),
+                partner_url: z.url().optional(),
               }),
             ),
           }),
@@ -298,7 +298,7 @@ const services = defineCollection({
             type: z.literal('inquiry'),
             title: z.string(),
             intro: z.string(),
-            email: z.string().email(),
+            email: z.email(),
             submit_text: z.string(),
           }),
         ]),

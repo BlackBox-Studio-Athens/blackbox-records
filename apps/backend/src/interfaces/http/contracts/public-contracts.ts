@@ -71,7 +71,7 @@ const startCheckoutBodySchema = z
 
 const startCheckoutResponseSchema = z
   .object({
-    checkoutUrl: z.string().url(),
+    checkoutUrl: z.url(),
   })
   .openapi('StartCheckoutResponse');
 
