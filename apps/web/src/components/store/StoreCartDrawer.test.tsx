@@ -3,7 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { createStoreCartDrawerView, STORE_CART_DRAWER_COPY, StoreCartDrawerPanel } from './StoreCartDrawer';
-import { addStoreCartItem, createEmptyStoreCartState, type CartLineItemSnapshot } from '../../lib/store-cart';
+import {
+  addStoreCartItem,
+  createCartQuantity,
+  createEmptyStoreCartState,
+  type CartLineItemSnapshot,
+} from '../../lib/store-cart';
 
 const cartItem: CartLineItemSnapshot = {
   availabilityLabel: 'Available',
@@ -104,11 +109,11 @@ describe('StoreCartDrawer', () => {
         lines: [
           {
             ...cartItem,
-            quantity: 1,
+            quantity: createCartQuantity(1),
             stripePriceId: 'price_secret',
             d1Id: 'store_item_option_1',
             stockCount: 99,
-          } as CartLineItemSnapshot & { quantity: number } & Record<string, unknown>,
+          } as CartLineItemSnapshot & { quantity: ReturnType<typeof createCartQuantity> } & Record<string, unknown>,
         ],
       },
       resolveHref,

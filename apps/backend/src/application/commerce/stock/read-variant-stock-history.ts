@@ -3,6 +3,7 @@ import type {
   StockCountRepository,
   StoreItemOptionRepository,
 } from '../../../domain/commerce/repositories/spi';
+import { parseVariantId } from '../../../domain/commerce';
 import { VariantNotFoundError } from './errors';
 import type { VariantStockHistoryEntry } from './types';
 
@@ -10,18 +11,19 @@ export async function readVariantStockHistory(
   storeItemOptions: StoreItemOptionRepository,
   stockChanges: StockChangeRepository,
   stockCounts: StockCountRepository,
-  variantId: string,
+  variantId: unknown,
   limit = 50,
 ): Promise<VariantStockHistoryEntry[]> {
-  const storeItem = await storeItemOptions.findByVariantId(variantId);
+  const parsedVariantId = parseVariantId(variantId);
+  const storeItem = await storeItemOptions.findByVariantId(parsedVariantId);
 
   if (!storeItem) {
-    throw new VariantNotFoundError(variantId);
+    throw new VariantNotFoundError(parsedVariantId);
   }
 
   const [changes, counts] = await Promise.all([
-    stockChanges.listByVariantId(variantId, limit),
-    stockCounts.listByVariantId(variantId, limit),
+    stockChanges.listByVariantId(parsedVariantId, limit),
+    stockCounts.listByVariantId(parsedVariantId, limit),
   ]);
 
   const entries: VariantStockHistoryEntry[] = [

@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import { reconcileCheckoutSession } from '../../../../src/application/commerce/checkout';
 import type { StripeCheckoutSessionState } from '../../../../src/application/commerce/checkout/spi';
+import { checkoutSessionId, paymentIntentId } from '../../../support/commerce-value-objects';
 
 function session(input: Partial<StripeCheckoutSessionState>): StripeCheckoutSessionState {
   return {
-    checkoutSessionId: 'cs_test_123',
+    checkoutSessionId: checkoutSessionId('cs_test_123'),
     paymentStatus: 'unpaid',
     status: 'open',
     ...input,
@@ -19,7 +20,7 @@ describe('checkout reconciliation', () => {
         session({
           paymentStatus: 'paid',
           status: 'complete',
-          stripePaymentIntentId: 'pi_test_123',
+          stripePaymentIntentId: paymentIntentId('pi_test_123'),
         }),
       ),
     ).toEqual({

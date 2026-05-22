@@ -8,6 +8,14 @@ import type {
   StockRepository,
   OrderStateRepository,
 } from '../../../domain/commerce/repositories/spi';
+import {
+  createCartQuantity,
+  createStockChangeDelta,
+  createStockQuantity,
+  type CartQuantity,
+  type CheckoutSessionId,
+  type StripePriceId,
+} from '../../../domain/commerce';
 import { InvalidOrderTransitionError } from './errors';
 import { transitionCheckoutOrder } from './transition-checkout-order';
 
@@ -23,7 +31,7 @@ export type ApplyPaidCheckoutReconciliationResult =
       reason: 'not_paid_recommendation';
     }
   | {
-      checkoutSessionId: string;
+      checkoutSessionId: CheckoutSessionId;
       kind: 'missing_order';
     }
   | {
@@ -145,13 +153,13 @@ export async function applyPaidCheckoutReconciliation(
     }
 
     const updatedStock = await stock.save(orderLine.variantId, {
-      onlineQuantity: currentStock.onlineQuantity - orderLine.quantity,
-      quantity: currentStock.quantity - orderLine.quantity,
+      onlineQuantity: createStockQuantity(currentStock.onlineQuantity - orderLine.quantity),
+      quantity: createStockQuantity(currentStock.quantity - orderLine.quantity),
     });
     const recordedStockChange = await stockChanges.record({
       actorEmail: 'stripe-webhook',
       notes: `Checkout session ${checkoutSessionId}`,
-      quantityDelta: -orderLine.quantity,
+      quantityDelta: createStockChangeDelta(Number(orderLine.quantity) * -1),
       reason: 'checkout_paid',
       recordedAt: appliedAt,
       variantId: orderLine.variantId,
@@ -170,8 +178,8 @@ export async function applyPaidCheckoutReconciliation(
 }
 
 export type FinalizedPaidCheckoutLineItem = {
-  quantity: number;
-  stripePriceId: string;
+  quantity: CartQuantity;
+  stripePriceId: StripePriceId;
 };
 
 function readCheckoutOrderLines(order: CheckoutOrderRecord): CheckoutOrderLineRecord[] {
@@ -182,7 +190,7 @@ function readCheckoutOrderLines(order: CheckoutOrderRecord): CheckoutOrderLineRe
           createdAt: order.createdAt,
           id: order.id,
           orderId: order.id,
-          quantity: 1,
+          quantity: createCartQuantity(1),
           storeItemSlug: order.storeItemSlug,
           stripePriceId: null,
           variantId: order.variantId,
@@ -217,7 +225,7 @@ function reconcileFinalizedLineItems(
 
     reconciledLines.push({
       ...line,
-      quantity: finalizedQuantityByStripePriceId.get(line.stripePriceId)!,
+      quantity: createCartQuantity(finalizedQuantityByStripePriceId.get(line.stripePriceId)!),
     });
   }
 

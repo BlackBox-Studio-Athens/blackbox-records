@@ -6,7 +6,13 @@ import type {
   HostedCheckoutSessionRequest,
   StripeCheckoutSessionState,
 } from '../../application/commerce/checkout/spi';
-import { CheckoutConfigurationError } from '../../application/commerce/checkout';
+import {
+  CheckoutConfigurationError,
+  createCartQuantity,
+  parseCheckoutSessionId,
+  parseStripePriceId,
+  type CheckoutSessionId,
+} from '../../application/commerce/checkout';
 import type { AppBindings } from '../../env';
 import { toStripeCheckoutSessionState } from './stripe-checkout-session-state';
 
@@ -27,7 +33,7 @@ export class StripeCheckoutGateway implements CheckoutGateway {
       (request.storeItemSlug && request.stripePriceId && request.variantId
         ? [
             {
-              quantity: 1,
+              quantity: createCartQuantity(1),
               storeItemSlug: request.storeItemSlug,
               stripePriceId: request.stripePriceId,
               variantId: request.variantId,
@@ -64,28 +70,34 @@ export class StripeCheckoutGateway implements CheckoutGateway {
     }
 
     return {
-      checkoutSessionId: session.id,
+      checkoutSessionId: parseCheckoutSessionId(session.id),
       checkoutUrl: session.url,
     };
   }
 
-  public async readCheckoutSession(checkoutSessionId: string): Promise<StripeCheckoutSessionState> {
+  public async readCheckoutSession(checkoutSessionId: CheckoutSessionId): Promise<StripeCheckoutSessionState> {
     const session = await this.stripe.checkout.sessions.retrieve(checkoutSessionId);
 
     return toStripeCheckoutSessionState(session);
   }
 
-  public async readCheckoutSessionLineItems(checkoutSessionId: string) {
+  public async readCheckoutSessionLineItems(checkoutSessionId: CheckoutSessionId) {
     const stripeLineItemsResponse = await this.stripe.checkout.sessions.listLineItems(checkoutSessionId, {
       limit: 100,
     });
 
-    return stripeLineItemsResponse.data
-      .map((lineItem) => ({
-        quantity: lineItem.quantity ?? 0,
-        stripePriceId: lineItem.price?.id ?? '',
-      }))
-      .filter((lineItem) => lineItem.quantity > 0 && lineItem.stripePriceId);
+    return stripeLineItemsResponse.data.flatMap((lineItem) => {
+      if (!lineItem.quantity || !lineItem.price?.id) {
+        return [];
+      }
+
+      return [
+        {
+          quantity: createCartQuantity(lineItem.quantity),
+          stripePriceId: parseStripePriceId(lineItem.price.id),
+        },
+      ];
+    });
   }
 }
 

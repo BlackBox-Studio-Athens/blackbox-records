@@ -1,5 +1,6 @@
 import type { CheckoutReconciliation } from '../checkout/reconcile-checkout-session';
 import type { CheckoutOrderRecord, OrderStateRepository, OrderStatus } from '../../../domain/commerce/repositories/spi';
+import type { CheckoutSessionId } from '../../../domain/commerce';
 import { CheckoutOrderNotFoundError, InvalidOrderTransitionError } from './errors';
 import { transitionCheckoutOrder } from './transition-checkout-order';
 
@@ -9,7 +10,7 @@ export type ApplyNonPaidCheckoutReconciliationResult =
       reason: 'pending_or_paid_recommendation';
     }
   | {
-      checkoutSessionId: string;
+      checkoutSessionId: CheckoutSessionId;
       kind: 'missing_order';
     }
   | {

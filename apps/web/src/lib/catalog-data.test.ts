@@ -232,6 +232,15 @@ describe('StoreItem projection contract', () => {
     await expect(getStoreItemBySlug('caregivers')).resolves.toBeNull();
   });
 
+  it('detects store item slug collisions without suffixing public slugs', () => {
+    expect(() =>
+      mapStoreItemsBySlug([
+        { slug: 'caregivers-vinyl', sourceKind: 'release', sourceId: 'caregivers' },
+        { slug: 'caregivers-vinyl', sourceKind: 'distro', sourceId: 'caregivers-vinyl' },
+      ] as any),
+    ).toThrow('Slug collision detected: caregivers-vinyl: release:caregivers, distro:caregivers-vinyl');
+  });
+
   it('keeps legacy release ids separate from canonical item-option slugs', async () => {
     const [, externalRelease] = await listReleaseCatalog();
 

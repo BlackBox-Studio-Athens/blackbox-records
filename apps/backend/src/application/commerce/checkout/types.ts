@@ -1,5 +1,12 @@
 import type { ShippingLockerSnapshot } from '../../../domain/commerce/repositories/spi';
-import type { StoreItemSlug, StripePriceId, VariantId } from '../../../domain/commerce';
+import type {
+  CartQuantity,
+  CheckoutSessionId,
+  PaymentIntentId,
+  StoreItemSlug,
+  StripePriceId,
+  VariantId,
+} from '../../../domain/commerce';
 
 export type StoreOfferAvailability = {
   status: 'available' | 'sold_out';
@@ -23,19 +30,19 @@ export type HostedCheckoutSessionRequest = {
 };
 
 export type CheckoutSessionLineItem = {
-  quantity: number;
+  quantity: CartQuantity;
   storeItemSlug: StoreItemSlug;
   stripePriceId: StripePriceId;
   variantId: VariantId;
 };
 
 export type FinalizedCheckoutSessionLineItem = {
-  quantity: number;
+  quantity: CartQuantity;
   stripePriceId: StripePriceId;
 };
 
 export type HostedCheckoutSession = {
-  checkoutSessionId: string;
+  checkoutSessionId: CheckoutSessionId;
   checkoutUrl: string;
 };
 
@@ -44,14 +51,14 @@ export type StripeCheckoutSessionStatus = 'open' | 'complete' | 'expired' | null
 export type StripeCheckoutPaymentStatus = 'paid' | 'unpaid' | 'no_payment_required';
 
 export type StripeCheckoutSessionState = {
-  checkoutSessionId: string;
+  checkoutSessionId: CheckoutSessionId;
   paymentStatus: StripeCheckoutPaymentStatus;
-  stripePaymentIntentId?: string | null;
+  stripePaymentIntentId?: PaymentIntentId | null;
   status: StripeCheckoutSessionStatus;
 };
 
 export type CheckoutState = {
-  checkoutSessionId: string;
+  checkoutSessionId: CheckoutSessionId;
   paymentStatus: StripeCheckoutPaymentStatus;
   shippingLocker: ShippingLockerSnapshot | null;
   state: 'open' | 'paid' | 'processing' | 'expired' | 'unknown';
@@ -60,6 +67,6 @@ export type CheckoutState = {
 
 export interface CheckoutGateway {
   createHostedCheckoutSession(request: HostedCheckoutSessionRequest): Promise<HostedCheckoutSession>;
-  readCheckoutSessionLineItems(checkoutSessionId: string): Promise<FinalizedCheckoutSessionLineItem[]>;
-  readCheckoutSession(checkoutSessionId: string): Promise<StripeCheckoutSessionState>;
+  readCheckoutSessionLineItems(checkoutSessionId: CheckoutSessionId): Promise<FinalizedCheckoutSessionLineItem[]>;
+  readCheckoutSession(checkoutSessionId: CheckoutSessionId): Promise<StripeCheckoutSessionState>;
 }

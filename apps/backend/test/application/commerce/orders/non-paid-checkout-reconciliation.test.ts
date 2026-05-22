@@ -17,6 +17,7 @@ import type {
   OrderStateRepository,
   OrderStatus,
 } from '../../../../src/domain/commerce/repositories/spi';
+import { checkoutSessionId, paymentIntentId, storeItemSlug, variantId } from '../../../support/commerce-value-objects';
 
 class InMemoryOrderStateRepository implements OrderStateRepository {
   public readonly records = new Map<string, CheckoutOrderRecord>();
@@ -91,15 +92,16 @@ describe('non-paid checkout reconciliation', () => {
     locker_id: '4',
     locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
   };
+  const primaryCheckoutSessionId = checkoutSessionId('cs_test_123');
   let orders: InMemoryOrderStateRepository;
 
   beforeEach(async () => {
     orders = new InMemoryOrderStateRepository();
     await createPendingCheckoutOrder(orders, {
-      checkoutSessionId: 'cs_test_123',
+      checkoutSessionId: primaryCheckoutSessionId,
       shippingLocker,
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
+      variantId: variantId('variant_barren-point_standard'),
     });
   });
 
@@ -182,9 +184,9 @@ describe('non-paid checkout reconciliation', () => {
 
 function reconciliation(status: StripeCheckoutSessionStatus, paymentStatus: StripeCheckoutPaymentStatus) {
   return reconcileCheckoutSession({
-    checkoutSessionId: 'cs_test_123',
+    checkoutSessionId: checkoutSessionId('cs_test_123'),
     paymentStatus,
     status,
-    stripePaymentIntentId: 'pi_test_123',
+    stripePaymentIntentId: paymentIntentId('pi_test_123'),
   });
 }

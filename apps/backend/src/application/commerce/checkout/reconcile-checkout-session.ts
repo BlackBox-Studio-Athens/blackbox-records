@@ -1,4 +1,5 @@
 import type { OrderStatus } from '../../../domain/commerce/repositories/spi';
+import type { CheckoutSessionId, PaymentIntentId } from '../../../domain/commerce';
 import type { StripeCheckoutSessionState } from './spi';
 import type { CheckoutState } from './types';
 
@@ -7,8 +8,8 @@ export type CheckoutReconciliation = {
   isAuthoritative: false;
   recommendedOrderStatus: OrderStatus;
   source: {
-    checkoutSessionId: string;
-    stripePaymentIntentId: string | null;
+    checkoutSessionId: CheckoutSessionId;
+    stripePaymentIntentId: PaymentIntentId | null;
   };
 };
 

@@ -7,6 +7,7 @@ import type {
   StoreItemOptionRepository,
 } from '../../../../src/domain/commerce/repositories/spi';
 import { StoreOfferReader } from '../../../../src/application/commerce/readers';
+import { storeItemSlug, variantId } from '../../../support/commerce-value-objects';
 
 describe('StoreOfferReader', () => {
   it('returns null when no store item option exists', async () => {
@@ -22,15 +23,15 @@ describe('StoreOfferReader', () => {
 
     const reader = new StoreOfferReader(storeItemOptions, itemAvailability);
 
-    await expect(reader.findByStoreItemSlug('unknown-slug')).resolves.toBeNull();
+    await expect(reader.findByStoreItemSlug(storeItemSlug('unknown-slug'))).resolves.toBeNull();
   });
 
   it('returns a conservative unavailable offer when availability is missing', async () => {
     const storeItemOption: StoreItemOptionRecord = {
-      storeItemSlug: 'aftermaths',
+      storeItemSlug: storeItemSlug('aftermaths'),
       sourceKind: 'distro',
       sourceId: 'aftermaths',
-      variantId: 'variant_aftermaths_standard',
+      variantId: variantId('variant_aftermaths_standard'),
     };
     const storeItemOptions: StoreItemOptionRepository = {
       findByVariantId: vi.fn(async () => null),
@@ -44,7 +45,7 @@ describe('StoreOfferReader', () => {
 
     const reader = new StoreOfferReader(storeItemOptions, itemAvailability);
 
-    await expect(reader.findByStoreItemSlug('aftermaths')).resolves.toEqual({
+    await expect(reader.findByStoreItemSlug(storeItemSlug('aftermaths'))).resolves.toEqual({
       storeItemSlug: 'aftermaths',
       variantId: 'variant_aftermaths_standard',
       availability: {
@@ -57,13 +58,13 @@ describe('StoreOfferReader', () => {
 
   it('returns repository-backed offer availability for a mapped slug', async () => {
     const storeItemOption: StoreItemOptionRecord = {
-      storeItemSlug: 'disintegration-black-vinyl-lp',
+      storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
       sourceKind: 'release',
       sourceId: 'barren-point',
-      variantId: 'variant_barren-point_standard',
+      variantId: variantId('variant_barren-point_standard'),
     };
     const availability: ItemAvailabilityRecord = {
-      variantId: 'variant_barren-point_standard',
+      variantId: variantId('variant_barren-point_standard'),
       status: 'available',
       canBuy: true,
       updatedAt: new Date('2026-04-22T00:00:00.000Z'),
@@ -80,7 +81,7 @@ describe('StoreOfferReader', () => {
 
     const reader = new StoreOfferReader(storeItemOptions, itemAvailability);
 
-    await expect(reader.findByStoreItemSlug('disintegration-black-vinyl-lp')).resolves.toEqual({
+    await expect(reader.findByStoreItemSlug(storeItemSlug('disintegration-black-vinyl-lp'))).resolves.toEqual({
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
       availability: {
@@ -93,13 +94,13 @@ describe('StoreOfferReader', () => {
 
   it('uses sold-out language for stored sold-out availability', async () => {
     const storeItemOption: StoreItemOptionRecord = {
-      storeItemSlug: 'afterglow-tape',
+      storeItemSlug: storeItemSlug('afterglow-tape'),
       sourceKind: 'distro',
       sourceId: 'afterglow-tape',
-      variantId: 'variant_afterglow-tape_standard',
+      variantId: variantId('variant_afterglow-tape_standard'),
     };
     const availability: ItemAvailabilityRecord = {
-      variantId: 'variant_afterglow-tape_standard',
+      variantId: variantId('variant_afterglow-tape_standard'),
       status: 'sold_out',
       canBuy: false,
       updatedAt: new Date('2026-04-22T00:00:00.000Z'),
@@ -116,7 +117,7 @@ describe('StoreOfferReader', () => {
 
     const reader = new StoreOfferReader(storeItemOptions, itemAvailability);
 
-    await expect(reader.findByStoreItemSlug('afterglow-tape')).resolves.toMatchObject({
+    await expect(reader.findByStoreItemSlug(storeItemSlug('afterglow-tape'))).resolves.toMatchObject({
       availability: {
         status: 'sold_out',
         label: 'Sold Out',

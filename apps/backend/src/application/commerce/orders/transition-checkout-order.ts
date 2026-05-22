@@ -1,12 +1,13 @@
 import type { CheckoutOrderRecord, OrderStateRepository, OrderStatus } from '../../../domain/commerce/repositories/spi';
+import type { CheckoutSessionId, PaymentIntentId } from '../../../domain/commerce';
 import { CheckoutOrderNotFoundError, InvalidOrderTransitionError } from './errors';
 import { evaluateOrderTransition, type OrderTransitionOrigin } from './order-state';
 
 export type TransitionCheckoutOrderCommand = {
-  checkoutSessionId: string;
+  checkoutSessionId: CheckoutSessionId;
   toStatus: OrderStatus;
   transitionedAt?: Date;
-  stripePaymentIntentId?: string | null;
+  stripePaymentIntentId?: PaymentIntentId | null;
   origin?: OrderTransitionOrigin;
 };
 

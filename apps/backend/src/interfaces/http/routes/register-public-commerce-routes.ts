@@ -6,6 +6,7 @@ import {
   getStoreItemVariantsRoute,
   postCheckoutSessionRoute,
 } from '../contracts/public-contracts';
+import { createStartCheckoutLineCommand } from '../../../application/commerce/checkout';
 import { createPublicCheckoutCancelUrl, createPublicCheckoutReturnUrl } from './public-checkout-return-url';
 import { createPublicCommerceServices } from './public-commerce-services';
 
@@ -76,22 +77,25 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
         return context.json({ error: 'Checkout requires at least one cart line.' }, 400);
       }
 
+      const checkoutLines = lines.map(createStartCheckoutLineCommand);
+      const primaryCheckoutLine = checkoutLines[0]!;
+
       const checkoutSession = await services.startCheckout({
         cancelUrl: createPublicCheckoutCancelUrl(
           context.req.raw.headers,
           context.req.url,
-          primaryLine.storeItemSlug,
+          primaryCheckoutLine.storeItemSlug,
           context.env.CHECKOUT_RETURN_ORIGINS,
         ),
-        ...(body.lines ? { lines } : {}),
+        ...(body.lines ? { lines: checkoutLines } : {}),
         successUrl: createPublicCheckoutReturnUrl(
           context.req.raw.headers,
           context.req.url,
-          primaryLine.storeItemSlug,
+          primaryCheckoutLine.storeItemSlug,
           context.env.CHECKOUT_RETURN_ORIGINS,
         ),
-        storeItemSlug: primaryLine.storeItemSlug,
-        variantId: primaryLine.variantId,
+        storeItemSlug: primaryCheckoutLine.storeItemSlug,
+        variantId: primaryCheckoutLine.variantId,
       });
 
       return context.json(

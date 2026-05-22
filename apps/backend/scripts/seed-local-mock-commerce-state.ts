@@ -6,6 +6,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { resolveExplicitOrSuggestedSlug } from '../../web/src/lib/slugs';
+
 export type LocalMockStoreItem = {
   mockCheckoutEnabled: boolean;
   taxCategory: 'physical_goods';
@@ -49,7 +51,9 @@ export async function readReleaseStoreItems(directory: string): Promise<LocalMoc
   for (const fileName of files) {
     const sourceId = path.basename(fileName, '.md');
     const frontmatter = parseFrontmatter(await readFile(path.join(directory, fileName), 'utf8'));
-    const storeItemSlug = releaseStoreItemSlugByReleaseId[sourceId] ?? sourceId;
+    const storeItemSlug =
+      releaseStoreItemSlugByReleaseId[sourceId] ??
+      resolveExplicitOrSuggestedSlug(sourceId, frontmatter.title ?? sourceId);
 
     storeItems.push({
       mockCheckoutEnabled: mockCheckoutStoreItemSlugs.has(storeItemSlug),
@@ -72,15 +76,17 @@ export async function readDistroStoreItems(directory: string): Promise<LocalMock
   for (const fileName of files) {
     const sourceId = path.basename(fileName, '.json');
     const content = JSON.parse(await readFile(path.join(directory, fileName), 'utf8')) as { title?: unknown };
+    const title = typeof content.title === 'string' ? content.title : sourceId;
+    const storeItemSlug = resolveExplicitOrSuggestedSlug(sourceId, title);
 
     storeItems.push({
-      mockCheckoutEnabled: mockCheckoutStoreItemSlugs.has(sourceId),
+      mockCheckoutEnabled: mockCheckoutStoreItemSlugs.has(storeItemSlug),
       taxCategory: 'physical_goods',
       sourceId,
       sourceKind: 'distro',
-      storeItemSlug: sourceId,
-      title: typeof content.title === 'string' ? content.title : sourceId,
-      variantId: createVariantId(sourceId),
+      storeItemSlug,
+      title,
+      variantId: createVariantId(storeItemSlug),
     });
   }
 

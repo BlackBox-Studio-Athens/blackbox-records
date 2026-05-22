@@ -28,6 +28,14 @@ import type {
   VariantStripeMappingRecord,
   VariantStripeMappingRepository,
 } from '../../../../src/domain/commerce/repositories/spi';
+import {
+  cartQuantity,
+  checkoutSessionId,
+  stockQuantity,
+  storeItemSlug,
+  stripePriceId,
+  variantId as toVariantId,
+} from '../../../support/commerce-value-objects';
 
 class InMemoryStoreItemOptionRepository implements StoreItemOptionRepository {
   public constructor(private readonly records: StoreItemOptionRecord[]) {}
@@ -70,10 +78,10 @@ class InMemoryStockRepository implements StockRepository {
   public async save(variantId: string, state: { onlineQuantity: number; quantity: number }): Promise<StockRecord> {
     const record: StockRecord = {
       createdAt: new Date('2026-04-24T10:00:00.000Z'),
-      onlineQuantity: state.onlineQuantity,
-      quantity: state.quantity,
+      onlineQuantity: stockQuantity(state.onlineQuantity),
+      quantity: stockQuantity(state.quantity),
       updatedAt: new Date('2026-04-24T10:00:00.000Z'),
-      variantId,
+      variantId: toVariantId(variantId),
     };
 
     this.records.set(variantId, record);
@@ -158,8 +166,8 @@ describe('checkout use cases', () => {
   const storeItem: StoreItemOptionRecord = {
     sourceId: 'barren-point',
     sourceKind: 'release',
-    storeItemSlug: 'disintegration-black-vinyl-lp',
-    variantId: 'variant_barren-point_standard',
+    storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
+    variantId: toVariantId('variant_barren-point_standard'),
   };
 
   let storeItems: InMemoryStoreItemOptionRepository;
@@ -177,12 +185,12 @@ describe('checkout use cases', () => {
     orders = new InMemoryOrderStateRepository();
     checkoutGateway = {
       createHostedCheckoutSession: vi.fn(async () => ({
-        checkoutSessionId: 'cs_test_123',
+        checkoutSessionId: checkoutSessionId('cs_test_123'),
         checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
       })),
       readCheckoutSessionLineItems: vi.fn(async () => []),
       readCheckoutSession: vi.fn(async () => ({
-        checkoutSessionId: 'cs_test_123',
+        checkoutSessionId: checkoutSessionId('cs_test_123'),
         paymentStatus: 'paid' as const,
         status: 'complete' as const,
       })),
@@ -199,28 +207,26 @@ describe('checkout use cases', () => {
       quantity: 3,
     });
     stripeMappings.records.set(storeItem.variantId, {
-      stripePriceId: 'price_test_barren_point',
+      stripePriceId: stripePriceId('price_test_barren_point'),
       variantId: storeItem.variantId,
     });
   });
 
   it('reads backend-known checkout eligibility for one store item', async () => {
-    await expect(readStoreOffer(storeItems, itemAvailability, stock, 'disintegration-black-vinyl-lp')).resolves.toEqual(
-      {
-        availability: {
-          label: 'Available',
-          status: 'available',
-        },
-        canCheckout: true,
-        storeItemSlug: 'disintegration-black-vinyl-lp',
-        variantId: 'variant_barren-point_standard',
+    await expect(readStoreOffer(storeItems, itemAvailability, stock, storeItem.storeItemSlug)).resolves.toEqual({
+      availability: {
+        label: 'Available',
+        status: 'available',
       },
-    );
+      canCheckout: true,
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+      variantId: 'variant_barren-point_standard',
+    });
   });
 
   it('returns array-shaped variant offers for future multi-variant expansion', async () => {
     await expect(
-      listVariantOffersForStoreItem(storeItems, itemAvailability, stock, 'disintegration-black-vinyl-lp'),
+      listVariantOffersForStoreItem(storeItems, itemAvailability, stock, storeItem.storeItemSlug),
     ).resolves.toEqual([
       expect.objectContaining({
         storeItemSlug: 'disintegration-black-vinyl-lp',
@@ -278,7 +284,7 @@ describe('checkout use cases', () => {
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         cancelUrl: 'https://example.com/checkout',
         successUrl: 'https://example.com/return',
-        storeItemSlug: 'unknown',
+        storeItemSlug: storeItemSlug('unknown'),
         variantId: storeItem.variantId,
       }),
     ).rejects.toBeInstanceOf(StoreItemNotFoundError);
@@ -290,7 +296,7 @@ describe('checkout use cases', () => {
         cancelUrl: 'https://example.com/checkout',
         successUrl: 'https://example.com/return',
         storeItemSlug: storeItem.storeItemSlug,
-        variantId: 'variant_other',
+        variantId: toVariantId('variant_other'),
       }),
     ).rejects.toBeInstanceOf(VariantMismatchError);
   });
@@ -365,7 +371,7 @@ describe('checkout use cases', () => {
       startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
         lines: [
           {
-            quantity: 2,
+            quantity: cartQuantity(2),
             storeItemSlug: storeItem.storeItemSlug,
             variantId: storeItem.variantId,
           },
@@ -393,7 +399,7 @@ describe('checkout use cases', () => {
   });
 
   it('maps Stripe Checkout Session status into app-owned return state without D1 writes', async () => {
-    await expect(readCheckoutState(checkoutGateway, orders, 'cs_test_123')).resolves.toEqual({
+    await expect(readCheckoutState(checkoutGateway, orders, checkoutSessionId('cs_test_123'))).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
       paymentStatus: 'paid',
       shippingLocker: null,
@@ -412,7 +418,7 @@ describe('checkout use cases', () => {
       variantId: storeItem.variantId,
     });
 
-    await expect(readCheckoutState(checkoutGateway, orders, 'cs_test_123')).resolves.toEqual({
+    await expect(readCheckoutState(checkoutGateway, orders, checkoutSessionId('cs_test_123'))).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
       paymentStatus: 'paid',
       shippingLocker: null,

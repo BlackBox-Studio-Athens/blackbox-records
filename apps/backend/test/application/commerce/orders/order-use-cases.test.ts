@@ -14,6 +14,7 @@ import type {
   OrderStateRepository,
   OrderStatus,
 } from '../../../../src/domain/commerce/repositories/spi';
+import { checkoutSessionId, paymentIntentId, storeItemSlug, variantId } from '../../../support/commerce-value-objects';
 
 class InMemoryOrderStateRepository implements OrderStateRepository {
   public readonly records = new Map<string, CheckoutOrderRecord>();
@@ -87,6 +88,9 @@ describe('order lifecycle use cases', () => {
     locker_id: '4',
     locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
   };
+  const primaryCheckoutSessionId = checkoutSessionId('cs_test_123');
+  const primaryStoreItemSlug = storeItemSlug('disintegration-black-vinyl-lp');
+  const primaryVariantId = variantId('variant_barren-point_standard');
   let orders: InMemoryOrderStateRepository;
 
   beforeEach(() => {
@@ -98,14 +102,14 @@ describe('order lifecycle use cases', () => {
 
     await expect(
       createPendingCheckoutOrder(orders, {
-        checkoutSessionId: 'cs_test_123',
+        checkoutSessionId: primaryCheckoutSessionId,
         createdAt,
         shippingLocker,
-        storeItemSlug: 'disintegration-black-vinyl-lp',
-        variantId: 'variant_barren-point_standard',
+        storeItemSlug: primaryStoreItemSlug,
+        variantId: primaryVariantId,
       }),
     ).resolves.toMatchObject({
-      checkoutSessionId: 'cs_test_123',
+      checkoutSessionId: primaryCheckoutSessionId,
       shippingLocker,
       status: 'pending_payment',
       statusUpdatedAt: createdAt,
@@ -113,26 +117,26 @@ describe('order lifecycle use cases', () => {
       variantId: 'variant_barren-point_standard',
     });
 
-    await expect(readCheckoutOrder(orders, 'cs_test_123')).resolves.toMatchObject({
-      checkoutSessionId: 'cs_test_123',
+    await expect(readCheckoutOrder(orders, primaryCheckoutSessionId)).resolves.toMatchObject({
+      checkoutSessionId: primaryCheckoutSessionId,
       status: 'pending_payment',
     });
   });
 
   it('transitions a pending order to paid and records payment metadata', async () => {
     await createPendingCheckoutOrder(orders, {
-      checkoutSessionId: 'cs_test_123',
+      checkoutSessionId: primaryCheckoutSessionId,
       shippingLocker,
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      storeItemSlug: primaryStoreItemSlug,
+      variantId: primaryVariantId,
     });
 
     const transitionedAt = new Date('2026-04-25T11:00:00.000Z');
 
     await expect(
       transitionCheckoutOrder(orders, {
-        checkoutSessionId: 'cs_test_123',
-        stripePaymentIntentId: 'pi_test_123',
+        checkoutSessionId: primaryCheckoutSessionId,
+        stripePaymentIntentId: paymentIntentId('pi_test_123'),
         toStatus: 'paid',
         transitionedAt,
       }),
@@ -149,13 +153,13 @@ describe('order lifecycle use cases', () => {
 
   it('returns a no-op result for duplicate paid replay without saving another transition', async () => {
     await createPendingCheckoutOrder(orders, {
-      checkoutSessionId: 'cs_test_123',
+      checkoutSessionId: primaryCheckoutSessionId,
       shippingLocker,
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      storeItemSlug: primaryStoreItemSlug,
+      variantId: primaryVariantId,
     });
     await transitionCheckoutOrder(orders, {
-      checkoutSessionId: 'cs_test_123',
+      checkoutSessionId: primaryCheckoutSessionId,
       toStatus: 'paid',
       transitionedAt: new Date('2026-04-25T11:00:00.000Z'),
     });
@@ -163,7 +167,7 @@ describe('order lifecycle use cases', () => {
 
     await expect(
       transitionCheckoutOrder(orders, {
-        checkoutSessionId: 'cs_test_123',
+        checkoutSessionId: primaryCheckoutSessionId,
         toStatus: 'paid',
         transitionedAt: new Date('2026-04-25T12:00:00.000Z'),
       }),
@@ -178,20 +182,20 @@ describe('order lifecycle use cases', () => {
 
   it('rejects invalid transitions before persistence writes', async () => {
     await createPendingCheckoutOrder(orders, {
-      checkoutSessionId: 'cs_test_123',
+      checkoutSessionId: primaryCheckoutSessionId,
       shippingLocker,
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      storeItemSlug: primaryStoreItemSlug,
+      variantId: primaryVariantId,
     });
     await transitionCheckoutOrder(orders, {
-      checkoutSessionId: 'cs_test_123',
+      checkoutSessionId: primaryCheckoutSessionId,
       toStatus: 'paid',
     });
     orders.saveTransitionCalls = 0;
 
     await expect(
       transitionCheckoutOrder(orders, {
-        checkoutSessionId: 'cs_test_123',
+        checkoutSessionId: primaryCheckoutSessionId,
         toStatus: 'not_paid',
       }),
     ).rejects.toBeInstanceOf(InvalidOrderTransitionError);
@@ -200,15 +204,15 @@ describe('order lifecycle use cases', () => {
 
   it('rejects browser read-path transition attempts', async () => {
     await createPendingCheckoutOrder(orders, {
-      checkoutSessionId: 'cs_test_123',
+      checkoutSessionId: primaryCheckoutSessionId,
       shippingLocker,
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      storeItemSlug: primaryStoreItemSlug,
+      variantId: primaryVariantId,
     });
 
     await expect(
       transitionCheckoutOrder(orders, {
-        checkoutSessionId: 'cs_test_123',
+        checkoutSessionId: primaryCheckoutSessionId,
         origin: 'browser_read',
         toStatus: 'paid',
       }),
@@ -218,7 +222,7 @@ describe('order lifecycle use cases', () => {
   it('throws a not-found error for unknown checkout sessions', async () => {
     await expect(
       transitionCheckoutOrder(orders, {
-        checkoutSessionId: 'cs_missing',
+        checkoutSessionId: checkoutSessionId('cs_missing'),
         toStatus: 'paid',
       }),
     ).rejects.toBeInstanceOf(CheckoutOrderNotFoundError);

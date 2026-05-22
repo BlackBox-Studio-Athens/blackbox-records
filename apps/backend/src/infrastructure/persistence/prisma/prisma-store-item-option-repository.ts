@@ -3,6 +3,7 @@ import type {
   StoreItemOptionRepository,
   StoreItemSourceRef,
 } from '../../../domain/commerce/repositories/spi';
+import { parseStoreItemSlug, parseVariantId } from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapStoreItemOption(record: {
@@ -12,10 +13,10 @@ function mapStoreItemOption(record: {
   variantId: string;
 }): StoreItemOptionRecord {
   return {
-    storeItemSlug: record.storeItemSlug,
+    storeItemSlug: parseStoreItemSlug(record.storeItemSlug),
     sourceKind: record.sourceKind,
     sourceId: record.sourceId,
-    variantId: record.variantId,
+    variantId: parseVariantId(record.variantId),
   };
 }
 

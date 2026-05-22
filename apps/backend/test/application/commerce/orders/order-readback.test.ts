@@ -8,6 +8,7 @@ import type {
   OrderStateRepository,
   OrderStatus,
 } from '../../../../src/domain/commerce/repositories/spi';
+import { checkoutSessionId, paymentIntentId, storeItemSlug, variantId } from '../../../support/commerce-value-objects';
 
 class InMemoryOrderStateRepository implements OrderStateRepository {
   public readonly records = new Map<string, CheckoutOrderRecord>();
@@ -79,37 +80,39 @@ describe('order readback use cases', () => {
     locker_id: '4',
     locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
   };
+  const oldPaidCheckoutSessionId = checkoutSessionId('cs_old_paid');
+  const newReviewCheckoutSessionId = checkoutSessionId('cs_new_review');
   let orders: InMemoryOrderStateRepository;
 
   beforeEach(async () => {
     orders = new InMemoryOrderStateRepository();
     await orders.createPending({
-      checkoutSessionId: 'cs_old_paid',
+      checkoutSessionId: oldPaidCheckoutSessionId,
       createdAt: new Date('2026-04-25T10:00:00.000Z'),
       shippingLocker,
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
+      variantId: variantId('variant_barren-point_standard'),
     });
-    await orders.saveTransition('cs_old_paid', {
+    await orders.saveTransition(oldPaidCheckoutSessionId, {
       status: 'paid',
       statusUpdatedAt: new Date('2026-04-25T10:05:00.000Z'),
-      stripePaymentIntentId: 'pi_test_paid',
+      stripePaymentIntentId: paymentIntentId('pi_test_paid'),
     });
     await orders.createPending({
-      checkoutSessionId: 'cs_new_review',
+      checkoutSessionId: newReviewCheckoutSessionId,
       createdAt: new Date('2026-04-25T11:00:00.000Z'),
       shippingLocker,
-      storeItemSlug: 'caregivers-vinyl',
-      variantId: 'variant_caregivers-vinyl_standard',
+      storeItemSlug: storeItemSlug('caregivers-vinyl'),
+      variantId: variantId('variant_caregivers-vinyl_standard'),
     });
-    await orders.saveTransition('cs_new_review', {
+    await orders.saveTransition(newReviewCheckoutSessionId, {
       status: 'needs_review',
       statusUpdatedAt: new Date('2026-04-25T11:05:00.000Z'),
     });
   });
 
   it('reads one checkout order by checkout session id', async () => {
-    await expect(readCheckoutOrder(orders, 'cs_old_paid')).resolves.toMatchObject({
+    await expect(readCheckoutOrder(orders, oldPaidCheckoutSessionId)).resolves.toMatchObject({
       checkoutSessionId: 'cs_old_paid',
       shippingLocker,
       status: 'paid',

@@ -178,6 +178,26 @@ describe('store cart state', () => {
     });
   });
 
+  it('normalizes legacy currency casing while preserving the storage shape', () => {
+    const state = parseSerializedStoreCartState(
+      JSON.stringify({ lines: [{ ...canonicalItem, priceCurrencyCode: 'eur', quantity: 2 }] }),
+    );
+
+    expect(state.lines[0]).toMatchObject({
+      priceAmountMinor: 2000,
+      priceCurrencyCode: 'EUR',
+      quantity: 2,
+    });
+  });
+
+  it('rejects invalid price states instead of storing float money', () => {
+    const state = parseSerializedStoreCartState(
+      JSON.stringify({ lines: [{ ...canonicalItem, priceAmountMinor: 20.5, quantity: 1 }] }),
+    );
+
+    expect(state).toEqual(createEmptyStoreCartState());
+  });
+
   it('falls back to empty cart for malformed storage', () => {
     expect(parseSerializedStoreCartState('{not json')).toEqual(createEmptyStoreCartState());
     expect(

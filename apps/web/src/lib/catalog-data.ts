@@ -1,6 +1,7 @@
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
 
 import { createProjectRelativeUrl } from '../config/site';
+import { assertNoSlugCollisions } from './slugs';
 import type { StoreItemTaxCategory } from './store-tax-category';
 export { groupDistroEntries } from './distro-data';
 
@@ -199,6 +200,13 @@ export async function listStoreItems(): Promise<StoreItem[]> {
 }
 
 export function mapStoreItemsBySlug(storeItems: StoreItem[]) {
+  assertNoSlugCollisions(
+    storeItems.map((storeItem) => ({
+      owner: `${storeItem.sourceKind}:${storeItem.sourceId}`,
+      slug: storeItem.slug,
+    })),
+  );
+
   return new Map(storeItems.map((storeItem) => [storeItem.slug, storeItem]));
 }
 

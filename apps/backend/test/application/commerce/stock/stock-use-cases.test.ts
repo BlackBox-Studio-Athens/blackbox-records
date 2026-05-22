@@ -22,6 +22,12 @@ import type {
   StoreItemOptionRepository,
   StoreItemSourceRef,
 } from '../../../../src/domain/commerce/repositories/spi';
+import {
+  stockChangeDelta,
+  stockQuantity,
+  storeItemSlug,
+  variantId as toVariantId,
+} from '../../../support/commerce-value-objects';
 
 class InMemoryStoreItemOptionRepository implements StoreItemOptionRepository {
   public constructor(private readonly storeItems: StoreItemOptionRecord[]) {}
@@ -68,10 +74,10 @@ class InMemoryStockRepository implements StockRepository {
     const existing = this.records.get(variantId);
     const record: StockRecord = {
       createdAt: existing?.createdAt ?? new Date('2026-04-24T10:00:00.000Z'),
-      onlineQuantity: state.onlineQuantity,
-      quantity: state.quantity,
+      onlineQuantity: stockQuantity(state.onlineQuantity),
+      quantity: stockQuantity(state.quantity),
       updatedAt: new Date('2026-04-24T11:00:00.000Z'),
-      variantId,
+      variantId: toVariantId(variantId),
     };
 
     this.records.set(variantId, record);
@@ -132,8 +138,8 @@ describe('commerce stock use cases', () => {
   const storeItem = {
     sourceId: 'barren-point',
     sourceKind: 'release' as const,
-    storeItemSlug: 'disintegration-black-vinyl-lp',
-    variantId: 'variant_barren-point_standard',
+    storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
+    variantId: toVariantId('variant_barren-point_standard'),
   };
 
   let storeItems: InMemoryStoreItemOptionRepository;
@@ -167,7 +173,7 @@ describe('commerce stock use cases', () => {
     const result = await recordStockChange(storeItems, stock, stockChanges, {
       actorEmail: 'operator@blackboxrecords.example',
       notes: 'Initial delivery',
-      quantityDelta: 3,
+      quantityDelta: stockChangeDelta(3),
       reason: 'delivery',
       variantId: storeItem.variantId,
     });
@@ -189,7 +195,7 @@ describe('commerce stock use cases', () => {
       recordStockChange(storeItems, stock, stockChanges, {
         actorEmail: 'operator@blackboxrecords.example',
         notes: null,
-        quantityDelta: -1,
+        quantityDelta: stockChangeDelta(-1),
         reason: 'sale',
         variantId: storeItem.variantId,
       }),
@@ -200,16 +206,16 @@ describe('commerce stock use cases', () => {
     await recordStockChange(storeItems, stock, stockChanges, {
       actorEmail: 'operator@blackboxrecords.example',
       notes: null,
-      quantityDelta: 5,
+      quantityDelta: stockChangeDelta(5),
       reason: 'delivery',
       variantId: storeItem.variantId,
     });
 
     const result = await recordStockCount(storeItems, stock, stockCounts, {
       actorEmail: 'operator@blackboxrecords.example',
-      countedQuantity: 2,
+      countedQuantity: stockQuantity(2),
       notes: 'Shelf recount',
-      onlineQuantity: 1,
+      onlineQuantity: stockQuantity(1),
       variantId: storeItem.variantId,
     });
 
@@ -222,15 +228,15 @@ describe('commerce stock use cases', () => {
     await recordStockChange(storeItems, stock, stockChanges, {
       actorEmail: 'operator@blackboxrecords.example',
       notes: null,
-      quantityDelta: 5,
+      quantityDelta: stockChangeDelta(5),
       reason: 'delivery',
       variantId: storeItem.variantId,
     });
     await recordStockCount(storeItems, stock, stockCounts, {
       actorEmail: 'operator@blackboxrecords.example',
-      countedQuantity: 4,
+      countedQuantity: stockQuantity(4),
       notes: 'Recounted after prep',
-      onlineQuantity: 2,
+      onlineQuantity: stockQuantity(2),
       variantId: storeItem.variantId,
     });
 
@@ -251,6 +257,8 @@ describe('commerce stock use cases', () => {
   });
 
   it('throws a variant-not-found error for unknown variants', async () => {
-    await expect(readVariantStock(storeItems, stock, 'variant_missing')).rejects.toBeInstanceOf(VariantNotFoundError);
+    await expect(readVariantStock(storeItems, stock, toVariantId('variant_missing'))).rejects.toBeInstanceOf(
+      VariantNotFoundError,
+    );
   });
 });

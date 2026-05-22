@@ -18,6 +18,15 @@ import type {
   StockRecord,
   StockRepository,
 } from '../../../../src/domain/commerce/repositories/spi';
+import {
+  cartQuantity,
+  checkoutSessionId,
+  paymentIntentId,
+  stockQuantity,
+  storeItemSlug,
+  stripePriceId,
+  variantId as toVariantId,
+} from '../../../support/commerce-value-objects';
 
 class InMemoryOrderStateRepository implements OrderStateRepository {
   public readonly records = new Map<string, CheckoutOrderRecord>();
@@ -39,17 +48,24 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
       stripePaymentIntentId: input.stripePaymentIntentId ?? null,
       updatedAt: createdAt,
       variantId: input.variantId,
-      lines: (input.lines ?? [{ quantity: 1, storeItemSlug: input.storeItemSlug, variantId: input.variantId }]).map(
-        (line, index) => ({
-          createdAt,
-          id: `order_line_${index + 1}`,
-          orderId: `order_${this.records.size + 1}`,
-          quantity: line.quantity,
-          stripePriceId: line.stripePriceId ?? null,
-          storeItemSlug: line.storeItemSlug,
-          variantId: line.variantId,
-        }),
-      ),
+      lines: (
+        input.lines ?? [
+          {
+            quantity: cartQuantity(1),
+            storeItemSlug: input.storeItemSlug,
+            stripePriceId: null,
+            variantId: input.variantId,
+          },
+        ]
+      ).map((line, index) => ({
+        createdAt,
+        id: `order_line_${index + 1}`,
+        orderId: `order_${this.records.size + 1}`,
+        quantity: line.quantity,
+        stripePriceId: line.stripePriceId ?? null,
+        storeItemSlug: line.storeItemSlug,
+        variantId: line.variantId,
+      })),
     };
 
     this.records.set(record.checkoutSessionId, record);
@@ -108,10 +124,10 @@ class InMemoryStockRepository implements StockRepository {
     this.saveCalls += 1;
     const record: StockRecord = {
       createdAt: new Date('2026-04-24T10:00:00.000Z'),
-      onlineQuantity: state.onlineQuantity,
-      quantity: state.quantity,
+      onlineQuantity: stockQuantity(state.onlineQuantity),
+      quantity: stockQuantity(state.quantity),
       updatedAt: new Date('2026-04-25T11:00:00.000Z'),
-      variantId,
+      variantId: toVariantId(variantId),
     };
 
     this.records.set(variantId, record);
@@ -151,7 +167,10 @@ describe('paid checkout reconciliation', () => {
     locker_id: '4',
     locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
   };
-  const variantId = 'variant_barren-point_standard';
+  const primaryCheckoutSessionId = checkoutSessionId('cs_test_123');
+  const primaryStoreItemSlug = storeItemSlug('disintegration-black-vinyl-lp');
+  const primaryStripePriceId = stripePriceId('price_test_barren_point');
+  const variantId = toVariantId('variant_barren-point_standard');
   let orders: InMemoryOrderStateRepository;
   let stock: InMemoryStockRepository;
   let stockChanges: InMemoryStockChangeRepository;
@@ -161,17 +180,17 @@ describe('paid checkout reconciliation', () => {
     stock = new InMemoryStockRepository();
     stockChanges = new InMemoryStockChangeRepository();
     await createPendingCheckoutOrder(orders, {
-      checkoutSessionId: 'cs_test_123',
+      checkoutSessionId: primaryCheckoutSessionId,
       lines: [
         {
-          quantity: 1,
-          stripePriceId: 'price_test_barren_point',
-          storeItemSlug: 'disintegration-black-vinyl-lp',
+          quantity: cartQuantity(1),
+          stripePriceId: primaryStripePriceId,
+          storeItemSlug: primaryStoreItemSlug,
           variantId,
         },
       ],
       shippingLocker,
-      storeItemSlug: 'disintegration-black-vinyl-lp',
+      storeItemSlug: primaryStoreItemSlug,
       variantId,
     });
     await stock.save(variantId, {
@@ -227,7 +246,7 @@ describe('paid checkout reconciliation', () => {
         stock,
         stockChanges,
         reconcileCheckoutSession({
-          checkoutSessionId: 'cs_test_123',
+          checkoutSessionId: primaryCheckoutSessionId,
           paymentStatus: 'unpaid',
           status: 'open',
         }),
@@ -280,8 +299,8 @@ describe('paid checkout reconciliation', () => {
   it('uses finalized Stripe line item quantities before decrementing paid stock', async () => {
     const result = await applyPaidCheckoutReconciliation(orders, stock, stockChanges, paidReconciliation(), appliedAt, [
       {
-        quantity: 2,
-        stripePriceId: 'price_test_barren_point',
+        quantity: cartQuantity(2),
+        stripePriceId: primaryStripePriceId,
       },
     ]);
 
@@ -301,8 +320,8 @@ describe('paid checkout reconciliation', () => {
     await expect(
       applyPaidCheckoutReconciliation(orders, stock, stockChanges, paidReconciliation(), appliedAt, [
         {
-          quantity: 2,
-          stripePriceId: 'price_unmapped',
+          quantity: cartQuantity(2),
+          stripePriceId: stripePriceId('price_unmapped'),
         },
       ]),
     ).resolves.toEqual({
@@ -319,9 +338,9 @@ describe('paid checkout reconciliation', () => {
 
 function paidReconciliation() {
   return reconcileCheckoutSession({
-    checkoutSessionId: 'cs_test_123',
+    checkoutSessionId: checkoutSessionId('cs_test_123'),
     paymentStatus: 'paid',
     status: 'complete',
-    stripePaymentIntentId: 'pi_test_123',
+    stripePaymentIntentId: paymentIntentId('pi_test_123'),
   });
 }

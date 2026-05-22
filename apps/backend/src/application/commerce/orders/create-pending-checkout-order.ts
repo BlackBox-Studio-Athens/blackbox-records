@@ -3,21 +3,28 @@ import type {
   OrderStateRepository,
   ShippingLockerSnapshot,
 } from '../../../domain/commerce/repositories/spi';
-import type { StoreItemSlug, VariantId } from '../../../domain/commerce';
+import type {
+  CartQuantity,
+  CheckoutSessionId,
+  PaymentIntentId,
+  StoreItemSlug,
+  StripePriceId,
+  VariantId,
+} from '../../../domain/commerce';
 
 export type CreatePendingCheckoutOrderCommand = {
   lines?: CreatePendingCheckoutOrderLineCommand[];
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
-  checkoutSessionId: string;
+  checkoutSessionId: CheckoutSessionId;
   shippingLocker: ShippingLockerSnapshot | null;
-  stripePaymentIntentId?: string | null;
+  stripePaymentIntentId?: PaymentIntentId | null;
   createdAt?: Date;
 };
 
 export type CreatePendingCheckoutOrderLineCommand = {
-  quantity: number;
-  stripePriceId?: string | null;
+  quantity: CartQuantity;
+  stripePriceId?: StripePriceId | null;
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
 };

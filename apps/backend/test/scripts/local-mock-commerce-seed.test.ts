@@ -93,8 +93,8 @@ describe('local mock commerce seed generator', () => {
           taxCategory: 'physical_goods',
           sourceId: '___',
           sourceKind: 'distro',
-          storeItemSlug: '___',
-          variantId: 'variant_____standard',
+          storeItemSlug: 'the-chemical-bath',
+          variantId: 'variant_the-chemical-bath_standard',
         }),
         expect.objectContaining({
           mockCheckoutEnabled: true,

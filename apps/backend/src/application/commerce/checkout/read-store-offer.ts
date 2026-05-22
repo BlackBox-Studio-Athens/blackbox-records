@@ -3,10 +3,10 @@ import type {
   StockRepository,
   StoreItemOptionRepository,
 } from '../../../domain/commerce/repositories/spi';
-import type { StoreItemSlug } from '../../../domain/commerce';
+import { parseStoreItemSlug, type StoreItemSlug, type VariantId } from '../../../domain/commerce';
 import type { StoreOffer } from './types';
 
-function unavailableOffer(storeItemSlug: StoreItemSlug, variantId: string, label: string): StoreOffer {
+function unavailableOffer(storeItemSlug: StoreItemSlug, variantId: VariantId, label: string): StoreOffer {
   return {
     storeItemSlug,
     variantId,
@@ -22,9 +22,10 @@ export async function readStoreOffer(
   storeItems: StoreItemOptionRepository,
   itemAvailability: ItemAvailabilityRepository,
   stock: StockRepository,
-  storeItemSlug: StoreItemSlug,
+  storeItemSlug: unknown,
 ): Promise<StoreOffer | null> {
-  const storeItem = await storeItems.findByStoreItemSlug(storeItemSlug);
+  const parsedStoreItemSlug = parseStoreItemSlug(storeItemSlug);
+  const storeItem = await storeItems.findByStoreItemSlug(parsedStoreItemSlug);
 
   if (!storeItem) {
     return null;
@@ -61,7 +62,7 @@ export async function listVariantOffersForStoreItem(
   storeItems: StoreItemOptionRepository,
   itemAvailability: ItemAvailabilityRepository,
   stock: StockRepository,
-  storeItemSlug: StoreItemSlug,
+  storeItemSlug: unknown,
 ): Promise<StoreOffer[] | null> {
   const offer = await readStoreOffer(storeItems, itemAvailability, stock, storeItemSlug);
 

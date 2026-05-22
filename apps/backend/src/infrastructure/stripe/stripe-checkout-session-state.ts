@@ -5,20 +5,25 @@ import type {
   StripeCheckoutSessionState,
   StripeCheckoutSessionStatus,
 } from '../../application/commerce/checkout/spi';
+import {
+  parseCheckoutSessionId,
+  parsePaymentIntentId,
+  type PaymentIntentId,
+} from '../../application/commerce/checkout';
 
 export function toStripeCheckoutSessionState(session: Stripe.Checkout.Session): StripeCheckoutSessionState {
   return {
-    checkoutSessionId: session.id,
+    checkoutSessionId: parseCheckoutSessionId(session.id),
     paymentStatus: session.payment_status as StripeCheckoutPaymentStatus,
     status: session.status as StripeCheckoutSessionStatus,
     stripePaymentIntentId: readStripePaymentIntentId(session.payment_intent),
   };
 }
 
-function readStripePaymentIntentId(paymentIntent: Stripe.Checkout.Session['payment_intent']): string | null {
+function readStripePaymentIntentId(paymentIntent: Stripe.Checkout.Session['payment_intent']): PaymentIntentId | null {
   if (!paymentIntent) {
     return null;
   }
 
-  return typeof paymentIntent === 'string' ? paymentIntent : paymentIntent.id;
+  return parsePaymentIntentId(typeof paymentIntent === 'string' ? paymentIntent : paymentIntent.id);
 }

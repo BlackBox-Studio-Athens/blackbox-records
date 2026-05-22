@@ -3,13 +3,14 @@ import type {
   StockRepository,
   StoreItemOptionRepository,
 } from '../../../domain/commerce/repositories/spi';
+import { createStockQuantity, createStockState, parseVariantId } from '../../../domain/commerce';
 import { InvalidStockOperationError, VariantNotFoundError } from './errors';
 import type { RecordedStockCount } from './types';
 
 export type RecordStockCountCommand = {
-  variantId: string;
-  countedQuantity: number;
-  onlineQuantity: number;
+  variantId: unknown;
+  countedQuantity: unknown;
+  onlineQuantity: unknown;
   notes: string | null;
   actorEmail: string;
 };
@@ -20,35 +21,31 @@ export async function recordStockCount(
   stockCounts: StockCountRepository,
   command: RecordStockCountCommand,
 ): Promise<RecordedStockCount> {
-  const storeItem = await storeItemOptions.findByVariantId(command.variantId);
+  const variantId = parseVariantId(command.variantId);
+  const storeItem = await storeItemOptions.findByVariantId(variantId);
 
   if (!storeItem) {
-    throw new VariantNotFoundError(command.variantId);
+    throw new VariantNotFoundError(variantId);
   }
 
-  if (!Number.isInteger(command.countedQuantity) || command.countedQuantity < 0) {
-    throw new InvalidStockOperationError('Stock count must use a whole-number counted quantity of zero or more.');
-  }
-
-  if (!Number.isInteger(command.onlineQuantity) || command.onlineQuantity < 0) {
-    throw new InvalidStockOperationError('Online stock must use a whole-number quantity of zero or more.');
-  }
-
-  if (command.onlineQuantity > command.countedQuantity) {
+  let nextStock;
+  try {
+    nextStock = createStockState({
+      onlineQuantity: createStockQuantity(command.onlineQuantity),
+      quantity: createStockQuantity(command.countedQuantity),
+    });
+  } catch {
     throw new InvalidStockOperationError('Online stock cannot exceed counted stock.');
   }
 
-  const savedStock = await stock.save(command.variantId, {
-    onlineQuantity: command.onlineQuantity,
-    quantity: command.countedQuantity,
-  });
+  const savedStock = await stock.save(variantId, nextStock);
 
   const entry = await stockCounts.record({
     actorEmail: command.actorEmail,
-    countedQuantity: command.countedQuantity,
+    countedQuantity: nextStock.quantity,
     notes: command.notes,
-    onlineQuantity: command.onlineQuantity,
-    variantId: command.variantId,
+    onlineQuantity: nextStock.onlineQuantity,
+    variantId,
   });
 
   return {

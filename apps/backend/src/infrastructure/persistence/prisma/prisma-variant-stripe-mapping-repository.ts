@@ -2,12 +2,13 @@ import type {
   VariantStripeMappingRecord,
   VariantStripeMappingRepository,
 } from '../../../domain/commerce/repositories/spi';
+import { parseStripePriceId, parseVariantId } from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapVariantStripeMapping(record: { stripePriceId: string; variantId: string }): VariantStripeMappingRecord {
   return {
-    variantId: record.variantId,
-    stripePriceId: record.stripePriceId,
+    variantId: parseVariantId(record.variantId),
+    stripePriceId: parseStripePriceId(record.stripePriceId),
   };
 }
 

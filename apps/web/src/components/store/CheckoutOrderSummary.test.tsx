@@ -7,6 +7,7 @@ import CheckoutOrderSummary, {
   createCheckoutOrderSummaryView,
   type CheckoutOrderSummaryInput,
 } from './CheckoutOrderSummary';
+import { createCartQuantity } from '../../lib/store-cart';
 
 const summaryInput: CheckoutOrderSummaryInput = {
   availabilityLabel: 'Available',
@@ -84,7 +85,7 @@ describe('CheckoutOrderSummary', () => {
           availabilityLabel: 'Available',
           priceAmountMinor: 2800,
           priceCurrencyCode: 'EUR',
-          quantity: 2,
+          quantity: createCartQuantity(2),
           storeItemSlug: 'disintegration-black-vinyl-lp',
           variantId: 'variant_barren-point_standard',
         },
@@ -102,7 +103,7 @@ describe('CheckoutOrderSummary', () => {
         priceAmountMinor: 1400,
         priceCurrencyCode: 'EUR',
         priceDisplay: '€14.00',
-        quantity: 2,
+        quantity: createCartQuantity(2),
         storeItemSlug: 'afterglow-tape',
         title: 'Afterglow',
         variantId: 'variant_afterglow-tape_standard',

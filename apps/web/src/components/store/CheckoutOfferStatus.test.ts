@@ -14,7 +14,7 @@ import {
   STRIPE_CHECKOUT_CTA_COPY,
 } from './CheckoutOfferStatus';
 import { PublicCheckoutApiError, type PublicCheckoutApi } from '../../lib/backend/public-checkout-api';
-import type { CartLineItemSnapshot } from '../../lib/store-cart';
+import { createCartQuantity, type CartLineItemSnapshot } from '../../lib/store-cart';
 
 const initialAvailability: CheckoutOfferInitialAvailability = {
   canBuy: true,
@@ -59,17 +59,17 @@ describe('CheckoutOfferStatus helpers', () => {
   });
 
   it('summarizes checkout item text from the current StoreCart lines', () => {
-    expect(createCheckoutCartItemSummary([{ ...cartItem, quantity: 1 }])).toEqual({
+    expect(createCheckoutCartItemSummary([{ ...cartItem, quantity: createCartQuantity(1) }])).toEqual({
       label: 'Item',
       value: 'Disintegration / Black Vinyl LP',
     });
     expect(
       createCheckoutCartItemSummary([
-        { ...cartItem, quantity: 1 },
+        { ...cartItem, quantity: createCartQuantity(1) },
         {
           ...cartItem,
           optionLabel: 'Cassette',
-          quantity: 1,
+          quantity: createCartQuantity(1),
           storeItemSlug: 'afterglow-tape',
           title: 'Afterglow',
           variantId: 'variant_afterglow-tape_standard',

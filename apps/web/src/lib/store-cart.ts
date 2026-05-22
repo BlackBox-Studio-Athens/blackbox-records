@@ -1,7 +1,14 @@
+import { z } from 'zod';
+
+import { createMoney, formatMoney, moneyToCurrencyCode, moneyToMinorAmount } from './money';
+
 export const STORE_CART_STORAGE_KEY = 'blackbox.storeCart.v2';
 export const LEGACY_STORE_CART_STORAGE_KEY = 'blackbox.storeCart.v1';
 export const STORE_CART_ADD_ITEM_EVENT = 'blackbox:store-cart:add-item';
 export const STORE_CART_OPEN_REQUESTED_EVENT = 'blackbox:store-cart:open-requested';
+export const STORE_CART_MAX_QUANTITY = 9;
+
+const cartQuantitySchema = z.number().int().min(1).max(STORE_CART_MAX_QUANTITY).brand<'CartQuantity'>();
 
 export type CartLineItemSnapshot = {
   availabilityLabel: string;
@@ -17,7 +24,7 @@ export type CartLineItemSnapshot = {
   variantId: string;
 };
 
-export type CartQuantity = number;
+export type CartQuantity = z.infer<typeof cartQuantitySchema>;
 
 export type CartLine = CartLineItemSnapshot & {
   quantity: CartQuantity;
@@ -34,33 +41,40 @@ export type StoreCartState = {
 
 type StoreCartStorage = Pick<Storage, 'getItem' | 'removeItem' | 'setItem'>;
 
-const REQUIRED_STRING_FIELDS = [
-  'availabilityLabel',
-  'priceDisplay',
-  'storeItemSlug',
-  'subtitle',
-  'title',
-  'variantId',
-] as const satisfies readonly (keyof CartLineItemSnapshot)[];
-
-const OPTIONAL_STRING_FIELDS = [
-  'image',
-  'imageAlt',
-  'optionLabel',
-] as const satisfies readonly (keyof CartLineItemSnapshot)[];
-
-export const STORE_CART_MAX_QUANTITY = 9;
 const CART_MONEY_FORMAT_LOCALE = 'en-US';
 
-function readStringField(value: Record<string, unknown>, field: keyof CartLineItemSnapshot) {
-  const fieldValue = value[field];
-  return typeof fieldValue === 'string' ? fieldValue : null;
-}
+const nullableStringSchema = z
+  .string()
+  .nullable()
+  .optional()
+  .transform((value) => value ?? null);
 
-function readPositiveIntegerField(value: Record<string, unknown>, field: keyof CartLineItemSnapshot) {
-  const fieldValue = value[field];
-  return typeof fieldValue === 'number' && Number.isInteger(fieldValue) && fieldValue >= 0 ? fieldValue : null;
-}
+const cartLineItemSnapshotSchema = z
+  .object({
+    availabilityLabel: z.string().trim().min(1),
+    image: nullableStringSchema,
+    imageAlt: nullableStringSchema,
+    optionLabel: nullableStringSchema,
+    priceAmountMinor: z.number().int().min(0),
+    priceCurrencyCode: z.string().trim().length(3),
+    priceDisplay: z.string().trim().min(1),
+    storeItemSlug: z.string().trim().min(1),
+    subtitle: z.string(),
+    title: z.string().trim().min(1),
+    variantId: z.string().trim().min(1),
+  })
+  .transform((snapshot): CartLineItemSnapshot => {
+    const price = createMoney({
+      amountMinor: snapshot.priceAmountMinor,
+      currencyCode: snapshot.priceCurrencyCode,
+    });
+
+    return {
+      ...snapshot,
+      priceAmountMinor: moneyToMinorAmount(price),
+      priceCurrencyCode: moneyToCurrencyCode(price),
+    };
+  });
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -79,37 +93,24 @@ export function createCheckoutPathForCartLineItem(item: CartLineItemSnapshot): s
 }
 
 export function parseCartLineItemSnapshot(value: unknown): CartLineItemSnapshot | null {
-  if (!isRecord(value)) return null;
+  const result = cartLineItemSnapshotSchema.safeParse(value);
+  return result.success ? result.data : null;
+}
 
-  const lineItemSnapshot = {} as CartLineItemSnapshot;
-  for (const field of REQUIRED_STRING_FIELDS) {
-    const fieldValue = readStringField(value, field);
-    if (!fieldValue) return null;
-    lineItemSnapshot[field] = fieldValue;
-  }
-  for (const field of OPTIONAL_STRING_FIELDS) {
-    lineItemSnapshot[field] = readStringField(value, field);
-  }
-  const priceAmountMinor = readPositiveIntegerField(value, 'priceAmountMinor');
-  const priceCurrencyCode = readStringField(value, 'priceCurrencyCode')?.trim().toUpperCase() ?? null;
-  if (priceAmountMinor === null || !priceCurrencyCode) return null;
-
-  lineItemSnapshot.priceAmountMinor = priceAmountMinor;
-  lineItemSnapshot.priceCurrencyCode = priceCurrencyCode;
-
-  return lineItemSnapshot;
+export function createCartQuantity(value: unknown): CartQuantity {
+  return cartQuantitySchema.parse(value);
 }
 
 export function sanitizeCartQuantity(value: unknown): CartQuantity {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return 1;
-  return Math.min(STORE_CART_MAX_QUANTITY, Math.max(1, Math.floor(value)));
+  if (typeof value !== 'number' || !Number.isFinite(value)) return createCartQuantity(1);
+  return createCartQuantity(Math.min(STORE_CART_MAX_QUANTITY, Math.max(1, Math.floor(value))));
 }
 
 export function parseCartLine(value: unknown): CartLine | null {
   const lineItemSnapshot = parseCartLineItemSnapshot(value);
   if (!lineItemSnapshot) return null;
 
-  const quantity = isRecord(value) ? sanitizeCartQuantity(value.quantity) : 1;
+  const quantity = isRecord(value) ? sanitizeCartQuantity(value.quantity) : createCartQuantity(1);
   return { ...lineItemSnapshot, quantity };
 }
 
@@ -138,11 +139,7 @@ export function normalizeStoreCartState(state: StoreCartState | CartDraft): Stor
 }
 
 export function formatCartMoney(amountMinor: number, currencyCode: string): string {
-  return new Intl.NumberFormat(CART_MONEY_FORMAT_LOCALE, {
-    currency: currencyCode,
-    currencyDisplay: 'narrowSymbol',
-    style: 'currency',
-  }).format(amountMinor / 100);
+  return formatMoney(createMoney({ amountMinor, currencyCode }), CART_MONEY_FORMAT_LOCALE);
 }
 
 export function getCartLineTotalDisplay(line: CartLine): string {
@@ -190,7 +187,7 @@ export function addStoreCartItem(
   }
 
   return normalizeStoreCartState({
-    lines: [...currentState.lines, { ...parsedLineItemSnapshot, quantity: 1 }],
+    lines: [...currentState.lines, { ...parsedLineItemSnapshot, quantity: createCartQuantity(1) }],
   });
 }
 
@@ -264,7 +261,7 @@ export function parseSerializedStoreCartState(serializedState: string | null): S
     const legacyLineItemSnapshot = parseCartLineItemSnapshot(parsedState.item);
     if (!legacyLineItemSnapshot) return createEmptyStoreCartState();
 
-    return normalizeStoreCartState({ lines: [{ ...legacyLineItemSnapshot, quantity: 1 }] });
+    return normalizeStoreCartState({ lines: [{ ...legacyLineItemSnapshot, quantity: createCartQuantity(1) }] });
   } catch {
     return createEmptyStoreCartState();
   }

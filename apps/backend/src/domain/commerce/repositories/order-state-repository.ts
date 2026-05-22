@@ -1,4 +1,5 @@
-import type { StoreItemSlug, StripePriceId, VariantId } from '../ids';
+import type { CheckoutSessionId, PaymentIntentId, StoreItemSlug, StripePriceId, VariantId } from '../ids';
+import type { CartQuantity } from '../quantities';
 
 export type OrderStatus = 'pending_payment' | 'paid' | 'not_paid' | 'needs_review';
 
@@ -12,8 +13,8 @@ export type CheckoutOrderRecord = {
   id: string;
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
-  checkoutSessionId: string;
-  stripePaymentIntentId: string | null;
+  checkoutSessionId: CheckoutSessionId;
+  stripePaymentIntentId: PaymentIntentId | null;
   shippingLocker: ShippingLockerSnapshot | null;
   status: OrderStatus;
   statusUpdatedAt: Date;
@@ -31,7 +32,7 @@ export type CheckoutOrderLineRecord = {
   stripePriceId: StripePriceId | null;
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
-  quantity: number;
+  quantity: CartQuantity;
   createdAt: Date;
 };
 
@@ -39,14 +40,14 @@ export type CreatePendingCheckoutOrderInput = {
   lines?: CreatePendingCheckoutOrderLineInput[];
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
-  checkoutSessionId: string;
+  checkoutSessionId: CheckoutSessionId;
   shippingLocker: ShippingLockerSnapshot | null;
-  stripePaymentIntentId?: string | null;
+  stripePaymentIntentId?: PaymentIntentId | null;
   createdAt?: Date;
 };
 
 export type CreatePendingCheckoutOrderLineInput = {
-  quantity: number;
+  quantity: CartQuantity;
   stripePriceId?: StripePriceId | null;
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
@@ -55,7 +56,7 @@ export type CreatePendingCheckoutOrderLineInput = {
 export type CheckoutOrderTransitionInput = {
   status: OrderStatus;
   statusUpdatedAt: Date;
-  stripePaymentIntentId?: string | null;
+  stripePaymentIntentId?: PaymentIntentId | null;
 };
 
 export type ListRecentCheckoutOrdersInput = {
@@ -65,10 +66,10 @@ export type ListRecentCheckoutOrdersInput = {
 
 export interface OrderStateRepository {
   createPending(input: CreatePendingCheckoutOrderInput): Promise<CheckoutOrderRecord>;
-  findByCheckoutSessionId(checkoutSessionId: string): Promise<CheckoutOrderRecord | null>;
+  findByCheckoutSessionId(checkoutSessionId: CheckoutSessionId): Promise<CheckoutOrderRecord | null>;
   listRecent(input: ListRecentCheckoutOrdersInput): Promise<CheckoutOrderRecord[]>;
   saveTransition(
-    checkoutSessionId: string,
+    checkoutSessionId: CheckoutSessionId,
     transition: CheckoutOrderTransitionInput,
   ): Promise<CheckoutOrderRecord | null>;
 }

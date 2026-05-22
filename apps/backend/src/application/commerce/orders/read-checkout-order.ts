@@ -1,8 +1,9 @@
 import type { CheckoutOrderRecord, OrderStateRepository } from '../../../domain/commerce/repositories/spi';
+import { parseCheckoutSessionId } from '../../../domain/commerce';
 
 export function readCheckoutOrder(
   orders: OrderStateRepository,
-  checkoutSessionId: string,
+  checkoutSessionId: unknown,
 ): Promise<CheckoutOrderRecord | null> {
-  return orders.findByCheckoutSessionId(checkoutSessionId);
+  return orders.findByCheckoutSessionId(parseCheckoutSessionId(checkoutSessionId));
 }

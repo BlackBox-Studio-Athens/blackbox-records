@@ -1,19 +1,21 @@
 import type { StockRepository, StoreItemOptionRepository } from '../../../domain/commerce/repositories/spi';
+import { parseVariantId } from '../../../domain/commerce';
 import { VariantNotFoundError } from './errors';
 import type { VariantStockDetail } from './types';
 
 export async function readVariantStock(
   storeItemOptions: StoreItemOptionRepository,
   stock: StockRepository,
-  variantId: string,
+  variantId: unknown,
 ): Promise<VariantStockDetail> {
-  const storeItem = await storeItemOptions.findByVariantId(variantId);
+  const parsedVariantId = parseVariantId(variantId);
+  const storeItem = await storeItemOptions.findByVariantId(parsedVariantId);
 
   if (!storeItem) {
-    throw new VariantNotFoundError(variantId);
+    throw new VariantNotFoundError(parsedVariantId);
   }
 
-  const currentStock = await stock.findByVariantId(variantId);
+  const currentStock = await stock.findByVariantId(parsedVariantId);
 
   return {
     ...storeItem,

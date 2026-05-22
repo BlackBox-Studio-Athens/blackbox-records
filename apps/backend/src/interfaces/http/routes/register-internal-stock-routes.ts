@@ -167,6 +167,14 @@ const getVariantStockRoute = createRoute({
       },
       description: 'Missing operator identity.',
     },
+    400: {
+      content: {
+        'application/json': {
+          schema: errorSchema,
+        },
+      },
+      description: 'Invalid variant id.',
+    },
     404: {
       content: {
         'application/json': {
@@ -202,6 +210,14 @@ const getVariantStockHistoryRoute = createRoute({
         },
       },
       description: 'Missing operator identity.',
+    },
+    400: {
+      content: {
+        'application/json': {
+          schema: errorSchema,
+        },
+      },
+      description: 'Invalid variant id.',
     },
     404: {
       content: {
@@ -354,6 +370,10 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         return context.json({ error: error.message }, 404);
       }
 
+      if (error instanceof z.ZodError) {
+        return context.json({ error: 'Invalid variant id.' }, 400);
+      }
+
       throw error;
     } finally {
       await services.disconnect();
@@ -384,6 +404,10 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
     } catch (error) {
       if (error instanceof services.errors.VariantNotFoundError) {
         return context.json({ error: error.message }, 404);
+      }
+
+      if (error instanceof z.ZodError) {
+        return context.json({ error: 'Invalid variant id.' }, 400);
       }
 
       throw error;
@@ -429,6 +453,10 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         return context.json({ error: error.message }, 400);
       }
 
+      if (error instanceof z.ZodError) {
+        return context.json({ error: 'Invalid stock change request.' }, 400);
+      }
+
       throw error;
     } finally {
       await services.disconnect();
@@ -470,6 +498,10 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
 
       if (error instanceof services.errors.InvalidStockOperationError) {
         return context.json({ error: error.message }, 400);
+      }
+
+      if (error instanceof z.ZodError) {
+        return context.json({ error: 'Invalid stock count request.' }, 400);
       }
 
       throw error;

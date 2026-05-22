@@ -7,6 +7,14 @@ import type {
   OrderStateRepository,
   OrderStatus,
 } from '../../../domain/commerce/repositories/spi';
+import {
+  createCartQuantity,
+  parseCheckoutSessionId,
+  parsePaymentIntentId,
+  parseStoreItemSlug,
+  parseStripePriceId,
+  parseVariantId,
+} from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapCheckoutOrder(record: {
@@ -28,7 +36,7 @@ function mapCheckoutOrder(record: {
   lines?: CheckoutOrderLineRecord[];
 }): CheckoutOrderRecord {
   return {
-    checkoutSessionId: record.checkoutSessionId,
+    checkoutSessionId: parseCheckoutSessionId(record.checkoutSessionId),
     createdAt: record.createdAt,
     id: record.id,
     needsReviewAt: record.needsReviewAt,
@@ -44,10 +52,10 @@ function mapCheckoutOrder(record: {
         : null,
     status: record.status,
     statusUpdatedAt: record.statusUpdatedAt,
-    storeItemSlug: record.storeItemSlug,
-    stripePaymentIntentId: record.stripePaymentIntentId,
+    storeItemSlug: parseStoreItemSlug(record.storeItemSlug),
+    stripePaymentIntentId: record.stripePaymentIntentId ? parsePaymentIntentId(record.stripePaymentIntentId) : null,
     updatedAt: record.updatedAt,
-    variantId: record.variantId,
+    variantId: parseVariantId(record.variantId),
     lines: record.lines ?? [],
   };
 }
@@ -67,10 +75,10 @@ function mapCheckoutOrderLine(row: CheckoutOrderLineRow): CheckoutOrderLineRecor
     createdAt: row.createdAt instanceof Date ? row.createdAt : new Date(row.createdAt),
     id: row.id,
     orderId: row.orderId,
-    quantity: row.quantity,
-    stripePriceId: row.stripePriceId,
-    storeItemSlug: row.storeItemSlug,
-    variantId: row.variantId,
+    quantity: createCartQuantity(row.quantity),
+    stripePriceId: row.stripePriceId ? parseStripePriceId(row.stripePriceId) : null,
+    storeItemSlug: parseStoreItemSlug(row.storeItemSlug),
+    variantId: parseVariantId(row.variantId),
   };
 }
 
@@ -96,7 +104,9 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
 
     const lines = await this.createCheckoutOrderLines(
       record.id,
-      input.lines ?? [{ quantity: 1, storeItemSlug: input.storeItemSlug, variantId: input.variantId }],
+      input.lines ?? [
+        { quantity: createCartQuantity(1), storeItemSlug: input.storeItemSlug, variantId: input.variantId },
+      ],
       createdAt,
     );
 

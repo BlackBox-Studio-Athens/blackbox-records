@@ -3,6 +3,7 @@ import type {
   StockChangeRecord,
   StockChangeRepository,
 } from '../../../domain/commerce/repositories/spi';
+import { createStockChangeDelta, parseVariantId } from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapStockChange(record: {
@@ -18,10 +19,10 @@ function mapStockChange(record: {
     actorEmail: record.actorEmail,
     id: record.id,
     notes: record.notes,
-    quantityDelta: record.quantityDelta,
+    quantityDelta: createStockChangeDelta(record.quantityDelta),
     reason: record.reason,
     recordedAt: record.recordedAt,
-    variantId: record.variantId,
+    variantId: parseVariantId(record.variantId),
   };
 }
 

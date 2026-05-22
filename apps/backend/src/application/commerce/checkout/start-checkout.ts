@@ -5,7 +5,14 @@ import type {
   StoreItemOptionRepository,
   VariantStripeMappingRepository,
 } from '../../../domain/commerce/repositories/spi';
-import type { StoreItemSlug, VariantId } from '../../../domain/commerce';
+import {
+  createCartQuantity,
+  parseStoreItemSlug,
+  parseVariantId,
+  type CartQuantity,
+  type StoreItemSlug,
+  type VariantId,
+} from '../../../domain/commerce';
 import {
   CheckoutConfigurationError,
   CheckoutUnavailableError,
@@ -25,7 +32,7 @@ export type StartCheckoutCommand = {
 };
 
 export type StartCheckoutLineCommand = {
-  quantity: number;
+  quantity: CartQuantity;
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
 };
@@ -39,19 +46,35 @@ function legacySingleCheckoutLine(command: StartCheckoutCommand): StartCheckoutL
 
   return [
     {
-      quantity: 1,
+      quantity: createCartQuantity(1),
       storeItemSlug: command.storeItemSlug,
       variantId: command.variantId,
     },
   ];
 }
 
-function validateCheckoutQuantity(quantity: number): number {
-  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 9) {
+export function createStartCheckoutLineCommand(input: {
+  quantity: unknown;
+  storeItemSlug: unknown;
+  variantId: unknown;
+}): StartCheckoutLineCommand {
+  try {
+    return {
+      quantity: createCartQuantity(input.quantity),
+      storeItemSlug: parseStoreItemSlug(input.storeItemSlug),
+      variantId: parseVariantId(input.variantId),
+    };
+  } catch {
     throw new CheckoutUnavailableError();
   }
+}
 
-  return quantity;
+function createCheckoutQuantity(value: unknown): CartQuantity {
+  try {
+    return createCartQuantity(value);
+  } catch {
+    throw new CheckoutUnavailableError();
+  }
 }
 
 function mergeCheckoutLines(lines: StartCheckoutLineCommand[]): StartCheckoutLineCommand[] {
@@ -60,10 +83,9 @@ function mergeCheckoutLines(lines: StartCheckoutLineCommand[]): StartCheckoutLin
   for (const line of lines) {
     const key = `${line.storeItemSlug}:${line.variantId}`;
     const existingLine = mergedLines.get(key);
-    const quantity = validateCheckoutQuantity(line.quantity);
 
     mergedLines.set(key, {
-      quantity: validateCheckoutQuantity((existingLine?.quantity ?? 0) + quantity),
+      quantity: createCheckoutQuantity((existingLine?.quantity ?? 0) + line.quantity),
       storeItemSlug: line.storeItemSlug,
       variantId: line.variantId,
     });
@@ -97,7 +119,7 @@ export async function startCheckout(
   const validatedLines: CheckoutSessionLineItem[] = [];
 
   for (const line of requestedLines) {
-    const quantity = validateCheckoutQuantity(line.quantity);
+    const quantity = line.quantity;
     const storeItem = await storeItems.findByStoreItemSlug(line.storeItemSlug);
 
     if (!storeItem) {

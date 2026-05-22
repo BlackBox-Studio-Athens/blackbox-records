@@ -7,6 +7,7 @@ import {
   createStripeClientOptions,
   StripeCheckoutGateway,
 } from '../../../src/infrastructure/stripe/stripe-checkout-gateway';
+import { cartQuantity, storeItemSlug, stripePriceId, variantId } from '../../support/commerce-value-objects';
 
 describe('createStripeClientOptions', () => {
   it('uses real Stripe API defaults when no API base URL is configured', () => {
@@ -49,10 +50,10 @@ describe('StripeCheckoutGateway', () => {
       gateway.createHostedCheckoutSession({
         lineItems: [
           {
-            quantity: 2,
-            storeItemSlug: 'disintegration-black-vinyl-lp',
-            stripePriceId: 'price_test_barren_point',
-            variantId: 'variant_barren-point_standard',
+            quantity: cartQuantity(2),
+            storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
+            stripePriceId: stripePriceId('price_test_barren_point'),
+            variantId: variantId('variant_barren-point_standard'),
           },
         ],
         cancelUrl: 'https://blackbox.example/checkout',

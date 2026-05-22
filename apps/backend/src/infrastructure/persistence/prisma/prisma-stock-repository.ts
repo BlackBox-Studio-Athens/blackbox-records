@@ -1,4 +1,5 @@
 import type { StockRecord, StockRepository, StockState } from '../../../domain/commerce/repositories/spi';
+import { createStockQuantity, parseVariantId } from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapStock(record: {
@@ -10,10 +11,10 @@ function mapStock(record: {
 }): StockRecord {
   return {
     createdAt: record.createdAt,
-    onlineQuantity: record.onlineQuantity,
-    quantity: record.quantity,
+    onlineQuantity: createStockQuantity(record.onlineQuantity),
+    quantity: createStockQuantity(record.quantity),
     updatedAt: record.updatedAt,
-    variantId: record.variantId,
+    variantId: parseVariantId(record.variantId),
   };
 }
 

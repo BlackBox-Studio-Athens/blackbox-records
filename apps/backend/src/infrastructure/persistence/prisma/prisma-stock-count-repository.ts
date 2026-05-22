@@ -3,6 +3,7 @@ import type {
   StockCountRecord,
   StockCountRepository,
 } from '../../../domain/commerce/repositories/spi';
+import { createStockQuantity, parseVariantId } from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapStockCount(record: {
@@ -16,12 +17,12 @@ function mapStockCount(record: {
 }): StockCountRecord {
   return {
     actorEmail: record.actorEmail,
-    countedQuantity: record.countedQuantity,
+    countedQuantity: createStockQuantity(record.countedQuantity),
     id: record.id,
     notes: record.notes,
-    onlineQuantity: record.onlineQuantity,
+    onlineQuantity: createStockQuantity(record.onlineQuantity),
     recordedAt: record.recordedAt,
-    variantId: record.variantId,
+    variantId: parseVariantId(record.variantId),
   };
 }
 

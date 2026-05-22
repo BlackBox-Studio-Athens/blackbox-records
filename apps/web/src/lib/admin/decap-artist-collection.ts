@@ -1,4 +1,9 @@
 import { buildField, buildFieldMapping, buildFolderCollection } from './decap-yaml-builder';
+import { createSlugSuggestion, slugPatternSource } from '../slugs';
+
+export function createArtistSlugSuggestion(artistName: string): string {
+  return createSlugSuggestion(artistName);
+}
 
 export function buildArtistCollection() {
   return buildFolderCollection({
@@ -20,7 +25,8 @@ export function buildArtistCollection() {
         label: 'Slug',
         name: 'slug',
         widget: 'string',
-        hint: 'Used for the artist page filename. Use lowercase kebab-case, for example "mass-culture".',
+        hint: `Used for the artist page filename. Use lowercase kebab-case, for example "${createArtistSlugSuggestion('Mass Culture')}".`,
+        extras: [`pattern: ["${slugPatternSource}", "Use lowercase kebab-case, for example mass-culture."]`],
       }),
       buildField({
         label: 'Genre',

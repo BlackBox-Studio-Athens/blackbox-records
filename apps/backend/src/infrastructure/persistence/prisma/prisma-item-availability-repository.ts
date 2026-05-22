@@ -1,4 +1,5 @@
 import type { ItemAvailabilityRecord, ItemAvailabilityRepository } from '../../../domain/commerce/repositories/spi';
+import { parseVariantId } from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapItemAvailability(record: {
@@ -11,7 +12,7 @@ function mapItemAvailability(record: {
     canBuy: record.canBuy,
     status: record.status,
     updatedAt: record.updatedAt,
-    variantId: record.variantId,
+    variantId: parseVariantId(record.variantId),
   };
 }
 

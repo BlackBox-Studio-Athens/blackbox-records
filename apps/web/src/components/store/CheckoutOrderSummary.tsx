@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   decrementCartLineQuantityByVariant,
+  createCartQuantity,
   getCartLineTotalDisplay,
   getCartSubtotalDisplay,
   incrementCartLineQuantityByVariant,
@@ -68,7 +69,7 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
           priceAmountMinor: props.priceAmountMinor,
           priceCurrencyCode: props.priceCurrencyCode,
           priceDisplay: props.priceDisplay,
-          quantity: 1,
+          quantity: createCartQuantity(1),
           storeItemSlug: props.storeItemSlug || props.itemHref,
           subtitle: props.subtitle,
           title: props.title,

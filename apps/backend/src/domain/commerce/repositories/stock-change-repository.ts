@@ -1,9 +1,10 @@
 import type { VariantId } from '../ids';
+import type { StockChangeDelta } from '../quantities';
 
 export type StockChangeRecord = {
   id: string;
   variantId: VariantId;
-  quantityDelta: number;
+  quantityDelta: StockChangeDelta;
   reason: string;
   notes: string | null;
   actorEmail: string;
@@ -12,7 +13,7 @@ export type StockChangeRecord = {
 
 export type RecordStockChangeInput = {
   variantId: VariantId;
-  quantityDelta: number;
+  quantityDelta: StockChangeDelta;
   reason: string;
   notes: string | null;
   actorEmail: string;

@@ -1,10 +1,11 @@
 import type { VariantId } from '../ids';
+import type { StockQuantity } from '../quantities';
 
 export type StockCountRecord = {
   id: string;
   variantId: VariantId;
-  countedQuantity: number;
-  onlineQuantity: number;
+  countedQuantity: StockQuantity;
+  onlineQuantity: StockQuantity;
   notes: string | null;
   actorEmail: string;
   recordedAt: Date;
@@ -12,8 +13,8 @@ export type StockCountRecord = {
 
 export type RecordStockCountInput = {
   variantId: VariantId;
-  countedQuantity: number;
-  onlineQuantity: number;
+  countedQuantity: StockQuantity;
+  onlineQuantity: StockQuantity;
   notes: string | null;
   actorEmail: string;
   recordedAt?: Date;
