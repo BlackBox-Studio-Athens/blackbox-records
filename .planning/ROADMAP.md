@@ -55,7 +55,7 @@ The UI contracts for the store flow and BOX NOW locker flow were approved in the
 - [x] **Phase 12: Modulith Boundary Hardening Planning** - Activate the TypeScript-native boundary stack and execution slices that make later refactors safer before revisiting the deferred commerce gates
 - [ ] **Phase 13: Stripe Dynamic Payment Methods Policy** - Configure Stripe dynamic payment methods for BlackBox checkout while banning PayPal, Klarna, BNPL, and bank-debit style methods
 - [ ] **Phase 14: Shiplemon Non-Greece Shipping Integration** - Post-MVP phase for Worker-owned Shiplemon quotes and operator-confirmed shipment creation for EU destinations outside Greece
-- [ ] **Phase 15: Adopt Sharp Asset QA** - Formalize Sharp as the repo asset-quality tool for static image validation without changing the runtime hosting model
+- [x] **Phase 15: Adopt Sharp Asset QA** - Formalize Sharp as the repo asset-quality tool for static image validation without changing the runtime hosting model
 - [x] **Phase 16: Adopt Robot For Player Session Machine** - Replace the hand-rolled player session reducer with the latest `robot3` state machine while preserving player behavior
 - [ ] **Phase 17: Adopt Slugify For Slug Tooling** - Centralize slug generation and validation around `@sindresorhus/slugify` without silently changing existing public URLs
 - [ ] **Phase 18: Remove Valibot And Standardize On Zod** - Prove there is no direct Valibot app usage, replace any direct usage with Zod, and document any unavoidable transitive dependency
@@ -541,7 +541,7 @@ readiness unless explicitly activated.
 | 12. Modulith Boundary Hardening Planning                       | 63/63          | Complete  | 2026-05-16 |
 | 13. Stripe Dynamic Payment Methods Policy                      | 0/1            | Planned   |            |
 | 14. Shiplemon Non-Greece Shipping Integration                  | 0/1            | Post-MVP  |            |
-| 15. Adopt Sharp Asset QA                                       | 0/1            | Planned   |            |
+| 15. Adopt Sharp Asset QA                                       | 1/1            | Complete  | 2026-05-23 |
 | 16. Adopt Robot For Player Session Machine                     | 1/1            | Complete  | 2026-05-22 |
 | 17. Adopt Slugify For Slug Tooling                             | 1/1            | Complete  | 2026-05-22 |
 | 18. Remove Valibot And Standardize On Zod                      | 0/1            | Planned   |            |
@@ -561,7 +561,7 @@ readiness unless explicitly activated.
 
 Plans:
 
-- [ ] 15-01: Add the Sharp-backed asset QA script and tests
+- [x] 15-01: Add the Sharp-backed asset QA script and tests
 
 ### Phase 16: Adopt Robot For Player Session Machine
 

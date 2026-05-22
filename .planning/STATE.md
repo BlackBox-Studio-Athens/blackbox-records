@@ -6,9 +6,9 @@ current_phase: 13
 current_phase_name: stripe-dynamic-payment-methods-policy
 current_plan: 1
 status: executing
-stopped_at: Phases 15-18 dependency adoption plans created
-last_updated: '2026-05-22T00:00:00.000Z'
-last_activity: 2026-05-22 -- Phases 15-18 dependency adoption planning complete
+stopped_at: Phase 15 Sharp asset QA execution complete
+last_updated: '2026-05-23T01:45:00.000+03:00'
+last_activity: 2026-05-23 -- Phase 15 Sharp asset QA execution complete
 progress:
   total_phases: 18
   completed_phases: 1
@@ -41,8 +41,8 @@ Status: Ready to execute
 14 Shiplemon non-Greece shipping is post-MVP. Phases 15-18 are dependency/tooling adoption follow-ups and do not block
 checkout launch readiness unless explicitly activated.
 Progress: [########--] 80%
-Last activity: 2026-05-22 -- Phases 15-18 dependency adoption planning complete
-Last Activity Description: Phase 15-18 planning complete — 4 independent one-plan phases ready
+Last activity: 2026-05-23 -- Phase 15 Sharp asset QA execution complete
+Last Activity Description: Phase 15 complete — Sharp-backed read-only asset QA command, tests, and validation evidence added
 Paused At:
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, 8, and 11 are complete. Phase 7 mock, contract, frontend
@@ -101,14 +101,14 @@ policy, while Phase 14 is post-MVP.
 | 12    | 63/63 | Completed | 2026-05-16 |
 | 13    | 0/1   | Planned   | 2026-05-20 |
 | 14    | 0/1   | Post-MVP  | 2026-05-21 |
-| 15    | 0/1   | Planned   | 2026-05-22 |
+| 15    | 1/1   | Completed | 2026-05-23 |
 | 16    | 1/1   | Completed | 2026-05-22 |
 | 17    | 0/1   | Planned   | 2026-05-22 |
 | 18    | 0/1   | Planned   | 2026-05-22 |
 
 **Recent Trend:**
 
-- Last 5 plans: 15-01 planning, 16-01 execution, 17-01 planning, 18-01 planning
+- Last 5 plans: 15-01 execution, 16-01 execution, 17-01 planning, 18-01 planning
 - Trend: The Cloudflare Pages migration, sandbox evidence, multi-item cart, manual BOX NOW scope, and Phase 12 boundary
   hardening are in place. Phase 13 narrows dynamic payment methods for checkout launch readiness. Phase 14 Shiplemon
   non-Greece shipping is post-MVP.
@@ -562,6 +562,11 @@ policy, while Phase 14 is post-MVP.
   session machine, `@sindresorhus/slugify` for slug tooling, and direct Valibot removal/Zod standardization. These plans
   are not checkout launch blockers and should not be treated as dependencies of Phase 13 or Phase 14.
 
+- Phase 15 is complete: `pnpm assets:check` now runs a read-only Sharp-backed asset QA command for public assets,
+  favicon metadata, and content-referenced local images. Existing artist portrait source drift is reported as advisory
+  warnings until replacement assets are approved; no image files, content image paths, public URLs, Astro runtime image
+  handling, Worker routes, or hosting behavior changed.
+
 - StoreCart remains convenience-only state. Native `localStorage` stays the approved storage primitive until carts
   become account-backed, cross-device, large/offline, or operationally authoritative.
 
@@ -657,6 +662,6 @@ policy, while Phase 14 is post-MVP.
 
 ## Session
 
-**Last Date:** 2026-05-22T00:00:00.000Z
-**Stopped At:** Phases 15-18 dependency adoption plans created
+**Last Date:** 2026-05-23T01:45:00.000+03:00
+**Stopped At:** Phase 15 Sharp asset QA execution complete
 **Resume File:** .planning/ROADMAP.md
