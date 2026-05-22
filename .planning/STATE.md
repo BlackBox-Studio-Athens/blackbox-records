@@ -6,14 +6,14 @@ current_phase: 13
 current_phase_name: stripe-dynamic-payment-methods-policy
 current_plan: 1
 status: executing
-stopped_at: Phase 15 Sharp asset QA execution complete
-last_updated: '2026-05-23T01:45:00.000+03:00'
-last_activity: 2026-05-23 -- Phase 15 Sharp asset QA execution complete
+stopped_at: Phase 18 Valibot removal and Zod standardization complete
+last_updated: '2026-05-23T02:07:48.661+03:00'
+last_activity: 2026-05-23 -- Phase 18 Valibot removal and Zod standardization complete
 progress:
   total_phases: 18
   completed_phases: 1
   total_plans: 142
-  completed_plans: 66
+  completed_plans: 68
   percent: 7
 ---
 
@@ -41,8 +41,8 @@ Status: Ready to execute
 14 Shiplemon non-Greece shipping is post-MVP. Phases 15-18 are dependency/tooling adoption follow-ups and do not block
 checkout launch readiness unless explicitly activated.
 Progress: [########--] 80%
-Last activity: 2026-05-23 -- Phase 15 Sharp asset QA execution complete
-Last Activity Description: Phase 15 complete — Sharp-backed read-only asset QA command, tests, and validation evidence added
+Last activity: 2026-05-23 -- Phase 18 Valibot removal and Zod standardization complete
+Last Activity Description: Phase 18 complete — no direct Valibot usage found; Zod 4 URL/email APIs applied; Prisma transitive Valibot boundary documented
 Paused At:
 
 Phase summary: Phases 5, 5.1, 6, 6.1, 6.1.1, 7.1, 8, and 11 are complete. Phase 7 mock, contract, frontend
@@ -77,9 +77,9 @@ policy, while Phase 14 is post-MVP.
 
 **Velocity:**
 
-- Total plans completed: 88
-- Total plans remaining: 6
-- Completed plan ratio: 88/94
+- Total plans completed: 90
+- Total plans remaining: 4
+- Completed plan ratio: 90/94
 - Average duration: -
 - Total execution time: -
 
@@ -103,12 +103,12 @@ policy, while Phase 14 is post-MVP.
 | 14    | 0/1   | Post-MVP  | 2026-05-21 |
 | 15    | 1/1   | Completed | 2026-05-23 |
 | 16    | 1/1   | Completed | 2026-05-22 |
-| 17    | 0/1   | Planned   | 2026-05-22 |
-| 18    | 0/1   | Planned   | 2026-05-22 |
+| 17    | 1/1   | Completed | 2026-05-22 |
+| 18    | 1/1   | Completed | 2026-05-23 |
 
 **Recent Trend:**
 
-- Last 5 plans: 15-01 execution, 16-01 execution, 17-01 planning, 18-01 planning
+- Last 5 plans: 15-01 execution, 16-01 execution, 17-01 execution, 18-01 planning, 18-01 execution
 - Trend: The Cloudflare Pages migration, sandbox evidence, multi-item cart, manual BOX NOW scope, and Phase 12 boundary
   hardening are in place. Phase 13 narrows dynamic payment methods for checkout launch readiness. Phase 14 Shiplemon
   non-Greece shipping is post-MVP.
@@ -566,6 +566,11 @@ policy, while Phase 14 is post-MVP.
   favicon metadata, and content-referenced local images. Existing artist portrait source drift is reported as advisory
   warnings until replacement assets are approved; no image files, content image paths, public URLs, Astro runtime image
   handling, Worker routes, or hosting behavior changed.
+
+- Phase 18 is complete: repo-authored runtime validation remains standardized on Zod, there are no direct Valibot package
+  manifest or source usages, and the remaining `pnpm-lock.yaml` Valibot entry is documented as an upstream Prisma
+  transitive dependency. The small Zod 4 cleanup removed existing URL/email deprecation hints from the Astro content
+  check.
 
 - StoreCart remains convenience-only state. Native `localStorage` stays the approved storage primitive until carts
   become account-backed, cross-device, large/offline, or operationally authoritative.

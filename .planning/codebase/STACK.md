@@ -37,6 +37,7 @@
 - React 19.2.5 with `@astrojs/react` 5.0.4 - client-loaded app shell, overlays, mobile nav, filters, inquiry form, and shadcn primitives in `src/components/app-shell/AppShell.astro`, `src/components/app-shell/AppShellRoot.tsx`, and `src/components/ui/**`.
 - Astro content collections - 10 typed collections defined in `src/content.config.ts` and queried through `src/lib/site-data.ts` and `src/lib/catalog-data.ts`.
 - Custom app-shell routing - same-document top-level section swaps plus overlay fragment fetching in `src/lib/app-shell/routing.ts` and `src/components/app-shell/AppShellRoot.tsx`.
+- Runtime validation - repo-authored validation standardizes on Zod. Astro content schemas use `astro/zod`, backend OpenAPI contracts use `@hono/zod-openapi`, and StoreCart, money, commerce ID, quantity, and HTTP payload validation stay on Zod. Valibot is not a direct app dependency; if it appears in `pnpm-lock.yaml`, it is allowed only as an upstream Prisma transitive dependency until Prisma removes it.
 
 **Testing:**
 
