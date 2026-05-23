@@ -8,6 +8,7 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 import { chromium, type Browser, type Frame, type Page } from 'playwright';
 
 export type StripeSandboxSmokeScenarioName =
+  | 'checkout_surface'
   | 'card_declined'
   | 'expired_card'
   | 'happy_path_paid'
@@ -20,17 +21,35 @@ export type StripeSandboxSmokeScenarioSelection = StripeSandboxSmokeScenarioName
 export type StripeSandboxScreenshotMode = 'always' | 'never' | 'on-failure';
 
 export type StripeSandboxSmokeScenario = {
-  cardNumber: string;
+  cardNumber?: string;
+  checkoutSurfaceExpectation?: StripeCheckoutSurfaceExpectation;
   description: string;
-  expectedOrderStatus: 'paid' | 'not_paid_or_pending';
+  expectedOrderStatus: 'not_paid_or_pending' | 'not_submitted' | 'paid';
   expectedStripeErrorPattern?: RegExp;
   name: StripeSandboxSmokeScenarioName;
   stripeFormExpectation: string;
 };
 
+export type StripeCheckoutSurfaceExpectation = {
+  expectedAmountText: string;
+  expectedPaymentMethodLabels: string[];
+  minimumDynamicPaymentMethodCount: number;
+};
+
+export type StripeCheckoutSurfaceObservation = {
+  amountTextPresent: boolean;
+  dynamicPaymentMethodLabels: string[];
+  expectedAmountText: string;
+  expectedPaymentMethodLabels: string[];
+  issues: string[];
+  observedAmountTexts: string[];
+  paymentMethodLabels: string[];
+};
+
 export type StripeSandboxSmokeOptions = {
   debug: boolean;
   declineConcurrency: number;
+  expectedPaymentMethodLabels: string[];
   fieldActionTimeoutMs: number;
   headed: boolean;
   scenarioSelection: StripeSandboxSmokeScenarioSelection;
@@ -61,6 +80,7 @@ export type StripeSandboxSmokePreflightInput = {
   minimumSmokeOnlineQuantity: number;
   options: Pick<StripeSandboxSmokeOptions, 'siteUrl' | 'workerUrl'>;
   remoteD1Summary: RemoteD1ReadinessSummary | null;
+  scenarios: readonly StripeSandboxSmokeScenario[];
   secretNames: string[];
   siteReady: boolean;
   workerReady: boolean;
@@ -76,6 +96,7 @@ export type RemoteD1ReadinessSummary = {
 };
 
 export type StripeSandboxScenarioAutomationResult = {
+  checkoutSurface: StripeCheckoutSurfaceObservation | null;
   checkoutSessionId: string | null;
   durations: StripeSandboxSmokeDurations;
   finalUrl: string;
@@ -85,6 +106,7 @@ export type StripeSandboxScenarioAutomationResult = {
 };
 
 export type StripeSandboxSmokeEvidence = {
+  checkoutSurface: StripeCheckoutSurfaceObservation | null;
   checkoutPageUrl: string;
   durations: StripeSandboxSmokeDurations;
   finalUrl: string;
@@ -104,6 +126,7 @@ export type StripeSandboxSmokeEvidence = {
 };
 
 export type StripeSandboxScenarioGroups = {
+  checkoutSurfaceScenarios: StripeSandboxSmokeScenario[];
   declineScenarios: StripeSandboxSmokeScenario[];
   paidScenarios: StripeSandboxSmokeScenario[];
 };
@@ -125,6 +148,13 @@ type D1JsonResult = Array<{
   success?: boolean;
 }>;
 
+type PublicStoreOfferResponse = {
+  canCheckout?: boolean;
+  price?: {
+    display?: string;
+  } | null;
+};
+
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(scriptDir, '..');
 const backendDir = path.join(rootDir, 'apps', 'backend');
@@ -136,6 +166,7 @@ const defaultWorkerUrl = 'https://blackbox-records-backend-sandbox.blackboxrecor
 const smokeStoreItemSlug = 'disintegration-black-vinyl-lp';
 const smokeVariantId = 'variant_barren-point_standard';
 const allScenarioNames: readonly StripeSandboxSmokeScenarioName[] = [
+  'checkout_surface',
   'happy_path_paid',
   'three_d_secure',
   'card_declined',
@@ -156,10 +187,25 @@ const sandboxFormDefaults = {
   postalCode: '10557',
 };
 
+const disintegrationCheckoutSurfaceExpectation: StripeCheckoutSurfaceExpectation = {
+  expectedAmountText: 'Worker Store Offer price',
+  expectedPaymentMethodLabels: [],
+  minimumDynamicPaymentMethodCount: 1,
+};
+
 export const STRIPE_TEST_CARD_DOCS_URL = 'https://docs.stripe.com/testing#cards';
 export const STRIPE_SANDBOX_SMOKE_SCENARIOS: Record<StripeSandboxSmokeScenarioName, StripeSandboxSmokeScenario> = {
+  checkout_surface: {
+    checkoutSurfaceExpectation: disintegrationCheckoutSurfaceExpectation,
+    description: 'Hosted Checkout amount and dynamic payment method surface, without submitting payment.',
+    expectedOrderStatus: 'not_submitted',
+    name: 'checkout_surface',
+    stripeFormExpectation:
+      'Stripe should show the storefront amount and at least one dynamic payment option before payment is submitted.',
+  },
   happy_path_paid: {
     cardNumber: '4242 4242 4242 4242',
+    checkoutSurfaceExpectation: disintegrationCheckoutSurfaceExpectation,
     description: 'Immediate successful card payment.',
     expectedOrderStatus: 'paid',
     name: 'happy_path_paid',
@@ -220,6 +266,7 @@ export function parseStripeSandboxSmokeArgs(args: string[]): StripeSandboxSmokeO
   const options: StripeSandboxSmokeOptions = {
     debug: false,
     declineConcurrency: 3,
+    expectedPaymentMethodLabels: parsePaymentMethodLabelList(process.env.STRIPE_SANDBOX_EXPECTED_PAYMENT_LABELS ?? ''),
     fieldActionTimeoutMs: 2_000,
     headed: false,
     scenarioSelection: 'all',
@@ -273,6 +320,35 @@ export function parseStripeSandboxSmokeArgs(args: string[]): StripeSandboxSmokeO
       const value = args[index + 1];
       index += 1;
       options.fieldActionTimeoutMs = parsePositiveInteger(value, '--field-action-timeout-ms');
+      continue;
+    }
+
+    if (arg === '--expected-payment-label') {
+      const value = args[index + 1];
+      index += 1;
+      options.expectedPaymentMethodLabels.push(parsePaymentMethodLabel(value, '--expected-payment-label'));
+      continue;
+    }
+
+    if (arg?.startsWith('--expected-payment-label=')) {
+      options.expectedPaymentMethodLabels.push(
+        parsePaymentMethodLabel(arg.slice('--expected-payment-label='.length), '--expected-payment-label'),
+      );
+      continue;
+    }
+
+    if (arg === '--expected-payment-labels') {
+      const value = args[index + 1];
+      index += 1;
+      options.expectedPaymentMethodLabels = parsePaymentMethodLabelList(value, '--expected-payment-labels');
+      continue;
+    }
+
+    if (arg?.startsWith('--expected-payment-labels=')) {
+      options.expectedPaymentMethodLabels = parsePaymentMethodLabelList(
+        arg.slice('--expected-payment-labels='.length),
+        '--expected-payment-labels',
+      );
       continue;
     }
 
@@ -376,7 +452,8 @@ export function groupStripeSandboxSmokeScenarios(
   scenarios: readonly StripeSandboxSmokeScenario[],
 ): StripeSandboxScenarioGroups {
   return {
-    declineScenarios: scenarios.filter((scenario) => scenario.expectedOrderStatus !== 'paid'),
+    checkoutSurfaceScenarios: scenarios.filter((scenario) => scenario.expectedOrderStatus === 'not_submitted'),
+    declineScenarios: scenarios.filter((scenario) => scenario.expectedOrderStatus === 'not_paid_or_pending'),
     paidScenarios: scenarios.filter((scenario) => scenario.expectedOrderStatus === 'paid'),
   };
 }
@@ -478,6 +555,7 @@ export function parseRemoteD1ReadinessSummary(jsonText: string): RemoteD1Readine
 
 export function checkStripeSandboxSmokePreflight(input: StripeSandboxSmokePreflightInput): string[] {
   const issues: string[] = [];
+  const requiresPaidWebhook = input.scenarios.some((scenario) => scenario.expectedOrderStatus === 'paid');
 
   if (!input.siteReady) {
     issues.push(`Sandbox site is not reachable: ${input.options.siteUrl}`);
@@ -501,7 +579,7 @@ export function checkStripeSandboxSmokePreflight(input: StripeSandboxSmokePrefli
     );
   }
 
-  if (!input.secretNames.includes('STRIPE_WEBHOOK_SECRET')) {
+  if (requiresPaidWebhook && !input.secretNames.includes('STRIPE_WEBHOOK_SECRET')) {
     issues.push(
       'Sandbox Worker secret STRIPE_WEBHOOK_SECRET is not configured. Set it from apps/backend with: pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env sandbox',
     );
@@ -550,10 +628,13 @@ export function formatStripeSandboxSmokeRunHeader(input: {
     `Headed: ${input.options.headed ? 'yes' : 'no'}`,
     `Trace: ${input.options.trace ? 'yes' : 'no'}`,
     `Screenshots: ${input.options.screenshots}`,
+    `Expected payment labels: ${
+      input.options.expectedPaymentMethodLabels.length ? input.options.expectedPaymentMethodLabels.join(', ') : 'none'
+    }`,
     `Field action timeout: ${input.options.fieldActionTimeoutMs}ms`,
     `Decline concurrency: ${input.options.declineConcurrency}`,
     '',
-    'Required outside this process:',
+    'Required outside this process for paid scenarios:',
     `- stripe listen --forward-to ${input.options.workerUrl}/api/stripe/webhooks`,
     '- The sandbox Worker STRIPE_WEBHOOK_SECRET must match that listener.',
     '- Real sandbox Stripe Price mappings and positive online stock must exist in sandbox D1.',
@@ -594,7 +675,16 @@ export function didScenarioPass(
   order: LocalCheckoutOrderRow | null,
   scenario: StripeSandboxSmokeScenario,
   observedStripeUi: string,
+  checkoutSurface: StripeCheckoutSurfaceObservation | null = null,
 ): boolean {
+  if (checkoutSurface?.issues.length) {
+    return false;
+  }
+
+  if (scenario.expectedOrderStatus === 'not_submitted') {
+    return Boolean(checkoutSurface);
+  }
+
   if (scenario.expectedOrderStatus === 'paid') {
     return order?.status === 'paid';
   }
@@ -619,9 +709,15 @@ export function buildStripeSandboxSmokeEvidence(input: {
   runId: string;
   scenario: StripeSandboxSmokeScenario;
 }): StripeSandboxSmokeEvidence {
-  const passed = didScenarioPass(input.result.order, input.scenario, input.result.observedStripeUi);
+  const passed = didScenarioPass(
+    input.result.order,
+    input.scenario,
+    input.result.observedStripeUi,
+    input.result.checkoutSurface,
+  );
 
   return {
+    checkoutSurface: input.result.checkoutSurface,
     checkoutPageUrl: input.checkoutPageUrl,
     durations: input.result.durations,
     finalUrl: input.result.finalUrl,
@@ -653,7 +749,12 @@ async function main() {
   ensureSandboxSmokeStock(minimumSmokeOnlineQuantity);
 
   const preflight = await runPreflight(options);
-  const preflightIssues = checkStripeSandboxSmokePreflight({ ...preflight, minimumSmokeOnlineQuantity, options });
+  const preflightIssues = checkStripeSandboxSmokePreflight({
+    ...preflight,
+    minimumSmokeOnlineQuantity,
+    options,
+    scenarios,
+  });
 
   console.log(formatStripeSandboxSmokePreflightSummary({ ...preflight, issues: preflightIssues }));
 
@@ -670,6 +771,10 @@ async function main() {
     });
 
     const scenarioGroups = groupStripeSandboxSmokeScenarios(scenarios);
+
+    for (const scenario of scenarioGroups.checkoutSurfaceScenarios) {
+      await runScenarioAndWriteEvidence({ browser, options, runArtifactDir, runId, scenario });
+    }
 
     for (const scenario of scenarioGroups.paidScenarios) {
       await runScenarioAndWriteEvidence({ browser, options, runArtifactDir, runId, scenario });
@@ -700,13 +805,23 @@ async function runScenarioAndWriteEvidence(input: {
   const checkoutPageUrl = createCheckoutPageUrl(input.options.siteUrl);
   const scenarioArtifactDir = path.join(input.runArtifactDir, input.scenario.name);
   mkdirSync(scenarioArtifactDir, { recursive: true });
+  const scenario = input.scenario.checkoutSurfaceExpectation
+    ? {
+        ...input.scenario,
+        checkoutSurfaceExpectation: await resolveCheckoutSurfaceExpectation(
+          input.options.workerUrl,
+          input.scenario.checkoutSurfaceExpectation,
+          input.options.expectedPaymentMethodLabels,
+        ),
+      }
+    : input.scenario;
 
   const result = await runScenarioWithBrowser({
     browser: input.browser,
     checkoutPageUrl,
     options: input.options,
     runId: input.runId,
-    scenario: input.scenario,
+    scenario,
     scenarioArtifactDir,
   });
   const tracePath = input.options.trace ? path.join(scenarioArtifactDir, 'trace.zip') : null;
@@ -717,7 +832,7 @@ async function runScenarioAndWriteEvidence(input: {
     options: input.options,
     result,
     runId: input.runId,
-    scenario: input.scenario,
+    scenario,
   });
   const evidencePath = path.join(scenarioArtifactDir, 'evidence.json');
   const evidenceWriteStartedAt = Date.now();
@@ -728,10 +843,17 @@ async function runScenarioAndWriteEvidence(input: {
 
   console.log(
     [
-      `Scenario ${input.scenario.name}: ${evidence.passed ? 'PASSED' : 'FAILED'} in ${formatDuration(
+      `Scenario ${scenario.name}: ${evidence.passed ? 'PASSED' : 'FAILED'} in ${formatDuration(
         evidence.durations.totalMs,
       )}`,
       `- checkout session: ${result.checkoutSessionId ?? 'not observed'}`,
+      `- checkout surface: ${
+        result.checkoutSurface
+          ? result.checkoutSurface.issues.length
+            ? `FAILED (${result.checkoutSurface.issues.join(' ')})`
+            : `OK (${formatCheckoutSurfaceLabelSummary(result.checkoutSurface)})`
+          : 'not checked'
+      }`,
       `- order status: ${result.order?.status ?? 'none'}`,
       `- screenshot: ${result.screenshotPath ?? 'skipped'}`,
       `- evidence: ${evidencePath}`,
@@ -739,7 +861,7 @@ async function runScenarioAndWriteEvidence(input: {
   );
 
   if (!evidence.passed) {
-    throw new Error(createScenarioFailureMessage(input.scenario, result));
+    throw new Error(createScenarioFailureMessage(scenario, result));
   }
 }
 
@@ -749,7 +871,7 @@ export function countPaidStripeSandboxScenarios(scenarios: readonly StripeSandbo
 
 export function calculateMinimumSmokeOnlineQuantity(scenarios: readonly StripeSandboxSmokeScenario[]): number {
   const paidScenarioCount = countPaidStripeSandboxScenarios(scenarios);
-  const hasDeclineScenario = scenarios.some((scenario) => scenario.expectedOrderStatus !== 'paid');
+  const hasDeclineScenario = scenarios.some((scenario) => scenario.expectedOrderStatus === 'not_paid_or_pending');
 
   return Math.max(1, paidScenarioCount + (hasDeclineScenario ? 1 : 0));
 }
@@ -789,7 +911,7 @@ function ensureSandboxSmokeStock(minimumQuantity: number): void {
 
 async function runPreflight(
   options: StripeSandboxSmokeOptions,
-): Promise<Omit<StripeSandboxSmokePreflightInput, 'minimumSmokeOnlineQuantity' | 'options'>> {
+): Promise<Omit<StripeSandboxSmokePreflightInput, 'minimumSmokeOnlineQuantity' | 'options' | 'scenarios'>> {
   const [siteReady, workerReady] = await Promise.all([
     isHttpReady(options.siteUrl),
     isHttpReady(`${options.workerUrl}/api/store/capabilities`),
@@ -835,11 +957,35 @@ async function runScenarioWithBrowser(input: {
       await page.goto(input.checkoutPageUrl, { waitUntil: 'domcontentloaded' });
       await Promise.all([
         page.waitForURL(/checkout\.stripe\.com/, { timeout: input.options.timeoutMs, waitUntil: 'commit' }),
-        page.getByRole('button', { name: /pay securely with stripe/i }).click(),
+        page.getByRole('button', { name: /(?:pay securely with|continue to) stripe(?: checkout)?/i }).click(),
       ]);
     });
 
     const checkoutSessionId = extractCheckoutSessionId(page.url());
+    const checkoutSurface = input.scenario.checkoutSurfaceExpectation
+      ? await readStripeCheckoutSurface(page, input.scenario.checkoutSurfaceExpectation, input.options.timeoutMs)
+      : null;
+
+    if (checkoutSurface?.issues.length || input.scenario.expectedOrderStatus === 'not_submitted') {
+      const screenshotPath =
+        input.options.screenshots === 'always' ? path.join(input.scenarioArtifactDir, 'final.png') : null;
+
+      if (screenshotPath) {
+        await page.screenshot({ fullPage: true, path: screenshotPath });
+      }
+
+      durations.totalMs = Date.now() - scenarioStartedAt;
+
+      return {
+        checkoutSurface,
+        checkoutSessionId,
+        durations,
+        finalUrl: page.url(),
+        observedStripeUi: await page.locator('body').innerText({ timeout: input.options.timeoutMs }),
+        order: null,
+        screenshotPath,
+      };
+    }
 
     await timeStripeSandboxStep(input.scenario.name, 'Stripe form fill', durations, 'stripeFormFillMs', async () => {
       await fillStripeHostedCheckout(
@@ -877,6 +1023,7 @@ async function runScenarioWithBrowser(input: {
     durations.totalMs = Date.now() - scenarioStartedAt;
 
     return {
+      checkoutSurface,
       checkoutSessionId: resolvedCheckoutSessionId,
       durations,
       finalUrl,
@@ -915,12 +1062,180 @@ async function runScenarioWithBrowser(input: {
   }
 }
 
+async function readStripeCheckoutSurface(
+  page: Page,
+  expectation: StripeCheckoutSurfaceExpectation,
+  timeoutMs: number,
+): Promise<StripeCheckoutSurfaceObservation> {
+  await page.waitForFunction(
+    () => {
+      const text = document.body?.innerText?.trim() ?? '';
+
+      return text.length > 0 && /card information|email|payment method/i.test(text);
+    },
+    undefined,
+    { timeout: timeoutMs },
+  );
+
+  const bodyText = await page.locator('body').innerText({ timeout: 10_000 });
+
+  return createStripeCheckoutSurfaceObservation(bodyText, expectation);
+}
+
+export async function resolveCheckoutSurfaceExpectation(
+  workerUrl: string,
+  baseExpectation: StripeCheckoutSurfaceExpectation,
+  expectedPaymentMethodLabels: string[],
+): Promise<StripeCheckoutSurfaceExpectation> {
+  const offer = await readWorkerStoreOffer(workerUrl);
+
+  if (!offer.canCheckout || !offer.price?.display) {
+    throw new Error('Worker Store Offer is not checkout-ready for sandbox smoke.');
+  }
+
+  return {
+    ...baseExpectation,
+    expectedAmountText: offer.price.display,
+    expectedPaymentMethodLabels,
+  };
+}
+
+export function createStripeCheckoutSurfaceObservation(
+  bodyText: string,
+  expectation: StripeCheckoutSurfaceExpectation,
+): StripeCheckoutSurfaceObservation {
+  const normalizedBodyText = normalizeVisibleStripeText(bodyText);
+  const paymentMethodLabels = extractPaymentMethodLabels(normalizedBodyText);
+  const dynamicPaymentMethodLabels = extractDynamicPaymentMethodLabels(normalizedBodyText);
+  const observedPaymentSurfaceLabels = uniqueStrings([...paymentMethodLabels, ...dynamicPaymentMethodLabels]);
+  const observedAmountTexts = extractAmountTexts(normalizedBodyText);
+  const amountTextPresent = normalizedBodyText.includes(expectation.expectedAmountText);
+  const expectedPaymentMethodLabels = uniqueStrings(
+    expectation.expectedPaymentMethodLabels.map(normalizePaymentMethodLabel),
+  );
+  const missingPaymentMethodLabels = expectedPaymentMethodLabels.filter(
+    (expectedLabel) =>
+      !observedPaymentSurfaceLabels.some((label) => normalizePaymentMethodLabel(label) === expectedLabel),
+  );
+  const issues: string[] = [];
+
+  if (!amountTextPresent) {
+    issues.push(
+      `Expected hosted Checkout amount ${expectation.expectedAmountText}; observed: ${
+        observedAmountTexts.length ? observedAmountTexts.join(', ') : 'none'
+      }.`,
+    );
+  }
+
+  if (dynamicPaymentMethodLabels.length < expectation.minimumDynamicPaymentMethodCount) {
+    issues.push(
+      `Expected at least ${expectation.minimumDynamicPaymentMethodCount} dynamic payment method surface label(s); observed: ${
+        observedPaymentSurfaceLabels.length ? observedPaymentSurfaceLabels.join(', ') : 'none'
+      }.`,
+    );
+  }
+
+  if (missingPaymentMethodLabels.length) {
+    issues.push(
+      `Expected hosted Checkout payment method label(s) ${missingPaymentMethodLabels.join(', ')}; observed: ${
+        observedPaymentSurfaceLabels.length ? observedPaymentSurfaceLabels.join(', ') : 'none'
+      }.`,
+    );
+  }
+
+  return {
+    amountTextPresent,
+    dynamicPaymentMethodLabels,
+    expectedAmountText: expectation.expectedAmountText,
+    expectedPaymentMethodLabels,
+    issues,
+    observedAmountTexts,
+    paymentMethodLabels,
+  };
+}
+
+function normalizeVisibleStripeText(text: string): string {
+  return text
+    .replace(/\u00a0/g, ' ')
+    .replace(/\r\n/g, '\n')
+    .trim();
+}
+
+function extractPaymentMethodLabels(text: string): string[] {
+  const lines = createVisibleTextLines(text);
+  const paymentMethodIndex = lines.findIndex((line) => /^payment method$/i.test(line));
+
+  if (paymentMethodIndex < 0) {
+    return [];
+  }
+
+  const terminalIndex = lines.findIndex(
+    (line, index) =>
+      index > paymentMethodIndex &&
+      /^(card information|billing information|billing info is same as shipping|save my information|pay)$/i.test(line),
+  );
+  const labels = lines.slice(paymentMethodIndex + 1, terminalIndex > paymentMethodIndex ? terminalIndex : undefined);
+
+  return uniqueStrings(
+    labels.filter((line) =>
+      /^(?:card|link|apple pay|google pay|pay with link|pay with apple pay|pay with google pay)$/i.test(line),
+    ),
+  );
+}
+
+function extractDynamicPaymentMethodLabels(text: string): string[] {
+  const labels: string[] = [];
+
+  for (const line of createVisibleTextLines(text)) {
+    if (/^(?:apple pay|pay with apple pay)$/i.test(line)) {
+      labels.push('Apple Pay');
+    }
+
+    if (/^(?:google pay|pay with google pay)$/i.test(line)) {
+      labels.push('Google Pay');
+    }
+
+    if (/^(?:link|pay with link)$/i.test(line)) {
+      labels.push('Link');
+    }
+  }
+
+  if (/pay securely\b[\s\S]*\blink is accepted\b/i.test(text)) {
+    labels.push('Link');
+  }
+
+  return uniqueStrings(labels);
+}
+
+function normalizePaymentMethodLabel(label: string): string {
+  return label.trim().replace(/\s+/g, ' ');
+}
+
+function extractAmountTexts(text: string): string[] {
+  return uniqueStrings(text.match(/(?:€|CHF|USD|EUR|GBP)\s?\d+(?:[.,]\d{2})?/g) ?? []);
+}
+
+function createVisibleTextLines(text: string): string[] {
+  return normalizeVisibleStripeText(text)
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values)];
+}
+
 async function fillStripeHostedCheckout(
   page: Page,
   scenario: StripeSandboxSmokeScenario,
   email: string,
   fieldActionTimeoutMs: number,
 ) {
+  if (!scenario.cardNumber) {
+    throw new Error(`Scenario ${scenario.name} does not define a Stripe test card number.`);
+  }
+
   await page.locator('input[name="cardNumber"]').waitFor({ state: 'visible' });
   await fillRequiredVisibleSelector(page, 'input[name="email"]', email, fieldActionTimeoutMs);
   await fillRequiredVisibleSelector(page, 'input[name="shippingName"]', sandboxFormDefaults.name, fieldActionTimeoutMs);
@@ -1171,6 +1486,18 @@ async function isHttpReady(url: string): Promise<boolean> {
   }
 }
 
+async function readWorkerStoreOffer(workerUrl: string): Promise<PublicStoreOfferResponse> {
+  const response = await fetch(
+    `${normalizeBaseUrl(workerUrl, 'workerUrl')}/api/store/items/${encodeURIComponent(smokeStoreItemSlug)}`,
+  );
+
+  if (!response.ok) {
+    throw new Error(`Worker Store Offer read failed with HTTP ${response.status}.`);
+  }
+
+  return (await response.json()) as PublicStoreOfferResponse;
+}
+
 async function fillFirstVisible(
   page: Page,
   labelPatterns: RegExp[],
@@ -1299,6 +1626,29 @@ function parsePositiveInteger(value: string | undefined, flag: string): number {
   return parsed;
 }
 
+function parsePaymentMethodLabel(value: string | undefined, flag: string): string {
+  const label = normalizePaymentMethodLabel(value ?? '');
+
+  if (!label) {
+    throw new Error(`${flag} must include a payment method label.`);
+  }
+
+  return label;
+}
+
+function parsePaymentMethodLabelList(
+  value: string | undefined,
+  flag = 'STRIPE_SANDBOX_EXPECTED_PAYMENT_LABELS',
+): string[] {
+  return uniqueStrings(
+    (value ?? '')
+      .split(',')
+      .map((label) => label.trim())
+      .filter(Boolean)
+      .map((label) => parsePaymentMethodLabel(label, flag)),
+  );
+}
+
 function normalizeBaseUrl(value: string | undefined, flag: string): string {
   if (!value?.trim()) {
     throw new Error(`${flag} must be a URL.`);
@@ -1416,6 +1766,18 @@ function createScenarioFailureMessage(
   scenario: StripeSandboxSmokeScenario,
   result: StripeSandboxScenarioAutomationResult,
 ): string {
+  if (result.checkoutSurface?.issues.length) {
+    return [
+      `Scenario ${scenario.name} failed hosted Checkout surface expectations.`,
+      ...result.checkoutSurface.issues,
+      `Observed payment surface: ${formatCheckoutSurfaceLabelSummary(result.checkoutSurface)}.`,
+    ].join(' ');
+  }
+
+  if (scenario.expectedOrderStatus === 'not_submitted') {
+    return `Scenario ${scenario.name} did not complete the hosted Checkout surface check.`;
+  }
+
   if (scenario.expectedOrderStatus === 'paid') {
     return [
       `Scenario ${scenario.name} did not produce a paid CheckoutOrder.`,
@@ -1439,6 +1801,15 @@ function truncateForConsole(text: string, maxLength = 1_200): string {
 
 function formatDuration(ms: number): string {
   return ms >= 1_000 ? `${(ms / 1_000).toFixed(1)}s` : `${ms}ms`;
+}
+
+function formatCheckoutSurfaceLabelSummary(surface: StripeCheckoutSurfaceObservation): string {
+  const paymentLabels = surface.paymentMethodLabels.length ? surface.paymentMethodLabels.join(', ') : 'none';
+  const dynamicLabels = surface.dynamicPaymentMethodLabels.length
+    ? surface.dynamicPaymentMethodLabels.join(', ')
+    : 'none';
+
+  return `payment methods: ${paymentLabels}; dynamic surface: ${dynamicLabels}`;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

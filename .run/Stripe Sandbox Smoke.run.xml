@@ -5,9 +5,11 @@
     <scripts>
       <script value="smoke:stripe-sandbox" />
     </scripts>
-    <arguments value="-- --scenario all" />
+    <arguments value="-- --scenario all --screenshots always --timeout-ms 120000" />
     <node-interpreter value="project" />
-    <envs />
+    <envs>
+      <env name="STRIPE_SANDBOX_EXPECTED_PAYMENT_LABELS" value="Link" />
+    </envs>
     <method v="2" />
   </configuration>
 </component>

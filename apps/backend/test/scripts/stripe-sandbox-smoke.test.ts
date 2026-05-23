@@ -4,6 +4,7 @@ import {
   buildStripeSandboxSmokeEvidence,
   calculateMinimumSmokeOnlineQuantity,
   checkStripeSandboxSmokePreflight,
+  createStripeCheckoutSurfaceObservation,
   createEmptyStripeSandboxSmokeDurations,
   createCheckoutOrderBySessionSql,
   createCheckoutPageUrl,
@@ -19,6 +20,7 @@ import {
   parseD1CheckoutOrderRows,
   parseRemoteD1ReadinessSummary,
   parseStripeSandboxSmokeArgs,
+  resolveCheckoutSurfaceExpectation,
   resolveSelectedStripeSandboxScenarios,
   runInBatches,
   scrubSensitiveStripeSmokeText,
@@ -64,6 +66,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(parseStripeSandboxSmokeArgs([])).toEqual({
       debug: false,
       declineConcurrency: 3,
+      expectedPaymentMethodLabels: [],
       fieldActionTimeoutMs: 2_000,
       headed: false,
       scenarioSelection: 'all',
@@ -86,6 +89,9 @@ describe('Stripe sandbox Playwright smoke runner', () => {
         '--decline-concurrency',
         '2',
         '--field-action-timeout-ms=1500',
+        '--expected-payment-label',
+        'Link',
+        '--expected-payment-label=Google Pay',
         '--screenshots',
         'always',
         '--timeout-ms=30000',
@@ -96,6 +102,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     ).toEqual({
       debug: false,
       declineConcurrency: 2,
+      expectedPaymentMethodLabels: ['Link', 'Google Pay'],
       fieldActionTimeoutMs: 1_500,
       headed: true,
       scenarioSelection: 'three_d_secure',
@@ -112,12 +119,55 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(() => parseStripeSandboxSmokeArgs(['--screenshots', 'sometimes'])).toThrow(
       '--screenshots must be one of: on-failure, always, never.',
     );
+    expect(
+      parseStripeSandboxSmokeArgs(['--expected-payment-labels=Link,Google Pay']).expectedPaymentMethodLabels,
+    ).toEqual(['Link', 'Google Pay']);
+    expect(() => parseStripeSandboxSmokeArgs(['--expected-payment-label', ''])).toThrow(
+      '--expected-payment-label must include a payment method label.',
+    );
+  });
+
+  it('derives the checkout surface amount from the Worker Store Offer', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        canCheckout: true,
+        price: {
+          display: '€28.00',
+        },
+      }),
+      status: 200,
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    try {
+      await expect(
+        resolveCheckoutSurfaceExpectation(
+          'https://worker.example.test/',
+          {
+            expectedAmountText: 'Worker Store Offer price',
+            expectedPaymentMethodLabels: [],
+            minimumDynamicPaymentMethodCount: 1,
+          },
+          ['Link'],
+        ),
+      ).resolves.toEqual({
+        expectedAmountText: '€28.00',
+        expectedPaymentMethodLabels: ['Link'],
+        minimumDynamicPaymentMethodCount: 1,
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    expect(fetchMock).toHaveBeenCalledWith('https://worker.example.test/api/store/items/disintegration-black-vinyl-lp');
   });
 
   it('resolves all supported Stripe sandbox scenarios including 3DS', () => {
     const scenarios = resolveSelectedStripeSandboxScenarios('all');
 
     expect(scenarios.map((scenario) => scenario.name)).toEqual([
+      'checkout_surface',
       'happy_path_paid',
       'three_d_secure',
       'card_declined',
@@ -132,6 +182,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(calculateMinimumSmokeOnlineQuantity([STRIPE_SANDBOX_SMOKE_SCENARIOS.card_declined])).toBe(1);
 
     expect(groupStripeSandboxSmokeScenarios(scenarios)).toEqual({
+      checkoutSurfaceScenarios: [STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface],
       declineScenarios: [
         STRIPE_SANDBOX_SMOKE_SCENARIOS.card_declined,
         STRIPE_SANDBOX_SMOKE_SCENARIOS.insufficient_funds,
@@ -176,6 +227,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
           workerUrl: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
         },
         remoteD1Summary: readySummary,
+        scenarios: [STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface],
         secretNames: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'],
         siteReady: true,
         workerReady: true,
@@ -197,6 +249,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
         smokeVariantCanBuy: false,
         smokeVariantOnlineQuantity: 0,
       },
+      scenarios: [STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid],
       secretNames: [],
       siteReady: false,
       workerReady: false,
@@ -292,8 +345,29 @@ describe('Stripe sandbox Playwright smoke runner', () => {
   });
 
   it('classifies paid and decline scenarios', () => {
-    expect(didScenarioPass(paidOrder, STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid, '')).toBe(true);
-    expect(didScenarioPass(pendingOrder, STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid, '')).toBe(false);
+    const passingSurface = createStripeCheckoutSurfaceObservation(
+      'BlackBox UAT - Disintegration\n€28.00\nPayment method\nGoogle Pay\nCard\nCard information',
+      {
+        expectedAmountText: '€28.00',
+        expectedPaymentMethodLabels: [],
+        minimumDynamicPaymentMethodCount: 1,
+      },
+    );
+    const failingSurface = createStripeCheckoutSurfaceObservation(
+      'BlackBox UAT - Disintegration\n€10.00\nPayment method\nCard\nCard information',
+      {
+        expectedAmountText: '€28.00',
+        expectedPaymentMethodLabels: [],
+        minimumDynamicPaymentMethodCount: 1,
+      },
+    );
+
+    expect(didScenarioPass(paidOrder, STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid, '', passingSurface)).toBe(true);
+    expect(didScenarioPass(pendingOrder, STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid, '', passingSurface)).toBe(
+      false,
+    );
+    expect(didScenarioPass(null, STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface, '', passingSurface)).toBe(true);
+    expect(didScenarioPass(null, STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface, '', failingSurface)).toBe(false);
     expect(
       didScenarioPass(
         pendingOrder,
@@ -304,6 +378,61 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(
       didScenarioPass(paidOrder, STRIPE_SANDBOX_SMOKE_SCENARIOS.insufficient_funds, 'Your card was declined.'),
     ).toBe(false);
+  });
+
+  it('extracts hosted Checkout surface amount and dynamic payment method expectations', () => {
+    const expectation = {
+      expectedAmountText: '€28.00',
+      expectedPaymentMethodLabels: ['Google Pay'],
+      minimumDynamicPaymentMethodCount: 1,
+    };
+
+    expect(
+      createStripeCheckoutSurfaceObservation(
+        'BlackBox UAT - Disintegration\n€28.00\nPayment method\nGoogle Pay\nCard\nCard information',
+        expectation,
+      ),
+    ).toMatchObject({
+      amountTextPresent: true,
+      dynamicPaymentMethodLabels: ['Google Pay'],
+      issues: [],
+      observedAmountTexts: ['€28.00'],
+      paymentMethodLabels: ['Google Pay', 'Card'],
+    });
+
+    expect(
+      createStripeCheckoutSurfaceObservation(
+        'BlackBox UAT - Disintegration\n€10.00\nPayment method\nCard\nCard information\nSave my information for faster checkout',
+        expectation,
+      ),
+    ).toMatchObject({
+      amountTextPresent: false,
+      dynamicPaymentMethodLabels: [],
+      issues: [
+        'Expected hosted Checkout amount €28.00; observed: €10.00.',
+        'Expected at least 1 dynamic payment method surface label(s); observed: Card.',
+        'Expected hosted Checkout payment method label(s) Google Pay; observed: Card.',
+      ],
+      observedAmountTexts: ['€10.00'],
+      paymentMethodLabels: ['Card'],
+    });
+
+    expect(
+      createStripeCheckoutSurfaceObservation(
+        'BlackBox UAT - Disintegration\n€28.00\nPayment method\nCard\nCard information\nSave my information for faster checkout\nPay securely at Giannakos Dimitrios sandbox and everywhere Link is accepted.',
+        {
+          expectedAmountText: '€28.00',
+          expectedPaymentMethodLabels: ['Link'],
+          minimumDynamicPaymentMethodCount: 1,
+        },
+      ),
+    ).toMatchObject({
+      amountTextPresent: true,
+      dynamicPaymentMethodLabels: ['Link'],
+      issues: [],
+      observedAmountTexts: ['€28.00'],
+      paymentMethodLabels: ['Card'],
+    });
   });
 
   it('passes short field action timeouts to Stripe field helpers', async () => {
@@ -343,6 +472,14 @@ describe('Stripe sandbox Playwright smoke runner', () => {
         workerUrl: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
       },
       result: {
+        checkoutSurface: createStripeCheckoutSurfaceObservation(
+          'BlackBox UAT - Disintegration\n€28.00\nPayment method\nGoogle Pay\nCard\nCard information',
+          {
+            expectedAmountText: '€28.00',
+            expectedPaymentMethodLabels: [],
+            minimumDynamicPaymentMethodCount: 1,
+          },
+        ),
         checkoutSessionId: 'cs_test_123',
         durations: {
           ...createEmptyStripeSandboxSmokeDurations(),

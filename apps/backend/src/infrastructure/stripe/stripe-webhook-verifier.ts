@@ -7,7 +7,18 @@ export const STRIPE_CHECKOUT_WEBHOOK_EVENT_TYPES = [
   'checkout.session.expired',
 ] as const;
 
+export const STRIPE_CATALOG_WEBHOOK_EVENT_TYPES = [
+  'product.created',
+  'product.updated',
+  'product.deleted',
+  'price.created',
+  'price.updated',
+  'price.deleted',
+] as const;
+
 export type StripeCheckoutWebhookEventType = (typeof STRIPE_CHECKOUT_WEBHOOK_EVENT_TYPES)[number];
+export type StripeCatalogWebhookEventType = (typeof STRIPE_CATALOG_WEBHOOK_EVENT_TYPES)[number];
+export type StripeWebhookEventType = StripeCheckoutWebhookEventType | StripeCatalogWebhookEventType;
 
 export type VerifiedStripeWebhookEvent =
   | {
@@ -18,13 +29,24 @@ export type VerifiedStripeWebhookEvent =
       type: StripeCheckoutWebhookEventType;
     }
   | {
+      catalogObject: Stripe.Price | Stripe.Product | Stripe.DeletedPrice | Stripe.DeletedProduct;
+      created: number;
+      id: string;
+      isAllowed: true;
+      type: StripeCatalogWebhookEventType;
+    }
+  | {
       created: number;
       id: string;
       isAllowed: false;
       type: string;
     };
 
-const allowedCheckoutWebhookEventTypes = new Set<string>(STRIPE_CHECKOUT_WEBHOOK_EVENT_TYPES);
+const allowedCatalogWebhookEventTypes = new Set<string>(STRIPE_CATALOG_WEBHOOK_EVENT_TYPES);
+const allowedWebhookEventTypes = new Set<string>([
+  ...STRIPE_CHECKOUT_WEBHOOK_EVENT_TYPES,
+  ...STRIPE_CATALOG_WEBHOOK_EVENT_TYPES,
+]);
 
 const stripe = new Stripe('sk_test_webhook_verifier', {
   httpClient: Stripe.createFetchHttpClient(),
@@ -80,12 +102,22 @@ export async function verifyStripeWebhookEvent(input: {
     throw new StripeWebhookSignatureVerificationError();
   }
 
-  if (!allowedCheckoutWebhookEventTypes.has(event.type)) {
+  if (!allowedWebhookEventTypes.has(event.type)) {
     return {
       created: event.created,
       id: event.id,
       isAllowed: false,
       type: event.type,
+    };
+  }
+
+  if (allowedCatalogWebhookEventTypes.has(event.type)) {
+    return {
+      catalogObject: event.data.object as Stripe.Price | Stripe.Product | Stripe.DeletedPrice | Stripe.DeletedProduct,
+      created: event.created,
+      id: event.id,
+      isAllowed: true,
+      type: event.type as StripeCatalogWebhookEventType,
     };
   }
 
