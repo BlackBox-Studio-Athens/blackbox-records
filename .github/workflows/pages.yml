@@ -39,7 +39,7 @@ jobs:
         with:
           path: ./apps/web
           node-version: 24
-          package-manager: pnpm@10.33.2
+          package-manager: pnpm@10.33.4
           cache: true
           build-cmd: >-
             pnpm --workspace-root test:unit &&

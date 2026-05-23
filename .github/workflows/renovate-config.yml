@@ -1,0 +1,44 @@
+name: Validate Renovate config
+
+on:
+  pull_request:
+    paths:
+      - renovate.json
+      - package.json
+      - pnpm-workspace.yaml
+      - .github/workflows/renovate-config.yml
+  push:
+    branches: ['main']
+    paths:
+      - renovate.json
+      - package.json
+      - pnpm-workspace.yaml
+      - .github/workflows/renovate-config.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: 'renovate-config-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  validate-renovate-config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.8
+        with:
+          version: 10.33.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 24
+
+      - name: Validate Renovate config
+        run: pnpm renovate:validate

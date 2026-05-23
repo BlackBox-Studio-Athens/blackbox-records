@@ -597,6 +597,16 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid variant id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockError"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Missing operator identity.",
             "content": {
@@ -653,6 +663,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InternalStockHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid variant id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockError"
                 }
               }
             }

@@ -41,7 +41,7 @@ For label-member sandbox UAT, the GitHub Pages URL is intentionally wired to the
 ## Prerequisites
 
 - Node.js 24 LTS
-- pnpm 10.33.2, via the repo `packageManager` field
+- pnpm 10.33.4, via the repo `packageManager` field
 - Go, only for the local official `stripe-mock` launcher
 
 ## Setup

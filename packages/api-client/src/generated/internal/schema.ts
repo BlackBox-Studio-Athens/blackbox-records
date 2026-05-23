@@ -175,6 +175,15 @@ export type paths = {
                         "application/json": components["schemas"]["InternalStockDetail"];
                     };
                 };
+                /** @description Invalid variant id. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["InternalStockError"];
+                    };
+                };
                 /** @description Missing operator identity. */
                 401: {
                     headers: {
@@ -366,6 +375,15 @@ export type paths = {
                     };
                     content: {
                         "application/json": components["schemas"]["InternalStockHistoryResponse"];
+                    };
+                };
+                /** @description Invalid variant id. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["InternalStockError"];
                     };
                 };
                 /** @description Missing operator identity. */

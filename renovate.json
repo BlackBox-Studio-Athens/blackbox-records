@@ -1,6 +1,149 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
+  "extends": ["config:best-practices", "mergeConfidence:all-badges"],
+  "timezone": "Europe/Bucharest",
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "Dependency Dashboard",
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps",
+  "addLabels": ["dependencies"],
+  "prConcurrentLimit": 8,
+  "prHourlyLimit": 4,
+  "packageRules": [
+    {
+      "description": "Require dashboard approval for major updates.",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true,
+      "automerge": false,
+      "addLabels": ["major"]
+    },
+    {
+      "description": "Group Astro frontend build packages.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["astro", "@astrojs/check", "prettier-plugin-astro"],
+      "groupName": "Astro frontend build packages",
+      "groupSlug": "astro-frontend-build"
+    },
+    {
+      "description": "Group React UI runtime and type packages.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom", "@astrojs/react"],
+      "groupName": "React UI packages",
+      "groupSlug": "react-ui"
+    },
+    {
+      "description": "Group Tailwind and shadcn UI styling packages.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": [
+        "tailwindcss",
+        "@tailwindcss/vite",
+        "tailwind-merge",
+        "tw-animate-css",
+        "class-variance-authority",
+        "shadcn"
+      ],
+      "groupName": "Tailwind and shadcn packages",
+      "groupSlug": "tailwind-shadcn"
+    },
+    {
+      "description": "Group TypeScript, lint, and format packages.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": [
+        "typescript",
+        "@types/node",
+        "@eslint/js",
+        "eslint",
+        "eslint-config-prettier",
+        "eslint-import-resolver-typescript",
+        "eslint-plugin-astro",
+        "eslint-plugin-boundaries",
+        "prettier",
+        "typescript-eslint"
+      ],
+      "groupName": "TypeScript lint and format packages",
+      "groupSlug": "typescript-lint-format"
+    },
+    {
+      "description": "Keep TypeScript on the latest 5.x line until OpenAPI tooling supports TypeScript 6 peers.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<6.0.0",
+      "dependencyDashboardApproval": true,
+      "automerge": false
+    },
+    {
+      "description": "Group test and browser automation packages.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["vitest", "msw", "playwright"],
+      "groupName": "Test and browser automation packages",
+      "groupSlug": "test-browser-automation"
+    },
+    {
+      "description": "Group Cloudflare Worker runtime and test adapter packages.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": [
+        "wrangler",
+        "@cloudflare/workers-types",
+        "@cloudflare/vitest-pool-workers",
+        "@cloudflare/flagship"
+      ],
+      "groupName": "Cloudflare Worker packages",
+      "groupSlug": "cloudflare-worker",
+      "dependencyDashboardApproval": true,
+      "automerge": false,
+      "addLabels": ["runtime"]
+    },
+    {
+      "description": "Group Prisma D1 persistence packages.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["prisma", "@prisma/client", "@prisma/adapter-d1"],
+      "groupName": "Prisma D1 persistence packages",
+      "groupSlug": "prisma-d1",
+      "dependencyDashboardApproval": true,
+      "automerge": false,
+      "addLabels": ["persistence"]
+    },
+    {
+      "description": "Group backend API and commerce contract packages.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": [
+        "stripe",
+        "hono",
+        "@hono/zod-openapi",
+        "zod",
+        "openapi-typescript",
+        "openapi-typescript-fetch"
+      ],
+      "groupName": "Backend API and commerce contract packages",
+      "groupSlug": "backend-api-commerce-contracts",
+      "dependencyDashboardApproval": true,
+      "automerge": false,
+      "addLabels": ["runtime"]
+    },
+    {
+      "description": "Group local process and script runner packages.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["tsx", "execa"],
+      "groupName": "Process and script runner packages",
+      "groupSlug": "process-script-runners"
+    },
+    {
+      "description": "Group GitHub Actions and workflow runtime references.",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": [
+        "actions/checkout",
+        "actions/setup-node",
+        "actions/configure-pages",
+        "actions/deploy-pages",
+        "pnpm/action-setup",
+        "withastro/action"
+      ],
+      "groupName": "GitHub Actions workflow dependencies",
+      "groupSlug": "github-actions-workflows",
+      "dependencyDashboardApproval": true,
+      "automerge": false,
+      "addLabels": ["ci"]
+    }
   ]
 }
