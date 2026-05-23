@@ -52,10 +52,10 @@
     "depcruise:boundaries": "depcruise --config .dependency-cruiser.cjs apps/web/src apps/backend/src packages/api-client/src"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.9",
+    "@astrojs/check": "0.9.9",
     "@eslint/js": "^10.0.1",
     "@t3-oss/env-core": "^0.13.11",
-    "astro": "^6.3.7",
+    "astro": "6.3.7",
     "dependency-cruiser": "^17.4.0",
     "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",
@@ -66,7 +66,7 @@
     "knip": "^6.14.2",
     "playwright": "1.60.0",
     "prettier": "^3.8.3",
-    "prettier-plugin-astro": "^0.14.1",
+    "prettier-plugin-astro": "0.14.1",
     "tsx": "4.22.3",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.59.4",
