@@ -100,9 +100,9 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
   }
 
   return (
-    <Card className="rounded-none border-border/70 bg-[#101010] shadow-none" data-checkout-order-summary>
-      <CardContent className="grid gap-5 p-5">
-        <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-4">
+    <Card className="min-w-0 rounded-none border-border/70 bg-[#101010] shadow-none" data-checkout-order-summary>
+      <CardContent className="grid min-w-0 grid-cols-1 gap-5 p-4 sm:p-5">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4 sm:gap-4">
           <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
             {CHECKOUT_ORDER_SUMMARY_COPY.title}
           </p>
@@ -121,7 +121,10 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
 
         <div className="space-y-4">
           {lines.map((line) => (
-            <article className="grid grid-cols-[84px_1fr] gap-4" key={line.variantId}>
+            <article
+              className="grid min-w-0 grid-cols-[72px_minmax(0,1fr)] gap-3 sm:grid-cols-[84px_minmax(0,1fr)] sm:gap-4"
+              key={line.variantId}
+            >
               <div className="aspect-square overflow-hidden border border-border/70 bg-muted/20">
                 {line.image ? (
                   <img className="h-full w-full object-cover" src={line.image} alt={line.imageAlt || line.title} />
@@ -138,7 +141,7 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
                 {line.optionLabel && (
                   <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{line.optionLabel}</p>
                 )}
-                <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
                   <div className="space-y-1">
                     <p className="font-display text-2xl uppercase tracking-[0.08em] text-foreground">
                       {getCartLineTotalDisplay(line)}

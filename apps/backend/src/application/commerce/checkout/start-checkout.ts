@@ -3,7 +3,6 @@ import type {
   OrderStateRepository,
   StockRepository,
   StoreItemOptionRepository,
-  VariantStripeMappingRepository,
 } from '../../../domain/commerce/repositories/spi';
 import {
   createCartQuantity,
@@ -14,12 +13,12 @@ import {
   type VariantId,
 } from '../../../domain/commerce';
 import {
-  CheckoutConfigurationError,
   CheckoutUnavailableError,
   NativeCheckoutDisabledError,
   StoreItemNotFoundError,
   VariantMismatchError,
 } from './errors';
+import { CatalogDriftError, hasBlockingCatalogIssue, type CatalogReconciler } from '../catalog-sync';
 import { createPendingCheckoutOrder } from '../orders/create-pending-checkout-order';
 import type { CheckoutSessionLineItem, CheckoutGateway, FeatureFlagReader, HostedCheckoutSession } from './spi';
 
@@ -98,7 +97,7 @@ export async function startCheckout(
   storeItems: StoreItemOptionRepository,
   itemAvailability: ItemAvailabilityRepository,
   stock: StockRepository,
-  variantStripeMappings: VariantStripeMappingRepository,
+  catalogReconciler: Pick<CatalogReconciler, 'reconcileVariant'>,
   checkoutGateway: CheckoutGateway,
   orders: OrderStateRepository,
   command: StartCheckoutCommand,
@@ -142,16 +141,22 @@ export async function startCheckout(
       throw new CheckoutUnavailableError();
     }
 
-    const stripeMapping = await variantStripeMappings.findByVariantId(line.variantId);
+    const catalogResult = await catalogReconciler.reconcileVariant(storeItem, { apply: true });
+    const resolvedPrice = catalogResult.resolvedPrice;
 
-    if (!stripeMapping) {
-      throw new CheckoutConfigurationError();
+    if (
+      !resolvedPrice ||
+      resolvedPrice.amountMinor === null ||
+      !resolvedPrice.currencyCode ||
+      hasBlockingCatalogIssue(catalogResult.issues)
+    ) {
+      throw new CatalogDriftError();
     }
 
     validatedLines.push({
       quantity,
       storeItemSlug: line.storeItemSlug,
-      stripePriceId: stripeMapping.stripePriceId,
+      stripePriceId: resolvedPrice.priceId,
       variantId: line.variantId,
     });
   }

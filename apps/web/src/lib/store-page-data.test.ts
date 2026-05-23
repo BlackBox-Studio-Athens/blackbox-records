@@ -214,7 +214,7 @@ describe('store page data helper', () => {
     ]);
   });
 
-  it('creates a browser-safe CartLineItemSnapshot for an eligible store page', () => {
+  it('does not create a static CartLineItemSnapshot for an eligible store page', () => {
     const cartItem = createCartLineItemSnapshotForStorePage(
       {
         slug: 'disintegration-black-vinyl-lp',
@@ -235,26 +235,14 @@ describe('store page data helper', () => {
         variantId: 'variant_barren-point_standard',
         storeItemSlug: 'disintegration-black-vinyl-lp',
         optionLabel: 'Black Vinyl LP',
-        price: { amountMinor: 2800, currencyCode: 'EUR', display: 'EUR 28.00' },
+        price: { display: 'Price confirmed at checkout' },
         availability: { status: 'available', label: 'Available' },
         canBuy: true,
       },
       '/blackbox-records/_astro/disintegration.webp',
     );
 
-    expect(cartItem).toEqual({
-      availabilityLabel: 'Available',
-      image: '/blackbox-records/_astro/disintegration.webp',
-      imageAlt: 'Disintegration cover',
-      optionLabel: 'Black Vinyl LP',
-      priceAmountMinor: 2800,
-      priceCurrencyCode: 'EUR',
-      priceDisplay: 'EUR 28.00',
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      subtitle: 'Afterwise',
-      title: 'Disintegration',
-      variantId: 'variant_barren-point_standard',
-    });
+    expect(cartItem).toBeNull();
     expect(JSON.stringify(cartItem)).not.toContain('barren-point/checkout');
     expect(JSON.stringify(cartItem)).not.toContain('price_');
     expect(JSON.stringify(cartItem)).not.toContain('stockCount');
@@ -318,15 +306,21 @@ describe('store page data helper', () => {
     };
 
     expect(createCartLineItemSnapshotForStorePage(storeItem, availability, '/afterglow.webp')).toBeNull();
-    expect(createPricedCartSeedForStorePage(storeItem, availability, '/afterglow.webp')).toMatchObject({
-      priceAmountMinor: 1400,
-      priceCurrencyCode: 'EUR',
+    const seed = createPricedCartSeedForStorePage(storeItem, availability, '/afterglow.webp');
+
+    expect(seed).toMatchObject({
+      availabilityLabel: 'Sold Out',
+      image: '/afterglow.webp',
+      optionLabel: 'Cassette',
       storeItemSlug: 'afterglow-tape',
       variantId: 'variant_afterglow-tape_standard',
     });
+    expect(seed).not.toHaveProperty('priceAmountMinor');
+    expect(seed).not.toHaveProperty('priceCurrencyCode');
+    expect(seed).not.toHaveProperty('priceDisplay');
   });
 
-  it('does not create a priced cart seed for Price soon store pages', () => {
+  it('creates a metadata cart seed for Price soon store pages when a variant is known', () => {
     const storeItem = {
       slug: 'aftermaths',
       taxCategory: 'physical_goods' as const,
@@ -356,6 +350,10 @@ describe('store page data helper', () => {
         },
         '/aftermaths.webp',
       ),
-    ).toBeNull();
+    ).toMatchObject({
+      availabilityLabel: 'Unavailable',
+      storeItemSlug: 'aftermaths',
+      variantId: 'variant_aftermaths_standard',
+    });
   });
 });

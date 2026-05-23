@@ -98,9 +98,7 @@ describe('ItemAvailability adapter', () => {
         storeItemSlug: 'disintegration-black-vinyl-lp',
         optionLabel: 'Black Vinyl LP',
         price: {
-          amountMinor: 2800,
-          currencyCode: 'EUR',
-          display: '€28.00',
+          display: 'Price confirmed at checkout',
         },
         availability: {
           status: 'available',
@@ -146,24 +144,22 @@ describe('ItemAvailability adapter', () => {
     });
   });
 
-  it('exposes structured price data and a stable display label', async () => {
+  it('keeps the static availability price as a non-authoritative placeholder', async () => {
     const itemAvailability = await getPrimaryAvailabilityForStoreItem('disintegration-black-vinyl-lp');
 
     expect(itemAvailability?.price).toEqual({
-      amountMinor: 2800,
-      currencyCode: 'EUR',
-      display: '€28.00',
+      display: 'Price confirmed at checkout',
     });
   });
 
-  it('keeps Price soon out of the structured cart price path', async () => {
+  it('keeps static availability out of the structured cart price path', async () => {
     const aftermathsAvailability = await getPrimaryAvailabilityForStoreItem('aftermaths');
     const disintegrationAvailability = await getPrimaryAvailabilityForStoreItem('disintegration-black-vinyl-lp');
 
     expect(hasStructuredItemPrice(aftermathsAvailability?.price)).toBe(false);
     expect(isPricedItemAvailability(aftermathsAvailability)).toBe(false);
-    expect(hasStructuredItemPrice(disintegrationAvailability?.price)).toBe(true);
-    expect(isPricedItemAvailability(disintegrationAvailability)).toBe(true);
+    expect(hasStructuredItemPrice(disintegrationAvailability?.price)).toBe(false);
+    expect(isPricedItemAvailability(disintegrationAvailability)).toBe(false);
   });
 
   it('marks sold-out variants as unavailable to buy', async () => {

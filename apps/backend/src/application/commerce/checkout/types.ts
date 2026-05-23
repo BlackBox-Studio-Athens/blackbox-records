@@ -13,11 +13,21 @@ export type StoreOfferAvailability = {
   label: string;
 };
 
+export type StoreOfferCatalogStatus = 'catalog_drift' | 'ready' | 'sold_out';
+
+export type StoreOfferPrice = {
+  amountMinor: number;
+  currencyCode: string;
+  display: string;
+};
+
 export type StoreOffer = {
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
   availability: StoreOfferAvailability;
   canCheckout: boolean;
+  catalogStatus: StoreOfferCatalogStatus;
+  price: StoreOfferPrice | null;
 };
 
 export type HostedCheckoutSessionRequest = {

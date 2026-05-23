@@ -82,7 +82,7 @@ describe('store collection entries', () => {
 
     expect(collectionEntries[0]?.primaryAvailability).toMatchObject({
       storeItemSlug: 'disintegration-black-vinyl-lp',
-      price: { display: '€28.00' },
+      price: { display: 'Price confirmed at checkout' },
       canBuy: true,
     });
 
@@ -95,7 +95,7 @@ describe('store collection entries', () => {
 
     expect(collectionEntries[2]?.primaryAvailability).toMatchObject({
       storeItemSlug: 'afterglow-tape',
-      price: { display: '€14.00' },
+      price: { display: 'Price confirmed at checkout' },
       availability: { status: 'sold_out', label: 'Sold Out' },
       canBuy: false,
     });

@@ -145,7 +145,8 @@ describe('local mock commerce seed generator', () => {
     expect(sql).toContain('INSERT INTO "ItemAvailability"');
     expect(sql).toContain('INSERT INTO "Stock"');
     expect(sql).toContain('INSERT INTO "VariantStripeMapping"');
-    expect(sql.match(/ON CONFLICT/g)).toHaveLength(4);
+    expect(sql).toContain('INSERT INTO "StoreOfferSnapshot"');
+    expect(sql.match(/ON CONFLICT/g)).toHaveLength(5);
     expect(sql).toContain("'caregivers-vinyl'");
     expect(sql).toContain("'variant_caregivers-vinyl_standard'");
     expect(sql).toContain("'available'");
@@ -154,6 +155,8 @@ describe('local mock commerce seed generator', () => {
     expect(sql).toContain('FALSE');
     expect(sql).toContain('99');
     expect(sql).toContain("'price_mock_afterglow_tape'");
+    expect(sql).toContain("'blackbox:local:afterglow-tape:variant_afterglow-tape_standard'");
+    expect(sql).toContain("datetime('now', '+1 day')");
     expect(sql).not.toContain("'price_mock_caregivers_vinyl'");
     expect(sql).toContain('not real inventory evidence');
     expect(sql).not.toContain('price_replace_with_real_stripe_test_price');

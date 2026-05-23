@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  CheckoutConfigurationError,
+  CatalogDriftError,
   CheckoutUnavailableError,
   NativeCheckoutDisabledError,
   listVariantOffersForStoreItem,
@@ -12,6 +12,12 @@ import {
   VariantMismatchError,
 } from '../../../../src/application/commerce/checkout';
 import type { CheckoutGateway } from '../../../../src/application/commerce/checkout/spi';
+import type {
+  CatalogReconciler,
+  CatalogSyncIssue,
+  CatalogSyncVariantResult,
+  StripeCatalogPrice,
+} from '../../../../src/application/commerce/catalog-sync';
 import type {
   CheckoutOrderRecord,
   CheckoutOrderTransitionInput,
@@ -25,8 +31,6 @@ import type {
   StoreItemOptionRecord,
   StoreItemOptionRepository,
   StoreItemSourceRef,
-  VariantStripeMappingRecord,
-  VariantStripeMappingRepository,
 } from '../../../../src/domain/commerce/repositories/spi';
 import {
   cartQuantity,
@@ -87,14 +91,6 @@ class InMemoryStockRepository implements StockRepository {
     this.records.set(variantId, record);
 
     return record;
-  }
-}
-
-class InMemoryVariantStripeMappingRepository implements VariantStripeMappingRepository {
-  public readonly records = new Map<string, VariantStripeMappingRecord>();
-
-  public async findByVariantId(variantId: string): Promise<VariantStripeMappingRecord | null> {
-    return this.records.get(variantId) ?? null;
   }
 }
 
@@ -162,6 +158,77 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
   }
 }
 
+class InMemoryCatalogReconciler implements Pick<CatalogReconciler, 'reconcileVariant'> {
+  public readonly issues = new Map<string, CatalogSyncIssue[]>();
+  public readonly prices = new Map<string, StripeCatalogPrice>();
+
+  public async reconcileVariant(
+    storeItem: StoreItemOptionRecord,
+    _options: { apply?: boolean } = {},
+  ): Promise<CatalogSyncVariantResult> {
+    const resolvedPrice = this.prices.get(storeItem.variantId) ?? null;
+    const issues =
+      this.issues.get(storeItem.variantId) ??
+      (resolvedPrice
+        ? []
+        : [
+            {
+              code: 'missing_price',
+              detail: 'No active Stripe Price resolved for test variant.',
+              storeItemSlug: storeItem.storeItemSlug,
+              variantId: storeItem.variantId,
+            },
+          ]);
+
+    return {
+      actions: [],
+      issueCount: issues.length,
+      issues,
+      lookupKey: `blackbox:sandbox:${storeItem.storeItemSlug}:${storeItem.variantId}`,
+      mapping: resolvedPrice
+        ? {
+            stripePriceId: resolvedPrice.priceId,
+            variantId: storeItem.variantId,
+          }
+        : null,
+      resolvedPrice,
+      snapshot: null,
+      storeItem,
+    };
+  }
+}
+
+function createCatalogPrice(input: {
+  amountMinor?: number;
+  currencyCode?: string;
+  priceId?: string;
+  storeItem: StoreItemOptionRecord;
+}): StripeCatalogPrice {
+  return {
+    active: true,
+    amountMinor: input.amountMinor ?? 2800,
+    currencyCode: input.currencyCode ?? 'EUR',
+    lookupKey: `blackbox:sandbox:${input.storeItem.storeItemSlug}:${input.storeItem.variantId}`,
+    metadata: {
+      appEnv: 'sandbox',
+      sourceId: input.storeItem.sourceId,
+      sourceKind: input.storeItem.sourceKind,
+      storeItemSlug: input.storeItem.storeItemSlug,
+      variantId: input.storeItem.variantId,
+    },
+    priceId: stripePriceId(input.priceId ?? 'price_test_barren_point'),
+    productActive: true,
+    productId: 'prod_test_barren_point',
+    productMetadata: {
+      appEnv: 'sandbox',
+      sourceId: input.storeItem.sourceId,
+      sourceKind: input.storeItem.sourceKind,
+      storeItemSlug: input.storeItem.storeItemSlug,
+      variantId: input.storeItem.variantId,
+    },
+  };
+}
+
 describe('checkout use cases', () => {
   const storeItem: StoreItemOptionRecord = {
     sourceId: 'barren-point',
@@ -173,7 +240,7 @@ describe('checkout use cases', () => {
   let storeItems: InMemoryStoreItemOptionRepository;
   let itemAvailability: InMemoryItemAvailabilityRepository;
   let stock: InMemoryStockRepository;
-  let stripeMappings: InMemoryVariantStripeMappingRepository;
+  let catalogReconciler: InMemoryCatalogReconciler;
   let orders: InMemoryOrderStateRepository;
   let checkoutGateway: CheckoutGateway;
 
@@ -181,7 +248,7 @@ describe('checkout use cases', () => {
     storeItems = new InMemoryStoreItemOptionRepository([storeItem]);
     itemAvailability = new InMemoryItemAvailabilityRepository();
     stock = new InMemoryStockRepository();
-    stripeMappings = new InMemoryVariantStripeMappingRepository();
+    catalogReconciler = new InMemoryCatalogReconciler();
     orders = new InMemoryOrderStateRepository();
     checkoutGateway = {
       createHostedCheckoutSession: vi.fn(async () => ({
@@ -206,19 +273,24 @@ describe('checkout use cases', () => {
       onlineQuantity: 2,
       quantity: 3,
     });
-    stripeMappings.records.set(storeItem.variantId, {
-      stripePriceId: stripePriceId('price_test_barren_point'),
-      variantId: storeItem.variantId,
-    });
+    catalogReconciler.prices.set(storeItem.variantId, createCatalogPrice({ storeItem }));
   });
 
   it('reads backend-known checkout eligibility for one store item', async () => {
-    await expect(readStoreOffer(storeItems, itemAvailability, stock, storeItem.storeItemSlug)).resolves.toEqual({
+    await expect(
+      readStoreOffer(storeItems, itemAvailability, stock, catalogReconciler, storeItem.storeItemSlug),
+    ).resolves.toEqual({
       availability: {
         label: 'Available',
         status: 'available',
       },
       canCheckout: true,
+      catalogStatus: 'ready',
+      price: {
+        amountMinor: 2800,
+        currencyCode: 'EUR',
+        display: '€28.00',
+      },
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
     });
@@ -226,9 +298,10 @@ describe('checkout use cases', () => {
 
   it('returns array-shaped variant offers for future multi-variant expansion', async () => {
     await expect(
-      listVariantOffersForStoreItem(storeItems, itemAvailability, stock, storeItem.storeItemSlug),
+      listVariantOffersForStoreItem(storeItems, itemAvailability, stock, catalogReconciler, storeItem.storeItemSlug),
     ).resolves.toEqual([
       expect.objectContaining({
+        catalogStatus: 'ready',
         storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_barren-point_standard',
       }),
@@ -237,7 +310,7 @@ describe('checkout use cases', () => {
 
   it('starts checkout without a browser-selected locker for manual BOX NOW fulfillment', async () => {
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
+      startCheckout(storeItems, itemAvailability, stock, catalogReconciler, checkoutGateway, orders, {
         cancelUrl: 'https://example.com/checkout',
         successUrl: 'https://example.com/return',
         storeItemSlug: storeItem.storeItemSlug,
@@ -260,7 +333,7 @@ describe('checkout use cases', () => {
         storeItems,
         itemAvailability,
         stock,
-        stripeMappings,
+        catalogReconciler,
         checkoutGateway,
         orders,
         {
@@ -281,7 +354,7 @@ describe('checkout use cases', () => {
 
   it('rejects unknown store items before starting checkout', async () => {
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
+      startCheckout(storeItems, itemAvailability, stock, catalogReconciler, checkoutGateway, orders, {
         cancelUrl: 'https://example.com/checkout',
         successUrl: 'https://example.com/return',
         storeItemSlug: storeItemSlug('unknown'),
@@ -292,7 +365,7 @@ describe('checkout use cases', () => {
 
   it('rejects variants that do not belong to the requested store item', async () => {
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
+      startCheckout(storeItems, itemAvailability, stock, catalogReconciler, checkoutGateway, orders, {
         cancelUrl: 'https://example.com/checkout',
         successUrl: 'https://example.com/return',
         storeItemSlug: storeItem.storeItemSlug,
@@ -308,7 +381,7 @@ describe('checkout use cases', () => {
     });
 
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
+      startCheckout(storeItems, itemAvailability, stock, catalogReconciler, checkoutGateway, orders, {
         cancelUrl: 'https://example.com/checkout',
         successUrl: 'https://example.com/return',
         storeItemSlug: storeItem.storeItemSlug,
@@ -317,22 +390,22 @@ describe('checkout use cases', () => {
     ).rejects.toBeInstanceOf(CheckoutUnavailableError);
   });
 
-  it('returns a non-500 configuration error when Stripe price mapping is missing', async () => {
-    stripeMappings.records.clear();
+  it('returns a non-500 catalog drift error when Stripe price authority is missing', async () => {
+    catalogReconciler.prices.clear();
 
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
+      startCheckout(storeItems, itemAvailability, stock, catalogReconciler, checkoutGateway, orders, {
         cancelUrl: 'https://example.com/checkout',
         successUrl: 'https://example.com/return',
         storeItemSlug: storeItem.storeItemSlug,
         variantId: storeItem.variantId,
       }),
-    ).rejects.toBeInstanceOf(CheckoutConfigurationError);
+    ).rejects.toBeInstanceOf(CatalogDriftError);
   });
 
   it('starts hosted Checkout with the mapped Stripe price', async () => {
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
+      startCheckout(storeItems, itemAvailability, stock, catalogReconciler, checkoutGateway, orders, {
         cancelUrl: 'https://example.com/checkout',
         successUrl: 'https://example.com/return',
         storeItemSlug: storeItem.storeItemSlug,
@@ -368,7 +441,7 @@ describe('checkout use cases', () => {
 
   it('starts hosted Checkout with requested CartQuantity and fixed Stripe quantity', async () => {
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
+      startCheckout(storeItems, itemAvailability, stock, catalogReconciler, checkoutGateway, orders, {
         lines: [
           {
             quantity: cartQuantity(2),
@@ -411,7 +484,7 @@ describe('checkout use cases', () => {
   });
 
   it('surfaces manual BOX NOW return state without a persisted locker snapshot', async () => {
-    await startCheckout(storeItems, itemAvailability, stock, stripeMappings, checkoutGateway, orders, {
+    await startCheckout(storeItems, itemAvailability, stock, catalogReconciler, checkoutGateway, orders, {
       cancelUrl: 'https://example.com/checkout',
       successUrl: 'https://example.com/return',
       storeItemSlug: storeItem.storeItemSlug,

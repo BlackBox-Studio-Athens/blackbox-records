@@ -67,9 +67,13 @@ import {
   writeStoreCartState,
 } from '@/lib/store-cart';
 import { createStoreCartDrawerView } from './StoreCartDrawer';
-import { requestStoreCartAddItem } from './StoreItemPurchaseActions';
+import { createCartLineItemSnapshotFromWorkerOffer, requestStoreCartAddItem } from './StoreItemPurchaseActions';
 import { createCheckoutOfferView, loadCheckoutOfferState, startHostedCheckout } from './checkout-offer-status-state';
-import { createCartLineItemSnapshotForStorePage, getStorePageEntryBySlug } from '../../lib/store-page-data';
+import {
+  createCartLineItemSnapshotForStorePage,
+  createPricedCartSeedForStorePage,
+  getStorePageEntryBySlug,
+} from '../../lib/store-page-data';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -92,21 +96,27 @@ describe('store purchase happy path', () => {
         canBuy: true,
         optionLabel: 'Black Vinyl LP',
         price: {
-          amountMinor: 2800,
-          currencyCode: 'EUR',
-          display: '€28.00',
+          display: 'Price confirmed at checkout',
         },
         variantId: 'variant_barren-point_standard',
       },
     });
     expect(pageEntry).not.toBeNull();
 
-    const cartItem = createCartLineItemSnapshotForStorePage(
+    const staticCartItem = createCartLineItemSnapshotForStorePage(
       pageEntry!.storeItem,
       pageEntry!.primaryAvailability,
       readImageSrc(pageEntry!.storeItem.image),
     );
+    const cartSeed = createPricedCartSeedForStorePage(
+      pageEntry!.storeItem,
+      pageEntry!.primaryAvailability,
+      readImageSrc(pageEntry!.storeItem.image),
+    );
+    const workerOffer = createWorkerStoreOffer();
+    const cartItem = createCartLineItemSnapshotFromWorkerOffer(cartSeed, workerOffer);
 
+    expect(staticCartItem).toBeNull();
     expect(cartItem).toEqual({
       availabilityLabel: 'Available',
       image: '/disintegration.jpg',
@@ -226,6 +236,8 @@ function createMemoryStorage() {
 }
 
 function createCheckoutFetchStub() {
+  const workerOffer = createWorkerStoreOffer();
+
   return vi.fn(async (url: string, init?: RequestInit) => {
     if (url === '/api/store/capabilities') {
       return jsonResponse({
@@ -237,29 +249,11 @@ function createCheckoutFetchStub() {
     }
 
     if (url === '/api/store/items/disintegration-black-vinyl-lp') {
-      return jsonResponse({
-        availability: {
-          label: 'Available',
-          status: 'available',
-        },
-        canCheckout: true,
-        storeItemSlug: 'disintegration-black-vinyl-lp',
-        variantId: 'variant_barren-point_standard',
-      });
+      return jsonResponse(workerOffer);
     }
 
     if (url === '/api/store/items/disintegration-black-vinyl-lp/variants') {
-      return jsonResponse([
-        {
-          availability: {
-            label: 'Available',
-            status: 'available',
-          },
-          canCheckout: true,
-          storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_barren-point_standard',
-        },
-      ]);
+      return jsonResponse([workerOffer]);
     }
 
     if (url === '/api/checkout/sessions' && init?.method === 'POST') {
@@ -270,6 +264,24 @@ function createCheckoutFetchStub() {
 
     return jsonResponse({ error: `Unhandled request: ${url}` }, 404);
   });
+}
+
+function createWorkerStoreOffer() {
+  return {
+    availability: {
+      label: 'Available',
+      status: 'available' as const,
+    },
+    canCheckout: true,
+    catalogStatus: 'ready' as const,
+    price: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+      display: '€28.00',
+    },
+    storeItemSlug: 'disintegration-black-vinyl-lp',
+    variantId: 'variant_barren-point_standard',
+  };
 }
 
 function jsonResponse(body: unknown, status = 200) {

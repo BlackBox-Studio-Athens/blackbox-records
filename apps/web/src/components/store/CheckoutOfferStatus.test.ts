@@ -13,7 +13,11 @@ import {
   STRIPE_CHECKOUT_BADGE_SRC,
   STRIPE_CHECKOUT_CTA_COPY,
 } from './CheckoutOfferStatus';
-import { PublicCheckoutApiError, type PublicCheckoutApi } from '../../lib/backend/public-checkout-api';
+import {
+  PublicCheckoutApiError,
+  type PublicCheckoutApi,
+  type PublicStoreOffer,
+} from '../../lib/backend/public-checkout-api';
 import { createCartQuantity, type CartLineItemSnapshot } from '../../lib/store-cart';
 
 const initialAvailability: CheckoutOfferInitialAvailability = {
@@ -29,6 +33,50 @@ const enabledStoreCapabilities = {
     unavailableReason: null,
   },
 };
+
+const workerOfferPrice = {
+  amountMinor: 2800,
+  currencyCode: 'EUR',
+  display: '€28.00',
+};
+
+function createReadyStoreOffer(overrides: Partial<PublicStoreOffer> = {}): PublicStoreOffer {
+  const offer: PublicStoreOffer = {
+    availability: {
+      label: 'Available',
+      status: 'available',
+    },
+    canCheckout: true,
+    catalogStatus: 'ready',
+    price: workerOfferPrice,
+    storeItemSlug: 'disintegration-black-vinyl-lp',
+    variantId: 'variant_barren-point_standard',
+  };
+
+  return {
+    ...offer,
+    ...overrides,
+  };
+}
+
+function createUnavailableStoreOffer(overrides: Partial<PublicStoreOffer> = {}): PublicStoreOffer {
+  const offer: PublicStoreOffer = {
+    availability: {
+      label: 'Sold Out',
+      status: 'sold_out',
+    },
+    canCheckout: false,
+    catalogStatus: 'sold_out',
+    price: null,
+    storeItemSlug: 'afterglow-tape',
+    variantId: 'variant_afterglow-tape_standard',
+  };
+
+  return {
+    ...offer,
+    ...overrides,
+  };
+}
 
 const cartItem: CartLineItemSnapshot = {
   availabilityLabel: 'Available',
@@ -93,26 +141,8 @@ describe('CheckoutOfferStatus helpers', () => {
     const api: PublicCheckoutApi = {
       readStoreCapabilities: vi.fn(async () => enabledStoreCapabilities),
       readCheckoutState: vi.fn(),
-      readStoreOffer: vi.fn(async () => ({
-        availability: {
-          label: 'Available',
-          status: 'available' as const,
-        },
-        canCheckout: true,
-        storeItemSlug: 'disintegration-black-vinyl-lp',
-        variantId: 'variant_barren-point_standard',
-      })),
-      readStoreOfferVariants: vi.fn(async () => [
-        {
-          availability: {
-            label: 'Available',
-            status: 'available' as const,
-          },
-          canCheckout: true,
-          storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_barren-point_standard',
-        },
-      ]),
+      readStoreOffer: vi.fn(async () => createReadyStoreOffer()),
+      readStoreOfferVariants: vi.fn(async () => [createReadyStoreOffer()]),
       startCheckout: vi.fn(),
     };
 
@@ -136,26 +166,8 @@ describe('CheckoutOfferStatus helpers', () => {
       createCheckoutOfferView({
         kind: 'ready',
         capabilities: enabledStoreCapabilities,
-        offer: {
-          availability: {
-            label: 'Available',
-            status: 'available',
-          },
-          canCheckout: true,
-          storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_barren-point_standard',
-        },
-        variants: [
-          {
-            availability: {
-              label: 'Available',
-              status: 'available',
-            },
-            canCheckout: true,
-            storeItemSlug: 'disintegration-black-vinyl-lp',
-            variantId: 'variant_barren-point_standard',
-          },
-        ],
+        offer: createReadyStoreOffer(),
+        variants: [createReadyStoreOffer()],
       }),
     ).toEqual({
       badgeLabel: 'Checkout ready',
@@ -178,26 +190,8 @@ describe('CheckoutOfferStatus helpers', () => {
             unavailableReason: 'Native checkout is temporarily unavailable.',
           },
         },
-        offer: {
-          availability: {
-            label: 'Available',
-            status: 'available',
-          },
-          canCheckout: true,
-          storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_barren-point_standard',
-        },
-        variants: [
-          {
-            availability: {
-              label: 'Available',
-              status: 'available',
-            },
-            canCheckout: true,
-            storeItemSlug: 'disintegration-black-vinyl-lp',
-            variantId: 'variant_barren-point_standard',
-          },
-        ],
+        offer: createReadyStoreOffer(),
+        variants: [createReadyStoreOffer()],
       }),
     ).toEqual({
       badgeLabel: 'Checkout paused',
@@ -215,15 +209,7 @@ describe('CheckoutOfferStatus helpers', () => {
       createCheckoutOfferView({
         kind: 'ready',
         capabilities: enabledStoreCapabilities,
-        offer: {
-          availability: {
-            label: 'Sold Out',
-            status: 'sold_out',
-          },
-          canCheckout: false,
-          storeItemSlug: 'afterglow-tape',
-          variantId: 'variant_afterglow-tape_standard',
-        },
+        offer: createUnavailableStoreOffer(),
         variants: [],
       }),
     ).toMatchObject({
@@ -304,15 +290,7 @@ describe('CheckoutOfferStatus helpers', () => {
       createCheckoutOfferView({
         kind: 'ready',
         capabilities: enabledStoreCapabilities,
-        offer: {
-          availability: {
-            label: 'Available',
-            status: 'available',
-          },
-          canCheckout: true,
-          storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: '',
-        },
+        offer: createReadyStoreOffer({ variantId: '' }),
         variants: [],
       }),
     ).toMatchObject({
@@ -329,26 +307,8 @@ describe('CheckoutOfferStatus helpers', () => {
     const readyView = createCheckoutOfferView({
       kind: 'ready',
       capabilities: enabledStoreCapabilities,
-      offer: {
-        availability: {
-          label: 'Available',
-          status: 'available',
-        },
-        canCheckout: true,
-        storeItemSlug: 'disintegration-black-vinyl-lp',
-        variantId: 'variant_barren-point_standard',
-      },
-      variants: [
-        {
-          availability: {
-            label: 'Available',
-            status: 'available',
-          },
-          canCheckout: true,
-          storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_barren-point_standard',
-        },
-      ],
+      offer: createReadyStoreOffer(),
+      variants: [createReadyStoreOffer()],
     });
     const copy = [readyView.badgeLabel, readyView.detail, readyView.statusLabel].join(' ');
 

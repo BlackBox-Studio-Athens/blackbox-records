@@ -5,6 +5,7 @@ export {
   StoreItemNotFoundError,
   VariantMismatchError,
 } from './errors';
+export { CatalogDriftError } from '../catalog-sync';
 export { NATIVE_CHECKOUT_DISABLED_MESSAGE, readStoreCapabilities } from './feature-gates';
 export { listVariantOffersForStoreItem, readStoreOffer } from './read-store-offer';
 export { readCheckoutState } from './read-checkout-state';

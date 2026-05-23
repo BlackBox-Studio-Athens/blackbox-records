@@ -119,7 +119,8 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
 
       if (
         error instanceof services.errors.CheckoutUnavailableError ||
-        error instanceof services.errors.CheckoutConfigurationError
+        error instanceof services.errors.CheckoutConfigurationError ||
+        error instanceof services.errors.CatalogDriftError
       ) {
         return context.json({ error: error.message }, 409);
       }

@@ -77,12 +77,30 @@ export default function CheckoutReturnStatus({ api, checkoutPath, itemPath, stor
     clearStoreCartAfterPaidCheckout();
   }, [loadState]);
 
+  if (loadState.kind === 'loading') {
+    return <CheckoutReturnPendingStatus />;
+  }
+
   if (view.isFinal) {
     return <CheckoutSuccessScreen storePath={storePath} view={view} />;
   }
 
   return (
     <CheckoutReturnStatusScreen checkoutPath={checkoutPath} itemPath={itemPath} storePath={storePath} view={view} />
+  );
+}
+
+function CheckoutReturnPendingStatus() {
+  return (
+    <section
+      className="mx-auto min-h-[22rem] max-w-5xl"
+      data-checkout-return-status
+      data-checkout-return-pending
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <p className="sr-only">Confirming payment status.</p>
+    </section>
   );
 }
 

@@ -1,10 +1,5 @@
 import { getStoreItemBySlug, listStoreItems, type StoreItem } from './catalog-data';
-import {
-  getPrimaryAvailabilityForStoreItem,
-  hasStructuredItemPrice,
-  isPricedItemAvailability,
-  type ItemAvailability,
-} from './item-availability';
+import { getPrimaryAvailabilityForStoreItem, type ItemAvailability } from './item-availability';
 import type { CartLineItemSnapshot } from './store-cart';
 
 export type StorePageEntry = {
@@ -12,7 +7,10 @@ export type StorePageEntry = {
   primaryAvailability: ItemAvailability | null;
 };
 
-export type StorePagePricedCartSeed = Omit<CartLineItemSnapshot, 'availabilityLabel' | 'variantId'> & {
+export type StorePagePricedCartSeed = Omit<
+  CartLineItemSnapshot,
+  'availabilityLabel' | 'priceAmountMinor' | 'priceCurrencyCode' | 'priceDisplay' | 'variantId'
+> & {
   availabilityLabel: string;
   variantId: string | null;
 };
@@ -35,23 +33,11 @@ export function createCartLineItemSnapshotForStorePage(
   primaryAvailability: ItemAvailability | null,
   image: string | null,
 ): CartLineItemSnapshot | null {
-  if (!isPricedItemAvailability(primaryAvailability)) {
-    return null;
-  }
+  void storeItem;
+  void primaryAvailability;
+  void image;
 
-  return {
-    availabilityLabel: primaryAvailability.availability.label,
-    image,
-    imageAlt: storeItem.imageAlt,
-    optionLabel: primaryAvailability.optionLabel,
-    priceAmountMinor: primaryAvailability.price.amountMinor,
-    priceCurrencyCode: primaryAvailability.price.currencyCode,
-    priceDisplay: primaryAvailability.price.display,
-    storeItemSlug: storeItem.slug,
-    subtitle: storeItem.subtitle,
-    title: storeItem.title,
-    variantId: primaryAvailability.variantId,
-  };
+  return null;
 }
 
 export function createPricedCartSeedForStorePage(
@@ -59,7 +45,7 @@ export function createPricedCartSeedForStorePage(
   primaryAvailability: ItemAvailability | null,
   image: string | null,
 ): StorePagePricedCartSeed | null {
-  if (!primaryAvailability || !hasStructuredItemPrice(primaryAvailability.price)) {
+  if (!primaryAvailability?.variantId) {
     return null;
   }
 
@@ -68,9 +54,6 @@ export function createPricedCartSeedForStorePage(
     image,
     imageAlt: storeItem.imageAlt,
     optionLabel: primaryAvailability.optionLabel,
-    priceAmountMinor: primaryAvailability.price.amountMinor,
-    priceCurrencyCode: primaryAvailability.price.currencyCode,
-    priceDisplay: primaryAvailability.price.display,
     storeItemSlug: storeItem.slug,
     subtitle: storeItem.subtitle,
     title: storeItem.title,

@@ -19,7 +19,7 @@ export type BuyableItemAvailability = {
   variantId: string;
   storeItemSlug: StoreItemSlug;
   optionLabel: string | null;
-  price: ItemPrice;
+  price: PendingItemPrice;
   availability: {
     status: 'available';
     label: string;
@@ -49,9 +49,7 @@ const availabilityByStoreItemSlug: Record<StoreItemSlug, ItemAvailability[]> = {
       storeItemSlug: 'disintegration-black-vinyl-lp',
       optionLabel: 'Black Vinyl LP',
       price: {
-        amountMinor: 2800,
-        currencyCode: 'EUR',
-        display: '€28.00',
+        display: 'Price confirmed at checkout',
       },
       availability: {
         status: 'available',
@@ -66,9 +64,7 @@ const availabilityByStoreItemSlug: Record<StoreItemSlug, ItemAvailability[]> = {
       storeItemSlug: 'afterglow-tape',
       optionLabel: 'Cassette',
       price: {
-        amountMinor: 1400,
-        currencyCode: 'EUR',
-        display: '€14.00',
+        display: 'Price confirmed at checkout',
       },
       availability: {
         status: 'sold_out',

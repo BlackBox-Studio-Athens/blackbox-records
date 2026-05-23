@@ -25,10 +25,20 @@ const offerAvailabilitySchema = z
   })
   .openapi('PublicStoreOfferAvailability');
 
+const offerPriceSchema = z
+  .object({
+    amountMinor: z.number().int().nonnegative(),
+    currencyCode: z.string().trim().length(3),
+    display: z.string(),
+  })
+  .openapi('PublicStoreOfferPrice');
+
 const storeOfferSchema = z
   .object({
     availability: offerAvailabilitySchema,
     canCheckout: z.boolean(),
+    catalogStatus: z.enum(['catalog_drift', 'ready', 'sold_out']),
+    price: z.union([offerPriceSchema, z.null()]),
     storeItemSlug: z.string(),
     variantId: z.string(),
   })

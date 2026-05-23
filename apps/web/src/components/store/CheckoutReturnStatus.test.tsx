@@ -219,7 +219,7 @@ describe('CheckoutReturnStatus', () => {
     expect(updated).toHaveBeenCalledTimes(1);
   });
 
-  it('renders loading state actions without raw Stripe or implementation labels', () => {
+  it('keeps initial checkout resolution visually quiet before a final or recovery state renders', () => {
     const html = renderToStaticMarkup(
       <CheckoutReturnStatus
         checkoutPath="/blackbox-records/store/disintegration-black-vinyl-lp/checkout/"
@@ -231,11 +231,15 @@ describe('CheckoutReturnStatus', () => {
       />,
     );
 
-    expect(html).toContain('Payment Status');
-    expect(html).toContain(CHECKOUT_RETURN_ACTION_COPY.retryCheckout);
-    expect(html).toContain(CHECKOUT_RETURN_ACTION_COPY.backToCart);
-    expect(html).toContain(CHECKOUT_RETURN_ACTION_COPY.backToItem);
-    expect(html).toContain(CHECKOUT_RETURN_ACTION_COPY.continueShopping);
+    expect(html).toContain('data-checkout-return-pending');
+    expect(html).toContain('aria-busy="true"');
+    expect(html).toContain('Confirming payment status.');
+    expect(html).not.toContain('Payment Status');
+    expect(html).not.toContain('Confirming Payment');
+    expect(html).not.toContain(CHECKOUT_RETURN_ACTION_COPY.retryCheckout);
+    expect(html).not.toContain(CHECKOUT_RETURN_ACTION_COPY.backToCart);
+    expect(html).not.toContain(CHECKOUT_RETURN_ACTION_COPY.backToItem);
+    expect(html).not.toContain(CHECKOUT_RETURN_ACTION_COPY.continueShopping);
     expect(html).not.toContain('redirect_status');
     expect(html).not.toContain('payment_intent');
     expect(html).not.toContain('StartCheckout');

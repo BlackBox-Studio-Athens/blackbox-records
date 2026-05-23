@@ -32,6 +32,10 @@ const releaseVariantIdByReleaseId: Record<string, string> = {
   'barren-point': 'variant_barren-point_standard',
 };
 const mockCheckoutStoreItemSlugs = new Set(['afterglow-tape', 'disintegration-black-vinyl-lp']);
+const mockStoreOfferPricesBySlug = new Map([
+  ['afterglow-tape', { amountMinor: 1400, currencyCode: 'EUR' }],
+  ['disintegration-black-vinyl-lp', { amountMinor: 2800, currencyCode: 'EUR' }],
+]);
 
 const mockQuantity = 99;
 
@@ -105,6 +109,7 @@ export function createLocalMockCommerceSql(storeItems: LocalMockStoreItem[]): st
     createItemAvailabilitySql(storeItems),
     createStockSql(storeItems),
     createVariantStripeMappingSql(storeItems),
+    createStoreOfferSnapshotSql(storeItems),
     '',
   ].join('\n\n');
 }
@@ -263,12 +268,77 @@ function createVariantStripeMappingSql(storeItems: LocalMockStoreItem[]): string
   ].join('\n');
 }
 
+function createStoreOfferSnapshotSql(storeItems: LocalMockStoreItem[]): string {
+  const checkoutEnabledStoreItems = storeItems.filter((storeItem) => storeItem.mockCheckoutEnabled);
+  if (checkoutEnabledStoreItems.length === 0) {
+    return '';
+  }
+
+  return [
+    'INSERT INTO "StoreOfferSnapshot" (',
+    '    "id",',
+    '    "storeItemSlug",',
+    '    "variantId",',
+    '    "stripePriceId",',
+    '    "stripeLookupKey",',
+    '    "amountMinor",',
+    '    "currencyCode",',
+    '    "priceActive",',
+    '    "productActive",',
+    '    "syncedAt",',
+    '    "freshUntil",',
+    '    "createdAt",',
+    '    "updatedAt"',
+    ')',
+    'VALUES',
+    checkoutEnabledStoreItems
+      .map((storeItem) => {
+        const price = mockStoreOfferPricesBySlug.get(storeItem.storeItemSlug) ?? {
+          amountMinor: 0,
+          currencyCode: 'EUR',
+        };
+
+        return formatValues([
+          `store_offer_snapshot_${toSqlIdFragment(storeItem.storeItemSlug)}_mock`,
+          storeItem.storeItemSlug,
+          storeItem.variantId,
+          createMockStripePriceId(storeItem.storeItemSlug),
+          `blackbox:local:${storeItem.storeItemSlug}:${storeItem.variantId}`,
+          price.amountMinor,
+          price.currencyCode,
+          true,
+          true,
+          'CURRENT_TIMESTAMP',
+          "datetime('now', '+1 day')",
+          'CURRENT_TIMESTAMP',
+          'CURRENT_TIMESTAMP',
+        ]);
+      })
+      .join(',\n'),
+    'ON CONFLICT("variantId") DO UPDATE SET',
+    '    "storeItemSlug" = excluded."storeItemSlug",',
+    '    "stripePriceId" = excluded."stripePriceId",',
+    '    "stripeLookupKey" = excluded."stripeLookupKey",',
+    '    "amountMinor" = excluded."amountMinor",',
+    '    "currencyCode" = excluded."currencyCode",',
+    '    "priceActive" = excluded."priceActive",',
+    '    "productActive" = excluded."productActive",',
+    '    "syncedAt" = CURRENT_TIMESTAMP,',
+    "    \"freshUntil\" = datetime('now', '+1 day'),",
+    '    "updatedAt" = CURRENT_TIMESTAMP;',
+  ].join('\n');
+}
+
 function formatValues(values: Array<boolean | number | string>): string {
   return `    (${values.map(formatSqlValue).join(', ')})`;
 }
 
 function formatSqlValue(value: boolean | number | string): string {
   if (value === 'CURRENT_TIMESTAMP') {
+    return value;
+  }
+
+  if (value === "datetime('now', '+1 day')") {
     return value;
   }
 

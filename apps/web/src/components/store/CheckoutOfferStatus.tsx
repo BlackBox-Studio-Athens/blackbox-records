@@ -17,9 +17,11 @@ import {
 import CheckoutShippingStep from './CheckoutShippingStep';
 import { CHECKOUT_CART_UPDATED_EVENT } from './CheckoutOrderSummary';
 import { createCheckoutShippingGateView } from './checkout-shipping-step-state';
+import { createCartLineItemSnapshotFromWorkerOffer, type StoreItemCartSeed } from './StoreItemPurchaseActions';
 
 interface CheckoutOfferStatusProps {
   checkoutClientMode?: string;
+  fallbackCartSeed?: StoreItemCartSeed | null;
   fallbackLineItem?: CartLineItemSnapshot | null;
   initialAvailability: CheckoutOfferInitialAvailability;
   storeItemSlug: string;
@@ -69,6 +71,7 @@ export function createCheckoutCartItemSummary(
 export default function CheckoutOfferStatus({
   api,
   checkoutClientMode = import.meta.env.PUBLIC_CHECKOUT_CLIENT_MODE,
+  fallbackCartSeed = null,
   fallbackLineItem = null,
   initialAvailability,
   storeItemSlug,
@@ -77,10 +80,11 @@ export default function CheckoutOfferStatus({
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
-  const itemSummary = createCheckoutCartItemSummary(cartLines, fallbackLineItem);
+  const [workerFallbackLineItem, setWorkerFallbackLineItem] = useState<CartLineItemSnapshot | null>(fallbackLineItem);
+  const itemSummary = createCheckoutCartItemSummary(cartLines, workerFallbackLineItem);
   const ctaView = createStripeCheckoutCtaView(isStartingCheckout);
   const shippingGateView = createCheckoutShippingGateView(checkoutClientMode);
-  const hasCheckoutLine = cartLines.length > 0 || Boolean(fallbackLineItem);
+  const hasCheckoutLine = cartLines.length > 0 || Boolean(workerFallbackLineItem);
 
   useEffect(() => {
     let isActive = true;
@@ -91,6 +95,11 @@ export default function CheckoutOfferStatus({
 
       if (isActive) {
         setView(createCheckoutOfferView(loadState));
+        setWorkerFallbackLineItem(
+          loadState.kind === 'ready'
+            ? (createCartLineItemSnapshotFromWorkerOffer(fallbackCartSeed, loadState.offer) ?? fallbackLineItem)
+            : fallbackLineItem,
+        );
       }
     }
 
@@ -99,7 +108,7 @@ export default function CheckoutOfferStatus({
     return () => {
       isActive = false;
     };
-  }, [api, storeItemSlug]);
+  }, [api, fallbackCartSeed, fallbackLineItem, storeItemSlug]);
 
   useEffect(() => {
     function syncCartState() {
@@ -129,7 +138,7 @@ export default function CheckoutOfferStatus({
     }
 
     const currentCartLines = readStoreCartState(window.localStorage).lines;
-    if (currentCartLines.length === 0 && !fallbackLineItem) {
+    if (currentCartLines.length === 0 && !workerFallbackLineItem) {
       setCheckoutError('Add a priced item to the cart before checkout.');
       return;
     }
@@ -158,13 +167,13 @@ export default function CheckoutOfferStatus({
   }
 
   return (
-    <div className="space-y-5" data-checkout-offer-status>
+    <div className="min-w-0 space-y-5" data-checkout-offer-status>
       <CheckoutShippingStep checkoutClientMode={checkoutClientMode} />
 
-      <Card className="rounded-none border-border/70 bg-[#111111] shadow-none">
-        <CardContent className="grid gap-5 p-5 sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/60 pb-5">
-            <div className="max-w-xl space-y-2">
+      <Card className="min-w-0 rounded-none border-border/70 bg-[#111111] shadow-none">
+        <CardContent className="grid min-w-0 grid-cols-1 gap-5 p-5 sm:p-6">
+          <div className="flex min-w-0 flex-wrap items-start justify-between gap-4 border-b border-border/60 pb-5">
+            <div className="min-w-0 max-w-full space-y-2">
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Payment</p>
               <h3 className="font-display text-3xl uppercase tracking-[0.08em] text-foreground sm:text-4xl">
                 Review and Pay
@@ -187,12 +196,12 @@ export default function CheckoutOfferStatus({
             </Badge>
           </div>
 
-          <div className="grid gap-px border border-border/70 bg-border/70 sm:grid-cols-2">
-            <div className="bg-background/85 px-4 py-3">
+          <div className="grid min-w-0 grid-cols-1 gap-px border border-border/70 bg-border/70 sm:grid-cols-2">
+            <div className="min-w-0 bg-background/85 px-4 py-3">
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{itemSummary.label}</p>
               <p className="text-xs uppercase tracking-[0.16em] text-foreground">{itemSummary.value}</p>
             </div>
-            <div className="bg-background/85 px-4 py-3">
+            <div className="min-w-0 bg-background/85 px-4 py-3">
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Shipping</p>
               <p className="text-xs uppercase tracking-[0.16em] text-foreground">Greece only</p>
             </div>
@@ -205,7 +214,7 @@ export default function CheckoutOfferStatus({
               <Button
                 type="button"
                 size="lg"
-                className="inline-flex w-full gap-3 rounded-none uppercase tracking-[0.16em] sm:w-auto sm:min-w-72"
+                className="inline-flex h-auto min-h-11 w-full flex-wrap gap-2 rounded-none px-4 py-3 text-center uppercase tracking-[0.16em] whitespace-normal sm:w-auto sm:min-w-72 sm:flex-nowrap sm:gap-3 sm:px-6"
                 disabled={isStartingCheckout}
                 onClick={() => {
                   void handleStartCheckout();
@@ -213,8 +222,8 @@ export default function CheckoutOfferStatus({
               >
                 {ctaView.badgeSrc ? (
                   <>
-                    <span>{ctaView.label}</span>
-                    <img className="h-[18px] w-auto" src={ctaView.badgeSrc} alt="" aria-hidden="true" />
+                    <span className="min-w-0 leading-tight">{ctaView.label}</span>
+                    <img className="h-[18px] w-auto shrink-0" src={ctaView.badgeSrc} alt="" aria-hidden="true" />
                   </>
                 ) : (
                   ctaView.label

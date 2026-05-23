@@ -4,9 +4,15 @@ import type {
   StoreItemOptionRepository,
 } from '../../../domain/commerce/repositories/spi';
 import { parseStoreItemSlug, type StoreItemSlug, type VariantId } from '../../../domain/commerce';
+import { createStoreOfferPrice, hasBlockingCatalogIssue, type CatalogReconciler } from '../catalog-sync';
 import type { StoreOffer } from './types';
 
-function unavailableOffer(storeItemSlug: StoreItemSlug, variantId: VariantId, label: string): StoreOffer {
+function unavailableOffer(
+  storeItemSlug: StoreItemSlug,
+  variantId: VariantId,
+  label: string,
+  catalogStatus: StoreOffer['catalogStatus'] = 'sold_out',
+): StoreOffer {
   return {
     storeItemSlug,
     variantId,
@@ -15,6 +21,8 @@ function unavailableOffer(storeItemSlug: StoreItemSlug, variantId: VariantId, la
       label,
     },
     canCheckout: false,
+    catalogStatus,
+    price: null,
   };
 }
 
@@ -22,6 +30,7 @@ export async function readStoreOffer(
   storeItems: StoreItemOptionRepository,
   itemAvailability: ItemAvailabilityRepository,
   stock: StockRepository,
+  catalogReconciler: Pick<CatalogReconciler, 'reconcileVariant'>,
   storeItemSlug: unknown,
 ): Promise<StoreOffer | null> {
   const parsedStoreItemSlug = parseStoreItemSlug(storeItemSlug);
@@ -47,6 +56,18 @@ export async function readStoreOffer(
     return unavailableOffer(storeItem.storeItemSlug, storeItem.variantId, 'Sold Out');
   }
 
+  const catalogResult = await catalogReconciler.reconcileVariant(storeItem, { apply: true });
+  const resolvedPrice = catalogResult.resolvedPrice;
+
+  if (
+    !resolvedPrice ||
+    resolvedPrice.amountMinor === null ||
+    !resolvedPrice.currencyCode ||
+    hasBlockingCatalogIssue(catalogResult.issues)
+  ) {
+    return unavailableOffer(storeItem.storeItemSlug, storeItem.variantId, 'Checkout Paused', 'catalog_drift');
+  }
+
   return {
     storeItemSlug: storeItem.storeItemSlug,
     variantId: storeItem.variantId,
@@ -55,6 +76,11 @@ export async function readStoreOffer(
       label: 'Available',
     },
     canCheckout: true,
+    catalogStatus: 'ready',
+    price: createStoreOfferPrice({
+      amountMinor: resolvedPrice.amountMinor,
+      currencyCode: resolvedPrice.currencyCode,
+    }),
   };
 }
 
@@ -62,9 +88,10 @@ export async function listVariantOffersForStoreItem(
   storeItems: StoreItemOptionRepository,
   itemAvailability: ItemAvailabilityRepository,
   stock: StockRepository,
+  catalogReconciler: Pick<CatalogReconciler, 'reconcileVariant'>,
   storeItemSlug: unknown,
 ): Promise<StoreOffer[] | null> {
-  const offer = await readStoreOffer(storeItems, itemAvailability, stock, storeItemSlug);
+  const offer = await readStoreOffer(storeItems, itemAvailability, stock, catalogReconciler, storeItemSlug);
 
   return offer ? [offer] : null;
 }

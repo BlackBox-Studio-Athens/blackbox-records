@@ -8,7 +8,10 @@ import {
 } from '@/lib/backend/public-checkout-api';
 import { STORE_CART_ADD_ITEM_EVENT, type CartLineItemSnapshot } from '@/lib/store-cart';
 
-export type StoreItemCartSeed = Omit<CartLineItemSnapshot, 'availabilityLabel' | 'variantId'> & {
+export type StoreItemCartSeed = Omit<
+  CartLineItemSnapshot,
+  'availabilityLabel' | 'priceAmountMinor' | 'priceCurrencyCode' | 'priceDisplay' | 'variantId'
+> & {
   availabilityLabel: string;
   variantId: string | null;
 };
@@ -37,13 +40,16 @@ export function createCartLineItemSnapshotFromWorkerOffer(
   cartSeed: StoreItemCartSeed | null,
   offer: PublicStoreOffer,
 ): CartLineItemSnapshot | null {
-  if (!cartSeed || !offer.canCheckout || !offer.variantId.trim()) {
+  if (!cartSeed || !offer.canCheckout || !offer.variantId.trim() || !offer.price) {
     return null;
   }
 
   return {
     ...cartSeed,
     availabilityLabel: offer.availability.label,
+    priceAmountMinor: offer.price.amountMinor,
+    priceCurrencyCode: offer.price.currencyCode,
+    priceDisplay: offer.price.display,
     storeItemSlug: offer.storeItemSlug,
     variantId: offer.variantId,
   };

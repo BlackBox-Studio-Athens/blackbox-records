@@ -14,13 +14,13 @@ export default function CheckoutShippingStep({ checkoutClientMode }: CheckoutShi
 
   return (
     <Card
-      className="rounded-none border-border/70 bg-[#111111] shadow-none"
+      className="min-w-0 rounded-none border-border/70 bg-[#111111] shadow-none"
       data-checkout-shipping-step
       data-checkout-shipping-ready={view.canContinueToPayment ? 'true' : 'false'}
     >
-      <CardContent className="grid gap-4 p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-xl space-y-2">
+      <CardContent className="grid min-w-0 grid-cols-1 gap-4 p-5">
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 max-w-full space-y-2">
             <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Shipping</p>
             <h3 className="font-display text-2xl uppercase tracking-[0.08em] text-foreground sm:text-3xl">
               {view.title}

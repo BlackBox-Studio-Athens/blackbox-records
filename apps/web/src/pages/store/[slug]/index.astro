@@ -25,7 +25,7 @@ interface Props {
 const { entry } = Astro.props;
 const { storeItem, primaryAvailability } = entry;
 const metadataLabel = storeItem.metadata.join(' · ');
-const priceLabel = primaryAvailability?.price.display || 'Price soon';
+const priceLabel = 'Worker-confirmed at checkout';
 const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
 const itemTypeLabel = storeItem.sourceKind === 'release' ? 'Release' : 'Item';
 const canBuy = primaryAvailability?.canBuy ?? false;
