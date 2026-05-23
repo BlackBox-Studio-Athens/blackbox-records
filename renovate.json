@@ -129,6 +129,15 @@
       "groupSlug": "process-script-runners"
     },
     {
+      "description": "Keep checkout on v5 until v6 credential handling is proven green on GitHub-hosted runners.",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["actions/checkout"],
+      "allowedVersions": "<6.0.0",
+      "dependencyDashboardApproval": true,
+      "automerge": false,
+      "addLabels": ["ci"]
+    },
+    {
       "description": "Group GitHub Actions and workflow runtime references.",
       "matchManagers": ["github-actions"],
       "matchPackageNames": [
