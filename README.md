@@ -405,7 +405,7 @@ pnpm audit:commerce-boundaries
   - `locker_name_or_label`
 - Do not persist raw BOX NOW widget/API payloads, unapproved address or locker payload dumps, coordinates, voucher IDs, label URLs, tracking automation state, or partner-portal credentials in v1.
 - Any future BOX NOW automation must use `C:\Users\SVall\WebstormProjects\boxnow-js`; do not add a bespoke BOX NOW client here.
-- Operator handoff and local validation steps live in `.planning/phases/09-greece-only-box-now-shipping/09-MANUAL-FULFILLMENT.md`.
+- Operator handoff and local validation requirements live in `openspec/specs/shipping-fulfillment/spec.md`.
 - Astro may render the shopper-facing shipping step, but the Worker owns checkout preflight, validation, order state, secrets, and any future BOX NOW server integration.
 
 ## D1 migration workflow
@@ -529,7 +529,7 @@ CI/deploy credentials and public build variables:
 - The Worker remains separate and owns `/api/*`, Stripe secrets, webhooks, D1, stock operations, order state, and future BOX NOW work.
 - Do not introduce Pages Functions, SSR, D1 access, backend routes, or runtime business secrets into the Pages project.
 - Browser-safe Pages variables are limited to `PUBLIC_BACKEND_BASE_URL` and non-production `PUBLIC_CHECKOUT_CLIENT_MODE` only when deliberately testing mock mode outside production.
-- Required CI/project names are documented in `.planning/phases/07.1-cloudflare-pages-static-frontend-migration/07.1-CLOUDFLARE-PAGES-CONTRACT.md`; account-specific IDs, tokens, and domains stay out of git.
+- Required CI/project names are documented in `openspec/specs/static-site-and-deployment/spec.md`; account-specific IDs, tokens, and domains stay out of git.
 
 ## Content model
 

@@ -105,8 +105,8 @@ default_modes:
 # initial prompt for the project. It will always be given to the LLM upon activating the project
 # (contrary to the memories, which are loaded on demand).
 initial_prompt: >-
-  This is the BlackBox Records pnpm workspace. Use the GSD planning docs as the
-  source of truth for implementation order and preserve the architecture
+  This is the BlackBox Records pnpm workspace. Use OpenSpec under openspec/ as
+  the source of truth for baseline specs, active changes, and implementation order. Preserve the architecture
   boundary: Astro is static presentation, the Worker owns Stripe, D1, webhooks,
   order/stock mutations, secrets, and future shipping validation.
 

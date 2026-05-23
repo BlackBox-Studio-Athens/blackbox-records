@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const repoRoot = path.resolve(__dirname, '..');
-const manifestPath = path.resolve(repoRoot, '.planning/codebase/module-boundaries.manifest.json');
+const manifestPath = path.resolve(repoRoot, 'openspec/specs/module-boundaries/module-boundaries.manifest.json');
 
 const WALK_IGNORES = new Set([
   '.git',
@@ -17,6 +17,7 @@ const WALK_IGNORES = new Set([
 ]);
 const APPROVED_OPEN_TEMPORARY_MODULES = new Set([]);
 const DEFAULT_DISALLOWED_MODULE_DIRECTORY_NAMES = ['ports', 'adapters'];
+let cachedRepoFiles;
 
 function toPosixPath(value) {
   return value.split(path.sep).join('/');
@@ -317,12 +318,16 @@ function buildDependencyCruiserConfig(manifest = loadModuleBoundariesManifest())
 }
 
 function listRepoFiles() {
+  if (cachedRepoFiles) {
+    return cachedRepoFiles;
+  }
+
   const files = [];
 
   function walk(currentDirectory) {
     const relativeDirectory = toPosixPath(path.relative(repoRoot, currentDirectory));
 
-    if (relativeDirectory === '.planning/archive' || relativeDirectory.startsWith('.planning/archive/')) {
+    if (relativeDirectory === 'openspec/changes/archive' || relativeDirectory.startsWith('openspec/changes/archive/')) {
       return;
     }
 
@@ -344,6 +349,7 @@ function listRepoFiles() {
   }
 
   walk(repoRoot);
+  cachedRepoFiles = files;
   return files;
 }
 

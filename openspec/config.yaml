@@ -1,0 +1,9 @@
+project:
+  name: blackbox-records
+  description: BlackBox Records Astro site, static frontend, and Worker commerce backend.
+workflow:
+  source_of_truth: openspec
+  baseline_specs: openspec/specs
+  active_changes: openspec/changes
+telemetry:
+  enabled: false

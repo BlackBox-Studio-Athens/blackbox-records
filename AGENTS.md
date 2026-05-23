@@ -155,10 +155,10 @@ Read these first before editing:
 - The local/mock BOX NOW FAQ test locker is for the current locker-first prototype only: `locker_id = 4`, `country_code = GR`, and `locker_name_or_label = ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234`.
 - Do not persist raw BOX NOW widget/API payloads, unapproved address/locker payload dumps, voucher IDs, label URLs, tracking automation state, or partner-portal credentials in v1.
 - BOX NOW fulfillment remains manual by default; automation requires an explicit later slice using `boxnow-js`.
-- Manual fulfillment handoff and local validation steps live in `.planning/phases/09-greece-only-box-now-shipping/09-MANUAL-FULFILLMENT.md`.
+- Manual fulfillment handoff and local validation requirements live in `openspec/specs/shipping-fulfillment/spec.md`.
 - Phase 7 requires shopper-facing store URLs to describe the sellable item option, not legacy release shorthand. The old `barren-point` local smoke route is a compatibility alias for the canonical `Disintegration` / `Black Vinyl LP` route.
 - Phase 7 cart UX should be Shopify-familiar but BlackBox-owned: cart icon, single-item cart drawer, order summary, and checkout CTA using Astro/React/shadcn. Do not implement true multi-item cart, quantity controls, discount codes, or browser-owned commerce authority in this milestone.
-- The planned no-account multi-item cart workstream is documented in `.planning/phases/10-sandbox-verification-and-release-gate/10-MULTI-ITEM-CART-WORKSTREAM.md`; it must remain separate from Stripe Access Gate completion and any future BOX NOW reopen-only integration.
+- No-account cart terms and checkout authority rules live in `openspec/specs/project-language/spec.md` and `openspec/specs/commerce-checkout/spec.md`; they must remain separate from Stripe live-access gates and any future BOX NOW reopen-only integration.
 
 ### Required command policy
 
@@ -343,16 +343,17 @@ This is an iframe boundary, not an app bug.
 
 ## Ubiquitous language
 
-- Canonical project terminology lives in `.planning/UBIQUITOUS_LANGUAGE.md`.
-- Use those terms in GSD plans, test names, route/use-case names, UI copy, validation notes, ADRs, and handoff summaries.
-- If a task needs a new domain term or changes an existing meaning, update `.planning/UBIQUITOUS_LANGUAGE.md` in the same change instead of introducing synonyms ad hoc.
+- Canonical project terminology lives in `openspec/specs/project-language/spec.md`.
+- Use those terms in OpenSpec specs, active changes, test names, route/use-case names, UI copy, validation notes, ADRs, and handoff summaries.
+- If a task needs a new domain term or changes an existing meaning, update the relevant OpenSpec spec or change in the same work instead of introducing synonyms ad hoc.
 
-## GSD usage notes
+## OpenSpec usage notes
 
-- Repo GSD config intentionally keeps flat planning mode and `workflow.use_worktrees = false` for GSD v1.42.3 on Codex CLI 0.130.0, because Codex cannot provide Claude-style isolated subagent worktrees.
-- `07-16` and `10-03` are complete for Stripe sandbox UAT. Use explicit phase or plan arguments if older GSD progress helpers surface pre-access deferred-gate history.
-- Phase 12 boundary changes must keep `.planning/codebase/MODULES.md`, `.planning/codebase/modules/*.md`, and `.planning/codebase/module-boundaries.manifest.json` in sync whenever ownership, entrypoints, status, allowed dependencies, or exception policy changes.
-- Phase 12 execution slices stay one approved slice per branch or local commit cluster; do not enable `.planning/config.json` parallelization or `workflow.use_worktrees`.
+- OpenSpec is the only repo-local spec/context workflow.
+- Baseline behavior lives under `openspec/specs/<domain>/spec.md`.
+- Planned or unfinished work lives under `openspec/changes/<change-id>/` with `proposal.md`, `tasks.md`, and delta specs under `specs/<domain>/spec.md`.
+- Do not reintroduce legacy planning workflow commands, directories, config, or phase artifacts.
+- Module-boundary changes must keep `openspec/specs/module-boundaries/spec.md` and `openspec/specs/module-boundaries/module-boundaries.manifest.json` in sync whenever ownership, entrypoints, status, allowed dependencies, or exception policy changes.
 - Do not add temporary compatibility facades during boundary work; move callers to documented root entrypoints or named interfaces in the same slice.
 
 ## MCP usage
@@ -362,7 +363,7 @@ This is an iframe boundary, not an app bug.
 - Use `find_referencing_symbols` for impact checks; if it returns empty, confirm with Serena `search_for_pattern` or RTK-wrapped `rg` before treating a symbol as unused.
 - If `find_symbol`, `find_referencing_symbols`, `search_for_pattern`, `read_memory`, or `check_onboarding_performed` is missing, call `tool_search` for the exact Serena tool before falling back.
 - Use RTK-wrapped PowerShell commands for simple search, discovery reads, docs/YAML/JSON orientation, generated artifact discovery, package scripts, diffs, logs, validation, tests, and builds.
-- `.planning` files are good RTK first-pass candidates: use `rtk read <doc> --max-lines N -n` or `rtk smart <doc>`, not RTK-wrapped `Get-Content ... | Select-Object -First N`. Exact-read the relevant lines before changing planning source-of-truth or citing a decision. Source, config, schema, test, migration, and generated-contract behavior must be confirmed with exact bounded reads or Serena when semantic navigation is genuinely needed.
+- OpenSpec Markdown files are good RTK first-pass candidates: use `rtk read <doc> --max-lines N -n` or `rtk smart <doc>`, not RTK-wrapped `Get-Content ... | Select-Object -First N`. Exact-read the relevant lines before changing spec source-of-truth or citing a decision. Source, config, schema, test, migration, and generated-contract behavior must be confirmed with exact bounded reads or Serena when semantic navigation is genuinely needed.
 - Do not use Serena for routine/simple work, and do not use `rtk rg` as a substitute when the task genuinely needs Serena symbol navigation.
 - Keep Serena shell execution unfavored; run shell commands through Codex PowerShell with RTK when output may be noisy.
 - Keep Serena on the default LSP backend unless the paid Serena JetBrains plugin is installed and verified. JetBrains IDE MCP is separate and must not be treated as Serena's semantic backend.

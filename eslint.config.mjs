@@ -24,7 +24,7 @@ export default tseslint.config(
       'apps/backend/openapi/*.json',
       'apps/backend/src/generated/**',
       'packages/api-client/src/generated/**',
-      '.planning/archive/**',
+      'openspec/changes/archive/**',
     ],
   },
   js.configs.recommended,
