@@ -9,7 +9,7 @@ importers:
   .:
     devDependencies:
       '@astrojs/check':
-        specifier: ^0.9.9
+        specifier: 0.9.9
         version: 0.9.9(prettier-plugin-astro@0.14.1)(prettier@3.8.3)(typescript@5.9.3)
       '@eslint/js':
         specifier: ^10.0.1
@@ -18,7 +18,7 @@ importers:
         specifier: ^0.13.11
         version: 0.13.11(typescript@5.9.3)(valibot@1.2.0(typescript@5.9.3))(zod@4.4.3)
       astro:
-        specifier: ^6.3.7
+        specifier: 6.3.7
         version: 6.3.7(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.4)(sass@1.97.3)(tsx@4.22.3)(yaml@2.9.0)
       dependency-cruiser:
         specifier: ^17.4.0
@@ -51,7 +51,7 @@ importers:
         specifier: ^3.8.3
         version: 3.8.3
       prettier-plugin-astro:
-        specifier: ^0.14.1
+        specifier: 0.14.1
         version: 0.14.1
       tsx:
         specifier: 4.22.3
@@ -179,7 +179,7 @@ importers:
         version: 4.4.3
     devDependencies:
       '@astrojs/check':
-        specifier: ^0.9.9
+        specifier: 0.9.9
         version: 0.9.9(prettier-plugin-astro@0.14.1)(prettier@3.8.3)(typescript@5.9.3)
       '@types/node':
         specifier: ^25.9.1
@@ -5934,11 +5934,6 @@ packages:
     engines: {node: '>= 14'}
     hasBin: true
 
-  yaml@2.8.4:
-    resolution: {integrity: sha512-ml/JPOj9fOQK8RNnWojA67GbZ0ApXAUlN2UQclwv2eVgTgn7O9gg9o7paZWKMp4g0H3nTLtS9LVzhkpOFIKzog==}
-    engines: {node: '>= 14.6'}
-    hasBin: true
-
   yaml@2.9.0:
     resolution: {integrity: sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==}
     engines: {node: '>= 14.6'}
@@ -6114,7 +6109,7 @@ snapshots:
 
   '@astrojs/yaml2ts@0.2.3':
     dependencies:
-      yaml: 2.8.4
+      yaml: 2.9.0
 
   '@babel/code-frame@7.29.0':
     dependencies:
@@ -8204,7 +8199,7 @@ snapshots:
       espree: 10.4.0
       fast-glob: 3.3.3
       is-glob: 4.0.3
-      semver: 7.7.4
+      semver: 7.8.1
     transitivePeerDependencies:
       - supports-color
 
@@ -8882,7 +8877,7 @@ snapshots:
   eslint-compat-utils@0.6.5(eslint@10.4.0(jiti@2.7.0)):
     dependencies:
       eslint: 10.4.0(jiti@2.7.0)
-      semver: 7.7.4
+      semver: 7.8.1
 
   eslint-config-prettier@10.1.8(eslint@10.4.0(jiti@2.7.0)):
     dependencies:
@@ -9576,7 +9571,7 @@ snapshots:
 
   is-bun-module@2.0.0:
     dependencies:
-      semver: 7.7.4
+      semver: 7.8.1
 
   is-core-module@2.16.1:
     dependencies:
@@ -11357,7 +11352,7 @@ snapshots:
 
   typescript-auto-import-cache@0.3.6:
     dependencies:
-      semver: 7.7.4
+      semver: 7.8.1
 
   typescript-eslint@8.59.4(eslint@10.4.0(jiti@2.7.0))(typescript@5.9.3):
     dependencies:
@@ -11635,7 +11630,7 @@ snapshots:
   volar-service-typescript@0.0.70(@volar/language-service@2.4.28):
     dependencies:
       path-browserify: 1.0.1
-      semver: 7.7.4
+      semver: 7.8.1
       typescript-auto-import-cache: 0.3.6
       vscode-languageserver-textdocument: 1.0.12
       vscode-nls: 5.2.0
@@ -11804,8 +11799,6 @@ snapshots:
       yaml: 2.7.1
 
   yaml@2.7.1: {}
-
-  yaml@2.8.4: {}
 
   yaml@2.9.0: {}
 
