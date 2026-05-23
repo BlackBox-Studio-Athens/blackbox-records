@@ -1,10 +1,14 @@
-import { describe, expect, it, vi } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { describe, expect, it } from 'vitest';
 
+import { apiClientMswBaseUrl, internalStockFixtures } from '@blackbox/api-client/test/msw-handlers';
+import { webMswServer } from '@/test/msw-server';
 import {
   buildInternalStockApiUrl,
   createInternalStockApi,
   getInternalStockApiBaseUrl,
   InternalStockApiError,
+  type InternalStockChangeBody,
 } from './internal-stock-api';
 
 describe('getInternalStockApiBaseUrl', () => {
@@ -33,20 +37,51 @@ describe('buildInternalStockApiUrl', () => {
 
 describe('createInternalStockApi', () => {
   it('searches variants through the protected internal API', async () => {
-    const fetcher = vi.fn(async () => new Response(JSON.stringify([]), { status: 200 }));
-    const api = createInternalStockApi({ fetcher });
+    let receivedQuery = '';
+    webMswServer.use(
+      http.get<Record<string, never>, never, (typeof internalStockFixtures.variant)[]>(
+        '*/api/internal/variants',
+        ({ request }) => {
+          receivedQuery = new URL(request.url).searchParams.toString();
 
-    await api.searchVariants('after', 10);
-
-    expect(fetcher).toHaveBeenCalledWith(
-      '/api/internal/variants?limit=10&q=after',
-      expect.objectContaining({ credentials: 'include' }),
+          return HttpResponse.json([internalStockFixtures.variant]);
+        },
+      ),
     );
+    const api = createInternalStockApi({ backendBaseUrl: apiClientMswBaseUrl });
+
+    const result = await api.searchVariants('after', 10);
+
+    expect(result).toEqual([internalStockFixtures.variant]);
+    expect(receivedQuery).toBe('limit=10&q=after');
   });
 
   it('posts stock changes without client-submitted actor attribution', async () => {
-    const fetcher = vi.fn(async () => new Response(JSON.stringify({}), { status: 200 }));
-    const api = createInternalStockApi({ fetcher });
+    let receivedBody: InternalStockChangeBody | null = null;
+    webMswServer.use(
+      http.post<{ variantId: string }, InternalStockChangeBody>(
+        '*/api/internal/variants/:variantId/stock/changes',
+        async ({ request }) => {
+          receivedBody = (await request.json()) as InternalStockChangeBody;
+
+          return HttpResponse.json({
+            entry: {
+              actorEmail: 'operator@example.com',
+              id: 'stock_change_test_123',
+              notes: receivedBody.notes ?? null,
+              quantityDelta: receivedBody.delta,
+              reason: receivedBody.reason,
+              recordedAt: '2026-05-23T10:20:00.000Z',
+              type: 'change',
+              variantId: internalStockFixtures.variant.variantId,
+            },
+            stock: internalStockFixtures.stockDetail.stock,
+            variantId: internalStockFixtures.variant.variantId,
+          });
+        },
+      ),
+    );
+    const api = createInternalStockApi({ backendBaseUrl: apiClientMswBaseUrl });
 
     await api.recordStockChange('variant_barren-point_standard', {
       delta: -1,
@@ -54,10 +89,7 @@ describe('createInternalStockApi', () => {
       reason: 'sale',
     });
 
-    const calls = fetcher.mock.calls as unknown as [string, RequestInit][];
-    const request = calls[0]?.[1] as RequestInit;
-    expect(request.method).toBe('POST');
-    expect(JSON.parse(String(request.body))).toEqual({
+    expect(receivedBody).toEqual({
       delta: -1,
       notes: 'Table sale',
       reason: 'sale',
@@ -65,17 +97,20 @@ describe('createInternalStockApi', () => {
   });
 
   it('surfaces API error messages for operator-visible failure states', async () => {
-    const fetcher = vi.fn(
-      async () => new Response(JSON.stringify({ error: 'Missing operator identity.' }), { status: 401 }),
+    webMswServer.use(
+      http.get<Record<string, never>, never, typeof internalStockFixtures.missingOperatorIdentity>(
+        '*/api/internal/variants',
+        () => HttpResponse.json(internalStockFixtures.missingOperatorIdentity, { status: 401 }),
+      ),
     );
-    const api = createInternalStockApi({ fetcher });
+    const api = createInternalStockApi({ backendBaseUrl: apiClientMswBaseUrl });
 
     await expect(api.searchVariants()).rejects.toEqual(new InternalStockApiError(401, 'Missing operator identity.'));
   });
 
   it('falls back to status-based errors when a non-JSON response reaches the UI', async () => {
-    const fetcher = vi.fn(async () => new Response('<!doctype html>', { status: 404 }));
-    const api = createInternalStockApi({ fetcher });
+    webMswServer.use(http.get('*/api/internal/variants', () => HttpResponse.text('<!doctype html>', { status: 404 })));
+    const api = createInternalStockApi({ backendBaseUrl: apiClientMswBaseUrl });
 
     await expect(api.searchVariants()).rejects.toEqual(
       new InternalStockApiError(404, 'Internal stock API request failed with 404.'),

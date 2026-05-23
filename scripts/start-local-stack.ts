@@ -1,9 +1,10 @@
-import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
+
+import { createLongRunningProcessGroup, LocalProcessError, runFiniteCommand } from './local-process';
 
 export type LocalStackMode = 'stripe-test' | 'stripe-mock' | 'stripe-mock-api';
 
@@ -201,40 +202,34 @@ async function main() {
   await assertPortsAvailable(plan.ports);
 
   for (const command of plan.prepare) {
-    runOnce(command);
+    try {
+      await runFiniteCommand(command, { cwd: rootDir });
+    } catch (error) {
+      exitAfterFiniteCommandFailure(error);
+    }
   }
 
-  const children: ChildProcess[] = [];
-  let shuttingDown = false;
+  const processes = createLongRunningProcessGroup({ cwd: rootDir });
 
   const shutdown = () => {
-    shuttingDown = true;
-
-    for (const child of [...children].reverse()) {
-      if (!child.killed) {
-        child.kill('SIGTERM');
-      }
-    }
+    void processes.shutdown();
   };
 
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 
   for (const command of plan.longRunning) {
-    const child = spawnLongRunning(command, () => {
-      if (shuttingDown) {
-        return;
-      }
-
-      console.error(`[${command.name}] exited before the local stack stopped. Shutting down remaining services.`);
-      shutdown();
-      process.exit(1);
-    });
-    children.push(child);
+    processes.start(command);
 
     if (command.waitForPort) {
-      await waitForPort(command.waitForPort, command.name);
+      await Promise.race([waitForPort(command.waitForPort, command.name), processes.waitForUnexpectedExit()]);
     }
+  }
+
+  try {
+    await processes.waitForUnexpectedExit();
+  } catch (error) {
+    exitAfterUnexpectedServiceExit(error);
   }
 }
 
@@ -278,50 +273,6 @@ async function assertPortsAvailable(ports: number[]) {
   }
 }
 
-function runOnce(command: StackCommand) {
-  console.log(`[${command.name}] ${command.command} ${command.args.join(' ')}`);
-  const processCommand = createProcessCommand(command);
-  const result = spawnSync(processCommand.command, processCommand.args, {
-    cwd: rootDir,
-    env: {
-      ...process.env,
-      ...command.env,
-    },
-    shell: false,
-    stdio: 'inherit',
-  });
-
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1);
-  }
-}
-
-function spawnLongRunning(command: StackCommand, onUnexpectedExit: () => void): ChildProcess {
-  console.log(`[${command.name}] ${command.command} ${command.args.join(' ')}`);
-  const processCommand = createProcessCommand(command);
-
-  const child = spawn(processCommand.command, processCommand.args, {
-    cwd: rootDir,
-    env: {
-      ...process.env,
-      ...command.env,
-    },
-    shell: false,
-    stdio: 'inherit',
-  });
-
-  child.once('error', (error) => {
-    console.error(`[${command.name}] failed to start: ${error.message}`);
-    onUnexpectedExit();
-  });
-
-  child.once('exit', () => {
-    onUnexpectedExit();
-  });
-
-  return child;
-}
-
 async function waitForPort(port: number, label: string) {
   for (let attempt = 0; attempt < 120; attempt += 1) {
     if (!(await isPortAvailable(port))) {
@@ -334,15 +285,26 @@ async function waitForPort(port: number, label: string) {
   throw new Error(`${label} did not start on port ${port}.`);
 }
 
-function createProcessCommand(command: StackCommand): Pick<StackCommand, 'args' | 'command'> {
-  if (process.platform !== 'win32') {
-    return command;
+function exitAfterFiniteCommandFailure(error: unknown): never {
+  if (error instanceof LocalProcessError) {
+    if (typeof error.exitCode === 'number') {
+      process.exit(error.exitCode);
+    }
+
+    console.error(error.message);
+    process.exit(1);
   }
 
-  return {
-    args: ['/d', '/s', '/c', command.command, ...command.args],
-    command: 'cmd.exe',
-  };
+  throw error;
+}
+
+function exitAfterUnexpectedServiceExit(error: unknown): never {
+  if (error instanceof LocalProcessError) {
+    console.error(`[${error.processName}] exited before the local stack stopped. Shutting down remaining services.`);
+    process.exit(1);
+  }
+
+  throw error;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

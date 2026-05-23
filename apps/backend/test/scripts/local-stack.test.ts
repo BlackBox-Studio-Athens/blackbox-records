@@ -6,6 +6,7 @@ describe('local stack launcher plan', () => {
   it('builds the real Stripe test stack with D1 prep and split-port frontend env', () => {
     const plan = buildStackPlan('stripe-test');
 
+    expect(plan.ports).toEqual([8787, 4321]);
     expect(plan.prepare.map((command) => command.args.join(' '))).toEqual([
       '--filter @blackbox/backend d1:prepare:local',
       '--filter @blackbox/backend d1:seed:stripe-test:local',

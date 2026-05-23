@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./public": "./src/public-client.ts",
-    "./internal": "./src/internal-client.ts"
+    "./internal": "./src/internal-client.ts",
+    "./test/msw-handlers": "./src/test/msw-handlers.ts"
   },
   "scripts": {
     "generate": "pnpm exec tsx scripts/generate-api-client.ts",
@@ -18,6 +19,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
+    "msw": "^2.14.6",
     "openapi-typescript": "^7.13.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",

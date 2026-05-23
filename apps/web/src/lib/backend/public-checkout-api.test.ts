@@ -1,14 +1,16 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { describe, expect, it } from 'vitest';
 
+import { apiClientMswBaseUrl, publicCheckoutFixtures } from '@blackbox/api-client/test/msw-handlers';
+import { webMswServer } from '@/test/msw-server';
 import {
   createPublicCheckoutApi,
+  type PublicCommerceError,
   type PublicCheckoutApiError,
   resolvePublicCheckoutApiBaseUrl,
+  type StartCheckoutBody,
+  type StartCheckoutResponse,
 } from './public-checkout-api';
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
 
 describe('resolvePublicCheckoutApiBaseUrl', () => {
   it('defaults to same-origin checkout calls when PUBLIC_BACKEND_BASE_URL is unset', () => {
@@ -22,160 +24,63 @@ describe('resolvePublicCheckoutApiBaseUrl', () => {
 
 describe('createPublicCheckoutApi', () => {
   it('reads browser-safe store capabilities through the public Worker route', async () => {
-    const capabilities = {
-      nativeCheckout: {
-        enabled: false,
-        unavailableReason: 'Native checkout is temporarily unavailable.',
-      },
-    };
-    const fetchStub = vi.fn(
-      async (_url: string, _init?: RequestInit) => new Response(JSON.stringify(capabilities), { status: 200 }),
-    );
-    vi.stubGlobal('fetch', fetchStub);
-
-    const api = createPublicCheckoutApi('');
+    const api = createPublicCheckoutApi(apiClientMswBaseUrl);
     const result = await api.readStoreCapabilities();
 
-    expect(result).toEqual(capabilities);
-    expect(fetchStub).toHaveBeenCalledWith(
-      '/api/store/capabilities',
-      expect.objectContaining({
-        method: 'GET',
-      }),
-    );
+    expect(result).toEqual(publicCheckoutFixtures.storeCapabilities);
   });
 
-  it('reads store offers through same-origin checkout routes by default', async () => {
-    const offer = {
-      availability: {
-        label: 'Available now',
-        status: 'available',
-      },
-      canCheckout: true,
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
-    };
-    const fetchStub = vi.fn(
-      async (_url: string, _init?: RequestInit) => new Response(JSON.stringify(offer), { status: 200 }),
-    );
-    vi.stubGlobal('fetch', fetchStub);
-
-    const api = createPublicCheckoutApi('');
+  it('reads store offers through public Worker routes', async () => {
+    const api = createPublicCheckoutApi(apiClientMswBaseUrl);
     const result = await api.readStoreOffer('disintegration-black-vinyl-lp');
 
-    expect(result).toEqual(offer);
-    expect(fetchStub).toHaveBeenCalledWith(
-      '/api/store/items/disintegration-black-vinyl-lp',
-      expect.objectContaining({
-        method: 'GET',
-      }),
-    );
+    expect(result).toEqual(publicCheckoutFixtures.storeOffer);
   });
 
   it('uses the configured backend base URL for split-port development', async () => {
-    const variants = [
-      {
-        availability: {
-          label: 'Available now',
-          status: 'available',
-        },
-        canCheckout: true,
-        storeItemSlug: 'disintegration-black-vinyl-lp',
-        variantId: 'variant_barren-point_standard',
-      },
-    ];
-    const fetchStub = vi.fn(
-      async (_url: string, _init?: RequestInit) => new Response(JSON.stringify(variants), { status: 200 }),
-    );
-    vi.stubGlobal('fetch', fetchStub);
-
-    const api = createPublicCheckoutApi('http://127.0.0.1:8787/');
+    const api = createPublicCheckoutApi(apiClientMswBaseUrl);
     const result = await api.readStoreOfferVariants('disintegration-black-vinyl-lp');
 
-    expect(result).toEqual(variants);
-    expect(fetchStub).toHaveBeenCalledWith(
-      'http://127.0.0.1:8787/api/store/items/disintegration-black-vinyl-lp/variants',
-      expect.objectContaining({
-        method: 'GET',
-      }),
-    );
+    expect(result).toEqual([publicCheckoutFixtures.storeOffer]);
   });
 
   it('posts checkout payloads as JSON and returns the hosted checkout URL', async () => {
-    const fetchStub = vi.fn(
-      async (_url: string, _init?: RequestInit) =>
-        new Response(JSON.stringify({ checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123' }), {
-          status: 200,
-        }),
-    );
-    vi.stubGlobal('fetch', fetchStub);
+    let receivedBody: StartCheckoutBody | null = null;
+    webMswServer.use(
+      http.post<Record<string, never>, StartCheckoutBody, StartCheckoutResponse>(
+        '*/api/checkout/sessions',
+        async ({ request }) => {
+          receivedBody = (await request.json()) as StartCheckoutBody;
 
-    const api = createPublicCheckoutApi('');
-    const result = await api.startCheckout({
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
-    });
-
-    expect(result).toEqual({ checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123' });
-    expect(fetchStub).toHaveBeenCalledWith(
-      '/api/checkout/sessions',
-      expect.objectContaining({
-        method: 'POST',
-      }),
+          return HttpResponse.json(publicCheckoutFixtures.startCheckoutResponse);
+        },
+      ),
     );
 
-    const firstCall = fetchStub.mock.calls[0] as [string, RequestInit?] | undefined;
-    const requestInit = firstCall?.[1];
-    expect(requestInit?.body).toBe(
-      JSON.stringify({
-        storeItemSlug: 'disintegration-black-vinyl-lp',
-        variantId: 'variant_barren-point_standard',
-      }),
-    );
+    const api = createPublicCheckoutApi(apiClientMswBaseUrl);
+    const result = await api.startCheckout(publicCheckoutFixtures.startCheckoutBody);
+
+    expect(result).toEqual(publicCheckoutFixtures.startCheckoutResponse);
+    expect(receivedBody).toEqual(publicCheckoutFixtures.startCheckoutBody);
   });
 
   it('reads ReadCheckoutState with the Worker-owned shipping recap', async () => {
-    const checkoutState = {
-      checkoutSessionId: 'cs_test_123',
-      paymentStatus: 'paid',
-      shippingLocker: null,
-      state: 'paid',
-      status: 'complete',
-    };
-    const fetchStub = vi.fn(
-      async (_url: string, _init?: RequestInit) => new Response(JSON.stringify(checkoutState), { status: 200 }),
-    );
-    vi.stubGlobal('fetch', fetchStub);
-
-    const api = createPublicCheckoutApi('');
+    const api = createPublicCheckoutApi(apiClientMswBaseUrl);
     const result = await api.readCheckoutState('cs_test_123');
 
-    expect(result).toEqual(checkoutState);
-    expect(fetchStub).toHaveBeenCalledWith(
-      '/api/checkout/sessions/cs_test_123/state',
-      expect.objectContaining({
-        method: 'GET',
-      }),
-    );
+    expect(result).toEqual(publicCheckoutFixtures.checkoutState);
   });
 
   it('surfaces visible API error objects with status and response body', async () => {
-    const fetchStub = vi.fn(
-      async (_url: string, _init?: RequestInit) =>
-        new Response(JSON.stringify({ error: 'Checkout unavailable or not configured.' }), {
-          status: 409,
-        }),
+    webMswServer.use(
+      http.post<Record<string, never>, StartCheckoutBody, PublicCommerceError>('*/api/checkout/sessions', () =>
+        HttpResponse.json(publicCheckoutFixtures.checkoutUnavailable, { status: 409 }),
+      ),
     );
-    vi.stubGlobal('fetch', fetchStub);
 
-    const api = createPublicCheckoutApi('');
+    const api = createPublicCheckoutApi(apiClientMswBaseUrl);
 
-    await expect(
-      api.startCheckout({
-        storeItemSlug: 'disintegration-black-vinyl-lp',
-        variantId: 'variant_barren-point_standard',
-      }),
-    ).rejects.toMatchObject({
+    await expect(api.startCheckout(publicCheckoutFixtures.startCheckoutBody)).rejects.toMatchObject({
       body: {
         error: 'Checkout unavailable or not configured.',
       },
