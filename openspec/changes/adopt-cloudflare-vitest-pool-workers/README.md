@@ -1,3 +1,3 @@
 # adopt-cloudflare-vitest-pool-workers
 
-Focused Worker-runtime Vitest coverage for backend routes and bindings.
+Make Worker-runtime Vitest the default backend confidence path.
