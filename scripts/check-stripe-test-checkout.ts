@@ -3,6 +3,9 @@ import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
+import { createEnv, type StandardSchemaV1 } from '@t3-oss/env-core';
+import { z } from 'zod';
+
 export type StripeTestCheckoutPreflightInput = {
   devVarsText: string | null;
   env: NodeJS.ProcessEnv;
@@ -24,23 +27,9 @@ export function checkStripeTestCheckoutPreflight(
   input: StripeTestCheckoutPreflightInput,
 ): StripeTestCheckoutPreflightResult {
   const issues: string[] = [];
-  const stripeSecretKey = input.devVarsText ? readDotEnvValue(input.devVarsText, 'STRIPE_SECRET_KEY') : null;
-  const paymentMethodConfigurationId = input.devVarsText
-    ? readDotEnvValue(input.devVarsText, 'STRIPE_PAYMENT_METHOD_CONFIGURATION_ID')
-    : null;
   const seedSqlText = input.seedSqlText?.trim() ?? '';
 
-  if (!input.devVarsText) {
-    issues.push(`${devVarsRelativePath} must exist for dev:stack:stripe-test.`);
-  } else if (!isRealStripeTestSecretKey(stripeSecretKey ?? '')) {
-    issues.push(
-      `${devVarsRelativePath} must define STRIPE_SECRET_KEY with a real Stripe test secret key (sk_test_...).`,
-    );
-  }
-
-  if (input.devVarsText && !isStripePaymentMethodConfigurationId(paymentMethodConfigurationId ?? '')) {
-    issues.push(`${devVarsRelativePath} must define STRIPE_PAYMENT_METHOD_CONFIGURATION_ID with a pmc_... value.`);
-  }
+  issues.push(...readStripeTestCheckoutEnvIssues(input.devVarsText));
 
   if (!input.seedSqlText) {
     issues.push(`Missing ${seedRelativePath}. Copy ${seedExampleRelativePath} and replace the placeholder Price ID.`);
@@ -82,9 +71,72 @@ export function formatStripeTestCheckoutPreflightReport(result: StripeTestChecko
   ].join('\n');
 }
 
-function readDotEnvValue(text: string | null, key: string): string | null {
+class StripeTestCheckoutEnvValidationError extends Error {
+  readonly issues: readonly StandardSchemaV1.Issue[];
+
+  constructor(issues: readonly StandardSchemaV1.Issue[]) {
+    super('Stripe test checkout env validation failed.');
+    this.name = 'StripeTestCheckoutEnvValidationError';
+    this.issues = issues;
+  }
+}
+
+function readStripeTestCheckoutEnvIssues(devVarsText: string | null): string[] {
+  if (!devVarsText) {
+    return [`${devVarsRelativePath} must exist for dev:stack:stripe-test.`];
+  }
+
+  try {
+    createEnv({
+      emptyStringAsUndefined: true,
+      onValidationError: (issues) => {
+        throw new StripeTestCheckoutEnvValidationError(issues);
+      },
+      runtimeEnv: readDotEnvRuntimeEnv(devVarsText),
+      server: {
+        STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: z.string().trim().startsWith('pmc_'),
+        STRIPE_SECRET_KEY: z
+          .string()
+          .trim()
+          .startsWith('sk_test_')
+          .refine((value) => value !== 'sk_test_mock'),
+      },
+    });
+
+    return [];
+  } catch (error) {
+    if (error instanceof StripeTestCheckoutEnvValidationError) {
+      return formatStripeTestCheckoutEnvIssues(error.issues);
+    }
+
+    throw error;
+  }
+}
+
+function formatStripeTestCheckoutEnvIssues(issues: readonly StandardSchemaV1.Issue[]): string[] {
+  const invalidVariables = new Set(issues.flatMap((issue) => issue.path?.map((pathItem) => String(pathItem)) ?? []));
+  const formattedIssues: string[] = [];
+
+  if (invalidVariables.has('STRIPE_SECRET_KEY')) {
+    formattedIssues.push(
+      `${devVarsRelativePath} must define STRIPE_SECRET_KEY with a real Stripe test secret key (sk_test_...).`,
+    );
+  }
+
+  if (invalidVariables.has('STRIPE_PAYMENT_METHOD_CONFIGURATION_ID')) {
+    formattedIssues.push(
+      `${devVarsRelativePath} must define STRIPE_PAYMENT_METHOD_CONFIGURATION_ID with a pmc_... value.`,
+    );
+  }
+
+  return formattedIssues;
+}
+
+function readDotEnvRuntimeEnv(text: string | null): Record<string, string | undefined> {
+  const runtimeEnv: Record<string, string | undefined> = {};
+
   if (!text) {
-    return null;
+    return runtimeEnv;
   }
 
   for (const line of text.split(/\r?\n/)) {
@@ -101,22 +153,13 @@ function readDotEnvValue(text: string | null, key: string): string | null {
     }
 
     const parsedKey = trimmed.slice(0, separatorIndex).trim();
-
-    if (parsedKey !== key) {
-      continue;
-    }
-
-    return trimmed
+    runtimeEnv[parsedKey] = trimmed
       .slice(separatorIndex + 1)
       .trim()
       .replace(/^['"]|['"]$/g, '');
   }
 
-  return null;
-}
-
-function isRealStripeTestSecretKey(value: string): boolean {
-  return value.startsWith('sk_test_') && value !== 'sk_test_mock';
+  return runtimeEnv;
 }
 
 function containsRealStripeTestPriceId(value: string): boolean {
@@ -127,10 +170,6 @@ function containsRealStripeTestPriceId(value: string): boolean {
 
     return priceId !== placeholderPriceId && !priceId.startsWith('price_mock_');
   });
-}
-
-function isStripePaymentMethodConfigurationId(value: string): boolean {
-  return value.startsWith('pmc_');
 }
 
 function readOptionalFile(relativePath: string): string | null {

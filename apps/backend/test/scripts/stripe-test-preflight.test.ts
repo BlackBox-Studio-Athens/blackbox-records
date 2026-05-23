@@ -107,4 +107,23 @@ describe('Stripe test checkout preflight', () => {
     );
     expect(report).not.toContain('sk_test_real_secret');
   });
+
+  it('reports malformed env values without printing submitted secrets', () => {
+    const report = formatStripeTestCheckoutPreflightReport(
+      checkStripeTestCheckoutPreflight({
+        ...validInput,
+        devVarsText:
+          'STRIPE_SECRET_KEY=sk_live_real_secret\nSTRIPE_PAYMENT_METHOD_CONFIGURATION_ID=payment_method_config_secret\n',
+      }),
+    );
+
+    expect(report).toContain(
+      'apps/backend/.dev.vars must define STRIPE_SECRET_KEY with a real Stripe test secret key (sk_test_...).',
+    );
+    expect(report).toContain(
+      'apps/backend/.dev.vars must define STRIPE_PAYMENT_METHOD_CONFIGURATION_ID with a pmc_... value.',
+    );
+    expect(report).not.toContain('sk_live_real_secret');
+    expect(report).not.toContain('payment_method_config_secret');
+  });
 });

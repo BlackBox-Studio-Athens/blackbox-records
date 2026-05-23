@@ -53,6 +53,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
     "@eslint/js": "^10.0.1",
+    "@t3-oss/env-core": "^0.13.11",
     "astro": "^6.3.1",
     "dependency-cruiser": "^17.4.0",
     "eslint": "^10.3.0",
@@ -67,6 +68,7 @@
     "prettier-plugin-astro": "^0.14.1",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.2"
+    "typescript-eslint": "^8.59.2",
+    "zod": "^4.4.3"
   }
 }
