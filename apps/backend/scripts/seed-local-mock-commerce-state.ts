@@ -77,7 +77,7 @@ export async function readDistroStoreItems(directory: string): Promise<LocalMock
     const sourceId = path.basename(fileName, '.json');
     const content = JSON.parse(await readFile(path.join(directory, fileName), 'utf8')) as { title?: unknown };
     const title = typeof content.title === 'string' ? content.title : sourceId;
-    const storeItemSlug = resolveExplicitOrSuggestedSlug(sourceId, title);
+    const storeItemSlug = resolveExplicitOrSuggestedSlug(sourceId, title) || sourceId;
 
     storeItems.push({
       mockCheckoutEnabled: mockCheckoutStoreItemSlugs.has(storeItemSlug),

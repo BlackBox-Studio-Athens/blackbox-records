@@ -85,6 +85,7 @@ describe('local mock commerce seed generator', () => {
 
     try {
       await writeFile(path.join(tempDir, 'afterglow-tape.json'), JSON.stringify({ title: 'Afterglow Cassette' }));
+      await writeFile(path.join(tempDir, 'blank-title-slug.json'), JSON.stringify({ title: '___' }));
       await writeFile(path.join(tempDir, '___.json'), JSON.stringify({ title: 'The Chemical Bath' }));
 
       await expect(readDistroStoreItems(tempDir)).resolves.toEqual([
@@ -103,6 +104,14 @@ describe('local mock commerce seed generator', () => {
           sourceKind: 'distro',
           storeItemSlug: 'afterglow-tape',
           variantId: 'variant_afterglow-tape_standard',
+        }),
+        expect.objectContaining({
+          mockCheckoutEnabled: false,
+          taxCategory: 'physical_goods',
+          sourceId: 'blank-title-slug',
+          sourceKind: 'distro',
+          storeItemSlug: 'blank-title-slug',
+          variantId: 'variant_blank-title-slug_standard',
         }),
       ]);
     } finally {
