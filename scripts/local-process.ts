@@ -1,4 +1,4 @@
-import { execa, type ExecaChildProcess, type ExecaReturnValue, type Options } from 'execa';
+import { execa, type Options, type Result, type ResultPromise } from 'execa';
 
 export type LocalProcessCommand = {
   args: string[];
@@ -18,7 +18,7 @@ export type LocalProcessOptions = {
 
 export type RunningLocalProcess = {
   command: LocalProcessCommand;
-  subprocess: ExecaChildProcess;
+  subprocess: ResultPromise;
 };
 
 type ExecaErrorLike = Error & {
@@ -56,7 +56,7 @@ export class LocalProcessError extends Error {
 export async function runFiniteCommand(
   command: LocalProcessCommand,
   options: LocalProcessOptions = {},
-): Promise<ExecaReturnValue> {
+): Promise<Result> {
   logCommand(command, options.logger);
 
   try {
@@ -133,7 +133,7 @@ class LongRunningProcessGroup {
     return this.unexpectedExit;
   }
 
-  private handleUnexpectedExit(processEntry: RunningLocalProcess, errorOrResult: ExecaReturnValue | unknown) {
+  private handleUnexpectedExit(processEntry: RunningLocalProcess, errorOrResult: unknown) {
     if (this.stopping) {
       return;
     }
@@ -185,6 +185,6 @@ function toLocalProcessError(command: LocalProcessCommand, errorOrResult: unknow
   });
 }
 
-function isExecaResult(value: unknown): value is ExecaReturnValue {
+function isExecaResult(value: unknown): value is Result {
   return Boolean(value && typeof value === 'object' && 'exitCode' in value && 'failed' in value);
 }
