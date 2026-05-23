@@ -42,8 +42,8 @@
   "devDependencies": {
     "@astrojs/check": "0.9.9",
     "@types/node": "^25.9.1",
-    "@types/react": "^19.2.15",
-    "@types/react-dom": "^19.2.2",
+    "@types/react": "19.2.15",
+    "@types/react-dom": "19.2.3",
     "decap-server": "^3.7.0",
     "msw": "2.14.6",
     "shadcn": "^4.8.0",
