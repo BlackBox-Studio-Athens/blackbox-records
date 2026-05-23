@@ -45,6 +45,9 @@ jobs:
       - name: Run workspace checks
         run: pnpm check
 
+      - name: Run unused code audit
+        run: pnpm audit:unused
+
       - name: Verify Stripe payment method policy
         env:
           STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+  // Root scripts and CI/config files are valid entrypoints even when app code does not import them.
+  "workspaces": {
+    ".": {
+      "entry": [
+        "package.json",
+        "scripts/*.ts",
+        "*.config.{js,cjs,mjs,ts}",
+        ".dependency-cruiser.cjs",
+        ".github/workflows/*.{yml,yaml}",
+      ],
+      "project": ["scripts/**/*.ts", "*.config.{js,cjs,mjs,ts}", ".dependency-cruiser.cjs"],
+    },
+    "apps/web": {
+      "entry": [
+        "astro.config.mjs",
+        "src/content.config.ts",
+        "src/pages/**/*.{astro,ts}",
+        "src/**/*.test.{ts,tsx}",
+        "scripts/**/*.{mjs,ts}",
+      ],
+      "project": ["astro.config.mjs", "src/**/*.{astro,ts,tsx,js,mjs}", "scripts/**/*.{mjs,ts}", "vitest.config.ts"],
+      // CSS imports and local dev binary launching are intentional but not visible to Knip's TS graph.
+      "ignoreDependencies": ["tailwindcss", "tw-animate-css", "decap-server", "shadcn"],
+    },
+    "apps/backend": {
+      "entry": ["src/index.ts", "wrangler.jsonc", "prisma.config.ts", "scripts/**/*.{mjs,ts}", "test/**/*.test.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.{mjs,ts}", "prisma.config.ts"],
+    },
+    "packages/api-client": {
+      "entry": ["src/index.ts", "src/public-client.ts", "src/internal-client.ts", "scripts/generate-api-client.ts"],
+      "project": ["src/**/*.ts", "scripts/**/*.ts"],
+    },
+  },
+  // Generated outputs, static route/content surfaces, migrations, and planning archives require owner review before deletion.
+  "ignoreFiles": [
+    ".planning/archive/**",
+    ".planning/phases/**",
+    "apps/backend/openapi/*.json",
+    "apps/backend/prisma/migrations/**",
+    "apps/backend/prisma/seeds/**",
+    "apps/backend/src/generated/**",
+    "apps/web/public/**",
+    "apps/web/src/content/**",
+    "apps/web/src/pages/**",
+    "packages/api-client/src/generated/**",
+  ],
+  "ignoreIssues": {
+    "apps/backend/src/generated/**": ["exports", "types", "enumMembers", "namespaceMembers"],
+    "packages/api-client/src/generated/**": ["exports", "types", "enumMembers", "namespaceMembers"],
+  },
+}

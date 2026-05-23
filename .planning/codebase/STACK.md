@@ -50,6 +50,7 @@
 - Radix UI primitives - dialog/select/slot primitives used by shadcn-based UI in `src/components/ui/sheet.tsx`, `src/components/ui/select.tsx`, and `src/components/ui/button.tsx`.
 - Sharp 0.34.5 - Astro image processing backing `image()` collection fields in `src/content.config.ts` and `astro:assets` usage such as `src/components/cards/DistroCard.astro`.
 - `@astrojs/check` 0.9.6 - content/type verification behind `pnpm check` in `package.json`.
+- Knip 6.14.2 - report-first unused dependency, export, and file auditing through `pnpm audit:unused`; this is intentionally outside `pnpm check` until the baseline findings are reviewed.
 
 ## Key Dependencies
 
@@ -82,6 +83,7 @@
 **Build:**
 
 - `package.json` - install scripts, dev/build/check/test commands, dependency versions.
+- `knip.jsonc` - report-first unused dependency/export/file audit configuration with explicit protected generated, route, content, migration, public asset, and planning surfaces.
 - `astro.config.mjs` - Astro static build, base path, React integration, Vite plugin stack.
 - `.github/workflows/pages.yml` - CI build and Pages deployment.
 - `tsconfig.json` - strict TS baseline and path aliases.

@@ -48,6 +48,9 @@ jobs:
       - name: Run workspace checks
         run: pnpm check
 
+      - name: Run unused code audit
+        run: pnpm audit:unused
+
       - name: Build static frontend
         env:
           ASTRO_SITE_URL: https://blackbox-records-web.pages.dev
