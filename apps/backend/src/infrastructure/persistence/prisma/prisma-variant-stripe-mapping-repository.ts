@@ -22,4 +22,21 @@ export class PrismaVariantStripeMappingRepository implements VariantStripeMappin
 
     return record ? mapVariantStripeMapping(record) : null;
   }
+
+  public async save(record: VariantStripeMappingRecord): Promise<VariantStripeMappingRecord> {
+    const savedRecord = await this.prisma.variantStripeMapping.upsert({
+      create: {
+        stripePriceId: record.stripePriceId,
+        variantId: record.variantId,
+      },
+      update: {
+        stripePriceId: record.stripePriceId,
+      },
+      where: {
+        variantId: record.variantId,
+      },
+    });
+
+    return mapVariantStripeMapping(savedRecord);
+  }
 }

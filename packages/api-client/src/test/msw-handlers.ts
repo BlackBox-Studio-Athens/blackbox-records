@@ -49,6 +49,12 @@ export const publicCheckoutFixtures = {
       status: 'available',
     },
     canCheckout: true,
+    catalogStatus: 'ready',
+    price: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+      display: '€28.00',
+    },
     storeItemSlug: 'disintegration-black-vinyl-lp',
     variantId: 'variant_barren-point_standard',
   } satisfies PublicStoreOffer,

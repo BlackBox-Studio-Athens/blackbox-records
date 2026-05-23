@@ -273,6 +273,9 @@ export type components = {
         PublicStoreOffer: {
             availability: components["schemas"]["PublicStoreOfferAvailability"];
             canCheckout: boolean;
+            /** @enum {string} */
+            catalogStatus: "catalog_drift" | "ready" | "sold_out";
+            price: components["schemas"]["PublicStoreOfferPrice"] | null;
             storeItemSlug: string;
             variantId: string;
         };
@@ -280,6 +283,11 @@ export type components = {
             label: string;
             /** @enum {string} */
             status: "available" | "sold_out";
+        };
+        PublicStoreOfferPrice: {
+            amountMinor: number;
+            currencyCode: string;
+            display: string;
         };
         StartCheckoutBody: {
             lines?: components["schemas"]["StartCheckoutLine"][];

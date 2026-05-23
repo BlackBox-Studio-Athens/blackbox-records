@@ -1,0 +1,388 @@
+import type {
+  StoreItemOptionRecord,
+  StoreItemOptionRepository,
+  StoreOfferSnapshotRepository,
+  VariantStripeMappingRepository,
+} from '../../../domain/commerce/repositories/spi';
+import { parseStripePriceId } from '../../../domain/commerce';
+import { createStripeCatalogLookupKey, createStripeCatalogMetadata, redactStripeObjectId } from './catalog-identifiers';
+import type {
+  CatalogSyncAction,
+  CatalogSyncIssue,
+  CatalogSyncRunResult,
+  CatalogSyncVariantResult,
+  StripeCatalogExpectedPrice,
+  StripeCatalogGateway,
+  StripeCatalogPrice,
+  StripeCatalogEnvironment,
+} from './types';
+
+const STORE_OFFER_FRESHNESS_MS = 24 * 60 * 60 * 1_000;
+const MAX_CATALOG_ITEMS = 500;
+
+export class CatalogDriftError extends Error {
+  public constructor(message = 'Checkout catalog needs review before payment can start.') {
+    super(message);
+    this.name = 'CatalogDriftError';
+  }
+}
+
+export type CatalogReconcilerDependencies = {
+  environment: StripeCatalogEnvironment;
+  storeItems: StoreItemOptionRepository;
+  storeOfferSnapshots: StoreOfferSnapshotRepository;
+  stripeCatalog: StripeCatalogGateway;
+  variantStripeMappings: VariantStripeMappingRepository;
+};
+
+export type ReconcileCatalogVariantOptions = {
+  apply: boolean;
+  expectedPrice?: StripeCatalogExpectedPrice | null;
+  now?: Date;
+  productName?: string;
+};
+
+export class CatalogReconciler {
+  public constructor(private readonly dependencies: CatalogReconcilerDependencies) {}
+
+  public async reconcileVariant(
+    storeItem: StoreItemOptionRecord,
+    options: ReconcileCatalogVariantOptions,
+  ): Promise<CatalogSyncVariantResult> {
+    const now = options.now ?? new Date();
+    const lookupKey = createStripeCatalogLookupKey(this.dependencies.environment, storeItem);
+    const metadata = createStripeCatalogMetadata(this.dependencies.environment, storeItem);
+    const [mapping, snapshot] = await Promise.all([
+      this.dependencies.variantStripeMappings.findByVariantId(storeItem.variantId),
+      this.dependencies.storeOfferSnapshots.findByVariantId(storeItem.variantId),
+    ]);
+
+    if (
+      this.dependencies.environment === 'local' &&
+      mapping?.stripePriceId.startsWith('price_mock_') &&
+      snapshot &&
+      snapshot.stripePriceId === mapping.stripePriceId
+    ) {
+      return {
+        actions: [],
+        issueCount: 0,
+        issues: [],
+        lookupKey,
+        mapping,
+        resolvedPrice: {
+          active: snapshot.priceActive,
+          amountMinor: snapshot.amountMinor,
+          currencyCode: snapshot.currencyCode,
+          lookupKey: snapshot.stripeLookupKey,
+          metadata,
+          priceId: snapshot.stripePriceId,
+          productActive: snapshot.productActive,
+          productId: null,
+          productMetadata: metadata,
+        },
+        snapshot,
+        storeItem,
+      };
+    }
+
+    const [lookupPrices, metadataPrices] = await Promise.all([
+      this.dependencies.stripeCatalog.listPricesByLookupKey(lookupKey),
+      this.dependencies.stripeCatalog.listPricesByMetadata(metadata),
+    ]);
+    const mappedPrice = mapping ? await this.dependencies.stripeCatalog.retrievePrice(mapping.stripePriceId) : null;
+    const candidates = uniquePrices([...lookupPrices, ...metadataPrices, ...(mappedPrice ? [mappedPrice] : [])]);
+    const issues: CatalogSyncIssue[] = [];
+    const actions: CatalogSyncAction[] = [];
+
+    if (mapping && isPlaceholderStripePriceId(mapping.stripePriceId, this.dependencies.environment)) {
+      issues.push(createIssue(storeItem, 'placeholder_price_mapping', 'D1 points at a placeholder Stripe Price ID.'));
+    }
+
+    if (mappedPrice && !matchesCatalogIdentity(mappedPrice, storeItem, this.dependencies.environment, lookupKey)) {
+      issues.push(
+        createIssue(
+          storeItem,
+          'wrong_variant_identity',
+          `Mapped Price ${redactStripeObjectId(mappedPrice.priceId)} does not identify this Store Item variant.`,
+        ),
+      );
+    }
+
+    const activeMatches = candidates.filter(
+      (price) =>
+        price.active &&
+        price.productActive &&
+        matchesCatalogIdentity(price, storeItem, this.dependencies.environment, lookupKey),
+    );
+
+    if (activeMatches.length > 1) {
+      issues.push(
+        createIssue(
+          storeItem,
+          'ambiguous_active_price',
+          `Multiple active Prices match ${lookupKey}; archive or disambiguate the stale Price.`,
+        ),
+      );
+    }
+
+    let resolvedPrice = activeMatches.length === 1 ? activeMatches[0]! : null;
+
+    if (
+      resolvedPrice &&
+      options.apply &&
+      options.expectedPrice &&
+      this.dependencies.environment === 'sandbox' &&
+      !matchesExpectedPrice(resolvedPrice, options.expectedPrice)
+    ) {
+      actions.push({ kind: 'archive_price', stripePriceId: resolvedPrice.priceId });
+      resolvedPrice = await this.dependencies.stripeCatalog.createSandboxPrice({
+        amountMinor: options.expectedPrice.amountMinor,
+        currencyCode: options.expectedPrice.currencyCode,
+        lookupKey,
+        metadata,
+        productName: options.productName ?? storeItem.storeItemSlug,
+      });
+      actions.push({ kind: 'create_sandbox_price' });
+    }
+
+    if (!resolvedPrice && options.apply && options.expectedPrice && this.dependencies.environment === 'sandbox') {
+      resolvedPrice = await this.dependencies.stripeCatalog.createSandboxPrice({
+        amountMinor: options.expectedPrice.amountMinor,
+        currencyCode: options.expectedPrice.currencyCode,
+        lookupKey,
+        metadata,
+        productName: options.productName ?? storeItem.storeItemSlug,
+      });
+      actions.push({ kind: 'create_sandbox_price' });
+    }
+
+    if (!resolvedPrice) {
+      issues.push(createIssue(storeItem, 'missing_price', `No unambiguous active Stripe Price matches ${lookupKey}.`));
+    }
+
+    if (resolvedPrice) {
+      if (!resolvedPrice.active) {
+        issues.push(createIssue(storeItem, 'inactive_price', 'Resolved Stripe Price is inactive.'));
+      }
+
+      if (!resolvedPrice.productActive) {
+        issues.push(createIssue(storeItem, 'inactive_product', 'Resolved Stripe Product is inactive.'));
+      }
+
+      if (!matchesCatalogIdentity(resolvedPrice, storeItem, this.dependencies.environment, lookupKey)) {
+        issues.push(createIssue(storeItem, 'wrong_variant_identity', 'Resolved Stripe Price metadata is wrong.'));
+      }
+
+      if (options.expectedPrice && resolvedPrice.amountMinor !== options.expectedPrice.amountMinor) {
+        issues.push(
+          createIssue(
+            storeItem,
+            'wrong_amount',
+            `Expected ${options.expectedPrice.amountMinor}; Stripe has ${resolvedPrice.amountMinor ?? 'unknown'}.`,
+          ),
+        );
+      }
+
+      if (
+        options.expectedPrice &&
+        resolvedPrice.currencyCode?.toUpperCase() !== options.expectedPrice.currencyCode.toUpperCase()
+      ) {
+        issues.push(
+          createIssue(
+            storeItem,
+            'wrong_currency',
+            `Expected ${options.expectedPrice.currencyCode}; Stripe has ${resolvedPrice.currencyCode ?? 'unknown'}.`,
+          ),
+        );
+      }
+
+      if (mapping?.stripePriceId !== resolvedPrice.priceId) {
+        actions.push({ kind: 'update_mapping', stripePriceId: resolvedPrice.priceId });
+      }
+
+      if (!hasMetadata(resolvedPrice.metadata, metadata) || !hasMetadata(resolvedPrice.productMetadata, metadata)) {
+        actions.push({ kind: 'update_stripe_metadata', stripePriceId: resolvedPrice.priceId });
+      }
+
+      if (
+        !snapshot ||
+        snapshot.amountMinor !== resolvedPrice.amountMinor ||
+        snapshot.currencyCode.toUpperCase() !== resolvedPrice.currencyCode?.toUpperCase() ||
+        snapshot.stripePriceId !== resolvedPrice.priceId ||
+        snapshot.stripeLookupKey !== lookupKey ||
+        snapshot.freshUntil.getTime() <= now.getTime()
+      ) {
+        actions.push({ kind: 'update_snapshot' });
+      }
+
+      if (snapshot && snapshot.freshUntil.getTime() <= now.getTime()) {
+        issues.push(createIssue(storeItem, 'snapshot_stale', 'Store Offer snapshot is stale.'));
+      }
+
+      if (
+        snapshot &&
+        (snapshot.amountMinor !== resolvedPrice.amountMinor ||
+          snapshot.currencyCode.toUpperCase() !== resolvedPrice.currencyCode?.toUpperCase() ||
+          snapshot.stripePriceId !== resolvedPrice.priceId)
+      ) {
+        issues.push(createIssue(storeItem, 'snapshot_mismatch', 'Store Offer snapshot differs from Stripe Price.'));
+      }
+    }
+
+    if (options.apply && resolvedPrice && canApplyCatalogActions(issues)) {
+      await this.applyActions(storeItem, lookupKey, resolvedPrice, actions, now);
+    }
+
+    return {
+      actions,
+      issueCount: issues.length,
+      issues,
+      lookupKey,
+      mapping,
+      resolvedPrice,
+      snapshot,
+      storeItem,
+    };
+  }
+
+  public async verifyBuyableCatalog(input: {
+    apply: boolean;
+    expectedPrices?: Map<string, StripeCatalogExpectedPrice>;
+    now?: Date;
+  }): Promise<CatalogSyncRunResult> {
+    const storeItems = await this.dependencies.storeItems.search(null, MAX_CATALOG_ITEMS);
+    const results = await Promise.all(
+      storeItems.map((storeItem) =>
+        this.reconcileVariant(storeItem, {
+          apply: input.apply,
+          expectedPrice: input.expectedPrices?.get(storeItem.variantId) ?? null,
+          now: input.now,
+        }),
+      ),
+    );
+    const issues = results.flatMap((result) => result.issues);
+
+    return {
+      dryRun: !input.apply,
+      environment: this.dependencies.environment,
+      issues,
+      results,
+    };
+  }
+
+  private async applyActions(
+    storeItem: StoreItemOptionRecord,
+    lookupKey: string,
+    resolvedPrice: StripeCatalogPrice,
+    actions: CatalogSyncAction[],
+    now: Date,
+  ): Promise<void> {
+    for (const action of actions) {
+      if (action.kind === 'archive_price') {
+        await this.dependencies.stripeCatalog.archivePrice(action.stripePriceId);
+      } else if (action.kind === 'update_mapping') {
+        await this.dependencies.variantStripeMappings.save({
+          stripePriceId: resolvedPrice.priceId,
+          variantId: storeItem.variantId,
+        });
+      } else if (
+        action.kind === 'update_snapshot' &&
+        resolvedPrice.amountMinor !== null &&
+        resolvedPrice.currencyCode
+      ) {
+        await this.dependencies.storeOfferSnapshots.save({
+          amountMinor: resolvedPrice.amountMinor,
+          currencyCode: resolvedPrice.currencyCode.toUpperCase(),
+          freshUntil: new Date(now.getTime() + STORE_OFFER_FRESHNESS_MS),
+          priceActive: resolvedPrice.active,
+          productActive: resolvedPrice.productActive,
+          storeItemSlug: storeItem.storeItemSlug,
+          stripeLookupKey: lookupKey,
+          stripePriceId: resolvedPrice.priceId,
+          syncedAt: now,
+          variantId: storeItem.variantId,
+        });
+      } else if (action.kind === 'update_stripe_metadata') {
+        await this.dependencies.stripeCatalog.updatePriceMetadata(
+          resolvedPrice.priceId,
+          createStripeCatalogMetadata(this.dependencies.environment, storeItem),
+        );
+      }
+    }
+  }
+}
+
+export function matchesCatalogIdentity(
+  price: StripeCatalogPrice,
+  storeItem: StoreItemOptionRecord,
+  environment: StripeCatalogEnvironment,
+  lookupKey: string,
+): boolean {
+  return (
+    price.lookupKey === lookupKey ||
+    hasMetadata(price.metadata, createStripeCatalogMetadata(environment, storeItem)) ||
+    hasMetadata(price.productMetadata, createStripeCatalogMetadata(environment, storeItem))
+  );
+}
+
+function hasMetadata(candidate: Record<string, string>, expected: Record<string, string>): boolean {
+  return Object.entries(expected).every(([key, value]) => candidate[key] === value);
+}
+
+function matchesExpectedPrice(price: StripeCatalogPrice, expectedPrice: StripeCatalogExpectedPrice): boolean {
+  return (
+    price.amountMinor === expectedPrice.amountMinor &&
+    price.currencyCode?.toUpperCase() === expectedPrice.currencyCode.toUpperCase()
+  );
+}
+
+export function hasBlockingCatalogIssue(issues: CatalogSyncIssue[]): boolean {
+  return issues.some((issue) =>
+    [
+      'ambiguous_active_price',
+      'inactive_price',
+      'inactive_product',
+      'missing_price',
+      'placeholder_price_mapping',
+      'wrong_amount',
+      'wrong_currency',
+      'wrong_variant_identity',
+    ].includes(issue.code),
+  );
+}
+
+function canApplyCatalogActions(issues: CatalogSyncIssue[]): boolean {
+  return !issues.some((issue) => hasBlockingCatalogIssue([issue]) && !isRepairableStaleMappedPriceIssue(issue));
+}
+
+function isRepairableStaleMappedPriceIssue(issue: CatalogSyncIssue): boolean {
+  return issue.code === 'wrong_variant_identity' && issue.detail.startsWith('Mapped Price ');
+}
+
+function isPlaceholderStripePriceId(value: string, environment: StripeCatalogEnvironment): boolean {
+  return (
+    (environment !== 'local' && value.startsWith('price_mock_')) ||
+    value === 'price_replace_with_real_stripe_test_price'
+  );
+}
+
+function createIssue(
+  storeItem: StoreItemOptionRecord,
+  code: CatalogSyncIssue['code'],
+  detail: string,
+): CatalogSyncIssue {
+  return {
+    code,
+    detail,
+    storeItemSlug: storeItem.storeItemSlug,
+    variantId: storeItem.variantId,
+  };
+}
+
+function uniquePrices(prices: StripeCatalogPrice[]): StripeCatalogPrice[] {
+  return [...new Map(prices.map((price) => [price.priceId, price])).values()];
+}
+
+export function parseCatalogStripePriceId(value: string) {
+  return parseStripePriceId(value);
+}

@@ -309,10 +309,6 @@ export type EnumItemAvailabilityStatusFieldUpdateOperationsInput = {
   set?: $Enums.ItemAvailabilityStatus
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 
 
 export type ItemAvailabilitySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{

@@ -46,6 +46,25 @@ model VariantStripeMapping {
   updatedAt     DateTime @updatedAt
 }
 
+model StoreOfferSnapshot {
+  id              String   @id @default(cuid())
+  storeItemSlug   String   @unique
+  variantId       String   @unique
+  stripePriceId   String
+  stripeLookupKey String
+  amountMinor     Int
+  currencyCode    String
+  priceActive     Boolean
+  productActive   Boolean
+  syncedAt        DateTime
+  freshUntil      DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([freshUntil])
+  @@index([stripeLookupKey])
+}
+
 model ItemAvailability {
   id        String                 @id @default(cuid())
   variantId String                 @unique
@@ -88,10 +107,10 @@ model StockCount {
 }
 
 model CheckoutOrder {
-  id                        String      @id @default(cuid())
+  id                        String              @id @default(cuid())
   storeItemSlug             String
   variantId                 String
-  checkoutSessionId         String      @unique
+  checkoutSessionId         String              @unique
   stripePaymentIntentId     String?
   shippingLockerId          String?
   shippingLockerCountryCode String?
@@ -101,8 +120,8 @@ model CheckoutOrder {
   paidAt                    DateTime?
   notPaidAt                 DateTime?
   needsReviewAt             DateTime?
-  createdAt                 DateTime    @default(now())
-  updatedAt                 DateTime    @updatedAt
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
   lines                     CheckoutOrderLine[]
 
   @@index([variantId, status])

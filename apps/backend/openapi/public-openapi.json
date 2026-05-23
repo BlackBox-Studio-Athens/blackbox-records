@@ -45,6 +45,24 @@
           "canCheckout": {
             "type": "boolean"
           },
+          "catalogStatus": {
+            "type": "string",
+            "enum": [
+              "catalog_drift",
+              "ready",
+              "sold_out"
+            ]
+          },
+          "price": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicStoreOfferPrice"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "storeItemSlug": {
             "type": "string"
           },
@@ -55,6 +73,8 @@
         "required": [
           "availability",
           "canCheckout",
+          "catalogStatus",
+          "price",
           "storeItemSlug",
           "variantId"
         ]
@@ -76,6 +96,28 @@
         "required": [
           "label",
           "status"
+        ]
+      },
+      "PublicStoreOfferPrice": {
+        "type": "object",
+        "properties": {
+          "amountMinor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "currencyCode": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "display": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amountMinor",
+          "currencyCode",
+          "display"
         ]
       },
       "PublicCommerceError": {

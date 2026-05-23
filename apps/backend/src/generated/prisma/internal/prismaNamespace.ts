@@ -386,6 +386,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   StoreItemOption: 'StoreItemOption',
   VariantStripeMapping: 'VariantStripeMapping',
+  StoreOfferSnapshot: 'StoreOfferSnapshot',
   ItemAvailability: 'ItemAvailability',
   Stock: 'Stock',
   StockChange: 'StockChange',
@@ -407,7 +408,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "storeItemOption" | "variantStripeMapping" | "itemAvailability" | "stock" | "stockChange" | "stockCount" | "checkoutOrder" | "checkoutOrderLine"
+    modelProps: "storeItemOption" | "variantStripeMapping" | "storeOfferSnapshot" | "itemAvailability" | "stock" | "stockChange" | "stockCount" | "checkoutOrder" | "checkoutOrderLine"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -556,6 +557,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.VariantStripeMappingCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.VariantStripeMappingCountAggregateOutputType> | number
+        }
+      }
+    }
+    StoreOfferSnapshot: {
+      payload: Prisma.$StoreOfferSnapshotPayload<ExtArgs>
+      fields: Prisma.StoreOfferSnapshotFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.StoreOfferSnapshotFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreOfferSnapshotPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.StoreOfferSnapshotFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreOfferSnapshotPayload>
+        }
+        findFirst: {
+          args: Prisma.StoreOfferSnapshotFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreOfferSnapshotPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.StoreOfferSnapshotFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreOfferSnapshotPayload>
+        }
+        findMany: {
+          args: Prisma.StoreOfferSnapshotFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreOfferSnapshotPayload>[]
+        }
+        create: {
+          args: Prisma.StoreOfferSnapshotCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreOfferSnapshotPayload>
+        }
+        createMany: {
+          args: Prisma.StoreOfferSnapshotCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.StoreOfferSnapshotCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreOfferSnapshotPayload>[]
+        }
+        delete: {
+          args: Prisma.StoreOfferSnapshotDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreOfferSnapshotPayload>
+        }
+        update: {
+          args: Prisma.StoreOfferSnapshotUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreOfferSnapshotPayload>
+        }
+        deleteMany: {
+          args: Prisma.StoreOfferSnapshotDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.StoreOfferSnapshotUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.StoreOfferSnapshotUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreOfferSnapshotPayload>[]
+        }
+        upsert: {
+          args: Prisma.StoreOfferSnapshotUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StoreOfferSnapshotPayload>
+        }
+        aggregate: {
+          args: Prisma.StoreOfferSnapshotAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateStoreOfferSnapshot>
+        }
+        groupBy: {
+          args: Prisma.StoreOfferSnapshotGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StoreOfferSnapshotGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.StoreOfferSnapshotCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StoreOfferSnapshotCountAggregateOutputType> | number
         }
       }
     }
@@ -1063,6 +1138,25 @@ export const VariantStripeMappingScalarFieldEnum = {
 export type VariantStripeMappingScalarFieldEnum = (typeof VariantStripeMappingScalarFieldEnum)[keyof typeof VariantStripeMappingScalarFieldEnum]
 
 
+export const StoreOfferSnapshotScalarFieldEnum = {
+  id: 'id',
+  storeItemSlug: 'storeItemSlug',
+  variantId: 'variantId',
+  stripePriceId: 'stripePriceId',
+  stripeLookupKey: 'stripeLookupKey',
+  amountMinor: 'amountMinor',
+  currencyCode: 'currencyCode',
+  priceActive: 'priceActive',
+  productActive: 'productActive',
+  syncedAt: 'syncedAt',
+  freshUntil: 'freshUntil',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type StoreOfferSnapshotScalarFieldEnum = (typeof StoreOfferSnapshotScalarFieldEnum)[keyof typeof StoreOfferSnapshotScalarFieldEnum]
+
+
 export const ItemAvailabilityScalarFieldEnum = {
   id: 'id',
   variantId: 'variantId',
@@ -1190,9 +1284,9 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
 
 
 /**
- * Reference to a field of type 'ItemAvailabilityStatus'
+ * Reference to a field of type 'Int'
  */
-export type EnumItemAvailabilityStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ItemAvailabilityStatus'>
+export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
     
 
 
@@ -1204,9 +1298,9 @@ export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
- * Reference to a field of type 'Int'
+ * Reference to a field of type 'ItemAvailabilityStatus'
  */
-export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+export type EnumItemAvailabilityStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ItemAvailabilityStatus'>
     
 
 
@@ -1335,6 +1429,7 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   storeItemOption?: Prisma.StoreItemOptionOmit
   variantStripeMapping?: Prisma.VariantStripeMappingOmit
+  storeOfferSnapshot?: Prisma.StoreOfferSnapshotOmit
   itemAvailability?: Prisma.ItemAvailabilityOmit
   stock?: Prisma.StockOmit
   stockChange?: Prisma.StockChangeOmit

@@ -28,6 +28,11 @@ export type StoreItemOption = Prisma.StoreItemOptionModel
  */
 export type VariantStripeMapping = Prisma.VariantStripeMappingModel
 /**
+ * Model StoreOfferSnapshot
+ *
+ */
+export type StoreOfferSnapshot = Prisma.StoreOfferSnapshotModel
+/**
  * Model ItemAvailability
  * 
  */

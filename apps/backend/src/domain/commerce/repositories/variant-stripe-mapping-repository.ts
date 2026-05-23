@@ -7,4 +7,5 @@ export type VariantStripeMappingRecord = {
 
 export interface VariantStripeMappingRepository {
   findByVariantId(variantId: VariantId): Promise<VariantStripeMappingRecord | null>;
+  save(record: VariantStripeMappingRecord): Promise<VariantStripeMappingRecord>;
 }

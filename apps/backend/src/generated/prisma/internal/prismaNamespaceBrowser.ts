@@ -53,6 +53,7 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   StoreItemOption: 'StoreItemOption',
   VariantStripeMapping: 'VariantStripeMapping',
+  StoreOfferSnapshot: 'StoreOfferSnapshot',
   ItemAvailability: 'ItemAvailability',
   Stock: 'Stock',
   StockChange: 'StockChange',
@@ -96,6 +97,25 @@ export const VariantStripeMappingScalarFieldEnum = {
 } as const
 
 export type VariantStripeMappingScalarFieldEnum = (typeof VariantStripeMappingScalarFieldEnum)[keyof typeof VariantStripeMappingScalarFieldEnum]
+
+
+export const StoreOfferSnapshotScalarFieldEnum = {
+  id: 'id',
+  storeItemSlug: 'storeItemSlug',
+  variantId: 'variantId',
+  stripePriceId: 'stripePriceId',
+  stripeLookupKey: 'stripeLookupKey',
+  amountMinor: 'amountMinor',
+  currencyCode: 'currencyCode',
+  priceActive: 'priceActive',
+  productActive: 'productActive',
+  syncedAt: 'syncedAt',
+  freshUntil: 'freshUntil',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type StoreOfferSnapshotScalarFieldEnum = (typeof StoreOfferSnapshotScalarFieldEnum)[keyof typeof StoreOfferSnapshotScalarFieldEnum]
 
 
 export const ItemAvailabilityScalarFieldEnum = {

@@ -229,12 +229,14 @@
         "apps/backend/src/interfaces/http/routes/public-commerce-services.ts",
         "apps/backend/src/interfaces/http/routes/stripe-webhook-acknowledgement.ts",
         "apps/backend/src/interfaces/http/routes/stripe-webhook-services.ts",
-        "apps/backend/src/interfaces/http/contracts/public-contracts.ts"
+        "apps/backend/src/interfaces/http/contracts/public-contracts.ts",
+        "apps/backend/src/interfaces/scheduled/**"
       ],
       "providedEntrypoints": [
         "apps/backend/src/interfaces/http/contracts/public-contracts.ts",
         "apps/backend/src/interfaces/http/routes/register-public-routes.ts",
-        "apps/backend/src/interfaces/http/routes/register-internal-routes.ts"
+        "apps/backend/src/interfaces/http/routes/register-internal-routes.ts",
+        "apps/backend/src/interfaces/scheduled/catalog-verification.ts"
       ],
       "namedInterfaces": {
         "public-contracts": "apps/backend/src/interfaces/http/contracts/public-contracts.ts"
@@ -244,6 +246,8 @@
         "orders",
         "operator-stock",
         "stock",
+        "catalog-sync",
+        "commerce-domain",
         "commerce-persistence",
         "stripe-integration",
         "platform-shared"
@@ -281,7 +285,16 @@
       "roots": ["apps/backend/src/infrastructure/stripe/**"],
       "providedEntrypoints": ["apps/backend/src/infrastructure/stripe/index.ts"],
       "namedInterfaces": {},
-      "allowedDependencies": ["checkout-core", "platform-shared"],
+      "allowedDependencies": ["catalog-sync", "checkout-core", "commerce-domain", "platform-shared"],
+      "allowedWorkspaceInterfaces": {},
+      "ownershipExceptions": []
+    },
+    "catalog-sync": {
+      "status": "closed",
+      "roots": ["apps/backend/src/application/commerce/catalog-sync/**"],
+      "providedEntrypoints": ["apps/backend/src/application/commerce/catalog-sync/index.ts"],
+      "namedInterfaces": {},
+      "allowedDependencies": ["commerce-domain"],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
@@ -300,7 +313,7 @@
       "namedInterfaces": {
         "checkout-spi": "apps/backend/src/application/commerce/checkout/spi.ts"
       },
-      "allowedDependencies": ["commerce-domain", "orders", "stock", "platform-shared"],
+      "allowedDependencies": ["catalog-sync", "commerce-domain", "orders", "stock", "platform-shared"],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
