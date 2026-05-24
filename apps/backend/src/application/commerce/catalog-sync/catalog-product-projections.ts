@@ -102,6 +102,32 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     },
     productProjection: {
       description:
+        "Mass Culture's Barren Point keeps the Greek band's post-hardcore and metal pressure direct and physical.",
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/mass-culture-barren-point.jpg',
+      ],
+      metadata: {
+        sourceId: 'barren-point',
+        sourceKind: 'distro',
+        storeItemSlug: 'barren-point',
+        variantId: 'variant_barren-point_standard',
+      },
+      name: 'BlackBox Records - Barren Point - LP',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'barren-point',
+    sourceKind: 'distro',
+    storeItemSlug: 'barren-point',
+    variantId: 'variant_barren-point_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description:
         'Sadhus, The Smoking Community bring Athens sludge and crust together with brutal vocals across their second full-length release.',
       imageUrls: [
         'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/sadhus-the-big-fish.jpg',
@@ -209,18 +235,18 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
         'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/656856327_18427527979186423_8617747121554203403_n.jpg',
       ],
       metadata: {
-        sourceId: 'barren-point',
+        sourceId: 'disintegration',
         sourceKind: 'release',
         storeItemSlug: 'disintegration-black-vinyl-lp',
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
       name: 'BlackBox Records - Disintegration - Black Vinyl LP',
       taxCode: 'txcd_99999999',
     },
-    sourceId: 'barren-point',
+    sourceId: 'disintegration',
     sourceKind: 'release',
     storeItemSlug: 'disintegration-black-vinyl-lp',
-    variantId: 'variant_barren-point_standard',
+    variantId: 'variant_disintegration-black-vinyl-lp_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',
@@ -299,32 +325,6 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     sourceKind: 'distro',
     storeItemSlug: 'magic-sleazeball-corrida',
     variantId: 'variant_magic-sleazeball-corrida_standard',
-  },
-  {
-    alignmentStatus: 'checkout_eligible',
-    expectedSandboxPrice: {
-      amountMinor: 2800,
-      currencyCode: 'EUR',
-    },
-    productProjection: {
-      description:
-        "Mass Culture's Barren Point keeps the Greek band's post-hardcore and metal pressure direct and physical.",
-      imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/mass-culture-barren-point.jpg',
-      ],
-      metadata: {
-        sourceId: 'mass-culture-lp',
-        sourceKind: 'distro',
-        storeItemSlug: 'mass-culture-lp',
-        variantId: 'variant_mass-culture-lp_standard',
-      },
-      name: 'BlackBox Records - Barren Point - LP',
-      taxCode: 'txcd_99999999',
-    },
-    sourceId: 'mass-culture-lp',
-    sourceKind: 'distro',
-    storeItemSlug: 'mass-culture-lp',
-    variantId: 'variant_mass-culture-lp_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',

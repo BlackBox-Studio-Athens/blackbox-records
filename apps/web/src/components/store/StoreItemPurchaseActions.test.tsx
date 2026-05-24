@@ -21,7 +21,7 @@ const cartItem: CartLineItemSnapshot = {
   storeItemSlug: 'disintegration-black-vinyl-lp',
   subtitle: 'Afterwise',
   title: 'Disintegration',
-  variantId: 'variant_barren-point_standard',
+  variantId: 'variant_disintegration-black-vinyl-lp_standard',
 };
 
 const cartSeed: StoreItemCartSeed = {
@@ -84,7 +84,7 @@ describe('StoreItemPurchaseActions', () => {
         display: '€28.00',
       },
       storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
 
     expect(workerCartItem).toEqual({
@@ -106,7 +106,7 @@ describe('StoreItemPurchaseActions', () => {
         catalogStatus: 'sold_out',
         price: null,
         storeItemSlug: 'disintegration-black-vinyl-lp',
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
       }),
     ).toBeNull();
   });

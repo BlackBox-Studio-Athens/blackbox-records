@@ -40,22 +40,30 @@ describe('slug tooling', () => {
   it('reports slug collisions without suffixing public slugs', () => {
     expect(
       findSlugCollisions([
-        { owner: 'release:barren-point', slug: 'disintegration-black-vinyl-lp' },
-        { owner: 'distro:disintegration', slug: 'disintegration-black-vinyl-lp' },
+        { owner: 'release:disintegration', slug: 'disintegration-black-vinyl-lp' },
+        { owner: 'distro:barren-point', slug: 'barren-point' },
         { owner: 'release:caregivers', slug: 'caregivers-vinyl' },
+        { owner: 'distro:caregivers-vinyl', slug: 'caregivers-vinyl' },
       ]),
     ).toEqual([
       {
-        owners: ['release:barren-point', 'distro:disintegration'],
-        slug: 'disintegration-black-vinyl-lp',
+        owners: ['release:caregivers', 'distro:caregivers-vinyl'],
+        slug: 'caregivers-vinyl',
       },
     ]);
 
+    expect(
+      findSlugCollisions([
+        { owner: 'release:disintegration', slug: 'disintegration-black-vinyl-lp' },
+        { owner: 'distro:barren-point', slug: 'barren-point' },
+      ]),
+    ).toEqual([]);
+
     expect(() =>
       assertNoSlugCollisions([
-        { owner: 'release:barren-point', slug: 'disintegration-black-vinyl-lp' },
-        { owner: 'distro:disintegration', slug: 'disintegration-black-vinyl-lp' },
+        { owner: 'release:caregivers', slug: 'caregivers-vinyl' },
+        { owner: 'distro:caregivers-vinyl', slug: 'caregivers-vinyl' },
       ]),
-    ).toThrow('Slug collision detected: disintegration-black-vinyl-lp');
+    ).toThrow('Slug collision detected: caregivers-vinyl');
   });
 });

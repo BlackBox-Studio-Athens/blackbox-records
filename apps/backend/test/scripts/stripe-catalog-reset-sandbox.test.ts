@@ -18,18 +18,18 @@ const contract: StripeCatalogStoreItemContract = {
     description: 'Projected product.',
     imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/product.jpg'],
     metadata: {
-      sourceId: 'barren-point',
+      sourceId: 'disintegration',
       sourceKind: 'release',
       storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     },
     name: 'BlackBox Records - Disintegration - Black Vinyl LP',
     taxCode: null,
   },
-  sourceId: 'barren-point',
+  sourceId: 'disintegration',
   sourceKind: 'release',
   storeItemSlug: 'disintegration-black-vinyl-lp',
-  variantId: 'variant_barren-point_standard',
+  variantId: 'variant_disintegration-black-vinyl-lp_standard',
 };
 
 describe('stripe sandbox catalog reset', () => {
@@ -112,7 +112,7 @@ function createFakeStripeClient() {
           {
             active: true,
             id: 'price_blackboxOwned1111',
-            lookup_key: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_barren-point_standard',
+            lookup_key: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
             metadata: {},
             product: {
               deleted: false,
@@ -126,10 +126,10 @@ function createFakeStripeClient() {
             lookup_key: null,
             metadata: {
               appEnv: 'sandbox',
-              sourceId: 'barren-point',
+              sourceId: 'disintegration',
               sourceKind: 'release',
               storeItemSlug: 'disintegration-black-vinyl-lp',
-              variantId: 'variant_barren-point_standard',
+              variantId: 'variant_disintegration-black-vinyl-lp_standard',
             },
             product: {
               deleted: false,

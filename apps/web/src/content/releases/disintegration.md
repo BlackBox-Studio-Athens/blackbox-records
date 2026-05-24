@@ -13,7 +13,7 @@ summary: >-
 
   Mastered by Nikos Dimitrakakos and Jim Spanos at Unreal Studio, Athens, Greece.
 formats:
-  - Vinyl LP
+  - Black Vinyl LP
   - CD
   - Digital
 credits:

@@ -1,6 +1,6 @@
 DELETE FROM "StoreItemOption"
 WHERE "sourceKind" = 'release'
-  AND "sourceId" = 'barren-point'
+  AND "sourceId" = 'disintegration'
   AND "storeItemSlug" <> 'disintegration-black-vinyl-lp';
 
 INSERT INTO "StoreItemOption" (
@@ -14,11 +14,11 @@ INSERT INTO "StoreItemOption" (
 )
 VALUES
     (
-        'store_item_option_barren_point',
+        'store_item_option_disintegration_black_vinyl_lp',
         'disintegration-black-vinyl-lp',
         'release',
-        'barren-point',
-        'variant_barren-point_standard',
+        'disintegration',
+        'variant_disintegration-black-vinyl-lp_standard',
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP
     ),
@@ -55,8 +55,8 @@ INSERT INTO "ItemAvailability" (
 )
 VALUES
     (
-        'item_availability_barren_point',
-        'variant_barren-point_standard',
+        'item_availability_disintegration_black_vinyl_lp',
+        'variant_disintegration-black-vinyl-lp_standard',
         'available',
         TRUE,
         CURRENT_TIMESTAMP
@@ -90,8 +90,8 @@ INSERT INTO "Stock" (
 )
 VALUES
     (
-        'stock_barren_point',
-        'variant_barren-point_standard',
+        'stock_disintegration_black_vinyl_lp',
+        'variant_disintegration-black-vinyl-lp_standard',
         3,
         2,
         CURRENT_TIMESTAMP,

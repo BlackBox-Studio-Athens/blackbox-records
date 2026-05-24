@@ -25,7 +25,7 @@ const canonicalItem: CartLineItemSnapshot = {
   storeItemSlug: 'disintegration-black-vinyl-lp',
   subtitle: 'Afterwise',
   title: 'Disintegration',
-  variantId: 'variant_barren-point_standard',
+  variantId: 'variant_disintegration-black-vinyl-lp_standard',
 };
 
 function createMemoryStorage() {
@@ -56,7 +56,7 @@ describe('store cart state', () => {
     expect(getStoreCartCount(state)).toBe(1);
     expect(state.primaryLineItem).toMatchObject({
       storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
       optionLabel: 'Black Vinyl LP',
     });
     expect(state.lines).toEqual([{ ...canonicalItem, quantity: 1 }]);
@@ -127,7 +127,7 @@ describe('store cart state', () => {
       },
       firstState,
     );
-    const finalState = removeCartLineByVariant('variant_barren-point_standard', secondState);
+    const finalState = removeCartLineByVariant('variant_disintegration-black-vinyl-lp_standard', secondState);
 
     expect(getStoreCartCount(finalState)).toBe(1);
     expect(finalState.primaryLineItem?.storeItemSlug).toBe('afterglow-tape');

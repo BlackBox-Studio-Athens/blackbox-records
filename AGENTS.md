@@ -156,7 +156,7 @@ Read these first before editing:
 - Do not persist raw BOX NOW widget/API payloads, unapproved address/locker payload dumps, voucher IDs, label URLs, tracking automation state, or partner-portal credentials in v1.
 - BOX NOW fulfillment remains manual by default; automation requires an explicit later slice using `boxnow-js`.
 - Manual fulfillment handoff and local validation requirements live in `openspec/specs/shipping-fulfillment/spec.md`.
-- Phase 7 requires shopper-facing store URLs to describe the sellable item option, not legacy release shorthand. The old `barren-point` local smoke route is a compatibility alias for the canonical `Disintegration` / `Black Vinyl LP` route.
+- Phase 7 requires shopper-facing store URLs to describe the sellable item option, not legacy release shorthand. `Disintegration` uses `/store/disintegration-black-vinyl-lp/`; `/store/barren-point/` belongs to the separate Barren Point distro item.
 - Phase 7 cart UX should be Shopify-familiar but BlackBox-owned: cart icon, single-item cart drawer, order summary, and checkout CTA using Astro/React/shadcn. Do not implement true multi-item cart, quantity controls, discount codes, or browser-owned commerce authority in this milestone.
 - No-account cart terms and checkout authority rules live in `openspec/specs/project-language/spec.md` and `openspec/specs/commerce-checkout/spec.md`; they must remain separate from Stripe live-access gates and any future BOX NOW reopen-only integration.
 

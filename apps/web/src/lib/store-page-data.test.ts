@@ -44,7 +44,7 @@ describe('store page data helper', () => {
     mockCatalogData.getStoreItemBySlug.mockResolvedValue({
       slug: 'disintegration-black-vinyl-lp',
       sourceKind: 'release',
-      sourceId: 'barren-point',
+      sourceId: 'disintegration',
       title: 'Disintegration',
       subtitle: 'Afterwise',
       summary: 'BlackBox release.',
@@ -57,7 +57,7 @@ describe('store page data helper', () => {
     });
 
     mockItemAvailability.getPrimaryAvailabilityForStoreItem.mockResolvedValue({
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
       storeItemSlug: 'disintegration-black-vinyl-lp',
       optionLabel: 'Black Vinyl LP',
       price: {
@@ -79,7 +79,7 @@ describe('store page data helper', () => {
         checkoutPath: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
       },
       primaryAvailability: {
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
         canBuy: true,
       },
     });
@@ -98,7 +98,7 @@ describe('store page data helper', () => {
         slug: 'disintegration-black-vinyl-lp',
         taxCategory: 'physical_goods',
         sourceKind: 'release',
-        sourceId: 'barren-point',
+        sourceId: 'disintegration',
         title: 'Disintegration',
         subtitle: 'Afterwise',
         summary: 'BlackBox release.',
@@ -143,7 +143,7 @@ describe('store page data helper', () => {
 
     mockItemAvailability.getPrimaryAvailabilityForStoreItem
       .mockResolvedValueOnce({
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
         storeItemSlug: 'disintegration-black-vinyl-lp',
         optionLabel: 'Black Vinyl LP',
         price: { amountMinor: 2800, currencyCode: 'EUR', display: 'EUR 28.00' },
@@ -220,7 +220,7 @@ describe('store page data helper', () => {
         slug: 'disintegration-black-vinyl-lp',
         taxCategory: 'physical_goods',
         sourceKind: 'release',
-        sourceId: 'barren-point',
+        sourceId: 'disintegration',
         title: 'Disintegration',
         subtitle: 'Afterwise',
         summary: 'BlackBox release.',
@@ -232,7 +232,7 @@ describe('store page data helper', () => {
         checkoutPath: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
       },
       {
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
         storeItemSlug: 'disintegration-black-vinyl-lp',
         optionLabel: 'Black Vinyl LP',
         price: { display: 'Price confirmed at checkout' },

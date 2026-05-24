@@ -170,7 +170,7 @@ describe('paid checkout reconciliation', () => {
   const primaryCheckoutSessionId = checkoutSessionId('cs_test_123');
   const primaryStoreItemSlug = storeItemSlug('disintegration-black-vinyl-lp');
   const primaryStripePriceId = stripePriceId('price_test_barren_point');
-  const variantId = toVariantId('variant_barren-point_standard');
+  const variantId = toVariantId('variant_disintegration-black-vinyl-lp_standard');
   let orders: InMemoryOrderStateRepository;
   let stock: InMemoryStockRepository;
   let stockChanges: InMemoryStockChangeRepository;

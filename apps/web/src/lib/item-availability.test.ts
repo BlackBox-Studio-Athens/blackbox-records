@@ -5,12 +5,12 @@ vi.mock('astro:content', () => ({
     if (collectionName === 'releases') {
       return [
         {
-          id: 'barren-point',
+          id: 'disintegration',
           data: {
             artist: { id: 'afterwise' },
-            cover_image: { src: '/barren-point.jpg' },
-            cover_image_alt: 'Barren Point cover',
-            formats: ['Vinyl LP'],
+            cover_image: { src: '/disintegration.jpg' },
+            cover_image_alt: 'Disintegration cover',
+            formats: ['Black Vinyl LP'],
             merch_url: '/store/',
             release_date: new Date('2026-09-01T00:00:00.000Z'),
             summary: 'Native-shop release',
@@ -94,7 +94,7 @@ describe('ItemAvailability adapter', () => {
   it('resolves one stable temporary item availability record for a native store item slug', async () => {
     await expect(listAvailabilityForStoreItem('disintegration-black-vinyl-lp')).resolves.toEqual([
       {
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
         storeItemSlug: 'disintegration-black-vinyl-lp',
         optionLabel: 'Black Vinyl LP',
         price: {

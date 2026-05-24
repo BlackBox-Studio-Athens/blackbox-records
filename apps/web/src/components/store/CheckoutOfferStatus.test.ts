@@ -50,7 +50,7 @@ function createReadyStoreOffer(overrides: Partial<PublicStoreOffer> = {}): Publi
     catalogStatus: 'ready',
     price: workerOfferPrice,
     storeItemSlug: 'disintegration-black-vinyl-lp',
-    variantId: 'variant_barren-point_standard',
+    variantId: 'variant_disintegration-black-vinyl-lp_standard',
   };
 
   return {
@@ -89,7 +89,7 @@ const cartItem: CartLineItemSnapshot = {
   storeItemSlug: 'disintegration-black-vinyl-lp',
   subtitle: 'Afterwise',
   title: 'Disintegration',
-  variantId: 'variant_barren-point_standard',
+  variantId: 'variant_disintegration-black-vinyl-lp_standard',
 };
 
 describe('CheckoutOfferStatus helpers', () => {
@@ -156,7 +156,7 @@ describe('CheckoutOfferStatus helpers', () => {
       kind: 'ready',
       offer: {
         canCheckout: true,
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
     });
   });
@@ -176,7 +176,7 @@ describe('CheckoutOfferStatus helpers', () => {
       isReady: true,
       statusLabel: 'Available',
       tone: 'ready',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
   });
 
@@ -200,7 +200,7 @@ describe('CheckoutOfferStatus helpers', () => {
       isReady: false,
       statusLabel: 'Available',
       tone: 'unavailable',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
   });
 
@@ -272,12 +272,12 @@ describe('CheckoutOfferStatus helpers', () => {
     const state = await startHostedCheckout({
       api,
       storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
 
     expect(api.startCheckout).toHaveBeenCalledExactlyOnceWith({
       storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
     expect(state).toEqual({
       checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
@@ -333,7 +333,7 @@ describe('CheckoutOfferStatus helpers', () => {
       startHostedCheckout({
         api,
         storeItemSlug: 'disintegration-black-vinyl-lp',
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
       }),
     ).resolves.toEqual({
       kind: 'error',

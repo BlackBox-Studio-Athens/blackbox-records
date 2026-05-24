@@ -5,12 +5,12 @@ vi.mock('astro:content', () => ({
     if (collectionName === 'releases') {
       return [
         {
-          id: 'barren-point',
+          id: 'disintegration',
           data: {
             artist: { id: 'afterwise' },
-            cover_image: { src: '/barren-point.jpg' },
-            cover_image_alt: 'Barren Point cover',
-            formats: ['Vinyl LP'],
+            cover_image: { src: '/disintegration.jpg' },
+            cover_image_alt: 'Disintegration cover',
+            formats: ['Black Vinyl LP'],
             merch_url: '/store/',
             release_date: new Date('2026-09-01T00:00:00.000Z'),
             summary: 'Native-shop release',

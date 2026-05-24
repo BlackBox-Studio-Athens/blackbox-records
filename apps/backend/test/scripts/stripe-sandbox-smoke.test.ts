@@ -65,7 +65,7 @@ const sessionProjectionExpectation = {
   expectedAmountMinor: 2800,
   expectedCurrencyCode: 'EUR',
   expectedProductImageUrl:
-    'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/barren-point.jpg',
+    'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/disintegration.jpg',
   expectedProductName: 'BlackBox Records - Disintegration - Black Vinyl LP',
 };
 const checkoutSurfaceExpectation = {
@@ -289,9 +289,11 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     );
     expect(issues).toContain('Sandbox D1 has no real Stripe price mappings.');
     expect(issues).toContain('Sandbox D1 has no positive online stock rows.');
-    expect(issues).toContain('Sandbox D1 smoke item variant_barren-point_standard is not marked buyable.');
     expect(issues).toContain(
-      'Sandbox D1 smoke item variant_barren-point_standard needs at least 2 online stock for the selected paid scenario(s). Current online stock: 0.',
+      'Sandbox D1 smoke item variant_disintegration-black-vinyl-lp_standard is not marked buyable.',
+    );
+    expect(issues).toContain(
+      'Sandbox D1 smoke item variant_disintegration-black-vinyl-lp_standard needs at least 2 online stock for the selected paid scenario(s). Current online stock: 0.',
     );
     expect(JSON.stringify(issues)).not.toContain('sk_test_');
     expect(JSON.stringify(issues)).not.toContain('whsec_');
@@ -327,7 +329,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(createRemoteD1ReadinessSql()).toContain('realStripeMappingCount');
     expect(createRemoteD1ReadinessSql()).toContain('smokeVariantOnlineQuantity');
     expect(createSandboxSmokeStockTopUpSql(2)).toContain('"onlineQuantity" < 2');
-    expect(createSandboxSmokeStockTopUpSql(2)).toContain('variant_barren-point_standard');
+    expect(createSandboxSmokeStockTopUpSql(2)).toContain('variant_disintegration-black-vinyl-lp_standard');
     expect(() => createSandboxSmokeStockTopUpSql(0)).toThrow(
       'Sandbox smoke stock top-up quantity must be a positive integer.',
     );

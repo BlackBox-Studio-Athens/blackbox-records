@@ -38,7 +38,7 @@ describe('stripe-mock local launcher proxy', () => {
       }),
       method: 'POST',
       requestBody: new URLSearchParams({
-        'metadata[variantId]': 'variant_barren-point_standard',
+        'metadata[variantId]': 'variant_disintegration-black-vinyl-lp_standard',
       }).toString(),
       url: '/v1/checkout/sessions',
     });

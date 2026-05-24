@@ -9,10 +9,10 @@ import type { StoreItemOptionRecord } from '../../src/domain/commerce/repositori
 import { storeItemSlug, variantId } from '../support/commerce-value-objects';
 
 const storeItem: StoreItemOptionRecord = {
-  sourceId: 'barren-point',
+  sourceId: 'disintegration',
   sourceKind: 'release',
   storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
-  variantId: variantId('variant_barren-point_standard'),
+  variantId: variantId('variant_disintegration-black-vinyl-lp_standard'),
 };
 
 function createServices(): StripeWebhookAcknowledgementServices {
@@ -43,7 +43,7 @@ describe('Stripe webhook acknowledgement catalog events', () => {
       catalogObject: {
         id: 'prod_test_123',
         metadata: {
-          variantId: 'variant_barren-point_standard',
+          variantId: 'variant_disintegration-black-vinyl-lp_standard',
         },
         object: 'product',
       },
@@ -60,9 +60,9 @@ describe('Stripe webhook acknowledgement catalog events', () => {
       eventId: 'evt_catalog_product',
       eventType: 'product.updated',
       stripeCreatedAt: new Date(1_790_000_000 * 1000),
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
-    expect(services.findStoreItemByVariantId).toHaveBeenCalledWith('variant_barren-point_standard');
+    expect(services.findStoreItemByVariantId).toHaveBeenCalledWith('variant_disintegration-black-vinyl-lp_standard');
     expect(services.reconcileCatalogVariant).toHaveBeenCalledWith(storeItem);
   });
 
@@ -71,7 +71,7 @@ describe('Stripe webhook acknowledgement catalog events', () => {
     const event: VerifiedStripeWebhookEvent = {
       catalogObject: {
         id: 'price_test_123',
-        lookup_key: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_barren-point_standard',
+        lookup_key: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
         metadata: {},
         object: 'price',
       },
@@ -82,7 +82,7 @@ describe('Stripe webhook acknowledgement catalog events', () => {
     } as unknown as VerifiedStripeWebhookEvent;
 
     await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).resolves.toEqual({ received: true });
-    expect(services.findStoreItemByVariantId).toHaveBeenCalledWith('variant_barren-point_standard');
+    expect(services.findStoreItemByVariantId).toHaveBeenCalledWith('variant_disintegration-black-vinyl-lp_standard');
     expect(services.reconcileCatalogVariant).toHaveBeenCalledWith(storeItem);
   });
 
@@ -103,7 +103,7 @@ describe('Stripe webhook acknowledgement catalog events', () => {
     const event: VerifiedStripeWebhookEvent = {
       catalogObject: {
         id: 'price_test_123',
-        lookup_key: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_barren-point_standard',
+        lookup_key: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
         metadata: {},
         object: 'price',
       },
@@ -124,7 +124,7 @@ describe('Stripe webhook acknowledgement catalog events', () => {
       catalogObject: {
         active: false,
         id: 'price_test_old_payload',
-        lookup_key: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_barren-point_standard',
+        lookup_key: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
         metadata: {},
         object: 'price',
         unit_amount: 1000,

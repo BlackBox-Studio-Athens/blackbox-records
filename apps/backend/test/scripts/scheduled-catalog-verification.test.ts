@@ -16,7 +16,7 @@ vi.mock('../../src/application/commerce/catalog-sync', () => ({
     () =>
       new Map([
         [
-          'variant_barren-point_standard',
+          'variant_disintegration-black-vinyl-lp_standard',
           {
             name: 'BlackBox Records - Disintegration - Black Vinyl LP',
           },
@@ -24,7 +24,9 @@ vi.mock('../../src/application/commerce/catalog-sync', () => ({
       ]),
   ),
   createCurrentCatalogExpectedSandboxPriceMap: vi.fn((environment: string) =>
-    environment === 'sandbox' ? new Map([['variant_barren-point_standard', { amountMinor: 2800 }]]) : new Map(),
+    environment === 'sandbox'
+      ? new Map([['variant_disintegration-black-vinyl-lp_standard', { amountMinor: 2800 }]])
+      : new Map(),
   ),
 }));
 
@@ -76,7 +78,7 @@ describe('runScheduledCatalogVerification', () => {
     });
     expect(
       scheduledMocks.verifyBuyableCatalog.mock.calls[0]?.[0].expectedProductProjections.get(
-        'variant_barren-point_standard',
+        'variant_disintegration-black-vinyl-lp_standard',
       ),
     ).toMatchObject({
       name: 'BlackBox Records - Disintegration - Black Vinyl LP',

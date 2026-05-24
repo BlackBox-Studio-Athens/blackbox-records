@@ -32,7 +32,7 @@ export const publicCheckoutFixtures = {
   } satisfies PublicCommerceError,
   startCheckoutBody: {
     storeItemSlug: 'disintegration-black-vinyl-lp',
-    variantId: 'variant_barren-point_standard',
+    variantId: 'variant_disintegration-black-vinyl-lp_standard',
   } satisfies StartCheckoutBody,
   startCheckoutResponse: {
     checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
@@ -56,7 +56,7 @@ export const publicCheckoutFixtures = {
       display: '€28.00',
     },
     storeItemSlug: 'disintegration-black-vinyl-lp',
-    variantId: 'variant_barren-point_standard',
+    variantId: 'variant_disintegration-black-vinyl-lp_standard',
   } satisfies PublicStoreOffer,
 };
 
@@ -70,7 +70,7 @@ export const internalStockFixtures = {
     reason: 'sale',
   } satisfies InternalStockChangeBody,
   stockDetail: {
-    sourceId: 'barren-point',
+    sourceId: 'disintegration',
     sourceKind: 'release',
     stock: {
       onlineQuantity: 4,
@@ -78,13 +78,13 @@ export const internalStockFixtures = {
       updatedAt: '2026-05-23T10:15:00.000Z',
     },
     storeItemSlug: 'disintegration-black-vinyl-lp',
-    variantId: 'variant_barren-point_standard',
+    variantId: 'variant_disintegration-black-vinyl-lp_standard',
   } satisfies InternalStockDetail,
   variant: {
-    sourceId: 'barren-point',
+    sourceId: 'disintegration',
     sourceKind: 'release',
     storeItemSlug: 'disintegration-black-vinyl-lp',
-    variantId: 'variant_barren-point_standard',
+    variantId: 'variant_disintegration-black-vinyl-lp_standard',
   } satisfies InternalVariantSummary,
 };
 

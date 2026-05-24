@@ -91,7 +91,7 @@ describe('order readback use cases', () => {
       createdAt: new Date('2026-04-25T10:00:00.000Z'),
       shippingLocker,
       storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
-      variantId: variantId('variant_barren-point_standard'),
+      variantId: variantId('variant_disintegration-black-vinyl-lp_standard'),
     });
     await orders.saveTransition(oldPaidCheckoutSessionId, {
       status: 'paid',

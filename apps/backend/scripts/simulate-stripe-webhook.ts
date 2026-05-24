@@ -22,7 +22,7 @@ export type SimulateStripeWebhookOptions = StripeWebhookFixtureOptions & {
 
 const defaultWebhookSecret = 'whsec_local_mock';
 const defaultEndpointUrl = 'http://127.0.0.1:8787/api/stripe/webhooks';
-const defaultCheckoutSessionId = 'cs_mock_variant_barren-point_standard';
+const defaultCheckoutSessionId = 'cs_mock_variant_disintegration-black-vinyl-lp_standard';
 const defaultEventType: StripeCheckoutWebhookEventType = 'checkout.session.completed';
 
 export function createStripeWebhookFixturePayload({

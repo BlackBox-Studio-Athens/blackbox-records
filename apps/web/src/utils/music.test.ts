@@ -103,7 +103,7 @@ describe('embedded player data', () => {
   });
 
   it('keeps current release content aligned with the player embed contract', () => {
-    const disintegration = readReleaseFrontmatter('barren-point');
+    const disintegration = readReleaseFrontmatter('disintegration');
     const caregivers = readReleaseFrontmatter('caregivers');
 
     expect(buildEmbeddedPlayerData(disintegration)).toMatchObject({

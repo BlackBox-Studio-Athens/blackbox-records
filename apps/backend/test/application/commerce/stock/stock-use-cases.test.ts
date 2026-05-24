@@ -136,10 +136,10 @@ class InMemoryStockCountRepository implements StockCountRepository {
 
 describe('commerce stock use cases', () => {
   const storeItem = {
-    sourceId: 'barren-point',
+    sourceId: 'disintegration',
     sourceKind: 'release' as const,
     storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
-    variantId: toVariantId('variant_barren-point_standard'),
+    variantId: toVariantId('variant_disintegration-black-vinyl-lp_standard'),
   };
 
   let storeItems: InMemoryStoreItemOptionRepository;
@@ -155,7 +155,7 @@ describe('commerce stock use cases', () => {
   });
 
   it('searches variants through the shared store item mapping seam', async () => {
-    await expect(searchVariants(storeItems, 'barren', 20)).resolves.toEqual([storeItem]);
+    await expect(searchVariants(storeItems, 'disintegration', 20)).resolves.toEqual([storeItem]);
   });
 
   it('returns zero stock when the variant exists but has no stock row yet', async () => {

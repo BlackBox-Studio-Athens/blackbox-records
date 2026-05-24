@@ -46,10 +46,10 @@ describe('internal stock routes', () => {
   it('lists variants for operators on the protected internal surface', async () => {
     mockSearchVariants.mockResolvedValueOnce([
       {
-        sourceId: 'barren-point',
+        sourceId: 'disintegration',
         sourceKind: 'release',
         storeItemSlug: 'disintegration-black-vinyl-lp',
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
     ]);
 
@@ -71,17 +71,17 @@ describe('internal stock routes', () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual([
       {
-        sourceId: 'barren-point',
+        sourceId: 'disintegration',
         sourceKind: 'release',
         storeItemSlug: 'disintegration-black-vinyl-lp',
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
     ]);
   });
 
   it('returns current stock detail for a known variant', async () => {
     mockReadVariantStock.mockResolvedValueOnce({
-      sourceId: 'barren-point',
+      sourceId: 'disintegration',
       sourceKind: 'release',
       stock: {
         onlineQuantity: 2,
@@ -89,12 +89,12 @@ describe('internal stock routes', () => {
         updatedAt: new Date('2026-04-24T12:00:00.000Z'),
       },
       storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
 
     const app = createHttpApp();
     const response = await app.request(
-      'http://backend.test/api/internal/variants/variant_barren-point_standard/stock',
+      'http://backend.test/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock',
       {
         headers: {
           [CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER]: 'operator@blackboxrecords.example',
@@ -108,7 +108,7 @@ describe('internal stock routes', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      sourceId: 'barren-point',
+      sourceId: 'disintegration',
       sourceKind: 'release',
       stock: {
         onlineQuantity: 2,
@@ -116,7 +116,7 @@ describe('internal stock routes', () => {
         updatedAt: '2026-04-24T12:00:00.000Z',
       },
       storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
   });
 
@@ -129,20 +129,20 @@ describe('internal stock routes', () => {
         quantityDelta: -1,
         reason: 'sale',
         recordedAt: new Date('2026-04-24T12:05:00.000Z'),
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
       stock: {
         createdAt: new Date('2026-04-24T10:00:00.000Z'),
         onlineQuantity: 1,
         quantity: 2,
         updatedAt: new Date('2026-04-24T12:05:00.000Z'),
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
     });
 
     const app = createHttpApp();
     const response = await app.request(
-      'http://backend.test/api/internal/variants/variant_barren-point_standard/stock/changes',
+      'http://backend.test/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock/changes',
       {
         body: JSON.stringify({
           delta: -1,
@@ -166,7 +166,7 @@ describe('internal stock routes', () => {
       notes: 'Packed for table',
       quantityDelta: -1,
       reason: 'sale',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
@@ -178,14 +178,14 @@ describe('internal stock routes', () => {
         reason: 'sale',
         recordedAt: '2026-04-24T12:05:00.000Z',
         type: 'change',
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
       stock: {
         onlineQuantity: 1,
         quantity: 2,
         updatedAt: '2026-04-24T12:05:00.000Z',
       },
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
   });
 
@@ -196,7 +196,7 @@ describe('internal stock routes', () => {
 
     const app = createHttpApp();
     const response = await app.request(
-      'http://backend.test/api/internal/variants/variant_barren-point_standard/stock/counts',
+      'http://backend.test/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock/counts',
       {
         body: JSON.stringify({
           countedQuantity: 1,

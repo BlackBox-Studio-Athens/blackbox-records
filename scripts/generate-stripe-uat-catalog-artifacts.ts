@@ -132,6 +132,7 @@ export function createSandboxUatCommerceSql(contracts: StripeCatalogStoreItemCon
   return [
     '-- Sandbox-only UAT commerce readiness seed generated from Astro store content.',
     '-- This file contains no Stripe IDs or secrets; Price mappings and Store Offer snapshots are owned by catalog apply.',
+    createStaleIdentityCleanupSql(),
     createStoreItemOptionSql(contracts),
     createItemAvailabilitySql(contracts),
     createStockSql(contracts),
@@ -177,6 +178,37 @@ async function run(mode: GenerateMode): Promise<void> {
   }
 
   console.log('Generated Stripe UAT catalog artifacts are up to date.');
+}
+
+function createStaleIdentityCleanupSql(): string {
+  return [
+    '-- Cleanup for renamed sandbox-only identities from the pre-decoupling Barren Point / Disintegration catalog.',
+    'UPDATE "StoreItemOption"',
+    'SET "id" = \'store_item_option_disintegration_black_vinyl_lp\',',
+    '    "sourceKind" = \'release\',',
+    '    "sourceId" = \'disintegration\',',
+    '    "variantId" = \'variant_disintegration-black-vinyl-lp_standard\',',
+    '    "updatedAt" = CURRENT_TIMESTAMP',
+    'WHERE "storeItemSlug" = \'disintegration-black-vinyl-lp\'',
+    '  AND "variantId" = \'variant_barren-point_standard\';',
+    '',
+    'DELETE FROM "StoreOfferSnapshot"',
+    'WHERE "storeItemSlug" = \'mass-culture-lp\'',
+    "   OR \"variantId\" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard', 'variant_disintegration-black-vinyl-lp_standard');",
+    '',
+    'DELETE FROM "VariantStripeMapping"',
+    "WHERE \"variantId\" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard', 'variant_disintegration-black-vinyl-lp_standard');",
+    '',
+    'DELETE FROM "Stock"',
+    "WHERE \"variantId\" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard', 'variant_disintegration-black-vinyl-lp_standard');",
+    '',
+    'DELETE FROM "ItemAvailability"',
+    "WHERE \"variantId\" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard', 'variant_disintegration-black-vinyl-lp_standard');",
+    '',
+    'DELETE FROM "StoreItemOption"',
+    'WHERE "storeItemSlug" = \'mass-culture-lp\'',
+    '   OR "variantId" = \'variant_mass-culture-lp_standard\';',
+  ].join('\n');
 }
 
 function createStoreItemOptionSql(contracts: StripeCatalogStoreItemContract[]): string {

@@ -30,7 +30,7 @@ const shippingLocker = {
 };
 
 const checkoutState = {
-  checkoutSessionId: 'cs_mock_variant_barren-point_standard',
+  checkoutSessionId: 'cs_mock_variant_disintegration-black-vinyl-lp_standard',
   paymentStatus: 'unpaid',
   shippingLocker,
   state: 'open',
@@ -68,11 +68,15 @@ describe('CheckoutReturnStatus', () => {
       readCheckoutState: vi.fn(async () => checkoutState),
     };
 
-    await expect(loadCheckoutReturnState(api, 'cs_mock_variant_barren-point_standard')).resolves.toEqual({
+    await expect(
+      loadCheckoutReturnState(api, 'cs_mock_variant_disintegration-black-vinyl-lp_standard'),
+    ).resolves.toEqual({
       checkoutState,
       kind: 'ready',
     });
-    expect(api.readCheckoutState).toHaveBeenCalledExactlyOnceWith('cs_mock_variant_barren-point_standard');
+    expect(api.readCheckoutState).toHaveBeenCalledExactlyOnceWith(
+      'cs_mock_variant_disintegration-black-vinyl-lp_standard',
+    );
   });
 
   it('does not call the API when the return link has no checkout session', async () => {

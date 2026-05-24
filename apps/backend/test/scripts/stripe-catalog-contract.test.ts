@@ -38,8 +38,18 @@ describe('stripe catalog contract projection', () => {
         name: 'BlackBox Records - Disintegration - Black Vinyl LP',
         taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
       },
-      sourceId: 'barren-point',
+      sourceId: 'disintegration',
       sourceKind: 'release',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+    });
+    expect(contractsBySlug.get('barren-point')).toMatchObject({
+      productProjection: {
+        imageUrls: ['https://blackbox-records-web.pages.dev/admin/media/distro/mass-culture-barren-point.jpg'],
+        name: 'BlackBox Records - Barren Point - LP',
+        taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
+      },
+      sourceId: 'barren-point',
+      sourceKind: 'distro',
       variantId: 'variant_barren-point_standard',
     });
     expect(contractsBySlug.get('caregivers-vinyl')).toMatchObject({
@@ -165,7 +175,12 @@ describe('stripe catalog contract projection', () => {
     expect(sql.match(/INSERT INTO "ItemAvailability"/g)).toHaveLength(1);
     expect(sql.match(/INSERT INTO "Stock"/g)).toHaveLength(1);
     expect(sql).toContain("'stock_afterglow_tape', 'variant_afterglow-tape_standard', 1, 1");
-    expect(sql).toContain("'disintegration-black-vinyl-lp', 'release', 'barren-point'");
+    expect(sql).toContain(
+      "'disintegration-black-vinyl-lp', 'release', 'disintegration', 'variant_disintegration-black-vinyl-lp_standard'",
+    );
+    expect(sql).toContain("'barren-point', 'distro', 'barren-point', 'variant_barren-point_standard'");
+    expect(sql).toContain('DELETE FROM "StoreItemOption"\nWHERE "storeItemSlug" = \'mass-culture-lp\'');
+    expect(sql).not.toContain("'mass-culture-lp', 'distro'");
     expect(sql).not.toContain('price_');
     expect(sql).not.toContain('sk_');
   });

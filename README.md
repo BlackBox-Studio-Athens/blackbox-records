@@ -101,7 +101,7 @@ Local mock checkout smoke path:
 http://127.0.0.1:4321/blackbox-records/store/disintegration-black-vinyl-lp/checkout/
 ```
 
-That canonical path remains the fastest smoke path. Legacy `/store/barren-point/` and `/store/barren-point/checkout/` paths remain compatibility redirects for the same item option. In stripe-mock mode, the local seed generator now creates fake development `Stock`, `ItemAvailability`, and `price_mock_*` mappings for every current store item so each item can exercise the local no-network checkout path. Those values are not real inventory counts or Stripe test evidence.
+That canonical path remains the fastest smoke path for Disintegration. `/store/barren-point/` is the separate Barren Point distro item and is not a Disintegration alias. In stripe-mock mode, the local seed generator now creates fake development `Stock`, `ItemAvailability`, and `price_mock_*` mappings for every current store item so each item can exercise the local no-network checkout path. Those values are not real inventory counts or Stripe test evidence.
 
 Run the full local commerce stack with real Stripe test mode:
 

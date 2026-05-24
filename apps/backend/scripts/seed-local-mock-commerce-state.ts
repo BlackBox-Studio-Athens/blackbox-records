@@ -6,7 +6,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { resolveExplicitOrSuggestedSlug } from '../../web/src/lib/slugs';
+import { createSlugSuggestion, resolveExplicitOrSuggestedSlug } from '../../web/src/lib/slugs';
 
 export type LocalMockStoreItem = {
   mockCheckoutEnabled: boolean;
@@ -23,14 +23,7 @@ const repoRoot = path.resolve(backendDir, '..', '..');
 const releasesDir = path.join(repoRoot, 'apps', 'web', 'src', 'content', 'releases');
 const distroDir = path.join(repoRoot, 'apps', 'web', 'src', 'content', 'distro');
 
-const releaseStoreItemSlugByReleaseId: Record<string, string> = {
-  'barren-point': 'disintegration-black-vinyl-lp',
-  caregivers: 'caregivers-vinyl',
-};
-
-const releaseVariantIdByReleaseId: Record<string, string> = {
-  'barren-point': 'variant_barren-point_standard',
-};
+const nonPhysicalReleaseFormats = new Set(['digital']);
 const mockCheckoutStoreItemSlugs = new Set(['afterglow-tape', 'disintegration-black-vinyl-lp']);
 const mockStoreOfferPricesBySlug = new Map([
   ['afterglow-tape', { amountMinor: 1400, currencyCode: 'EUR' }],
@@ -55,9 +48,8 @@ export async function readReleaseStoreItems(directory: string): Promise<LocalMoc
   for (const fileName of files) {
     const sourceId = path.basename(fileName, '.md');
     const frontmatter = parseFrontmatter(await readFile(path.join(directory, fileName), 'utf8'));
-    const storeItemSlug =
-      releaseStoreItemSlugByReleaseId[sourceId] ??
-      resolveExplicitOrSuggestedSlug(sourceId, frontmatter.title ?? sourceId);
+    const title = readFrontmatterString(frontmatter.title) ?? sourceId;
+    const storeItemSlug = createReleaseStoreItemSlug(title, readFrontmatterStringArray(frontmatter.formats));
 
     storeItems.push({
       mockCheckoutEnabled: mockCheckoutStoreItemSlugs.has(storeItemSlug),
@@ -65,8 +57,8 @@ export async function readReleaseStoreItems(directory: string): Promise<LocalMoc
       sourceId,
       sourceKind: 'release',
       storeItemSlug,
-      title: frontmatter.title ?? sourceId,
-      variantId: releaseVariantIdByReleaseId[sourceId] ?? createVariantId(storeItemSlug),
+      title,
+      variantId: createVariantId(storeItemSlug),
     });
   }
 
@@ -122,16 +114,18 @@ export function createMockStripePriceId(storeItemSlug: string): string {
   return `price_mock_${toSqlIdFragment(storeItemSlug)}`;
 }
 
-export function parseFrontmatter(content: string): Record<string, string> {
+export function parseFrontmatter(content: string): Record<string, string | string[]> {
   const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content);
 
   if (!match?.[1]) {
     return {};
   }
 
-  const result: Record<string, string> = {};
+  const result: Record<string, string | string[]> = {};
+  const lines = match[1].split(/\r?\n/);
 
-  for (const line of match[1].split(/\r?\n/)) {
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
     const keyValueMatch = /^([A-Za-z0-9_-]+):\s*(.*)$/.exec(line);
 
     if (!keyValueMatch?.[1]) {
@@ -139,10 +133,52 @@ export function parseFrontmatter(content: string): Record<string, string> {
     }
 
     const [, key, rawValue = ''] = keyValueMatch;
+
+    if (rawValue === '') {
+      const arrayValues: string[] = [];
+      let cursor = index + 1;
+
+      while (cursor < lines.length) {
+        const arrayMatch = /^\s*-\s+(?<value>.+)$/.exec(lines[cursor]);
+        if (!arrayMatch?.groups) {
+          break;
+        }
+
+        arrayValues.push(arrayMatch.groups.value.replace(/^['"]|['"]$/g, ''));
+        cursor += 1;
+      }
+
+      result[key] = arrayValues;
+      index = cursor - 1;
+      continue;
+    }
+
     result[key] = rawValue.replace(/^['"]|['"]$/g, '');
   }
 
   return result;
+}
+
+function readFrontmatterString(value: string | string[] | undefined): string | null {
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function readFrontmatterStringArray(value: string | string[] | undefined): string[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function getPrimaryReleaseStoreFormat(formats: readonly string[] | undefined): string | null {
+  return (
+    formats?.find((format) => {
+      const normalized = format.trim().toLowerCase();
+      return normalized && !nonPhysicalReleaseFormats.has(normalized);
+    }) ?? null
+  );
+}
+
+function createReleaseStoreItemSlug(title: string, formats: readonly string[]): string {
+  const primaryFormat = getPrimaryReleaseStoreFormat(formats);
+  return createSlugSuggestion([title, primaryFormat].filter(Boolean).join(' '));
 }
 
 function createStoreItemOptionSql(storeItems: LocalMockStoreItem[]): string {

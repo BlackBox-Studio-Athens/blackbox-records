@@ -9,7 +9,8 @@ const validInput = {
   devVarsText: 'STRIPE_SECRET_KEY=sk_test_real_secret\nSTRIPE_PAYMENT_METHOD_CONFIGURATION_ID=pmc_test_123\n',
   env: {},
   gitignoreText: 'apps/backend/prisma/seeds/local-stripe-test-state.sql\n',
-  seedSqlText: "INSERT INTO VariantStripeMapping VALUES ('variant', 'variant_barren-point_standard', 'price_real');",
+  seedSqlText:
+    "INSERT INTO VariantStripeMapping VALUES ('variant', 'variant_disintegration-black-vinyl-lp_standard', 'price_real');",
 };
 
 describe('Stripe test checkout preflight', () => {

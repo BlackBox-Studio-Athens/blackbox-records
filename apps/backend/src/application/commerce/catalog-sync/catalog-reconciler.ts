@@ -164,7 +164,12 @@ export class CatalogReconciler {
           productName: options.productProjection?.name ?? storeItem.storeItemSlug,
           productProjection: options.productProjection ?? null,
         },
-        createMutationContext(this.dependencies.environment, storeItem.variantId, 'create_sandbox_price'),
+        createMutationContext(
+          this.dependencies.environment,
+          storeItem.variantId,
+          'create_sandbox_price',
+          createSandboxPriceMutationIdentity(options.expectedPrice, options.productProjection ?? null),
+        ),
       );
       actions.push({ kind: 'create_sandbox_price' });
     }
@@ -179,7 +184,12 @@ export class CatalogReconciler {
           productName: options.productProjection?.name ?? storeItem.storeItemSlug,
           productProjection: options.productProjection ?? null,
         },
-        createMutationContext(this.dependencies.environment, storeItem.variantId, 'create_sandbox_price'),
+        createMutationContext(
+          this.dependencies.environment,
+          storeItem.variantId,
+          'create_sandbox_price',
+          createSandboxPriceMutationIdentity(options.expectedPrice, options.productProjection ?? null),
+        ),
       );
       actions.push({ kind: 'create_sandbox_price' });
     }
@@ -526,6 +536,29 @@ function createMutationContext(
   return {
     idempotencyKey: ['blackbox', 'catalog', environment, variantId, action, identity].join(':'),
   };
+}
+
+function createSandboxPriceMutationIdentity(
+  expectedPrice: StripeCatalogExpectedPrice,
+  productProjection: StripeCatalogProductProjection | null,
+): string {
+  return createStableShortHash(
+    JSON.stringify({
+      amountMinor: expectedPrice.amountMinor,
+      currencyCode: expectedPrice.currencyCode.toUpperCase(),
+      productProjection,
+    }),
+  );
+}
+
+function createStableShortHash(value: string): string {
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = Math.imul(31, hash) + value.charCodeAt(index);
+  }
+
+  return `v${(hash >>> 0).toString(36)}`;
 }
 
 function canApplyCatalogActions(issues: CatalogSyncIssue[]): boolean {

@@ -5,12 +5,12 @@ vi.mock('astro:content', () => ({
     if (collectionName === 'releases') {
       return [
         {
-          id: 'barren-point',
+          id: 'disintegration',
           data: {
             artist: { id: 'afterwise' },
-            cover_image: { src: '/barren-point.jpg' },
-            cover_image_alt: 'Barren Point cover',
-            formats: ['Vinyl LP'],
+            cover_image: { src: '/disintegration.jpg' },
+            cover_image_alt: 'Disintegration cover',
+            formats: ['Black Vinyl LP'],
             merch_url: '/store/',
             release_date: new Date('2026-09-01T00:00:00.000Z'),
             summary: 'Native-shop release',
@@ -114,7 +114,7 @@ describe('StoreItem projection contract', () => {
         artist: { id: 'afterwise' },
         cover_image: { src: '/cover.jpg' },
         cover_image_alt: 'Caregivers cover',
-        formats: ['LP', 'Digital'],
+        formats: ['Vinyl', 'Digital'],
         release_date: new Date('2024-11-02T00:00:00.000Z'),
         summary: 'Release summary',
         title: 'Caregivers',
@@ -132,7 +132,7 @@ describe('StoreItem projection contract', () => {
       image: { src: '/cover.jpg' },
       imageAlt: 'Caregivers cover',
       eyebrow: 'Release',
-      metadata: ['2024', 'LP', 'Digital'],
+      metadata: ['2024', 'Vinyl', 'Digital'],
       storePath: '/blackbox-records/store/caregivers-vinyl/',
       checkoutPath: '/blackbox-records/store/caregivers-vinyl/checkout/',
     });
@@ -190,7 +190,7 @@ describe('StoreItem projection contract', () => {
 
     await expect(getStoreItemForRelease(nativeRelease as any)).resolves.toMatchObject({
       slug: 'disintegration-black-vinyl-lp',
-      sourceId: 'barren-point',
+      sourceId: 'disintegration',
       storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
     });
     await expect(getStoreItemForRelease(externalRelease as any)).resolves.toMatchObject({
@@ -255,7 +255,7 @@ describe('StoreItem projection contract', () => {
 
     await expect(getStoreItemForRelease(nativeRelease as any)).resolves.toMatchObject({
       slug: 'disintegration-black-vinyl-lp',
-      sourceId: 'barren-point',
+      sourceId: 'disintegration',
       storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
     });
 

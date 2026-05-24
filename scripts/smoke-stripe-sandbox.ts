@@ -207,7 +207,7 @@ const artifactRootDir = path.join(rootDir, '.codex-artifacts', 'stripe-sandbox-s
 const defaultSiteUrl = 'https://blackbox-records-web.pages.dev';
 const defaultWorkerUrl = 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev';
 const smokeStoreItemSlug = 'disintegration-black-vinyl-lp';
-const smokeVariantId = 'variant_barren-point_standard';
+const smokeVariantId = 'variant_disintegration-black-vinyl-lp_standard';
 const smokeCatalogProjectionEntry = currentCatalogProductProjectionEntries.find(
   (entry) => entry.storeItemSlug === smokeStoreItemSlug && entry.variantId === smokeVariantId,
 );

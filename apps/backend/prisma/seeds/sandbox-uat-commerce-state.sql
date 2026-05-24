@@ -2,6 +2,33 @@
 
 -- This file contains no Stripe IDs or secrets; Price mappings and Store Offer snapshots are owned by catalog apply.
 
+-- Cleanup for renamed sandbox-only identities from the pre-decoupling Barren Point / Disintegration catalog.
+UPDATE "StoreItemOption"
+SET "id" = 'store_item_option_disintegration_black_vinyl_lp',
+    "sourceKind" = 'release',
+    "sourceId" = 'disintegration',
+    "variantId" = 'variant_disintegration-black-vinyl-lp_standard',
+    "updatedAt" = CURRENT_TIMESTAMP
+WHERE "storeItemSlug" = 'disintegration-black-vinyl-lp'
+  AND "variantId" = 'variant_barren-point_standard';
+
+DELETE FROM "StoreOfferSnapshot"
+WHERE "storeItemSlug" = 'mass-culture-lp'
+   OR "variantId" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard', 'variant_disintegration-black-vinyl-lp_standard');
+
+DELETE FROM "VariantStripeMapping"
+WHERE "variantId" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard', 'variant_disintegration-black-vinyl-lp_standard');
+
+DELETE FROM "Stock"
+WHERE "variantId" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard', 'variant_disintegration-black-vinyl-lp_standard');
+
+DELETE FROM "ItemAvailability"
+WHERE "variantId" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard', 'variant_disintegration-black-vinyl-lp_standard');
+
+DELETE FROM "StoreItemOption"
+WHERE "storeItemSlug" = 'mass-culture-lp'
+   OR "variantId" = 'variant_mass-culture-lp_standard';
+
 INSERT INTO "StoreItemOption" (
     "id",
     "storeItemSlug",
@@ -15,15 +42,15 @@ VALUES
     ('store_item_option_afterglow_tape', 'afterglow-tape', 'distro', 'afterglow-tape', 'variant_afterglow-tape_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_aftermaths', 'aftermaths', 'distro', 'aftermaths', 'variant_aftermaths_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_against_his_story_against_leviathan', 'against-his-story-against-leviathan', 'distro', 'against-his-story-against-leviathan', 'variant_against-his-story-against-leviathan_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('store_item_option_barren_point', 'barren-point', 'distro', 'barren-point', 'variant_barren-point_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_big_fish', 'big-fish', 'distro', 'big-fish', 'variant_big-fish_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_bloed_tranen', 'bloed-tranen', 'distro', 'bloed-tranen', 'variant_bloed-tranen_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_caregivers_vinyl', 'caregivers-vinyl', 'release', 'caregivers', 'variant_caregivers-vinyl_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_crawl_eat_them_dead_or_alive_split_7', 'crawl-eat-them-dead-or-alive-split-7', 'distro', 'crawl-eat-them-dead-or-alive-split-7', 'variant_crawl-eat-them-dead-or-alive-split-7_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    ('store_item_option_disintegration_black_vinyl_lp', 'disintegration-black-vinyl-lp', 'release', 'barren-point', 'variant_barren-point_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('store_item_option_disintegration_black_vinyl_lp', 'disintegration-black-vinyl-lp', 'release', 'disintegration', 'variant_disintegration-black-vinyl-lp_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_endless_searcher', 'endless-searcher', 'distro', 'endless-searcher', 'variant_endless-searcher_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_in_your_absence', 'in-your-absence', 'distro', 'in-your-absence', 'variant_in-your-absence_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_magic_sleazeball_corrida', 'magic-sleazeball-corrida', 'distro', 'magic-sleazeball-corrida', 'variant_magic-sleazeball-corrida_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    ('store_item_option_mass_culture_lp', 'mass-culture-lp', 'distro', 'mass-culture-lp', 'variant_mass-culture-lp_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_noise_without_decay', 'noise-without-decay', 'distro', 'noise-without-decay', 'variant_noise-without-decay_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_on_the_quiet', 'on-the-quiet', 'distro', 'on-the-quiet', 'variant_on-the-quiet_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_primal_ephemeral', 'primal-ephemeral', 'distro', 'primal-ephemeral', 'variant_primal-ephemeral_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
@@ -57,15 +84,15 @@ VALUES
     ('item_availability_afterglow_tape', 'variant_afterglow-tape_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_aftermaths', 'variant_aftermaths_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_against_his_story_against_leviathan', 'variant_against-his-story-against-leviathan_standard', 'available', TRUE, CURRENT_TIMESTAMP),
+    ('item_availability_barren_point', 'variant_barren-point_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_big_fish', 'variant_big-fish_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_bloed_tranen', 'variant_bloed-tranen_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_caregivers_vinyl', 'variant_caregivers-vinyl_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_crawl_eat_them_dead_or_alive_split_7', 'variant_crawl-eat-them-dead-or-alive-split-7_standard', 'available', TRUE, CURRENT_TIMESTAMP),
-    ('item_availability_disintegration_black_vinyl_lp', 'variant_barren-point_standard', 'available', TRUE, CURRENT_TIMESTAMP),
+    ('item_availability_disintegration_black_vinyl_lp', 'variant_disintegration-black-vinyl-lp_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_endless_searcher', 'variant_endless-searcher_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_in_your_absence', 'variant_in-your-absence_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_magic_sleazeball_corrida', 'variant_magic-sleazeball-corrida_standard', 'available', TRUE, CURRENT_TIMESTAMP),
-    ('item_availability_mass_culture_lp', 'variant_mass-culture-lp_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_noise_without_decay', 'variant_noise-without-decay_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_on_the_quiet', 'variant_on-the-quiet_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_primal_ephemeral', 'variant_primal-ephemeral_standard', 'available', TRUE, CURRENT_TIMESTAMP),
@@ -99,15 +126,15 @@ VALUES
     ('stock_afterglow_tape', 'variant_afterglow-tape_standard', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_aftermaths', 'variant_aftermaths_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_against_his_story_against_leviathan', 'variant_against-his-story-against-leviathan_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('stock_barren_point', 'variant_barren-point_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_big_fish', 'variant_big-fish_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_bloed_tranen', 'variant_bloed-tranen_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_caregivers_vinyl', 'variant_caregivers-vinyl_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_crawl_eat_them_dead_or_alive_split_7', 'variant_crawl-eat-them-dead-or-alive-split-7_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    ('stock_disintegration_black_vinyl_lp', 'variant_barren-point_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('stock_disintegration_black_vinyl_lp', 'variant_disintegration-black-vinyl-lp_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_endless_searcher', 'variant_endless-searcher_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_in_your_absence', 'variant_in-your-absence_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_magic_sleazeball_corrida', 'variant_magic-sleazeball-corrida_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    ('stock_mass_culture_lp', 'variant_mass-culture-lp_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_noise_without_decay', 'variant_noise-without-decay_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_on_the_quiet', 'variant_on-the-quiet_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_primal_ephemeral', 'variant_primal-ephemeral_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),

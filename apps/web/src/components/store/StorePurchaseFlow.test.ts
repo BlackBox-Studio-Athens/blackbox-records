@@ -5,12 +5,12 @@ vi.mock('astro:content', () => ({
     if (collectionName === 'releases') {
       return [
         {
-          id: 'barren-point',
+          id: 'disintegration',
           data: {
             artist: { id: 'afterwise' },
             cover_image: { src: '/disintegration.jpg' },
             cover_image_alt: 'Disintegration by Afterwise',
-            formats: ['Vinyl LP'],
+            formats: ['Black Vinyl LP'],
             merch_url: '/store/',
             release_date: new Date('2026-09-01T00:00:00.000Z'),
             summary: 'Native-shop release.',
@@ -98,7 +98,7 @@ describe('store purchase happy path', () => {
         price: {
           display: 'Worker-confirmed at checkout',
         },
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
     });
     expect(pageEntry).not.toBeNull();
@@ -128,7 +128,7 @@ describe('store purchase happy path', () => {
       storeItemSlug: 'disintegration-black-vinyl-lp',
       subtitle: 'Afterwise',
       title: 'Disintegration',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
 
     // Act: Add To Cart emits the real cart event, then the app stores the resulting single-item cart.
@@ -173,7 +173,7 @@ describe('store purchase happy path', () => {
     expect(checkoutView).toMatchObject({
       canStartCheckout: true,
       statusLabel: 'Available',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
 
     const handoffState = await startHostedCheckout({
@@ -184,7 +184,7 @@ describe('store purchase happy path', () => {
 
     // Assert: checkout starts with app identity only, and the handoff does not render secrets.
     expect(handoffState).toEqual({
-      checkoutUrl: 'https://checkout.stripe.test/session/cs_mock_variant_barren-point_standard',
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_mock_variant_disintegration-black-vinyl-lp_standard',
       kind: 'redirect',
     });
     expect(fetchStub).toHaveBeenCalledWith(
@@ -192,7 +192,7 @@ describe('store purchase happy path', () => {
       expect.objectContaining({
         body: JSON.stringify({
           storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_barren-point_standard',
+          variantId: 'variant_disintegration-black-vinyl-lp_standard',
         }),
         method: 'POST',
       }),
@@ -258,7 +258,7 @@ function createCheckoutFetchStub() {
 
     if (url === '/api/checkout/sessions' && init?.method === 'POST') {
       return jsonResponse({
-        checkoutUrl: 'https://checkout.stripe.test/session/cs_mock_variant_barren-point_standard',
+        checkoutUrl: 'https://checkout.stripe.test/session/cs_mock_variant_disintegration-black-vinyl-lp_standard',
       });
     }
 
@@ -280,7 +280,7 @@ function createWorkerStoreOffer() {
       display: '€28.00',
     },
     storeItemSlug: 'disintegration-black-vinyl-lp',
-    variantId: 'variant_barren-point_standard',
+    variantId: 'variant_disintegration-black-vinyl-lp_standard',
   };
 }
 

@@ -42,14 +42,12 @@ export type UnbuyableItemAvailability = {
 export type ItemAvailability = BuyableItemAvailability | UnbuyableItemAvailability;
 
 function createStoreItemVariantId(storeItem: StoreItem): string {
-  return storeItem.slug === 'disintegration-black-vinyl-lp'
-    ? 'variant_barren-point_standard'
-    : `variant_${storeItem.slug}_standard`;
+  return `variant_${storeItem.slug}_standard`;
 }
 
 function createStoreItemOptionLabel(storeItem: StoreItem): string | null {
-  if (storeItem.slug === 'disintegration-black-vinyl-lp') {
-    return 'Black Vinyl LP';
+  if (storeItem.sourceKind === 'release') {
+    return storeItem.metadata.slice(1).find((value) => value.trim().toLowerCase() !== 'digital') ?? null;
   }
 
   return storeItem.metadata.at(-1) ?? null;

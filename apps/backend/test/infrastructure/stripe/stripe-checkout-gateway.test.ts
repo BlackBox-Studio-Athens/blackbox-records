@@ -53,7 +53,7 @@ describe('StripeCheckoutGateway', () => {
             quantity: cartQuantity(2),
             storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
             stripePriceId: stripePriceId('price_test_barren_point'),
-            variantId: variantId('variant_barren-point_standard'),
+            variantId: variantId('variant_disintegration-black-vinyl-lp_standard'),
           },
         ],
         cancelUrl: 'https://blackbox.example/checkout',

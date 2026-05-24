@@ -21,10 +21,10 @@ describe('local mock commerce seed generator', () => {
         expect.objectContaining({
           mockCheckoutEnabled: true,
           taxCategory: 'physical_goods',
-          sourceId: 'barren-point',
+          sourceId: 'disintegration',
           sourceKind: 'release',
           storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_barren-point_standard',
+          variantId: 'variant_disintegration-black-vinyl-lp_standard',
         }),
         expect.objectContaining({
           mockCheckoutEnabled: false,
@@ -53,7 +53,16 @@ describe('local mock commerce seed generator', () => {
     try {
       await writeFile(
         path.join(tempDir, 'caregivers.md'),
-        ['---', 'title: Caregivers', 'merch_url: https://example.com/legacy', '---', 'Body'].join('\n'),
+        [
+          '---',
+          'title: Caregivers',
+          'merch_url: https://example.com/legacy',
+          'formats:',
+          '  - Vinyl',
+          '  - Digital',
+          '---',
+          'Body',
+        ].join('\n'),
       );
       await writeFile(path.join(tempDir, 'future-release.md'), ['---', 'title: Future Release', '---'].join('\n'));
 

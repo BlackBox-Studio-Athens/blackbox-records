@@ -101,7 +101,7 @@ describe('non-paid checkout reconciliation', () => {
       checkoutSessionId: primaryCheckoutSessionId,
       shippingLocker,
       storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
-      variantId: variantId('variant_barren-point_standard'),
+      variantId: variantId('variant_disintegration-black-vinyl-lp_standard'),
     });
   });
 

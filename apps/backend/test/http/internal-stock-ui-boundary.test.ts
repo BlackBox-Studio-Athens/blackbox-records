@@ -7,7 +7,7 @@ describe('internal stock UI boundary', () => {
   it('does not serve the stock operations UI from the Worker', async () => {
     const app = createHttpApp();
 
-    for (const path of ['/stock/', '/stock/variant_barren-point_standard/']) {
+    for (const path of ['/stock/', '/stock/variant_disintegration-black-vinyl-lp_standard/']) {
       const response = await app.request(`http://backend.test${path}`, {
         headers: {
           [CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER]: 'operator@blackboxrecords.example',

@@ -61,7 +61,7 @@ describe('public commerce routes', () => {
       },
       canCheckout: true,
       storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
 
     const app = createHttpApp();
@@ -80,7 +80,7 @@ describe('public commerce routes', () => {
       },
       canCheckout: true,
       storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
   });
 
@@ -114,7 +114,7 @@ describe('public commerce routes', () => {
         },
         canCheckout: true,
         storeItemSlug: 'disintegration-black-vinyl-lp',
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
     ]);
 
@@ -134,7 +134,7 @@ describe('public commerce routes', () => {
         },
         canCheckout: true,
         storeItemSlug: 'disintegration-black-vinyl-lp',
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
     ]);
   });
@@ -163,7 +163,7 @@ describe('public commerce routes', () => {
       {
         body: JSON.stringify({
           storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_barren-point_standard',
+          variantId: 'variant_disintegration-black-vinyl-lp_standard',
         }),
         headers: {
           origin: 'https://blackbox.example',
@@ -180,7 +180,7 @@ describe('public commerce routes', () => {
       successUrl:
         'https://blackbox.example/blackbox-records/store/disintegration-black-vinyl-lp/checkout/return?session_id={CHECKOUT_SESSION_ID}',
       storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
@@ -200,7 +200,7 @@ describe('public commerce routes', () => {
       {
         body: JSON.stringify({
           storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_barren-point_standard',
+          variantId: 'variant_disintegration-black-vinyl-lp_standard',
         }),
         headers: {
           origin: 'https://blackbox.example',
@@ -223,7 +223,7 @@ describe('public commerce routes', () => {
       {
         body: JSON.stringify({
           storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_barren-point_standard',
+          variantId: 'variant_disintegration-black-vinyl-lp_standard',
         }),
         headers: {
           origin: 'https://evil.example',
@@ -249,7 +249,7 @@ describe('public commerce routes', () => {
       {
         body: JSON.stringify({
           storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_barren-point_standard',
+          variantId: 'variant_disintegration-black-vinyl-lp_standard',
         }),
         headers: {
           origin: 'https://evil.example',
@@ -277,7 +277,7 @@ describe('public commerce routes', () => {
       {
         body: JSON.stringify({
           storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_barren-point_standard',
+          variantId: 'variant_disintegration-black-vinyl-lp_standard',
         }),
         headers: {
           origin: 'https://blackbox.example',
@@ -304,7 +304,7 @@ describe('public commerce routes', () => {
       {
         body: JSON.stringify({
           storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_barren-point_standard',
+          variantId: 'variant_disintegration-black-vinyl-lp_standard',
         }),
         headers: {
           origin: 'https://blackbox.example',

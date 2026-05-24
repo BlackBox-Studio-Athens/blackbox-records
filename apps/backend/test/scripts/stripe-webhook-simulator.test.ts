@@ -13,7 +13,7 @@ describe('Stripe webhook simulator', () => {
 
   it('creates signed checkout-session fixture payloads accepted by the verifier', async () => {
     const payload = createStripeWebhookFixturePayload({
-      checkoutSessionId: 'cs_mock_variant_barren-point_standard',
+      checkoutSessionId: 'cs_mock_variant_disintegration-black-vinyl-lp_standard',
       type: 'checkout.session.completed',
     });
     const signature = createStripeWebhookSignatureHeader({
@@ -30,7 +30,7 @@ describe('Stripe webhook simulator', () => {
     ).resolves.toEqual(
       expect.objectContaining({
         checkoutSession: expect.objectContaining({
-          id: 'cs_mock_variant_barren-point_standard',
+          id: 'cs_mock_variant_disintegration-black-vinyl-lp_standard',
           payment_status: 'paid',
           status: 'complete',
         }),

@@ -6,6 +6,7 @@ import type {
   StripeCatalogExpectedPrice,
   StripeCatalogProductProjection,
 } from '../apps/backend/src/application/commerce/catalog-sync';
+import { createSlugSuggestion } from '../apps/web/src/lib/slugs';
 
 type StoreItemSourceKind = 'distro' | 'release';
 
@@ -19,15 +20,6 @@ export type StripeCatalogStoreItemContract = {
   sourceKind: StoreItemSourceKind;
   storeItemSlug: string;
   variantId: string;
-};
-
-type StripeCatalogProjectionOverride = {
-  alignmentStatus?: StripeCatalogAlignmentStatus;
-  expectedSandboxPrice?: StripeCatalogExpectedPrice;
-  optionLabel?: string;
-  productDescription?: string;
-  taxCode?: string;
-  variantId?: string;
 };
 
 type LoadStripeCatalogContractsOptions = {
@@ -57,22 +49,7 @@ const defaultSiteUrl = 'https://blackbox-studio-athens.github.io';
 const defaultBasePath = '/blackbox-records/';
 export const STRIPE_PHYSICAL_GOODS_TAX_CODE = 'txcd_99999999';
 
-const releaseStoreItemSlugByReleaseId: Record<string, string> = {
-  'barren-point': 'disintegration-black-vinyl-lp',
-  caregivers: 'caregivers-vinyl',
-};
-
-const stripeCatalogProjectionOverrides: Record<string, StripeCatalogProjectionOverride> = {
-  'disintegration-black-vinyl-lp': {
-    alignmentStatus: 'checkout_eligible',
-    expectedSandboxPrice: {
-      amountMinor: 2800,
-      currencyCode: 'EUR',
-    },
-    optionLabel: 'Black Vinyl LP',
-    variantId: 'variant_barren-point_standard',
-  },
-};
+const nonPhysicalReleaseFormats = new Set(['digital']);
 
 export async function loadStripeCatalogStoreItemContracts(
   options: LoadStripeCatalogContractsOptions = {},
@@ -160,16 +137,15 @@ async function readReleaseContracts(
       .map(async (entry) => {
         const sourceId = path.basename(entry.name, '.md');
         const content = parseFrontmatter(await readFile(path.join(releasesDir, entry.name), 'utf8')) as ReleaseContent;
-        const storeItemSlug = releaseStoreItemSlugByReleaseId[sourceId] ?? sourceId;
-        const override = stripeCatalogProjectionOverrides[storeItemSlug] ?? {};
-        const optionLabel = override.optionLabel ?? content.formats[0] ?? null;
+        const optionLabel = getPrimaryReleaseStoreFormat(content.formats);
+        const storeItemSlug = createReleaseStoreItemSlug(content);
         const titleParts = ['BlackBox Records', content.title, optionLabel].filter(Boolean);
 
         return {
           ...createContract({
-            alignmentStatus: override.alignmentStatus ?? 'checkout_eligible',
-            description: override.productDescription ?? normalizeDescription(content.summary, content.title),
-            expectedSandboxPrice: override.expectedSandboxPrice ?? createExpectedSandboxPrice(optionLabel),
+            alignmentStatus: 'checkout_eligible',
+            description: normalizeDescription(content.summary, content.title),
+            expectedSandboxPrice: createExpectedSandboxPrice(optionLabel),
             imageUrl: createContentAssetUrl('releases', content.cover_image, options),
             metadata: {
               sourceId,
@@ -180,8 +156,8 @@ async function readReleaseContracts(
             sourceId,
             sourceKind: 'release',
             storeItemSlug,
-            taxCode: override.taxCode ?? STRIPE_PHYSICAL_GOODS_TAX_CODE,
-            variantId: override.variantId ?? createDefaultVariantId(storeItemSlug),
+            taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
+            variantId: createDefaultVariantId(storeItemSlug),
           }),
           artistId: content.artist,
         };
@@ -202,16 +178,13 @@ async function readDistroContracts(
       .map(async (entry) => {
         const sourceId = path.basename(entry.name, '.json');
         const content = JSON.parse(await readFile(path.join(distroDir, entry.name), 'utf8')) as DistroContent;
-        const override = stripeCatalogProjectionOverrides[sourceId] ?? {};
-        const optionLabel = override.optionLabel ?? content.format;
+        const optionLabel = content.format;
         const titleParts = ['BlackBox Records', content.title, optionLabel].filter(Boolean);
 
         return createContract({
-          alignmentStatus: override.alignmentStatus ?? 'checkout_eligible',
-          description:
-            override.productDescription ??
-            normalizeDescription(content.summary, `${content.title} by ${content.artist_or_label}`),
-          expectedSandboxPrice: override.expectedSandboxPrice ?? createExpectedSandboxPrice(optionLabel),
+          alignmentStatus: 'checkout_eligible',
+          description: normalizeDescription(content.summary, `${content.title} by ${content.artist_or_label}`),
+          expectedSandboxPrice: createExpectedSandboxPrice(optionLabel),
           imageUrl: createContentAssetUrl('distro', content.image, options),
           metadata: {
             sourceId,
@@ -222,8 +195,8 @@ async function readDistroContracts(
           sourceId,
           sourceKind: 'distro',
           storeItemSlug: sourceId,
-          taxCode: override.taxCode ?? STRIPE_PHYSICAL_GOODS_TAX_CODE,
-          variantId: override.variantId ?? createDefaultVariantId(sourceId),
+          taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
+          variantId: createDefaultVariantId(sourceId),
         });
       }),
   );
@@ -352,6 +325,20 @@ function normalizeDescription(value: string | undefined, fallback: string): stri
 
 function createDefaultVariantId(storeItemSlug: string): string {
   return `variant_${storeItemSlug}_standard`;
+}
+
+export function getPrimaryReleaseStoreFormat(formats: readonly string[] | undefined): string | null {
+  return (
+    formats?.find((format) => {
+      const normalized = format.trim().toLowerCase();
+      return normalized && !nonPhysicalReleaseFormats.has(normalized);
+    }) ?? null
+  );
+}
+
+function createReleaseStoreItemSlug(content: Pick<ReleaseContent, 'formats' | 'title'>): string {
+  const optionLabel = getPrimaryReleaseStoreFormat(content.formats);
+  return createSlugSuggestion([content.title, optionLabel].filter(Boolean).join(' '));
 }
 
 export function createExpectedSandboxPrice(formatOrOptionLabel: string | null | undefined): StripeCatalogExpectedPrice {

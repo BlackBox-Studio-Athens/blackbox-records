@@ -9,8 +9,8 @@ INSERT INTO "VariantStripeMapping" (
     "updatedAt"
 )
 VALUES (
-    'variant_stripe_mapping_barren_point_test',
-    'variant_barren-point_standard',
+    'variant_stripe_mapping_disintegration_black_vinyl_lp_test',
+    'variant_disintegration-black-vinyl-lp_standard',
     'price_replace_with_real_stripe_test_price',
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP

@@ -1,7 +1,7 @@
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
 
 import { createProjectRelativeUrl } from '../config/site';
-import { assertNoSlugCollisions } from './slugs';
+import { assertNoSlugCollisions, createSlugSuggestion } from './slugs';
 import type { StoreItemTaxCategory } from './store-tax-category';
 export { groupDistroEntries } from './distro-data';
 
@@ -31,14 +31,7 @@ export type ArtistRosterReleaseContext = {
   releaseCount: number;
 };
 
-const releaseStoreItemSlugByReleaseId: Record<string, string> = {
-  'barren-point': 'disintegration-black-vinyl-lp',
-  caregivers: 'caregivers-vinyl',
-};
-
-const releaseDetailSlugByReleaseId: Record<string, string> = {
-  'barren-point': 'disintegration',
-};
+const nonPhysicalReleaseFormats = new Set(['digital']);
 
 function sortArtistProfilesByName(left: ArtistProfileEntry, right: ArtistProfileEntry) {
   return left.data.title.localeCompare(right.data.title);
@@ -108,7 +101,7 @@ export async function listReleaseCatalogByArtistId(artistId: string) {
 }
 
 export function getReleaseDetailSlug(releaseEntry: ReleaseCatalogEntry) {
-  return releaseDetailSlugByReleaseId[releaseEntry.id] || releaseEntry.id;
+  return releaseEntry.id;
 }
 
 export function createReleaseDetailPath(releaseEntry: ReleaseCatalogEntry) {
@@ -140,10 +133,24 @@ function normalizeStoreItemImageAlt(imageAlt: string | undefined, fallback: stri
   return imageAlt || fallback;
 }
 
+export function getPrimaryReleaseStoreFormat(formats: readonly string[] | undefined): string | null {
+  return (
+    formats?.find((format) => {
+      const normalized = format.trim().toLowerCase();
+      return normalized && !nonPhysicalReleaseFormats.has(normalized);
+    }) ?? null
+  );
+}
+
+export function createReleaseStoreItemSlug(releaseEntry: ReleaseCatalogEntry): string {
+  const primaryFormat = getPrimaryReleaseStoreFormat(releaseEntry.data.formats);
+  return createSlugSuggestion([releaseEntry.data.title, primaryFormat].filter(Boolean).join(' '));
+}
+
 export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEntry): Promise<StoreItem> {
   const artistProfile = await resolveArtistProfileForRelease(releaseEntry);
   const artistDisplayName = resolveReleaseArtistDisplayName(releaseEntry, artistProfile || undefined);
-  const slug = releaseStoreItemSlugByReleaseId[releaseEntry.id] || releaseEntry.id;
+  const slug = createReleaseStoreItemSlug(releaseEntry);
   const metadata = [String(releaseEntry.data.release_date.getFullYear()), ...(releaseEntry.data.formats || [])];
 
   return {

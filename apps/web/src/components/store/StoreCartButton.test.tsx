@@ -16,7 +16,7 @@ const cartItem = {
   storeItemSlug: 'disintegration-black-vinyl-lp',
   subtitle: 'Afterwise',
   title: 'Disintegration',
-  variantId: 'variant_barren-point_standard',
+  variantId: 'variant_disintegration-black-vinyl-lp_standard',
 };
 
 describe('StoreCartButton', () => {

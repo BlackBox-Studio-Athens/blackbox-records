@@ -10,10 +10,10 @@ import {
 } from '../../../../scripts/stripe-catalog-verify';
 
 const storeItem = {
-  sourceId: 'barren-point',
+  sourceId: 'disintegration',
   sourceKind: 'release' as const,
   storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
-  variantId: variantId('variant_barren-point_standard'),
+  variantId: variantId('variant_disintegration-black-vinyl-lp_standard'),
 };
 
 describe('stripe catalog verify script helpers', () => {
@@ -70,13 +70,13 @@ describe('stripe catalog verify script helpers', () => {
               variantId: storeItem.variantId,
             },
           ],
-          lookupKey: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_barren-point_standard',
+          lookupKey: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
           mapping: null,
           resolvedPrice: {
             active: true,
             amountMinor: 1000,
             currencyCode: 'EUR',
-            lookupKey: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_barren-point_standard',
+            lookupKey: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
             metadata: {},
             priceId: stripePriceId('price_1234567890abcdef'),
             productActive: true,
@@ -137,7 +137,7 @@ describe('stripe catalog verify script helpers', () => {
           actions: [],
           issueCount: 0,
           issues: [],
-          lookupKey: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_barren-point_standard',
+          lookupKey: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
           mapping: null,
           resolvedPrice: null,
           snapshot: null,

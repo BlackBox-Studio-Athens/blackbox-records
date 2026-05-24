@@ -51,7 +51,7 @@ describe('internal order routes', () => {
         storeItemSlug: 'disintegration-black-vinyl-lp',
         stripePaymentIntentId: 'pi_test_paid',
         updatedAt: new Date('2026-04-25T10:05:00.000Z'),
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
     ]);
 
@@ -91,7 +91,7 @@ describe('internal order routes', () => {
         storeItemSlug: 'disintegration-black-vinyl-lp',
         stripePaymentIntentId: 'pi_test_paid',
         updatedAt: '2026-04-25T10:05:00.000Z',
-        variantId: 'variant_barren-point_standard',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
     ]);
   });

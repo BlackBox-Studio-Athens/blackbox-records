@@ -90,7 +90,7 @@ describe('order lifecycle use cases', () => {
   };
   const primaryCheckoutSessionId = checkoutSessionId('cs_test_123');
   const primaryStoreItemSlug = storeItemSlug('disintegration-black-vinyl-lp');
-  const primaryVariantId = variantId('variant_barren-point_standard');
+  const primaryVariantId = variantId('variant_disintegration-black-vinyl-lp_standard');
   let orders: InMemoryOrderStateRepository;
 
   beforeEach(() => {
@@ -114,7 +114,7 @@ describe('order lifecycle use cases', () => {
       status: 'pending_payment',
       statusUpdatedAt: createdAt,
       storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
 
     await expect(readCheckoutOrder(orders, primaryCheckoutSessionId)).resolves.toMatchObject({

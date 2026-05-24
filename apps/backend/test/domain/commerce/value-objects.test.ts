@@ -16,7 +16,9 @@ import {
 describe('commerce value objects', () => {
   it('parses branded commerce identifiers', () => {
     expect(parseStoreItemSlug('disintegration-black-vinyl-lp')).toBe('disintegration-black-vinyl-lp');
-    expect(parseVariantId('variant_barren-point_standard')).toBe('variant_barren-point_standard');
+    expect(parseVariantId('variant_disintegration-black-vinyl-lp_standard')).toBe(
+      'variant_disintegration-black-vinyl-lp_standard',
+    );
     expect(parseStripePriceId('price_test_barren_point')).toBe('price_test_barren_point');
     expect(parseCheckoutSessionId('cs_test_123')).toBe('cs_test_123');
     expect(parsePaymentIntentId('pi_test_123')).toBe('pi_test_123');

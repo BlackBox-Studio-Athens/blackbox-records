@@ -83,7 +83,7 @@ describe('createInternalStockApi', () => {
     );
     const api = createInternalStockApi({ backendBaseUrl: apiClientMswBaseUrl });
 
-    await api.recordStockChange('variant_barren-point_standard', {
+    await api.recordStockChange('variant_disintegration-black-vinyl-lp_standard', {
       delta: -1,
       notes: 'Table sale',
       reason: 'sale',

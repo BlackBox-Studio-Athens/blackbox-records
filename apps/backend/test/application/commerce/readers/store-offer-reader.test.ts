@@ -60,11 +60,11 @@ describe('StoreOfferReader', () => {
     const storeItemOption: StoreItemOptionRecord = {
       storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
       sourceKind: 'release',
-      sourceId: 'barren-point',
-      variantId: variantId('variant_barren-point_standard'),
+      sourceId: 'disintegration',
+      variantId: variantId('variant_disintegration-black-vinyl-lp_standard'),
     };
     const availability: ItemAvailabilityRecord = {
-      variantId: variantId('variant_barren-point_standard'),
+      variantId: variantId('variant_disintegration-black-vinyl-lp_standard'),
       status: 'available',
       canBuy: true,
       updatedAt: new Date('2026-04-22T00:00:00.000Z'),
@@ -83,7 +83,7 @@ describe('StoreOfferReader', () => {
 
     await expect(reader.findByStoreItemSlug(storeItemSlug('disintegration-black-vinyl-lp'))).resolves.toEqual({
       storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_barren-point_standard',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
       availability: {
         status: 'available',
         label: 'Available',
