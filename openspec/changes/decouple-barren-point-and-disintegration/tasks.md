@@ -46,4 +46,4 @@
 - [x] 7.4 Run `pnpm stripe:catalog:verify --env sandbox --apply`.
 - [x] 7.5 Run `pnpm stripe:catalog:verify --env sandbox`.
 - [x] 7.6 Run `pnpm deploy:backend:sandbox`.
-- [ ] 7.7 Run GitHub Pages UAT `checkout_surface` and `happy_path_paid` smokes after the pushed frontend has deployed.
+- [x] 7.7 Run GitHub Pages UAT `checkout_surface` and `happy_path_paid` smokes after the pushed frontend has deployed.
