@@ -301,9 +301,7 @@ export class CatalogReconciler {
     now?: Date;
   }): Promise<CatalogSyncRunResult> {
     const storeItems = await this.dependencies.storeItems.search(null, MAX_CATALOG_ITEMS);
-    const results = input.apply
-      ? await this.verifyCatalogSequentially(storeItems, input)
-      : await Promise.all(storeItems.map((storeItem) => this.verifyCatalogStoreItem(storeItem, input)));
+    const results = await this.verifyCatalogSequentially(storeItems, input);
     const issues = results.flatMap((result) => result.issues);
 
     return {
