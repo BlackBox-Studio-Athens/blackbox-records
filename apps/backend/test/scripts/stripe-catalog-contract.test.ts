@@ -6,6 +6,7 @@ import {
   createExpectedSandboxPrice,
   isStableAbsoluteStripeImageUrl,
   loadStripeCatalogStoreItemContracts,
+  STRIPE_PHYSICAL_GOODS_TAX_CODE,
   type StripeCatalogStoreItemContract,
 } from '../../../../scripts/stripe-catalog-contract';
 import {
@@ -35,6 +36,7 @@ describe('stripe catalog contract projection', () => {
           'https://blackbox-records-web.pages.dev/admin/media/releases/656856327_18427527979186423_8617747121554203403_n.jpg',
         ],
         name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+        taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
       },
       sourceId: 'barren-point',
       sourceKind: 'release',
@@ -57,6 +59,7 @@ describe('stripe catalog contract projection', () => {
       productProjection: {
         imageUrls: ['https://blackbox-records-web.pages.dev/admin/media/distro/cassette-tape.jpg'],
         name: 'BlackBox Records - Afterglow Cassette - Cassette',
+        taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
       },
       sourceKind: 'distro',
       variantId: 'variant_afterglow-tape_standard',
@@ -67,6 +70,9 @@ describe('stripe catalog contract projection', () => {
         currencyCode: 'EUR',
       },
     });
+    expect(contracts.every((contract) => contract.productProjection.taxCode === STRIPE_PHYSICAL_GOODS_TAX_CODE)).toBe(
+      true,
+    );
   });
 
   it('uses format-based sandbox test prices without making the browser price authority', () => {

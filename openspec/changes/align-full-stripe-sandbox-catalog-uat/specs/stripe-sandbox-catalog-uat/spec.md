@@ -35,6 +35,17 @@ The sandbox expected Price policy SHALL use deterministic test prices by Store I
 - **WHEN** sandbox expected Prices are derived
 - **THEN** its expected amount is `2800` and currency is `EUR`.
 
+### Requirement: Sandbox Product Category MUST Follow Physical Goods Policy
+
+The sandbox Product Projection policy SHALL assign the physical goods Stripe Tax category to every current Astro Store Item because the UAT catalog sells shipped physical goods.
+
+#### Scenario: Physical goods Product category is assigned
+
+- **GIVEN** current Astro Store Items are releases, vinyl, cassettes, CDs, shirts, or similar shipped merch
+- **WHEN** backend Product Projection entries are generated
+- **THEN** every generated Product Projection has `taxCode = txcd_99999999`
+- **AND** no current Product Projection falls back to `null` or `txcd_10000000`.
+
 ### Requirement: Sandbox UAT Stock Seed MUST Support Repeated Tests
 
 The sandbox UAT D1 seed SHALL make every current Store Item checkout-ready while reserving exactly one low-stock item for behavior testing.

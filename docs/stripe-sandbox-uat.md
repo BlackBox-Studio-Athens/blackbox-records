@@ -62,7 +62,7 @@ Catalog Field Ownership keeps sandbox alignment explicit:
 - Price Authority is Stripe-owned. Change prices by creating a replacement Stripe Price, moving lookup key/metadata to that Price, archiving the stale Price, and rerunning catalog verification.
 - Stripe Dashboard edits to Product presentation are drift unless repo content/projection is updated first.
 - `pnpm stripe:catalog:verify --env sandbox --apply` is sandbox-only and should follow a reviewed dry-run plan.
-- Full-catalog sandbox reset is a deactivation flow, not hard deletion. It only targets Stripe test-mode objects identified by BlackBox sandbox metadata or lookup keys.
+- Full-catalog sandbox reset is a deactivation flow, not hard deletion. It only targets Stripe test-mode objects identified by BlackBox sandbox metadata, lookup keys, or documented catalog-derived legacy sandbox names.
 
 ## Full Catalog UAT Alignment
 
@@ -79,11 +79,18 @@ Sandbox stock defaults:
 - `afterglow-tape`: `quantity = 1`, `onlineQuantity = 1`
 - every other current Store Item: `quantity = 99`, `onlineQuantity = 99`
 
+Sandbox Product category / Stripe Tax default:
+
+- every current physical Store Item uses `General - Tangible Goods` / `txcd_99999999`
+- `General - Electronically Supplied Services` / `txcd_10000000` is not the default for shipped vinyl, cassettes, CDs, shirts, or similar merch
+
 Static pages may show items as available with `Worker-confirmed at checkout`. They must not expose Stripe Price IDs, D1 IDs, stock authority, secrets, or authoritative prices.
 
 Operator sequence for a full sandbox catalog reset:
 
 ```powershell
+git status --short
+git push origin main
 pnpm stripe:webhooks:verify --env sandbox
 pnpm stripe:catalog:verify --env sandbox
 pnpm stripe:catalog:reset-sandbox --env sandbox --dry-run
@@ -93,6 +100,17 @@ pnpm stripe:catalog:verify --env sandbox --apply
 pnpm stripe:catalog:verify --env sandbox
 pnpm deploy:backend:sandbox
 ```
+
+Provider execution notes:
+
+- Repo-complete is not provider-complete. A pushed commit does not mutate Stripe Products, Stripe Prices, D1 stock, D1 mappings, or Store Offer snapshots.
+- Start from a clean final tree that already passed `pnpm test:unit`, `pnpm check`, `pnpm build`, and OpenSpec validation. `git status --short` should print nothing before provider mutation begins.
+- Run the provider sequence from the final pushed commit. If reset/apply/smoke work requires a code or script fix, rerun `pnpm test:unit`, `pnpm check`, and `pnpm build`, push the fix, redeploy the sandbox Worker, and rerun catalog verification.
+- Reset cleanup must cover current ownership metadata and documented legacy sandbox names such as `BlackBox UAT - ...`. Keep that fallback until there are no legacy sandbox catalog objects left.
+- `pnpm stripe:catalog:verify --env sandbox` and `pnpm stripe:catalog:verify --env sandbox --apply` are intentionally throttled. If Stripe returns a rate-limit error after reset or apply work, wait for a short cooldown and rerun verification instead of trusting Dashboard row counts.
+- Stripe Dashboard product counts are diagnostic only. Acceptance proof is the CLI report showing every expected variant checked with zero Product Projection, Price Authority, D1 readiness, and Store Offer snapshot issues, plus UAT smoke evidence.
+- `pnpm stripe:webhooks:verify --env sandbox` proves endpoint shape, mode, status, and event coverage. Existing endpoint signing-secret match is proven by `happy_path_paid` reaching a paid Worker order, not by Stripe endpoint list/retrieve APIs.
+- Keep `afterglow-tape` reserved for low-stock behavior. Generic happy-path smoke should use a high-stock item so repeated proof runs do not consume the low-stock test case.
 
 GitHub Pages UAT smoke:
 

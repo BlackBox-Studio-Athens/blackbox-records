@@ -55,6 +55,7 @@ type DistroContent = {
 
 const defaultSiteUrl = 'https://blackbox-studio-athens.github.io';
 const defaultBasePath = '/blackbox-records/';
+export const STRIPE_PHYSICAL_GOODS_TAX_CODE = 'txcd_99999999';
 
 const releaseStoreItemSlugByReleaseId: Record<string, string> = {
   'barren-point': 'disintegration-black-vinyl-lp',
@@ -179,7 +180,7 @@ async function readReleaseContracts(
             sourceId,
             sourceKind: 'release',
             storeItemSlug,
-            taxCode: override.taxCode ?? null,
+            taxCode: override.taxCode ?? STRIPE_PHYSICAL_GOODS_TAX_CODE,
             variantId: override.variantId ?? createDefaultVariantId(storeItemSlug),
           }),
           artistId: content.artist,
@@ -221,7 +222,7 @@ async function readDistroContracts(
           sourceId,
           sourceKind: 'distro',
           storeItemSlug: sourceId,
-          taxCode: override.taxCode ?? null,
+          taxCode: override.taxCode ?? STRIPE_PHYSICAL_GOODS_TAX_CODE,
           variantId: override.variantId ?? createDefaultVariantId(sourceId),
         });
       }),
