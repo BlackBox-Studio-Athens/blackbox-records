@@ -109,13 +109,18 @@ export async function createResetPlan(
   const expectedIdentities = contracts.map((contract) =>
     createStripeCatalogMetadata(environment, toStoreItemOptionRecord(contract)),
   );
+  const expectedLegacyProductNames = new Set(
+    contracts.flatMap((contract) => createLegacySandboxProductNames(contract.productProjection.name)),
+  );
   const [prices, products] = await Promise.all([
     stripe.prices.list({ active: true, expand: ['data.product'], limit: 100 }),
     stripe.products.list({ active: true, limit: 100 }),
   ]);
 
   const pricesToDeactivate = prices.data
-    .filter((price) => isRepoOwnedSandboxPrice(price, expectedLookupKeys, expectedIdentities))
+    .filter((price) =>
+      isRepoOwnedSandboxPrice(price, expectedLookupKeys, expectedIdentities, expectedLegacyProductNames),
+    )
     .map((price) => price.id)
     .sort();
   const productIdsFromPrices = new Set(
@@ -128,7 +133,8 @@ export async function createResetPlan(
     .filter(
       (product) =>
         productIdsFromPrices.has(product.id) ||
-        hasExpectedMetadata(normalizeMetadata(product.metadata), expectedIdentities),
+        hasExpectedMetadata(normalizeMetadata(product.metadata), expectedIdentities) ||
+        isLegacyRepoOwnedSandboxProduct(product, expectedLegacyProductNames),
     )
     .map((product) => product.id)
     .sort();
@@ -175,17 +181,40 @@ function isRepoOwnedSandboxPrice(
   price: Stripe.Price,
   expectedLookupKeys: Set<string>,
   expectedIdentities: Array<Record<string, string>>,
+  expectedLegacyProductNames: Set<string>,
 ): boolean {
   const priceMetadata = normalizeMetadata(price.metadata);
-  const productMetadata = normalizeMetadata(
-    typeof price.product === 'object' && !price.product.deleted ? price.product.metadata : {},
-  );
+  const product = typeof price.product === 'object' && !price.product.deleted ? price.product : null;
+  const productMetadata = normalizeMetadata(product?.metadata);
 
   return (
     Boolean(price.lookup_key && expectedLookupKeys.has(price.lookup_key)) ||
     hasExpectedMetadata(priceMetadata, expectedIdentities) ||
-    hasExpectedMetadata(productMetadata, expectedIdentities)
+    hasExpectedMetadata(productMetadata, expectedIdentities) ||
+    Boolean(product && isLegacyRepoOwnedSandboxProduct(product, expectedLegacyProductNames))
   );
+}
+
+function isLegacyRepoOwnedSandboxProduct(product: Stripe.Product, expectedLegacyProductNames: Set<string>): boolean {
+  return Boolean(product.name && expectedLegacyProductNames.has(normalizeLegacyProductName(product.name)));
+}
+
+function createLegacySandboxProductNames(productProjectionName: string): string[] {
+  const displayName = productProjectionName.replace(/^BlackBox Records - /, '').trim();
+  const [title, optionLabel] = displayName.split(' - ').map((part) => part.trim());
+  const titleOnly = title || displayName;
+
+  return [
+    displayName,
+    titleOnly,
+    `BlackBox UAT - ${displayName}`,
+    `BlackBox UAT - ${titleOnly}`,
+    optionLabel ? `${titleOnly} - ${optionLabel}` : titleOnly,
+  ].map(normalizeLegacyProductName);
+}
+
+function normalizeLegacyProductName(value: string): string {
+  return value.replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
 function hasExpectedMetadata(

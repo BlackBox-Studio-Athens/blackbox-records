@@ -301,19 +301,9 @@ export class CatalogReconciler {
     now?: Date;
   }): Promise<CatalogSyncRunResult> {
     const storeItems = await this.dependencies.storeItems.search(null, MAX_CATALOG_ITEMS);
-    const results = await Promise.all(
-      storeItems.map((storeItem) => {
-        const expectedPrice = input.expectedPrices?.get(storeItem.variantId) ?? null;
-
-        return this.reconcileVariant(storeItem, {
-          apply: input.apply,
-          expectedPrice,
-          productProjection: input.expectedProductProjections?.get(storeItem.variantId) ?? null,
-          requirePriceAuthority: Boolean(expectedPrice),
-          now: input.now,
-        });
-      }),
-    );
+    const results = input.apply
+      ? await this.verifyCatalogSequentially(storeItems, input)
+      : await Promise.all(storeItems.map((storeItem) => this.verifyCatalogStoreItem(storeItem, input)));
     const issues = results.flatMap((result) => result.issues);
 
     return {
@@ -322,6 +312,45 @@ export class CatalogReconciler {
       issues,
       results,
     };
+  }
+
+  private async verifyCatalogSequentially(
+    storeItems: StoreItemOptionRecord[],
+    input: {
+      apply: boolean;
+      expectedPrices?: Map<string, StripeCatalogExpectedPrice>;
+      expectedProductProjections?: Map<string, StripeCatalogProductProjection>;
+      now?: Date;
+    },
+  ): Promise<CatalogSyncVariantResult[]> {
+    const results: CatalogSyncVariantResult[] = [];
+
+    for (const storeItem of storeItems) {
+      results.push(await this.verifyCatalogStoreItem(storeItem, input));
+      await sleep(500);
+    }
+
+    return results;
+  }
+
+  private verifyCatalogStoreItem(
+    storeItem: StoreItemOptionRecord,
+    input: {
+      apply: boolean;
+      expectedPrices?: Map<string, StripeCatalogExpectedPrice>;
+      expectedProductProjections?: Map<string, StripeCatalogProductProjection>;
+      now?: Date;
+    },
+  ): Promise<CatalogSyncVariantResult> {
+    const expectedPrice = input.expectedPrices?.get(storeItem.variantId) ?? null;
+
+    return this.reconcileVariant(storeItem, {
+      apply: input.apply,
+      expectedPrice,
+      productProjection: input.expectedProductProjections?.get(storeItem.variantId) ?? null,
+      requirePriceAuthority: Boolean(expectedPrice),
+      now: input.now,
+    });
   }
 
   private async applyActions(
@@ -535,6 +564,12 @@ function createIssue(
 
 function uniquePrices(prices: StripeCatalogPrice[]): StripeCatalogPrice[] {
   return [...new Map(prices.map((price) => [price.priceId, price])).values()];
+}
+
+function sleep(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
 }
 
 export function parseCatalogStripePriceId(value: string) {

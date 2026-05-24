@@ -53,8 +53,8 @@ describe('stripe sandbox catalog reset', () => {
     await expect(
       createResetPlan('sandbox', stripe as unknown as Parameters<typeof createResetPlan>[1], [contract]),
     ).resolves.toEqual({
-      pricesToDeactivate: ['price_blackboxOwned1111', 'price_lookupOwned2222'],
-      productsToDeactivate: ['prod_blackboxOwned1111', 'prod_lookupOwned2222'],
+      pricesToDeactivate: ['price_blackboxOwned1111', 'price_legacyOwned4444', 'price_lookupOwned2222'],
+      productsToDeactivate: ['prod_blackboxOwned1111', 'prod_legacyOwned4444', 'prod_lookupOwned2222'],
     });
   });
 
@@ -66,7 +66,7 @@ describe('stripe sandbox catalog reset', () => {
       stripe as unknown as Parameters<typeof resetStripeSandboxCatalog>[1],
       [contract],
     );
-    expect(dryRunPlan.pricesToDeactivate).toHaveLength(2);
+    expect(dryRunPlan.pricesToDeactivate).toHaveLength(3);
     expect(stripe.prices.update).not.toHaveBeenCalled();
     expect(stripe.products.update).not.toHaveBeenCalled();
 
@@ -148,6 +148,18 @@ function createFakeStripeClient() {
               metadata: {},
             },
           },
+          {
+            active: true,
+            id: 'price_legacyOwned4444',
+            lookup_key: null,
+            metadata: {},
+            product: {
+              deleted: false,
+              id: 'prod_legacyOwned4444',
+              metadata: {},
+              name: 'BlackBox UAT - Disintegration',
+            },
+          },
         ],
       })),
       update: vi.fn(async () => ({})),
@@ -159,16 +171,25 @@ function createFakeStripeClient() {
             active: true,
             id: 'prod_blackboxOwned1111',
             metadata: {},
+            name: 'BlackBox Records - Disintegration - Black Vinyl LP',
           },
           {
             active: true,
             id: 'prod_lookupOwned2222',
             metadata: {},
+            name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+          },
+          {
+            active: true,
+            id: 'prod_legacyOwned4444',
+            metadata: {},
+            name: 'BlackBox UAT - Disintegration',
           },
           {
             active: true,
             id: 'prod_unrelated3333',
             metadata: {},
+            name: 'Unrelated Product',
           },
         ],
       })),
