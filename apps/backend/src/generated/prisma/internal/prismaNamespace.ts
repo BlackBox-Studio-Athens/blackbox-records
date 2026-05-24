@@ -387,6 +387,7 @@ export const ModelName = {
   StoreItemOption: 'StoreItemOption',
   VariantStripeMapping: 'VariantStripeMapping',
   StoreOfferSnapshot: 'StoreOfferSnapshot',
+  StripeCatalogWebhookEvent: 'StripeCatalogWebhookEvent',
   ItemAvailability: 'ItemAvailability',
   Stock: 'Stock',
   StockChange: 'StockChange',
@@ -408,7 +409,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "storeItemOption" | "variantStripeMapping" | "storeOfferSnapshot" | "itemAvailability" | "stock" | "stockChange" | "stockCount" | "checkoutOrder" | "checkoutOrderLine"
+    modelProps: "storeItemOption" | "variantStripeMapping" | "storeOfferSnapshot" | "stripeCatalogWebhookEvent" | "itemAvailability" | "stock" | "stockChange" | "stockCount" | "checkoutOrder" | "checkoutOrderLine"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -631,6 +632,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.StoreOfferSnapshotCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.StoreOfferSnapshotCountAggregateOutputType> | number
+        }
+      }
+    }
+    StripeCatalogWebhookEvent: {
+      payload: Prisma.$StripeCatalogWebhookEventPayload<ExtArgs>
+      fields: Prisma.StripeCatalogWebhookEventFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.StripeCatalogWebhookEventFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StripeCatalogWebhookEventPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.StripeCatalogWebhookEventFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StripeCatalogWebhookEventPayload>
+        }
+        findFirst: {
+          args: Prisma.StripeCatalogWebhookEventFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StripeCatalogWebhookEventPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.StripeCatalogWebhookEventFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StripeCatalogWebhookEventPayload>
+        }
+        findMany: {
+          args: Prisma.StripeCatalogWebhookEventFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StripeCatalogWebhookEventPayload>[]
+        }
+        create: {
+          args: Prisma.StripeCatalogWebhookEventCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StripeCatalogWebhookEventPayload>
+        }
+        createMany: {
+          args: Prisma.StripeCatalogWebhookEventCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.StripeCatalogWebhookEventCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StripeCatalogWebhookEventPayload>[]
+        }
+        delete: {
+          args: Prisma.StripeCatalogWebhookEventDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StripeCatalogWebhookEventPayload>
+        }
+        update: {
+          args: Prisma.StripeCatalogWebhookEventUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StripeCatalogWebhookEventPayload>
+        }
+        deleteMany: {
+          args: Prisma.StripeCatalogWebhookEventDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.StripeCatalogWebhookEventUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.StripeCatalogWebhookEventUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StripeCatalogWebhookEventPayload>[]
+        }
+        upsert: {
+          args: Prisma.StripeCatalogWebhookEventUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StripeCatalogWebhookEventPayload>
+        }
+        aggregate: {
+          args: Prisma.StripeCatalogWebhookEventAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateStripeCatalogWebhookEvent>
+        }
+        groupBy: {
+          args: Prisma.StripeCatalogWebhookEventGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StripeCatalogWebhookEventGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.StripeCatalogWebhookEventCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StripeCatalogWebhookEventCountAggregateOutputType> | number
         }
       }
     }
@@ -1157,6 +1232,19 @@ export const StoreOfferSnapshotScalarFieldEnum = {
 export type StoreOfferSnapshotScalarFieldEnum = (typeof StoreOfferSnapshotScalarFieldEnum)[keyof typeof StoreOfferSnapshotScalarFieldEnum]
 
 
+export const StripeCatalogWebhookEventScalarFieldEnum = {
+  eventId: 'eventId',
+  eventType: 'eventType',
+  catalogObjectId: 'catalogObjectId',
+  catalogObjectKind: 'catalogObjectKind',
+  variantId: 'variantId',
+  stripeCreatedAt: 'stripeCreatedAt',
+  processedAt: 'processedAt'
+} as const
+
+export type StripeCatalogWebhookEventScalarFieldEnum = (typeof StripeCatalogWebhookEventScalarFieldEnum)[keyof typeof StripeCatalogWebhookEventScalarFieldEnum]
+
+
 export const ItemAvailabilityScalarFieldEnum = {
   id: 'id',
   variantId: 'variantId',
@@ -1430,6 +1518,7 @@ export type GlobalOmitConfig = {
   storeItemOption?: Prisma.StoreItemOptionOmit
   variantStripeMapping?: Prisma.VariantStripeMappingOmit
   storeOfferSnapshot?: Prisma.StoreOfferSnapshotOmit
+  stripeCatalogWebhookEvent?: Prisma.StripeCatalogWebhookEventOmit
   itemAvailability?: Prisma.ItemAvailabilityOmit
   stock?: Prisma.StockOmit
   stockChange?: Prisma.StockChangeOmit

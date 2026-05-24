@@ -54,6 +54,7 @@ export const ModelName = {
   StoreItemOption: 'StoreItemOption',
   VariantStripeMapping: 'VariantStripeMapping',
   StoreOfferSnapshot: 'StoreOfferSnapshot',
+  StripeCatalogWebhookEvent: 'StripeCatalogWebhookEvent',
   ItemAvailability: 'ItemAvailability',
   Stock: 'Stock',
   StockChange: 'StockChange',
@@ -116,6 +117,19 @@ export const StoreOfferSnapshotScalarFieldEnum = {
 } as const
 
 export type StoreOfferSnapshotScalarFieldEnum = (typeof StoreOfferSnapshotScalarFieldEnum)[keyof typeof StoreOfferSnapshotScalarFieldEnum]
+
+
+export const StripeCatalogWebhookEventScalarFieldEnum = {
+  eventId: 'eventId',
+  eventType: 'eventType',
+  catalogObjectId: 'catalogObjectId',
+  catalogObjectKind: 'catalogObjectKind',
+  variantId: 'variantId',
+  stripeCreatedAt: 'stripeCreatedAt',
+  processedAt: 'processedAt'
+} as const
+
+export type StripeCatalogWebhookEventScalarFieldEnum = (typeof StripeCatalogWebhookEventScalarFieldEnum)[keyof typeof StripeCatalogWebhookEventScalarFieldEnum]
 
 
 export const ItemAvailabilityScalarFieldEnum = {

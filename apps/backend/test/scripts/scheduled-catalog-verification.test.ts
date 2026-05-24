@@ -12,6 +12,20 @@ vi.mock('../../src/application/commerce/catalog-sync', () => ({
       verifyBuyableCatalog: scheduledMocks.verifyBuyableCatalog,
     };
   }),
+  createCurrentCatalogExpectedProductProjectionMap: vi.fn(
+    () =>
+      new Map([
+        [
+          'variant_barren-point_standard',
+          {
+            name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+          },
+        ],
+      ]),
+  ),
+  createCurrentCatalogExpectedSandboxPriceMap: vi.fn((environment: string) =>
+    environment === 'sandbox' ? new Map([['variant_barren-point_standard', { amountMinor: 2800 }]]) : new Map(),
+  ),
 }));
 
 vi.mock('../../src/infrastructure/persistence/prisma', () => ({
@@ -55,26 +69,51 @@ describe('runScheduledCatalogVerification', () => {
   it('applies non-production scheduled catalog reconciliation and disconnects Prisma', async () => {
     await runScheduledCatalogVerification(createBindings('sandbox'));
 
-    expect(scheduledMocks.verifyBuyableCatalog).toHaveBeenCalledWith({ apply: true });
+    expect(scheduledMocks.verifyBuyableCatalog).toHaveBeenCalledWith({
+      apply: true,
+      expectedPrices: expect.any(Map),
+      expectedProductProjections: expect.any(Map),
+    });
+    expect(
+      scheduledMocks.verifyBuyableCatalog.mock.calls[0]?.[0].expectedProductProjections.get(
+        'variant_barren-point_standard',
+      ),
+    ).toMatchObject({
+      name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+    });
     expect(scheduledMocks.disconnect).toHaveBeenCalledOnce();
   });
 
   it('runs production scheduled verification as report-only', async () => {
     await runScheduledCatalogVerification(createBindings('production'));
 
-    expect(scheduledMocks.verifyBuyableCatalog).toHaveBeenCalledWith({ apply: false });
+    expect(scheduledMocks.verifyBuyableCatalog).toHaveBeenCalledWith({
+      apply: false,
+      expectedPrices: expect.any(Map),
+      expectedProductProjections: expect.any(Map),
+    });
+    expect(scheduledMocks.verifyBuyableCatalog.mock.calls[0]?.[0].expectedPrices.size).toBe(0);
     expect(scheduledMocks.disconnect).toHaveBeenCalledOnce();
   });
 
   it('warns when scheduled verification reports catalog drift', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     scheduledMocks.verifyBuyableCatalog.mockResolvedValue({
-      issues: [{}],
+      issues: [
+        {
+          driftCategory: 'product_projection',
+        },
+        {
+          driftCategory: 'price_authority',
+        },
+      ],
     });
 
     try {
       await runScheduledCatalogVerification(createBindings('sandbox'));
-      expect(warn).toHaveBeenCalledWith('Scheduled Stripe catalog verification found 1 issue(s) in sandbox.');
+      expect(warn).toHaveBeenCalledWith(
+        'Scheduled Stripe catalog verification found 2 issue(s) in sandbox. Product Projection: 1; Price Authority: 1; D1 readiness: 0; Store Offer snapshots: 0',
+      );
     } finally {
       warn.mockRestore();
     }

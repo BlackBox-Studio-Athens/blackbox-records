@@ -96,7 +96,7 @@ describe('store purchase happy path', () => {
         canBuy: true,
         optionLabel: 'Black Vinyl LP',
         price: {
-          display: 'Price confirmed at checkout',
+          display: 'Worker-confirmed at checkout',
         },
         variantId: 'variant_barren-point_standard',
       },

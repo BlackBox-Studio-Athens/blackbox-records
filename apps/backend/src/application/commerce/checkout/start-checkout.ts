@@ -18,7 +18,12 @@ import {
   StoreItemNotFoundError,
   VariantMismatchError,
 } from './errors';
-import { CatalogDriftError, hasBlockingCatalogIssue, type CatalogReconciler } from '../catalog-sync';
+import {
+  CatalogDriftError,
+  hasBlockingCatalogIssue,
+  type CatalogProductProjectionReader,
+  type CatalogReconciler,
+} from '../catalog-sync';
 import { createPendingCheckoutOrder } from '../orders/create-pending-checkout-order';
 import type { CheckoutSessionLineItem, CheckoutGateway, FeatureFlagReader, HostedCheckoutSession } from './spi';
 
@@ -98,6 +103,7 @@ export async function startCheckout(
   itemAvailability: ItemAvailabilityRepository,
   stock: StockRepository,
   catalogReconciler: Pick<CatalogReconciler, 'reconcileVariant'>,
+  productProjections: CatalogProductProjectionReader,
   checkoutGateway: CheckoutGateway,
   orders: OrderStateRepository,
   command: StartCheckoutCommand,
@@ -141,7 +147,13 @@ export async function startCheckout(
       throw new CheckoutUnavailableError();
     }
 
-    const catalogResult = await catalogReconciler.reconcileVariant(storeItem, { apply: true });
+    const productProjection = productProjections.findByStoreItem(storeItem);
+
+    if (!productProjection) {
+      throw new CatalogDriftError();
+    }
+
+    const catalogResult = await catalogReconciler.reconcileVariant(storeItem, { apply: true, productProjection });
     const resolvedPrice = catalogResult.resolvedPrice;
 
     if (

@@ -6,8 +6,11 @@ import {
   type StripeCatalogEnvironment,
   type StripeCatalogGateway,
   type StripeCatalogIdentityMetadata,
+  type StripeCatalogMutationContext,
   type StripeCatalogPrice,
   type StripeCatalogPriceCreateInput,
+  type StripeCatalogProductProjection,
+  type StripeCatalogProductProjectionUpdateInput,
 } from '../../../../src/application/commerce/catalog-sync';
 import type {
   StoreItemOptionRecord,
@@ -26,6 +29,12 @@ const storeItem: StoreItemOptionRecord = {
   sourceKind: 'release',
   storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
   variantId: variantId('variant_barren-point_standard'),
+};
+const unavailableStoreItem: StoreItemOptionRecord = {
+  sourceId: 'noise-without-decay',
+  sourceKind: 'distro',
+  storeItemSlug: storeItemSlug('noise-without-decay'),
+  variantId: variantId('variant_noise-without-decay_standard'),
 };
 
 class InMemoryStoreItems implements StoreItemOptionRepository {
@@ -82,7 +91,7 @@ class InMemoryStoreOfferSnapshots implements StoreOfferSnapshotRepository {
 }
 
 class InMemoryStripeCatalog implements StripeCatalogGateway {
-  public readonly archivePrice = vi.fn(async (priceId: string) => {
+  public readonly archivePrice = vi.fn(async (priceId: string, _context?: StripeCatalogMutationContext) => {
     const price = this.prices.get(priceId);
 
     if (!price) {
@@ -95,30 +104,63 @@ class InMemoryStripeCatalog implements StripeCatalogGateway {
     return archived;
   });
   public readonly prices = new Map<string, StripeCatalogPrice>();
-  public readonly updatePriceMetadata = vi.fn(async (priceId: string, metadata: StripeCatalogIdentityMetadata) => {
-    const price = this.prices.get(priceId);
+  public readonly updatePriceMetadata = vi.fn(
+    async (priceId: string, metadata: StripeCatalogIdentityMetadata, _context?: StripeCatalogMutationContext) => {
+      const price = this.prices.get(priceId);
 
-    if (!price) {
-      throw new Error(`Missing price ${priceId}.`);
-    }
+      if (!price) {
+        throw new Error(`Missing price ${priceId}.`);
+      }
 
-    const updated = { ...price, metadata, productMetadata: metadata };
-    this.prices.set(priceId, updated);
+      const updated = { ...price, metadata, productMetadata: metadata };
+      this.prices.set(priceId, updated);
 
-    return updated;
-  });
+      return updated;
+    },
+  );
+  public readonly updateProductProjection = vi.fn(
+    async (
+      productId: string,
+      input: StripeCatalogProductProjectionUpdateInput,
+      _context?: StripeCatalogMutationContext,
+    ) => {
+      const price = [...this.prices.values()].find((candidate) => candidate.productId === productId);
 
-  public async createSandboxPrice(input: StripeCatalogPriceCreateInput): Promise<StripeCatalogPrice> {
-    const price = createCatalogPrice({
-      amountMinor: input.amountMinor,
-      currencyCode: input.currencyCode,
-      environment: input.metadata.appEnv,
-      priceId: 'price_test_disintegration_2800',
-    });
-    this.prices.set(price.priceId, price);
+      if (!price) {
+        throw new Error(`Missing product ${productId}.`);
+      }
 
-    return price;
-  }
+      this.prices.set(price.priceId, {
+        ...price,
+        productDescription: input.projection.description,
+        productImages: input.projection.imageUrls,
+        productMetadata: {
+          ...input.projection.metadata,
+          ...input.stripeMetadata,
+        },
+        productName: input.projection.name,
+        productTaxCode: input.projection.taxCode,
+      });
+    },
+  );
+
+  public readonly createSandboxPrice = vi.fn(
+    async (
+      input: StripeCatalogPriceCreateInput,
+      _context?: StripeCatalogMutationContext,
+    ): Promise<StripeCatalogPrice> => {
+      const price = createCatalogPrice({
+        amountMinor: input.amountMinor,
+        currencyCode: input.currencyCode,
+        environment: input.metadata.appEnv,
+        priceId: 'price_test_disintegration_2800',
+        productProjection: input.productProjection ?? null,
+      });
+      this.prices.set(price.priceId, price);
+
+      return price;
+    },
+  );
 
   public async listPricesByLookupKey(lookupKey: string): Promise<StripeCatalogPrice[]> {
     return [...this.prices.values()].filter((price) => price.lookupKey === lookupKey);
@@ -141,6 +183,7 @@ function createCatalogPrice(input: {
   currencyCode?: string;
   environment?: StripeCatalogEnvironment;
   priceId: string;
+  productProjection?: StripeCatalogProductProjection | null;
 }): StripeCatalogPrice {
   const environment = input.environment ?? 'sandbox';
   const lookupKey = createStripeCatalogLookupKey(environment, storeItem);
@@ -160,8 +203,17 @@ function createCatalogPrice(input: {
     metadata,
     priceId: stripePriceId(input.priceId),
     productActive: true,
+    productDescription: input.productProjection?.description ?? 'Disintegration by Afterwise.',
     productId: `prod_${input.priceId}`,
-    productMetadata: metadata,
+    productImages: input.productProjection?.imageUrls ?? [
+      'https://blackbox-records-web.pages.dev/admin/media/releases/disintegration.jpg',
+    ],
+    productMetadata: {
+      ...(input.productProjection?.metadata ?? {}),
+      ...metadata,
+    },
+    productName: input.productProjection?.name ?? 'BlackBox Records - Disintegration - Black Vinyl LP',
+    productTaxCode: input.productProjection?.taxCode ?? null,
   };
 }
 
@@ -170,6 +222,7 @@ function createReconciler(
     environment?: StripeCatalogEnvironment;
     mappings?: InMemoryVariantMappings;
     snapshots?: InMemoryStoreOfferSnapshots;
+    storeItems?: StoreItemOptionRecord[];
     stripeCatalog?: InMemoryStripeCatalog;
   } = {},
 ) {
@@ -179,7 +232,7 @@ function createReconciler(
   const stripeCatalog = input.stripeCatalog ?? new InMemoryStripeCatalog();
   const reconciler = new CatalogReconciler({
     environment,
-    storeItems: new InMemoryStoreItems([storeItem]),
+    storeItems: new InMemoryStoreItems(input.storeItems ?? [storeItem]),
     storeOfferSnapshots: snapshots,
     stripeCatalog,
     variantStripeMappings: mappings,
@@ -220,7 +273,12 @@ describe('CatalogReconciler', () => {
         { kind: 'update_snapshot' },
       ]),
     );
-    expect(stripeCatalog.archivePrice).toHaveBeenCalledWith('price_test_disintegration_1000');
+    expect(stripeCatalog.archivePrice).toHaveBeenCalledWith(
+      'price_test_disintegration_1000',
+      expect.objectContaining({
+        idempotencyKey: expect.stringContaining('archive_price'),
+      }),
+    );
     expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe('price_test_disintegration_2800');
     expect(snapshots.records.get(storeItem.variantId)).toMatchObject({
       amountMinor: 2800,
@@ -302,6 +360,173 @@ describe('CatalogReconciler', () => {
       currencyCode: 'EUR',
       stripePriceId: correctedPrice.priceId,
     });
+  });
+
+  it('plans Product Projection updates separately from Price Authority', async () => {
+    const price = {
+      ...createCatalogPrice({ priceId: 'price_test_disintegration_2800' }),
+      productDescription: 'Dashboard-edited description.',
+      productImages: ['https://example.com/dashboard-image.jpg'],
+      productName: 'Dashboard edited name',
+    };
+    const { reconciler, stripeCatalog } = createReconciler();
+    stripeCatalog.prices.set(price.priceId, price);
+
+    const result = await reconciler.reconcileVariant(storeItem, {
+      apply: false,
+      productProjection: {
+        description: 'Disintegration by Afterwise.',
+        imageUrls: ['https://blackbox-records-web.pages.dev/admin/media/releases/disintegration.jpg'],
+        metadata: {
+          sourceId: storeItem.sourceId,
+          sourceKind: storeItem.sourceKind,
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+        name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+        taxCode: null,
+      },
+    });
+
+    expect(result.issues).toEqual([
+      expect.objectContaining({
+        code: 'product_projection_mismatch',
+        driftCategory: 'product_projection',
+      }),
+    ]);
+    expect(result.actions).toEqual(
+      expect.arrayContaining([{ kind: 'update_product_projection', productId: price.productId }]),
+    );
+    expect(result.actions).not.toEqual(
+      expect.arrayContaining([
+        { kind: 'create_sandbox_price' },
+        { kind: 'archive_price', stripePriceId: price.priceId },
+      ]),
+    );
+  });
+
+  it('keeps dry-run verification mutation-free for Stripe and D1 write paths', async () => {
+    const price = {
+      ...createCatalogPrice({ amountMinor: 1000, priceId: 'price_test_disintegration_1000' }),
+      productDescription: 'Dashboard-edited description.',
+    };
+    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
+    stripeCatalog.prices.set(price.priceId, price);
+    mappings.records.set(storeItem.variantId, {
+      stripePriceId: price.priceId,
+      variantId: storeItem.variantId,
+    });
+    snapshots.records.set(storeItem.variantId, {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      freshUntil: new Date('2026-05-22T10:00:00.000Z'),
+      priceActive: true,
+      productActive: true,
+      storeItemSlug: storeItem.storeItemSlug,
+      stripeLookupKey: createStripeCatalogLookupKey('sandbox', storeItem),
+      stripePriceId: price.priceId,
+      syncedAt: new Date('2026-05-21T10:00:00.000Z'),
+      variantId: storeItem.variantId,
+    });
+
+    const result = await reconciler.reconcileVariant(storeItem, {
+      apply: false,
+      expectedPrice: {
+        amountMinor: 2800,
+        currencyCode: 'EUR',
+      },
+      now: new Date('2026-05-23T10:00:00.000Z'),
+      productProjection: {
+        description: 'Disintegration by Afterwise.',
+        imageUrls: ['https://blackbox-records-web.pages.dev/admin/media/releases/disintegration.jpg'],
+        metadata: {
+          sourceId: storeItem.sourceId,
+          sourceKind: storeItem.sourceKind,
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+        name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+        taxCode: null,
+      },
+    });
+
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'product_projection_mismatch' }),
+        expect.objectContaining({ code: 'snapshot_stale' }),
+        expect.objectContaining({ code: 'wrong_amount' }),
+      ]),
+    );
+    expect(result.actions).toEqual(
+      expect.arrayContaining([
+        { kind: 'update_product_projection', productId: price.productId },
+        { kind: 'update_snapshot' },
+      ]),
+    );
+    expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
+    expect(stripeCatalog.createSandboxPrice).not.toHaveBeenCalled();
+    expect(stripeCatalog.updatePriceMetadata).not.toHaveBeenCalled();
+    expect(stripeCatalog.updateProductProjection).not.toHaveBeenCalled();
+    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(price.priceId);
+    expect(snapshots.records.get(storeItem.variantId)?.freshUntil.toISOString()).toBe('2026-05-22T10:00:00.000Z');
+  });
+
+  it('reports non-checkout variants without forcing Price Authority alignment', async () => {
+    const { mappings, reconciler } = createReconciler({ storeItems: [storeItem, unavailableStoreItem] });
+    mappings.records.set(unavailableStoreItem.variantId, {
+      stripePriceId: stripePriceId('price_test_stale_unavailable'),
+      variantId: unavailableStoreItem.variantId,
+    });
+
+    const result = await reconciler.verifyBuyableCatalog({
+      apply: false,
+      expectedPrices: new Map([[storeItem.variantId, { amountMinor: 2800, currencyCode: 'EUR' }]]),
+    });
+    const unavailableResult = result.results.find(
+      (item) => item.storeItem.variantId === unavailableStoreItem.variantId,
+    );
+
+    expect(unavailableResult).toMatchObject({
+      actions: [],
+      issueCount: 0,
+      resolvedPrice: null,
+    });
+    expect(result.issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ variantId: unavailableStoreItem.variantId })]),
+    );
+  });
+
+  it('applies sandbox Product Projection updates with idempotency keys', async () => {
+    const price = {
+      ...createCatalogPrice({ priceId: 'price_test_disintegration_2800' }),
+      productDescription: 'Dashboard-edited description.',
+    };
+    const { reconciler, stripeCatalog } = createReconciler();
+    stripeCatalog.prices.set(price.priceId, price);
+
+    await reconciler.reconcileVariant(storeItem, {
+      apply: true,
+      productProjection: {
+        description: 'Disintegration by Afterwise.',
+        imageUrls: ['https://blackbox-records-web.pages.dev/admin/media/releases/disintegration.jpg'],
+        metadata: {
+          sourceId: storeItem.sourceId,
+          sourceKind: storeItem.sourceKind,
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+        name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+        taxCode: null,
+      },
+    });
+
+    expect(stripeCatalog.updateProductProjection).toHaveBeenCalledWith(
+      price.productId,
+      expect.any(Object),
+      expect.objectContaining({
+        idempotencyKey: expect.stringContaining('update_product_projection'),
+      }),
+    );
   });
 
   it('fails closed when multiple active Stripe Prices match one Store Item variant', async () => {

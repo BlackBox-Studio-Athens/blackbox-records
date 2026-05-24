@@ -13,10 +13,12 @@ import {
 } from '../../../../src/application/commerce/checkout';
 import type { CheckoutGateway } from '../../../../src/application/commerce/checkout/spi';
 import type {
+  CatalogProductProjectionReader,
   CatalogReconciler,
   CatalogSyncIssue,
   CatalogSyncVariantResult,
   StripeCatalogPrice,
+  StripeCatalogProductProjection,
 } from '../../../../src/application/commerce/catalog-sync';
 import type {
   CheckoutOrderRecord,
@@ -159,13 +161,17 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
 }
 
 class InMemoryCatalogReconciler implements Pick<CatalogReconciler, 'reconcileVariant'> {
+  public readonly calls: Array<{
+    options: { apply?: boolean; productProjection?: StripeCatalogProductProjection | null };
+  }> = [];
   public readonly issues = new Map<string, CatalogSyncIssue[]>();
   public readonly prices = new Map<string, StripeCatalogPrice>();
 
   public async reconcileVariant(
     storeItem: StoreItemOptionRecord,
-    _options: { apply?: boolean } = {},
+    options: { apply?: boolean; productProjection?: StripeCatalogProductProjection | null } = {},
   ): Promise<CatalogSyncVariantResult> {
+    this.calls.push({ options });
     const resolvedPrice = this.prices.get(storeItem.variantId) ?? null;
     const issues =
       this.issues.get(storeItem.variantId) ??
@@ -175,6 +181,7 @@ class InMemoryCatalogReconciler implements Pick<CatalogReconciler, 'reconcileVar
             {
               code: 'missing_price',
               detail: 'No active Stripe Price resolved for test variant.',
+              driftCategory: 'price_authority',
               storeItemSlug: storeItem.storeItemSlug,
               variantId: storeItem.variantId,
             },
@@ -198,6 +205,14 @@ class InMemoryCatalogReconciler implements Pick<CatalogReconciler, 'reconcileVar
   }
 }
 
+class InMemoryCatalogProductProjectionReader implements CatalogProductProjectionReader {
+  public readonly projections = new Map<string, StripeCatalogProductProjection>();
+
+  public findByStoreItem(storeItem: StoreItemOptionRecord): StripeCatalogProductProjection | null {
+    return this.projections.get(storeItem.variantId) ?? null;
+  }
+}
+
 function createCatalogPrice(input: {
   amountMinor?: number;
   currencyCode?: string;
@@ -218,7 +233,9 @@ function createCatalogPrice(input: {
     },
     priceId: stripePriceId(input.priceId ?? 'price_test_barren_point'),
     productActive: true,
+    productDescription: 'Disintegration by Afterwise.',
     productId: 'prod_test_barren_point',
+    productImages: ['https://blackbox-records-web.pages.dev/admin/media/releases/disintegration.jpg'],
     productMetadata: {
       appEnv: 'sandbox',
       sourceId: input.storeItem.sourceId,
@@ -226,6 +243,8 @@ function createCatalogPrice(input: {
       storeItemSlug: input.storeItem.storeItemSlug,
       variantId: input.storeItem.variantId,
     },
+    productName: 'BlackBox Records - Disintegration - Black Vinyl LP',
+    productTaxCode: null,
   };
 }
 
@@ -241,6 +260,7 @@ describe('checkout use cases', () => {
   let itemAvailability: InMemoryItemAvailabilityRepository;
   let stock: InMemoryStockRepository;
   let catalogReconciler: InMemoryCatalogReconciler;
+  let productProjections: InMemoryCatalogProductProjectionReader;
   let orders: InMemoryOrderStateRepository;
   let checkoutGateway: CheckoutGateway;
 
@@ -249,6 +269,7 @@ describe('checkout use cases', () => {
     itemAvailability = new InMemoryItemAvailabilityRepository();
     stock = new InMemoryStockRepository();
     catalogReconciler = new InMemoryCatalogReconciler();
+    productProjections = new InMemoryCatalogProductProjectionReader();
     orders = new InMemoryOrderStateRepository();
     checkoutGateway = {
       createHostedCheckoutSession: vi.fn(async () => ({
@@ -273,12 +294,31 @@ describe('checkout use cases', () => {
       onlineQuantity: 2,
       quantity: 3,
     });
+    productProjections.projections.set(storeItem.variantId, {
+      description: 'Disintegration by Afterwise.',
+      imageUrls: ['https://blackbox-records-web.pages.dev/admin/media/releases/disintegration.jpg'],
+      metadata: {
+        sourceId: storeItem.sourceId,
+        sourceKind: storeItem.sourceKind,
+        storeItemSlug: storeItem.storeItemSlug,
+        variantId: storeItem.variantId,
+      },
+      name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+      taxCode: null,
+    });
     catalogReconciler.prices.set(storeItem.variantId, createCatalogPrice({ storeItem }));
   });
 
   it('reads backend-known checkout eligibility for one store item', async () => {
     await expect(
-      readStoreOffer(storeItems, itemAvailability, stock, catalogReconciler, storeItem.storeItemSlug),
+      readStoreOffer(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        storeItem.storeItemSlug,
+      ),
     ).resolves.toEqual({
       availability: {
         label: 'Available',
@@ -294,11 +334,51 @@ describe('checkout use cases', () => {
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_barren-point_standard',
     });
+    expect(catalogReconciler.calls[0]?.options.productProjection).toEqual(
+      productProjections.projections.get(storeItem.variantId),
+    );
+  });
+
+  it('reads Store Offer price from a replacement Stripe Price without content changes', async () => {
+    catalogReconciler.prices.set(
+      storeItem.variantId,
+      createCatalogPrice({
+        amountMinor: 3200,
+        priceId: 'price_test_replacement_black_vinyl',
+        storeItem,
+      }),
+    );
+
+    await expect(
+      readStoreOffer(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        storeItem.storeItemSlug,
+      ),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        price: {
+          amountMinor: 3200,
+          currencyCode: 'EUR',
+          display: '€32.00',
+        },
+      }),
+    );
   });
 
   it('returns array-shaped variant offers for future multi-variant expansion', async () => {
     await expect(
-      listVariantOffersForStoreItem(storeItems, itemAvailability, stock, catalogReconciler, storeItem.storeItemSlug),
+      listVariantOffersForStoreItem(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        storeItem.storeItemSlug,
+      ),
     ).resolves.toEqual([
       expect.objectContaining({
         catalogStatus: 'ready',
@@ -310,12 +390,21 @@ describe('checkout use cases', () => {
 
   it('starts checkout without a browser-selected locker for manual BOX NOW fulfillment', async () => {
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, catalogReconciler, checkoutGateway, orders, {
-        cancelUrl: 'https://example.com/checkout',
-        successUrl: 'https://example.com/return',
-        storeItemSlug: storeItem.storeItemSlug,
-        variantId: storeItem.variantId,
-      }),
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+      ),
     ).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
       checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
@@ -334,6 +423,7 @@ describe('checkout use cases', () => {
         itemAvailability,
         stock,
         catalogReconciler,
+        productProjections,
         checkoutGateway,
         orders,
         {
@@ -354,23 +444,41 @@ describe('checkout use cases', () => {
 
   it('rejects unknown store items before starting checkout', async () => {
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, catalogReconciler, checkoutGateway, orders, {
-        cancelUrl: 'https://example.com/checkout',
-        successUrl: 'https://example.com/return',
-        storeItemSlug: storeItemSlug('unknown'),
-        variantId: storeItem.variantId,
-      }),
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+          storeItemSlug: storeItemSlug('unknown'),
+          variantId: storeItem.variantId,
+        },
+      ),
     ).rejects.toBeInstanceOf(StoreItemNotFoundError);
   });
 
   it('rejects variants that do not belong to the requested store item', async () => {
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, catalogReconciler, checkoutGateway, orders, {
-        cancelUrl: 'https://example.com/checkout',
-        successUrl: 'https://example.com/return',
-        storeItemSlug: storeItem.storeItemSlug,
-        variantId: toVariantId('variant_other'),
-      }),
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: toVariantId('variant_other'),
+        },
+      ),
     ).rejects.toBeInstanceOf(VariantMismatchError);
   });
 
@@ -381,12 +489,21 @@ describe('checkout use cases', () => {
     });
 
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, catalogReconciler, checkoutGateway, orders, {
-        cancelUrl: 'https://example.com/checkout',
-        successUrl: 'https://example.com/return',
-        storeItemSlug: storeItem.storeItemSlug,
-        variantId: storeItem.variantId,
-      }),
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+      ),
     ).rejects.toBeInstanceOf(CheckoutUnavailableError);
   });
 
@@ -394,23 +511,95 @@ describe('checkout use cases', () => {
     catalogReconciler.prices.clear();
 
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, catalogReconciler, checkoutGateway, orders, {
-        cancelUrl: 'https://example.com/checkout',
-        successUrl: 'https://example.com/return',
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+      ),
+    ).rejects.toBeInstanceOf(CatalogDriftError);
+  });
+
+  it('pauses Store Offer checkout when Product Projection cannot be confirmed', async () => {
+    catalogReconciler.issues.set(storeItem.variantId, [
+      {
+        code: 'product_projection_mismatch',
+        detail: 'Stripe Product projection differs: images.',
+        driftCategory: 'product_projection',
         storeItemSlug: storeItem.storeItemSlug,
         variantId: storeItem.variantId,
+      },
+    ]);
+
+    await expect(
+      readStoreOffer(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        storeItem.storeItemSlug,
+      ),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        canCheckout: false,
+        catalogStatus: 'catalog_drift',
+        price: null,
       }),
+    );
+  });
+
+  it('rejects checkout before Stripe writes when Product Projection is missing or drifted', async () => {
+    productProjections.projections.clear();
+
+    await expect(
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+      ),
     ).rejects.toBeInstanceOf(CatalogDriftError);
+
+    expect(checkoutGateway.createHostedCheckoutSession).not.toHaveBeenCalled();
+    expect(orders.records.size).toBe(0);
   });
 
   it('starts hosted Checkout with the mapped Stripe price', async () => {
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, catalogReconciler, checkoutGateway, orders, {
-        cancelUrl: 'https://example.com/checkout',
-        successUrl: 'https://example.com/return',
-        storeItemSlug: storeItem.storeItemSlug,
-        variantId: storeItem.variantId,
-      }),
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+      ),
     ).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
       checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
@@ -441,17 +630,26 @@ describe('checkout use cases', () => {
 
   it('starts hosted Checkout with requested CartQuantity and fixed Stripe quantity', async () => {
     await expect(
-      startCheckout(storeItems, itemAvailability, stock, catalogReconciler, checkoutGateway, orders, {
-        lines: [
-          {
-            quantity: cartQuantity(2),
-            storeItemSlug: storeItem.storeItemSlug,
-            variantId: storeItem.variantId,
-          },
-        ],
-        cancelUrl: 'https://example.com/checkout',
-        successUrl: 'https://example.com/return',
-      }),
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          lines: [
+            {
+              quantity: cartQuantity(2),
+              storeItemSlug: storeItem.storeItemSlug,
+              variantId: storeItem.variantId,
+            },
+          ],
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+        },
+      ),
     ).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
       checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
@@ -484,12 +682,21 @@ describe('checkout use cases', () => {
   });
 
   it('surfaces manual BOX NOW return state without a persisted locker snapshot', async () => {
-    await startCheckout(storeItems, itemAvailability, stock, catalogReconciler, checkoutGateway, orders, {
-      cancelUrl: 'https://example.com/checkout',
-      successUrl: 'https://example.com/return',
-      storeItemSlug: storeItem.storeItemSlug,
-      variantId: storeItem.variantId,
-    });
+    await startCheckout(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      checkoutGateway,
+      orders,
+      {
+        cancelUrl: 'https://example.com/checkout',
+        successUrl: 'https://example.com/return',
+        storeItemSlug: storeItem.storeItemSlug,
+        variantId: storeItem.variantId,
+      },
+    );
 
     await expect(readCheckoutState(checkoutGateway, orders, checkoutSessionId('cs_test_123'))).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',

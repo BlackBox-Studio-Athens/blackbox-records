@@ -29,9 +29,14 @@ export type StoreItemOption = Prisma.StoreItemOptionModel
 export type VariantStripeMapping = Prisma.VariantStripeMappingModel
 /**
  * Model StoreOfferSnapshot
- *
+ * 
  */
 export type StoreOfferSnapshot = Prisma.StoreOfferSnapshotModel
+/**
+ * Model StripeCatalogWebhookEvent
+ * 
+ */
+export type StripeCatalogWebhookEvent = Prisma.StripeCatalogWebhookEventModel
 /**
  * Model ItemAvailability
  * 

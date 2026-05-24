@@ -65,6 +65,19 @@ model StoreOfferSnapshot {
   @@index([stripeLookupKey])
 }
 
+model StripeCatalogWebhookEvent {
+  eventId           String   @id
+  eventType         String
+  catalogObjectId   String
+  catalogObjectKind String
+  variantId         String?
+  stripeCreatedAt   DateTime
+  processedAt       DateTime @default(now())
+
+  @@index([catalogObjectKind, catalogObjectId])
+  @@index([variantId, stripeCreatedAt])
+}
+
 model ItemAvailability {
   id        String                 @id @default(cuid())
   variantId String                 @unique

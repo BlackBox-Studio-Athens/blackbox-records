@@ -82,22 +82,22 @@ describe('store collection entries', () => {
 
     expect(collectionEntries[0]?.primaryAvailability).toMatchObject({
       storeItemSlug: 'disintegration-black-vinyl-lp',
-      price: { display: 'Price confirmed at checkout' },
+      price: { display: 'Worker-confirmed at checkout' },
       canBuy: true,
     });
 
     expect(collectionEntries[1]?.primaryAvailability).toMatchObject({
       storeItemSlug: 'caregivers-vinyl',
-      price: { display: 'Price soon' },
-      availability: { status: 'sold_out', label: 'Unavailable' },
-      canBuy: false,
+      price: { display: 'Worker-confirmed at checkout' },
+      availability: { status: 'available', label: 'Available' },
+      canBuy: true,
     });
 
     expect(collectionEntries[2]?.primaryAvailability).toMatchObject({
       storeItemSlug: 'afterglow-tape',
-      price: { display: 'Price confirmed at checkout' },
-      availability: { status: 'sold_out', label: 'Sold Out' },
-      canBuy: false,
+      price: { display: 'Worker-confirmed at checkout' },
+      availability: { status: 'available', label: 'Available' },
+      canBuy: true,
     });
   });
 });

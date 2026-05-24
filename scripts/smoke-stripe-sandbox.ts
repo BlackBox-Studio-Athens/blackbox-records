@@ -7,6 +7,8 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 
 import { chromium, type Browser, type Frame, type Page } from 'playwright';
 
+import { currentCatalogProductProjectionEntries } from '../apps/backend/src/application/commerce/catalog-sync/catalog-product-projections';
+
 export type StripeSandboxSmokeScenarioName =
   | 'checkout_surface'
   | 'card_declined'
@@ -33,7 +35,15 @@ export type StripeSandboxSmokeScenario = {
 export type StripeCheckoutSurfaceExpectation = {
   expectedAmountText: string;
   expectedPaymentMethodLabels: string[];
+  expectedSessionProjection: StripeCheckoutSessionProjectionExpectation;
   minimumDynamicPaymentMethodCount: number;
+};
+
+export type StripeCheckoutSessionProjectionExpectation = {
+  expectedAmountMinor: number;
+  expectedCurrencyCode: string;
+  expectedProductImageUrl: string;
+  expectedProductName: string;
 };
 
 export type StripeCheckoutSurfaceObservation = {
@@ -44,6 +54,22 @@ export type StripeCheckoutSurfaceObservation = {
   issues: string[];
   observedAmountTexts: string[];
   paymentMethodLabels: string[];
+};
+
+export type StripeCheckoutSessionProjectionObservation = {
+  amountMatches: boolean;
+  currencyMatches: boolean;
+  expectedAmountMinor: number;
+  expectedCurrencyCode: string;
+  expectedProductImageUrl: string;
+  expectedProductName: string;
+  issues: string[];
+  observedAmountMinor: number | null;
+  observedCurrencyCode: string | null;
+  observedProductImageUrls: string[];
+  observedProductName: string | null;
+  productImageMatches: boolean;
+  productNameMatches: boolean;
 };
 
 export type StripeSandboxSmokeOptions = {
@@ -96,6 +122,7 @@ export type RemoteD1ReadinessSummary = {
 };
 
 export type StripeSandboxScenarioAutomationResult = {
+  checkoutSessionProjection: StripeCheckoutSessionProjectionObservation | null;
   checkoutSurface: StripeCheckoutSurfaceObservation | null;
   checkoutSessionId: string | null;
   durations: StripeSandboxSmokeDurations;
@@ -106,6 +133,7 @@ export type StripeSandboxScenarioAutomationResult = {
 };
 
 export type StripeSandboxSmokeEvidence = {
+  checkoutSessionProjection: StripeCheckoutSessionProjectionObservation | null;
   checkoutSurface: StripeCheckoutSurfaceObservation | null;
   checkoutPageUrl: string;
   durations: StripeSandboxSmokeDurations;
@@ -148,6 +176,21 @@ type D1JsonResult = Array<{
   success?: boolean;
 }>;
 
+type StripeCheckoutLineItemsApiResponse = {
+  data?: Array<{
+    amount_total?: number | null;
+    currency?: string | null;
+    price?: {
+      product?: StripeProductApiObject | string | null;
+    } | null;
+  }>;
+};
+
+type StripeProductApiObject = {
+  images?: string[] | null;
+  name?: string | null;
+};
+
 type PublicStoreOfferResponse = {
   canCheckout?: boolean;
   price?: {
@@ -165,6 +208,9 @@ const defaultSiteUrl = 'https://blackbox-records-web.pages.dev';
 const defaultWorkerUrl = 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev';
 const smokeStoreItemSlug = 'disintegration-black-vinyl-lp';
 const smokeVariantId = 'variant_barren-point_standard';
+const smokeCatalogProjectionEntry = currentCatalogProductProjectionEntries.find(
+  (entry) => entry.storeItemSlug === smokeStoreItemSlug && entry.variantId === smokeVariantId,
+);
 const allScenarioNames: readonly StripeSandboxSmokeScenarioName[] = [
   'checkout_surface',
   'happy_path_paid',
@@ -187,9 +233,25 @@ const sandboxFormDefaults = {
   postalCode: '10557',
 };
 
+function requireSmokeCatalogProjectionEntry() {
+  const expectedSandboxPrice = smokeCatalogProjectionEntry?.expectedSandboxPrice;
+
+  if (!smokeCatalogProjectionEntry || !expectedSandboxPrice) {
+    throw new Error(`Missing checkout-eligible Product Projection for ${smokeStoreItemSlug} / ${smokeVariantId}.`);
+  }
+
+  return { ...smokeCatalogProjectionEntry, expectedSandboxPrice };
+}
+
 const disintegrationCheckoutSurfaceExpectation: StripeCheckoutSurfaceExpectation = {
   expectedAmountText: 'Worker Store Offer price',
   expectedPaymentMethodLabels: [],
+  expectedSessionProjection: {
+    expectedAmountMinor: requireSmokeCatalogProjectionEntry().expectedSandboxPrice.amountMinor,
+    expectedCurrencyCode: requireSmokeCatalogProjectionEntry().expectedSandboxPrice.currencyCode,
+    expectedProductImageUrl: requireSmokeCatalogProjectionEntry().productProjection.imageUrls[0] ?? '',
+    expectedProductName: requireSmokeCatalogProjectionEntry().productProjection.name,
+  },
   minimumDynamicPaymentMethodCount: 1,
 };
 
@@ -635,8 +697,10 @@ export function formatStripeSandboxSmokeRunHeader(input: {
     `Decline concurrency: ${input.options.declineConcurrency}`,
     '',
     'Required outside this process for paid scenarios:',
-    `- stripe listen --forward-to ${input.options.workerUrl}/api/stripe/webhooks`,
-    '- The sandbox Worker STRIPE_WEBHOOK_SECRET must match that listener.',
+    `- Persistent Stripe Dashboard/Workbench webhook endpoint: ${input.options.workerUrl}/api/stripe/webhooks`,
+    '- The sandbox Worker STRIPE_WEBHOOK_SECRET must match the persistent endpoint signing secret.',
+    '- Run pnpm stripe:webhooks:verify --env sandbox before accepting deployed-sandbox webhook readiness.',
+    '- stripe listen is local/temporary diagnostic tooling only; it is not persistent readiness evidence.',
     '- Real sandbox Stripe Price mappings and positive online stock must exist in sandbox D1.',
     '',
     `Stripe test card reference: ${STRIPE_TEST_CARD_DOCS_URL}`,
@@ -676,8 +740,17 @@ export function didScenarioPass(
   scenario: StripeSandboxSmokeScenario,
   observedStripeUi: string,
   checkoutSurface: StripeCheckoutSurfaceObservation | null = null,
+  checkoutSessionProjection: StripeCheckoutSessionProjectionObservation | null = null,
 ): boolean {
   if (checkoutSurface?.issues.length) {
+    return false;
+  }
+
+  if (checkoutSessionProjection?.issues.length) {
+    return false;
+  }
+
+  if (scenario.checkoutSurfaceExpectation && !checkoutSessionProjection) {
     return false;
   }
 
@@ -714,9 +787,11 @@ export function buildStripeSandboxSmokeEvidence(input: {
     input.scenario,
     input.result.observedStripeUi,
     input.result.checkoutSurface,
+    input.result.checkoutSessionProjection,
   );
 
   return {
+    checkoutSessionProjection: input.result.checkoutSessionProjection,
     checkoutSurface: input.result.checkoutSurface,
     checkoutPageUrl: input.checkoutPageUrl,
     durations: input.result.durations,
@@ -854,6 +929,13 @@ async function runScenarioAndWriteEvidence(input: {
             : `OK (${formatCheckoutSurfaceLabelSummary(result.checkoutSurface)})`
           : 'not checked'
       }`,
+      `- checkout session projection: ${
+        result.checkoutSessionProjection
+          ? result.checkoutSessionProjection.issues.length
+            ? `FAILED (${result.checkoutSessionProjection.issues.join(' ')})`
+            : `OK (${formatCheckoutSessionProjectionSummary(result.checkoutSessionProjection)})`
+          : 'not checked'
+      }`,
       `- order status: ${result.order?.status ?? 'none'}`,
       `- screenshot: ${result.screenshotPath ?? 'skipped'}`,
       `- evidence: ${evidencePath}`,
@@ -965,8 +1047,24 @@ async function runScenarioWithBrowser(input: {
     const checkoutSurface = input.scenario.checkoutSurfaceExpectation
       ? await readStripeCheckoutSurface(page, input.scenario.checkoutSurfaceExpectation, input.options.timeoutMs)
       : null;
+    const checkoutSessionProjection = input.scenario.checkoutSurfaceExpectation
+      ? checkoutSessionId
+        ? await readStripeCheckoutSessionProjection(
+            checkoutSessionId,
+            input.scenario.checkoutSurfaceExpectation.expectedSessionProjection,
+          )
+        : createStripeCheckoutSessionProjectionObservation(
+            null,
+            input.scenario.checkoutSurfaceExpectation.expectedSessionProjection,
+            ['Checkout Session ID was not observed in the hosted Checkout URL.'],
+          )
+      : null;
 
-    if (checkoutSurface?.issues.length || input.scenario.expectedOrderStatus === 'not_submitted') {
+    if (
+      checkoutSurface?.issues.length ||
+      checkoutSessionProjection?.issues.length ||
+      input.scenario.expectedOrderStatus === 'not_submitted'
+    ) {
       const screenshotPath =
         input.options.screenshots === 'always' ? path.join(input.scenarioArtifactDir, 'final.png') : null;
 
@@ -977,6 +1075,7 @@ async function runScenarioWithBrowser(input: {
       durations.totalMs = Date.now() - scenarioStartedAt;
 
       return {
+        checkoutSessionProjection,
         checkoutSurface,
         checkoutSessionId,
         durations,
@@ -1023,6 +1122,7 @@ async function runScenarioWithBrowser(input: {
     durations.totalMs = Date.now() - scenarioStartedAt;
 
     return {
+      checkoutSessionProjection,
       checkoutSurface,
       checkoutSessionId: resolvedCheckoutSessionId,
       durations,
@@ -1152,6 +1252,129 @@ export function createStripeCheckoutSurfaceObservation(
     observedAmountTexts,
     paymentMethodLabels,
   };
+}
+
+export async function readStripeCheckoutSessionProjection(
+  checkoutSessionId: string,
+  expectation: StripeCheckoutSessionProjectionExpectation,
+  secretKey = process.env.STRIPE_SECRET_KEY ?? '',
+): Promise<StripeCheckoutSessionProjectionObservation> {
+  const normalizedSecretKey = secretKey.trim();
+
+  if (!normalizedSecretKey) {
+    return createStripeCheckoutSessionProjectionObservation(null, expectation, [
+      'STRIPE_SECRET_KEY is required to verify hosted Checkout Product Projection through Stripe API.',
+    ]);
+  }
+
+  const apiBaseUrl = (process.env.STRIPE_API_BASE_URL?.trim() || 'https://api.stripe.com').replace(/\/+$/, '');
+  const searchParams = new URLSearchParams({
+    limit: '1',
+  });
+  searchParams.append('expand[]', 'data.price.product');
+  const response = await fetch(
+    `${apiBaseUrl}/v1/checkout/sessions/${encodeURIComponent(checkoutSessionId)}/line_items?${searchParams}`,
+    {
+      headers: {
+        Authorization: `Bearer ${normalizedSecretKey}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    const responseText = await response.text();
+
+    return createStripeCheckoutSessionProjectionObservation(null, expectation, [
+      `Stripe Checkout Session line item read failed with HTTP ${response.status}: ${scrubSensitiveStripeSmokeText(
+        responseText,
+      )}`,
+    ]);
+  }
+
+  const body = (await response.json()) as StripeCheckoutLineItemsApiResponse;
+  const lineItem = body.data?.[0] ?? null;
+  const product = getExpandedStripeProduct(lineItem?.price?.product ?? null);
+
+  return createStripeCheckoutSessionProjectionObservation(
+    lineItem && product
+      ? {
+          amountMinor: typeof lineItem.amount_total === 'number' ? lineItem.amount_total : null,
+          currencyCode: lineItem.currency ?? null,
+          productImageUrls: product.images ?? [],
+          productName: product.name ?? null,
+        }
+      : null,
+    expectation,
+    lineItem && product ? [] : ['Stripe Checkout Session line item Product was not expanded.'],
+  );
+}
+
+export function createStripeCheckoutSessionProjectionObservation(
+  observed: {
+    amountMinor: number | null;
+    currencyCode: string | null;
+    productImageUrls: string[];
+    productName: string | null;
+  } | null,
+  expectation: StripeCheckoutSessionProjectionExpectation,
+  extraIssues: string[] = [],
+): StripeCheckoutSessionProjectionObservation {
+  const observedCurrencyCode = observed?.currencyCode?.toUpperCase() ?? null;
+  const expectedCurrencyCode = expectation.expectedCurrencyCode.toUpperCase();
+  const observedProductImageUrls = observed?.productImageUrls ?? [];
+  const amountMatches = observed?.amountMinor === expectation.expectedAmountMinor;
+  const currencyMatches = observedCurrencyCode === expectedCurrencyCode;
+  const productNameMatches = observed?.productName === expectation.expectedProductName;
+  const productImageMatches = observedProductImageUrls.includes(expectation.expectedProductImageUrl);
+  const issues = [...extraIssues];
+
+  if (!amountMatches) {
+    issues.push(
+      `Expected Checkout Session amount ${expectation.expectedAmountMinor}; observed ${observed?.amountMinor ?? 'none'}.`,
+    );
+  }
+
+  if (!currencyMatches) {
+    issues.push(
+      `Expected Checkout Session currency ${expectedCurrencyCode}; observed ${observedCurrencyCode ?? 'none'}.`,
+    );
+  }
+
+  if (!productNameMatches) {
+    issues.push(
+      `Expected Checkout Session Product name "${expectation.expectedProductName}"; observed "${
+        observed?.productName ?? 'none'
+      }".`,
+    );
+  }
+
+  if (!productImageMatches) {
+    issues.push(
+      `Expected Checkout Session Product image ${expectation.expectedProductImageUrl}; observed ${
+        observedProductImageUrls.length ? observedProductImageUrls.join(', ') : 'none'
+      }.`,
+    );
+  }
+
+  return {
+    amountMatches,
+    currencyMatches,
+    expectedAmountMinor: expectation.expectedAmountMinor,
+    expectedCurrencyCode,
+    expectedProductImageUrl: expectation.expectedProductImageUrl,
+    expectedProductName: expectation.expectedProductName,
+    issues,
+    observedAmountMinor: observed?.amountMinor ?? null,
+    observedCurrencyCode,
+    observedProductImageUrls,
+    observedProductName: observed?.productName ?? null,
+    productImageMatches,
+    productNameMatches,
+  };
+}
+
+function getExpandedStripeProduct(value: StripeProductApiObject | string | null): StripeProductApiObject | null {
+  return value && typeof value === 'object' ? value : null;
 }
 
 function normalizeVisibleStripeText(text: string): string {
@@ -1774,6 +1997,14 @@ function createScenarioFailureMessage(
     ].join(' ');
   }
 
+  if (result.checkoutSessionProjection?.issues.length) {
+    return [
+      `Scenario ${scenario.name} failed hosted Checkout Session Product Projection expectations.`,
+      ...result.checkoutSessionProjection.issues,
+      `Observed Checkout Session projection: ${formatCheckoutSessionProjectionSummary(result.checkoutSessionProjection)}.`,
+    ].join(' ');
+  }
+
   if (scenario.expectedOrderStatus === 'not_submitted') {
     return `Scenario ${scenario.name} did not complete the hosted Checkout surface check.`;
   }
@@ -1782,7 +2013,7 @@ function createScenarioFailureMessage(
     return [
       `Scenario ${scenario.name} did not produce a paid CheckoutOrder.`,
       `Observed order status: ${result.order?.status ?? 'none'}.`,
-      'Likely causes: stripe listen is not forwarding to the sandbox Worker, or sandbox STRIPE_WEBHOOK_SECRET does not match the active listener secret.',
+      'Likely causes: the persistent Stripe webhook endpoint is not delivering to the sandbox Worker, or sandbox STRIPE_WEBHOOK_SECRET does not match the persistent endpoint signing secret.',
     ].join(' ');
   }
 
@@ -1810,6 +2041,14 @@ function formatCheckoutSurfaceLabelSummary(surface: StripeCheckoutSurfaceObserva
     : 'none';
 
   return `payment methods: ${paymentLabels}; dynamic surface: ${dynamicLabels}`;
+}
+
+function formatCheckoutSessionProjectionSummary(projection: StripeCheckoutSessionProjectionObservation): string {
+  return [
+    `amount: ${projection.observedAmountMinor ?? 'none'} ${projection.observedCurrencyCode ?? 'none'}`,
+    `product: ${projection.observedProductName ?? 'none'}`,
+    `images: ${projection.observedProductImageUrls.length}`,
+  ].join('; ');
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

@@ -6,4 +6,5 @@ export { PrismaStockChangeRepository } from './prisma-stock-change-repository';
 export { PrismaStockCountRepository } from './prisma-stock-count-repository';
 export { PrismaStockRepository } from './prisma-stock-repository';
 export { PrismaStoreOfferSnapshotRepository } from './prisma-store-offer-snapshot-repository';
+export { PrismaStripeCatalogWebhookEventRepository } from './prisma-stripe-catalog-webhook-event-repository';
 export { PrismaVariantStripeMappingRepository } from './prisma-variant-stripe-mapping-repository';

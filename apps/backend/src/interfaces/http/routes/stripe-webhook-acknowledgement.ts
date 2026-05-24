@@ -5,7 +5,12 @@ import type {
 } from '../../../application/commerce/orders';
 import { toStripeCheckoutSessionState } from '../../../infrastructure/stripe';
 import type { VerifiedStripeWebhookEvent } from '../../../infrastructure/stripe';
-import type { StoreItemOptionRecord } from '../../../domain/commerce/repositories/spi';
+import { parseVariantId } from '../../../domain/commerce';
+import type {
+  RecordStripeCatalogWebhookEventInput,
+  RecordStripeCatalogWebhookEventResult,
+  StoreItemOptionRecord,
+} from '../../../domain/commerce/repositories/spi';
 
 export type StripeWebhookAcknowledgement = {
   ignored?: true;
@@ -20,6 +25,9 @@ export type StripeWebhookAcknowledgementServices = {
     reconciliation: ReturnType<typeof reconcileCheckoutSession>,
   ) => Promise<ApplyPaidCheckoutReconciliationResult>;
   findStoreItemByVariantId: (variantId: string) => Promise<StoreItemOptionRecord | null>;
+  recordCatalogWebhookEvent: (
+    input: RecordStripeCatalogWebhookEventInput,
+  ) => Promise<RecordStripeCatalogWebhookEventResult>;
   reconcileCatalogVariant: (storeItem: StoreItemOptionRecord) => Promise<unknown>;
 };
 
@@ -36,6 +44,22 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
 
   if ('catalogObject' in event) {
     const variantId = readVariantIdFromCatalogObject(event.catalogObject);
+    const catalogObjectIdentity = readCatalogObjectIdentity(event.catalogObject);
+    const recordResult = await services.recordCatalogWebhookEvent({
+      catalogObjectId: catalogObjectIdentity.catalogObjectId,
+      catalogObjectKind: catalogObjectIdentity.catalogObjectKind,
+      eventId: event.id,
+      eventType: event.type,
+      stripeCreatedAt: new Date(event.created * 1000),
+      variantId,
+    });
+
+    if (recordResult.status === 'duplicate') {
+      return {
+        received: true,
+      };
+    }
+
     const storeItem = variantId ? await services.findStoreItemByVariantId(variantId) : null;
 
     if (storeItem) {
@@ -68,9 +92,18 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
   };
 }
 
+function readCatalogObjectIdentity(
+  catalogObject: Extract<VerifiedStripeWebhookEvent, { catalogObject: unknown }>['catalogObject'],
+): Pick<RecordStripeCatalogWebhookEventInput, 'catalogObjectId' | 'catalogObjectKind'> {
+  return {
+    catalogObjectId: catalogObject.id,
+    catalogObjectKind: catalogObject.object === 'price' ? 'price' : 'product',
+  };
+}
+
 function readVariantIdFromCatalogObject(
   catalogObject: Extract<VerifiedStripeWebhookEvent, { catalogObject: unknown }>['catalogObject'],
-): string | null {
+): RecordStripeCatalogWebhookEventInput['variantId'] {
   if ('deleted' in catalogObject) {
     return null;
   }
@@ -78,7 +111,7 @@ function readVariantIdFromCatalogObject(
   const metadataVariantId = readOptionalString(catalogObject.metadata?.variantId);
 
   if (metadataVariantId) {
-    return metadataVariantId;
+    return parseVariantId(metadataVariantId);
   }
 
   if ('lookup_key' in catalogObject) {
@@ -88,10 +121,10 @@ function readVariantIdFromCatalogObject(
   return null;
 }
 
-function readVariantIdFromLookupKey(lookupKey: string | null): string | null {
+function readVariantIdFromLookupKey(lookupKey: string | null): RecordStripeCatalogWebhookEventInput['variantId'] {
   const parts = lookupKey?.split(':') ?? [];
 
-  return parts.length === 4 && parts[3]?.startsWith('variant_') ? parts[3] : null;
+  return parts.length === 4 && parts[3]?.startsWith('variant_') ? parseVariantId(parts[3]) : null;
 }
 
 function readOptionalString(value: unknown): string | null {

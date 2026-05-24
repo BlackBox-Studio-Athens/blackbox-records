@@ -4,8 +4,10 @@ import { parseStripePriceId } from '../../domain/commerce';
 import type {
   StripeCatalogGateway,
   StripeCatalogIdentityMetadata,
+  StripeCatalogMutationContext,
   StripeCatalogPrice,
   StripeCatalogPriceCreateInput,
+  StripeCatalogProductProjectionUpdateInput,
 } from '../../application/commerce/catalog-sync';
 import { CheckoutConfigurationError } from '../../application/commerce/checkout';
 import type { AppBindings } from '../../env';
@@ -18,11 +20,15 @@ type StripePriceWithExpandedProduct = Stripe.Price & {
 export class StripeCatalogGatewayClient implements StripeCatalogGateway {
   public constructor(private readonly stripe: Stripe) {}
 
-  public async archivePrice(priceId: string): Promise<StripeCatalogPrice> {
-    const price = (await this.stripe.prices.update(priceId, {
-      active: false,
-      expand: ['product'],
-    })) as StripePriceWithExpandedProduct;
+  public async archivePrice(priceId: string, context?: StripeCatalogMutationContext): Promise<StripeCatalogPrice> {
+    const price = (await this.stripe.prices.update(
+      priceId,
+      {
+        active: false,
+        expand: ['product'],
+      },
+      toStripeRequestOptions(context),
+    )) as StripePriceWithExpandedProduct;
 
     return toCatalogPrice(price);
   }
@@ -70,7 +76,10 @@ export class StripeCatalogGatewayClient implements StripeCatalogGateway {
       );
   }
 
-  public async createSandboxPrice(input: StripeCatalogPriceCreateInput): Promise<StripeCatalogPrice> {
+  public async createSandboxPrice(
+    input: StripeCatalogPriceCreateInput,
+    context?: StripeCatalogMutationContext,
+  ): Promise<StripeCatalogPrice> {
     const existingPrice = (await this.listPricesByMetadata(input.metadata)).find(
       (price) =>
         price.active &&
@@ -80,24 +89,36 @@ export class StripeCatalogGatewayClient implements StripeCatalogGateway {
     );
 
     if (existingPrice) {
-      return this.updatePriceMetadata(existingPrice.priceId, input.metadata);
+      return this.updatePriceMetadata(existingPrice.priceId, input.metadata, context);
     }
 
-    const product = await this.stripe.products.create({
-      active: true,
-      metadata: input.metadata,
-      name: input.productName,
-    });
-    const price = (await this.stripe.prices.create({
-      active: true,
-      currency: input.currencyCode.toLowerCase(),
-      lookup_key: input.lookupKey,
-      metadata: input.metadata,
-      product: product.id,
-      transfer_lookup_key: true,
-      unit_amount: input.amountMinor,
-      expand: ['product'],
-    })) as StripePriceWithExpandedProduct;
+    const product = await this.stripe.products.create(
+      {
+        active: true,
+        description: input.productProjection?.description,
+        images: input.productProjection?.imageUrls,
+        metadata: {
+          ...(input.productProjection?.metadata ?? {}),
+          ...input.metadata,
+        },
+        name: input.productProjection?.name ?? input.productName,
+        tax_code: input.productProjection?.taxCode ?? undefined,
+      },
+      toStripeRequestOptions(deriveChildMutationContext(context, 'product')),
+    );
+    const price = (await this.stripe.prices.create(
+      {
+        active: true,
+        currency: input.currencyCode.toLowerCase(),
+        lookup_key: input.lookupKey,
+        metadata: input.metadata,
+        product: product.id,
+        transfer_lookup_key: true,
+        unit_amount: input.amountMinor,
+        expand: ['product'],
+      },
+      toStripeRequestOptions(deriveChildMutationContext(context, 'price')),
+    )) as StripePriceWithExpandedProduct;
 
     return toCatalogPrice(price);
   }
@@ -105,19 +126,49 @@ export class StripeCatalogGatewayClient implements StripeCatalogGateway {
   public async updatePriceMetadata(
     priceId: string,
     metadata: StripeCatalogIdentityMetadata,
+    context?: StripeCatalogMutationContext,
   ): Promise<StripeCatalogPrice> {
-    const price = (await this.stripe.prices.update(priceId, {
-      metadata,
-      expand: ['product'],
-    })) as StripePriceWithExpandedProduct;
+    const price = (await this.stripe.prices.update(
+      priceId,
+      {
+        metadata,
+        expand: ['product'],
+      },
+      toStripeRequestOptions(deriveChildMutationContext(context, 'price')),
+    )) as StripePriceWithExpandedProduct;
 
     const product = getActiveProduct(price.product);
 
     if (product) {
-      await this.stripe.products.update(product.id, { metadata });
+      await this.stripe.products.update(
+        product.id,
+        { metadata },
+        toStripeRequestOptions(deriveChildMutationContext(context, 'product')),
+      );
     }
 
     return toCatalogPrice(price);
+  }
+
+  public async updateProductProjection(
+    productId: string,
+    input: StripeCatalogProductProjectionUpdateInput,
+    context?: StripeCatalogMutationContext,
+  ): Promise<void> {
+    await this.stripe.products.update(
+      productId,
+      {
+        description: input.projection.description,
+        images: input.projection.imageUrls,
+        metadata: {
+          ...input.projection.metadata,
+          ...input.stripeMetadata,
+        },
+        name: input.projection.name,
+        tax_code: input.projection.taxCode ?? undefined,
+      },
+      toStripeRequestOptions(context),
+    );
   }
 }
 
@@ -144,8 +195,12 @@ function toCatalogPrice(price: StripePriceWithExpandedProduct): StripeCatalogPri
     metadata: normalizeMetadata(price.metadata),
     priceId: parseStripePriceId(price.id),
     productActive: product?.active ?? false,
+    productDescription: product?.description ?? null,
     productId: product?.id ?? (typeof price.product === 'string' ? price.product : null),
+    productImages: product?.images ?? [],
     productMetadata: normalizeMetadata(product?.metadata ?? {}),
+    productName: product?.name ?? null,
+    productTaxCode: normalizeProductTaxCode(product?.tax_code),
   };
 }
 
@@ -159,6 +214,25 @@ function getActiveProduct(product: StripePriceWithExpandedProduct['product']): S
 
 function normalizeMetadata(metadata: Stripe.Metadata | null | undefined): Record<string, string> {
   return Object.fromEntries(Object.entries(metadata ?? {}).filter(([, value]) => typeof value === 'string'));
+}
+
+function normalizeProductTaxCode(taxCode: string | Stripe.TaxCode | null | undefined): string | null {
+  if (!taxCode) {
+    return null;
+  }
+
+  return typeof taxCode === 'string' ? taxCode : taxCode.id;
+}
+
+function toStripeRequestOptions(context: StripeCatalogMutationContext | undefined): Stripe.RequestOptions | undefined {
+  return context ? { idempotencyKey: context.idempotencyKey } : undefined;
+}
+
+function deriveChildMutationContext(
+  context: StripeCatalogMutationContext | undefined,
+  child: string,
+): StripeCatalogMutationContext | undefined {
+  return context ? { idempotencyKey: `${context.idempotencyKey}:${child}` } : undefined;
 }
 
 function hasMetadata(candidate: Record<string, string>, expected: Record<string, string>): boolean {

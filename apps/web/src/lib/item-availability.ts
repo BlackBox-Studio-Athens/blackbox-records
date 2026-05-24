@@ -41,53 +41,33 @@ export type UnbuyableItemAvailability = {
 
 export type ItemAvailability = BuyableItemAvailability | UnbuyableItemAvailability;
 
-// Phase 6 keeps temporary offer-state fixtures in code so editorial collections remain presentation-only.
-const availabilityByStoreItemSlug: Record<StoreItemSlug, ItemAvailability[]> = {
-  'disintegration-black-vinyl-lp': [
-    {
-      variantId: 'variant_barren-point_standard',
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      optionLabel: 'Black Vinyl LP',
-      price: {
-        display: 'Price confirmed at checkout',
-      },
-      availability: {
-        status: 'available',
-        label: 'Available',
-      },
-      canBuy: true,
-    },
-  ],
-  'afterglow-tape': [
-    {
-      variantId: 'variant_afterglow-tape_standard',
-      storeItemSlug: 'afterglow-tape',
-      optionLabel: 'Cassette',
-      price: {
-        display: 'Price confirmed at checkout',
-      },
-      availability: {
-        status: 'sold_out',
-        label: 'Sold Out',
-      },
-      canBuy: false,
-    },
-  ],
-};
+function createStoreItemVariantId(storeItem: StoreItem): string {
+  return storeItem.slug === 'disintegration-black-vinyl-lp'
+    ? 'variant_barren-point_standard'
+    : `variant_${storeItem.slug}_standard`;
+}
 
-function createFallbackItemAvailability(storeItem: StoreItem): ItemAvailability {
+function createStoreItemOptionLabel(storeItem: StoreItem): string | null {
+  if (storeItem.slug === 'disintegration-black-vinyl-lp') {
+    return 'Black Vinyl LP';
+  }
+
+  return storeItem.metadata.at(-1) ?? null;
+}
+
+function createStoreItemAvailability(storeItem: StoreItem): ItemAvailability {
   return {
-    variantId: `variant_${storeItem.slug}_standard`,
+    variantId: createStoreItemVariantId(storeItem),
     storeItemSlug: storeItem.slug,
-    optionLabel: null,
+    optionLabel: createStoreItemOptionLabel(storeItem),
     price: {
-      display: 'Price soon',
+      display: 'Worker-confirmed at checkout',
     },
     availability: {
-      status: 'sold_out',
-      label: 'Unavailable',
+      status: 'available',
+      label: 'Available',
     },
-    canBuy: false,
+    canBuy: true,
   };
 }
 
@@ -113,14 +93,8 @@ export function isPricedItemAvailability(
 }
 
 export async function listAvailabilityForStoreItem(slug: StoreItemSlug): Promise<ItemAvailability[]> {
-  const explicitAvailability = availabilityByStoreItemSlug[slug];
-
-  if (explicitAvailability) {
-    return explicitAvailability;
-  }
-
   const storeItem = await getStoreItemBySlug(slug);
-  return storeItem ? [createFallbackItemAvailability(storeItem)] : [];
+  return storeItem ? [createStoreItemAvailability(storeItem)] : [];
 }
 
 export async function getPrimaryAvailabilityForStoreItem(slug: StoreItemSlug): Promise<ItemAvailability | null> {

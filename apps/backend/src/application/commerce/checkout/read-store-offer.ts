@@ -4,7 +4,12 @@ import type {
   StoreItemOptionRepository,
 } from '../../../domain/commerce/repositories/spi';
 import { parseStoreItemSlug, type StoreItemSlug, type VariantId } from '../../../domain/commerce';
-import { createStoreOfferPrice, hasBlockingCatalogIssue, type CatalogReconciler } from '../catalog-sync';
+import {
+  createStoreOfferPrice,
+  hasBlockingCatalogIssue,
+  type CatalogProductProjectionReader,
+  type CatalogReconciler,
+} from '../catalog-sync';
 import type { StoreOffer } from './types';
 
 function unavailableOffer(
@@ -31,6 +36,7 @@ export async function readStoreOffer(
   itemAvailability: ItemAvailabilityRepository,
   stock: StockRepository,
   catalogReconciler: Pick<CatalogReconciler, 'reconcileVariant'>,
+  productProjections: CatalogProductProjectionReader,
   storeItemSlug: unknown,
 ): Promise<StoreOffer | null> {
   const parsedStoreItemSlug = parseStoreItemSlug(storeItemSlug);
@@ -56,7 +62,13 @@ export async function readStoreOffer(
     return unavailableOffer(storeItem.storeItemSlug, storeItem.variantId, 'Sold Out');
   }
 
-  const catalogResult = await catalogReconciler.reconcileVariant(storeItem, { apply: true });
+  const productProjection = productProjections.findByStoreItem(storeItem);
+
+  if (!productProjection) {
+    return unavailableOffer(storeItem.storeItemSlug, storeItem.variantId, 'Checkout Paused', 'catalog_drift');
+  }
+
+  const catalogResult = await catalogReconciler.reconcileVariant(storeItem, { apply: true, productProjection });
   const resolvedPrice = catalogResult.resolvedPrice;
 
   if (
@@ -89,9 +101,17 @@ export async function listVariantOffersForStoreItem(
   itemAvailability: ItemAvailabilityRepository,
   stock: StockRepository,
   catalogReconciler: Pick<CatalogReconciler, 'reconcileVariant'>,
+  productProjections: CatalogProductProjectionReader,
   storeItemSlug: unknown,
 ): Promise<StoreOffer[] | null> {
-  const offer = await readStoreOffer(storeItems, itemAvailability, stock, catalogReconciler, storeItemSlug);
+  const offer = await readStoreOffer(
+    storeItems,
+    itemAvailability,
+    stock,
+    catalogReconciler,
+    productProjections,
+    storeItemSlug,
+  );
 
   return offer ? [offer] : null;
 }

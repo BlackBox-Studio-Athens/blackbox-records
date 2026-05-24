@@ -4,6 +4,7 @@ import {
   buildStripeSandboxSmokeEvidence,
   calculateMinimumSmokeOnlineQuantity,
   checkStripeSandboxSmokePreflight,
+  createStripeCheckoutSessionProjectionObservation,
   createStripeCheckoutSurfaceObservation,
   createEmptyStripeSandboxSmokeDurations,
   createCheckoutOrderBySessionSql,
@@ -60,6 +61,28 @@ const readySummary: RemoteD1ReadinessSummary = {
   smokeVariantCanBuy: true,
   smokeVariantOnlineQuantity: 3,
 };
+const sessionProjectionExpectation = {
+  expectedAmountMinor: 2800,
+  expectedCurrencyCode: 'EUR',
+  expectedProductImageUrl:
+    'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/barren-point.jpg',
+  expectedProductName: 'BlackBox Records - Disintegration - Black Vinyl LP',
+};
+const checkoutSurfaceExpectation = {
+  expectedAmountText: '€28.00',
+  expectedPaymentMethodLabels: [],
+  expectedSessionProjection: sessionProjectionExpectation,
+  minimumDynamicPaymentMethodCount: 1,
+};
+const passingSessionProjection = createStripeCheckoutSessionProjectionObservation(
+  {
+    amountMinor: 2800,
+    currencyCode: 'eur',
+    productImageUrls: [sessionProjectionExpectation.expectedProductImageUrl],
+    productName: sessionProjectionExpectation.expectedProductName,
+  },
+  sessionProjectionExpectation,
+);
 
 describe('Stripe sandbox Playwright smoke runner', () => {
   it('defaults to sandbox-only all-scenario automation', () => {
@@ -147,6 +170,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
           {
             expectedAmountText: 'Worker Store Offer price',
             expectedPaymentMethodLabels: [],
+            expectedSessionProjection: sessionProjectionExpectation,
             minimumDynamicPaymentMethodCount: 1,
           },
           ['Link'],
@@ -154,6 +178,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       ).resolves.toEqual({
         expectedAmountText: '€28.00',
         expectedPaymentMethodLabels: ['Link'],
+        expectedSessionProjection: sessionProjectionExpectation,
         minimumDynamicPaymentMethodCount: 1,
       });
     } finally {
@@ -288,7 +313,10 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     });
 
     expect(header).toContain('Stripe sandbox checkout Playwright smoke');
-    expect(header).toContain('stripe listen --forward-to');
+    expect(header).toContain('Persistent Stripe Dashboard/Workbench webhook endpoint');
+    expect(header).toContain('pnpm stripe:webhooks:verify --env sandbox');
+    expect(header).toContain('stripe listen is local/temporary diagnostic tooling only');
+    expect(header).not.toContain('STRIPE_WEBHOOK_SECRET must match that listener');
     expect(header).toContain(STRIPE_TEST_CARD_DOCS_URL);
     expect(summary).toContain('real Stripe mappings: 1');
     expect(summary).toContain('preflight result: OK');
@@ -350,6 +378,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       {
         expectedAmountText: '€28.00',
         expectedPaymentMethodLabels: [],
+        expectedSessionProjection: sessionProjectionExpectation,
         minimumDynamicPaymentMethodCount: 1,
       },
     );
@@ -358,16 +387,47 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       {
         expectedAmountText: '€28.00',
         expectedPaymentMethodLabels: [],
+        expectedSessionProjection: sessionProjectionExpectation,
         minimumDynamicPaymentMethodCount: 1,
       },
     );
 
-    expect(didScenarioPass(paidOrder, STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid, '', passingSurface)).toBe(true);
-    expect(didScenarioPass(pendingOrder, STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid, '', passingSurface)).toBe(
-      false,
-    );
-    expect(didScenarioPass(null, STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface, '', passingSurface)).toBe(true);
-    expect(didScenarioPass(null, STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface, '', failingSurface)).toBe(false);
+    expect(
+      didScenarioPass(
+        paidOrder,
+        STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid,
+        '',
+        passingSurface,
+        passingSessionProjection,
+      ),
+    ).toBe(true);
+    expect(
+      didScenarioPass(
+        pendingOrder,
+        STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid,
+        '',
+        passingSurface,
+        passingSessionProjection,
+      ),
+    ).toBe(false);
+    expect(
+      didScenarioPass(
+        null,
+        STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface,
+        '',
+        passingSurface,
+        passingSessionProjection,
+      ),
+    ).toBe(true);
+    expect(
+      didScenarioPass(
+        null,
+        STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface,
+        '',
+        failingSurface,
+        passingSessionProjection,
+      ),
+    ).toBe(false);
     expect(
       didScenarioPass(
         pendingOrder,
@@ -390,7 +450,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(
       createStripeCheckoutSurfaceObservation(
         'BlackBox UAT - Disintegration\n€28.00\nPayment method\nGoogle Pay\nCard\nCard information',
-        expectation,
+        { ...expectation, expectedSessionProjection: sessionProjectionExpectation },
       ),
     ).toMatchObject({
       amountTextPresent: true,
@@ -403,7 +463,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(
       createStripeCheckoutSurfaceObservation(
         'BlackBox UAT - Disintegration\n€10.00\nPayment method\nCard\nCard information\nSave my information for faster checkout',
-        expectation,
+        { ...expectation, expectedSessionProjection: sessionProjectionExpectation },
       ),
     ).toMatchObject({
       amountTextPresent: false,
@@ -423,6 +483,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
         {
           expectedAmountText: '€28.00',
           expectedPaymentMethodLabels: ['Link'],
+          expectedSessionProjection: sessionProjectionExpectation,
           minimumDynamicPaymentMethodCount: 1,
         },
       ),
@@ -474,12 +535,9 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       result: {
         checkoutSurface: createStripeCheckoutSurfaceObservation(
           'BlackBox UAT - Disintegration\n€28.00\nPayment method\nGoogle Pay\nCard\nCard information',
-          {
-            expectedAmountText: '€28.00',
-            expectedPaymentMethodLabels: [],
-            minimumDynamicPaymentMethodCount: 1,
-          },
+          checkoutSurfaceExpectation,
         ),
+        checkoutSessionProjection: passingSessionProjection,
         checkoutSessionId: 'cs_test_123',
         durations: {
           ...createEmptyStripeSandboxSmokeDurations(),

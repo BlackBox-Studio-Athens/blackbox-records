@@ -5,7 +5,10 @@ import { pathToFileURL } from 'node:url';
 
 import {
   CatalogReconciler,
+  catalogFieldOwnershipMatrix,
   redactStripeObjectId,
+  type CatalogDriftCategory,
+  type CatalogSyncAction,
   type CatalogSyncRunResult,
   type StripeCatalogEnvironment,
 } from '../apps/backend/src/application/commerce/catalog-sync';
@@ -21,7 +24,7 @@ import type {
   VariantStripeMappingRepository,
 } from '../apps/backend/src/domain/commerce/repositories/spi';
 import { createStripeCatalogGateway } from '../apps/backend/src/infrastructure/stripe';
-import { stripeCatalogStoreItemContracts } from './stripe-catalog-contract';
+import { loadStripeCatalogStoreItemContracts, type StripeCatalogStoreItemContract } from './stripe-catalog-contract';
 
 type CatalogVerifyOptions = {
   apply: boolean;
@@ -92,57 +95,98 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 }
 
 export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promise<CatalogSyncRunResult> {
-  const rows = readD1CatalogRows(options.environment);
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
+
+  if (!stripeSecretKey) {
+    throw new Error('Missing STRIPE_SECRET_KEY for Stripe catalog verification.');
+  }
+
+  const contracts = await loadStripeCatalogStoreItemContracts();
+  const rows = readD1CatalogRows(options.environment, contracts);
   const repositories = createD1CatalogRepositories(options.environment, rows);
+  const expectedPrices = createExpectedPriceMap(contracts);
+  const expectedProductProjections = createExpectedProductProjectionMap(contracts);
   const reconciler = new CatalogReconciler({
     environment: options.environment,
     storeItems: repositories.storeItems,
     storeOfferSnapshots: repositories.storeOfferSnapshots,
     stripeCatalog: createStripeCatalogGateway({
       STRIPE_API_BASE_URL: process.env.STRIPE_API_BASE_URL,
-      STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ?? '',
+      STRIPE_SECRET_KEY: stripeSecretKey,
     }),
     variantStripeMappings: repositories.variantStripeMappings,
   });
 
   const result = await reconciler.verifyBuyableCatalog({
     apply: options.apply,
-    expectedPrices: createExpectedPriceMap(),
+    expectedPrices,
+    expectedProductProjections,
   });
+  const appliedActions = result.results.flatMap((resultItem) =>
+    resultItem.actions.length
+      ? [
+          {
+            actions: resultItem.actions,
+            storeItemSlug: resultItem.storeItem.storeItemSlug,
+            variantId: resultItem.storeItem.variantId,
+          },
+        ]
+      : [],
+  );
 
-  if (options.apply && result.results.some((resultItem) => resultItem.actions.length > 0)) {
-    return reconciler.verifyBuyableCatalog({
+  if (options.apply && appliedActions.length > 0) {
+    const postApplyResult = await reconciler.verifyBuyableCatalog({
       apply: false,
-      expectedPrices: createExpectedPriceMap(),
+      expectedPrices,
+      expectedProductProjections,
     });
+
+    return {
+      ...postApplyResult,
+      appliedActions,
+      dryRun: false,
+    };
   }
 
   return result;
 }
 
 export function formatStripeCatalogVerifyReport(result: CatalogSyncRunResult): string {
+  const issueCounts = countIssuesByDriftCategory(result);
   const lines = [
     `Stripe catalog verification ${result.issues.length ? 'failed' : 'OK'}.`,
     `Environment: ${result.environment}`,
     `Mode: ${result.dryRun ? 'dry-run' : 'apply'}`,
     `Checked variants: ${result.results.length}`,
+    '',
+    'Report sections:',
+    `- Catalog Field Ownership: ${catalogFieldOwnershipMatrix.length} field groups declare owner, direction, mutation policy, and verification policy.`,
+    `- Product Projection: ${formatIssueCount(issueCounts.product_projection)}.`,
+    `- Price Authority: ${formatIssueCount(issueCounts.price_authority)}.`,
+    `- D1 readiness: ${formatIssueCount(issueCounts.d1_readiness)}.`,
+    `- Store Offer snapshots: ${formatIssueCount(issueCounts.store_offer_snapshot)}.`,
+    `- Webhook readiness: run pnpm stripe:webhooks:verify --env sandbox for persistent endpoint proof.`,
+    `- Dry-run immutability: Stripe Products, Stripe Prices, D1 mappings, Store Offer snapshots, repo files, and evidence files are not mutated unless --apply is set.`,
   ];
+
+  if (result.appliedActions?.length) {
+    const actionCount = result.appliedActions.reduce((total, item) => total + item.actions.length, 0);
+    lines.push(`- Apply actions: completed ${actionCount} ${actionCount === 1 ? 'action' : 'actions'}.`);
+
+    for (const item of result.appliedActions) {
+      lines.push(
+        `- Apply completed for ${item.storeItemSlug} / ${item.variantId}: ${item.actions
+          .map(formatCatalogSyncActionLabel)
+          .join(', ')}`,
+      );
+    }
+  }
 
   for (const resultItem of result.results) {
     const priceLabel = resultItem.resolvedPrice
       ? redactStripeObjectId(resultItem.resolvedPrice.priceId)
       : 'not resolved';
-    const actionLabels = resultItem.actions.map((action) => {
-      if (
-        action.kind === 'archive_price' ||
-        action.kind === 'update_mapping' ||
-        action.kind === 'update_stripe_metadata'
-      ) {
-        return `${action.kind}:${redactStripeObjectId(action.stripePriceId)}`;
-      }
-
-      return action.kind;
-    });
+    const actionLabels = resultItem.actions.map(formatCatalogSyncActionLabel);
 
     lines.push(
       `- ${resultItem.storeItem.storeItemSlug} / ${resultItem.storeItem.variantId}: ${priceLabel}; issues=${resultItem.issueCount}; actions=${
@@ -154,23 +198,68 @@ export function formatStripeCatalogVerifyReport(result: CatalogSyncRunResult): s
   if (result.issues.length) {
     lines.push('', 'Issues:');
     lines.push(
-      ...result.issues.map((issue) => `- ${issue.storeItemSlug} / ${issue.variantId}: ${issue.code} - ${issue.detail}`),
+      ...result.issues.map(
+        (issue) =>
+          `- ${issue.storeItemSlug} / ${issue.variantId}: ${issue.driftCategory}:${issue.code} - ${redactStripeCatalogDiagnostic(
+            issue.detail,
+          )}`,
+      ),
     );
   }
 
   return lines.join('\n');
 }
 
-function createExpectedPriceMap() {
+function formatCatalogSyncActionLabel(action: CatalogSyncAction): string {
+  if (action.kind === 'archive_price' || action.kind === 'update_mapping' || action.kind === 'update_stripe_metadata') {
+    return `${action.kind}:${redactStripeObjectId(action.stripePriceId)}`;
+  }
+
+  if (action.kind === 'update_product_projection') {
+    return `${action.kind}:${redactStripeObjectId(action.productId)}`;
+  }
+
+  return action.kind;
+}
+
+export function redactStripeCatalogDiagnostic(value: string): string {
+  return value
+    .replace(/sk_(test|live)_[A-Za-z0-9_]+/g, '[redacted_stripe_secret_key]')
+    .replace(/whsec_[A-Za-z0-9_]+/g, '[redacted_stripe_webhook_secret]')
+    .replace(/\b(price|prod|we)_[A-Za-z0-9]{8,}\b/g, (match) => redactStripeObjectId(match));
+}
+
+function countIssuesByDriftCategory(result: CatalogSyncRunResult): Record<CatalogDriftCategory, number> {
+  const counts: Record<CatalogDriftCategory, number> = {
+    catalog_identity: 0,
+    d1_readiness: 0,
+    paid_order_state: 0,
+    price_authority: 0,
+    product_projection: 0,
+    store_offer_snapshot: 0,
+  };
+
+  for (const issue of result.issues) {
+    counts[issue.driftCategory] += 1;
+  }
+
+  return counts;
+}
+
+function formatIssueCount(count: number): string {
+  return count === 1 ? '1 issue' : `${count} issues`;
+}
+
+function createExpectedPriceMap(contracts: StripeCatalogStoreItemContract[]) {
   return new Map(
-    stripeCatalogStoreItemContracts.map((contract) => [
-      contract.variantId,
-      {
-        amountMinor: contract.amountMinor,
-        currencyCode: contract.currencyCode,
-      },
-    ]),
+    contracts.flatMap((contract) =>
+      contract.expectedSandboxPrice ? [[contract.variantId, contract.expectedSandboxPrice] as const] : [],
+    ),
   );
+}
+
+function createExpectedProductProjectionMap(contracts: StripeCatalogStoreItemContract[]) {
+  return new Map(contracts.map((contract) => [contract.variantId, contract.productProjection] as const));
 }
 
 function createD1CatalogRepositories(environment: StripeCatalogEnvironment, rows: D1CatalogRow[]) {
@@ -262,7 +351,10 @@ function createD1CatalogRepositories(environment: StripeCatalogEnvironment, rows
   return { storeItems, storeOfferSnapshots, variantStripeMappings };
 }
 
-function readD1CatalogRows(environment: StripeCatalogEnvironment): D1CatalogRow[] {
+function readD1CatalogRows(
+  environment: StripeCatalogEnvironment,
+  contracts: StripeCatalogStoreItemContract[],
+): D1CatalogRow[] {
   return parseD1Rows<D1CatalogRow>(
     runD1ReadSql(
       environment,
@@ -284,7 +376,7 @@ function readD1CatalogRows(environment: StripeCatalogEnvironment): D1CatalogRow[
         'FROM StoreItemOption o',
         'LEFT JOIN VariantStripeMapping m ON m.variantId = o.variantId',
         'LEFT JOIN StoreOfferSnapshot s ON s.variantId = o.variantId',
-        `WHERE o.variantId IN (${stripeCatalogStoreItemContracts.map((contract) => sqlString(contract.variantId)).join(', ')})`,
+        `WHERE o.variantId IN (${contracts.map((contract) => sqlString(contract.variantId)).join(', ')})`,
         'ORDER BY o.storeItemSlug;',
       ].join('\n'),
     ),
@@ -437,7 +529,7 @@ async function main() {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((error: unknown) => {
-    console.error(error instanceof Error ? error.message : String(error));
+    console.error(redactStripeCatalogDiagnostic(error instanceof Error ? error.message : String(error)));
     process.exit(1);
   });
 }

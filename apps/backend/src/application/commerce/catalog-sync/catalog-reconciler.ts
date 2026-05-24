@@ -15,6 +15,7 @@ import type {
   StripeCatalogGateway,
   StripeCatalogPrice,
   StripeCatalogEnvironment,
+  StripeCatalogProductProjection,
 } from './types';
 
 const STORE_OFFER_FRESHNESS_MS = 24 * 60 * 60 * 1_000;
@@ -39,7 +40,8 @@ export type ReconcileCatalogVariantOptions = {
   apply: boolean;
   expectedPrice?: StripeCatalogExpectedPrice | null;
   now?: Date;
-  productName?: string;
+  productProjection?: StripeCatalogProductProjection | null;
+  requirePriceAuthority?: boolean;
 };
 
 export class CatalogReconciler {
@@ -50,6 +52,7 @@ export class CatalogReconciler {
     options: ReconcileCatalogVariantOptions,
   ): Promise<CatalogSyncVariantResult> {
     const now = options.now ?? new Date();
+    const requirePriceAuthority = options.requirePriceAuthority ?? true;
     const lookupKey = createStripeCatalogLookupKey(this.dependencies.environment, storeItem);
     const metadata = createStripeCatalogMetadata(this.dependencies.environment, storeItem);
     const [mapping, snapshot] = await Promise.all([
@@ -77,9 +80,26 @@ export class CatalogReconciler {
           metadata,
           priceId: snapshot.stripePriceId,
           productActive: snapshot.productActive,
+          productDescription: null,
           productId: null,
+          productImages: [],
           productMetadata: metadata,
+          productName: null,
+          productTaxCode: null,
         },
+        snapshot,
+        storeItem,
+      };
+    }
+
+    if (!requirePriceAuthority) {
+      return {
+        actions: [],
+        issueCount: 0,
+        issues: [],
+        lookupKey,
+        mapping,
+        resolvedPrice: null,
         snapshot,
         storeItem,
       };
@@ -135,24 +155,32 @@ export class CatalogReconciler {
       !matchesExpectedPrice(resolvedPrice, options.expectedPrice)
     ) {
       actions.push({ kind: 'archive_price', stripePriceId: resolvedPrice.priceId });
-      resolvedPrice = await this.dependencies.stripeCatalog.createSandboxPrice({
-        amountMinor: options.expectedPrice.amountMinor,
-        currencyCode: options.expectedPrice.currencyCode,
-        lookupKey,
-        metadata,
-        productName: options.productName ?? storeItem.storeItemSlug,
-      });
+      resolvedPrice = await this.dependencies.stripeCatalog.createSandboxPrice(
+        {
+          amountMinor: options.expectedPrice.amountMinor,
+          currencyCode: options.expectedPrice.currencyCode,
+          lookupKey,
+          metadata,
+          productName: options.productProjection?.name ?? storeItem.storeItemSlug,
+          productProjection: options.productProjection ?? null,
+        },
+        createMutationContext(this.dependencies.environment, storeItem.variantId, 'create_sandbox_price'),
+      );
       actions.push({ kind: 'create_sandbox_price' });
     }
 
     if (!resolvedPrice && options.apply && options.expectedPrice && this.dependencies.environment === 'sandbox') {
-      resolvedPrice = await this.dependencies.stripeCatalog.createSandboxPrice({
-        amountMinor: options.expectedPrice.amountMinor,
-        currencyCode: options.expectedPrice.currencyCode,
-        lookupKey,
-        metadata,
-        productName: options.productName ?? storeItem.storeItemSlug,
-      });
+      resolvedPrice = await this.dependencies.stripeCatalog.createSandboxPrice(
+        {
+          amountMinor: options.expectedPrice.amountMinor,
+          currencyCode: options.expectedPrice.currencyCode,
+          lookupKey,
+          metadata,
+          productName: options.productProjection?.name ?? storeItem.storeItemSlug,
+          productProjection: options.productProjection ?? null,
+        },
+        createMutationContext(this.dependencies.environment, storeItem.variantId, 'create_sandbox_price'),
+      );
       actions.push({ kind: 'create_sandbox_price' });
     }
 
@@ -204,6 +232,27 @@ export class CatalogReconciler {
         actions.push({ kind: 'update_stripe_metadata', stripePriceId: resolvedPrice.priceId });
       }
 
+      if (options.productProjection) {
+        const productProjectionIssues = findProductProjectionIssues(
+          resolvedPrice,
+          createExpectedStripeProductProjection(metadata, options.productProjection),
+        );
+
+        if (productProjectionIssues.length > 0) {
+          issues.push(
+            createIssue(
+              storeItem,
+              'product_projection_mismatch',
+              `Stripe Product projection differs: ${productProjectionIssues.join(', ')}.`,
+            ),
+          );
+
+          if (resolvedPrice.productId) {
+            actions.push({ kind: 'update_product_projection', productId: resolvedPrice.productId });
+          }
+        }
+      }
+
       if (
         !snapshot ||
         snapshot.amountMinor !== resolvedPrice.amountMinor ||
@@ -230,7 +279,7 @@ export class CatalogReconciler {
     }
 
     if (options.apply && resolvedPrice && canApplyCatalogActions(issues)) {
-      await this.applyActions(storeItem, lookupKey, resolvedPrice, actions, now);
+      await this.applyActions(storeItem, lookupKey, resolvedPrice, actions, now, options.productProjection ?? null);
     }
 
     return {
@@ -248,17 +297,22 @@ export class CatalogReconciler {
   public async verifyBuyableCatalog(input: {
     apply: boolean;
     expectedPrices?: Map<string, StripeCatalogExpectedPrice>;
+    expectedProductProjections?: Map<string, StripeCatalogProductProjection>;
     now?: Date;
   }): Promise<CatalogSyncRunResult> {
     const storeItems = await this.dependencies.storeItems.search(null, MAX_CATALOG_ITEMS);
     const results = await Promise.all(
-      storeItems.map((storeItem) =>
-        this.reconcileVariant(storeItem, {
+      storeItems.map((storeItem) => {
+        const expectedPrice = input.expectedPrices?.get(storeItem.variantId) ?? null;
+
+        return this.reconcileVariant(storeItem, {
           apply: input.apply,
-          expectedPrice: input.expectedPrices?.get(storeItem.variantId) ?? null,
+          expectedPrice,
+          productProjection: input.expectedProductProjections?.get(storeItem.variantId) ?? null,
+          requirePriceAuthority: Boolean(expectedPrice),
           now: input.now,
-        }),
-      ),
+        });
+      }),
     );
     const issues = results.flatMap((result) => result.issues);
 
@@ -276,10 +330,14 @@ export class CatalogReconciler {
     resolvedPrice: StripeCatalogPrice,
     actions: CatalogSyncAction[],
     now: Date,
+    productProjection: StripeCatalogProductProjection | null,
   ): Promise<void> {
     for (const action of actions) {
       if (action.kind === 'archive_price') {
-        await this.dependencies.stripeCatalog.archivePrice(action.stripePriceId);
+        await this.dependencies.stripeCatalog.archivePrice(
+          action.stripePriceId,
+          createMutationContext(this.dependencies.environment, storeItem.variantId, action.kind, action.stripePriceId),
+        );
       } else if (action.kind === 'update_mapping') {
         await this.dependencies.variantStripeMappings.save({
           stripePriceId: resolvedPrice.priceId,
@@ -302,10 +360,24 @@ export class CatalogReconciler {
           syncedAt: now,
           variantId: storeItem.variantId,
         });
-      } else if (action.kind === 'update_stripe_metadata') {
+      } else if (action.kind === 'update_stripe_metadata' && this.dependencies.environment === 'sandbox') {
         await this.dependencies.stripeCatalog.updatePriceMetadata(
           resolvedPrice.priceId,
           createStripeCatalogMetadata(this.dependencies.environment, storeItem),
+          createMutationContext(this.dependencies.environment, storeItem.variantId, action.kind, resolvedPrice.priceId),
+        );
+      } else if (
+        action.kind === 'update_product_projection' &&
+        productProjection &&
+        this.dependencies.environment === 'sandbox'
+      ) {
+        await this.dependencies.stripeCatalog.updateProductProjection(
+          action.productId,
+          {
+            projection: productProjection,
+            stripeMetadata: createStripeCatalogMetadata(this.dependencies.environment, storeItem),
+          },
+          createMutationContext(this.dependencies.environment, storeItem.variantId, action.kind, action.productId),
         );
       }
     }
@@ -344,6 +416,7 @@ export function hasBlockingCatalogIssue(issues: CatalogSyncIssue[]): boolean {
       'inactive_product',
       'missing_price',
       'placeholder_price_mapping',
+      'product_projection_mismatch',
       'wrong_amount',
       'wrong_currency',
       'wrong_variant_identity',
@@ -351,12 +424,92 @@ export function hasBlockingCatalogIssue(issues: CatalogSyncIssue[]): boolean {
   );
 }
 
-function canApplyCatalogActions(issues: CatalogSyncIssue[]): boolean {
-  return !issues.some((issue) => hasBlockingCatalogIssue([issue]) && !isRepairableStaleMappedPriceIssue(issue));
+export function classifyCatalogSyncIssue(code: CatalogSyncIssue['code']): CatalogSyncIssue['driftCategory'] {
+  if (code === 'inactive_product' || code === 'product_projection_mismatch') {
+    return 'product_projection';
+  }
+
+  if (code === 'mapping_points_to_wrong_price' || code === 'placeholder_price_mapping') {
+    return 'd1_readiness';
+  }
+
+  if (code === 'snapshot_mismatch' || code === 'snapshot_stale') {
+    return 'store_offer_snapshot';
+  }
+
+  if (code === 'wrong_variant_identity') {
+    return 'catalog_identity';
+  }
+
+  return 'price_authority';
 }
 
-function isRepairableStaleMappedPriceIssue(issue: CatalogSyncIssue): boolean {
-  return issue.code === 'wrong_variant_identity' && issue.detail.startsWith('Mapped Price ');
+function createExpectedStripeProductProjection(
+  metadata: ReturnType<typeof createStripeCatalogMetadata>,
+  projection: StripeCatalogProductProjection,
+): StripeCatalogProductProjection {
+  return {
+    ...projection,
+    metadata: {
+      ...projection.metadata,
+      ...metadata,
+    },
+  };
+}
+
+function findProductProjectionIssues(
+  price: StripeCatalogPrice,
+  expectedProjection: StripeCatalogProductProjection,
+): string[] {
+  const issues: string[] = [];
+
+  if (price.productName !== expectedProjection.name) {
+    issues.push('name');
+  }
+
+  if ((price.productDescription ?? '') !== expectedProjection.description) {
+    issues.push('description');
+  }
+
+  if (!sameStringList(price.productImages, expectedProjection.imageUrls)) {
+    issues.push('images');
+  }
+
+  if (!hasMetadata(price.productMetadata, expectedProjection.metadata)) {
+    issues.push('metadata');
+  }
+
+  if ((price.productTaxCode ?? null) !== expectedProjection.taxCode) {
+    issues.push('tax_code');
+  }
+
+  return issues;
+}
+
+function sameStringList(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function createMutationContext(
+  environment: StripeCatalogEnvironment,
+  variantId: string,
+  action: CatalogSyncAction['kind'],
+  identity = 'new',
+) {
+  return {
+    idempotencyKey: ['blackbox', 'catalog', environment, variantId, action, identity].join(':'),
+  };
+}
+
+function canApplyCatalogActions(issues: CatalogSyncIssue[]): boolean {
+  return !issues.some((issue) => hasBlockingCatalogIssue([issue]) && !isRepairableCatalogApplyIssue(issue));
+}
+
+function isRepairableCatalogApplyIssue(issue: CatalogSyncIssue): boolean {
+  return (
+    issue.code === 'product_projection_mismatch' ||
+    (issue.code === 'wrong_variant_identity' && issue.detail.startsWith('Mapped Price '))
+  );
 }
 
 function isPlaceholderStripePriceId(value: string, environment: StripeCatalogEnvironment): boolean {
@@ -374,6 +527,7 @@ function createIssue(
   return {
     code,
     detail,
+    driftCategory: classifyCatalogSyncIssue(code),
     storeItemSlug: storeItem.storeItemSlug,
     variantId: storeItem.variantId,
   };

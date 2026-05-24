@@ -98,7 +98,7 @@ describe('ItemAvailability adapter', () => {
         storeItemSlug: 'disintegration-black-vinyl-lp',
         optionLabel: 'Black Vinyl LP',
         price: {
-          display: 'Price confirmed at checkout',
+          display: 'Worker-confirmed at checkout',
         },
         availability: {
           status: 'available',
@@ -114,33 +114,33 @@ describe('ItemAvailability adapter', () => {
     await expect(getPrimaryAvailabilityForStoreItem('unknown-slug')).resolves.toBeNull();
   });
 
-  it('creates fallback availability for known store items without explicit fixture pricing', async () => {
+  it('creates Worker-confirmed checkout availability for known store items without static price authority', async () => {
     await expect(getPrimaryAvailabilityForStoreItem('aftermaths')).resolves.toMatchObject({
       variantId: 'variant_aftermaths_standard',
       storeItemSlug: 'aftermaths',
-      optionLabel: null,
+      optionLabel: 'Vinyl',
       price: {
-        display: 'Price soon',
+        display: 'Worker-confirmed at checkout',
       },
       availability: {
-        status: 'sold_out',
-        label: 'Unavailable',
+        status: 'available',
+        label: 'Available',
       },
-      canBuy: false,
+      canBuy: true,
     });
 
     await expect(getPrimaryAvailabilityForStoreItem('caregivers-vinyl')).resolves.toMatchObject({
       variantId: 'variant_caregivers-vinyl_standard',
       storeItemSlug: 'caregivers-vinyl',
-      optionLabel: null,
+      optionLabel: 'Vinyl',
       price: {
-        display: 'Price soon',
+        display: 'Worker-confirmed at checkout',
       },
       availability: {
-        status: 'sold_out',
-        label: 'Unavailable',
+        status: 'available',
+        label: 'Available',
       },
-      canBuy: false,
+      canBuy: true,
     });
   });
 
@@ -148,7 +148,7 @@ describe('ItemAvailability adapter', () => {
     const itemAvailability = await getPrimaryAvailabilityForStoreItem('disintegration-black-vinyl-lp');
 
     expect(itemAvailability?.price).toEqual({
-      display: 'Price confirmed at checkout',
+      display: 'Worker-confirmed at checkout',
     });
   });
 
@@ -162,13 +162,13 @@ describe('ItemAvailability adapter', () => {
     expect(isPricedItemAvailability(disintegrationAvailability)).toBe(false);
   });
 
-  it('marks sold-out variants as unavailable to buy', async () => {
+  it('keeps the low-stock test variant statically available while Worker/D1 owns quantity', async () => {
     await expect(getPrimaryAvailabilityForStoreItem('afterglow-tape')).resolves.toMatchObject({
       availability: {
-        status: 'sold_out',
-        label: 'Sold Out',
+        status: 'available',
+        label: 'Available',
       },
-      canBuy: false,
+      canBuy: true,
     });
   });
 

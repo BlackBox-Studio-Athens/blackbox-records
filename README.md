@@ -118,7 +118,20 @@ pnpm smoke:stripe-sandbox -- --scenario all
 
 The smoke runner is intentionally not part of CI. It targets the deployed Cloudflare Pages + sandbox Worker path, drives Stripe-hosted Checkout with Playwright, checks sandbox D1 remotely through Wrangler, and writes ignored evidence to `.codex-artifacts/stripe-sandbox-smoke/<run-id>/`.
 
-Supported scenarios are `happy_path_paid`, `three_d_secure`, `card_declined`, `insufficient_funds`, `expired_card`, `incorrect_cvc`, `processing_error`, and `all`. The committed JetBrains run configuration `Stripe Sandbox Smoke` runs `--scenario all`. Stripe’s current test card reference lives at <https://docs.stripe.com/testing#cards>. Keep `stripe listen --forward-to https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev/api/stripe/webhooks` running separately, and make sure the sandbox Worker `STRIPE_WEBHOOK_SECRET` matches that listener for paid-order evidence.
+Supported scenarios are `happy_path_paid`, `three_d_secure`, `card_declined`, `insufficient_funds`, `expired_card`, `incorrect_cvc`, `processing_error`, and `all`. The committed JetBrains run configuration `Stripe Sandbox Smoke` runs `--scenario all`. Stripe’s current test card reference lives at <https://docs.stripe.com/testing#cards>. Paid deployed-sandbox smoke now expects the persistent Stripe Dashboard/Workbench webhook endpoint to deliver to `https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev/api/stripe/webhooks`; `stripe listen` is local/temporary diagnostic tooling only and is not persistent readiness evidence.
+
+Before accepting sandbox catalog or paid-order webhook readiness, run:
+
+```sh
+pnpm stripe:webhooks:verify --env sandbox
+pnpm stripe:catalog:verify --env sandbox
+```
+
+Catalog Field Ownership is one-way. Repo content owns Product Projection fields that Stripe-hosted Checkout displays (`name`, `description`, image URLs, and app metadata), while Stripe owns Price Authority (`amount`, `currency`, active Price identity, and lookup key). A sandbox product-presentation change starts in repo content or the generated projection, then runs `pnpm stripe:catalog:verify --env sandbox`, followed by reviewed `pnpm stripe:catalog:verify --env sandbox --apply` only when the dry-run plan is understood. A price change starts in Stripe as a replacement Price: move the lookup key/metadata to the replacement Price, archive the stale Price, then rerun catalog verification so D1 `VariantStripeMapping` and `StoreOfferSnapshot` follow Stripe without an Astro deploy. Stripe Dashboard edits to repo-owned Product presentation are catalog drift unless the repo projection is updated.
+
+Full GitHub Pages UAT catalog alignment uses generated repo artifacts and a sandbox-only reset/apply flow. Run `pnpm stripe:catalog:artifacts:generate` after Store Item content changes and let `pnpm stripe:catalog:artifacts:check` catch drift in `pnpm check`. The reset command is dry-run by default and only deactivates BlackBox-owned Stripe sandbox Products/Prices; `pnpm stripe:catalog:verify --env sandbox --apply` creates the fresh active sandbox catalog and syncs D1 mappings/snapshots. See [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md) for the full reset, D1 seed, deploy, and smoke sequence.
+
+The webhook verifier is read-only. It proves the persistent endpoint URL, test-mode status, required catalog event subscriptions, sandbox Worker `STRIPE_WEBHOOK_SECRET` presence, and the six-hour scheduled catalog-verification backstop when Cloudflare schedule credentials are available. It does not prove the existing endpoint signing secret equals the Worker secret because Stripe does not return an existing endpoint secret through list/retrieve APIs. After endpoint creation, endpoint recreation, or secret rotation, update the sandbox Worker from `apps/backend` with `pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env sandbox` without logging the value, then rerun the verifier and paid smoke.
 
 Before using `dev:stack:stripe-test`:
 
@@ -376,6 +389,9 @@ pnpm audit:commerce-boundaries
   - `STRIPE_WEBHOOK_SECRET`
 - The required backend Stripe checkout configuration binding is:
   - `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`
+- The sandbox Worker persistent webhook readiness check is:
+  - `pnpm stripe:webhooks:verify --env sandbox`
+  - it must stay verify-only and must not create, update, delete, rotate, log, or commit Stripe webhook endpoint secrets
 - Future BOX NOW credentials remain Worker runtime secrets or out-of-band operator credentials. They must not be exposed through Astro `PUBLIC_*` env, Cloudflare Pages public build variables, generated frontend clients, static content, or committed seed files.
 - The optional backend-local Stripe mock/test override is:
   - `STRIPE_API_BASE_URL`
@@ -453,8 +469,9 @@ Local checkout seed flow:
 Sandbox D1 seed flow:
 
 1. Apply sandbox migrations only when the sandbox environment is intentionally being prepared: `pnpm --filter @blackbox/backend d1:migrations:apply:sandbox`.
-2. Apply the non-secret base commerce seed with `pnpm --filter @blackbox/backend d1:seed:sandbox`.
-3. Do not use local mock stock, `price_mock_*` rows, real Stripe Price IDs, BOX NOW credentials, or production data in sandbox seed files.
+2. Apply the non-secret base commerce seed with `pnpm --filter @blackbox/backend d1:seed:sandbox` when preparing the older narrow sandbox fixture.
+3. Apply the full GitHub Pages UAT catalog readiness seed with `pnpm --filter @blackbox/backend d1:seed:sandbox:uat-catalog` before full-catalog `pnpm stripe:catalog:verify --env sandbox --apply`.
+4. Do not use local mock stock, `price_mock_*` rows, real Stripe Price IDs, BOX NOW credentials, or production data in sandbox seed files.
 
 Local development:
 

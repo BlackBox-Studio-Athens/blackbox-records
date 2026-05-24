@@ -8,6 +8,7 @@ import {
   PrismaStockCountRepository,
   PrismaStockRepository,
   PrismaStoreItemOptionRepository,
+  PrismaStripeCatalogWebhookEventRepository,
   PrismaVariantStripeMappingRepository,
   createPrismaClient,
 } from '../../../src/infrastructure/persistence/prisma';
@@ -24,9 +25,11 @@ describe('Prisma repository seams', () => {
     const stockChanges = new PrismaStockChangeRepository(prisma);
     const stockCounts = new PrismaStockCountRepository(prisma);
     const variantStripeMappings = new PrismaVariantStripeMappingRepository(prisma);
+    const catalogWebhookEvents = new PrismaStripeCatalogWebhookEventRepository(prisma);
     const orders = new PrismaOrderStateRepository(prisma);
 
     expect(typeof prisma.checkoutOrder.findUnique).toBe('function');
+    expect(typeof prisma.stripeCatalogWebhookEvent.findUnique).toBe('function');
     expect(typeof orders.createPending).toBe('function');
     expect(typeof orders.findByCheckoutSessionId).toBe('function');
     expect(typeof orders.saveTransition).toBe('function');
@@ -41,6 +44,7 @@ describe('Prisma repository seams', () => {
     expect(typeof stockChanges.record).toBe('function');
     expect(typeof stockCounts.listByVariantId).toBe('function');
     expect(typeof stockCounts.record).toBe('function');
+    expect(typeof catalogWebhookEvents.recordCatalogEvent).toBe('function');
     expect(typeof variantStripeMappings.findByVariantId).toBe('function');
 
     await prisma.$disconnect();

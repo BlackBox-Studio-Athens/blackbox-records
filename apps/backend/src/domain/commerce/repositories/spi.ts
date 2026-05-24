@@ -27,4 +27,11 @@ export type {
   StoreOfferSnapshotRepository,
   StoreOfferSnapshotState,
 } from './store-offer-snapshot-repository';
+export type {
+  RecordStripeCatalogWebhookEventInput,
+  RecordStripeCatalogWebhookEventResult,
+  StripeCatalogWebhookEventRecord,
+  StripeCatalogWebhookEventRepository,
+  StripeCatalogWebhookObjectKind,
+} from './stripe-catalog-webhook-event-repository';
 export type { VariantStripeMappingRecord, VariantStripeMappingRepository } from './variant-stripe-mapping-repository';

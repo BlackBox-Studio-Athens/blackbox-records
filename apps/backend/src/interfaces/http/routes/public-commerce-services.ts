@@ -24,7 +24,10 @@ import {
 } from '../../../infrastructure/persistence/prisma';
 import { createFeatureFlagReader } from '../../../infrastructure/feature-flags';
 import { createStripeCatalogGateway, createStripeCheckoutGateway } from '../../../infrastructure/stripe';
-import { CatalogReconciler } from '../../../application/commerce/catalog-sync';
+import {
+  CatalogReconciler,
+  createCurrentCatalogProductProjectionReader,
+} from '../../../application/commerce/catalog-sync';
 
 export function createPublicCommerceServices(bindings: AppBindings) {
   const prisma = createPrismaClient(bindings);
@@ -34,6 +37,7 @@ export function createPublicCommerceServices(bindings: AppBindings) {
   const variantStripeMappings = new PrismaVariantStripeMappingRepository(prisma);
   const storeOfferSnapshots = new PrismaStoreOfferSnapshotRepository(prisma);
   const orders = new PrismaOrderStateRepository(prisma);
+  const productProjections = createCurrentCatalogProductProjectionReader();
   const createCatalogReconciler = () =>
     new CatalogReconciler({
       environment: bindings.APP_ENV,
@@ -54,18 +58,26 @@ export function createPublicCommerceServices(bindings: AppBindings) {
       VariantMismatchError,
     },
     listVariantOffersForStoreItem: async (storeItemSlug: string) =>
-      listVariantOffersForStoreItem(storeItems, itemAvailability, stock, createCatalogReconciler(), storeItemSlug),
+      listVariantOffersForStoreItem(
+        storeItems,
+        itemAvailability,
+        stock,
+        createCatalogReconciler(),
+        productProjections,
+        storeItemSlug,
+      ),
     readCheckoutState: async (checkoutSessionId: string) =>
       readCheckoutState(createStripeCheckoutGateway(bindings), orders, checkoutSessionId),
     readStoreCapabilities: async () => readStoreCapabilities(createFeatureFlagReader(bindings)),
     readStoreOffer: async (storeItemSlug: string) =>
-      readStoreOffer(storeItems, itemAvailability, stock, createCatalogReconciler(), storeItemSlug),
+      readStoreOffer(storeItems, itemAvailability, stock, createCatalogReconciler(), productProjections, storeItemSlug),
     startCheckout: async (command: StartCheckoutCommand) =>
       startCheckout(
         storeItems,
         itemAvailability,
         stock,
         createCatalogReconciler(),
+        productProjections,
         createStripeCheckoutGateway(bindings),
         orders,
         command,
