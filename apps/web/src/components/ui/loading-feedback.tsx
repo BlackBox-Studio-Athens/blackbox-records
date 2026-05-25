@@ -16,8 +16,9 @@ type LoadingMarkProps = {
 function LoadingMark({ className, spinnerClassName }: LoadingMarkProps) {
   return (
     <span className={cn('loading-feedback-mark size-4 shrink-0', className)} aria-hidden="true">
-      <span className="loading-feedback-mark__pulse" />
-      <Spinner className={cn('size-3.5', spinnerClassName)} />
+      <span className="loading-feedback-mark__scale">
+        <Spinner className={cn('size-3.5', spinnerClassName)} />
+      </span>
     </span>
   );
 }

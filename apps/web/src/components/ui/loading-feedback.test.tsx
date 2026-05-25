@@ -13,7 +13,7 @@ describe('loading feedback primitives', () => {
     expect(html).toContain('Checking availability');
     expect(html).toContain('aria-hidden="true"');
     expect(html).toContain('loading-feedback-mark');
-    expect(html).toContain('loading-feedback-mark__pulse');
+    expect(html).toContain('loading-feedback-mark__scale');
     expect(html).toContain('animate-spin');
   });
 
