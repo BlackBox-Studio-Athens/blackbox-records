@@ -75,6 +75,19 @@ export function indentYamlBlock(value: string, spaces: number): string {
     .join('\n');
 }
 
+function ensureYamlListItem(value: string): string {
+  if (value.trimStart().startsWith('- ')) {
+    return value;
+  }
+
+  const [firstLine = '', ...remainingLines] = value.split('\n');
+  return [`- ${firstLine}`, ...remainingLines.map((line) => `  ${line}`)].join('\n');
+}
+
+function indentYamlListItem(value: string, spaces: number): string {
+  return indentYamlBlock(ensureYamlListItem(value), spaces);
+}
+
 export function buildArtistOptionsYaml(options: DecapSelectOption[], indentSpaces = 4): string {
   return options
     .map(
@@ -122,7 +135,7 @@ function buildListType(config: ListTypeConfig): string {
   }
 
   lines.push('  fields:');
-  lines.push(...config.fields.map((field) => indentYamlBlock(field, 4)));
+  lines.push(...config.fields.map((field) => indentYamlListItem(field, 4)));
 
   return lines.join('\n');
 }
@@ -172,7 +185,7 @@ export function buildField(config: BlockFieldConfig): string {
 
   if (config.fields?.length) {
     lines.push('  fields:');
-    lines.push(...config.fields.map((field) => indentYamlBlock(field, 4)));
+    lines.push(...config.fields.map((field) => indentYamlListItem(field, 4)));
   }
 
   return lines.join('\n');
@@ -203,7 +216,7 @@ function buildFileEntry(config: FileEntryConfig): string {
   }
 
   lines.push('  fields:');
-  lines.push(...config.fields.map((field) => indentYamlBlock(field, 4)));
+  lines.push(...config.fields.map((field) => indentYamlListItem(field, 4)));
 
   return lines.join('\n');
 }
@@ -248,7 +261,7 @@ export function buildFolderCollection(config: FolderCollectionConfig): string {
 
   lines.push(`  summary: ${escapeYamlScalar(config.summary)}`);
   lines.push('  fields:');
-  lines.push(...config.fields.map((field) => indentYamlBlock(field, 4)));
+  lines.push(...config.fields.map((field) => indentYamlListItem(field, 4)));
 
   return lines.join('\n');
 }

@@ -58,6 +58,30 @@ describe('Decap YAML builder', () => {
     expect(yaml).toContain('          widget: text');
   });
 
+  it('keeps bare child field mappings as YAML list items', () => {
+    expect(
+      buildField({
+        label: 'Profile links',
+        name: 'profile_links',
+        widget: 'list',
+        fields: [
+          buildFieldMapping({ label: 'Label', name: 'label', widget: 'string' }),
+          buildFieldMapping({ label: 'URL', name: 'url', widget: 'string' }),
+        ],
+      }),
+    ).toContain(
+      [
+        '  fields:',
+        '    - label: "Label"',
+        '      name: "label"',
+        '      widget: string',
+        '    - label: "URL"',
+        '      name: "url"',
+        '      widget: string',
+      ].join('\n'),
+    );
+  });
+
   it('builds schema fields and Decap collection wrappers', () => {
     const titleField = buildField({ label: 'Title', name: 'title', widget: 'string' });
 
