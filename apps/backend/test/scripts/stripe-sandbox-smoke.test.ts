@@ -579,12 +579,16 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     });
     expect(JSON.stringify(evidence)).not.toContain('sk_test_');
     expect(JSON.stringify(evidence)).not.toContain('whsec_');
+    expect(JSON.stringify(evidence)).not.toContain('cs_test_123');
+    expect(evidence.finalUrl).toContain('[redacted_checkout_session_id]');
+    expect(evidence.order?.checkoutSessionId).toBe('[redacted_checkout_session_id]');
   });
 
-  it('scrubs Stripe secrets and client secrets from logs', () => {
+  it('scrubs Stripe secrets, session IDs, and client secrets from logs', () => {
     const text = [
       'STRIPE_SECRET_KEY=sk_test_should_not_print',
       'STRIPE_WEBHOOK_SECRET=whsec_should_not_print',
+      'session_id=cs_test_should_not_print',
       'client_secret=cs_test_abc_secret_should_not_print',
       'setup_secret=seti_test_abc_secret_should_not_print',
     ].join('\n');
@@ -593,6 +597,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       [
         'STRIPE_SECRET_KEY=[redacted_stripe_secret_key]',
         'STRIPE_WEBHOOK_SECRET=[redacted_stripe_webhook_secret]',
+        'session_id=[redacted_checkout_session_id]',
         'client_secret=cs_test_abc_secret_[redacted]',
         'setup_secret=seti_test_abc_secret_[redacted]',
       ].join('\n'),

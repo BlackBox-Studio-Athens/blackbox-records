@@ -771,7 +771,16 @@ export function scrubSensitiveStripeSmokeText(text: string): string {
     .replace(/sk_live_[A-Za-z0-9_]+/g, '[redacted_stripe_secret_key]')
     .replace(/whsec_[A-Za-z0-9_]+/g, '[redacted_stripe_webhook_secret]')
     .replace(/(cs_(?:test|live)_[A-Za-z0-9_]*?_secret_)[A-Za-z0-9_]+/g, '$1[redacted]')
-    .replace(/(seti_(?:test|live)_[A-Za-z0-9_]*?_secret_)[A-Za-z0-9_]+/g, '$1[redacted]');
+    .replace(/(seti_(?:test|live)_[A-Za-z0-9_]*?_secret_)[A-Za-z0-9_]+/g, '$1[redacted]')
+    .replace(/cs_(?:test|live)_[A-Za-z0-9_]+/g, '[redacted_checkout_session_id]');
+}
+
+function scrubStripeSmokeEvidenceUrl(value: string): string {
+  if (value.startsWith('https://checkout.stripe.com/')) {
+    return 'https://checkout.stripe.com/[redacted_checkout_url]';
+  }
+
+  return scrubSensitiveStripeSmokeText(value);
 }
 
 export function buildStripeSandboxSmokeEvidence(input: {
@@ -795,7 +804,7 @@ export function buildStripeSandboxSmokeEvidence(input: {
     checkoutSurface: input.result.checkoutSurface,
     checkoutPageUrl: input.checkoutPageUrl,
     durations: input.result.durations,
-    finalUrl: input.result.finalUrl,
+    finalUrl: scrubStripeSmokeEvidenceUrl(input.result.finalUrl),
     generatedAt: new Date().toISOString(),
     observedStripeUi: input.result.observedStripeUi,
     order: input.result.order ? sanitizeOrderForReport(input.result.order) : null,
@@ -1926,7 +1935,7 @@ function toCheckoutOrderRow(value: unknown): LocalCheckoutOrderRow {
 
 function sanitizeOrderForReport(order: LocalCheckoutOrderRow) {
   return {
-    checkoutSessionId: order.checkoutSessionId,
+    checkoutSessionId: scrubSensitiveStripeSmokeText(order.checkoutSessionId),
     createdAt: order.createdAt,
     needsReviewAt: order.needsReviewAt,
     notPaidAt: order.notPaidAt,
