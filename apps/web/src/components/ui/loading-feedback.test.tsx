@@ -12,6 +12,8 @@ describe('loading feedback primitives', () => {
     expect(html).toContain('aria-live="polite"');
     expect(html).toContain('Checking availability');
     expect(html).toContain('aria-hidden="true"');
+    expect(html).toContain('loading-feedback-mark');
+    expect(html).toContain('loading-feedback-mark__pulse');
     expect(html).toContain('animate-spin');
   });
 
@@ -20,6 +22,7 @@ describe('loading feedback primitives', () => {
 
     expect(html).toContain('Opening Stripe Checkout');
     expect(html).toContain('aria-hidden="true"');
+    expect(html).toContain('loading-feedback-mark');
     expect(html).not.toContain('role="status"');
   });
 
@@ -33,5 +36,6 @@ describe('loading feedback primitives', () => {
     expect(html).toContain('aria-live="polite"');
     expect(html).toContain('Confirming payment status');
     expect(html).toContain('Keep this tab open.');
+    expect(html).toContain('loading-feedback-mark');
   });
 });

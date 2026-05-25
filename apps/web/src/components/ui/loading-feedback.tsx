@@ -8,6 +8,20 @@ type LoadingInlineProps = React.HTMLAttributes<HTMLSpanElement> & {
   spinnerClassName?: string;
 };
 
+type LoadingMarkProps = {
+  className?: string | undefined;
+  spinnerClassName?: string | undefined;
+};
+
+function LoadingMark({ className, spinnerClassName }: LoadingMarkProps) {
+  return (
+    <span className={cn('loading-feedback-mark size-4 shrink-0', className)} aria-hidden="true">
+      <span className="loading-feedback-mark__pulse" />
+      <Spinner className={cn('size-3.5', spinnerClassName)} />
+    </span>
+  );
+}
+
 export function LoadingInline({ className, label, spinnerClassName, ...props }: LoadingInlineProps) {
   return (
     <span
@@ -16,7 +30,7 @@ export function LoadingInline({ className, label, spinnerClassName, ...props }: 
       className={cn('inline-flex min-w-0 items-center gap-2 text-current', className)}
       {...props}
     >
-      <Spinner className={cn('size-3.5 shrink-0', spinnerClassName)} />
+      <LoadingMark spinnerClassName={spinnerClassName} />
       <span className="min-w-0">{label}</span>
     </span>
   );
@@ -31,7 +45,7 @@ type LoadingButtonContentProps = {
 export function LoadingButtonContent({ className, label, spinnerClassName }: LoadingButtonContentProps) {
   return (
     <span className={cn('inline-flex min-w-0 items-center justify-center gap-2', className)}>
-      <Spinner className={cn('size-3.5 shrink-0', spinnerClassName)} />
+      <LoadingMark spinnerClassName={spinnerClassName} />
       <span className="min-w-0 leading-tight">{label}</span>
     </span>
   );
@@ -55,7 +69,7 @@ export function LoadingStateBlock({ className, description, title, ...props }: L
       {...props}
     >
       <div className="grid max-w-sm justify-items-center gap-3">
-        <Spinner className="size-5 text-foreground/75" />
+        <LoadingMark className="size-6 text-foreground/75" spinnerClassName="size-5" />
         <div className="grid gap-1.5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-foreground">{title}</p>
           {description && <p className="text-sm leading-6 text-muted-foreground">{description}</p>}

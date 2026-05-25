@@ -106,6 +106,7 @@ body {
 }
 
 .blackbox-cms-boot__spinner {
+  position: relative;
   width: 0.9rem;
   height: 0.9rem;
   flex: 0 0 auto;
@@ -115,14 +116,37 @@ body {
   animation: blackbox-cms-spin 0.9s linear infinite;
 }
 
+.blackbox-cms-boot__spinner::after {
+  position: absolute;
+  inset: -0.25rem;
+  border: 1px solid rgba(146, 47, 63, 0.32);
+  border-radius: 999px;
+  content: '';
+  animation: blackbox-cms-loading-pulse 1.45s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
 @keyframes blackbox-cms-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
+@keyframes blackbox-cms-loading-pulse {
+  0%,
+  100% {
+    transform: scale(0.82);
+    opacity: 0.5;
+  }
+
+  52% {
+    transform: scale(1.38);
+    opacity: 0.12;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .blackbox-cms-boot__spinner {
+  .blackbox-cms-boot__spinner,
+  .blackbox-cms-boot__spinner::after {
     animation: none;
   }
 }
