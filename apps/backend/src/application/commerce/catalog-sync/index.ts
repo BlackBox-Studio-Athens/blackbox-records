@@ -13,6 +13,13 @@ export {
   findCurrentCatalogProductProjection,
   findCurrentCatalogProductProjectionEntry,
 } from './catalog-product-projections';
+export {
+  createCurrentDesiredCatalogEntriesForEnvironment,
+  createCurrentDesiredPriceMap,
+  currentDesiredCatalogEntries,
+  currentDesiredCatalogState,
+  findCurrentDesiredCatalogEntry,
+} from './desired-catalog-state';
 export type { CatalogProductProjectionEntry, CatalogProductProjectionReader } from './catalog-product-projections';
 export type {
   CatalogDriftCategory,
@@ -37,6 +44,13 @@ export type {
   CatalogSyncIssue,
   CatalogSyncRunResult,
   CatalogSyncVariantResult,
+  DesiredCatalogEntry,
+  DesiredCatalogEnvironment,
+  DesiredCatalogState,
+  DesiredPrice,
+  PromotionEvidence,
+  PromotionRun,
+  ProviderCatalogState,
   StoreOfferPrice,
   StripeCatalogEnvironment,
   StripeCatalogExpectedPrice,

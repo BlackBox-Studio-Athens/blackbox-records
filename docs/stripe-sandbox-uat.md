@@ -56,6 +56,8 @@ Do not paste the signing secret into docs, chat, screenshots, evidence files, As
 
 Catalog correctness is layered: persistent webhooks provide near-real-time sync, Store Offer reads reconcile stale snapshots, checkout start revalidates the active Stripe Price, scheduled sandbox catalog verification runs every six hours, and `pnpm stripe:catalog:verify --env sandbox` remains the operator proof for current catalog alignment.
 
+Sandbox UAT is also the first leg of the shared Catalog Promotion pipeline described in [`docs/catalog-promotion.md`](catalog-promotion.md). Normal CMS publication should use the generated artifact commit and promotion workflow instead of treating sandbox apply as a detached manual checklist.
+
 Catalog Field Ownership keeps sandbox alignment explicit:
 
 - Product Projection is repo-owned and may update Stripe Product name, description, image URLs, and metadata only through a reviewed sandbox apply.

@@ -33,6 +33,13 @@ export type StripeCatalogPrice = {
 export type StripeCatalogExpectedPrice = {
   amountMinor: number;
   currencyCode: string;
+  revision?: string;
+};
+
+export type DesiredPrice = {
+  amountMinor: number;
+  currencyCode: string;
+  revision: string;
 };
 
 export type StripeCatalogProductProjection = {
@@ -43,9 +50,54 @@ export type StripeCatalogProductProjection = {
   taxCode: string | null;
 };
 
+export type DesiredCatalogEnvironment = Extract<StripeCatalogEnvironment, 'production' | 'sandbox'>;
+
+export type DesiredCatalogAvailability = 'published' | 'retired' | 'withheld';
+
+export type DesiredCatalogEntry = {
+  availability: DesiredCatalogAvailability;
+  desiredPrice: DesiredPrice | null;
+  productProjection: StripeCatalogProductProjection;
+  smokeCandidate: boolean;
+  sourceId: string;
+  sourceKind: StoreItemOptionRecord['sourceKind'];
+  stockInitialization: {
+    initialOnlineQuantity: number | null;
+  };
+  storeItemSlug: string;
+  targetEnvironments: DesiredCatalogEnvironment[];
+  variantId: string;
+};
+
+export type DesiredCatalogState = {
+  entries: DesiredCatalogEntry[];
+  revision: string;
+};
+
+export type ProviderCatalogState = {
+  environment: DesiredCatalogEnvironment;
+  entries: Array<{
+    activePriceCount: number;
+    storeItemSlug: string;
+    variantId: string;
+  }>;
+};
+
+export type PromotionRun = {
+  artifactCommitSha: string;
+  environment: DesiredCatalogEnvironment;
+  runId: string;
+  sourceCommitSha: string;
+};
+
+export type PromotionEvidence = PromotionRun & {
+  status: 'failed' | 'not_configured' | 'passed' | 'skipped' | 'superseded';
+  summary: string;
+};
+
 export type StripeCatalogGateway = {
   archivePrice(priceId: StripePriceId, context?: StripeCatalogMutationContext): Promise<StripeCatalogPrice>;
-  createSandboxPrice(
+  createCatalogPrice(
     input: StripeCatalogPriceCreateInput,
     context?: StripeCatalogMutationContext,
   ): Promise<StripeCatalogPrice>;
@@ -118,7 +170,7 @@ export type CatalogSyncAction =
       stripePriceId: StripePriceId;
     }
   | {
-      kind: 'create_sandbox_price';
+      kind: 'create_catalog_price';
     }
   | {
       kind: 'update_mapping';

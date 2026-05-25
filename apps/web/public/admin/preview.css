@@ -177,6 +177,13 @@ body {
   gap: 0.65rem;
 }
 
+.blackbox-preview__commerce {
+  display: grid;
+  gap: 0.75rem;
+  border-top: 1px solid var(--bb-preview-line);
+  padding-top: 1rem;
+}
+
 .blackbox-preview__quote {
   font-size: 1.12rem;
   color: rgba(245, 245, 245, 0.88);

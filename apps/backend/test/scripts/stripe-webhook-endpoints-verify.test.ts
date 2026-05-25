@@ -12,6 +12,7 @@ import {
   formatStripeWebhookEndpointVerificationReport,
   parseStripeWebhookVerifyArgs,
   parseWranglerSecretNames,
+  PRODUCTION_WEBHOOK_URL,
   redactSensitiveValues,
   SANDBOX_WEBHOOK_URL,
   verifyStripeWebhookEndpointConfiguration,
@@ -50,12 +51,15 @@ function fakeClient(pages: StripeWebhookEndpoint[][]): StripeWebhookEndpointList
 }
 
 describe('Stripe webhook endpoint verifier', () => {
-  it('requires explicit sandbox argument parsing', () => {
+  it('requires explicit target environment argument parsing', () => {
     expect(parseStripeWebhookVerifyArgs(['--env', 'sandbox'])).toEqual({ environment: 'sandbox' });
+    expect(parseStripeWebhookVerifyArgs(['--env', 'production'])).toEqual({ environment: 'production' });
     expect(parseStripeWebhookVerifyArgs(['--', '--env=sandbox'])).toEqual({ environment: 'sandbox' });
-    expect(() => parseStripeWebhookVerifyArgs([])).toThrow('Usage: pnpm stripe:webhooks:verify --env sandbox');
-    expect(() => parseStripeWebhookVerifyArgs(['--env', 'production'])).toThrow(
-      'Stripe webhook endpoint verification is currently supported only with --env sandbox.',
+    expect(() => parseStripeWebhookVerifyArgs([])).toThrow(
+      'Usage: pnpm stripe:webhooks:verify --env sandbox|production',
+    );
+    expect(() => parseStripeWebhookVerifyArgs(['--env', 'local'])).toThrow(
+      'Stripe webhook endpoint verification requires --env sandbox or --env production.',
     );
   });
 
@@ -81,6 +85,28 @@ describe('Stripe webhook endpoint verifier', () => {
     expect(report).toContain('we_...cdef');
     expect(report).toContain('Signing-secret match proof: not_proven_by_api');
     expect(report).not.toContain('we_1234567890abcdef');
+  });
+
+  it('passes one enabled live-mode production account endpoint without requiring sandbox cron proof', async () => {
+    const result = await verifyStripeWebhookEndpointConfiguration({
+      client: fakeClient([
+        [
+          endpoint({
+            livemode: true,
+            url: PRODUCTION_WEBHOOK_URL,
+          }),
+        ],
+      ]),
+      committedCron: { status: 'unverified', detail: 'not configured' },
+      deployedCron: { status: 'unverified', detail: 'not configured' },
+      environment: 'production',
+      workerSecret: { status: 'present' },
+    });
+    const report = formatStripeWebhookEndpointVerificationReport(result);
+
+    expect(result.issues).toEqual([]);
+    expect(report).toContain('Stripe production webhook endpoint verification OK.');
+    expect(report).toContain(`Endpoint URL: ${PRODUCTION_WEBHOOK_URL}`);
   });
 
   it('follows Stripe pagination while listing endpoints', async () => {
@@ -110,6 +136,17 @@ describe('Stripe webhook endpoint verifier', () => {
     expect(analyzeStripeWebhookEndpoints([endpoint({ livemode: true })]).issues).toContain(
       'Webhook endpoint we_...cdef is not in Stripe test mode.',
     );
+    expect(
+      analyzeStripeWebhookEndpoints(
+        [
+          endpoint({
+            livemode: false,
+            url: PRODUCTION_WEBHOOK_URL,
+          }),
+        ],
+        'production',
+      ).issues,
+    ).toContain('Webhook endpoint we_...cdef is not in Stripe live mode.');
     expect(analyzeStripeWebhookEndpoints([endpoint({ application: 'ca_1234567890abcdef' })]).issues).toContain(
       `Matching webhook endpoint(s) for ${SANDBOX_WEBHOOK_URL} are Connect-only or application-owned; create an account endpoint.`,
     );

@@ -1,0 +1,95 @@
+name: Catalog artifact regeneration
+
+on:
+  push:
+    branches: ['main']
+    paths:
+      - 'apps/web/src/content/distro/**'
+      - 'apps/web/src/content/releases/**'
+      - 'apps/web/src/content/uploads/**'
+      - 'apps/web/src/lib/admin/**'
+      - 'apps/web/src/content.config.ts'
+      - 'scripts/stripe-catalog-contract.ts'
+      - 'scripts/generate-stripe-uat-catalog-artifacts.ts'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: 'catalog-artifacts-${{ github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  regenerate:
+    if: "${{ github.event_name != 'push' || !contains(github.event.head_commit.message, 'chore(catalog): regenerate promotion artifacts') }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.8
+        with:
+          version: 10.33.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate catalog artifacts
+        run: pnpm stripe:catalog:artifacts:generate
+
+      - name: Verify generated artifact allowlist
+        shell: bash
+        run: |
+          set -euo pipefail
+          changed="$(git diff --name-only)"
+          if [ -z "$changed" ]; then
+            echo "changed=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          allowed='^(apps/backend/src/application/commerce/catalog-sync/(catalog-product-projections|desired-catalog-state)\.ts|apps/backend/prisma/seeds/(sandbox-uat-commerce-state|production-commerce-readiness)\.sql)$'
+          unexpected="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected generated artifact drift:"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+
+          echo "changed=true" >> "$GITHUB_ENV"
+
+      - name: Commit generated catalog artifacts
+        if: env.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/backend/src/application/commerce/catalog-sync/catalog-product-projections.ts
+          git add apps/backend/src/application/commerce/catalog-sync/desired-catalog-state.ts
+          git add apps/backend/prisma/seeds/sandbox-uat-commerce-state.sql
+          git add apps/backend/prisma/seeds/production-commerce-readiness.sql
+          git commit -m "chore(catalog): regenerate promotion artifacts"
+          git push
+
+      - name: Resolve artifact commit
+        id: artifact
+        shell: bash
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch catalog promotion
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          gh workflow run catalog-promotion.yml
+          --ref main
+          -f artifact_commit_sha=${{ steps.artifact.outputs.sha }}
+          -f target=all

@@ -38,6 +38,10 @@ For label-member sandbox UAT, the GitHub Pages URL is intentionally wired to the
 - The minimized player is only shown after the user interacts with the embed area; a loaded embed alone does not create the pill.
 - Real document navigations still occur for direct loads, refreshes, new tabs, and the external shop redirect.
 
+## Catalog Promotion
+
+Decap-authored release and distro entries now expose a guarded Commerce section. Content publication and buyable status are separate: the generated Desired Catalog State and catalog promotion workflow move CMS changes through UAT and production provider state. See [docs/catalog-promotion.md](docs/catalog-promotion.md) for maintainer fields, status meanings, rollback rules, and Promotion Evidence expectations.
+
 ## Prerequisites
 
 - Node.js 24 LTS

@@ -50,13 +50,17 @@ Read these first before editing:
 - Backend dev server with official local stripe-mock API override: `pnpm dev:backend:mock-api`
 - Backend sandbox dev server: `pnpm dev:backend:sandbox`
 - Backend sandbox deploy: `pnpm deploy:backend:sandbox`
+- Backend production deploy: `pnpm deploy:backend:production`
 - Cloudflare Pages frontend deploy workflow: `.github/workflows/cloudflare-pages.yml`
+- Catalog artifact regeneration workflow: `.github/workflows/catalog-artifacts.yml`
+- Catalog promotion workflow: `.github/workflows/catalog-promotion.yml`
 - Full local stack with real Stripe test mode: `pnpm dev:stack:stripe-test`
 - Local official stripe-mock launcher: `pnpm stripe-mock:local`
 - Full local stack with mock Stripe mode: `pnpm dev:stack:stripe-mock`
 - Alias for the same official stripe-mock API mode: `pnpm dev:stack:stripe-mock-api`
 - Real Stripe test checkout preflight: `pnpm checkout:preflight:stripe-test`
 - At-will automated Stripe sandbox Playwright smoke: `pnpm smoke:stripe-sandbox`
+- Production no-payment catalog promotion smoke: `pnpm smoke:stripe-promotion -- --env production --scenario all`
 - Local signed Stripe webhook fixture simulator: `pnpm stripe:webhook:simulate:local`
 - Backend local D1 smoke check: `pnpm --filter @blackbox/backend d1:smoke:local`
 - Backend local D1 seed apply: `pnpm --filter @blackbox/backend d1:seed:local`
@@ -71,6 +75,14 @@ Read these first before editing:
   - `pnpm --filter @blackbox/backend d1:migrations:list:sandbox`
   - `pnpm --filter @blackbox/backend d1:migrations:apply:sandbox`
 - Backend sandbox D1 non-secret seed apply: `pnpm --filter @blackbox/backend d1:seed:sandbox`
+- Backend sandbox catalog readiness seed apply: `pnpm --filter @blackbox/backend d1:seed:sandbox:uat-catalog`
+- Backend production catalog readiness dry-run/report: `pnpm production:catalog-readiness:check -- --phase pre-apply`
+- Backend production catalog readiness seed apply: `pnpm --filter @blackbox/backend d1:seed:production:catalog-readiness`
+- Catalog checkout pause dry-run/apply: `pnpm catalog:checkout:pause -- --variant-id <variantId> [--apply]`
+- Runtime config category verifier: `pnpm runtime:config:verify --env sandbox|production`
+- Backend production D1 migration list/apply:
+  - `pnpm --filter @blackbox/backend d1:migrations:list:production`
+  - `pnpm --filter @blackbox/backend d1:migrations:apply:production`
 - Backend Prisma client generation: `pnpm --filter @blackbox/backend prisma:generate`
 - Backend local secrets: copy `apps/backend/.dev.vars.example` to `apps/backend/.dev.vars`
 - Generate backend OpenAPI docs and client package: `pnpm generate:api`

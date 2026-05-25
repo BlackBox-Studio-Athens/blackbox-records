@@ -144,16 +144,17 @@ class InMemoryStripeCatalog implements StripeCatalogGateway {
     },
   );
 
-  public readonly createSandboxPrice = vi.fn(
+  public readonly createCatalogPrice = vi.fn(
     async (
       input: StripeCatalogPriceCreateInput,
       _context?: StripeCatalogMutationContext,
     ): Promise<StripeCatalogPrice> => {
+      const pricePrefix = input.metadata.appEnv === 'production' ? 'price_live' : 'price_test';
       const price = createCatalogPrice({
         amountMinor: input.amountMinor,
         currencyCode: input.currencyCode,
         environment: input.metadata.appEnv,
-        priceId: 'price_test_disintegration_2800',
+        priceId: `${pricePrefix}_disintegration_2800`,
         productProjection: input.productProjection ?? null,
       });
       this.prices.set(price.priceId, price);
@@ -260,6 +261,7 @@ describe('CatalogReconciler', () => {
       expectedPrice: {
         amountMinor: 2800,
         currencyCode: 'EUR',
+        revision: 'disintegration-black-vinyl-lp-2800-eur',
       },
       now: new Date('2026-05-23T10:00:00.000Z'),
     });
@@ -268,7 +270,7 @@ describe('CatalogReconciler', () => {
     expect(result.actions).toEqual(
       expect.arrayContaining([
         { kind: 'archive_price', stripePriceId: oldPrice.priceId },
-        { kind: 'create_sandbox_price' },
+        { kind: 'create_catalog_price' },
         { kind: 'update_mapping', stripePriceId: 'price_test_disintegration_2800' },
         { kind: 'update_snapshot' },
       ]),
@@ -343,6 +345,7 @@ describe('CatalogReconciler', () => {
       expectedPrice: {
         amountMinor: 2800,
         currencyCode: 'EUR',
+        revision: 'disintegration-black-vinyl-lp-2800-eur',
       },
       now: new Date('2026-05-23T10:00:00.000Z'),
     });
@@ -399,7 +402,7 @@ describe('CatalogReconciler', () => {
     );
     expect(result.actions).not.toEqual(
       expect.arrayContaining([
-        { kind: 'create_sandbox_price' },
+        { kind: 'create_catalog_price' },
         { kind: 'archive_price', stripePriceId: price.priceId },
       ]),
     );
@@ -464,7 +467,7 @@ describe('CatalogReconciler', () => {
       ]),
     );
     expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
-    expect(stripeCatalog.createSandboxPrice).not.toHaveBeenCalled();
+    expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
     expect(stripeCatalog.updatePriceMetadata).not.toHaveBeenCalled();
     expect(stripeCatalog.updateProductProjection).not.toHaveBeenCalled();
     expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(price.priceId);
@@ -541,5 +544,92 @@ describe('CatalogReconciler', () => {
       expect.objectContaining({ code: 'ambiguous_active_price' }),
       expect.objectContaining({ code: 'missing_price' }),
     ]);
+  });
+
+  it('applies production replacement Prices only through app-owned active matches', async () => {
+    const oldPrice = createCatalogPrice({
+      amountMinor: 1000,
+      environment: 'production',
+      priceId: 'price_live_disintegration_1000',
+    });
+    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler({ environment: 'production' });
+    stripeCatalog.prices.set(oldPrice.priceId, oldPrice);
+    mappings.records.set(storeItem.variantId, {
+      stripePriceId: oldPrice.priceId,
+      variantId: storeItem.variantId,
+    });
+
+    const result = await reconciler.reconcileVariant(storeItem, {
+      apply: true,
+      expectedPrice: {
+        amountMinor: 2800,
+        currencyCode: 'EUR',
+        revision: 'disintegration-black-vinyl-lp-2800-eur',
+      },
+      now: new Date('2026-05-23T10:00:00.000Z'),
+    });
+
+    expect(result.issues).toEqual([]);
+    expect(result.actions).toEqual(
+      expect.arrayContaining([
+        { kind: 'archive_price', stripePriceId: oldPrice.priceId },
+        { kind: 'create_catalog_price' },
+        { kind: 'update_mapping', stripePriceId: 'price_live_disintegration_2800' },
+        { kind: 'update_snapshot' },
+      ]),
+    );
+    expect(stripeCatalog.archivePrice).toHaveBeenCalledWith(
+      oldPrice.priceId,
+      expect.objectContaining({
+        idempotencyKey: expect.stringContaining('production'),
+      }),
+    );
+    expect(stripeCatalog.createCatalogPrice).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        idempotencyKey: expect.stringContaining('revision_disintegration-black-vinyl-lp-2800-eur'),
+      }),
+    );
+    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe('price_live_disintegration_2800');
+    expect(snapshots.records.get(storeItem.variantId)).toMatchObject({
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+      stripePriceId: 'price_live_disintegration_2800',
+    });
+  });
+
+  it('does not mutate production metadata when the resolved Price is ambiguous or not app-owned', async () => {
+    const wrongPrice = {
+      ...createCatalogPrice({
+        environment: 'production',
+        priceId: 'price_live_wrong_owner',
+      }),
+      lookupKey: 'other-app:production:disintegration-black-vinyl-lp',
+      metadata: {},
+      productMetadata: {},
+    };
+    const { mappings, reconciler, stripeCatalog } = createReconciler({ environment: 'production' });
+    stripeCatalog.prices.set(wrongPrice.priceId, wrongPrice);
+    mappings.records.set(storeItem.variantId, {
+      stripePriceId: wrongPrice.priceId,
+      variantId: storeItem.variantId,
+    });
+
+    const result = await reconciler.reconcileVariant(storeItem, {
+      apply: true,
+      expectedPrice: {
+        amountMinor: 2800,
+        currencyCode: 'EUR',
+      },
+    });
+
+    expect(result.issues).toEqual([
+      expect.objectContaining({ code: 'wrong_variant_identity' }),
+      expect.objectContaining({ code: 'missing_price' }),
+    ]);
+    expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
+    expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
+    expect(stripeCatalog.updatePriceMetadata).not.toHaveBeenCalled();
+    expect(stripeCatalog.updateProductProjection).not.toHaveBeenCalled();
   });
 });

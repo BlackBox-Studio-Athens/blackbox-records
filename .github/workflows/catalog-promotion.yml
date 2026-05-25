@@ -1,0 +1,195 @@
+name: Catalog promotion
+
+on:
+  workflow_dispatch:
+    inputs:
+      artifact_commit_sha:
+        description: Commit containing generated Desired Catalog State artifacts.
+        required: true
+        type: string
+      target:
+        description: Target environment sequence.
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - uat
+          - production
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: 'catalog-promotion-${{ inputs.target }}'
+  cancel-in-progress: true
+
+jobs:
+  verify-artifact:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout artifact commit
+        uses: actions/checkout@v5.0.1
+        with:
+          ref: ${{ inputs.artifact_commit_sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.8
+        with:
+          version: 10.33.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run repository gates
+        run: |
+          pnpm test:unit
+          pnpm check
+          pnpm build
+
+  promote-uat:
+    if: ${{ inputs.target == 'all' || inputs.target == 'uat' }}
+    needs: verify-artifact
+    runs-on: ubuntu-latest
+    environment: catalog-promotion-uat
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+    steps:
+      - name: Checkout artifact commit
+        uses: actions/checkout@v5.0.1
+        with:
+          ref: ${{ inputs.artifact_commit_sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.8
+        with:
+          version: 10.33.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify UAT webhook and payment configuration
+        run: |
+          pnpm runtime:config:verify --env sandbox
+          pnpm stripe:webhooks:verify --env sandbox
+          pnpm stripe:payment-methods:verify
+
+      - name: Prepare UAT D1 catalog readiness
+        run: |
+          pnpm --filter @blackbox/backend d1:migrations:apply:sandbox
+          pnpm --filter @blackbox/backend d1:seed:sandbox:uat-catalog
+
+      - name: Plan UAT provider catalog
+        run: |
+          mkdir -p .codex-artifacts/catalog-promotion/uat
+          pnpm stripe:catalog:verify --env sandbox 2>&1 | tee .codex-artifacts/catalog-promotion/uat/catalog-plan.txt
+
+      - name: Apply UAT provider catalog
+        run: |
+          pnpm stripe:catalog:verify --env sandbox --apply
+          pnpm stripe:catalog:verify --env sandbox 2>&1 | tee .codex-artifacts/catalog-promotion/uat/catalog-post-apply.txt
+
+      - name: Deploy UAT Worker
+        run: pnpm deploy:backend:sandbox
+
+      - name: Run UAT smoke
+        run: pnpm smoke:stripe-sandbox -- --scenario all
+
+      - name: Upload UAT Promotion Evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: catalog-promotion-uat-${{ github.run_id }}
+          path: |
+            .codex-artifacts/catalog-promotion/uat/**
+            .codex-artifacts/stripe-sandbox-smoke/**
+          if-no-files-found: warn
+
+  promote-production:
+    if: ${{ always() && needs.verify-artifact.result == 'success' && (inputs.target == 'production' || (inputs.target == 'all' && needs.promote-uat.result == 'success')) }}
+    needs:
+      - verify-artifact
+      - promote-uat
+    runs-on: ubuntu-latest
+    environment: catalog-promotion-production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+    steps:
+      - name: Checkout artifact commit
+        uses: actions/checkout@v5.0.1
+        with:
+          ref: ${{ inputs.artifact_commit_sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.8
+        with:
+          version: 10.33.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify production webhook and payment configuration
+        run: |
+          pnpm runtime:config:verify --env production
+          pnpm stripe:webhooks:verify --env production
+          pnpm stripe:payment-methods:verify
+
+      - name: Prepare production D1 catalog readiness
+        run: |
+          pnpm --filter @blackbox/backend d1:migrations:apply:production
+          pnpm production:catalog-readiness:check -- --phase pre-apply
+          pnpm --filter @blackbox/backend d1:seed:production:catalog-readiness
+          pnpm production:catalog-readiness:check -- --phase pre-apply
+
+      - name: Plan production provider catalog
+        run: |
+          mkdir -p .codex-artifacts/catalog-promotion/production
+          pnpm stripe:catalog:verify --env production 2>&1 | tee .codex-artifacts/catalog-promotion/production/catalog-plan.txt
+
+      - name: Apply production provider catalog
+        run: |
+          pnpm stripe:catalog:verify --env production --apply --ci-promotion --artifact-commit-sha "${{ inputs.artifact_commit_sha }}" --promotion-run-id "${{ github.run_id }}"
+          pnpm stripe:catalog:verify --env production 2>&1 | tee .codex-artifacts/catalog-promotion/production/catalog-post-apply.txt
+          pnpm production:catalog-readiness:check -- --phase post-apply
+
+      - name: Deploy production Worker
+        run: pnpm deploy:backend:production
+
+      - name: Confirm static frontend artifact commit
+        run: test "$(git rev-parse HEAD)" = "${{ inputs.artifact_commit_sha }}"
+
+      - name: Run production no-payment smoke
+        run: pnpm smoke:stripe-promotion -- --env production --scenario all --evidence-dir .codex-artifacts/catalog-promotion/production
+
+      - name: Upload production Promotion Evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: catalog-promotion-production-${{ github.run_id }}
+          path: .codex-artifacts/catalog-promotion/production/**
+          if-no-files-found: warn

@@ -2,6 +2,7 @@ import { defineCollection, reference } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
+import { commerceFields } from './lib/commerce-content-schema';
 import { buildBandcampEmbedUrl, buildTidalEmbedUrl } from './utils/music';
 
 const bandcampEmbedUrl = z.string().refine((value) => buildBandcampEmbedUrl(value) === value, {
@@ -61,6 +62,7 @@ const releases = defineCollection({
       tidal_url: tidalUrl.optional(),
       summary: z.string().optional(),
       formats: z.array(z.string()).optional(),
+      commerce: commerceFields,
       credits: z
         .array(
           z.object({
@@ -100,6 +102,7 @@ const distro = defineCollection({
       fourthwall_url: z.url(),
       eyebrow: z.string().optional(),
       format: z.string().optional(),
+      commerce: commerceFields,
       release_date: z.coerce.date().optional(),
       order: z.number().int().nonnegative(),
     }),

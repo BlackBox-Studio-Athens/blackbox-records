@@ -34,3 +34,18 @@ The system SHALL treat OpenSpec as the source of truth for current plans, baseli
 - **GIVEN** a task introduces or changes a domain term
 - **WHEN** the term affects specs, tests, route names, UI copy, ADRs, or handoff notes
 - **THEN** the relevant OpenSpec baseline spec or active change is updated in the same work.
+
+### Requirement: Catalog Promotion terms
+
+The system SHALL use Catalog Promotion language consistently for CMS-driven provider catalog publication.
+
+#### Scenario: Promotion artifacts and evidence are discussed
+
+- **GIVEN** Decap-authored content is intended to become buyable
+- **WHEN** specs, docs, tests, workflows, or code describe the publication path
+- **THEN** `DesiredCatalogState` is the generated repo-owned promotion input
+- **AND** `DesiredCatalogEntry` describes one buyable variant's desired Product Projection, Desired Price, target environments, availability, smoke-candidate flag, and first-publication stock intent
+- **AND** `DesiredPrice` means the CMS/repo instruction used to provision or replace provider Prices, not checkout runtime authority
+- **AND** `ProviderCatalogState` means the observed Stripe/D1 state after verification
+- **AND** `PromotionRun` means one environment-scoped execution against an artifact commit
+- **AND** `PromotionEvidence` means redacted machine-readable proof for success, failure, skipped, superseded, or not-configured outcomes.
