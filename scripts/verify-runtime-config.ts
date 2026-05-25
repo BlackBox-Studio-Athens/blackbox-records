@@ -68,14 +68,12 @@ export function parseRuntimeConfigVerifyArgs(args: string[]): { environment: Run
 
 export function verifyRuntimeConfig(input: {
   environment: RuntimeConfigEnvironment;
-  env?: NodeJS.ProcessEnv;
   secretNames: readonly string[] | null;
   wranglerConfigText: string;
 }): RuntimeConfigVerificationResult {
-  const env = input.env ?? process.env;
   const environmentBlock = extractWranglerEnvironmentBlock(input.wranglerConfigText, input.environment);
   const categories: RuntimeConfigCategory[] = [
-    classifyProcessEnvPresence('STRIPE_PAYMENT_METHOD_CONFIGURATION_ID', env.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID),
+    classifyWorkerConfigPresence('STRIPE_PAYMENT_METHOD_CONFIGURATION_ID', environmentBlock, input.secretNames),
     classifySecretPresence('STRIPE_SECRET_KEY', input.secretNames),
     classifySecretPresence('STRIPE_WEBHOOK_SECRET', input.secretNames),
     classifyWranglerTextPresence('CHECKOUT_RETURN_ORIGINS', environmentBlock),
@@ -127,13 +125,36 @@ export function parseWranglerSecretNames(jsonText: string): string[] {
   return parsed.flatMap((secret) => (typeof secret.name === 'string' ? [secret.name] : []));
 }
 
-function classifyProcessEnvPresence(
+function classifyWorkerConfigPresence(
   name: RuntimeConfigCategory['name'],
-  value: string | undefined,
+  environmentBlock: string,
+  secretNames: readonly string[] | null,
 ): RuntimeConfigCategory {
+  if (classifyWranglerTextPresence(name, environmentBlock).status === 'present') {
+    return {
+      name,
+      status: 'present',
+    };
+  }
+
+  if (secretNames?.includes(name)) {
+    return {
+      name,
+      status: 'present',
+    };
+  }
+
+  if (secretNames === null) {
+    return {
+      detail: 'Wrangler secret list could not be read.',
+      name,
+      status: 'unverified',
+    };
+  }
+
   return {
     name,
-    status: value?.trim() ? 'present' : 'missing',
+    status: 'missing',
   };
 }
 

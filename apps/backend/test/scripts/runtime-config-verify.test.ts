@@ -28,11 +28,8 @@ describe('runtime config verification', () => {
 
   it('classifies required production config categories without printing values', () => {
     const result = verifyRuntimeConfig({
-      env: {
-        STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: 'pmc_live_secret_value',
-      },
       environment: 'production',
-      secretNames: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'],
+      secretNames: ['STRIPE_PAYMENT_METHOD_CONFIGURATION_ID', 'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'],
       wranglerConfigText,
     });
 
@@ -48,12 +45,10 @@ describe('runtime config verification', () => {
         expect.objectContaining({ name: 'PRODUCTION_CATALOG_CRON', status: 'not_applicable' }),
       ]),
     );
-    expect(formatRuntimeConfigVerificationReport(result)).not.toContain('pmc_live_secret_value');
   });
 
   it('reports missing config categories with redacted output', () => {
     const result = verifyRuntimeConfig({
-      env: {},
       environment: 'production',
       secretNames: ['STRIPE_SECRET_KEY'],
       wranglerConfigText: '{"env":{"production":{"vars":{"APP_ENV":"production"}}}}',
@@ -70,5 +65,19 @@ describe('runtime config verification', () => {
     );
     expect(report).not.toContain('sk_live_');
     expect(report).not.toContain('whsec_');
+  });
+
+  it('accepts payment method configuration from Worker vars without printing values', () => {
+    const result = verifyRuntimeConfig({
+      environment: 'production',
+      secretNames: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'],
+      wranglerConfigText: wranglerConfigText.replace(
+        '"CHECKOUT_RETURN_ORIGINS": "https://blackbox-records-web.pages.dev"',
+        '"CHECKOUT_RETURN_ORIGINS": "https://blackbox-records-web.pages.dev", "STRIPE_PAYMENT_METHOD_CONFIGURATION_ID": "pmc_live_secret_value"',
+      ),
+    });
+
+    expect(result.issues).toEqual([]);
+    expect(formatRuntimeConfigVerificationReport(result)).not.toContain('pmc_live_secret_value');
   });
 });

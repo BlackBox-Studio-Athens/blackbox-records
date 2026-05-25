@@ -69,11 +69,24 @@ Each environment needs these secrets:
 
 The target Worker environment must also have the required Wrangler runtime configuration before promotion runs:
 
+- `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`
+- `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `CHECKOUT_RETURN_ORIGINS`
 - `COMMERCE_DB`
 
 Use `pnpm runtime:config:verify --env sandbox` and `pnpm runtime:config:verify --env production` as the non-mutating readiness probes. They classify missing or unverified categories without printing secret values.
+
+These values must be entered more than once because the stores are intentionally isolated. GitHub Actions secrets are available only to workflow jobs, Cloudflare Worker secrets are available only to the deployed Worker runtime, ignored local files are available only on one developer machine, and Stripe Dashboard/Workbench values remain inside Stripe. The repo validates names and presence, but it must not copy sensitive values between stores, print them, or commit them.
+
+Current manual provider checklist before final proof:
+
+1. Add `CLOUDFLARE_API_TOKEN` and `STRIPE_SECRET_KEY` to both GitHub Actions environments.
+2. Add `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` to both GitHub Actions environments as a variable or secret according to the account policy.
+3. Create the production D1 database, add its `COMMERCE_DB` binding to `apps/backend/wrangler.jsonc`, and apply migrations before production readiness.
+4. Deploy the production Worker once from the final artifact commit so Worker secrets can be attached and verified.
+5. Add production Worker secrets for `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` from `apps/backend` with `wrangler secret put`.
+6. Re-run `pnpm runtime:config:verify --env production` and only continue to production promotion when it passes.
 
 ## Reruns
 

@@ -79,6 +79,7 @@
       "name": "blackbox-records-backend",
       "vars": {
         "APP_ENV": "production",
+        "CHECKOUT_RETURN_ORIGINS": "https://blackbox-records-web.pages.dev",
       },
     },
   },
