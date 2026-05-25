@@ -185,23 +185,32 @@
 
 ## 14. Provider Proof and Rollout
 
-- [ ] 14.1 Run the full UAT Promotion Run against sandbox credentials and record redacted Promotion Evidence.
-- [ ] 14.2 Verify the UAT run creates or updates the expected sandbox Stripe Products/Prices without reset.
-- [ ] 14.3 Verify the UAT run seeds/prepares sandbox D1 and deploys the sandbox Worker/static surface from the artifact commit.
-- [ ] 14.4 Verify UAT `checkout_surface` smoke passes for a promoted item.
-- [ ] 14.5 Verify UAT `happy_path_paid` smoke passes for a promoted item.
+- [x] 14.1 Run the full UAT Promotion Run against sandbox credentials and record redacted Promotion Evidence.
+- [x] 14.2 Verify the UAT run creates or updates the expected sandbox Stripe Products/Prices without reset.
+- [x] 14.3 Verify the UAT run seeds/prepares sandbox D1 and deploys the sandbox Worker/static surface from the artifact commit.
+- [x] 14.4 Verify UAT `checkout_surface` smoke passes for a promoted item.
+- [x] 14.5 Verify UAT `happy_path_paid` smoke passes for a promoted item.
 - [ ] 14.6 Run the full production Promotion Run against production credentials after UAT proof passes for the same artifact commit.
 - [ ] 14.7 Verify the production run creates or updates only app-owned live Stripe Products/Prices.
 - [ ] 14.8 Verify the production run prepares production D1 without overwriting existing stock for existing variants.
 - [ ] 14.9 Verify the production Worker/static surface deploys from the artifact commit.
 - [ ] 14.10 Verify production `checkout_surface` smoke passes without submitting payment.
-- [ ] 14.11 If live paid smoke policy exists, verify production paid smoke and reconciliation; otherwise record `not_configured`.
-- [ ] 14.12 Verify a failed or retired promotion disables checkout without deleting provider/order/stock evidence.
+- [x] 14.11 If live paid smoke policy exists, verify production paid smoke and reconciliation; otherwise record `not_configured`.
+- [x] 14.12 Verify a failed or retired promotion disables checkout without deleting provider/order/stock evidence.
 
 ## 15. Closeout
 
-- [ ] 15.1 Review Promotion Evidence for leaked secrets, full provider IDs, raw payment details, or account-private values.
+- [x] 15.1 Review Promotion Evidence for leaked secrets, full provider IDs, raw payment details, or account-private values.
 - [x] 15.2 Confirm no legacy planning files, duplicate workflows, or stale sandbox-only docs contradict the new promotion path.
 - [x] 15.3 Confirm the final implementation still satisfies the core user story: maintainer creates a buyable item in Decap and UAT/production promotion happens in the background.
-- [ ] 15.4 Update this task list with final validation notes and any provider-side limitations discovered during live proof.
+- [x] 15.4 Update this task list with final validation notes and any provider-side limitations discovered during live proof.
 - [ ] 15.5 Archive the OpenSpec change only after implementation, strict validation, repository gates, UAT proof, and production proof are complete.
+
+Validation notes:
+
+- 2026-05-25: GitHub Actions catalog promotion run `26408123001` succeeded for artifact commit `521d8592ee2a13f528c6654f232482603eb225b7`.
+- 2026-05-25: UAT `verify-artifact`, webhook/payment config verification, sandbox D1 readiness, provider catalog plan/apply, sandbox Worker deploy, Playwright install, and UAT smoke all passed.
+- 2026-05-25: UAT smoke evidence passed `checkout_surface`, `happy_path_paid`, `three_d_secure`, `card_declined`, `insufficient_funds`, `expired_card`, `incorrect_cvc`, and `processing_error`.
+- 2026-05-25: Downloaded Promotion Evidence from run `26408123001` was scanned for Stripe secrets, webhook secrets, full Stripe object IDs, raw card test numbers, and the Cloudflare account ID; no full sensitive values were found. Redacted `price_...` summaries are present by design.
+- 2026-05-25: PRD job recorded `status=not_configured` because `PRD_OPEN_GATE` remains closed in the `catalog-promotion-prd` credential scope. Production live provider mutation, production D1 apply, production Worker deploy, and production no-payment smoke are intentionally not proven yet.
+- 2026-05-25: `pnpm catalog:checkout:pause -- --variant-id variant_disintegration-black-vinyl-lp_standard --env sandbox` verified the non-destructive pause plan: `ItemAvailability` only, with Stripe Products, Stripe Prices, orders, stock rows, and Promotion Evidence preserved.
