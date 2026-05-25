@@ -108,6 +108,9 @@ jobs:
       - name: Deploy UAT Worker
         run: pnpm deploy:backend:sandbox
 
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Run UAT smoke
         run: pnpm smoke:stripe-sandbox -- --scenario all
 
@@ -205,6 +208,10 @@ jobs:
       - name: Confirm static frontend artifact commit
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         run: test "$(git rev-parse HEAD)" = "${{ inputs.artifact_commit_sha }}"
+
+      - name: Install Playwright browsers
+        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Run production no-payment smoke
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
