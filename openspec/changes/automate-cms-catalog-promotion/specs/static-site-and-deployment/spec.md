@@ -25,9 +25,9 @@ The system SHALL treat a commerce-affecting CMS publish as a coordinated catalog
 - **THEN** deployment uses the bot artifact commit
 - **AND** Promotion Evidence links both the original CMS commit and the artifact commit.
 
-### Requirement: UAT and production deployment topology stays parallel
+### Requirement: UAT and PRD deployment topology stays parallel
 
-The system MUST keep UAT and production deployment flows structurally equivalent while preserving environment isolation.
+The system MUST keep UAT and PRD deployment flows structurally equivalent while preserving environment isolation and the PRD-disabled gate.
 
 #### Scenario: UAT promotion deploys
 
@@ -36,12 +36,12 @@ The system MUST keep UAT and production deployment flows structurally equivalent
 - **THEN** it deploys the sandbox Worker and UAT static surface configured for sandbox Worker APIs
 - **AND** UAT smoke runs against the UAT surface and sandbox Worker.
 
-#### Scenario: Production promotion deploys
+#### Scenario: PRD promotion deploys after PRD opens
 
-- **GIVEN** UAT proof passed and production catalog apply and verification pass for the same Desired Catalog State
-- **WHEN** production deployment runs
-- **THEN** it deploys the production Worker and production static surface configured for production Worker APIs
-- **AND** production smoke runs against the production surface and production Worker.
+- **GIVEN** UAT proof passed, the PRD-open gate exists, and production catalog apply and verification pass for the same Desired Catalog State
+- **WHEN** PRD deployment runs
+- **THEN** it deploys the production Worker and Cloudflare Pages PRD static surface configured for production Worker APIs
+- **AND** PRD smoke runs against the PRD surface and production Worker.
 
 #### Scenario: Environment configuration is missing
 
@@ -50,20 +50,20 @@ The system MUST keep UAT and production deployment flows structurally equivalent
 - **THEN** the run fails before provider mutation or deployment for that environment
 - **AND** the failure records the missing configuration key or external setup category without printing secret values.
 
-### Requirement: Production promotion is serialized and rerunnable
+### Requirement: PRD promotion is serialized and rerunnable
 
-The system SHALL prevent overlapping production catalog promotions from racing each other.
+The system SHALL prevent overlapping PRD catalog promotions from racing each other.
 
 #### Scenario: Multiple CMS publishes occur quickly
 
 - **GIVEN** two commerce-affecting CMS commits are pushed close together
-- **WHEN** production promotion workflows start
-- **THEN** concurrency rules cancel, queue, or supersede stale runs so only the latest validated artifact commit mutates production provider and D1 state
+- **WHEN** PRD promotion workflows start
+- **THEN** concurrency rules cancel, queue, or supersede stale runs so only the latest validated artifact commit can mutate production provider and D1 state after PRD opens
 - **AND** skipped runs record that a newer commit superseded them.
 
-#### Scenario: Production promotion is retried
+#### Scenario: PRD promotion is retried
 
-- **GIVEN** a production promotion failed after a transient provider, network, or deploy error
+- **GIVEN** a PRD promotion failed after a transient provider, network, or deploy error
 - **WHEN** the workflow is rerun for the same artifact commit
 - **THEN** it resumes safely from current provider and D1 state
 - **AND** idempotent apply and verification decide whether remaining changes are needed.
@@ -72,9 +72,9 @@ The system SHALL prevent overlapping production catalog promotions from racing e
 
 The system MUST provide a deployment and catalog rollback path that preserves historical records.
 
-#### Scenario: Bad production promotion reaches shopper surface
+#### Scenario: Bad PRD promotion reaches shopper surface
 
-- **GIVEN** a promoted production item has incorrect Product Projection, Price, stock readiness, or checkout behavior
+- **GIVEN** a promoted PRD item has incorrect Product Projection, Price, stock readiness, or checkout behavior after PRD opens
 - **WHEN** rollback is invoked
 - **THEN** checkout for affected variants is disabled through Worker/D1 catalog readiness or a corrective Desired Catalog State promotion
 - **AND** Stripe Products, Stripe Prices, paid orders, stock ledger records, and Promotion Evidence are preserved.

@@ -158,7 +158,9 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
     throw new Error('Missing STRIPE_SECRET_KEY for Stripe catalog verification.');
   }
 
-  const contracts = await loadStripeCatalogStoreItemContracts();
+  const contracts = await loadStripeCatalogStoreItemContracts({
+    productEnvironment: options.environment === 'production' ? 'prd' : 'uat',
+  });
   const rows = readD1CatalogRows(options.environment, contracts);
   const repositories = createD1CatalogRepositories(options.environment, rows);
   const expectedPrices = createExpectedPriceMap(contracts, options.environment);
@@ -234,6 +236,7 @@ export function formatStripeCatalogVerifyReport(result: CatalogSyncRunResult): s
   const lines = [
     `Stripe catalog verification ${result.issues.length ? 'failed' : 'OK'}.`,
     `Environment: ${result.environment}`,
+    `Product Environment: ${result.environment === 'production' ? 'PRD' : result.environment === 'sandbox' ? 'UAT' : 'Local'}`,
     `Mode: ${result.dryRun ? 'dry-run' : 'apply'}`,
     `Checked variants: ${result.results.length}`,
     '',

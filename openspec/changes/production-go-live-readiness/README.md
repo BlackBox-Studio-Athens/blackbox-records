@@ -1,3 +1,3 @@
 # production-go-live-readiness
 
-Track final production launch gates for native commerce after sandbox evidence.
+Track final PRD-open launch gates for native commerce after UAT evidence.

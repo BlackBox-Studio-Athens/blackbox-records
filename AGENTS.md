@@ -7,7 +7,7 @@ If this file conflicts with the global file, follow the global file.
 
 Build and maintain the BlackBox Records Astro site.
 
-Current static frontend hosting is Cloudflare Pages, with GitHub Pages kept as rollback/legacy. The live commerce handoff still has external Fourthwall history, but the repo now carries native commerce migration work; follow the active planning docs when working in that area.
+Current product environments are Local, UAT, and PRD. UAT is GitHub Pages plus the sandbox Worker; PRD is Cloudflare Pages plus the production Worker with checkout and live provider mutation disabled until the explicit PRD-open gate exists. The live commerce handoff still has external Fourthwall history, but the repo now carries native commerce migration work; follow the active planning docs when working in that area.
 
 ## Current stack
 
@@ -55,6 +55,7 @@ Read these first before editing:
 - Catalog artifact regeneration workflow: `.github/workflows/catalog-artifacts.yml`
 - Catalog promotion workflow: `.github/workflows/catalog-promotion.yml`
 - Full local stack with real Stripe test mode: `pnpm dev:stack:stripe-test`
+- Local frontend connected to deployed UAT Worker/API: `pnpm dev:stack:uat-connected`
 - Local official stripe-mock launcher: `pnpm stripe-mock:local`
 - Full local stack with mock Stripe mode: `pnpm dev:stack:stripe-mock`
 - Alias for the same official stripe-mock API mode: `pnpm dev:stack:stripe-mock-api`
@@ -79,7 +80,7 @@ Read these first before editing:
 - Backend production catalog readiness dry-run/report: `pnpm production:catalog-readiness:check -- --phase pre-apply`
 - Backend production catalog readiness seed apply: `pnpm --filter @blackbox/backend d1:seed:production:catalog-readiness`
 - Catalog checkout pause dry-run/apply: `pnpm catalog:checkout:pause -- --variant-id <variantId> [--apply]`
-- Runtime config category verifier: `pnpm runtime:config:verify --env sandbox|production`
+- Runtime config category verifier: `pnpm runtime:config:verify --env local|uat|prd` (`sandbox` and `production` remain Worker runtime target aliases)
 - Backend production D1 migration list/apply:
   - `pnpm --filter @blackbox/backend d1:migrations:list:production`
   - `pnpm --filter @blackbox/backend d1:migrations:apply:production`
@@ -108,8 +109,9 @@ Read these first before editing:
 - The stack launcher scripts must run D1 migrations and seed SQL before starting the Worker/static site.
 - Keep `BlackBox Local Stack` working whenever frontend env, backend env, ports, checkout setup, D1 migrations, seed files, or WebStorm run configs change. If a change breaks the canonical launcher, fix the launcher or docs in the same commit.
 - The deterministic local mock checkout smoke path is `http://127.0.0.1:4321/blackbox-records/store/disintegration-black-vinyl-lp/checkout/`; stripe-mock mode now seeds every current visible store item with fake local checkout state.
-- `pnpm dev:stack:stripe-test` is the real local checkout path and requires `STRIPE_SECRET_KEY`, `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`, `STRIPE_WEBHOOK_SECRET`, and ignored local Stripe test Price mappings.
-- Run `pnpm checkout:preflight:stripe-test` before `pnpm dev:stack:stripe-test`; it verifies the backend local secret/config file, ignored local Price mapping seed, and gitignore protection without printing secrets.
+- `pnpm dev:stack:uat-connected` runs the local static frontend against the deployed UAT Worker/API. It must not require copying UAT Stripe secrets or UAT Worker secrets into local files.
+- `pnpm dev:stack:stripe-test` is an advanced provider diagnostic path and requires `STRIPE_SECRET_KEY`, `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`, `STRIPE_WEBHOOK_SECRET`, and ignored local Stripe test Price mappings.
+- Run `pnpm checkout:preflight:stripe-test` before the advanced `pnpm dev:stack:stripe-test`; it verifies the backend local secret/config file, ignored local Price mapping seed, and gitignore protection without printing secrets.
 - `pnpm smoke:stripe-sandbox` is sandbox-only and automated through Playwright. It requires the deployed Pages site, sandbox Worker, sandbox D1 real Price mappings/stock, sandbox Worker Stripe secret names, and a separately running `stripe listen --forward-to <sandbox-worker>/api/stripe/webhooks` whose signing secret matches the sandbox Worker secret.
 - `pnpm dev:stack:stripe-mock` starts official `stripe-mock` locally through Go, points the real Stripe SDK at the local proxy on `http://127.0.0.1:12110`, generates local-only fake `Stock`, `ItemAvailability`, and `price_mock_*` mappings for every current store item, and returns a local-only mock Checkout URL. It must not require Docker or `apps/backend/.dev.vars`. It is not a real Stripe-hosted Checkout browser substitute, and the generated 99/99 stock values are not real inventory counts.
 - `pnpm dev:stack:stripe-mock-api` is kept as a terminal alias for the same official stripe-mock API path. Do not reintroduce the old in-process mock gateway as the default local stack.
@@ -154,7 +156,7 @@ Read these first before editing:
 - StoreCart is convenience state only. Keep it behind `apps/web/src/lib/store-cart.ts`, use native `localStorage` for the current browser-only storage scope, and do not add Zustand, Redux Persist, Dexie, IndexedDB wrappers, or cart SaaS libraries unless carts become account-backed, cross-device, large/offline, or operationally authoritative.
 - Future multi-item cart work should use the canonical terms `StoreCart`, `CartDraft`, `CartLine`, `CartLineItemSnapshot`, `Primary Line Item`, and `CartQuantity`. The Worker must validate every CartLine and CartQuantity before Stripe Checkout; StoreCart must not contain Stripe Price IDs, stock authority, payment state, order state, D1 fields, or backend runtime secrets.
 - Checkout return origins and split-port browser API CORS origins are allowlisted through the Worker runtime variable `CHECKOUT_RETURN_ORIGINS`; never trust browser-submitted or arbitrary `Referer` origins.
-- Cloudflare Pages production origin is `https://blackbox-records-web.pages.dev`; add preview origins only as exact emitted origins during validation, never as `*.pages.dev`.
+- Cloudflare Pages PRD origin is `https://blackbox-records-web.pages.dev`. Cloudflare Pages preview/branch deploys are non-product diagnostics and must not be used as UAT acceptance, PRD readiness, Promotion Evidence, or shopper-facing commerce proof.
 - The static checkout shell redirects to the Worker-returned hosted Checkout URL; never expose `STRIPE_SECRET_KEY` through Astro public env.
 - Public shopper checkout APIs now live under `/api/store/*` and `/api/checkout/*`.
 - Checkout creation is Worker-owned through a backend Stripe gateway seam; route files must not instantiate Stripe directly.
@@ -184,10 +186,10 @@ Read these first before editing:
 
 ## Deployment and URL model
 
-- Canonical static deployment target: Cloudflare Pages
-- Rollback static deployment target: GitHub Pages
+- UAT static deployment target: GitHub Pages
+- PRD static deployment target: Cloudflare Pages, with live commerce disabled until the PRD-open gate exists
 - Canonical CI/CD workflow: `.github/workflows/cloudflare-pages.yml`
-- Rollback CI/CD workflow: `.github/workflows/pages.yml`
+- UAT CI/CD workflow: `.github/workflows/pages.yml`
 - Both static frontend workflows are gated by:
   - `pnpm test:unit`
   - `pnpm check`
@@ -197,15 +199,15 @@ Read these first before editing:
 - Configured in `apps/web/astro.config.mjs`
   - default `site: https://blackbox-studio-athens.github.io`
   - default `base: /blackbox-records/`
-- Cloudflare Pages builds override those defaults through non-secret `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/` so the artifact serves from the Pages domain root.
+- Cloudflare Pages PRD builds override those defaults through non-secret `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/` so the artifact serves from the Pages domain root.
 - Do not change `site` or `base` behavior unless the task explicitly requires deployment URL changes.
-- Cloudflare Pages hosting must keep the frontend static and deploy only the prebuilt `apps/web/dist` artifact.
+- Cloudflare Pages hosting must keep the PRD frontend static and deploy only the prebuilt `apps/web/dist` artifact.
 - The Cloudflare Pages workflow must run `pnpm test:unit`, `pnpm check`, and `pnpm build` before Direct Upload to the `blackbox-records-web` Pages project.
-- The Cloudflare Pages workflow may pass only non-secret build-target env plus browser-safe public Astro env into the build: `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, and `PUBLIC_BACKEND_BASE_URL`; keep production `PUBLIC_CHECKOUT_CLIENT_MODE` unset.
-- Cloudflare Pages deploys must run through `.github/workflows/cloudflare-pages.yml`. Manual local `wrangler pages deploy` is diagnostic only and is not Phase 7.1 acceptance evidence.
+- The Cloudflare Pages workflow may pass only non-secret PRD build-target env plus browser-safe public Astro env into the build: `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, and `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`; keep `PUBLIC_CHECKOUT_CLIENT_MODE` unset.
+- Cloudflare Pages PRD deploys must run through `.github/workflows/cloudflare-pages.yml`. Manual local `wrangler pages deploy` is diagnostic only and is not acceptance evidence.
 - Cloudflare Pages must not own backend routes, Pages Functions, D1 access, Stripe secrets, webhooks, operator auth, stock mutations, order state, or future BOX NOW runtime secrets.
-- GitHub Pages remains rollback/legacy only after Phase `07.1-05`; do not delete it without an explicit follow-up task.
-- Native commerce migration work must treat Cloudflare Pages plus the separate Worker as the static/dynamic hosting baseline. External-shop behavior remains legacy commerce context, not the final architecture.
+- GitHub Pages is the UAT static host. Do not describe it as PRD rollback or legacy production hosting.
+- Native commerce migration work must treat UAT as GitHub Pages plus sandbox Worker and PRD as Cloudflare Pages plus production Worker. External-shop behavior remains historical commerce context, not the final architecture.
 
 ## Project map
 
@@ -429,4 +431,4 @@ These checks are mandatory both:
 - Reintroducing Jekyll/Decap-era files or assumptions
 - Moving shell state into scattered document-global scripts
 - Reintroducing real route swaps on top-level section links without revisiting player persistence
-- Introducing SSR/live content features unless the deployment model intentionally changes away from static Cloudflare Pages with GitHub Pages rollback
+- Introducing SSR/live content features unless the deployment model intentionally changes away from static GitHub Pages UAT plus static Cloudflare Pages PRD

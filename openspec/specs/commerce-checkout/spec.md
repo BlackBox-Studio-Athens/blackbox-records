@@ -55,3 +55,28 @@ The system SHALL expose checkout capability status without leaking provider inte
 - **GIVEN** the browser calls `/api/store/capabilities`
 - **WHEN** the Worker evaluates native checkout availability
 - **THEN** the response is browser-safe and omits provider names, feature flag keys, Stripe IDs, D1 bindings, secrets, and internal evaluation errors.
+
+### Requirement: Environment-scoped checkout readiness
+
+The system MUST evaluate checkout readiness against the canonical Local, UAT, and PRD product environment model.
+
+#### Scenario: Local mock checkout starts
+
+- **GIVEN** Local runs in `mock` mode
+- **WHEN** checkout readiness is evaluated
+- **THEN** the system uses local Worker state, local D1, and stripe-mock behavior
+- **AND** it does not require Stripe live/test secrets or deployed provider writes.
+
+#### Scenario: Local UAT-connected checkout is inspected
+
+- **GIVEN** Local runs in `uat-connected` mode
+- **WHEN** checkout readiness is inspected from the local static frontend
+- **THEN** browser calls target the deployed UAT Worker/API
+- **AND** local config does not receive UAT Stripe secrets or UAT Worker secrets.
+
+#### Scenario: PRD checkout is disabled
+
+- **GIVEN** PRD has not been opened by a production-readiness gate
+- **WHEN** the browser reads checkout capability or attempts checkout from Cloudflare Pages
+- **THEN** checkout remains disabled without exposing provider internals
+- **AND** no live Stripe Checkout Session is created.

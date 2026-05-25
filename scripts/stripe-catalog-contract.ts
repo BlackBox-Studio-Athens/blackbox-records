@@ -10,6 +10,7 @@ import type {
 import { createSlugSuggestion } from '../apps/web/src/lib/slugs';
 
 type StoreItemSourceKind = 'distro' | 'release';
+export type CatalogProductEnvironment = 'prd' | 'uat';
 
 export type StripeCatalogAlignmentStatus = 'checkout_eligible' | 'future_buyable' | 'unavailable';
 
@@ -26,6 +27,7 @@ export type StripeCatalogStoreItemContract = {
 
 type LoadStripeCatalogContractsOptions = {
   basePath?: string;
+  productEnvironment?: CatalogProductEnvironment;
   projectRoot?: string;
   siteUrl?: string;
 };
@@ -70,6 +72,8 @@ type CommerceContent = {
 
 const defaultSiteUrl = 'https://blackbox-studio-athens.github.io';
 const defaultBasePath = '/blackbox-records/';
+const prdSiteUrl = 'https://blackbox-records-web.pages.dev';
+const prdBasePath = '/';
 export const STRIPE_PHYSICAL_GOODS_TAX_CODE = 'txcd_99999999';
 
 const nonPhysicalReleaseFormats = new Set(['digital']);
@@ -571,9 +575,31 @@ function createContentAssetUrl(
   options: LoadStripeCatalogContractsOptions,
 ): string {
   const assetName = path.basename(assetPath.replace(/^\.\//, ''));
-  const basePath = normalizeBasePath(options.basePath ?? process.env.ASTRO_BASE_PATH ?? defaultBasePath);
-  const siteUrl = options.siteUrl ?? process.env.ASTRO_SITE_URL ?? defaultSiteUrl;
+  const target = resolveCatalogAssetTarget(options);
+  const basePath = normalizeBasePath(options.basePath ?? target.basePath);
+  const siteUrl = options.siteUrl ?? target.siteUrl;
   return new URL(`${basePath}/admin/media/${collection}/${encodeURIComponent(assetName)}`, siteUrl).toString();
+}
+
+function resolveCatalogAssetTarget(options: LoadStripeCatalogContractsOptions): { basePath: string; siteUrl: string } {
+  const productEnvironment =
+    options.productEnvironment ?? parseCatalogProductEnvironment(process.env.CATALOG_PRODUCT_ENVIRONMENT);
+
+  if (productEnvironment === 'prd') {
+    return {
+      basePath: process.env.PRD_CATALOG_ASSET_BASE_PATH ?? process.env.ASTRO_BASE_PATH ?? prdBasePath,
+      siteUrl: process.env.PRD_CATALOG_ASSET_SITE_URL ?? process.env.ASTRO_SITE_URL ?? prdSiteUrl,
+    };
+  }
+
+  return {
+    basePath: process.env.UAT_CATALOG_ASSET_BASE_PATH ?? process.env.ASTRO_BASE_PATH ?? defaultBasePath,
+    siteUrl: process.env.UAT_CATALOG_ASSET_SITE_URL ?? process.env.ASTRO_SITE_URL ?? defaultSiteUrl,
+  };
+}
+
+function parseCatalogProductEnvironment(value: string | undefined): CatalogProductEnvironment {
+  return value?.trim().toLowerCase() === 'prd' ? 'prd' : 'uat';
 }
 
 function normalizeBasePath(value: string): string {

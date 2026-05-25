@@ -4,7 +4,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
-export type RuntimeConfigEnvironment = 'production' | 'sandbox';
+export type ProductEnvironment = 'Local' | 'PRD' | 'UAT';
+export type RuntimeConfigEnvironment = 'local' | 'production' | 'sandbox';
 export type RuntimeConfigStatus = 'missing' | 'not_applicable' | 'present' | 'unverified';
 
 export type RuntimeConfigCategory = {
@@ -13,10 +14,13 @@ export type RuntimeConfigCategory = {
     | 'CHECKOUT_RETURN_ORIGINS'
     | 'COMMERCE_DB'
     | 'FLAGS'
+    | 'PRD_OPEN_GATE'
     | 'PRODUCTION_CATALOG_CRON'
+    | 'PRODUCT_ENVIRONMENT_MAPPING'
     | 'STRIPE_PAYMENT_METHOD_CONFIGURATION_ID'
     | 'STRIPE_SECRET_KEY'
-    | 'STRIPE_WEBHOOK_SECRET';
+    | 'STRIPE_WEBHOOK_SECRET'
+    | 'WORKER_ORIGIN_SCOPE';
   status: RuntimeConfigStatus;
 };
 
@@ -24,14 +28,21 @@ export type RuntimeConfigVerificationResult = {
   categories: RuntimeConfigCategory[];
   environment: RuntimeConfigEnvironment;
   issues: string[];
+  productEnvironment: ProductEnvironment;
+  requireLiveSecrets: boolean;
 };
 
 const rootDir = process.cwd();
 const backendDir = path.join(rootDir, 'apps', 'backend');
 const wranglerConfigPath = path.join(backendDir, 'wrangler.jsonc');
 
-export function parseRuntimeConfigVerifyArgs(args: string[]): { environment: RuntimeConfigEnvironment } {
+export function parseRuntimeConfigVerifyArgs(args: string[]): {
+  environment: RuntimeConfigEnvironment;
+  productEnvironment: ProductEnvironment;
+  requireLiveSecrets: boolean;
+} {
   let environment: RuntimeConfigEnvironment | null = null;
+  let requireLiveSecrets = false;
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -41,8 +52,13 @@ export function parseRuntimeConfigVerifyArgs(args: string[]): { environment: Run
     }
 
     if (arg === '--help' || arg === '-h') {
-      console.log('Usage: pnpm runtime:config:verify --env sandbox|production');
+      console.log('Usage: pnpm runtime:config:verify --env local|uat|prd|sandbox|production [--require-live-secrets]');
       process.exit(0);
+    }
+
+    if (arg === '--require-live-secrets') {
+      requireLiveSecrets = true;
+      continue;
     }
 
     if (arg === '--env') {
@@ -60,25 +76,38 @@ export function parseRuntimeConfigVerifyArgs(args: string[]): { environment: Run
   }
 
   if (!environment) {
-    throw new Error('Runtime config verification requires --env sandbox or --env production.');
+    throw new Error('Runtime config verification requires --env local, uat, prd, sandbox, or production.');
   }
 
-  return { environment };
+  return {
+    environment,
+    productEnvironment: mapRuntimeEnvironmentToProductEnvironment(environment),
+    requireLiveSecrets,
+  };
 }
 
 export function verifyRuntimeConfig(input: {
   environment: RuntimeConfigEnvironment;
+  requireLiveSecrets?: boolean;
   secretNames: readonly string[] | null;
   wranglerConfigText: string;
 }): RuntimeConfigVerificationResult {
   const environmentBlock = extractWranglerEnvironmentBlock(input.wranglerConfigText, input.environment);
+  const requireDeployedSecrets = input.environment === 'sandbox' || input.requireLiveSecrets === true;
   const categories: RuntimeConfigCategory[] = [
-    classifyWorkerConfigPresence('STRIPE_PAYMENT_METHOD_CONFIGURATION_ID', environmentBlock, input.secretNames),
-    classifySecretPresence('STRIPE_SECRET_KEY', input.secretNames),
-    classifySecretPresence('STRIPE_WEBHOOK_SECRET', input.secretNames),
+    classifyProductEnvironmentMapping(input.environment),
+    ...(!requireDeployedSecrets
+      ? []
+      : [
+          classifyWorkerConfigPresence('STRIPE_PAYMENT_METHOD_CONFIGURATION_ID', environmentBlock, input.secretNames),
+          classifySecretPresence('STRIPE_SECRET_KEY', input.secretNames),
+          classifySecretPresence('STRIPE_WEBHOOK_SECRET', input.secretNames),
+        ]),
     classifyWranglerTextPresence('CHECKOUT_RETURN_ORIGINS', environmentBlock),
+    classifyWorkerOriginScope(input.environment, environmentBlock),
     classifyWranglerTextPresence('COMMERCE_DB', environmentBlock, /"binding"\s*:\s*"COMMERCE_DB"/),
     classifyFlagsPresence(environmentBlock),
+    classifyPrdOpenGate(input.environment),
     classifyProductionCronPresence(input.environment, environmentBlock),
   ];
   const issues = categories.flatMap((category) =>
@@ -91,13 +120,17 @@ export function verifyRuntimeConfig(input: {
     categories,
     environment: input.environment,
     issues,
+    productEnvironment: mapRuntimeEnvironmentToProductEnvironment(input.environment),
+    requireLiveSecrets: requireDeployedSecrets,
   };
 }
 
 export function formatRuntimeConfigVerificationReport(result: RuntimeConfigVerificationResult): string {
   const lines = [
     `Runtime config verification ${result.issues.length ? 'failed' : 'OK'}.`,
-    `Environment: ${result.environment}`,
+    `Product Environment: ${result.productEnvironment}`,
+    `Worker runtime target: ${result.environment}`,
+    `Live secret requirement: ${result.requireLiveSecrets ? 'required' : 'not required for disabled readiness'}`,
     '',
     'Categories:',
     ...result.categories.map(
@@ -176,6 +209,74 @@ function classifySecretPresence(
   };
 }
 
+function classifyProductEnvironmentMapping(environment: RuntimeConfigEnvironment): RuntimeConfigCategory {
+  return {
+    detail: `${mapRuntimeEnvironmentToProductEnvironment(environment)} maps to Worker runtime target ${environment}.`,
+    name: 'PRODUCT_ENVIRONMENT_MAPPING',
+    status: 'present',
+  };
+}
+
+function classifyWorkerOriginScope(
+  environment: RuntimeConfigEnvironment,
+  environmentBlock: string,
+): RuntimeConfigCategory {
+  const origins = getCheckoutReturnOrigins(environmentBlock);
+  const hasLocal = origins.some(
+    (origin) => origin.startsWith('http://127.0.0.1') || origin.startsWith('http://localhost'),
+  );
+  const hasUat = origins.includes('https://blackbox-studio-athens.github.io/blackbox-records');
+  const hasPrd = origins.includes('https://blackbox-records-web.pages.dev');
+  const hasPreview = origins.some(
+    (origin) =>
+      origin.includes('.blackbox-records-web.pages.dev') && origin !== 'https://blackbox-records-web.pages.dev',
+  );
+
+  if (environment === 'local') {
+    return {
+      detail: hasLocal && !hasUat && !hasPrd && !hasPreview ? undefined : 'Local mock origins must stay local-only.',
+      name: 'WORKER_ORIGIN_SCOPE',
+      status: hasLocal && !hasUat && !hasPrd && !hasPreview ? 'present' : 'missing',
+    };
+  }
+
+  if (environment === 'sandbox') {
+    return {
+      detail:
+        hasUat && hasLocal && !hasPrd && !hasPreview
+          ? 'UAT Worker allows GitHub Pages plus local uat-connected diagnostics.'
+          : 'UAT Worker must allow GitHub Pages and local uat-connected diagnostics, but not PRD or preview origins.',
+      name: 'WORKER_ORIGIN_SCOPE',
+      status: hasUat && hasLocal && !hasPrd && !hasPreview ? 'present' : 'missing',
+    };
+  }
+
+  return {
+    detail:
+      hasPrd && !hasUat && !hasLocal && !hasPreview
+        ? 'PRD Worker allows only Cloudflare Pages PRD until an approved custom domain is added.'
+        : 'PRD Worker must not allow Local, UAT, or preview origins.',
+    name: 'WORKER_ORIGIN_SCOPE',
+    status: hasPrd && !hasUat && !hasLocal && !hasPreview ? 'present' : 'missing',
+  };
+}
+
+function classifyPrdOpenGate(environment: RuntimeConfigEnvironment): RuntimeConfigCategory {
+  if (environment !== 'production') {
+    return {
+      detail: 'PRD-open gate applies only to the PRD product environment.',
+      name: 'PRD_OPEN_GATE',
+      status: 'not_applicable',
+    };
+  }
+
+  return {
+    detail: 'PRD checkout and live provider mutation stay disabled until PRD_OPEN_GATE is configured outside the repo.',
+    name: 'PRD_OPEN_GATE',
+    status: 'not_applicable',
+  };
+}
+
 function classifyWranglerTextPresence(
   name: RuntimeConfigCategory['name'],
   environmentBlock: string,
@@ -219,6 +320,10 @@ function classifyProductionCronPresence(
 }
 
 function readWorkerSecretNames(environment: RuntimeConfigEnvironment): string[] | null {
+  if (environment === 'local') {
+    return null;
+  }
+
   const command = createPnpmCommand(['exec', 'wrangler', 'secret', 'list', '--env', environment, '--format', 'json']);
   const result = spawnSync(command.command, command.args, {
     cwd: backendDir,
@@ -234,6 +339,12 @@ function readWorkerSecretNames(environment: RuntimeConfigEnvironment): string[] 
 }
 
 function extractWranglerEnvironmentBlock(configText: string, environment: RuntimeConfigEnvironment): string {
+  if (environment === 'local') {
+    const envMarker = '"env"';
+    const envIndex = configText.indexOf(envMarker);
+    return envIndex === -1 ? configText : configText.slice(0, envIndex);
+  }
+
   const marker = `"${environment}"`;
   const markerIndex = configText.indexOf(marker);
 
@@ -273,11 +384,35 @@ function createPnpmCommand(args: string[]): { args: string[]; command: string } 
 }
 
 function parseEnvironment(value: string | undefined): RuntimeConfigEnvironment {
-  if (value === 'sandbox' || value === 'production') {
+  if (value === 'local' || value === 'sandbox' || value === 'production') {
     return value;
   }
 
-  throw new Error('Runtime config verification requires --env sandbox or production.');
+  if (value === 'uat') {
+    return 'sandbox';
+  }
+
+  if (value === 'prd') {
+    return 'production';
+  }
+
+  throw new Error('Runtime config verification requires --env local, uat, prd, sandbox, or production.');
+}
+
+function mapRuntimeEnvironmentToProductEnvironment(environment: RuntimeConfigEnvironment): ProductEnvironment {
+  if (environment === 'production') return 'PRD';
+  if (environment === 'sandbox') return 'UAT';
+  return 'Local';
+}
+
+function getCheckoutReturnOrigins(environmentBlock: string): string[] {
+  const match = /"CHECKOUT_RETURN_ORIGINS"\s*:\s*"(?<origins>[^"]*)"/.exec(environmentBlock);
+  return (
+    match?.groups?.origins
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean) ?? []
+  );
 }
 
 function redactSensitiveValues(value: string): string {

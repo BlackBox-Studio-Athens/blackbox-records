@@ -36,10 +36,15 @@ describe('catalog promotion workflows', () => {
     expect(workflow).toContain('gh workflow run catalog-promotion.yml');
   });
 
-  it('keeps production promotion behind UAT success and CI promotion context', () => {
+  it('keeps PRD promotion behind UAT success, PRD-open gate, and CI promotion context', () => {
     const workflow = readWorkflow('catalog-promotion.yml');
 
     expect(workflow).toContain("inputs.target == 'all' && needs.promote-uat.result == 'success'");
+    expect(workflow).toContain('- prd');
+    expect(workflow).not.toContain('- production');
+    expect(workflow).toContain('catalog-promotion-prd');
+    expect(workflow).toContain('PRD_OPEN_GATE');
+    expect(workflow).toContain('prd-not-configured.txt');
     expect(workflow).toContain('pnpm test:unit');
     expect(workflow).toContain('pnpm check');
     expect(workflow).toContain('pnpm build');
@@ -49,7 +54,9 @@ describe('catalog promotion workflows', () => {
     expect(workflow).toContain('pnpm stripe:catalog:verify --env production --apply --ci-promotion');
     expect(workflow).toContain('--artifact-commit-sha "${{ inputs.artifact_commit_sha }}"');
     expect(workflow).toContain('--promotion-run-id "${{ github.run_id }}"');
-    expect(workflow).toContain('pnpm smoke:stripe-promotion -- --env production --scenario all');
+    expect(workflow).toContain(
+      'pnpm smoke:stripe-promotion -- --env production --scenario all --evidence-dir .codex-artifacts/catalog-promotion/prd',
+    );
     expect(workflow).toContain('actions/upload-artifact@v5.0.0');
   });
 });

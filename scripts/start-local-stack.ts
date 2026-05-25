@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 
 import { createLongRunningProcessGroup, LocalProcessError, runFiniteCommand } from './local-process';
 
-export type LocalStackMode = 'stripe-test' | 'stripe-mock' | 'stripe-mock-api';
+export type LocalStackMode = 'stripe-test' | 'stripe-mock' | 'stripe-mock-api' | 'uat-connected';
 
 export type StackCommand = {
   args: string[];
@@ -29,20 +29,26 @@ const STATIC_PORT = 4321;
 const STRIPE_MOCK_PROXY_PORT = 12110;
 const STRIPE_MOCK_HTTP_PORT = 12111;
 const STRIPE_MOCK_HTTPS_PORT = 12112;
+const UAT_WORKER_URL = 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev';
 
 export function buildStackPlan(mode: LocalStackMode): StackPlan {
-  const prepare: StackCommand[] = [
-    {
-      args: ['--filter', '@blackbox/backend', 'd1:prepare:local'],
-      command: 'pnpm',
-      name: 'Prepare local D1',
-    },
-  ];
+  const prepare: StackCommand[] =
+    mode === 'uat-connected'
+      ? []
+      : [
+          {
+            args: ['--filter', '@blackbox/backend', 'd1:prepare:local'],
+            command: 'pnpm',
+            name: 'Prepare local D1',
+          },
+        ];
   const longRunning: StackCommand[] = [];
   const ports =
-    mode === 'stripe-mock' || mode === 'stripe-mock-api'
-      ? [STRIPE_MOCK_PROXY_PORT, STRIPE_MOCK_HTTP_PORT, STRIPE_MOCK_HTTPS_PORT, BACKEND_PORT, STATIC_PORT]
-      : [BACKEND_PORT, STATIC_PORT];
+    mode === 'uat-connected'
+      ? [STATIC_PORT]
+      : mode === 'stripe-mock' || mode === 'stripe-mock-api'
+        ? [STRIPE_MOCK_PROXY_PORT, STRIPE_MOCK_HTTP_PORT, STRIPE_MOCK_HTTPS_PORT, BACKEND_PORT, STATIC_PORT]
+        : [BACKEND_PORT, STATIC_PORT];
 
   if (mode === 'stripe-test') {
     prepare.push({
@@ -98,7 +104,7 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
         waitForPort: STATIC_PORT,
       },
     );
-  } else {
+  } else if (mode === 'stripe-mock-api') {
     prepare.push({
       args: ['--filter', '@blackbox/backend', 'd1:seed:stripe-mock:local'],
       command: 'pnpm',
@@ -128,6 +134,17 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
         waitForPort: STATIC_PORT,
       },
     );
+  } else {
+    longRunning.push({
+      args: ['site:dev'],
+      command: 'pnpm',
+      env: {
+        PUBLIC_BACKEND_BASE_URL: UAT_WORKER_URL,
+        PUBLIC_CHECKOUT_CLIENT_MODE: 'stripe',
+      },
+      name: 'Static site',
+      waitForPort: STATIC_PORT,
+    });
   }
 
   return {
@@ -234,11 +251,13 @@ async function main() {
 }
 
 function parseMode(value: string | undefined): LocalStackMode {
-  if (value === 'stripe-test' || value === 'stripe-mock' || value === 'stripe-mock-api') {
+  if (value === 'stripe-test' || value === 'stripe-mock' || value === 'stripe-mock-api' || value === 'uat-connected') {
     return value;
   }
 
-  console.error('Usage: pnpm dev:stack:stripe-test OR pnpm dev:stack:stripe-mock OR pnpm dev:stack:stripe-mock-api');
+  console.error(
+    'Usage: pnpm dev:stack:stripe-mock OR pnpm dev:stack:uat-connected. Advanced diagnostics: pnpm dev:stack:stripe-test OR pnpm dev:stack:stripe-mock-api',
+  );
   process.exit(1);
 }
 

@@ -1,10 +1,10 @@
 ## Why
 
-Sandbox evidence exists, but production native-commerce launch still depends on live Stripe access, final domain wiring, production webhook configuration, production Worker/D1 configuration, rollback behavior, and named human approval.
+UAT evidence exists, but PRD native-commerce launch still depends on live Stripe access, final domain wiring, production webhook configuration, production Worker/D1 configuration, emergency-disable behavior, and named human approval.
 
 ## What Changes
 
-Define the final production go-live gates as an OpenSpec change instead of leaving them in legacy launch-readiness/backlog docs.
+Define the final PRD-open gates as an OpenSpec change instead of leaving them in historical launch-readiness/backlog docs.
 
 ## Capabilities
 

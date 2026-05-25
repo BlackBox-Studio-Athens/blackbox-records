@@ -13,22 +13,33 @@ Static Astro site for the BlackBox Records label.
 
 ## URL model
 
-Cloudflare Pages is the canonical static frontend host:
+The site uses one Product Environment model: Local, UAT, and PRD. The full matrix lives in [`docs/environment-model.md`](docs/environment-model.md).
+
+UAT is the GitHub Pages static frontend:
+
+- `site`: `https://blackbox-studio-athens.github.io`
+- `base`: `/blackbox-records/`
+- browser API target: `UAT_PUBLIC_BACKEND_BASE_URL`, expected to point at the sandbox Worker
+
+PRD is the Cloudflare Pages static frontend:
 
 - `site`: `https://blackbox-records-web.pages.dev`
 - `base`: `/`
+- browser API target: `PRD_PUBLIC_BACKEND_BASE_URL`, expected to point at the production Worker
+- commerce state: disabled until the explicit PRD-open production-readiness gate is present
 
-The Cloudflare Pages workflow sets these non-secret build-time variables before deploying `apps/web/dist`:
+The Cloudflare Pages workflow sets these non-secret build-time variables before deploying the disabled PRD static artifact from `apps/web/dist`:
 
 - `ASTRO_SITE_URL`: `https://blackbox-records-web.pages.dev`
 - `ASTRO_BASE_PATH`: `/`
+- `PUBLIC_BACKEND_BASE_URL`: from `PRD_PUBLIC_BACKEND_BASE_URL`
 
-GitHub Pages remains a rollback/legacy static deployment and keeps the repo defaults in `apps/web/astro.config.mjs`:
+GitHub Pages UAT keeps the repo defaults in `apps/web/astro.config.mjs`:
 
 - `site`: `https://blackbox-studio-athens.github.io`
 - `base`: `/blackbox-records/`
 
-For label-member sandbox UAT, the GitHub Pages URL is intentionally wired to the sandbox Worker on every `main` push. Tester instructions live in [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md). This is Stripe test mode only and is not production go-live approval.
+For label-member UAT, the GitHub Pages URL is intentionally wired to the sandbox Worker on every `main` push. Tester instructions live in [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md). This is Stripe test mode only and is not PRD go-live approval.
 
 ## Navigation model
 
@@ -510,12 +521,12 @@ CI/deploy credentials and public build variables:
 - None of these values are the Worker's runtime business secrets.
 - Deployed runtime secrets terminate as Cloudflare Worker secrets/bindings, not as browser env vars and not as GitHub-only config.
 
-## Sandbox backend CI/CD
+## UAT backend CI/CD
 
 - The static Astro site has two deployment workflows:
-  - `.github/workflows/cloudflare-pages.yml` uploads the prebuilt static artifact to canonical Cloudflare Pages.
-  - `.github/workflows/pages.yml` remains the GitHub Pages rollback workflow.
-- The separate Worker sandbox deploy path is isolated in `.github/workflows/cloudflare-sandbox.yml`.
+  - `.github/workflows/pages.yml` uploads the prebuilt UAT static artifact to GitHub Pages.
+  - `.github/workflows/cloudflare-pages.yml` uploads the prebuilt disabled PRD static artifact to Cloudflare Pages.
+- The separate UAT Worker deploy path is isolated in `.github/workflows/cloudflare-sandbox.yml`; `sandbox` is the Wrangler runtime target mapped to UAT.
 - That workflow:
   - runs on pushes to `sandbox`
   - can also be triggered manually
@@ -523,33 +534,33 @@ CI/deploy credentials and public build variables:
   - runs `pnpm test:unit`
   - runs `pnpm check`
   - deploys only the backend workspace to Cloudflare Workers
-- The sandbox `workers.dev` backend is a reachable sandbox target for browser checks, Stripe return URLs, and webhook testing.
-- Cloudflare Access is not part of public sandbox browsing at this stage.
+- The UAT `workers.dev` backend is reachable for browser checks, Stripe return URLs, and webhook testing.
+- Cloudflare Access is not part of public UAT browsing at this stage.
 - Phase `06.1.1` now locks a separate protected staff-only hostname and Google-backed Access contract for internal stock work, while keeping the public sandbox backend reachable and unauthenticated.
 
-## GitHub Pages rollback CI/CD
+## GitHub Pages UAT CI/CD
 
-- Rollback deployment is handled by `.github/workflows/pages.yml`.
+- UAT deployment is handled by `.github/workflows/pages.yml`.
 - The workflow uses `withastro/action@v6.1.1`, Node 24, and pnpm 10.33.2, and only deploys if all of these succeed:
   - `pnpm test:unit`
   - `pnpm check`
   - `pnpm build`
-- The build step passes `PUBLIC_BACKEND_BASE_URL` from the GitHub repository variable so the GitHub Pages URL can serve as the public Stripe sandbox UAT surface.
+- The build step passes `PUBLIC_BACKEND_BASE_URL` from `UAT_PUBLIC_BACKEND_BASE_URL` so the GitHub Pages URL serves as the public UAT surface.
 - Pushes go directly to `main` in this repo.
-- If CI fails on `main`, GitHub Pages does not publish the broken rollback revision; fix it with a follow-up commit or revert the bad commit on `main`.
-- GitHub Pages is no longer the canonical static host after Phase 7.1 acceptance, but it remains available as a rollback/legacy deployment path and sandbox UAT surface until a later cutover explicitly disables it.
+- If CI fails on `main`, GitHub Pages does not publish the broken UAT revision; fix it with a follow-up commit or revert the bad commit on `main`.
+- GitHub Pages is the UAT static host and must not be described as PRD rollback or legacy production hosting.
 
-## Cloudflare Pages canonical deployment
+## Cloudflare Pages PRD Deployment
 
-- Cloudflare Pages is the canonical static frontend host for this milestone.
+- Cloudflare Pages is the PRD static frontend host and remains a disabled commerce readiness surface until the PRD-open gate exists.
 - The deploy artifact remains the prebuilt Astro output at `apps/web/dist`.
 - Cloudflare Pages Direct Upload acceptance is handled by `.github/workflows/cloudflare-pages.yml`, not by local manual `wrangler pages deploy`.
 - The workflow runs `pnpm test:unit`, `pnpm check`, and `pnpm build` before uploading `apps/web/dist` to the `blackbox-records-web` Pages project.
 - The workflow sets Cloudflare-root static build values with `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/`.
-- The workflow passes only browser-safe public Astro variables into the frontend runtime: `PUBLIC_BACKEND_BASE_URL`.
+- The workflow passes only browser-safe public Astro variables into the frontend runtime: `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`.
 - The Worker remains separate and owns `/api/*`, Stripe secrets, webhooks, D1, stock operations, order state, and future BOX NOW work.
 - Do not introduce Pages Functions, SSR, D1 access, backend routes, or runtime business secrets into the Pages project.
-- Browser-safe Pages variables are limited to `PUBLIC_BACKEND_BASE_URL` and non-production `PUBLIC_CHECKOUT_CLIENT_MODE` only when deliberately testing mock mode outside production.
+- Browser-safe Pages variables are limited to `PUBLIC_BACKEND_BASE_URL`; keep `PUBLIC_CHECKOUT_CLIENT_MODE` unset for PRD.
 - Required CI/project names are documented in `openspec/specs/static-site-and-deployment/spec.md`; account-specific IDs, tokens, and domains stay out of git.
 
 ## Content model

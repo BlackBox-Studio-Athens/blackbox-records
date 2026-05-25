@@ -1,6 +1,6 @@
 ## ADDED Requirements
 
-### Requirement: Catalog promotion gates are automated for UAT and production
+### Requirement: Catalog promotion gates are automated for UAT and PRD
 
 The system SHALL provide automated validation gates that prove CMS-driven catalog promotion for each target environment.
 
@@ -11,12 +11,19 @@ The system SHALL provide automated validation gates that prove CMS-driven catalo
 - **THEN** it runs artifact generation/checks, repository gates, UAT webhook/config verification, UAT D1 readiness, UAT catalog dry-run, UAT catalog apply, post-apply verify, UAT Worker/static deployment, and UAT smoke evidence
 - **AND** all output redacts provider secrets and full account-private identifiers.
 
-#### Scenario: Production catalog promotion gate runs
+#### Scenario: PRD catalog promotion gate is requested before PRD opens
 
-- **GIVEN** Desired Catalog State targets production and UAT proof passed for the same artifact commit
-- **WHEN** the production promotion workflow runs
-- **THEN** it runs production webhook/config verification, production D1 readiness, production catalog dry-run, production catalog apply, post-apply verify, production Worker/static deployment, and production smoke evidence
-- **AND** it uses the same command implementation and report format as UAT with production environment parameters.
+- **GIVEN** Desired Catalog State targets PRD and UAT proof passed for the same artifact commit
+- **WHEN** the PRD promotion workflow runs before the PRD-open gate exists
+- **THEN** it records disabled or `not_configured` readiness evidence
+- **AND** it does not mutate Stripe live mode, production D1, production Worker checkout availability, or successful PRD Promotion Evidence.
+
+#### Scenario: PRD catalog promotion gate runs after PRD opens
+
+- **GIVEN** Desired Catalog State targets PRD, UAT proof passed for the same artifact commit, and the PRD-open gate exists
+- **WHEN** the PRD promotion workflow runs
+- **THEN** it runs PRD webhook/config verification, production D1 readiness, production catalog dry-run, production catalog apply, post-apply verify, production Worker/static deployment, and PRD smoke evidence
+- **AND** it uses the same command implementation and report format as UAT with production Worker runtime target parameters.
 
 #### Scenario: Standard repository gates fail
 

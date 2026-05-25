@@ -101,7 +101,10 @@ describe('Stripe test checkout preflight', () => {
       }),
     );
 
-    expect(report).toContain('Stripe test checkout preflight failed:');
+    expect(report).toContain('Advanced Stripe test checkout diagnostic preflight failed:');
+    expect(report).toContain('Normal Local modes are exactly:');
+    expect(report).toContain('- mock: pnpm dev:stack:stripe-mock');
+    expect(report).toContain('- uat-connected: pnpm dev:stack:uat-connected');
     expect(report).toContain('Set STRIPE_SECRET_KEY in apps/backend/.dev.vars to a real sk_test_ value.');
     expect(report).toContain(
       'Set STRIPE_PAYMENT_METHOD_CONFIGURATION_ID in apps/backend/.dev.vars to the test-mode Payment Method Configuration ID.',

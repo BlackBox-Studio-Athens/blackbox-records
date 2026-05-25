@@ -8,14 +8,14 @@ on:
         required: true
         type: string
       target:
-        description: Target environment sequence.
+        description: Product Environment target sequence.
         required: true
         default: all
         type: choice
         options:
           - all
           - uat
-          - production
+          - prd
 
 permissions:
   contents: read
@@ -121,16 +121,17 @@ jobs:
             .codex-artifacts/stripe-sandbox-smoke/**
           if-no-files-found: warn
 
-  promote-production:
-    if: ${{ always() && needs.verify-artifact.result == 'success' && (inputs.target == 'production' || (inputs.target == 'all' && needs.promote-uat.result == 'success')) }}
+  promote-prd:
+    if: ${{ always() && needs.verify-artifact.result == 'success' && (inputs.target == 'prd' || (inputs.target == 'all' && needs.promote-uat.result == 'success')) }}
     needs:
       - verify-artifact
       - promote-uat
     runs-on: ubuntu-latest
-    environment: catalog-promotion-production
+    environment: catalog-promotion-prd
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      PRD_OPEN_GATE: ${{ vars.PRD_OPEN_GATE }}
       STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
     steps:
@@ -153,13 +154,31 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify production webhook and payment configuration
+      - name: Confirm PRD open gate
         run: |
-          pnpm runtime:config:verify --env production
+          mkdir -p .codex-artifacts/catalog-promotion/prd
+          if [ "${PRD_OPEN_GATE}" = "open" ]; then
+            echo "PRD_LIVE_MUTATION_ENABLED=true" >> "$GITHUB_ENV"
+            echo "PRD open gate present; live provider mutation may continue." > .codex-artifacts/catalog-promotion/prd/prd-open-gate.txt
+          else
+            echo "PRD_LIVE_MUTATION_ENABLED=false" >> "$GITHUB_ENV"
+            {
+              echo "status=not_configured"
+              echo "reason=PRD checkout and live provider mutation are disabled until PRD_OPEN_GATE is set to open in the catalog-promotion-prd credential scope."
+              echo "artifact_commit_sha=${{ inputs.artifact_commit_sha }}"
+              echo "run_id=${{ github.run_id }}"
+            } > .codex-artifacts/catalog-promotion/prd/prd-not-configured.txt
+          fi
+
+      - name: Verify production webhook and payment configuration
+        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
+        run: |
+          pnpm runtime:config:verify --env production --require-live-secrets
           pnpm stripe:webhooks:verify --env production
           pnpm stripe:payment-methods:verify
 
       - name: Prepare production D1 catalog readiness
+        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         run: |
           pnpm --filter @blackbox/backend d1:migrations:apply:production
           pnpm production:catalog-readiness:check -- --phase pre-apply
@@ -167,29 +186,34 @@ jobs:
           pnpm production:catalog-readiness:check -- --phase pre-apply
 
       - name: Plan production provider catalog
+        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         run: |
-          mkdir -p .codex-artifacts/catalog-promotion/production
-          pnpm stripe:catalog:verify --env production 2>&1 | tee .codex-artifacts/catalog-promotion/production/catalog-plan.txt
+          mkdir -p .codex-artifacts/catalog-promotion/prd
+          pnpm stripe:catalog:verify --env production 2>&1 | tee .codex-artifacts/catalog-promotion/prd/catalog-plan.txt
 
       - name: Apply production provider catalog
+        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         run: |
           pnpm stripe:catalog:verify --env production --apply --ci-promotion --artifact-commit-sha "${{ inputs.artifact_commit_sha }}" --promotion-run-id "${{ github.run_id }}"
-          pnpm stripe:catalog:verify --env production 2>&1 | tee .codex-artifacts/catalog-promotion/production/catalog-post-apply.txt
+          pnpm stripe:catalog:verify --env production 2>&1 | tee .codex-artifacts/catalog-promotion/prd/catalog-post-apply.txt
           pnpm production:catalog-readiness:check -- --phase post-apply
 
       - name: Deploy production Worker
+        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         run: pnpm deploy:backend:production
 
       - name: Confirm static frontend artifact commit
+        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         run: test "$(git rev-parse HEAD)" = "${{ inputs.artifact_commit_sha }}"
 
       - name: Run production no-payment smoke
-        run: pnpm smoke:stripe-promotion -- --env production --scenario all --evidence-dir .codex-artifacts/catalog-promotion/production
+        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
+        run: pnpm smoke:stripe-promotion -- --env production --scenario all --evidence-dir .codex-artifacts/catalog-promotion/prd
 
-      - name: Upload production Promotion Evidence
+      - name: Upload PRD readiness or Promotion Evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v5.0.0
         with:
-          name: catalog-promotion-production-${{ github.run_id }}
-          path: .codex-artifacts/catalog-promotion/production/**
+          name: catalog-promotion-prd-${{ github.run_id }}
+          path: .codex-artifacts/catalog-promotion/prd/**
           if-no-files-found: warn
