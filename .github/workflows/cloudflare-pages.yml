@@ -1,8 +1,8 @@
-name: Deploy Astro site to Cloudflare Pages
+name: Deploy PRD static site to Cloudflare Pages
 
 on:
   push:
-    branches: ['main', 'pages/**']
+    branches: ['main']
   workflow_dispatch:
 
 permissions:
@@ -51,16 +51,16 @@ jobs:
       - name: Run unused code audit
         run: pnpm audit:unused
 
-      - name: Build static frontend
+      - name: Build disabled PRD static frontend
         env:
           ASTRO_SITE_URL: https://blackbox-records-web.pages.dev
           ASTRO_BASE_PATH: /
-          PUBLIC_BACKEND_BASE_URL: ${{ vars.PUBLIC_BACKEND_BASE_URL }}
+          PUBLIC_BACKEND_BASE_URL: ${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}
         run: pnpm build
 
-      - name: Deploy static frontend to Cloudflare Pages
+      - name: Deploy disabled PRD static frontend to Cloudflare Pages
         working-directory: apps/backend
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm exec wrangler pages deploy ../../apps/web/dist --project-name=blackbox-records-web --branch=${{ github.ref_name }}
+        run: pnpm exec wrangler pages deploy ../../apps/web/dist --project-name=blackbox-records-web --branch=main

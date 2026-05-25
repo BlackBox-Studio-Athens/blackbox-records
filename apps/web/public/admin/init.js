@@ -44,6 +44,52 @@
       .trim()
       .replace(/\b\w/g, (character) => character.toUpperCase());
 
+  const createSlugSuggestion = (value) =>
+    toText(value)
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/&/g, ' and ')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+  const formatAmountMinor = (amountMinor, currencyCode) => {
+    const amount = Number(amountMinor);
+    const currency = toText(currencyCode || 'EUR').toUpperCase();
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return 'Price pending';
+    }
+
+    return `${currency} ${(amount / 100).toFixed(2)}`;
+  };
+
+  const getCommerceTargetLabel = (target) => {
+    switch (target) {
+      case 'uat':
+        return 'UAT only';
+      case 'uat_and_production':
+        return 'UAT plus production';
+      default:
+        return 'Draft / not buyable';
+    }
+  };
+
+  const getCommerceOptionLabel = (data, fallback) => {
+    const commerce = toObject(data.commerce);
+    return toText(commerce.option_label || fallback || '').trim();
+  };
+
+  const getReleasePreviewStoreSlug = (data) => {
+    const optionLabel = getCommerceOptionLabel(data, toArray(data.formats)[0]);
+    return createSlugSuggestion([data.title, optionLabel].filter(Boolean).join(' '));
+  };
+
+  const getDistroPreviewStoreSlug = (entry, data) =>
+    createSlugSuggestion(toText(entry.get('slug') || data.slug || data.title));
+
+  const getPreviewVariantId = (storeItemSlug) => (storeItemSlug ? `variant_${storeItemSlug}_standard` : 'Pending slug');
+
   const getAdminMediaBaseUrl = () => {
     const pathname = window.location.pathname;
     const adminRootPath = pathname.includes('/admin/')
@@ -359,9 +405,61 @@
         label,
       );
 
+    const renderCommerceSummary = (entry, data, options = {}) => {
+      const commerce = toObject(data.commerce);
+      const price = toObject(commerce.price);
+      const stock = toObject(commerce.stock);
+      const storeItemSlug =
+        options.kind === 'distro' ? getDistroPreviewStoreSlug(entry, data) : getReleasePreviewStoreSlug(data);
+      const variantId = getPreviewVariantId(storeItemSlug);
+      const targetLabel = getCommerceTargetLabel(commerce.publish_target);
+      const priceLabel = formatAmountMinor(price.amount_minor, price.currency);
+      const stockLabel =
+        stock.initial_online_quantity === null || stock.initial_online_quantity === undefined
+          ? 'Existing stock required before production'
+          : `${stock.initial_online_quantity} initial online`;
+      const statusPills = [
+        commerce.enabled ? 'Checkout enabled' : 'Checkout disabled',
+        commerce.retired ? 'Retired from checkout' : null,
+        commerce.smoke_candidate ? 'Smoke candidate' : null,
+      ].filter(Boolean);
+
+      return h('section', { className: 'blackbox-preview__commerce' }, [
+        h('p', { className: 'blackbox-preview__eyebrow' }, 'Catalog Promotion'),
+        statusPills.length ? renderPills(statusPills, 'blackbox-preview__pill blackbox-preview__pill--accent') : null,
+        h('div', { className: 'blackbox-preview__stack' }, [
+          h('div', { className: 'blackbox-preview__contact-row' }, [
+            h('span', { className: 'blackbox-preview__meta' }, 'Target'),
+            h('span', { className: 'blackbox-preview__copy' }, targetLabel),
+          ]),
+          h('div', { className: 'blackbox-preview__contact-row' }, [
+            h('span', { className: 'blackbox-preview__meta' }, 'Store slug'),
+            h('span', { className: 'blackbox-preview__copy' }, storeItemSlug || 'Pending title'),
+          ]),
+          h('div', { className: 'blackbox-preview__contact-row' }, [
+            h('span', { className: 'blackbox-preview__meta' }, 'Variant'),
+            h('span', { className: 'blackbox-preview__copy' }, variantId),
+          ]),
+          h('div', { className: 'blackbox-preview__contact-row' }, [
+            h('span', { className: 'blackbox-preview__meta' }, 'Desired Price'),
+            h('span', { className: 'blackbox-preview__copy' }, priceLabel),
+          ]),
+          h('div', { className: 'blackbox-preview__contact-row' }, [
+            h('span', { className: 'blackbox-preview__meta' }, 'Tax code'),
+            h('span', { className: 'blackbox-preview__copy' }, toText(commerce.tax_code || 'txcd_99999999')),
+          ]),
+          h('div', { className: 'blackbox-preview__contact-row' }, [
+            h('span', { className: 'blackbox-preview__meta' }, 'Stock'),
+            h('span', { className: 'blackbox-preview__copy' }, stockLabel),
+          ]),
+        ]),
+      ]);
+    };
+
     return {
       renderButton,
       renderBulletList,
+      renderCommerceSummary,
       renderImage,
       renderPills,
     };
@@ -376,7 +474,7 @@
     const CMS = window.CMS;
     const createClass = window.createClass;
     const h = window.h;
-    const { renderButton, renderBulletList, renderImage, renderPills } = createElementFactory(h);
+    const { renderButton, renderBulletList, renderCommerceSummary, renderImage, renderPills } = createElementFactory(h);
     const findSection = (sections, type) => toArray(sections).find((section) => section?.type === type);
 
     if (previewStyleUrl) {
@@ -795,6 +893,7 @@
                       ),
                     )
                   : null,
+                renderCommerceSummary(entry, data, { kind: 'release' }),
               ]),
             ]),
           ]),
@@ -823,6 +922,7 @@
                   [data.eyebrow, data.format].filter(Boolean),
                   'blackbox-preview__pill blackbox-preview__pill--outline',
                 ),
+                renderCommerceSummary(entry, data, { kind: 'distro' }),
                 renderButton('View in Store', true),
               ]),
             ]),

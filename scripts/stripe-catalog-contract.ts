@@ -3,17 +3,20 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import type {
+  DesiredCatalogEntry,
   StripeCatalogExpectedPrice,
   StripeCatalogProductProjection,
 } from '../apps/backend/src/application/commerce/catalog-sync';
 import { createSlugSuggestion } from '../apps/web/src/lib/slugs';
 
 type StoreItemSourceKind = 'distro' | 'release';
+export type CatalogProductEnvironment = 'prd' | 'uat';
 
 export type StripeCatalogAlignmentStatus = 'checkout_eligible' | 'future_buyable' | 'unavailable';
 
 export type StripeCatalogStoreItemContract = {
   alignmentStatus: StripeCatalogAlignmentStatus;
+  desiredCatalogEntry: DesiredCatalogEntry;
   expectedSandboxPrice: StripeCatalogExpectedPrice | null;
   productProjection: StripeCatalogProductProjection;
   sourceId: string;
@@ -24,12 +27,14 @@ export type StripeCatalogStoreItemContract = {
 
 type LoadStripeCatalogContractsOptions = {
   basePath?: string;
+  productEnvironment?: CatalogProductEnvironment;
   projectRoot?: string;
   siteUrl?: string;
 };
 
 type ReleaseContent = {
   artist: string;
+  commerce?: CommerceContent;
   cover_image: string;
   formats: string[];
   summary?: string;
@@ -38,6 +43,7 @@ type ReleaseContent = {
 
 type DistroContent = {
   artist_or_label: string;
+  commerce?: CommerceContent;
   format: string;
   image: string;
   order: number;
@@ -45,8 +51,29 @@ type DistroContent = {
   title: string;
 };
 
+type CommercePublishTarget = 'draft' | 'uat' | 'uat_and_production';
+
+type CommerceContent = {
+  enabled?: boolean;
+  option_label?: string;
+  price?: {
+    amount_minor?: number;
+    currency?: string;
+    revision?: string;
+  };
+  publish_target?: CommercePublishTarget;
+  retired?: boolean;
+  smoke_candidate?: boolean;
+  stock?: {
+    initial_online_quantity?: number;
+  };
+  tax_code?: string;
+};
+
 const defaultSiteUrl = 'https://blackbox-studio-athens.github.io';
 const defaultBasePath = '/blackbox-records/';
+const prdSiteUrl = 'https://blackbox-records-web.pages.dev';
+const prdBasePath = '/';
 export const STRIPE_PHYSICAL_GOODS_TAX_CODE = 'txcd_99999999';
 
 const nonPhysicalReleaseFormats = new Set(['digital']);
@@ -137,15 +164,16 @@ async function readReleaseContracts(
       .map(async (entry) => {
         const sourceId = path.basename(entry.name, '.md');
         const content = parseFrontmatter(await readFile(path.join(releasesDir, entry.name), 'utf8')) as ReleaseContent;
-        const optionLabel = getPrimaryReleaseStoreFormat(content.formats);
+        const optionLabel = content.commerce?.option_label ?? getPrimaryReleaseStoreFormat(content.formats);
         const storeItemSlug = createReleaseStoreItemSlug(content);
         const titleParts = ['BlackBox Records', content.title, optionLabel].filter(Boolean);
+        const expectedPrice = createExpectedPrice(content.commerce, optionLabel);
 
         return {
           ...createContract({
-            alignmentStatus: 'checkout_eligible',
+            alignmentStatus: createAlignmentStatus(content.commerce),
             description: normalizeDescription(content.summary, content.title),
-            expectedSandboxPrice: createExpectedSandboxPrice(optionLabel),
+            expectedSandboxPrice: expectedPrice,
             imageUrl: createContentAssetUrl('releases', content.cover_image, options),
             metadata: {
               sourceId,
@@ -156,7 +184,9 @@ async function readReleaseContracts(
             sourceId,
             sourceKind: 'release',
             storeItemSlug,
-            taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
+            taxCode: content.commerce?.tax_code ?? STRIPE_PHYSICAL_GOODS_TAX_CODE,
+            commerce: content.commerce,
+            desiredPrice: expectedPrice,
             variantId: createDefaultVariantId(storeItemSlug),
           }),
           artistId: content.artist,
@@ -178,13 +208,14 @@ async function readDistroContracts(
       .map(async (entry) => {
         const sourceId = path.basename(entry.name, '.json');
         const content = JSON.parse(await readFile(path.join(distroDir, entry.name), 'utf8')) as DistroContent;
-        const optionLabel = content.format;
+        const optionLabel = content.commerce?.option_label ?? content.format;
         const titleParts = ['BlackBox Records', content.title, optionLabel].filter(Boolean);
+        const expectedPrice = createExpectedPrice(content.commerce, optionLabel);
 
         return createContract({
-          alignmentStatus: 'checkout_eligible',
+          alignmentStatus: createAlignmentStatus(content.commerce),
           description: normalizeDescription(content.summary, `${content.title} by ${content.artist_or_label}`),
-          expectedSandboxPrice: createExpectedSandboxPrice(optionLabel),
+          expectedSandboxPrice: expectedPrice,
           imageUrl: createContentAssetUrl('distro', content.image, options),
           metadata: {
             sourceId,
@@ -195,7 +226,9 @@ async function readDistroContracts(
           sourceId,
           sourceKind: 'distro',
           storeItemSlug: sourceId,
-          taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
+          taxCode: content.commerce?.tax_code ?? STRIPE_PHYSICAL_GOODS_TAX_CODE,
+          commerce: content.commerce,
+          desiredPrice: expectedPrice,
           variantId: createDefaultVariantId(sourceId),
         });
       }),
@@ -225,7 +258,9 @@ function applyArtistName(
 
 function createContract(input: {
   alignmentStatus: StripeCatalogAlignmentStatus;
+  commerce?: CommerceContent;
   description: string;
+  desiredPrice: StripeCatalogExpectedPrice | null;
   expectedSandboxPrice: StripeCatalogExpectedPrice | null;
   imageUrl: string;
   metadata: Record<string, string>;
@@ -236,23 +271,118 @@ function createContract(input: {
   taxCode: string | null;
   variantId: string;
 }): StripeCatalogStoreItemContract {
+  const productProjection = {
+    description: input.description,
+    imageUrls: [input.imageUrl],
+    metadata: {
+      ...input.metadata,
+      variantId: input.variantId,
+    },
+    name: input.name,
+    taxCode: input.taxCode,
+  };
+
   return {
     alignmentStatus: input.alignmentStatus,
-    expectedSandboxPrice: input.expectedSandboxPrice,
-    productProjection: {
-      description: input.description,
-      imageUrls: [input.imageUrl],
-      metadata: {
-        ...input.metadata,
-        variantId: input.variantId,
+    desiredCatalogEntry: {
+      availability: createDesiredAvailability(input.commerce),
+      desiredPrice: input.desiredPrice
+        ? createDesiredPrice(input.desiredPrice, input.commerce, input.storeItemSlug)
+        : null,
+      productProjection,
+      smokeCandidate: input.commerce?.smoke_candidate ?? false,
+      sourceId: input.sourceId,
+      sourceKind: input.sourceKind,
+      stockInitialization: {
+        initialOnlineQuantity: input.commerce?.stock?.initial_online_quantity ?? null,
       },
-      name: input.name,
-      taxCode: input.taxCode,
+      storeItemSlug: input.storeItemSlug,
+      targetEnvironments: createTargetEnvironments(input.commerce),
+      variantId: input.variantId,
     },
+    expectedSandboxPrice: input.expectedSandboxPrice,
+    productProjection,
     sourceId: input.sourceId,
     sourceKind: input.sourceKind,
     storeItemSlug: input.storeItemSlug,
     variantId: input.variantId,
+  };
+}
+
+function createAlignmentStatus(commerce: CommerceContent | undefined): StripeCatalogAlignmentStatus {
+  if (createDesiredAvailability(commerce) === 'published') {
+    return 'checkout_eligible';
+  }
+
+  return commerce?.retired ? 'unavailable' : 'future_buyable';
+}
+
+function createDesiredAvailability(commerce: CommerceContent | undefined): DesiredCatalogEntry['availability'] {
+  if (commerce?.retired) {
+    return 'retired';
+  }
+
+  return createTargetEnvironments(commerce).length > 0 ? 'published' : 'withheld';
+}
+
+function createTargetEnvironments(commerce: CommerceContent | undefined): DesiredCatalogEntry['targetEnvironments'] {
+  if (commerce?.retired || commerce?.enabled === false || commerce?.publish_target === 'draft') {
+    return [];
+  }
+
+  if (commerce?.publish_target === 'uat_and_production') {
+    return ['sandbox', 'production'];
+  }
+
+  return ['sandbox'];
+}
+
+function createExpectedPrice(
+  commerce: CommerceContent | undefined,
+  optionLabel: string | null | undefined,
+): StripeCatalogExpectedPrice | null {
+  const targets = createTargetEnvironments(commerce);
+  if (targets.length === 0) {
+    return null;
+  }
+
+  if (!commerce?.price) {
+    if (targets.includes('production')) {
+      throw new Error(
+        'Production-targeted commerce entries require commerce.price.amount_minor and commerce.price.currency.',
+      );
+    }
+
+    return createExpectedSandboxPrice(optionLabel);
+  }
+
+  const amountMinor = commerce.price.amount_minor;
+  if (typeof amountMinor !== 'number' || !Number.isInteger(amountMinor) || amountMinor <= 0) {
+    throw new Error('commerce.price.amount_minor must be a positive integer.');
+  }
+
+  const currencyCode = (commerce.price.currency ?? 'EUR').trim().toUpperCase();
+  if (currencyCode !== 'EUR') {
+    throw new Error(`Unsupported commerce.price.currency: ${currencyCode}`);
+  }
+
+  return {
+    amountMinor,
+    currencyCode,
+  };
+}
+
+function createDesiredPrice(
+  price: StripeCatalogExpectedPrice,
+  commerce: CommerceContent | undefined,
+  storeItemSlug: string,
+): DesiredCatalogEntry['desiredPrice'] {
+  return {
+    amountMinor: price.amountMinor,
+    currencyCode: price.currencyCode,
+    revision:
+      commerce?.price?.revision?.trim() ||
+      createSlugSuggestion([storeItemSlug, price.amountMinor, price.currencyCode].join(' ')),
   };
 }
 
@@ -263,11 +393,32 @@ function parseFrontmatter(markdown: string): Record<string, unknown> {
   }
 
   const lines = match.groups.frontmatter.split(/\r?\n/);
+  return parseYamlObject(lines, 0, 0).value;
+}
+
+function parseYamlObject(
+  lines: string[],
+  startIndex: number,
+  expectedIndent: number,
+): { nextIndex: number; value: Record<string, unknown> } {
   const result: Record<string, unknown> = {};
 
-  for (let index = 0; index < lines.length; index += 1) {
+  for (let index = startIndex; index < lines.length; index += 1) {
     const line = lines[index];
-    const fieldMatch = /^(?<key>[A-Za-z0-9_]+):(?:\s*(?<value>.*))?$/.exec(line);
+    if (!line.trim()) {
+      continue;
+    }
+
+    const indent = getIndent(line);
+    if (indent < expectedIndent) {
+      return { nextIndex: index, value: result };
+    }
+
+    if (indent > expectedIndent) {
+      continue;
+    }
+
+    const fieldMatch = /^\s*(?<key>[A-Za-z0-9_]+):(?:\s*(?<value>.*))?$/.exec(line);
     if (!fieldMatch?.groups) {
       continue;
     }
@@ -276,21 +427,22 @@ function parseFrontmatter(markdown: string): Record<string, unknown> {
     const value = fieldMatch.groups.value ?? '';
 
     if (value === '') {
-      const arrayValues: string[] = [];
-      let cursor = index + 1;
-
-      while (cursor < lines.length) {
-        const arrayMatch = /^\s*-\s+(?<value>.+)$/.exec(lines[cursor]);
-        if (!arrayMatch?.groups) {
-          break;
-        }
-
-        arrayValues.push(cleanScalar(arrayMatch.groups.value));
-        cursor += 1;
+      const childIndex = findNextMeaningfulLineIndex(lines, index + 1);
+      if (childIndex === -1 || getIndent(lines[childIndex]) <= indent) {
+        result[key] = [];
+        continue;
       }
 
-      result[key] = arrayValues;
-      index = cursor - 1;
+      if (/^\s*-\s+/.test(lines[childIndex])) {
+        const parsed = parseYamlArray(lines, childIndex, getIndent(lines[childIndex]));
+        result[key] = parsed.value;
+        index = parsed.nextIndex - 1;
+        continue;
+      }
+
+      const parsed = parseYamlObject(lines, childIndex, getIndent(lines[childIndex]));
+      result[key] = parsed.value;
+      index = parsed.nextIndex - 1;
       continue;
     }
 
@@ -308,10 +460,63 @@ function parseFrontmatter(markdown: string): Record<string, unknown> {
       continue;
     }
 
-    result[key] = cleanScalar(value);
+    result[key] = parseYamlScalar(value);
   }
 
-  return result;
+  return { nextIndex: lines.length, value: result };
+}
+
+function parseYamlArray(
+  lines: string[],
+  startIndex: number,
+  expectedIndent: number,
+): { nextIndex: number; value: string[] } {
+  const values: string[] = [];
+  let cursor = startIndex;
+
+  while (cursor < lines.length) {
+    const line = lines[cursor];
+    if (!line.trim()) {
+      cursor += 1;
+      continue;
+    }
+
+    if (getIndent(line) !== expectedIndent) {
+      break;
+    }
+
+    const arrayMatch = /^\s*-\s+(?<value>.+)$/.exec(line);
+    if (!arrayMatch?.groups) {
+      break;
+    }
+
+    values.push(cleanScalar(arrayMatch.groups.value));
+    cursor += 1;
+  }
+
+  return { nextIndex: cursor, value: values };
+}
+
+function findNextMeaningfulLineIndex(lines: string[], startIndex: number): number {
+  for (let index = startIndex; index < lines.length; index += 1) {
+    if (lines[index].trim()) {
+      return index;
+    }
+  }
+
+  return -1;
+}
+
+function getIndent(value: string): number {
+  return /^\s*/.exec(value)?.[0].length ?? 0;
+}
+
+function parseYamlScalar(value: string): boolean | number | string {
+  const scalar = cleanScalar(value);
+  if (scalar === 'true') return true;
+  if (scalar === 'false') return false;
+  if (/^-?\d+$/.test(scalar)) return Number(scalar);
+  return scalar;
 }
 
 function cleanScalar(value: string): string {
@@ -370,9 +575,31 @@ function createContentAssetUrl(
   options: LoadStripeCatalogContractsOptions,
 ): string {
   const assetName = path.basename(assetPath.replace(/^\.\//, ''));
-  const basePath = normalizeBasePath(options.basePath ?? process.env.ASTRO_BASE_PATH ?? defaultBasePath);
-  const siteUrl = options.siteUrl ?? process.env.ASTRO_SITE_URL ?? defaultSiteUrl;
+  const target = resolveCatalogAssetTarget(options);
+  const basePath = normalizeBasePath(options.basePath ?? target.basePath);
+  const siteUrl = options.siteUrl ?? target.siteUrl;
   return new URL(`${basePath}/admin/media/${collection}/${encodeURIComponent(assetName)}`, siteUrl).toString();
+}
+
+function resolveCatalogAssetTarget(options: LoadStripeCatalogContractsOptions): { basePath: string; siteUrl: string } {
+  const productEnvironment =
+    options.productEnvironment ?? parseCatalogProductEnvironment(process.env.CATALOG_PRODUCT_ENVIRONMENT);
+
+  if (productEnvironment === 'prd') {
+    return {
+      basePath: process.env.PRD_CATALOG_ASSET_BASE_PATH ?? process.env.ASTRO_BASE_PATH ?? prdBasePath,
+      siteUrl: process.env.PRD_CATALOG_ASSET_SITE_URL ?? process.env.ASTRO_SITE_URL ?? prdSiteUrl,
+    };
+  }
+
+  return {
+    basePath: process.env.UAT_CATALOG_ASSET_BASE_PATH ?? process.env.ASTRO_BASE_PATH ?? defaultBasePath,
+    siteUrl: process.env.UAT_CATALOG_ASSET_SITE_URL ?? process.env.ASTRO_SITE_URL ?? defaultSiteUrl,
+  };
+}
+
+function parseCatalogProductEnvironment(value: string | undefined): CatalogProductEnvironment {
+  return value?.trim().toLowerCase() === 'prd' ? 'prd' : 'uat';
 }
 
 function normalizeBasePath(value: string): string {

@@ -1,4 +1,5 @@
 import { buildField, buildFolderCollection, buildSchemaField } from './decap-yaml-builder';
+import { buildCommerceFields } from './decap-commerce-fields';
 
 export function buildDistroCollection() {
   return buildFolderCollection({
@@ -74,6 +75,7 @@ export function buildDistroCollection() {
         required: false,
         hint: 'Optional short format note, such as "LP" or "Black tee".',
       }),
+      buildCommerceFields(),
       buildField({
         label: 'Release date',
         name: 'release_date',

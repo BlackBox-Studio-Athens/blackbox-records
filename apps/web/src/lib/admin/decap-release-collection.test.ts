@@ -24,5 +24,11 @@ describe('Decap release collection', () => {
     expect(yaml).toContain('summary: "{{fields.value}}"');
     expect(yaml).toContain('name: "credits"');
     expect(yaml).toContain('summary: "{{fields.role}}"');
+    expect(yaml).toContain('name: "commerce"');
+    expect(yaml).toContain('label: "Publish target"');
+    expect(yaml).toContain('value: "uat_and_production"');
+    expect(yaml).toContain('name: "amount_minor"');
+    expect(yaml).toContain('name: "initial_online_quantity"');
+    expect(yaml).toContain('name: "retired"');
   });
 });

@@ -76,7 +76,7 @@ export class StripeCatalogGatewayClient implements StripeCatalogGateway {
       );
   }
 
-  public async createSandboxPrice(
+  public async createCatalogPrice(
     input: StripeCatalogPriceCreateInput,
     context?: StripeCatalogMutationContext,
   ): Promise<StripeCatalogPrice> {

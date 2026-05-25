@@ -1,4 +1,5 @@
 import { buildField, buildFieldMapping, buildFolderCollection, type DecapSelectOption } from './decap-yaml-builder';
+import { buildCommerceFields } from './decap-commerce-fields';
 
 export function buildReleaseCollection(artistOptions: DecapSelectOption[]) {
   return buildFolderCollection({
@@ -92,6 +93,7 @@ export function buildReleaseCollection(artistOptions: DecapSelectOption[]) {
           hint: 'Example: "LP", "CD", or "Digital".',
         }),
       }),
+      buildCommerceFields(),
       buildField({
         label: 'Credits',
         name: 'credits',

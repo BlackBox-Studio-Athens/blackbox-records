@@ -10,8 +10,10 @@ import {
 } from '../apps/backend/src/infrastructure/stripe';
 
 export type StripeWebhookVerifyOptions = {
-  environment: 'sandbox';
+  environment: StripeWebhookVerifyEnvironment;
 };
+
+export type StripeWebhookVerifyEnvironment = 'production' | 'sandbox';
 
 export type StripeWebhookEndpoint = {
   application?: string | null;
@@ -49,7 +51,7 @@ export type StripeWebhookEndpointVerificationResult = {
   committedCron: VerificationPresence;
   deployedCron: VerificationPresence;
   endpointAnalysis: StripeWebhookEndpointAnalysis;
-  environment: 'sandbox';
+  environment: StripeWebhookVerifyEnvironment;
   issues: string[];
   signingSecretMatchProof: 'not_proven_by_api';
   workerSecret: VerificationPresence;
@@ -62,6 +64,8 @@ const wranglerConfigPath = path.join(backendDir, 'wrangler.jsonc');
 export const SANDBOX_WORKER_URL = 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev';
 export const SANDBOX_WEBHOOK_URL = `${SANDBOX_WORKER_URL}/api/stripe/webhooks`;
 export const SANDBOX_WORKER_NAME = 'blackbox-records-backend-sandbox';
+export const PRODUCTION_WORKER_URL = 'https://blackbox-records-backend.blackboxrecordsathens.workers.dev';
+export const PRODUCTION_WEBHOOK_URL = `${PRODUCTION_WORKER_URL}/api/stripe/webhooks`;
 export const EXPECTED_SANDBOX_CRON = '17 */6 * * *';
 
 const requiredCatalogEvents = [...STRIPE_CATALOG_WEBHOOK_EVENT_TYPES];
@@ -76,7 +80,7 @@ export class StripeWebhookEndpointVerificationError extends Error {
 }
 
 export function parseStripeWebhookVerifyArgs(args: string[]): StripeWebhookVerifyOptions {
-  let environment: 'sandbox' | null = null;
+  let environment: StripeWebhookVerifyEnvironment | null = null;
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -86,7 +90,7 @@ export function parseStripeWebhookVerifyArgs(args: string[]): StripeWebhookVerif
     }
 
     if (arg === '--help' || arg === '-h') {
-      console.log('Usage: pnpm stripe:webhooks:verify --env sandbox');
+      console.log('Usage: pnpm stripe:webhooks:verify --env sandbox|production');
       process.exit(0);
     }
 
@@ -106,7 +110,7 @@ export function parseStripeWebhookVerifyArgs(args: string[]): StripeWebhookVerif
   }
 
   if (!environment) {
-    throw new StripeWebhookEndpointVerificationError('Usage: pnpm stripe:webhooks:verify --env sandbox');
+    throw new StripeWebhookEndpointVerificationError('Usage: pnpm stripe:webhooks:verify --env sandbox|production');
   }
 
   return { environment };
@@ -116,30 +120,32 @@ export async function verifyStripeWebhookEndpointConfiguration(input: {
   client: StripeWebhookEndpointListClient;
   committedCron?: VerificationPresence;
   deployedCron?: VerificationPresence;
+  environment?: StripeWebhookVerifyEnvironment;
   workerSecret?: VerificationPresence;
 }): Promise<StripeWebhookEndpointVerificationResult> {
+  const environment = input.environment ?? 'sandbox';
   const endpoints = await listAllStripeWebhookEndpoints(input.client);
-  const endpointAnalysis = analyzeStripeWebhookEndpoints(endpoints);
-  const workerSecret = input.workerSecret ?? readSandboxWorkerSecretPresence();
-  const committedCron = input.committedCron ?? readCommittedSandboxCronPresence();
-  const deployedCron = input.deployedCron ?? (await readDeployedSandboxCronPresence());
+  const endpointAnalysis = analyzeStripeWebhookEndpoints(endpoints, environment);
+  const workerSecret = input.workerSecret ?? readWorkerSecretPresence(environment);
+  const committedCron = input.committedCron ?? readCommittedCronPresence(environment);
+  const deployedCron = input.deployedCron ?? (await readDeployedCronPresence(environment));
   const issues = [...endpointAnalysis.issues];
 
   if (workerSecret.status === 'missing') {
     issues.push(
-      'Sandbox Worker secret STRIPE_WEBHOOK_SECRET is missing. Set it from apps/backend with: pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env sandbox',
+      `${formatEnvironmentLabel(environment)} Worker secret STRIPE_WEBHOOK_SECRET is missing. Set it from apps/backend with: pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env ${environment}`,
     );
   } else if (workerSecret.status === 'unverified') {
     issues.push(
-      `Sandbox Worker secret STRIPE_WEBHOOK_SECRET presence is unverified.${formatOptionalDetail(workerSecret.detail)}`,
+      `${formatEnvironmentLabel(environment)} Worker secret STRIPE_WEBHOOK_SECRET presence is unverified.${formatOptionalDetail(workerSecret.detail)}`,
     );
   }
 
-  if (committedCron.status !== 'present') {
+  if (environment === 'sandbox' && committedCron.status !== 'present') {
     issues.push(`Committed sandbox cron ${EXPECTED_SANDBOX_CRON} is ${committedCron.status}.`);
   }
 
-  if (deployedCron.status === 'missing') {
+  if (environment === 'sandbox' && deployedCron.status === 'missing') {
     issues.push(`Deployed sandbox cron ${EXPECTED_SANDBOX_CRON} is missing.`);
   }
 
@@ -147,7 +153,7 @@ export async function verifyStripeWebhookEndpointConfiguration(input: {
     committedCron,
     deployedCron,
     endpointAnalysis,
-    environment: 'sandbox',
+    environment,
     issues,
     signingSecretMatchProof: 'not_proven_by_api',
     workerSecret,
@@ -178,18 +184,22 @@ export async function listAllStripeWebhookEndpoints(
   }
 }
 
-export function analyzeStripeWebhookEndpoints(endpoints: StripeWebhookEndpoint[]): StripeWebhookEndpointAnalysis {
-  const exactUrlMatches = endpoints.filter((endpoint) => endpoint.url === SANDBOX_WEBHOOK_URL);
+export function analyzeStripeWebhookEndpoints(
+  endpoints: StripeWebhookEndpoint[],
+  environment: StripeWebhookVerifyEnvironment = 'sandbox',
+): StripeWebhookEndpointAnalysis {
+  const expectedUrl = getWebhookUrl(environment);
+  const exactUrlMatches = endpoints.filter((endpoint) => endpoint.url === expectedUrl);
   const accountUrlMatches = exactUrlMatches.filter((endpoint) => !normalizeOptionalValue(endpoint.application));
   const enabledAccountUrlMatches = accountUrlMatches.filter((endpoint) => endpoint.status === 'enabled');
   const issues: string[] = [];
   const warnings: string[] = [];
 
   if (!exactUrlMatches.length) {
-    issues.push(`No Stripe account webhook endpoint targets ${SANDBOX_WEBHOOK_URL}.`);
+    issues.push(`No Stripe account webhook endpoint targets ${expectedUrl}.`);
   } else if (!accountUrlMatches.length) {
     issues.push(
-      `Matching webhook endpoint(s) for ${SANDBOX_WEBHOOK_URL} are Connect-only or application-owned; create an account endpoint.`,
+      `Matching webhook endpoint(s) for ${expectedUrl} are Connect-only or application-owned; create an account endpoint.`,
     );
   }
 
@@ -201,7 +211,7 @@ export function analyzeStripeWebhookEndpoints(endpoints: StripeWebhookEndpoint[]
 
   if (enabledAccountUrlMatches.length > 1) {
     issues.push(
-      `Multiple enabled account webhook endpoints target ${SANDBOX_WEBHOOK_URL}: ${enabledAccountUrlMatches
+      `Multiple enabled account webhook endpoints target ${expectedUrl}: ${enabledAccountUrlMatches
         .map((endpoint) => redactStripeObjectId(endpoint.id))
         .join(', ')}.`,
     );
@@ -212,8 +222,12 @@ export function analyzeStripeWebhookEndpoints(endpoints: StripeWebhookEndpoint[]
   const extraEvents = endpoint ? findExtraWebhookEvents(endpoint.enabled_events ?? []) : [];
 
   if (endpoint) {
-    if (endpoint.livemode !== false) {
-      issues.push(`Webhook endpoint ${redactStripeObjectId(endpoint.id)} is not in Stripe test mode.`);
+    if (endpoint.livemode !== (environment === 'production')) {
+      issues.push(
+        `Webhook endpoint ${redactStripeObjectId(endpoint.id)} is not in Stripe ${
+          environment === 'production' ? 'live' : 'test'
+        } mode.`,
+      );
     }
 
     if (normalizeOptionalValue(endpoint.application)) {
@@ -303,7 +317,11 @@ export function parseWranglerSecretNames(jsonText: string): string[] {
 }
 
 export function readSandboxWorkerSecretPresence(): VerificationPresence {
-  const command = createPnpmCommand(['exec', 'wrangler', 'secret', 'list', '--env', 'sandbox', '--format', 'json']);
+  return readWorkerSecretPresence('sandbox');
+}
+
+export function readWorkerSecretPresence(environment: StripeWebhookVerifyEnvironment): VerificationPresence {
+  const command = createPnpmCommand(['exec', 'wrangler', 'secret', 'list', '--env', environment, '--format', 'json']);
   const result = spawnSync(command.command, command.args, {
     cwd: backendDir,
     encoding: 'utf8',
@@ -328,6 +346,20 @@ export function readSandboxWorkerSecretPresence(): VerificationPresence {
 }
 
 export function readCommittedSandboxCronPresence(configPath = wranglerConfigPath): VerificationPresence {
+  return readCommittedCronPresence('sandbox', configPath);
+}
+
+export function readCommittedCronPresence(
+  environment: StripeWebhookVerifyEnvironment,
+  configPath = wranglerConfigPath,
+): VerificationPresence {
+  if (environment === 'production') {
+    return {
+      detail: 'Production catalog cron is not configured in wrangler.jsonc.',
+      status: 'unverified',
+    };
+  }
+
   try {
     const configText = readFileSync(configPath, 'utf8');
     const hasExpectedCron = new RegExp(`"crons"\\s*:\\s*\\[\\s*"${escapeRegExp(EXPECTED_SANDBOX_CRON)}"\\s*\\]`).test(
@@ -348,6 +380,20 @@ export function readCommittedSandboxCronPresence(configPath = wranglerConfigPath
 export async function readDeployedSandboxCronPresence(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<VerificationPresence> {
+  return readDeployedCronPresence('sandbox', env);
+}
+
+export async function readDeployedCronPresence(
+  environment: StripeWebhookVerifyEnvironment,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<VerificationPresence> {
+  if (environment === 'production') {
+    return {
+      detail: 'Production catalog cron is not configured as a promotion prerequisite.',
+      status: 'unverified',
+    };
+  }
+
   const accountId = normalizeOptionalValue(env.CLOUDFLARE_ACCOUNT_ID);
   const apiToken = normalizeOptionalValue(env.CLOUDFLARE_API_TOKEN);
 
@@ -361,7 +407,7 @@ export async function readDeployedSandboxCronPresence(
   const response = await fetch(
     `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(
       accountId,
-    )}/workers/scripts/${encodeURIComponent(SANDBOX_WORKER_NAME)}/schedules`,
+    )}/workers/scripts/${encodeURIComponent(getWorkerName(environment))}/schedules`,
     {
       headers: {
         Authorization: `Bearer ${apiToken}`,
@@ -401,10 +447,11 @@ export async function readDeployedSandboxCronPresence(
 
 export function formatStripeWebhookEndpointVerificationReport(result: StripeWebhookEndpointVerificationResult): string {
   const endpoint = result.endpointAnalysis.endpoint;
+  const environmentLabel = formatEnvironmentLabel(result.environment).toLowerCase();
   const lines = [
-    `Stripe sandbox webhook endpoint verification ${result.issues.length ? 'failed' : 'OK'}.`,
+    `Stripe ${environmentLabel} webhook endpoint verification ${result.issues.length ? 'failed' : 'OK'}.`,
     `Environment: ${result.environment}`,
-    `Endpoint URL: ${SANDBOX_WEBHOOK_URL}`,
+    `Endpoint URL: ${getWebhookUrl(result.environment)}`,
     `Endpoint: ${
       endpoint
         ? `${redactStripeObjectId(endpoint.id)} (status=${endpoint.status ?? 'unknown'}, livemode=${formatNullableBoolean(
@@ -512,13 +559,13 @@ function createPnpmCommand(args: string[]): { args: string[]; command: string } 
     : { args, command: 'pnpm' };
 }
 
-function parseEnvironment(value: string | undefined): 'sandbox' {
-  if (value === 'sandbox') {
+function parseEnvironment(value: string | undefined): StripeWebhookVerifyEnvironment {
+  if (value === 'sandbox' || value === 'production') {
     return value;
   }
 
   throw new StripeWebhookEndpointVerificationError(
-    'Stripe webhook endpoint verification is currently supported only with --env sandbox.',
+    'Stripe webhook endpoint verification requires --env sandbox or --env production.',
   );
 }
 
@@ -544,10 +591,22 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function getWebhookUrl(environment: StripeWebhookVerifyEnvironment): string {
+  return environment === 'production' ? PRODUCTION_WEBHOOK_URL : SANDBOX_WEBHOOK_URL;
+}
+
+function getWorkerName(environment: StripeWebhookVerifyEnvironment): string {
+  return environment === 'production' ? 'blackbox-records-backend' : SANDBOX_WORKER_NAME;
+}
+
+function formatEnvironmentLabel(environment: StripeWebhookVerifyEnvironment): string {
+  return environment === 'production' ? 'Production' : 'Sandbox';
+}
+
 async function main() {
-  parseStripeWebhookVerifyArgs(process.argv.slice(2));
+  const options = parseStripeWebhookVerifyArgs(process.argv.slice(2));
   const client = createStripeWebhookEndpointRestClient(process.env.STRIPE_SECRET_KEY ?? '');
-  const result = await verifyStripeWebhookEndpointConfiguration({ client });
+  const result = await verifyStripeWebhookEndpointConfiguration({ client, environment: options.environment });
   const report = formatStripeWebhookEndpointVerificationReport(result);
 
   if (result.issues.length) {

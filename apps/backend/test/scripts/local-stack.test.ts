@@ -89,6 +89,25 @@ describe('local stack launcher plan', () => {
     ]);
   });
 
+  it('builds the uat-connected stack without local Worker, D1, or UAT secrets', () => {
+    const plan = buildStackPlan('uat-connected');
+
+    expect(plan.ports).toEqual([4321]);
+    expect(plan.prepare).toEqual([]);
+    expect(plan.longRunning).toEqual([
+      expect.objectContaining({
+        args: ['site:dev'],
+        command: 'pnpm',
+        env: expect.objectContaining({
+          PUBLIC_BACKEND_BASE_URL: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
+          PUBLIC_CHECKOUT_CLIENT_MODE: 'stripe',
+        }),
+        name: 'Static site',
+        waitForPort: 4321,
+      }),
+    ]);
+  });
+
   it('does not require a publishable key for hosted Checkout redirect stacks', () => {
     expect(
       readRequiredEnvironmentIssues(
@@ -99,6 +118,7 @@ describe('local stack launcher plan', () => {
     ).toEqual([]);
     expect(readRequiredEnvironmentIssues('stripe-mock', {}, new Set(['STRIPE_SECRET_KEY']))).toEqual([]);
     expect(readRequiredEnvironmentIssues('stripe-mock-api', {}, new Set(['STRIPE_SECRET_KEY']))).toEqual([]);
+    expect(readRequiredEnvironmentIssues('uat-connected', {}, new Set())).toEqual([]);
   });
 
   it('requires a backend Stripe secret only for the real Stripe test stack', () => {
@@ -111,5 +131,6 @@ describe('local stack launcher plan', () => {
 
     expect(readRequiredEnvironmentIssues('stripe-mock', {}, new Set())).toEqual([]);
     expect(readRequiredEnvironmentIssues('stripe-mock-api', {}, new Set())).toEqual([]);
+    expect(readRequiredEnvironmentIssues('uat-connected', {}, new Set())).toEqual([]);
   });
 });

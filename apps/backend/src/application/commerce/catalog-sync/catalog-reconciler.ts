@@ -151,11 +151,11 @@ export class CatalogReconciler {
       resolvedPrice &&
       options.apply &&
       options.expectedPrice &&
-      this.dependencies.environment === 'sandbox' &&
+      issues.length === 0 &&
       !matchesExpectedPrice(resolvedPrice, options.expectedPrice)
     ) {
       actions.push({ kind: 'archive_price', stripePriceId: resolvedPrice.priceId });
-      resolvedPrice = await this.dependencies.stripeCatalog.createSandboxPrice(
+      resolvedPrice = await this.dependencies.stripeCatalog.createCatalogPrice(
         {
           amountMinor: options.expectedPrice.amountMinor,
           currencyCode: options.expectedPrice.currencyCode,
@@ -167,15 +167,15 @@ export class CatalogReconciler {
         createMutationContext(
           this.dependencies.environment,
           storeItem.variantId,
-          'create_sandbox_price',
-          createSandboxPriceMutationIdentity(options.expectedPrice, options.productProjection ?? null),
+          'create_catalog_price',
+          createCatalogPriceMutationIdentity(options.expectedPrice, options.productProjection ?? null),
         ),
       );
-      actions.push({ kind: 'create_sandbox_price' });
+      actions.push({ kind: 'create_catalog_price' });
     }
 
-    if (!resolvedPrice && options.apply && options.expectedPrice && this.dependencies.environment === 'sandbox') {
-      resolvedPrice = await this.dependencies.stripeCatalog.createSandboxPrice(
+    if (!resolvedPrice && options.apply && options.expectedPrice && issues.length === 0) {
+      resolvedPrice = await this.dependencies.stripeCatalog.createCatalogPrice(
         {
           amountMinor: options.expectedPrice.amountMinor,
           currencyCode: options.expectedPrice.currencyCode,
@@ -187,11 +187,11 @@ export class CatalogReconciler {
         createMutationContext(
           this.dependencies.environment,
           storeItem.variantId,
-          'create_sandbox_price',
-          createSandboxPriceMutationIdentity(options.expectedPrice, options.productProjection ?? null),
+          'create_catalog_price',
+          createCatalogPriceMutationIdentity(options.expectedPrice, options.productProjection ?? null),
         ),
       );
-      actions.push({ kind: 'create_sandbox_price' });
+      actions.push({ kind: 'create_catalog_price' });
     }
 
     if (!resolvedPrice) {
@@ -397,17 +397,15 @@ export class CatalogReconciler {
           syncedAt: now,
           variantId: storeItem.variantId,
         });
-      } else if (action.kind === 'update_stripe_metadata' && this.dependencies.environment === 'sandbox') {
+      } else if (action.kind === 'update_stripe_metadata') {
+        this.assertCatalogMutationAllowed(storeItem, lookupKey, resolvedPrice, action.kind);
         await this.dependencies.stripeCatalog.updatePriceMetadata(
           resolvedPrice.priceId,
           createStripeCatalogMetadata(this.dependencies.environment, storeItem),
           createMutationContext(this.dependencies.environment, storeItem.variantId, action.kind, resolvedPrice.priceId),
         );
-      } else if (
-        action.kind === 'update_product_projection' &&
-        productProjection &&
-        this.dependencies.environment === 'sandbox'
-      ) {
+      } else if (action.kind === 'update_product_projection' && productProjection) {
+        this.assertCatalogMutationAllowed(storeItem, lookupKey, resolvedPrice, action.kind);
         await this.dependencies.stripeCatalog.updateProductProjection(
           action.productId,
           {
@@ -417,6 +415,25 @@ export class CatalogReconciler {
           createMutationContext(this.dependencies.environment, storeItem.variantId, action.kind, action.productId),
         );
       }
+    }
+  }
+
+  private assertCatalogMutationAllowed(
+    storeItem: StoreItemOptionRecord,
+    lookupKey: string,
+    resolvedPrice: StripeCatalogPrice,
+    action: CatalogSyncAction['kind'],
+  ): void {
+    if (this.dependencies.environment !== 'production') {
+      return;
+    }
+
+    if (!matchesCatalogIdentity(resolvedPrice, storeItem, this.dependencies.environment, lookupKey)) {
+      throw new Error(`Refusing production ${action}: resolved Stripe Price is not app-owned for ${lookupKey}.`);
+    }
+
+    if (action === 'update_product_projection' && !resolvedPrice.productId) {
+      throw new Error(`Refusing production ${action}: resolved Stripe Product is missing for ${lookupKey}.`);
     }
   }
 }
@@ -538,10 +555,14 @@ function createMutationContext(
   };
 }
 
-function createSandboxPriceMutationIdentity(
+function createCatalogPriceMutationIdentity(
   expectedPrice: StripeCatalogExpectedPrice,
   productProjection: StripeCatalogProductProjection | null,
 ): string {
+  if (expectedPrice.revision) {
+    return `revision_${expectedPrice.revision}`;
+  }
+
   return createStableShortHash(
     JSON.stringify({
       amountMinor: expectedPrice.amountMinor,

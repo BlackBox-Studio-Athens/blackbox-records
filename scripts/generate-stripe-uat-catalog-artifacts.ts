@@ -27,6 +27,24 @@ const sandboxUatSeedPath = path.join(
   'seeds',
   'sandbox-uat-commerce-state.sql',
 );
+const productionReadinessSeedPath = path.join(
+  process.cwd(),
+  'apps',
+  'backend',
+  'prisma',
+  'seeds',
+  'production-commerce-readiness.sql',
+);
+const desiredCatalogStatePath = path.join(
+  process.cwd(),
+  'apps',
+  'backend',
+  'src',
+  'application',
+  'commerce',
+  'catalog-sync',
+  'desired-catalog-state.ts',
+);
 
 export function createSandboxUatCatalogStock(contract: Pick<StripeCatalogStoreItemContract, 'storeItemSlug'>): {
   onlineQuantity: number;
@@ -124,6 +142,44 @@ export function createCatalogProductProjectionSource(contracts: StripeCatalogSto
   ].join('\n')}`;
 }
 
+export function createDesiredCatalogStateSource(contracts: StripeCatalogStoreItemContract[]): string {
+  const entries = contracts.map((contract) => contract.desiredCatalogEntry);
+  const revision = createDesiredCatalogStateRevision(contracts);
+
+  return `${[
+    "import type { DesiredCatalogEntry, DesiredCatalogEnvironment, DesiredCatalogState, DesiredPrice } from './types';",
+    '',
+    'export type { DesiredCatalogEntry, DesiredCatalogEnvironment, DesiredCatalogState, DesiredPrice };',
+    '',
+    'export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = ',
+    `${JSON.stringify(entries, null, 2)};`,
+    '',
+    'export const currentDesiredCatalogState: DesiredCatalogState = {',
+    `  revision: ${JSON.stringify(revision)},`,
+    '  entries: currentDesiredCatalogEntries,',
+    '};',
+    '',
+    'export function createCurrentDesiredCatalogEntriesForEnvironment(',
+    '  environment: DesiredCatalogEnvironment,',
+    '): DesiredCatalogEntry[] {',
+    '  return currentDesiredCatalogEntries.filter((entry) => entry.targetEnvironments.includes(environment));',
+    '}',
+    '',
+    'export function createCurrentDesiredPriceMap(environment: DesiredCatalogEnvironment): Map<string, DesiredPrice> {',
+    '  return new Map(',
+    '    createCurrentDesiredCatalogEntriesForEnvironment(environment).flatMap((entry) =>',
+    '      entry.desiredPrice ? [[entry.variantId, entry.desiredPrice] as const] : [],',
+    '    ),',
+    '  );',
+    '}',
+    '',
+    'export function findCurrentDesiredCatalogEntry(variantId: string): DesiredCatalogEntry | null {',
+    '  return currentDesiredCatalogEntries.find((entry) => entry.variantId === variantId) ?? null;',
+    '}',
+    '',
+  ].join('\n')}`;
+}
+
 export function createSandboxUatCommerceSql(contracts: StripeCatalogStoreItemContract[]): string {
   if (contracts.length === 0) {
     throw new Error('No Store Item contracts found for sandbox UAT commerce seed.');
@@ -140,9 +196,33 @@ export function createSandboxUatCommerceSql(contracts: StripeCatalogStoreItemCon
   ].join('\n\n');
 }
 
+export function createProductionCommerceReadinessSql(contracts: StripeCatalogStoreItemContract[]): string {
+  const productionContracts = contracts.filter((contract) =>
+    contract.desiredCatalogEntry.targetEnvironments.includes('production'),
+  );
+
+  return [
+    '-- Production catalog readiness seed generated from Desired Catalog State.',
+    '-- This file must not overwrite existing operator-owned stock quantities.',
+    createProductionStoreItemOptionSql(productionContracts),
+    createProductionItemAvailabilitySql(productionContracts),
+    createProductionStockInitializationSql(productionContracts),
+    '',
+  ].join('\n\n');
+}
+
 async function run(mode: GenerateMode): Promise<void> {
   const contracts = await loadStripeCatalogStoreItemContracts();
   const generated = [
+    {
+      content: await format(createDesiredCatalogStateSource(contracts), {
+        parser: 'typescript',
+        printWidth: 120,
+        singleQuote: true,
+      }),
+      label: 'Desired Catalog State',
+      path: desiredCatalogStatePath,
+    },
     {
       content: await format(createCatalogProductProjectionSource(contracts), {
         parser: 'typescript',
@@ -156,6 +236,11 @@ async function run(mode: GenerateMode): Promise<void> {
       content: createSandboxUatCommerceSql(contracts),
       label: 'sandbox UAT commerce seed',
       path: sandboxUatSeedPath,
+    },
+    {
+      content: createProductionCommerceReadinessSql(contracts),
+      label: 'production commerce readiness seed',
+      path: productionReadinessSeedPath,
     },
   ];
 
@@ -178,6 +263,24 @@ async function run(mode: GenerateMode): Promise<void> {
   }
 
   console.log('Generated Stripe UAT catalog artifacts are up to date.');
+}
+
+function createDesiredCatalogStateRevision(contracts: StripeCatalogStoreItemContract[]): string {
+  const payload = JSON.stringify(
+    contracts.map((contract) => ({
+      desiredPrice: contract.desiredCatalogEntry.desiredPrice,
+      storeItemSlug: contract.storeItemSlug,
+      targetEnvironments: contract.desiredCatalogEntry.targetEnvironments,
+      variantId: contract.variantId,
+    })),
+  );
+  let hash = 0;
+
+  for (let index = 0; index < payload.length; index += 1) {
+    hash = (hash * 31 + payload.charCodeAt(index)) >>> 0;
+  }
+
+  return `desired-catalog-${hash.toString(16).padStart(8, '0')}`;
 }
 
 function createStaleIdentityCleanupSql(): string {
@@ -244,6 +347,14 @@ function createStoreItemOptionSql(contracts: StripeCatalogStoreItemContract[]): 
   ].join('\n');
 }
 
+function createProductionStoreItemOptionSql(contracts: StripeCatalogStoreItemContract[]): string {
+  if (contracts.length === 0) {
+    return '-- No production-targeted StoreItemOption rows.';
+  }
+
+  return createStoreItemOptionSql(contracts);
+}
+
 function createItemAvailabilitySql(contracts: StripeCatalogStoreItemContract[]): string {
   return [
     'INSERT INTO "ItemAvailability" (',
@@ -261,6 +372,38 @@ function createItemAvailabilitySql(contracts: StripeCatalogStoreItemContract[]):
           contract.variantId,
           'available',
           true,
+          'CURRENT_TIMESTAMP',
+        ]),
+      )
+      .join(',\n'),
+    'ON CONFLICT("variantId") DO UPDATE SET',
+    '    "status" = excluded."status",',
+    '    "canBuy" = excluded."canBuy",',
+    '    "updatedAt" = CURRENT_TIMESTAMP;',
+  ].join('\n');
+}
+
+function createProductionItemAvailabilitySql(contracts: StripeCatalogStoreItemContract[]): string {
+  if (contracts.length === 0) {
+    return '-- No production-targeted ItemAvailability rows.';
+  }
+
+  return [
+    'INSERT INTO "ItemAvailability" (',
+    '    "id",',
+    '    "variantId",',
+    '    "status",',
+    '    "canBuy",',
+    '    "updatedAt"',
+    ')',
+    'VALUES',
+    contracts
+      .map((contract) =>
+        formatValues([
+          `item_availability_${toSqlIdFragment(contract.storeItemSlug)}`,
+          contract.variantId,
+          contract.desiredCatalogEntry.availability === 'published' ? 'available' : 'sold_out',
+          contract.desiredCatalogEntry.availability === 'published',
           'CURRENT_TIMESTAMP',
         ]),
       )
@@ -300,6 +443,42 @@ function createStockSql(contracts: StripeCatalogStoreItemContract[]): string {
     '    "quantity" = excluded."quantity",',
     '    "onlineQuantity" = excluded."onlineQuantity",',
     '    "updatedAt" = CURRENT_TIMESTAMP;',
+  ].join('\n');
+}
+
+function createProductionStockInitializationSql(contracts: StripeCatalogStoreItemContract[]): string {
+  const stockContracts = contracts.filter(
+    (contract) => contract.desiredCatalogEntry.stockInitialization.initialOnlineQuantity !== null,
+  );
+
+  if (stockContracts.length === 0) {
+    return '-- No first-publication production stock initialization rows.';
+  }
+
+  return [
+    'INSERT INTO "Stock" (',
+    '    "id",',
+    '    "variantId",',
+    '    "quantity",',
+    '    "onlineQuantity",',
+    '    "createdAt",',
+    '    "updatedAt"',
+    ')',
+    'VALUES',
+    stockContracts
+      .map((contract) => {
+        const onlineQuantity = contract.desiredCatalogEntry.stockInitialization.initialOnlineQuantity ?? 0;
+        return formatValues([
+          `stock_${toSqlIdFragment(contract.storeItemSlug)}`,
+          contract.variantId,
+          onlineQuantity,
+          onlineQuantity,
+          'CURRENT_TIMESTAMP',
+          'CURRENT_TIMESTAMP',
+        ]);
+      })
+      .join(',\n'),
+    'ON CONFLICT("variantId") DO NOTHING;',
   ].join('\n');
 }
 

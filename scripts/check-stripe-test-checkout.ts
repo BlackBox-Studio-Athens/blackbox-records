@@ -60,8 +60,14 @@ export function formatStripeTestCheckoutPreflightReport(result: StripeTestChecko
   }
 
   return [
-    `Stripe test checkout preflight failed: ${result.issues.length} issue(s).`,
+    `Advanced Stripe test checkout diagnostic preflight failed: ${result.issues.length} issue(s).`,
     ...result.issues.map((issue) => `- ${issue}`),
+    '',
+    'Normal Local modes are exactly:',
+    '- mock: pnpm dev:stack:stripe-mock',
+    '- uat-connected: pnpm dev:stack:uat-connected',
+    '',
+    'This command is only for the advanced local Stripe test diagnostic path.',
     '',
     'Required setup:',
     '1. Copy apps/backend/.dev.vars.example to apps/backend/.dev.vars.',

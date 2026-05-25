@@ -10,6 +10,35 @@ import type { StripeCatalogStoreItemContract } from '../../../../scripts/stripe-
 
 const contract: StripeCatalogStoreItemContract = {
   alignmentStatus: 'checkout_eligible',
+  desiredCatalogEntry: {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+      revision: 'disintegration-black-vinyl-lp-2800-eur',
+    },
+    productProjection: {
+      description: 'Projected product.',
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/product.jpg'],
+      metadata: {
+        sourceId: 'disintegration',
+        sourceKind: 'release',
+        storeItemSlug: 'disintegration-black-vinyl-lp',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      },
+      name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+      taxCode: null,
+    },
+    smokeCandidate: false,
+    sourceId: 'disintegration',
+    sourceKind: 'release',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'disintegration-black-vinyl-lp',
+    targetEnvironments: ['sandbox'],
+    variantId: 'variant_disintegration-black-vinyl-lp_standard',
+  },
   expectedSandboxPrice: {
     amountMinor: 2800,
     currencyCode: 'EUR',

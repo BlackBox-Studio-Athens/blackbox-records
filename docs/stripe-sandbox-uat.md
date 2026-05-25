@@ -1,14 +1,14 @@
 # Stripe Sandbox UAT Guide
 
-This guide is for label-member testing of the sandbox checkout flow on GitHub Pages.
+This guide is for label-member testing of UAT checkout on GitHub Pages. `sandbox` is the mapped Worker runtime target and Stripe test-mode provider layer, not a separate Product Environment.
 
 ## Test URL
 
-Use the GitHub Pages sandbox UAT site:
+Use the GitHub Pages UAT site:
 
 https://blackbox-studio-athens.github.io/blackbox-records/
 
-The site is static, but checkout calls the sandbox Worker:
+The site is static, but checkout calls the UAT Worker/API. That Worker is deployed through the Wrangler `sandbox` runtime target:
 
 https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev
 
@@ -17,12 +17,12 @@ https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev
 - This is Stripe test mode only.
 - Do not enter real card details.
 - No real charges are created.
-- Orders, stock changes, and webhook evidence are sandbox-only.
+- Orders, stock changes, and webhook evidence are UAT-only and backed by sandbox D1 plus Stripe test mode.
 - Report buyer-facing UI issues, confusing wording, broken flows, and anything that feels unsafe or unclear.
 
 ## Operator Webhook Readiness
 
-Sandbox paid-order and catalog webhook evidence must use the persistent Stripe Dashboard/Workbench webhook endpoint:
+UAT paid-order and catalog webhook evidence must use the persistent Stripe Dashboard/Workbench test-mode webhook endpoint:
 
 ```text
 https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev/api/stripe/webhooks
@@ -39,14 +39,14 @@ price.updated
 price.deleted
 ```
 
-Before accepting sandbox webhook readiness, run:
+Before accepting UAT webhook readiness, run:
 
 ```sh
 pnpm stripe:webhooks:verify --env sandbox
 pnpm stripe:catalog:verify --env sandbox
 ```
 
-If the endpoint is newly created, recreated, or its signing secret is rotated, update the sandbox Worker from `apps/backend`:
+If the endpoint is newly created, recreated, or its signing secret is rotated, update the UAT Worker from `apps/backend`:
 
 ```sh
 pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env sandbox
@@ -54,19 +54,21 @@ pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env sandbox
 
 Do not paste the signing secret into docs, chat, screenshots, evidence files, Astro public env vars, or committed files. For an existing endpoint, reveal/copy the signing secret from Stripe Dashboard/Workbench and put it directly into Wrangler. Stripe endpoint list/retrieve APIs do not return an existing endpoint secret, so `pnpm stripe:webhooks:verify --env sandbox` separates endpoint configuration proof from signing-secret match proof.
 
-Catalog correctness is layered: persistent webhooks provide near-real-time sync, Store Offer reads reconcile stale snapshots, checkout start revalidates the active Stripe Price, scheduled sandbox catalog verification runs every six hours, and `pnpm stripe:catalog:verify --env sandbox` remains the operator proof for current catalog alignment.
+Catalog correctness is layered: persistent webhooks provide near-real-time sync, Store Offer reads reconcile stale snapshots, checkout start revalidates the active Stripe Price, scheduled UAT catalog verification runs every six hours, and `pnpm stripe:catalog:verify --env sandbox` remains the Worker-target command for current UAT catalog alignment.
 
-Catalog Field Ownership keeps sandbox alignment explicit:
+UAT is also the first leg of the shared Catalog Promotion pipeline described in [`docs/catalog-promotion.md`](catalog-promotion.md). Normal CMS publication should use the generated artifact commit and promotion workflow instead of treating sandbox apply as a detached manual checklist.
 
-- Product Projection is repo-owned and may update Stripe Product name, description, image URLs, and metadata only through a reviewed sandbox apply.
+Catalog Field Ownership keeps UAT alignment explicit:
+
+- Product Projection is repo-owned and may update Stripe Product name, description, image URLs, and metadata only through a reviewed UAT apply. UAT Product image URLs use the GitHub Pages UAT asset base.
 - Price Authority is Stripe-owned. Change prices by creating a replacement Stripe Price, moving lookup key/metadata to that Price, archiving the stale Price, and rerunning catalog verification.
 - Stripe Dashboard edits to Product presentation are drift unless repo content/projection is updated first.
-- `pnpm stripe:catalog:verify --env sandbox --apply` is sandbox-only and should follow a reviewed dry-run plan.
+- `pnpm stripe:catalog:verify --env sandbox --apply` is UAT-only and should follow a reviewed dry-run plan.
 - Full-catalog sandbox reset is a deactivation flow, not hard deletion. It only targets Stripe test-mode objects identified by BlackBox sandbox metadata, lookup keys, or documented catalog-derived legacy sandbox names.
 
 ## Full Catalog UAT Alignment
 
-The sandbox UAT catalog is generated from current Astro Store Item content. The placeholder `___.json` distro file remains excluded by the projection loader until it becomes an explicit content decision.
+The UAT catalog is generated from current Astro Store Item content. The placeholder `___.json` distro file remains excluded by the projection loader until it becomes an explicit content decision.
 
 Sandbox test Price defaults:
 
@@ -86,7 +88,7 @@ Sandbox Product category / Stripe Tax default:
 
 Static pages may show items as available with `Worker-confirmed at checkout`. They must not expose Stripe Price IDs, D1 IDs, stock authority, secrets, or authoritative prices.
 
-Operator sequence for a full sandbox catalog reset:
+Operator sequence for a full UAT catalog reset:
 
 ```powershell
 git status --short

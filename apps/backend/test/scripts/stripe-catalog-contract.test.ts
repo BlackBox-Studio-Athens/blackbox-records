@@ -10,6 +10,8 @@ import {
   type StripeCatalogStoreItemContract,
 } from '../../../../scripts/stripe-catalog-contract';
 import {
+  createDesiredCatalogStateSource,
+  createProductionCommerceReadinessSql,
   createSandboxUatCatalogStock,
   createSandboxUatCommerceSql,
 } from '../../../../scripts/generate-stripe-uat-catalog-artifacts';
@@ -17,8 +19,7 @@ import {
 describe('stripe catalog contract projection', () => {
   it('derives Product Projection contracts for all current Store Items without Astro runtime imports', async () => {
     const contracts = await loadStripeCatalogStoreItemContracts({
-      basePath: '/',
-      siteUrl: 'https://blackbox-records-web.pages.dev',
+      productEnvironment: 'prd',
     });
     const contractsBySlug = new Map(contracts.map((contract) => [contract.storeItemSlug, contract]));
 
@@ -27,6 +28,14 @@ describe('stripe catalog contract projection', () => {
     expect(new Set(contracts.map((contract) => contract.alignmentStatus))).toEqual(new Set(['checkout_eligible']));
     expect(contractsBySlug.get('disintegration-black-vinyl-lp')).toMatchObject({
       alignmentStatus: 'checkout_eligible',
+      desiredCatalogEntry: {
+        availability: 'published',
+        desiredPrice: {
+          amountMinor: 2800,
+          currencyCode: 'EUR',
+        },
+        targetEnvironments: ['sandbox'],
+      },
       expectedSandboxPrice: {
         amountMinor: 2800,
         currencyCode: 'EUR',
@@ -85,6 +94,35 @@ describe('stripe catalog contract projection', () => {
     );
   });
 
+  it('generates Desired Catalog State from the same content contract without production targets by default', async () => {
+    const contracts = await loadStripeCatalogStoreItemContracts({
+      productEnvironment: 'prd',
+    });
+    const disintegration = contracts.find((contract) => contract.storeItemSlug === 'disintegration-black-vinyl-lp');
+    const source = createDesiredCatalogStateSource(contracts);
+
+    expect(disintegration?.desiredCatalogEntry).toMatchObject({
+      availability: 'published',
+      desiredPrice: {
+        amountMinor: 2800,
+        currencyCode: 'EUR',
+      },
+      productProjection: {
+        name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+      },
+      smokeCandidate: false,
+      stockInitialization: {
+        initialOnlineQuantity: null,
+      },
+      targetEnvironments: ['sandbox'],
+    });
+    expect(contracts.flatMap((contract) => contract.desiredCatalogEntry.targetEnvironments)).not.toContain(
+      'production',
+    );
+    expect(source).toContain('export const currentDesiredCatalogState');
+    expect(source).toContain('createCurrentDesiredCatalogEntriesForEnvironment');
+  });
+
   it('uses format-based sandbox test prices without making the browser price authority', () => {
     expect(createExpectedSandboxPrice('Cassette')).toEqual({
       amountMinor: 1200,
@@ -105,7 +143,7 @@ describe('stripe catalog contract projection', () => {
   });
 
   it('keeps the Worker-safe Product Projection manifest in sync with generated catalog contracts', async () => {
-    const contracts = await loadStripeCatalogStoreItemContracts();
+    const contracts = await loadStripeCatalogStoreItemContracts({ productEnvironment: 'uat' });
 
     expect(currentCatalogProductProjectionEntries).toEqual(
       contracts.map((contract) => ({
@@ -128,6 +166,31 @@ describe('stripe catalog contract projection', () => {
 
     const invalidContract: StripeCatalogStoreItemContract = {
       alignmentStatus: 'checkout_eligible',
+      desiredCatalogEntry: {
+        availability: 'published',
+        desiredPrice: null,
+        productProjection: {
+          description: 'Invalid test contract.',
+          imageUrls: ['/admin/media/distro/cassette-tape.jpg'],
+          metadata: {
+            sourceId: 'afterglow-tape',
+            sourceKind: 'distro',
+            storeItemSlug: 'afterglow-tape',
+            variantId: 'variant_afterglow-tape_standard',
+          },
+          name: 'Invalid test contract',
+          taxCode: null,
+        },
+        smokeCandidate: false,
+        sourceId: 'afterglow-tape',
+        sourceKind: 'distro',
+        stockInitialization: {
+          initialOnlineQuantity: null,
+        },
+        storeItemSlug: 'afterglow-tape',
+        targetEnvironments: ['sandbox'],
+        variantId: 'variant_afterglow-tape_standard',
+      },
       expectedSandboxPrice: null,
       productProjection: {
         description: 'Invalid test contract.',
@@ -153,7 +216,7 @@ describe('stripe catalog contract projection', () => {
   });
 
   it('generates sandbox UAT D1 readiness rows with only afterglow as low stock', async () => {
-    const contracts = await loadStripeCatalogStoreItemContracts();
+    const contracts = await loadStripeCatalogStoreItemContracts({ productEnvironment: 'uat' });
     const stockBySlug = new Map(
       contracts.map((contract) => [contract.storeItemSlug, createSandboxUatCatalogStock(contract)]),
     );
@@ -183,5 +246,17 @@ describe('stripe catalog contract projection', () => {
     expect(sql).not.toContain("'mass-culture-lp', 'distro'");
     expect(sql).not.toContain('price_');
     expect(sql).not.toContain('sk_');
+  });
+
+  it('generates production D1 readiness without sandbox stock defaults or stock overwrites', async () => {
+    const contracts = await loadStripeCatalogStoreItemContracts({ productEnvironment: 'prd' });
+    const sql = createProductionCommerceReadinessSql(contracts);
+
+    expect(sql).toContain('Production catalog readiness seed generated from Desired Catalog State.');
+    expect(sql).toContain('No production-targeted StoreItemOption rows.');
+    expect(sql).toContain('No production-targeted ItemAvailability rows.');
+    expect(sql).toContain('No first-publication production stock initialization rows.');
+    expect(sql).not.toContain('99, 99');
+    expect(sql).not.toContain('DO UPDATE SET\n    "quantity" = excluded."quantity"');
   });
 });

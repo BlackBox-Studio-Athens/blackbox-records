@@ -1,4 +1,4 @@
-name: Deploy Astro site to Pages
+name: Deploy UAT static site to GitHub Pages
 
 on:
   push:
@@ -21,10 +21,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5.0.1
 
-      - name: Configure GitHub Pages
+      - name: Configure GitHub Pages UAT
         uses: actions/configure-pages@v6.0.0
 
-      - name: Build site and Pages artifact
+      - name: Build UAT site and Pages artifact
         uses: withastro/action@v6.1.1
         env:
           DECAP_SITE_URL: ${{ vars.DECAP_SITE_URL }}
@@ -45,7 +45,7 @@ jobs:
             pnpm --workspace-root test:unit &&
             pnpm --workspace-root check &&
             pnpm --workspace-root audit:unused &&
-            PUBLIC_BACKEND_BASE_URL="${{ vars.PUBLIC_BACKEND_BASE_URL }}" pnpm --workspace-root build:web
+            PUBLIC_BACKEND_BASE_URL="${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}" pnpm --workspace-root build:web
 
   deploy:
     needs: verify
@@ -54,6 +54,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy to GitHub Pages
+      - name: Deploy UAT to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5.0.0

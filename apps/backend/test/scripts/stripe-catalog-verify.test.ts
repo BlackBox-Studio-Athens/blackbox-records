@@ -17,18 +17,49 @@ const storeItem = {
 };
 
 describe('stripe catalog verify script helpers', () => {
-  it('parses sandbox dry-run and apply flags while rejecting production apply', () => {
+  it('parses sandbox dry-run and apply flags while requiring promotion context for production apply', () => {
     expect(parseStripeCatalogVerifyArgs(['--env', 'sandbox'])).toEqual({
       apply: false,
       environment: 'sandbox',
+      promotionContext: null,
     });
     expect(parseStripeCatalogVerifyArgs(['--env=sandbox', '--apply'])).toEqual({
       apply: true,
       environment: 'sandbox',
+      promotionContext: null,
     });
     expect(() => parseStripeCatalogVerifyArgs(['--env', 'production', '--apply'])).toThrow(
-      'Stripe catalog apply is allowed only with --env sandbox.',
+      'Production Stripe catalog apply requires promotion context.',
     );
+    expect(
+      parseStripeCatalogVerifyArgs([
+        '--env=production',
+        '--apply',
+        '--artifact-commit-sha',
+        'abc123',
+        '--promotion-run-id=run-456',
+        '--ci-promotion',
+      ]),
+    ).toEqual({
+      apply: true,
+      environment: 'production',
+      promotionContext: {
+        artifactCommitSha: 'abc123',
+        ci: true,
+        runId: 'run-456',
+      },
+    });
+  });
+
+  it('allows production dry-run without promotion context', () => {
+    expect(parseStripeCatalogVerifyArgs(['--env', 'production'])).toEqual({
+      apply: false,
+      environment: 'production',
+      promotionContext: null,
+    });
+    expect(() =>
+      parseStripeCatalogVerifyArgs(['--env', 'production', '--apply', '--artifact-commit-sha', 'abc123']),
+    ).toThrow('Run from CI with --ci-promotion, --artifact-commit-sha <sha>, and --promotion-run-id <id>.');
   });
 
   it('formats redacted diagnostics without printing full Stripe object IDs', () => {

@@ -20,5 +20,9 @@ describe('Decap distro collection', () => {
     expect(yaml).toContain('date_format: YYYY-MM-DD');
     expect(yaml).toContain('name: "order"');
     expect(yaml).toContain('value_type: int');
+    expect(yaml).toContain('name: "commerce"');
+    expect(yaml).toContain('label: "Enable checkout"');
+    expect(yaml).toContain('default: txcd_99999999');
+    expect(yaml).toContain('name: "smoke_candidate"');
   });
 });

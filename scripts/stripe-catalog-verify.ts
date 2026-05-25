@@ -29,6 +29,13 @@ import { loadStripeCatalogStoreItemContracts, type StripeCatalogStoreItemContrac
 type CatalogVerifyOptions = {
   apply: boolean;
   environment: StripeCatalogEnvironment;
+  promotionContext: CatalogPromotionContext | null;
+};
+
+type CatalogPromotionContext = {
+  artifactCommitSha: string;
+  ci: boolean;
+  runId: string;
 };
 
 type D1CatalogRow = {
@@ -53,6 +60,7 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
   const options: CatalogVerifyOptions = {
     apply: false,
     environment: 'sandbox',
+    promotionContext: null,
   };
 
   for (let index = 0; index < args.length; index += 1) {
@@ -64,6 +72,53 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 
     if (arg === '--apply') {
       options.apply = true;
+      continue;
+    }
+
+    if (arg === '--artifact-commit-sha') {
+      const value = args[index + 1];
+      index += 1;
+      options.promotionContext = {
+        ...(options.promotionContext ?? { artifactCommitSha: '', ci: false, runId: '' }),
+        artifactCommitSha: parseRequiredOptionValue('--artifact-commit-sha', value),
+      };
+      continue;
+    }
+
+    if (arg?.startsWith('--artifact-commit-sha=')) {
+      options.promotionContext = {
+        ...(options.promotionContext ?? { artifactCommitSha: '', ci: false, runId: '' }),
+        artifactCommitSha: parseRequiredOptionValue(
+          '--artifact-commit-sha',
+          arg.slice('--artifact-commit-sha='.length),
+        ),
+      };
+      continue;
+    }
+
+    if (arg === '--promotion-run-id') {
+      const value = args[index + 1];
+      index += 1;
+      options.promotionContext = {
+        ...(options.promotionContext ?? { artifactCommitSha: '', ci: false, runId: '' }),
+        runId: parseRequiredOptionValue('--promotion-run-id', value),
+      };
+      continue;
+    }
+
+    if (arg?.startsWith('--promotion-run-id=')) {
+      options.promotionContext = {
+        ...(options.promotionContext ?? { artifactCommitSha: '', ci: false, runId: '' }),
+        runId: parseRequiredOptionValue('--promotion-run-id', arg.slice('--promotion-run-id='.length)),
+      };
+      continue;
+    }
+
+    if (arg === '--ci-promotion') {
+      options.promotionContext = {
+        ...(options.promotionContext ?? { artifactCommitSha: '', ci: false, runId: '' }),
+        ci: true,
+      };
       continue;
     }
 
@@ -80,15 +135,17 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
     }
 
     if (arg === '--help' || arg === '-h') {
-      console.log('Usage: pnpm stripe:catalog:verify --env sandbox [--apply]');
+      console.log(
+        'Usage: pnpm stripe:catalog:verify --env sandbox|production [--apply] [--artifact-commit-sha <sha> --promotion-run-id <id> --ci-promotion]',
+      );
       process.exit(0);
     }
 
     throw new Error(`Unknown argument: ${arg}`);
   }
 
-  if (options.apply && options.environment !== 'sandbox') {
-    throw new Error('Stripe catalog apply is allowed only with --env sandbox.');
+  if (options.apply && options.environment === 'production') {
+    assertProductionApplyPromotionContext(options.promotionContext);
   }
 
   return options;
@@ -101,11 +158,13 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
     throw new Error('Missing STRIPE_SECRET_KEY for Stripe catalog verification.');
   }
 
-  const contracts = await loadStripeCatalogStoreItemContracts();
+  const contracts = await loadStripeCatalogStoreItemContracts({
+    productEnvironment: options.environment === 'production' ? 'prd' : 'uat',
+  });
   const rows = readD1CatalogRows(options.environment, contracts);
   const repositories = createD1CatalogRepositories(options.environment, rows);
-  const expectedPrices = createExpectedPriceMap(contracts);
-  const expectedProductProjections = createExpectedProductProjectionMap(contracts);
+  const expectedPrices = createExpectedPriceMap(contracts, options.environment);
+  const expectedProductProjections = createExpectedProductProjectionMap(contracts, options.environment);
   const reconciler = new CatalogReconciler({
     environment: options.environment,
     storeItems: repositories.storeItems,
@@ -151,11 +210,33 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
   return result;
 }
 
+function assertProductionApplyPromotionContext(context: CatalogPromotionContext | null): void {
+  if (!context?.ci || !context.artifactCommitSha || !context.runId) {
+    throw new Error(
+      [
+        'Production Stripe catalog apply requires promotion context.',
+        'Run from CI with --ci-promotion, --artifact-commit-sha <sha>, and --promotion-run-id <id>.',
+        'Use --env production without --apply for a local dry run.',
+      ].join(' '),
+    );
+  }
+}
+
+function parseRequiredOptionValue(name: string, value: string | undefined): string {
+  const normalized = value?.trim();
+  if (!normalized) {
+    throw new Error(`${name} requires a value.`);
+  }
+
+  return normalized;
+}
+
 export function formatStripeCatalogVerifyReport(result: CatalogSyncRunResult): string {
   const issueCounts = countIssuesByDriftCategory(result);
   const lines = [
     `Stripe catalog verification ${result.issues.length ? 'failed' : 'OK'}.`,
     `Environment: ${result.environment}`,
+    `Product Environment: ${result.environment === 'production' ? 'PRD' : result.environment === 'sandbox' ? 'UAT' : 'Local'}`,
     `Mode: ${result.dryRun ? 'dry-run' : 'apply'}`,
     `Checked variants: ${result.results.length}`,
     '',
@@ -250,16 +331,30 @@ function formatIssueCount(count: number): string {
   return count === 1 ? '1 issue' : `${count} issues`;
 }
 
-function createExpectedPriceMap(contracts: StripeCatalogStoreItemContract[]) {
+function createExpectedPriceMap(contracts: StripeCatalogStoreItemContract[], environment: StripeCatalogEnvironment) {
   return new Map(
     contracts.flatMap((contract) =>
-      contract.expectedSandboxPrice ? [[contract.variantId, contract.expectedSandboxPrice] as const] : [],
+      contract.desiredCatalogEntry.targetEnvironments.includes(
+        environment === 'production' ? 'production' : 'sandbox',
+      ) && contract.desiredCatalogEntry.desiredPrice
+        ? [[contract.variantId, contract.desiredCatalogEntry.desiredPrice] as const]
+        : [],
     ),
   );
 }
 
-function createExpectedProductProjectionMap(contracts: StripeCatalogStoreItemContract[]) {
-  return new Map(contracts.map((contract) => [contract.variantId, contract.productProjection] as const));
+function createExpectedProductProjectionMap(
+  contracts: StripeCatalogStoreItemContract[],
+  environment: StripeCatalogEnvironment,
+) {
+  const desiredEnvironment = environment === 'production' ? 'production' : 'sandbox';
+  return new Map(
+    contracts.flatMap((contract) =>
+      contract.desiredCatalogEntry.targetEnvironments.includes(desiredEnvironment)
+        ? [[contract.variantId, contract.productProjection] as const]
+        : [],
+    ),
+  );
 }
 
 function createD1CatalogRepositories(environment: StripeCatalogEnvironment, rows: D1CatalogRow[]) {
