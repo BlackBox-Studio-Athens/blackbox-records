@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { LoadingButtonContent, LoadingInline } from '@/components/ui/loading-feedback';
 import { createPublicCheckoutApi, type PublicCheckoutApi } from '@/lib/backend/public-checkout-api';
 import { getStoreCartCount, readStoreCartState, type CartLine, type CartLineItemSnapshot } from '@/lib/store-cart';
 import { cn } from '@/lib/utils';
@@ -39,7 +40,7 @@ export const STRIPE_CHECKOUT_BADGE_SRC = `${(import.meta.env.BASE_URL || '/').re
 export function createStripeCheckoutCtaView(isStartingCheckout: boolean) {
   return {
     badgeSrc: isStartingCheckout ? null : STRIPE_CHECKOUT_BADGE_SRC,
-    label: isStartingCheckout ? 'Opening Stripe' : STRIPE_CHECKOUT_CTA_COPY,
+    label: isStartingCheckout ? 'Opening Stripe Checkout' : STRIPE_CHECKOUT_CTA_COPY,
   };
 }
 
@@ -209,6 +210,12 @@ export default function CheckoutOfferStatus({
 
           <div className="space-y-4">
             <p className="text-sm leading-relaxed text-muted-foreground">{view.detail}</p>
+            {view.tone === 'loading' && (
+              <LoadingInline
+                className="text-xs uppercase tracking-[0.16em] text-muted-foreground"
+                label="Confirming price and availability"
+              />
+            )}
 
             {view.canStartCheckout && shippingGateView.canContinueToPayment && hasCheckoutLine ? (
               <Button
@@ -216,11 +223,14 @@ export default function CheckoutOfferStatus({
                 size="lg"
                 className="inline-flex h-auto min-h-11 w-full flex-wrap gap-2 rounded-none px-4 py-3 text-center uppercase tracking-[0.16em] whitespace-normal sm:w-auto sm:min-w-72 sm:flex-nowrap sm:gap-3 sm:px-6"
                 disabled={isStartingCheckout}
+                aria-busy={isStartingCheckout ? 'true' : undefined}
                 onClick={() => {
                   void handleStartCheckout();
                 }}
               >
-                {ctaView.badgeSrc ? (
+                {isStartingCheckout ? (
+                  <LoadingButtonContent label={ctaView.label} />
+                ) : ctaView.badgeSrc ? (
                   <>
                     <span className="min-w-0 leading-tight">{ctaView.label}</span>
                     <img className="h-[18px] w-auto shrink-0" src={ctaView.badgeSrc} alt="" aria-hidden="true" />
@@ -235,7 +245,7 @@ export default function CheckoutOfferStatus({
                   ? 'Add a priced item to the cart before checkout.'
                   : view.canStartCheckout
                     ? 'Stripe opens after checkout is ready.'
-                    : 'Payment opens only after this item is confirmed as buyable.'}
+                    : 'Payment opens after price and availability are confirmed.'}
               </p>
             )}
 
@@ -250,7 +260,7 @@ export default function CheckoutOfferStatus({
 
             {isStartingCheckout && (
               <p className="text-xs leading-relaxed text-muted-foreground" aria-live="polite">
-                Opening Stripe Checkout.
+                Opening Stripe Checkout. Keep this tab open while the secure payment page loads.
               </p>
             )}
           </div>

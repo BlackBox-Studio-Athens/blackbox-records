@@ -95,11 +95,36 @@ body {
 }
 
 .blackbox-cms-boot__copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   margin: 0;
   max-width: 24rem;
   color: var(--bb-admin-text-muted);
   font-size: 0.95rem;
   line-height: 1.6;
+}
+
+.blackbox-cms-boot__spinner {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: 0 0 auto;
+  border: 1px solid rgba(36, 31, 29, 0.2);
+  border-top-color: var(--bb-admin-accent);
+  border-radius: 999px;
+  animation: blackbox-cms-spin 0.9s linear infinite;
+}
+
+@keyframes blackbox-cms-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blackbox-cms-boot__spinner {
+    animation: none;
+  }
 }
 
 h1,

@@ -45,12 +45,24 @@ describe('StoreItemPurchaseActions', () => {
     expect(html).not.toContain('href=');
   });
 
-  it('renders unavailable items as disabled and non-actionable', () => {
+  it('renders pending availability as disabled, busy, and non-actionable', () => {
     const html = renderToStaticMarkup(<StoreItemPurchaseActions cartItem={null} cartSeed={cartSeed} />);
 
     expect(html).toContain(STORE_ITEM_PURCHASE_ACTION_COPY.checking);
     expect(html).toContain('disabled=""');
+    expect(html).toContain('aria-busy="true"');
+    expect(html).toContain('animate-spin');
     expect(html).not.toContain(STORE_ITEM_PURCHASE_ACTION_COPY.addToCart);
+    expect(html).not.toContain('data-store-item-add-to-cart');
+  });
+
+  it('renders unavailable items as disabled without a pending spinner', () => {
+    const html = renderToStaticMarkup(<StoreItemPurchaseActions cartItem={null} cartSeed={null} />);
+
+    expect(html).toContain(STORE_ITEM_PURCHASE_ACTION_COPY.unavailable);
+    expect(html).toContain('disabled=""');
+    expect(html).not.toContain('aria-busy="true"');
+    expect(html).not.toContain('animate-spin');
     expect(html).not.toContain('data-store-item-add-to-cart');
   });
 

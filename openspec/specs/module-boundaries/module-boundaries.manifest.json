@@ -110,6 +110,7 @@
         "apps/web/src/components/ui/card.tsx",
         "apps/web/src/components/ui/grid-pattern.astro",
         "apps/web/src/components/ui/input.tsx",
+        "apps/web/src/components/ui/loading-feedback.tsx",
         "apps/web/src/components/ui/sheet.tsx",
         "apps/web/src/components/ui/spinner.tsx",
         "apps/web/src/components/ui/textarea.tsx",

@@ -531,9 +531,12 @@ export default function AppShellRoot({
       <div
         className="app-shell-route-loading-indicator"
         data-state={isRouteLoading ? 'open' : 'closed'}
-        aria-hidden="true"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
       >
-        <span className="app-shell-route-loading-indicator__bar"></span>
+        <span className="accessibility-visually-hidden-text">{isRouteLoading ? 'Loading section' : ''}</span>
+        <span className="app-shell-route-loading-indicator__bar" aria-hidden="true"></span>
       </div>
 
       <div

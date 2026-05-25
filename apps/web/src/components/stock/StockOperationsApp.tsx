@@ -1,10 +1,12 @@
 import { ArrowRight, RefreshCcw, Search, ShieldCheck } from 'lucide-react';
+import * as React from 'react';
 import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { LoadingButtonContent, LoadingInline, LoadingStateBlock } from '@/components/ui/loading-feedback';
 import { Textarea } from '@/components/ui/textarea';
 import {
   createInternalStockApi,
@@ -19,6 +21,8 @@ interface StockOperationsAppProps {
 }
 
 type HistoryEntry = InternalStockHistoryResponse['entries'][number];
+export type StockLoadingIntent = 'refresh' | 'search' | 'variant' | 'workspace' | null;
+type StockSubmittingIntent = 'stockChange' | 'stockCount' | null;
 
 export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAppProps) {
   const [query, setQuery] = useState('');
@@ -28,6 +32,8 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingIntent, setLoadingIntent] = useState<StockLoadingIntent>('workspace');
+  const [submittingIntent, setSubmittingIntent] = useState<StockSubmittingIntent>(null);
   const [statusMessage, setStatusMessage] = useState('Loading stock workspace.');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [changeDelta, setChangeDelta] = useState('');
@@ -42,6 +48,8 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
   async function searchVariants(nextQuery = query) {
     setErrorMessage(null);
     setIsLoading(true);
+    setLoadingIntent(nextQuery.trim() ? 'search' : 'workspace');
+    setStatusMessage(nextQuery.trim() ? 'Searching variants.' : 'Loading stock workspace.');
 
     try {
       const results = await api.searchVariants(nextQuery, 25);
@@ -52,10 +60,15 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
       setStatusMessage('Stock API unavailable.');
     } finally {
       setIsLoading(false);
+      setLoadingIntent(null);
     }
   }
 
-  async function loadVariant(variantId: string, shouldUpdateUrl = true) {
+  async function loadVariant(
+    variantId: string,
+    shouldUpdateUrl = true,
+    intent: Exclude<StockLoadingIntent, null> = 'variant',
+  ) {
     if (!variantId) {
       return;
     }
@@ -63,6 +76,8 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     setSelectedVariantId(variantId);
     setErrorMessage(null);
     setIsLoading(true);
+    setLoadingIntent(intent);
+    setStatusMessage(intent === 'refresh' ? 'Refreshing stock.' : 'Loading selected stock.');
 
     try {
       const [detail, historyResponse] = await Promise.all([
@@ -81,12 +96,15 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
         window.history.replaceState({}, '', url);
       }
     } catch (error) {
-      setStockDetail(null);
-      setHistory([]);
+      if (!stockDetail || stockDetail.variantId !== variantId) {
+        setStockDetail(null);
+        setHistory([]);
+      }
       setErrorMessage(readErrorMessage(error));
-      setStatusMessage('Variant detail unavailable.');
+      setStatusMessage(intent === 'refresh' ? 'Stock refresh failed.' : 'Variant detail unavailable.');
     } finally {
       setIsLoading(false);
+      setLoadingIntent(null);
     }
   }
 
@@ -94,11 +112,13 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     const params = new URLSearchParams(window.location.search);
     const variantId = params.get('variantId');
 
-    void searchVariants('');
+    void (async () => {
+      await searchVariants('');
 
-    if (variantId) {
-      void loadVariant(variantId, false);
-    }
+      if (variantId) {
+        await loadVariant(variantId, false);
+      }
+    })();
   }, []);
 
   async function handleSearch(event: { preventDefault(): void }) {
@@ -114,7 +134,9 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     }
 
     setIsSubmitting(true);
+    setSubmittingIntent('stockChange');
     setErrorMessage(null);
+    setStatusMessage('Saving StockChange.');
 
     try {
       await api.recordStockChange(selectedVariantId, {
@@ -124,12 +146,13 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
       });
       setChangeDelta('');
       setChangeNotes('');
-      await loadVariant(selectedVariantId, false);
+      await loadVariant(selectedVariantId, false, 'refresh');
       setStatusMessage('StockChange recorded.');
     } catch (error) {
       setErrorMessage(readErrorMessage(error));
     } finally {
       setIsSubmitting(false);
+      setSubmittingIntent(null);
     }
   }
 
@@ -141,7 +164,9 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     }
 
     setIsSubmitting(true);
+    setSubmittingIntent('stockCount');
     setErrorMessage(null);
+    setStatusMessage('Saving StockCount.');
 
     try {
       await api.recordStockCount(selectedVariantId, {
@@ -150,14 +175,19 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
         onlineQuantity: Number(onlineQuantity),
       });
       setCountNotes('');
-      await loadVariant(selectedVariantId, false);
+      await loadVariant(selectedVariantId, false, 'refresh');
       setStatusMessage('StockCount recorded.');
     } catch (error) {
       setErrorMessage(readErrorMessage(error));
     } finally {
       setIsSubmitting(false);
+      setSubmittingIntent(null);
     }
   }
+
+  const isSearchPending = loadingIntent === 'search' || loadingIntent === 'workspace';
+  const isStockRefreshPending = loadingIntent === 'refresh';
+  const loadingLabel = readStockLoadingLabel(loadingIntent);
 
   return (
     <div className="min-h-screen bg-[#080808] text-foreground">
@@ -214,11 +244,23 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                     placeholder="barren, tape, distro..."
                     value={query}
                   />
-                  <Button aria-label="Search" className="rounded-none" disabled={isLoading} type="submit">
-                    <Search className="size-4" />
+                  <Button
+                    aria-label={isSearchPending ? 'Searching variants' : 'Search'}
+                    aria-busy={isSearchPending ? 'true' : undefined}
+                    className="min-w-11 rounded-none"
+                    disabled={isLoading}
+                    type="submit"
+                  >
+                    {isSearchPending ? (
+                      <LoadingButtonContent label={<span className="sr-only">Searching variants</span>} />
+                    ) : (
+                      <Search className="size-4" />
+                    )}
                   </Button>
                 </div>
-                <p className="font-mono text-xs text-white/45">{statusMessage}</p>
+                <p className="font-mono text-xs text-white/45" role="status" aria-live="polite">
+                  {statusMessage}
+                </p>
               </form>
             </CardContent>
           </Card>
@@ -247,7 +289,11 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                   </span>
                 </button>
               ))}
-              {variants.length === 0 && <p className="text-sm text-white/50">No variants loaded yet.</p>}
+              {variants.length === 0 && isLoading ? (
+                <LoadingInline className="font-mono text-xs text-white/55" label={loadingLabel} />
+              ) : (
+                variants.length === 0 && <p className="text-sm text-white/50">No variants loaded yet.</p>
+              )}
             </CardContent>
           </Card>
         </aside>
@@ -270,20 +316,35 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
               <Button
                 className="rounded-none"
                 disabled={!selectedVariantId || isLoading}
-                onClick={() => void loadVariant(selectedVariantId, false)}
+                aria-busy={isStockRefreshPending ? 'true' : undefined}
+                onClick={() => void loadVariant(selectedVariantId, false, 'refresh')}
                 type="button"
                 variant="outline"
               >
-                <RefreshCcw className="size-4" />
-                Refresh
+                {isStockRefreshPending ? (
+                  <LoadingButtonContent label="Refreshing stock" />
+                ) : (
+                  <>
+                    <RefreshCcw className="size-4" />
+                    Refresh
+                  </>
+                )}
               </Button>
             </CardHeader>
             <CardContent className="grid gap-4">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <StockMetric label="Stock" value={stockDetail?.stock.quantity} />
-                <StockMetric label="OnlineStock" value={stockDetail?.stock.onlineQuantity} />
-                <StockMetric label="Updated" value={formatDate(stockDetail?.stock.updatedAt)} isText />
-              </div>
+              {isLoading && !stockDetail ? (
+                <LoadingStateBlock
+                  className="min-h-40 border-white/10 bg-black/30"
+                  title={loadingLabel}
+                  description="Stock values will appear after the protected API responds."
+                />
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <StockMetric label="Stock" value={stockDetail?.stock.quantity} />
+                  <StockMetric label="OnlineStock" value={stockDetail?.stock.onlineQuantity} />
+                  <StockMetric label="Updated" value={formatDate(stockDetail?.stock.updatedAt)} isText />
+                </div>
+              )}
               {stockDetail && (
                 <div className="grid gap-2 border border-white/10 bg-black/30 p-3 font-mono text-xs text-white/55">
                   <span>storeItemSlug: {stockDetail.storeItemSlug}</span>
@@ -302,7 +363,11 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                 <CardDescription>Use signed movement: negative for outgoing, positive for incoming.</CardDescription>
               </CardHeader>
               <CardContent>
-                <form className="grid gap-3" onSubmit={handleStockChange}>
+                <form
+                  className="grid gap-3"
+                  onSubmit={handleStockChange}
+                  aria-busy={submittingIntent === 'stockChange' ? 'true' : undefined}
+                >
                   <Input
                     className="rounded-none border-white/15 bg-black/40"
                     disabled={!selectedVariantId || isSubmitting}
@@ -334,7 +399,11 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                     value={changeNotes}
                   />
                   <Button className="rounded-none" disabled={!selectedVariantId || isSubmitting} type="submit">
-                    Save StockChange
+                    {submittingIntent === 'stockChange' ? (
+                      <LoadingButtonContent label="Saving StockChange" />
+                    ) : (
+                      'Save StockChange'
+                    )}
                   </Button>
                 </form>
               </CardContent>
@@ -346,7 +415,11 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                 <CardDescription>Reset the physical count and choose the safe online quantity.</CardDescription>
               </CardHeader>
               <CardContent>
-                <form className="grid gap-3" onSubmit={handleStockCount}>
+                <form
+                  className="grid gap-3"
+                  onSubmit={handleStockCount}
+                  aria-busy={submittingIntent === 'stockCount' ? 'true' : undefined}
+                >
                   <Input
                     className="rounded-none border-white/15 bg-black/40"
                     disabled={!selectedVariantId || isSubmitting}
@@ -381,7 +454,11 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                     value={countNotes}
                   />
                   <Button className="rounded-none" disabled={!selectedVariantId || isSubmitting} type="submit">
-                    Save StockCount
+                    {submittingIntent === 'stockCount' ? (
+                      <LoadingButtonContent label="Saving StockCount" />
+                    ) : (
+                      'Save StockCount'
+                    )}
                   </Button>
                 </form>
               </CardContent>
@@ -404,6 +481,13 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
       </section>
     </div>
   );
+}
+
+export function readStockLoadingLabel(intent: StockLoadingIntent) {
+  if (intent === 'refresh') return 'Refreshing stock';
+  if (intent === 'search') return 'Searching variants';
+  if (intent === 'variant') return 'Loading selected stock';
+  return 'Loading stock workspace';
 }
 
 function StockMetric({

@@ -65,6 +65,8 @@ describe('ShellOverlayPanel', () => {
 
     expect(html).toContain('aria-busy="true"');
     expect(html).toContain('role="status"');
+    expect(html).toContain('Loading detail');
+    expect(html).toContain('Fetching the selected detail view.');
     expect(html).toContain('>artist</span>');
     expect(html).not.toContain('<article>');
   });

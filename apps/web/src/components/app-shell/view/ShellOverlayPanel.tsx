@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { X } from 'lucide-react';
 
-import { Spinner } from '@/components/ui/spinner';
+import { LoadingStateBlock } from '@/components/ui/loading-feedback';
 import type { OverlayRoute } from '@/lib/app-shell/routing';
 
 import type { ShellOverlayState } from '../overlay/shell-overlay-navigation';
@@ -54,17 +54,12 @@ export default function ShellOverlayPanel({
         </div>
         <div ref={scrollContainerRef} className="app-shell-content-overlay__scroll-region">
           {overlayState?.isLoading ? (
-            <div className="app-shell-content-overlay__loading-state" role="status" aria-live="polite">
-              <div className="music-streaming-service-embedded-player-loading-card">
-                <div className="music-streaming-service-embedded-player-loading-card-status">
-                  <Spinner className="size-3.5 text-foreground/72" />
-                  <span>loading</span>
-                </div>
-                <div className="music-streaming-service-embedded-player-loading-card-bars" aria-hidden="true">
-                  <span className="music-streaming-service-embedded-player-loading-card-bar music-streaming-service-embedded-player-loading-card-bar--long"></span>
-                  <span className="music-streaming-service-embedded-player-loading-card-bar music-streaming-service-embedded-player-loading-card-bar--short"></span>
-                </div>
-              </div>
+            <div className="app-shell-content-overlay__loading-state">
+              <LoadingStateBlock
+                className="min-h-64 w-full max-w-sm bg-background/70"
+                title="Loading detail"
+                description="Fetching the selected detail view."
+              />
             </div>
           ) : (
             overlayState?.html && (

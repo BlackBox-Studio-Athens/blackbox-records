@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
+import { LoadingButtonContent } from '@/components/ui/loading-feedback';
 import {
   createPublicCheckoutApi,
   type PublicCheckoutApi,
@@ -24,7 +25,7 @@ type StoreItemPurchaseActionsProps = {
 
 export const STORE_ITEM_PURCHASE_ACTION_COPY = {
   addToCart: 'Add To Cart',
-  checking: 'Checking Checkout',
+  checking: 'Checking availability',
   unavailable: 'Currently Unavailable',
 } as const;
 
@@ -99,11 +100,16 @@ export default function StoreItemPurchaseActions({ api, cartItem, cartSeed }: St
       <Button
         type="button"
         size="lg"
-        variant="outline"
-        className="pointer-events-none rounded-none border-border/60 text-muted-foreground opacity-70 uppercase tracking-[0.12em]"
+        variant={isChecking ? 'default' : 'outline'}
+        className="pointer-events-none min-w-56 rounded-none border-border/60 uppercase tracking-[0.12em]"
         disabled
+        aria-busy={isChecking ? 'true' : undefined}
       >
-        {isChecking ? STORE_ITEM_PURCHASE_ACTION_COPY.checking : STORE_ITEM_PURCHASE_ACTION_COPY.unavailable}
+        {isChecking ? (
+          <LoadingButtonContent label={STORE_ITEM_PURCHASE_ACTION_COPY.checking} />
+        ) : (
+          STORE_ITEM_PURCHASE_ACTION_COPY.unavailable
+        )}
       </Button>
     );
   }
@@ -112,7 +118,7 @@ export default function StoreItemPurchaseActions({ api, cartItem, cartSeed }: St
     <Button
       type="button"
       size="lg"
-      className="rounded-none uppercase tracking-[0.12em]"
+      className="min-w-56 rounded-none uppercase tracking-[0.12em]"
       data-store-item-add-to-cart
       onClick={() => requestStoreCartAddItem(resolvedCartItem)}
     >

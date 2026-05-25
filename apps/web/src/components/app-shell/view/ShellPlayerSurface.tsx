@@ -2,7 +2,7 @@ import { Square } from 'lucide-react';
 import * as React from 'react';
 import type { MouseEvent } from 'react';
 
-import { Spinner } from '@/components/ui/spinner';
+import { LoadingStateBlock } from '@/components/ui/loading-feedback';
 import { type PlayerEmbedLayout, type PlayerProvider, type PlayerProviderId } from '../player-provider-data';
 import { OPEN_PLAYER_ACTION_LABEL } from '../player-session-ui';
 import { PLAYER_PROVIDER_LABELS } from '../player-shell/shell-player-view-state';
@@ -117,21 +117,12 @@ export default function ShellPlayerSurface({
             onMouseDownCapture={markActivePlayerSurfaceAsInteracted}
             onTouchStartCapture={markActivePlayerSurfaceAsInteracted}
           >
-            <div
-              className="music-streaming-service-embedded-player-modal-loading-state absolute inset-0 flex items-center justify-center bg-background/92 px-3 py-3 text-center"
-              role="status"
-              aria-live="polite"
-            >
-              <div className="music-streaming-service-embedded-player-loading-card">
-                <div className="music-streaming-service-embedded-player-loading-card-status">
-                  <Spinner className="size-3.5 text-foreground/72" />
-                  <span>loading</span>
-                </div>
-                <div className="music-streaming-service-embedded-player-loading-card-bars" aria-hidden="true">
-                  <span className="music-streaming-service-embedded-player-loading-card-bar music-streaming-service-embedded-player-loading-card-bar--long"></span>
-                  <span className="music-streaming-service-embedded-player-loading-card-bar music-streaming-service-embedded-player-loading-card-bar--short"></span>
-                </div>
-              </div>
+            <div className="music-streaming-service-embedded-player-modal-loading-state absolute inset-0 flex items-center justify-center bg-background/92 px-3 py-3 text-center">
+              <LoadingStateBlock
+                className="min-h-40 w-full max-w-sm bg-background/70"
+                title="Loading player"
+                description="Preparing the embedded player. Playback starts after you interact with the provider frame."
+              />
             </div>
             <div
               ref={iframeFrameHostRef}

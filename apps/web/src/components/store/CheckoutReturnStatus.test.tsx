@@ -223,7 +223,7 @@ describe('CheckoutReturnStatus', () => {
     expect(updated).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps initial checkout resolution visually quiet before a final or recovery state renders', () => {
+  it('renders initial checkout resolution as a visible pending status before final or recovery state', () => {
     const html = renderToStaticMarkup(
       <CheckoutReturnStatus
         checkoutPath="/blackbox-records/store/disintegration-black-vinyl-lp/checkout/"
@@ -237,9 +237,10 @@ describe('CheckoutReturnStatus', () => {
 
     expect(html).toContain('data-checkout-return-pending');
     expect(html).toContain('aria-busy="true"');
-    expect(html).toContain('Confirming payment status.');
-    expect(html).not.toContain('Payment Status');
-    expect(html).not.toContain('Confirming Payment');
+    expect(html).toContain('role="status"');
+    expect(html).toContain('Payment Status');
+    expect(html).toContain('Confirming Payment');
+    expect(html).toContain('We are confirming the latest payment status');
     expect(html).not.toContain(CHECKOUT_RETURN_ACTION_COPY.retryCheckout);
     expect(html).not.toContain(CHECKOUT_RETURN_ACTION_COPY.backToCart);
     expect(html).not.toContain(CHECKOUT_RETURN_ACTION_COPY.backToItem);

@@ -31,12 +31,15 @@ const fontStylesheetUrl =
     <link rel="cms-config-url" type="text/yaml" href={adminConfigUrl} />
   </head>
   <body>
-    <div class="blackbox-cms-boot" aria-live="polite">
+    <div class="blackbox-cms-boot" role="status" aria-busy="true" aria-live="polite">
       <div class="blackbox-cms-boot__card">
         <img class="blackbox-cms-boot__logo" src={logoUrl} alt="BlackBox Records logo" width="80" height="80" />
         <p class="blackbox-cms-boot__eyebrow">BlackBox CMS</p>
         <h1 class="blackbox-cms-boot__title">Preparing the editor</h1>
-        <p class="blackbox-cms-boot__copy">Loading content collections, previews, and media tools.</p>
+        <p class="blackbox-cms-boot__copy">
+          <span class="blackbox-cms-boot__spinner" aria-hidden="true"></span>
+          Loading content collections, previews, and media tools.
+        </p>
       </div>
     </div>
     <script is:inline define:vars={{ previewStyleUrl }}>

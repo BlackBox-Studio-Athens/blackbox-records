@@ -79,4 +79,17 @@ describe('ShellPlayerSurface', () => {
     expect(html).toContain('hidden=""');
     expect(html).toContain('aria-label="Bandcamp"');
   });
+
+  it('renders player loading as a visible busy status without implying playback started', () => {
+    const html = renderPlayerSurface({
+      isPlayerLoading: true,
+      isPlayerModalOpen: true,
+    });
+
+    expect(html).toContain('aria-busy="true"');
+    expect(html).toContain('role="status"');
+    expect(html).toContain('Loading player');
+    expect(html).toContain('Playback starts after you interact with the provider frame.');
+    expect(html).not.toContain('Playing');
+  });
 });

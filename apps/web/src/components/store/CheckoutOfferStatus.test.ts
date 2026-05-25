@@ -102,7 +102,7 @@ describe('CheckoutOfferStatus helpers', () => {
     expect(createStripeCheckoutCtaView(false).label).not.toBe('Pay Securely With Stripe');
     expect(createStripeCheckoutCtaView(true)).toEqual({
       badgeSrc: null,
-      label: 'Opening Stripe',
+      label: 'Opening Stripe Checkout',
     });
   });
 
@@ -247,9 +247,9 @@ describe('CheckoutOfferStatus helpers', () => {
 
   it('uses static availability as initial fallback while Worker state loads', () => {
     expect(createInitialCheckoutOfferView(initialAvailability)).toEqual({
-      badgeLabel: 'Checking checkout',
+      badgeLabel: 'Checking availability',
       canStartCheckout: false,
-      detail: 'Checking secure checkout.',
+      detail: 'Confirming price and availability before payment opens.',
       isReady: false,
       statusLabel: 'Available',
       tone: 'loading',

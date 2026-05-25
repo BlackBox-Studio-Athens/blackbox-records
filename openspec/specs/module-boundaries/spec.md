@@ -25,6 +25,13 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **WHEN** the change is made
 - **THEN** `openspec/specs/module-boundaries/module-boundaries.manifest.json` and this spec are updated together when behavior changes.
 
+#### Scenario: Shared UI primitive is added
+
+- **GIVEN** a reusable UI foundation primitive must be consumed across closed application modules
+- **WHEN** the primitive is added under `apps/web/src/components/ui/`
+- **THEN** the primitive is listed as a provided `ui-foundation` entrypoint in `module-boundaries.manifest.json`
+- **AND** feature modules import that entrypoint directly instead of deep-importing private UI foundation implementation.
+
 ### Requirement: Compatibility facades are disallowed
 
 The system SHALL avoid temporary compatibility facades during boundary work unless a new OpenSpec change explicitly approves an exception.

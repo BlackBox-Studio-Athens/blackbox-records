@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, PackageCheck, ReceiptText, Truck, type LucideIcon } from 'lucide-react';
 
 import { createPublicCheckoutApi, type PublicCheckoutApi } from '@/lib/backend/public-checkout-api';
+import { LoadingStateBlock } from '@/components/ui/loading-feedback';
 import { createEmptyStoreCartState, STORE_CART_OPEN_REQUESTED_EVENT, writeStoreCartState } from '@/lib/store-cart';
 import { cn } from '@/lib/utils';
 import { CHECKOUT_CART_UPDATED_EVENT } from './CheckoutOrderSummary';
@@ -91,15 +92,19 @@ export default function CheckoutReturnStatus({ api, checkoutPath, itemPath, stor
 }
 
 function CheckoutReturnPendingStatus() {
+  const view = createCheckoutReturnStatusView({ kind: 'loading' });
+
   return (
-    <section
-      className="mx-auto min-h-[22rem] max-w-5xl"
-      data-checkout-return-status
-      data-checkout-return-pending
-      aria-busy="true"
-      aria-live="polite"
-    >
-      <p className="sr-only">Confirming payment status.</p>
+    <section className="mx-auto max-w-4xl space-y-5" data-checkout-return-status data-checkout-return-pending>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{view.kicker}</p>
+        <CheckoutReturnBadge view={view} />
+      </div>
+      <LoadingStateBlock
+        className="min-h-[22rem] bg-background/45"
+        title={view.title}
+        description={`${view.detail} ${view.nextStep}`}
+      />
     </section>
   );
 }

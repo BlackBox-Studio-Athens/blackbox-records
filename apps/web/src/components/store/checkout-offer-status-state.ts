@@ -64,9 +64,11 @@ export function createInitialCheckoutOfferView(
   initialAvailability: CheckoutOfferInitialAvailability,
 ): CheckoutOfferStatusView {
   return {
-    badgeLabel: 'Checking checkout',
+    badgeLabel: 'Checking availability',
     canStartCheckout: false,
-    detail: initialAvailability.canBuy ? 'Checking secure checkout.' : 'This item is not currently buyable.',
+    detail: initialAvailability.canBuy
+      ? 'Confirming price and availability before payment opens.'
+      : 'This item is not currently buyable.',
     isReady: false,
     statusLabel: initialAvailability.label,
     tone: 'loading',
