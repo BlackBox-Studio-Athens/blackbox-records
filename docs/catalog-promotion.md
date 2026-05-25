@@ -83,10 +83,10 @@ Current manual provider checklist before final proof:
 
 1. Add `CLOUDFLARE_API_TOKEN` and `STRIPE_SECRET_KEY` to both GitHub Actions environments.
 2. Add `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` to both GitHub Actions environments as a variable or secret according to the account policy.
-3. Create the production D1 database, add its `COMMERCE_DB` binding to `apps/backend/wrangler.jsonc`, and apply migrations before production readiness.
-4. Deploy the production Worker once from the final artifact commit so Worker secrets can be attached and verified.
-5. Add production Worker secrets for `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` from `apps/backend` with `wrangler secret put`.
-6. Re-run `pnpm runtime:config:verify --env production` and only continue to production promotion when it passes.
+3. Add production Worker secrets for `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` from `apps/backend` with `wrangler secret put`.
+4. Re-run `pnpm runtime:config:verify --env production` and only continue to production promotion when it passes.
+
+The current production D1 database and Worker shell already exist. If the production provider resources are rebuilt from scratch, recreate `blackbox-records-commerce-production`, update the `COMMERCE_DB` binding in `apps/backend/wrangler.jsonc`, apply D1 migrations, and deploy `blackbox-records-backend` before adding Worker secrets.
 
 ## Reruns
 

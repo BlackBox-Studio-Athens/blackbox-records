@@ -77,6 +77,14 @@
     },
     "production": {
       "name": "blackbox-records-backend",
+      "d1_databases": [
+        {
+          "binding": "COMMERCE_DB",
+          "database_name": "blackbox-records-commerce-production",
+          "database_id": "ec342b1d-86e1-4491-beab-fc9ea58c5c48",
+          "migrations_dir": "prisma/migrations",
+        },
+      ],
       "vars": {
         "APP_ENV": "production",
         "CHECKOUT_RETURN_ORIGINS": "https://blackbox-records-web.pages.dev",
