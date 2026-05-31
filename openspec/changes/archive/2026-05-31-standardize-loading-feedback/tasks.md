@@ -105,4 +105,4 @@
 - [x] 12.2 Confirm no authority boundaries changed for StoreCart, checkout, stock, Stripe, D1, or Worker APIs.
 - [x] 12.3 Confirm browser validation notes distinguish unit-test evidence from rendered Browser Use evidence.
 - [x] 12.4 Confirm README, AGENTS, or OpenSpec baseline docs only changed if implementation alters setup, architecture, or accepted validation policy.
-- [ ] 12.5 Archive the OpenSpec change only after implementation, strict OpenSpec validation, repository gates, and required Browser Use validation are complete.
+- [x] 12.5 Archive the OpenSpec change only after implementation, strict OpenSpec validation, repository gates, and required Browser Use validation are complete.
