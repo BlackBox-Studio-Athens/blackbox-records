@@ -104,6 +104,30 @@ The system MUST use OpenSpec as the only spec and context workflow in this repos
 - **THEN** it is written as an OpenSpec baseline spec update or active change under `openspec/`
 - **AND** legacy planning commands, directories, and phase artifacts are not reintroduced.
 
+### Requirement: Prepared work stays in main worktree commits
+
+The system MUST require OpenSpec artifact changes, OpenSpec archiving, OpenSpec-backed implementation work, and non-OpenSpec prepared changes to happen in the main worktree on the `main` branch unless the user explicitly requests a separate branch or worktree.
+
+#### Scenario: Prepared work starts
+
+- **GIVEN** an agent will create or update OpenSpec artifacts, archive an OpenSpec change, implement OpenSpec-backed work, or prepare a non-OpenSpec change
+- **WHEN** the agent starts that work
+- **THEN** it runs the repository main-worktree guard when OpenSpec commands are involved
+- **AND** the work proceeds from the main worktree at `C:\Users\SVall\WebstormProjects\blackbox-records` on branch `main`
+- **AND** the agent does not create a new branch or git worktree unless the user explicitly asks.
+
+#### Scenario: OpenSpec commands run from the main worktree
+
+- **GIVEN** the current checkout is the main worktree on branch `main`
+- **WHEN** OpenSpec commands run for artifact changes, archiving, implementation, review, inspection, or CI-equivalent validation
+- **THEN** the guarded `pnpm openspec -- <args>` command allows the work to continue.
+
+#### Scenario: Work is separated
+
+- **GIVEN** a prepared change is ready to save
+- **WHEN** the agent records it in git
+- **THEN** the work is separated with small, meaningful commits on `main` instead of a new branch or worktree.
+
 ### Requirement: Execa adoption is narrow
 
 The system SHALL adopt Execa where it removes meaningful process orchestration complexity from repo-owned development scripts without changing documented commands.

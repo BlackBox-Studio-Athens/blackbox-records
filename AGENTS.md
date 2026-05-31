@@ -364,6 +364,10 @@ This is an iframe boundary, not an app bug.
 ## OpenSpec usage notes
 
 - OpenSpec is the only repo-local spec/context workflow.
+- Before creating or updating OpenSpec artifacts, archiving a change, or implementing OpenSpec-backed work, run the repo main-worktree guard through `pnpm openspec:guard`.
+- OpenSpec and non-OpenSpec prepared work must happen in the main worktree at `C:\Users\SVall\WebstormProjects\blackbox-records` on branch `main`; do not create new branches or git worktrees unless the user explicitly asks.
+- Use `pnpm openspec -- <args>` for OpenSpec work from the main worktree; `pnpm openspec:readonly -- <args>` remains a compatibility alias for the same guarded command.
+- Keep prepared work separated with small, meaningful commits on `main`.
 - Baseline behavior lives under `openspec/specs/<domain>/spec.md`.
 - Planned or unfinished work lives under `openspec/changes/<change-id>/` with `proposal.md`, `tasks.md`, and delta specs under `specs/<domain>/spec.md`.
 - Do not reintroduce legacy planning workflow commands, directories, config, or phase artifacts.
