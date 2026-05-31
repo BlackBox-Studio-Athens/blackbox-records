@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Environment-scoped checkout readiness
 
@@ -37,6 +37,8 @@ The system MUST evaluate checkout readiness against the canonical Local, UAT, an
 - **WHEN** the browser reads checkout capability or attempts checkout from Cloudflare Pages
 - **THEN** checkout remains disabled without exposing provider internals
 - **AND** no live Stripe Checkout Session is created.
+
+## ADDED Requirements
 
 ### Requirement: Environment-scoped provider mutation
 

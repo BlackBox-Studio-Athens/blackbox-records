@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Canonical product environments
 
@@ -71,6 +71,8 @@ The system MUST distinguish Product Environment from Platform Environment, Worke
 - **WHEN** Stripe test mode, Stripe live mode, or stripe-mock is referenced
 - **THEN** it is described as a provider mode mapped to Local, UAT, or PRD
 - **AND** it is not used as the product environment name.
+
+## ADDED Requirements
 
 ### Requirement: Secret-store boundaries
 

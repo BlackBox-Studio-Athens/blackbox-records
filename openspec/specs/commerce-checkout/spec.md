@@ -74,9 +74,187 @@ The system MUST evaluate checkout readiness against the canonical Local, UAT, an
 - **THEN** browser calls target the deployed UAT Worker/API
 - **AND** local config does not receive UAT Stripe secrets or UAT Worker secrets.
 
+#### Scenario: Local UAT-connected checkout write is requested
+
+- **GIVEN** Local runs in `uat-connected` mode
+- **WHEN** a maintainer triggers checkout behavior that creates provider state
+- **THEN** the write is performed only by the deployed UAT Worker under UAT rules
+- **AND** the command or UI path is explicitly labeled as a UAT checkout/smoke action.
+
+#### Scenario: UAT checkout starts
+
+- **GIVEN** UAT checkout is enabled
+- **WHEN** the shopper starts checkout from GitHub Pages
+- **THEN** the request is handled by the UAT Worker against sandbox D1 and Stripe test mode.
+
 #### Scenario: PRD checkout is disabled
 
 - **GIVEN** PRD has not been opened by a production-readiness gate
 - **WHEN** the browser reads checkout capability or attempts checkout from Cloudflare Pages
 - **THEN** checkout remains disabled without exposing provider internals
 - **AND** no live Stripe Checkout Session is created.
+
+### Requirement: Hosted Checkout amount matches Store Offer
+
+The system MUST ensure the Stripe-hosted Checkout amount matches the Worker-authoritative Store Offer amount for each checkout line.
+
+#### Scenario: Shopper reaches hosted Checkout
+
+- **GIVEN** the Worker creates a Stripe Checkout Session for a Store Item variant
+- **WHEN** hosted Checkout renders the payment page
+- **THEN** the displayed amount matches the Worker Store Offer amount and currency for that variant.
+
+#### Scenario: Store Offer and Stripe Price drift
+
+- **GIVEN** the Store Offer amount or currency differs from the mapped Stripe Price
+- **WHEN** checkout start is requested
+- **THEN** the Worker revalidates the active Stripe Price before creating the Checkout Session
+- **AND** rejects checkout with a catalog-drift error if the Stripe Price cannot be resolved unambiguously.
+
+#### Scenario: Sandbox smoke detects hosted amount drift
+
+- **GIVEN** the Worker creates a Stripe Checkout Session for a Store Item variant
+- **WHEN** sandbox smoke reaches hosted Checkout before payment submission
+- **THEN** the smoke fails if the hosted amount or currency differs from the Worker Store Offer evidence.
+
+### Requirement: Hosted Checkout uses approved payment method configuration
+
+The system MUST use the approved Stripe Payment Method Configuration for Stripe-backed Checkout Sessions and verify the visible hosted payment surface.
+
+#### Scenario: Dynamic payment methods are expected
+
+- **GIVEN** the UAT sandbox account, browser context, amount, currency, and shipping country are documented with expected dynamic payment labels
+- **WHEN** hosted Checkout renders before payment submission
+- **THEN** the smoke evidence includes the visible payment method labels
+- **AND** a card-only surface fails validation when non-card labels are expected for that documented context.
+
+#### Scenario: Payment method configuration cannot be verified
+
+- **GIVEN** `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` is missing locally or on the deployed Worker
+- **WHEN** payment method verification runs
+- **THEN** the verification reports the gap without creating checkout acceptance evidence.
+
+### Requirement: Paid checkout return avoids duplicate visual status surfaces
+
+The system MUST keep the checkout return page from showing a full non-final recovery/status screen before the paid confirmation screen renders.
+
+#### Scenario: Checkout return state is still resolving
+
+- **GIVEN** a shopper has returned from Stripe Checkout
+- **WHEN** the browser has not yet loaded the Worker-owned checkout state
+- **THEN** the page exposes an accessible pending marker only
+- **AND** it does not show retry, cart, item, or continue-shopping recovery actions.
+
+#### Scenario: Paid checkout state is confirmed
+
+- **GIVEN** the Worker returns a paid checkout state
+- **WHEN** the checkout return page renders the result
+- **THEN** the page shows one final success surface with next steps
+- **AND** it does not show the non-final recovery/status card behind or before that success surface.
+
+### Requirement: Checkout consumes field-owned Store Offers
+
+The system MUST create and display Stripe-backed checkout state from field-owned Store Offers rather than Astro price fixtures, browser cart prices, or unverified Stripe Dashboard state.
+
+#### Scenario: Store page loads checkout controls
+
+- **GIVEN** a static Store Item page has repo-owned editorial content and app identifiers
+- **WHEN** the page needs checkout price or readiness
+- **THEN** browser code reads the Worker Store Offer for that Store Item
+- **AND** treats the Worker Store Offer as the only browser-safe buyable price/readiness source.
+
+#### Scenario: Checkout starts with a stale cart snapshot
+
+- **GIVEN** `StoreCart` contains an older browser-safe price snapshot
+- **WHEN** checkout starts
+- **THEN** the Worker revalidates the current Store Offer, stock, feature gate, and Stripe Price mapping
+- **AND** creates the Stripe Checkout Session only from the currently resolved Stripe Price.
+
+#### Scenario: Store Offer projection cannot be confirmed
+
+- **GIVEN** Product projection, Price authority, D1 mapping, stock, or availability cannot be confirmed for the selected variant
+- **WHEN** the storefront renders checkout state or checkout start is requested
+- **THEN** the system disables checkout or rejects checkout with catalog drift
+- **AND** no browser-supplied amount or Stripe Price ID is accepted.
+
+### Requirement: Hosted Checkout display follows Product projection
+
+The system SHALL keep Stripe-hosted Checkout display aligned with repo-owned Product projection for checkout-eligible Store Item variants.
+
+#### Scenario: Hosted Checkout opens for a synced Product
+
+- **GIVEN** a Store Item variant has a clean Product projection and resolved Stripe Price
+- **WHEN** the Worker creates a hosted Stripe Checkout Session for that variant
+- **THEN** the Stripe-hosted page uses the Product name and image derived from the repo-owned projection
+- **AND** the amount and currency come from the resolved Stripe Price.
+
+#### Scenario: Product projection is stale
+
+- **GIVEN** the Stripe Product presentation fields do not match the repo-owned projection
+- **WHEN** checkout readiness is verified before sandbox acceptance
+- **THEN** verification fails or reports Product projection drift
+- **AND** hosted Checkout evidence is not accepted as catalog-aligned until drift is resolved.
+
+### Requirement: Browser checkout state MUST remain non-authoritative
+
+Static Astro pages and browser state MUST NOT expose Stripe Price IDs, Stripe secrets, D1 IDs, stock authority, paid order state, or authoritative item prices. They MAY show current Store Items as available with Worker-confirmed checkout copy when the Worker remains responsible for Store Offer reads and checkout creation.
+
+#### Scenario: Static availability remains browser-safe
+
+- **GIVEN** a current Store Item is rendered on the static UAT storefront
+- **WHEN** the page displays purchase availability
+- **THEN** it may show the item as available and "Worker-confirmed at checkout"
+- **AND** it does not include a Stripe Price ID, D1 ID, stock count, secret, or authoritative amount.
+
+### Requirement: Environment-scoped provider mutation
+
+The system MUST prevent provider catalog mutation unless the target product environment and gate allow it.
+
+#### Scenario: UAT catalog apply runs
+
+- **GIVEN** a generated Desired Catalog State targets UAT
+- **WHEN** the promotion workflow applies provider catalog changes
+- **THEN** it uses the sandbox Worker/D1/Stripe test mapping
+- **AND** Product Projection image URLs resolve from the GitHub Pages UAT asset base
+- **AND** records UAT Promotion Evidence.
+
+#### Scenario: PRD catalog apply is requested while PRD is disabled
+
+- **GIVEN** a generated Desired Catalog State targets PRD
+- **WHEN** the promotion workflow reaches the PRD apply step before the PRD-open gate exists
+- **THEN** the apply step fails closed or records `not_configured` evidence
+- **AND** it does not mutate Stripe live mode, production D1, or production Worker checkout availability
+- **AND** it does not record successful PRD Promotion Evidence.
+
+#### Scenario: PRD catalog readiness checks product image URLs
+
+- **GIVEN** a generated Desired Catalog State targets PRD
+- **WHEN** catalog readiness or dry-run verification evaluates Product Projection image URLs
+- **THEN** the URLs resolve from the Cloudflare Pages PRD asset base or an approved PRD custom domain asset base
+- **AND** GitHub Pages UAT asset URLs are rejected for PRD readiness/live provider mutation unless a later approved change defines GitHub Pages as a shared canonical asset CDN.
+
+### Requirement: Environment-scoped checkout origins
+
+The system MUST keep checkout return origins, browser CORS origins, and Worker API targets aligned with the Local, UAT, and PRD product environment matrix.
+
+#### Scenario: UAT checkout origin is evaluated
+
+- **GIVEN** checkout runs through the UAT Worker
+- **WHEN** return origins or browser origins are evaluated
+- **THEN** GitHub Pages UAT is allowed
+- **AND** local `uat-connected` origins are allowed only as an explicitly named diagnostic path
+- **AND** Cloudflare Pages PRD and Cloudflare Pages preview origins are not accepted as UAT checkout evidence origins.
+
+#### Scenario: PRD checkout origin is evaluated
+
+- **GIVEN** checkout runs through the PRD Worker
+- **WHEN** return origins or browser origins are evaluated
+- **THEN** Cloudflare Pages PRD and approved PRD custom domains are the only PRD shopper-facing origins
+- **AND** GitHub Pages UAT, local origins, and Cloudflare Pages preview origins are not accepted as PRD checkout evidence origins.
+
+#### Scenario: Local mock checkout origin is evaluated
+
+- **GIVEN** checkout runs through the Local `mock` Worker
+- **WHEN** return origins or browser origins are evaluated
+- **THEN** only local static origins are accepted
+- **AND** deployed UAT, PRD, and preview origins are not needed for Local mock checkout.

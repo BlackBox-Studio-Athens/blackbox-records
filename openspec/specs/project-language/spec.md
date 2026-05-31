@@ -45,17 +45,11 @@ The system SHALL use canonical environment terminology across specs, docs, workf
 - **THEN** it uses Local, UAT, or PRD
 - **AND** it does not use `sandbox`, `production`, `test`, `live`, GitHub Actions environment names, or Wrangler environment names as product environment substitutes.
 
-#### Scenario: Local mode is named
+#### Scenario: Platform Environment is named
 
-- **WHEN** docs, scripts, or validation output describe normal Local operation
-- **THEN** they use `mock` or `uat-connected`
-- **AND** they map the mode back to the Local Product Environment.
-
-#### Scenario: PRD readiness is discussed
-
-- **WHEN** docs, workflows, smoke tests, or Promotion Evidence discuss PRD before go-live
-- **THEN** they state whether the action is readiness-only, disabled, not configured, or explicitly opened
-- **AND** they do not imply that Cloudflare Pages deployment alone makes live commerce buyable.
+- **WHEN** an artifact describes a GitHub Actions environment, Wrangler environment, Cloudflare Pages project, Worker runtime target, Stripe mode, or secret store
+- **THEN** it labels that concept as a platform/provider/configuration layer
+- **AND** it maps the concept back to Local, UAT, or PRD.
 
 ### Requirement: Catalog Promotion terms
 
@@ -71,3 +65,72 @@ The system SHALL use Catalog Promotion language consistently for CMS-driven prov
 - **AND** `ProviderCatalogState` means the observed Stripe/D1 state after verification
 - **AND** `PromotionRun` means one environment-scoped execution against an artifact commit
 - **AND** `PromotionEvidence` means redacted machine-readable proof for success, failure, skipped, superseded, or not-configured outcomes.
+
+### Requirement: Catalog ownership terms are canonical
+
+The system SHALL use consistent terms for Stripe catalog field ownership across specs, code, tests, docs, validation output, and handoff summaries.
+
+#### Scenario: Catalog Field Ownership is referenced
+
+- **GIVEN** a spec, test, script, or doc describes which system owns a catalog field
+- **WHEN** it names that boundary
+- **THEN** it uses `Catalog Field Ownership` to mean the declared source of truth and allowed sync direction for a catalog field.
+
+#### Scenario: Product Projection is referenced
+
+- **GIVEN** repo-owned product presentation fields are sent to Stripe Product fields
+- **WHEN** specs, code, tests, docs, or diagnostics name that process
+- **THEN** they use `Product Projection`
+- **AND** do not describe it as bidirectional sync.
+
+#### Scenario: Price Authority is referenced
+
+- **GIVEN** Stripe Price amount, currency, active status, lookup key, or Price identity controls Store Offer price and checkout creation
+- **WHEN** specs, code, tests, docs, or diagnostics name that authority
+- **THEN** they use `Price Authority`
+- **AND** distinguish it from repo-owned Product Projection.
+
+#### Scenario: Sandbox Catalog Alignment is referenced
+
+- **GIVEN** sandbox Stripe Products, Stripe Prices, D1 mappings, Store Offer snapshots, stock, and availability are verified together
+- **WHEN** specs, code, tests, docs, or diagnostics name that proof
+- **THEN** they use `Sandbox Catalog Alignment`
+- **AND** state whether the proof is dry-run, apply, smoke, or provider-live evidence.
+
+### Requirement: Local mode terms
+
+The system SHALL use `mock` and `uat-connected` as the normal Local mode names.
+
+#### Scenario: Local mock mode is described
+
+- **WHEN** docs, scripts, or validation output describe deterministic local development
+- **THEN** they use `mock`
+- **AND** they map it to local static hosting, local Worker, local D1, and stripe-mock.
+- **AND** they treat `mock-api` as an implementation alias for the same Local mode rather than as a separate product environment.
+
+#### Scenario: Local UAT-connected mode is described
+
+- **WHEN** docs, scripts, or validation output describe local frontend work against deployed UAT
+- **THEN** they use `uat-connected`
+- **AND** they state that local code calls the deployed UAT Worker/API without copying UAT secrets into local files.
+
+### Requirement: PRD-disabled terms
+
+The system SHALL describe PRD as configured but disabled until an explicit production-readiness gate opens it.
+
+#### Scenario: PRD readiness is discussed
+
+- **WHEN** docs, workflows, smoke tests, or Promotion Evidence discuss PRD before go-live
+- **THEN** they state whether the action is readiness-only, disabled, not configured, or explicitly opened
+- **AND** they do not imply that Cloudflare Pages deployment alone makes live commerce buyable
+- **AND** they do not call readiness-only, disabled, or `not_configured` evidence successful PRD Promotion Evidence.
+
+### Requirement: Catalog asset terms
+
+The system SHALL describe Stripe Product image URLs and public catalog asset URLs as environment-scoped catalog promotion data.
+
+#### Scenario: Catalog asset URL is named
+
+- **WHEN** docs, specs, scripts, or validation output describe a Product Projection image URL, Stripe Product image URL, or public catalog asset URL
+- **THEN** they identify whether the URL belongs to Local diagnostics, UAT, or PRD
+- **AND** they do not describe UAT-hosted catalog assets as PRD-ready unless a later approved change defines a shared canonical asset CDN.

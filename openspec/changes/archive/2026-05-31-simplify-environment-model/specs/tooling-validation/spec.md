@@ -11,7 +11,7 @@ The system SHALL use Zod for repo-authored runtime input validation and OpenAPI 
 - **THEN** it uses Zod unless an explicit OpenSpec change approves another validation library
 - **AND** any `@t3-oss/env-core` usage remains backed by Zod-compatible schemas and does not store, sync, print, or rotate secrets.
 
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Environment matrix validation
 
@@ -50,6 +50,8 @@ The system SHALL provide validation that detects drift from the canonical Local,
 - **WHEN** environment validation or closeout review runs
 - **THEN** affected baseline OpenSpec specs do not retain stale Purpose, requirement, or scenario wording that describes GitHub Pages as rollback/legacy production or Cloudflare Pages as canonical production without PRD-disabled state
 - **AND** archive readiness is blocked until baseline source-of-truth prose matches the Local/UAT/PRD model.
+
+## ADDED Requirements
 
 ### Requirement: Secret presence checks are redacted
 

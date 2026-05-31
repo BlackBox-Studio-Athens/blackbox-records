@@ -14,11 +14,16 @@ The system SHALL expose exactly three product environments in operator-facing do
 - **THEN** the docs identify Local, UAT, and PRD as the product environments
 - **AND** any platform-specific names are shown only as mapped implementation details.
 
+#### Scenario: New environment wording is introduced
+
+- **WHEN** a future change introduces `sandbox`, `production`, `test`, `live`, `GitHub Actions environment`, `Wrangler environment`, or `Stripe mode` wording
+- **THEN** the change MUST classify that wording under the product environment mapping instead of treating it as a fourth product environment.
+
 #### Scenario: Preview or branch deployment is introduced
 
 - **WHEN** a workflow, host, or script creates a preview, branch, pull-request, or diagnostic deployment
-- **THEN** that deployment is classified as a non-product diagnostic surface
-- **AND** it is not used as UAT acceptance, PRD readiness, Promotion Evidence, or shopper-facing commerce proof.
+- **THEN** that deployment MUST be classified as a non-product diagnostic surface
+- **AND** it MUST NOT be used as UAT acceptance, PRD readiness, Promotion Evidence, or shopper-facing commerce proof.
 
 ### Requirement: Product environment mapping
 
@@ -43,6 +48,12 @@ The system SHALL maintain a single mapping from product environments to static h
 - **AND** any additional provider diagnostic command is documented outside the normal Local mode list.
 - **AND** `mock`, `mock-api`, and `uat-connected` are not counted as additional product environments.
 
+#### Scenario: Active production-facing plans are evaluated
+
+- **WHEN** another active OpenSpec change describes production provider mutation, production proof, production checkout, or production launch readiness
+- **THEN** that change MUST be reconciled with the PRD-disabled model
+- **AND** it MUST identify whether the work is readiness-only, blocked by the PRD-open gate, or the owner of the PRD-open gate.
+
 ### Requirement: Platform names are scoped
 
 The system MUST distinguish Product Environment from Platform Environment, Worker Runtime Target, Provider Mode, and Secret Store.
@@ -57,7 +68,23 @@ The system MUST distinguish Product Environment from Platform Environment, Worke
 
 - **WHEN** a script or workflow references a Wrangler environment such as `sandbox` or `production`
 - **THEN** it is described as a Worker runtime target mapped to UAT or PRD
-- **AND** operator-facing commands prefer product targets such as `uat` and `prd` once wrappers exist.
+- **AND** operator-facing commands SHOULD prefer product targets such as `uat` and `prd` once wrappers exist.
+
+#### Scenario: Stripe mode is referenced
+
+- **WHEN** Stripe test mode, Stripe live mode, or stripe-mock is referenced
+- **THEN** it is described as a provider mode mapped to Local, UAT, or PRD
+- **AND** it is not used as the product environment name.
+
+### Requirement: Secret-store boundaries
+
+The system MUST keep secrets in provider-native secret stores and MUST NOT treat env validation libraries as secret storage.
+
+#### Scenario: Sensitive information is required again
+
+- **WHEN** a maintainer must enter the same sensitive value into local config, GitHub Actions, Cloudflare Worker secrets, or Stripe provider settings
+- **THEN** docs and preflight output explain that each store is intentionally isolated
+- **AND** the system never asks the maintainer to paste the value into committed files, public Astro env vars, screenshots, logs, or chat.
 
 #### Scenario: Env validation library is used
 

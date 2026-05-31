@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Commerce validation MUST cover generated UAT catalog artifacts
 

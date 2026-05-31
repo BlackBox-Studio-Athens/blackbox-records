@@ -64,11 +64,24 @@ The system SHALL provide validation that detects drift from the canonical Local,
 - **AND** PRD static builds call the PRD Worker/API
 - **AND** `CHECKOUT_RETURN_ORIGINS` and browser CORS origins do not contain broad cross-environment or preview allowlists.
 
+#### Scenario: Catalog public asset URLs are checked
+
+- **WHEN** environment validation runs against catalog contracts, Desired Catalog State, Product Projections, or Promotion Evidence
+- **THEN** it verifies UAT Product image URLs use the GitHub Pages UAT asset base
+- **AND** PRD Product image URLs use the Cloudflare Pages PRD asset base or an approved PRD custom domain asset base
+- **AND** PRD readiness/live evidence cannot be produced from GitHub Pages UAT Product image URLs unless a later approved change defines GitHub Pages as a shared canonical asset CDN.
+
 #### Scenario: PRD disabled state is checked
 
 - **WHEN** environment validation runs before production readiness is opened
 - **THEN** it verifies PRD checkout and live provider mutation fail closed
 - **AND** it reports any workflow, script, or feature gate that could enable live checkout or live provider mutation without the explicit PRD-open gate.
+
+#### Scenario: Baseline OpenSpec wording is checked
+
+- **WHEN** environment validation or closeout review runs
+- **THEN** affected baseline OpenSpec specs do not retain stale Purpose, requirement, or scenario wording that describes GitHub Pages as rollback/legacy production or Cloudflare Pages as canonical production without PRD-disabled state
+- **AND** archive readiness is blocked until baseline source-of-truth prose matches the Local/UAT/PRD model.
 
 ### Requirement: Knip audit is report-first
 
@@ -90,3 +103,240 @@ The system MUST use OpenSpec as the only spec and context workflow in this repos
 - **WHEN** it is captured as source of truth
 - **THEN** it is written as an OpenSpec baseline spec update or active change under `openspec/`
 - **AND** legacy planning commands, directories, and phase artifacts are not reintroduced.
+
+### Requirement: Execa adoption is narrow
+
+The system SHALL adopt Execa where it removes meaningful process orchestration complexity from repo-owned development scripts without changing documented commands.
+
+#### Scenario: Script process handling is refactored
+
+- **GIVEN** a script manages subprocess execution, readiness, ports, signals, or stdio
+- **WHEN** Execa is introduced
+- **THEN** documented command behavior, Windows compatibility, and tests remain stable.
+
+### Requirement: Shared local process helper is introduced first
+
+The system SHALL introduce a shared local process helper before refactoring multiple local process orchestration scripts.
+
+#### Scenario: Local stack execution is refactored
+
+- **GIVEN** the local stack launcher manages finite preparation commands and long-running service commands
+- **WHEN** the launcher is refactored to Execa
+- **THEN** shared process lifecycle behavior is moved into a repo-local helper while local-stack-specific command planning remains in the launcher.
+
+### Requirement: Launcher and secret behavior are preserved
+
+The system MUST preserve WebStorm launcher targets, package script names, port-failure behavior, long-running process lifecycle, and secret redaction.
+
+#### Scenario: Local stack script changes
+
+- **GIVEN** a refactor touches local stack or stripe-mock orchestration
+- **WHEN** validation runs
+- **THEN** command planning, failure handling, and redacted output remain equivalent for users.
+
+#### Scenario: Long-running script changes
+
+- **GIVEN** a refactor changes a long-running local script
+- **WHEN** the automated checks pass
+- **THEN** manual launcher validation is still required before the change is considered complete.
+
+### Requirement: Local stack remains the first high-value target
+
+The system SHALL refactor `scripts/start-local-stack.ts` before lower-complexity process scripts unless implementation evidence shows the helper cannot preserve current local-stack behavior.
+
+#### Scenario: First Execa-backed script is selected
+
+- **GIVEN** multiple scripts use hand-rolled child-process orchestration
+- **WHEN** this change starts implementation
+- **THEN** the first target is the local stack launcher because it contains the highest-value mix of finite commands, long-running processes, ports, readiness, signals, and WebStorm launcher behavior.
+
+### Requirement: Renovate owns routine dependency update PRs
+
+The system SHALL use repository-owned Renovate configuration for routine dependency update detection and pull request creation.
+
+#### Scenario: Renovate runs for the repository
+
+- **GIVEN** the hosted Renovate GitHub App is installed for the repository owner
+- **WHEN** Renovate evaluates the repository
+- **THEN** it reads dependency update policy from `renovate.json`.
+
+#### Scenario: Renovate config changes
+
+- **GIVEN** Renovate configuration or package-manager metadata changes
+- **WHEN** CI validates the change
+- **THEN** the Renovate config validator runs before the change reaches `main`.
+
+### Requirement: Dependency updates preserve compatibility groups
+
+The system MUST keep dependency updates grouped by compatibility-sensitive ecosystem boundaries.
+
+#### Scenario: Routine frontend and tooling packages update
+
+- **GIVEN** Astro, React, Tailwind, TypeScript, lint, format, test, browser automation, or script-runner packages have compatible updates
+- **WHEN** Renovate opens update PRs
+- **THEN** related packages are grouped by ecosystem so peer and runtime mismatches can be reviewed together.
+
+#### Scenario: Runtime-sensitive packages update
+
+- **GIVEN** Cloudflare Worker, Prisma D1 persistence, backend API, commerce contract, GitHub Actions, or major-version packages have updates
+- **WHEN** Renovate proposes the update
+- **THEN** the update requires dashboard approval and is not automerged.
+
+### Requirement: First update pass reaches latest compatible direct dependencies
+
+The system SHALL verify the first Renovate adoption pass by updating direct dependency ranges to the latest compatible published versions available to pnpm.
+
+#### Scenario: First local update pass completes
+
+- **GIVEN** direct npm dependencies can be updated without breaking repository gates
+- **WHEN** the first update pass finishes
+- **THEN** `pnpm outdated --recursive --format json` reports no outdated direct dependencies except documented compatibility deferrals.
+
+#### Scenario: Latest published versions have peer mismatches
+
+- **GIVEN** a latest published package version creates a peer dependency mismatch with repo-owned tooling
+- **WHEN** the first update pass is completed
+- **THEN** the repo stays on the latest compatible version and documents the deferral.
+
+#### Scenario: Package manager major is not compatible yet
+
+- **GIVEN** the latest package-manager major cannot consume the current lockfile because of its supply-chain or compatibility policy
+- **WHEN** the first update pass is completed
+- **THEN** the repo stays on the latest compatible current major and documents the deferral.
+
+### Requirement: Stripe sandbox smoke verifies hosted Checkout surface
+
+The system SHALL include a pre-payment Stripe sandbox smoke scenario that verifies the hosted Checkout amount and payment-method surface.
+
+#### Scenario: UAT sandbox dynamic payment surface is verified
+
+- **GIVEN** the deployed UAT sandbox storefront and Worker use the intended Stripe Payment Method Configuration
+- **AND** the expected payment labels are configured for the documented browser, checkout country, amount, and currency context
+- **WHEN** `pnpm smoke:stripe-sandbox -- --scenario checkout_surface` runs against that deployment
+- **THEN** it reaches Stripe-hosted Checkout without submitting payment
+- **AND** it asserts the expected Store Offer amount, currency, and configured dynamic payment method labels.
+
+#### Scenario: Payment Method Configuration verifier runs before browser smoke
+
+- **GIVEN** a sandbox `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` is configured for the Worker
+- **WHEN** `pnpm stripe:payment-methods:verify` runs for the UAT sandbox environment
+- **THEN** it reports whether the configuration exists, is active, and includes the expected candidate payment methods before hosted Checkout smoke evidence is accepted.
+
+#### Scenario: Hosted Checkout surface drifts from storefront authority
+
+- **GIVEN** the deployed sandbox storefront can redirect to Stripe-hosted Checkout
+- **WHEN** `pnpm smoke:stripe-sandbox -- --scenario checkout_surface` runs
+- **THEN** it records the hosted amount texts and visible payment method labels
+- **AND** it fails before payment submission if the hosted amount or dynamic payment surface does not match expectations.
+
+#### Scenario: Paid smoke scenarios run
+
+- **GIVEN** paid smoke scenarios are selected
+- **WHEN** the smoke runner starts
+- **THEN** webhook listener and paid order reconciliation requirements remain separate from the pre-payment surface scenario.
+
+### Requirement: Catalog projection verification is dry-run by default
+
+The system SHALL verify catalog field ownership, Product projection, Price authority, D1 readiness, and Store Offer snapshot state without mutating provider or database state by default.
+
+#### Scenario: Operator runs catalog verification
+
+- **GIVEN** an operator runs `pnpm stripe:catalog:verify --env sandbox` without `--apply`
+- **WHEN** the command inspects repo projection, sandbox D1, and Stripe catalog state
+- **THEN** it reports Product projection drift, Price authority drift, Store Offer snapshot drift, missing D1 readiness, and redacted provider diagnostics
+- **AND** it does not mutate Stripe Products, Stripe Prices, D1 mappings, Store Offer snapshots, repo content, or committed evidence.
+
+#### Scenario: Output includes provider identifiers
+
+- **GIVEN** verification needs to mention Stripe Products, Prices, webhook endpoint IDs, API errors, or secrets
+- **WHEN** output is printed or evidence is written
+- **THEN** full provider IDs, secret values, account-private values, and API error payloads are redacted.
+
+### Requirement: Catalog apply is environment-scoped and sandbox-first
+
+The system MUST require explicit environment and apply flags before mutating Stripe Products, Stripe Prices, D1 mappings, or Store Offer snapshots.
+
+#### Scenario: Sandbox apply is requested
+
+- **GIVEN** an operator runs `pnpm stripe:catalog:verify --env sandbox --apply`
+- **WHEN** the dry-run plan has actionable Product projection or sandbox Price/D1 drift
+- **THEN** the command applies only sandbox-scoped changes
+- **AND** prints a redacted post-apply verification report.
+
+#### Scenario: Production apply is requested before go-live approval
+
+- **GIVEN** an operator requests catalog apply for production
+- **WHEN** production catalog mutation has not been explicitly approved by the production go-live readiness workflow
+- **THEN** the command refuses to mutate provider or D1 state
+- **AND** reports the required approval gate.
+
+### Requirement: Field ownership has layered tests
+
+The system SHALL test catalog field ownership through deterministic unit tests, script tests, and sandbox operator checks.
+
+#### Scenario: Unit tests run
+
+- **GIVEN** field ownership, Product projection, Price reconciliation, or webhook replay behavior changes
+- **WHEN** targeted unit tests run
+- **THEN** they cover ownership matrix completeness, Product projection planning, Price replacement reconciliation, ambiguity failures, stale snapshot updates, webhook duplicate handling, and redaction.
+
+#### Scenario: Script tests run
+
+- **GIVEN** catalog verification or apply command behavior changes
+- **WHEN** script-level tests run
+- **THEN** they cover argument parsing, dry-run immutability, sandbox-only apply enforcement, redacted reports, all-current-catalog coverage, and missing credential classification.
+
+#### Scenario: Sandbox live checks run
+
+- **GIVEN** sandbox Stripe and Cloudflare credentials are available
+- **WHEN** live/operator checks run
+- **THEN** `pnpm stripe:webhooks:verify --env sandbox`, `pnpm stripe:catalog:verify --env sandbox`, sandbox apply when needed, and Stripe sandbox smoke prove persistent webhook delivery and hosted Checkout catalog alignment without exposing secrets.
+
+### Requirement: Commerce validation MUST cover generated UAT catalog artifacts
+
+The validation workflow SHALL include a deterministic check that the backend Product Projection manifest and sandbox UAT D1 seed match the current Astro Store Item catalog.
+
+#### Scenario: Generated artifacts drift
+
+- **GIVEN** Astro Store Item content changes
+- **WHEN** `pnpm stripe:catalog:artifacts:check` runs before regenerating artifacts
+- **THEN** the command fails and identifies generated artifact drift.
+
+### Requirement: Sandbox UAT proof MUST follow reset, seed, apply, and smoke sequence
+
+The sandbox UAT proof sequence SHALL verify webhook readiness, catalog readiness, reset/apply behavior, sandbox D1 seed application, backend deployment, and GitHub Pages hosted checkout smoke without committing secrets or full provider IDs. A pushed repo commit alone SHALL NOT be accepted as proof that Stripe sandbox catalog objects, D1 checkout readiness, or Store Offer snapshots have been updated.
+
+#### Scenario: Full UAT catalog proof is run
+
+- **GIVEN** Stripe sandbox credentials, the sandbox Worker, and the GitHub Pages UAT storefront are available
+- **WHEN** the operator follows the documented UAT sequence
+- **THEN** catalog reset dry-run runs before confirmed mutation
+- **AND** D1 seed runs before catalog apply
+- **AND** catalog verification passes after apply
+- **AND** checkout smoke covers `checkout_surface` and `happy_path_paid`
+- **AND** evidence remains redacted and contains no secrets.
+
+#### Scenario: Provider execution lessons are enforced
+
+- **GIVEN** full sandbox catalog alignment is being accepted after an end-to-end provider run
+- **WHEN** an operator reviews the proof
+- **THEN** CLI catalog verification and smoke evidence are authoritative over Stripe Dashboard row counts
+- **AND** legacy BlackBox sandbox Product cleanup is considered only through current ownership metadata, lookup keys, or documented catalog-derived legacy names
+- **AND** webhook endpoint verification is treated as endpoint configuration proof, while paid smoke is treated as signing-secret and paid-order proof
+- **AND** the sandbox Worker is redeployed from the final pushed commit after any live-run script or runtime fixes
+- **AND** low-stock smoke uses `afterglow-tape` only when low-stock behavior is the behavior under test.
+
+### Requirement: Secret presence checks are redacted
+
+The system MUST verify secret/config presence without printing secret values.
+
+#### Scenario: Secret preflight fails
+
+- **WHEN** a local, UAT, or PRD preflight detects missing sensitive configuration
+- **THEN** output names the missing secret key or credential category
+- **AND** it does not print existing secret values, derived credentials, webhook signing secrets, API tokens, or Stripe keys.
+
+#### Scenario: Secret must be entered in another store
+
+- **WHEN** a maintainer must add a value to GitHub Actions secrets, Cloudflare Worker secrets, Stripe Dashboard, or ignored local files
+- **THEN** the preflight explains the destination store and why the value is not copied automatically from another store.

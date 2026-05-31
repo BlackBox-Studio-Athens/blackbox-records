@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Environment terms
 
@@ -15,6 +15,8 @@ The system SHALL use canonical environment terminology across specs, docs, workf
 - **WHEN** an artifact describes a GitHub Actions environment, Wrangler environment, Cloudflare Pages project, Worker runtime target, Stripe mode, or secret store
 - **THEN** it labels that concept as a platform/provider/configuration layer
 - **AND** it maps the concept back to Local, UAT, or PRD.
+
+## ADDED Requirements
 
 ### Requirement: Local mode terms
 
