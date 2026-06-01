@@ -70,7 +70,7 @@
     "@astrojs/check": "0.9.9",
     "@eslint/js": "^10.0.1",
     "@t3-oss/env-core": "^0.13.11",
-    "astro": "6.3.7",
+    "astro": "6.4.2",
     "dependency-cruiser": "^17.4.0",
     "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",

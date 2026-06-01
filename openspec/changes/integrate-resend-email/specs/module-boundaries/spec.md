@@ -12,7 +12,7 @@ The system MUST document email application and infrastructure modules in the mod
 
 #### Scenario: Resend infrastructure code is introduced
 
-- **GIVEN** a Resend provider client is added
+- **GIVEN** a Resend SDK provider gateway is added
 - **WHEN** module boundaries are audited
 - **THEN** Resend infrastructure entrypoints and allowed dependencies are listed in the module-boundary manifest
 - **AND** frontend modules cannot import backend email provider code.

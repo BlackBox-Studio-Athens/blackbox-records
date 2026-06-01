@@ -2,14 +2,20 @@
 
 ### Requirement: Worker-owned Resend email provider
 
-The system MUST send application email through a Worker-owned Resend provider boundary without exposing Resend secrets, provider IDs, or internal delivery errors to static frontend code.
+The system MUST send application email through a Worker-owned Resend provider boundary backed by the official Resend SDK without exposing Resend secrets, provider IDs, or internal delivery errors to static frontend code.
 
 #### Scenario: Worker sends email
 
 - **GIVEN** a Worker application service needs to send email
 - **WHEN** it calls the email provider
-- **THEN** it uses server-side Resend runtime config and HTTPS API calls
+- **THEN** it uses server-side Resend runtime config through the backend Resend SDK infrastructure gateway
 - **AND** the browser receives no Resend API key, provider resource ID, provider response body, or internal delivery diagnostic.
+
+#### Scenario: SDK coverage is insufficient
+
+- **GIVEN** a required Resend provider operation is not supported by the official SDK or fails in the Cloudflare Worker runtime
+- **WHEN** implementation reaches that operation
+- **THEN** the implementation records the SDK gap and does not add a direct REST fallback without an explicit follow-up decision.
 
 #### Scenario: Provider is unavailable
 
@@ -50,7 +56,7 @@ The system SHALL route Resend application emails according to the Worker Product
 
 - **GIVEN** the Worker runs in the sandbox runtime target for UAT
 - **AND** `RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL` is configured as `blackboxrecordsathens@gmail.com`
-- **WHEN** paid-order shopper, paid-order ops, or newsletter welcome emails are sent
+- **WHEN** paid-order shopper or paid-order ops emails are sent
 - **THEN** the Worker sends each email to `blackboxrecordsathens@gmail.com`
 - **AND** the email includes safe test evidence for the intended recipient.
 
@@ -62,45 +68,9 @@ The system SHALL route Resend application emails according to the Worker Product
 - **AND** ops notification goes to `RESEND_OPS_TO_EMAIL`
 - **AND** the UAT recipient override is ignored.
 
-### Requirement: Newsletter subscription capture
+### Requirement: Resend provider readiness verification
 
-The system SHALL capture newsletter signups through the Worker and enroll consenting subscribers in Resend.
-
-#### Scenario: PRD shopper subscribes
-
-- **GIVEN** a shopper submits a valid email with explicit consent accepted
-- **AND** the Worker runs in the production runtime target for PRD
-- **WHEN** the static newsletter form posts to the Worker
-- **THEN** the Worker creates or updates the Resend Contact
-- **AND** the Worker adds the Contact to the configured newsletter Segment and optional Topic
-- **AND** the Worker records consent metadata as provider contact properties
-- **AND** the Worker sends one welcome email for a first opt-in transition.
-
-#### Scenario: UAT shopper subscribes
-
-- **GIVEN** a shopper submits a valid email with explicit consent accepted
-- **AND** the Worker runs in the sandbox runtime target for UAT
-- **WHEN** the static newsletter form posts to the Worker
-- **THEN** the Worker sends a test welcome email to `blackboxrecordsathens@gmail.com`
-- **AND** the email includes the submitted address and consent metadata for inspection
-- **AND** the Worker does not create or update a Resend Contact, Segment enrollment, or Topic enrollment for the submitted address.
-
-#### Scenario: Consent is missing
-
-- **GIVEN** a newsletter signup request omits accepted consent
-- **WHEN** the Worker validates the request
-- **THEN** it rejects the request without calling Resend.
-
-#### Scenario: Subscriber already exists
-
-- **GIVEN** the submitted email already belongs to a subscribed Resend Contact in PRD
-- **WHEN** the Worker processes the request
-- **THEN** it treats the signup as idempotent success
-- **AND** it does not send duplicate welcome emails for an already opted-in contact.
-
-### Requirement: Resend CLI setup automation
-
-The system SHALL provide a repo-owned setup script that uses Resend CLI for diagnostics and provider resource preparation without becoming part of runtime email delivery.
+The system SHALL provide a repo-owned verification script that uses Resend CLI for diagnostics and read-only provider checks without becoming part of runtime email delivery.
 
 #### Scenario: CLI configuration is validated first
 
@@ -108,24 +78,25 @@ The system SHALL provide a repo-owned setup script that uses Resend CLI for diag
 - **WHEN** the operator environment is prepared
 - **THEN** `resend --version` works
 - **AND** `resend doctor --json` returns account/team diagnostics without leaking secrets
-- **AND** read-only CLI checks can inspect the intended sending domain, newsletter Segment, and optional Topic
+- **AND** read-only CLI checks can inspect the intended sending domain and sender readiness
+- **AND** the official Resend SDK is proven compatible with the Worker toolchain for required paid-order send behavior
 - **AND** runtime email implementation does not proceed until those checks pass or a manual provider checkpoint is explicitly recorded.
 
-#### Scenario: Setup diagnostics run
+#### Scenario: Verification diagnostics run
 
-- **GIVEN** an operator runs the Resend setup script
+- **GIVEN** an operator runs the Resend verification script
 - **WHEN** Resend CLI is available
 - **THEN** the script runs CLI diagnostics in JSON mode
-- **AND** it checks or prepares non-secret provider resources such as domains, Segments, and Topics according to supplied options.
+- **AND** it performs read-only provider checks for account, domain, and sender readiness.
 
 #### Scenario: Provider setup needs secrets or DNS
 
-- **GIVEN** setup requires a real Resend API key, DNS record application, or Cloudflare Worker secret upload
+- **GIVEN** setup requires a real Resend API key, DNS record application, Cloudflare Worker secret upload, Segment/Topic creation, or provider mutation
 - **WHEN** the script reports required actions
 - **THEN** it leaves those actions as explicit operator checkpoints unless a later approved automation has the necessary credentials and safeguards.
 
 #### Scenario: Setup writes local output
 
-- **GIVEN** provider resources are discovered or created
-- **WHEN** the setup script writes local output
-- **THEN** it writes only non-secret IDs and diagnostic reports to ignored local files.
+- **GIVEN** provider readiness is checked
+- **WHEN** the verification script writes local output
+- **THEN** it writes only non-secret diagnostic reports to ignored local files.

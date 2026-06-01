@@ -1,43 +1,32 @@
-## 0. Resend CLI Configuration And Provider Proof
+## 0. Resend Provider Proof
 
 - [ ] 0.1 Install or locate the Resend CLI, authenticate with `resend login` or CI-safe `RESEND_API_KEY`, and verify `resend --version` runs in the operator environment.
 - [ ] 0.2 Run `resend doctor --json` and capture redacted proof that the CLI can reach the intended Resend account/team.
-- [ ] 0.3 Run read-only CLI checks for the target environment's sending domain, newsletter Segment, and optional Topic before any Worker runtime email implementation begins.
-- [ ] 0.4 Record any required manual checkpoints for DNS, API-key creation, or Cloudflare Worker secret upload; do not continue to runtime email work until CLI validation passes or the checkpoint is explicitly accepted.
+- [ ] 0.3 Run read-only CLI checks for the target environment's sending domain and sender readiness before any Worker runtime email implementation begins.
+- [ ] 0.4 Prove the official `resend` SDK imports and supports the required send/idempotency shape in the Worker toolchain, or record the exact SDK gap before discussing a REST fallback.
+- [ ] 0.5 Record any required manual checkpoints for DNS, API-key creation, or Cloudflare Worker secret upload; do not continue to runtime email work until validation passes or the checkpoint is explicitly accepted.
 
-## 1. Provider Setup And Runtime Contract
+## 1. SDK-Backed Runtime Contract
 
-- [ ] 1.1 Add Worker Resend runtime bindings and validation coverage for API key, sender, ops recipient, newsletter Segment, optional Topic, and optional test API base URL.
-- [ ] 1.2 Add a Resend REST infrastructure client with explicit `User-Agent`, bearer auth, JSON errors, idempotency-key support, contact upsert/enrollment, and test base URL override.
-- [ ] 1.3 Add `resend:setup` CLI automation with dry-run/apply modes, JSON diagnostics, Segment/Topic/domain checks, optional API-key creation, and ignored non-secret setup output.
+- [ ] 1.1 Add Worker Resend runtime bindings and validation coverage for API key, sender, ops recipient, and UAT recipient override.
+- [ ] 1.2 Add a backend email application module with library-style entrypoints, repo-owned template builders, recipient routing, deterministic idempotency key creation, and provider-safe errors.
+- [ ] 1.3 Add a Resend SDK infrastructure gateway that wraps the official `resend` package and maps SDK success/failure results without exposing provider payloads outside the backend boundary.
+- [ ] 1.4 Add `resend:verify` CLI diagnostics with read-only account/domain/sender checks and ignored non-secret readiness output.
 
 ## 2. Paid Order Email
 
-- [ ] 2.1 Add repo-owned paid-order shopper and ops HTML/text template builders with unit tests and no secret/provider payload exposure.
-- [ ] 2.2 Extend Stripe Checkout Session mapping to capture shopper email safely from `customer_details.email` with `customer_email` fallback.
-- [ ] 2.3 Trigger paid-order email notifications only after first-time paid reconciliation applies, with replay/non-paid/needs-review safeguards and deterministic idempotency keys.
+- [ ] 2.1 Extend Stripe Checkout Session mapping to capture shopper email safely from `customer_details.email` with `customer_email` fallback.
+- [ ] 2.2 Trigger paid-order email notifications only after first-time paid reconciliation applies, with replay/non-paid/needs-review safeguards and deterministic idempotency keys.
+- [ ] 2.3 Add tests for shopper email, ops email, missing shopper email, replay suppression, provider failure handling, UAT sink routing, and PRD recipient routing.
 
-## 3. Newsletter Subscription
+## 3. Docs, Boundaries, And Validation
 
-- [ ] 3.1 Add `POST /api/newsletter/subscriptions` OpenAPI contract, route, service, and generated API client support.
-- [ ] 3.2 Implement newsletter subscription Resend behavior for single opt-in consent, Contact upsert, Segment/Topic enrollment, consent metadata, idempotent existing subscribers, and first-opt-in welcome email.
-- [ ] 3.3 Wire the static Astro newsletter form to the Worker endpoint with explicit consent UI, accessible status/error states, and browser-safe provider failures.
-
-## 4. Docs, Boundaries, And Validation
-
-- [ ] 4.1 Update module-boundary manifest and audits for email application/infrastructure and newsletter route ownership.
-- [ ] 4.2 Update README/env docs with Resend CLI setup, manual DNS/secret checkpoints, Local/UAT/PRD config, and runtime-vs-setup boundaries.
-- [ ] 4.3 Run OpenSpec validation, unit tests, check, build, and Browser Use newsletter UI verification; record any provider-side checks that remain manual.
-
-## 5. Environment-Aware Delivery Amendment
-
-- [ ] 5.1 Add environment-aware recipient routing so UAT/sandbox sends all Resend application emails to `blackboxrecordsathens@gmail.com` and PRD/production sends to buyer and ops recipients.
-- [ ] 5.2 Add Worker config validation for `RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL` in UAT and ensure PRD ignores the UAT override.
-- [ ] 5.3 Update newsletter behavior so UAT validates consent and sends sink welcome tests without creating/updating Resend Contacts, while PRD keeps real Contact/Segment/Topic enrollment.
-- [ ] 5.4 Add tests and docs for UAT paid-order routing, PRD recipient routing, UAT newsletter sink-only behavior, PRD newsletter enrollment, and runtime config verification.
+- [ ] 3.1 Update module-boundary manifest and audits for email application and Resend SDK infrastructure ownership.
+- [ ] 3.2 Update README/env docs with Resend SDK runtime usage, CLI verification, manual DNS/secret checkpoints, Local/UAT/PRD config, and runtime-vs-verification boundaries.
+- [ ] 3.3 Run OpenSpec validation, unit tests, check, and build; record any provider-side checks that remain manual.
 
 Planning notes:
 
 - Runtime implementation was intentionally discarded before review completion; these tasks remain unchecked until the spec is approved and implementation restarts.
-- Resend CLI/provider checks remain the first required implementation step and are not yet complete.
-
+- Resend CLI/provider checks and official SDK compatibility remain the first required implementation step and are not yet complete.
+- Newsletter signup, Contact Segment/Topic enrollment, welcome email behavior, and provider resource automation are intentionally deferred to later OpenSpec changes.
