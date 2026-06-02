@@ -32,6 +32,37 @@ const loadingView: StoreOfferPriceDisplayView = {
   tone: 'loading',
 };
 
+const maxConcurrentStoreOfferPriceReads = 4;
+
+let activeStoreOfferPriceReads = 0;
+
+const pendingStoreOfferPriceReads: Array<() => void> = [];
+const cachedStoreOfferPriceDisplayReads = new Map<string, Promise<StoreOfferPriceDisplayView>>();
+
+function enqueueStoreOfferPriceRead(
+  task: () => Promise<StoreOfferPriceDisplayView>,
+): Promise<StoreOfferPriceDisplayView> {
+  return new Promise((resolve, reject) => {
+    const runTask = () => {
+      activeStoreOfferPriceReads += 1;
+
+      task()
+        .then(resolve, reject)
+        .finally(() => {
+          activeStoreOfferPriceReads -= 1;
+          pendingStoreOfferPriceReads.shift()?.();
+        });
+    };
+
+    if (activeStoreOfferPriceReads < maxConcurrentStoreOfferPriceReads) {
+      runTask();
+      return;
+    }
+
+    pendingStoreOfferPriceReads.push(runTask);
+  });
+}
+
 export function createStoreOfferPriceDisplayView(
   offer: PublicStoreOffer | null | undefined,
 ): StoreOfferPriceDisplayView {
@@ -61,6 +92,22 @@ export async function loadStoreOfferPriceDisplayView(
   }
 }
 
+function loadDefaultStoreOfferPriceDisplayView(
+  api: PublicCheckoutApi,
+  storeItemSlug: string,
+): Promise<StoreOfferPriceDisplayView> {
+  const cachedRead = cachedStoreOfferPriceDisplayReads.get(storeItemSlug);
+
+  if (cachedRead) {
+    return cachedRead;
+  }
+
+  const nextRead = enqueueStoreOfferPriceRead(() => loadStoreOfferPriceDisplayView(api, storeItemSlug));
+  cachedStoreOfferPriceDisplayReads.set(storeItemSlug, nextRead);
+
+  return nextRead;
+}
+
 export default function StoreOfferPriceDisplay({ api, className, storeItemSlug }: StoreOfferPriceDisplayProps) {
   const [view, setView] = React.useState<StoreOfferPriceDisplayView>(loadingView);
 
@@ -70,7 +117,11 @@ export default function StoreOfferPriceDisplay({ api, className, storeItemSlug }
 
     setView(loadingView);
 
-    void loadStoreOfferPriceDisplayView(checkoutApi, storeItemSlug).then((nextView) => {
+    const readStoreOfferPriceDisplayView = api
+      ? loadStoreOfferPriceDisplayView(checkoutApi, storeItemSlug)
+      : loadDefaultStoreOfferPriceDisplayView(checkoutApi, storeItemSlug);
+
+    void readStoreOfferPriceDisplayView.then((nextView) => {
       if (isActive) {
         setView(nextView);
       }
