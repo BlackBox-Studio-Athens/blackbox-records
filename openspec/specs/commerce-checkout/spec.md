@@ -1,9 +1,7 @@
 ## Purpose
 
 Specify native storefront, cart, checkout, Stripe, feature-gate, and secret-boundary behavior.
-
 ## Requirements
-
 ### Requirement: Native store projection
 
 The system SHALL render native store pages from repo-owned content and stable store projections.
@@ -318,3 +316,15 @@ The storefront and checkout UI MUST keep loading feedback browser-safe and non-a
 - **WHEN** checkout-related loading feedback is rendered to the browser
 - **THEN** it describes availability, payment handoff, or payment status at user level
 - **AND** it omits provider IDs, feature flag keys, D1 bindings, Worker secret names, raw provider errors, and internal evaluation details.
+
+### Requirement: Store Images Remain Derived Display Data
+
+The system SHALL keep shopper-facing store, cart, and checkout images derived from repo-owned product images.
+
+#### Scenario: Cart or checkout stores image data
+
+- **GIVEN** a StoreCart line, checkout summary, checkout return, or order summary includes an image
+- **WHEN** the image value is stored or rendered in browser/runtime state
+- **THEN** it is a Runtime Image Snapshot for display only
+- **AND** it is not stock, price, payment, order, provider, or product-media authority.
+
