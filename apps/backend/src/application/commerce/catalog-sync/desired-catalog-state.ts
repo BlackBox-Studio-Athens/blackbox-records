@@ -266,7 +266,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       description:
         'The first release of the band is a mix of post rock elements. Engineering, recording, and mixing by Jim Spanos at BlackBox Studio, Athens, Greece. Mastered by Nikos Dimitrakakos and Jim Spanos at Unreal Studio, Athens, Greece.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/656856327_18427527979186423_8617747121554203403_n.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
       ],
       metadata: {
         sourceId: 'disintegration',

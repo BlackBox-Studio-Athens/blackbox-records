@@ -42,7 +42,7 @@ describe('stripe catalog contract projection', () => {
       },
       productProjection: {
         imageUrls: [
-          'https://blackbox-records-web.pages.dev/admin/media/releases/656856327_18427527979186423_8617747121554203403_n.jpg',
+          'https://blackbox-records-web.pages.dev/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
         ],
         name: 'BlackBox Records - Disintegration - Black Vinyl LP',
         taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,

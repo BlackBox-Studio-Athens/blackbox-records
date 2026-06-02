@@ -138,6 +138,29 @@ describe('StoreItem projection contract', () => {
     });
   });
 
+  it('uses the disintegration mockup cover override only for the store item', async () => {
+    const storeItem = await getStoreItemForRelease({
+      id: 'disintegration',
+      data: {
+        artist: { id: 'afterwise' },
+        cover_image: { src: '/disintegration.jpg' },
+        cover_image_alt: 'Disintegration cover',
+        formats: ['Black Vinyl LP'],
+        merch_url: '/store/',
+        release_date: new Date('2026-09-01T00:00:00.000Z'),
+        summary: 'Native-shop release',
+        title: 'Disintegration',
+      },
+    } as any);
+
+    expect(storeItem.image).toEqual({
+      src: '/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
+      width: 3544,
+      height: 3543,
+      format: 'webp',
+    });
+  });
+
   it('creates a distro-derived store item without leaking external-shop fields', () => {
     const storeItem = createStoreItemFromDistroEntry({
       id: 'afterglow-tape',

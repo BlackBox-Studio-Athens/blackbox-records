@@ -25,6 +25,12 @@ export type StoreItem = {
   storePath: string;
   checkoutPath: string;
 };
+type StoreItemImageOverride = {
+  src: string;
+  width: number;
+  height: number;
+  format: 'webp';
+};
 export type ArtistRosterReleaseContext = {
   latestReleaseTitle: string | null;
   latestReleaseYear: number | null;
@@ -129,6 +135,19 @@ function createStoreItemPaths(slug: string) {
   };
 }
 
+const RELEASE_STORE_ITEM_IMAGE_OVERRIDES: Record<string, StoreItemImageOverride> = {
+  disintegration: {
+    src: '/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
+    width: 3544,
+    height: 3543,
+    format: 'webp',
+  },
+};
+
+function resolveStoreItemImageForRelease(releaseEntry: ReleaseCatalogEntry): StoreItem['image'] {
+  return (RELEASE_STORE_ITEM_IMAGE_OVERRIDES[releaseEntry.id] || releaseEntry.data.cover_image) as StoreItem['image'];
+}
+
 function normalizeStoreItemImageAlt(imageAlt: string | undefined, fallback: string) {
   return imageAlt || fallback;
 }
@@ -161,7 +180,7 @@ export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEnt
     title: releaseEntry.data.title,
     subtitle: artistDisplayName,
     summary: releaseEntry.data.summary || null,
-    image: releaseEntry.data.cover_image,
+    image: resolveStoreItemImageForRelease(releaseEntry),
     imageAlt: normalizeStoreItemImageAlt(releaseEntry.data.cover_image_alt, releaseEntry.data.title),
     eyebrow: 'Release',
     metadata,

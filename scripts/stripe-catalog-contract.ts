@@ -74,6 +74,9 @@ const defaultSiteUrl = 'https://blackbox-studio-athens.github.io';
 const defaultBasePath = '/blackbox-records/';
 const prdSiteUrl = 'https://blackbox-records-web.pages.dev';
 const prdBasePath = '/';
+const CATALOG_RELEASE_IMAGE_OVERRIDES: Record<string, string> = {
+  disintegration: 'afterwise-album-cover-distro-mockup.webp',
+};
 export const STRIPE_PHYSICAL_GOODS_TAX_CODE = 'txcd_99999999';
 
 const nonPhysicalReleaseFormats = new Set(['digital']);
@@ -166,6 +169,7 @@ async function readReleaseContracts(
         const content = parseFrontmatter(await readFile(path.join(releasesDir, entry.name), 'utf8')) as ReleaseContent;
         const optionLabel = content.commerce?.option_label ?? getPrimaryReleaseStoreFormat(content.formats);
         const storeItemSlug = createReleaseStoreItemSlug(content);
+        const coverImage = resolveCatalogCoverImagePathForRelease(sourceId, content.cover_image);
         const titleParts = ['BlackBox Records', content.title, optionLabel].filter(Boolean);
         const expectedPrice = createExpectedPrice(content.commerce, optionLabel);
 
@@ -174,7 +178,7 @@ async function readReleaseContracts(
             alignmentStatus: createAlignmentStatus(content.commerce),
             description: normalizeDescription(content.summary, content.title),
             expectedSandboxPrice: expectedPrice,
-            imageUrl: createContentAssetUrl('releases', content.cover_image, options),
+            imageUrl: createContentAssetUrl('releases', coverImage, options),
             metadata: {
               sourceId,
               sourceKind: 'release',
@@ -579,6 +583,14 @@ function createContentAssetUrl(
   const basePath = normalizeBasePath(options.basePath ?? target.basePath);
   const siteUrl = options.siteUrl ?? target.siteUrl;
   return new URL(`${basePath}/admin/media/${collection}/${encodeURIComponent(assetName)}`, siteUrl).toString();
+}
+
+function resolveCatalogImageOverrideForRelease(sourceId: string): string | undefined {
+  return CATALOG_RELEASE_IMAGE_OVERRIDES[sourceId];
+}
+
+function resolveCatalogCoverImagePathForRelease(sourceId: string, coverImage: string): string {
+  return resolveCatalogImageOverrideForRelease(sourceId) ?? coverImage;
 }
 
 function resolveCatalogAssetTarget(options: LoadStripeCatalogContractsOptions): { basePath: string; siteUrl: string } {
