@@ -180,7 +180,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'released March 13, 2026 All music written and performed by Chronoboros All lyrics written by Nikos Zalimoglou Recorded live at Ignite Music Studio Jun 2025 Recorded, mixed, and mastered by George Christoforidis Artwork and layout by Healitwithsilver',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/651165517_1798070461631923_2184094727995022471_n.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/chronoboros-album-cover-distro-mockup.webp',
       ],
       metadata: {
         sourceId: 'caregivers',

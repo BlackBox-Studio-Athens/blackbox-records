@@ -109,7 +109,7 @@ describe('groupDistroEntries', () => {
 describe('StoreItem projection contract', () => {
   it('creates a release-derived store item with stable store and checkout paths', async () => {
     const storeItem = await createStoreItemFromRelease({
-      id: 'caregivers',
+      id: 'caregivers-control',
       data: {
         artist: { id: 'afterwise' },
         cover_image: { src: '/cover.jpg' },
@@ -125,7 +125,7 @@ describe('StoreItem projection contract', () => {
       slug: 'caregivers-vinyl',
       taxCategory: 'physical_goods',
       sourceKind: 'release',
-      sourceId: 'caregivers',
+      sourceId: 'caregivers-control',
       title: 'Caregivers',
       subtitle: 'Afterwise',
       summary: 'Release summary',
@@ -155,6 +155,29 @@ describe('StoreItem projection contract', () => {
 
     expect(storeItem.image).toEqual({
       src: '/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
+      width: 3544,
+      height: 3543,
+      format: 'webp',
+    });
+  });
+
+  it('uses the caregivers mockup cover override only for the store item', async () => {
+    const storeItem = await getStoreItemForRelease({
+      id: 'caregivers',
+      data: {
+        artist: { id: 'chronoboros' },
+        cover_image: { src: '/caregivers.jpg' },
+        cover_image_alt: 'Caregivers cover',
+        formats: ['Vinyl'],
+        merch_url: 'https://chronoboros.bandcamp.com/merch',
+        release_date: new Date('2026-03-13T00:00:00.000Z'),
+        summary: 'External merch release',
+        title: 'Caregivers',
+      },
+    } as any);
+
+    expect(storeItem.image).toEqual({
+      src: '/blackbox-records/admin/media/releases/chronoboros-album-cover-distro-mockup.webp',
       width: 3544,
       height: 3543,
       format: 'webp',

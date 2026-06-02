@@ -63,6 +63,9 @@ describe('stripe catalog contract projection', () => {
     });
     expect(contractsBySlug.get('caregivers-vinyl')).toMatchObject({
       productProjection: {
+        imageUrls: [
+          'https://blackbox-records-web.pages.dev/admin/media/releases/chronoboros-album-cover-distro-mockup.webp',
+        ],
         name: 'BlackBox Records - Caregivers - Vinyl',
       },
       sourceId: 'caregivers',
