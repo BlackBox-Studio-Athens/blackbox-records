@@ -1,6 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import { Card, CardContent } from '@/components/ui/card';
+import StoreOfferPriceDisplay from '@/components/store/StoreOfferPriceDisplay';
 import type { StoreCollectionEntry } from '@/lib/store-collection';
 
 interface Props {
@@ -9,7 +10,6 @@ interface Props {
 
 const { entry } = Astro.props;
 const { storeItem, primaryAvailability } = entry;
-const priceLabel = 'Worker-confirmed';
 const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
 const metadataLabel = storeItem.metadata.join(' · ');
 const collectionLabel = storeItem.eyebrow || (storeItem.sourceKind === 'release' ? 'Release' : 'Distro');
@@ -55,7 +55,11 @@ const collectionLabel = storeItem.eyebrow || (storeItem.sourceKind === 'release'
       <div class="mt-auto flex items-end justify-between gap-4 border-t border-border/50 pt-4">
         <div class="space-y-1">
           <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Price</p>
-          <p class="font-display text-2xl tracking-[0.08em] uppercase text-foreground">{priceLabel}</p>
+          <StoreOfferPriceDisplay
+            client:load
+            storeItemSlug={storeItem.slug}
+            className="block font-display text-2xl tracking-[0.08em] uppercase text-foreground"
+          />
         </div>
         <span class="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-foreground/88">
           View Item <span aria-hidden="true">→</span>

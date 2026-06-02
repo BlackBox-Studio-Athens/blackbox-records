@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import CheckoutOrderSummary from '@/components/store/CheckoutOrderSummary';
 import CheckoutOfferStatus from '@/components/store/CheckoutOfferStatus';
+import StoreOfferPriceDisplay, { STORE_OFFER_PRICE_DISPLAY_COPY } from '@/components/store/StoreOfferPriceDisplay';
 import { createProjectRelativeUrl } from '@/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import {
@@ -22,7 +23,7 @@ interface Props {
 
 const { entry } = Astro.props;
 const { storeItem, primaryAvailability } = entry;
-const priceLabel = 'Worker-confirmed';
+const priceLabel = STORE_OFFER_PRICE_DISPLAY_COPY.loading;
 const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
 const canBuy = primaryAvailability?.canBuy ?? false;
 const fallbackLineItem = createCartLineItemSnapshotForStorePage(storeItem, primaryAvailability, storeItem.image.src);
@@ -83,7 +84,11 @@ const summaryItem = {
             class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground marker:hidden sm:px-5"
           >
             <span class="min-w-0">Order Summary</span>
-            <span class="min-w-0 text-right font-display text-xl tracking-[0.08em] sm:text-2xl">{priceLabel}</span>
+            <StoreOfferPriceDisplay
+              client:load
+              storeItemSlug={storeItem.slug}
+              className="min-w-0 text-right font-display text-xl tracking-[0.08em] sm:text-2xl"
+            />
           </summary>
           <div class="min-w-0 border-t border-border/70 p-3 sm:p-4">
             <CheckoutOrderSummary client:load {...summaryItem} />

@@ -1,6 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 
+import StoreOfferPriceDisplay from '@/components/store/StoreOfferPriceDisplay';
 import StoreItemPurchaseActions from '@/components/store/StoreItemPurchaseActions';
 import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
@@ -25,7 +26,6 @@ interface Props {
 const { entry } = Astro.props;
 const { storeItem, primaryAvailability } = entry;
 const metadataLabel = storeItem.metadata.join(' · ');
-const priceLabel = 'Worker-confirmed at checkout';
 const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
 const itemTypeLabel = storeItem.sourceKind === 'release' ? 'Release' : 'Item';
 const canBuy = primaryAvailability?.canBuy ?? false;
@@ -106,7 +106,11 @@ const cartSeed = createPricedCartSeedForStorePage(storeItem, primaryAvailability
 
             <div class="space-y-2">
               <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Price</p>
-              <p class="font-display text-3xl tracking-[0.08em] uppercase text-foreground">{priceLabel}</p>
+              <StoreOfferPriceDisplay
+                client:load
+                storeItemSlug={storeItem.slug}
+                className="block font-display text-3xl tracking-[0.08em] uppercase text-foreground"
+              />
               <p class="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{availabilityLabel}</p>
             </div>
           </div>
