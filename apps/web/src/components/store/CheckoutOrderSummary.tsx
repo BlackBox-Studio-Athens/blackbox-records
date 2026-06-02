@@ -126,6 +126,7 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
               key={line.variantId}
             >
               <div className="aspect-square overflow-hidden border border-border/70 bg-muted/20">
+                {/* Runtime Image Snapshot: checkout summary renders the stored string URL only. */}
                 {line.image ? (
                   <img className="h-full w-full object-cover" src={line.image} alt={line.imageAlt || line.title} />
                 ) : (

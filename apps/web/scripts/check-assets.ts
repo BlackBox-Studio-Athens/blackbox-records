@@ -3,12 +3,22 @@ import { basename, dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import sharp, { type Metadata } from 'sharp';
+import {
+  isStableAbsoluteStripeImageUrl,
+  loadStripeCatalogStoreItemContracts,
+  resolveCatalogAssetTarget,
+  type CatalogProductEnvironment,
+  type StripeCatalogStoreItemContract,
+} from '../../../scripts/stripe-catalog-contract';
 
 export type AssetRuleId =
   | 'artist-portrait-ratio'
   | 'favicon-alpha'
   | 'favicon-size'
   | 'missing-image'
+  | 'missing-alt'
+  | 'provider-url-readiness'
+  | 'unsupported-image'
   | 'unreadable-image';
 
 export type AssetDiagnosticSeverity = 'error' | 'warning';
@@ -51,6 +61,13 @@ const artistPortraitRatio = 3 / 4;
 const artistPortraitRatioTolerance = 0.025;
 
 type AssetMetadata = Pick<Metadata, 'format'> & Partial<Pick<Metadata, 'channels' | 'hasAlpha' | 'height' | 'width'>>;
+
+type ContentImageReference = {
+  altFieldPath: string;
+  altValue: string | null;
+  fieldPath: string;
+  value: string;
+};
 
 function normalizePath(path: string): string {
   return path.split(sep).join('/');
@@ -304,48 +321,64 @@ function readFrontmatter(source: string): string | null {
   return match?.groups?.frontmatter ?? null;
 }
 
-function collectMarkdownReferences(source: string): Array<{ fieldPath: string; value: string }> {
+function collectMarkdownReferences(source: string): ContentImageReference[] {
   const frontmatter = readFrontmatter(source);
   if (!frontmatter) return [];
 
-  return frontmatter
-    .split(/\r?\n/)
-    .flatMap((line) => {
-      const match = /^(?<key>cover_image|image):\s*(?<value>.+?)\s*$/.exec(line);
-      if (!match?.groups) return [];
+  const entries = new Map<string, string>();
+
+  for (const line of frontmatter.split(/\r?\n/)) {
+    const match = /^(?<key>[A-Za-z0-9_]+):\s*(?<value>.+?)\s*$/.exec(line);
+    if (!match?.groups?.key) continue;
+
+    entries.set(match.groups.key, stripScalarQuotes(match.groups.value ?? ''));
+  }
+
+  return [...contentImageKeys]
+    .flatMap((key) => {
+      const value = entries.get(key);
+      if (!value) return [];
 
       return [
         {
-          fieldPath: match.groups.key ?? '',
-          value: stripScalarQuotes(match.groups.value ?? ''),
+          altFieldPath: `${key}_alt`,
+          altValue: entries.get(`${key}_alt`) ?? null,
+          fieldPath: key,
+          value,
         },
       ];
     })
     .filter((reference) => reference.value.length > 0);
 }
 
-function collectJsonReferences(value: unknown, path: string[] = []): Array<{ fieldPath: string; value: string }> {
+function collectJsonReferences(value: unknown, path: string[] = []): ContentImageReference[] {
   if (Array.isArray(value)) {
     return value.flatMap((entry, index) => collectJsonReferences(entry, [...path, String(index)]));
   }
 
   if (!value || typeof value !== 'object') return [];
 
-  return Object.entries(value).flatMap(([key, entryValue]) => {
-    const nextPath = [...path, key];
-    const fieldPath = nextPath.join('.');
+  const objectValue = value as Record<string, unknown>;
 
-    if (contentImageKeys.has(key) && typeof entryValue === 'string') {
-      return [
-        {
-          fieldPath,
-          value: entryValue,
-        },
-      ];
-    }
+  return Object.entries(objectValue)
+    .flatMap(([key, entryValue]) => {
+      const nextPath = [...path, key];
+      const fieldPath = nextPath.join('.');
 
-    return collectJsonReferences(entryValue, nextPath);
-  });
+      if (contentImageKeys.has(key) && typeof entryValue === 'string') {
+        return [
+          {
+            altFieldPath: [...path, `${key}_alt`].join('.'),
+            altValue: typeof objectValue[`${key}_alt`] === 'string' ? String(objectValue[`${key}_alt`]) : null,
+            fieldPath,
+            value: entryValue,
+          },
+        ];
+      }
+
+      return collectJsonReferences(entryValue, nextPath);
+    })
+    .filter((reference) => reference.value.length > 0);
 }
 
 function collectionNameFor(entryPath: string, root = webRoot): string | undefined {
@@ -359,10 +392,15 @@ function resolveContentImage(entryPath: string, reference: string, root = webRoo
   return resolve(dirname(entryPath), reference);
 }
 
-function discoverContentAssets(root = webRoot): { assets: ImageAsset[]; skipped: AssetSkip[] } {
+function discoverContentAssets(root = webRoot): {
+  assets: ImageAsset[];
+  diagnostics: AssetDiagnostic[];
+  skipped: AssetSkip[];
+} {
   const contentRoot = resolve(root, 'src/content');
   const entries = listFiles(contentRoot).filter((path) => contentEntryExtensions.has(extensionFor(path)));
   const assets: ImageAsset[] = [];
+  const diagnostics: AssetDiagnostic[] = [];
   const skipped: AssetSkip[] = [];
 
   for (const entryPath of entries) {
@@ -374,6 +412,20 @@ function discoverContentAssets(root = webRoot): { assets: ImageAsset[]; skipped:
     const collection = collectionNameFor(entryPath, root);
 
     for (const reference of references) {
+      if (!reference.altValue?.trim()) {
+        diagnostics.push(
+          createDiagnostic({
+            severity: 'warning',
+            ruleId: 'missing-alt',
+            assetPath: sourcePath,
+            sourcePath,
+            message: `Content image reference ${reference.fieldPath} should include alt text coverage via ${reference.altFieldPath}.`,
+            expected: reference.altFieldPath,
+            actual: reference.altValue?.trim() || 'missing',
+          }),
+        );
+      }
+
       if (isExternalReference(reference.value)) {
         skipped.push({
           sourcePath,
@@ -384,6 +436,23 @@ function discoverContentAssets(root = webRoot): { assets: ImageAsset[]; skipped:
       }
 
       const assetPath = resolveContentImage(entryPath, reference.value, root);
+      const assetRepoPath = toRepoPath(assetPath, root);
+      const fileExtension = extensionFor(assetPath);
+
+      if (!imageExtensions.has(fileExtension)) {
+        diagnostics.push(
+          createDiagnostic({
+            severity: 'warning',
+            ruleId: 'unsupported-image',
+            assetPath: assetRepoPath,
+            sourcePath,
+            message: `Content image reference ${reference.fieldPath} uses unsupported extension ${fileExtension || '(none)'}.`,
+            expected: '.gif, .ico, .jpg, .jpeg, .png, .svg, or .webp',
+            actual: fileExtension || '(none)',
+          }),
+        );
+        continue;
+      }
 
       if (!existsSync(assetPath)) {
         assets.push({
@@ -391,15 +460,6 @@ function discoverContentAssets(root = webRoot): { assets: ImageAsset[]; skipped:
           sourcePath,
           collection,
           fieldPath: reference.fieldPath,
-        });
-        continue;
-      }
-
-      if (!imageExtensions.has(extensionFor(assetPath))) {
-        skipped.push({
-          sourcePath,
-          fieldPath: reference.fieldPath,
-          reason: `unsupported image extension ${extensionFor(assetPath) || '(none)'}`,
         });
         continue;
       }
@@ -413,7 +473,7 @@ function discoverContentAssets(root = webRoot): { assets: ImageAsset[]; skipped:
     }
   }
 
-  return { assets, skipped };
+  return { assets, diagnostics, skipped };
 }
 
 function discoverPublicAssets(root = webRoot): ImageAsset[] {
@@ -424,13 +484,84 @@ function discoverPublicAssets(root = webRoot): ImageAsset[] {
     .map((path) => ({ path }));
 }
 
+function resolveProjectRoot(root = webRoot): string {
+  return resolve(root, '..', '..');
+}
+
+export function evaluateProviderProductImageUrls(
+  productEnvironment: CatalogProductEnvironment,
+  contracts: StripeCatalogStoreItemContract[],
+): AssetDiagnostic[] {
+  const { basePath, siteUrl } = resolveCatalogAssetTarget({ productEnvironment });
+  const expectedBaseUrl = new URL(basePath, siteUrl).toString();
+  const diagnostics: AssetDiagnostic[] = [];
+
+  for (const contract of contracts) {
+    const assetPath = `catalog:${productEnvironment}:${contract.storeItemSlug}`;
+
+    if (contract.productProjection.imageUrls.length === 0) {
+      diagnostics.push(
+        createDiagnostic({
+          severity: 'error',
+          ruleId: 'provider-url-readiness',
+          assetPath,
+          message: 'Provider product image URL is missing.',
+          expected: expectedBaseUrl,
+          actual: 'none',
+        }),
+      );
+      continue;
+    }
+
+    for (const imageUrl of contract.productProjection.imageUrls) {
+      if (!isStableAbsoluteStripeImageUrl(imageUrl)) {
+        diagnostics.push(
+          createDiagnostic({
+            severity: 'error',
+            ruleId: 'provider-url-readiness',
+            assetPath,
+            message: 'Provider product image URL must be absolute.',
+            expected: expectedBaseUrl,
+            actual: imageUrl,
+          }),
+        );
+        continue;
+      }
+
+      if (!imageUrl.startsWith(expectedBaseUrl)) {
+        diagnostics.push(
+          createDiagnostic({
+            severity: 'error',
+            ruleId: 'provider-url-readiness',
+            assetPath,
+            message: `Provider product image URL must use the ${productEnvironment.toUpperCase()} asset base.`,
+            expected: expectedBaseUrl,
+            actual: imageUrl,
+          }),
+        );
+      }
+    }
+  }
+
+  return diagnostics;
+}
+
 export async function runAssetCheck(root = webRoot): Promise<AssetCheckResult> {
   const publicAssets = discoverPublicAssets(root);
-  const { assets: contentAssets, skipped } = discoverContentAssets(root);
+  const { assets: contentAssets, diagnostics: contentDiagnostics, skipped } = discoverContentAssets(root);
+  const projectRoot = resolveProjectRoot(root);
+  const [uatContracts, prdContracts] = await Promise.all([
+    loadStripeCatalogStoreItemContracts({ productEnvironment: 'uat', projectRoot }),
+    loadStripeCatalogStoreItemContracts({ productEnvironment: 'prd', projectRoot }),
+  ]);
   const assets = [...publicAssets, ...contentAssets].sort((left, right) =>
     normalizePath(left.path).localeCompare(normalizePath(right.path)),
   );
-  const diagnostics: AssetDiagnostic[] = [];
+  const diagnostics: AssetDiagnostic[] = [
+    ...contentDiagnostics,
+    ...evaluateProviderProductImageUrls('uat', uatContracts),
+    ...evaluateProviderProductImageUrls('prd', prdContracts),
+  ];
 
   for (const asset of assets) {
     const assetPath = toRepoPath(asset.path, root);

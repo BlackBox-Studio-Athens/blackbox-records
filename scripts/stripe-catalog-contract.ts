@@ -25,7 +25,7 @@ export type StripeCatalogStoreItemContract = {
   variantId: string;
 };
 
-type LoadStripeCatalogContractsOptions = {
+export type LoadStripeCatalogContractsOptions = {
   basePath?: string;
   productEnvironment?: CatalogProductEnvironment;
   projectRoot?: string;
@@ -595,7 +595,10 @@ function resolveCatalogCoverImagePathForRelease(sourceId: string, coverImage: st
   return resolveCatalogImageOverrideForRelease(sourceId) ?? coverImage;
 }
 
-function resolveCatalogAssetTarget(options: LoadStripeCatalogContractsOptions): { basePath: string; siteUrl: string } {
+export function resolveCatalogAssetTarget(options: LoadStripeCatalogContractsOptions): {
+  basePath: string;
+  siteUrl: string;
+} {
   const productEnvironment =
     options.productEnvironment ?? parseCatalogProductEnvironment(process.env.CATALOG_PRODUCT_ENVIRONMENT);
 

@@ -126,6 +126,7 @@ export function StoreCartDrawerPanel({
               {view.lines.map((line) => (
                 <article className="grid grid-cols-[88px_1fr] gap-4" data-store-cart-line-item key={line.variantId}>
                   <div className="aspect-square overflow-hidden border border-border/70 bg-muted/20">
+                    {/* Runtime Image Snapshot: cart state stores a browser-safe string URL here. */}
                     {line.image ? (
                       <img className="h-full w-full object-cover" src={line.image} alt={line.imageAlt || line.title} />
                     ) : (
