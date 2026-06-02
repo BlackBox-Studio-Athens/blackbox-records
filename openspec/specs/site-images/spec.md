@@ -1,8 +1,11 @@
 # site-images Specification
 
 ## Purpose
+
 TBD - created by archiving change standardize-site-images. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Simple Image Roles
 
 The system SHALL classify site image behavior with a small set of image roles.
@@ -51,4 +54,3 @@ The system SHALL derive Provider Product Image URLs from repo-owned content and 
 - **WHEN** the target Product Environment is UAT or PRD
 - **THEN** the image URL is an absolute public URL for that same Product Environment
 - **AND** browser-submitted image URLs are not accepted as product-media authority.
-

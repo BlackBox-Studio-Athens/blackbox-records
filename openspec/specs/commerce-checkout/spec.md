@@ -1,7 +1,9 @@
 ## Purpose
 
 Specify native storefront, cart, checkout, Stripe, feature-gate, and secret-boundary behavior.
+
 ## Requirements
+
 ### Requirement: Native store projection
 
 The system SHALL render native store pages from repo-owned content and stable store projections.
@@ -327,4 +329,3 @@ The system SHALL keep shopper-facing store, cart, and checkout images derived fr
 - **WHEN** the image value is stored or rendered in browser/runtime state
 - **THEN** it is a Runtime Image Snapshot for display only
 - **AND** it is not stock, price, payment, order, provider, or product-media authority.
-

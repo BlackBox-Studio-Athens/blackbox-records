@@ -1,7 +1,9 @@
 ## Purpose
 
 Specify repository validation gates, local tooling, dependency-audit posture, and OpenSpec workflow ownership.
+
 ## Requirements
+
 ### Requirement: Standard repository gates
 
 The system SHALL run the standard repository gates after behavior-changing implementation.
@@ -436,4 +438,3 @@ The system SHALL validate image policy drift without mutating images or content.
 - **WHEN** the drift is reported
 - **THEN** it may be warning-first
 - **AND** image replacement waits for explicit owner-approved content work.
-
