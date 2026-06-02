@@ -207,7 +207,7 @@ function createStoreItemOptionSql(storeItems: LocalMockStoreItem[]): string {
         ]),
       )
       .join(',\n'),
-    'ON CONFLICT("storeItemSlug") DO UPDATE SET',
+    'ON CONFLICT DO UPDATE SET',
     '    "sourceKind" = excluded."sourceKind",',
     '    "sourceId" = excluded."sourceId",',
     '    "variantId" = excluded."variantId",',
@@ -236,7 +236,7 @@ function createItemAvailabilitySql(storeItems: LocalMockStoreItem[]): string {
         ]),
       )
       .join(',\n'),
-    'ON CONFLICT("variantId") DO UPDATE SET',
+    'ON CONFLICT DO UPDATE SET',
     '    "status" = excluded."status",',
     '    "canBuy" = excluded."canBuy",',
     '    "updatedAt" = CURRENT_TIMESTAMP;',
@@ -266,7 +266,7 @@ function createStockSql(storeItems: LocalMockStoreItem[]): string {
         ]),
       )
       .join(',\n'),
-    'ON CONFLICT("variantId") DO UPDATE SET',
+    'ON CONFLICT DO UPDATE SET',
     '    "quantity" = excluded."quantity",',
     '    "onlineQuantity" = excluded."onlineQuantity",',
     '    "updatedAt" = CURRENT_TIMESTAMP;',
@@ -299,7 +299,7 @@ function createVariantStripeMappingSql(storeItems: LocalMockStoreItem[]): string
         ]),
       )
       .join(',\n'),
-    'ON CONFLICT("variantId") DO UPDATE SET',
+    'ON CONFLICT DO UPDATE SET',
     '    "stripePriceId" = excluded."stripePriceId",',
     '    "updatedAt" = CURRENT_TIMESTAMP;',
   ].join('\n');
@@ -352,7 +352,7 @@ function createStoreOfferSnapshotSql(storeItems: LocalMockStoreItem[]): string {
         ]);
       })
       .join(',\n'),
-    'ON CONFLICT("variantId") DO UPDATE SET',
+    'ON CONFLICT DO UPDATE SET',
     '    "storeItemSlug" = excluded."storeItemSlug",',
     '    "stripePriceId" = excluded."stripePriceId",',
     '    "stripeLookupKey" = excluded."stripeLookupKey",',
