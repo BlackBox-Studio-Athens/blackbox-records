@@ -137,13 +137,13 @@ function createStoreItemPaths(slug: string) {
 
 const RELEASE_STORE_ITEM_IMAGE_OVERRIDES: Record<string, StoreItemImageOverride> = {
   caregivers: {
-    src: '/blackbox-records/admin/media/releases/chronoboros-album-cover-distro-mockup.webp',
+    src: createProjectRelativeUrl('/admin/media/releases/chronoboros-album-cover-distro-mockup.webp'),
     width: 3544,
     height: 3543,
     format: 'webp',
   },
   disintegration: {
-    src: '/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
+    src: createProjectRelativeUrl('/admin/media/releases/afterwise-album-cover-distro-mockup.webp'),
     width: 3544,
     height: 3543,
     format: 'webp',
