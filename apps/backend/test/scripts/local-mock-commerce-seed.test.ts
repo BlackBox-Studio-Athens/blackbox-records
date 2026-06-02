@@ -21,6 +21,14 @@ describe('local mock commerce seed generator', () => {
         expect.objectContaining({
           mockCheckoutEnabled: true,
           taxCategory: 'physical_goods',
+          sourceId: 'anarchotribal',
+          sourceKind: 'release',
+          storeItemSlug: 'anarchotribal-vinyl',
+          variantId: 'variant_anarchotribal-vinyl_standard',
+        }),
+        expect.objectContaining({
+          mockCheckoutEnabled: true,
+          taxCategory: 'physical_goods',
           sourceId: 'disintegration',
           sourceKind: 'release',
           storeItemSlug: 'disintegration-black-vinyl-lp',
@@ -142,6 +150,15 @@ describe('local mock commerce seed generator', () => {
       {
         mockCheckoutEnabled: true,
         taxCategory: 'physical_goods',
+        sourceId: 'anarchotribal',
+        sourceKind: 'release',
+        storeItemSlug: 'anarchotribal-vinyl',
+        title: 'Anarchotribal',
+        variantId: 'variant_anarchotribal-vinyl_standard',
+      },
+      {
+        mockCheckoutEnabled: true,
+        taxCategory: 'physical_goods',
         sourceId: 'afterglow-tape',
         sourceKind: 'distro',
         storeItemSlug: 'afterglow-tape',
@@ -164,6 +181,7 @@ describe('local mock commerce seed generator', () => {
     expect(sql).toContain('FALSE');
     expect(sql).toContain('99');
     expect(sql).toContain("'price_mock_afterglow_tape'");
+    expect(sql).toContain("'price_mock_anarchotribal_vinyl'");
     expect(sql).toContain("'blackbox:local:afterglow-tape:variant_afterglow-tape_standard'");
     expect(sql).toContain("datetime('now', '+1 day')");
     expect(sql).not.toContain("'price_mock_caregivers_vinyl'");
@@ -173,6 +191,7 @@ describe('local mock commerce seed generator', () => {
   });
 
   it('uses mock Stripe price IDs only', () => {
+    expect(createMockStripePriceId('anarchotribal-vinyl')).toBe('price_mock_anarchotribal_vinyl');
     expect(createMockStripePriceId('caregivers-vinyl')).toBe('price_mock_caregivers_vinyl');
     expect(createMockStripePriceId('___')).toBe('price_mock_item');
   });

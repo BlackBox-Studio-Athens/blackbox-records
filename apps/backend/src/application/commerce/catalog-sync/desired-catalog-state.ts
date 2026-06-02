@@ -102,6 +102,37 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     desiredPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
+      revision: 'anarchotribal-vinyl-2800-eur',
+    },
+    productProjection: {
+      description: "Ouranopithecus' Anarchotribal joins the BlackBox Records store as a vinyl release.",
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/ouranopithecus-album-cover-distro-mockup.webp',
+      ],
+      metadata: {
+        sourceId: 'anarchotribal',
+        sourceKind: 'release',
+        storeItemSlug: 'anarchotribal-vinyl',
+        variantId: 'variant_anarchotribal-vinyl_standard',
+      },
+      name: 'BlackBox Records - Anarchotribal - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    smokeCandidate: false,
+    sourceId: 'anarchotribal',
+    sourceKind: 'release',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'anarchotribal-vinyl',
+    targetEnvironments: ['sandbox'],
+    variantId: 'variant_anarchotribal-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
       revision: 'barren-point-2800-eur',
     },
     productProjection: {
@@ -885,7 +916,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
 ];
 
 export const currentDesiredCatalogState: DesiredCatalogState = {
-  revision: 'desired-catalog-b7879cc8',
+  revision: 'desired-catalog-0734b631',
   entries: currentDesiredCatalogEntries,
 };
 

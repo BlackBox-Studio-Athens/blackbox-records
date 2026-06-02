@@ -3,6 +3,11 @@ WHERE "sourceKind" = 'release'
   AND "sourceId" = 'disintegration'
   AND "storeItemSlug" <> 'disintegration-black-vinyl-lp';
 
+DELETE FROM "StoreItemOption"
+WHERE "sourceKind" = 'release'
+  AND "sourceId" = 'anarchotribal'
+  AND "storeItemSlug" <> 'anarchotribal-vinyl';
+
 INSERT INTO "StoreItemOption" (
     "id",
     "storeItemSlug",
@@ -13,6 +18,15 @@ INSERT INTO "StoreItemOption" (
     "updatedAt"
 )
 VALUES
+    (
+        'store_item_option_anarchotribal_vinyl',
+        'anarchotribal-vinyl',
+        'release',
+        'anarchotribal',
+        'variant_anarchotribal-vinyl_standard',
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    ),
     (
         'store_item_option_disintegration_black_vinyl_lp',
         'disintegration-black-vinyl-lp',
@@ -55,6 +69,13 @@ INSERT INTO "ItemAvailability" (
 )
 VALUES
     (
+        'item_availability_anarchotribal_vinyl',
+        'variant_anarchotribal-vinyl_standard',
+        'available',
+        TRUE,
+        CURRENT_TIMESTAMP
+    ),
+    (
         'item_availability_disintegration_black_vinyl_lp',
         'variant_disintegration-black-vinyl-lp_standard',
         'available',
@@ -89,6 +110,14 @@ INSERT INTO "Stock" (
     "updatedAt"
 )
 VALUES
+    (
+        'stock_anarchotribal_vinyl',
+        'variant_anarchotribal-vinyl_standard',
+        3,
+        2,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    ),
     (
         'stock_disintegration_black_vinyl_lp',
         'variant_disintegration-black-vinyl-lp_standard',

@@ -161,6 +161,29 @@ describe('StoreItem projection contract', () => {
     });
   });
 
+  it('uses the anarchotribal mockup cover override only for the store item', async () => {
+    const storeItem = await getStoreItemForRelease({
+      id: 'anarchotribal',
+      data: {
+        artist: { id: 'ouranopithecus' },
+        cover_image: { src: '/anarchotribal-cover.webp' },
+        cover_image_alt: 'Anarchotribal cover',
+        formats: ['Vinyl'],
+        merch_url: '/store/',
+        release_date: new Date('2026-12-01T00:00:00.000Z'),
+        summary: 'Native-shop release',
+        title: 'Anarchotribal',
+      },
+    } as any);
+
+    expect(storeItem.image).toEqual({
+      src: '/blackbox-records/admin/media/releases/ouranopithecus-album-cover-distro-mockup.webp',
+      width: 3544,
+      height: 3543,
+      format: 'webp',
+    });
+  });
+
   it('uses the caregivers mockup cover override only for the store item', async () => {
     const storeItem = await getStoreItemForRelease({
       id: 'caregivers',

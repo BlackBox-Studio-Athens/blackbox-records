@@ -75,6 +75,7 @@ const defaultBasePath = '/blackbox-records/';
 const prdSiteUrl = 'https://blackbox-records-web.pages.dev';
 const prdBasePath = '/';
 const CATALOG_RELEASE_IMAGE_OVERRIDES: Record<string, string> = {
+  anarchotribal: 'ouranopithecus-album-cover-distro-mockup.webp',
   caregivers: 'chronoboros-album-cover-distro-mockup.webp',
   disintegration: 'afterwise-album-cover-distro-mockup.webp',
 };

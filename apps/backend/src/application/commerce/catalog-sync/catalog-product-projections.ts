@@ -101,6 +101,31 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       currencyCode: 'EUR',
     },
     productProjection: {
+      description: "Ouranopithecus' Anarchotribal joins the BlackBox Records store as a vinyl release.",
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/ouranopithecus-album-cover-distro-mockup.webp',
+      ],
+      metadata: {
+        sourceId: 'anarchotribal',
+        sourceKind: 'release',
+        storeItemSlug: 'anarchotribal-vinyl',
+        variantId: 'variant_anarchotribal-vinyl_standard',
+      },
+      name: 'BlackBox Records - Anarchotribal - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'anarchotribal',
+    sourceKind: 'release',
+    storeItemSlug: 'anarchotribal-vinyl',
+    variantId: 'variant_anarchotribal-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
       description:
         "Mass Culture's Barren Point keeps the Greek band's post-hardcore and metal pressure direct and physical.",
       imageUrls: [

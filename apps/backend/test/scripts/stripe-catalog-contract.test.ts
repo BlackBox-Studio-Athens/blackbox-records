@@ -24,8 +24,33 @@ describe('stripe catalog contract projection', () => {
     const contractsBySlug = new Map(contracts.map((contract) => [contract.storeItemSlug, contract]));
 
     expect(contracts.length).toBeGreaterThan(20);
-    expect(contracts).toHaveLength(28);
+    expect(contracts).toHaveLength(29);
     expect(new Set(contracts.map((contract) => contract.alignmentStatus))).toEqual(new Set(['checkout_eligible']));
+    expect(contractsBySlug.get('anarchotribal-vinyl')).toMatchObject({
+      alignmentStatus: 'checkout_eligible',
+      desiredCatalogEntry: {
+        availability: 'published',
+        desiredPrice: {
+          amountMinor: 2800,
+          currencyCode: 'EUR',
+        },
+        targetEnvironments: ['sandbox'],
+      },
+      expectedSandboxPrice: {
+        amountMinor: 2800,
+        currencyCode: 'EUR',
+      },
+      productProjection: {
+        imageUrls: [
+          'https://blackbox-records-web.pages.dev/admin/media/releases/ouranopithecus-album-cover-distro-mockup.webp',
+        ],
+        name: 'BlackBox Records - Anarchotribal - Vinyl',
+        taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
+      },
+      sourceId: 'anarchotribal',
+      sourceKind: 'release',
+      variantId: 'variant_anarchotribal-vinyl_standard',
+    });
     expect(contractsBySlug.get('disintegration-black-vinyl-lp')).toMatchObject({
       alignmentStatus: 'checkout_eligible',
       desiredCatalogEntry: {
@@ -244,6 +269,7 @@ describe('stripe catalog contract projection', () => {
     expect(sql).toContain(
       "'disintegration-black-vinyl-lp', 'release', 'disintegration', 'variant_disintegration-black-vinyl-lp_standard'",
     );
+    expect(sql).toContain("'anarchotribal-vinyl', 'release', 'anarchotribal', 'variant_anarchotribal-vinyl_standard'");
     expect(sql).toContain("'barren-point', 'distro', 'barren-point', 'variant_barren-point_standard'");
     expect(sql).toContain('DELETE FROM "StoreItemOption"\nWHERE "storeItemSlug" = \'mass-culture-lp\'');
     expect(sql).not.toContain("'mass-culture-lp', 'distro'");

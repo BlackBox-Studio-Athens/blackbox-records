@@ -24,9 +24,10 @@ const releasesDir = path.join(repoRoot, 'apps', 'web', 'src', 'content', 'releas
 const distroDir = path.join(repoRoot, 'apps', 'web', 'src', 'content', 'distro');
 
 const nonPhysicalReleaseFormats = new Set(['digital']);
-const mockCheckoutStoreItemSlugs = new Set(['afterglow-tape', 'disintegration-black-vinyl-lp']);
+const mockCheckoutStoreItemSlugs = new Set(['afterglow-tape', 'anarchotribal-vinyl', 'disintegration-black-vinyl-lp']);
 const mockStoreOfferPricesBySlug = new Map([
   ['afterglow-tape', { amountMinor: 1400, currencyCode: 'EUR' }],
+  ['anarchotribal-vinyl', { amountMinor: 2800, currencyCode: 'EUR' }],
   ['disintegration-black-vinyl-lp', { amountMinor: 2800, currencyCode: 'EUR' }],
 ]);
 
