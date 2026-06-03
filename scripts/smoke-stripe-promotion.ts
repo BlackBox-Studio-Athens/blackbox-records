@@ -1,4 +1,3 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
@@ -8,6 +7,15 @@ import {
   type DesiredCatalogEnvironment,
   type DesiredCatalogEntry,
 } from '../apps/backend/src/application/commerce/catalog-sync/desired-catalog-state';
+import {
+  createRunId as createSmokeRunId,
+  createSmokeEvidencePath,
+  createSmokeScenarioArtifactDir,
+  createSmokeSummaryPath,
+  parseRequiredValue as parseSmokeRequiredValue,
+  redactSensitiveSmokeText,
+  writeJsonFile,
+} from './smoke-core';
 
 export type PromotionSmokeEnvironment = DesiredCatalogEnvironment;
 export type PromotionSmokeScenarioSelection = 'all' | 'checkout_surface' | 'paid';
@@ -67,7 +75,7 @@ const defaultProductionWorkerUrl = 'https://blackbox-records-backend.blackboxrec
 export function parsePromotionSmokeArgs(args: string[]): PromotionSmokeOptions {
   const options: PromotionSmokeOptions = {
     environment: 'production',
-    evidenceDir: path.join('.codex-artifacts', 'catalog-promotion-smoke'),
+    evidenceDir: path.join('.codex-artifacts', 'smoke', 'prd', 'stripe-promotion'),
     scenario: 'checkout_surface',
     siteUrl: defaultProductionSiteUrl,
     workerUrl: defaultProductionWorkerUrl,
@@ -174,15 +182,33 @@ export async function runPromotionSmoke(options: PromotionSmokeOptions): Promise
   const entry = selectPromotionSmokeEntry(currentDesiredCatalogEntries, options.environment);
   const scenarios = options.scenario === 'all' ? (['checkout_surface', 'paid'] as const) : [options.scenario];
   const evidence: PromotionSmokeEvidence[] = [];
+  const runId = createSmokeRunId();
+  const runArtifactDir = path.join(options.evidenceDir, runId);
+  const evidencePaths: string[] = [];
 
   for (const scenario of scenarios) {
     const result =
       scenario === 'paid'
         ? createPaidSmokePolicyEvidence(options, entry)
         : await runCheckoutSurfaceSmoke(options, entry);
-    writePromotionSmokeEvidence(options.evidenceDir, result);
+    const evidencePath = writePromotionSmokeEvidence(runArtifactDir, result);
+    evidencePaths.push(evidencePath);
     evidence.push(result);
   }
+
+  writeJsonFile(createSmokeSummaryPath(runArtifactDir), {
+    evidencePaths,
+    environment: options.environment,
+    failedScenarioCount: evidence.filter((item) => item.status === 'failed').length,
+    generatedAt: new Date().toISOString(),
+    passedScenarioCount: evidence.filter((item) => item.status !== 'failed').length,
+    runId,
+    scenarioNames: scenarios,
+    siteUrl: options.siteUrl,
+    status: evidence.some((item) => item.status === 'failed') ? 'failed' : 'passed',
+    suite: 'stripe-promotion',
+    workerUrl: options.workerUrl,
+  });
 
   return evidence;
 }
@@ -346,13 +372,12 @@ export function parseCheckoutSessionId(checkoutUrl: string): string {
   return match[0];
 }
 
-function writePromotionSmokeEvidence(evidenceDir: string, evidence: PromotionSmokeEvidence): void {
-  mkdirSync(evidenceDir, { recursive: true });
-  writeFileSync(
-    path.join(evidenceDir, `${evidence.environment}-${evidence.scenario}.json`),
-    `${JSON.stringify(evidence, null, 2)}\n`,
-    'utf8',
-  );
+function writePromotionSmokeEvidence(runArtifactDir: string, evidence: PromotionSmokeEvidence): string {
+  const scenarioArtifactDir = createSmokeScenarioArtifactDir(runArtifactDir, evidence.scenario);
+  const evidencePath = createSmokeEvidencePath(scenarioArtifactDir);
+  writeJsonFile(evidencePath, evidence);
+
+  return evidencePath;
 }
 
 function parseEnvironment(value: string | undefined): PromotionSmokeEnvironment {
@@ -372,13 +397,7 @@ function parseScenario(value: string | undefined): PromotionSmokeScenarioSelecti
 }
 
 function parseRequiredValue(name: string, value: string | undefined): string {
-  const normalized = value?.trim();
-
-  if (!normalized) {
-    throw new Error(`${name} requires a value.`);
-  }
-
-  return normalized;
+  return parseSmokeRequiredValue(name, value);
 }
 
 function redactStripeObjectId(value: string): string {
@@ -393,9 +412,9 @@ function redactStripeObjectId(value: string): string {
 }
 
 function redactSensitiveValues(value: string): string {
-  return value
-    .replace(/sk_(test|live)_[A-Za-z0-9_]+/g, 'sk_$1_[redacted]')
-    .replace(/\b(?:cs|price|prod)_(?:test|live)?_?[A-Za-z0-9_]+\b/g, (match) => redactStripeObjectId(match));
+  return redactSensitiveSmokeText(value).replace(/\b(?:cs|price|prod)_(?:test|live)?_?[A-Za-z0-9_]+\b/g, (match) =>
+    redactStripeObjectId(match),
+  );
 }
 
 async function main(): Promise<void> {

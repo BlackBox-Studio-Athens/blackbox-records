@@ -5,7 +5,7 @@ Catalog Promotion is the CMS-to-provider path for making a Decap-authored releas
 ## Maintainer Statuses
 
 - Published content: the Astro content entry exists and can render on the static site. This does not mean checkout is enabled.
-- UAT buyable: the generated Desired Catalog State targets UAT, sandbox D1 readiness has been applied through the mapped Worker runtime target, Stripe test-mode catalog verification passes, and UAT smoke evidence exists.
+- UAT buyable: the generated Desired Catalog State targets UAT, sandbox D1 readiness has been applied through the mapped Worker runtime target, Stripe test-mode catalog verification passes, and post-merge UAT smoke evidence exists.
 - PRD buyable: disabled until the explicit PRD-open gate exists. Before that gate, PRD evidence is readiness-only, disabled, or `not_configured`; it is not successful PRD Promotion Evidence.
 - Promotion failed: content may still be visible, but checkout must be treated as not promoted until the Promotion Evidence failure category is fixed and rerun.
 
@@ -44,25 +44,27 @@ Use the Commerce section on release and distro entries:
 2. `Catalog artifact regeneration` generates Desired Catalog State, Product Projection, UAT readiness SQL, and PRD readiness SQL.
 3. If generated artifacts drift, the workflow commits only those artifacts as `chore(catalog): regenerate promotion artifacts`.
 4. `Catalog promotion` runs from the artifact commit, not the original CMS-only commit.
-5. UAT runs repository gates, config verification, D1 readiness, Stripe dry-run/apply/post-verify, Worker deploy, and UAT smoke.
+5. UAT runs repository gates, config verification, D1 readiness, Stripe dry-run/apply/post-verify, and Worker deploy. GitHub Pages UAT validation then happens in a separate `workflow_run` smoke workflow that runs `pnpm smoke:stripe-sandbox -- --scenario all --screenshots on-failure` against the deployed site.
 6. PRD starts only after UAT proof for the same artifact commit on the normal `all` target. Until `PRD_OPEN_GATE=open` exists in the `catalog-promotion-prd` credential scope, the job records `not_configured` readiness evidence and skips live provider mutation.
-7. After PRD is opened, PRD smoke uses `pnpm smoke:stripe-promotion -- --env production --scenario all` to create a live hosted Checkout Session, verify the pre-payment checkout surface through Stripe APIs, and record paid smoke as `not_configured` unless an explicit live paid smoke policy exists.
+7. PRD smoke is no longer part of catalog promotion. The `pnpm smoke:stripe-promotion -- --env production --scenario all` script remains available for manual operator runs or a later dedicated workflow.
 
 Pushing the repo is not the buyable-status source of truth. Promotion Evidence from the catalog promotion workflow is the source for UAT buyable status and, after the PRD-open gate exists, PRD buyable status.
 
 ## Provider Setup
 
-The `Catalog promotion` workflow expects two GitHub Actions credential scopes:
+The `Catalog promotion` workflow expects two GitHub Actions credential scopes. The post-merge UAT sandbox smoke workflow reuses `catalog-promotion-uat`; no new GitHub Actions environment is needed:
 
 - `catalog-promotion-uat`
 - `catalog-promotion-prd`
 
-Each environment needs these non-secret variables:
+The `catalog-promotion-uat` environment already carries the UAT Cloudflare and Stripe values used by the smoke runner.
+
+Each promotion environment needs these non-secret variables:
 
 - `CLOUDFLARE_ACCOUNT_ID`
 - `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`
 
-Each environment needs these secrets:
+Each promotion environment needs these secrets:
 
 - `CLOUDFLARE_API_TOKEN`
 - `STRIPE_SECRET_KEY`
@@ -81,8 +83,8 @@ These values must be entered more than once because the stores are intentionally
 
 Current manual provider checklist before final proof:
 
-1. Add `CLOUDFLARE_API_TOKEN` and `STRIPE_SECRET_KEY` to both GitHub Actions environments.
-2. Add `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` to both GitHub Actions environments as a variable or secret according to the account policy.
+1. Add `CLOUDFLARE_API_TOKEN` and `STRIPE_SECRET_KEY` to both `catalog-promotion-uat` and `catalog-promotion-prd`.
+2. Add `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` to both catalog promotion environments as a variable or secret according to the account policy.
 3. Add PRD Worker secrets for `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` from `apps/backend` with `wrangler secret put --env production`.
 4. Re-run `pnpm runtime:config:verify --env prd` and only set `PRD_OPEN_GATE=open` when the production-readiness change approves live PRD checkout and live provider mutation.
 

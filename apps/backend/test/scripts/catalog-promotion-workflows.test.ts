@@ -54,9 +54,24 @@ describe('catalog promotion workflows', () => {
     expect(workflow).toContain('pnpm stripe:catalog:verify --env production --apply --ci-promotion');
     expect(workflow).toContain('--artifact-commit-sha "${{ inputs.artifact_commit_sha }}"');
     expect(workflow).toContain('--promotion-run-id "${{ github.run_id }}"');
-    expect(workflow).toContain(
-      'pnpm smoke:stripe-promotion -- --env production --scenario all --evidence-dir .codex-artifacts/catalog-promotion/prd',
-    );
     expect(workflow).toContain('actions/upload-artifact@v5.0.0');
+    expect(workflow).not.toContain('pnpm smoke:stripe-sandbox');
+    expect(workflow).not.toContain('pnpm smoke:uat-static');
+    expect(workflow).not.toContain('pnpm smoke:stripe-promotion');
+    expect(workflow).not.toContain('.codex-artifacts/smoke/');
+  });
+
+  it('defines a manual UAT static smoke workflow with the standard smoke inputs', () => {
+    const workflow = readWorkflow('uat-static-smoke.yml');
+
+    expect(workflow).toContain('workflow_dispatch');
+    expect(workflow).toContain('site_url');
+    expect(workflow).toContain('scenario');
+    expect(workflow).toContain('timeout_ms');
+    expect(workflow).toContain('evidence_dir');
+    expect(workflow).toContain('screenshots');
+    expect(workflow).toContain('headed');
+    expect(workflow).toContain('pnpm smoke:uat-static --');
+    expect(workflow).toContain('.codex-artifacts/smoke/uat/uat-static/**');
   });
 });

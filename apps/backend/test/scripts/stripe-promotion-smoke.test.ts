@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -48,6 +50,12 @@ describe('Stripe promotion smoke runner', () => {
       environment: 'production',
       evidenceDir: '.codex-artifacts/catalog-promotion',
       scenario: 'all',
+    });
+
+    expect(parsePromotionSmokeArgs(['--env', 'production'])).toMatchObject({
+      evidenceDir: path.join('.codex-artifacts', 'smoke', 'prd', 'stripe-promotion'),
+      environment: 'production',
+      scenario: 'checkout_surface',
     });
   });
 

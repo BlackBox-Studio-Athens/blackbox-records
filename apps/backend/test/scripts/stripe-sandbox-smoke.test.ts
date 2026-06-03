@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   buildStripeSandboxSmokeEvidence,
+  buildStripeSandboxSmokeSummary,
   calculateMinimumSmokeOnlineQuantity,
   checkStripeSandboxSmokePreflight,
   createStripeCheckoutSessionProjectionObservation,
@@ -94,7 +95,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       headed: false,
       scenarioSelection: 'all',
       screenshots: 'on-failure',
-      siteUrl: 'https://blackbox-records-web.pages.dev',
+      siteUrl: 'https://blackbox-studio-athens.github.io/blackbox-records',
       timeoutMs: 120_000,
       trace: false,
       workerUrl: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
@@ -527,7 +528,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
   it('builds scrubbed evidence JSON shape', () => {
     const evidence = buildStripeSandboxSmokeEvidence({
       artifactPaths: {
-        tracePath: '.codex-artifacts/stripe-sandbox-smoke/run/happy_path_paid/trace.zip',
+        tracePath: '.codex-artifacts/smoke/uat/stripe-sandbox/run/happy_path_paid/trace.zip',
       },
       checkoutPageUrl: 'https://blackbox-records-web.pages.dev/store/disintegration-black-vinyl-lp/checkout/',
       options: {
@@ -582,6 +583,70 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(JSON.stringify(evidence)).not.toContain('cs_test_123');
     expect(evidence.finalUrl).toContain('[redacted_checkout_session_id]');
     expect(evidence.order?.checkoutSessionId).toBe('[redacted_checkout_session_id]');
+  });
+
+  it('builds a standardized run summary for passed and blocked runs', () => {
+    const passedSummary = buildStripeSandboxSmokeSummary({
+      evidence: [
+        {
+          checkoutPageUrl: 'https://blackbox-records-web.pages.dev/store/disintegration-black-vinyl-lp/checkout/',
+          checkoutSessionProjection: null,
+          checkoutSurface: null,
+          durations: createEmptyStripeSandboxSmokeDurations(),
+          finalUrl: 'https://blackbox-records-web.pages.dev/store/disintegration-black-vinyl-lp/checkout/',
+          generatedAt: '2026-05-17T00:00:00.000Z',
+          observedStripeUi: 'Checkout ready',
+          order: null,
+          passed: true,
+          runId: '20260517000102',
+          scenario: {
+            expectedOrderStatus: 'not_submitted',
+            name: 'checkout_surface',
+          },
+          screenshotPath: null,
+          siteUrl: 'https://blackbox-records-web.pages.dev',
+          tracePath: null,
+          workerUrl: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
+        },
+      ],
+      options: {
+        siteUrl: 'https://blackbox-records-web.pages.dev',
+        workerUrl: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
+      },
+      runId: '20260517000102',
+      scenarios: [STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface],
+    });
+
+    const blockedSummary = buildStripeSandboxSmokeSummary({
+      blocker: 'Sandbox D1 readiness could not be inspected.',
+      evidence: [],
+      options: {
+        siteUrl: 'https://blackbox-records-web.pages.dev',
+        workerUrl: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
+      },
+      runId: '20260517000102',
+      scenarios: [STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface],
+    });
+
+    expect(passedSummary).toMatchObject({
+      environment: 'uat',
+      failedScenarioCount: 0,
+      passedScenarioCount: 1,
+      runId: '20260517000102',
+      scenarioNames: ['checkout_surface'],
+      status: 'passed',
+      suite: 'stripe-sandbox',
+    });
+    expect(blockedSummary).toMatchObject({
+      blocker: 'Sandbox D1 readiness could not be inspected.',
+      environment: 'uat',
+      failedScenarioCount: 0,
+      passedScenarioCount: 0,
+      runId: '20260517000102',
+      scenarioNames: ['checkout_surface'],
+      status: 'failed',
+      suite: 'stripe-sandbox',
+    });
   });
 
   it('scrubs Stripe secrets, session IDs, and client secrets from logs', () => {

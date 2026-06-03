@@ -135,6 +135,21 @@ The system SHALL describe Stripe Product image URLs and public catalog asset URL
 - **THEN** they identify whether the URL belongs to Local diagnostics, UAT, or PRD
 - **AND** they do not describe UAT-hosted catalog assets as PRD-ready unless a later approved change defines a shared canonical asset CDN.
 
+### Requirement: Smoke terminology
+
+The system SHALL use canonical smoke terms across scripts, workflows, specs, tests, docs, and evidence.
+
+#### Scenario: Smoke terms are named
+
+- **WHEN** an artifact references shared smoke plumbing or evidence
+- **THEN** it uses `Smoke Harness` for the shared Playwright, route probing, redaction, secret scanning, and evidence-writing helpers
+- **AND** it uses `Smoke Suite` for a domain-owned runner and its named scenarios
+- **AND** it uses `Smoke Scenario` for one named check within a suite
+- **AND** it uses `Smoke Evidence` for the redacted per-scenario evidence and run summary
+- **AND** it uses `Static Smoke` for read-only UAT static or CMS/browser validation that does not create provider state
+- **AND** it uses `Provider Smoke` for Stripe- and D1-authoritative hosted-checkout and promotion evidence
+- **AND** it uses `Promotion Smoke` for environment-scoped catalog or checkout readiness evidence written by the promotion workflow.
+
 ### Requirement: Cache policy terms
 
 The system SHALL use canonical cache-policy terms across specs, docs, validation output, and implementation notes.

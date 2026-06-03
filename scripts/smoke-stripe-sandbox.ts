@@ -1,5 +1,5 @@
 import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import process from 'node:process';
@@ -8,6 +8,24 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 import { chromium, type Browser, type Frame, type Page } from 'playwright';
 
 import { currentCatalogProductProjectionEntries } from '../apps/backend/src/application/commerce/catalog-sync/catalog-product-projections';
+import {
+  createRouteUrl,
+  createRunId as createSmokeRunId,
+  createSmokeEvidencePath,
+  createSmokeRunArtifactDir,
+  createSmokeScenarioArtifactDir,
+  createSmokeSummaryPath,
+  formatDuration as formatSmokeDuration,
+  normalizeBaseUrl as normalizeSmokeBaseUrl,
+  parseNamedSmokeScenarioSelection,
+  parsePositiveInteger as parseSmokePositiveInteger,
+  parseScreenshotMode as parseSmokeScreenshotMode,
+  redactSensitiveSmokeText,
+  resolveSmokeScenarioSelection,
+  runInBatches as runSmokeInBatches,
+  truncateForConsole as truncateSmokeForConsole,
+  writeJsonFile,
+} from './smoke-core';
 
 export type StripeSandboxSmokeScenarioName =
   | 'checkout_surface'
@@ -153,6 +171,20 @@ export type StripeSandboxSmokeEvidence = {
   workerUrl: string;
 };
 
+export type StripeSandboxSmokeSummary = {
+  blocker?: string;
+  environment: 'uat';
+  failedScenarioCount: number;
+  generatedAt: string;
+  passedScenarioCount: number;
+  runId: string;
+  scenarioNames: StripeSandboxSmokeScenarioName[];
+  siteUrl: string;
+  status: 'failed' | 'passed';
+  suite: 'stripe-sandbox';
+  workerUrl: string;
+};
+
 export type StripeSandboxScenarioGroups = {
   checkoutSurfaceScenarios: StripeSandboxSmokeScenario[];
   declineScenarios: StripeSandboxSmokeScenario[];
@@ -203,8 +235,7 @@ const rootDir = path.resolve(scriptDir, '..');
 const backendDir = path.join(rootDir, 'apps', 'backend');
 const nodeRequire = createRequire(import.meta.url);
 const wranglerBin = nodeRequire.resolve('wrangler/bin/wrangler.js', { paths: [backendDir] });
-const artifactRootDir = path.join(rootDir, '.codex-artifacts', 'stripe-sandbox-smoke');
-const defaultSiteUrl = 'https://blackbox-records-web.pages.dev';
+const defaultSiteUrl = 'https://blackbox-studio-athens.github.io/blackbox-records';
 const defaultWorkerUrl = 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev';
 const smokeStoreItemSlug = 'disintegration-black-vinyl-lp';
 const smokeVariantId = 'variant_disintegration-black-vinyl-lp_standard';
@@ -505,9 +536,7 @@ export function parseStripeSandboxSmokeArgs(args: string[]): StripeSandboxSmokeO
 export function resolveSelectedStripeSandboxScenarios(
   selection: StripeSandboxSmokeScenarioSelection,
 ): StripeSandboxSmokeScenario[] {
-  const scenarioNames = selection === 'all' ? allScenarioNames : [selection];
-
-  return scenarioNames.map((name) => STRIPE_SANDBOX_SMOKE_SCENARIOS[name]);
+  return resolveSmokeScenarioSelection(selection, Object.values(STRIPE_SANDBOX_SMOKE_SCENARIOS));
 }
 
 export function groupStripeSandboxSmokeScenarios(
@@ -521,7 +550,7 @@ export function groupStripeSandboxSmokeScenarios(
 }
 
 export function createCheckoutPageUrl(siteUrl: string, storeItemSlug = smokeStoreItemSlug): string {
-  return `${normalizeBaseUrl(siteUrl, 'siteUrl')}/store/${encodeURIComponent(storeItemSlug)}/checkout/`;
+  return createRouteUrl(siteUrl, `/store/${encodeURIComponent(storeItemSlug)}/checkout/`);
 }
 
 export function createScenarioEmail(runId: string, scenarioName: string): string {
@@ -766,13 +795,7 @@ export function didScenarioPass(
 }
 
 export function scrubSensitiveStripeSmokeText(text: string): string {
-  return text
-    .replace(/sk_test_[A-Za-z0-9_]+/g, '[redacted_stripe_secret_key]')
-    .replace(/sk_live_[A-Za-z0-9_]+/g, '[redacted_stripe_secret_key]')
-    .replace(/whsec_[A-Za-z0-9_]+/g, '[redacted_stripe_webhook_secret]')
-    .replace(/(cs_(?:test|live)_[A-Za-z0-9_]*?_secret_)[A-Za-z0-9_]+/g, '$1[redacted]')
-    .replace(/(seti_(?:test|live)_[A-Za-z0-9_]*?_secret_)[A-Za-z0-9_]+/g, '$1[redacted]')
-    .replace(/cs_(?:test|live)_[A-Za-z0-9_]+/g, '[redacted_checkout_session_id]');
+  return redactSensitiveSmokeText(text);
 }
 
 function scrubStripeSmokeEvidenceUrl(value: string): string {
@@ -821,59 +844,109 @@ export function buildStripeSandboxSmokeEvidence(input: {
   };
 }
 
+export function buildStripeSandboxSmokeSummary(input: {
+  blocker?: string;
+  evidence: readonly StripeSandboxSmokeEvidence[];
+  options: Pick<StripeSandboxSmokeOptions, 'siteUrl' | 'workerUrl'>;
+  runId: string;
+  scenarios: readonly StripeSandboxSmokeScenario[];
+}): StripeSandboxSmokeSummary {
+  const failedScenarioCount = input.evidence.filter((item) => !item.passed).length;
+  const passedScenarioCount = input.evidence.filter((item) => item.passed).length;
+  const status: StripeSandboxSmokeSummary['status'] = input.blocker || failedScenarioCount > 0 ? 'failed' : 'passed';
+
+  return {
+    blocker: input.blocker,
+    environment: 'uat',
+    failedScenarioCount,
+    generatedAt: new Date().toISOString(),
+    passedScenarioCount,
+    runId: input.runId,
+    scenarioNames: input.scenarios.map((scenario) => scenario.name),
+    siteUrl: input.options.siteUrl,
+    status,
+    suite: 'stripe-sandbox',
+    workerUrl: input.options.workerUrl,
+  };
+}
+
 async function main() {
   const options = parseStripeSandboxSmokeArgs(process.argv.slice(2));
   const scenarios = resolveSelectedStripeSandboxScenarios(options.scenarioSelection);
   const runId = createRunId();
-  const runArtifactDir = path.join(artifactRootDir, runId);
+  const runArtifactDir = createSmokeRunArtifactDir(rootDir, 'uat', 'stripe-sandbox', runId);
+  const summaryPath = createSmokeSummaryPath(runArtifactDir);
   const minimumSmokeOnlineQuantity = calculateMinimumSmokeOnlineQuantity(scenarios);
+  const evidence: StripeSandboxSmokeEvidence[] = [];
 
   mkdirSync(runArtifactDir, { recursive: true });
   console.log(formatStripeSandboxSmokeRunHeader({ options, runId, scenarios }));
-  ensureSandboxSmokeStock(minimumSmokeOnlineQuantity);
-
-  const preflight = await runPreflight(options);
-  const preflightIssues = checkStripeSandboxSmokePreflight({
-    ...preflight,
-    minimumSmokeOnlineQuantity,
-    options,
-    scenarios,
-  });
-
-  console.log(formatStripeSandboxSmokePreflightSummary({ ...preflight, issues: preflightIssues }));
-
-  if (preflightIssues.length) {
-    throw new Error('Stripe sandbox smoke preflight failed. Fix the listed issue(s), then rerun.');
-  }
-
-  let browser: Browser | null = null;
-
   try {
-    browser = await chromium.launch({
-      headless: !options.headed,
-      slowMo: options.debug ? 150 : 0,
+    ensureSandboxSmokeStock(minimumSmokeOnlineQuantity);
+
+    const preflight = await runPreflight(options);
+    const preflightIssues = checkStripeSandboxSmokePreflight({
+      ...preflight,
+      minimumSmokeOnlineQuantity,
+      options,
+      scenarios,
     });
 
-    const scenarioGroups = groupStripeSandboxSmokeScenarios(scenarios);
+    console.log(formatStripeSandboxSmokePreflightSummary({ ...preflight, issues: preflightIssues }));
 
-    for (const scenario of scenarioGroups.checkoutSurfaceScenarios) {
-      await runScenarioAndWriteEvidence({ browser, options, runArtifactDir, runId, scenario });
+    if (preflightIssues.length) {
+      throw new Error('Stripe sandbox smoke preflight failed. Fix the listed issue(s), then rerun.');
     }
 
-    for (const scenario of scenarioGroups.paidScenarios) {
-      await runScenarioAndWriteEvidence({ browser, options, runArtifactDir, runId, scenario });
+    let browser: Browser | null = null;
+
+    try {
+      browser = await chromium.launch({
+        headless: !options.headed,
+        slowMo: options.debug ? 150 : 0,
+      });
+
+      const scenarioGroups = groupStripeSandboxSmokeScenarios(scenarios);
+
+      for (const scenario of scenarioGroups.checkoutSurfaceScenarios) {
+        evidence.push(await runScenarioAndWriteEvidence({ browser, options, runArtifactDir, runId, scenario }));
+      }
+
+      for (const scenario of scenarioGroups.paidScenarios) {
+        evidence.push(await runScenarioAndWriteEvidence({ browser, options, runArtifactDir, runId, scenario }));
+      }
+
+      if (scenarioGroups.declineScenarios.length) {
+        console.log(
+          `Running ${scenarioGroups.declineScenarios.length} decline scenario(s) with concurrency ${options.declineConcurrency}.`,
+        );
+        const declineEvidence: StripeSandboxSmokeEvidence[] = [];
+        await runInBatches(scenarioGroups.declineScenarios, options.declineConcurrency, async (scenario) => {
+          declineEvidence.push(
+            await runScenarioAndWriteEvidence({ browser: browser!, options, runArtifactDir, runId, scenario }),
+          );
+        });
+        evidence.push(...declineEvidence);
+      }
+    } finally {
+      await browser?.close();
     }
 
-    if (scenarioGroups.declineScenarios.length) {
-      console.log(
-        `Running ${scenarioGroups.declineScenarios.length} decline scenario(s) with concurrency ${options.declineConcurrency}.`,
-      );
-      await runInBatches(scenarioGroups.declineScenarios, options.declineConcurrency, async (scenario) =>
-        runScenarioAndWriteEvidence({ browser: browser!, options, runArtifactDir, runId, scenario }),
-      );
+    writeJsonFile(summaryPath, buildStripeSandboxSmokeSummary({ evidence, options, runId, scenarios }));
+
+    const failedEvidence = evidence.filter((item) => !item.passed);
+
+    if (failedEvidence.length) {
+      console.error(JSON.stringify(failedEvidence, null, 2));
+      process.exit(1);
     }
-  } finally {
-    await browser?.close();
+
+    console.log(JSON.stringify(evidence, null, 2));
+  } catch (error) {
+    const blocker = scrubSensitiveStripeSmokeText(error instanceof Error ? error.message : String(error));
+    writeJsonFile(summaryPath, buildStripeSandboxSmokeSummary({ blocker, evidence, options, runId, scenarios }));
+    console.error(blocker);
+    process.exit(1);
   }
 }
 
@@ -883,12 +956,11 @@ async function runScenarioAndWriteEvidence(input: {
   runArtifactDir: string;
   runId: string;
   scenario: StripeSandboxSmokeScenario;
-}): Promise<void> {
+}): Promise<StripeSandboxSmokeEvidence> {
   console.log(`Running ${input.scenario.name}: ${input.scenario.description}`);
 
   const checkoutPageUrl = createCheckoutPageUrl(input.options.siteUrl);
-  const scenarioArtifactDir = path.join(input.runArtifactDir, input.scenario.name);
-  mkdirSync(scenarioArtifactDir, { recursive: true });
+  const scenarioArtifactDir = createSmokeScenarioArtifactDir(input.runArtifactDir, input.scenario.name);
   const scenario = input.scenario.checkoutSurfaceExpectation
     ? {
         ...input.scenario,
@@ -918,12 +990,12 @@ async function runScenarioAndWriteEvidence(input: {
     runId: input.runId,
     scenario,
   });
-  const evidencePath = path.join(scenarioArtifactDir, 'evidence.json');
+  const evidencePath = createSmokeEvidencePath(scenarioArtifactDir);
   const evidenceWriteStartedAt = Date.now();
 
-  writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`);
+  writeJsonFile(evidencePath, evidence);
   evidence.durations.evidenceWriteMs = Date.now() - evidenceWriteStartedAt;
-  writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`);
+  writeJsonFile(evidencePath, evidence);
 
   console.log(
     [
@@ -951,9 +1023,7 @@ async function runScenarioAndWriteEvidence(input: {
     ].join('\n'),
   );
 
-  if (!evidence.passed) {
-    throw new Error(createScenarioFailureMessage(scenario, result));
-  }
+  return evidence;
 }
 
 export function countPaidStripeSandboxScenarios(scenarios: readonly StripeSandboxSmokeScenario[]): number {
@@ -984,9 +1054,7 @@ export async function runInBatches<T>(
   concurrency: number,
   task: (item: T) => Promise<void>,
 ): Promise<void> {
-  for (let index = 0; index < items.length; index += concurrency) {
-    await Promise.all(items.slice(index, index + concurrency).map((item) => task(item)));
-  }
+  return runSmokeInBatches(items, concurrency, task);
 }
 
 function ensureSandboxSmokeStock(minimumQuantity: number): void {
@@ -1827,35 +1895,15 @@ function extractCheckoutSessionId(value: string): string | null {
 }
 
 function parseScenarioSelection(value: string | undefined): StripeSandboxSmokeScenarioSelection {
-  if (value === 'all') {
-    return value;
-  }
-
-  if (value && value in STRIPE_SANDBOX_SMOKE_SCENARIOS) {
-    return value as StripeSandboxSmokeScenarioName;
-  }
-
-  throw new Error(
-    `Unknown Stripe sandbox smoke scenario: ${value ?? '<missing>'}. Use one of: ${['all', ...allScenarioNames].join(', ')}.`,
-  );
+  return parseNamedSmokeScenarioSelection(value, allScenarioNames, 'Stripe sandbox smoke');
 }
 
 function parseScreenshotMode(value: string | undefined): StripeSandboxScreenshotMode {
-  if (value === 'always' || value === 'never' || value === 'on-failure') {
-    return value;
-  }
-
-  throw new Error(`--screenshots must be one of: on-failure, always, never.`);
+  return parseSmokeScreenshotMode(value);
 }
 
 function parsePositiveInteger(value: string | undefined, flag: string): number {
-  const parsed = Number(value);
-
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new Error(`${flag} must be a positive integer.`);
-  }
-
-  return parsed;
+  return parseSmokePositiveInteger(value, flag);
 }
 
 function parsePaymentMethodLabel(value: string | undefined, flag: string): string {
@@ -1882,16 +1930,7 @@ function parsePaymentMethodLabelList(
 }
 
 function normalizeBaseUrl(value: string | undefined, flag: string): string {
-  if (!value?.trim()) {
-    throw new Error(`${flag} must be a URL.`);
-  }
-
-  const url = new URL(value);
-  url.pathname = url.pathname.replace(/\/+$/, '');
-  url.search = '';
-  url.hash = '';
-
-  return url.toString().replace(/\/$/, '');
+  return normalizeSmokeBaseUrl(value, flag);
 }
 
 function readOptionalFile(relativePath: string): string | null {
@@ -1988,45 +2027,7 @@ function escapeSqlLiteral(value: string): string {
 }
 
 function createRunId(): string {
-  return new Date()
-    .toISOString()
-    .replace(/[-:.TZ]/g, '')
-    .slice(0, 14);
-}
-
-function createScenarioFailureMessage(
-  scenario: StripeSandboxSmokeScenario,
-  result: StripeSandboxScenarioAutomationResult,
-): string {
-  if (result.checkoutSurface?.issues.length) {
-    return [
-      `Scenario ${scenario.name} failed hosted Checkout surface expectations.`,
-      ...result.checkoutSurface.issues,
-      `Observed payment surface: ${formatCheckoutSurfaceLabelSummary(result.checkoutSurface)}.`,
-    ].join(' ');
-  }
-
-  if (result.checkoutSessionProjection?.issues.length) {
-    return [
-      `Scenario ${scenario.name} failed hosted Checkout Session Product Projection expectations.`,
-      ...result.checkoutSessionProjection.issues,
-      `Observed Checkout Session projection: ${formatCheckoutSessionProjectionSummary(result.checkoutSessionProjection)}.`,
-    ].join(' ');
-  }
-
-  if (scenario.expectedOrderStatus === 'not_submitted') {
-    return `Scenario ${scenario.name} did not complete the hosted Checkout surface check.`;
-  }
-
-  if (scenario.expectedOrderStatus === 'paid') {
-    return [
-      `Scenario ${scenario.name} did not produce a paid CheckoutOrder.`,
-      `Observed order status: ${result.order?.status ?? 'none'}.`,
-      'Likely causes: the persistent Stripe webhook endpoint is not delivering to the sandbox Worker, or sandbox STRIPE_WEBHOOK_SECRET does not match the persistent endpoint signing secret.',
-    ].join(' ');
-  }
-
-  return `Scenario ${scenario.name} did not show the expected Stripe decline state or produced a paid order.`;
+  return createSmokeRunId();
 }
 
 function sleep(ms: number): Promise<void> {
@@ -2034,13 +2035,11 @@ function sleep(ms: number): Promise<void> {
 }
 
 function truncateForConsole(text: string, maxLength = 1_200): string {
-  const normalized = text.replace(/\s+/g, ' ').trim();
-
-  return normalized.length > maxLength ? `${normalized.slice(0, maxLength)}...` : normalized;
+  return truncateSmokeForConsole(text, maxLength);
 }
 
 function formatDuration(ms: number): string {
-  return ms >= 1_000 ? `${(ms / 1_000).toFixed(1)}s` : `${ms}ms`;
+  return formatSmokeDuration(ms);
 }
 
 function formatCheckoutSurfaceLabelSummary(surface: StripeCheckoutSurfaceObservation): string {

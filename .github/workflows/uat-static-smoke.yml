@@ -1,0 +1,98 @@
+name: UAT static smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: Deployed UAT static site URL.
+        required: true
+        default: https://blackbox-studio-athens.github.io/blackbox-records
+        type: string
+      scenario:
+        description: Smoke scenario to run.
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - cms_admin
+          - cms_assets
+          - checkout_shell
+          - public_routes
+      timeout_ms:
+        description: Per-route timeout in milliseconds.
+        required: true
+        default: '60000'
+        type: string
+      evidence_dir:
+        description: Root directory for smoke artifacts.
+        required: true
+        default: .codex-artifacts/smoke/uat/uat-static
+        type: string
+      screenshots:
+        description: Screenshot policy.
+        required: true
+        default: on-failure
+        type: choice
+        options:
+          - on-failure
+          - always
+          - never
+      headed:
+        description: Run Chromium headed.
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5.0.1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.8
+        with:
+          version: 10.33.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run UAT static smoke
+        run: |
+          args=(
+            --site-url "${{ inputs.site_url }}"
+            --scenario "${{ inputs.scenario }}"
+            --timeout-ms "${{ inputs.timeout_ms }}"
+            --evidence-dir "${{ inputs.evidence_dir }}"
+            --screenshots "${{ inputs.screenshots }}"
+          )
+
+          if [ "${{ inputs.headed }}" = "true" ]; then
+            args+=(--headed)
+          fi
+
+          pnpm smoke:uat-static -- "${args[@]}"
+
+      - name: Upload UAT static smoke evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: uat-static-smoke-${{ github.run_id }}
+          path: |
+            .codex-artifacts/smoke/uat/uat-static/**
+            ${{ inputs.evidence_dir }}/**
+          if-no-files-found: warn

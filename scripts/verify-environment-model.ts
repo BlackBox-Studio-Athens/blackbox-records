@@ -21,6 +21,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
   const pagesWorkflow = read('.github/workflows/pages.yml');
   const cloudflarePagesWorkflow = read('.github/workflows/cloudflare-pages.yml');
   const catalogPromotionWorkflow = read('.github/workflows/catalog-promotion.yml');
+  const uatSandboxSmokeWorkflow = read('.github/workflows/uat-sandbox-smoke.yml');
   const wranglerConfig = read('apps/backend/wrangler.jsonc');
   const staticSiteSpec = read('openspec/specs/static-site-and-deployment/spec.md');
   const catalogVerifyScript = read('scripts/stripe-catalog-verify.ts');
@@ -44,13 +45,33 @@ export function verifyEnvironmentModel(): CheckResult[] {
         !cloudflarePagesWorkflow.includes('--branch=${{ github.ref_name }}'),
     },
     {
-      detail: 'Catalog promotion exposes PRD at the operator boundary and gates live provider mutation.',
+      detail:
+        'Catalog promotion exposes PRD at the operator boundary and gates live provider mutation without smoke steps.',
       ok:
         catalogPromotionWorkflow.includes('- prd') &&
         !catalogPromotionWorkflow.includes('- production') &&
         catalogPromotionWorkflow.includes('catalog-promotion-prd') &&
         catalogPromotionWorkflow.includes('PRD_OPEN_GATE') &&
-        catalogPromotionWorkflow.includes('prd-not-configured.txt'),
+        catalogPromotionWorkflow.includes('prd-not-configured.txt') &&
+        !catalogPromotionWorkflow.includes('pnpm smoke:') &&
+        !catalogPromotionWorkflow.includes('.codex-artifacts/smoke/'),
+    },
+    {
+      detail:
+        'Post-merge UAT sandbox smoke runs after the GitHub Pages deploy and reuses the UAT promotion credential scope.',
+      ok:
+        uatSandboxSmokeWorkflow.includes('workflow_run') &&
+        uatSandboxSmokeWorkflow.includes('Deploy UAT static site to GitHub Pages') &&
+        uatSandboxSmokeWorkflow.includes("branches: ['main']") &&
+        uatSandboxSmokeWorkflow.includes('types: [completed]') &&
+        uatSandboxSmokeWorkflow.includes('concurrency:') &&
+        uatSandboxSmokeWorkflow.includes('environment: catalog-promotion-uat') &&
+        uatSandboxSmokeWorkflow.includes('github.event.workflow_run.head_sha') &&
+        uatSandboxSmokeWorkflow.includes('pnpm smoke:stripe-sandbox -- \\') &&
+        uatSandboxSmokeWorkflow.includes('--site-url "${UAT_SITE_URL}"') &&
+        uatSandboxSmokeWorkflow.includes('--scenario all') &&
+        uatSandboxSmokeWorkflow.includes('--screenshots on-failure') &&
+        uatSandboxSmokeWorkflow.includes('.codex-artifacts/smoke/uat/stripe-sandbox/**'),
     },
     {
       detail: 'Local Worker checkout origins stay local-only.',

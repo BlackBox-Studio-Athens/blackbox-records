@@ -108,12 +108,6 @@ jobs:
       - name: Deploy UAT Worker
         run: pnpm deploy:backend:sandbox
 
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Run UAT smoke
-        run: pnpm smoke:stripe-sandbox -- --scenario all --site-url https://blackbox-studio-athens.github.io/blackbox-records
-
       - name: Upload UAT Promotion Evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v5.0.0
@@ -121,7 +115,6 @@ jobs:
           name: catalog-promotion-uat-${{ github.run_id }}
           path: |
             .codex-artifacts/catalog-promotion/uat/**
-            .codex-artifacts/stripe-sandbox-smoke/**
           if-no-files-found: warn
 
   promote-prd:
@@ -209,18 +202,11 @@ jobs:
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         run: test "$(git rev-parse HEAD)" = "${{ inputs.artifact_commit_sha }}"
 
-      - name: Install Playwright browsers
-        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Run production no-payment smoke
-        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
-        run: pnpm smoke:stripe-promotion -- --env production --scenario all --evidence-dir .codex-artifacts/catalog-promotion/prd
-
       - name: Upload PRD readiness or Promotion Evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v5.0.0
         with:
           name: catalog-promotion-prd-${{ github.run_id }}
-          path: .codex-artifacts/catalog-promotion/prd/**
+          path: |
+            .codex-artifacts/catalog-promotion/prd/**
           if-no-files-found: warn

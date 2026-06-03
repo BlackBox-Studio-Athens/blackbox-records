@@ -1,0 +1,64 @@
+name: UAT sandbox smoke
+
+on:
+  workflow_run:
+    workflows: ['Deploy UAT static site to GitHub Pages']
+    branches: ['main']
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: 'uat-sandbox-smoke-${{ github.event.workflow_run.head_branch }}'
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: catalog-promotion-uat
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      UAT_SITE_URL: https://blackbox-studio-athens.github.io/blackbox-records
+    steps:
+      - name: Checkout deployed commit
+        uses: actions/checkout@v5.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.8
+        with:
+          version: 10.33.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run UAT sandbox smoke
+        run: |
+          pnpm smoke:stripe-sandbox -- \
+            --site-url "${UAT_SITE_URL}" \
+            --scenario all \
+            --screenshots on-failure
+
+      - name: Upload UAT sandbox smoke evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: uat-sandbox-smoke-${{ github.run_id }}
+          path: |
+            .codex-artifacts/smoke/uat/stripe-sandbox/**
+          if-no-files-found: warn

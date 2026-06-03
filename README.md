@@ -51,7 +51,7 @@ For label-member UAT, the GitHub Pages URL is intentionally wired to the sandbox
 
 ## Catalog Promotion
 
-Decap-authored release and distro entries now expose a guarded Commerce section. Content publication and buyable status are separate: the generated Desired Catalog State and catalog promotion workflow move CMS changes through UAT and production provider state. See [docs/catalog-promotion.md](docs/catalog-promotion.md) for maintainer fields, status meanings, rollback rules, and Promotion Evidence expectations.
+Decap-authored release and distro entries now expose a guarded Commerce section. Content publication and buyable status are separate: the generated Desired Catalog State and catalog promotion workflow move CMS changes through UAT and production provider state. GitHub Pages UAT is validated by a separate post-merge sandbox smoke workflow after `pages.yml` completes. See [docs/catalog-promotion.md](docs/catalog-promotion.md) for maintainer fields, status meanings, rollback rules, and Promotion Evidence expectations.
 
 ## Prerequisites
 
@@ -131,9 +131,21 @@ Run the at-will automated Stripe sandbox smoke:
 pnpm smoke:stripe-sandbox -- --scenario all
 ```
 
-The smoke runner is intentionally not part of CI. It targets the deployed Cloudflare Pages + sandbox Worker path, drives Stripe-hosted Checkout with Playwright, checks sandbox D1 remotely through Wrangler, and writes ignored evidence to `.codex-artifacts/stripe-sandbox-smoke/<run-id>/`.
+The Stripe sandbox smoke runner targets the deployed UAT Worker path, drives Stripe-hosted Checkout with Playwright, checks sandbox D1 remotely through Wrangler, and writes ignored evidence to `.codex-artifacts/smoke/uat/stripe-sandbox/<run-id>/` with a `summary.json` at the run root and `evidence.json` per scenario.
+
+The runner defaults to the GitHub Pages UAT site and is also used by the downstream GitHub Actions `catalog-promotion-uat` environment after the UAT Pages deploy succeeds.
 
 Supported scenarios are `happy_path_paid`, `three_d_secure`, `card_declined`, `insufficient_funds`, `expired_card`, `incorrect_cvc`, `processing_error`, and `all`. The committed JetBrains run configuration `Stripe Sandbox Smoke` runs `--scenario all`. Stripe’s current test card reference lives at <https://docs.stripe.com/testing#cards>. Paid deployed-sandbox smoke now expects the persistent Stripe Dashboard/Workbench webhook endpoint to deliver to `https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev/api/stripe/webhooks`; `stripe listen` is local/temporary diagnostic tooling only and is not persistent readiness evidence.
+
+Run the UAT static smoke when you need to verify deployed GitHub Pages static routes, Decap admin boot/config, representative public pages, checkout shell visibility, sitemap, robots, console errors, and high-risk public-secret exposure:
+
+```sh
+pnpm smoke:uat-static -- --site-url https://blackbox-studio-athens.github.io/blackbox-records --scenario all
+```
+
+The UAT static smoke runner is manual by design and writes ignored evidence to `.codex-artifacts/smoke/uat/uat-static/<run-id>/`. The supported scenarios are `cms_admin`, `cms_assets`, `checkout_shell`, `public_routes`, and `all`. It never creates provider state.
+
+The PRD no-payment promotion smoke runner writes ignored evidence to `.codex-artifacts/smoke/prd/stripe-promotion/<run-id>/`. The `not_configured` paid-policy status means live payment was not attempted, not that PRD commerce is open.
 
 Before accepting sandbox catalog or paid-order webhook readiness, run:
 
@@ -756,6 +768,7 @@ If a source crops badly, replace the source image rather than adding focal-point
 
 - `.run/BlackBox Local Stack.run.xml` is the canonical committed local-stack launcher.
 - `.run/Stripe Sandbox Smoke.run.xml` is the at-will automated Playwright sandbox checkout launcher and runs `pnpm smoke:stripe-sandbox -- --scenario all`.
+- It targets the GitHub Pages UAT site by default.
 - It runs `pnpm dev:stack:stripe-mock`, which starts local D1 prep, local official `stripe-mock` through Go, the local Worker backend pointed at the local stripe-mock proxy, and the local Astro frontend without Docker or real Stripe keys.
 - Real Stripe test mode remains available from the terminal through `pnpm dev:stack:stripe-test`.
 - `pnpm dev:stack:stripe-mock-api` is a terminal alias for the same official stripe-mock API path; do not add a second WebStorm launcher for it unless explicitly requested.

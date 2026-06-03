@@ -83,6 +83,36 @@ The system SHALL provide validation that detects drift from the canonical Local,
 - **THEN** affected baseline OpenSpec specs do not retain stale Purpose, requirement, or scenario wording that describes GitHub Pages as rollback/legacy production or Cloudflare Pages as canonical production without PRD-disabled state
 - **AND** archive readiness is blocked until baseline source-of-truth prose matches the Local/UAT/PRD model.
 
+### Requirement: Shared smoke harness and evidence contract
+
+The system SHALL keep smoke runners on the shared `.codex-artifacts/smoke/<environment>/<suite>/<run-id>/` contract with per-scenario `evidence.json` files and a run `summary.json`.
+
+#### Scenario: Smoke runner evidence is standardized
+
+- **WHEN** smoke scripts or workflows are updated
+- **THEN** shared redaction, secret scanning, route probing, screenshot policy, and evidence-writing helpers are reused where practical
+- **AND** static smoke and provider smoke remain separate suite boundaries
+- **AND** focused unit tests cover the shared harness and runner contracts.
+
+### Requirement: Post-merge UAT sandbox smoke workflow
+
+The system SHALL validate the deployed GitHub Pages UAT site with sandbox smoke after the Pages deploy completes successfully on `main`.
+
+#### Scenario: UAT Pages deploy completes successfully
+
+- **GIVEN** the `Deploy UAT static site to GitHub Pages` workflow completes successfully on `main`
+- **WHEN** the downstream `workflow_run` smoke workflow starts
+- **THEN** it runs `pnpm smoke:stripe-sandbox -- --scenario all --screenshots on-failure` against the deployed GitHub Pages UAT site
+- **AND** it uses the `catalog-promotion-uat` GitHub Actions environment for the same UAT Cloudflare and sandbox Stripe credentials already used by UAT promotion
+- **AND** it uploads the standard smoke summary and evidence artifacts
+- **AND** the catalog promotion workflow does not run smoke steps itself.
+
+#### Scenario: Stale smoke runs are cancelled
+
+- **GIVEN** a newer `main` push triggers a later GitHub Pages deploy before an older smoke run finishes
+- **WHEN** the downstream smoke workflow starts for the newer deploy
+- **THEN** concurrency cancels the stale smoke run so only the latest deployed UAT commit remains under evaluation.
+
 ### Requirement: Knip audit is report-first
 
 The system SHALL keep unused dependency/export/file auditing report-first until findings are owner-reviewed.
