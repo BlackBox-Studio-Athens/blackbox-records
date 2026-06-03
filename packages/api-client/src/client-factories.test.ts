@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { Fetcher } from 'openapi-typescript-fetch';
+import { describe, expect, it, vi } from 'vitest';
 
 import { apiClientMswBaseUrl, internalStockFixtures, publicCheckoutFixtures } from './test/msw-handlers';
 import { createInternalApiFetcher } from './internal-client';
@@ -39,5 +40,59 @@ describe('api client fetchers', () => {
       ok: true,
       status: 200,
     });
+  });
+
+  it('configures public API fetchers for no-store requests', () => {
+    const configure = vi.fn();
+    const path = vi.fn(() => ({
+      method: vi.fn(() => ({
+        create: vi.fn(),
+      })),
+    }));
+    const fetcherForSpy = vi.spyOn(Fetcher, 'for').mockReturnValue({
+      configure,
+      path,
+    } as never);
+
+    try {
+      createPublicApiFetcher('http://127.0.0.1:8787');
+
+      expect(fetcherForSpy).toHaveBeenCalledOnce();
+      expect(configure).toHaveBeenCalledWith({
+        baseUrl: 'http://127.0.0.1:8787',
+        init: {
+          cache: 'no-store',
+        },
+      });
+    } finally {
+      fetcherForSpy.mockRestore();
+    }
+  });
+
+  it('configures internal API fetchers for no-store requests', () => {
+    const configure = vi.fn();
+    const path = vi.fn(() => ({
+      method: vi.fn(() => ({
+        create: vi.fn(),
+      })),
+    }));
+    const fetcherForSpy = vi.spyOn(Fetcher, 'for').mockReturnValue({
+      configure,
+      path,
+    } as never);
+
+    try {
+      createInternalApiFetcher('https://sandbox.example.workers.dev');
+
+      expect(fetcherForSpy).toHaveBeenCalledOnce();
+      expect(configure).toHaveBeenCalledWith({
+        baseUrl: 'https://sandbox.example.workers.dev',
+        init: {
+          cache: 'no-store',
+        },
+      });
+    } finally {
+      fetcherForSpy.mockRestore();
+    }
   });
 });

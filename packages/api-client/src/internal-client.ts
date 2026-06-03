@@ -11,6 +11,9 @@ export function createInternalApiFetcher(baseUrl: string) {
 
   fetcher.configure({
     baseUrl,
+    init: {
+      cache: 'no-store',
+    },
   });
 
   return fetcher;

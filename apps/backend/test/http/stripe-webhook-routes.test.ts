@@ -36,6 +36,10 @@ const testBindings = {
   STRIPE_WEBHOOK_SECRET: webhookSecret,
 };
 
+function expectNoStoreCacheControl(response: Response): void {
+  expect(response.headers.get('Cache-Control')).toBe('no-store');
+}
+
 function createStripeEventPayload(type: string): string {
   return JSON.stringify({
     api_version: '2026-04-25.basil',
@@ -91,6 +95,7 @@ describe('Stripe webhook routes', () => {
     );
 
     expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       received: true,
     });
@@ -150,6 +155,7 @@ describe('Stripe webhook routes', () => {
     );
 
     expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       received: true,
     });
@@ -196,6 +202,7 @@ describe('Stripe webhook routes', () => {
     );
 
     expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       received: true,
     });
@@ -242,6 +249,7 @@ describe('Stripe webhook routes', () => {
     );
 
     expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       received: true,
     });
@@ -267,6 +275,7 @@ describe('Stripe webhook routes', () => {
     );
 
     expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       ignored: true,
       received: true,
@@ -291,6 +300,7 @@ describe('Stripe webhook routes', () => {
     );
 
     expect(response.status).toBe(400);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       error: 'Stripe webhook signature is required.',
     });
@@ -316,6 +326,7 @@ describe('Stripe webhook routes', () => {
     );
 
     expect(response.status).toBe(400);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       error: 'Stripe webhook signature verification failed.',
     });
@@ -343,6 +354,7 @@ describe('Stripe webhook routes', () => {
     );
 
     expect(response.status).toBe(500);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       error: 'Stripe webhook is not configured.',
     });

@@ -8,6 +8,12 @@ import {
 import { acknowledgeVerifiedStripeWebhookEvent } from './stripe-webhook-acknowledgement';
 import { createStripeWebhookServices } from './stripe-webhook-services';
 
+const jsonNoStore = <TResponse extends Response>(response: TResponse): TResponse => {
+  response.headers.set('Cache-Control', 'no-store');
+
+  return response;
+};
+
 export function registerStripeWebhookRoutes(app: AppOpenApi): void {
   app.post('/api/stripe/webhooks', async (context) => {
     const services = createStripeWebhookServices(context.env);
@@ -21,18 +27,18 @@ export function registerStripeWebhookRoutes(app: AppOpenApi): void {
       });
       const acknowledgement = await acknowledgeVerifiedStripeWebhookEvent(event, services);
 
-      return context.json(acknowledgement, 200);
+      return jsonNoStore(context.json(acknowledgement, 200));
     } catch (error) {
       if (error instanceof StripeWebhookConfigurationError) {
-        return context.json({ error: error.message }, 500);
+        return jsonNoStore(context.json({ error: error.message }, 500));
       }
 
       if (error instanceof StripeWebhookMissingSignatureError) {
-        return context.json({ error: error.message }, 400);
+        return jsonNoStore(context.json({ error: error.message }, 400));
       }
 
       if (error instanceof StripeWebhookSignatureVerificationError) {
-        return context.json({ error: error.message }, 400);
+        return jsonNoStore(context.json({ error: error.message }, 400));
       }
 
       throw error;

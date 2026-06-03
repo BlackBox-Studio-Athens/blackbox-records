@@ -12,6 +12,10 @@ const mockRecordStockCount = vi.fn();
 const VariantNotFoundError = class VariantNotFoundError extends Error {};
 const InvalidStockOperationError = class InvalidStockOperationError extends Error {};
 
+function expectNoStoreCacheControl(response: Response): void {
+  expect(response.headers.get('Cache-Control')).toBe('no-store');
+}
+
 vi.mock('../../src/interfaces/http/routes/internal-stock-services', () => ({
   createInternalStockServices: () => ({
     disconnect: mockDisconnect,
@@ -38,6 +42,7 @@ describe('internal stock routes', () => {
     const response = await app.request('http://backend.test/api/internal/variants');
 
     expect(response.status).toBe(401);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       error: 'Missing operator identity.',
     });
@@ -69,6 +74,7 @@ describe('internal stock routes', () => {
 
     expect(mockSearchVariants).toHaveBeenCalledWith('barren', 10);
     expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual([
       {
         sourceId: 'disintegration',
@@ -107,6 +113,7 @@ describe('internal stock routes', () => {
     );
 
     expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       sourceId: 'disintegration',
       sourceKind: 'release',
@@ -169,6 +176,7 @@ describe('internal stock routes', () => {
       variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
     expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       entry: {
         actorEmail: 'operator@blackboxrecords.example',
@@ -215,6 +223,7 @@ describe('internal stock routes', () => {
     );
 
     expect(response.status).toBe(400);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       error: 'Online stock cannot exceed counted stock.',
     });

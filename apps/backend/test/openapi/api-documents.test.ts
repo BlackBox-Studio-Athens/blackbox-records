@@ -11,6 +11,7 @@ describe('OpenAPI documents', () => {
     expect(document.info.title).toBe('BlackBox Records Public API');
     expect(document.openapi).toBe('3.1.0');
     expect(Object.keys(document.paths ?? {})).toEqual(publicContractPaths);
+    expect(JSON.stringify(document).toLowerCase()).not.toContain('cache-control');
   });
 
   it('emits the internal API document', () => {
@@ -19,5 +20,6 @@ describe('OpenAPI documents', () => {
     expect(document.info.title).toBe('BlackBox Records Internal API');
     expect(document.openapi).toBe('3.1.0');
     expect(Object.keys(document.paths ?? {})).toEqual(internalContractPaths);
+    expect(JSON.stringify(document).toLowerCase()).not.toContain('cache-control');
   });
 });

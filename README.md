@@ -563,6 +563,20 @@ CI/deploy credentials and public build variables:
 - Browser-safe Pages variables are limited to `PUBLIC_BACKEND_BASE_URL`; keep `PUBLIC_CHECKOUT_CLIENT_MODE` unset for PRD.
 - Required CI/project names are documented in `openspec/specs/static-site-and-deployment/spec.md`; account-specific IDs, tokens, and domains stay out of git.
 
+## Cache policy
+
+Cloudflare cache policy is explicit and versioned in repo-owned artifacts and route headers.
+
+- Static Asset Cache: fingerprinted Astro build assets under `/_astro/*` use the repo-owned `apps/web/public/_headers` artifact with `Cache-Control: public, max-age=31536000, immutable`.
+- Document Revalidation: route HTML, overlay partial HTML, `sitemap.xml`, `robots.txt`, `/store/*`, `/stock/*`, and `/admin/*` stay revalidation-friendly and do not use year-long immutable caching.
+- Route Document Headers: no explicit document revalidation headers were added in this change; Cloudflare Pages defaults remain in effect for route HTML and overlay partials.
+- Worker API Freshness: checkout, Store Offer, stock, order, webhook, operator, and error responses use `Cache-Control: no-store`.
+- TTL Policy: no route class in this change receives a future TTL; the store capabilities and Store Offer routes remain `no-store` because they carry checkout authority.
+- Same-Session Shell Cache: app-shell page snapshots and overlay fragments remain in-memory UI caches only; they are not CDN caches and they do not own commerce state.
+- Validation: `pnpm cache:policy:check` inspects the built `apps/web/dist/_headers` artifact, and `pnpm build` runs it through the `apps/web` build script.
+- Hosted audit: `pnpm cache:policy:hosted-audit` performs a bounded read-only PRD header audit against the deployed Pages and Worker URLs. It is diagnostic only and stays out of required CI because deployment propagation timing can make it flaky.
+- Browser Use is not required for this change because the implementation is limited to headers, tests, scripts, and docs; it does not alter app-shell runtime behavior.
+
 ## Content model
 
 Content is managed in the repo through Astro content collections, and Decap CMS now provides an editing layer on top of the same `apps/web/src/content/**` files.

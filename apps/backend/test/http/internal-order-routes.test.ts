@@ -7,6 +7,10 @@ const mockDisconnect = vi.fn(async () => {});
 const mockReadCheckoutOrder = vi.fn();
 const mockReadRecentCheckoutOrders = vi.fn();
 
+function expectNoStoreCacheControl(response: Response): void {
+  expect(response.headers.get('Cache-Control')).toBe('no-store');
+}
+
 vi.mock('../../src/interfaces/http/routes/internal-order-services', () => ({
   createInternalOrderServices: () => ({
     disconnect: mockDisconnect,
@@ -26,6 +30,7 @@ describe('internal order routes', () => {
     const response = await app.request('http://backend.test/api/internal/orders');
 
     expect(response.status).toBe(401);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       error: 'Missing operator identity.',
     });
@@ -74,6 +79,7 @@ describe('internal order routes', () => {
       status: 'paid',
     });
     expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual([
       {
         checkoutSessionId: 'cs_test_paid',
@@ -129,6 +135,7 @@ describe('internal order routes', () => {
 
     expect(mockReadCheckoutOrder).toHaveBeenCalledWith('cs_test_review');
     expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       checkoutSessionId: 'cs_test_review',
       createdAt: '2026-04-25T11:00:00.000Z',
@@ -163,6 +170,7 @@ describe('internal order routes', () => {
     );
 
     expect(response.status).toBe(404);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       error: 'Checkout order not found.',
     });

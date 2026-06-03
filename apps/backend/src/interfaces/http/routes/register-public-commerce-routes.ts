@@ -10,12 +10,18 @@ import { createStartCheckoutLineCommand } from '../../../application/commerce/ch
 import { createPublicCheckoutCancelUrl, createPublicCheckoutReturnUrl } from './public-checkout-return-url';
 import { createPublicCommerceServices } from './public-commerce-services';
 
+const jsonNoStore = <TResponse extends Response>(response: TResponse): TResponse => {
+  response.headers.set('Cache-Control', 'no-store');
+
+  return response;
+};
+
 export function registerPublicCommerceRoutes(app: AppOpenApi): void {
   app.openapi(getStoreCapabilitiesRoute, async (context) => {
     const services = createPublicCommerceServices(context.env);
 
     try {
-      return context.json(await services.readStoreCapabilities(), 200);
+      return jsonNoStore(context.json(await services.readStoreCapabilities(), 200));
     } finally {
       await services.disconnect();
     }
@@ -29,10 +35,10 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
       const offer = await services.readStoreOffer(storeItemSlug);
 
       if (!offer) {
-        return context.json({ error: 'Store item not found.' }, 404);
+        return jsonNoStore(context.json({ error: 'Store item not found.' }, 404));
       }
 
-      return context.json(offer, 200);
+      return jsonNoStore(context.json(offer, 200));
     } finally {
       await services.disconnect();
     }
@@ -46,10 +52,10 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
       const variants = await services.listVariantOffersForStoreItem(storeItemSlug);
 
       if (!variants) {
-        return context.json({ error: 'Store item not found.' }, 404);
+        return jsonNoStore(context.json({ error: 'Store item not found.' }, 404));
       }
 
-      return context.json(variants, 200);
+      return jsonNoStore(context.json(variants, 200));
     } finally {
       await services.disconnect();
     }
@@ -74,7 +80,7 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
       const primaryLine = lines[0];
 
       if (!primaryLine) {
-        return context.json({ error: 'Checkout requires at least one cart line.' }, 400);
+        return jsonNoStore(context.json({ error: 'Checkout requires at least one cart line.' }, 400));
       }
 
       const checkoutLines = lines.map(createStartCheckoutLineCommand);
@@ -98,23 +104,18 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
         variantId: primaryCheckoutLine.variantId,
       });
 
-      return context.json(
-        {
-          checkoutUrl: checkoutSession.checkoutUrl,
-        },
-        200,
-      );
+      return jsonNoStore(context.json({ checkoutUrl: checkoutSession.checkoutUrl }, 200));
     } catch (error) {
       if (error instanceof services.errors.StoreItemNotFoundError) {
-        return context.json({ error: error.message }, 404);
+        return jsonNoStore(context.json({ error: error.message }, 404));
       }
 
       if (error instanceof services.errors.VariantMismatchError) {
-        return context.json({ error: error.message }, 400);
+        return jsonNoStore(context.json({ error: error.message }, 400));
       }
 
       if (error instanceof services.errors.NativeCheckoutDisabledError) {
-        return context.json({ error: error.message }, 503);
+        return jsonNoStore(context.json({ error: error.message }, 503));
       }
 
       if (
@@ -122,7 +123,7 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
         error instanceof services.errors.CheckoutConfigurationError ||
         error instanceof services.errors.CatalogDriftError
       ) {
-        return context.json({ error: error.message }, 409);
+        return jsonNoStore(context.json({ error: error.message }, 409));
       }
 
       throw error;
@@ -138,10 +139,10 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
       const { checkoutSessionId } = context.req.valid('param');
       const checkoutState = await services.readCheckoutState(checkoutSessionId);
 
-      return context.json(checkoutState, 200);
+      return jsonNoStore(context.json(checkoutState, 200));
     } catch (error) {
       if (error instanceof services.errors.CheckoutConfigurationError) {
-        return context.json({ error: error.message }, 409);
+        return jsonNoStore(context.json({ error: error.message }, 409));
       }
 
       throw error;

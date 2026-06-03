@@ -94,6 +94,8 @@ Read these first before editing:
 - Apply formatter: `pnpm format`
 - Lint only: `pnpm lint`
 - Production build: `pnpm build`
+- Static cache policy validation: `pnpm cache:policy:check` (`pnpm build` runs it through `apps/web`)
+- Hosted cache policy audit: `pnpm cache:policy:hosted-audit` (read-only diagnostic for the deployed PRD Pages and Worker URLs; not required in CI)
 
 ### WebStorm launcher contract
 

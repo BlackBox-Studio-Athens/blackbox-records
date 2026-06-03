@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { apiClientMswBaseUrl, internalStockFixtures } from '@blackbox/api-client/test/msw-handlers';
 import { webMswServer } from '@/test/msw-server';
@@ -93,6 +93,32 @@ describe('createInternalStockApi', () => {
       delta: -1,
       notes: 'Table sale',
       reason: 'sale',
+    });
+  });
+
+  it('sends no-store cache intent on internal stock API requests', async () => {
+    const fetcher = vi.fn(
+      async () =>
+        new Response(JSON.stringify([internalStockFixtures.variant]), {
+          headers: {
+            'content-type': 'application/json',
+          },
+          status: 200,
+        }),
+    );
+    const api = createInternalStockApi({
+      backendBaseUrl: apiClientMswBaseUrl,
+      fetcher,
+    });
+
+    await api.searchVariants('after', 10);
+
+    expect(fetcher).toHaveBeenCalledOnce();
+    const calls = fetcher.mock.calls as unknown as Array<[RequestInfo | URL, RequestInit | undefined]>;
+
+    expect(calls[0]?.[1]).toMatchObject({
+      cache: 'no-store',
+      credentials: 'include',
     });
   });
 

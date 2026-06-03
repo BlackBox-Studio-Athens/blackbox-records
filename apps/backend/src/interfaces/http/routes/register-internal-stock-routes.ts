@@ -4,6 +4,12 @@ import type { AppOpenApi } from '../../../env';
 import { readOperatorIdentityFromAccessHeaders } from '../auth';
 import { createInternalStockServices } from './internal-stock-services';
 
+const jsonNoStore = <TResponse extends Response>(response: TResponse): TResponse => {
+  response.headers.set('Cache-Control', 'no-store');
+
+  return response;
+};
+
 const errorSchema = z
   .object({
     error: z.string(),
@@ -336,7 +342,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
     const operatorIdentity = readOperatorIdentityFromAccessHeaders(context.req.raw.headers);
 
     if (!operatorIdentity) {
-      return context.json({ error: 'Missing operator identity.' }, 401);
+      return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
     const services = createInternalStockServices(context.env);
@@ -345,7 +351,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
       const query = context.req.valid('query');
       const variants = await services.searchVariants(query.q ?? null, query.limit ?? 20);
 
-      return context.json(variants, 200);
+      return jsonNoStore(context.json(variants, 200));
     } finally {
       await services.disconnect();
     }
@@ -355,7 +361,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
     const operatorIdentity = readOperatorIdentityFromAccessHeaders(context.req.raw.headers);
 
     if (!operatorIdentity) {
-      return context.json({ error: 'Missing operator identity.' }, 401);
+      return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
     const services = createInternalStockServices(context.env);
@@ -364,14 +370,14 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
       const { variantId } = context.req.valid('param');
       const detail = await services.readVariantStock(variantId);
 
-      return context.json(toStockDetailResponse(detail), 200);
+      return jsonNoStore(context.json(toStockDetailResponse(detail), 200));
     } catch (error) {
       if (error instanceof services.errors.VariantNotFoundError) {
-        return context.json({ error: error.message }, 404);
+        return jsonNoStore(context.json({ error: error.message }, 404));
       }
 
       if (error instanceof z.ZodError) {
-        return context.json({ error: 'Invalid variant id.' }, 400);
+        return jsonNoStore(context.json({ error: 'Invalid variant id.' }, 400));
       }
 
       throw error;
@@ -384,7 +390,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
     const operatorIdentity = readOperatorIdentityFromAccessHeaders(context.req.raw.headers);
 
     if (!operatorIdentity) {
-      return context.json({ error: 'Missing operator identity.' }, 401);
+      return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
     const services = createInternalStockServices(context.env);
@@ -394,20 +400,14 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
       const query = context.req.valid('query');
       const entries = await services.readVariantStockHistory(variantId, query.limit ?? 50);
 
-      return context.json(
-        {
-          entries: entries.map(toHistoryEntryResponse),
-          variantId,
-        },
-        200,
-      );
+      return jsonNoStore(context.json({ entries: entries.map(toHistoryEntryResponse), variantId }, 200));
     } catch (error) {
       if (error instanceof services.errors.VariantNotFoundError) {
-        return context.json({ error: error.message }, 404);
+        return jsonNoStore(context.json({ error: error.message }, 404));
       }
 
       if (error instanceof z.ZodError) {
-        return context.json({ error: 'Invalid variant id.' }, 400);
+        return jsonNoStore(context.json({ error: 'Invalid variant id.' }, 400));
       }
 
       throw error;
@@ -420,7 +420,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
     const operatorIdentity = readOperatorIdentityFromAccessHeaders(context.req.raw.headers);
 
     if (!operatorIdentity) {
-      return context.json({ error: 'Missing operator identity.' }, 401);
+      return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
     const services = createInternalStockServices(context.env);
@@ -436,25 +436,27 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         variantId,
       });
 
-      return context.json(
-        {
-          entry: toStockChangeEntryResponse(result.entry),
-          stock: toStockStateResponse(result.stock),
-          variantId,
-        },
-        200,
+      return jsonNoStore(
+        context.json(
+          {
+            entry: toStockChangeEntryResponse(result.entry),
+            stock: toStockStateResponse(result.stock),
+            variantId,
+          },
+          200,
+        ),
       );
     } catch (error) {
       if (error instanceof services.errors.VariantNotFoundError) {
-        return context.json({ error: error.message }, 404);
+        return jsonNoStore(context.json({ error: error.message }, 404));
       }
 
       if (error instanceof services.errors.InvalidStockOperationError) {
-        return context.json({ error: error.message }, 400);
+        return jsonNoStore(context.json({ error: error.message }, 400));
       }
 
       if (error instanceof z.ZodError) {
-        return context.json({ error: 'Invalid stock change request.' }, 400);
+        return jsonNoStore(context.json({ error: 'Invalid stock change request.' }, 400));
       }
 
       throw error;
@@ -467,7 +469,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
     const operatorIdentity = readOperatorIdentityFromAccessHeaders(context.req.raw.headers);
 
     if (!operatorIdentity) {
-      return context.json({ error: 'Missing operator identity.' }, 401);
+      return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
     const services = createInternalStockServices(context.env);
@@ -483,25 +485,27 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         variantId,
       });
 
-      return context.json(
-        {
-          entry: toStockCountEntryResponse(result.entry),
-          stock: toStockStateResponse(result.stock),
-          variantId,
-        },
-        200,
+      return jsonNoStore(
+        context.json(
+          {
+            entry: toStockCountEntryResponse(result.entry),
+            stock: toStockStateResponse(result.stock),
+            variantId,
+          },
+          200,
+        ),
       );
     } catch (error) {
       if (error instanceof services.errors.VariantNotFoundError) {
-        return context.json({ error: error.message }, 404);
+        return jsonNoStore(context.json({ error: error.message }, 404));
       }
 
       if (error instanceof services.errors.InvalidStockOperationError) {
-        return context.json({ error: error.message }, 400);
+        return jsonNoStore(context.json({ error: error.message }, 400));
       }
 
       if (error instanceof z.ZodError) {
-        return context.json({ error: 'Invalid stock count request.' }, 400);
+        return jsonNoStore(context.json({ error: 'Invalid stock count request.' }, 400));
       }
 
       throw error;

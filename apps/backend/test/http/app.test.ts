@@ -12,6 +12,10 @@ const testBindings: AppBindings = {
   STRIPE_SECRET_KEY: 'sk_test_mock',
 };
 
+function expectNoStoreCacheControl(response: Response): void {
+  expect(response.headers.get('Cache-Control')).toBe('no-store');
+}
+
 describe('createHttpApp', () => {
   it('returns 404 for unmatched routes', async () => {
     const app = createHttpApp();
@@ -19,6 +23,7 @@ describe('createHttpApp', () => {
     const response = await app.request('http://backend.test/nope');
 
     expect(response.status).toBe(404);
+    expectNoStoreCacheControl(response);
   });
 
   it('returns a JSON fallback body for unmatched routes', async () => {
@@ -29,6 +34,7 @@ describe('createHttpApp', () => {
     await expect(response.json()).resolves.toEqual({
       error: 'Not Found',
     });
+    expectNoStoreCacheControl(response);
   });
 
   it('returns JSON content type for unmatched routes', async () => {
@@ -72,6 +78,26 @@ describe('createHttpApp', () => {
     );
 
     expect(response.headers.get('access-control-allow-origin')).toBe('https://blackbox-studio-athens.github.io');
+  });
+
+  it('keeps CORS preflight headers intact on API routes', async () => {
+    const app = createHttpApp();
+
+    const response = await app.request(
+      'http://backend.test/api/store/capabilities',
+      {
+        headers: {
+          'Access-Control-Request-Method': 'GET',
+          Origin: 'http://127.0.0.1:4321',
+        },
+        method: 'OPTIONS',
+      },
+      testBindings,
+    );
+
+    expect(response.headers.get('access-control-allow-origin')).toBe('http://127.0.0.1:4321');
+    expect(response.headers.get('access-control-allow-methods')).toContain('GET');
+    expect(response.headers.get('access-control-allow-methods')).toContain('OPTIONS');
   });
 
   it('does not allow arbitrary browser origins on API routes', async () => {

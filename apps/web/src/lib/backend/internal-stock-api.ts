@@ -61,6 +61,7 @@ export function createInternalStockApi({ backendBaseUrl = '', fetcher = fetch }:
     const response = await fetcher(buildInternalStockApiUrl(backendBaseUrl, path, query), {
       credentials: 'include',
       ...init,
+      cache: 'no-store',
       headers: {
         ...(init?.body ? { 'content-type': 'application/json' } : {}),
         ...init?.headers,

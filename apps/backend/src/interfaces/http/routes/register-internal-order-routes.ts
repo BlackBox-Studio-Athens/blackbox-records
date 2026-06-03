@@ -5,6 +5,12 @@ import type { AppOpenApi } from '../../../env';
 import { readOperatorIdentityFromAccessHeaders } from '../auth';
 import { createInternalOrderServices } from './internal-order-services';
 
+const jsonNoStore = <TResponse extends Response>(response: TResponse): TResponse => {
+  response.headers.set('Cache-Control', 'no-store');
+
+  return response;
+};
+
 const errorSchema = z
   .object({
     error: z.string(),
@@ -118,7 +124,7 @@ export function registerInternalOrderRoutes(app: AppOpenApi): void {
     const operatorIdentity = readOperatorIdentityFromAccessHeaders(context.req.raw.headers);
 
     if (!operatorIdentity) {
-      return context.json({ error: 'Missing operator identity.' }, 401);
+      return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
     const services = createInternalOrderServices(context.env);
@@ -130,7 +136,7 @@ export function registerInternalOrderRoutes(app: AppOpenApi): void {
         status: (query.status as OrderStatus | undefined) ?? null,
       });
 
-      return context.json(orders.map(toCheckoutOrderResponse), 200);
+      return jsonNoStore(context.json(orders.map(toCheckoutOrderResponse), 200));
     } finally {
       await services.disconnect();
     }
@@ -140,7 +146,7 @@ export function registerInternalOrderRoutes(app: AppOpenApi): void {
     const operatorIdentity = readOperatorIdentityFromAccessHeaders(context.req.raw.headers);
 
     if (!operatorIdentity) {
-      return context.json({ error: 'Missing operator identity.' }, 401);
+      return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
     const services = createInternalOrderServices(context.env);
@@ -150,10 +156,10 @@ export function registerInternalOrderRoutes(app: AppOpenApi): void {
       const order = await services.readCheckoutOrder(checkoutSessionId);
 
       if (!order) {
-        return context.json({ error: 'Checkout order not found.' }, 404);
+        return jsonNoStore(context.json({ error: 'Checkout order not found.' }, 404));
       }
 
-      return context.json(toCheckoutOrderResponse(order), 200);
+      return jsonNoStore(context.json(toCheckoutOrderResponse(order), 200));
     } finally {
       await services.disconnect();
     }

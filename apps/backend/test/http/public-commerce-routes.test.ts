@@ -48,6 +48,10 @@ const shippingLocker = {
   locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
 };
 
+function expectNoStoreCacheControl(response: Response): void {
+  expect(response.headers.get('Cache-Control')).toBe('no-store');
+}
+
 describe('public commerce routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -73,6 +77,7 @@ describe('public commerce routes', () => {
 
     expect(mockReadStoreOffer).toHaveBeenCalledWith('disintegration-black-vinyl-lp');
     expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       availability: {
         label: 'Available',
@@ -97,6 +102,7 @@ describe('public commerce routes', () => {
 
     expect(mockReadStoreCapabilities).toHaveBeenCalledOnce();
     expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       nativeCheckout: {
         enabled: false,
@@ -126,6 +132,7 @@ describe('public commerce routes', () => {
     );
 
     expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual([
       {
         availability: {
@@ -146,6 +153,7 @@ describe('public commerce routes', () => {
     const response = await app.request('http://backend.test/api/store/items/unknown', {}, testBindings);
 
     expect(response.status).toBe(404);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       error: 'Store item not found.',
     });
@@ -183,6 +191,7 @@ describe('public commerce routes', () => {
       variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
     expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
     });
@@ -214,6 +223,7 @@ describe('public commerce routes', () => {
 
     expect(mockStartCheckout).toHaveBeenCalledOnce();
     expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
   });
 
   it('rejects checkout return URLs from unapproved origins', async () => {
@@ -237,6 +247,7 @@ describe('public commerce routes', () => {
 
     expect(mockStartCheckout).not.toHaveBeenCalled();
     expect(response.status).toBe(409);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       error: 'Checkout return URL is not allowed.',
     });
@@ -263,6 +274,7 @@ describe('public commerce routes', () => {
 
     expect(mockStartCheckout).not.toHaveBeenCalled();
     expect(response.status).toBe(409);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       error: 'Checkout return URL is not allowed.',
     });
@@ -290,6 +302,7 @@ describe('public commerce routes', () => {
     );
 
     expect(response.status).toBe(409);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       error: 'Checkout is not configured for this item.',
     });
@@ -317,6 +330,7 @@ describe('public commerce routes', () => {
     );
 
     expect(response.status).toBe(503);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       error: 'Native checkout is temporarily unavailable.',
     });
@@ -335,6 +349,7 @@ describe('public commerce routes', () => {
     const response = await app.request('http://backend.test/api/checkout/sessions/cs_test_123/state', {}, testBindings);
 
     expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
       paymentStatus: 'paid',

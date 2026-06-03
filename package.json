@@ -47,6 +47,8 @@
     "worker:dev:sandbox": "pnpm dev:backend:sandbox",
     "build": "pnpm build:web",
     "build:web": "pnpm --filter @blackbox/web build",
+    "cache:policy:check": "pnpm --filter @blackbox/web cache:policy:check",
+    "cache:policy:hosted-audit": "pnpm --filter @blackbox/web cache:policy:hosted-audit",
     "generate:api": "pnpm --filter @blackbox/backend generate:openapi && pnpm --filter @blackbox/api-client generate",
     "assets:check": "pnpm --filter @blackbox/web assets:check",
     "audit:commerce-boundaries": "tsx scripts/audit-commerce-boundaries.ts",
