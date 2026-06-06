@@ -9,7 +9,7 @@ export function buildArtistCollection() {
   return buildFolderCollection({
     name: 'artists',
     label: 'Artists',
-    folder: 'src/content/artists',
+    folder: 'apps/web/src/content/artists',
     create: true,
     delete: true,
     extension: 'md',

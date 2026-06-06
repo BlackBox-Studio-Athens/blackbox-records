@@ -7,7 +7,7 @@ describe('Decap distro collection', () => {
     const yaml = buildDistroCollection();
 
     expect(yaml).toContain('name: "distro"');
-    expect(yaml).toContain('folder: "src/content/distro"');
+    expect(yaml).toContain('folder: "apps/web/src/content/distro"');
     expect(yaml).toContain('extension: json');
     expect(yaml).toContain('format: json');
     expect(yaml).toContain('summary: "{{title}} - {{group}}"');

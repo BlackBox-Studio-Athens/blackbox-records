@@ -5,7 +5,7 @@ export function buildReleaseCollection(artistOptions: DecapSelectOption[]) {
   return buildFolderCollection({
     name: 'releases',
     label: 'Releases',
-    folder: 'src/content/releases',
+    folder: 'apps/web/src/content/releases',
     create: true,
     delete: true,
     extension: 'md',

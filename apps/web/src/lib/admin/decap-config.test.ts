@@ -20,11 +20,12 @@ describe('buildDecapConfig', () => {
 
     expect(yaml).toContain('name: proxy');
     expect(yaml).toContain('http://127.0.0.1:8082/api/v1');
-    expect(yaml).toContain('media_folder: src/content/uploads');
-    expect(yaml).toContain('folder: "src/content/releases"');
+    expect(yaml).toContain('media_folder: apps/web/src/content/uploads');
+    expect(yaml).toContain('folder: "apps/web/src/content/releases"');
     expect(yaml).toContain('value: "mass-culture"');
     expect(yaml).toContain('summary: "{{fields.tagline}}"');
-    expect(yaml).toContain('file: "src/content/newsletter/site.json"');
+    expect(yaml).toContain('file: "apps/web/src/content/newsletter/site.json"');
+    expect(yaml).not.toMatch(/file: "src\/content\/|folder: "src\/content\/|media_folder: src\/content\//);
     expect(yaml).toContain('default: "../../../.astro/collections/newsletter.schema.json"');
     expect(yaml).toContain('hint: "Short line over the hero still. Example: \\"Heavy music on record.\\""');
     expect(yaml).toContain('hint: "Pick the matching artist entry so Astro references stay valid."');
@@ -48,7 +49,7 @@ describe('buildDecapConfig', () => {
 
     expect(yaml).toContain('name: git-gateway');
     expect(yaml).toContain('auth_type: pkce');
-    expect(yaml).toContain('media_folder: src/content/uploads');
+    expect(yaml).toContain('media_folder: apps/web/src/content/uploads');
     expect(yaml).toContain('auth_endpoint: "/sites/site-id/pkce"');
     expect(yaml).toContain('auth_token_endpoint: "/sites/site-id/token"');
     expect(yaml).not.toContain('auth_type: classic');

@@ -284,7 +284,7 @@ function startCmsProcesses(options: CmsLocalSmokeOptions): ManagedProcess[] {
 
   return [
     spawnManagedProcess('decap-server', proxyExecutable, [], {
-      cwd: webRoot,
+      cwd: repoRoot,
       env: {
         ...sharedEnv,
         PORT: String(options.proxyPort),
@@ -358,12 +358,25 @@ async function waitForLocalCmsReady(input: {
   const configText = await waitForHttpText(configUrl, input.options.timeoutMs, input.processes);
 
   const expectedProxyUrl = `http://127.0.0.1:${input.options.proxyPort}/api/v1`;
-  const missingConfigSnippets = ['backend:', 'name: proxy', 'extension: json', 'format: json', expectedProxyUrl].filter(
-    (snippet) => !configText.includes(snippet),
-  );
+  const missingConfigSnippets = [
+    'backend:',
+    'name: proxy',
+    'extension: json',
+    'format: json',
+    'media_folder: apps/web/src/content/uploads',
+    'file: "apps/web/src/content/home/site.json"',
+    'folder: "apps/web/src/content/releases"',
+    expectedProxyUrl,
+  ].filter((snippet) => !configText.includes(snippet));
 
   if (missingConfigSnippets.length) {
     throw new Error(`Local CMS config missed expected snippets: ${missingConfigSnippets.join(', ')}.`);
+  }
+
+  if (/file: "src\/content\/|folder: "src\/content\/|media_folder: src\/content\//.test(configText)) {
+    throw new Error(
+      'Local CMS config still uses app-root src/content paths; remote DecapBridge needs repo-root paths.',
+    );
   }
 }
 

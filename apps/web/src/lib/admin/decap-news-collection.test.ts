@@ -7,7 +7,7 @@ describe('Decap news collection', () => {
     const yaml = buildNewsCollection();
 
     expect(yaml).toContain('name: "news"');
-    expect(yaml).toContain('folder: "src/content/news"');
+    expect(yaml).toContain('folder: "apps/web/src/content/news"');
     expect(yaml).toContain('extension: md');
     expect(yaml).toContain('format: frontmatter');
     expect(yaml).toContain('summary: "{{title}} - {{date}}"');

@@ -7,7 +7,7 @@ describe('Decap release collection', () => {
     const yaml = buildReleaseCollection([{ label: 'Mass Culture', value: 'mass-culture' }]);
 
     expect(yaml).toContain('name: "releases"');
-    expect(yaml).toContain('folder: "src/content/releases"');
+    expect(yaml).toContain('folder: "apps/web/src/content/releases"');
     expect(yaml).toContain('extension: md');
     expect(yaml).toContain('format: frontmatter');
     expect(yaml).toContain('summary: "{{title}} - {{artist}}"');

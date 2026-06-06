@@ -27,7 +27,7 @@ export function buildPageFileCollections({
         {
           name: 'home-site',
           label: 'Home Content',
-          file: 'src/content/home/site.json',
+          file: 'apps/web/src/content/home/site.json',
           mediaFolder: '.',
           publicFolder: './',
           fields: homeFields,
@@ -45,7 +45,7 @@ export function buildPageFileCollections({
         {
           name: 'about-site',
           label: 'About Content',
-          file: 'src/content/about/site.json',
+          file: 'apps/web/src/content/about/site.json',
           mediaFolder: '.',
           publicFolder: './',
           fields: aboutFields,
@@ -63,7 +63,7 @@ export function buildPageFileCollections({
         {
           name: 'services-site',
           label: 'Services Content',
-          file: 'src/content/services/site.json',
+          file: 'apps/web/src/content/services/site.json',
           mediaFolder: '.',
           publicFolder: './',
           fields: servicesFields,
@@ -81,7 +81,7 @@ export function buildPageFileCollections({
         {
           name: 'newsletter-site',
           label: 'Newsletter Content',
-          file: 'src/content/newsletter/site.json',
+          file: 'apps/web/src/content/newsletter/site.json',
           fields: newsletterFields,
         },
       ],
@@ -97,7 +97,7 @@ export function buildPageFileCollections({
         {
           name: 'settings-site',
           label: 'Site Settings',
-          file: 'src/content/settings/site.json',
+          file: 'apps/web/src/content/settings/site.json',
           fields: settingsFields,
         },
       ],

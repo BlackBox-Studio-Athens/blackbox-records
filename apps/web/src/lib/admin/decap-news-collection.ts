@@ -4,7 +4,7 @@ export function buildNewsCollection() {
   return buildFolderCollection({
     name: 'news',
     label: 'News',
-    folder: 'src/content/news',
+    folder: 'apps/web/src/content/news',
     create: true,
     delete: true,
     extension: 'md',

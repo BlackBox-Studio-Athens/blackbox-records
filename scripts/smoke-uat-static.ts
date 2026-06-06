@@ -776,11 +776,19 @@ export function checkCmsConfigPlaceholders(text: string): string[] {
 export function checkCmsSingletonJsonDeclarations(text: string): string[] {
   const issues: string[] = [];
   const singletonPaths = [
-    'src/content/home/site.json',
-    'src/content/about/site.json',
-    'src/content/services/site.json',
-    'src/content/newsletter/site.json',
-    'src/content/settings/site.json',
+    'apps/web/src/content/home/site.json',
+    'apps/web/src/content/about/site.json',
+    'apps/web/src/content/services/site.json',
+    'apps/web/src/content/newsletter/site.json',
+    'apps/web/src/content/settings/site.json',
+  ];
+  const folderPaths = [
+    'apps/web/src/content/artists',
+    'apps/web/src/content/releases',
+    'apps/web/src/content/distro',
+    'apps/web/src/content/news',
+    'apps/web/src/content/navigation',
+    'apps/web/src/content/socials',
   ];
   const jsonExtensionCount = (text.match(/^\s+extension:\s+json\s*$/gm) || []).length;
   const jsonFormatCount = (text.match(/^\s+format:\s+json\s*$/gm) || []).length;
@@ -789,6 +797,16 @@ export function checkCmsSingletonJsonDeclarations(text: string): string[] {
     if (!text.includes(`file: "${singletonPath}"`)) {
       issues.push(`CMS config does not include singleton file path "${singletonPath}".`);
     }
+  }
+
+  for (const folderPath of folderPaths) {
+    if (!text.includes(`folder: "${folderPath}"`)) {
+      issues.push(`CMS config does not include collection folder path "${folderPath}".`);
+    }
+  }
+
+  if (/file: "src\/content\/|folder: "src\/content\/|media_folder: src\/content\//.test(text)) {
+    issues.push('CMS config still uses app-root src/content paths; DecapBridge needs repo-root apps/web paths.');
   }
 
   if (jsonExtensionCount < singletonPaths.length) {

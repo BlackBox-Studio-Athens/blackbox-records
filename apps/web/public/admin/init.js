@@ -317,11 +317,11 @@
     guard.setAttribute('role', 'alert');
     guard.innerHTML = [
       '<div class="blackbox-cms-empty-guard__copy">',
-      '<p class="blackbox-cms-empty-guard__eyebrow">CMS content warning</p>',
-      `<h2 class="blackbox-cms-empty-guard__title">${activeEditor.expectation.label} loaded without existing JSON content</h2>`,
-      '<p class="blackbox-cms-empty-guard__body">Do not publish this entry. Clear the local Decap draft cache, reload, then reopen the entry.</p>',
+      '<p class="blackbox-cms-empty-guard__eyebrow">Content did not load</p>',
+      `<h2 class="blackbox-cms-empty-guard__title">Do not publish ${activeEditor.expectation.label} yet</h2>`,
+      '<p class="blackbox-cms-empty-guard__body">The editor opened, but it did not receive the existing GitHub content. Publishing from this screen could overwrite the live page with blanks.</p>',
       '</div>',
-      '<button class="blackbox-cms-empty-guard__button" type="button">Clear draft cache and reload</button>',
+      '<button class="blackbox-cms-empty-guard__button" type="button">Clear local draft and retry</button>',
     ].join('');
 
     guard.querySelector('button')?.addEventListener('click', () => {

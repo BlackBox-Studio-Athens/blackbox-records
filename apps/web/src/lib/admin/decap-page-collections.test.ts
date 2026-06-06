@@ -15,19 +15,19 @@ describe('Decap page file collections', () => {
     expect(yaml).toContain('name: "home"');
     expect(yaml).toContain('extension: json');
     expect(yaml).toContain('format: json');
-    expect(yaml).toContain('file: "src/content/home/site.json"');
+    expect(yaml).toContain('file: "apps/web/src/content/home/site.json"');
     expect(yaml).toContain('home-field');
     expect(yaml).toContain('name: "about"');
-    expect(yaml).toContain('file: "src/content/about/site.json"');
+    expect(yaml).toContain('file: "apps/web/src/content/about/site.json"');
     expect(yaml).toContain('about-field');
     expect(yaml).toContain('name: "services"');
-    expect(yaml).toContain('file: "src/content/services/site.json"');
+    expect(yaml).toContain('file: "apps/web/src/content/services/site.json"');
     expect(yaml).toContain('services-field');
     expect(yaml).toContain('name: "settings"');
-    expect(yaml).toContain('file: "src/content/settings/site.json"');
+    expect(yaml).toContain('file: "apps/web/src/content/settings/site.json"');
     expect(yaml).toContain('settings-field');
     expect(yaml).toContain('name: "newsletter"');
-    expect(yaml).toContain('file: "src/content/newsletter/site.json"');
+    expect(yaml).toContain('file: "apps/web/src/content/newsletter/site.json"');
     expect(yaml).toContain('newsletter-field');
   });
 
@@ -46,10 +46,10 @@ describe('Decap page file collections', () => {
       expect(collectionYaml).toContain('format: json');
     }
 
-    expect(yaml.join('\n')).toContain('file: "src/content/home/site.json"');
-    expect(yaml.join('\n')).toContain('file: "src/content/about/site.json"');
-    expect(yaml.join('\n')).toContain('file: "src/content/services/site.json"');
-    expect(yaml.join('\n')).toContain('file: "src/content/newsletter/site.json"');
-    expect(yaml.join('\n')).toContain('file: "src/content/settings/site.json"');
+    expect(yaml.join('\n')).toContain('file: "apps/web/src/content/home/site.json"');
+    expect(yaml.join('\n')).toContain('file: "apps/web/src/content/about/site.json"');
+    expect(yaml.join('\n')).toContain('file: "apps/web/src/content/services/site.json"');
+    expect(yaml.join('\n')).toContain('file: "apps/web/src/content/newsletter/site.json"');
+    expect(yaml.join('\n')).toContain('file: "apps/web/src/content/settings/site.json"');
   });
 });

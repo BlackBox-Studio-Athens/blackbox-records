@@ -5,7 +5,7 @@ export function buildSiteChromeCollections() {
     buildFolderCollection({
       name: 'navigation',
       label: 'Navigation',
-      folder: 'src/content/navigation',
+      folder: 'apps/web/src/content/navigation',
       create: false,
       delete: false,
       extension: 'json',
@@ -49,7 +49,7 @@ export function buildSiteChromeCollections() {
     buildFolderCollection({
       name: 'socials',
       label: 'Socials',
-      folder: 'src/content/socials',
+      folder: 'apps/web/src/content/socials',
       create: true,
       delete: true,
       extension: 'json',

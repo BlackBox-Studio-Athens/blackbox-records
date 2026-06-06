@@ -5,7 +5,7 @@ export function buildDistroCollection() {
   return buildFolderCollection({
     name: 'distro',
     label: 'Distro',
-    folder: 'src/content/distro',
+    folder: 'apps/web/src/content/distro',
     create: true,
     delete: true,
     extension: 'json',

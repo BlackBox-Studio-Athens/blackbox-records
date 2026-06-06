@@ -7,7 +7,7 @@ describe('Decap artist collection', () => {
     const yaml = buildArtistCollection();
 
     expect(yaml).toContain('name: "artists"');
-    expect(yaml).toContain('folder: "src/content/artists"');
+    expect(yaml).toContain('folder: "apps/web/src/content/artists"');
     expect(yaml).toContain('extension: md');
     expect(yaml).toContain('format: frontmatter');
     expect(yaml).toContain('slug: "{{fields.slug}}"');
