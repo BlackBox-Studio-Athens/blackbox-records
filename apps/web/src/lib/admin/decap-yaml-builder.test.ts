@@ -99,6 +99,7 @@ describe('Decap YAML builder', () => {
       label: 'Pages',
       create: false,
       delete: false,
+      extension: 'json',
       format: 'json',
       files: [
         {
@@ -112,7 +113,7 @@ describe('Decap YAML builder', () => {
       ],
     });
 
-    expect(fileCollectionYaml).toContain('  format: json\n  files:\n    - name: "home"');
+    expect(fileCollectionYaml).toContain('  extension: json\n  format: json\n  files:\n    - name: "home"');
     expect(fileCollectionYaml).toContain('      media_folder: "src/assets/home"\n      public_folder: "/assets/home"');
 
     expect(

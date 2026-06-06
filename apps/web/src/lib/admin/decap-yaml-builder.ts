@@ -44,6 +44,7 @@ export type FileCollectionConfig = {
   label: string;
   create: boolean;
   delete: boolean;
+  extension: string;
   format: string;
   files: FileEntryConfig[];
 };
@@ -228,6 +229,7 @@ export function buildFileCollection(config: FileCollectionConfig): string {
     `  label: ${escapeYamlScalar(config.label)}`,
     `  create: ${config.create}`,
     `  delete: ${config.delete}`,
+    `  extension: ${config.extension}`,
     `  format: ${config.format}`,
     '  files:',
   ];

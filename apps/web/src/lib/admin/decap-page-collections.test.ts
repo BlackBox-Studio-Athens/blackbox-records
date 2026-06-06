@@ -13,6 +13,7 @@ describe('Decap page file collections', () => {
     }).join('\n');
 
     expect(yaml).toContain('name: "home"');
+    expect(yaml).toContain('extension: json');
     expect(yaml).toContain('format: json');
     expect(yaml).toContain('file: "src/content/home/site.json"');
     expect(yaml).toContain('home-field');
@@ -30,7 +31,7 @@ describe('Decap page file collections', () => {
     expect(yaml).toContain('newsletter-field');
   });
 
-  it('marks every singleton page collection as JSON so Decap reads existing content', () => {
+  it('marks every singleton page collection with explicit JSON extension and format', () => {
     const yaml = buildPageFileCollections({
       homeFields: ['home-field'],
       aboutFields: ['about-field'],
@@ -41,6 +42,7 @@ describe('Decap page file collections', () => {
 
     expect(yaml).toHaveLength(5);
     for (const collectionYaml of yaml) {
+      expect(collectionYaml).toContain('extension: json');
       expect(collectionYaml).toContain('format: json');
     }
 

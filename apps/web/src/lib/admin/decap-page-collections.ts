@@ -21,6 +21,7 @@ export function buildPageFileCollections({
       label: 'Home',
       create: false,
       delete: false,
+      extension: 'json',
       format: 'json',
       files: [
         {
@@ -38,6 +39,7 @@ export function buildPageFileCollections({
       label: 'About',
       create: false,
       delete: false,
+      extension: 'json',
       format: 'json',
       files: [
         {
@@ -55,6 +57,7 @@ export function buildPageFileCollections({
       label: 'Services',
       create: false,
       delete: false,
+      extension: 'json',
       format: 'json',
       files: [
         {
@@ -72,6 +75,7 @@ export function buildPageFileCollections({
       label: 'Newsletter',
       create: false,
       delete: false,
+      extension: 'json',
       format: 'json',
       files: [
         {
@@ -87,6 +91,7 @@ export function buildPageFileCollections({
       label: 'Settings',
       create: false,
       delete: false,
+      extension: 'json',
       format: 'json',
       files: [
         {

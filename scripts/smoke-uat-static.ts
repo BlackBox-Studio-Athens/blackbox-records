@@ -515,7 +515,14 @@ async function checkCheckoutShellPage(page: Page, options: UatStaticSmokeOptions
 async function checkCmsAssets(options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck[]> {
   const checks: UatStaticSmokeCheck[] = [];
 
-  checks.push(await checkTextAsset(options, '/admin/config.yml', ['collections:', 'media_folder:']));
+  checks.push(
+    await checkTextAsset(options, '/admin/config.yml', [
+      'collections:',
+      'media_folder:',
+      'extension: json',
+      'format: json',
+    ]),
+  );
   checks.push(
     await checkTextAsset(options, '/admin/init.js', [
       'window.__BLACKBOX_ADMIN__',
@@ -617,6 +624,7 @@ async function checkTextAsset(
 
   if (routePath === '/admin/config.yml') {
     issues.push(...checkCmsConfigPlaceholders(text));
+    issues.push(...checkCmsSingletonJsonDeclarations(text));
   }
 
   for (const exposure of scanHighRiskSmokeExposure(text)) {
@@ -760,6 +768,39 @@ export function checkCmsConfigPlaceholders(text: string): string[] {
 
   if (/https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?/i.test(text)) {
     issues.push('CMS config still points at a local backend or loopback URL.');
+  }
+
+  return issues;
+}
+
+export function checkCmsSingletonJsonDeclarations(text: string): string[] {
+  const issues: string[] = [];
+  const singletonPaths = [
+    'src/content/home/site.json',
+    'src/content/about/site.json',
+    'src/content/services/site.json',
+    'src/content/newsletter/site.json',
+    'src/content/settings/site.json',
+  ];
+  const jsonExtensionCount = (text.match(/^\s+extension:\s+json\s*$/gm) || []).length;
+  const jsonFormatCount = (text.match(/^\s+format:\s+json\s*$/gm) || []).length;
+
+  for (const singletonPath of singletonPaths) {
+    if (!text.includes(`file: "${singletonPath}"`)) {
+      issues.push(`CMS config does not include singleton file path "${singletonPath}".`);
+    }
+  }
+
+  if (jsonExtensionCount < singletonPaths.length) {
+    issues.push(
+      `CMS config includes ${jsonExtensionCount} JSON extension declarations; expected at least ${singletonPaths.length}.`,
+    );
+  }
+
+  if (jsonFormatCount < singletonPaths.length) {
+    issues.push(
+      `CMS config includes ${jsonFormatCount} JSON format declarations; expected at least ${singletonPaths.length}.`,
+    );
   }
 
   return issues;

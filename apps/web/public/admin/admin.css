@@ -115,6 +115,72 @@ body {
   animation: blackbox-cms-loading-motion 1.15s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
+.blackbox-cms-empty-guard {
+  position: fixed;
+  z-index: 100000;
+  inset-block-start: 5rem;
+  inset-inline: 50% auto;
+  width: min(40rem, calc(100vw - 2rem));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid rgba(185, 89, 109, 0.32);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: rgba(255, 250, 247, 0.98);
+  box-shadow: 0 18px 42px rgba(91, 45, 54, 0.18);
+  transform: translateX(-50%);
+}
+
+.blackbox-cms-empty-guard__copy {
+  min-width: 0;
+}
+
+.blackbox-cms-empty-guard__eyebrow,
+.blackbox-cms-empty-guard__title,
+.blackbox-cms-empty-guard__body {
+  margin: 0;
+}
+
+.blackbox-cms-empty-guard__eyebrow {
+  color: var(--bb-admin-accent);
+  font-family: var(--bb-admin-font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.blackbox-cms-empty-guard__title {
+  margin-block-start: 0.24rem;
+  color: var(--bb-admin-text);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.blackbox-cms-empty-guard__body {
+  margin-block-start: 0.34rem;
+  color: var(--bb-admin-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.blackbox-cms-empty-guard__button {
+  flex: 0 0 auto;
+  min-height: 2.55rem !important;
+  border: 1px solid rgba(141, 61, 74, 0.28) !important;
+  border-radius: 0.75rem !important;
+  padding: 0.5rem 0.8rem !important;
+  background: var(--bb-admin-accent) !important;
+  color: #fffaf7 !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap;
+}
+
 @keyframes blackbox-cms-loading-motion {
   0% {
     transform: rotate(0deg) scale(0.88);
@@ -135,6 +201,14 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .blackbox-cms-boot__spinner {
     animation: none;
+  }
+}
+
+@media (max-width: 48rem) {
+  .blackbox-cms-empty-guard {
+    inset-block-start: 4.25rem;
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 

@@ -116,6 +116,249 @@
 
   const isEntryEditorRoute = () => /^#\/collections\/[^/]+\/entries\/[^/]+/.test(window.location.hash);
 
+  const singletonEditorExpectations = {
+    about: {
+      entry: 'about-site',
+      label: 'About',
+      minimumSectionCount: 1,
+      values: ['The Label'],
+    },
+    home: {
+      entry: 'home-site',
+      label: 'Home',
+      minimumSectionCount: 1,
+      values: ['Fine music on record.'],
+    },
+    newsletter: {
+      entry: 'newsletter-site',
+      label: 'Newsletter',
+      minimumSectionCount: 0,
+      values: ['Join the Collective'],
+    },
+    services: {
+      entry: 'services-site',
+      label: 'Services',
+      minimumSectionCount: 1,
+      values: ['Tour Booking'],
+    },
+    settings: {
+      entry: 'settings-site',
+      label: 'Settings',
+      minimumSectionCount: 0,
+      values: ['Blackbox Records'],
+    },
+  };
+
+  let singletonContentGuardTimer = 0;
+  let currentSingletonRouteKey = '';
+
+  const getActiveSingletonEditor = () => {
+    const match = window.location.hash.match(/^#\/collections\/([^/]+)\/entries\/([^/]+)/);
+    if (!match) {
+      return null;
+    }
+
+    const [, collection, entry] = match;
+    const expectation = singletonEditorExpectations[collection];
+    if (!expectation || expectation.entry !== entry) {
+      return null;
+    }
+
+    return {
+      collection,
+      entry,
+      expectation,
+    };
+  };
+
+  const getSingletonRouteKey = (activeEditor) =>
+    activeEditor ? `${activeEditor.collection}/${activeEditor.entry}` : '';
+
+  const hasSavedEditorState = () => /\bCHANGES SAVED\b/i.test(document.body?.innerText || '');
+
+  const reloadOnSavedSingletonRouteChange = () => {
+    const nextSingletonRouteKey = getSingletonRouteKey(getActiveSingletonEditor());
+    const shouldReload =
+      currentSingletonRouteKey &&
+      nextSingletonRouteKey &&
+      currentSingletonRouteKey !== nextSingletonRouteKey &&
+      hasSavedEditorState();
+
+    currentSingletonRouteKey = nextSingletonRouteKey;
+
+    if (shouldReload) {
+      window.location.reload();
+      return true;
+    }
+
+    return false;
+  };
+
+  const readSingletonEditorState = () => {
+    const bodyText = document.body?.innerText || '';
+    const formValues = Array.from(document.querySelectorAll('input, textarea, select'))
+      .map((element) => {
+        if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+          return element.value.trim();
+        }
+
+        if (element instanceof HTMLSelectElement) {
+          return element.value.trim();
+        }
+
+        return '';
+      })
+      .filter(Boolean);
+    const sectionCounts = Array.from(bodyText.matchAll(/\b(\d+)\s+sections\b/gi)).map((match) => Number(match[1]));
+
+    return {
+      bodyText,
+      formValues,
+      hasLoadedEditorChrome: /\bWriting in\b.+\bcollection\b/i.test(bodyText),
+      sectionCounts,
+    };
+  };
+
+  const isSingletonEditorEmptyLoad = (activeEditor, state) => {
+    if (!activeEditor || !state.hasLoadedEditorChrome) {
+      return false;
+    }
+
+    const { expectation } = activeEditor;
+    const missingExpectedValues = expectation.values.filter(
+      (value) => !state.formValues.some((formValue) => formValue.includes(value)),
+    );
+    const maxSectionCount = Math.max(0, ...state.sectionCounts);
+
+    return missingExpectedValues.length > 0 || maxSectionCount < expectation.minimumSectionCount;
+  };
+
+  const removeSingletonContentGuard = () => {
+    if (singletonContentGuardTimer) {
+      window.clearTimeout(singletonContentGuardTimer);
+      singletonContentGuardTimer = 0;
+    }
+
+    document.querySelector('[data-blackbox-cms-empty-guard="true"]')?.remove();
+    delete document.documentElement.dataset.blackboxCmsEmptySingleton;
+  };
+
+  const clearStorageKeys = (storage, tokens) => {
+    if (!storage) {
+      return;
+    }
+
+    try {
+      const keys = Array.from({ length: storage.length }, (_, index) => storage.key(index)).filter(Boolean);
+      keys.forEach((key) => {
+        const normalizedKey = key.toLowerCase();
+        if (tokens.some((token) => normalizedKey.includes(token))) {
+          storage.removeItem(key);
+        }
+      });
+    } catch {
+      // Ignore blocked browser storage. IndexedDB cleanup still runs when available.
+    }
+  };
+
+  const clearIndexedDbDraftStores = async (tokens) => {
+    if (!window.indexedDB || typeof window.indexedDB.databases !== 'function') {
+      return;
+    }
+
+    const databases = await window.indexedDB.databases().catch(() => []);
+    await Promise.all(
+      databases
+        .map((database) => database?.name)
+        .filter((name) => {
+          const normalizedName = toText(name).toLowerCase();
+          return normalizedName && tokens.some((token) => normalizedName.includes(token));
+        })
+        .map(
+          (name) =>
+            new Promise((resolve) => {
+              const request = window.indexedDB.deleteDatabase(name);
+              request.addEventListener('success', resolve, { once: true });
+              request.addEventListener('error', resolve, { once: true });
+              request.addEventListener('blocked', resolve, { once: true });
+            }),
+        ),
+    );
+  };
+
+  const clearDecapDraftCacheAndReload = async () => {
+    const tokens = [
+      'backup',
+      'blackbox',
+      'cms',
+      'decap',
+      'localforage',
+      'netlify',
+      ...Object.values(singletonEditorExpectations).map((expectation) => expectation.entry),
+    ];
+
+    try {
+      clearStorageKeys(window.localStorage, tokens);
+      clearStorageKeys(window.sessionStorage, tokens);
+      await clearIndexedDbDraftStores(tokens);
+    } finally {
+      window.location.reload();
+    }
+  };
+
+  const ensureSingletonContentGuard = (activeEditor) => {
+    if (document.querySelector('[data-blackbox-cms-empty-guard="true"]')) {
+      return;
+    }
+
+    const guard = document.createElement('section');
+    guard.className = 'blackbox-cms-empty-guard';
+    guard.dataset.blackboxCmsEmptyGuard = 'true';
+    guard.setAttribute('role', 'alert');
+    guard.innerHTML = [
+      '<div class="blackbox-cms-empty-guard__copy">',
+      '<p class="blackbox-cms-empty-guard__eyebrow">CMS content warning</p>',
+      `<h2 class="blackbox-cms-empty-guard__title">${activeEditor.expectation.label} loaded without existing JSON content</h2>`,
+      '<p class="blackbox-cms-empty-guard__body">Do not publish this entry. Clear the local Decap draft cache, reload, then reopen the entry.</p>',
+      '</div>',
+      '<button class="blackbox-cms-empty-guard__button" type="button">Clear draft cache and reload</button>',
+    ].join('');
+
+    guard.querySelector('button')?.addEventListener('click', () => {
+      clearDecapDraftCacheAndReload();
+    });
+
+    document.body?.append(guard);
+  };
+
+  const syncSingletonContentGuard = () => {
+    const activeEditor = getActiveSingletonEditor();
+    const state = readSingletonEditorState();
+    window.__BLACKBOX_DECAP_SINGLETON_STATE__ = {
+      activeEditor,
+      formValues: state.formValues,
+      sectionCounts: state.sectionCounts,
+    };
+
+    if (!isSingletonEditorEmptyLoad(activeEditor, state)) {
+      removeSingletonContentGuard();
+      return;
+    }
+
+    document.documentElement.dataset.blackboxCmsEmptySingleton = activeEditor.collection;
+    if (singletonContentGuardTimer) {
+      return;
+    }
+
+    singletonContentGuardTimer = window.setTimeout(() => {
+      singletonContentGuardTimer = 0;
+      const latestActiveEditor = getActiveSingletonEditor();
+      if (isSingletonEditorEmptyLoad(latestActiveEditor, readSingletonEditorState())) {
+        ensureSingletonContentGuard(latestActiveEditor);
+      }
+    }, 1500);
+  };
+
   const getLoginButton = () =>
     Array.from(document.querySelectorAll('button')).find((button) => {
       const label = (button.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -308,10 +551,15 @@
 
   const startEntryEditorPreviewController = () => {
     const triggerPreviewCollapse = () => {
+      if (reloadOnSavedSingletonRouteChange()) {
+        return;
+      }
+
       window.requestAnimationFrame(() => {
         syncAuthLoginSurface();
         syncPreviewToggleButtonState();
         enhanceListItemActionButtons();
+        syncSingletonContentGuard();
         schedulePreviewCollapse();
       });
     };

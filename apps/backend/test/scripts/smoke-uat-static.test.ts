@@ -4,6 +4,7 @@ import {
   buildUatStaticSmokeEvidence,
   checkCmsAdminRenderedState,
   checkCmsConfigPlaceholders,
+  checkCmsSingletonJsonDeclarations,
   parseUatStaticSmokeArgs,
   resolveSelectedUatStaticSmokeScenarios,
 } from '../../../../scripts/smoke-uat-static';
@@ -56,6 +57,57 @@ describe('UAT static smoke runner', () => {
     ]);
 
     expect(checkCmsConfigPlaceholders(['backend:', '  auth_endpoint: /sites/blackbox/pkce'].join('\n'))).toEqual([]);
+  });
+
+  it('flags singleton CMS config entries that are not explicit JSON files', () => {
+    const validConfig = [
+      'collections:',
+      '  - name: "home"',
+      '    extension: json',
+      '    format: json',
+      '    files:',
+      '      - file: "src/content/home/site.json"',
+      '  - name: "about"',
+      '    extension: json',
+      '    format: json',
+      '    files:',
+      '      - file: "src/content/about/site.json"',
+      '  - name: "services"',
+      '    extension: json',
+      '    format: json',
+      '    files:',
+      '      - file: "src/content/services/site.json"',
+      '  - name: "newsletter"',
+      '    extension: json',
+      '    format: json',
+      '    files:',
+      '      - file: "src/content/newsletter/site.json"',
+      '  - name: "settings"',
+      '    extension: json',
+      '    format: json',
+      '    files:',
+      '      - file: "src/content/settings/site.json"',
+    ].join('\n');
+
+    expect(checkCmsSingletonJsonDeclarations(validConfig)).toEqual([]);
+    expect(
+      checkCmsSingletonJsonDeclarations(
+        [
+          'collections:',
+          '  - name: "home"',
+          '    format: json',
+          '    files:',
+          '      - file: "src/content/home/site.json"',
+        ].join('\n'),
+      ),
+    ).toEqual([
+      'CMS config does not include singleton file path "src/content/about/site.json".',
+      'CMS config does not include singleton file path "src/content/services/site.json".',
+      'CMS config does not include singleton file path "src/content/newsletter/site.json".',
+      'CMS config does not include singleton file path "src/content/settings/site.json".',
+      'CMS config includes 0 JSON extension declarations; expected at least 5.',
+      'CMS config includes 1 JSON format declarations; expected at least 5.',
+    ]);
   });
 
   it('flags CMS admin states that are blank, stuck loading, or generic login-only', () => {

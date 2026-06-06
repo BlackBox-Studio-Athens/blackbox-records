@@ -52,6 +52,7 @@ type CmsEditorCheck = {
 type CmsEditorSnapshot = {
   bodyTextSnippet: string;
   formValues: string[];
+  hasEmptyContentGuard: boolean;
   hasLoadedEditorChrome: boolean;
   hash: string;
   sectionCounts: number[];
@@ -200,7 +201,7 @@ export async function runCmsLocalSmoke(options: CmsLocalSmokeOptions): Promise<C
         consoleErrors,
         context,
         entry: 'home-site',
-        expectedFormValues: [],
+        expectedFormValues: ['Fine music on record.'],
         minimumSectionCount: 1,
         options,
         pageErrors,
@@ -221,6 +222,16 @@ export async function runCmsLocalSmoke(options: CmsLocalSmokeOptions): Promise<C
         runArtifactDir,
         siteUrl,
       }),
+    );
+    checks.push(
+      ...(await checkSingletonEditorRouteTransition({
+        consoleErrors,
+        context,
+        options,
+        pageErrors,
+        runArtifactDir,
+        siteUrl,
+      })),
     );
 
     const status =
@@ -347,7 +358,7 @@ async function waitForLocalCmsReady(input: {
   const configText = await waitForHttpText(configUrl, input.options.timeoutMs, input.processes);
 
   const expectedProxyUrl = `http://127.0.0.1:${input.options.proxyPort}/api/v1`;
-  const missingConfigSnippets = ['backend:', 'name: proxy', 'format: json', expectedProxyUrl].filter(
+  const missingConfigSnippets = ['backend:', 'name: proxy', 'extension: json', 'format: json', expectedProxyUrl].filter(
     (snippet) => !configText.includes(snippet),
   );
 
@@ -505,6 +516,10 @@ async function checkSingletonEditor(input: {
     issues.push(`Expected ${input.collection} editor not to render the empty "0 sections" state.`);
   }
 
+  if (snapshot.hasEmptyContentGuard) {
+    issues.push(`Expected ${input.collection} editor not to show the singleton empty-content recovery guard.`);
+  }
+
   const status = issues.length ? 'failed' : 'passed';
   const screenshotPath = await maybeCaptureCmsScreenshot(
     input.page,
@@ -562,6 +577,49 @@ async function checkSingletonEditorInFreshPage(input: {
   }
 }
 
+async function checkSingletonEditorRouteTransition(input: {
+  consoleErrors: string[];
+  context: BrowserContext;
+  options: CmsLocalSmokeOptions;
+  pageErrors: string[];
+  runArtifactDir: string;
+  siteUrl: string;
+}): Promise<CmsEditorCheck[]> {
+  const page = await input.context.newPage();
+  const diagnostics = attachSmokePageDiagnostics(page);
+  page.setDefaultTimeout(input.options.timeoutMs);
+
+  try {
+    return [
+      await checkSingletonEditor({
+        collection: 'home',
+        entry: 'home-site',
+        expectedFormValues: ['Fine music on record.'],
+        minimumSectionCount: 1,
+        options: input.options,
+        page,
+        runArtifactDir: input.runArtifactDir,
+        siteUrl: input.siteUrl,
+      }),
+      await checkSingletonEditor({
+        collection: 'about',
+        entry: 'about-site',
+        expectedFormValues: ['The Label'],
+        minimumSectionCount: 1,
+        options: input.options,
+        page,
+        runArtifactDir: input.runArtifactDir,
+        siteUrl: input.siteUrl,
+      }),
+    ];
+  } finally {
+    input.consoleErrors.push(...diagnostics.consoleErrors);
+    input.pageErrors.push(...diagnostics.pageErrors);
+    diagnostics.dispose();
+    await page.close();
+  }
+}
+
 async function clickLocalDecapLogin(page: Page): Promise<void> {
   const loginButton = page
     .locator('[data-blackbox-cms-auth-button="true"], button', {
@@ -591,6 +649,7 @@ async function readCmsEditorSnapshot(page: Page): Promise<CmsEditorSnapshot> {
     return {
       bodyTextSnippet: bodyText.replace(/\s+/g, ' ').trim().slice(0, 1_500),
       formValues,
+      hasEmptyContentGuard: Boolean(document.querySelector('[data-blackbox-cms-empty-guard="true"]')),
       hasLoadedEditorChrome: /\bWriting in\b.+\bcollection\b/i.test(bodyText),
       hash: window.location.hash,
       sectionCounts,
