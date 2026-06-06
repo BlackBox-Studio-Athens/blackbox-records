@@ -10,7 +10,8 @@ describe('Decap home fields', () => {
     expect(yaml).toContain('label: "Hero"\n  name: "hero"\n  widget: object');
     expect(yaml).toContain('hint: "Short line over the hero still. Example: \\"Heavy music on record.\\""');
     expect(yaml).toContain('label: "Sections"\n  name: "sections"\n  widget: list');
-    expect(yaml).toContain('label: "Latest releases"');
+    expect(yaml).toContain('label: "News"');
+    expect(yaml).toContain('name: "news"');
     expect(yaml).toContain('label: "Artists"');
     expect(yaml).toContain('label: "Distro"');
     expect(yaml).toContain('label: "Journey"');

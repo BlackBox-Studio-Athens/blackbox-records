@@ -45,8 +45,8 @@ export function buildHomeFields() {
       collapsed: true,
       types: [
         {
-          label: 'Latest releases',
-          name: 'latest_releases',
+          label: 'News',
+          name: 'news',
           summary: '{{fields.title}}',
           fields: [
             buildField({
@@ -59,19 +59,19 @@ export function buildHomeFields() {
               label: 'Title',
               name: 'title',
               widget: 'string',
-              hint: 'Main heading for the homepage releases section.',
+              hint: 'Main heading for the homepage news section.',
             }),
             buildField({
               label: 'Link text',
               name: 'link_text',
               widget: 'string',
-              hint: 'CTA label. Example: "View all releases".',
+              hint: 'CTA label. Example: "Read News".',
             }),
             buildField({
               label: 'Link URL',
               name: 'link_url',
               widget: 'string',
-              hint: 'Internal section path starting with /. Example: /releases/.',
+              hint: 'Internal section path starting with /. Example: /news/.',
             }),
           ],
         },

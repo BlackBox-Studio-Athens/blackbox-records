@@ -73,7 +73,7 @@ describe('buildDecapConfig', () => {
     expect(yaml).toContain(
       'label: "Sections"\n            name: "sections"\n            widget: list\n            hint: "Add, remove, or reorder whole homepage sections."\n            collapsed: true\n            typeKey: "type"\n            types:',
     );
-    expect(yaml).toContain('label: "Latest releases"');
+    expect(yaml).toContain('label: "News"');
     expect(yaml).toContain('label: "Quote"');
     expect(yaml).toContain('label: "Services list"');
     expect(yaml).toContain('summary: "{{fields.locality}}, {{fields.country}}"');

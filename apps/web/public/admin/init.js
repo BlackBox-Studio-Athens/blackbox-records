@@ -523,7 +523,7 @@
         const data = toObject(entry.get('data'));
         const hero = toObject(data.hero);
         const sections = toArray(data.sections);
-        const latestReleases = findSection(sections, 'latest_releases');
+        const news = findSection(sections, 'news');
         const artists = findSection(sections, 'artists');
         const distro = findSection(sections, 'distro');
         const journeyIndex = sections.findIndex((section) => section?.type === 'journey');
@@ -548,7 +548,7 @@
                   ),
                   renderPills(
                     [
-                      toText(latestReleases?.title || 'Releases'),
+                      toText(news?.title || 'News'),
                       toText(artists?.title || 'Artists'),
                       toText(distro?.title || 'Distro'),
                     ].filter(Boolean),
@@ -562,17 +562,9 @@
             ]),
             h('section', { className: 'blackbox-preview__grid blackbox-preview__grid--three' }, [
               h('article', { className: 'blackbox-preview__card' }, [
-                h(
-                  'p',
-                  { className: 'blackbox-preview__meta' },
-                  toText(latestReleases?.section_label || 'Latest Releases'),
-                ),
-                h(
-                  'h2',
-                  { className: 'blackbox-preview__card-title' },
-                  toText(latestReleases?.title || 'Latest Releases'),
-                ),
-                renderButton(toText(latestReleases?.link_text || 'View All'), true),
+                h('p', { className: 'blackbox-preview__meta' }, toText(news?.section_label || 'News')),
+                h('h2', { className: 'blackbox-preview__card-title' }, toText(news?.title || 'News')),
+                renderButton(toText(news?.link_text || 'Read News'), true),
               ]),
               h('article', { className: 'blackbox-preview__card' }, [
                 h('p', { className: 'blackbox-preview__meta' }, toText(artists?.section_label || 'Artists')),

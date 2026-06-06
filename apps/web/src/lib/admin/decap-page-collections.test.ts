@@ -13,6 +13,7 @@ describe('Decap page file collections', () => {
     }).join('\n');
 
     expect(yaml).toContain('name: "home"');
+    expect(yaml).toContain('format: json');
     expect(yaml).toContain('file: "src/content/home/site.json"');
     expect(yaml).toContain('home-field');
     expect(yaml).toContain('name: "about"');
@@ -27,5 +28,26 @@ describe('Decap page file collections', () => {
     expect(yaml).toContain('name: "newsletter"');
     expect(yaml).toContain('file: "src/content/newsletter/site.json"');
     expect(yaml).toContain('newsletter-field');
+  });
+
+  it('marks every singleton page collection as JSON so Decap reads existing content', () => {
+    const yaml = buildPageFileCollections({
+      homeFields: ['home-field'],
+      aboutFields: ['about-field'],
+      servicesFields: ['services-field'],
+      settingsFields: ['settings-field'],
+      newsletterFields: ['newsletter-field'],
+    });
+
+    expect(yaml).toHaveLength(5);
+    for (const collectionYaml of yaml) {
+      expect(collectionYaml).toContain('format: json');
+    }
+
+    expect(yaml.join('\n')).toContain('file: "src/content/home/site.json"');
+    expect(yaml.join('\n')).toContain('file: "src/content/about/site.json"');
+    expect(yaml.join('\n')).toContain('file: "src/content/services/site.json"');
+    expect(yaml.join('\n')).toContain('file: "src/content/newsletter/site.json"');
+    expect(yaml.join('\n')).toContain('file: "src/content/settings/site.json"');
   });
 });

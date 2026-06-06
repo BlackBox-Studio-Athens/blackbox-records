@@ -37,6 +37,7 @@
     "stripe:webhooks:verify": "tsx scripts/verify-stripe-webhook-endpoints.ts",
     "smoke:stripe-sandbox": "tsx scripts/smoke-stripe-sandbox.ts",
     "smoke:stripe-promotion": "tsx scripts/smoke-stripe-promotion.ts",
+    "smoke:cms-local": "tsx scripts/smoke-cms-local.ts",
     "smoke:uat-static": "tsx scripts/smoke-uat-static.ts",
     "stripe:webhook:simulate:local": "pnpm --filter @blackbox/backend webhook:simulate:local",
     "openspec:guard": "tsx scripts/assert-openspec-worktree.ts",

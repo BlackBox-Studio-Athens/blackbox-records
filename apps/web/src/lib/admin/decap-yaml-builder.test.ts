@@ -94,24 +94,26 @@ describe('Decap YAML builder', () => {
       ].join('\n'),
     );
 
-    expect(
-      buildFileCollection({
-        name: 'pages',
-        label: 'Pages',
-        create: false,
-        delete: false,
-        files: [
-          {
-            name: 'home',
-            label: 'Home',
-            file: 'src/content/home/site.json',
-            mediaFolder: 'src/assets/home',
-            publicFolder: '/assets/home',
-            fields: [titleField],
-          },
-        ],
-      }),
-    ).toContain('      media_folder: "src/assets/home"\n      public_folder: "/assets/home"');
+    const fileCollectionYaml = buildFileCollection({
+      name: 'pages',
+      label: 'Pages',
+      create: false,
+      delete: false,
+      format: 'json',
+      files: [
+        {
+          name: 'home',
+          label: 'Home',
+          file: 'src/content/home/site.json',
+          mediaFolder: 'src/assets/home',
+          publicFolder: '/assets/home',
+          fields: [titleField],
+        },
+      ],
+    });
+
+    expect(fileCollectionYaml).toContain('  format: json\n  files:\n    - name: "home"');
+    expect(fileCollectionYaml).toContain('      media_folder: "src/assets/home"\n      public_folder: "/assets/home"');
 
     expect(
       buildFolderCollection({
