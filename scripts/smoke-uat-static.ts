@@ -79,6 +79,15 @@ type UatStaticSmokeSummary = {
   suite: 'uat-static';
 };
 
+export type CmsAdminRenderedState = {
+  bodyText: string;
+  hasCollectionUi: boolean;
+  hasConfigLink: boolean;
+  hasCmsRoot: boolean;
+  isAdminReady: boolean;
+  isAuthReady: boolean;
+};
+
 export type UatStaticSmokeEvidenceInput = {
   checks: UatStaticSmokeCheck[];
   consoleErrors: string[];
@@ -373,45 +382,34 @@ async function checkCmsAdminPage(page: Page, options: UatStaticSmokeOptions): Pr
   const url = createRouteUrl(options.siteUrl, '/admin/#/');
   const probe = await probeSmokeRoute(page, url, options.timeoutMs);
   const issues = [...probe.issues];
-  const configHref = await page
-    .locator('link[rel="cms-config-url"]')
-    .getAttribute('href')
-    .catch(() => null);
+
+  await waitForCmsAdminTerminalState(page, options.timeoutMs).catch((error: unknown) => {
+    issues.push(
+      `Expected /admin/#/ to reach a usable Decap auth or collection state: ${redactSensitiveSmokeText(
+        truncateForConsole(String(error)),
+      )}.`,
+    );
+  });
+
+  const renderedState = await readCmsAdminRenderedState(page, options.timeoutMs).catch((error: unknown) => {
+    issues.push(`Expected /admin/#/ rendered state to be readable: ${redactSensitiveSmokeText(String(error))}.`);
+    return null;
+  });
 
   if (!probe.status || probe.status >= 400) {
     issues.push(`Expected /admin/#/ to return HTTP 200; received ${probe.status ?? 'no response'}.`);
   }
 
-  if (
-    !containsAnyTextIgnoreCase(probe.bodyText, [
-      'Preparing the editor',
-      'Loading configuration...',
-      'Loading configuration',
-    ])
-  ) {
-    issues.push('Expected the admin boot copy to show the Decap loading state.');
+  if (renderedState) {
+    issues.push(...checkCmsAdminRenderedState(renderedState));
   }
 
-  if (
-    !containsAnyTextIgnoreCase(probe.bodyText, [
-      'Loading content collections, previews, and media tools.',
-      'Loading configuration...',
-      'Loading configuration',
-    ])
-  ) {
-    issues.push('Expected the admin boot copy to describe the CMS bootstrap state.');
-  }
-
-  if (!configHref?.includes('/admin/config.yml')) {
-    issues.push('Expected the admin page to point at /admin/config.yml via rel="cms-config-url".');
-  }
-
-  for (const exposure of scanHighRiskSmokeExposure(probe.bodyText)) {
+  for (const exposure of scanHighRiskSmokeExposure(renderedState?.bodyText ?? probe.bodyText)) {
     issues.push(`Admin page exposed ${exposure}.`);
   }
 
   return {
-    bodyTextSnippet: truncateForConsole(redactSensitiveSmokeText(probe.bodyText), 500),
+    bodyTextSnippet: truncateForConsole(redactSensitiveSmokeText(renderedState?.bodyText ?? probe.bodyText), 500),
     contentType: null,
     issues,
     kind: 'page',
@@ -420,6 +418,63 @@ async function checkCmsAdminPage(page: Page, options: UatStaticSmokeOptions): Pr
     title: probe.title,
     url,
   };
+}
+
+async function waitForCmsAdminTerminalState(page: Page, timeoutMs: number): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const globalState = window as typeof window & {
+        __BLACKBOX_ADMIN_AUTH_READY__?: boolean;
+        __BLACKBOX_ADMIN_READY__?: boolean;
+      };
+      const bodyText = document.body?.innerText || '';
+      const hasLoadingText = /Preparing the editor|Loading configuration/i.test(bodyText);
+      const hasEnhancedAuth = Boolean(
+        globalState.__BLACKBOX_ADMIN_AUTH_READY__ ||
+        document.querySelector('[data-blackbox-cms-auth-button="true"]') ||
+        bodyText.includes('Sign in with DecapBridge'),
+      );
+      const hasCollectionUi = Boolean(
+        document.querySelector('a[href*="#/collections/"]') ||
+        document.querySelector('[class*="Collection"]') ||
+        /\bCollections\b|\bHome Content\b|\bReleases\b|\bDistro\b/.test(bodyText),
+      );
+
+      return hasEnhancedAuth || hasCollectionUi || (Boolean(globalState.__BLACKBOX_ADMIN_READY__) && !hasLoadingText);
+    },
+    undefined,
+    { timeout: Math.min(timeoutMs, 20_000) },
+  );
+}
+
+async function readCmsAdminRenderedState(page: Page, timeoutMs: number): Promise<CmsAdminRenderedState> {
+  void timeoutMs;
+
+  return page.evaluate(() => {
+    const globalState = window as typeof window & {
+      __BLACKBOX_ADMIN_AUTH_READY__?: boolean;
+      __BLACKBOX_ADMIN_READY__?: boolean;
+    };
+    const bodyText = document.body?.innerText || '';
+    const hasCollectionUi = Boolean(
+      document.querySelector('a[href*="#/collections/"]') ||
+      document.querySelector('[class*="Collection"]') ||
+      /\bCollections\b|\bHome Content\b|\bReleases\b|\bDistro\b/.test(bodyText),
+    );
+
+    return {
+      bodyText,
+      hasCollectionUi,
+      hasConfigLink: Boolean(document.querySelector('link[rel="cms-config-url"][href*="/admin/config.yml"]')),
+      hasCmsRoot: Boolean(document.getElementById('nc-root')),
+      isAdminReady: Boolean(globalState.__BLACKBOX_ADMIN_READY__),
+      isAuthReady: Boolean(
+        globalState.__BLACKBOX_ADMIN_AUTH_READY__ ||
+        document.querySelector('[data-blackbox-cms-auth-button="true"]') ||
+        bodyText.includes('Sign in with DecapBridge'),
+      ),
+    };
+  });
 }
 
 async function checkCheckoutShellPage(page: Page, options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck> {
@@ -705,6 +760,44 @@ export function checkCmsConfigPlaceholders(text: string): string[] {
 
   if (/https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?/i.test(text)) {
     issues.push('CMS config still points at a local backend or loopback URL.');
+  }
+
+  return issues;
+}
+
+export function checkCmsAdminRenderedState(state: CmsAdminRenderedState): string[] {
+  const issues: string[] = [];
+  const bodyText = state.bodyText.trim();
+  const hasLoadingText = containsAnyTextIgnoreCase(bodyText, [
+    'Preparing the editor',
+    'Loading configuration...',
+    'Loading configuration',
+  ]);
+
+  if (!state.hasConfigLink) {
+    issues.push('Expected the admin page to point at /admin/config.yml via rel="cms-config-url".');
+  }
+
+  if (!state.hasCmsRoot) {
+    issues.push('Expected Decap CMS to mount #nc-root.');
+  }
+
+  if (!bodyText) {
+    issues.push('Expected /admin/#/ to render visible Decap CMS text.');
+    return issues;
+  }
+
+  if (hasLoadingText && !state.isAuthReady && !state.hasCollectionUi) {
+    issues.push('Expected /admin/#/ to finish Decap bootstrap instead of staying on loading copy.');
+    return issues;
+  }
+
+  if (!state.isAdminReady && !state.isAuthReady && !state.hasCollectionUi) {
+    issues.push('Expected the BlackBox admin runtime to finish registering Decap previews.');
+  }
+
+  if (!state.isAuthReady && !state.hasCollectionUi) {
+    issues.push('Expected /admin/#/ to render a usable DecapBridge auth surface or authenticated collection UI.');
   }
 
   return issues;

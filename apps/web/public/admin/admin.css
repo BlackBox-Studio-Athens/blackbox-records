@@ -606,6 +606,44 @@ label {
   background: rgba(102, 72, 62, 0.28);
 }
 
+.blackbox-cms-auth-helper {
+  max-width: 24rem;
+  margin: 0 auto 1rem;
+  text-align: center;
+}
+
+.blackbox-cms-auth-helper__eyebrow {
+  margin: 0 0 0.4rem;
+  color: var(--bb-admin-accent);
+  font-family: var(--bb-admin-font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.blackbox-cms-auth-helper__title {
+  margin: 0;
+  color: var(--bb-admin-text);
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  line-height: 1.05;
+}
+
+.blackbox-cms-auth-helper__copy {
+  margin: 0.6rem 0 0;
+  color: var(--bb-admin-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+button[data-blackbox-cms-auth-button='true'] {
+  min-width: min(100%, 18rem) !important;
+  min-height: 2.85rem !important;
+  border-radius: 7px !important;
+  font-family: var(--bb-admin-font-sans) !important;
+  font-weight: 700 !important;
+}
+
 @media (max-width: 960px) {
   .blackbox-cms-boot {
     padding: 1rem;

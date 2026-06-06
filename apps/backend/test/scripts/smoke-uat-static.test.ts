@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildUatStaticSmokeEvidence,
+  checkCmsAdminRenderedState,
   checkCmsConfigPlaceholders,
   parseUatStaticSmokeArgs,
   resolveSelectedUatStaticSmokeScenarios,
@@ -55,6 +56,65 @@ describe('UAT static smoke runner', () => {
     ]);
 
     expect(checkCmsConfigPlaceholders(['backend:', '  auth_endpoint: /sites/blackbox/pkce'].join('\n'))).toEqual([]);
+  });
+
+  it('flags CMS admin states that are blank, stuck loading, or generic login-only', () => {
+    expect(
+      checkCmsAdminRenderedState({
+        bodyText: '',
+        hasCollectionUi: false,
+        hasConfigLink: true,
+        hasCmsRoot: true,
+        isAdminReady: false,
+        isAuthReady: false,
+      }),
+    ).toContain('Expected /admin/#/ to render visible Decap CMS text.');
+
+    expect(
+      checkCmsAdminRenderedState({
+        bodyText: 'Loading configuration...',
+        hasCollectionUi: false,
+        hasConfigLink: true,
+        hasCmsRoot: true,
+        isAdminReady: false,
+        isAuthReady: false,
+      }),
+    ).toContain('Expected /admin/#/ to finish Decap bootstrap instead of staying on loading copy.');
+
+    expect(
+      checkCmsAdminRenderedState({
+        bodyText: 'Login\n\nGo back to site',
+        hasCollectionUi: false,
+        hasConfigLink: true,
+        hasCmsRoot: true,
+        isAdminReady: true,
+        isAuthReady: false,
+      }),
+    ).toContain('Expected /admin/#/ to render a usable DecapBridge auth surface or authenticated collection UI.');
+  });
+
+  it('accepts the enhanced DecapBridge auth surface or authenticated collection UI', () => {
+    expect(
+      checkCmsAdminRenderedState({
+        bodyText: 'Sign in to edit content\nSign in with DecapBridge',
+        hasCollectionUi: false,
+        hasConfigLink: true,
+        hasCmsRoot: true,
+        isAdminReady: true,
+        isAuthReady: true,
+      }),
+    ).toEqual([]);
+
+    expect(
+      checkCmsAdminRenderedState({
+        bodyText: 'Collections\nReleases\nDistro',
+        hasCollectionUi: true,
+        hasConfigLink: true,
+        hasCmsRoot: true,
+        isAdminReady: true,
+        isAuthReady: false,
+      }),
+    ).toEqual([]);
   });
 
   it('builds redacted evidence with the standard smoke contract', () => {

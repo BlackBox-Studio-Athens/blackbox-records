@@ -116,6 +116,39 @@
 
   const isEntryEditorRoute = () => /^#\/collections\/[^/]+\/entries\/[^/]+/.test(window.location.hash);
 
+  const getLoginButton = () =>
+    Array.from(document.querySelectorAll('button')).find((button) => {
+      const label = (button.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+      return label === 'login' || label === 'sign in with decapbridge';
+    }) || null;
+
+  const syncAuthLoginSurface = () => {
+    const loginButton = getLoginButton();
+    if (!loginButton) {
+      return;
+    }
+
+    loginButton.dataset.blackboxCmsAuthButton = 'true';
+    loginButton.textContent = 'Sign in with DecapBridge';
+    loginButton.setAttribute('aria-label', 'Sign in with DecapBridge');
+    loginButton.setAttribute('title', 'Sign in with DecapBridge');
+
+    if (!document.querySelector('[data-blackbox-cms-auth-helper="true"]')) {
+      const authHelper = document.createElement('div');
+      authHelper.className = 'blackbox-cms-auth-helper';
+      authHelper.dataset.blackboxCmsAuthHelper = 'true';
+      authHelper.innerHTML = [
+        '<p class="blackbox-cms-auth-helper__eyebrow">BlackBox CMS</p>',
+        '<h1 class="blackbox-cms-auth-helper__title">Sign in to edit content</h1>',
+        '<p class="blackbox-cms-auth-helper__copy">Continue through DecapBridge, then choose Google or Microsoft.</p>',
+      ].join('');
+      loginButton.parentElement?.insertBefore(authHelper, loginButton);
+    }
+
+    document.documentElement.dataset.blackboxCmsAuth = 'ready';
+    window.__BLACKBOX_ADMIN_AUTH_READY__ = true;
+  };
+
   const getPreviewToggleButton = () =>
     document.querySelector('button[data-blackbox-preview-toggle="true"]') ||
     Array.from(document.querySelectorAll('button')).find(
@@ -276,6 +309,7 @@
   const startEntryEditorPreviewController = () => {
     const triggerPreviewCollapse = () => {
       window.requestAnimationFrame(() => {
+        syncAuthLoginSurface();
         syncPreviewToggleButtonState();
         enhanceListItemActionButtons();
         schedulePreviewCollapse();
