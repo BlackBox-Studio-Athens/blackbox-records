@@ -29,7 +29,6 @@ const contract: StripeCatalogStoreItemContract = {
       name: 'BlackBox Records - Disintegration - Black Vinyl LP',
       taxCode: null,
     },
-    smokeCandidate: false,
     sourceId: 'disintegration',
     sourceKind: 'release',
     stockInitialization: {

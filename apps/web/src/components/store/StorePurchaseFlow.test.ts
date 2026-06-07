@@ -28,7 +28,6 @@ vi.mock('astro:content', () => ({
             artist_or_label: 'Afterglow',
             eyebrow: 'Tape',
             format: 'Cassette',
-            fourthwall_url: 'https://blackboxrecords-shop.fourthwall.com/collections/all',
             group: 'Tapes',
             image: { src: '/afterglow.jpg' },
             image_alt: 'Afterglow tape',

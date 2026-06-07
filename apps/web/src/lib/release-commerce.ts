@@ -2,7 +2,6 @@ import type { CollectionEntry } from 'astro:content';
 
 import { resolveLinkAttributes } from '../config/site';
 import { getStoreItemForRelease } from './catalog-data';
-import { resolveMerchHref } from '../utils/music';
 
 export type ReleaseCommerceLink = {
   href: string;
@@ -25,7 +24,7 @@ export async function getReleaseCommerceLink(
     };
   }
 
-  const merchHref = resolveMerchHref(release.data.merch_url, release.data.shop_collection_handle);
+  const merchHref = release.data.merch_url || '';
   if (!merchHref) {
     return null;
   }

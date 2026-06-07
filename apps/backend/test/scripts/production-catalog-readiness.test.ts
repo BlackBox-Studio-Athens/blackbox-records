@@ -22,7 +22,6 @@ const productionEntry: DesiredCatalogEntry = {
     name: 'Disintegration - Black Vinyl LP',
     taxCode: 'txcd_99999999',
   },
-  smokeCandidate: true,
   sourceId: 'disintegration',
   sourceKind: 'release',
   stockInitialization: {

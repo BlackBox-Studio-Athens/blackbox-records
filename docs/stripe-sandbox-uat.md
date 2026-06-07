@@ -56,7 +56,7 @@ Do not paste the signing secret into docs, chat, screenshots, evidence files, As
 
 Catalog correctness is layered: persistent webhooks provide near-real-time sync, Store Offer reads reconcile stale snapshots, checkout start revalidates the active Stripe Price, scheduled UAT catalog verification runs every six hours, and `pnpm stripe:catalog:verify --env sandbox` remains the Worker-target command for current UAT catalog alignment.
 
-UAT is also the first leg of the shared Catalog Promotion pipeline described in [`docs/catalog-promotion.md`](catalog-promotion.md). Normal CMS publication should use the generated artifact commit and promotion workflow instead of treating sandbox apply as a detached manual checklist.
+UAT is also the first leg of the generated catalog artifact pipeline described in [`docs/catalog-promotion.md`](catalog-promotion.md). Normal content publication should use the generated artifact commit and promotion workflow instead of treating sandbox apply as a detached manual checklist.
 
 Catalog Field Ownership keeps UAT alignment explicit:
 

@@ -41,7 +41,6 @@ vi.mock('astro:content', () => ({
             artist_or_label: 'Afterglow',
             eyebrow: 'Tape',
             format: 'Cassette',
-            fourthwall_url: 'https://blackboxrecords-shop.fourthwall.com/collections/all',
             group: 'Tapes',
             image: { src: '/afterglow.jpg' },
             image_alt: 'Afterglow tape',
@@ -214,7 +213,6 @@ describe('StoreItem projection contract', () => {
         artist_or_label: 'Afterglow',
         eyebrow: 'Tape',
         format: 'Cassette',
-        fourthwall_url: 'https://blackboxrecords-shop.fourthwall.com/collections/all',
         group: 'Tapes',
         image: { src: '/afterglow.jpg' },
         image_alt: 'Afterglow tape',
@@ -229,7 +227,6 @@ describe('StoreItem projection contract', () => {
     expect(storeItem.storePath).toBe('/blackbox-records/store/afterglow-tape/');
     expect(storeItem.checkoutPath).toBe('/blackbox-records/store/afterglow-tape/checkout/');
     expect(storeItem.metadata).toEqual(['Tapes', '2021', 'Cassette']);
-    expect(storeItem).not.toHaveProperty('fourthwall_url');
     expect(storeItem).not.toHaveProperty('merch_url');
   });
 
@@ -240,7 +237,6 @@ describe('StoreItem projection contract', () => {
         artist_or_label: 'Afterglow',
         eyebrow: 'Tape',
         format: 'Cassette',
-        fourthwall_url: 'https://blackboxrecords-shop.fourthwall.com/collections/all',
         group: 'Tapes',
         image: { src: '/afterglow.jpg' },
         image_alt: 'Afterglow tape',

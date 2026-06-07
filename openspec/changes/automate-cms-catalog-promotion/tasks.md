@@ -2,7 +2,7 @@
 
 - [x] 1.1 Re-read `openspec/changes/automate-cms-catalog-promotion/proposal.md`, `design.md`, and all delta specs before implementation starts.
 - [x] 1.2 Inspect current Decap release and distro collection builders to list every field currently available to maintainers.
-- [x] 1.3 Inspect `apps/web/src/content.config.ts` release and distro schemas to identify the schema changes needed for commerce fields.
+- [x] 1.3 Inspect `apps/web/src/content.config.ts` release and distro schemas to identify and remove CMS-authored commerce fields.
 - [x] 1.4 Inspect current catalog generation in `scripts/stripe-catalog-contract.ts` and document which fields are derived, hardcoded, or missing for production automation.
 - [x] 1.5 Inspect current generated artifacts in `apps/backend/src/application/commerce/catalog-sync/catalog-product-projections.ts` and `apps/backend/prisma/seeds/sandbox-uat-commerce-state.sql`.
 - [x] 1.6 Inspect current catalog apply guard in `scripts/stripe-catalog-verify.ts` and identify the exact code path that blocks `--env production --apply`.
@@ -18,40 +18,40 @@
 - [x] 2.2 Add code-facing type names for `DesiredCatalogState`, `DesiredCatalogEntry`, `DesiredPrice`, `ProviderCatalogState`, `PromotionRun`, and `PromotionEvidence`.
 - [x] 2.3 Replace ad hoc wording such as "sandbox expected price" where it now refers to environment-neutral Desired Price.
 - [x] 2.4 Keep existing `StoreOffer`, `StoreCart`, `CartDraft`, `OnlineStock`, `VariantStripeMapping`, and Product Projection terms unchanged.
-- [x] 2.5 Add README or docs placeholders for the automated CMS-to-UAT-to-production promotion flow.
+- [x] 2.5 Add README or docs placeholders for the generated catalog artifact promotion flow.
 - [x] 2.6 Add a short maintainer-facing status explanation for "published content", "UAT buyable", "production buyable", and "promotion failed".
 
-## 3. CMS Commerce Contract
+## 3. Editorial CMS Contract
 
-- [x] 3.1 Add a reusable commerce field schema for release and distro content.
-- [x] 3.2 Add `commerce.enabled` with a safe default that does not make existing content newly production-buyable by accident.
-- [x] 3.3 Add `commerce.publish_target` with allowed values for draft, UAT-only, and UAT-plus-production so production never skips UAT proof.
-- [x] 3.4 Add `commerce.price.amount_minor` with integer validation, positive minimum, and clear CMS hint text.
-- [x] 3.5 Add `commerce.price.currency` with an initial allowed set containing `EUR`.
-- [x] 3.6 Add a deterministic price revision input or derived revision hash so Price replacement idempotency can be tested.
-- [x] 3.7 Add `commerce.option_label` or map existing release/distro format fields into an explicit option label with validation.
-- [x] 3.8 Add `commerce.tax_code` with a default for physical goods and an explicit override path.
-- [x] 3.9 Add `commerce.stock.initial_online_quantity` for first publication only, with validation that it cannot be negative.
-- [x] 3.10 Add `commerce.smoke_candidate` so smoke workflows can choose a deterministic promoted item.
-- [x] 3.11 Add `commerce.retired` or equivalent checkout-retirement intent.
-- [x] 3.12 Update Decap release collection fields to expose the commerce section with maintainer-safe labels and hints.
-- [x] 3.13 Update Decap distro collection fields to expose the same commerce section with maintainer-safe labels and hints.
-- [x] 3.14 Update CMS preview data so maintainers see target environments, generated slug/variant, Desired Price, tax code, and stock initialization intent before publishing.
-- [x] 3.15 Add content-schema tests for missing commerce fields, invalid amounts, invalid currencies, invalid target environments, and retired items.
-- [x] 3.16 Add Decap config tests proving release and distro commerce fields render in generated `/admin/config.yml`.
+- [x] 3.1 Remove the reusable commerce field schema for release and distro content.
+- [x] 3.2 Remove `commerce.enabled` and keep content publication separate from checkout buyability.
+- [x] 3.3 Remove `commerce.publish_target`; generated policy owns target environments.
+- [x] 3.4 Remove CMS-authored price amount fields.
+- [x] 3.5 Remove CMS-authored price currency fields.
+- [x] 3.6 Remove CMS-authored price revision fields.
+- [x] 3.7 Keep sellable option naming derived from release formats and distro format labels.
+- [x] 3.8 Keep physical-goods tax code in generated policy instead of Decap fields.
+- [x] 3.9 Keep stock initialization outside Decap and under D1/operator policy.
+- [x] 3.10 Remove `commerce.smoke_candidate`; smoke selection falls back to the first published entry.
+- [x] 3.11 Remove CMS checkout-retirement intent; operational pausing remains D1/operator-owned.
+- [x] 3.12 Update Decap release collection fields to omit the commerce section.
+- [x] 3.13 Update Decap distro collection fields to omit the commerce section.
+- [x] 3.14 Remove commerce summary data from CMS previews.
+- [x] 3.15 Add tests proving content schemas validate without commerce fields.
+- [x] 3.16 Add Decap config tests proving release and distro commerce fields are absent from generated `/admin/config.yml`.
 
 ## 4. Desired Catalog State Generation
 
 - [x] 4.1 Design the generated Desired Catalog State TypeScript module location under backend catalog-sync ownership.
-- [x] 4.2 Extend `scripts/stripe-catalog-contract.ts` so it reads explicit commerce fields from release markdown and distro JSON.
+- [x] 4.2 Update `scripts/stripe-catalog-contract.ts` so generated policy derives sandbox entries from current release markdown and distro JSON.
 - [x] 4.3 Preserve existing store item slug and variant ID behavior unless a content item explicitly opts into a new approved identity.
-- [x] 4.4 Generate Product Projection fields from CMS content, including stable absolute image URLs and `txcd_99999999` default where applicable.
-- [x] 4.5 Generate Desired Price from explicit commerce fields for production-targeted entries.
+- [x] 4.4 Generate Product Projection fields from content, including stable absolute image URLs and `txcd_99999999` default where applicable.
+- [x] 4.5 Generate Desired Price from explicit generated sandbox policy.
 - [x] 4.6 Preserve format-derived defaults only for UAT entries that intentionally rely on sandbox/UAT price policy.
 - [x] 4.7 Generate environment targets per entry so UAT-only items do not mutate production and production items still get UAT proof when configured.
 - [x] 4.8 Generate first-publication stock initialization intent without treating it as ongoing stock authority.
 - [x] 4.9 Generate retired/non-buyable intent separately from editorial visibility.
-- [x] 4.10 Validate that every checkout-enabled entry has Product Projection, Desired Price, target environment, image, tax code, and app identity.
+- [x] 4.10 Validate that every generated entry has Product Projection, Desired Price, target environment, image, tax code, and app identity.
 - [x] 4.11 Validate that Product image URLs are absolute, stable, and public enough for Stripe-hosted Checkout.
 - [x] 4.12 Add generated output for environment-aware D1 readiness seed or migration input.
 - [x] 4.13 Update `pnpm stripe:catalog:artifacts:generate` to write all Desired Catalog State artifacts.
@@ -150,20 +150,20 @@
 ## 11. Rollback, Pause, and Retirement Paths
 
 - [x] 11.1 Add a promotion operation or documented workflow to pause checkout for affected variants through D1 availability.
-- [x] 11.2 Add a CMS retirement path that leaves editorial pages visible but makes Store Offers non-buyable.
+- [x] 11.2 Keep checkout pause/retirement outside CMS so editorial pages remain visible while D1/operator controls make Store Offers non-buyable.
 - [x] 11.3 Ensure retirement promotion does not delete Stripe Products, Stripe Prices, orders, stock ledger rows, or Promotion Evidence.
-- [x] 11.4 Add a corrective promotion path for fixing wrong Product Projection, Desired Price, or commerce target fields.
+- [x] 11.4 Add a corrective promotion path for fixing wrong Product Projection, Desired Price, or generated target fields.
 - [x] 11.5 Document when static frontend rollback is enough and when catalog pause/retirement is also required.
 - [x] 11.6 Add tests for retired variants, paused variants, and checkout rejection after rollback.
 
 ## 12. Documentation and Maintainer UX
 
-- [x] 12.1 Update README catalog/CMS sections with the new CMS-only product publication flow.
+- [x] 12.1 Update README catalog/CMS sections with the editorial CMS and generated artifact flow.
 - [x] 12.2 Update `docs/stripe-sandbox-uat.md` or successor docs so UAT is described as the first leg of the shared promotion pipeline.
 - [x] 12.3 Add production catalog promotion docs covering automatic apply, live smoke limits, rollback, and evidence.
 - [x] 12.4 Update AGENTS or repo handoff notes if command expectations, workflows, or provider boundaries change.
-- [x] 12.5 Add a maintainer checklist for creating a new release in Decap with commerce fields.
-- [x] 12.6 Add a maintainer checklist for creating a new distro/merch item in Decap with commerce fields.
+- [x] 12.5 Add a maintainer checklist for creating a new editorial release in Decap.
+- [x] 12.6 Add a maintainer checklist for creating a new editorial distro/merch item in Decap.
 - [x] 12.7 Add examples of promotion success, content validation failure, provider ambiguity failure, and production smoke failure.
 - [x] 12.8 Document that pushing the repo is no longer enough and that Promotion Evidence is the source for buyable status.
 - [x] 12.9 Document that production reset does not exist and sandbox reset remains separate from normal promotion.

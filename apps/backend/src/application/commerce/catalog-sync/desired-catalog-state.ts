@@ -23,7 +23,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Afterglow Cassette - Cassette',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'afterglow-tape',
     sourceKind: 'distro',
     stockInitialization: {
@@ -55,7 +54,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Aftermaths - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'aftermaths',
     sourceKind: 'distro',
     stockInitialization: {
@@ -87,7 +85,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Against His-Story, Against Leviathan! - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'against-his-story-against-leviathan',
     sourceKind: 'distro',
     stockInitialization: {
@@ -118,7 +115,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Anarchotribal - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'anarchotribal',
     sourceKind: 'release',
     stockInitialization: {
@@ -150,7 +146,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Barren Point - LP',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'barren-point',
     sourceKind: 'distro',
     stockInitialization: {
@@ -182,7 +177,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Big Fish - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'big-fish',
     sourceKind: 'distro',
     stockInitialization: {
@@ -212,7 +206,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Tranen - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'bloed-tranen',
     sourceKind: 'distro',
     stockInitialization: {
@@ -244,7 +237,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Caregivers - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'caregivers',
     sourceKind: 'release',
     stockInitialization: {
@@ -276,7 +268,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Crawl / Eat Them Dead Or Alive, Split 7" - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'crawl-eat-them-dead-or-alive-split-7',
     sourceKind: 'distro',
     stockInitialization: {
@@ -308,7 +299,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Disintegration - Black Vinyl LP',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'disintegration',
     sourceKind: 'release',
     stockInitialization: {
@@ -340,7 +330,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Endless Searcher - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'endless-searcher',
     sourceKind: 'distro',
     stockInitialization: {
@@ -372,7 +361,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - In Your Absence - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'in-your-absence',
     sourceKind: 'distro',
     stockInitialization: {
@@ -404,7 +392,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Magic Sleazeball Corrida - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'magic-sleazeball-corrida',
     sourceKind: 'distro',
     stockInitialization: {
@@ -436,7 +423,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Noise Without Decay - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'noise-without-decay',
     sourceKind: 'distro',
     stockInitialization: {
@@ -467,7 +453,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - On The Quiet - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'on-the-quiet',
     sourceKind: 'distro',
     stockInitialization: {
@@ -499,7 +484,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Primal | Ephemeral - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'primal-ephemeral',
     sourceKind: 'distro',
     stockInitialization: {
@@ -531,7 +515,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - BlackBox Studio T-Shirt - T-Shirt',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'rehearsal-room-tee',
     sourceKind: 'distro',
     stockInitialization: {
@@ -563,7 +546,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Rise Of The Black Fang - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'rise-of-the-black-fang',
     sourceKind: 'distro',
     stockInitialization: {
@@ -595,7 +577,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - RITE - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'rite',
     sourceKind: 'distro',
     stockInitialization: {
@@ -626,7 +607,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Selenopolis - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'selenopolis',
     sourceKind: 'distro',
     stockInitialization: {
@@ -655,7 +635,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Spinners - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'spinners',
     sourceKind: 'distro',
     stockInitialization: {
@@ -686,7 +665,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Steelwitch - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'steelwitch',
     sourceKind: 'distro',
     stockInitialization: {
@@ -716,7 +694,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - The Chemical Bath - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'the-chemical-bath',
     sourceKind: 'distro',
     stockInitialization: {
@@ -748,7 +725,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - The Feathers of Oblivion - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'the-feathers-of-oblivion',
     sourceKind: 'distro',
     stockInitialization: {
@@ -780,7 +756,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - The Last Second - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'the-last-second',
     sourceKind: 'distro',
     stockInitialization: {
@@ -812,7 +787,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Transatlantic // Transiberian - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'transatlantic-transiberian',
     sourceKind: 'distro',
     stockInitialization: {
@@ -841,7 +815,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - UnKraut - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'unkraut',
     sourceKind: 'distro',
     stockInitialization: {
@@ -872,7 +845,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Voyage Voyage - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'voyage-voyage',
     sourceKind: 'distro',
     stockInitialization: {
@@ -903,7 +875,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       name: 'BlackBox Records - Wreckquiem - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    smokeCandidate: false,
     sourceId: 'wreckquiem',
     sourceKind: 'distro',
     stockInitialization: {

@@ -2,11 +2,11 @@
 
 ### Requirement: Catalog promotion terms are canonical
 
-The system SHALL use consistent terms for CMS-driven provider publication across specs, scripts, workflows, docs, tests, and UI copy.
+The system SHALL use consistent terms for generated provider publication across specs, scripts, workflows, docs, tests, and UI copy.
 
 #### Scenario: Referring to the generated target state
 
-- **GIVEN** code, tests, specs, or docs describe the catalog state generated from Decap/Astro content before provider apply
+- **GIVEN** code, tests, specs, or docs describe the catalog state generated from Astro content and explicit policy before provider apply
 - **WHEN** they name that concept
 - **THEN** they use `Desired Catalog State`
 - **AND** they do not call it Stripe authority, Store Offer authority, static price authority, or Dashboard state.
@@ -34,11 +34,11 @@ The system SHALL use consistent terms for CMS-driven provider publication across
 
 ### Requirement: Desired Price language preserves runtime authority boundaries
 
-The system MUST describe CMS-entered price data as desired provider provisioning input, not as checkout authority.
+The system MUST describe repo/provider-policy price data as desired provider provisioning input, not as checkout authority.
 
-#### Scenario: Referring to CMS price input
+#### Scenario: Referring to Desired Price input
 
-- **GIVEN** code, specs, docs, or CMS labels describe the amount/currency entered by a maintainer
+- **GIVEN** code, specs, or docs describe the amount/currency from repo/provider policy
 - **WHEN** the price is used to create or resolve Stripe Prices during promotion
 - **THEN** they use `Desired Price`
 - **AND** they do not call it the charged price until Provider Catalog State confirms the active Stripe Price.

@@ -1,28 +1,28 @@
 ## ADDED Requirements
 
-### Requirement: CMS content defines Desired Catalog State
+### Requirement: Store Item content defines generated Desired Catalog State
 
-The system SHALL derive a Desired Catalog State for every CMS-authored buyable Store Item variant from Astro content plus explicit commerce fields.
+The system SHALL derive a Desired Catalog State for current Store Item variants from Astro content plus explicit generated policy.
 
 #### Scenario: Maintainer publishes a release or distro item in Decap
 
 - **GIVEN** a maintainer creates or updates a release or distro item in Decap
-- **WHEN** the item has commerce enabled and a target environment selected
+- **WHEN** artifact generation runs
 - **THEN** artifact generation produces a Desired Catalog State entry with app identity, Product Projection, Desired Price, tax code, availability intent, and target environment metadata
 - **AND** the entry is stable enough for repeatable D1, Stripe, Worker, and smoke automation.
 
-#### Scenario: Required commerce fields are missing
+#### Scenario: Required Store Item fields are missing
 
-- **GIVEN** a CMS item is marked commerce-enabled
-- **WHEN** price amount, currency, target environment, option label, image, or app identity cannot be resolved
+- **GIVEN** a release or distro item is part of the Store Item catalog
+- **WHEN** title, format, image, or app identity cannot be resolved
 - **THEN** content validation and catalog artifact generation fail before provider mutation
 - **AND** the failure identifies the CMS item and missing field without printing provider secrets.
 
 #### Scenario: Production price is inferred only from explicit commerce input
 
-- **GIVEN** a CMS item targets UAT-plus-production
+- **GIVEN** a Store Item would target PRD
 - **WHEN** Desired Catalog State is generated
-- **THEN** the production Desired Price comes from explicit CMS commerce fields or an explicitly approved provider policy
+- **THEN** the production Desired Price comes from an explicitly approved provider policy
 - **AND** it does not fall back to sandbox format defaults unless that policy is explicitly enabled for production.
 
 ### Requirement: Generated catalog artifacts are committed by automation
@@ -31,7 +31,7 @@ The system MUST keep generated catalog artifacts in the repository and automatic
 
 #### Scenario: Decap commit changes catalog content
 
-- **GIVEN** a Decap-authored commit changes release, distro, artist, media, or commerce fields that affect catalog projection
+- **GIVEN** a Decap-authored commit changes release, distro, artist, or media fields that affect catalog projection
 - **WHEN** the catalog artifact workflow runs
 - **THEN** it runs the artifact generator
 - **AND** it creates a bot commit containing only generated catalog artifacts when those artifacts drift.
@@ -45,7 +45,7 @@ The system MUST keep generated catalog artifacts in the repository and automatic
 
 #### Scenario: Generated artifacts cannot be produced
 
-- **GIVEN** CMS content is invalid or incomplete
+- **GIVEN** content is invalid or incomplete
 - **WHEN** artifact generation fails
 - **THEN** the promotion stops before D1, Stripe, Worker, or frontend deployment changes
 - **AND** the maintainer-facing workflow status explains which content item must be fixed.
@@ -127,7 +127,7 @@ The system SHALL mutate only app-owned production provider state and SHALL prese
 
 #### Scenario: Item is retired from checkout
 
-- **GIVEN** CMS Desired Catalog State marks a Store Item variant as retired or no longer buyable
+- **GIVEN** D1/operator state marks a Store Item variant as paused or no longer buyable
 - **WHEN** production apply runs
 - **THEN** production D1 availability and Store Offer readiness are updated to prevent new checkout
 - **AND** historical Stripe objects and existing orders remain intact.
@@ -138,15 +138,15 @@ The system MUST distinguish first-publication stock initialization from ongoing 
 
 #### Scenario: New production variant has initial stock
 
-- **GIVEN** Desired Catalog State includes first-publication production stock initialization
+- **GIVEN** operator-approved production policy includes first-publication stock initialization
 - **WHEN** production D1 readiness runs for a variant with no existing stock row
 - **THEN** it creates the initial stock and online stock rows
-- **AND** the Promotion Evidence records that stock was initialized from CMS.
+- **AND** the Promotion Evidence records that stock was initialized from the approved policy.
 
 #### Scenario: Existing production variant has stock
 
 - **GIVEN** a production variant already has D1 stock state
-- **WHEN** CMS content or Desired Catalog State changes for product copy, price, or media
+- **WHEN** content or Desired Catalog State changes for product copy, price, or media
 - **THEN** production promotion does not overwrite current D1 stock quantities
 - **AND** stock changes remain owned by stock operator workflows.
 
@@ -155,7 +155,7 @@ The system MUST distinguish first-publication stock initialization from ongoing 
 - **GIVEN** Desired Catalog State targets production checkout but no initial stock is supplied and no D1 stock row exists
 - **WHEN** production readiness validation runs
 - **THEN** the variant remains non-buyable
-- **AND** the failure tells the maintainer/operator that stock must be initialized before checkout can be enabled.
+- **AND** the failure tells the operator that stock must be initialized before checkout can be enabled.
 
 ### Requirement: Promotion evidence is redacted and actionable
 
@@ -177,13 +177,13 @@ The system SHALL produce machine-readable Promotion Evidence for every UAT and p
 
 #### Scenario: Maintainer checks status
 
-- **GIVEN** a maintainer published through Decap and does not use CLI tools
+- **GIVEN** a maintainer published editorial content through Decap and does not use CLI tools
 - **WHEN** the Promotion Run finishes
 - **THEN** GitHub status, action summary, or CMS-adjacent status surfaces show whether UAT and production are buyable, failed, or waiting on content correction.
 
 ### Requirement: Reset is excluded from normal promotion
 
-The system MUST NOT use catalog reset as part of ordinary CMS-driven item publication.
+The system MUST NOT use catalog reset as part of ordinary generated artifact publication.
 
 #### Scenario: New item is added
 

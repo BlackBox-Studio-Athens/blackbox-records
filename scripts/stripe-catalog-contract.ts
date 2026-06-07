@@ -34,7 +34,6 @@ export type LoadStripeCatalogContractsOptions = {
 
 type ReleaseContent = {
   artist: string;
-  commerce?: CommerceContent;
   cover_image: string;
   formats: string[];
   summary?: string;
@@ -43,31 +42,11 @@ type ReleaseContent = {
 
 type DistroContent = {
   artist_or_label: string;
-  commerce?: CommerceContent;
-  format: string;
+  format?: string;
   image: string;
   order: number;
   summary?: string;
   title: string;
-};
-
-type CommercePublishTarget = 'draft' | 'uat' | 'uat_and_production';
-
-type CommerceContent = {
-  enabled?: boolean;
-  option_label?: string;
-  price?: {
-    amount_minor?: number;
-    currency?: string;
-    revision?: string;
-  };
-  publish_target?: CommercePublishTarget;
-  retired?: boolean;
-  smoke_candidate?: boolean;
-  stock?: {
-    initial_online_quantity?: number;
-  };
-  tax_code?: string;
 };
 
 const defaultSiteUrl = 'https://blackbox-studio-athens.github.io';
@@ -169,15 +148,15 @@ async function readReleaseContracts(
       .map(async (entry) => {
         const sourceId = path.basename(entry.name, '.md');
         const content = parseFrontmatter(await readFile(path.join(releasesDir, entry.name), 'utf8')) as ReleaseContent;
-        const optionLabel = content.commerce?.option_label ?? getPrimaryReleaseStoreFormat(content.formats);
+        const optionLabel = getPrimaryReleaseStoreFormat(content.formats);
         const storeItemSlug = createReleaseStoreItemSlug(content);
         const coverImage = resolveCatalogCoverImagePathForRelease(sourceId, content.cover_image);
         const titleParts = ['BlackBox Records', content.title, optionLabel].filter(Boolean);
-        const expectedPrice = createExpectedPrice(content.commerce, optionLabel);
+        const expectedPrice = createExpectedSandboxPrice(optionLabel);
 
         return {
           ...createContract({
-            alignmentStatus: createAlignmentStatus(content.commerce),
+            alignmentStatus: 'checkout_eligible',
             description: normalizeDescription(content.summary, content.title),
             expectedSandboxPrice: expectedPrice,
             imageUrl: createContentAssetUrl('releases', coverImage, options),
@@ -190,8 +169,7 @@ async function readReleaseContracts(
             sourceId,
             sourceKind: 'release',
             storeItemSlug,
-            taxCode: content.commerce?.tax_code ?? STRIPE_PHYSICAL_GOODS_TAX_CODE,
-            commerce: content.commerce,
+            taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
             desiredPrice: expectedPrice,
             variantId: createDefaultVariantId(storeItemSlug),
           }),
@@ -214,12 +192,12 @@ async function readDistroContracts(
       .map(async (entry) => {
         const sourceId = path.basename(entry.name, '.json');
         const content = JSON.parse(await readFile(path.join(distroDir, entry.name), 'utf8')) as DistroContent;
-        const optionLabel = content.commerce?.option_label ?? content.format;
+        const optionLabel = content.format ?? null;
         const titleParts = ['BlackBox Records', content.title, optionLabel].filter(Boolean);
-        const expectedPrice = createExpectedPrice(content.commerce, optionLabel);
+        const expectedPrice = createExpectedSandboxPrice(optionLabel);
 
         return createContract({
-          alignmentStatus: createAlignmentStatus(content.commerce),
+          alignmentStatus: 'checkout_eligible',
           description: normalizeDescription(content.summary, `${content.title} by ${content.artist_or_label}`),
           expectedSandboxPrice: expectedPrice,
           imageUrl: createContentAssetUrl('distro', content.image, options),
@@ -232,8 +210,7 @@ async function readDistroContracts(
           sourceId,
           sourceKind: 'distro',
           storeItemSlug: sourceId,
-          taxCode: content.commerce?.tax_code ?? STRIPE_PHYSICAL_GOODS_TAX_CODE,
-          commerce: content.commerce,
+          taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
           desiredPrice: expectedPrice,
           variantId: createDefaultVariantId(sourceId),
         });
@@ -264,7 +241,6 @@ function applyArtistName(
 
 function createContract(input: {
   alignmentStatus: StripeCatalogAlignmentStatus;
-  commerce?: CommerceContent;
   description: string;
   desiredPrice: StripeCatalogExpectedPrice | null;
   expectedSandboxPrice: StripeCatalogExpectedPrice | null;
@@ -291,19 +267,16 @@ function createContract(input: {
   return {
     alignmentStatus: input.alignmentStatus,
     desiredCatalogEntry: {
-      availability: createDesiredAvailability(input.commerce),
-      desiredPrice: input.desiredPrice
-        ? createDesiredPrice(input.desiredPrice, input.commerce, input.storeItemSlug)
-        : null,
+      availability: 'published',
+      desiredPrice: input.desiredPrice ? createDesiredPrice(input.desiredPrice, input.storeItemSlug) : null,
       productProjection,
-      smokeCandidate: input.commerce?.smoke_candidate ?? false,
       sourceId: input.sourceId,
       sourceKind: input.sourceKind,
       stockInitialization: {
-        initialOnlineQuantity: input.commerce?.stock?.initial_online_quantity ?? null,
+        initialOnlineQuantity: null,
       },
       storeItemSlug: input.storeItemSlug,
-      targetEnvironments: createTargetEnvironments(input.commerce),
+      targetEnvironments: ['sandbox'],
       variantId: input.variantId,
     },
     expectedSandboxPrice: input.expectedSandboxPrice,
@@ -315,80 +288,14 @@ function createContract(input: {
   };
 }
 
-function createAlignmentStatus(commerce: CommerceContent | undefined): StripeCatalogAlignmentStatus {
-  if (createDesiredAvailability(commerce) === 'published') {
-    return 'checkout_eligible';
-  }
-
-  return commerce?.retired ? 'unavailable' : 'future_buyable';
-}
-
-function createDesiredAvailability(commerce: CommerceContent | undefined): DesiredCatalogEntry['availability'] {
-  if (commerce?.retired) {
-    return 'retired';
-  }
-
-  return createTargetEnvironments(commerce).length > 0 ? 'published' : 'withheld';
-}
-
-function createTargetEnvironments(commerce: CommerceContent | undefined): DesiredCatalogEntry['targetEnvironments'] {
-  if (commerce?.retired || commerce?.enabled === false || commerce?.publish_target === 'draft') {
-    return [];
-  }
-
-  if (commerce?.publish_target === 'uat_and_production') {
-    return ['sandbox', 'production'];
-  }
-
-  return ['sandbox'];
-}
-
-function createExpectedPrice(
-  commerce: CommerceContent | undefined,
-  optionLabel: string | null | undefined,
-): StripeCatalogExpectedPrice | null {
-  const targets = createTargetEnvironments(commerce);
-  if (targets.length === 0) {
-    return null;
-  }
-
-  if (!commerce?.price) {
-    if (targets.includes('production')) {
-      throw new Error(
-        'Production-targeted commerce entries require commerce.price.amount_minor and commerce.price.currency.',
-      );
-    }
-
-    return createExpectedSandboxPrice(optionLabel);
-  }
-
-  const amountMinor = commerce.price.amount_minor;
-  if (typeof amountMinor !== 'number' || !Number.isInteger(amountMinor) || amountMinor <= 0) {
-    throw new Error('commerce.price.amount_minor must be a positive integer.');
-  }
-
-  const currencyCode = (commerce.price.currency ?? 'EUR').trim().toUpperCase();
-  if (currencyCode !== 'EUR') {
-    throw new Error(`Unsupported commerce.price.currency: ${currencyCode}`);
-  }
-
-  return {
-    amountMinor,
-    currencyCode,
-  };
-}
-
 function createDesiredPrice(
   price: StripeCatalogExpectedPrice,
-  commerce: CommerceContent | undefined,
   storeItemSlug: string,
 ): DesiredCatalogEntry['desiredPrice'] {
   return {
     amountMinor: price.amountMinor,
     currencyCode: price.currencyCode,
-    revision:
-      commerce?.price?.revision?.trim() ||
-      createSlugSuggestion([storeItemSlug, price.amountMinor, price.currencyCode].join(' ')),
+    revision: createSlugSuggestion([storeItemSlug, price.amountMinor, price.currencyCode].join(' ')),
   };
 }
 

@@ -20,7 +20,7 @@ describe('Decap artist collection', () => {
     expect(yaml).toContain('name: "videos"');
     expect(yaml).toContain('name: "youtube_video_id"');
     expect(yaml).toContain('hint: "The 11-character ID from a YouTube URL, for example dQw4w9WgXcQ."');
-    expect(yaml).toContain('name: "shop_collection_handle"');
+    expect(yaml).not.toContain('name: "shop_collection_handle"');
     expect(yaml).toContain('name: "body"');
   });
 

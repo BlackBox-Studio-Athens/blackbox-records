@@ -58,7 +58,6 @@ export type DesiredCatalogEntry = {
   availability: DesiredCatalogAvailability;
   desiredPrice: DesiredPrice | null;
   productProjection: StripeCatalogProductProjection;
-  smokeCandidate: boolean;
   sourceId: string;
   sourceKind: StoreItemOptionRecord['sourceKind'];
   stockInitialization: {

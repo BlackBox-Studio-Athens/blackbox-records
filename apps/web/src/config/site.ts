@@ -5,7 +5,6 @@ export const siteConfig = {
   description: 'Helping artists release/share/tour their music. Dreaming about a planet full of art.',
   socialImage: '/assets/images/brand/logo.png',
   socialImageAlt: 'Blackbox Records logo',
-  shopUrl: 'https://blackboxrecords-shop.fourthwall.com',
 } as const;
 
 export const siteBrandAssets = {
@@ -44,12 +43,6 @@ export function isExternalUrl(path = '') {
   return /^[a-z][a-z0-9+.-]*:\/\//i.test(path);
 }
 
-export function isShopUrl(path = '') {
-  const normalizedPath = path.trim().replace(/\/+$/, '');
-  const normalizedShopUrl = siteConfig.shopUrl.replace(/\/+$/, '');
-  return normalizedPath === normalizedShopUrl;
-}
-
 type LinkAttributes = {
   href: string;
   rel?: string;
@@ -58,15 +51,6 @@ type LinkAttributes = {
 };
 
 export function resolveLinkAttributes(path = '/'): LinkAttributes {
-  if (isShopUrl(path)) {
-    return {
-      href: siteConfig.shopUrl,
-      rel: 'noreferrer noopener',
-      shouldPrefetch: false,
-      target: '_blank',
-    };
-  }
-
   if (isExternalUrl(path)) {
     return {
       href: path,

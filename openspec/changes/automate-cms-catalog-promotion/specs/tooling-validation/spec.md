@@ -2,7 +2,7 @@
 
 ### Requirement: Catalog promotion gates are automated for UAT and PRD
 
-The system SHALL provide automated validation gates that prove CMS-driven catalog promotion for each target environment.
+The system SHALL provide automated validation gates that prove generated catalog artifact promotion for each target environment.
 
 #### Scenario: UAT catalog promotion gate runs
 
@@ -104,11 +104,11 @@ The system MUST retain redacted evidence for successful and failed Promotion Run
 
 The system SHALL include deterministic tests for CMS-to-catalog promotion behavior before relying on live provider checks.
 
-#### Scenario: CMS field validation tests run
+#### Scenario: Editorial field validation tests run
 
-- **GIVEN** Decap commerce fields or Astro content schemas change
+- **GIVEN** Decap editorial fields or Astro content schemas change
 - **WHEN** unit tests run
-- **THEN** they cover required commerce fields, invalid price/currency cases, target environment validation, and CMS preview summary data.
+- **THEN** they cover required editorial fields, generated policy assumptions, target environment generation, and absence of CMS commerce preview data.
 
 #### Scenario: Artifact generation tests run
 

@@ -1,7 +1,7 @@
 ## Audit Findings
 
-- Decap release and distro builders did not expose commerce intent, target environment, Desired Price, tax code, stock initialization, smoke candidate, or checkout retirement fields.
-- `apps/web/src/content.config.ts` accepted release and distro editorial fields only, so production buyability could not be validated from CMS-authored content.
+- Decap release and distro builders previously exposed commerce intent, target environment, Desired Price, tax code, stock initialization, smoke candidate, and checkout retirement fields; production cleanup removed those CMS-authored commerce controls.
+- `apps/web/src/content.config.ts` now accepts release and distro editorial fields only, so production buyability is not controlled from CMS-authored content.
 - `scripts/stripe-catalog-contract.ts` derived every current entry as sandbox checkout-eligible and used format-derived sandbox test prices. That preserved UAT behavior but was too implicit for production.
 - `scripts/generate-stripe-uat-catalog-artifacts.ts` generated Product Projection and sandbox UAT D1 seed artifacts only. No environment-neutral Desired Catalog State or production-safe D1 readiness artifact existed.
 - `scripts/stripe-catalog-verify.ts` allowed `--env production` dry-runs through argument parsing but blocked every production apply with a sandbox-only guard.
@@ -12,9 +12,9 @@
 
 ## Implemented Local Slice
 
-- Added guarded CMS commerce fields and matching Astro content schema.
+- Removed guarded CMS commerce fields and matching Astro content schema.
 - Added code-facing Catalog Promotion types and generated Desired Catalog State.
-- Kept absent commerce fields sandbox-only by default, so existing content did not become production-buyable.
+- Kept generated sandbox entries production-disabled by default, so existing content did not become production-buyable.
 - Added a production readiness SQL artifact that does not overwrite existing stock rows.
 - Replaced the blanket production apply argument rejection with a CI promotion-context guard.
 - Added catalog artifact regeneration and catalog promotion workflows.

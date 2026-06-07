@@ -24,7 +24,6 @@ const productionEntry: DesiredCatalogEntry = {
     name: 'Disintegration - Black Vinyl LP',
     taxCode: 'txcd_99999999',
   },
-  smokeCandidate: true,
   sourceId: 'disintegration',
   sourceKind: 'release',
   stockInitialization: {
@@ -59,7 +58,7 @@ describe('Stripe promotion smoke runner', () => {
     });
   });
 
-  it('selects a published smoke candidate for the target environment', () => {
+  it('falls back to the first published entry for the target environment', () => {
     expect(selectPromotionSmokeEntry([productionEntry], 'production')).toEqual(productionEntry);
   });
 

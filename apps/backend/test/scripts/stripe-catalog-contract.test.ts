@@ -138,7 +138,6 @@ describe('stripe catalog contract projection', () => {
       productProjection: {
         name: 'BlackBox Records - Disintegration - Black Vinyl LP',
       },
-      smokeCandidate: false,
       stockInitialization: {
         initialOnlineQuantity: null,
       },
@@ -149,6 +148,7 @@ describe('stripe catalog contract projection', () => {
     );
     expect(source).toContain('export const currentDesiredCatalogState');
     expect(source).toContain('createCurrentDesiredCatalogEntriesForEnvironment');
+    expect(source).not.toContain('smokeCandidate');
   });
 
   it('uses format-based sandbox test prices without making the browser price authority', () => {
@@ -209,7 +209,6 @@ describe('stripe catalog contract projection', () => {
           name: 'Invalid test contract',
           taxCode: null,
         },
-        smokeCandidate: false,
         sourceId: 'afterglow-tape',
         sourceKind: 'distro',
         stockInitialization: {

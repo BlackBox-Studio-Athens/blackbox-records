@@ -13,7 +13,7 @@ The system MUST expose CMS-promoted buyable items to shoppers only after Worker,
 
 #### Scenario: Promotion has not completed
 
-- **GIVEN** CMS content exists for a Store Item variant but UAT or production promotion has failed or not yet run
+- **GIVEN** content exists for a Store Item variant but UAT or production promotion has failed or not yet run
 - **WHEN** the shopper requests checkout readiness for that variant in the affected environment
 - **THEN** the Worker returns a non-buyable or catalog-drift Store Offer state
 - **AND** checkout start is rejected before creating a Stripe Checkout Session.
@@ -23,7 +23,7 @@ The system MUST expose CMS-promoted buyable items to shoppers only after Worker,
 - **GIVEN** a promoted production item later has ambiguous, inactive, missing, or mismatched Stripe Price state
 - **WHEN** Store Offer read or checkout start reconciles the catalog
 - **THEN** the Worker fails closed for that variant
-- **AND** the failure is reported as catalog drift rather than falling back to CMS Desired Price.
+- **AND** the failure is reported as catalog drift rather than falling back to static Desired Price.
 
 ### Requirement: Desired Price provisions Stripe Price but does not bypass checkout authority
 
@@ -52,11 +52,11 @@ The system SHALL use Desired Price to provision provider catalog state while pre
 
 ### Requirement: Production promotion supports retire and pause states
 
-The system SHALL allow CMS-driven promotion to disable checkout for a Store Item variant without deleting public editorial content or historical payment records.
+The system SHALL allow D1/operator controls or corrective promotion to disable checkout for a Store Item variant without deleting public editorial content or historical payment records.
 
-#### Scenario: Maintainer retires an item from commerce
+#### Scenario: Operator pauses an item from checkout
 
-- **GIVEN** a CMS item remains editorially visible but commerce intent is retired or disabled
+- **GIVEN** a content item remains editorially visible but D1/operator state pauses checkout
 - **WHEN** production promotion runs
 - **THEN** D1 availability and Store Offer readiness prevent new checkout for the variant
 - **AND** existing orders, stock ledger records, Stripe Products, and historical Prices remain preserved.

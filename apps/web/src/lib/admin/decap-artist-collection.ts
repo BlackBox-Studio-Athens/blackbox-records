@@ -116,13 +116,6 @@ export function buildArtistCollection() {
         hint: 'Optional note shown when an artist has a release on the way.',
       }),
       buildField({
-        label: 'Shop collection handle',
-        name: 'shop_collection_handle',
-        widget: 'string',
-        required: false,
-        hint: 'Optional Fourthwall collection handle, without a full URL.',
-      }),
-      buildField({
         label: 'Section label',
         name: 'section_label',
         widget: 'string',

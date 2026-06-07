@@ -51,7 +51,7 @@ For label-member UAT, the GitHub Pages URL is intentionally wired to the sandbox
 
 ## Catalog Promotion
 
-Decap-authored release and distro entries now expose a guarded Commerce section. Content publication and buyable status are separate: the generated Desired Catalog State and catalog promotion workflow move CMS changes through UAT and production provider state. GitHub Pages UAT is validated by a separate post-merge sandbox smoke workflow after `pages.yml` completes. See [docs/catalog-promotion.md](docs/catalog-promotion.md) for maintainer fields, status meanings, rollback rules, and Promotion Evidence expectations.
+Decap remains editorial-only. Content publication and buyable status are separate: generated catalog artifacts derive from current Store Item content, UAT provider state is applied through sandbox catalog tooling, and runtime checkout safety stays with D1, Worker gates, and operator controls. GitHub Pages UAT is validated by a separate post-merge sandbox smoke workflow after `pages.yml` completes. See [docs/catalog-promotion.md](docs/catalog-promotion.md) for catalog artifact, rollback, and Promotion Evidence expectations.
 
 ## Prerequisites
 
@@ -606,7 +606,7 @@ Content is managed in the repo through Astro content collections, and Decap CMS 
 - Site settings: `apps/web/src/content/settings/*.json`
 - Collection-owned images live next to their Markdown entries and are validated by Astro content schemas.
 - JSON collection entries include `$schema` references to Astro-generated collection schemas for editor/CMS validation.
-- Artists and releases may include an optional `shop_collection_handle` for future Fourthwall collection linking.
+- Artist, release, and distro entries stay editorial-only; Fourthwall collection handles and CMS-authored commerce controls are not part of the content contract.
 - Home/about decorative images are now validated as Astro image fields.
 - Home, About, and Services now store their page sections as editable block lists in Decap so whole sections can be deleted or reordered when needed.
 

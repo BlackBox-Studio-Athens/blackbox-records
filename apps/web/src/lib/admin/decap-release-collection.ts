@@ -1,5 +1,4 @@
 import { buildField, buildFieldMapping, buildFolderCollection, type DecapSelectOption } from './decap-yaml-builder';
-import { buildCommerceFields } from './decap-commerce-fields';
 
 export function buildReleaseCollection(artistOptions: DecapSelectOption[]) {
   return buildFolderCollection({
@@ -51,13 +50,6 @@ export function buildReleaseCollection(artistOptions: DecapSelectOption[]) {
         hint: 'Optional direct merch or product URL. Include https://.',
       }),
       buildField({
-        label: 'Shop collection handle',
-        name: 'shop_collection_handle',
-        widget: 'string',
-        required: false,
-        hint: 'Optional Fourthwall collection handle, without a full URL.',
-      }),
-      buildField({
         label: 'Bandcamp embed URL',
         name: 'bandcamp_embed_url',
         widget: 'string',
@@ -93,7 +85,6 @@ export function buildReleaseCollection(artistOptions: DecapSelectOption[]) {
           hint: 'Example: "LP", "CD", or "Digital".',
         }),
       }),
-      buildCommerceFields(),
       buildField({
         label: 'Credits',
         name: 'credits',

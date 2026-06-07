@@ -160,16 +160,9 @@ export function selectPromotionSmokeEntry(
   entries: readonly DesiredCatalogEntry[],
   environment: PromotionSmokeEnvironment,
 ): DesiredCatalogEntry {
-  const entry =
-    entries.find(
-      (candidate) =>
-        candidate.smokeCandidate &&
-        candidate.availability === 'published' &&
-        candidate.targetEnvironments.includes(environment),
-    ) ??
-    entries.find(
-      (candidate) => candidate.availability === 'published' && candidate.targetEnvironments.includes(environment),
-    );
+  const entry = entries.find(
+    (candidate) => candidate.availability === 'published' && candidate.targetEnvironments.includes(environment),
+  );
 
   if (!entry) {
     throw new Error(`No published ${environment} Desired Catalog entry is available for promotion smoke.`);

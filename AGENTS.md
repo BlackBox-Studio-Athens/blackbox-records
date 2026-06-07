@@ -261,7 +261,7 @@ All JSON collection entries include `$schema` links to Astro-generated collectio
 - `releases.artist` is an Astro `reference('artists')`
 - Collection-owned images for artists/releases/news use Astro `image()`
 - Home/about decorative images also use Astro `image()`
-- Artists and releases may carry an optional `shop_collection_handle` for future Fourthwall collection linking
+- Decap artist, release, and distro entries are editorial-only and must not carry CMS-authored commerce controls or Fourthwall collection fields
 - Home/about/services/newsletter/settings/navigation/socials use structured JSON collections
 - Query helpers live in `apps/web/src/lib/site-data.ts`
 
