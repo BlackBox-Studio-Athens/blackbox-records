@@ -2,11 +2,11 @@
 
 ### Requirement: Email modules follow backend boundaries
 
-The system MUST document email application and infrastructure modules in the module-boundary manifest when email behavior is added.
+The system MUST document email application and infrastructure modules in the module-boundary manifest when email behavior or newsletter registration is added.
 
 #### Scenario: Email application code is introduced
 
-- **GIVEN** backend email use cases or template builders are added
+- **GIVEN** backend email use cases, newsletter registration use cases, or template builders are added
 - **WHEN** module boundaries are audited
 - **THEN** email application entrypoints and allowed dependencies are listed in the module-boundary manifest.
 
