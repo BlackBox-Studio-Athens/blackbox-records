@@ -19,13 +19,13 @@ importers:
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.4.0(jiti@2.7.0))
       '@t3-oss/env-core':
-        specifier: ^0.13.11
+        specifier: 0.13.11
         version: 0.13.11(typescript@5.9.3)(valibot@1.2.0(typescript@5.9.3))(zod@4.4.3)
       astro:
         specifier: 6.4.2
         version: 6.4.2(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.4)(sass@1.97.3)(tsx@4.22.3)(yaml@2.9.0)
       dependency-cruiser:
-        specifier: ^17.4.0
+        specifier: 17.4.0
         version: 17.4.0
       eslint:
         specifier: ^10.4.0
@@ -46,7 +46,7 @@ importers:
         specifier: 9.6.1
         version: 9.6.1
       knip:
-        specifier: ^6.14.2
+        specifier: 6.14.2
         version: 6.14.2(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
       playwright:
         specifier: 1.60.0
@@ -195,7 +195,7 @@ importers:
         specifier: 19.2.3
         version: 19.2.3(@types/react@19.2.15)
       decap-server:
-        specifier: ^3.7.0
+        specifier: 3.7.0
         version: 3.7.0
       msw:
         specifier: 2.14.6
@@ -6982,7 +6982,7 @@ snapshots:
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
       '@emnapi/core': 1.10.0
-      '@emnapi/runtime': 1.8.1
+      '@emnapi/runtime': 1.10.0
       '@tybys/wasm-util': 0.10.2
     optional: true
 
@@ -9319,7 +9319,7 @@ snapshots:
       get-proto: 1.0.1
       gopd: 1.2.0
       has-symbols: 1.1.0
-      hasown: 2.0.2
+      hasown: 2.0.3
       math-intrinsics: 1.1.0
 
   get-nonce@1.0.1: {}
@@ -11301,7 +11301,7 @@ snapshots:
   tsconfig-paths-webpack-plugin@4.2.0:
     dependencies:
       chalk: 4.1.2
-      enhanced-resolve: 5.21.0
+      enhanced-resolve: 5.22.0
       tapable: 2.3.3
       tsconfig-paths: 4.2.0
 
