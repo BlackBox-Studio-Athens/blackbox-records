@@ -6,7 +6,7 @@
   "pnpm": {
     "overrides": {
       "unicorn-magic": "0.4.0",
-      "npm-run-path": "5.0.1"
+      "npm-run-path": "5.3.0"
     }
   },
   "scripts": {
