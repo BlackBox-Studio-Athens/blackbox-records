@@ -3,9 +3,13 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
-import { filteredViteLogger, installFilteredViteConsoleWarningFilter } from './test/setup/filtered-vite-logger';
+import {
+  filteredViteLogger,
+  filterBackendTestConsoleLog,
+  installBackendWorkerPoolSourcemapStderrFilter,
+} from './test/setup/filtered-vite-logger';
 
-installFilteredViteConsoleWarningFilter();
+installBackendWorkerPoolSourcemapStderrFilter();
 
 const backendRoot = dirname(fileURLToPath(import.meta.url));
 const migrations = await readD1Migrations(join(backendRoot, 'prisma/migrations'));
@@ -39,10 +43,12 @@ export default defineConfig({
       'test/http/internal-order-routes.test.ts',
       'test/http/internal-stock-routes.test.ts',
       'test/http/public-commerce-routes.test.ts',
+      'test/http/stripe-webhook-services.test.ts',
       'test/http/stripe-webhook-routes.test.ts',
       'test/scripts/**/*.test.ts',
     ],
     include: ['test/**/*.test.ts'],
+    onConsoleLog: filterBackendTestConsoleLog,
     setupFiles: ['./test/setup/apply-d1-migrations.ts'],
   },
 });
