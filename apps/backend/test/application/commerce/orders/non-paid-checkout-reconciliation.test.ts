@@ -184,8 +184,17 @@ describe('non-paid checkout reconciliation', () => {
 
 function reconciliation(status: StripeCheckoutSessionStatus, paymentStatus: StripeCheckoutPaymentStatus) {
   return reconcileCheckoutSession({
+    amountTotalMinor: null,
     checkoutSessionId: checkoutSessionId('cs_test_123'),
+    currencyCode: null,
+    customer: {
+      email: null,
+      name: null,
+      phone: null,
+    },
+    newsletterOptIn: false,
     paymentStatus,
+    shippingAddress: null,
     status,
     stripePaymentIntentId: paymentIntentId('pi_test_123'),
   });

@@ -30,6 +30,7 @@ import type { CheckoutSessionLineItem, CheckoutGateway, FeatureFlagReader, Hoste
 export type StartCheckoutCommand = {
   cancelUrl: string;
   lines?: StartCheckoutLineCommand[];
+  newsletterOptIn?: boolean;
   successUrl: string;
   storeItemSlug?: StoreItemSlug;
   variantId?: VariantId;
@@ -176,6 +177,7 @@ export async function startCheckout(
   const checkoutSession = await checkoutGateway.createHostedCheckoutSession({
     cancelUrl: command.cancelUrl,
     lineItems: validatedLines,
+    newsletterOptIn: command.newsletterOptIn === true,
     successUrl: command.successUrl,
   });
 

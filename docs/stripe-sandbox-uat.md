@@ -121,6 +121,14 @@ pnpm smoke:stripe-sandbox -- --site-url https://blackbox-studio-athens.github.io
 pnpm smoke:stripe-sandbox -- --site-url https://blackbox-studio-athens.github.io/blackbox-records/ --scenario happy_path_paid
 ```
 
+Run the Resend UAT smoke after the sandbox Worker has `RESEND_API_KEY` and `RESEND_NEWSLETTER_TOPIC_ID` configured:
+
+```sh
+pnpm smoke:resend-uat
+```
+
+This posts one synthetic consented signup through the public Worker route and expects Resend-backed UAT sink routing to accept it. Evidence is written under `.codex-artifacts/smoke/uat/resend-uat/` and must stay ignored/redacted.
+
 Evidence must stay ignored/redacted. Do not commit or paste Stripe secrets, webhook secrets, full `price_...`, `prod_...`, `we_...` IDs, customer payment details, or raw provider payloads.
 
 ## What To Test

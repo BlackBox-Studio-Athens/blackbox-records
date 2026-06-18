@@ -120,6 +120,63 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/newsletter/registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["NewsletterRegistrationBody"];
+                };
+            };
+            responses: {
+                /** @description Registered a public newsletter contact. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NewsletterRegistrationResponse"];
+                    };
+                };
+                /** @description Invalid newsletter signup request. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PublicCommerceError"];
+                    };
+                };
+                /** @description Newsletter signup is temporarily unavailable. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PublicCommerceError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/store/capabilities": {
         parameters: {
             query?: never;
@@ -267,6 +324,16 @@ export type components = {
             locker_id: string;
             locker_name_or_label: string;
         };
+        NewsletterRegistrationBody: {
+            /** @enum {boolean} */
+            consentAccepted: true;
+            /** Format: email */
+            email: string;
+        };
+        NewsletterRegistrationResponse: {
+            /** @enum {string} */
+            status: "registered";
+        };
         PublicCommerceError: {
             error: string;
         };
@@ -291,6 +358,7 @@ export type components = {
         };
         StartCheckoutBody: {
             lines?: components["schemas"]["StartCheckoutLine"][];
+            newsletterOptIn?: boolean;
             storeItemSlug?: string;
             variantId?: string;
         };

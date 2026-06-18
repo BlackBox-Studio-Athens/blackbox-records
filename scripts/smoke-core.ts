@@ -7,6 +7,9 @@ const smokeSecretNamePatterns: ReadonlyArray<[RegExp, string]> = [
   [/\bSTRIPE_SECRET_KEY\b/g, 'runtime secret name STRIPE_SECRET_KEY'],
   [/\bSTRIPE_WEBHOOK_SECRET\b/g, 'runtime secret name STRIPE_WEBHOOK_SECRET'],
   [/\bSTRIPE_PAYMENT_METHOD_CONFIGURATION_ID\b/g, 'runtime secret name STRIPE_PAYMENT_METHOD_CONFIGURATION_ID'],
+  [/\bRESEND_API_KEY\b/g, 'runtime secret name RESEND_API_KEY'],
+  [/\bRESEND_NEWSLETTER_TOPIC_ID\b/g, 'runtime config name RESEND_NEWSLETTER_TOPIC_ID'],
+  [/\bRESEND_NEWSLETTER_SEGMENT_ID\b/g, 'runtime config name RESEND_NEWSLETTER_SEGMENT_ID'],
   [/\bCLOUDFLARE_API_TOKEN\b/g, 'runtime secret name CLOUDFLARE_API_TOKEN'],
   [/\bCF_ACCESS_JWT_ASSERTION\b/g, 'runtime secret name CF_ACCESS_JWT_ASSERTION'],
   [/\bCF-ACCESS-AUTHENTICATED-USER-EMAIL\b/g, 'operator identity header CF-ACCESS-AUTHENTICATED-USER-EMAIL'],
@@ -16,6 +19,7 @@ const smokeSecretNamePatterns: ReadonlyArray<[RegExp, string]> = [
 const smokeSecretValuePatterns: ReadonlyArray<[RegExp, string]> = [
   [/\bsk_(?:test|live)_[A-Za-z0-9_]+\b/g, 'Stripe secret key value'],
   [/\bwhsec_[A-Za-z0-9_]+\b/g, 'Stripe webhook secret value'],
+  [/\bre_[A-Za-z0-9_]+\b/g, 'Resend API key value'],
   [/\b(?:cs|seti)_(?:test|live)_[A-Za-z0-9_]*?_secret_[A-Za-z0-9_]+\b/g, 'Stripe client secret value'],
   [/\b(?:cs|seti|pi|pm|price|prod|acct|cus|evt)_(?:test|live)?_?[A-Za-z0-9_]+\b/g, 'Stripe object identifier'],
 ];
@@ -156,12 +160,14 @@ export function redactSensitiveSmokeText(text: string): string {
       /\bSTRIPE_PAYMENT_METHOD_CONFIGURATION_ID\b\s*[:=]\s*[^\s]+/g,
       'STRIPE_PAYMENT_METHOD_CONFIGURATION_ID=[redacted]',
     )
+    .replace(/\bRESEND_API_KEY\b\s*[:=]\s*[^\s]+/g, 'RESEND_API_KEY=[redacted_resend_api_key]')
     .replace(/\bCLOUDFLARE_API_TOKEN\b\s*[:=]\s*[^\s]+/g, 'CLOUDFLARE_API_TOKEN=[redacted]')
     .replace(/\bCF_ACCESS_JWT_ASSERTION\b\s*[:=]\s*[^\s]+/g, 'CF_ACCESS_JWT_ASSERTION=[redacted]')
     .replace(/\bCOMMERCE_DB\b\s*[:=]\s*[^\s]+/g, 'COMMERCE_DB=[redacted]')
     .replace(/sk_test_[A-Za-z0-9_]+/g, '[redacted_stripe_secret_key]')
     .replace(/sk_live_[A-Za-z0-9_]+/g, '[redacted_stripe_secret_key]')
     .replace(/whsec_[A-Za-z0-9_]+/g, '[redacted_stripe_webhook_secret]')
+    .replace(/\bre_[A-Za-z0-9_]+\b/g, '[redacted_resend_api_key]')
     .replace(/(cs_(?:test|live)_[A-Za-z0-9_]*?_secret_)[A-Za-z0-9_]+/g, '$1[redacted]')
     .replace(/(seti_(?:test|live)_[A-Za-z0-9_]*?_secret_)[A-Za-z0-9_]+/g, '$1[redacted]')
     .replace(/\bcs_(?:test|live)_(?![A-Za-z0-9_]*_secret_)[A-Za-z0-9_]+\b/g, '[redacted_checkout_session_id]');

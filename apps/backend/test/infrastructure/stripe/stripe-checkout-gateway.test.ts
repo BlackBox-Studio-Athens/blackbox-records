@@ -57,6 +57,7 @@ describe('StripeCheckoutGateway', () => {
           },
         ],
         cancelUrl: 'https://blackbox.example/checkout',
+        newsletterOptIn: true,
         successUrl: 'https://blackbox.example/return',
       }),
     ).resolves.toEqual({
@@ -74,6 +75,11 @@ describe('StripeCheckoutGateway', () => {
         ],
         cancel_url: 'https://blackbox.example/checkout',
         locale: 'en',
+        metadata: {
+          newsletterOptIn: 'true',
+          storeItemSlug: 'disintegration-black-vinyl-lp',
+          variantId: 'variant_disintegration-black-vinyl-lp_standard',
+        },
         payment_method_configuration: 'pmc_test_blackbox_checkout',
         phone_number_collection: {
           enabled: true,

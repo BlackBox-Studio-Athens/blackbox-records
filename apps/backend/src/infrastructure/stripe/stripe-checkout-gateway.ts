@@ -49,6 +49,7 @@ export class StripeCheckoutGateway implements CheckoutGateway {
       cancel_url: request.cancelUrl,
       metadata: metadataLineItem
         ? {
+            ...(request.newsletterOptIn ? { newsletterOptIn: 'true' } : {}),
             storeItemSlug: metadataLineItem.storeItemSlug,
             variantId: metadataLineItem.variantId,
           }

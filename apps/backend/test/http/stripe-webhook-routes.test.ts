@@ -8,14 +8,33 @@ const {
   mockApplyNonPaidCheckoutReconciliation,
   mockApplyPaidCheckoutReconciliation,
   mockDisconnectStripeWebhookServices,
+  mockPublishCheckoutOrderPaid,
 } = vi.hoisted(() => ({
   mockApplyNonPaidCheckoutReconciliation: vi.fn(async () => ({
     kind: 'transitioned',
   })),
   mockApplyPaidCheckoutReconciliation: vi.fn(async () => ({
+    checkoutOrderPaid: {
+      amountTotalMinor: null,
+      checkoutSessionId: 'cs_test_123',
+      currencyCode: null,
+      customerEmail: 'buyer@example.com',
+      customerName: null,
+      customerPhone: null,
+      lineItems: [],
+      newsletterOptIn: false,
+      occurredAt: new Date('2026-04-25T11:00:00.000Z'),
+      orderId: 'order_1',
+      orderReference: 'BBR-ORDER1',
+      paidAt: new Date('2026-04-25T11:00:00.000Z'),
+      paymentStatus: 'paid' as const,
+      shippingAddress: null,
+      stripePaymentIntentId: null,
+    },
     kind: 'applied',
   })),
   mockDisconnectStripeWebhookServices: vi.fn(async () => {}),
+  mockPublishCheckoutOrderPaid: vi.fn(async () => {}),
 }));
 
 vi.mock('../../src/interfaces/http/routes/stripe-webhook-services', () => ({
@@ -23,6 +42,7 @@ vi.mock('../../src/interfaces/http/routes/stripe-webhook-services', () => ({
     applyNonPaidCheckoutReconciliation: mockApplyNonPaidCheckoutReconciliation,
     applyPaidCheckoutReconciliation: mockApplyPaidCheckoutReconciliation,
     disconnect: mockDisconnectStripeWebhookServices,
+    publishCheckoutOrderPaid: mockPublishCheckoutOrderPaid,
   }),
 }));
 
@@ -74,6 +94,7 @@ describe('Stripe webhook routes', () => {
     mockApplyNonPaidCheckoutReconciliation.mockClear();
     mockApplyPaidCheckoutReconciliation.mockClear();
     mockDisconnectStripeWebhookServices.mockClear();
+    mockPublishCheckoutOrderPaid.mockClear();
   });
 
   it('acknowledges valid allowed checkout-session events after signature verification', async () => {
@@ -114,6 +135,11 @@ describe('Stripe webhook routes', () => {
     expect(mockApplyPaidCheckoutReconciliation).toHaveBeenCalledWith(
       expect.objectContaining({
         recommendedOrderStatus: 'paid',
+      }),
+    );
+    expect(mockPublishCheckoutOrderPaid).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderReference: 'BBR-ORDER1',
       }),
     );
     expect(mockApplyNonPaidCheckoutReconciliation).not.toHaveBeenCalled();

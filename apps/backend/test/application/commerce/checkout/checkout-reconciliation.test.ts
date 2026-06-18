@@ -6,8 +6,17 @@ import { checkoutSessionId, paymentIntentId } from '../../../support/commerce-va
 
 function session(input: Partial<StripeCheckoutSessionState>): StripeCheckoutSessionState {
   return {
+    amountTotalMinor: null,
     checkoutSessionId: checkoutSessionId('cs_test_123'),
+    currencyCode: null,
+    customer: {
+      email: null,
+      name: null,
+      phone: null,
+    },
+    newsletterOptIn: false,
     paymentStatus: 'unpaid',
+    shippingAddress: null,
     status: 'open',
     ...input,
   };
@@ -34,7 +43,16 @@ describe('checkout reconciliation', () => {
       isAuthoritative: false,
       recommendedOrderStatus: 'paid',
       source: {
+        amountTotalMinor: null,
         checkoutSessionId: 'cs_test_123',
+        currencyCode: null,
+        customer: {
+          email: null,
+          name: null,
+          phone: null,
+        },
+        newsletterOptIn: false,
+        shippingAddress: null,
         stripePaymentIntentId: 'pi_test_123',
       },
     });
@@ -80,7 +98,16 @@ describe('checkout reconciliation', () => {
 
   it('defaults missing backend-only Stripe source identifiers to null', () => {
     expect(reconcileCheckoutSession(session({})).source).toEqual({
+      amountTotalMinor: null,
       checkoutSessionId: 'cs_test_123',
+      currencyCode: null,
+      customer: {
+        email: null,
+        name: null,
+        phone: null,
+      },
+      newsletterOptIn: false,
+      shippingAddress: null,
       stripePaymentIntentId: null,
     });
   });

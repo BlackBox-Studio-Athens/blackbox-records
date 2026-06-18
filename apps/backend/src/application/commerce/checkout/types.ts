@@ -33,6 +33,7 @@ export type StoreOffer = {
 export type HostedCheckoutSessionRequest = {
   cancelUrl: string;
   lineItems?: CheckoutSessionLineItem[];
+  newsletterOptIn?: boolean;
   successUrl: string;
   storeItemSlug?: StoreItemSlug;
   stripePriceId?: StripePriceId;
@@ -60,9 +61,29 @@ export type StripeCheckoutSessionStatus = 'open' | 'complete' | 'expired' | null
 
 export type StripeCheckoutPaymentStatus = 'paid' | 'unpaid' | 'no_payment_required';
 
+export type StripeCheckoutCustomerSnapshot = {
+  email: string | null;
+  name: string | null;
+  phone: string | null;
+};
+
+export type StripeCheckoutAddressSnapshot = {
+  city: string | null;
+  country: string | null;
+  line1: string | null;
+  line2: string | null;
+  postalCode: string | null;
+  state: string | null;
+};
+
 export type StripeCheckoutSessionState = {
+  amountTotalMinor: number | null;
   checkoutSessionId: CheckoutSessionId;
+  currencyCode: string | null;
+  customer: StripeCheckoutCustomerSnapshot;
+  newsletterOptIn: boolean;
   paymentStatus: StripeCheckoutPaymentStatus;
+  shippingAddress: StripeCheckoutAddressSnapshot | null;
   stripePaymentIntentId?: PaymentIntentId | null;
   status: StripeCheckoutSessionStatus;
 };

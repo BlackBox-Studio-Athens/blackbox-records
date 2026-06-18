@@ -6,6 +6,8 @@ export type PublicStoreOffer = PublicApiComponents['schemas']['PublicStoreOffer'
 export type PublicStoreOfferAvailability = PublicApiComponents['schemas']['PublicStoreOfferAvailability'];
 export type StoreCapabilities = PublicApiComponents['schemas']['StoreCapabilities'];
 export type CheckoutState = PublicApiComponents['schemas']['CheckoutState'];
+export type NewsletterRegistrationBody = PublicApiComponents['schemas']['NewsletterRegistrationBody'];
+export type NewsletterRegistrationResponse = PublicApiComponents['schemas']['NewsletterRegistrationResponse'];
 export type StartCheckoutBody = PublicApiComponents['schemas']['StartCheckoutBody'];
 export type StartCheckoutResponse = PublicApiComponents['schemas']['StartCheckoutResponse'];
 export type PublicCommerceError = PublicApiComponents['schemas']['PublicCommerceError'];
@@ -21,6 +23,7 @@ export interface PublicCheckoutApi {
   readStoreOfferVariants(storeItemSlug: string): Promise<PublicStoreOffer[]>;
   startCheckout(body: StartCheckoutBody): Promise<StartCheckoutResponse>;
   readCheckoutState(checkoutSessionId: string): Promise<CheckoutState>;
+  registerNewsletterSignup(body: NewsletterRegistrationBody): Promise<NewsletterRegistrationResponse>;
 }
 
 export class PublicCheckoutApiError extends Error {
@@ -56,6 +59,7 @@ export function createPublicCheckoutApi(
     .path('/api/checkout/sessions/{checkoutSessionId}/state')
     .method('get')
     .create();
+  const registerNewsletterSignupRequest = fetcher.path('/api/newsletter/registrations').method('post').create();
 
   return {
     async readStoreCapabilities() {
@@ -83,6 +87,12 @@ export function createPublicCheckoutApi(
       return readPublicCheckoutResponse(
         () => readCheckoutStateRequest({ checkoutSessionId }),
         'Could not load checkout status.',
+      );
+    },
+    async registerNewsletterSignup(body: NewsletterRegistrationBody) {
+      return readPublicCheckoutResponse(
+        () => registerNewsletterSignupRequest(body),
+        'Newsletter signup is temporarily unavailable.',
       );
     },
   };

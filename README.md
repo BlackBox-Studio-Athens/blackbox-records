@@ -69,8 +69,8 @@ pnpm install
 
 - Keep local and CI Node on the current 24.x LTS line; do not move this repo to Node Current for routine dependency updates.
 - Keep TypeScript on `5.9.3` until `@astrojs/check` and `openapi-typescript` publish compatible TypeScript 6 peer ranges.
-- Keep Prisma on the latest compatible v6 line, currently `6.19.3`; Prisma 7 requires a separate `prisma.config.ts` migration.
-- Keep repo Wrangler on the workspace dependency, currently `wrangler@4.85.0`; if a global Wrangler is installed, keep it aligned for ad hoc terminal use.
+- Keep Prisma on the latest compatible v7 line, currently `7.8.0`; datasource URL configuration lives in `apps/backend/prisma.config.ts`.
+- Keep repo Wrangler on the workspace dependency, currently `wrangler@4.94.0`; if a global Wrangler is installed, keep it aligned for ad hoc terminal use.
 - Keep GitHub CLI and Serena MCP updated locally, but do not commit machine-local tool shims, caches, credentials, or MCP memories.
 
 ## shadcn MCP registries
@@ -136,6 +136,14 @@ The Stripe sandbox smoke runner targets the deployed UAT Worker path, drives Str
 The runner defaults to the GitHub Pages UAT site and is also used by the downstream GitHub Actions `catalog-promotion-uat` environment after the UAT Pages deploy succeeds.
 
 Supported scenarios are `happy_path_paid`, `three_d_secure`, `card_declined`, `insufficient_funds`, `expired_card`, `incorrect_cvc`, `processing_error`, and `all`. The committed JetBrains run configuration `Stripe Sandbox Smoke` runs `--scenario all`. Stripe’s current test card reference lives at <https://docs.stripe.com/testing#cards>. Paid deployed-sandbox smoke now expects the persistent Stripe Dashboard/Workbench webhook endpoint to deliver to `https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev/api/stripe/webhooks`; `stripe listen` is local/temporary diagnostic tooling only and is not persistent readiness evidence.
+
+Run the UAT Resend smoke when you need to prove the sandbox Worker can register a newsletter Contact through Resend:
+
+```sh
+pnpm smoke:resend-uat
+```
+
+The Resend UAT smoke posts a synthetic consented signup to `/api/newsletter/registrations`, expects the sandbox sink routing to return `{"status":"registered"}`, and writes ignored evidence to `.codex-artifacts/smoke/uat/resend-uat/<run-id>/`. It does not print Resend API keys, Topic IDs, Contact IDs, or account diagnostics.
 
 Run the UAT static smoke when you need to verify deployed GitHub Pages static routes, Decap admin boot/config, representative public pages, checkout shell visibility, sitemap, robots, console errors, and high-risk public-secret exposure:
 
@@ -300,6 +308,7 @@ Current Worker scope:
 - frontend discovers the backend only through `PUBLIC_BACKEND_BASE_URL`
 - the dedicated sandbox deploy target is the `blackbox-records-backend-sandbox` Worker on `workers.dev`
 - runtime business secrets stay in Worker secrets or backend-local Wrangler `.dev.vars`, not in browser env vars or GitHub deploy credentials
+- Resend transactional email and newsletter Contact operations are Worker-owned through the backend email module and official Resend SDK; the static frontend never receives Resend API keys, Topic/Segment IDs, provider responses, or delivery diagnostics
 
 Clean dev run (mirrors the `ateleia` workflow):
 
@@ -416,6 +425,16 @@ pnpm audit:commerce-boundaries
   - `STRIPE_WEBHOOK_SECRET`
 - The required backend Stripe checkout configuration binding is:
   - `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`
+- The backend Resend runtime contract is:
+  - `RESEND_API_KEY` as a Worker secret or harmless committed local mock value
+  - `RESEND_FROM_EMAIL=orders@blackboxrecordsathens.com`
+  - `RESEND_REPLY_TO_EMAIL=support@blackboxrecordsathens.com`
+  - `RESEND_OPS_TO_EMAIL=blackboxrecordsathens@gmail.com`
+  - `RESEND_NEWSLETTER_TOPIC_ID`
+  - optional `RESEND_NEWSLETTER_SEGMENT_ID`
+  - `RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL=blackboxrecordsathens+TESTING@gmail.com` for the sandbox Worker target only
+- Resend uses `blackboxrecordsathens.com` as the single approved Free-tier sending domain. DNS verification, SPF/DKIM/DMARC alignment, Cloudflare Email Routing for support replies, Topic/Segment setup, and Worker secret upload are manual operator checkpoints; do not commit provider-readiness evidence.
+- Local and automated tests use application-level provider mocks and committed fake `re_mock_*` values. UAT application email and newsletter Contact writes route to the sink recipient; PRD ignores that override and uses real recipients only after provider setup is complete.
 - The sandbox Worker persistent webhook readiness check is:
   - `pnpm stripe:webhooks:verify --env sandbox`
   - it must stay verify-only and must not create, update, delete, rotate, log, or commit Stripe webhook endpoint secrets
@@ -426,6 +445,7 @@ pnpm audit:commerce-boundaries
 - The checkout return-origin and browser API CORS allowlist is configured server-side with `CHECKOUT_RETURN_ORIGINS`.
 - `COMMERCE_DB` is runtime-only backend infrastructure, not a browser env var and not a GitHub Actions credential.
 - `CHECKOUT_RETURN_ORIGINS` is a Worker runtime variable, not a browser-selected return URL or an open CORS wildcard.
+- `RESEND_API_KEY` and Resend provider diagnostics are runtime-only backend concerns. Run `resend --version`, `resend doctor --json`, and read-only domain/sender/contact/topic checks manually when preparing provider readiness; keep command output and account evidence out of committed source.
 - Current checkout return allowlist entries are exact origins only:
   - `http://127.0.0.1:4321`
   - `http://localhost:4321`
@@ -553,7 +573,7 @@ CI/deploy credentials and public build variables:
 ## GitHub Pages UAT CI/CD
 
 - UAT deployment is handled by `.github/workflows/pages.yml`.
-- The workflow uses `withastro/action@v6.1.1`, Node 24, and pnpm 10.33.2, and only deploys if all of these succeed:
+- The workflow uses `withastro/action@v6.1.1`, Node 24, and pnpm 10.33.4, and only deploys if all of these succeed:
   - `pnpm test:unit`
   - `pnpm check`
   - `pnpm build`

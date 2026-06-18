@@ -6,7 +6,7 @@ export type CheckoutShippingGateView = {
   tone: 'blocked' | 'empty' | 'ready';
 };
 
-export const CHECKOUT_SHIPPING_COPY = {
+const CHECKOUT_SHIPPING_COPY = {
   readyBadge: 'Greece only',
   readyDetail: 'Stripe collects the shipping address. The label arranges BOX NOW after payment.',
   stepTitle: 'Delivery details',

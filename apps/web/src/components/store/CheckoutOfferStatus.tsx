@@ -80,6 +80,7 @@ export default function CheckoutOfferStatus({
   const [view, setView] = useState<CheckoutOfferStatusView>(() => createInitialCheckoutOfferView(initialAvailability));
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
+  const [isNewsletterOptedIn, setIsNewsletterOptedIn] = useState(false);
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
   const [workerFallbackLineItem, setWorkerFallbackLineItem] = useState<CartLineItemSnapshot | null>(fallbackLineItem);
   const itemSummary = createCheckoutCartItemSummary(cartLines, workerFallbackLineItem);
@@ -150,6 +151,7 @@ export default function CheckoutOfferStatus({
     const checkoutState = await startHostedCheckout({
       api: checkoutApi,
       lines: currentCartLines,
+      newsletterOptIn: isNewsletterOptedIn,
       storeItemSlug,
       variantId: view.variantId,
     });
@@ -218,27 +220,44 @@ export default function CheckoutOfferStatus({
             )}
 
             {view.canStartCheckout && shippingGateView.canContinueToPayment && hasCheckoutLine ? (
-              <Button
-                type="button"
-                size="lg"
-                className="inline-flex h-auto min-h-11 w-full flex-wrap gap-2 rounded-none px-4 py-3 text-center uppercase tracking-[0.16em] whitespace-normal sm:w-auto sm:min-w-72 sm:flex-nowrap sm:gap-3 sm:px-6"
-                disabled={isStartingCheckout}
-                aria-busy={isStartingCheckout ? 'true' : undefined}
-                onClick={() => {
-                  void handleStartCheckout();
-                }}
-              >
-                {isStartingCheckout ? (
-                  <LoadingButtonContent label={ctaView.label} />
-                ) : ctaView.badgeSrc ? (
-                  <>
-                    <span className="min-w-0 leading-tight">{ctaView.label}</span>
-                    <img className="h-[18px] w-auto shrink-0" src={ctaView.badgeSrc} alt="" aria-hidden="true" />
-                  </>
-                ) : (
-                  ctaView.label
-                )}
-              </Button>
+              <div className="grid gap-4">
+                <label className="flex max-w-2xl items-start gap-3 border border-border/70 bg-background/55 p-3 text-sm leading-relaxed text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    className="mt-1 size-4 shrink-0 accent-foreground"
+                    checked={isNewsletterOptedIn}
+                    disabled={isStartingCheckout}
+                    onChange={(event) => {
+                      setIsNewsletterOptedIn(event.currentTarget.checked);
+                    }}
+                  />
+                  <span>
+                    Email me BlackBox Records release, distro, and event updates. You can unsubscribe anytime.
+                  </span>
+                </label>
+
+                <Button
+                  type="button"
+                  size="lg"
+                  className="inline-flex h-auto min-h-11 w-full flex-wrap gap-2 rounded-none px-4 py-3 text-center uppercase tracking-[0.16em] whitespace-normal sm:w-auto sm:min-w-72 sm:flex-nowrap sm:gap-3 sm:px-6"
+                  disabled={isStartingCheckout}
+                  aria-busy={isStartingCheckout ? 'true' : undefined}
+                  onClick={() => {
+                    void handleStartCheckout();
+                  }}
+                >
+                  {isStartingCheckout ? (
+                    <LoadingButtonContent label={ctaView.label} />
+                  ) : ctaView.badgeSrc ? (
+                    <>
+                      <span className="min-w-0 leading-tight">{ctaView.label}</span>
+                      <img className="h-[18px] w-auto shrink-0" src={ctaView.badgeSrc} alt="" aria-hidden="true" />
+                    </>
+                  ) : (
+                    ctaView.label
+                  )}
+                </Button>
+              </div>
             ) : (
               <p className="text-xs leading-relaxed text-muted-foreground">
                 {!hasCheckoutLine

@@ -68,10 +68,13 @@ export function verifyEnvironmentModel(): CheckResult[] {
         uatSandboxSmokeWorkflow.includes('environment: catalog-promotion-uat') &&
         uatSandboxSmokeWorkflow.includes('github.event.workflow_run.head_sha') &&
         uatSandboxSmokeWorkflow.includes('pnpm smoke:stripe-sandbox -- \\') &&
+        uatSandboxSmokeWorkflow.includes('pnpm smoke:resend-uat -- \\') &&
         uatSandboxSmokeWorkflow.includes('--site-url "${UAT_SITE_URL}"') &&
+        uatSandboxSmokeWorkflow.includes('--worker-url "${UAT_WORKER_URL}"') &&
         uatSandboxSmokeWorkflow.includes('--scenario all') &&
         uatSandboxSmokeWorkflow.includes('--screenshots on-failure') &&
-        uatSandboxSmokeWorkflow.includes('.codex-artifacts/smoke/uat/stripe-sandbox/**'),
+        uatSandboxSmokeWorkflow.includes('.codex-artifacts/smoke/uat/stripe-sandbox/**') &&
+        uatSandboxSmokeWorkflow.includes('.codex-artifacts/smoke/uat/resend-uat/**'),
     },
     {
       detail: 'Local Worker checkout origins stay local-only.',

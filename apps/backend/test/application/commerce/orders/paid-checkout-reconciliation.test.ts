@@ -4,7 +4,9 @@ import { reconcileCheckoutSession } from '../../../../src/application/commerce/c
 import {
   applyPaidCheckoutReconciliation,
   createPendingCheckoutOrder,
+  finalizePaidCheckoutWithRepositories,
   type ApplyPaidCheckoutReconciliationResult,
+  type PaidCheckoutFinalizationRepository,
 } from '../../../../src/application/commerce/orders';
 import type {
   CheckoutOrderRecord,
@@ -172,6 +174,7 @@ describe('paid checkout reconciliation', () => {
   const primaryStripePriceId = stripePriceId('price_test_barren_point');
   const variantId = toVariantId('variant_disintegration-black-vinyl-lp_standard');
   let orders: InMemoryOrderStateRepository;
+  let paidCheckoutFinalizer: PaidCheckoutFinalizationRepository;
   let stock: InMemoryStockRepository;
   let stockChanges: InMemoryStockChangeRepository;
 
@@ -179,6 +182,9 @@ describe('paid checkout reconciliation', () => {
     orders = new InMemoryOrderStateRepository();
     stock = new InMemoryStockRepository();
     stockChanges = new InMemoryStockChangeRepository();
+    paidCheckoutFinalizer = {
+      finalizePaidCheckout: (command) => finalizePaidCheckoutWithRepositories(orders, stock, stockChanges, command),
+    };
     await createPendingCheckoutOrder(orders, {
       checkoutSessionId: primaryCheckoutSessionId,
       lines: [
@@ -201,9 +207,22 @@ describe('paid checkout reconciliation', () => {
   });
 
   it('transitions a paid checkout order and decrements stock once', async () => {
-    const result = await applyPaidCheckoutReconciliation(orders, stock, stockChanges, paidReconciliation(), appliedAt);
+    const result = await applyPaidCheckoutReconciliation(
+      orders,
+      paidCheckoutFinalizer,
+      paidReconciliation(),
+      appliedAt,
+    );
 
     expect(result).toEqual({
+      checkoutOrderPaid: expect.objectContaining({
+        amountTotalMinor: 2500,
+        checkoutSessionId: 'cs_test_123',
+        currencyCode: 'EUR',
+        customerEmail: 'buyer@example.com',
+        orderReference: 'BBR-ORDER1',
+        paymentStatus: 'paid',
+      }),
       kind: 'applied',
       order: expect.objectContaining({
         paidAt: appliedAt,
@@ -224,11 +243,11 @@ describe('paid checkout reconciliation', () => {
   });
 
   it('does not decrement stock for duplicate paid webhook replay', async () => {
-    await applyPaidCheckoutReconciliation(orders, stock, stockChanges, paidReconciliation(), appliedAt);
+    await applyPaidCheckoutReconciliation(orders, paidCheckoutFinalizer, paidReconciliation(), appliedAt);
     stock.saveCalls = 0;
 
     await expect(
-      applyPaidCheckoutReconciliation(orders, stock, stockChanges, paidReconciliation(), appliedAt),
+      applyPaidCheckoutReconciliation(orders, paidCheckoutFinalizer, paidReconciliation(), appliedAt),
     ).resolves.toEqual({
       kind: 'replay',
       order: expect.objectContaining({
@@ -243,11 +262,19 @@ describe('paid checkout reconciliation', () => {
     await expect(
       applyPaidCheckoutReconciliation(
         orders,
-        stock,
-        stockChanges,
+        paidCheckoutFinalizer,
         reconcileCheckoutSession({
+          amountTotalMinor: null,
           checkoutSessionId: primaryCheckoutSessionId,
+          currencyCode: null,
+          customer: {
+            email: null,
+            name: null,
+            phone: null,
+          },
+          newsletterOptIn: false,
           paymentStatus: 'unpaid',
+          shippingAddress: null,
           status: 'open',
         }),
         appliedAt,
@@ -264,8 +291,7 @@ describe('paid checkout reconciliation', () => {
     await expect(
       applyPaidCheckoutReconciliation(
         new InMemoryOrderStateRepository(),
-        stock,
-        stockChanges,
+        paidCheckoutFinalizer,
         paidReconciliation(),
         appliedAt,
       ),
@@ -284,11 +310,11 @@ describe('paid checkout reconciliation', () => {
     stock.saveCalls = 0;
 
     await expect(
-      applyPaidCheckoutReconciliation(orders, stock, stockChanges, paidReconciliation(), appliedAt),
+      applyPaidCheckoutReconciliation(orders, paidCheckoutFinalizer, paidReconciliation(), appliedAt),
     ).resolves.toEqual({
       kind: 'stock_unavailable',
       order: expect.objectContaining({
-        status: 'paid',
+        status: 'pending_payment',
       }),
       reason: 'Paid checkout cannot decrement unavailable stock.',
     });
@@ -297,12 +323,18 @@ describe('paid checkout reconciliation', () => {
   });
 
   it('uses finalized Stripe line item quantities before decrementing paid stock', async () => {
-    const result = await applyPaidCheckoutReconciliation(orders, stock, stockChanges, paidReconciliation(), appliedAt, [
-      {
-        quantity: cartQuantity(2),
-        stripePriceId: primaryStripePriceId,
-      },
-    ]);
+    const result = await applyPaidCheckoutReconciliation(
+      orders,
+      paidCheckoutFinalizer,
+      paidReconciliation(),
+      appliedAt,
+      [
+        {
+          quantity: cartQuantity(2),
+          stripePriceId: primaryStripePriceId,
+        },
+      ],
+    );
 
     expect(result).toMatchObject({
       kind: 'applied',
@@ -318,7 +350,7 @@ describe('paid checkout reconciliation', () => {
 
   it('moves paid checkout to needs_review when finalized Stripe line items cannot be mapped', async () => {
     await expect(
-      applyPaidCheckoutReconciliation(orders, stock, stockChanges, paidReconciliation(), appliedAt, [
+      applyPaidCheckoutReconciliation(orders, paidCheckoutFinalizer, paidReconciliation(), appliedAt, [
         {
           quantity: cartQuantity(2),
           stripePriceId: stripePriceId('price_unmapped'),
@@ -338,8 +370,24 @@ describe('paid checkout reconciliation', () => {
 
 function paidReconciliation() {
   return reconcileCheckoutSession({
+    amountTotalMinor: 2500,
     checkoutSessionId: checkoutSessionId('cs_test_123'),
+    currencyCode: 'EUR',
+    customer: {
+      email: 'buyer@example.com',
+      name: 'Buyer Name',
+      phone: '+302100000000',
+    },
+    newsletterOptIn: true,
     paymentStatus: 'paid',
+    shippingAddress: {
+      city: 'Athens',
+      country: 'GR',
+      line1: 'Long Street 1',
+      line2: null,
+      postalCode: '10558',
+      state: null,
+    },
     status: 'complete',
     stripePaymentIntentId: paymentIntentId('pi_test_123'),
   });

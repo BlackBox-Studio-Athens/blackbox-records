@@ -17,6 +17,13 @@ export type RuntimeConfigCategory = {
     | 'PRD_OPEN_GATE'
     | 'PRODUCTION_CATALOG_CRON'
     | 'PRODUCT_ENVIRONMENT_MAPPING'
+    | 'RESEND_API_KEY'
+    | 'RESEND_FROM_EMAIL'
+    | 'RESEND_NEWSLETTER_SEGMENT_ID'
+    | 'RESEND_NEWSLETTER_TOPIC_ID'
+    | 'RESEND_OPS_TO_EMAIL'
+    | 'RESEND_REPLY_TO_EMAIL'
+    | 'RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL'
     | 'STRIPE_PAYMENT_METHOD_CONFIGURATION_ID'
     | 'STRIPE_SECRET_KEY'
     | 'STRIPE_WEBHOOK_SECRET'
@@ -106,6 +113,7 @@ export function verifyRuntimeConfig(input: {
     classifyWranglerTextPresence('CHECKOUT_RETURN_ORIGINS', environmentBlock),
     classifyWorkerOriginScope(input.environment, environmentBlock),
     classifyWranglerTextPresence('COMMERCE_DB', environmentBlock, /"binding"\s*:\s*"COMMERCE_DB"/),
+    ...classifyResendRuntimeConfig(input.environment, environmentBlock, input.secretNames),
     classifyFlagsPresence(environmentBlock),
     classifyPrdOpenGate(input.environment),
     classifyProductionCronPresence(input.environment, environmentBlock),
@@ -192,7 +200,7 @@ function classifyWorkerConfigPresence(
 }
 
 function classifySecretPresence(
-  name: Extract<RuntimeConfigCategory['name'], 'STRIPE_SECRET_KEY' | 'STRIPE_WEBHOOK_SECRET'>,
+  name: Extract<RuntimeConfigCategory['name'], 'RESEND_API_KEY' | 'STRIPE_SECRET_KEY' | 'STRIPE_WEBHOOK_SECRET'>,
   secretNames: readonly string[] | null,
 ): RuntimeConfigCategory {
   if (!secretNames) {
@@ -206,6 +214,98 @@ function classifySecretPresence(
   return {
     name,
     status: secretNames.includes(name) ? 'present' : 'missing',
+  };
+}
+
+function classifyResendRuntimeConfig(
+  environment: RuntimeConfigEnvironment,
+  environmentBlock: string,
+  secretNames: readonly string[] | null,
+): RuntimeConfigCategory[] {
+  return [
+    classifyWorkerConfigPresence('RESEND_API_KEY', environmentBlock, secretNames),
+    classifyExactWorkerConfigPresence(
+      'RESEND_FROM_EMAIL',
+      environmentBlock,
+      'orders@blackboxrecordsathens.com',
+      'Resend sender must stay on the verified orders@blackboxrecordsathens.com address.',
+    ),
+    classifyExactWorkerConfigPresence(
+      'RESEND_REPLY_TO_EMAIL',
+      environmentBlock,
+      'support@blackboxrecordsathens.com',
+      'Resend reply-to must route through support@blackboxrecordsathens.com.',
+    ),
+    classifyExactWorkerConfigPresence(
+      'RESEND_OPS_TO_EMAIL',
+      environmentBlock,
+      'blackboxrecordsathens@gmail.com',
+      'Ops notifications must route to the Gmail operations inbox.',
+    ),
+    classifyWorkerConfigPresence('RESEND_NEWSLETTER_TOPIC_ID', environmentBlock, secretNames),
+    classifyResendNewsletterSegmentPresence(environmentBlock),
+    classifyResendUatRecipientOverride(environment, environmentBlock),
+  ];
+}
+
+function classifyExactWorkerConfigPresence(
+  name: RuntimeConfigCategory['name'],
+  environmentBlock: string,
+  expectedValue: string,
+  detail: string,
+): RuntimeConfigCategory {
+  const match = new RegExp(`"${escapeRegExp(name)}"\\s*:\\s*"(?<value>[^"]*)"`).exec(environmentBlock);
+
+  return {
+    detail: match?.groups?.value === expectedValue ? undefined : detail,
+    name,
+    status: match?.groups?.value === expectedValue ? 'present' : 'missing',
+  };
+}
+
+function classifyResendNewsletterSegmentPresence(environmentBlock: string): RuntimeConfigCategory {
+  const hasSegment =
+    classifyWranglerTextPresence('RESEND_NEWSLETTER_SEGMENT_ID', environmentBlock).status === 'present';
+
+  return {
+    detail: hasSegment
+      ? 'Optional newsletter Segment config is present.'
+      : 'Newsletter Segment assignment is optional and deferred.',
+    name: 'RESEND_NEWSLETTER_SEGMENT_ID',
+    status: hasSegment ? 'present' : 'not_applicable',
+  };
+}
+
+function classifyResendUatRecipientOverride(
+  environment: RuntimeConfigEnvironment,
+  environmentBlock: string,
+): RuntimeConfigCategory {
+  const match = /"RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL"\s*:\s*"(?<email>[^"]*)"/.exec(environmentBlock);
+
+  if (environment === 'sandbox') {
+    const isSink = match?.groups?.email === 'blackboxrecordsathens+TESTING@gmail.com';
+
+    return {
+      detail: isSink
+        ? 'UAT email and Contact writes route to the sink recipient.'
+        : 'UAT must route email and Contact writes to the sink recipient.',
+      name: 'RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL',
+      status: isSink ? 'present' : 'missing',
+    };
+  }
+
+  if (environment === 'production' && match) {
+    return {
+      detail: 'PRD must not honor the UAT sink recipient override.',
+      name: 'RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL',
+      status: 'missing',
+    };
+  }
+
+  return {
+    detail: 'UAT sink recipient applies only to the sandbox Worker runtime target.',
+    name: 'RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL',
+    status: 'not_applicable',
   };
 }
 
@@ -417,6 +517,7 @@ function getCheckoutReturnOrigins(environmentBlock: string): string[] {
 
 function redactSensitiveValues(value: string): string {
   return value
+    .replace(/re_[A-Za-z0-9_]+/g, 're_[redacted]')
     .replace(/sk_(test|live)_[A-Za-z0-9_]+/g, 'sk_$1_[redacted]')
     .replace(/whsec_[A-Za-z0-9_]+/g, '[redacted_stripe_webhook_secret]')
     .replace(/pmc_[A-Za-z0-9_]+/g, 'pmc_[redacted]');
@@ -430,6 +531,7 @@ async function main(): Promise<void> {
   const options = parseRuntimeConfigVerifyArgs(process.argv.slice(2));
   const result = verifyRuntimeConfig({
     environment: options.environment,
+    requireLiveSecrets: options.requireLiveSecrets,
     secretNames: readWorkerSecretNames(options.environment),
     wranglerConfigText: readFileSync(wranglerConfigPath, 'utf8'),
   });

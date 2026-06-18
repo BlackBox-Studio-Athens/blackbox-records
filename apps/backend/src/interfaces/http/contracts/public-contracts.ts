@@ -73,6 +73,7 @@ const startCheckoutLineSchema = z
 const startCheckoutBodySchema = z
   .object({
     lines: z.array(startCheckoutLineSchema).min(1).optional(),
+    newsletterOptIn: z.boolean().optional(),
     storeItemSlug: z.string().trim().min(1).optional(),
     variantId: z.string().trim().min(1).optional(),
   })
@@ -94,6 +95,20 @@ const checkoutStateSchema = z
     status: z.enum(['open', 'complete', 'expired']).nullable(),
   })
   .openapi('CheckoutState');
+
+const newsletterRegistrationBodySchema = z
+  .object({
+    consentAccepted: z.literal(true),
+    email: z.string().trim().email(),
+  })
+  .strict()
+  .openapi('NewsletterRegistrationBody');
+
+const newsletterRegistrationResponseSchema = z
+  .object({
+    status: z.literal('registered'),
+  })
+  .openapi('NewsletterRegistrationResponse');
 
 export const getStoreItemRoute = createRoute({
   method: 'get',
@@ -249,12 +264,54 @@ export const getCheckoutStateRoute = createRoute({
   tags: ['Checkout'],
 });
 
-export const publicContractModules = [
+export const postNewsletterRegistrationRoute = createRoute({
+  method: 'post',
+  path: '/api/newsletter/registrations',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: newsletterRegistrationBodySchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: newsletterRegistrationResponseSchema,
+        },
+      },
+      description: 'Registered a public newsletter contact.',
+    },
+    400: {
+      content: {
+        'application/json': {
+          schema: errorSchema,
+        },
+      },
+      description: 'Invalid newsletter signup request.',
+    },
+    503: {
+      content: {
+        'application/json': {
+          schema: errorSchema,
+        },
+      },
+      description: 'Newsletter signup is temporarily unavailable.',
+    },
+  },
+  tags: ['Newsletter'],
+});
+
+const publicContractModules = [
   getStoreCapabilitiesRoute,
   getStoreItemRoute,
   getStoreItemVariantsRoute,
   postCheckoutSessionRoute,
   getCheckoutStateRoute,
+  postNewsletterRegistrationRoute,
 ] as const;
 
 export const publicContractPaths = publicContractModules.map((route) => route.path);

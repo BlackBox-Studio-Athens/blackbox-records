@@ -8,7 +8,12 @@ export type CheckoutReconciliation = {
   isAuthoritative: false;
   recommendedOrderStatus: OrderStatus;
   source: {
+    amountTotalMinor: number | null;
     checkoutSessionId: CheckoutSessionId;
+    currencyCode: string | null;
+    customer: StripeCheckoutSessionState['customer'];
+    newsletterOptIn: boolean;
+    shippingAddress: StripeCheckoutSessionState['shippingAddress'];
     stripePaymentIntentId: PaymentIntentId | null;
   };
 };
@@ -25,7 +30,12 @@ export function reconcileCheckoutSession(session: StripeCheckoutSessionState): C
     isAuthoritative: false,
     recommendedOrderStatus: mapRecommendedOrderStatus(session),
     source: {
+      amountTotalMinor: session.amountTotalMinor,
       checkoutSessionId: session.checkoutSessionId,
+      currencyCode: session.currencyCode,
+      customer: session.customer,
+      newsletterOptIn: session.newsletterOptIn,
+      shippingAddress: session.shippingAddress,
       stripePaymentIntentId: session.stripePaymentIntentId ?? null,
     },
   };

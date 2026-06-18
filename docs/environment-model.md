@@ -13,15 +13,16 @@ BlackBox Records uses three Product Environments: Local, UAT, and PRD. Other nam
 
 PRD exists as a deployable static readiness surface, but live checkout and live provider catalog mutation are disabled until an explicit production-readiness gate opens them. Before that gate, PRD evidence is readiness-only, disabled, or `not_configured`; it is not successful PRD Promotion Evidence.
 
-The disabled PRD readiness probe does not require live Stripe secrets. Opened PRD promotion runs use `pnpm runtime:config:verify --env production --require-live-secrets` before live provider mutation.
+The disabled PRD readiness probe does not require live Stripe secrets. Resend runtime config is still environment-scoped because email delivery and newsletter Contact writes are backend-owned. Opened PRD promotion runs use `pnpm runtime:config:verify --env production --require-live-secrets` before live provider mutation.
 
 ## Platform Layers
 
 - GitHub Actions environments are credential and protection scopes for workflow jobs. They are not Product Environments.
 - Wrangler environments are Worker runtime targets. `sandbox` maps to UAT and `production` maps to PRD.
-- Stripe test mode, Stripe live mode, and stripe-mock are provider modes. They are not Product Environments.
+- Stripe test mode, Stripe live mode, stripe-mock, and Resend provider resources are provider layers. They are not Product Environments.
 - Secret stores remain isolated by design: local ignored files, GitHub Actions secrets, Cloudflare Worker secrets, and Stripe Dashboard/Workbench values must be populated separately. The repo may validate names and presence, but it must not print, commit, sync, or rotate sensitive values.
 - `@t3-oss/env-core` validates local/process environment contracts in Node scripts and preflight checks. It is not a secret store.
+- Resend Free-tier runtime work uses one verified custom domain, `blackboxrecordsathens.com`. UAT maps application email and newsletter Contact writes to `blackboxrecordsathens+TESTING@gmail.com`; PRD must not honor that sink override.
 
 ## Origins And API Targets
 
@@ -51,3 +52,4 @@ After this model is active, maintainers need these provider-side steps:
 3. Add `PRD_OPEN_GATE=open` only when the production-readiness change explicitly approves live PRD checkout and live provider mutation.
 4. Add or rotate Cloudflare Worker secrets from `apps/backend` with `wrangler secret put --env sandbox` or `--env production`; do not store the values in docs, screenshots, chat, or committed files.
 5. Configure Stripe Dashboard/Workbench webhook and catalog settings in test mode for UAT and live mode for PRD. Existing webhook signing secrets cannot be retrieved by Stripe APIs, so endpoint shape can be verified by CLI but signing-secret match needs a redacted runtime proof.
+6. Configure Resend manually before live provider acceptance: verify `blackboxrecordsathens.com` DNS through Cloudflare, align SPF/DKIM/DMARC, keep Cloudflare Email Routing for `support@blackboxrecordsathens.com` replies where needed, create/upload `RESEND_API_KEY`, configure `RESEND_NEWSLETTER_TOPIC_ID`, optionally configure `RESEND_NEWSLETTER_SEGMENT_ID`, and run read-only Resend CLI checks without committing evidence.

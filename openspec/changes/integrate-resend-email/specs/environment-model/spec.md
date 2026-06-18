@@ -8,8 +8,9 @@ The system SHALL scope Resend provider resources and runtime config to the canon
 
 - **GIVEN** the Worker runs in Local, UAT, or PRD
 - **WHEN** paid-order email behavior reads runtime config
-- **THEN** it uses only that environment's Resend API key, sender, ops recipient, and recipient override.
+- **THEN** it uses only that environment's Resend API key, sender, reply-to, ops recipient, newsletter Topic, and recipient/contact override.
 - **AND** UAT maps to the Worker sandbox runtime target and requires `RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL=blackboxrecordsathens+TESTING@gmail.com`
+- **AND** UAT uses that override as the sink recipient for application email and the sink Contact for newsletter registration
 - **AND** PRD maps to the Worker production runtime target and must not honor the UAT recipient override.
 
 #### Scenario: Local development runs without real provider secrets
@@ -37,8 +38,9 @@ The system SHALL keep Resend runtime behavior and provider setup within the appr
 - **THEN** the system uses the owned `blackboxrecordsathens.com` domain as the single verified Resend sending domain
 - **AND** the domain was bought through Spaceship and delegated to Cloudflare nameservers
 - **AND** Cloudflare is the DNS control plane for Resend DNS records and Cloudflare Email Routing records
+- **AND** Cloudflare must be authoritative and hold required Resend DNS records before live Resend domain proof completes
 - **AND** Worker email can use clean sender addresses such as `orders@blackboxrecordsathens.com` and `newsletter@blackboxrecordsathens.com` after DNS and Resend verification
-- **AND** Cloudflare Email Routing remains the inbound alias and catch-all forwarding path to Gmail after setup
+- **AND** Cloudflare Email Routing remains the inbound alias and catch-all forwarding path to Gmail after setup where it supports reply routing for this task
 - **AND** DNS verification, SPF/DKIM/DMARC alignment, any required SPF record merging, and Cloudflare Email Routing setup remain manual operator checkpoints
 - **AND** Local implementation and automated tests do not require live domain verification
 - **AND** live UAT/PRD provider acceptance does not complete until DNS and Resend verification are done

@@ -5,6 +5,8 @@ export type {
   FinalizedCheckoutSessionLineItem,
   HostedCheckoutSession,
   HostedCheckoutSessionRequest,
+  StripeCheckoutAddressSnapshot,
+  StripeCheckoutCustomerSnapshot,
   StripeCheckoutPaymentStatus,
   StripeCheckoutSessionState,
   StripeCheckoutSessionStatus,

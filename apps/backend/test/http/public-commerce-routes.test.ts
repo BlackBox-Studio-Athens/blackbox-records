@@ -15,6 +15,7 @@ const mockListVariantOffersForStoreItem = vi.fn();
 const mockReadStoreCapabilities = vi.fn();
 const mockStartCheckout = vi.fn();
 const mockReadCheckoutState = vi.fn();
+const mockRegisterNewsletterSignup = vi.fn();
 
 vi.mock('../../src/interfaces/http/routes/public-commerce-services', () => ({
   createPublicCommerceServices: () => ({
@@ -31,6 +32,16 @@ vi.mock('../../src/interfaces/http/routes/public-commerce-services', () => ({
     readStoreCapabilities: mockReadStoreCapabilities,
     readStoreOffer: mockReadStoreOffer,
     startCheckout: mockStartCheckout,
+  }),
+}));
+
+vi.mock('../../src/interfaces/http/routes/public-newsletter-services', () => ({
+  createPublicNewsletterServices: () => ({
+    errors: {
+      EmailConfigurationError: class EmailConfigurationError extends Error {},
+      ZodError: class ZodError extends Error {},
+    },
+    registerNewsletterSignup: mockRegisterNewsletterSignup,
   }),
 }));
 
@@ -187,6 +198,7 @@ describe('public commerce routes', () => {
       cancelUrl: 'https://blackbox.example/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
       successUrl:
         'https://blackbox.example/blackbox-records/store/disintegration-black-vinyl-lp/checkout/return?session_id={CHECKOUT_SESSION_ID}',
+      newsletterOptIn: false,
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
@@ -224,6 +236,114 @@ describe('public commerce routes', () => {
     expect(mockStartCheckout).toHaveBeenCalledOnce();
     expect(response.status).toBe(200);
     expectNoStoreCacheControl(response);
+  });
+
+  it('passes explicit checkout newsletter opt-in without provider details in the browser payload', async () => {
+    mockStartCheckout.mockResolvedValueOnce({
+      checkoutSessionId: 'cs_test_123',
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
+    });
+
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://backend.test/api/checkout/sessions',
+      {
+        body: JSON.stringify({
+          newsletterOptIn: true,
+          storeItemSlug: 'disintegration-black-vinyl-lp',
+          variantId: 'variant_disintegration-black-vinyl-lp_standard',
+        }),
+        headers: {
+          origin: 'https://blackbox.example',
+          referer: 'https://blackbox.example/store/disintegration-black-vinyl-lp/checkout/',
+          'content-type': 'application/json',
+        },
+        method: 'POST',
+      },
+      testBindings,
+    );
+
+    expect(mockStartCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        newsletterOptIn: true,
+      }),
+    );
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+  });
+
+  it('registers direct newsletter signups through the public Worker route', async () => {
+    mockRegisterNewsletterSignup.mockResolvedValueOnce({
+      contactRouting: {
+        contactEmail: 'fan@example.com',
+        intendedSubscriberEmail: 'fan@example.com',
+        isSinkRouted: false,
+      },
+      retryable: false,
+      status: 'registered',
+    });
+
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://backend.test/api/newsletter/registrations',
+      {
+        body: JSON.stringify({
+          consentAccepted: true,
+          email: 'fan@example.com',
+        }),
+        headers: {
+          'content-type': 'application/json',
+          origin: 'https://blackbox.example',
+        },
+        method: 'POST',
+      },
+      testBindings,
+    );
+
+    expect(mockRegisterNewsletterSignup).toHaveBeenCalledWith({
+      email: 'fan@example.com',
+    });
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    await expect(response.json()).resolves.toEqual({
+      status: 'registered',
+    });
+  });
+
+  it('maps newsletter provider failures to a provider-safe public response', async () => {
+    mockRegisterNewsletterSignup.mockResolvedValueOnce({
+      contactRouting: {
+        contactEmail: 'fan@example.com',
+        intendedSubscriberEmail: 'fan@example.com',
+        isSinkRouted: false,
+      },
+      providerSafeReason: 'provider_unavailable',
+      retryable: true,
+      status: 'failed',
+    });
+
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://backend.test/api/newsletter/registrations',
+      {
+        body: JSON.stringify({
+          consentAccepted: true,
+          email: 'fan@example.com',
+        }),
+        headers: {
+          'content-type': 'application/json',
+          origin: 'https://blackbox.example',
+        },
+        method: 'POST',
+      },
+      testBindings,
+    );
+
+    expect(response.status).toBe(503);
+    expectNoStoreCacheControl(response);
+    await expect(response.json()).resolves.toEqual({
+      error: 'Newsletter signup is temporarily unavailable.',
+    });
   });
 
   it('rejects checkout return URLs from unapproved origins', async () => {

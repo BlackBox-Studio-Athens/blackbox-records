@@ -9,7 +9,7 @@ Integrating Resend gives the Worker a single email provider boundary for paid-or
 - Add a Worker-owned email communications capability backed by the official Resend SDK.
 - Send rich, BlackBox-designed, repo-owned HTML/text shopper confirmation and ops fulfillment emails only after the first verified Stripe paid transition.
 - Add Resend-backed newsletter registration for the existing site signup forms and shopper opt-in during purchase.
-- Add a repo-owned Resend provider verifier for CLI/account/domain readiness without using the CLI at runtime.
+- Document manual Resend and Cloudflare provider readiness checkpoints without adding a repo-owned verifier script or committed evidence artifact.
 - Extend environment, order, and module-boundary specs so Resend secrets, sender config, runtime behavior, and local validation remain explicit.
 - Stay compatible with Resend Free tier constraints; defer welcome emails, newsletter broadcast composition/sending, DNS automation, secret upload automation, and provider account/domain/key automation to later reviewable changes.
 
@@ -28,5 +28,5 @@ Integrating Resend gives the Worker a single email provider boundary for paid-or
 ## Impact
 
 - Backend Worker env contract, Resend SDK infrastructure gateway, email application services, and Stripe webhook acknowledgement path.
-- Repo provider verification script and docs for Resend CLI diagnostics and manual DNS/secret checkpoints.
+- OpenSpec/docs guidance for manual Resend CLI diagnostics and manual DNS/secret checkpoints; no committed provider-readiness script or evidence artifact.
 - Unit tests, runtime config verification, module-boundary checks, and required repo gates.

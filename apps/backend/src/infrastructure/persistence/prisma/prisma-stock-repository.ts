@@ -2,6 +2,8 @@ import type { StockRecord, StockRepository, StockState } from '../../../domain/c
 import { createStockQuantity, parseVariantId } from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
+type PrismaStockClient = Pick<PrismaClient, 'stock'>;
+
 function mapStock(record: {
   createdAt: Date;
   onlineQuantity: number;
@@ -19,7 +21,7 @@ function mapStock(record: {
 }
 
 export class PrismaStockRepository implements StockRepository {
-  public constructor(private readonly prisma: PrismaClient) {}
+  public constructor(private readonly prisma: PrismaStockClient) {}
 
   public async findByVariantId(variantId: string): Promise<StockRecord | null> {
     const record = await this.prisma.stock.findUnique({

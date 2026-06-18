@@ -278,8 +278,17 @@ describe('checkout use cases', () => {
       })),
       readCheckoutSessionLineItems: vi.fn(async () => []),
       readCheckoutSession: vi.fn(async () => ({
+        amountTotalMinor: null,
         checkoutSessionId: checkoutSessionId('cs_test_123'),
+        currencyCode: null,
+        customer: {
+          email: null,
+          name: null,
+          phone: null,
+        },
+        newsletterOptIn: false,
         paymentStatus: 'paid' as const,
+        shippingAddress: null,
         status: 'complete' as const,
       })),
     };
@@ -615,6 +624,7 @@ describe('checkout use cases', () => {
         },
       ],
       cancelUrl: 'https://example.com/checkout',
+      newsletterOptIn: false,
       successUrl: 'https://example.com/return',
     });
     expect(orders.records.get('cs_test_123')).toEqual(
@@ -665,8 +675,34 @@ describe('checkout use cases', () => {
         },
       ],
       cancelUrl: 'https://example.com/checkout',
+      newsletterOptIn: false,
       successUrl: 'https://example.com/return',
     });
+  });
+
+  it('passes checkout newsletter opt-in to the hosted Checkout Session request', async () => {
+    await startCheckout(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      checkoutGateway,
+      orders,
+      {
+        cancelUrl: 'https://example.com/checkout',
+        newsletterOptIn: true,
+        successUrl: 'https://example.com/return',
+        storeItemSlug: storeItem.storeItemSlug,
+        variantId: storeItem.variantId,
+      },
+    );
+
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        newsletterOptIn: true,
+      }),
+    );
   });
 
   it('maps Stripe Checkout Session status into app-owned return state without D1 writes', async () => {

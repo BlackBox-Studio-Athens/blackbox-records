@@ -149,6 +149,7 @@ export type HostedCheckoutStartState =
 export type HostedCheckoutStartInput = {
   api: PublicCheckoutApi;
   lines?: CartLine[];
+  newsletterOptIn?: boolean;
   storeItemSlug: string;
   variantId: string;
 };
@@ -156,6 +157,7 @@ export type HostedCheckoutStartInput = {
 export async function startHostedCheckout({
   api,
   lines,
+  newsletterOptIn = false,
   storeItemSlug,
   variantId,
 }: HostedCheckoutStartInput): Promise<HostedCheckoutStartState> {
@@ -176,6 +178,7 @@ export async function startHostedCheckout({
           checkoutLines[0]!.variantId !== variantId));
     const { checkoutUrl } = await api.startCheckout({
       ...(shouldSendMultiLineContract ? { lines: checkoutLines } : {}),
+      ...(newsletterOptIn ? { newsletterOptIn: true } : {}),
       storeItemSlug,
       variantId,
     });
@@ -199,7 +202,7 @@ export async function startHostedCheckout({
   }
 }
 
-export function readCheckoutErrorMessage(error: unknown): string {
+function readCheckoutErrorMessage(error: unknown): string {
   if (error instanceof PublicCheckoutApiError) {
     return error.message;
   }

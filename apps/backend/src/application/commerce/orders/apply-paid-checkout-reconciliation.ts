@@ -3,24 +3,23 @@ import type {
   CheckoutOrderRecord,
   CheckoutOrderLineRecord,
   StockChangeRecord,
-  StockChangeRepository,
   StockRecord,
-  StockRepository,
   OrderStateRepository,
 } from '../../../domain/commerce/repositories/spi';
 import {
   createCartQuantity,
-  createStockChangeDelta,
-  createStockQuantity,
   type CartQuantity,
   type CheckoutSessionId,
   type StripePriceId,
 } from '../../../domain/commerce';
+import { createCheckoutOrderPaidEvent, type CheckoutOrderPaid } from './checkout-order-paid-event';
 import { InvalidOrderTransitionError } from './errors';
+import type { PaidCheckoutFinalizationRepository } from './paid-checkout-finalization';
 import { transitionCheckoutOrder } from './transition-checkout-order';
 
 export type ApplyPaidCheckoutReconciliationResult =
   | {
+      checkoutOrderPaid: CheckoutOrderPaid;
       kind: 'applied';
       order: CheckoutOrderRecord;
       stock: StockRecord;
@@ -55,8 +54,7 @@ export type ApplyPaidCheckoutReconciliationResult =
 
 export async function applyPaidCheckoutReconciliation(
   orders: OrderStateRepository,
-  stock: StockRepository,
-  stockChanges: StockChangeRepository,
+  paidCheckoutFinalizer: PaidCheckoutFinalizationRepository,
   reconciliation: CheckoutReconciliation,
   appliedAt = new Date(),
   finalizedLineItems: FinalizedPaidCheckoutLineItem[] = [],
@@ -107,15 +105,37 @@ export async function applyPaidCheckoutReconciliation(
     }
   }
 
-  let orderTransitionResult: Awaited<ReturnType<typeof transitionCheckoutOrder>>;
-
   try {
-    orderTransitionResult = await transitionCheckoutOrder(orders, {
+    const finalizationResult = await paidCheckoutFinalizer.finalizePaidCheckout({
       checkoutSessionId,
+      lineItems: reconciledOrderLines,
       stripePaymentIntentId: reconciliation.source.stripePaymentIntentId,
-      toStatus: 'paid',
       transitionedAt: appliedAt,
     });
+
+    if (finalizationResult.kind === 'replay') {
+      return {
+        kind: 'replay',
+        order: finalizationResult.order,
+      };
+    }
+
+    if (finalizationResult.kind === 'stock_unavailable') {
+      return finalizationResult;
+    }
+
+    return {
+      checkoutOrderPaid: createCheckoutOrderPaidEvent({
+        lineItems: reconciledOrderLines,
+        occurredAt: appliedAt,
+        order: finalizationResult.order,
+        reconciliation,
+      }),
+      kind: 'applied',
+      order: finalizationResult.order,
+      stock: finalizationResult.stock[0]!,
+      stockChange: finalizationResult.stockChanges[0]!,
+    };
   } catch (error) {
     if (error instanceof InvalidOrderTransitionError) {
       return {
@@ -126,55 +146,6 @@ export async function applyPaidCheckoutReconciliation(
 
     throw error;
   }
-
-  if (!orderTransitionResult.transitioned) {
-    return {
-      kind: 'replay',
-      order: orderTransitionResult.order,
-    };
-  }
-
-  const updatedStockRecords: StockRecord[] = [];
-  const recordedStockChangeRecords: StockChangeRecord[] = [];
-
-  for (const orderLine of reconciledOrderLines) {
-    const currentStock = await stock.findByVariantId(orderLine.variantId);
-
-    if (
-      !currentStock ||
-      currentStock.quantity < orderLine.quantity ||
-      currentStock.onlineQuantity < orderLine.quantity
-    ) {
-      return {
-        kind: 'stock_unavailable',
-        order: orderTransitionResult.order,
-        reason: 'Paid checkout cannot decrement unavailable stock.',
-      };
-    }
-
-    const updatedStock = await stock.save(orderLine.variantId, {
-      onlineQuantity: createStockQuantity(currentStock.onlineQuantity - orderLine.quantity),
-      quantity: createStockQuantity(currentStock.quantity - orderLine.quantity),
-    });
-    const recordedStockChange = await stockChanges.record({
-      actorEmail: 'stripe-webhook',
-      notes: `Checkout session ${checkoutSessionId}`,
-      quantityDelta: createStockChangeDelta(Number(orderLine.quantity) * -1),
-      reason: 'checkout_paid',
-      recordedAt: appliedAt,
-      variantId: orderLine.variantId,
-    });
-
-    updatedStockRecords.push(updatedStock);
-    recordedStockChangeRecords.push(recordedStockChange);
-  }
-
-  return {
-    kind: 'applied',
-    order: orderTransitionResult.order,
-    stock: updatedStockRecords[0]!,
-    stockChange: recordedStockChangeRecords[0]!,
-  };
 }
 
 export type FinalizedPaidCheckoutLineItem = {

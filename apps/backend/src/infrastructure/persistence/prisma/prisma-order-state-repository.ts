@@ -17,6 +17,8 @@ import {
 } from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
+type PrismaOrderStateClient = Pick<PrismaClient, 'checkoutOrder' | '$executeRawUnsafe' | '$queryRawUnsafe'>;
+
 function mapCheckoutOrder(record: {
   checkoutSessionId: string;
   createdAt: Date;
@@ -83,7 +85,7 @@ function mapCheckoutOrderLine(row: CheckoutOrderLineRow): CheckoutOrderLineRecor
 }
 
 export class PrismaOrderStateRepository implements OrderStateRepository {
-  public constructor(private readonly prisma: PrismaClient) {}
+  public constructor(private readonly prisma: PrismaOrderStateClient) {}
 
   public async createPending(input: CreatePendingCheckoutOrderInput): Promise<CheckoutOrderRecord> {
     const createdAt = input.createdAt ?? new Date();

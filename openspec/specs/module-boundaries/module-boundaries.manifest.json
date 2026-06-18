@@ -225,9 +225,11 @@
         "apps/backend/src/interfaces/http/routes/register-internal-routes.ts",
         "apps/backend/src/interfaces/http/routes/register-public-routes.ts",
         "apps/backend/src/interfaces/http/routes/register-public-commerce-routes.ts",
+        "apps/backend/src/interfaces/http/routes/register-public-newsletter-routes.ts",
         "apps/backend/src/interfaces/http/routes/public-checkout-return-url.ts",
         "apps/backend/src/interfaces/http/routes/register-stripe-webhook-routes.ts",
         "apps/backend/src/interfaces/http/routes/public-commerce-services.ts",
+        "apps/backend/src/interfaces/http/routes/public-newsletter-services.ts",
         "apps/backend/src/interfaces/http/routes/stripe-webhook-acknowledgement.ts",
         "apps/backend/src/interfaces/http/routes/stripe-webhook-services.ts",
         "apps/backend/src/interfaces/http/contracts/public-contracts.ts",
@@ -248,9 +250,11 @@
         "operator-stock",
         "stock",
         "catalog-sync",
+        "email-application",
         "commerce-domain",
         "commerce-persistence",
         "stripe-integration",
+        "resend-integration",
         "platform-shared"
       ],
       "allowedWorkspaceInterfaces": {},
@@ -287,6 +291,26 @@
       "providedEntrypoints": ["apps/backend/src/infrastructure/stripe/index.ts"],
       "namedInterfaces": {},
       "allowedDependencies": ["catalog-sync", "checkout-core", "commerce-domain", "platform-shared"],
+      "allowedWorkspaceInterfaces": {},
+      "ownershipExceptions": []
+    },
+    "resend-integration": {
+      "status": "closed",
+      "roots": ["apps/backend/src/infrastructure/resend/**"],
+      "providedEntrypoints": ["apps/backend/src/infrastructure/resend/index.ts"],
+      "namedInterfaces": {},
+      "allowedDependencies": ["email-application", "platform-shared"],
+      "allowedWorkspaceInterfaces": {},
+      "ownershipExceptions": []
+    },
+    "email-application": {
+      "status": "closed",
+      "roots": ["apps/backend/src/application/email/**"],
+      "providedEntrypoints": ["apps/backend/src/application/email/index.ts"],
+      "namedInterfaces": {
+        "email-provider-spi": "apps/backend/src/application/email/spi.ts"
+      },
+      "allowedDependencies": ["platform-shared"],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },

@@ -94,6 +94,7 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
           context.env.CHECKOUT_RETURN_ORIGINS,
         ),
         ...(body.lines ? { lines: checkoutLines } : {}),
+        newsletterOptIn: body.newsletterOptIn === true,
         successUrl: createPublicCheckoutReturnUrl(
           context.req.raw.headers,
           context.req.url,

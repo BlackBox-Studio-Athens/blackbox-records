@@ -30,7 +30,7 @@
     "generate:openapi": "pnpm exec tsx scripts/generate-openapi.ts",
     "webhook:simulate:local": "tsx scripts/simulate-stripe-webhook.ts",
     "check": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run --config vitest.config.ts",
+    "test": "vitest run --config vitest.config.ts && vitest run --config vitest.node.config.ts",
     "test:node": "vitest run --config vitest.node.config.ts"
   },
   "dependencies": {
@@ -40,6 +40,7 @@
     "@prisma/adapter-d1": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "hono": "4.12.22",
+    "resend": "^6.12.4",
     "stripe": "^22.1.1",
     "zod": "^4.4.3"
   },

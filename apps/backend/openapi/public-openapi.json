@@ -153,6 +153,9 @@
             },
             "minItems": 1
           },
+          "newsletterOptIn": {
+            "type": "boolean"
+          },
           "storeItemSlug": {
             "type": "string",
             "minLength": 1
@@ -266,6 +269,40 @@
           "locker_id",
           "locker_name_or_label"
         ]
+      },
+      "NewsletterRegistrationResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "registered"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "NewsletterRegistrationBody": {
+        "type": "object",
+        "properties": {
+          "consentAccepted": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        },
+        "required": [
+          "consentAccepted",
+          "email"
+        ],
+        "additionalProperties": false
       }
     },
     "parameters": {}
@@ -470,6 +507,54 @@
           },
           "409": {
             "description": "Checkout is not configured.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCommerceError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/newsletter/registrations": {
+      "post": {
+        "tags": [
+          "Newsletter"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewsletterRegistrationBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Registered a public newsletter contact.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsletterRegistrationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid newsletter signup request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCommerceError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Newsletter signup is temporarily unavailable.",
             "content": {
               "application/json": {
                 "schema": {

@@ -6,6 +6,8 @@ import type { PublicApiComponents } from '../public-client';
 export const apiClientMswBaseUrl = 'http://blackbox.test';
 
 type CheckoutState = PublicApiComponents['schemas']['CheckoutState'];
+type NewsletterRegistrationBody = PublicApiComponents['schemas']['NewsletterRegistrationBody'];
+type NewsletterRegistrationResponse = PublicApiComponents['schemas']['NewsletterRegistrationResponse'];
 type PublicCommerceError = PublicApiComponents['schemas']['PublicCommerceError'];
 type PublicStoreOffer = PublicApiComponents['schemas']['PublicStoreOffer'];
 type StartCheckoutBody = PublicApiComponents['schemas']['StartCheckoutBody'];
@@ -30,6 +32,13 @@ export const publicCheckoutFixtures = {
   checkoutUnavailable: {
     error: 'Checkout unavailable or not configured.',
   } satisfies PublicCommerceError,
+  newsletterRegistrationBody: {
+    consentAccepted: true,
+    email: 'fan@example.com',
+  } satisfies NewsletterRegistrationBody,
+  newsletterRegistrationResponse: {
+    status: 'registered',
+  } satisfies NewsletterRegistrationResponse,
   startCheckoutBody: {
     storeItemSlug: 'disintegration-black-vinyl-lp',
     variantId: 'variant_disintegration-black-vinyl-lp_standard',
@@ -110,6 +119,14 @@ export function createPublicCheckoutHandlers(): HttpHandler[] {
     http.get<{ checkoutSessionId: string }, never, CheckoutState>(
       '*/api/checkout/sessions/:checkoutSessionId/state',
       () => HttpResponse.json(publicCheckoutFixtures.checkoutState),
+    ),
+    http.post<Record<string, never>, NewsletterRegistrationBody, NewsletterRegistrationResponse>(
+      '*/api/newsletter/registrations',
+      async ({ request }) => {
+        await request.json();
+
+        return HttpResponse.json(publicCheckoutFixtures.newsletterRegistrationResponse);
+      },
     ),
   ];
 }

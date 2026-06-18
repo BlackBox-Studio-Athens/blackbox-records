@@ -7,6 +7,8 @@ import {
   createPublicCheckoutApi,
   type PublicCommerceError,
   type PublicCheckoutApiError,
+  type NewsletterRegistrationBody,
+  type NewsletterRegistrationResponse,
   resolvePublicCheckoutApiBaseUrl,
   type StartCheckoutBody,
   type StartCheckoutResponse,
@@ -69,6 +71,26 @@ describe('createPublicCheckoutApi', () => {
     const result = await api.readCheckoutState('cs_test_123');
 
     expect(result).toEqual(publicCheckoutFixtures.checkoutState);
+  });
+
+  it('posts newsletter signup consent through the public Worker route', async () => {
+    let receivedBody: NewsletterRegistrationBody | null = null;
+    webMswServer.use(
+      http.post<Record<string, never>, NewsletterRegistrationBody, NewsletterRegistrationResponse>(
+        '*/api/newsletter/registrations',
+        async ({ request }) => {
+          receivedBody = (await request.json()) as NewsletterRegistrationBody;
+
+          return HttpResponse.json(publicCheckoutFixtures.newsletterRegistrationResponse);
+        },
+      ),
+    );
+
+    const api = createPublicCheckoutApi(apiClientMswBaseUrl);
+    const result = await api.registerNewsletterSignup(publicCheckoutFixtures.newsletterRegistrationBody);
+
+    expect(result).toEqual(publicCheckoutFixtures.newsletterRegistrationResponse);
+    expect(receivedBody).toEqual(publicCheckoutFixtures.newsletterRegistrationBody);
   });
 
   it('surfaces visible API error objects with status and response body', async () => {

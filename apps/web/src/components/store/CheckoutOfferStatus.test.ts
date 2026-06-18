@@ -143,6 +143,7 @@ describe('CheckoutOfferStatus helpers', () => {
       readCheckoutState: vi.fn(),
       readStoreOffer: vi.fn(async () => createReadyStoreOffer()),
       readStoreOfferVariants: vi.fn(async () => [createReadyStoreOffer()]),
+      registerNewsletterSignup: vi.fn(),
       startCheckout: vi.fn(),
     };
 
@@ -230,6 +231,7 @@ describe('CheckoutOfferStatus helpers', () => {
         throw new PublicCheckoutApiError(404, 'Store item not found.');
       }),
       readStoreOfferVariants: vi.fn(),
+      registerNewsletterSignup: vi.fn(),
       startCheckout: vi.fn(),
     };
 
@@ -266,6 +268,7 @@ describe('CheckoutOfferStatus helpers', () => {
       readCheckoutState: vi.fn(),
       readStoreOffer: vi.fn(),
       readStoreOfferVariants: vi.fn(),
+      registerNewsletterSignup: vi.fn(),
       startCheckout,
     };
 
@@ -282,6 +285,33 @@ describe('CheckoutOfferStatus helpers', () => {
     expect(state).toEqual({
       checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
       kind: 'redirect',
+    });
+  });
+
+  it('includes checkout newsletter opt-in only when selected', async () => {
+    const startCheckout = vi.fn(async () => ({
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
+    }));
+    const api: PublicCheckoutApi = {
+      readStoreCapabilities: vi.fn(async () => enabledStoreCapabilities),
+      readCheckoutState: vi.fn(),
+      readStoreOffer: vi.fn(),
+      readStoreOfferVariants: vi.fn(),
+      registerNewsletterSignup: vi.fn(),
+      startCheckout,
+    };
+
+    await startHostedCheckout({
+      api,
+      newsletterOptIn: true,
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+    });
+
+    expect(api.startCheckout).toHaveBeenCalledExactlyOnceWith({
+      newsletterOptIn: true,
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
   });
 
@@ -324,6 +354,7 @@ describe('CheckoutOfferStatus helpers', () => {
       readCheckoutState: vi.fn(),
       readStoreOffer: vi.fn(),
       readStoreOfferVariants: vi.fn(),
+      registerNewsletterSignup: vi.fn(),
       startCheckout: vi.fn(async () => ({
         checkoutUrl: '',
       })),
@@ -347,6 +378,7 @@ describe('CheckoutOfferStatus helpers', () => {
       readCheckoutState: vi.fn(),
       readStoreOffer: vi.fn(),
       readStoreOfferVariants: vi.fn(),
+      registerNewsletterSignup: vi.fn(),
       startCheckout: vi.fn(async () => {
         throw new PublicCheckoutApiError(409, 'Checkout is not available.');
       }),

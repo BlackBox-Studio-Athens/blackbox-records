@@ -20,6 +20,7 @@ function createServices(): StripeWebhookAcknowledgementServices {
     applyNonPaidCheckoutReconciliation: vi.fn(),
     applyPaidCheckoutReconciliation: vi.fn(),
     findStoreItemByVariantId: vi.fn(async () => storeItem),
+    publishCheckoutOrderPaid: vi.fn(),
     recordCatalogWebhookEvent: vi.fn(async () => ({
       record: {
         catalogObjectId: 'price_test_123',
@@ -35,6 +36,51 @@ function createServices(): StripeWebhookAcknowledgementServices {
     reconcileCatalogVariant: vi.fn(),
   };
 }
+
+describe('Stripe webhook acknowledgement checkout events', () => {
+  it('publishes CheckoutOrderPaid only after paid reconciliation applies', async () => {
+    const services = createServices();
+    const checkoutOrderPaid = createCheckoutOrderPaidFixture();
+    vi.mocked(services.applyPaidCheckoutReconciliation).mockResolvedValueOnce({
+      checkoutOrderPaid,
+      kind: 'applied',
+      order: {} as never,
+      stock: {} as never,
+      stockChange: {} as never,
+    });
+
+    await expect(acknowledgeVerifiedStripeWebhookEvent(createPaidCheckoutEvent(), services)).resolves.toEqual({
+      received: true,
+    });
+
+    expect(services.applyPaidCheckoutReconciliation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recommendedOrderStatus: 'paid',
+        source: expect.objectContaining({
+          customer: expect.objectContaining({
+            email: 'buyer@example.com',
+          }),
+          newsletterOptIn: true,
+        }),
+      }),
+    );
+    expect(services.publishCheckoutOrderPaid).toHaveBeenCalledWith(checkoutOrderPaid);
+  });
+
+  it('does not publish CheckoutOrderPaid for paid replay reconciliation', async () => {
+    const services = createServices();
+    vi.mocked(services.applyPaidCheckoutReconciliation).mockResolvedValueOnce({
+      kind: 'replay',
+      order: {} as never,
+    });
+
+    await expect(acknowledgeVerifiedStripeWebhookEvent(createPaidCheckoutEvent(), services)).resolves.toEqual({
+      received: true,
+    });
+
+    expect(services.publishCheckoutOrderPaid).not.toHaveBeenCalled();
+  });
+});
 
 describe('Stripe webhook acknowledgement catalog events', () => {
   it('reconciles Product catalog events by app-owned variant metadata', async () => {
@@ -162,3 +208,72 @@ describe('Stripe webhook acknowledgement catalog events', () => {
     expect(services.reconcileCatalogVariant).not.toHaveBeenCalled();
   });
 });
+
+function createPaidCheckoutEvent(): VerifiedStripeWebhookEvent {
+  return {
+    checkoutSession: {
+      amount_total: 2500,
+      currency: 'eur',
+      customer_details: {
+        address: {
+          city: 'Athens',
+          country: 'GR',
+          line1: 'Long Street 1',
+          line2: null,
+          postal_code: '10558',
+          state: null,
+        },
+        email: 'buyer@example.com',
+        name: 'Buyer Name',
+        phone: '+302100000000',
+      },
+      customer_email: 'fallback@example.com',
+      id: 'cs_test_123',
+      metadata: {
+        newsletterOptIn: 'true',
+      },
+      object: 'checkout.session',
+      payment_intent: 'pi_test_123',
+      payment_status: 'paid',
+      status: 'complete',
+    },
+    created: 1_790_000_000,
+    id: 'evt_checkout_paid',
+    isAllowed: true,
+    type: 'checkout.session.completed',
+  } as unknown as VerifiedStripeWebhookEvent;
+}
+
+function createCheckoutOrderPaidFixture() {
+  return {
+    amountTotalMinor: 2500,
+    checkoutSessionId: 'cs_test_123',
+    currencyCode: 'EUR',
+    customerEmail: 'buyer@example.com',
+    customerName: 'Buyer Name',
+    customerPhone: '+302100000000',
+    lineItems: [
+      {
+        quantity: 1,
+        storeItemSlug: 'disintegration-black-vinyl-lp',
+        stripePriceId: 'price_test_123',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      },
+    ],
+    newsletterOptIn: true,
+    occurredAt: new Date('2026-04-25T11:00:00.000Z'),
+    orderId: 'order_1',
+    orderReference: 'BBR-ORDER1',
+    paidAt: new Date('2026-04-25T11:00:00.000Z'),
+    paymentStatus: 'paid' as const,
+    shippingAddress: {
+      city: 'Athens',
+      country: 'GR',
+      line1: 'Long Street 1',
+      line2: null,
+      postalCode: '10558',
+      state: null,
+    },
+    stripePaymentIntentId: 'pi_test_123',
+  };
+}

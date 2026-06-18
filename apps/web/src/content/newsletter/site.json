@@ -2,8 +2,8 @@
   "$schema": "../../../.astro/collections/newsletter.schema.json",
   "section_label": "Newsletter",
   "title": "Join the Collective",
-  "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent vel tortor quis nisi tincidunt eleifend.",
+  "description": "Get BlackBox Records release news, distro drops, event notes, and label updates.",
   "placeholder": "your@email.com",
   "button_label": "Subscribe",
-  "note": "Lorem ipsum dolor sit amet, consectetur adipiscing."
+  "note": "No spam. Unsubscribe anytime."
 }

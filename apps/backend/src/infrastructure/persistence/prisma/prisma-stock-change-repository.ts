@@ -6,6 +6,8 @@ import type {
 import { createStockChangeDelta, parseVariantId } from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
+type PrismaStockChangeClient = Pick<PrismaClient, 'stockChange'>;
+
 function mapStockChange(record: {
   actorEmail: string;
   id: string;
@@ -27,7 +29,7 @@ function mapStockChange(record: {
 }
 
 export class PrismaStockChangeRepository implements StockChangeRepository {
-  public constructor(private readonly prisma: PrismaClient) {}
+  public constructor(private readonly prisma: PrismaStockChangeClient) {}
 
   public async listByVariantId(variantId: string, limit: number): Promise<StockChangeRecord[]> {
     const records = await this.prisma.stockChange.findMany({
