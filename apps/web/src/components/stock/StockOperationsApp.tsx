@@ -1,6 +1,6 @@
 import { ArrowRight, RefreshCcw, Search, ShieldCheck } from 'lucide-react';
 import * as React from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -42,8 +42,11 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
   const [countedQuantity, setCountedQuantity] = useState('');
   const [onlineQuantity, setOnlineQuantity] = useState('');
   const [countNotes, setCountNotes] = useState('');
+  const activeStockLoadRequestRef = useRef(0);
 
   const api = createInternalStockApi({ backendBaseUrl });
+  const canMutateSelectedStock = canSubmitStockMutation(selectedVariantId, stockDetail);
+  const selectedStockDetail = canMutateSelectedStock ? stockDetail : null;
 
   async function searchVariants(nextQuery = query) {
     setErrorMessage(null);
@@ -78,12 +81,19 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     setIsLoading(true);
     setLoadingIntent(intent);
     setStatusMessage(intent === 'refresh' ? 'Refreshing stock.' : 'Loading selected stock.');
+    const requestId = activeStockLoadRequestRef.current + 1;
+    activeStockLoadRequestRef.current = requestId;
 
     try {
       const [detail, historyResponse] = await Promise.all([
         api.readStock(variantId),
         api.readStockHistory(variantId, 25),
       ]);
+
+      if (!shouldApplyStockLoadResult(activeStockLoadRequestRef.current, requestId)) {
+        return;
+      }
+
       setStockDetail(detail);
       setHistory(historyResponse.entries);
       setCountedQuantity(String(detail.stock.quantity));
@@ -96,15 +106,17 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
         window.history.replaceState({}, '', url);
       }
     } catch (error) {
-      if (!stockDetail || stockDetail.variantId !== variantId) {
+      if (shouldApplyStockLoadResult(activeStockLoadRequestRef.current, requestId)) {
         setStockDetail(null);
         setHistory([]);
+        setErrorMessage(readErrorMessage(error));
+        setStatusMessage(intent === 'refresh' ? 'Stock refresh failed.' : 'Variant detail unavailable.');
       }
-      setErrorMessage(readErrorMessage(error));
-      setStatusMessage(intent === 'refresh' ? 'Stock refresh failed.' : 'Variant detail unavailable.');
     } finally {
-      setIsLoading(false);
-      setLoadingIntent(null);
+      if (shouldApplyStockLoadResult(activeStockLoadRequestRef.current, requestId)) {
+        setIsLoading(false);
+        setLoadingIntent(null);
+      }
     }
   }
 
@@ -129,24 +141,25 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
   async function handleStockChange(event: { preventDefault(): void }) {
     event.preventDefault();
 
-    if (!selectedVariantId) {
+    if (!canMutateSelectedStock) {
       return;
     }
 
+    const variantId = selectedVariantId;
     setIsSubmitting(true);
     setSubmittingIntent('stockChange');
     setErrorMessage(null);
     setStatusMessage('Saving StockChange.');
 
     try {
-      await api.recordStockChange(selectedVariantId, {
+      await api.recordStockChange(variantId, {
         delta: Number(changeDelta),
         notes: normalizeNotes(changeNotes),
         reason: changeReason,
       });
       setChangeDelta('');
       setChangeNotes('');
-      await loadVariant(selectedVariantId, false, 'refresh');
+      await loadVariant(variantId, false, 'refresh');
       setStatusMessage('StockChange recorded.');
     } catch (error) {
       setErrorMessage(readErrorMessage(error));
@@ -159,23 +172,24 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
   async function handleStockCount(event: { preventDefault(): void }) {
     event.preventDefault();
 
-    if (!selectedVariantId) {
+    if (!canMutateSelectedStock) {
       return;
     }
 
+    const variantId = selectedVariantId;
     setIsSubmitting(true);
     setSubmittingIntent('stockCount');
     setErrorMessage(null);
     setStatusMessage('Saving StockCount.');
 
     try {
-      await api.recordStockCount(selectedVariantId, {
+      await api.recordStockCount(variantId, {
         countedQuantity: Number(countedQuantity),
         notes: normalizeNotes(countNotes),
         onlineQuantity: Number(onlineQuantity),
       });
       setCountNotes('');
-      await loadVariant(selectedVariantId, false, 'refresh');
+      await loadVariant(variantId, false, 'refresh');
       setStatusMessage('StockCount recorded.');
     } catch (error) {
       setErrorMessage(readErrorMessage(error));
@@ -310,7 +324,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
               <div className="grid gap-1">
                 <CardTitle className="font-display text-4xl uppercase tracking-[0.06em]">Current Stock</CardTitle>
                 <CardDescription>
-                  {stockDetail ? stockDetail.variantId : 'Select a Variant to inspect stock.'}
+                  {selectedStockDetail ? selectedStockDetail.variantId : 'Select a Variant to inspect stock.'}
                 </CardDescription>
               </div>
               <Button
@@ -332,7 +346,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
               </Button>
             </CardHeader>
             <CardContent className="grid gap-4">
-              {isLoading && !stockDetail ? (
+              {isLoading && !selectedStockDetail ? (
                 <LoadingStateBlock
                   className="min-h-40 border-white/10 bg-black/30"
                   title={loadingLabel}
@@ -340,16 +354,16 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                 />
               ) : (
                 <div className="grid gap-3 sm:grid-cols-3">
-                  <StockMetric label="Stock" value={stockDetail?.stock.quantity} />
-                  <StockMetric label="OnlineStock" value={stockDetail?.stock.onlineQuantity} />
-                  <StockMetric label="Updated" value={formatDate(stockDetail?.stock.updatedAt)} isText />
+                  <StockMetric label="Stock" value={selectedStockDetail?.stock.quantity} />
+                  <StockMetric label="OnlineStock" value={selectedStockDetail?.stock.onlineQuantity} />
+                  <StockMetric label="Updated" value={formatDate(selectedStockDetail?.stock.updatedAt)} isText />
                 </div>
               )}
-              {stockDetail && (
+              {selectedStockDetail && (
                 <div className="grid gap-2 border border-white/10 bg-black/30 p-3 font-mono text-xs text-white/55">
-                  <span>storeItemSlug: {stockDetail.storeItemSlug}</span>
+                  <span>storeItemSlug: {selectedStockDetail.storeItemSlug}</span>
                   <span>
-                    source: {stockDetail.sourceKind}/{stockDetail.sourceId}
+                    source: {selectedStockDetail.sourceKind}/{selectedStockDetail.sourceId}
                   </span>
                 </div>
               )}
@@ -370,7 +384,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                 >
                   <Input
                     className="rounded-none border-white/15 bg-black/40"
-                    disabled={!selectedVariantId || isSubmitting}
+                    disabled={!canMutateSelectedStock || isSubmitting}
                     id="stock-change-delta"
                     name="delta"
                     onChange={(event) => setChangeDelta(event.target.value)}
@@ -381,7 +395,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                   />
                   <Input
                     className="rounded-none border-white/15 bg-black/40"
-                    disabled={!selectedVariantId || isSubmitting}
+                    disabled={!canMutateSelectedStock || isSubmitting}
                     id="stock-change-reason"
                     name="reason"
                     onChange={(event) => setChangeReason(event.target.value)}
@@ -391,14 +405,14 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                   />
                   <Textarea
                     className="rounded-none border-white/15 bg-black/40"
-                    disabled={!selectedVariantId || isSubmitting}
+                    disabled={!canMutateSelectedStock || isSubmitting}
                     id="stock-change-notes"
                     name="notes"
                     onChange={(event) => setChangeNotes(event.target.value)}
                     placeholder="Notes"
                     value={changeNotes}
                   />
-                  <Button className="rounded-none" disabled={!selectedVariantId || isSubmitting} type="submit">
+                  <Button className="rounded-none" disabled={!canMutateSelectedStock || isSubmitting} type="submit">
                     {submittingIntent === 'stockChange' ? (
                       <LoadingButtonContent label="Saving StockChange" />
                     ) : (
@@ -422,7 +436,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                 >
                   <Input
                     className="rounded-none border-white/15 bg-black/40"
-                    disabled={!selectedVariantId || isSubmitting}
+                    disabled={!canMutateSelectedStock || isSubmitting}
                     id="stock-count-counted-quantity"
                     min="0"
                     name="countedQuantity"
@@ -434,7 +448,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                   />
                   <Input
                     className="rounded-none border-white/15 bg-black/40"
-                    disabled={!selectedVariantId || isSubmitting}
+                    disabled={!canMutateSelectedStock || isSubmitting}
                     id="stock-count-online-quantity"
                     min="0"
                     name="onlineQuantity"
@@ -446,14 +460,14 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                   />
                   <Textarea
                     className="rounded-none border-white/15 bg-black/40"
-                    disabled={!selectedVariantId || isSubmitting}
+                    disabled={!canMutateSelectedStock || isSubmitting}
                     id="stock-count-notes"
                     name="notes"
                     onChange={(event) => setCountNotes(event.target.value)}
                     placeholder="Notes"
                     value={countNotes}
                   />
-                  <Button className="rounded-none" disabled={!selectedVariantId || isSubmitting} type="submit">
+                  <Button className="rounded-none" disabled={!canMutateSelectedStock || isSubmitting} type="submit">
                     {submittingIntent === 'stockCount' ? (
                       <LoadingButtonContent label="Saving StockCount" />
                     ) : (
@@ -488,6 +502,17 @@ export function readStockLoadingLabel(intent: StockLoadingIntent) {
   if (intent === 'search') return 'Searching variants';
   if (intent === 'variant') return 'Loading selected stock';
   return 'Loading stock workspace';
+}
+
+export function shouldApplyStockLoadResult(activeRequestId: number, requestId: number) {
+  return activeRequestId === requestId;
+}
+
+export function canSubmitStockMutation(
+  selectedVariantId: string,
+  stockDetail: Pick<InternalStockDetail, 'variantId'> | null,
+) {
+  return Boolean(selectedVariantId && stockDetail?.variantId === selectedVariantId);
 }
 
 function StockMetric({
