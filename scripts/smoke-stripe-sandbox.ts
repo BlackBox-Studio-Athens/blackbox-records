@@ -7,25 +7,67 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 
 import { chromium, type Browser, type Frame, type Page } from 'playwright';
 
-import { currentCatalogProductProjectionEntries } from '../apps/backend/src/application/commerce/catalog-sync/catalog-product-projections';
 import {
-  createRouteUrl,
   createRunId as createSmokeRunId,
   createSmokeEvidencePath,
   createSmokeRunArtifactDir,
   createSmokeScenarioArtifactDir,
   createSmokeSummaryPath,
   formatDuration as formatSmokeDuration,
-  normalizeBaseUrl as normalizeSmokeBaseUrl,
-  parseNamedSmokeScenarioSelection,
-  parsePositiveInteger as parseSmokePositiveInteger,
-  parseScreenshotMode as parseSmokeScreenshotMode,
-  redactSensitiveSmokeText,
-  resolveSmokeScenarioSelection,
   runInBatches as runSmokeInBatches,
   truncateForConsole as truncateSmokeForConsole,
   writeJsonFile,
 } from './smoke-core';
+import { parseStripeSandboxSmokeArgs } from './stripe-sandbox-smoke/args';
+import {
+  createCheckoutOrderBySessionSql,
+  createRemoteD1ReadinessSql,
+  createSandboxSmokeStockTopUpSql,
+  parseD1CheckoutOrderRows,
+  parseRemoteD1ReadinessSummary,
+} from './stripe-sandbox-smoke/d1-sql';
+import {
+  createStripeCheckoutSessionProjectionObservation,
+  createStripeCheckoutSurfaceObservation,
+  readStripeCheckoutSessionProjection,
+  resolveCheckoutSurfaceExpectation,
+} from './stripe-sandbox-smoke/checkout-surface';
+import { smokeVariantId } from './stripe-sandbox-smoke/constants';
+import { scrubSensitiveStripeSmokeText, scrubStripeSmokeEvidenceUrl } from './stripe-sandbox-smoke/redaction';
+import {
+  calculateMinimumSmokeOnlineQuantity,
+  createCheckoutPageUrl,
+  createScenarioEmail,
+  groupStripeSandboxSmokeScenarios,
+  resolveSelectedStripeSandboxScenarios,
+  STRIPE_TEST_CARD_DOCS_URL,
+} from './stripe-sandbox-smoke/scenario-policy';
+
+export {
+  createCheckoutOrderBySessionSql,
+  createRemoteD1ReadinessSql,
+  createSandboxSmokeStockTopUpSql,
+  parseD1CheckoutOrderRows,
+  parseRemoteD1ReadinessSummary,
+} from './stripe-sandbox-smoke/d1-sql';
+export {
+  createStripeCheckoutSessionProjectionObservation,
+  createStripeCheckoutSurfaceObservation,
+  readStripeCheckoutSessionProjection,
+  resolveCheckoutSurfaceExpectation,
+} from './stripe-sandbox-smoke/checkout-surface';
+export { scrubSensitiveStripeSmokeText } from './stripe-sandbox-smoke/redaction';
+export { parseStripeSandboxSmokeArgs } from './stripe-sandbox-smoke/args';
+export {
+  calculateMinimumSmokeOnlineQuantity,
+  countPaidStripeSandboxScenarios,
+  createCheckoutPageUrl,
+  createScenarioEmail,
+  groupStripeSandboxSmokeScenarios,
+  resolveSelectedStripeSandboxScenarios,
+  STRIPE_SANDBOX_SMOKE_SCENARIOS,
+  STRIPE_TEST_CARD_DOCS_URL,
+} from './stripe-sandbox-smoke/scenario-policy';
 
 export type StripeSandboxSmokeScenarioName =
   | 'checkout_surface'
@@ -203,55 +245,11 @@ export type StripeSandboxSmokeDurations = {
 
 type StripeSandboxSmokeDurationKey = Exclude<keyof StripeSandboxSmokeDurations, 'evidenceWriteMs' | 'totalMs'>;
 
-type D1JsonResult = Array<{
-  results?: unknown;
-  success?: boolean;
-}>;
-
-type StripeCheckoutLineItemsApiResponse = {
-  data?: Array<{
-    amount_total?: number | null;
-    currency?: string | null;
-    price?: {
-      product?: StripeProductApiObject | string | null;
-    } | null;
-  }>;
-};
-
-type StripeProductApiObject = {
-  images?: string[] | null;
-  name?: string | null;
-};
-
-type PublicStoreOfferResponse = {
-  canCheckout?: boolean;
-  price?: {
-    display?: string;
-  } | null;
-};
-
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(scriptDir, '..');
 const backendDir = path.join(rootDir, 'apps', 'backend');
 const nodeRequire = createRequire(import.meta.url);
 const wranglerBin = nodeRequire.resolve('wrangler/bin/wrangler.js', { paths: [backendDir] });
-const defaultSiteUrl = 'https://blackbox-studio-athens.github.io/blackbox-records';
-const defaultWorkerUrl = 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev';
-const smokeStoreItemSlug = 'disintegration-black-vinyl-lp';
-const smokeVariantId = 'variant_disintegration-black-vinyl-lp_standard';
-const smokeCatalogProjectionEntry = currentCatalogProductProjectionEntries.find(
-  (entry) => entry.storeItemSlug === smokeStoreItemSlug && entry.variantId === smokeVariantId,
-);
-const allScenarioNames: readonly StripeSandboxSmokeScenarioName[] = [
-  'checkout_surface',
-  'happy_path_paid',
-  'three_d_secure',
-  'card_declined',
-  'insufficient_funds',
-  'expired_card',
-  'incorrect_cvc',
-  'processing_error',
-];
 
 const sandboxFormDefaults = {
   addressLine1: '1 Stripe Test Street',
@@ -263,386 +261,6 @@ const sandboxFormDefaults = {
   phone: '6912345678',
   postalCode: '10557',
 };
-
-function requireSmokeCatalogProjectionEntry() {
-  const expectedSandboxPrice = smokeCatalogProjectionEntry?.expectedSandboxPrice;
-
-  if (!smokeCatalogProjectionEntry || !expectedSandboxPrice) {
-    throw new Error(`Missing checkout-eligible Product Projection for ${smokeStoreItemSlug} / ${smokeVariantId}.`);
-  }
-
-  return { ...smokeCatalogProjectionEntry, expectedSandboxPrice };
-}
-
-const disintegrationCheckoutSurfaceExpectation: StripeCheckoutSurfaceExpectation = {
-  expectedAmountText: 'Worker Store Offer price',
-  expectedPaymentMethodLabels: [],
-  expectedSessionProjection: {
-    expectedAmountMinor: requireSmokeCatalogProjectionEntry().expectedSandboxPrice.amountMinor,
-    expectedCurrencyCode: requireSmokeCatalogProjectionEntry().expectedSandboxPrice.currencyCode,
-    expectedProductImageUrl: requireSmokeCatalogProjectionEntry().productProjection.imageUrls[0] ?? '',
-    expectedProductName: requireSmokeCatalogProjectionEntry().productProjection.name,
-  },
-  minimumDynamicPaymentMethodCount: 1,
-};
-
-export const STRIPE_TEST_CARD_DOCS_URL = 'https://docs.stripe.com/testing#cards';
-export const STRIPE_SANDBOX_SMOKE_SCENARIOS: Record<StripeSandboxSmokeScenarioName, StripeSandboxSmokeScenario> = {
-  checkout_surface: {
-    checkoutSurfaceExpectation: disintegrationCheckoutSurfaceExpectation,
-    description: 'Hosted Checkout amount and dynamic payment method surface, without submitting payment.',
-    expectedOrderStatus: 'not_submitted',
-    name: 'checkout_surface',
-    stripeFormExpectation:
-      'Stripe should show the storefront amount and at least one dynamic payment option before payment is submitted.',
-  },
-  happy_path_paid: {
-    cardNumber: '4242 4242 4242 4242',
-    checkoutSurfaceExpectation: disintegrationCheckoutSurfaceExpectation,
-    description: 'Immediate successful card payment.',
-    expectedOrderStatus: 'paid',
-    name: 'happy_path_paid',
-    stripeFormExpectation:
-      'Stripe should accept the card, return to the checkout return page, and emit a paid webhook.',
-  },
-  three_d_secure: {
-    cardNumber: '4000 0000 0000 3220',
-    description: '3D Secure authentication is required for every transaction.',
-    expectedOrderStatus: 'paid',
-    name: 'three_d_secure',
-    stripeFormExpectation:
-      'Stripe should open a 3D Secure challenge. The runner completes it and expects paid order evidence.',
-  },
-  card_declined: {
-    cardNumber: '4000 0000 0000 0002',
-    description: 'Generic card decline.',
-    expectedOrderStatus: 'not_paid_or_pending',
-    expectedStripeErrorPattern: /card (?:was )?declined|declined/i,
-    name: 'card_declined',
-    stripeFormExpectation: 'Stripe should show a declined-card error and remain on hosted Checkout.',
-  },
-  insufficient_funds: {
-    cardNumber: '4000 0000 0000 9995',
-    description: 'Insufficient funds decline.',
-    expectedOrderStatus: 'not_paid_or_pending',
-    expectedStripeErrorPattern: /insufficient funds|declined/i,
-    name: 'insufficient_funds',
-    stripeFormExpectation: 'Stripe should show an insufficient-funds error and remain on hosted Checkout.',
-  },
-  expired_card: {
-    cardNumber: '4000 0000 0000 0069',
-    description: 'Expired card decline.',
-    expectedOrderStatus: 'not_paid_or_pending',
-    expectedStripeErrorPattern: /expired|declined/i,
-    name: 'expired_card',
-    stripeFormExpectation: 'Stripe should show an expired-card error and remain on hosted Checkout.',
-  },
-  incorrect_cvc: {
-    cardNumber: '4000 0000 0000 0127',
-    description: 'Incorrect CVC decline.',
-    expectedOrderStatus: 'not_paid_or_pending',
-    expectedStripeErrorPattern: /security code|cvc|declined/i,
-    name: 'incorrect_cvc',
-    stripeFormExpectation: 'Stripe should show an incorrect-CVC error and remain on hosted Checkout.',
-  },
-  processing_error: {
-    cardNumber: '4000 0000 0000 0119',
-    description: 'Processing error decline.',
-    expectedOrderStatus: 'not_paid_or_pending',
-    expectedStripeErrorPattern: /processing error|try again|declined/i,
-    name: 'processing_error',
-    stripeFormExpectation: 'Stripe should show a processing-error decline and remain on hosted Checkout.',
-  },
-};
-
-export function parseStripeSandboxSmokeArgs(args: string[]): StripeSandboxSmokeOptions {
-  const options: StripeSandboxSmokeOptions = {
-    debug: false,
-    declineConcurrency: 3,
-    expectedPaymentMethodLabels: parsePaymentMethodLabelList(process.env.STRIPE_SANDBOX_EXPECTED_PAYMENT_LABELS ?? ''),
-    fieldActionTimeoutMs: 2_000,
-    headed: false,
-    scenarioSelection: 'all',
-    screenshots: 'on-failure',
-    siteUrl: defaultSiteUrl,
-    timeoutMs: 120_000,
-    trace: false,
-    workerUrl: defaultWorkerUrl,
-  };
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-
-    if (arg === '--') {
-      continue;
-    }
-
-    if (arg === '--headed') {
-      options.headed = true;
-      continue;
-    }
-
-    if (arg === '--debug') {
-      options.debug = true;
-      options.headed = true;
-      options.trace = true;
-      continue;
-    }
-
-    if (arg === '--trace') {
-      options.trace = true;
-      continue;
-    }
-
-    if (arg === '--decline-concurrency') {
-      const value = args[index + 1];
-      index += 1;
-      options.declineConcurrency = parsePositiveInteger(value, '--decline-concurrency');
-      continue;
-    }
-
-    if (arg?.startsWith('--decline-concurrency=')) {
-      options.declineConcurrency = parsePositiveInteger(
-        arg.slice('--decline-concurrency='.length),
-        '--decline-concurrency',
-      );
-      continue;
-    }
-
-    if (arg === '--field-action-timeout-ms') {
-      const value = args[index + 1];
-      index += 1;
-      options.fieldActionTimeoutMs = parsePositiveInteger(value, '--field-action-timeout-ms');
-      continue;
-    }
-
-    if (arg === '--expected-payment-label') {
-      const value = args[index + 1];
-      index += 1;
-      options.expectedPaymentMethodLabels.push(parsePaymentMethodLabel(value, '--expected-payment-label'));
-      continue;
-    }
-
-    if (arg?.startsWith('--expected-payment-label=')) {
-      options.expectedPaymentMethodLabels.push(
-        parsePaymentMethodLabel(arg.slice('--expected-payment-label='.length), '--expected-payment-label'),
-      );
-      continue;
-    }
-
-    if (arg === '--expected-payment-labels') {
-      const value = args[index + 1];
-      index += 1;
-      options.expectedPaymentMethodLabels = parsePaymentMethodLabelList(value, '--expected-payment-labels');
-      continue;
-    }
-
-    if (arg?.startsWith('--expected-payment-labels=')) {
-      options.expectedPaymentMethodLabels = parsePaymentMethodLabelList(
-        arg.slice('--expected-payment-labels='.length),
-        '--expected-payment-labels',
-      );
-      continue;
-    }
-
-    if (arg?.startsWith('--field-action-timeout-ms=')) {
-      options.fieldActionTimeoutMs = parsePositiveInteger(
-        arg.slice('--field-action-timeout-ms='.length),
-        '--field-action-timeout-ms',
-      );
-      continue;
-    }
-
-    if (arg === '--screenshots') {
-      const value = args[index + 1];
-      index += 1;
-      options.screenshots = parseScreenshotMode(value);
-      continue;
-    }
-
-    if (arg?.startsWith('--screenshots=')) {
-      options.screenshots = parseScreenshotMode(arg.slice('--screenshots='.length));
-      continue;
-    }
-
-    if (arg === '--use-running-stack' || arg === '--manual-timeout-ms') {
-      if (arg === '--manual-timeout-ms') {
-        index += 1;
-      }
-
-      console.warn(`${arg} is ignored; smoke:stripe-sandbox now targets the deployed sandbox only.`);
-      continue;
-    }
-
-    if (arg?.startsWith('--manual-timeout-ms=')) {
-      console.warn('--manual-timeout-ms is ignored; use --timeout-ms for browser automation timeouts.');
-      continue;
-    }
-
-    if (arg === '--timeout-ms') {
-      const value = args[index + 1];
-      index += 1;
-      options.timeoutMs = parsePositiveInteger(value, '--timeout-ms');
-      continue;
-    }
-
-    if (arg?.startsWith('--timeout-ms=')) {
-      options.timeoutMs = parsePositiveInteger(arg.slice('--timeout-ms='.length), '--timeout-ms');
-      continue;
-    }
-
-    if (arg === '--scenario') {
-      const value = args[index + 1];
-      index += 1;
-      options.scenarioSelection = parseScenarioSelection(value);
-      continue;
-    }
-
-    if (arg?.startsWith('--scenario=')) {
-      options.scenarioSelection = parseScenarioSelection(arg.slice('--scenario='.length));
-      continue;
-    }
-
-    if (arg === '--site-url') {
-      const value = args[index + 1];
-      index += 1;
-      options.siteUrl = normalizeBaseUrl(value, '--site-url');
-      continue;
-    }
-
-    if (arg?.startsWith('--site-url=')) {
-      options.siteUrl = normalizeBaseUrl(arg.slice('--site-url='.length), '--site-url');
-      continue;
-    }
-
-    if (arg === '--worker-url') {
-      const value = args[index + 1];
-      index += 1;
-      options.workerUrl = normalizeBaseUrl(value, '--worker-url');
-      continue;
-    }
-
-    if (arg?.startsWith('--worker-url=')) {
-      options.workerUrl = normalizeBaseUrl(arg.slice('--worker-url='.length), '--worker-url');
-      continue;
-    }
-
-    throw new Error(`Unknown argument: ${arg}`);
-  }
-
-  return options;
-}
-
-export function resolveSelectedStripeSandboxScenarios(
-  selection: StripeSandboxSmokeScenarioSelection,
-): StripeSandboxSmokeScenario[] {
-  return resolveSmokeScenarioSelection(selection, Object.values(STRIPE_SANDBOX_SMOKE_SCENARIOS));
-}
-
-export function groupStripeSandboxSmokeScenarios(
-  scenarios: readonly StripeSandboxSmokeScenario[],
-): StripeSandboxScenarioGroups {
-  return {
-    checkoutSurfaceScenarios: scenarios.filter((scenario) => scenario.expectedOrderStatus === 'not_submitted'),
-    declineScenarios: scenarios.filter((scenario) => scenario.expectedOrderStatus === 'not_paid_or_pending'),
-    paidScenarios: scenarios.filter((scenario) => scenario.expectedOrderStatus === 'paid'),
-  };
-}
-
-export function createCheckoutPageUrl(siteUrl: string, storeItemSlug = smokeStoreItemSlug): string {
-  return createRouteUrl(siteUrl, `/store/${encodeURIComponent(storeItemSlug)}/checkout/`);
-}
-
-export function createScenarioEmail(runId: string, scenarioName: string): string {
-  return `sandbox-checkout+${runId}-${scenarioName}@blackbox.example`;
-}
-
-export function createRemoteD1ReadinessSql(): string {
-  return [
-    'SELECT',
-    '  (SELECT COUNT(*) FROM "VariantStripeMapping" WHERE "stripePriceId" LIKE \'price_%\' AND "stripePriceId" NOT LIKE \'price_mock_%\') AS "realStripeMappingCount",',
-    '  (SELECT COUNT(*) FROM "Stock" WHERE "onlineQuantity" > 0) AS "availableStockCount",',
-    '  (SELECT COALESCE(MAX("onlineQuantity"), 0) FROM "Stock" WHERE "variantId" = \'' +
-      smokeVariantId +
-      '\') AS "smokeVariantOnlineQuantity",',
-    '  (SELECT COALESCE(MAX("canBuy"), 0) FROM "ItemAvailability" WHERE "variantId" = \'' +
-      smokeVariantId +
-      '\') AS "smokeVariantCanBuy",',
-    '  (SELECT COUNT(*) FROM "CheckoutOrder") AS "checkoutOrderCount";',
-  ].join('\n');
-}
-
-export function createSandboxSmokeStockTopUpSql(minimumQuantity: number): string {
-  if (!Number.isInteger(minimumQuantity) || minimumQuantity < 1) {
-    throw new Error('Sandbox smoke stock top-up quantity must be a positive integer.');
-  }
-
-  return [
-    'UPDATE "Stock"',
-    'SET',
-    `  "quantity" = CASE WHEN "quantity" < ${minimumQuantity} THEN ${minimumQuantity} ELSE "quantity" END,`,
-    `  "onlineQuantity" = CASE WHEN "onlineQuantity" < ${minimumQuantity} THEN ${minimumQuantity} ELSE "onlineQuantity" END,`,
-    '  "updatedAt" = CURRENT_TIMESTAMP',
-    `WHERE "variantId" = '${smokeVariantId}';`,
-    '',
-    'UPDATE "ItemAvailability"',
-    'SET',
-    '  "status" = \'available\',',
-    '  "canBuy" = 1,',
-    '  "updatedAt" = CURRENT_TIMESTAMP',
-    `WHERE "variantId" = '${smokeVariantId}';`,
-  ].join('\n');
-}
-
-export function createCheckoutOrderBySessionSql(checkoutSessionId: string): string {
-  return [
-    'SELECT',
-    '  "id",',
-    '  "checkoutSessionId",',
-    '  "stripePaymentIntentId",',
-    '  "shippingLockerId",',
-    '  "shippingLockerCountryCode",',
-    '  "shippingLockerNameOrLabel",',
-    '  "status",',
-    '  "createdAt",',
-    '  "updatedAt",',
-    '  "paidAt",',
-    '  "notPaidAt",',
-    '  "needsReviewAt"',
-    'FROM "CheckoutOrder"',
-    `WHERE "checkoutSessionId" = '${escapeSqlLiteral(checkoutSessionId)}'`,
-    'LIMIT 1;',
-  ].join('\n');
-}
-
-export function parseD1CheckoutOrderRows(jsonText: string): LocalCheckoutOrderRow[] {
-  const parsed = JSON.parse(jsonText) as D1JsonResult;
-  const firstResult = parsed[0];
-
-  if (!firstResult?.success || !Array.isArray(firstResult.results)) {
-    throw new Error('Wrangler did not return a successful D1 result set.');
-  }
-
-  return firstResult.results.map(toCheckoutOrderRow);
-}
-
-export function parseRemoteD1ReadinessSummary(jsonText: string): RemoteD1ReadinessSummary {
-  const parsed = JSON.parse(jsonText) as D1JsonResult;
-  const firstResult = parsed[0];
-  const row = Array.isArray(firstResult?.results) ? firstResult.results[0] : null;
-
-  if (!firstResult?.success || !row || typeof row !== 'object') {
-    throw new Error('Wrangler did not return sandbox D1 readiness rows.');
-  }
-
-  return {
-    availableStockCount: readNumberField(row, 'availableStockCount'),
-    checkoutOrderCount: readNumberField(row, 'checkoutOrderCount'),
-    realStripeMappingCount: readNumberField(row, 'realStripeMappingCount'),
-    smokeVariantCanBuy: readNumberField(row, 'smokeVariantCanBuy') === 1,
-    smokeVariantOnlineQuantity: readNumberField(row, 'smokeVariantOnlineQuantity'),
-  };
-}
 
 export function checkStripeSandboxSmokePreflight(input: StripeSandboxSmokePreflightInput): string[] {
   const issues: string[] = [];
@@ -792,18 +410,6 @@ export function didScenarioPass(
   }
 
   return Boolean(scenario.expectedStripeErrorPattern?.test(observedStripeUi)) && order?.status !== 'paid';
-}
-
-export function scrubSensitiveStripeSmokeText(text: string): string {
-  return redactSensitiveSmokeText(text);
-}
-
-function scrubStripeSmokeEvidenceUrl(value: string): string {
-  if (value.startsWith('https://checkout.stripe.com/')) {
-    return 'https://checkout.stripe.com/[redacted_checkout_url]';
-  }
-
-  return scrubSensitiveStripeSmokeText(value);
 }
 
 export function buildStripeSandboxSmokeEvidence(input: {
@@ -1026,17 +632,6 @@ async function runScenarioAndWriteEvidence(input: {
   return evidence;
 }
 
-export function countPaidStripeSandboxScenarios(scenarios: readonly StripeSandboxSmokeScenario[]): number {
-  return scenarios.filter((scenario) => scenario.expectedOrderStatus === 'paid').length;
-}
-
-export function calculateMinimumSmokeOnlineQuantity(scenarios: readonly StripeSandboxSmokeScenario[]): number {
-  const paidScenarioCount = countPaidStripeSandboxScenarios(scenarios);
-  const hasDeclineScenario = scenarios.some((scenario) => scenario.expectedOrderStatus === 'not_paid_or_pending');
-
-  return Math.max(1, paidScenarioCount + (hasDeclineScenario ? 1 : 0));
-}
-
 export function createEmptyStripeSandboxSmokeDurations(): StripeSandboxSmokeDurations {
   return {
     checkoutOpenMs: 0,
@@ -1114,6 +709,7 @@ async function runScenarioWithBrowser(input: {
   try {
     await timeStripeSandboxStep(input.scenario.name, 'checkout open', durations, 'checkoutOpenMs', async () => {
       await page.goto(input.checkoutPageUrl, { waitUntil: 'domcontentloaded' });
+      await page.getByLabel(/Email me BlackBox Records/i).check({ timeout: input.options.fieldActionTimeoutMs });
       await Promise.all([
         page.waitForURL(/checkout\.stripe\.com/, { timeout: input.options.timeoutMs, waitUntil: 'commit' }),
         page.getByRole('button', { name: /(?:pay securely with|continue to) stripe(?: checkout)?/i }).click(),
@@ -1257,273 +853,6 @@ async function readStripeCheckoutSurface(
   const bodyText = await page.locator('body').innerText({ timeout: 10_000 });
 
   return createStripeCheckoutSurfaceObservation(bodyText, expectation);
-}
-
-export async function resolveCheckoutSurfaceExpectation(
-  workerUrl: string,
-  baseExpectation: StripeCheckoutSurfaceExpectation,
-  expectedPaymentMethodLabels: string[],
-): Promise<StripeCheckoutSurfaceExpectation> {
-  const offer = await readWorkerStoreOffer(workerUrl);
-
-  if (!offer.canCheckout || !offer.price?.display) {
-    throw new Error('Worker Store Offer is not checkout-ready for sandbox smoke.');
-  }
-
-  return {
-    ...baseExpectation,
-    expectedAmountText: offer.price.display,
-    expectedPaymentMethodLabels,
-  };
-}
-
-export function createStripeCheckoutSurfaceObservation(
-  bodyText: string,
-  expectation: StripeCheckoutSurfaceExpectation,
-): StripeCheckoutSurfaceObservation {
-  const normalizedBodyText = normalizeVisibleStripeText(bodyText);
-  const paymentMethodLabels = extractPaymentMethodLabels(normalizedBodyText);
-  const dynamicPaymentMethodLabels = extractDynamicPaymentMethodLabels(normalizedBodyText);
-  const observedPaymentSurfaceLabels = uniqueStrings([...paymentMethodLabels, ...dynamicPaymentMethodLabels]);
-  const observedAmountTexts = extractAmountTexts(normalizedBodyText);
-  const amountTextPresent = normalizedBodyText.includes(expectation.expectedAmountText);
-  const expectedPaymentMethodLabels = uniqueStrings(
-    expectation.expectedPaymentMethodLabels.map(normalizePaymentMethodLabel),
-  );
-  const missingPaymentMethodLabels = expectedPaymentMethodLabels.filter(
-    (expectedLabel) =>
-      !observedPaymentSurfaceLabels.some((label) => normalizePaymentMethodLabel(label) === expectedLabel),
-  );
-  const issues: string[] = [];
-
-  if (!amountTextPresent) {
-    issues.push(
-      `Expected hosted Checkout amount ${expectation.expectedAmountText}; observed: ${
-        observedAmountTexts.length ? observedAmountTexts.join(', ') : 'none'
-      }.`,
-    );
-  }
-
-  if (dynamicPaymentMethodLabels.length < expectation.minimumDynamicPaymentMethodCount) {
-    issues.push(
-      `Expected at least ${expectation.minimumDynamicPaymentMethodCount} dynamic payment method surface label(s); observed: ${
-        observedPaymentSurfaceLabels.length ? observedPaymentSurfaceLabels.join(', ') : 'none'
-      }.`,
-    );
-  }
-
-  if (missingPaymentMethodLabels.length) {
-    issues.push(
-      `Expected hosted Checkout payment method label(s) ${missingPaymentMethodLabels.join(', ')}; observed: ${
-        observedPaymentSurfaceLabels.length ? observedPaymentSurfaceLabels.join(', ') : 'none'
-      }.`,
-    );
-  }
-
-  return {
-    amountTextPresent,
-    dynamicPaymentMethodLabels,
-    expectedAmountText: expectation.expectedAmountText,
-    expectedPaymentMethodLabels,
-    issues,
-    observedAmountTexts,
-    paymentMethodLabels,
-  };
-}
-
-export async function readStripeCheckoutSessionProjection(
-  checkoutSessionId: string,
-  expectation: StripeCheckoutSessionProjectionExpectation,
-  secretKey = process.env.STRIPE_SECRET_KEY ?? '',
-): Promise<StripeCheckoutSessionProjectionObservation> {
-  const normalizedSecretKey = secretKey.trim();
-
-  if (!normalizedSecretKey) {
-    return createStripeCheckoutSessionProjectionObservation(null, expectation, [
-      'STRIPE_SECRET_KEY is required to verify hosted Checkout Product Projection through Stripe API.',
-    ]);
-  }
-
-  const apiBaseUrl = (process.env.STRIPE_API_BASE_URL?.trim() || 'https://api.stripe.com').replace(/\/+$/, '');
-  const searchParams = new URLSearchParams({
-    limit: '1',
-  });
-  searchParams.append('expand[]', 'data.price.product');
-  const response = await fetch(
-    `${apiBaseUrl}/v1/checkout/sessions/${encodeURIComponent(checkoutSessionId)}/line_items?${searchParams}`,
-    {
-      headers: {
-        Authorization: `Bearer ${normalizedSecretKey}`,
-      },
-    },
-  );
-
-  if (!response.ok) {
-    const responseText = await response.text();
-
-    return createStripeCheckoutSessionProjectionObservation(null, expectation, [
-      `Stripe Checkout Session line item read failed with HTTP ${response.status}: ${scrubSensitiveStripeSmokeText(
-        responseText,
-      )}`,
-    ]);
-  }
-
-  const body = (await response.json()) as StripeCheckoutLineItemsApiResponse;
-  const lineItem = body.data?.[0] ?? null;
-  const product = getExpandedStripeProduct(lineItem?.price?.product ?? null);
-
-  return createStripeCheckoutSessionProjectionObservation(
-    lineItem && product
-      ? {
-          amountMinor: typeof lineItem.amount_total === 'number' ? lineItem.amount_total : null,
-          currencyCode: lineItem.currency ?? null,
-          productImageUrls: product.images ?? [],
-          productName: product.name ?? null,
-        }
-      : null,
-    expectation,
-    lineItem && product ? [] : ['Stripe Checkout Session line item Product was not expanded.'],
-  );
-}
-
-export function createStripeCheckoutSessionProjectionObservation(
-  observed: {
-    amountMinor: number | null;
-    currencyCode: string | null;
-    productImageUrls: string[];
-    productName: string | null;
-  } | null,
-  expectation: StripeCheckoutSessionProjectionExpectation,
-  extraIssues: string[] = [],
-): StripeCheckoutSessionProjectionObservation {
-  const observedCurrencyCode = observed?.currencyCode?.toUpperCase() ?? null;
-  const expectedCurrencyCode = expectation.expectedCurrencyCode.toUpperCase();
-  const observedProductImageUrls = observed?.productImageUrls ?? [];
-  const amountMatches = observed?.amountMinor === expectation.expectedAmountMinor;
-  const currencyMatches = observedCurrencyCode === expectedCurrencyCode;
-  const productNameMatches = observed?.productName === expectation.expectedProductName;
-  const productImageMatches = observedProductImageUrls.includes(expectation.expectedProductImageUrl);
-  const issues = [...extraIssues];
-
-  if (!amountMatches) {
-    issues.push(
-      `Expected Checkout Session amount ${expectation.expectedAmountMinor}; observed ${observed?.amountMinor ?? 'none'}.`,
-    );
-  }
-
-  if (!currencyMatches) {
-    issues.push(
-      `Expected Checkout Session currency ${expectedCurrencyCode}; observed ${observedCurrencyCode ?? 'none'}.`,
-    );
-  }
-
-  if (!productNameMatches) {
-    issues.push(
-      `Expected Checkout Session Product name "${expectation.expectedProductName}"; observed "${
-        observed?.productName ?? 'none'
-      }".`,
-    );
-  }
-
-  if (!productImageMatches) {
-    issues.push(
-      `Expected Checkout Session Product image ${expectation.expectedProductImageUrl}; observed ${
-        observedProductImageUrls.length ? observedProductImageUrls.join(', ') : 'none'
-      }.`,
-    );
-  }
-
-  return {
-    amountMatches,
-    currencyMatches,
-    expectedAmountMinor: expectation.expectedAmountMinor,
-    expectedCurrencyCode,
-    expectedProductImageUrl: expectation.expectedProductImageUrl,
-    expectedProductName: expectation.expectedProductName,
-    issues,
-    observedAmountMinor: observed?.amountMinor ?? null,
-    observedCurrencyCode,
-    observedProductImageUrls,
-    observedProductName: observed?.productName ?? null,
-    productImageMatches,
-    productNameMatches,
-  };
-}
-
-function getExpandedStripeProduct(value: StripeProductApiObject | string | null): StripeProductApiObject | null {
-  return value && typeof value === 'object' ? value : null;
-}
-
-function normalizeVisibleStripeText(text: string): string {
-  return text
-    .replace(/\u00a0/g, ' ')
-    .replace(/\r\n/g, '\n')
-    .trim();
-}
-
-function extractPaymentMethodLabels(text: string): string[] {
-  const lines = createVisibleTextLines(text);
-  const paymentMethodIndex = lines.findIndex((line) => /^payment method$/i.test(line));
-
-  if (paymentMethodIndex < 0) {
-    return [];
-  }
-
-  const terminalIndex = lines.findIndex(
-    (line, index) =>
-      index > paymentMethodIndex &&
-      /^(card information|billing information|billing info is same as shipping|save my information|pay)$/i.test(line),
-  );
-  const labels = lines.slice(paymentMethodIndex + 1, terminalIndex > paymentMethodIndex ? terminalIndex : undefined);
-
-  return uniqueStrings(
-    labels.filter((line) =>
-      /^(?:card|link|apple pay|google pay|pay with link|pay with apple pay|pay with google pay)$/i.test(line),
-    ),
-  );
-}
-
-function extractDynamicPaymentMethodLabels(text: string): string[] {
-  const labels: string[] = [];
-
-  for (const line of createVisibleTextLines(text)) {
-    if (/^(?:apple pay|pay with apple pay)$/i.test(line)) {
-      labels.push('Apple Pay');
-    }
-
-    if (/^(?:google pay|pay with google pay)$/i.test(line)) {
-      labels.push('Google Pay');
-    }
-
-    if (/^(?:link|pay with link)$/i.test(line)) {
-      labels.push('Link');
-    }
-  }
-
-  if (/pay securely\b[\s\S]*\blink is accepted\b/i.test(text)) {
-    labels.push('Link');
-  }
-
-  return uniqueStrings(labels);
-}
-
-function normalizePaymentMethodLabel(label: string): string {
-  return label.trim().replace(/\s+/g, ' ');
-}
-
-function extractAmountTexts(text: string): string[] {
-  return uniqueStrings(text.match(/(?:€|CHF|USD|EUR|GBP)\s?\d+(?:[.,]\d{2})?/g) ?? []);
-}
-
-function createVisibleTextLines(text: string): string[] {
-  return normalizeVisibleStripeText(text)
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
-function uniqueStrings(values: string[]): string[] {
-  return [...new Set(values)];
 }
 
 async function fillStripeHostedCheckout(
@@ -1786,18 +1115,6 @@ async function isHttpReady(url: string): Promise<boolean> {
   }
 }
 
-async function readWorkerStoreOffer(workerUrl: string): Promise<PublicStoreOfferResponse> {
-  const response = await fetch(
-    `${normalizeBaseUrl(workerUrl, 'workerUrl')}/api/store/items/${encodeURIComponent(smokeStoreItemSlug)}`,
-  );
-
-  if (!response.ok) {
-    throw new Error(`Worker Store Offer read failed with HTTP ${response.status}.`);
-  }
-
-  return (await response.json()) as PublicStoreOfferResponse;
-}
-
 async function fillFirstVisible(
   page: Page,
   labelPatterns: RegExp[],
@@ -1894,45 +1211,6 @@ function extractCheckoutSessionId(value: string): string | null {
   return /cs_(?:test|live)_[A-Za-z0-9]+/.exec(decoded)?.[0] ?? null;
 }
 
-function parseScenarioSelection(value: string | undefined): StripeSandboxSmokeScenarioSelection {
-  return parseNamedSmokeScenarioSelection(value, allScenarioNames, 'Stripe sandbox smoke');
-}
-
-function parseScreenshotMode(value: string | undefined): StripeSandboxScreenshotMode {
-  return parseSmokeScreenshotMode(value);
-}
-
-function parsePositiveInteger(value: string | undefined, flag: string): number {
-  return parseSmokePositiveInteger(value, flag);
-}
-
-function parsePaymentMethodLabel(value: string | undefined, flag: string): string {
-  const label = normalizePaymentMethodLabel(value ?? '');
-
-  if (!label) {
-    throw new Error(`${flag} must include a payment method label.`);
-  }
-
-  return label;
-}
-
-function parsePaymentMethodLabelList(
-  value: string | undefined,
-  flag = 'STRIPE_SANDBOX_EXPECTED_PAYMENT_LABELS',
-): string[] {
-  return uniqueStrings(
-    (value ?? '')
-      .split(',')
-      .map((label) => label.trim())
-      .filter(Boolean)
-      .map((label) => parsePaymentMethodLabel(label, flag)),
-  );
-}
-
-function normalizeBaseUrl(value: string | undefined, flag: string): string {
-  return normalizeSmokeBaseUrl(value, flag);
-}
-
 function readOptionalFile(relativePath: string): string | null {
   const absolutePath = path.join(rootDir, ...relativePath.split('/'));
 
@@ -1941,35 +1219,6 @@ function readOptionalFile(relativePath: string): string | null {
   }
 
   return readFileSync(absolutePath, 'utf8');
-}
-
-function readNumberField(row: object, field: keyof RemoteD1ReadinessSummary): number {
-  const value = (row as Record<string, unknown>)[field];
-
-  return typeof value === 'number' ? value : Number(value ?? 0);
-}
-
-function toCheckoutOrderRow(value: unknown): LocalCheckoutOrderRow {
-  if (!value || typeof value !== 'object') {
-    throw new Error('D1 returned a non-object checkout order row.');
-  }
-
-  const row = value as Record<string, unknown>;
-
-  return {
-    checkoutSessionId: readString(row, 'checkoutSessionId'),
-    createdAt: readString(row, 'createdAt'),
-    id: readString(row, 'id'),
-    needsReviewAt: readNullableString(row, 'needsReviewAt'),
-    notPaidAt: readNullableString(row, 'notPaidAt'),
-    paidAt: readNullableString(row, 'paidAt'),
-    shippingLockerCountryCode: readNullableString(row, 'shippingLockerCountryCode'),
-    shippingLockerId: readNullableString(row, 'shippingLockerId'),
-    shippingLockerNameOrLabel: readNullableString(row, 'shippingLockerNameOrLabel'),
-    status: parseOrderStatus(readString(row, 'status')),
-    stripePaymentIntentId: readNullableString(row, 'stripePaymentIntentId'),
-    updatedAt: readString(row, 'updatedAt'),
-  };
 }
 
 function sanitizeOrderForReport(order: LocalCheckoutOrderRow) {
@@ -1988,42 +1237,6 @@ function sanitizeOrderForReport(order: LocalCheckoutOrderRow) {
     stripePaymentIntentRecorded: Boolean(order.stripePaymentIntentId),
     updatedAt: order.updatedAt,
   };
-}
-
-function readString(row: Record<string, unknown>, key: string): string {
-  const value = row[key];
-
-  if (typeof value !== 'string') {
-    throw new Error(`D1 checkout order row is missing string field ${key}.`);
-  }
-
-  return value;
-}
-
-function readNullableString(row: Record<string, unknown>, key: string): string | null {
-  const value = row[key];
-
-  if (value === null || value === undefined) {
-    return null;
-  }
-
-  if (typeof value !== 'string') {
-    throw new Error(`D1 checkout order row has invalid nullable string field ${key}.`);
-  }
-
-  return value;
-}
-
-function parseOrderStatus(value: string): LocalCheckoutOrderRow['status'] {
-  if (value === 'needs_review' || value === 'not_paid' || value === 'paid' || value === 'pending_payment') {
-    return value;
-  }
-
-  throw new Error(`Unexpected checkout order status: ${value}`);
-}
-
-function escapeSqlLiteral(value: string): string {
-  return value.replace(/'/g, "''");
 }
 
 function createRunId(): string {
