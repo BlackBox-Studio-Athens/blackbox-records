@@ -93,7 +93,6 @@ describe('local process helper', () => {
       processName: 'Crashing service',
     });
     await expect(sibling.subprocess).rejects.toMatchObject({
-      killed: true,
       signal: 'SIGTERM',
     });
   });

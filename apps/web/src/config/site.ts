@@ -39,7 +39,7 @@ export function createAbsoluteSiteUrl(path = '/') {
   return new URL(createProjectRelativeUrl(path), astroSiteUrl).toString();
 }
 
-export function isExternalUrl(path = '') {
+function isExternalUrl(path = '') {
   return /^[a-z][a-z0-9+.-]*:\/\//i.test(path);
 }
 

@@ -37,7 +37,7 @@ export function getContentSection<T extends { type: string }, U extends T['type'
   return sections.find((section): section is Extract<T, { type: U }> => section.type === type);
 }
 
-export async function getNavigationItems(): Promise<SiteNavigationItem[]> {
+async function getNavigationItems(): Promise<SiteNavigationItem[]> {
   return (await getCollection('navigation'))
     .map((item) => ({
       id: item.id,

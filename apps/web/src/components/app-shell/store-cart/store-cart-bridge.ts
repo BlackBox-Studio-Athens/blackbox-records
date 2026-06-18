@@ -34,7 +34,7 @@ export function getStoreCartBrowserStorage(): Storage | undefined {
   }
 }
 
-export function persistStoreCartState(storage: StoreCartBrowserStorage, state: StoreCartState) {
+function persistStoreCartState(storage: StoreCartBrowserStorage, state: StoreCartState) {
   writeStoreCartState(storage, state);
 }
 

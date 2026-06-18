@@ -4,7 +4,6 @@ import type {
   StoreOfferSnapshotRepository,
   VariantStripeMappingRepository,
 } from '../../../domain/commerce/repositories/spi';
-import { parseStripePriceId } from '../../../domain/commerce';
 import { createStripeCatalogLookupKey, createStripeCatalogMetadata, redactStripeObjectId } from './catalog-identifiers';
 import type {
   CatalogSyncAction,
@@ -438,7 +437,7 @@ export class CatalogReconciler {
   }
 }
 
-export function matchesCatalogIdentity(
+function matchesCatalogIdentity(
   price: StripeCatalogPrice,
   storeItem: StoreItemOptionRecord,
   environment: StripeCatalogEnvironment,
@@ -622,8 +621,4 @@ function sleep(milliseconds: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
   });
-}
-
-export function parseCatalogStripePriceId(value: string) {
-  return parseStripePriceId(value);
 }

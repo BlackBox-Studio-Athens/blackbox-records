@@ -11,6 +11,8 @@
         ".github/workflows/*.{yml,yaml}",
       ],
       "project": ["scripts/**/*.ts", "*.config.{js,cjs,mjs,ts}", ".dependency-cruiser.cjs"],
+      // Astro CLI resolves this from the workspace root under pnpm; app-local declaration alone triggers install prompts.
+      "ignoreDependencies": ["@astrojs/check"],
     },
     "apps/web": {
       "entry": [
@@ -27,6 +29,8 @@
     "apps/backend": {
       "entry": ["src/index.ts", "wrangler.jsonc", "prisma.config.ts", "scripts/**/*.{mjs,ts}", "test/**/*.test.ts"],
       "project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.{mjs,ts}", "prisma.config.ts"],
+      // Vitest's Cloudflare pool exposes this virtual module; it is not an installable package dependency.
+      "ignoreDependencies": ["cloudflare"],
     },
     "packages/api-client": {
       "entry": ["src/index.ts", "src/public-client.ts", "src/internal-client.ts", "scripts/generate-api-client.ts"],
@@ -46,6 +50,8 @@
     "packages/api-client/src/generated/**",
   ],
   "ignoreIssues": {
+    "apps/backend/src/application/commerce/catalog-sync/catalog-product-projections.ts": ["exports", "types"],
+    "apps/backend/src/application/commerce/catalog-sync/desired-catalog-state.ts": ["exports", "types"],
     "apps/backend/src/generated/**": ["exports", "types", "enumMembers", "namespaceMembers"],
     "packages/api-client/src/generated/**": ["exports", "types", "enumMembers", "namespaceMembers"],
   },

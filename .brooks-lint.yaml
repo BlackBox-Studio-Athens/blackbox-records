@@ -1,0 +1,88 @@
+version: 1
+
+# Keep standard R1-R6 and T1-T6 risks enabled. Project-specific risks below
+# make Brooks scans follow BlackBox Records architecture and commerce policy.
+disable: []
+
+ignore:
+  - '**/node_modules/**'
+  - '**/dist/**'
+  - '**/build/**'
+  - '**/out/**'
+  - '**/.astro/**'
+  - '**/.wrangler/**'
+  - '**/.vite/**'
+  - '**/coverage/**'
+  - '.codex-artifacts/**'
+  - 'apps/backend/openapi/*.json'
+  - 'apps/backend/src/generated/**'
+  - 'packages/api-client/src/generated/**'
+  - 'apps/backend/prisma/migrations/**'
+  - 'openspec/changes/archive/**'
+  - 'pnpm-lock.yaml'
+
+custom_risks:
+  C1:
+    name: Module Boundary Drift
+    question: Does code bypass the OpenSpec module-boundary model?
+    symptoms:
+      - "Code imports another closed module's internal implementation instead of its provided entrypoint or named interface."
+      - 'A change adds, moves, or renames module roots, entrypoints, allowed dependencies, or exceptions without updating openspec/specs/module-boundaries/module-boundaries.manifest.json.'
+      - 'Module-boundary behavior changes without updating openspec/specs/module-boundaries/spec.md.'
+      - 'A module adds a disallowed ports or adapters directory name without an approved manifest exception.'
+      - 'Workspace package consumers deep-import generated or source internals instead of declared package exports.'
+    severity:
+      critical:
+        - 'pnpm audit:module-boundaries, pnpm depcruise:boundaries, or the module-boundaries architecture test fails.'
+      warning:
+        - 'A module ownership or dependency rule is ambiguous even if current gates still pass.'
+      suggestion:
+        - 'A module diagram, handoff note, or report names stale module ownership.'
+
+  C2:
+    name: Commerce Authority Leakage
+    question: Does browser-facing or public-contract code expose backend commerce authority?
+    symptoms:
+      - 'Browser-facing code or public generated clients expose Stripe secrets, Stripe Price IDs, D1 bindings, database IDs, or backend runtime paths.'
+      - 'Public OpenAPI or public client contracts expose internal stock, order, operator, or /api/internal shapes.'
+      - 'Checkout browser payloads contain Stripe identifiers, D1 identifiers, payment state, order state, or backend secrets instead of app-owned identities.'
+      - 'StoreCart or static content becomes authoritative for stock, payment, provider mapping, order state, or feature-gate decisions.'
+    severity:
+      critical:
+        - 'pnpm audit:commerce-boundaries fails, or a secret/authority-bearing identifier appears in browser/public contract code.'
+      warning:
+        - 'A public route, UI component, or docs path blurs Worker authority, Stripe authority, D1 operational state, and browser convenience state.'
+      suggestion:
+        - 'Copy or test names use commerce authority terms imprecisely but do not alter runtime behavior.'
+
+  C3:
+    name: Environment Language Drift
+    question: Do artifacts preserve the Local, UAT, and PRD product environment model?
+    symptoms:
+      - 'Docs, specs, tests, workflows, or validation output use sandbox or production as product environment names instead of platform/runtime targets.'
+      - 'PRD is described as open, live, successful, or buyable before the explicit PRD-open gate exists.'
+      - 'mock-api is treated as a separate product environment instead of a Local implementation alias.'
+      - 'Cloudflare Pages previews, branch deploys, or GitHub Pages are described as PRD readiness or shopper-facing production proof.'
+    severity:
+      critical:
+        - 'Environment wording could approve provider mutation, checkout, deployment, or PRD readiness incorrectly.'
+      warning:
+        - 'An artifact mixes product environment and platform environment terms in a way that can mislead maintainers.'
+      suggestion:
+        - 'A local variable or helper name is platform-specific but surrounding copy maps it clearly to Local, UAT, or PRD.'
+
+  C4:
+    name: Generated Contract Desync
+    question: Are generated contracts synchronized with their source routes and schemas?
+    symptoms:
+      - 'Generated OpenAPI or API client artifacts change without corresponding source route, contract, schema, or generation evidence.'
+      - 'Generated contract files are hand-edited instead of regenerated through pnpm generate:api.'
+      - 'Public generated contracts include internal routes, internal schemas, provider secrets, D1 bindings, or operator-only stock/order details.'
+      - 'Backend route changes alter public or internal API behavior without updating the generated client package and contract tests.'
+    severity:
+      critical:
+        - 'Public generated contracts leak internal or authority-bearing API shapes.'
+      warning:
+        - 'Generated files and source routes appear out of sync or lack generation evidence.'
+      suggestion:
+        - 'Generated contract diffs are correct but the report or handoff omits how they were produced.'

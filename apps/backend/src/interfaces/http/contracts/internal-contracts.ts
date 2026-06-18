@@ -1,4 +1,4 @@
-export const internalContractModules = [
+const internalContractModules = [
   {
     name: 'internal-orders',
     paths: ['/api/internal/orders', '/api/internal/orders/checkout-sessions/{checkoutSessionId}'],

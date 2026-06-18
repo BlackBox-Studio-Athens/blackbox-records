@@ -164,7 +164,7 @@ function normalizeStoreItemImageAlt(imageAlt: string | undefined, fallback: stri
   return imageAlt || fallback;
 }
 
-export function getPrimaryReleaseStoreFormat(formats: readonly string[] | undefined): string | null {
+function getPrimaryReleaseStoreFormat(formats: readonly string[] | undefined): string | null {
   return (
     formats?.find((format) => {
       const normalized = format.trim().toLowerCase();
@@ -173,7 +173,7 @@ export function getPrimaryReleaseStoreFormat(formats: readonly string[] | undefi
   );
 }
 
-export function createReleaseStoreItemSlug(releaseEntry: ReleaseCatalogEntry): string {
+function createReleaseStoreItemSlug(releaseEntry: ReleaseCatalogEntry): string {
   const primaryFormat = getPrimaryReleaseStoreFormat(releaseEntry.data.formats);
   return createSlugSuggestion([releaseEntry.data.title, primaryFormat].filter(Boolean).join(' '));
 }

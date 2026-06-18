@@ -1,4 +1,4 @@
-export const NATIVE_CHECKOUT_DISABLED_MESSAGE = 'Native checkout is temporarily unavailable.';
+const NATIVE_CHECKOUT_DISABLED_MESSAGE = 'Native checkout is temporarily unavailable.';
 
 export type FeatureFlagReader = {
   isNativeCheckoutEnabled(): Promise<boolean>;

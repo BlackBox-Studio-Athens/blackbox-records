@@ -126,8 +126,8 @@ Read these first before editing:
   - `apps/backend/src/domain/commerce/repositories/`
   - `apps/backend/src/infrastructure/persistence/prisma/`
 - The committed Prisma client lives under `apps/backend/src/generated/prisma/`.
-- `apps/backend/prisma/schema.prisma` uses a placeholder local SQLite URL for the current Prisma 6 CLI generation only; Worker runtime queries still go through `env.COMMERCE_DB`.
-- Prisma 7 moves datasource URLs to `prisma.config.ts`; do not remove the schema URL until the repo upgrades from Prisma 6 because Prisma 6 still requires it during generation.
+- `apps/backend/prisma/schema.prisma` is on Prisma 7 style datasource configuration without an inline URL; `apps/backend/prisma.config.ts` supplies the local CLI datasource URL.
+- Worker runtime queries still go through `env.COMMERCE_DB`; do not add runtime database URLs to the schema.
 - D1 migrations live under `apps/backend/prisma/migrations/`, and Wrangler applies them through the `COMMERCE_DB` binding.
 - The current pre-production D1 schema history is consolidated into one baseline migration; do not rewrite migration history after real sandbox or production commerce data exists.
 - Backend-local seed SQL lives under `apps/backend/prisma/seeds/`.
@@ -197,7 +197,7 @@ Read these first before editing:
   - `pnpm check`
   - `pnpm build`
 - `pnpm check` is intentionally editor-independent; do not rely on WebStorm formatting or inspections as the only style gate.
-- The workflow uses `withastro/action@v6.1.1` with Node 24, pnpm 10.33.2, and built-in pnpm/Astro caching
+- The workflow uses `withastro/action@v6.1.1` with Node 24, pnpm 10.33.4, and built-in pnpm/Astro caching
 - Configured in `apps/web/astro.config.mjs`
   - default `site: https://blackbox-studio-athens.github.io`
   - default `base: /blackbox-records/`

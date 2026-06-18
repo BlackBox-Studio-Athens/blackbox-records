@@ -3,10 +3,15 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
+import { filteredViteLogger, installFilteredViteConsoleWarningFilter } from './test/setup/filtered-vite-logger';
+
+installFilteredViteConsoleWarningFilter();
+
 const backendRoot = dirname(fileURLToPath(import.meta.url));
 const migrations = await readD1Migrations(join(backendRoot, 'prisma/migrations'));
 
 export default defineConfig({
+  customLogger: filteredViteLogger,
   plugins: [
     cloudflareTest({
       main: './src/index.ts',

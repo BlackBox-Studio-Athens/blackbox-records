@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const MAX_CART_QUANTITY = 9;
+const MAX_CART_QUANTITY = 9;
 
 const cartQuantitySchema = z.number().int().min(1).max(MAX_CART_QUANTITY).brand<'CartQuantity'>();
 const stockQuantitySchema = z.number().int().min(0).brand<'StockQuantity'>();

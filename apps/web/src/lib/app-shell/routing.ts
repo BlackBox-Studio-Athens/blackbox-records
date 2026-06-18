@@ -56,10 +56,6 @@ export function parseOverlayRoute(pathname: string): OverlayRoute | null {
   return null;
 }
 
-export function isOverlayEligiblePath(pathname: string) {
-  return parseOverlayRoute(pathname) !== null;
-}
-
 export function parseShellSectionRoute(pathname: string): ShellSectionRoute | null {
   const normalizedPathname = normalizeAppPathname(pathname);
 
@@ -73,10 +69,6 @@ export function parseShellSectionRoute(pathname: string): ShellSectionRoute | nu
   }
 
   return null;
-}
-
-export function isShellSectionPath(pathname: string) {
-  return parseShellSectionRoute(pathname) !== null;
 }
 
 export function buildOverlayFragmentUrl(pathname: string) {

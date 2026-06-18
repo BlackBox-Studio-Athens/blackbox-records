@@ -17,7 +17,7 @@ type StripePriceWithExpandedProduct = Stripe.Price & {
   product: string | Stripe.Product | Stripe.DeletedProduct;
 };
 
-export class StripeCatalogGatewayClient implements StripeCatalogGateway {
+class StripeCatalogGatewayClient implements StripeCatalogGateway {
   public constructor(private readonly stripe: Stripe) {}
 
   public async archivePrice(priceId: string, context?: StripeCatalogMutationContext): Promise<StripeCatalogPrice> {

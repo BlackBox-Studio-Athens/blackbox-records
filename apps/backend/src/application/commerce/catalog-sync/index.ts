@@ -10,16 +10,7 @@ export {
   createCurrentCatalogExpectedSandboxPriceMap,
   createCurrentCatalogProductProjectionReader,
   currentCatalogProductProjectionEntries,
-  findCurrentCatalogProductProjection,
-  findCurrentCatalogProductProjectionEntry,
 } from './catalog-product-projections';
-export {
-  createCurrentDesiredCatalogEntriesForEnvironment,
-  createCurrentDesiredPriceMap,
-  currentDesiredCatalogEntries,
-  currentDesiredCatalogState,
-  findCurrentDesiredCatalogEntry,
-} from './desired-catalog-state';
 export type { CatalogProductProjectionEntry, CatalogProductProjectionReader } from './catalog-product-projections';
 export type {
   CatalogDriftCategory,
@@ -35,8 +26,6 @@ export {
   CatalogReconciler,
   classifyCatalogSyncIssue,
   hasBlockingCatalogIssue,
-  matchesCatalogIdentity,
-  parseCatalogStripePriceId,
 } from './catalog-reconciler';
 export { createStoreOfferPrice } from './money';
 export type {

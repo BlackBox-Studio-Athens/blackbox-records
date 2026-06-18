@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { createMoney, formatMoney, moneyToCurrencyCode, moneyToMinorAmount } from './money';
 
 export const STORE_CART_STORAGE_KEY = 'blackbox.storeCart.v2';
-export const LEGACY_STORE_CART_STORAGE_KEY = 'blackbox.storeCart.v1';
+const LEGACY_STORE_CART_STORAGE_KEY = 'blackbox.storeCart.v1';
 export const STORE_CART_ADD_ITEM_EVENT = 'blackbox:store-cart:add-item';
 export const STORE_CART_OPEN_REQUESTED_EVENT = 'blackbox:store-cart:open-requested';
 export const STORE_CART_MAX_QUANTITY = 9;
@@ -101,12 +101,12 @@ export function createCartQuantity(value: unknown): CartQuantity {
   return cartQuantitySchema.parse(value);
 }
 
-export function sanitizeCartQuantity(value: unknown): CartQuantity {
+function sanitizeCartQuantity(value: unknown): CartQuantity {
   if (typeof value !== 'number' || !Number.isFinite(value)) return createCartQuantity(1);
   return createCartQuantity(Math.min(STORE_CART_MAX_QUANTITY, Math.max(1, Math.floor(value))));
 }
 
-export function parseCartLine(value: unknown): CartLine | null {
+function parseCartLine(value: unknown): CartLine | null {
   const lineItemSnapshot = parseCartLineItemSnapshot(value);
   if (!lineItemSnapshot) return null;
 
@@ -138,7 +138,7 @@ export function normalizeStoreCartState(state: StoreCartState | CartDraft): Stor
   return { primaryLineItem, lines };
 }
 
-export function formatCartMoney(amountMinor: number, currencyCode: string): string {
+function formatCartMoney(amountMinor: number, currencyCode: string): string {
   return formatMoney(createMoney({ amountMinor, currencyCode }), CART_MONEY_FORMAT_LOCALE);
 }
 
@@ -191,7 +191,7 @@ export function addStoreCartItem(
   });
 }
 
-export function setCartLineQuantityByVariant(
+function setCartLineQuantityByVariant(
   variantId: string,
   quantity: unknown,
   state: StoreCartState = createEmptyStoreCartState(),
@@ -230,10 +230,6 @@ export function decrementCartLineQuantityByVariant(
   return setCartLineQuantityByVariant(variantId, line.quantity - 1, currentState);
 }
 
-export function clearStoreCart(): StoreCartState {
-  return createEmptyStoreCartState();
-}
-
 export function removeCartLineByVariant(
   variantId?: string,
   state: StoreCartState = createEmptyStoreCartState(),
@@ -267,7 +263,7 @@ export function parseSerializedStoreCartState(serializedState: string | null): S
   }
 }
 
-export function serializeStoreCartState(state: StoreCartState): string {
+function serializeStoreCartState(state: StoreCartState): string {
   return JSON.stringify({ lines: normalizeStoreCartState(state).lines });
 }
 

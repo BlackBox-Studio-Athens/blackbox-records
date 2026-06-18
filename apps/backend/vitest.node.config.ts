@@ -1,6 +1,11 @@
 import { defineConfig } from 'vitest/config';
 
+import { filteredViteLogger, installFilteredViteConsoleWarningFilter } from './test/setup/filtered-vite-logger';
+
+installFilteredViteConsoleWarningFilter();
+
 export default defineConfig({
+  customLogger: filteredViteLogger,
   test: {
     environment: 'node',
     include: [

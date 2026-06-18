@@ -90,7 +90,7 @@ function indentYamlListItem(value: string, spaces: number): string {
   return indentYamlBlock(ensureYamlListItem(value), spaces);
 }
 
-export function buildArtistOptionsYaml(options: DecapSelectOption[], indentSpaces = 4): string {
+function buildArtistOptionsYaml(options: DecapSelectOption[], indentSpaces = 4): string {
   return options
     .map(
       (option) =>
