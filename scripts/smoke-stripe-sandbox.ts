@@ -488,55 +488,13 @@ async function main() {
   mkdirSync(runArtifactDir, { recursive: true });
   console.log(formatStripeSandboxSmokeRunHeader({ options, runId, scenarios }));
   try {
-    ensureSandboxSmokeStock(minimumSmokeOnlineQuantity);
-
-    const preflight = await runPreflight(options);
-    const preflightIssues = checkStripeSandboxSmokePreflight({
-      ...preflight,
+    await verifyStripeSandboxSmokeReadiness({
       minimumSmokeOnlineQuantity,
       options,
       scenarios,
     });
 
-    console.log(formatStripeSandboxSmokePreflightSummary({ ...preflight, issues: preflightIssues }));
-
-    if (preflightIssues.length) {
-      throw new Error('Stripe sandbox smoke preflight failed. Fix the listed issue(s), then rerun.');
-    }
-
-    let browser: Browser | null = null;
-
-    try {
-      browser = await chromium.launch({
-        headless: !options.headed,
-        slowMo: options.debug ? 150 : 0,
-      });
-
-      const scenarioGroups = groupStripeSandboxSmokeScenarios(scenarios);
-
-      for (const scenario of scenarioGroups.checkoutSurfaceScenarios) {
-        evidence.push(await runScenarioAndWriteEvidence({ browser, options, runArtifactDir, runId, scenario }));
-      }
-
-      for (const scenario of scenarioGroups.paidScenarios) {
-        evidence.push(await runScenarioAndWriteEvidence({ browser, options, runArtifactDir, runId, scenario }));
-      }
-
-      if (scenarioGroups.declineScenarios.length) {
-        console.log(
-          `Running ${scenarioGroups.declineScenarios.length} decline scenario(s) with concurrency ${options.declineConcurrency}.`,
-        );
-        const declineEvidence: StripeSandboxSmokeEvidence[] = [];
-        await runInBatches(scenarioGroups.declineScenarios, options.declineConcurrency, async (scenario) => {
-          declineEvidence.push(
-            await runScenarioAndWriteEvidence({ browser: browser!, options, runArtifactDir, runId, scenario }),
-          );
-        });
-        evidence.push(...declineEvidence);
-      }
-    } finally {
-      await browser?.close();
-    }
+    evidence.push(...(await runStripeSandboxSmokeScenarios({ options, runArtifactDir, runId, scenarios })));
 
     writeJsonFile(summaryPath, buildStripeSandboxSmokeSummary({ evidence, options, runId, scenarios }));
 
@@ -554,6 +512,80 @@ async function main() {
     console.error(blocker);
     process.exit(1);
   }
+}
+
+async function verifyStripeSandboxSmokeReadiness(input: {
+  minimumSmokeOnlineQuantity: number;
+  options: StripeSandboxSmokeOptions;
+  scenarios: readonly StripeSandboxSmokeScenario[];
+}): Promise<void> {
+  ensureSandboxSmokeStock(input.minimumSmokeOnlineQuantity);
+
+  const preflight = await runPreflight(input.options);
+  const preflightIssues = checkStripeSandboxSmokePreflight({
+    ...preflight,
+    minimumSmokeOnlineQuantity: input.minimumSmokeOnlineQuantity,
+    options: input.options,
+    scenarios: input.scenarios,
+  });
+
+  console.log(formatStripeSandboxSmokePreflightSummary({ ...preflight, issues: preflightIssues }));
+
+  if (preflightIssues.length) {
+    throw new Error('Stripe sandbox smoke preflight failed. Fix the listed issue(s), then rerun.');
+  }
+}
+
+async function runStripeSandboxSmokeScenarios(input: {
+  options: StripeSandboxSmokeOptions;
+  runArtifactDir: string;
+  runId: string;
+  scenarios: readonly StripeSandboxSmokeScenario[];
+}): Promise<StripeSandboxSmokeEvidence[]> {
+  let browser: Browser | null = null;
+
+  try {
+    browser = await chromium.launch({
+      headless: !input.options.headed,
+      slowMo: input.options.debug ? 150 : 0,
+    });
+
+    return await runStripeSandboxSmokeScenarioGroups({ ...input, browser });
+  } finally {
+    await browser?.close();
+  }
+}
+
+async function runStripeSandboxSmokeScenarioGroups(input: {
+  browser: Browser;
+  options: StripeSandboxSmokeOptions;
+  runArtifactDir: string;
+  runId: string;
+  scenarios: readonly StripeSandboxSmokeScenario[];
+}): Promise<StripeSandboxSmokeEvidence[]> {
+  const evidence: StripeSandboxSmokeEvidence[] = [];
+  const scenarioGroups = groupStripeSandboxSmokeScenarios(input.scenarios);
+
+  for (const scenario of scenarioGroups.checkoutSurfaceScenarios) {
+    evidence.push(await runScenarioAndWriteEvidence({ ...input, scenario }));
+  }
+
+  for (const scenario of scenarioGroups.paidScenarios) {
+    evidence.push(await runScenarioAndWriteEvidence({ ...input, scenario }));
+  }
+
+  if (scenarioGroups.declineScenarios.length) {
+    console.log(
+      `Running ${scenarioGroups.declineScenarios.length} decline scenario(s) with concurrency ${input.options.declineConcurrency}.`,
+    );
+    const declineEvidence: StripeSandboxSmokeEvidence[] = [];
+    await runInBatches(scenarioGroups.declineScenarios, input.options.declineConcurrency, async (scenario) => {
+      declineEvidence.push(await runScenarioAndWriteEvidence({ ...input, scenario }));
+    });
+    evidence.push(...declineEvidence);
+  }
+
+  return evidence;
 }
 
 async function runScenarioAndWriteEvidence(input: {

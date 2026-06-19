@@ -1,3 +1,4 @@
+import type { CollectionEntry } from 'astro:content';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('astro:content', () => ({
@@ -5,10 +6,11 @@ vi.mock('astro:content', () => ({
     if (collectionName === 'releases') {
       return [
         {
+          collection: 'releases',
           id: 'disintegration',
           data: {
-            artist: { id: 'afterwise' },
-            cover_image: { src: '/disintegration.jpg' },
+            artist: { collection: 'artists', id: 'afterwise' },
+            cover_image: { src: '/disintegration.jpg', width: 100, height: 100, format: 'jpg' },
             cover_image_alt: 'Disintegration cover',
             formats: ['Black Vinyl LP'],
             merch_url: '/store/',
@@ -18,10 +20,11 @@ vi.mock('astro:content', () => ({
           },
         },
         {
+          collection: 'releases',
           id: 'caregivers',
           data: {
-            artist: { id: 'chronoboros' },
-            cover_image: { src: '/caregivers.jpg' },
+            artist: { collection: 'artists', id: 'chronoboros' },
+            cover_image: { src: '/caregivers.jpg', width: 100, height: 100, format: 'jpg' },
             cover_image_alt: 'Caregivers cover',
             formats: ['Vinyl'],
             merch_url: 'https://chronoboros.bandcamp.com/merch',
@@ -36,6 +39,8 @@ vi.mock('astro:content', () => ({
     return [];
   }),
   getEntry: vi.fn(async (reference: { id: string }) => ({
+    collection: 'artists',
+    id: reference.id,
     data: {
       slug: reference.id,
       title: reference.id,
@@ -51,11 +56,21 @@ vi.mock('astro:config/client', () => ({
 import { listReleaseCatalog } from './catalog-data';
 import { getReleaseCommerceLink } from './release-commerce';
 
+type ReleaseEntry = CollectionEntry<'releases'>;
+
+function expectReleaseEntry(releaseEntry: ReleaseEntry | undefined): ReleaseEntry {
+  if (!releaseEntry) {
+    throw new Error('Expected release catalog fixture to exist.');
+  }
+
+  return releaseEntry;
+}
+
 describe('release commerce link resolution', () => {
   it('prefers the native store path for mapped releases', async () => {
     const [nativeRelease] = await listReleaseCatalog();
 
-    await expect(getReleaseCommerceLink(nativeRelease as any)).resolves.toEqual({
+    await expect(getReleaseCommerceLink(expectReleaseEntry(nativeRelease))).resolves.toEqual({
       href: '/blackbox-records/store/disintegration-black-vinyl-lp/',
       isNativeStoreLink: true,
       label: 'View In Store',
@@ -65,7 +80,7 @@ describe('release commerce link resolution', () => {
   it('prefers native store paths even when releases still carry legacy external merch metadata', async () => {
     const [, externalRelease] = await listReleaseCatalog();
 
-    await expect(getReleaseCommerceLink(externalRelease as any)).resolves.toEqual({
+    await expect(getReleaseCommerceLink(expectReleaseEntry(externalRelease))).resolves.toEqual({
       href: '/blackbox-records/store/caregivers-vinyl/',
       isNativeStoreLink: true,
       label: 'View In Store',

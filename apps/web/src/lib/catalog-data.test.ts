@@ -1,3 +1,4 @@
+import type { CollectionEntry } from 'astro:content';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('astro:content', () => ({
@@ -5,10 +6,11 @@ vi.mock('astro:content', () => ({
     if (collectionName === 'releases') {
       return [
         {
+          collection: 'releases',
           id: 'disintegration',
           data: {
-            artist: { id: 'afterwise' },
-            cover_image: { src: '/disintegration.jpg' },
+            artist: { collection: 'artists', id: 'afterwise' },
+            cover_image: { src: '/disintegration.jpg', width: 100, height: 100, format: 'jpg' },
             cover_image_alt: 'Disintegration cover',
             formats: ['Black Vinyl LP'],
             merch_url: '/store/',
@@ -18,10 +20,11 @@ vi.mock('astro:content', () => ({
           },
         },
         {
+          collection: 'releases',
           id: 'caregivers',
           data: {
-            artist: { id: 'chronoboros' },
-            cover_image: { src: '/caregivers.jpg' },
+            artist: { collection: 'artists', id: 'chronoboros' },
+            cover_image: { src: '/caregivers.jpg', width: 100, height: 100, format: 'jpg' },
             cover_image_alt: 'Caregivers cover',
             formats: ['Vinyl'],
             merch_url: 'https://chronoboros.bandcamp.com/merch',
@@ -36,13 +39,14 @@ vi.mock('astro:content', () => ({
     if (collectionName === 'distro') {
       return [
         {
+          collection: 'distro',
           id: 'afterglow-tape',
           data: {
             artist_or_label: 'Afterglow',
             eyebrow: 'Tape',
             format: 'Cassette',
             group: 'Tapes',
-            image: { src: '/afterglow.jpg' },
+            image: { src: '/afterglow.jpg', width: 100, height: 100, format: 'jpg' },
             image_alt: 'Afterglow tape',
             order: 1,
             summary: 'Small-run cassette.',
@@ -55,6 +59,8 @@ vi.mock('astro:content', () => ({
     return [];
   }),
   getEntry: vi.fn(async (reference: { id: string }) => ({
+    collection: 'artists',
+    id: reference.id,
     data: {
       slug: 'afterwise',
       title: reference.id === 'afterwise' ? 'Afterwise' : 'Artist',
@@ -76,18 +82,76 @@ import {
   listStoreItems,
   listReleaseCatalog,
   mapStoreItemsBySlug,
+  type StoreItem,
 } from './catalog-data';
+import type { DistroGroupName } from './distro-data';
+
+type ReleaseEntry = CollectionEntry<'releases'>;
+type ReleaseEntryData = ReleaseEntry['data'];
+type DistroEntry = CollectionEntry<'distro'>;
+type DistroEntryData = DistroEntry['data'];
+type TestImageMetadata = ReleaseEntryData['cover_image'];
+
+function createTestImage(src: string): TestImageMetadata {
+  return { src, width: 100, height: 100, format: 'jpg' };
+}
+
+function createReleaseEntry(id: string, data: ReleaseEntryData): ReleaseEntry {
+  return {
+    collection: 'releases',
+    id,
+    data,
+  };
+}
+
+function createDistroEntry(id: string, data: DistroEntryData): DistroEntry {
+  return {
+    collection: 'distro',
+    id,
+    data,
+  };
+}
+
+function expectReleaseEntry(releaseEntry: ReleaseEntry | undefined): ReleaseEntry {
+  if (!releaseEntry) {
+    throw new Error('Expected release catalog fixture to exist.');
+  }
+
+  return releaseEntry;
+}
+
+function createStoreItemCollisionRecord(
+  sourceKind: StoreItem['sourceKind'],
+  sourceId: string,
+  slug: string,
+): StoreItem {
+  return {
+    slug,
+    taxCategory: 'physical_goods',
+    sourceKind,
+    sourceId,
+    title: sourceId,
+    subtitle: 'Fixture artist',
+    summary: null,
+    image: createTestImage('/fixture.jpg'),
+    imageAlt: 'Fixture image',
+    eyebrow: null,
+    metadata: [],
+    storePath: `/blackbox-records/store/${slug}/`,
+    checkoutPath: `/blackbox-records/store/${slug}/checkout/`,
+  };
+}
 
 describe('groupDistroEntries', () => {
   it('returns distro groups in the intended editorial order and omits empty groups', () => {
-    const entries = [
+    const entries: Array<{ data: { group: DistroGroupName; order: number; title: string } }> = [
       { data: { group: 'Tapes', order: 5, title: 'C' } },
       { data: { group: 'Other', order: 6, title: 'F' } },
       { data: { group: 'Clothes', order: 3, title: 'D' } },
       { data: { group: 'Vinyl 7-inch', order: 2, title: 'B' } },
       { data: { group: 'CDs', order: 4, title: 'E' } },
       { data: { group: 'Vinyl 12-inch', order: 1, title: 'A' } },
-    ] as any;
+    ];
 
     const groups = groupDistroEntries(entries);
 
@@ -107,18 +171,17 @@ describe('groupDistroEntries', () => {
 
 describe('StoreItem projection contract', () => {
   it('creates a release-derived store item with stable store and checkout paths', async () => {
-    const storeItem = await createStoreItemFromRelease({
-      id: 'caregivers-control',
-      data: {
-        artist: { id: 'afterwise' },
-        cover_image: { src: '/cover.jpg' },
+    const storeItem = await createStoreItemFromRelease(
+      createReleaseEntry('caregivers-control', {
+        artist: { collection: 'artists', id: 'afterwise' },
+        cover_image: createTestImage('/cover.jpg'),
         cover_image_alt: 'Caregivers cover',
         formats: ['Vinyl', 'Digital'],
         release_date: new Date('2024-11-02T00:00:00.000Z'),
         summary: 'Release summary',
         title: 'Caregivers',
-      },
-    } as any);
+      }),
+    );
 
     expect(storeItem).toEqual({
       slug: 'caregivers-vinyl',
@@ -128,7 +191,7 @@ describe('StoreItem projection contract', () => {
       title: 'Caregivers',
       subtitle: 'Afterwise',
       summary: 'Release summary',
-      image: { src: '/cover.jpg' },
+      image: { src: '/cover.jpg', width: 100, height: 100, format: 'jpg' },
       imageAlt: 'Caregivers cover',
       eyebrow: 'Release',
       metadata: ['2024', 'Vinyl', 'Digital'],
@@ -138,19 +201,18 @@ describe('StoreItem projection contract', () => {
   });
 
   it('uses the disintegration mockup cover override only for the store item', async () => {
-    const storeItem = await getStoreItemForRelease({
-      id: 'disintegration',
-      data: {
-        artist: { id: 'afterwise' },
-        cover_image: { src: '/disintegration.jpg' },
+    const storeItem = await getStoreItemForRelease(
+      createReleaseEntry('disintegration', {
+        artist: { collection: 'artists', id: 'afterwise' },
+        cover_image: createTestImage('/disintegration.jpg'),
         cover_image_alt: 'Disintegration cover',
         formats: ['Black Vinyl LP'],
         merch_url: '/store/',
         release_date: new Date('2026-09-01T00:00:00.000Z'),
         summary: 'Native-shop release',
         title: 'Disintegration',
-      },
-    } as any);
+      }),
+    );
 
     expect(storeItem.image).toEqual({
       src: '/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
@@ -161,19 +223,18 @@ describe('StoreItem projection contract', () => {
   });
 
   it('uses the anarchotribal mockup cover override only for the store item', async () => {
-    const storeItem = await getStoreItemForRelease({
-      id: 'anarchotribal',
-      data: {
-        artist: { id: 'ouranopithecus' },
-        cover_image: { src: '/anarchotribal-cover.webp' },
+    const storeItem = await getStoreItemForRelease(
+      createReleaseEntry('anarchotribal', {
+        artist: { collection: 'artists', id: 'ouranopithecus' },
+        cover_image: createTestImage('/anarchotribal-cover.webp'),
         cover_image_alt: 'Anarchotribal cover',
         formats: ['Vinyl'],
         merch_url: '/store/',
         release_date: new Date('2026-12-01T00:00:00.000Z'),
         summary: 'Native-shop release',
         title: 'Anarchotribal',
-      },
-    } as any);
+      }),
+    );
 
     expect(storeItem.image).toEqual({
       src: '/blackbox-records/admin/media/releases/ouranopithecus-album-cover-distro-mockup.webp',
@@ -184,19 +245,18 @@ describe('StoreItem projection contract', () => {
   });
 
   it('uses the caregivers mockup cover override only for the store item', async () => {
-    const storeItem = await getStoreItemForRelease({
-      id: 'caregivers',
-      data: {
-        artist: { id: 'chronoboros' },
-        cover_image: { src: '/caregivers.jpg' },
+    const storeItem = await getStoreItemForRelease(
+      createReleaseEntry('caregivers', {
+        artist: { collection: 'artists', id: 'chronoboros' },
+        cover_image: createTestImage('/caregivers.jpg'),
         cover_image_alt: 'Caregivers cover',
         formats: ['Vinyl'],
         merch_url: 'https://chronoboros.bandcamp.com/merch',
         release_date: new Date('2026-03-13T00:00:00.000Z'),
         summary: 'External merch release',
         title: 'Caregivers',
-      },
-    } as any);
+      }),
+    );
 
     expect(storeItem.image).toEqual({
       src: '/blackbox-records/admin/media/releases/chronoboros-album-cover-distro-mockup.webp',
@@ -207,20 +267,20 @@ describe('StoreItem projection contract', () => {
   });
 
   it('creates a distro-derived store item without leaking external-shop fields', () => {
-    const storeItem = createStoreItemFromDistroEntry({
-      id: 'afterglow-tape',
-      data: {
+    const storeItem = createStoreItemFromDistroEntry(
+      createDistroEntry('afterglow-tape', {
         artist_or_label: 'Afterglow',
         eyebrow: 'Tape',
         format: 'Cassette',
         group: 'Tapes',
-        image: { src: '/afterglow.jpg' },
+        image: createTestImage('/afterglow.jpg'),
         image_alt: 'Afterglow tape',
+        order: 1,
         release_date: new Date('2021-06-07T00:00:00.000Z'),
         summary: 'Small-run cassette.',
         title: 'Afterglow Tape',
-      },
-    } as any);
+      }),
+    );
 
     expect(storeItem.sourceKind).toBe('distro');
     expect(storeItem.taxCategory).toBe('physical_goods');
@@ -231,19 +291,19 @@ describe('StoreItem projection contract', () => {
   });
 
   it('omits unknown distro release dates from store item metadata', () => {
-    const storeItem = createStoreItemFromDistroEntry({
-      id: 'afterglow-tape',
-      data: {
+    const storeItem = createStoreItemFromDistroEntry(
+      createDistroEntry('afterglow-tape', {
         artist_or_label: 'Afterglow',
         eyebrow: 'Tape',
         format: 'Cassette',
         group: 'Tapes',
-        image: { src: '/afterglow.jpg' },
+        image: createTestImage('/afterglow.jpg'),
         image_alt: 'Afterglow tape',
+        order: 1,
         summary: 'Small-run cassette.',
         title: 'Afterglow Tape',
-      },
-    } as any);
+      }),
+    );
 
     expect(storeItem.metadata).toEqual(['Tapes', 'Cassette']);
     expect(storeItem.metadata).not.toContain('Unknown');
@@ -253,12 +313,12 @@ describe('StoreItem projection contract', () => {
   it('treats current releases as native store candidates regardless of legacy merch metadata', async () => {
     const [nativeRelease, externalRelease] = await listReleaseCatalog();
 
-    await expect(getStoreItemForRelease(nativeRelease as any)).resolves.toMatchObject({
+    await expect(getStoreItemForRelease(expectReleaseEntry(nativeRelease))).resolves.toMatchObject({
       slug: 'disintegration-black-vinyl-lp',
       sourceId: 'disintegration',
       storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
     });
-    await expect(getStoreItemForRelease(externalRelease as any)).resolves.toMatchObject({
+    await expect(getStoreItemForRelease(expectReleaseEntry(externalRelease))).resolves.toMatchObject({
       slug: 'caregivers-vinyl',
       sourceId: 'caregivers',
       storePath: '/blackbox-records/store/caregivers-vinyl/',
@@ -300,16 +360,16 @@ describe('StoreItem projection contract', () => {
   it('detects store item slug collisions without suffixing public slugs', () => {
     expect(() =>
       mapStoreItemsBySlug([
-        { slug: 'caregivers-vinyl', sourceKind: 'release', sourceId: 'caregivers' },
-        { slug: 'caregivers-vinyl', sourceKind: 'distro', sourceId: 'caregivers-vinyl' },
-      ] as any),
+        createStoreItemCollisionRecord('release', 'caregivers', 'caregivers-vinyl'),
+        createStoreItemCollisionRecord('distro', 'caregivers-vinyl', 'caregivers-vinyl'),
+      ]),
     ).toThrow('Slug collision detected: caregivers-vinyl: release:caregivers, distro:caregivers-vinyl');
   });
 
   it('keeps legacy release ids separate from canonical item-option slugs', async () => {
     const [, externalRelease] = await listReleaseCatalog();
 
-    await expect(getStoreItemForRelease(externalRelease as any)).resolves.toMatchObject({
+    await expect(getStoreItemForRelease(expectReleaseEntry(externalRelease))).resolves.toMatchObject({
       slug: 'caregivers-vinyl',
     });
     await expect(getStoreItemBySlug('caregivers')).resolves.toBeNull();
@@ -318,13 +378,13 @@ describe('StoreItem projection contract', () => {
   it('resolves native store paths for mapped releases instead of legacy merch links', async () => {
     const [nativeRelease, externalRelease] = await listReleaseCatalog();
 
-    await expect(getStoreItemForRelease(nativeRelease as any)).resolves.toMatchObject({
+    await expect(getStoreItemForRelease(expectReleaseEntry(nativeRelease))).resolves.toMatchObject({
       slug: 'disintegration-black-vinyl-lp',
       sourceId: 'disintegration',
       storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
     });
 
-    await expect(getStoreItemForRelease(externalRelease as any)).resolves.toMatchObject({
+    await expect(getStoreItemForRelease(expectReleaseEntry(externalRelease))).resolves.toMatchObject({
       slug: 'caregivers-vinyl',
       sourceId: 'caregivers',
       storePath: '/blackbox-records/store/caregivers-vinyl/',

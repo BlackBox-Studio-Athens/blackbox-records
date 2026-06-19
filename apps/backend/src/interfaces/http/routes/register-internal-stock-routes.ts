@@ -1,14 +1,56 @@
 import { createRoute, z } from '@hono/zod-openapi';
 
-import type { AppOpenApi } from '../../../env';
+import type { AppBindings, AppOpenApi } from '../../../env';
 import { readOperatorIdentityFromAccessHeaders } from '../auth';
 import { createInternalStockServices } from './internal-stock-services';
+
+type InternalStockServices = ReturnType<typeof createInternalStockServices>;
+type InternalStockRouteError = {
+  message: string;
+  status: 400 | 404;
+};
 
 const jsonNoStore = <TResponse extends Response>(response: TResponse): TResponse => {
   response.headers.set('Cache-Control', 'no-store');
 
   return response;
 };
+
+const readOperatorEmail = (headers: Headers): string | null =>
+  readOperatorIdentityFromAccessHeaders(headers)?.email ?? null;
+
+async function withInternalStockServices<TResponse>(
+  bindings: AppBindings,
+  action: (services: InternalStockServices) => Promise<TResponse>,
+): Promise<TResponse> {
+  const services = createInternalStockServices(bindings);
+
+  try {
+    return await action(services);
+  } finally {
+    await services.disconnect();
+  }
+}
+
+function toInternalStockRouteError(
+  services: InternalStockServices,
+  error: unknown,
+  options: { includeInvalidStockOperation?: boolean; invalidRequestMessage: string },
+): InternalStockRouteError | null {
+  if (error instanceof services.errors.VariantNotFoundError) {
+    return { message: error.message, status: 404 };
+  }
+
+  if (options.includeInvalidStockOperation && error instanceof services.errors.InvalidStockOperationError) {
+    return { message: error.message, status: 400 };
+  }
+
+  if (error instanceof z.ZodError) {
+    return { message: options.invalidRequestMessage, status: 400 };
+  }
+
+  return null;
+}
 
 const errorSchema = z
   .object({
@@ -339,179 +381,161 @@ const postStockCountRoute = createRoute({
 
 export function registerInternalStockRoutes(app: AppOpenApi): void {
   app.openapi(searchVariantsRoute, async (context) => {
-    const operatorIdentity = readOperatorIdentityFromAccessHeaders(context.req.raw.headers);
+    const operatorEmail = readOperatorEmail(context.req.raw.headers);
 
-    if (!operatorIdentity) {
+    if (!operatorEmail) {
       return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
-    const services = createInternalStockServices(context.env);
-
-    try {
+    return withInternalStockServices(context.env, async (services) => {
       const query = context.req.valid('query');
       const variants = await services.searchVariants(query.q ?? null, query.limit ?? 20);
 
       return jsonNoStore(context.json(variants, 200));
-    } finally {
-      await services.disconnect();
-    }
+    });
   });
 
   app.openapi(getVariantStockRoute, async (context) => {
-    const operatorIdentity = readOperatorIdentityFromAccessHeaders(context.req.raw.headers);
+    const operatorEmail = readOperatorEmail(context.req.raw.headers);
 
-    if (!operatorIdentity) {
+    if (!operatorEmail) {
       return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
-    const services = createInternalStockServices(context.env);
+    return withInternalStockServices(context.env, async (services) => {
+      try {
+        const { variantId } = context.req.valid('param');
+        const detail = await services.readVariantStock(variantId);
 
-    try {
-      const { variantId } = context.req.valid('param');
-      const detail = await services.readVariantStock(variantId);
+        return jsonNoStore(context.json(toStockDetailResponse(detail), 200));
+      } catch (error) {
+        const routeError = toInternalStockRouteError(services, error, {
+          invalidRequestMessage: 'Invalid variant id.',
+        });
 
-      return jsonNoStore(context.json(toStockDetailResponse(detail), 200));
-    } catch (error) {
-      if (error instanceof services.errors.VariantNotFoundError) {
-        return jsonNoStore(context.json({ error: error.message }, 404));
+        if (routeError) {
+          return jsonNoStore(context.json({ error: routeError.message }, routeError.status));
+        }
+
+        throw error;
       }
-
-      if (error instanceof z.ZodError) {
-        return jsonNoStore(context.json({ error: 'Invalid variant id.' }, 400));
-      }
-
-      throw error;
-    } finally {
-      await services.disconnect();
-    }
+    });
   });
 
   app.openapi(getVariantStockHistoryRoute, async (context) => {
-    const operatorIdentity = readOperatorIdentityFromAccessHeaders(context.req.raw.headers);
+    const operatorEmail = readOperatorEmail(context.req.raw.headers);
 
-    if (!operatorIdentity) {
+    if (!operatorEmail) {
       return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
-    const services = createInternalStockServices(context.env);
+    return withInternalStockServices(context.env, async (services) => {
+      try {
+        const { variantId } = context.req.valid('param');
+        const query = context.req.valid('query');
+        const entries = await services.readVariantStockHistory(variantId, query.limit ?? 50);
 
-    try {
-      const { variantId } = context.req.valid('param');
-      const query = context.req.valid('query');
-      const entries = await services.readVariantStockHistory(variantId, query.limit ?? 50);
+        return jsonNoStore(context.json({ entries: entries.map(toHistoryEntryResponse), variantId }, 200));
+      } catch (error) {
+        const routeError = toInternalStockRouteError(services, error, {
+          invalidRequestMessage: 'Invalid variant id.',
+        });
 
-      return jsonNoStore(context.json({ entries: entries.map(toHistoryEntryResponse), variantId }, 200));
-    } catch (error) {
-      if (error instanceof services.errors.VariantNotFoundError) {
-        return jsonNoStore(context.json({ error: error.message }, 404));
+        if (routeError) {
+          return jsonNoStore(context.json({ error: routeError.message }, routeError.status));
+        }
+
+        throw error;
       }
-
-      if (error instanceof z.ZodError) {
-        return jsonNoStore(context.json({ error: 'Invalid variant id.' }, 400));
-      }
-
-      throw error;
-    } finally {
-      await services.disconnect();
-    }
+    });
   });
 
   app.openapi(postStockChangeRoute, async (context) => {
-    const operatorIdentity = readOperatorIdentityFromAccessHeaders(context.req.raw.headers);
+    const operatorEmail = readOperatorEmail(context.req.raw.headers);
 
-    if (!operatorIdentity) {
+    if (!operatorEmail) {
       return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
-    const services = createInternalStockServices(context.env);
+    return withInternalStockServices(context.env, async (services) => {
+      try {
+        const { variantId } = context.req.valid('param');
+        const body = context.req.valid('json');
+        const result = await services.recordStockChange({
+          actorEmail: operatorEmail,
+          notes: body.notes ?? null,
+          quantityDelta: body.delta,
+          reason: body.reason,
+          variantId,
+        });
 
-    try {
-      const { variantId } = context.req.valid('param');
-      const body = context.req.valid('json');
-      const result = await services.recordStockChange({
-        actorEmail: operatorIdentity.email,
-        notes: body.notes ?? null,
-        quantityDelta: body.delta,
-        reason: body.reason,
-        variantId,
-      });
+        return jsonNoStore(
+          context.json(
+            {
+              entry: toStockChangeEntryResponse(result.entry),
+              stock: toStockStateResponse(result.stock),
+              variantId,
+            },
+            200,
+          ),
+        );
+      } catch (error) {
+        const routeError = toInternalStockRouteError(services, error, {
+          includeInvalidStockOperation: true,
+          invalidRequestMessage: 'Invalid stock change request.',
+        });
 
-      return jsonNoStore(
-        context.json(
-          {
-            entry: toStockChangeEntryResponse(result.entry),
-            stock: toStockStateResponse(result.stock),
-            variantId,
-          },
-          200,
-        ),
-      );
-    } catch (error) {
-      if (error instanceof services.errors.VariantNotFoundError) {
-        return jsonNoStore(context.json({ error: error.message }, 404));
+        if (routeError) {
+          return jsonNoStore(context.json({ error: routeError.message }, routeError.status));
+        }
+
+        throw error;
       }
-
-      if (error instanceof services.errors.InvalidStockOperationError) {
-        return jsonNoStore(context.json({ error: error.message }, 400));
-      }
-
-      if (error instanceof z.ZodError) {
-        return jsonNoStore(context.json({ error: 'Invalid stock change request.' }, 400));
-      }
-
-      throw error;
-    } finally {
-      await services.disconnect();
-    }
+    });
   });
 
   app.openapi(postStockCountRoute, async (context) => {
-    const operatorIdentity = readOperatorIdentityFromAccessHeaders(context.req.raw.headers);
+    const operatorEmail = readOperatorEmail(context.req.raw.headers);
 
-    if (!operatorIdentity) {
+    if (!operatorEmail) {
       return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
-    const services = createInternalStockServices(context.env);
+    return withInternalStockServices(context.env, async (services) => {
+      try {
+        const { variantId } = context.req.valid('param');
+        const body = context.req.valid('json');
+        const result = await services.recordStockCount({
+          actorEmail: operatorEmail,
+          countedQuantity: body.countedQuantity,
+          notes: body.notes ?? null,
+          onlineQuantity: body.onlineQuantity,
+          variantId,
+        });
 
-    try {
-      const { variantId } = context.req.valid('param');
-      const body = context.req.valid('json');
-      const result = await services.recordStockCount({
-        actorEmail: operatorIdentity.email,
-        countedQuantity: body.countedQuantity,
-        notes: body.notes ?? null,
-        onlineQuantity: body.onlineQuantity,
-        variantId,
-      });
+        return jsonNoStore(
+          context.json(
+            {
+              entry: toStockCountEntryResponse(result.entry),
+              stock: toStockStateResponse(result.stock),
+              variantId,
+            },
+            200,
+          ),
+        );
+      } catch (error) {
+        const routeError = toInternalStockRouteError(services, error, {
+          includeInvalidStockOperation: true,
+          invalidRequestMessage: 'Invalid stock count request.',
+        });
 
-      return jsonNoStore(
-        context.json(
-          {
-            entry: toStockCountEntryResponse(result.entry),
-            stock: toStockStateResponse(result.stock),
-            variantId,
-          },
-          200,
-        ),
-      );
-    } catch (error) {
-      if (error instanceof services.errors.VariantNotFoundError) {
-        return jsonNoStore(context.json({ error: error.message }, 404));
+        if (routeError) {
+          return jsonNoStore(context.json({ error: routeError.message }, routeError.status));
+        }
+
+        throw error;
       }
-
-      if (error instanceof services.errors.InvalidStockOperationError) {
-        return jsonNoStore(context.json({ error: error.message }, 400));
-      }
-
-      if (error instanceof z.ZodError) {
-        return jsonNoStore(context.json({ error: 'Invalid stock count request.' }, 400));
-      }
-
-      throw error;
-    } finally {
-      await services.disconnect();
-    }
+    });
   });
 }
 

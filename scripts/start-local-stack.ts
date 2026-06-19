@@ -5,6 +5,7 @@ import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
 import { createLongRunningProcessGroup, LocalProcessError, runFiniteCommand } from './local-process';
+import { STRIPE_MOCK_HTTP_PORT, STRIPE_MOCK_HTTPS_PORT, STRIPE_MOCK_PROXY_PORT } from './start-stripe-mock';
 
 export type LocalStackMode = 'stripe-test' | 'stripe-mock' | 'stripe-mock-api' | 'uat-connected';
 
@@ -26,9 +27,6 @@ export type StackPlan = {
 const rootDir = process.cwd();
 const BACKEND_PORT = 8787;
 const STATIC_PORT = 4321;
-const STRIPE_MOCK_PROXY_PORT = 12110;
-const STRIPE_MOCK_HTTP_PORT = 12111;
-const STRIPE_MOCK_HTTPS_PORT = 12112;
 const UAT_WORKER_URL = 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev';
 
 export function buildStackPlan(mode: LocalStackMode): StackPlan {
