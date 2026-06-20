@@ -7,6 +7,7 @@ import {
   type DesiredCatalogEnvironment,
   type DesiredCatalogEntry,
 } from '../apps/backend/src/application/commerce/catalog-sync/desired-catalog-state';
+import { parseProductEnvironmentCliTarget, workerRuntimeTargetForProductEnvironment } from '../apps/backend/src/env';
 import {
   createRunId as createSmokeRunId,
   createSmokeEvidencePath,
@@ -90,7 +91,7 @@ export function parsePromotionSmokeArgs(args: string[]): PromotionSmokeOptions {
 
     if (arg === '--help' || arg === '-h') {
       console.log(
-        'Usage: pnpm smoke:stripe-promotion -- --env production --scenario checkout_surface|paid|all [--site-url <url>] [--worker-url <url>] [--evidence-dir <dir>]',
+        'Usage: pnpm smoke:stripe-promotion -- --env prd --scenario checkout_surface|paid|all [--site-url <url>] [--worker-url <url>] [--evidence-dir <dir>]',
       );
       process.exit(0);
     }
@@ -374,11 +375,17 @@ function writePromotionSmokeEvidence(runArtifactDir: string, evidence: Promotion
 }
 
 function parseEnvironment(value: string | undefined): PromotionSmokeEnvironment {
-  if (value === 'production' || value === 'sandbox') {
-    return value;
+  try {
+    const workerRuntimeTarget = workerRuntimeTargetForProductEnvironment(parseProductEnvironmentCliTarget(value));
+
+    if (workerRuntimeTarget === 'sandbox' || workerRuntimeTarget === 'production') {
+      return workerRuntimeTarget;
+    }
+  } catch {
+    // Fall through to the stable CLI error below.
   }
 
-  throw new Error('--env must be production or sandbox.');
+  throw new Error('--env must be prd or uat.');
 }
 
 function parseScenario(value: string | undefined): PromotionSmokeScenarioSelection {

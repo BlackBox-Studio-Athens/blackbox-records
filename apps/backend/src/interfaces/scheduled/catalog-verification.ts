@@ -4,7 +4,7 @@ import {
   createCurrentCatalogExpectedSandboxPriceMap,
   type CatalogSyncIssue,
 } from '../../application/commerce/catalog-sync';
-import type { AppBindings } from '../../env';
+import { productEnvironmentProfileFromWorkerRuntimeTarget, type AppBindings } from '../../env';
 import {
   createPrismaClient,
   PrismaStoreItemOptionRepository,
@@ -14,10 +14,11 @@ import {
 import { createStripeCatalogGateway } from '../../infrastructure/stripe';
 
 export async function runScheduledCatalogVerification(bindings: AppBindings): Promise<void> {
+  const productEnvironmentProfile = productEnvironmentProfileFromWorkerRuntimeTarget(bindings.APP_ENV);
   const prisma = createPrismaClient(bindings);
   const storeItems = new PrismaStoreItemOptionRepository(prisma);
   const catalogReconciler = new CatalogReconciler({
-    environment: bindings.APP_ENV,
+    environment: productEnvironmentProfile.workerRuntimeTarget,
     storeItems,
     storeOfferSnapshots: new PrismaStoreOfferSnapshotRepository(prisma),
     stripeCatalog: createStripeCatalogGateway(bindings),
@@ -26,15 +27,15 @@ export async function runScheduledCatalogVerification(bindings: AppBindings): Pr
 
   try {
     const result = await catalogReconciler.verifyBuyableCatalog({
-      apply: bindings.APP_ENV !== 'production',
-      expectedPrices: createCurrentCatalogExpectedSandboxPriceMap(bindings.APP_ENV),
+      apply: productEnvironmentProfile.catalogVerification.applyScheduledChanges,
+      expectedPrices: createCurrentCatalogExpectedSandboxPriceMap(productEnvironmentProfile.workerRuntimeTarget),
       expectedProductProjections: createCurrentCatalogExpectedProductProjectionMap(),
     });
 
     if (result.issues.length) {
       console.warn(
         [
-          `Scheduled Stripe catalog verification found ${result.issues.length} issue(s) in ${bindings.APP_ENV}.`,
+          `Scheduled Stripe catalog verification found ${result.issues.length} issue(s) in ${productEnvironmentProfile.label}.`,
           formatScheduledCatalogIssueBreakdown(result.issues),
         ].join(' '),
       );

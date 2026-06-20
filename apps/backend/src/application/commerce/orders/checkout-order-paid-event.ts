@@ -1,5 +1,6 @@
 import type { CheckoutReconciliation } from '../checkout/reconcile-checkout-session';
 import type { CheckoutOrderLineRecord, CheckoutOrderRecord } from '../../../domain/commerce/repositories/spi';
+import { createCheckoutOrderReferenceToken, type CheckoutOrderReferenceToken } from './order-reference-token';
 
 export type CheckoutOrderPaidLineItem = {
   quantity: number;
@@ -19,7 +20,7 @@ export type CheckoutOrderPaid = {
   newsletterOptIn: boolean;
   occurredAt: Date;
   orderId: string;
-  orderReference: string;
+  orderReference: CheckoutOrderReferenceToken;
   paidAt: Date | null;
   paymentStatus: 'paid';
   shippingAddress: CheckoutReconciliation['source']['shippingAddress'];
@@ -48,19 +49,13 @@ export function createCheckoutOrderPaidEvent(input: {
     newsletterOptIn: input.reconciliation.source.newsletterOptIn,
     occurredAt: input.occurredAt,
     orderId: input.order.id,
-    orderReference: createCheckoutOrderReference(input.order),
+    orderReference: createCheckoutOrderReferenceToken({
+      checkoutSessionId: input.order.checkoutSessionId,
+      orderId: input.order.id,
+    }),
     paidAt: input.order.paidAt,
     paymentStatus: 'paid',
     shippingAddress: input.reconciliation.source.shippingAddress,
     stripePaymentIntentId: input.reconciliation.source.stripePaymentIntentId,
   };
-}
-
-function createCheckoutOrderReference(order: CheckoutOrderRecord): string {
-  const compactId = order.id
-    .replace(/[^A-Za-z0-9]/g, '')
-    .slice(0, 10)
-    .toUpperCase();
-
-  return `BBR-${compactId || order.checkoutSessionId.slice(-10).toUpperCase()}`;
 }

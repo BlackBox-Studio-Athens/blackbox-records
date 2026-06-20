@@ -28,6 +28,11 @@ describe('stripe catalog verify script helpers', () => {
       environment: 'sandbox',
       promotionContext: null,
     });
+    expect(parseStripeCatalogVerifyArgs(['--env', 'uat'])).toEqual({
+      apply: false,
+      environment: 'sandbox',
+      promotionContext: null,
+    });
     expect(() => parseStripeCatalogVerifyArgs(['--env', 'production', '--apply'])).toThrow(
       'Production Stripe catalog apply requires promotion context.',
     );
@@ -52,6 +57,11 @@ describe('stripe catalog verify script helpers', () => {
   });
 
   it('allows production dry-run without promotion context', () => {
+    expect(parseStripeCatalogVerifyArgs(['--env', 'prd'])).toEqual({
+      apply: false,
+      environment: 'production',
+      promotionContext: null,
+    });
     expect(parseStripeCatalogVerifyArgs(['--env', 'production'])).toEqual({
       apply: false,
       environment: 'production',

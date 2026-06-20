@@ -230,6 +230,7 @@
         "apps/backend/src/interfaces/http/routes/register-stripe-webhook-routes.ts",
         "apps/backend/src/interfaces/http/routes/public-commerce-services.ts",
         "apps/backend/src/interfaces/http/routes/public-newsletter-services.ts",
+        "apps/backend/src/interfaces/http/routes/email-runtime-services.ts",
         "apps/backend/src/interfaces/http/routes/stripe-webhook-acknowledgement.ts",
         "apps/backend/src/interfaces/http/routes/d1-paid-checkout-finalization-repository.ts",
         "apps/backend/src/interfaces/http/routes/stripe-webhook-services.ts",

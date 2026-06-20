@@ -12,6 +12,16 @@ const rootDir = process.cwd();
 const uatStaticHost = 'https://blackbox-studio-athens.github.io/blackbox-records';
 const prdStaticHost = 'https://blackbox-records-web.pages.dev';
 const prdPreviewHostFragment = '.blackbox-records-web.pages.dev';
+const productPolicyFiles = [
+  'apps/backend/src/application/email/config.ts',
+  'apps/backend/src/application/email/routing.ts',
+  'apps/backend/src/application/email/idempotency.ts',
+  'apps/backend/src/infrastructure/feature-flags/cloudflare-feature-flag-reader.ts',
+  'apps/backend/src/interfaces/scheduled/catalog-verification.ts',
+  'apps/backend/src/interfaces/http/routes/public-commerce-services.ts',
+  'apps/backend/src/interfaces/http/routes/stripe-webhook-services.ts',
+  'scripts/verify-runtime-config.ts',
+];
 
 function read(relativePath: string): string {
   return readFileSync(path.join(rootDir, ...relativePath.split('/')), 'utf8');
@@ -106,7 +116,14 @@ export function verifyEnvironmentModel(): CheckResult[] {
     },
     {
       detail: 'Production catalog verification uses PRD catalog asset URLs.',
-      ok: catalogVerifyScript.includes("productEnvironment: options.environment === 'production' ? 'prd' : 'uat'"),
+      ok:
+        catalogVerifyScript.includes('parseProductEnvironmentCliTarget') &&
+        catalogVerifyScript.includes('productEnvironmentProfileFromWorkerRuntimeTarget') &&
+        catalogVerifyScript.includes("productEnvironmentProfile.productEnvironment === 'prd' ? 'prd' : 'uat'"),
+    },
+    {
+      detail: 'Raw platform/provider aliases stay out of product-policy modules outside approved boundaries.',
+      ok: findRawPlatformAliasPolicyLeaks().length === 0,
     },
     {
       detail: 'Generated Desired Catalog State does not combine production targets with UAT-hosted Product image URLs.',
@@ -120,6 +137,18 @@ export function verifyEnvironmentModel(): CheckResult[] {
         staticSiteSpec.includes('Cloudflare Pages as the only PRD static host'),
     },
   ];
+}
+
+function findRawPlatformAliasPolicyLeaks(): string[] {
+  const rawAliasBranchPattern =
+    /\b(?:appEnvironment|environment|APP_ENV|bindings\.APP_ENV)\s*(?:={2,3}|!={1,2})\s*['"`](?:sandbox|production|test|live)['"`]/;
+
+  return productPolicyFiles.flatMap((relativePath) => {
+    const text = read(relativePath);
+    const lines = text.split(/\r?\n/);
+
+    return lines.flatMap((line, index) => (rawAliasBranchPattern.test(line) ? [`${relativePath}:${index + 1}`] : []));
+  });
 }
 
 function hasCheckoutOrigins(

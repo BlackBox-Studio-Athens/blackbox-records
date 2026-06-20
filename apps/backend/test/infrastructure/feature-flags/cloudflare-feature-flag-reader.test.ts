@@ -6,21 +6,22 @@ import {
   NATIVE_CHECKOUT_ENABLED_FLAG,
   parseBooleanOverride,
 } from '../../../src/infrastructure/feature-flags';
+import { productEnvironmentProfiles } from '../../../src/env';
 
 describe('CloudflareFeatureFlagReader', () => {
   it('defaults local checkout to enabled when no provider binding is configured', async () => {
     await expect(
-      new CloudflareFeatureFlagReader('local', undefined, undefined).isNativeCheckoutEnabled(),
+      new CloudflareFeatureFlagReader(productEnvironmentProfiles.local, undefined, undefined).isNativeCheckoutEnabled(),
     ).resolves.toBe(true);
-    expect(isNativeCheckoutEnabledByDefault('local')).toBe(true);
+    expect(isNativeCheckoutEnabledByDefault(productEnvironmentProfiles.local)).toBe(true);
   });
 
   it('defaults sandbox and production checkout to disabled when no provider binding is configured', async () => {
     await expect(
-      new CloudflareFeatureFlagReader('sandbox', undefined, undefined).isNativeCheckoutEnabled(),
+      new CloudflareFeatureFlagReader(productEnvironmentProfiles.uat, undefined, undefined).isNativeCheckoutEnabled(),
     ).resolves.toBe(false);
     await expect(
-      new CloudflareFeatureFlagReader('production', undefined, undefined).isNativeCheckoutEnabled(),
+      new CloudflareFeatureFlagReader(productEnvironmentProfiles.prd, undefined, undefined).isNativeCheckoutEnabled(),
     ).resolves.toBe(false);
   });
 
@@ -29,9 +30,9 @@ describe('CloudflareFeatureFlagReader', () => {
       getBooleanValue: vi.fn(async () => false),
     };
 
-    await expect(new CloudflareFeatureFlagReader('sandbox', evaluator, 'true').isNativeCheckoutEnabled()).resolves.toBe(
-      true,
-    );
+    await expect(
+      new CloudflareFeatureFlagReader(productEnvironmentProfiles.uat, evaluator, 'true').isNativeCheckoutEnabled(),
+    ).resolves.toBe(true);
 
     expect(evaluator.getBooleanValue).not.toHaveBeenCalled();
     expect(parseBooleanOverride(' TRUE ')).toBe(true);
@@ -45,13 +46,14 @@ describe('CloudflareFeatureFlagReader', () => {
     };
 
     await expect(
-      new CloudflareFeatureFlagReader('sandbox', evaluator, undefined).isNativeCheckoutEnabled(),
+      new CloudflareFeatureFlagReader(productEnvironmentProfiles.uat, evaluator, undefined).isNativeCheckoutEnabled(),
     ).resolves.toBe(true);
 
     expect(evaluator.getBooleanValue).toHaveBeenCalledExactlyOnceWith(NATIVE_CHECKOUT_ENABLED_FLAG, false, {
-      appEnvironment: 'sandbox',
       capability: 'native_checkout',
-      targetingKey: 'blackbox-records-sandbox',
+      productEnvironment: 'uat',
+      targetingKey: 'blackbox-records-uat',
+      workerRuntimeTarget: 'sandbox',
     });
   });
 
@@ -63,7 +65,7 @@ describe('CloudflareFeatureFlagReader', () => {
     };
 
     await expect(
-      new CloudflareFeatureFlagReader('production', evaluator, undefined).isNativeCheckoutEnabled(),
+      new CloudflareFeatureFlagReader(productEnvironmentProfiles.prd, evaluator, undefined).isNativeCheckoutEnabled(),
     ).resolves.toBe(false);
   });
 });

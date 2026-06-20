@@ -3,11 +3,11 @@ import type { EmailRuntimeConfig } from './types';
 const MAX_RESEND_IDEMPOTENCY_KEY_LENGTH = 256;
 
 export function createEmailIdempotencyKey(input: {
-  config: Pick<EmailRuntimeConfig, 'appEnvironment'>;
+  config: Pick<EmailRuntimeConfig, 'productEnvironmentProfile'>;
   entityId: string;
   purpose: string;
 }): string {
-  return ['blackbox', input.config.appEnvironment, input.purpose, input.entityId]
+  return ['blackbox', input.config.productEnvironmentProfile.emailProviderEnvironmentTag, input.purpose, input.entityId]
     .map(toProviderSafeIdempotencySegment)
     .join(':')
     .slice(0, MAX_RESEND_IDEMPOTENCY_KEY_LENGTH);

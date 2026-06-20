@@ -39,7 +39,7 @@ describe('Stripe promotion smoke runner', () => {
     expect(
       parsePromotionSmokeArgs([
         '--env',
-        'production',
+        'prd',
         '--scenario',
         'all',
         '--evidence-dir',

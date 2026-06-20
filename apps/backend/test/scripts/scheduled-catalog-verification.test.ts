@@ -114,7 +114,7 @@ describe('runScheduledCatalogVerification', () => {
     try {
       await runScheduledCatalogVerification(createBindings('sandbox'));
       expect(warn).toHaveBeenCalledWith(
-        'Scheduled Stripe catalog verification found 2 issue(s) in sandbox. Product Projection: 1; Price Authority: 1; D1 readiness: 0; Store Offer snapshots: 0',
+        'Scheduled Stripe catalog verification found 2 issue(s) in UAT. Product Projection: 1; Price Authority: 1; D1 readiness: 0; Store Offer snapshots: 0',
       );
     } finally {
       warn.mockRestore();

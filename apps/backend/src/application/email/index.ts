@@ -1,5 +1,6 @@
 export { EmailConfigurationError } from './errors';
 export { readEmailRuntimeConfig } from './config';
+export type { EmailRuntimeBindingValues, EmailRuntimeConfig } from './config';
 export { buildPaidOrderEmailPreviews } from './paid-order-email-previews';
 export type { PaidOrderEmailPreview, PaidOrderEmailPreviewName } from './paid-order-email-previews';
 export { sendPaidOrderEmailNotifications } from './paid-order-email';
@@ -19,8 +20,6 @@ export type {
 export type {
   EmailMessageContent,
   EmailOperationResult,
-  EmailRuntimeBindingValues,
-  EmailRuntimeConfig,
   EmailTag,
   NewsletterContactRouting,
   NewsletterRegistrationResult,

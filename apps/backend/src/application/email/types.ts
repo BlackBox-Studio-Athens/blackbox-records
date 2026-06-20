@@ -1,27 +1,7 @@
-import type { AppEnvironment } from '../../env';
+import type { EmailRuntimeBindingValues, EmailRuntimeConfig } from './config';
 import type { EmailProviderSafeReason } from './errors';
 
-export type EmailRuntimeBindingValues = {
-  APP_ENV: AppEnvironment;
-  RESEND_API_KEY?: string;
-  RESEND_FROM_EMAIL?: string;
-  RESEND_NEWSLETTER_SEGMENT_ID?: string;
-  RESEND_NEWSLETTER_TOPIC_ID?: string;
-  RESEND_OPS_TO_EMAIL?: string;
-  RESEND_REPLY_TO_EMAIL?: string;
-  RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL?: string;
-};
-
-export type EmailRuntimeConfig = {
-  apiKey: string;
-  appEnvironment: AppEnvironment;
-  fromEmail: string;
-  newsletterSegmentId: string | null;
-  newsletterTopicId: string;
-  opsToEmail: string;
-  replyToEmail: string;
-  uatRecipientOverrideEmail: string | null;
-};
+export type { EmailRuntimeBindingValues, EmailRuntimeConfig };
 
 export type EmailTag = {
   name: string;

@@ -1,10 +1,10 @@
 import type { EmailRuntimeConfig, NewsletterContactRouting, RoutedEmailRecipient } from './types';
 
 export function routeTransactionalEmailRecipient(
-  config: Pick<EmailRuntimeConfig, 'appEnvironment' | 'uatRecipientOverrideEmail'>,
+  config: Pick<EmailRuntimeConfig, 'productEnvironmentProfile' | 'uatRecipientOverrideEmail'>,
   intendedRecipient: string,
 ): RoutedEmailRecipient {
-  if (config.appEnvironment === 'sandbox' && config.uatRecipientOverrideEmail) {
+  if (config.productEnvironmentProfile.emailRoutingMode === 'uat-sink' && config.uatRecipientOverrideEmail) {
     return {
       intendedRecipient,
       isSinkRouted: true,
@@ -20,10 +20,10 @@ export function routeTransactionalEmailRecipient(
 }
 
 export function routeNewsletterContact(
-  config: Pick<EmailRuntimeConfig, 'appEnvironment' | 'uatRecipientOverrideEmail'>,
+  config: Pick<EmailRuntimeConfig, 'productEnvironmentProfile' | 'uatRecipientOverrideEmail'>,
   intendedSubscriberEmail: string,
 ): NewsletterContactRouting {
-  if (config.appEnvironment === 'sandbox' && config.uatRecipientOverrideEmail) {
+  if (config.productEnvironmentProfile.emailRoutingMode === 'uat-sink' && config.uatRecipientOverrideEmail) {
     return {
       contactEmail: config.uatRecipientOverrideEmail,
       intendedSubscriberEmail,

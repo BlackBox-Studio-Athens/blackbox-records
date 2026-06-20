@@ -4,12 +4,11 @@ import {
   EmailConfigurationError,
   NEWSLETTER_CONSENT_COPY_VERSION,
   logNewsletterRegistrationOutcome,
-  readEmailRuntimeConfig,
   registerNewsletterContact,
   type NewsletterRegistrationResult,
 } from '../../../application/email';
 import type { AppBindings } from '../../../env';
-import { createResendEmailGatewayFromConfig } from '../../../infrastructure/resend';
+import { createEmailRuntimeServices } from './email-runtime-services';
 
 const publicNewsletterEmail = z.string().trim().email();
 
@@ -23,8 +22,8 @@ export function createPublicNewsletterServices(bindings: AppBindings) {
       consentedAt?: Date;
       email: string;
     }): Promise<NewsletterRegistrationResult> => {
-      const config = readEmailRuntimeConfig(bindings);
-      const result = await registerNewsletterContact(createResendEmailGatewayFromConfig(config), config, {
+      const emailRuntime = createEmailRuntimeServices(bindings);
+      const result = await registerNewsletterContact(emailRuntime.provider, emailRuntime.config, {
         consentCopyVersion: NEWSLETTER_CONSENT_COPY_VERSION,
         consentSource: 'site-form',
         consentedAt: input.consentedAt ?? new Date(),

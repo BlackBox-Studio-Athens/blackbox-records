@@ -13,6 +13,12 @@ import {
   type StripeCatalogEnvironment,
 } from '../apps/backend/src/application/commerce/catalog-sync';
 import { parseStoreItemSlug, parseStripePriceId, parseVariantId } from '../apps/backend/src/domain/commerce';
+import {
+  parseProductEnvironmentCliTarget,
+  productEnvironmentProfileFromWorkerRuntimeTarget,
+  workerRuntimeTargetForProductEnvironment,
+  type ProductEnvironmentProfile,
+} from '../apps/backend/src/env';
 import type {
   StoreItemOptionRecord,
   StoreItemOptionRepository,
@@ -136,7 +142,7 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 
     if (arg === '--help' || arg === '-h') {
       console.log(
-        'Usage: pnpm stripe:catalog:verify --env sandbox|production [--apply] [--artifact-commit-sha <sha> --promotion-run-id <id> --ci-promotion]',
+        'Usage: pnpm stripe:catalog:verify --env uat|prd [--apply] [--artifact-commit-sha <sha> --promotion-run-id <id> --ci-promotion]',
       );
       process.exit(0);
     }
@@ -144,7 +150,10 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
     throw new Error(`Unknown argument: ${arg}`);
   }
 
-  if (options.apply && options.environment === 'production') {
+  if (
+    options.apply &&
+    productEnvironmentProfileFromWorkerRuntimeTarget(options.environment).productEnvironment === 'prd'
+  ) {
     assertProductionApplyPromotionContext(options.promotionContext);
   }
 
@@ -152,6 +161,7 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 }
 
 export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promise<CatalogSyncRunResult> {
+  const productEnvironmentProfile = productEnvironmentProfileFromWorkerRuntimeTarget(options.environment);
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
 
   if (!stripeSecretKey) {
@@ -159,7 +169,7 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
   }
 
   const contracts = await loadStripeCatalogStoreItemContracts({
-    productEnvironment: options.environment === 'production' ? 'prd' : 'uat',
+    productEnvironment: productEnvironmentProfile.productEnvironment === 'prd' ? 'prd' : 'uat',
   });
   const rows = readD1CatalogRows(options.environment, contracts);
   const repositories = createD1CatalogRepositories(options.environment, rows);
@@ -216,7 +226,7 @@ function assertProductionApplyPromotionContext(context: CatalogPromotionContext 
       [
         'Production Stripe catalog apply requires promotion context.',
         'Run from CI with --ci-promotion, --artifact-commit-sha <sha>, and --promotion-run-id <id>.',
-        'Use --env production without --apply for a local dry run.',
+        'Use --env prd without --apply for a local dry run.',
       ].join(' '),
     );
   }
@@ -232,11 +242,12 @@ function parseRequiredOptionValue(name: string, value: string | undefined): stri
 }
 
 export function formatStripeCatalogVerifyReport(result: CatalogSyncRunResult): string {
+  const productEnvironmentProfile = productEnvironmentProfileFromWorkerRuntimeTarget(result.environment);
   const issueCounts = countIssuesByDriftCategory(result);
   const lines = [
     `Stripe catalog verification ${result.issues.length ? 'failed' : 'OK'}.`,
     `Environment: ${result.environment}`,
-    `Product Environment: ${result.environment === 'production' ? 'PRD' : result.environment === 'sandbox' ? 'UAT' : 'Local'}`,
+    `Product Environment: ${productEnvironmentProfile.label}`,
     `Mode: ${result.dryRun ? 'dry-run' : 'apply'}`,
     `Checked variants: ${result.results.length}`,
     '',
@@ -332,11 +343,12 @@ function formatIssueCount(count: number): string {
 }
 
 function createExpectedPriceMap(contracts: StripeCatalogStoreItemContract[], environment: StripeCatalogEnvironment) {
+  const desiredEnvironment = toDesiredCatalogEnvironment(productEnvironmentProfileFromWorkerRuntimeTarget(environment));
+
   return new Map(
     contracts.flatMap((contract) =>
-      contract.desiredCatalogEntry.targetEnvironments.includes(
-        environment === 'production' ? 'production' : 'sandbox',
-      ) && contract.desiredCatalogEntry.desiredPrice
+      contract.desiredCatalogEntry.targetEnvironments.includes(desiredEnvironment) &&
+      contract.desiredCatalogEntry.desiredPrice
         ? [[contract.variantId, contract.desiredCatalogEntry.desiredPrice] as const]
         : [],
     ),
@@ -347,7 +359,7 @@ function createExpectedProductProjectionMap(
   contracts: StripeCatalogStoreItemContract[],
   environment: StripeCatalogEnvironment,
 ) {
-  const desiredEnvironment = environment === 'production' ? 'production' : 'sandbox';
+  const desiredEnvironment = toDesiredCatalogEnvironment(productEnvironmentProfileFromWorkerRuntimeTarget(environment));
   return new Map(
     contracts.flatMap((contract) =>
       contract.desiredCatalogEntry.targetEnvironments.includes(desiredEnvironment)
@@ -602,11 +614,15 @@ function toSqlIdFragment(value: string): string {
 }
 
 function parseEnvironment(value: string | undefined): StripeCatalogEnvironment {
-  if (value === 'local' || value === 'sandbox' || value === 'production') {
-    return value;
+  try {
+    return workerRuntimeTargetForProductEnvironment(parseProductEnvironmentCliTarget(value));
+  } catch {
+    throw new Error('--env must be one of: local, uat, prd, sandbox, production.');
   }
+}
 
-  throw new Error('--env must be one of: local, sandbox, production.');
+function toDesiredCatalogEnvironment(productEnvironmentProfile: ProductEnvironmentProfile) {
+  return productEnvironmentProfile.productEnvironment === 'prd' ? 'production' : 'sandbox';
 }
 
 async function main() {

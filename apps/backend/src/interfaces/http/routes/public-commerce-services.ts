@@ -12,7 +12,7 @@ import {
   VariantMismatchError,
   type StartCheckoutCommand,
 } from '../../../application/commerce/checkout';
-import type { AppBindings } from '../../../env';
+import { productEnvironmentProfileFromWorkerRuntimeTarget, type AppBindings } from '../../../env';
 import {
   createPrismaClient,
   PrismaItemAvailabilityRepository,
@@ -30,6 +30,7 @@ import {
 } from '../../../application/commerce/catalog-sync';
 
 export function createPublicCommerceServices(bindings: AppBindings) {
+  const productEnvironmentProfile = productEnvironmentProfileFromWorkerRuntimeTarget(bindings.APP_ENV);
   const prisma = createPrismaClient(bindings);
   const storeItems = new PrismaStoreItemOptionRepository(prisma);
   const itemAvailability = new PrismaItemAvailabilityRepository(prisma);
@@ -40,7 +41,7 @@ export function createPublicCommerceServices(bindings: AppBindings) {
   const productProjections = createCurrentCatalogProductProjectionReader();
   const createCatalogReconciler = () =>
     new CatalogReconciler({
-      environment: bindings.APP_ENV,
+      environment: productEnvironmentProfile.workerRuntimeTarget,
       storeItems,
       storeOfferSnapshots,
       stripeCatalog: createStripeCatalogGateway(bindings),

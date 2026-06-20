@@ -11,7 +11,6 @@ import {
   EmailConfigurationError,
   logNewsletterRegistrationOutcome,
   NEWSLETTER_CONSENT_COPY_VERSION,
-  readEmailRuntimeConfig,
   registerNewsletterContact,
   sendPaidOrderEmailNotifications,
   type EmailProviderGateway,
@@ -19,8 +18,7 @@ import {
   type PaidOrderEmailInput,
 } from '../../../application/email';
 import type { StoreItemOptionRecord } from '../../../domain/commerce/repositories/spi';
-import type { AppBindings } from '../../../env';
-import { createResendEmailGatewayFromConfig } from '../../../infrastructure/resend';
+import { productEnvironmentProfileFromWorkerRuntimeTarget, type AppBindings } from '../../../env';
 import { createStripeCatalogGateway, createStripeCheckoutGateway } from '../../../infrastructure/stripe';
 import {
   createPrismaClient,
@@ -31,8 +29,10 @@ import {
   PrismaStripeCatalogWebhookEventRepository,
 } from '../../../infrastructure/persistence/prisma';
 import { D1PaidCheckoutFinalizationRepository } from './d1-paid-checkout-finalization-repository';
+import { createEmailRuntimeServices } from './email-runtime-services';
 
 export function createStripeWebhookServices(bindings: AppBindings) {
+  const productEnvironmentProfile = productEnvironmentProfileFromWorkerRuntimeTarget(bindings.APP_ENV);
   const prisma = createPrismaClient(bindings);
   const orders = new PrismaOrderStateRepository(prisma);
   const paidCheckoutFinalizer = new D1PaidCheckoutFinalizationRepository(bindings.COMMERCE_DB);
@@ -42,7 +42,7 @@ export function createStripeWebhookServices(bindings: AppBindings) {
   const catalogWebhookEvents = new PrismaStripeCatalogWebhookEventRepository(prisma);
   const checkoutGateway = createStripeCheckoutGateway(bindings);
   const catalogReconciler = new CatalogReconciler({
-    environment: bindings.APP_ENV,
+    environment: productEnvironmentProfile.workerRuntimeTarget,
     storeItems,
     storeOfferSnapshots,
     stripeCatalog: createStripeCatalogGateway(bindings),
@@ -68,8 +68,9 @@ export function createStripeWebhookServices(bindings: AppBindings) {
       let emailProvider: EmailProviderGateway;
 
       try {
-        emailConfig = readEmailRuntimeConfig(bindings);
-        emailProvider = createResendEmailGatewayFromConfig(emailConfig);
+        const emailRuntime = createEmailRuntimeServices(bindings);
+        emailConfig = emailRuntime.config;
+        emailProvider = emailRuntime.provider;
       } catch (error) {
         console.warn({
           event: 'paid_order_email_outcome',

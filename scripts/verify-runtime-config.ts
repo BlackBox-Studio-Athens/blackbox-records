@@ -4,8 +4,17 @@ import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
-export type ProductEnvironment = 'Local' | 'PRD' | 'UAT';
-export type RuntimeConfigEnvironment = 'local' | 'production' | 'sandbox';
+import {
+  parseProductEnvironmentCliTarget,
+  productEnvironmentProfileFromWorkerRuntimeTarget,
+  workerRuntimeTargetForProductEnvironment,
+  type ProductEnvironmentLabel,
+  type ProductEnvironmentProfile,
+  type WorkerRuntimeTarget,
+} from '../apps/backend/src/env';
+
+export type ProductEnvironment = ProductEnvironmentLabel;
+export type RuntimeConfigEnvironment = WorkerRuntimeTarget;
 export type RuntimeConfigStatus = 'missing' | 'not_applicable' | 'present' | 'unverified';
 
 export type RuntimeConfigCategory = {
@@ -99,10 +108,12 @@ export function verifyRuntimeConfig(input: {
   secretNames: readonly string[] | null;
   wranglerConfigText: string;
 }): RuntimeConfigVerificationResult {
+  const productEnvironmentProfile = productEnvironmentProfileFromWorkerRuntimeTarget(input.environment);
   const environmentBlock = extractWranglerEnvironmentBlock(input.wranglerConfigText, input.environment);
-  const requireDeployedSecrets = input.environment === 'sandbox' || input.requireLiveSecrets === true;
+  const requireDeployedSecrets =
+    productEnvironmentProfile.requiresDeployedSecretsByDefault || input.requireLiveSecrets === true;
   const categories: RuntimeConfigCategory[] = [
-    classifyProductEnvironmentMapping(input.environment),
+    classifyProductEnvironmentMapping(productEnvironmentProfile),
     ...(!requireDeployedSecrets
       ? []
       : [
@@ -111,12 +122,12 @@ export function verifyRuntimeConfig(input: {
           classifySecretPresence('STRIPE_WEBHOOK_SECRET', input.secretNames),
         ]),
     classifyWranglerTextPresence('CHECKOUT_RETURN_ORIGINS', environmentBlock),
-    classifyWorkerOriginScope(input.environment, environmentBlock),
+    classifyWorkerOriginScope(productEnvironmentProfile, environmentBlock),
     classifyWranglerTextPresence('COMMERCE_DB', environmentBlock, /"binding"\s*:\s*"COMMERCE_DB"/),
-    ...classifyResendRuntimeConfig(input.environment, environmentBlock, input.secretNames),
+    ...classifyResendRuntimeConfig(productEnvironmentProfile, environmentBlock, input.secretNames),
     classifyFlagsPresence(environmentBlock),
-    classifyPrdOpenGate(input.environment),
-    classifyProductionCronPresence(input.environment, environmentBlock),
+    classifyPrdOpenGate(productEnvironmentProfile),
+    classifyProductionCronPresence(productEnvironmentProfile, environmentBlock),
   ];
   const issues = categories.flatMap((category) =>
     category.status === 'missing' || category.status === 'unverified'
@@ -218,7 +229,7 @@ function classifySecretPresence(
 }
 
 function classifyResendRuntimeConfig(
-  environment: RuntimeConfigEnvironment,
+  productEnvironmentProfile: ProductEnvironmentProfile,
   environmentBlock: string,
   secretNames: readonly string[] | null,
 ): RuntimeConfigCategory[] {
@@ -244,7 +255,7 @@ function classifyResendRuntimeConfig(
     ),
     classifyWorkerConfigPresence('RESEND_NEWSLETTER_TOPIC_ID', environmentBlock, secretNames),
     classifyResendNewsletterSegmentPresence(environmentBlock),
-    classifyResendUatRecipientOverride(environment, environmentBlock),
+    classifyResendUatRecipientOverride(productEnvironmentProfile, environmentBlock),
   ];
 }
 
@@ -277,12 +288,12 @@ function classifyResendNewsletterSegmentPresence(environmentBlock: string): Runt
 }
 
 function classifyResendUatRecipientOverride(
-  environment: RuntimeConfigEnvironment,
+  productEnvironmentProfile: ProductEnvironmentProfile,
   environmentBlock: string,
 ): RuntimeConfigCategory {
   const match = /"RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL"\s*:\s*"(?<email>[^"]*)"/.exec(environmentBlock);
 
-  if (environment === 'sandbox') {
+  if (productEnvironmentProfile.emailRoutingMode === 'uat-sink') {
     const isSink = match?.groups?.email === 'blackboxrecordsathens+TESTING@gmail.com';
 
     return {
@@ -294,7 +305,7 @@ function classifyResendUatRecipientOverride(
     };
   }
 
-  if (environment === 'production' && match) {
+  if (productEnvironmentProfile.productEnvironment === 'prd' && match) {
     return {
       detail: 'PRD must not honor the UAT sink recipient override.',
       name: 'RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL',
@@ -309,16 +320,18 @@ function classifyResendUatRecipientOverride(
   };
 }
 
-function classifyProductEnvironmentMapping(environment: RuntimeConfigEnvironment): RuntimeConfigCategory {
+function classifyProductEnvironmentMapping(
+  productEnvironmentProfile: ProductEnvironmentProfile,
+): RuntimeConfigCategory {
   return {
-    detail: `${mapRuntimeEnvironmentToProductEnvironment(environment)} maps to Worker runtime target ${environment}.`,
+    detail: `${productEnvironmentProfile.label} maps to Worker runtime target ${productEnvironmentProfile.workerRuntimeTarget}.`,
     name: 'PRODUCT_ENVIRONMENT_MAPPING',
     status: 'present',
   };
 }
 
 function classifyWorkerOriginScope(
-  environment: RuntimeConfigEnvironment,
+  productEnvironmentProfile: ProductEnvironmentProfile,
   environmentBlock: string,
 ): RuntimeConfigCategory {
   const origins = getCheckoutReturnOrigins(environmentBlock);
@@ -332,7 +345,7 @@ function classifyWorkerOriginScope(
       origin.includes('.blackbox-records-web.pages.dev') && origin !== 'https://blackbox-records-web.pages.dev',
   );
 
-  if (environment === 'local') {
+  if (productEnvironmentProfile.productEnvironment === 'local') {
     return {
       detail: hasLocal && !hasUat && !hasPrd && !hasPreview ? undefined : 'Local mock origins must stay local-only.',
       name: 'WORKER_ORIGIN_SCOPE',
@@ -340,7 +353,7 @@ function classifyWorkerOriginScope(
     };
   }
 
-  if (environment === 'sandbox') {
+  if (productEnvironmentProfile.productEnvironment === 'uat') {
     return {
       detail:
         hasUat && hasLocal && !hasPrd && !hasPreview
@@ -361,8 +374,8 @@ function classifyWorkerOriginScope(
   };
 }
 
-function classifyPrdOpenGate(environment: RuntimeConfigEnvironment): RuntimeConfigCategory {
-  if (environment !== 'production') {
+function classifyPrdOpenGate(productEnvironmentProfile: ProductEnvironmentProfile): RuntimeConfigCategory {
+  if (productEnvironmentProfile.productEnvironment !== 'prd') {
     return {
       detail: 'PRD-open gate applies only to the PRD product environment.',
       name: 'PRD_OPEN_GATE',
@@ -399,10 +412,10 @@ function classifyFlagsPresence(environmentBlock: string): RuntimeConfigCategory 
 }
 
 function classifyProductionCronPresence(
-  environment: RuntimeConfigEnvironment,
+  productEnvironmentProfile: ProductEnvironmentProfile,
   environmentBlock: string,
 ): RuntimeConfigCategory {
-  if (environment !== 'production') {
+  if (productEnvironmentProfile.productEnvironment !== 'prd') {
     return {
       detail: 'Only production cron backstop is classified here.',
       name: 'PRODUCTION_CATALOG_CRON',
@@ -484,25 +497,15 @@ function createPnpmCommand(args: string[]): { args: string[]; command: string } 
 }
 
 function parseEnvironment(value: string | undefined): RuntimeConfigEnvironment {
-  if (value === 'local' || value === 'sandbox' || value === 'production') {
-    return value;
+  try {
+    return workerRuntimeTargetForProductEnvironment(parseProductEnvironmentCliTarget(value));
+  } catch {
+    throw new Error('Runtime config verification requires --env local, uat, prd, sandbox, or production.');
   }
-
-  if (value === 'uat') {
-    return 'sandbox';
-  }
-
-  if (value === 'prd') {
-    return 'production';
-  }
-
-  throw new Error('Runtime config verification requires --env local, uat, prd, sandbox, or production.');
 }
 
 function mapRuntimeEnvironmentToProductEnvironment(environment: RuntimeConfigEnvironment): ProductEnvironment {
-  if (environment === 'production') return 'PRD';
-  if (environment === 'sandbox') return 'UAT';
-  return 'Local';
+  return productEnvironmentProfileFromWorkerRuntimeTarget(environment).label;
 }
 
 function getCheckoutReturnOrigins(environmentBlock: string): string[] {

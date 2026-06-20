@@ -8,6 +8,7 @@ import {
   sendTransactionalEmail,
 } from '../../../src/application/email';
 import type { EmailProviderGateway } from '../../../src/application/email/spi';
+import { productEnvironmentProfiles } from '../../../src/env';
 
 const localBindings = {
   APP_ENV: 'local' as const,
@@ -28,11 +29,11 @@ describe('email application module', () => {
   it('validates required runtime config without exposing provider values in errors', () => {
     expect(readEmailRuntimeConfig(localBindings)).toEqual({
       apiKey: 're_mock_blackbox_local',
-      appEnvironment: 'local',
       fromEmail: 'orders@blackboxrecordsathens.com',
       newsletterSegmentId: null,
       newsletterTopicId: 'topic_mock_blackbox_newsletter',
       opsToEmail: 'blackboxrecordsathens@gmail.com',
+      productEnvironmentProfile: productEnvironmentProfiles.local,
       replyToEmail: 'support@blackboxrecordsathens.com',
       uatRecipientOverrideEmail: null,
     });

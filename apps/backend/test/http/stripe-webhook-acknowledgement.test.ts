@@ -4,6 +4,7 @@ import {
   acknowledgeVerifiedStripeWebhookEvent,
   type StripeWebhookAcknowledgementServices,
 } from '../../src/interfaces/http/routes/stripe-webhook-acknowledgement';
+import { createCheckoutOrderReferenceToken } from '../../src/application/commerce/orders';
 import type { VerifiedStripeWebhookEvent } from '../../src/infrastructure/stripe';
 import type { StoreItemOptionRecord } from '../../src/domain/commerce/repositories/spi';
 import { storeItemSlug, variantId } from '../support/commerce-value-objects';
@@ -263,7 +264,10 @@ function createCheckoutOrderPaidFixture() {
     newsletterOptIn: true,
     occurredAt: new Date('2026-04-25T11:00:00.000Z'),
     orderId: 'order_1',
-    orderReference: 'BBR-ORDER1',
+    orderReference: createCheckoutOrderReferenceToken({
+      checkoutSessionId: 'cs_test_123',
+      orderId: 'order_1',
+    }),
     paidAt: new Date('2026-04-25T11:00:00.000Z'),
     paymentStatus: 'paid' as const,
     shippingAddress: {

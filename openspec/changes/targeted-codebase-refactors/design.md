@@ -104,3 +104,23 @@ No new library is planned for idempotency because Resend already provides idempo
 ## Open Questions
 
 None for planning. Stop for owner approval before adding a new runtime dependency, introducing a DI container, changing public Local/UAT/PRD environment names, changing Wrangler target names, changing PRD checkout/live-provider gates, or expanding the refactor beyond the approved candidate list.
+
+## Implementation Inventory And Order
+
+Inventory used codegraph plus scoped `rg` over backend env, email, feature flags, scheduled catalog verification, runtime config verification, catalog/smoke scripts, and order-reference formatting.
+
+Approved implementation order:
+
+1. Product Environment Profile mapping in `apps/backend/src/env.ts`, then boundary mappers in route composition and scripts.
+2. Email runtime config type inference and a route-local email runtime composition factory.
+3. Checkout order reference token value object for visible `BBR-*` order references.
+4. Focused drift checks and tests for the touched behavior.
+
+Classified candidates:
+
+- Product Environment Profile: fixes repeated `local`/`sandbox`/`production` product-policy branches in feature flags, email routing, scheduled catalog verification, and runtime verification. Expected simplification is one typed map for Local/UAT/PRD policy. Behavior risk is medium because it touches UAT sink routing and PRD-disabled policy; verification is profile tests, runtime config verification, and standard gates.
+- Email runtime config and composition: fixes schema/type drift and repeated `readEmailRuntimeConfig` plus Resend gateway assembly in public newsletter and Stripe webhook services. Expected simplification is inferred config output and one boundary factory. Behavior risk is medium because email routing is provider-facing; verification is email unit tests and Resend UAT smoke.
+- Checkout order reference token: fixes primitive visible-reference formatting hidden in checkout paid-event creation. Expected simplification is one tested formatter with sanitization and fallback. Behavior risk is low; verification is value-object tests and paid-order/webhook tests.
+- `EmailIdempotencyKey` and provider-safe metadata tags: no new value object beyond existing local helper because invariant handling is already centralized in `application/email/idempotency.ts` and introducing a wrapper would not reduce code.
+- `StoreItemSlug`, `VariantId`, and `CartQuantity`: no new wrapper in this slice because domain parsers/helpers already own these invariants and broad promotion would expand scope.
+- Result, idempotency, DI, profile, and pattern-matching libraries: no-add. Local discriminated unions, Zod schemas, explicit factories, and typed maps are smaller for the current object graph.
