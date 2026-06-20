@@ -1,11 +1,9 @@
 import {
   applyNonPaidCheckoutReconciliation,
   applyPaidCheckoutReconciliation,
-  finalizePaidCheckoutWithRepositories,
   type CheckoutOrderPaid,
   type ApplyNonPaidCheckoutReconciliationResult,
   type ApplyPaidCheckoutReconciliationResult,
-  type PaidCheckoutFinalizationRepository,
 } from '../../../application/commerce/orders';
 import { CatalogReconciler } from '../../../application/commerce/catalog-sync';
 import type { CheckoutReconciliation } from '../../../application/commerce/checkout';
@@ -27,28 +25,17 @@ import { createStripeCatalogGateway, createStripeCheckoutGateway } from '../../.
 import {
   createPrismaClient,
   PrismaOrderStateRepository,
-  PrismaStockChangeRepository,
-  PrismaStockRepository,
   PrismaStoreItemOptionRepository,
   PrismaStoreOfferSnapshotRepository,
   PrismaVariantStripeMappingRepository,
   PrismaStripeCatalogWebhookEventRepository,
 } from '../../../infrastructure/persistence/prisma';
+import { D1PaidCheckoutFinalizationRepository } from './d1-paid-checkout-finalization-repository';
 
 export function createStripeWebhookServices(bindings: AppBindings) {
   const prisma = createPrismaClient(bindings);
   const orders = new PrismaOrderStateRepository(prisma);
-  const paidCheckoutFinalizer = {
-    finalizePaidCheckout: (command) =>
-      prisma.$transaction(async (transaction) =>
-        finalizePaidCheckoutWithRepositories(
-          new PrismaOrderStateRepository(transaction),
-          new PrismaStockRepository(transaction),
-          new PrismaStockChangeRepository(transaction),
-          command,
-        ),
-      ),
-  } satisfies PaidCheckoutFinalizationRepository;
+  const paidCheckoutFinalizer = new D1PaidCheckoutFinalizationRepository(bindings.COMMERCE_DB);
   const storeItems = new PrismaStoreItemOptionRepository(prisma);
   const storeOfferSnapshots = new PrismaStoreOfferSnapshotRepository(prisma);
   const variantStripeMappings = new PrismaVariantStripeMappingRepository(prisma);

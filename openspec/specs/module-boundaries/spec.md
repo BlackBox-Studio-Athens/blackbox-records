@@ -32,6 +32,13 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** the primitive is listed as a provided `ui-foundation` entrypoint in `module-boundaries.manifest.json`
 - **AND** feature modules import that entrypoint directly instead of deep-importing private UI foundation implementation.
 
+#### Scenario: Route-local HTTP helper is added
+
+- **GIVEN** public commerce HTTP route code needs a helper that is not a cross-module interface
+- **WHEN** the helper is added under `apps/backend/src/interfaces/http/routes/`
+- **THEN** the helper is listed under the owning `public-commerce-http` roots in `module-boundaries.manifest.json`
+- **AND** it is not listed as a provided entrypoint unless another module is allowed to import it.
+
 ### Requirement: Compatibility facades are disallowed
 
 The system SHALL avoid temporary compatibility facades during boundary work unless a new OpenSpec change explicitly approves an exception.

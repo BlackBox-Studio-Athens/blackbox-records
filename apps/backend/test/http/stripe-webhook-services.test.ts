@@ -11,14 +11,11 @@ import type { AppBindings } from '../../src/env';
 import { createStripeWebhookServices } from '../../src/interfaces/http/routes/stripe-webhook-services';
 
 const serviceMocks = vi.hoisted(() => {
-  const transactionPrisma = {
-    marker: 'transaction-prisma',
-  };
   const rootPrisma = {
     $disconnect: vi.fn(async () => undefined),
-    $transaction: vi.fn(async <T>(callback: (transaction: typeof transactionPrisma) => Promise<T>) =>
-      callback(transactionPrisma),
-    ),
+    $transaction: vi.fn(async () => {
+      throw new Error('Interactive transactions are not supported by D1.');
+    }),
     marker: 'root-prisma',
   };
   const checkoutGateway = {
@@ -31,6 +28,14 @@ const serviceMocks = vi.hoisted(() => {
   };
   const catalogReconciler = {
     reconcileVariant: vi.fn(),
+  };
+  const d1PaidCheckoutFinalizer = {
+    finalizePaidCheckout: vi.fn(async () => ({
+      kind: 'replay' as const,
+      order: {
+        checkoutSessionId: 'cs_test_123',
+      },
+    })),
   };
   const applyPaidCheckoutReconciliation = vi.fn(
     async (
@@ -62,12 +67,13 @@ const serviceMocks = vi.hoisted(() => {
     createPrismaClient: vi.fn(() => rootPrisma),
     createStripeCatalogGateway: vi.fn(() => ({})),
     createStripeCheckoutGateway: vi.fn(() => checkoutGateway),
-    finalizePaidCheckoutWithRepositories: vi.fn(async () => ({
-      kind: 'replay' as const,
-      order: {
-        checkoutSessionId: 'cs_test_123',
-      },
-    })),
+    d1PaidCheckoutFinalizer,
+    D1PaidCheckoutFinalizationRepository: vi.fn(function D1PaidCheckoutFinalizationRepository(db: D1Database) {
+      return {
+        db,
+        ...d1PaidCheckoutFinalizer,
+      };
+    }),
     PrismaOrderStateRepository: vi.fn(function PrismaOrderStateRepository(client: unknown) {
       return {
         client,
@@ -115,7 +121,6 @@ const serviceMocks = vi.hoisted(() => {
       };
     }),
     rootPrisma,
-    transactionPrisma,
   };
 });
 
@@ -131,7 +136,6 @@ vi.mock('../../src/application/commerce/orders', async (importOriginal) => {
   return {
     ...actual,
     applyPaidCheckoutReconciliation: serviceMocks.applyPaidCheckoutReconciliation,
-    finalizePaidCheckoutWithRepositories: serviceMocks.finalizePaidCheckoutWithRepositories,
   };
 });
 
@@ -144,6 +148,10 @@ vi.mock('../../src/infrastructure/persistence/prisma', () => ({
   PrismaStoreOfferSnapshotRepository: serviceMocks.PrismaStoreOfferSnapshotRepository,
   PrismaStripeCatalogWebhookEventRepository: serviceMocks.PrismaStripeCatalogWebhookEventRepository,
   PrismaVariantStripeMappingRepository: serviceMocks.PrismaVariantStripeMappingRepository,
+}));
+
+vi.mock('../../src/interfaces/http/routes/d1-paid-checkout-finalization-repository', () => ({
+  D1PaidCheckoutFinalizationRepository: serviceMocks.D1PaidCheckoutFinalizationRepository,
 }));
 
 vi.mock('../../src/infrastructure/stripe', () => ({
@@ -164,7 +172,7 @@ describe('createStripeWebhookServices', () => {
     vi.clearAllMocks();
   });
 
-  it('runs paid checkout finalization inside the Prisma transaction boundary', async () => {
+  it('runs paid checkout finalization through the D1 batch finalizer without Prisma transactions', async () => {
     const services = createStripeWebhookServices(bindings);
 
     await expect(services.applyPaidCheckoutReconciliation(createPaidReconciliation())).resolves.toEqual({
@@ -175,24 +183,34 @@ describe('createStripeWebhookServices', () => {
     });
 
     expect(serviceMocks.createPrismaClient).toHaveBeenCalledWith(bindings);
-    expect(serviceMocks.rootPrisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(serviceMocks.rootPrisma.$transaction).not.toHaveBeenCalled();
+    expect(serviceMocks.D1PaidCheckoutFinalizationRepository).toHaveBeenCalledWith(bindings.COMMERCE_DB);
     expect(serviceMocks.PrismaOrderStateRepository).toHaveBeenCalledWith(serviceMocks.rootPrisma);
-    expect(serviceMocks.PrismaOrderStateRepository).toHaveBeenCalledWith(serviceMocks.transactionPrisma);
-    expect(serviceMocks.PrismaStockRepository).toHaveBeenCalledWith(serviceMocks.transactionPrisma);
-    expect(serviceMocks.PrismaStockChangeRepository).toHaveBeenCalledWith(serviceMocks.transactionPrisma);
-    expect(serviceMocks.finalizePaidCheckoutWithRepositories).toHaveBeenCalledWith(
+    expect(serviceMocks.PrismaStockRepository).not.toHaveBeenCalled();
+    expect(serviceMocks.PrismaStockChangeRepository).not.toHaveBeenCalled();
+    expect(serviceMocks.applyPaidCheckoutReconciliation).toHaveBeenCalledWith(
       expect.objectContaining({
-        client: serviceMocks.transactionPrisma,
+        client: serviceMocks.rootPrisma,
         repository: 'orders',
       }),
       expect.objectContaining({
-        client: serviceMocks.transactionPrisma,
-        repository: 'stock',
+        db: bindings.COMMERCE_DB,
+        finalizePaidCheckout: serviceMocks.d1PaidCheckoutFinalizer.finalizePaidCheckout,
       }),
       expect.objectContaining({
-        client: serviceMocks.transactionPrisma,
-        repository: 'stockChanges',
+        source: expect.objectContaining({
+          checkoutSessionId: 'cs_test_123',
+        }),
       }),
+      expect.any(Date),
+      [
+        {
+          quantity: 1,
+          stripePriceId: 'price_test_123',
+        },
+      ],
+    );
+    expect(serviceMocks.d1PaidCheckoutFinalizer.finalizePaidCheckout).toHaveBeenCalledWith(
       expect.objectContaining({
         checkoutSessionId: 'cs_test_123',
       }),
