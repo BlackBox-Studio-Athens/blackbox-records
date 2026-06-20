@@ -1,6 +1,7 @@
 name: UAT sandbox smoke
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ['Deploy UAT static site to GitHub Pages']
     branches: ['main']
@@ -15,7 +16,7 @@ concurrency:
 
 jobs:
   smoke:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment: catalog-promotion-uat
     env:
@@ -29,7 +30,7 @@ jobs:
       - name: Checkout deployed commit
         uses: actions/checkout@v5.0.1
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.8
@@ -67,7 +68,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v5.0.0
         with:
-          name: uat-sandbox-smoke-${{ github.run_id }}
+          name: uat-sandbox-smoke-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             .codex-artifacts/smoke/uat/stripe-sandbox/**
             .codex-artifacts/smoke/uat/resend-uat/**

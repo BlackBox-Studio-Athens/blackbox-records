@@ -190,6 +190,7 @@ export type StripeSandboxScenarioAutomationResult = {
   observedStripeUi: string;
   order: LocalCheckoutOrderRow | null;
   screenshotPath: string | null;
+  webhookDeliveryDiagnostics: StripeSandboxWebhookDeliveryDiagnostics | null;
 };
 
 export type StripeSandboxSmokeEvidence = {
@@ -210,6 +211,7 @@ export type StripeSandboxSmokeEvidence = {
   screenshotPath: string | null;
   siteUrl: string;
   tracePath: string | null;
+  webhookDeliveryDiagnostics: StripeSandboxWebhookDeliveryDiagnostics | null;
   workerUrl: string;
 };
 
@@ -244,12 +246,45 @@ export type StripeSandboxSmokeDurations = {
 };
 
 type StripeSandboxSmokeDurationKey = Exclude<keyof StripeSandboxSmokeDurations, 'evidenceWriteMs' | 'totalMs'>;
+type FetchLike = (input: string, init?: { headers?: Record<string, string>; method?: string }) => Promise<Response>;
+
+export type StripeSandboxWebhookDeliveryDiagnostics = {
+  checkoutSession: {
+    issue: string | null;
+    lookup: 'failed' | 'missing_secret' | 'not_applicable' | 'ok';
+    paymentIntentRecorded: boolean | null;
+    paymentStatus: string | null;
+    status: string | null;
+  };
+  events: {
+    issue: string | null;
+    lookup: 'failed' | 'missing_secret' | 'not_applicable' | 'ok';
+    pendingRelatedEventCount: number;
+    related: StripeSandboxWebhookEventDiagnostic[];
+  };
+  issues: string[];
+};
+
+export type StripeSandboxWebhookEventDiagnostic = {
+  created: string | null;
+  id: string;
+  livemode: boolean | null;
+  pendingWebhooks: number | null;
+  type: string;
+};
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(scriptDir, '..');
 const backendDir = path.join(rootDir, 'apps', 'backend');
 const nodeRequire = createRequire(import.meta.url);
 const wranglerBin = nodeRequire.resolve('wrangler/bin/wrangler.js', { paths: [backendDir] });
+const stripeApiBaseUrl = 'https://api.stripe.com/v1';
+const stripeCheckoutWebhookEventTypes = [
+  'checkout.session.completed',
+  'checkout.session.async_payment_succeeded',
+  'checkout.session.async_payment_failed',
+  'checkout.session.expired',
+] as const;
 
 const sandboxFormDefaults = {
   addressLine1: '1 Stripe Test Street',
@@ -446,8 +481,234 @@ export function buildStripeSandboxSmokeEvidence(input: {
     screenshotPath: input.result.screenshotPath,
     siteUrl: input.options.siteUrl,
     tracePath: input.artifactPaths.tracePath,
+    webhookDeliveryDiagnostics: input.result.webhookDeliveryDiagnostics,
     workerUrl: input.options.workerUrl,
   };
+}
+
+export async function createStripeSandboxWebhookDeliveryDiagnostics(input: {
+  checkoutSessionId: string;
+  fetchImpl?: FetchLike;
+  scenarioStartedAt: number;
+  secretKey?: string;
+}): Promise<StripeSandboxWebhookDeliveryDiagnostics> {
+  const secretKey = input.secretKey ?? process.env.STRIPE_SECRET_KEY ?? '';
+
+  if (!secretKey.trim()) {
+    return {
+      checkoutSession: {
+        issue: 'STRIPE_SECRET_KEY is not available to query Stripe Checkout Session state.',
+        lookup: 'missing_secret',
+        paymentIntentRecorded: null,
+        paymentStatus: null,
+        status: null,
+      },
+      events: {
+        issue: 'STRIPE_SECRET_KEY is not available to query Stripe webhook event delivery state.',
+        lookup: 'missing_secret',
+        pendingRelatedEventCount: 0,
+        related: [],
+      },
+      issues: ['STRIPE_SECRET_KEY is required for Stripe webhook delivery diagnostics.'],
+    };
+  }
+
+  const fetchImpl = input.fetchImpl ?? fetch;
+  const issues: string[] = [];
+  const checkoutSession = await readStripeCheckoutSessionDiagnostic(input.checkoutSessionId, secretKey, fetchImpl);
+  const events = await readStripeCheckoutEventDiagnostics(input, secretKey, fetchImpl);
+
+  if (checkoutSession.issue) {
+    issues.push(checkoutSession.issue);
+  } else if (checkoutSession.paymentStatus !== 'paid') {
+    issues.push(`Stripe Checkout Session payment_status is ${checkoutSession.paymentStatus ?? 'unknown'}, not paid.`);
+  }
+
+  if (events.issue) {
+    issues.push(events.issue);
+  } else if (!events.related.length) {
+    issues.push('No related Stripe checkout webhook events were found for the Checkout Session.');
+  } else if (events.pendingRelatedEventCount > 0) {
+    issues.push(
+      `${events.pendingRelatedEventCount} related Stripe checkout webhook event(s) still have pending webhook delivery.`,
+    );
+  }
+
+  return {
+    checkoutSession,
+    events,
+    issues,
+  };
+}
+
+function formatStripeWebhookDeliveryDiagnostics(
+  diagnostics: StripeSandboxWebhookDeliveryDiagnostics | null,
+): string | null {
+  if (!diagnostics) {
+    return null;
+  }
+
+  const eventSummary = diagnostics.events.related.length
+    ? `${diagnostics.events.related.length} related event(s), ${diagnostics.events.pendingRelatedEventCount} pending delivery`
+    : 'no related events';
+
+  return [
+    `session ${diagnostics.checkoutSession.lookup}`,
+    `payment_status=${diagnostics.checkoutSession.paymentStatus ?? 'unknown'}`,
+    eventSummary,
+    diagnostics.issues.length ? `issues=${diagnostics.issues.join(' ')}` : 'issues=none',
+  ].join('; ');
+}
+
+async function readStripeCheckoutSessionDiagnostic(
+  checkoutSessionId: string,
+  secretKey: string,
+  fetchImpl: FetchLike,
+): Promise<StripeSandboxWebhookDeliveryDiagnostics['checkoutSession']> {
+  try {
+    const body = await readStripeApiJson(
+      `${stripeApiBaseUrl}/checkout/sessions/${encodeURIComponent(checkoutSessionId)}`,
+      secretKey,
+      fetchImpl,
+    );
+    const session = isRecord(body) ? body : {};
+    const paymentIntent = session.payment_intent;
+
+    return {
+      issue: null,
+      lookup: 'ok',
+      paymentIntentRecorded: typeof paymentIntent === 'string' && paymentIntent.length > 0,
+      paymentStatus: readOptionalString(session.payment_status),
+      status: readOptionalString(session.status),
+    };
+  } catch (error) {
+    return {
+      issue: `Stripe Checkout Session lookup failed: ${scrubSensitiveStripeSmokeText(String(error))}`,
+      lookup: 'failed',
+      paymentIntentRecorded: null,
+      paymentStatus: null,
+      status: null,
+    };
+  }
+}
+
+async function readStripeCheckoutEventDiagnostics(
+  input: Pick<
+    Parameters<typeof createStripeSandboxWebhookDeliveryDiagnostics>[0],
+    'checkoutSessionId' | 'scenarioStartedAt'
+  >,
+  secretKey: string,
+  fetchImpl: FetchLike,
+): Promise<StripeSandboxWebhookDeliveryDiagnostics['events']> {
+  try {
+    const body = await readStripeApiJson(createStripeCheckoutEventsUrl(input.scenarioStartedAt), secretKey, fetchImpl);
+    const related = readStripeEventList(body)
+      .filter((event) => readStripeEventCheckoutSessionId(event) === input.checkoutSessionId)
+      .map(toStripeSandboxWebhookEventDiagnostic);
+
+    return {
+      issue: null,
+      lookup: 'ok',
+      pendingRelatedEventCount: related.filter((event) => (event.pendingWebhooks ?? 0) > 0).length,
+      related,
+    };
+  } catch (error) {
+    return {
+      issue: `Stripe checkout event lookup failed: ${scrubSensitiveStripeSmokeText(String(error))}`,
+      lookup: 'failed',
+      pendingRelatedEventCount: 0,
+      related: [],
+    };
+  }
+}
+
+function createStripeCheckoutEventsUrl(scenarioStartedAt: number): string {
+  const params = new URLSearchParams({
+    'created[gte]': String(Math.max(0, Math.floor((scenarioStartedAt - 10 * 60_000) / 1000))),
+    limit: '100',
+  });
+
+  for (const eventType of stripeCheckoutWebhookEventTypes) {
+    params.append('types[]', eventType);
+  }
+
+  return `${stripeApiBaseUrl}/events?${params.toString()}`;
+}
+
+async function readStripeApiJson(url: string, secretKey: string, fetchImpl: FetchLike): Promise<unknown> {
+  const response = await fetchImpl(url, {
+    headers: {
+      Authorization: `Bearer ${secretKey}`,
+    },
+    method: 'GET',
+  });
+  const responseText = await response.text();
+  const body = responseText ? safeParseJson(responseText) : null;
+
+  if (!response.ok) {
+    throw new Error(`Stripe API ${response.status}: ${readStripeApiErrorMessage(body)}`);
+  }
+
+  return body;
+}
+
+function readStripeApiErrorMessage(body: unknown): string {
+  if (!isRecord(body) || !isRecord(body.error)) {
+    return 'unknown error';
+  }
+
+  return readOptionalString(body.error.message) ?? readOptionalString(body.error.type) ?? 'unknown error';
+}
+
+function readStripeEventList(body: unknown): Record<string, unknown>[] {
+  if (!isRecord(body) || !Array.isArray(body.data)) {
+    return [];
+  }
+
+  return body.data.filter(isRecord);
+}
+
+function readStripeEventCheckoutSessionId(event: Record<string, unknown>): string | null {
+  const data = event.data;
+  const eventObject = isRecord(data) && isRecord(data.object) ? data.object : null;
+
+  return eventObject ? readOptionalString(eventObject.id) : null;
+}
+
+function toStripeSandboxWebhookEventDiagnostic(event: Record<string, unknown>): StripeSandboxWebhookEventDiagnostic {
+  const created = readOptionalNumber(event.created);
+
+  return {
+    created: typeof created === 'number' ? new Date(created * 1000).toISOString() : null,
+    id: readOptionalString(event.id) ?? 'unknown',
+    livemode: readOptionalBoolean(event.livemode),
+    pendingWebhooks: readOptionalNumber(event.pending_webhooks),
+    type: readOptionalString(event.type) ?? 'unknown',
+  };
+}
+
+function safeParseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readOptionalString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
+function readOptionalNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function readOptionalBoolean(value: unknown): boolean | null {
+  return typeof value === 'boolean' ? value : null;
 }
 
 export function buildStripeSandboxSmokeSummary(input: {
@@ -669,6 +930,8 @@ async function runScenarioAndWriteEvidence(input: {
   evidence.durations.evidenceWriteMs = Date.now() - evidenceWriteStartedAt;
   writeJsonFile(evidencePath, evidence);
 
+  const webhookDiagnosticsSummary = formatStripeWebhookDeliveryDiagnostics(evidence.webhookDeliveryDiagnostics);
+
   console.log(
     [
       `Scenario ${scenario.name}: ${evidence.passed ? 'PASSED' : 'FAILED'} in ${formatDuration(
@@ -690,6 +953,7 @@ async function runScenarioAndWriteEvidence(input: {
           : 'not checked'
       }`,
       `- order status: ${result.order?.status ?? 'none'}`,
+      ...(webhookDiagnosticsSummary ? [`- webhook diagnostics: ${webhookDiagnosticsSummary}`] : []),
       `- screenshot: ${result.screenshotPath ?? 'skipped'}`,
       `- evidence: ${evidencePath}`,
     ].join('\n'),
@@ -829,6 +1093,7 @@ async function runScenarioWithBrowser(input: {
         observedStripeUi: await page.locator('body').innerText({ timeout: input.options.timeoutMs }),
         order: null,
         screenshotPath,
+        webhookDeliveryDiagnostics: null,
       };
     }
 
@@ -858,6 +1123,13 @@ async function runScenarioWithBrowser(input: {
           waitForRemoteOrderAfterCheckout(resolvedCheckoutSessionId, input.scenario, input.options.timeoutMs),
         )
       : null;
+    const webhookDeliveryDiagnostics =
+      resolvedCheckoutSessionId && input.scenario.expectedOrderStatus === 'paid' && order?.status !== 'paid'
+        ? await createStripeSandboxWebhookDeliveryDiagnostics({
+            checkoutSessionId: resolvedCheckoutSessionId,
+            scenarioStartedAt,
+          })
+        : null;
     const screenshotPath =
       input.options.screenshots === 'always' ? path.join(input.scenarioArtifactDir, 'final.png') : null;
 
@@ -876,6 +1148,7 @@ async function runScenarioWithBrowser(input: {
       observedStripeUi,
       order,
       screenshotPath,
+      webhookDeliveryDiagnostics,
     };
   } catch (error) {
     const failureScreenshotPath =

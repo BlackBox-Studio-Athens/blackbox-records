@@ -13,6 +13,7 @@ import {
   createRemoteD1ReadinessSql,
   createSandboxSmokeStockTopUpSql,
   createScenarioEmail,
+  createStripeSandboxWebhookDeliveryDiagnostics,
   countPaidStripeSandboxScenarios,
   didScenarioPass,
   fillFirstVisibleSelector,
@@ -554,6 +555,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
         observedStripeUi: 'Checkout paid',
         order: paidOrder,
         screenshotPath: null,
+        webhookDeliveryDiagnostics: null,
       },
       runId: '20260517000102',
       scenario: STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid,
@@ -606,6 +608,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
           screenshotPath: null,
           siteUrl: 'https://blackbox-records-web.pages.dev',
           tracePath: null,
+          webhookDeliveryDiagnostics: null,
           workerUrl: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
         },
       ],
@@ -647,6 +650,99 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       status: 'failed',
       suite: 'stripe-sandbox',
     });
+  });
+
+  it('diagnoses pending Stripe checkout webhook event delivery after paid finalization misses D1', async () => {
+    const fetchMock = vi.fn(async (url: string, _init?: { headers?: Record<string, string>; method?: string }) => {
+      if (url.includes('/checkout/sessions/')) {
+        return new Response(
+          JSON.stringify({
+            id: 'cs_test_123',
+            payment_intent: 'pi_test_123',
+            payment_status: 'paid',
+            status: 'complete',
+          }),
+          { status: 200 },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          data: [
+            {
+              created: 1_775_000_000,
+              data: {
+                object: {
+                  id: 'cs_test_123',
+                },
+              },
+              id: 'evt_test_pending',
+              livemode: false,
+              pending_webhooks: 1,
+              type: 'checkout.session.completed',
+            },
+            {
+              created: 1_775_000_001,
+              data: {
+                object: {
+                  id: 'cs_test_other',
+                },
+              },
+              id: 'evt_test_other',
+              livemode: false,
+              pending_webhooks: 0,
+              type: 'checkout.session.completed',
+            },
+          ],
+        }),
+        { status: 200 },
+      );
+    });
+
+    const diagnostics = await createStripeSandboxWebhookDeliveryDiagnostics({
+      checkoutSessionId: 'cs_test_123',
+      fetchImpl: fetchMock,
+      scenarioStartedAt: 1_775_000_000_000,
+      secretKey: 'sk_test_123',
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0]?.[1]?.headers?.Authorization).toBe('Bearer sk_test_123');
+    expect(diagnostics.checkoutSession).toMatchObject({
+      lookup: 'ok',
+      paymentIntentRecorded: true,
+      paymentStatus: 'paid',
+      status: 'complete',
+    });
+    expect(diagnostics.events).toMatchObject({
+      lookup: 'ok',
+      pendingRelatedEventCount: 1,
+      related: [
+        {
+          id: 'evt_test_pending',
+          pendingWebhooks: 1,
+          type: 'checkout.session.completed',
+        },
+      ],
+    });
+    expect(diagnostics.issues).toContain(
+      '1 related Stripe checkout webhook event(s) still have pending webhook delivery.',
+    );
+  });
+
+  it('does not call Stripe diagnostics without a secret key', async () => {
+    const fetchMock = vi.fn();
+
+    const diagnostics = await createStripeSandboxWebhookDeliveryDiagnostics({
+      checkoutSessionId: 'cs_test_123',
+      fetchImpl: fetchMock,
+      scenarioStartedAt: 1_775_000_000_000,
+      secretKey: '',
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(diagnostics.checkoutSession.lookup).toBe('missing_secret');
+    expect(diagnostics.events.lookup).toBe('missing_secret');
   });
 
   it('scrubs Stripe secrets, session IDs, and client secrets from logs', () => {

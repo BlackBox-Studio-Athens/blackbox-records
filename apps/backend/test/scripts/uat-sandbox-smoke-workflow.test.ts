@@ -14,6 +14,7 @@ describe('UAT sandbox smoke workflow', () => {
     const workflow = readWorkflow('uat-sandbox-smoke.yml');
 
     expect(workflow).toContain('name: UAT sandbox smoke');
+    expect(workflow).toContain('workflow_dispatch:');
     expect(workflow).toContain('workflow_run');
     expect(workflow).toContain('Deploy UAT static site to GitHub Pages');
     expect(workflow).toContain("branches: ['main']");
@@ -24,8 +25,10 @@ describe('UAT sandbox smoke workflow', () => {
     expect(workflow).toContain("group: 'uat-sandbox-smoke-${{ github.event.workflow_run.head_branch }}'");
     expect(workflow).toContain('cancel-in-progress: true');
     expect(workflow).toContain('environment: catalog-promotion-uat');
-    expect(workflow).toContain("github.event.workflow_run.conclusion == 'success'");
-    expect(workflow).toContain('github.event.workflow_run.head_sha');
+    expect(workflow).toContain(
+      "github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'",
+    );
+    expect(workflow).toContain('github.event.workflow_run.head_sha || github.sha');
     expect(workflow).toContain('pnpm stripe:webhooks:verify --env sandbox');
     expect(workflow).toContain('pnpm stripe:payment-methods:verify');
     expect(workflow).toContain('pnpm smoke:stripe-sandbox -- \\');
@@ -33,6 +36,7 @@ describe('UAT sandbox smoke workflow', () => {
     expect(workflow).toContain('--scenario all');
     expect(workflow).toContain('--screenshots on-failure');
     expect(workflow).toContain('.codex-artifacts/smoke/uat/stripe-sandbox/**');
+    expect(workflow).toContain('uat-sandbox-smoke-${{ github.run_id }}-${{ github.run_attempt }}');
     expect(workflow).toContain('actions/upload-artifact@v5.0.0');
     expect(workflow.indexOf('pnpm stripe:webhooks:verify --env sandbox')).toBeLessThan(
       workflow.indexOf('pnpm smoke:stripe-sandbox -- \\'),
