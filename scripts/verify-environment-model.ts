@@ -58,7 +58,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
     },
     {
       detail:
-        'Post-merge UAT sandbox smoke runs after the GitHub Pages deploy and reuses the UAT promotion credential scope.',
+        'Post-merge UAT sandbox smoke runs after the GitHub Pages deploy, deploys the sandbox Worker, and reuses the UAT promotion credential scope.',
       ok:
         uatSandboxSmokeWorkflow.includes('workflow_run') &&
         uatSandboxSmokeWorkflow.includes('Deploy UAT static site to GitHub Pages') &&
@@ -67,6 +67,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
         uatSandboxSmokeWorkflow.includes('concurrency:') &&
         uatSandboxSmokeWorkflow.includes('environment: catalog-promotion-uat') &&
         uatSandboxSmokeWorkflow.includes('github.event.workflow_run.head_sha') &&
+        uatSandboxSmokeWorkflow.includes('pnpm deploy:backend:sandbox') &&
         uatSandboxSmokeWorkflow.includes('pnpm smoke:stripe-sandbox -- \\') &&
         uatSandboxSmokeWorkflow.includes('pnpm smoke:resend-uat -- \\') &&
         uatSandboxSmokeWorkflow.includes('--site-url "${UAT_SITE_URL}"') &&

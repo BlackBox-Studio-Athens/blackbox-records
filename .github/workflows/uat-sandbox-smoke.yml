@@ -54,6 +54,9 @@ jobs:
           pnpm stripe:webhooks:verify --env sandbox
           pnpm stripe:payment-methods:verify
 
+      - name: Deploy UAT Worker sandbox
+        run: pnpm deploy:backend:sandbox
+
       - name: Run UAT sandbox smoke
         run: |
           pnpm smoke:stripe-sandbox -- \
