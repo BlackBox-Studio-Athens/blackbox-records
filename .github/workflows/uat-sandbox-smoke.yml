@@ -48,6 +48,11 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Verify UAT webhook and payment configuration
+        run: |
+          pnpm stripe:webhooks:verify --env sandbox
+          pnpm stripe:payment-methods:verify
+
       - name: Run UAT sandbox smoke
         run: |
           pnpm smoke:stripe-sandbox -- \

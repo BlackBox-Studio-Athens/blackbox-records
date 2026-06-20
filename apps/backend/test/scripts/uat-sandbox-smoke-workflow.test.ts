@@ -26,11 +26,16 @@ describe('UAT sandbox smoke workflow', () => {
     expect(workflow).toContain('environment: catalog-promotion-uat');
     expect(workflow).toContain("github.event.workflow_run.conclusion == 'success'");
     expect(workflow).toContain('github.event.workflow_run.head_sha');
+    expect(workflow).toContain('pnpm stripe:webhooks:verify --env sandbox');
+    expect(workflow).toContain('pnpm stripe:payment-methods:verify');
     expect(workflow).toContain('pnpm smoke:stripe-sandbox -- \\');
     expect(workflow).toContain('--site-url "${UAT_SITE_URL}"');
     expect(workflow).toContain('--scenario all');
     expect(workflow).toContain('--screenshots on-failure');
     expect(workflow).toContain('.codex-artifacts/smoke/uat/stripe-sandbox/**');
     expect(workflow).toContain('actions/upload-artifact@v5.0.0');
+    expect(workflow.indexOf('pnpm stripe:webhooks:verify --env sandbox')).toBeLessThan(
+      workflow.indexOf('pnpm smoke:stripe-sandbox -- \\'),
+    );
   });
 });

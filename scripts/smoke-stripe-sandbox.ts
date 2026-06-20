@@ -570,8 +570,23 @@ async function runStripeSandboxSmokeScenarioGroups(input: {
     evidence.push(await runScenarioAndWriteEvidence({ ...input, scenario }));
   }
 
+  if (hasFailedStripeSandboxSmokeEvidence(evidence)) {
+    logSkippedStripeSandboxSmokeScenarios('checkout surface', [
+      ...scenarioGroups.paidScenarios,
+      ...scenarioGroups.declineScenarios,
+    ]);
+
+    return evidence;
+  }
+
   for (const scenario of scenarioGroups.paidScenarios) {
     evidence.push(await runScenarioAndWriteEvidence({ ...input, scenario }));
+  }
+
+  if (hasFailedStripeSandboxSmokeEvidence(evidence)) {
+    logSkippedStripeSandboxSmokeScenarios('paid checkout finalization', scenarioGroups.declineScenarios);
+
+    return evidence;
   }
 
   if (scenarioGroups.declineScenarios.length) {
@@ -586,6 +601,25 @@ async function runStripeSandboxSmokeScenarioGroups(input: {
   }
 
   return evidence;
+}
+
+function hasFailedStripeSandboxSmokeEvidence(evidence: readonly StripeSandboxSmokeEvidence[]): boolean {
+  return evidence.some((item) => !item.passed);
+}
+
+function logSkippedStripeSandboxSmokeScenarios(
+  failedPhase: string,
+  scenarios: readonly StripeSandboxSmokeScenario[],
+): void {
+  if (!scenarios.length) {
+    return;
+  }
+
+  console.log(
+    `Skipping ${scenarios.length} downstream scenario(s) after ${failedPhase} failure: ${scenarios
+      .map((scenario) => scenario.name)
+      .join(', ')}.`,
+  );
 }
 
 async function runScenarioAndWriteEvidence(input: {
@@ -741,10 +775,17 @@ async function runScenarioWithBrowser(input: {
   try {
     await timeStripeSandboxStep(input.scenario.name, 'checkout open', durations, 'checkoutOpenMs', async () => {
       await page.goto(input.checkoutPageUrl, { waitUntil: 'domcontentloaded' });
-      await page.getByLabel(/Email me BlackBox Records/i).check({ timeout: input.options.fieldActionTimeoutMs });
+      const newsletterOptIn = page.getByLabel(/Email me BlackBox Records/i);
+      const checkoutButton = page.getByRole('button', {
+        name: /(?:pay securely with|continue to) stripe(?: checkout)?/i,
+      });
+
+      await newsletterOptIn.waitFor({ state: 'visible', timeout: input.options.timeoutMs });
+      await checkoutButton.waitFor({ state: 'visible', timeout: input.options.timeoutMs });
+      await newsletterOptIn.check({ timeout: input.options.fieldActionTimeoutMs });
       await Promise.all([
         page.waitForURL(/checkout\.stripe\.com/, { timeout: input.options.timeoutMs, waitUntil: 'commit' }),
-        page.getByRole('button', { name: /(?:pay securely with|continue to) stripe(?: checkout)?/i }).click(),
+        checkoutButton.click({ timeout: input.options.fieldActionTimeoutMs }),
       ]);
     });
 
