@@ -34,8 +34,6 @@ jobs:
           DECAPBRIDGE_AUTH_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_ENDPOINT }}
           DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT }}
           DECAPBRIDGE_GATEWAY_URL: ${{ vars.DECAPBRIDGE_GATEWAY_URL }}
-          ASTRO_SITE_URL: https://blackbox-studio-athens.github.io
-          ASTRO_BASE_PATH: /blackbox-records/
         with:
           path: ./apps/web
           node-version: 24
@@ -45,7 +43,7 @@ jobs:
             pnpm --workspace-root test:unit &&
             pnpm --workspace-root check &&
             pnpm --workspace-root audit:unused &&
-            PUBLIC_BACKEND_BASE_URL="${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}" pnpm --workspace-root build:web
+            ASTRO_SITE_URL="https://blackbox-studio-athens.github.io" ASTRO_BASE_PATH="/blackbox-records/" PUBLIC_BACKEND_BASE_URL="${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}" pnpm --workspace-root build:web
 
   deploy:
     needs: verify
