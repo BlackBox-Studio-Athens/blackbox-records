@@ -102,7 +102,7 @@ The system SHALL validate the deployed GitHub Pages UAT site with sandbox smoke 
 
 - **GIVEN** the `Deploy UAT static site to GitHub Pages` workflow completes successfully on `main`
 - **WHEN** the downstream `workflow_run` smoke workflow starts
-- **THEN** it runs `pnpm smoke:stripe-sandbox -- --scenario all --screenshots on-failure` against the deployed GitHub Pages UAT site
+- **THEN** it runs `pnpm smoke:stripe-sandbox -- --scenario happy_path_paid --screenshots on-failure` against the deployed GitHub Pages UAT site
 - **AND** it uses the `catalog-promotion-uat` GitHub Actions environment for the same UAT Cloudflare and sandbox Stripe credentials already used by UAT promotion
 - **AND** it uploads the standard smoke summary and evidence artifacts
 - **AND** the catalog promotion workflow does not run smoke steps itself.

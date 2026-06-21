@@ -145,6 +145,14 @@ pnpm smoke:resend-uat
 
 The Resend UAT smoke posts a synthetic consented signup to `/api/newsletter/registrations`, expects the sandbox sink routing to return `{"status":"registered"}`, and writes ignored evidence to `.codex-artifacts/smoke/uat/resend-uat/<run-id>/`. It does not print Resend API keys, Topic IDs, Contact IDs, or account diagnostics.
 
+Render local paid-order email previews when you need to inspect the generated shopper and ops HTML:
+
+```sh
+pnpm email:previews
+```
+
+This writes ignored HTML files under `.codex-artifacts/email-previews/` for Browser Use or the documented DevTools fallback. The previews use repo-owned template builders and do not create provider state.
+
 Run the UAT static smoke when you need to verify deployed GitHub Pages static routes, Decap admin boot/config, representative public pages, checkout shell visibility, sitemap, robots, console errors, and high-risk public-secret exposure:
 
 ```sh
@@ -433,6 +441,11 @@ pnpm audit:commerce-boundaries
   - `RESEND_NEWSLETTER_TOPIC_ID`
   - optional `RESEND_NEWSLETTER_SEGMENT_ID`
   - `RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL=blackboxrecordsathens+TESTING@gmail.com` for the sandbox Worker target only
+- Paid-order email brand URLs are non-secret Worker runtime config and must match the Product Environment profile:
+  - `EMAIL_BRAND_HOME_URL`
+  - `EMAIL_BRAND_LOGO_URL`
+  - Local/UAT use the GitHub Pages public site and logo URLs.
+  - PRD uses the Cloudflare Pages public site and logo URLs until an approved custom public site domain replaces them.
 - Resend uses `blackboxrecordsathens.com` as the single approved Free-tier sending domain. DNS verification, SPF/DKIM/DMARC alignment, Cloudflare Email Routing for support replies, Topic/Segment setup, and Worker secret upload are manual operator checkpoints; do not commit provider-readiness evidence.
 - Local and automated tests use application-level provider mocks and committed fake `re_mock_*` values. UAT application email and newsletter Contact writes route to the sink recipient; PRD ignores that override and uses real recipients only after provider setup is complete.
 - The sandbox Worker persistent webhook readiness check is:

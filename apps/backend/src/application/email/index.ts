@@ -27,7 +27,7 @@ export type {
   PaidOrderEmailInput,
   PaidOrderEmailLineItem,
   PaidOrderEmailNotificationResult,
-  PaidOrderSkippedEmailResult,
+  PaidOrderEmailShopperContact,
   RegisterNewsletterContactCommand,
   RoutedEmailRecipient,
   TransactionalEmailCommand,

@@ -61,40 +61,42 @@ export type NewsletterRegistrationResult = {
 };
 
 export type PaidOrderEmailLineItem = {
+  productImage?: {
+    altText: string;
+    url: string;
+  } | null;
   quantity: number;
   storeItemSlug: string;
   variantId: string;
 };
 
 export type PaidOrderEmailAddress = {
-  city: string | null;
-  country: string | null;
-  line1: string | null;
+  city: string;
+  country: 'GR';
+  line1: string;
   line2: string | null;
-  postalCode: string | null;
+  postalCode: string;
   state: string | null;
+};
+
+export type PaidOrderEmailShopperContact = {
+  email: string;
+  phone: string;
 };
 
 export type PaidOrderEmailInput = {
   amountTotalMinor: number | null;
   checkoutSessionId: string;
   currencyCode: string | null;
-  customerEmail: string | null;
   customerName: string | null;
-  customerPhone: string | null;
   lineItems: PaidOrderEmailLineItem[];
   orderReference: string;
   paidAt: Date | null;
-  shippingAddress: PaidOrderEmailAddress | null;
-};
-
-export type PaidOrderSkippedEmailResult = {
-  idempotencyKey: string;
-  reason: 'missing_shopper_email';
-  status: 'skipped';
+  shippingAddress: PaidOrderEmailAddress;
+  shopperContact: PaidOrderEmailShopperContact;
 };
 
 export type PaidOrderEmailNotificationResult = {
   ops: EmailOperationResult;
-  shopper: EmailOperationResult | PaidOrderSkippedEmailResult;
+  shopper: EmailOperationResult;
 };

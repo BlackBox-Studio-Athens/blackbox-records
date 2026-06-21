@@ -4,7 +4,7 @@ import {
   acknowledgeVerifiedStripeWebhookEvent,
   type StripeWebhookAcknowledgementServices,
 } from '../../src/interfaces/http/routes/stripe-webhook-acknowledgement';
-import { createCheckoutOrderReferenceToken } from '../../src/application/commerce/orders';
+import { createCheckoutOrderReferenceToken, type CheckoutOrderPaid } from '../../src/application/commerce/orders';
 import type { VerifiedStripeWebhookEvent } from '../../src/infrastructure/stripe';
 import type { StoreItemOptionRecord } from '../../src/domain/commerce/repositories/spi';
 import { storeItemSlug, variantId } from '../support/commerce-value-objects';
@@ -245,14 +245,12 @@ function createPaidCheckoutEvent(): VerifiedStripeWebhookEvent {
   } as unknown as VerifiedStripeWebhookEvent;
 }
 
-function createCheckoutOrderPaidFixture() {
+function createCheckoutOrderPaidFixture(): CheckoutOrderPaid {
   return {
     amountTotalMinor: 2500,
     checkoutSessionId: 'cs_test_123',
     currencyCode: 'EUR',
-    customerEmail: 'buyer@example.com',
     customerName: 'Buyer Name',
-    customerPhone: '+302100000000',
     lineItems: [
       {
         quantity: 1,
@@ -267,6 +265,7 @@ function createCheckoutOrderPaidFixture() {
     orderReference: createCheckoutOrderReferenceToken({
       checkoutSessionId: 'cs_test_123',
       orderId: 'order_1',
+      referenceDate: new Date('2026-04-25T11:00:00.000Z'),
     }),
     paidAt: new Date('2026-04-25T11:00:00.000Z'),
     paymentStatus: 'paid' as const,
@@ -277,6 +276,10 @@ function createCheckoutOrderPaidFixture() {
       line2: null,
       postalCode: '10558',
       state: null,
+    },
+    shopperContact: {
+      email: 'buyer@example.com',
+      phone: '+302100000000',
     },
     stripePaymentIntentId: 'pi_test_123',
   };

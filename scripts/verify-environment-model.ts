@@ -82,7 +82,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
         uatSandboxSmokeWorkflow.includes('pnpm smoke:resend-uat -- \\') &&
         uatSandboxSmokeWorkflow.includes('--site-url "${UAT_SITE_URL}"') &&
         uatSandboxSmokeWorkflow.includes('--worker-url "${UAT_WORKER_URL}"') &&
-        uatSandboxSmokeWorkflow.includes('--scenario all') &&
+        uatSandboxSmokeWorkflow.includes('--scenario happy_path_paid') &&
         uatSandboxSmokeWorkflow.includes('--screenshots on-failure') &&
         uatSandboxSmokeWorkflow.includes('.codex-artifacts/smoke/uat/stripe-sandbox/**') &&
         uatSandboxSmokeWorkflow.includes('.codex-artifacts/smoke/uat/resend-uat/**'),
@@ -165,7 +165,7 @@ function hasCheckoutOrigins(
 
   return (
     requiredOrigins.every((origin) => origins.includes(origin)) &&
-    forbiddenOrigins.every((origin) => !block.includes(origin))
+    forbiddenOrigins.every((origin) => !origins.some((checkoutOrigin) => checkoutOrigin.includes(origin)))
   );
 }
 

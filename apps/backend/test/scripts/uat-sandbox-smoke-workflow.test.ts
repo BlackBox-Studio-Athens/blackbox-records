@@ -34,7 +34,7 @@ describe('UAT sandbox smoke workflow', () => {
     expect(workflow).toContain('pnpm deploy:backend:uat');
     expect(workflow).toContain('pnpm smoke:stripe-sandbox -- \\');
     expect(workflow).toContain('--site-url "${UAT_SITE_URL}"');
-    expect(workflow).toContain('--scenario all');
+    expect(workflow).toContain('--scenario happy_path_paid');
     expect(workflow).toContain('--screenshots on-failure');
     expect(workflow).toContain('.codex-artifacts/smoke/uat/stripe-sandbox/**');
     expect(workflow).toContain('uat-sandbox-smoke-${{ github.run_id }}-${{ github.run_attempt }}');

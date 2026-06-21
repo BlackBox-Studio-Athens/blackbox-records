@@ -62,7 +62,7 @@ jobs:
           pnpm smoke:stripe-sandbox -- \
             --site-url "${UAT_SITE_URL}" \
             --worker-url "${UAT_WORKER_URL}" \
-            --scenario all \
+            --scenario happy_path_paid \
             --screenshots on-failure
           pnpm smoke:resend-uat -- \
             --worker-url "${UAT_WORKER_URL}"

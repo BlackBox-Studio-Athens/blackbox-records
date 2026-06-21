@@ -5,7 +5,7 @@ import {
   type ApplyNonPaidCheckoutReconciliationResult,
   type ApplyPaidCheckoutReconciliationResult,
 } from '../../../application/commerce/orders';
-import { CatalogReconciler } from '../../../application/commerce/catalog-sync';
+import { CatalogReconciler, currentCatalogProductProjectionEntries } from '../../../application/commerce/catalog-sync';
 import type { CheckoutReconciliation } from '../../../application/commerce/checkout';
 import {
   EmailConfigurationError,
@@ -124,25 +124,12 @@ async function safelyRegisterCheckoutNewsletterOptIn(
     return;
   }
 
-  if (!event.customerEmail) {
-    console.warn({
-      event: 'newsletter_registration_outcome',
-      orderReference: event.orderReference,
-      retryable: false,
-      safeReason: 'missing_shopper_email',
-      source: 'checkout-opt-in',
-      status: 'skipped',
-    });
-
-    return;
-  }
-
   try {
     const result = await registerNewsletterContact(provider, config, {
       consentCopyVersion: NEWSLETTER_CONSENT_COPY_VERSION,
       consentSource: 'checkout-opt-in',
       consentedAt: event.paidAt ?? event.occurredAt,
-      email: event.customerEmail,
+      email: event.shopperContact.email,
       properties: {
         checkoutSessionId: event.checkoutSessionId,
         orderReference: event.orderReference,
@@ -179,15 +166,14 @@ function logCheckoutNewsletterOptInConfigurationFailure(event: CheckoutOrderPaid
   });
 }
 
-function toPaidOrderEmailInput(event: CheckoutOrderPaid): PaidOrderEmailInput {
+export function toPaidOrderEmailInput(event: CheckoutOrderPaid): PaidOrderEmailInput {
   return {
     amountTotalMinor: event.amountTotalMinor,
     checkoutSessionId: event.checkoutSessionId,
     currencyCode: event.currencyCode,
-    customerEmail: event.customerEmail,
     customerName: event.customerName,
-    customerPhone: event.customerPhone,
     lineItems: event.lineItems.map((lineItem) => ({
+      productImage: createPaidOrderEmailProductImage(lineItem),
       quantity: lineItem.quantity,
       storeItemSlug: lineItem.storeItemSlug,
       variantId: lineItem.variantId,
@@ -195,5 +181,32 @@ function toPaidOrderEmailInput(event: CheckoutOrderPaid): PaidOrderEmailInput {
     orderReference: event.orderReference,
     paidAt: event.paidAt,
     shippingAddress: event.shippingAddress,
+    shopperContact: event.shopperContact,
   };
+}
+
+function createPaidOrderEmailProductImage(
+  lineItem: CheckoutOrderPaid['lineItems'][number],
+): PaidOrderEmailInput['lineItems'][number]['productImage'] {
+  const projection = currentCatalogProductProjectionEntries.find(
+    (entry) => entry.storeItemSlug === lineItem.storeItemSlug && entry.variantId === lineItem.variantId,
+  )?.productProjection;
+  const [url] = projection?.imageUrls ?? [];
+
+  if (!url) {
+    return null;
+  }
+
+  return {
+    altText: `${humanizeSlug(lineItem.storeItemSlug)} product image`,
+    url,
+  };
+}
+
+function humanizeSlug(value: string): string {
+  return value
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (character) => character.toUpperCase());
 }

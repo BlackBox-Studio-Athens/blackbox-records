@@ -12,7 +12,11 @@ import {
   type CheckoutSessionId,
   type StripePriceId,
 } from '../../../domain/commerce';
-import { createCheckoutOrderPaidEvent, type CheckoutOrderPaid } from './checkout-order-paid-event';
+import {
+  createCheckoutOrderPaidEvent,
+  readStripeCollectedPaidOrderFulfillmentDetails,
+  type CheckoutOrderPaid,
+} from './checkout-order-paid-event';
 import { InvalidOrderTransitionError } from './errors';
 import type { PaidCheckoutFinalizationRepository } from './paid-checkout-finalization';
 import { transitionCheckoutOrder } from './transition-checkout-order';
@@ -105,6 +109,8 @@ export async function applyPaidCheckoutReconciliation(
     }
   }
 
+  const paidFulfillmentDetails = readStripeCollectedPaidOrderFulfillmentDetails(reconciliation);
+
   try {
     const finalizationResult = await paidCheckoutFinalizer.finalizePaidCheckout({
       checkoutSessionId,
@@ -126,6 +132,7 @@ export async function applyPaidCheckoutReconciliation(
 
     return {
       checkoutOrderPaid: createCheckoutOrderPaidEvent({
+        fulfillment: paidFulfillmentDetails,
         lineItems: reconciledOrderLines,
         occurredAt: appliedAt,
         order: finalizationResult.order,

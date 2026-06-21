@@ -16,6 +16,10 @@ describe('Product Environment Profile', () => {
     expect(Object.keys(productEnvironmentProfiles)).toEqual(['LOCAL', 'UAT', 'PRD']);
 
     expect(getProductEnvironmentProfile('LOCAL')).toMatchObject({
+      emailBrand: {
+        homeUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/',
+        logoUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
+      },
       emailDeliveryPolicy: 'direct',
       nativeCheckoutEnabledByDefault: true,
       productEnvironment: 'LOCAL',
@@ -23,6 +27,10 @@ describe('Product Environment Profile', () => {
       workerDeploymentTarget: 'local',
     });
     expect(getProductEnvironmentProfile('UAT')).toMatchObject({
+      emailBrand: {
+        homeUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/',
+        logoUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
+      },
       emailDeliveryPolicy: 'uat-sink',
       emailProviderTag: 'sandbox',
       nativeCheckoutEnabledByDefault: false,
@@ -34,6 +42,10 @@ describe('Product Environment Profile', () => {
     expect(getProductEnvironmentProfile('PRD')).toMatchObject({
       catalogVerificationPolicy: {
         applyScheduledChanges: false,
+      },
+      emailBrand: {
+        homeUrl: 'https://blackbox-records-web.pages.dev/',
+        logoUrl: 'https://blackbox-records-web.pages.dev/assets/images/brand/logo-horizontal.png',
       },
       emailDeliveryPolicy: 'direct',
       nativeCheckoutEnabledByDefault: false,

@@ -15,6 +15,8 @@ const wranglerConfigText = `
       "vars": {
         "PRODUCT_ENVIRONMENT": "PRD",
         "CHECKOUT_RETURN_ORIGINS": "https://blackbox-records-web.pages.dev",
+        "EMAIL_BRAND_HOME_URL": "https://blackbox-records-web.pages.dev/",
+        "EMAIL_BRAND_LOGO_URL": "https://blackbox-records-web.pages.dev/assets/images/brand/logo-horizontal.png",
         "RESEND_FROM_EMAIL": "orders@blackboxrecordsathens.com",
         "RESEND_OPS_TO_EMAIL": "blackboxrecordsathens@gmail.com",
         "RESEND_REPLY_TO_EMAIL": "support@blackboxrecordsathens.com"
@@ -73,6 +75,8 @@ describe('runtime config verification', () => {
         expect.objectContaining({ name: 'WORKER_ORIGIN_SCOPE', status: 'present' }),
         expect.objectContaining({ name: 'COMMERCE_DB', status: 'present' }),
         expect.objectContaining({ name: 'RESEND_API_KEY', status: 'present' }),
+        expect.objectContaining({ name: 'EMAIL_BRAND_HOME_URL', status: 'present' }),
+        expect.objectContaining({ name: 'EMAIL_BRAND_LOGO_URL', status: 'present' }),
         expect.objectContaining({ name: 'RESEND_FROM_EMAIL', status: 'present' }),
         expect.objectContaining({ name: 'RESEND_REPLY_TO_EMAIL', status: 'present' }),
         expect.objectContaining({ name: 'RESEND_OPS_TO_EMAIL', status: 'present' }),
@@ -103,6 +107,8 @@ describe('runtime config verification', () => {
         'WORKER_ORIGIN_SCOPE is missing (PRD Worker must not allow Local, UAT, or preview origins.).',
         'COMMERCE_DB is missing.',
         'RESEND_API_KEY is missing.',
+        'EMAIL_BRAND_HOME_URL is missing (Email brand home URL must match the Product Environment public site URL.).',
+        'EMAIL_BRAND_LOGO_URL is missing (Email brand logo URL must match the Product Environment public logo asset URL.).',
         'RESEND_FROM_EMAIL is missing (Resend sender must stay on the verified orders@blackboxrecordsathens.com address.).',
         'RESEND_REPLY_TO_EMAIL is missing (Resend reply-to must route through support@blackboxrecordsathens.com.).',
         'RESEND_OPS_TO_EMAIL is missing (Ops notifications must route to the Gmail operations inbox.).',
@@ -154,6 +160,8 @@ describe('runtime config verification', () => {
           "vars": {
             "PRODUCT_ENVIRONMENT": "UAT",
             "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,https://blackbox-studio-athens.github.io/blackbox-records",
+            "EMAIL_BRAND_HOME_URL": "https://blackbox-studio-athens.github.io/blackbox-records/",
+            "EMAIL_BRAND_LOGO_URL": "https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png",
             "RESEND_FROM_EMAIL": "orders@blackboxrecordsathens.com",
             "RESEND_OPS_TO_EMAIL": "blackboxrecordsathens@gmail.com",
             "RESEND_REPLY_TO_EMAIL": "support@blackboxrecordsathens.com",

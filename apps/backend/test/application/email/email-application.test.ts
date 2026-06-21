@@ -11,6 +11,9 @@ import type { EmailProviderGateway } from '../../../src/application/email/spi';
 import { productEnvironmentProfiles } from '../../../src/env';
 
 const localBindings = {
+  EMAIL_BRAND_HOME_URL: 'https://blackbox-studio-athens.github.io/blackbox-records/',
+  EMAIL_BRAND_LOGO_URL:
+    'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
   PRODUCT_ENVIRONMENT: 'LOCAL' as const,
   RESEND_API_KEY: 're_mock_blackbox_local',
   RESEND_FROM_EMAIL: 'orders@blackboxrecordsathens.com',
@@ -29,6 +32,9 @@ describe('email application module', () => {
   it('validates required runtime config without exposing provider values in errors', () => {
     expect(readEmailRuntimeConfig(localBindings)).toEqual({
       apiKey: 're_mock_blackbox_local',
+      emailBrandHomeUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/',
+      emailBrandLogoUrl:
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
       fromEmail: 'orders@blackboxrecordsathens.com',
       newsletterSegmentId: null,
       newsletterTopicId: 'topic_mock_blackbox_newsletter',
@@ -42,6 +48,12 @@ describe('email application module', () => {
       readEmailRuntimeConfig({
         ...sandboxBindings,
         RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL: 'wrong@example.com',
+      }),
+    ).toThrow(EmailConfigurationError);
+    expect(() =>
+      readEmailRuntimeConfig({
+        ...sandboxBindings,
+        EMAIL_BRAND_HOME_URL: 'https://blackbox-records-web.pages.dev/',
       }),
     ).toThrow(EmailConfigurationError);
   });

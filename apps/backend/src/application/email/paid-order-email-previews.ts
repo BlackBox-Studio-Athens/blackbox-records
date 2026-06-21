@@ -5,7 +5,7 @@ import {
 } from './paid-order-templates';
 import type { EmailMessageContent, PaidOrderEmailInput } from './types';
 
-export type PaidOrderEmailPreviewName = 'ops-missing-contact' | 'ops-ready' | 'shopper-long-content';
+export type PaidOrderEmailPreviewName = 'ops-ready' | 'shopper-long-content';
 
 export type PaidOrderEmailPreview = {
   message: EmailMessageContent;
@@ -18,11 +18,13 @@ export function buildPaidOrderEmailPreviews(): PaidOrderEmailPreview[] {
     amountTotalMinor: 2500,
     checkoutSessionId: 'cs_preview_paid_order',
     currencyCode: 'EUR',
-    customerEmail: 'preview.buyer@example.com',
     customerName: 'Preview Buyer With A Long Fulfillment Contact Name',
-    customerPhone: '+302100000000',
     lineItems: [
       {
+        productImage: {
+          altText: 'Disintegration Black Vinyl Lp With Extra Long Preview Title product image',
+          url: 'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
+        },
         quantity: 1,
         storeItemSlug: 'disintegration-black-vinyl-lp-with-extra-long-preview-title',
         variantId: 'variant_disintegration-black-vinyl-lp_standard_preview_long_identifier',
@@ -38,15 +40,10 @@ export function buildPaidOrderEmailPreviews(): PaidOrderEmailPreview[] {
       postalCode: '15234',
       state: 'Attica',
     },
-  };
-  const missingContactOrder: PaidOrderEmailInput = {
-    ...longContentOrder,
-    checkoutSessionId: 'cs_preview_missing_contact',
-    customerEmail: null,
-    customerName: null,
-    customerPhone: null,
-    orderReference: 'BBR-PREVIEW-MISSING',
-    shippingAddress: null,
+    shopperContact: {
+      email: 'preview.buyer@example.com',
+      phone: '+302100000000',
+    },
   };
   const shopperRecipient = {
     intendedRecipient: 'preview.buyer@example.com',
@@ -57,11 +54,15 @@ export function buildPaidOrderEmailPreviews(): PaidOrderEmailPreview[] {
     isSinkRouted: false,
   };
   const sentShopperNotification: ShopperNotificationStatus = { status: 'sent' };
-  const skippedShopperNotification: ShopperNotificationStatus = { status: 'skipped' };
+  const previewBrand = {
+    homeUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/',
+    logoUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
+  };
 
   return [
     {
       message: buildPaidOrderShopperEmail({
+        brand: previewBrand,
         order: longContentOrder,
         recipient: shopperRecipient,
         replyToEmail: 'support@blackboxrecordsathens.com',
@@ -71,21 +72,13 @@ export function buildPaidOrderEmailPreviews(): PaidOrderEmailPreview[] {
     },
     {
       message: buildPaidOrderOpsEmail({
+        brand: previewBrand,
         order: longContentOrder,
         recipient: opsRecipient,
         shopperNotification: sentShopperNotification,
       }),
       name: 'ops-ready',
       order: longContentOrder,
-    },
-    {
-      message: buildPaidOrderOpsEmail({
-        order: missingContactOrder,
-        recipient: opsRecipient,
-        shopperNotification: skippedShopperNotification,
-      }),
-      name: 'ops-missing-contact',
-      order: missingContactOrder,
     },
   ];
 }

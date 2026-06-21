@@ -34,6 +34,7 @@
     "catalog:checkout:pause": "tsx scripts/pause-catalog-checkout.ts",
     "runtime:config:verify": "tsx scripts/verify-runtime-config.ts",
     "environment:model:verify": "tsx scripts/verify-environment-model.ts",
+    "email:previews": "tsx scripts/render-paid-order-email-previews.ts",
     "stripe:payment-methods:verify": "tsx scripts/verify-stripe-payment-method-configuration.ts",
     "stripe:webhooks:verify": "tsx scripts/verify-stripe-webhook-endpoints.ts",
     "smoke:stripe-sandbox": "tsx scripts/smoke-stripe-sandbox.ts",

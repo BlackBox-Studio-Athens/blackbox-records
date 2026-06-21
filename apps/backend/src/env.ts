@@ -6,6 +6,13 @@ export const productEnvironmentSchema = z.enum(['LOCAL', 'UAT', 'PRD']);
 export const workerRuntimeTargetSchema = z.enum(['local', 'sandbox', 'production']);
 export const stripeModeSchema = z.enum(['mock', 'test', 'live']);
 export const emailDeliveryPolicySchema = z.enum(['direct', 'uat-sink']);
+const absoluteHttpsUrlSchema = z
+  .string()
+  .trim()
+  .url()
+  .refine((value) => new URL(value).protocol === 'https:', {
+    message: 'Use an absolute HTTPS URL.',
+  });
 
 export type ProductEnvironment = z.infer<typeof productEnvironmentSchema>;
 export type WorkerRuntimeTarget = z.infer<typeof workerRuntimeTargetSchema>;
@@ -16,6 +23,10 @@ export const productEnvironmentProfileSchema = z.object({
     applyScheduledChanges: z.boolean(),
   }),
   emailDeliveryPolicy: emailDeliveryPolicySchema,
+  emailBrand: z.object({
+    homeUrl: absoluteHttpsUrlSchema,
+    logoUrl: absoluteHttpsUrlSchema,
+  }),
   emailProviderTag: workerRuntimeTargetSchema,
   nativeCheckoutEnabledByDefault: z.boolean(),
   productEnvironment: productEnvironmentSchema,
@@ -34,6 +45,10 @@ export const productEnvironmentProfiles = productEnvironmentProfileMapSchema.par
       applyScheduledChanges: true,
     },
     emailDeliveryPolicy: 'direct',
+    emailBrand: {
+      homeUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/',
+      logoUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
+    },
     emailProviderTag: 'local',
     nativeCheckoutEnabledByDefault: true,
     productEnvironment: 'LOCAL',
@@ -46,6 +61,10 @@ export const productEnvironmentProfiles = productEnvironmentProfileMapSchema.par
       applyScheduledChanges: true,
     },
     emailDeliveryPolicy: 'uat-sink',
+    emailBrand: {
+      homeUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/',
+      logoUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
+    },
     emailProviderTag: 'sandbox',
     nativeCheckoutEnabledByDefault: false,
     productEnvironment: 'UAT',
@@ -58,6 +77,10 @@ export const productEnvironmentProfiles = productEnvironmentProfileMapSchema.par
       applyScheduledChanges: false,
     },
     emailDeliveryPolicy: 'direct',
+    emailBrand: {
+      homeUrl: 'https://blackbox-records-web.pages.dev/',
+      logoUrl: 'https://blackbox-records-web.pages.dev/assets/images/brand/logo-horizontal.png',
+    },
     emailProviderTag: 'production',
     nativeCheckoutEnabledByDefault: false,
     productEnvironment: 'PRD',
@@ -125,6 +148,8 @@ export type AppBindings = {
   CHECKOUT_RETURN_ORIGINS?: string;
   FLAGS?: FlagshipBinding;
   NATIVE_CHECKOUT_ENABLED?: string;
+  EMAIL_BRAND_HOME_URL?: string;
+  EMAIL_BRAND_LOGO_URL?: string;
   RESEND_API_KEY?: string;
   RESEND_FROM_EMAIL?: string;
   RESEND_NEWSLETTER_SEGMENT_ID?: string;

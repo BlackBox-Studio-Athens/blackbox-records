@@ -22,6 +22,8 @@ export type RuntimeConfigCategory = {
     | 'CHECKOUT_RETURN_ORIGINS'
     | 'COMMERCE_DB'
     | 'FLAGS'
+    | 'EMAIL_BRAND_HOME_URL'
+    | 'EMAIL_BRAND_LOGO_URL'
     | 'PRD_OPEN_GATE'
     | 'PRODUCTION_CATALOG_CRON'
     | 'PRODUCT_ENVIRONMENT_MAPPING'
@@ -244,6 +246,18 @@ function classifyResendRuntimeConfig(
 ): RuntimeConfigCategory[] {
   return [
     classifyWorkerConfigPresence('RESEND_API_KEY', environmentBlock, secretNames),
+    classifyExactWorkerConfigPresence(
+      'EMAIL_BRAND_HOME_URL',
+      environmentBlock,
+      productEnvironmentProfile.emailBrand.homeUrl,
+      'Email brand home URL must match the Product Environment public site URL.',
+    ),
+    classifyExactWorkerConfigPresence(
+      'EMAIL_BRAND_LOGO_URL',
+      environmentBlock,
+      productEnvironmentProfile.emailBrand.logoUrl,
+      'Email brand logo URL must match the Product Environment public logo asset URL.',
+    ),
     classifyExactWorkerConfigPresence(
       'RESEND_FROM_EMAIL',
       environmentBlock,

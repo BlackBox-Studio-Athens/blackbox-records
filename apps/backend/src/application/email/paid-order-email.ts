@@ -1,4 +1,4 @@
-import { createEmailIdempotencyKey, createProviderSafeTag } from './idempotency';
+import { createProviderSafeTag } from './idempotency';
 import {
   buildPaidOrderOpsEmail,
   buildPaidOrderShopperEmail,
@@ -12,7 +12,6 @@ import type {
   EmailRuntimeConfig,
   PaidOrderEmailInput,
   PaidOrderEmailNotificationResult,
-  PaidOrderSkippedEmailResult,
 } from './types';
 
 export type EmailOutcomeLogger = Pick<Console, 'info' | 'warn'>;
@@ -32,6 +31,10 @@ export async function sendPaidOrderEmailNotifications(input: {
 
   const ops = await sendTransactionalEmail(input.provider, input.config, {
     content: buildPaidOrderOpsEmail({
+      brand: {
+        homeUrl: input.config.emailBrandHomeUrl,
+        logoUrl: input.config.emailBrandLogoUrl,
+      },
       order: input.order,
       recipient: routeTransactionalEmailRecipient(input.config, input.config.opsToEmail),
       shopperNotification: toShopperNotificationStatus(shopper),
@@ -53,29 +56,21 @@ async function sendShopperEmail(input: {
   config: EmailRuntimeConfig;
   order: PaidOrderEmailInput;
   provider: EmailProviderGateway;
-}): Promise<EmailOperationResult | PaidOrderSkippedEmailResult> {
-  if (!input.order.customerEmail) {
-    return {
-      idempotencyKey: createEmailIdempotencyKey({
-        config: input.config,
-        entityId: input.order.checkoutSessionId,
-        purpose: PAID_ORDER_SHOPPER_PURPOSE,
-      }),
-      reason: 'missing_shopper_email',
-      status: 'skipped',
-    };
-  }
-
+}): Promise<EmailOperationResult> {
   return sendTransactionalEmail(input.provider, input.config, {
     content: buildPaidOrderShopperEmail({
+      brand: {
+        homeUrl: input.config.emailBrandHomeUrl,
+        logoUrl: input.config.emailBrandLogoUrl,
+      },
       order: input.order,
-      recipient: routeTransactionalEmailRecipient(input.config, input.order.customerEmail),
+      recipient: routeTransactionalEmailRecipient(input.config, input.order.shopperContact.email),
       replyToEmail: input.config.replyToEmail,
     }),
     idempotencyEntityId: input.order.checkoutSessionId,
     purpose: PAID_ORDER_SHOPPER_PURPOSE,
     tags: createPaidOrderTags(input.order, 'shopper'),
-    to: input.order.customerEmail,
+    to: input.order.shopperContact.email,
   });
 }
 
@@ -87,18 +82,10 @@ function createPaidOrderTags(order: PaidOrderEmailInput, audience: 'ops' | 'shop
   ];
 }
 
-function toShopperNotificationStatus(
-  result: EmailOperationResult | PaidOrderSkippedEmailResult,
-): ShopperNotificationStatus {
+function toShopperNotificationStatus(result: EmailOperationResult): ShopperNotificationStatus {
   if (result.status === 'sent') {
     return {
       status: 'sent',
-    };
-  }
-
-  if (result.status === 'skipped') {
-    return {
-      status: 'skipped',
     };
   }
 
@@ -112,19 +99,14 @@ function logPaidOrderEmailOutcome(
   logger: EmailOutcomeLogger,
   order: PaidOrderEmailInput,
   purpose: string,
-  result: EmailOperationResult | PaidOrderSkippedEmailResult,
+  result: EmailOperationResult,
 ): void {
   const outcome = {
     event: 'paid_order_email_outcome',
     idempotencyKey: result.idempotencyKey,
     orderReference: order.orderReference,
     purpose,
-    safeReason:
-      result.status === 'skipped'
-        ? result.reason
-        : result.status === 'failed'
-          ? (result.providerSafeReason ?? 'unknown')
-          : undefined,
+    safeReason: result.status === 'failed' ? (result.providerSafeReason ?? 'unknown') : undefined,
     status: result.status,
   };
 

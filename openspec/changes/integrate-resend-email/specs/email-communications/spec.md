@@ -52,12 +52,13 @@ The system SHALL send paid-order email notifications after the first verified pa
 - **THEN** the email module is triggered by the internal `CheckoutOrderPaid` application event
 - **AND** it is not triggered directly by Stripe event names or a `PaymentSucceededEvent`.
 
-#### Scenario: Shopper email is unavailable
+#### Scenario: Paid order email input requires fulfillment details
 
-- **GIVEN** a verified paid transition has no shopper email in the Stripe Checkout Session
-- **WHEN** paid-order email notifications are evaluated
-- **THEN** the Worker skips shopper confirmation
-- **AND** the ops notification identifies that shopper email was unavailable.
+- **GIVEN** a verified paid transition is evaluated for paid-order email
+- **WHEN** the Worker maps the paid order event to email input
+- **THEN** the paid order event already requires a shipping address, shopper email, and shopper phone
+- **AND** the email input type cannot represent a ready-to-ship paid order without those details
+- **AND** the implementation documents the Stripe Checkout configuration boundary that makes those details required before payment completion.
 
 #### Scenario: Shopper email send fails
 
@@ -105,6 +106,7 @@ The system SHALL provide rich, repo-owned paid-order email templates with explic
 - **WHEN** the email content is rendered
 - **THEN** it uses an email-safe BlackBox design frame with near-black background, hard-edged panel structure, off-white body text, muted metadata labels, and restrained commerce or warning accents
 - **AND** it uses live text for all transactional content, including order reference, item summary, payment state, fulfillment guidance, warnings, and support contact
+- **AND** optional product images may support item recognition but must never be the only source for item name, quantity, price, payment state, fulfillment guidance, warnings, or support contact
 - **AND** it avoids generic provider receipt styling, Shopify-style invoice layout, decorative hero cards, rounded ecommerce polish, marketing newsletter blocks, gradient text, glass effects, and raw dashboard/debug labels
 - **AND** it remains legible in dark-mode and light-mode email clients that alter colors.
 
@@ -115,9 +117,17 @@ The system SHALL provide rich, repo-owned paid-order email templates with explic
 - **THEN** it uses an environment-scoped public HTTPS logo image URL from Worker runtime config
 - **AND** the logo image has explicit width, height, and alt text
 - **AND** the logo links to the environment-scoped public site home URL
-- **AND** nearby live text still identifies `BlackBox Records` if remote images are blocked
+- **AND** the logo alt text and live-text email frame still identify `BlackBox Records` if remote images are blocked
 - **AND** the logo appears once as a header lockup rather than as a repeated decoration, watermark, tracking pixel, attachment, inline SVG, or base64 blob
 - **AND** blocked images do not hide order facts, payment state, support contact, warnings, or fulfillment instructions.
+
+#### Scenario: Product images render as optional context
+
+- **GIVEN** a paid-order email includes catalog-backed product image context for a line item
+- **WHEN** the email content is rendered
+- **THEN** the product image uses a public HTTPS URL, explicit width, explicit height, and useful alt text
+- **AND** the adjacent live text still shows item name, quantity, and any ops-only variant context
+- **AND** blocked product images do not hide order facts, payment state, support contact, warnings, fulfillment instructions, item name, quantity, or total paid.
 
 #### Scenario: Shopper confirmation content is built
 
@@ -126,24 +136,28 @@ The system SHALL provide rich, repo-owned paid-order email templates with explic
 - **THEN** it includes BlackBox-branded HTML and plain-text content
 - **AND** its visual design follows the BlackBox email art direction and logo lockup requirements
 - **AND** it includes a subject and preheader
-- **AND** it shows formatted order reference, line item summary, quantity, and total paid near the top
+- **AND** it shows a formatted order reference, line item summary with optional product image, quantity, and total paid near the top
+- **AND** the formatted order reference uses a stable `BBR-YYYY-MM-DD-<three custom dictionary words>` shape seeded from order identity rather than a raw order ID, checkout session ID, Stripe ID, or random value generated during template rendering
 - **AND** it presents the order summary as a compact editorial receipt rather than a tax invoice
 - **AND** it uses safe payment wording such as payment received without exposing card details, raw Stripe IDs, or provider payloads
 - **AND** it describes fulfillment expectations without promising tracking before tracking exists
 - **AND** it includes a reply-to support CTA using `support@blackboxrecordsathens.com`
-- **AND** it does not claim to be a tax invoice or VAT receipt
+- **AND** it states in a separate quiet note that the email confirms payment received and is not a tax invoice or VAT receipt
 - **AND** it does not include marketing blocks or newsletter upsell content.
 
-#### Scenario: Ops fulfillment content is built
+#### Scenario: Order to ship content is built
 
-- **GIVEN** an ops fulfillment email is prepared
+- **GIVEN** an ops order-to-ship email is prepared
 - **WHEN** the email content is rendered
 - **THEN** it includes BlackBox-branded HTML and plain-text content
 - **AND** its visual design follows the BlackBox email art direction and logo lockup requirements
 - **AND** it includes a subject and preheader
 - **AND** it prioritizes a top fulfillment action list over decorative content
-- **AND** it includes order reference, item, variant, quantity, payment state, shopper email, shipping/contact summary, and missing-data warnings
-- **AND** it keeps fulfillment warnings visually prominent without exposing raw provider payloads or turning the email into a debugging dashboard
+- **AND** it uses the human-readable label `Order to ship`
+- **AND** it includes order reference, item summary with optional product image, variant, quantity, and payment state
+- **AND** it structures fulfillment details into readable order, shopper, and shipping address sections instead of a single comma-separated shipping/contact line
+- **AND** the formatted order reference uses the same stable shopper-visible `BBR-YYYY-MM-DD-<three custom dictionary words>` value
+- **AND** it keeps shopper-send-failure warnings visually prominent without exposing raw provider payloads or turning the email into a debugging dashboard
 - **AND** it includes ops-safe fulfillment context without exposing raw Stripe, D1, webhook, or shipping provider payloads.
 
 #### Scenario: Paid order template previews are verified
@@ -151,7 +165,7 @@ The system SHALL provide rich, repo-owned paid-order email templates with explic
 - **GIVEN** paid-order email templates are implemented
 - **WHEN** template validation runs
 - **THEN** HTML and plain-text snapshots exist
-- **AND** previews cover logo-loaded and logo-blocked states, mobile-width rendering, dark-mode-safe colors, long item titles, long recipient names, long shipping/contact details, UAT sink notices, missing shopper email, and shopper send failure warnings
+- **AND** previews cover logo-loaded and logo-blocked states, optional product-image rendering, image-blocked-safe live text, mobile-width rendering, dark-mode-safe colors, long item titles, long recipient names, long shipping address details, UAT sink routing, and shopper send failure warnings
 - **AND** rendered preview HTML is checked visually enough to confirm the logo scale, header lockup, table widths, line wrapping, contrast, and warning hierarchy.
 
 ### Requirement: Newsletter registrations are Resend-backed
@@ -178,7 +192,7 @@ The system SHALL register newsletter subscribers through the Worker-owned Resend
 
 #### Scenario: UAT newsletter registration uses sink Contact
 
-- **GIVEN** the Worker runs in the sandbox runtime target for UAT
+- **GIVEN** the Worker runs with `PRODUCT_ENVIRONMENT=UAT`
 - **WHEN** a site visitor or shopper opts into newsletter registration
 - **THEN** the Worker creates or updates only the sink Contact at `blackboxrecordsathens+TESTING@gmail.com`
 - **AND** it preserves intended subscriber evidence safely
@@ -247,7 +261,9 @@ The system SHALL use explicit Worker runtime config names for Resend email and n
 
 - **GIVEN** the Worker prepares Resend runtime behavior
 - **WHEN** runtime config is read
-- **THEN** it reads `RESEND_API_KEY` as a Worker secret
+- **THEN** it reads canonical `PRODUCT_ENVIRONMENT` as `LOCAL`, `UAT`, or `PRD`
+- **AND** it derives email delivery policy and provider tags from `ProductEnvironmentProfile`
+- **AND** it reads `RESEND_API_KEY` as a Worker secret
 - **AND** it reads `RESEND_FROM_EMAIL=orders@blackboxrecordsathens.com`
 - **AND** it reads `RESEND_REPLY_TO_EMAIL=support@blackboxrecordsathens.com`
 - **AND** it reads `RESEND_OPS_TO_EMAIL=blackboxrecordsathens@gmail.com`
@@ -261,7 +277,7 @@ The system SHALL route Resend application emails according to the Worker Product
 
 #### Scenario: UAT sends all emails to the sink recipient
 
-- **GIVEN** the Worker runs in the sandbox runtime target for UAT
+- **GIVEN** the Worker runs with `PRODUCT_ENVIRONMENT=UAT`
 - **AND** `RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL` is configured as `blackboxrecordsathens+TESTING@gmail.com`
 - **WHEN** paid-order shopper or paid-order ops emails are sent
 - **THEN** the Worker sends each email to `blackboxrecordsathens+TESTING@gmail.com`
@@ -269,7 +285,7 @@ The system SHALL route Resend application emails according to the Worker Product
 
 #### Scenario: PRD sends to real operational recipients
 
-- **GIVEN** the Worker runs in the production runtime target for PRD
+- **GIVEN** the Worker runs with `PRODUCT_ENVIRONMENT=PRD`
 - **WHEN** a paid order sends email
 - **THEN** shopper confirmation goes to the Stripe Checkout buyer email
 - **AND** ops notification goes to `RESEND_OPS_TO_EMAIL`

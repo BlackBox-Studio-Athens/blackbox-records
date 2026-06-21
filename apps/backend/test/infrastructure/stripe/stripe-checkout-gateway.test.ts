@@ -28,7 +28,7 @@ describe('createStripeClientOptions', () => {
 });
 
 describe('StripeCheckoutGateway', () => {
-  it('creates hosted Checkout Sessions with fixed quantities', async () => {
+  it('creates hosted Checkout Sessions with fixed quantities and required shipping/contact collection', async () => {
     const create = vi.fn(async () => ({
       id: 'cs_test_123',
       url: 'https://checkout.stripe.test/session/cs_test_123',

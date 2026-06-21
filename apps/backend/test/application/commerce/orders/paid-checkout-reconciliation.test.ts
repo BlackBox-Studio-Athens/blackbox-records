@@ -219,9 +219,16 @@ describe('paid checkout reconciliation', () => {
         amountTotalMinor: 2500,
         checkoutSessionId: 'cs_test_123',
         currencyCode: 'EUR',
-        customerEmail: 'buyer@example.com',
-        orderReference: 'BBR-ORDER1',
+        orderReference: expect.stringMatching(/^BBR-2026-04-25-[A-Z]+-[A-Z]+-[A-Z]+$/),
         paymentStatus: 'paid',
+        shippingAddress: expect.objectContaining({
+          country: 'GR',
+          line1: 'Long Street 1',
+        }),
+        shopperContact: {
+          email: 'buyer@example.com',
+          phone: '+302100000000',
+        },
       }),
       kind: 'applied',
       order: expect.objectContaining({
@@ -368,8 +375,8 @@ describe('paid checkout reconciliation', () => {
   });
 });
 
-function paidReconciliation() {
-  return reconcileCheckoutSession({
+function paidReconciliation(overrides: Partial<Parameters<typeof reconcileCheckoutSession>[0]> = {}) {
+  const session: Parameters<typeof reconcileCheckoutSession>[0] = {
     amountTotalMinor: 2500,
     checkoutSessionId: checkoutSessionId('cs_test_123'),
     currencyCode: 'EUR',
@@ -390,5 +397,14 @@ function paidReconciliation() {
     },
     status: 'complete',
     stripePaymentIntentId: paymentIntentId('pi_test_123'),
+  };
+
+  return reconcileCheckoutSession({
+    ...session,
+    ...overrides,
+    customer: {
+      ...session.customer,
+      ...overrides.customer,
+    },
   });
 }

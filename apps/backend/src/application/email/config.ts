@@ -5,6 +5,11 @@ import { EmailConfigurationError } from './errors';
 
 const requiredEmailAddress = z.string().trim().email();
 const requiredNonEmptyString = z.string().trim().min(1);
+const requiredHttpsUrl = z
+  .string()
+  .trim()
+  .url()
+  .refine((value) => new URL(value).protocol === 'https:');
 const optionalNonEmptyString = z
   .string()
   .trim()
@@ -12,6 +17,8 @@ const optionalNonEmptyString = z
   .transform((value) => (value ? value : null));
 
 const emailRuntimeBindingInputSchema = z.object({
+  EMAIL_BRAND_HOME_URL: z.string().optional(),
+  EMAIL_BRAND_LOGO_URL: z.string().optional(),
   PRODUCT_ENVIRONMENT: productEnvironmentSchema,
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().optional(),
@@ -24,6 +31,8 @@ const emailRuntimeBindingInputSchema = z.object({
 
 const emailRuntimeBindingSchema = emailRuntimeBindingInputSchema.pipe(
   z.object({
+    EMAIL_BRAND_HOME_URL: requiredHttpsUrl,
+    EMAIL_BRAND_LOGO_URL: requiredHttpsUrl,
     PRODUCT_ENVIRONMENT: productEnvironmentSchema,
     RESEND_API_KEY: requiredNonEmptyString.refine((value) => value.startsWith('re_'), {
       message: 'Resend API key must use the re_ prefix.',
@@ -42,6 +51,8 @@ const emailRuntimeConfigSchema = emailRuntimeBindingSchema.transform((bindings) 
 
   return {
     apiKey: bindings.RESEND_API_KEY,
+    emailBrandHomeUrl: bindings.EMAIL_BRAND_HOME_URL,
+    emailBrandLogoUrl: bindings.EMAIL_BRAND_LOGO_URL,
     fromEmail: bindings.RESEND_FROM_EMAIL,
     newsletterSegmentId: bindings.RESEND_NEWSLETTER_SEGMENT_ID,
     newsletterTopicId: bindings.RESEND_NEWSLETTER_TOPIC_ID,
@@ -69,6 +80,13 @@ export function readEmailRuntimeConfig(bindings: EmailRuntimeBindingValues): Ema
     if (parsed.data.uatRecipientOverrideEmail !== 'blackboxrecordsathens+TESTING@gmail.com') {
       throw new EmailConfigurationError('UAT email recipient sink is not configured.');
     }
+  }
+
+  if (
+    parsed.data.emailBrandHomeUrl !== parsed.data.productEnvironmentProfile.emailBrand.homeUrl ||
+    parsed.data.emailBrandLogoUrl !== parsed.data.productEnvironmentProfile.emailBrand.logoUrl
+  ) {
+    throw new EmailConfigurationError('Email brand config does not match the Product Environment profile.');
   }
 
   return parsed.data;
