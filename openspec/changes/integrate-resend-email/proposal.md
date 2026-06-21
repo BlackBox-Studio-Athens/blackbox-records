@@ -8,6 +8,7 @@ Integrating Resend gives the Worker a single email provider boundary for paid-or
 
 - Add a Worker-owned email communications capability backed by the official Resend SDK.
 - Send rich, BlackBox-designed, repo-owned HTML/text shopper confirmation and ops fulfillment emails only after the first verified Stripe paid transition.
+- Extend the email design plan with explicit BlackBox art direction, logo lockup usage, email-safe visual tokens, and preview QA so transactional email feels like the site rather than a generic provider receipt.
 - Add Resend-backed newsletter registration for the existing site signup forms and shopper opt-in during purchase.
 - Document manual Resend and Cloudflare provider readiness checkpoints without adding a repo-owned verifier script or committed evidence artifact.
 - Extend environment, order, and module-boundary specs so Resend secrets, sender config, runtime behavior, and local validation remain explicit.

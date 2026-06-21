@@ -39,14 +39,14 @@ The system MUST extend catalog verification/apply tooling so production mutation
 #### Scenario: Dry-run executes for production
 
 - **GIVEN** production credentials and D1 access are configured
-- **WHEN** `pnpm stripe:catalog:verify --env production` runs
+- **WHEN** `pnpm stripe:catalog:verify --env prd` runs
 - **THEN** it reports Product Projection drift, Desired Price versus active Stripe Price state, D1 readiness, Store Offer snapshot state, webhook readiness, and planned actions
 - **AND** it does not mutate Stripe, D1, repo files, or deployment state.
 
 #### Scenario: Apply executes for production
 
 - **GIVEN** production dry-run has a valid action plan from Desired Catalog State
-- **WHEN** `pnpm stripe:catalog:verify --env production --apply` runs inside the promotion workflow
+- **WHEN** `pnpm stripe:catalog:verify --env prd --apply` runs inside the promotion workflow
 - **THEN** it mutates only app-owned production Stripe/D1 state needed to align the plan
 - **AND** it prints a redacted post-apply summary suitable for Promotion Evidence.
 

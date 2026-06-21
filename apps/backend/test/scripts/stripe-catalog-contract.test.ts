@@ -19,7 +19,7 @@ import {
 describe('stripe catalog contract projection', () => {
   it('derives Product Projection contracts for all current Store Items without Astro runtime imports', async () => {
     const contracts = await loadStripeCatalogStoreItemContracts({
-      productEnvironment: 'prd',
+      productEnvironment: 'PRD',
     });
     const contractsBySlug = new Map(contracts.map((contract) => [contract.storeItemSlug, contract]));
 
@@ -124,7 +124,7 @@ describe('stripe catalog contract projection', () => {
 
   it('generates Desired Catalog State from the same content contract without production targets by default', async () => {
     const contracts = await loadStripeCatalogStoreItemContracts({
-      productEnvironment: 'prd',
+      productEnvironment: 'PRD',
     });
     const disintegration = contracts.find((contract) => contract.storeItemSlug === 'disintegration-black-vinyl-lp');
     const source = createDesiredCatalogStateSource(contracts);
@@ -171,7 +171,7 @@ describe('stripe catalog contract projection', () => {
   });
 
   it('keeps the Worker-safe Product Projection manifest in sync with generated catalog contracts', async () => {
-    const contracts = await loadStripeCatalogStoreItemContracts({ productEnvironment: 'uat' });
+    const contracts = await loadStripeCatalogStoreItemContracts({ productEnvironment: 'UAT' });
 
     expect(currentCatalogProductProjectionEntries).toEqual(
       contracts.map((contract) => ({
@@ -243,7 +243,7 @@ describe('stripe catalog contract projection', () => {
   });
 
   it('generates sandbox UAT D1 readiness rows with only afterglow as low stock', async () => {
-    const contracts = await loadStripeCatalogStoreItemContracts({ productEnvironment: 'uat' });
+    const contracts = await loadStripeCatalogStoreItemContracts({ productEnvironment: 'UAT' });
     const stockBySlug = new Map(
       contracts.map((contract) => [contract.storeItemSlug, createSandboxUatCatalogStock(contract)]),
     );
@@ -277,7 +277,7 @@ describe('stripe catalog contract projection', () => {
   });
 
   it('generates production D1 readiness without sandbox stock defaults or stock overwrites', async () => {
-    const contracts = await loadStripeCatalogStoreItemContracts({ productEnvironment: 'prd' });
+    const contracts = await loadStripeCatalogStoreItemContracts({ productEnvironment: 'PRD' });
     const sql = createProductionCommerceReadinessSql(contracts);
 
     expect(sql).toContain('Production catalog readiness seed generated from Desired Catalog State.');

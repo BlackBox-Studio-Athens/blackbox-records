@@ -13,7 +13,7 @@
     },
   ],
   "vars": {
-    "APP_ENV": "local",
+    "PRODUCT_ENVIRONMENT": "LOCAL",
     "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321",
     "RESEND_API_KEY": "re_mock_blackbox_local",
     "RESEND_FROM_EMAIL": "orders@blackboxrecordsathens.com",
@@ -33,7 +33,7 @@
         },
       ],
       "vars": {
-        "APP_ENV": "local",
+        "PRODUCT_ENVIRONMENT": "LOCAL",
         "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321",
         "RESEND_API_KEY": "re_mock_blackbox_local",
         "RESEND_FROM_EMAIL": "orders@blackboxrecordsathens.com",
@@ -57,7 +57,7 @@
         },
       ],
       "vars": {
-        "APP_ENV": "local",
+        "PRODUCT_ENVIRONMENT": "LOCAL",
         "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321",
         "RESEND_API_KEY": "re_mock_blackbox_local",
         "RESEND_FROM_EMAIL": "orders@blackboxrecordsathens.com",
@@ -85,7 +85,7 @@
         },
       ],
       "vars": {
-        "APP_ENV": "sandbox",
+        "PRODUCT_ENVIRONMENT": "UAT",
         "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321,https://blackbox-studio-athens.github.io/blackbox-records",
         "NATIVE_CHECKOUT_ENABLED": "true",
         "RESEND_FROM_EMAIL": "orders@blackboxrecordsathens.com",
@@ -105,7 +105,7 @@
         },
       ],
       "vars": {
-        "APP_ENV": "production",
+        "PRODUCT_ENVIRONMENT": "PRD",
         "CHECKOUT_RETURN_ORIGINS": "https://blackbox-records-web.pages.dev",
         "RESEND_FROM_EMAIL": "orders@blackboxrecordsathens.com",
         "RESEND_OPS_TO_EMAIL": "blackboxrecordsathens@gmail.com",

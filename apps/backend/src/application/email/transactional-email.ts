@@ -29,7 +29,7 @@ export async function sendTransactionalEmail(
       createProviderSafeTag({ name: 'purpose', value: command.purpose }),
       createProviderSafeTag({
         name: 'environment',
-        value: config.productEnvironmentProfile.emailProviderEnvironmentTag,
+        value: config.productEnvironmentProfile.emailProviderTag,
       }),
       createProviderSafeTag({ name: 'sink_routed', value: routedRecipient.isSinkRouted ? 'true' : 'false' }),
       ...(command.tags ?? []).map(createProviderSafeTag),

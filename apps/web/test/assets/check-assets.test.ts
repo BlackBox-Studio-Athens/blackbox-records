@@ -216,7 +216,7 @@ describe('asset QA rule engine', () => {
   });
 
   it('flags provider product image urls that are not absolute and environment scoped', () => {
-    const diagnostics = evaluateProviderProductImageUrls('uat', [
+    const diagnostics = evaluateProviderProductImageUrls('UAT', [
       {
         productProjection: {
           description: 'Example',
@@ -242,13 +242,13 @@ describe('asset QA rule engine', () => {
     expect(diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          assetPath: 'catalog:uat:example-product',
+          assetPath: 'catalog:UAT:example-product',
           message: 'Provider product image URL must be absolute.',
           ruleId: 'provider-url-readiness',
           severity: 'error',
         }),
         expect.objectContaining({
-          assetPath: 'catalog:uat:example-product-wrong-base',
+          assetPath: 'catalog:UAT:example-product-wrong-base',
           message: 'Provider product image URL must use the UAT asset base.',
           ruleId: 'provider-url-readiness',
           severity: 'error',

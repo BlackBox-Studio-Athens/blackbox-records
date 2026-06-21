@@ -43,7 +43,7 @@ Before accepting UAT webhook readiness, run:
 
 ```sh
 pnpm stripe:webhooks:verify --env sandbox
-pnpm stripe:catalog:verify --env sandbox
+pnpm stripe:catalog:verify --env uat
 ```
 
 If the endpoint is newly created, recreated, or its signing secret is rotated, update the UAT Worker from `apps/backend`:
@@ -54,7 +54,7 @@ pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env sandbox
 
 Do not paste the signing secret into docs, chat, screenshots, evidence files, Astro public env vars, or committed files. For an existing endpoint, reveal/copy the signing secret from Stripe Dashboard/Workbench and put it directly into Wrangler. Stripe endpoint list/retrieve APIs do not return an existing endpoint secret, so `pnpm stripe:webhooks:verify --env sandbox` separates endpoint configuration proof from signing-secret match proof.
 
-Catalog correctness is layered: persistent webhooks provide near-real-time sync, Store Offer reads reconcile stale snapshots, checkout start revalidates the active Stripe Price, scheduled UAT catalog verification runs every six hours, and `pnpm stripe:catalog:verify --env sandbox` remains the Worker-target command for current UAT catalog alignment.
+Catalog correctness is layered: persistent webhooks provide near-real-time sync, Store Offer reads reconcile stale snapshots, checkout start revalidates the active Stripe Price, scheduled UAT catalog verification runs every six hours, and `pnpm stripe:catalog:verify --env uat` remains the Product Environment command for current UAT catalog alignment.
 
 UAT is also the first leg of the generated catalog artifact pipeline described in [`docs/catalog-promotion.md`](catalog-promotion.md). Normal content publication should use the generated artifact commit and promotion workflow instead of treating sandbox apply as a detached manual checklist.
 
@@ -63,7 +63,7 @@ Catalog Field Ownership keeps UAT alignment explicit:
 - Product Projection is repo-owned and may update Stripe Product name, description, image URLs, and metadata only through a reviewed UAT apply. UAT Product image URLs use the GitHub Pages UAT asset base.
 - Price Authority is Stripe-owned. Change prices by creating a replacement Stripe Price, moving lookup key/metadata to that Price, archiving the stale Price, and rerunning catalog verification.
 - Stripe Dashboard edits to Product presentation are drift unless repo content/projection is updated first.
-- `pnpm stripe:catalog:verify --env sandbox --apply` is UAT-only and should follow a reviewed dry-run plan.
+- `pnpm stripe:catalog:verify --env uat --apply` is UAT-only and should follow a reviewed dry-run plan.
 - Full-catalog sandbox reset is a deactivation flow, not hard deletion. It only targets Stripe test-mode objects identified by BlackBox sandbox metadata, lookup keys, or documented catalog-derived legacy sandbox names.
 
 ## Full Catalog UAT Alignment
@@ -94,13 +94,13 @@ Operator sequence for a full UAT catalog reset:
 git status --short
 git push origin main
 pnpm stripe:webhooks:verify --env sandbox
-pnpm stripe:catalog:verify --env sandbox
+pnpm stripe:catalog:verify --env uat
 pnpm stripe:catalog:reset-sandbox --env sandbox --dry-run
 pnpm stripe:catalog:reset-sandbox --env sandbox --confirm
-pnpm --filter @blackbox/backend d1:seed:sandbox:uat-catalog
-pnpm stripe:catalog:verify --env sandbox --apply
-pnpm stripe:catalog:verify --env sandbox
-pnpm deploy:backend:sandbox
+pnpm --filter @blackbox/backend d1:seed:uat:catalog
+pnpm stripe:catalog:verify --env uat --apply
+pnpm stripe:catalog:verify --env uat
+pnpm deploy:backend:uat
 ```
 
 Provider execution notes:
@@ -109,7 +109,7 @@ Provider execution notes:
 - Start from a clean final tree that already passed `pnpm test:unit`, `pnpm check`, `pnpm build`, and OpenSpec validation. `git status --short` should print nothing before provider mutation begins.
 - Run the provider sequence from the final pushed commit. If reset/apply/smoke work requires a code or script fix, rerun `pnpm test:unit`, `pnpm check`, and `pnpm build`, push the fix, redeploy the sandbox Worker, and rerun catalog verification.
 - Reset cleanup must cover current ownership metadata and documented legacy sandbox names such as `BlackBox UAT - ...`. Keep that fallback until there are no legacy sandbox catalog objects left.
-- `pnpm stripe:catalog:verify --env sandbox` and `pnpm stripe:catalog:verify --env sandbox --apply` are intentionally throttled. If Stripe returns a rate-limit error after reset or apply work, wait for a short cooldown and rerun verification instead of trusting Dashboard row counts.
+- `pnpm stripe:catalog:verify --env uat` and `pnpm stripe:catalog:verify --env uat --apply` are intentionally throttled. If Stripe returns a rate-limit error after reset or apply work, wait for a short cooldown and rerun verification instead of trusting Dashboard row counts.
 - Stripe Dashboard product counts are diagnostic only. Acceptance proof is the CLI report showing every expected variant checked with zero Product Projection, Price Authority, D1 readiness, and Store Offer snapshot issues, plus UAT smoke evidence.
 - `pnpm stripe:webhooks:verify --env sandbox` proves endpoint shape, mode, status, and event coverage. Existing endpoint signing-secret match is proven by `happy_path_paid` reaching a paid Worker order, not by Stripe endpoint list/retrieve APIs.
 - Keep `afterglow-tape` reserved for low-stock behavior. Generic happy-path smoke should use a high-stock item so repeated proof runs do not consume the low-stock test case.

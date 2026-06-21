@@ -46,26 +46,26 @@ describe('Stripe promotion smoke runner', () => {
         '.codex-artifacts/catalog-promotion',
       ]),
     ).toMatchObject({
-      environment: 'production',
+      environment: 'PRD',
       evidenceDir: '.codex-artifacts/catalog-promotion',
       scenario: 'all',
     });
 
     expect(parsePromotionSmokeArgs(['--env', 'production'])).toMatchObject({
       evidenceDir: path.join('.codex-artifacts', 'smoke', 'prd', 'stripe-promotion'),
-      environment: 'production',
+      environment: 'PRD',
       scenario: 'checkout_surface',
     });
   });
 
   it('falls back to the first published entry for the target environment', () => {
-    expect(selectPromotionSmokeEntry([productionEntry], 'production')).toEqual(productionEntry);
+    expect(selectPromotionSmokeEntry([productionEntry], 'PRD')).toEqual(productionEntry);
   });
 
   it('reports production paid smoke as not_configured when no live paid policy exists', () => {
     const evidence = createPaidSmokePolicyEvidence(
       {
-        environment: 'production',
+        environment: 'PRD',
         evidenceDir: '.codex-artifacts/catalog-promotion',
         scenario: 'paid',
         siteUrl: 'https://blackbox-records-web.pages.dev',

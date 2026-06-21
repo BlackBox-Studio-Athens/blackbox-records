@@ -7,10 +7,11 @@ import type {
   StripeCatalogExpectedPrice,
   StripeCatalogProductProjection,
 } from '../apps/backend/src/application/commerce/catalog-sync';
+import { parseProductEnvironmentCliTarget, type ProductEnvironment } from '../apps/backend/src/env';
 import { createSlugSuggestion } from '../apps/web/src/lib/slugs';
 
 type StoreItemSourceKind = 'distro' | 'release';
-export type CatalogProductEnvironment = 'prd' | 'uat';
+export type CatalogProductEnvironment = Extract<ProductEnvironment, 'UAT' | 'PRD'>;
 
 export type StripeCatalogAlignmentStatus = 'checkout_eligible' | 'future_buyable' | 'unavailable';
 
@@ -509,7 +510,7 @@ export function resolveCatalogAssetTarget(options: LoadStripeCatalogContractsOpt
   const productEnvironment =
     options.productEnvironment ?? parseCatalogProductEnvironment(process.env.CATALOG_PRODUCT_ENVIRONMENT);
 
-  if (productEnvironment === 'prd') {
+  if (productEnvironment === 'PRD') {
     return {
       basePath: process.env.PRD_CATALOG_ASSET_BASE_PATH ?? process.env.ASTRO_BASE_PATH ?? prdBasePath,
       siteUrl: process.env.PRD_CATALOG_ASSET_SITE_URL ?? process.env.ASTRO_SITE_URL ?? prdSiteUrl,
@@ -523,7 +524,13 @@ export function resolveCatalogAssetTarget(options: LoadStripeCatalogContractsOpt
 }
 
 function parseCatalogProductEnvironment(value: string | undefined): CatalogProductEnvironment {
-  return value?.trim().toLowerCase() === 'prd' ? 'prd' : 'uat';
+  if (!value?.trim()) {
+    return 'UAT';
+  }
+
+  const productEnvironment = parseProductEnvironmentCliTarget(value);
+
+  return productEnvironment === 'PRD' ? 'PRD' : 'UAT';
 }
 
 function normalizeBasePath(value: string): string {

@@ -6,7 +6,7 @@ BlackBox Records has the pieces needed for automated catalog publication, but th
 - `scripts/stripe-catalog-contract.ts` derives Product Projection data and Desired Price state from Astro content.
 - `pnpm stripe:catalog:artifacts:generate` writes committed backend catalog artifacts and sandbox UAT seed SQL.
 - `pnpm check` fails when those generated artifacts drift from current content.
-- `pnpm stripe:catalog:verify --env sandbox --apply` can create or update sandbox Stripe Products/Prices and sync sandbox D1 mappings/snapshots.
+- `pnpm stripe:catalog:verify --env uat --apply` can create or update sandbox Stripe Products/Prices and sync sandbox D1 mappings/snapshots.
 - Production catalog mutation is currently blocked by script policy and deferred to go-live readiness.
 
 The target model now keeps Decap editorial-only. Generated catalog artifacts derive from current Astro Store Item content, UAT uses sandbox provider apply, and PRD provider mutation remains disabled until the explicit PRD-open gate defines live provider policy.

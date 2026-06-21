@@ -2,11 +2,7 @@ import type { Client as OpenFeatureClient } from '@openfeature/server-sdk';
 import type { FlagshipBinding } from '@cloudflare/flagship/server';
 
 import type { FeatureFlagReader } from '../../application/commerce/checkout/spi';
-import {
-  productEnvironmentProfileFromWorkerRuntimeTarget,
-  type AppBindings,
-  type ProductEnvironmentProfile,
-} from '../../env';
+import { productEnvironmentProfileFromBindings, type AppBindings, type ProductEnvironmentProfile } from '../../env';
 
 export const NATIVE_CHECKOUT_ENABLED_FLAG = 'native_checkout_enabled';
 
@@ -36,7 +32,7 @@ export class CloudflareFeatureFlagReader implements FeatureFlagReader {
         capability: 'native_checkout',
         productEnvironment: this.productEnvironmentProfile.productEnvironment,
         targetingKey: `blackbox-records-${this.productEnvironmentProfile.productEnvironment}`,
-        workerRuntimeTarget: this.productEnvironmentProfile.workerRuntimeTarget,
+        workerDeploymentTarget: this.productEnvironmentProfile.workerDeploymentTarget,
       });
     } catch {
       return defaultValue;
@@ -45,10 +41,10 @@ export class CloudflareFeatureFlagReader implements FeatureFlagReader {
 }
 
 export function createFeatureFlagReader(
-  bindings: Pick<AppBindings, 'APP_ENV' | 'FLAGS' | 'NATIVE_CHECKOUT_ENABLED'>,
+  bindings: Pick<AppBindings, 'PRODUCT_ENVIRONMENT' | 'FLAGS' | 'NATIVE_CHECKOUT_ENABLED'>,
 ): FeatureFlagReader {
   return new CloudflareFeatureFlagReader(
-    productEnvironmentProfileFromWorkerRuntimeTarget(bindings.APP_ENV),
+    productEnvironmentProfileFromBindings(bindings),
     bindings.FLAGS,
     bindings.NATIVE_CHECKOUT_ENABLED,
   );

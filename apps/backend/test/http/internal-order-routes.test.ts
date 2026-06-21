@@ -69,7 +69,7 @@ describe('internal order routes', () => {
         },
       },
       {
-        APP_ENV: 'local',
+        PRODUCT_ENVIRONMENT: 'LOCAL',
         COMMERCE_DB: {} as D1Database,
       },
     );
@@ -128,7 +128,7 @@ describe('internal order routes', () => {
         },
       },
       {
-        APP_ENV: 'local',
+        PRODUCT_ENVIRONMENT: 'LOCAL',
         COMMERCE_DB: {} as D1Database,
       },
     );
@@ -164,7 +164,7 @@ describe('internal order routes', () => {
         },
       },
       {
-        APP_ENV: 'local',
+        PRODUCT_ENVIRONMENT: 'LOCAL',
         COMMERCE_DB: {} as D1Database,
       },
     );

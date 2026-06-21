@@ -534,7 +534,7 @@ export function evaluateProviderProductImageUrls(
             severity: 'error',
             ruleId: 'provider-url-readiness',
             assetPath,
-            message: `Provider product image URL must use the ${productEnvironment.toUpperCase()} asset base.`,
+            message: `Provider product image URL must use the ${productEnvironment} asset base.`,
             expected: expectedBaseUrl,
             actual: imageUrl,
           }),
@@ -551,16 +551,16 @@ export async function runAssetCheck(root = webRoot): Promise<AssetCheckResult> {
   const { assets: contentAssets, diagnostics: contentDiagnostics, skipped } = discoverContentAssets(root);
   const projectRoot = resolveProjectRoot(root);
   const [uatContracts, prdContracts] = await Promise.all([
-    loadStripeCatalogStoreItemContracts({ productEnvironment: 'uat', projectRoot }),
-    loadStripeCatalogStoreItemContracts({ productEnvironment: 'prd', projectRoot }),
+    loadStripeCatalogStoreItemContracts({ productEnvironment: 'UAT', projectRoot }),
+    loadStripeCatalogStoreItemContracts({ productEnvironment: 'PRD', projectRoot }),
   ]);
   const assets = [...publicAssets, ...contentAssets].sort((left, right) =>
     normalizePath(left.path).localeCompare(normalizePath(right.path)),
   );
   const diagnostics: AssetDiagnostic[] = [
     ...contentDiagnostics,
-    ...evaluateProviderProductImageUrls('uat', uatContracts),
-    ...evaluateProviderProductImageUrls('prd', prdContracts),
+    ...evaluateProviderProductImageUrls('UAT', uatContracts),
+    ...evaluateProviderProductImageUrls('PRD', prdContracts),
   ];
 
   for (const asset of assets) {

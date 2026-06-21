@@ -21,7 +21,7 @@ export default defineConfig({
       main: './src/index.ts',
       miniflare: {
         bindings: {
-          APP_ENV: 'local',
+          PRODUCT_ENVIRONMENT: 'LOCAL',
           CHECKOUT_RETURN_ORIGINS: 'http://127.0.0.1:4321,http://localhost:4321',
           STRIPE_API_BASE_URL: 'http://127.0.0.1:12110',
           STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: 'pmc_test_blackbox_workers_pool',

@@ -77,7 +77,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
         uatSandboxSmokeWorkflow.includes('concurrency:') &&
         uatSandboxSmokeWorkflow.includes('environment: catalog-promotion-uat') &&
         uatSandboxSmokeWorkflow.includes('github.event.workflow_run.head_sha') &&
-        uatSandboxSmokeWorkflow.includes('pnpm deploy:backend:sandbox') &&
+        uatSandboxSmokeWorkflow.includes('pnpm deploy:backend:uat') &&
         uatSandboxSmokeWorkflow.includes('pnpm smoke:stripe-sandbox -- \\') &&
         uatSandboxSmokeWorkflow.includes('pnpm smoke:resend-uat -- \\') &&
         uatSandboxSmokeWorkflow.includes('--site-url "${UAT_SITE_URL}"') &&
@@ -119,7 +119,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
       ok:
         catalogVerifyScript.includes('parseProductEnvironmentCliTarget') &&
         catalogVerifyScript.includes('productEnvironmentProfileFromWorkerRuntimeTarget') &&
-        catalogVerifyScript.includes("productEnvironmentProfile.productEnvironment === 'prd' ? 'prd' : 'uat'"),
+        catalogVerifyScript.includes("productEnvironmentProfile.productEnvironment === 'PRD' ? 'PRD' : 'UAT'"),
     },
     {
       detail: 'Raw platform/provider aliases stay out of product-policy modules outside approved boundaries.',
@@ -141,7 +141,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
 
 function findRawPlatformAliasPolicyLeaks(): string[] {
   const rawAliasBranchPattern =
-    /\b(?:appEnvironment|environment|APP_ENV|bindings\.APP_ENV)\s*(?:={2,3}|!={1,2})\s*['"`](?:sandbox|production|test|live)['"`]/;
+    /\b(?:appEnvironment|environment|PRODUCT_ENVIRONMENT|bindings\.PRODUCT_ENVIRONMENT)\s*(?:={2,3}|!={1,2})\s*['"`](?:sandbox|production|test|live)['"`]/;
 
   return productPolicyFiles.flatMap((relativePath) => {
     const text = read(relativePath);

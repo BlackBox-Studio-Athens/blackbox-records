@@ -38,5 +38,5 @@ The system MUST keep catalog correctness protected by multiple controls instead 
 #### Scenario: Webhook delivery is missed
 
 - **GIVEN** Stripe catalog state changes but no catalog webhook updates the sandbox Store Offer snapshot
-- **WHEN** scheduled catalog verification or `pnpm stripe:catalog:verify --env sandbox` runs
+- **WHEN** scheduled catalog verification or `pnpm stripe:catalog:verify --env uat` runs
 - **THEN** catalog drift is detected or reconciled according to the environment's apply policy.

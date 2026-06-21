@@ -2,28 +2,26 @@ import type { OpenAPIHono } from '@hono/zod-openapi';
 import type { FlagshipBinding } from '@cloudflare/flagship/server';
 import { z } from 'zod';
 
-export const productEnvironmentSchema = z.enum(['local', 'uat', 'prd']);
+export const productEnvironmentSchema = z.enum(['LOCAL', 'UAT', 'PRD']);
 export const workerRuntimeTargetSchema = z.enum(['local', 'sandbox', 'production']);
-export const providerModeSchema = z.enum(['mock', 'test', 'live']);
-export const emailRoutingModeSchema = z.enum(['direct', 'uat-sink']);
+export const stripeModeSchema = z.enum(['mock', 'test', 'live']);
+export const emailDeliveryPolicySchema = z.enum(['direct', 'uat-sink']);
 
 export type ProductEnvironment = z.infer<typeof productEnvironmentSchema>;
 export type WorkerRuntimeTarget = z.infer<typeof workerRuntimeTargetSchema>;
-export type AppEnvironment = WorkerRuntimeTarget;
-export type ProductEnvironmentLabel = 'Local' | 'UAT' | 'PRD';
+export type AppEnvironment = ProductEnvironment;
 
 export const productEnvironmentProfileSchema = z.object({
-  catalogVerification: z.object({
+  catalogVerificationPolicy: z.object({
     applyScheduledChanges: z.boolean(),
   }),
-  emailProviderEnvironmentTag: workerRuntimeTargetSchema,
-  emailRoutingMode: emailRoutingModeSchema,
-  label: z.enum(['Local', 'UAT', 'PRD']),
+  emailDeliveryPolicy: emailDeliveryPolicySchema,
+  emailProviderTag: workerRuntimeTargetSchema,
   nativeCheckoutEnabledByDefault: z.boolean(),
   productEnvironment: productEnvironmentSchema,
-  providerMode: providerModeSchema,
+  stripeMode: stripeModeSchema,
   requiresDeployedSecretsByDefault: z.boolean(),
-  workerRuntimeTarget: workerRuntimeTargetSchema,
+  workerDeploymentTarget: workerRuntimeTargetSchema,
 });
 
 export type ProductEnvironmentProfile = z.infer<typeof productEnvironmentProfileSchema>;
@@ -31,44 +29,41 @@ export type ProductEnvironmentProfile = z.infer<typeof productEnvironmentProfile
 const productEnvironmentProfileMapSchema = z.record(productEnvironmentSchema, productEnvironmentProfileSchema);
 
 export const productEnvironmentProfiles = productEnvironmentProfileMapSchema.parse({
-  local: {
-    catalogVerification: {
+  LOCAL: {
+    catalogVerificationPolicy: {
       applyScheduledChanges: true,
     },
-    emailProviderEnvironmentTag: 'local',
-    emailRoutingMode: 'direct',
-    label: 'Local',
+    emailDeliveryPolicy: 'direct',
+    emailProviderTag: 'local',
     nativeCheckoutEnabledByDefault: true,
-    productEnvironment: 'local',
-    providerMode: 'mock',
+    productEnvironment: 'LOCAL',
+    stripeMode: 'mock',
     requiresDeployedSecretsByDefault: false,
-    workerRuntimeTarget: 'local',
+    workerDeploymentTarget: 'local',
   },
-  uat: {
-    catalogVerification: {
+  UAT: {
+    catalogVerificationPolicy: {
       applyScheduledChanges: true,
     },
-    emailProviderEnvironmentTag: 'sandbox',
-    emailRoutingMode: 'uat-sink',
-    label: 'UAT',
+    emailDeliveryPolicy: 'uat-sink',
+    emailProviderTag: 'sandbox',
     nativeCheckoutEnabledByDefault: false,
-    productEnvironment: 'uat',
-    providerMode: 'test',
+    productEnvironment: 'UAT',
+    stripeMode: 'test',
     requiresDeployedSecretsByDefault: true,
-    workerRuntimeTarget: 'sandbox',
+    workerDeploymentTarget: 'sandbox',
   },
-  prd: {
-    catalogVerification: {
+  PRD: {
+    catalogVerificationPolicy: {
       applyScheduledChanges: false,
     },
-    emailProviderEnvironmentTag: 'production',
-    emailRoutingMode: 'direct',
-    label: 'PRD',
+    emailDeliveryPolicy: 'direct',
+    emailProviderTag: 'production',
     nativeCheckoutEnabledByDefault: false,
-    productEnvironment: 'prd',
-    providerMode: 'live',
+    productEnvironment: 'PRD',
+    stripeMode: 'live',
     requiresDeployedSecretsByDefault: false,
-    workerRuntimeTarget: 'production',
+    workerDeploymentTarget: 'production',
   },
 });
 
@@ -80,14 +75,14 @@ export function productEnvironmentFromWorkerRuntimeTarget(
   workerRuntimeTarget: WorkerRuntimeTarget,
 ): ProductEnvironment {
   if (workerRuntimeTarget === 'production') {
-    return 'prd';
+    return 'PRD';
   }
 
   if (workerRuntimeTarget === 'sandbox') {
-    return 'uat';
+    return 'UAT';
   }
 
-  return 'local';
+  return 'LOCAL';
 }
 
 export function productEnvironmentProfileFromWorkerRuntimeTarget(
@@ -97,23 +92,35 @@ export function productEnvironmentProfileFromWorkerRuntimeTarget(
 }
 
 export function workerRuntimeTargetForProductEnvironment(productEnvironment: ProductEnvironment): WorkerRuntimeTarget {
-  return getProductEnvironmentProfile(productEnvironment).workerRuntimeTarget;
+  return getProductEnvironmentProfile(productEnvironment).workerDeploymentTarget;
 }
 
 export function parseProductEnvironmentCliTarget(value: string | undefined): ProductEnvironment {
-  if (value === 'sandbox') {
-    return 'uat';
+  const normalized = value?.trim().toLowerCase();
+
+  if (normalized === 'sandbox') {
+    return 'UAT';
   }
 
-  if (value === 'production') {
-    return 'prd';
+  if (normalized === 'production') {
+    return 'PRD';
   }
 
-  return productEnvironmentSchema.parse(value);
+  return productEnvironmentSchema.parse(normalized?.toUpperCase());
+}
+
+export function formatProductEnvironmentLabel(productEnvironment: ProductEnvironment): string {
+  return productEnvironment === 'LOCAL' ? 'Local' : productEnvironment;
+}
+
+export function productEnvironmentProfileFromBindings(
+  bindings: Pick<AppBindings, 'PRODUCT_ENVIRONMENT'>,
+): ProductEnvironmentProfile {
+  return getProductEnvironmentProfile(productEnvironmentSchema.parse(bindings.PRODUCT_ENVIRONMENT));
 }
 
 export type AppBindings = {
-  APP_ENV: WorkerRuntimeTarget;
+  PRODUCT_ENVIRONMENT: ProductEnvironment;
   COMMERCE_DB: D1Database;
   CHECKOUT_RETURN_ORIGINS?: string;
   FLAGS?: FlagshipBinding;

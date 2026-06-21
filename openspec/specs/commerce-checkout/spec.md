@@ -60,6 +60,12 @@ The system SHALL expose checkout capability status without leaking provider inte
 
 The system MUST evaluate checkout readiness against the canonical Local, UAT, and PRD product environment model.
 
+#### Scenario: Checkout policy resolves Product Environment
+
+- **WHEN** the Worker evaluates checkout capability, checkout start, or provider mutation policy
+- **THEN** it resolves the Product Environment as `LOCAL`, `UAT`, or `PRD`
+- **AND** it derives Stripe mode, feature-gate defaults, and provider mutation policy from that Product Environment profile.
+
 #### Scenario: Local mock checkout starts
 
 - **GIVEN** Local runs in `mock` mode

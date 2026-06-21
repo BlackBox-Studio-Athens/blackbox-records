@@ -14,7 +14,7 @@ Stripe's current docs support both Dashboard/Workbench setup and API setup for w
 - Make persistent endpoint setup visible through a repo command that can run before smoke, in CI, or in launch readiness checks.
 - Verify sandbox Worker `STRIPE_WEBHOOK_SECRET` presence without printing the secret.
 - Prevent transient `stripe listen` secrets from being mistaken for persistent webhook configuration.
-- Preserve the layered catalog safety model: webhook near-real-time sync, Store Offer read reconciliation, checkout start revalidation, scheduled backstop, and `pnpm stripe:catalog:verify --env sandbox`.
+- Preserve the layered catalog safety model: webhook near-real-time sync, Store Offer read reconciliation, checkout start revalidation, scheduled backstop, and `pnpm stripe:catalog:verify --env uat`.
 
 **Non-Goals:**
 
@@ -81,7 +81,7 @@ The persistent webhook endpoint is near-real-time synchronization, not blind tru
 - Store Offer reads reconcile stale or missing snapshots before showing checkout readiness.
 - Checkout start revalidates the active Stripe Price before creating a Checkout Session.
 - Scheduled sandbox catalog verification remains enabled every six hours.
-- `pnpm stripe:catalog:verify --env sandbox` remains the operator proof for current catalog state.
+- `pnpm stripe:catalog:verify --env uat` remains the operator proof for current catalog state.
 
 The new `stripe:webhooks:verify` command proves the operational path that feeds webhook reconciliation; it does not replace catalog verification.
 
@@ -99,5 +99,5 @@ The new `stripe:webhooks:verify` command proves the operational path that feeds 
 2. Register or repair the sandbox Stripe endpoint through Dashboard/Workbench, then put the endpoint signing secret into the sandbox Worker as `STRIPE_WEBHOOK_SECRET`.
 3. Use the verifier to prove endpoint URL, status, required events, and Worker secret presence after manual setup.
 4. Change `scripts/start-stripe-sandbox-listener.ts` so it no longer overwrites the deployed sandbox Worker's primary webhook secret with a transient listener secret.
-5. Run `pnpm stripe:webhooks:verify --env sandbox`, `pnpm stripe:catalog:verify --env sandbox`, and a sandbox checkout smoke that relies on the persistent endpoint for webhook delivery.
+5. Run `pnpm stripe:webhooks:verify --env sandbox`, `pnpm stripe:catalog:verify --env uat`, and a sandbox checkout smoke that relies on the persistent endpoint for webhook delivery.
 6. Keep rollback simple: disable the new verifier gate if credentials are unavailable, but do not remove the persistent endpoint or scheduled backstop once configured.

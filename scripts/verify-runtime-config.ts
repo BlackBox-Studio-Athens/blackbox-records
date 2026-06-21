@@ -5,16 +5,15 @@ import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
 import {
+  formatProductEnvironmentLabel,
+  getProductEnvironmentProfile,
   parseProductEnvironmentCliTarget,
-  productEnvironmentProfileFromWorkerRuntimeTarget,
-  workerRuntimeTargetForProductEnvironment,
-  type ProductEnvironmentLabel,
+  type ProductEnvironment,
   type ProductEnvironmentProfile,
   type WorkerRuntimeTarget,
 } from '../apps/backend/src/env';
 
-export type ProductEnvironment = ProductEnvironmentLabel;
-export type RuntimeConfigEnvironment = WorkerRuntimeTarget;
+export type RuntimeConfigEnvironment = ProductEnvironment;
 export type RuntimeConfigStatus = 'missing' | 'not_applicable' | 'present' | 'unverified';
 
 export type RuntimeConfigCategory = {
@@ -46,6 +45,7 @@ export type RuntimeConfigVerificationResult = {
   issues: string[];
   productEnvironment: ProductEnvironment;
   requireLiveSecrets: boolean;
+  workerDeploymentTarget: WorkerRuntimeTarget;
 };
 
 const rootDir = process.cwd();
@@ -68,7 +68,9 @@ export function parseRuntimeConfigVerifyArgs(args: string[]): {
     }
 
     if (arg === '--help' || arg === '-h') {
-      console.log('Usage: pnpm runtime:config:verify --env local|uat|prd|sandbox|production [--require-live-secrets]');
+      console.log(
+        'Usage: pnpm runtime:config:verify --env local|uat|prd [--require-live-secrets] (legacy platform aliases accepted: sandbox, production)',
+      );
       process.exit(0);
     }
 
@@ -92,12 +94,14 @@ export function parseRuntimeConfigVerifyArgs(args: string[]): {
   }
 
   if (!environment) {
-    throw new Error('Runtime config verification requires --env local, uat, prd, sandbox, or production.');
+    throw new Error(
+      'Runtime config verification requires --env local, uat, or prd. Legacy platform aliases accepted: sandbox, production.',
+    );
   }
 
   return {
     environment,
-    productEnvironment: mapRuntimeEnvironmentToProductEnvironment(environment),
+    productEnvironment: environment,
     requireLiveSecrets,
   };
 }
@@ -108,8 +112,11 @@ export function verifyRuntimeConfig(input: {
   secretNames: readonly string[] | null;
   wranglerConfigText: string;
 }): RuntimeConfigVerificationResult {
-  const productEnvironmentProfile = productEnvironmentProfileFromWorkerRuntimeTarget(input.environment);
-  const environmentBlock = extractWranglerEnvironmentBlock(input.wranglerConfigText, input.environment);
+  const productEnvironmentProfile = getProductEnvironmentProfile(input.environment);
+  const environmentBlock = extractWranglerEnvironmentBlock(
+    input.wranglerConfigText,
+    productEnvironmentProfile.workerDeploymentTarget,
+  );
   const requireDeployedSecrets =
     productEnvironmentProfile.requiresDeployedSecretsByDefault || input.requireLiveSecrets === true;
   const categories: RuntimeConfigCategory[] = [
@@ -139,8 +146,9 @@ export function verifyRuntimeConfig(input: {
     categories,
     environment: input.environment,
     issues,
-    productEnvironment: mapRuntimeEnvironmentToProductEnvironment(input.environment),
+    productEnvironment: input.environment,
     requireLiveSecrets: requireDeployedSecrets,
+    workerDeploymentTarget: productEnvironmentProfile.workerDeploymentTarget,
   };
 }
 
@@ -148,7 +156,8 @@ export function formatRuntimeConfigVerificationReport(result: RuntimeConfigVerif
   const lines = [
     `Runtime config verification ${result.issues.length ? 'failed' : 'OK'}.`,
     `Product Environment: ${result.productEnvironment}`,
-    `Worker runtime target: ${result.environment}`,
+    `Product Environment label: ${formatProductEnvironmentLabel(result.productEnvironment)}`,
+    `Worker deployment target: ${result.workerDeploymentTarget}`,
     `Live secret requirement: ${result.requireLiveSecrets ? 'required' : 'not required for disabled readiness'}`,
     '',
     'Categories:',
@@ -293,7 +302,7 @@ function classifyResendUatRecipientOverride(
 ): RuntimeConfigCategory {
   const match = /"RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL"\s*:\s*"(?<email>[^"]*)"/.exec(environmentBlock);
 
-  if (productEnvironmentProfile.emailRoutingMode === 'uat-sink') {
+  if (productEnvironmentProfile.emailDeliveryPolicy === 'uat-sink') {
     const isSink = match?.groups?.email === 'blackboxrecordsathens+TESTING@gmail.com';
 
     return {
@@ -305,7 +314,7 @@ function classifyResendUatRecipientOverride(
     };
   }
 
-  if (productEnvironmentProfile.productEnvironment === 'prd' && match) {
+  if (productEnvironmentProfile.productEnvironment === 'PRD' && match) {
     return {
       detail: 'PRD must not honor the UAT sink recipient override.',
       name: 'RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL',
@@ -324,7 +333,7 @@ function classifyProductEnvironmentMapping(
   productEnvironmentProfile: ProductEnvironmentProfile,
 ): RuntimeConfigCategory {
   return {
-    detail: `${productEnvironmentProfile.label} maps to Worker runtime target ${productEnvironmentProfile.workerRuntimeTarget}.`,
+    detail: `${productEnvironmentProfile.productEnvironment} maps to Worker deployment target ${productEnvironmentProfile.workerDeploymentTarget}.`,
     name: 'PRODUCT_ENVIRONMENT_MAPPING',
     status: 'present',
   };
@@ -345,7 +354,7 @@ function classifyWorkerOriginScope(
       origin.includes('.blackbox-records-web.pages.dev') && origin !== 'https://blackbox-records-web.pages.dev',
   );
 
-  if (productEnvironmentProfile.productEnvironment === 'local') {
+  if (productEnvironmentProfile.productEnvironment === 'LOCAL') {
     return {
       detail: hasLocal && !hasUat && !hasPrd && !hasPreview ? undefined : 'Local mock origins must stay local-only.',
       name: 'WORKER_ORIGIN_SCOPE',
@@ -353,7 +362,7 @@ function classifyWorkerOriginScope(
     };
   }
 
-  if (productEnvironmentProfile.productEnvironment === 'uat') {
+  if (productEnvironmentProfile.productEnvironment === 'UAT') {
     return {
       detail:
         hasUat && hasLocal && !hasPrd && !hasPreview
@@ -375,7 +384,7 @@ function classifyWorkerOriginScope(
 }
 
 function classifyPrdOpenGate(productEnvironmentProfile: ProductEnvironmentProfile): RuntimeConfigCategory {
-  if (productEnvironmentProfile.productEnvironment !== 'prd') {
+  if (productEnvironmentProfile.productEnvironment !== 'PRD') {
     return {
       detail: 'PRD-open gate applies only to the PRD product environment.',
       name: 'PRD_OPEN_GATE',
@@ -415,7 +424,7 @@ function classifyProductionCronPresence(
   productEnvironmentProfile: ProductEnvironmentProfile,
   environmentBlock: string,
 ): RuntimeConfigCategory {
-  if (productEnvironmentProfile.productEnvironment !== 'prd') {
+  if (productEnvironmentProfile.productEnvironment !== 'PRD') {
     return {
       detail: 'Only production cron backstop is classified here.',
       name: 'PRODUCTION_CATALOG_CRON',
@@ -432,7 +441,7 @@ function classifyProductionCronPresence(
   };
 }
 
-function readWorkerSecretNames(environment: RuntimeConfigEnvironment): string[] | null {
+function readWorkerSecretNames(environment: WorkerRuntimeTarget): string[] | null {
   if (environment === 'local') {
     return null;
   }
@@ -451,7 +460,7 @@ function readWorkerSecretNames(environment: RuntimeConfigEnvironment): string[] 
   return parseWranglerSecretNames(result.stdout);
 }
 
-function extractWranglerEnvironmentBlock(configText: string, environment: RuntimeConfigEnvironment): string {
+function extractWranglerEnvironmentBlock(configText: string, environment: WorkerRuntimeTarget): string {
   if (environment === 'local') {
     const envMarker = '"env"';
     const envIndex = configText.indexOf(envMarker);
@@ -498,14 +507,12 @@ function createPnpmCommand(args: string[]): { args: string[]; command: string } 
 
 function parseEnvironment(value: string | undefined): RuntimeConfigEnvironment {
   try {
-    return workerRuntimeTargetForProductEnvironment(parseProductEnvironmentCliTarget(value));
+    return parseProductEnvironmentCliTarget(value);
   } catch {
-    throw new Error('Runtime config verification requires --env local, uat, prd, sandbox, or production.');
+    throw new Error(
+      'Runtime config verification requires --env local, uat, or prd. Legacy platform aliases accepted: sandbox, production.',
+    );
   }
-}
-
-function mapRuntimeEnvironmentToProductEnvironment(environment: RuntimeConfigEnvironment): ProductEnvironment {
-  return productEnvironmentProfileFromWorkerRuntimeTarget(environment).label;
 }
 
 function getCheckoutReturnOrigins(environmentBlock: string): string[] {
@@ -532,10 +539,11 @@ function escapeRegExp(value: string): string {
 
 async function main(): Promise<void> {
   const options = parseRuntimeConfigVerifyArgs(process.argv.slice(2));
+  const workerDeploymentTarget = getProductEnvironmentProfile(options.environment).workerDeploymentTarget;
   const result = verifyRuntimeConfig({
     environment: options.environment,
     requireLiveSecrets: options.requireLiveSecrets,
-    secretNames: readWorkerSecretNames(options.environment),
+    secretNames: readWorkerSecretNames(workerDeploymentTarget),
     wranglerConfigText: readFileSync(wranglerConfigPath, 'utf8'),
   });
   const report = formatRuntimeConfigVerificationReport(result);

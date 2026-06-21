@@ -46,7 +46,7 @@ vi.mock('../../src/interfaces/http/routes/public-newsletter-services', () => ({
 }));
 
 const testBindings = {
-  APP_ENV: 'local' as const,
+  PRODUCT_ENVIRONMENT: 'LOCAL' as const,
   CHECKOUT_RETURN_ORIGINS: 'https://blackbox.example,http://127.0.0.1:4321',
   COMMERCE_DB: {} as D1Database,
   STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: 'pmc_test_blackbox_checkout',

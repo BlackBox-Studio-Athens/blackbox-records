@@ -31,7 +31,7 @@ describe('UAT sandbox smoke workflow', () => {
     expect(workflow).toContain('github.event.workflow_run.head_sha || github.sha');
     expect(workflow).toContain('pnpm stripe:webhooks:verify --env sandbox');
     expect(workflow).toContain('pnpm stripe:payment-methods:verify');
-    expect(workflow).toContain('pnpm deploy:backend:sandbox');
+    expect(workflow).toContain('pnpm deploy:backend:uat');
     expect(workflow).toContain('pnpm smoke:stripe-sandbox -- \\');
     expect(workflow).toContain('--site-url "${UAT_SITE_URL}"');
     expect(workflow).toContain('--scenario all');
@@ -40,9 +40,9 @@ describe('UAT sandbox smoke workflow', () => {
     expect(workflow).toContain('uat-sandbox-smoke-${{ github.run_id }}-${{ github.run_attempt }}');
     expect(workflow).toContain('actions/upload-artifact@v5.0.0');
     expect(workflow.indexOf('pnpm stripe:webhooks:verify --env sandbox')).toBeLessThan(
-      workflow.indexOf('pnpm deploy:backend:sandbox'),
+      workflow.indexOf('pnpm deploy:backend:uat'),
     );
-    expect(workflow.indexOf('pnpm deploy:backend:sandbox')).toBeLessThan(
+    expect(workflow.indexOf('pnpm deploy:backend:uat')).toBeLessThan(
       workflow.indexOf('pnpm smoke:stripe-sandbox -- \\'),
     );
   });
@@ -57,6 +57,6 @@ describe('UAT sandbox smoke workflow', () => {
       'STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}',
     );
     expect(workflow).toContain('STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}');
-    expect(workflow).toContain('pnpm deploy:backend:sandbox');
+    expect(workflow).toContain('pnpm deploy:backend:uat');
   });
 });

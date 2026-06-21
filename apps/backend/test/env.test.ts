@@ -8,40 +8,38 @@ import {
   productEnvironmentProfileSchema,
   productEnvironmentProfiles,
   workerRuntimeTargetForProductEnvironment,
+  formatProductEnvironmentLabel,
 } from '../src/env';
 
 describe('Product Environment Profile', () => {
   it('maps each Product Environment to one Worker runtime target and policy profile', () => {
-    expect(Object.keys(productEnvironmentProfiles)).toEqual(['local', 'uat', 'prd']);
+    expect(Object.keys(productEnvironmentProfiles)).toEqual(['LOCAL', 'UAT', 'PRD']);
 
-    expect(getProductEnvironmentProfile('local')).toMatchObject({
-      emailRoutingMode: 'direct',
-      label: 'Local',
+    expect(getProductEnvironmentProfile('LOCAL')).toMatchObject({
+      emailDeliveryPolicy: 'direct',
       nativeCheckoutEnabledByDefault: true,
-      productEnvironment: 'local',
-      providerMode: 'mock',
-      workerRuntimeTarget: 'local',
+      productEnvironment: 'LOCAL',
+      stripeMode: 'mock',
+      workerDeploymentTarget: 'local',
     });
-    expect(getProductEnvironmentProfile('uat')).toMatchObject({
-      emailProviderEnvironmentTag: 'sandbox',
-      emailRoutingMode: 'uat-sink',
-      label: 'UAT',
+    expect(getProductEnvironmentProfile('UAT')).toMatchObject({
+      emailDeliveryPolicy: 'uat-sink',
+      emailProviderTag: 'sandbox',
       nativeCheckoutEnabledByDefault: false,
-      productEnvironment: 'uat',
-      providerMode: 'test',
+      productEnvironment: 'UAT',
+      stripeMode: 'test',
       requiresDeployedSecretsByDefault: true,
-      workerRuntimeTarget: 'sandbox',
+      workerDeploymentTarget: 'sandbox',
     });
-    expect(getProductEnvironmentProfile('prd')).toMatchObject({
-      catalogVerification: {
+    expect(getProductEnvironmentProfile('PRD')).toMatchObject({
+      catalogVerificationPolicy: {
         applyScheduledChanges: false,
       },
-      emailRoutingMode: 'direct',
-      label: 'PRD',
+      emailDeliveryPolicy: 'direct',
       nativeCheckoutEnabledByDefault: false,
-      productEnvironment: 'prd',
-      providerMode: 'live',
-      workerRuntimeTarget: 'production',
+      productEnvironment: 'PRD',
+      stripeMode: 'live',
+      workerDeploymentTarget: 'production',
     });
   });
 
@@ -52,18 +50,22 @@ describe('Product Environment Profile', () => {
   });
 
   it('maps Worker runtime targets at boundary adapters', () => {
-    expect(productEnvironmentFromWorkerRuntimeTarget('local')).toBe('local');
-    expect(productEnvironmentFromWorkerRuntimeTarget('sandbox')).toBe('uat');
-    expect(productEnvironmentFromWorkerRuntimeTarget('production')).toBe('prd');
-    expect(productEnvironmentProfileFromWorkerRuntimeTarget('sandbox')).toBe(productEnvironmentProfiles.uat);
+    expect(productEnvironmentFromWorkerRuntimeTarget('local')).toBe('LOCAL');
+    expect(productEnvironmentFromWorkerRuntimeTarget('sandbox')).toBe('UAT');
+    expect(productEnvironmentFromWorkerRuntimeTarget('production')).toBe('PRD');
+    expect(productEnvironmentProfileFromWorkerRuntimeTarget('sandbox')).toBe(productEnvironmentProfiles.UAT);
   });
 
   it('maps Product Environment CLI targets while accepting legacy platform aliases at edges', () => {
-    expect(parseProductEnvironmentCliTarget('local')).toBe('local');
-    expect(parseProductEnvironmentCliTarget('uat')).toBe('uat');
-    expect(parseProductEnvironmentCliTarget('prd')).toBe('prd');
-    expect(parseProductEnvironmentCliTarget('sandbox')).toBe('uat');
-    expect(parseProductEnvironmentCliTarget('production')).toBe('prd');
-    expect(workerRuntimeTargetForProductEnvironment('uat')).toBe('sandbox');
+    expect(parseProductEnvironmentCliTarget('local')).toBe('LOCAL');
+    expect(parseProductEnvironmentCliTarget('LOCAL')).toBe('LOCAL');
+    expect(parseProductEnvironmentCliTarget('uat')).toBe('UAT');
+    expect(parseProductEnvironmentCliTarget('prd')).toBe('PRD');
+    expect(parseProductEnvironmentCliTarget('sandbox')).toBe('UAT');
+    expect(parseProductEnvironmentCliTarget('production')).toBe('PRD');
+    expect(workerRuntimeTargetForProductEnvironment('UAT')).toBe('sandbox');
+    expect(formatProductEnvironmentLabel('LOCAL')).toBe('Local');
+    expect(formatProductEnvironmentLabel('UAT')).toBe('UAT');
+    expect(() => parseProductEnvironmentCliTarget('test')).toThrow();
   });
 });

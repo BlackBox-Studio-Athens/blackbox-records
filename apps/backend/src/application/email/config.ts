@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { productEnvironmentProfileFromWorkerRuntimeTarget, workerRuntimeTargetSchema } from '../../env';
+import { productEnvironmentProfileFromBindings, productEnvironmentSchema } from '../../env';
 import { EmailConfigurationError } from './errors';
 
 const requiredEmailAddress = z.string().trim().email();
@@ -12,7 +12,7 @@ const optionalNonEmptyString = z
   .transform((value) => (value ? value : null));
 
 const emailRuntimeBindingInputSchema = z.object({
-  APP_ENV: workerRuntimeTargetSchema,
+  PRODUCT_ENVIRONMENT: productEnvironmentSchema,
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().optional(),
   RESEND_NEWSLETTER_SEGMENT_ID: z.string().optional(),
@@ -24,7 +24,7 @@ const emailRuntimeBindingInputSchema = z.object({
 
 const emailRuntimeBindingSchema = emailRuntimeBindingInputSchema.pipe(
   z.object({
-    APP_ENV: workerRuntimeTargetSchema,
+    PRODUCT_ENVIRONMENT: productEnvironmentSchema,
     RESEND_API_KEY: requiredNonEmptyString.refine((value) => value.startsWith('re_'), {
       message: 'Resend API key must use the re_ prefix.',
     }),
@@ -38,7 +38,7 @@ const emailRuntimeBindingSchema = emailRuntimeBindingInputSchema.pipe(
 );
 
 const emailRuntimeConfigSchema = emailRuntimeBindingSchema.transform((bindings) => {
-  const productEnvironmentProfile = productEnvironmentProfileFromWorkerRuntimeTarget(bindings.APP_ENV);
+  const productEnvironmentProfile = productEnvironmentProfileFromBindings(bindings);
 
   return {
     apiKey: bindings.RESEND_API_KEY,
@@ -49,7 +49,7 @@ const emailRuntimeConfigSchema = emailRuntimeBindingSchema.transform((bindings) 
     productEnvironmentProfile,
     replyToEmail: bindings.RESEND_REPLY_TO_EMAIL,
     uatRecipientOverrideEmail:
-      productEnvironmentProfile.emailRoutingMode === 'uat-sink'
+      productEnvironmentProfile.emailDeliveryPolicy === 'uat-sink'
         ? (bindings.RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL ?? null)
         : null,
   };
@@ -65,7 +65,7 @@ export function readEmailRuntimeConfig(bindings: EmailRuntimeBindingValues): Ema
     throw new EmailConfigurationError('Email runtime config is missing or invalid.');
   }
 
-  if (parsed.data.productEnvironmentProfile.emailRoutingMode === 'uat-sink') {
+  if (parsed.data.productEnvironmentProfile.emailDeliveryPolicy === 'uat-sink') {
     if (parsed.data.uatRecipientOverrideEmail !== 'blackboxrecordsathens+TESTING@gmail.com') {
       throw new EmailConfigurationError('UAT email recipient sink is not configured.');
     }

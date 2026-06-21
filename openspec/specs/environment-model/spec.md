@@ -14,6 +14,12 @@ The system SHALL expose exactly three product environments in operator-facing do
 - **THEN** the docs identify Local, UAT, and PRD as the product environments
 - **AND** any platform-specific names are shown only as mapped implementation details.
 
+#### Scenario: Runtime config names a product environment
+
+- **WHEN** code, Worker bindings, tests, generated evidence, or validation reports name a Product Environment value
+- **THEN** the canonical values are `LOCAL`, `UAT`, and `PRD`
+- **AND** any `sandbox`, `production`, `test`, or `live` value is treated only as a mapped platform/provider trait.
+
 #### Scenario: New environment wording is introduced
 
 - **WHEN** a future change introduces `sandbox`, `production`, `test`, `live`, `GitHub Actions environment`, `Wrangler environment`, or `Stripe mode` wording

@@ -48,10 +48,10 @@ describe('catalog promotion workflows', () => {
     expect(workflow).toContain('pnpm test:unit');
     expect(workflow).toContain('pnpm check');
     expect(workflow).toContain('pnpm build');
-    expect(workflow).toContain('pnpm runtime:config:verify --env production');
+    expect(workflow).toContain('pnpm runtime:config:verify --env prd');
     expect(workflow).toContain('pnpm production:catalog-readiness:check -- --phase pre-apply');
     expect(workflow).toContain('pnpm production:catalog-readiness:check -- --phase post-apply');
-    expect(workflow).toContain('pnpm stripe:catalog:verify --env production --apply --ci-promotion');
+    expect(workflow).toContain('pnpm stripe:catalog:verify --env prd --apply --ci-promotion');
     expect(workflow).toContain('--artifact-commit-sha "${{ inputs.artifact_commit_sha }}"');
     expect(workflow).toContain('--promotion-run-id "${{ github.run_id }}"');
     expect(workflow).toContain('actions/upload-artifact@v5.0.0');

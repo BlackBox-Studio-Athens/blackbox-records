@@ -295,7 +295,7 @@ The system SHALL verify catalog field ownership, Product projection, Price autho
 
 #### Scenario: Operator runs catalog verification
 
-- **GIVEN** an operator runs `pnpm stripe:catalog:verify --env sandbox` without `--apply`
+- **GIVEN** an operator runs `pnpm stripe:catalog:verify --env uat` without `--apply`
 - **WHEN** the command inspects repo projection, sandbox D1, and Stripe catalog state
 - **THEN** it reports Product projection drift, Price authority drift, Store Offer snapshot drift, missing D1 readiness, and redacted provider diagnostics
 - **AND** it does not mutate Stripe Products, Stripe Prices, D1 mappings, Store Offer snapshots, repo content, or committed evidence.
@@ -306,13 +306,13 @@ The system SHALL verify catalog field ownership, Product projection, Price autho
 - **WHEN** output is printed or evidence is written
 - **THEN** full provider IDs, secret values, account-private values, and API error payloads are redacted.
 
-### Requirement: Catalog apply is environment-scoped and sandbox-first
+### Requirement: Catalog apply is environment-scoped and UAT-first
 
 The system MUST require explicit environment and apply flags before mutating Stripe Products, Stripe Prices, D1 mappings, or Store Offer snapshots.
 
-#### Scenario: Sandbox apply is requested
+#### Scenario: UAT apply is requested
 
-- **GIVEN** an operator runs `pnpm stripe:catalog:verify --env sandbox --apply`
+- **GIVEN** an operator runs `pnpm stripe:catalog:verify --env uat --apply`
 - **WHEN** the dry-run plan has actionable Product projection or sandbox Price/D1 drift
 - **THEN** the command applies only sandbox-scoped changes
 - **AND** prints a redacted post-apply verification report.
@@ -344,7 +344,7 @@ The system SHALL test catalog field ownership through deterministic unit tests, 
 
 - **GIVEN** sandbox Stripe and Cloudflare credentials are available
 - **WHEN** live/operator checks run
-- **THEN** `pnpm stripe:webhooks:verify --env sandbox`, `pnpm stripe:catalog:verify --env sandbox`, sandbox apply when needed, and Stripe sandbox smoke prove persistent webhook delivery and hosted Checkout catalog alignment without exposing secrets.
+- **THEN** `pnpm stripe:webhooks:verify --env sandbox`, `pnpm stripe:catalog:verify --env uat`, UAT apply when needed, and Stripe sandbox smoke prove persistent webhook delivery and hosted Checkout catalog alignment without exposing secrets.
 
 ### Requirement: Commerce validation MUST cover generated UAT catalog artifacts
 

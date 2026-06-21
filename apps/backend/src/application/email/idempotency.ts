@@ -7,7 +7,7 @@ export function createEmailIdempotencyKey(input: {
   entityId: string;
   purpose: string;
 }): string {
-  return ['blackbox', input.config.productEnvironmentProfile.emailProviderEnvironmentTag, input.purpose, input.entityId]
+  return ['blackbox', input.config.productEnvironmentProfile.emailProviderTag, input.purpose, input.entityId]
     .map(toProviderSafeIdempotencySegment)
     .join(':')
     .slice(0, MAX_RESEND_IDEMPOTENCY_KEY_LENGTH);

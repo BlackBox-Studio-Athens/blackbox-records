@@ -5,7 +5,7 @@ import type { AppBindings } from '../../src/env';
 import { createHttpApp } from '../../src/interfaces/http/app';
 
 const testBindings: AppBindings = {
-  APP_ENV: 'local',
+  PRODUCT_ENVIRONMENT: 'LOCAL',
   CHECKOUT_RETURN_ORIGINS: 'http://127.0.0.1:4321,http://localhost:4321',
   COMMERCE_DB: env.COMMERCE_DB,
   STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: 'pmc_test_blackbox_checkout',

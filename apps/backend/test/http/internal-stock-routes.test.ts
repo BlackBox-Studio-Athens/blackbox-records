@@ -67,7 +67,7 @@ describe('internal stock routes', () => {
         },
       },
       {
-        APP_ENV: 'local',
+        PRODUCT_ENVIRONMENT: 'LOCAL',
         COMMERCE_DB: {} as D1Database,
       },
     );
@@ -107,7 +107,7 @@ describe('internal stock routes', () => {
         },
       },
       {
-        APP_ENV: 'local',
+        PRODUCT_ENVIRONMENT: 'LOCAL',
         COMMERCE_DB: {} as D1Database,
       },
     );
@@ -163,7 +163,7 @@ describe('internal stock routes', () => {
         method: 'POST',
       },
       {
-        APP_ENV: 'local',
+        PRODUCT_ENVIRONMENT: 'LOCAL',
         COMMERCE_DB: {} as D1Database,
       },
     );
@@ -217,7 +217,7 @@ describe('internal stock routes', () => {
         method: 'POST',
       },
       {
-        APP_ENV: 'local',
+        PRODUCT_ENVIRONMENT: 'LOCAL',
         COMMERCE_DB: {} as D1Database,
       },
     );

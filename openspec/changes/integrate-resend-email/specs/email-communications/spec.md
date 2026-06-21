@@ -97,16 +97,37 @@ The system SHALL send paid-order email notifications after the first verified pa
 
 ### Requirement: Paid order email templates are designed in source
 
-The system SHALL provide rich, repo-owned paid-order email templates as part of this change.
+The system SHALL provide rich, repo-owned paid-order email templates with explicit BlackBox visual direction as part of this change.
+
+#### Scenario: Email art direction is applied
+
+- **GIVEN** a paid-order email is prepared
+- **WHEN** the email content is rendered
+- **THEN** it uses an email-safe BlackBox design frame with near-black background, hard-edged panel structure, off-white body text, muted metadata labels, and restrained commerce or warning accents
+- **AND** it uses live text for all transactional content, including order reference, item summary, payment state, fulfillment guidance, warnings, and support contact
+- **AND** it avoids generic provider receipt styling, Shopify-style invoice layout, decorative hero cards, rounded ecommerce polish, marketing newsletter blocks, gradient text, glass effects, and raw dashboard/debug labels
+- **AND** it remains legible in dark-mode and light-mode email clients that alter colors.
+
+#### Scenario: Logo lockup is rendered safely
+
+- **GIVEN** a paid-order email includes BlackBox branding
+- **WHEN** the email header renders
+- **THEN** it uses an environment-scoped public HTTPS logo image URL from Worker runtime config
+- **AND** the logo image has explicit width, height, and alt text
+- **AND** the logo links to the environment-scoped public site home URL
+- **AND** nearby live text still identifies `BlackBox Records` if remote images are blocked
+- **AND** the logo appears once as a header lockup rather than as a repeated decoration, watermark, tracking pixel, attachment, inline SVG, or base64 blob
+- **AND** blocked images do not hide order facts, payment state, support contact, warnings, or fulfillment instructions.
 
 #### Scenario: Shopper confirmation content is built
 
 - **GIVEN** a shopper confirmation email is prepared
 - **WHEN** the email content is rendered
 - **THEN** it includes BlackBox-branded HTML and plain-text content
-- **AND** its visual design matches the current BlackBox site design language
+- **AND** its visual design follows the BlackBox email art direction and logo lockup requirements
 - **AND** it includes a subject and preheader
 - **AND** it shows formatted order reference, line item summary, quantity, and total paid near the top
+- **AND** it presents the order summary as a compact editorial receipt rather than a tax invoice
 - **AND** it uses safe payment wording such as payment received without exposing card details, raw Stripe IDs, or provider payloads
 - **AND** it describes fulfillment expectations without promising tracking before tracking exists
 - **AND** it includes a reply-to support CTA using `support@blackboxrecordsathens.com`
@@ -118,10 +139,11 @@ The system SHALL provide rich, repo-owned paid-order email templates as part of 
 - **GIVEN** an ops fulfillment email is prepared
 - **WHEN** the email content is rendered
 - **THEN** it includes BlackBox-branded HTML and plain-text content
-- **AND** its visual design matches the current BlackBox site design language
+- **AND** its visual design follows the BlackBox email art direction and logo lockup requirements
 - **AND** it includes a subject and preheader
 - **AND** it prioritizes a top fulfillment action list over decorative content
 - **AND** it includes order reference, item, variant, quantity, payment state, shopper email, shipping/contact summary, and missing-data warnings
+- **AND** it keeps fulfillment warnings visually prominent without exposing raw provider payloads or turning the email into a debugging dashboard
 - **AND** it includes ops-safe fulfillment context without exposing raw Stripe, D1, webhook, or shipping provider payloads.
 
 #### Scenario: Paid order template previews are verified
@@ -129,7 +151,8 @@ The system SHALL provide rich, repo-owned paid-order email templates as part of 
 - **GIVEN** paid-order email templates are implemented
 - **WHEN** template validation runs
 - **THEN** HTML and plain-text snapshots exist
-- **AND** previews cover mobile-width rendering, dark-mode-safe colors, long item titles, long recipient names, and long shipping/contact details.
+- **AND** previews cover logo-loaded and logo-blocked states, mobile-width rendering, dark-mode-safe colors, long item titles, long recipient names, long shipping/contact details, UAT sink notices, missing shopper email, and shopper send failure warnings
+- **AND** rendered preview HTML is checked visually enough to confirm the logo scale, header lockup, table widths, line wrapping, contrast, and warning hierarchy.
 
 ### Requirement: Newsletter registrations are Resend-backed
 

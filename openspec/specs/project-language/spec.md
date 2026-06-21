@@ -45,6 +45,12 @@ The system SHALL use canonical environment terminology across specs, docs, workf
 - **THEN** it uses Local, UAT, or PRD
 - **AND** it does not use `sandbox`, `production`, `test`, `live`, GitHub Actions environment names, or Wrangler environment names as product environment substitutes.
 
+#### Scenario: Product Environment code value is named
+
+- **WHEN** code, config, tests, or generated evidence name a Product Environment value
+- **THEN** it uses `LOCAL`, `UAT`, or `PRD`
+- **AND** human-readable prose may use Local, UAT, or PRD as labels.
+
 #### Scenario: Platform Environment is named
 
 - **WHEN** an artifact describes a GitHub Actions environment, Wrangler environment, Cloudflare Pages project, Worker runtime target, Stripe mode, or secret store

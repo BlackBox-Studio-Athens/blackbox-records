@@ -18,7 +18,7 @@ import {
   type PaidOrderEmailInput,
 } from '../../../application/email';
 import type { StoreItemOptionRecord } from '../../../domain/commerce/repositories/spi';
-import { productEnvironmentProfileFromWorkerRuntimeTarget, type AppBindings } from '../../../env';
+import { productEnvironmentProfileFromBindings, type AppBindings } from '../../../env';
 import { createStripeCatalogGateway, createStripeCheckoutGateway } from '../../../infrastructure/stripe';
 import {
   createPrismaClient,
@@ -32,7 +32,7 @@ import { D1PaidCheckoutFinalizationRepository } from './d1-paid-checkout-finaliz
 import { createEmailRuntimeServices } from './email-runtime-services';
 
 export function createStripeWebhookServices(bindings: AppBindings) {
-  const productEnvironmentProfile = productEnvironmentProfileFromWorkerRuntimeTarget(bindings.APP_ENV);
+  const productEnvironmentProfile = productEnvironmentProfileFromBindings(bindings);
   const prisma = createPrismaClient(bindings);
   const orders = new PrismaOrderStateRepository(prisma);
   const paidCheckoutFinalizer = new D1PaidCheckoutFinalizationRepository(bindings.COMMERCE_DB);
@@ -42,7 +42,7 @@ export function createStripeWebhookServices(bindings: AppBindings) {
   const catalogWebhookEvents = new PrismaStripeCatalogWebhookEventRepository(prisma);
   const checkoutGateway = createStripeCheckoutGateway(bindings);
   const catalogReconciler = new CatalogReconciler({
-    environment: productEnvironmentProfile.workerRuntimeTarget,
+    environment: productEnvironmentProfile.workerDeploymentTarget,
     storeItems,
     storeOfferSnapshots,
     stripeCatalog: createStripeCatalogGateway(bindings),

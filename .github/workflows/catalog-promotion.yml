@@ -86,27 +86,27 @@ jobs:
 
       - name: Verify UAT webhook and payment configuration
         run: |
-          pnpm runtime:config:verify --env sandbox
+          pnpm runtime:config:verify --env uat
           pnpm stripe:webhooks:verify --env sandbox
           pnpm stripe:payment-methods:verify
 
       - name: Prepare UAT D1 catalog readiness
         run: |
-          pnpm --filter @blackbox/backend d1:migrations:apply:sandbox
-          pnpm --filter @blackbox/backend d1:seed:sandbox:uat-catalog
+          pnpm --filter @blackbox/backend d1:migrations:apply:uat
+          pnpm --filter @blackbox/backend d1:seed:uat:catalog
 
       - name: Plan UAT provider catalog
         run: |
           mkdir -p .codex-artifacts/catalog-promotion/uat
-          pnpm stripe:catalog:verify --env sandbox 2>&1 | tee .codex-artifacts/catalog-promotion/uat/catalog-plan.txt
+          pnpm stripe:catalog:verify --env uat 2>&1 | tee .codex-artifacts/catalog-promotion/uat/catalog-plan.txt
 
       - name: Apply UAT provider catalog
         run: |
-          pnpm stripe:catalog:verify --env sandbox --apply
-          pnpm stripe:catalog:verify --env sandbox 2>&1 | tee .codex-artifacts/catalog-promotion/uat/catalog-post-apply.txt
+          pnpm stripe:catalog:verify --env uat --apply
+          pnpm stripe:catalog:verify --env uat 2>&1 | tee .codex-artifacts/catalog-promotion/uat/catalog-post-apply.txt
 
       - name: Deploy UAT Worker
-        run: pnpm deploy:backend:sandbox
+        run: pnpm deploy:backend:uat
 
       - name: Upload UAT Promotion Evidence
         if: ${{ always() }}
@@ -166,37 +166,37 @@ jobs:
             } > .codex-artifacts/catalog-promotion/prd/prd-not-configured.txt
           fi
 
-      - name: Verify production webhook and payment configuration
+      - name: Verify PRD webhook and payment configuration
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         run: |
-          pnpm runtime:config:verify --env production --require-live-secrets
+          pnpm runtime:config:verify --env prd --require-live-secrets
           pnpm stripe:webhooks:verify --env production
           pnpm stripe:payment-methods:verify
 
-      - name: Prepare production D1 catalog readiness
+      - name: Prepare PRD D1 catalog readiness
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         run: |
-          pnpm --filter @blackbox/backend d1:migrations:apply:production
+          pnpm --filter @blackbox/backend d1:migrations:apply:prd
           pnpm production:catalog-readiness:check -- --phase pre-apply
-          pnpm --filter @blackbox/backend d1:seed:production:catalog-readiness
+          pnpm --filter @blackbox/backend d1:seed:prd:catalog-readiness
           pnpm production:catalog-readiness:check -- --phase pre-apply
 
-      - name: Plan production provider catalog
+      - name: Plan PRD provider catalog
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         run: |
           mkdir -p .codex-artifacts/catalog-promotion/prd
-          pnpm stripe:catalog:verify --env production 2>&1 | tee .codex-artifacts/catalog-promotion/prd/catalog-plan.txt
+          pnpm stripe:catalog:verify --env prd 2>&1 | tee .codex-artifacts/catalog-promotion/prd/catalog-plan.txt
 
-      - name: Apply production provider catalog
+      - name: Apply PRD provider catalog
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         run: |
-          pnpm stripe:catalog:verify --env production --apply --ci-promotion --artifact-commit-sha "${{ inputs.artifact_commit_sha }}" --promotion-run-id "${{ github.run_id }}"
-          pnpm stripe:catalog:verify --env production 2>&1 | tee .codex-artifacts/catalog-promotion/prd/catalog-post-apply.txt
+          pnpm stripe:catalog:verify --env prd --apply --ci-promotion --artifact-commit-sha "${{ inputs.artifact_commit_sha }}" --promotion-run-id "${{ github.run_id }}"
+          pnpm stripe:catalog:verify --env prd 2>&1 | tee .codex-artifacts/catalog-promotion/prd/catalog-post-apply.txt
           pnpm production:catalog-readiness:check -- --phase post-apply
 
-      - name: Deploy production Worker
+      - name: Deploy PRD Worker
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
-        run: pnpm deploy:backend:production
+        run: pnpm deploy:backend:prd
 
       - name: Confirm static frontend artifact commit
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'

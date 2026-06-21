@@ -11,7 +11,7 @@ import type { EmailProviderGateway } from '../../../src/application/email/spi';
 import { productEnvironmentProfiles } from '../../../src/env';
 
 const localBindings = {
-  APP_ENV: 'local' as const,
+  PRODUCT_ENVIRONMENT: 'LOCAL' as const,
   RESEND_API_KEY: 're_mock_blackbox_local',
   RESEND_FROM_EMAIL: 'orders@blackboxrecordsathens.com',
   RESEND_NEWSLETTER_TOPIC_ID: 'topic_mock_blackbox_newsletter',
@@ -21,7 +21,7 @@ const localBindings = {
 
 const sandboxBindings = {
   ...localBindings,
-  APP_ENV: 'sandbox' as const,
+  PRODUCT_ENVIRONMENT: 'UAT' as const,
   RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL: 'blackboxrecordsathens+TESTING@gmail.com',
 };
 
@@ -33,7 +33,7 @@ describe('email application module', () => {
       newsletterSegmentId: null,
       newsletterTopicId: 'topic_mock_blackbox_newsletter',
       opsToEmail: 'blackboxrecordsathens@gmail.com',
-      productEnvironmentProfile: productEnvironmentProfiles.local,
+      productEnvironmentProfile: productEnvironmentProfiles.LOCAL,
       replyToEmail: 'support@blackboxrecordsathens.com',
       uatRecipientOverrideEmail: null,
     });

@@ -52,9 +52,9 @@ vi.mock('../../src/infrastructure/stripe', () => ({
 import { runScheduledCatalogVerification } from '../../src/interfaces/scheduled/catalog-verification';
 import type { AppBindings } from '../../src/env';
 
-function createBindings(appEnv: AppBindings['APP_ENV']): AppBindings {
+function createBindings(appEnv: AppBindings['PRODUCT_ENVIRONMENT']): AppBindings {
   return {
-    APP_ENV: appEnv,
+    PRODUCT_ENVIRONMENT: appEnv,
     COMMERCE_DB: {} as AppBindings['COMMERCE_DB'],
     STRIPE_SECRET_KEY: 'sk_test_scheduled',
   } as AppBindings;
@@ -69,7 +69,7 @@ describe('runScheduledCatalogVerification', () => {
   });
 
   it('applies non-production scheduled catalog reconciliation and disconnects Prisma', async () => {
-    await runScheduledCatalogVerification(createBindings('sandbox'));
+    await runScheduledCatalogVerification(createBindings('UAT'));
 
     expect(scheduledMocks.verifyBuyableCatalog).toHaveBeenCalledWith({
       apply: true,
@@ -87,7 +87,7 @@ describe('runScheduledCatalogVerification', () => {
   });
 
   it('runs production scheduled verification as report-only', async () => {
-    await runScheduledCatalogVerification(createBindings('production'));
+    await runScheduledCatalogVerification(createBindings('PRD'));
 
     expect(scheduledMocks.verifyBuyableCatalog).toHaveBeenCalledWith({
       apply: false,
@@ -112,7 +112,7 @@ describe('runScheduledCatalogVerification', () => {
     });
 
     try {
-      await runScheduledCatalogVerification(createBindings('sandbox'));
+      await runScheduledCatalogVerification(createBindings('UAT'));
       expect(warn).toHaveBeenCalledWith(
         'Scheduled Stripe catalog verification found 2 issue(s) in UAT. Product Projection: 1; Price Authority: 1; D1 readiness: 0; Store Offer snapshots: 0',
       );

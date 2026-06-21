@@ -9,7 +9,7 @@ import type { EmailProviderGateway, ProviderEmailMessage } from '../../../src/ap
 import type { PaidOrderEmailInput } from '../../../src/application/email';
 
 const sandboxConfig = readEmailRuntimeConfig({
-  APP_ENV: 'sandbox',
+  PRODUCT_ENVIRONMENT: 'UAT',
   RESEND_API_KEY: 're_mock_blackbox_local',
   RESEND_FROM_EMAIL: 'orders@blackboxrecordsathens.com',
   RESEND_NEWSLETTER_TOPIC_ID: 'topic_mock_blackbox_newsletter',
@@ -19,7 +19,7 @@ const sandboxConfig = readEmailRuntimeConfig({
 });
 
 const productionConfig = readEmailRuntimeConfig({
-  APP_ENV: 'production',
+  PRODUCT_ENVIRONMENT: 'PRD',
   RESEND_API_KEY: 're_mock_blackbox_local',
   RESEND_FROM_EMAIL: 'orders@blackboxrecordsathens.com',
   RESEND_NEWSLETTER_TOPIC_ID: 'topic_mock_blackbox_newsletter',

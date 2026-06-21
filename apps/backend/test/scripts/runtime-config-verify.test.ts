@@ -13,7 +13,7 @@ const wranglerConfigText = `
       "name": "blackbox-records-backend",
       "d1_databases": [{ "binding": "COMMERCE_DB" }],
       "vars": {
-        "APP_ENV": "production",
+        "PRODUCT_ENVIRONMENT": "PRD",
         "CHECKOUT_RETURN_ORIGINS": "https://blackbox-records-web.pages.dev",
         "RESEND_FROM_EMAIL": "orders@blackboxrecordsathens.com",
         "RESEND_OPS_TO_EMAIL": "blackboxrecordsathens@gmail.com",
@@ -29,22 +29,22 @@ const requiredResendSecrets = ['RESEND_API_KEY', 'RESEND_NEWSLETTER_TOPIC_ID'];
 describe('runtime config verification', () => {
   it('parses the target environment argument', () => {
     expect(parseRuntimeConfigVerifyArgs(['--env', 'production'])).toEqual({
-      environment: 'production',
+      environment: 'PRD',
       productEnvironment: 'PRD',
       requireLiveSecrets: false,
     });
     expect(parseRuntimeConfigVerifyArgs(['--env', 'prd'])).toEqual({
-      environment: 'production',
+      environment: 'PRD',
       productEnvironment: 'PRD',
       requireLiveSecrets: false,
     });
     expect(parseRuntimeConfigVerifyArgs(['--env', 'uat'])).toEqual({
-      environment: 'sandbox',
+      environment: 'UAT',
       productEnvironment: 'UAT',
       requireLiveSecrets: false,
     });
     expect(parseRuntimeConfigVerifyArgs(['--env', 'prd', '--require-live-secrets'])).toEqual({
-      environment: 'production',
+      environment: 'PRD',
       productEnvironment: 'PRD',
       requireLiveSecrets: true,
     });
@@ -52,7 +52,7 @@ describe('runtime config verification', () => {
 
   it('classifies required production config categories without printing values', () => {
     const result = verifyRuntimeConfig({
-      environment: 'production',
+      environment: 'PRD',
       requireLiveSecrets: true,
       secretNames: [
         'STRIPE_PAYMENT_METHOD_CONFIGURATION_ID',
@@ -88,10 +88,10 @@ describe('runtime config verification', () => {
 
   it('reports missing config categories with redacted output', () => {
     const result = verifyRuntimeConfig({
-      environment: 'production',
+      environment: 'PRD',
       requireLiveSecrets: true,
       secretNames: ['STRIPE_SECRET_KEY'],
-      wranglerConfigText: '{"env":{"production":{"vars":{"APP_ENV":"production"}}}}',
+      wranglerConfigText: '{"env":{"production":{"vars":{"PRODUCT_ENVIRONMENT":"PRD"}}}}',
     });
     const report = formatRuntimeConfigVerificationReport(result);
 
@@ -116,7 +116,7 @@ describe('runtime config verification', () => {
 
   it('accepts payment method configuration from Worker vars without printing values', () => {
     const result = verifyRuntimeConfig({
-      environment: 'production',
+      environment: 'PRD',
       requireLiveSecrets: true,
       secretNames: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', ...requiredResendSecrets],
       wranglerConfigText: wranglerConfigText.replace(
@@ -131,7 +131,7 @@ describe('runtime config verification', () => {
 
   it('allows disabled PRD readiness checks without live Stripe secrets', () => {
     const result = verifyRuntimeConfig({
-      environment: 'production',
+      environment: 'PRD',
       secretNames: requiredResendSecrets,
       wranglerConfigText,
     });
@@ -152,7 +152,7 @@ describe('runtime config verification', () => {
         "sandbox": {
           "d1_databases": [{ "binding": "COMMERCE_DB" }],
           "vars": {
-            "APP_ENV": "sandbox",
+            "PRODUCT_ENVIRONMENT": "UAT",
             "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,https://blackbox-studio-athens.github.io/blackbox-records",
             "RESEND_FROM_EMAIL": "orders@blackboxrecordsathens.com",
             "RESEND_OPS_TO_EMAIL": "blackboxrecordsathens@gmail.com",
@@ -163,7 +163,7 @@ describe('runtime config verification', () => {
       }
     }`;
     const sandboxResult = verifyRuntimeConfig({
-      environment: 'sandbox',
+      environment: 'UAT',
       secretNames: [
         'RESEND_API_KEY',
         'RESEND_NEWSLETTER_TOPIC_ID',
@@ -174,7 +174,7 @@ describe('runtime config verification', () => {
       wranglerConfigText: sandboxConfig,
     });
     const productionResult = verifyRuntimeConfig({
-      environment: 'production',
+      environment: 'PRD',
       secretNames: requiredResendSecrets,
       wranglerConfigText: wranglerConfigText.replace(
         '"RESEND_REPLY_TO_EMAIL": "support@blackboxrecordsathens.com"',

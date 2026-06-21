@@ -112,16 +112,16 @@ The system SHALL process Stripe catalog webhook events idempotently and reconcil
 
 The system MUST verify sandbox catalog alignment for every checkout-eligible Store Item variant, not only a single fixture item.
 
-#### Scenario: Sandbox catalog verification runs
+#### Scenario: UAT catalog verification runs
 
 - **GIVEN** the repo has current Store Items and sandbox D1 has checkout eligibility state
-- **WHEN** `pnpm stripe:catalog:verify --env sandbox` runs
+- **WHEN** `pnpm stripe:catalog:verify --env uat` runs
 - **THEN** the report covers every checkout-eligible Store Item variant
 - **AND** classifies identity, Product projection, Price authority, D1 readiness, and Store Offer snapshot status.
 
-#### Scenario: Sandbox catalog apply succeeds
+#### Scenario: UAT catalog apply succeeds
 
 - **GIVEN** sandbox Stripe credentials and sandbox D1 access are available
-- **WHEN** `pnpm stripe:catalog:verify --env sandbox --apply` runs after a clean dry-run plan is reviewed
+- **WHEN** `pnpm stripe:catalog:verify --env uat --apply` runs after a clean dry-run plan is reviewed
 - **THEN** sandbox Stripe Products, sandbox Stripe Prices where permitted, D1 mappings, and Store Offer snapshots are aligned for checkout-eligible variants
 - **AND** the follow-up dry-run reports no blocking catalog drift.

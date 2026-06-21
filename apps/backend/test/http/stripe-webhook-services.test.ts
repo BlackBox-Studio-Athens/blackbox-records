@@ -160,7 +160,7 @@ vi.mock('../../src/infrastructure/stripe', () => ({
 }));
 
 const bindings = {
-  APP_ENV: 'local',
+  PRODUCT_ENVIRONMENT: 'LOCAL',
   COMMERCE_DB: {} as D1Database,
   STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: 'pmc_test_blackbox_checkout',
   STRIPE_SECRET_KEY: 'sk_test_123',

@@ -29,4 +29,4 @@ Sandbox catalog sync still depends on an operational Stripe Dashboard endpoint t
 - Stripe SDK usage for webhook endpoint listing/retrieval and redacted diagnostics.
 - Wrangler/Cloudflare checks for sandbox Worker secret presence.
 - Existing sandbox smoke/preflight docs and operator proof commands.
-- OpenSpec launch/readiness expectations for sandbox catalog webhooks, scheduled backstop, and `pnpm stripe:catalog:verify --env sandbox`.
+- OpenSpec launch/readiness expectations for sandbox catalog webhooks, scheduled backstop, and `pnpm stripe:catalog:verify --env uat`.

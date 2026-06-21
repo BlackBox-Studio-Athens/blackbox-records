@@ -4,7 +4,7 @@ export function routeTransactionalEmailRecipient(
   config: Pick<EmailRuntimeConfig, 'productEnvironmentProfile' | 'uatRecipientOverrideEmail'>,
   intendedRecipient: string,
 ): RoutedEmailRecipient {
-  if (config.productEnvironmentProfile.emailRoutingMode === 'uat-sink' && config.uatRecipientOverrideEmail) {
+  if (config.productEnvironmentProfile.emailDeliveryPolicy === 'uat-sink' && config.uatRecipientOverrideEmail) {
     return {
       intendedRecipient,
       isSinkRouted: true,
@@ -23,7 +23,7 @@ export function routeNewsletterContact(
   config: Pick<EmailRuntimeConfig, 'productEnvironmentProfile' | 'uatRecipientOverrideEmail'>,
   intendedSubscriberEmail: string,
 ): NewsletterContactRouting {
-  if (config.productEnvironmentProfile.emailRoutingMode === 'uat-sink' && config.uatRecipientOverrideEmail) {
+  if (config.productEnvironmentProfile.emailDeliveryPolicy === 'uat-sink' && config.uatRecipientOverrideEmail) {
     return {
       contactEmail: config.uatRecipientOverrideEmail,
       intendedSubscriberEmail,

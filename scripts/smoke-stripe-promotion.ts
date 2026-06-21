@@ -7,7 +7,7 @@ import {
   type DesiredCatalogEnvironment,
   type DesiredCatalogEntry,
 } from '../apps/backend/src/application/commerce/catalog-sync/desired-catalog-state';
-import { parseProductEnvironmentCliTarget, workerRuntimeTargetForProductEnvironment } from '../apps/backend/src/env';
+import { parseProductEnvironmentCliTarget, type ProductEnvironment } from '../apps/backend/src/env';
 import {
   createRunId as createSmokeRunId,
   createSmokeEvidencePath,
@@ -18,7 +18,7 @@ import {
   writeJsonFile,
 } from './smoke-core';
 
-export type PromotionSmokeEnvironment = DesiredCatalogEnvironment;
+export type PromotionSmokeEnvironment = Extract<ProductEnvironment, 'UAT' | 'PRD'>;
 export type PromotionSmokeScenarioSelection = 'all' | 'checkout_surface' | 'paid';
 export type PromotionSmokeStatus = 'failed' | 'not_configured' | 'passed';
 
@@ -75,7 +75,7 @@ const defaultProductionWorkerUrl = 'https://blackbox-records-backend.blackboxrec
 
 export function parsePromotionSmokeArgs(args: string[]): PromotionSmokeOptions {
   const options: PromotionSmokeOptions = {
-    environment: 'production',
+    environment: 'PRD',
     evidenceDir: path.join('.codex-artifacts', 'smoke', 'prd', 'stripe-promotion'),
     scenario: 'checkout_surface',
     siteUrl: defaultProductionSiteUrl,
@@ -162,7 +162,9 @@ export function selectPromotionSmokeEntry(
   environment: PromotionSmokeEnvironment,
 ): DesiredCatalogEntry {
   const entry = entries.find(
-    (candidate) => candidate.availability === 'published' && candidate.targetEnvironments.includes(environment),
+    (candidate) =>
+      candidate.availability === 'published' &&
+      candidate.targetEnvironments.includes(toDesiredCatalogEnvironment(environment)),
   );
 
   if (!entry) {
@@ -241,8 +243,8 @@ async function runCheckoutSurfaceSmoke(
   options: PromotionSmokeOptions,
   entry: DesiredCatalogEntry,
 ): Promise<PromotionSmokeEvidence> {
-  if (options.environment !== 'production') {
-    throw new Error('Promotion checkout_surface smoke is currently reserved for production live no-payment proof.');
+  if (options.environment !== 'PRD') {
+    throw new Error('Promotion checkout_surface smoke is currently reserved for PRD live no-payment proof.');
   }
 
   const startCheckoutResponse = await startCheckoutSession(options.workerUrl, entry);
@@ -376,16 +378,20 @@ function writePromotionSmokeEvidence(runArtifactDir: string, evidence: Promotion
 
 function parseEnvironment(value: string | undefined): PromotionSmokeEnvironment {
   try {
-    const workerRuntimeTarget = workerRuntimeTargetForProductEnvironment(parseProductEnvironmentCliTarget(value));
+    const productEnvironment = parseProductEnvironmentCliTarget(value);
 
-    if (workerRuntimeTarget === 'sandbox' || workerRuntimeTarget === 'production') {
-      return workerRuntimeTarget;
+    if (productEnvironment === 'UAT' || productEnvironment === 'PRD') {
+      return productEnvironment;
     }
   } catch {
     // Fall through to the stable CLI error below.
   }
 
-  throw new Error('--env must be prd or uat.');
+  throw new Error('--env must be prd or uat. Legacy platform aliases accepted: sandbox, production.');
+}
+
+function toDesiredCatalogEnvironment(environment: PromotionSmokeEnvironment): DesiredCatalogEnvironment {
+  return environment === 'PRD' ? 'production' : 'sandbox';
 }
 
 function parseScenario(value: string | undefined): PromotionSmokeScenarioSelection {

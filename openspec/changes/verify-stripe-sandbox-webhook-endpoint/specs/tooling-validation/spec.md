@@ -57,4 +57,4 @@ The system SHALL make persistent sandbox webhook configuration visible in operat
 - **GIVEN** sandbox catalog readiness is being verified before UAT, smoke evidence, or launch-readiness review
 - **WHEN** operator validation runs
 - **THEN** it includes `pnpm stripe:webhooks:verify --env sandbox`
-- **AND** it keeps `pnpm stripe:catalog:verify --env sandbox` as separate proof that current Store Offer and Stripe catalog state are aligned.
+- **AND** it keeps `pnpm stripe:catalog:verify --env uat` as separate proof that current Store Offer and Stripe catalog state are aligned.

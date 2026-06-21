@@ -13,7 +13,7 @@ BlackBox Records uses three Product Environments: Local, UAT, and PRD. Other nam
 
 PRD exists as a deployable static readiness surface, but live checkout and live provider catalog mutation are disabled until an explicit production-readiness gate opens them. Before that gate, PRD evidence is readiness-only, disabled, or `not_configured`; it is not successful PRD Promotion Evidence.
 
-The disabled PRD readiness probe does not require live Stripe secrets. Resend runtime config is still environment-scoped because email delivery and newsletter Contact writes are backend-owned. Opened PRD promotion runs use `pnpm runtime:config:verify --env production --require-live-secrets` before live provider mutation.
+The disabled PRD readiness probe does not require live Stripe secrets. Resend runtime config is still environment-scoped because email delivery and newsletter Contact writes are backend-owned. Opened PRD promotion runs use `pnpm runtime:config:verify --env prd --require-live-secrets` before live provider mutation.
 
 ## Platform Layers
 

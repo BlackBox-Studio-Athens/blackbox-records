@@ -159,12 +159,12 @@ Before accepting sandbox catalog or paid-order webhook readiness, run:
 
 ```sh
 pnpm stripe:webhooks:verify --env sandbox
-pnpm stripe:catalog:verify --env sandbox
+pnpm stripe:catalog:verify --env uat
 ```
 
-Catalog Field Ownership is one-way. Repo content owns Product Projection fields that Stripe-hosted Checkout displays (`name`, `description`, image URLs, and app metadata), while Stripe owns Price Authority (`amount`, `currency`, active Price identity, and lookup key). A sandbox product-presentation change starts in repo content or the generated projection, then runs `pnpm stripe:catalog:verify --env sandbox`, followed by reviewed `pnpm stripe:catalog:verify --env sandbox --apply` only when the dry-run plan is understood. A price change starts in Stripe as a replacement Price: move the lookup key/metadata to the replacement Price, archive the stale Price, then rerun catalog verification so D1 `VariantStripeMapping` and `StoreOfferSnapshot` follow Stripe without an Astro deploy. Stripe Dashboard edits to repo-owned Product presentation are catalog drift unless the repo projection is updated.
+Catalog Field Ownership is one-way. Repo content owns Product Projection fields that Stripe-hosted Checkout displays (`name`, `description`, image URLs, and app metadata), while Stripe owns Price Authority (`amount`, `currency`, active Price identity, and lookup key). A UAT product-presentation change starts in repo content or the generated projection, then runs `pnpm stripe:catalog:verify --env uat`, followed by reviewed `pnpm stripe:catalog:verify --env uat --apply` only when the dry-run plan is understood. A price change starts in Stripe as a replacement Price: move the lookup key/metadata to the replacement Price, archive the stale Price, then rerun catalog verification so D1 `VariantStripeMapping` and `StoreOfferSnapshot` follow Stripe without an Astro deploy. Stripe Dashboard edits to repo-owned Product presentation are catalog drift unless the repo projection is updated.
 
-Full GitHub Pages UAT catalog alignment uses generated repo artifacts and a sandbox-only reset/apply flow. Run `pnpm stripe:catalog:artifacts:generate` after Store Item content changes and let `pnpm stripe:catalog:artifacts:check` catch drift in `pnpm check`. The reset command is dry-run by default and only deactivates BlackBox-owned Stripe sandbox Products/Prices; `pnpm stripe:catalog:verify --env sandbox --apply` creates the fresh active sandbox catalog and syncs D1 mappings/snapshots. See [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md) for the full reset, D1 seed, deploy, and smoke sequence.
+Full GitHub Pages UAT catalog alignment uses generated repo artifacts and a sandbox-only reset/apply flow. Run `pnpm stripe:catalog:artifacts:generate` after Store Item content changes and let `pnpm stripe:catalog:artifacts:check` catch drift in `pnpm check`. The reset command is dry-run by default and only deactivates BlackBox-owned Stripe sandbox Products/Prices; `pnpm stripe:catalog:verify --env uat --apply` creates the fresh active sandbox catalog and syncs D1 mappings/snapshots. See [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md) for the full reset, D1 seed, deploy, and smoke sequence.
 
 The webhook verifier is read-only. It proves the persistent endpoint URL, test-mode status, required catalog event subscriptions, sandbox Worker `STRIPE_WEBHOOK_SECRET` presence, and the six-hour scheduled catalog-verification backstop when Cloudflare schedule credentials are available. It does not prove the existing endpoint signing secret equals the Worker secret because Stripe does not return an existing endpoint secret through list/retrieve APIs. After endpoint creation, endpoint recreation, or secret rotation, update the sandbox Worker from `apps/backend` with `pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env sandbox` without logging the value, then rerun the verifier and paid smoke.
 
@@ -265,10 +265,10 @@ Bootstrap backend-local Wrangler secrets:
 cp apps/backend/.dev.vars.example apps/backend/.dev.vars
 ```
 
-Deploy the sandbox Worker manually:
+Deploy the UAT Worker manually:
 
 ```sh
-pnpm deploy:backend:sandbox
+pnpm deploy:backend:uat
 ```
 
 When the frontend starts consuming Worker APIs, point it at the local backend with:
@@ -496,7 +496,7 @@ Future migration flow:
    - Use `pnpm --filter @blackbox/backend exec prisma migrate diff --from-empty --to-schema-datamodel ./prisma/schema.prisma --script --output <file>` only for `0001_initial_commerce_state.sql`.
    - Use `pnpm --filter @blackbox/backend exec prisma migrate diff --from-local-d1 --to-schema-datamodel ./prisma/schema.prisma --script --output <file>` for later migrations.
 5. Apply locally with `pnpm --filter @blackbox/backend d1:migrations:apply:local`.
-6. Apply to sandbox with `pnpm --filter @blackbox/backend d1:migrations:apply:sandbox` when ready.
+6. Apply to UAT with `pnpm --filter @blackbox/backend d1:migrations:apply:uat` when ready.
 
 Do not rewrite committed migration history after real sandbox or production commerce data exists.
 
@@ -513,11 +513,11 @@ Local checkout seed flow:
 3. For real Stripe test mode, copy `apps/backend/prisma/seeds/local-stripe-test-state.sql.example` to ignored `apps/backend/prisma/seeds/local-stripe-test-state.sql`, replace the example price with a real `price_...`, then run `pnpm --filter @blackbox/backend d1:seed:stripe-test:local`.
 4. Do not commit real Stripe test Price IDs.
 
-Sandbox D1 seed flow:
+UAT D1 seed flow:
 
-1. Apply sandbox migrations only when the sandbox environment is intentionally being prepared: `pnpm --filter @blackbox/backend d1:migrations:apply:sandbox`.
-2. Apply the non-secret base commerce seed with `pnpm --filter @blackbox/backend d1:seed:sandbox` when preparing the older narrow sandbox fixture.
-3. Apply the full GitHub Pages UAT catalog readiness seed with `pnpm --filter @blackbox/backend d1:seed:sandbox:uat-catalog` before full-catalog `pnpm stripe:catalog:verify --env sandbox --apply`.
+1. Apply UAT migrations only when the UAT environment is intentionally being prepared: `pnpm --filter @blackbox/backend d1:migrations:apply:uat`.
+2. Apply the non-secret base commerce seed with `pnpm --filter @blackbox/backend d1:seed:uat` when preparing the older narrow sandbox fixture.
+3. Apply the full GitHub Pages UAT catalog readiness seed with `pnpm --filter @blackbox/backend d1:seed:uat:catalog` before full-catalog `pnpm stripe:catalog:verify --env uat --apply`.
 4. Do not use local mock stock, `price_mock_*` rows, real Stripe Price IDs, BOX NOW credentials, or production data in sandbox seed files.
 
 Local development:

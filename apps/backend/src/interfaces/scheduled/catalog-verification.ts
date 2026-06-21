@@ -4,7 +4,7 @@ import {
   createCurrentCatalogExpectedSandboxPriceMap,
   type CatalogSyncIssue,
 } from '../../application/commerce/catalog-sync';
-import { productEnvironmentProfileFromWorkerRuntimeTarget, type AppBindings } from '../../env';
+import { formatProductEnvironmentLabel, productEnvironmentProfileFromBindings, type AppBindings } from '../../env';
 import {
   createPrismaClient,
   PrismaStoreItemOptionRepository,
@@ -14,11 +14,11 @@ import {
 import { createStripeCatalogGateway } from '../../infrastructure/stripe';
 
 export async function runScheduledCatalogVerification(bindings: AppBindings): Promise<void> {
-  const productEnvironmentProfile = productEnvironmentProfileFromWorkerRuntimeTarget(bindings.APP_ENV);
+  const productEnvironmentProfile = productEnvironmentProfileFromBindings(bindings);
   const prisma = createPrismaClient(bindings);
   const storeItems = new PrismaStoreItemOptionRepository(prisma);
   const catalogReconciler = new CatalogReconciler({
-    environment: productEnvironmentProfile.workerRuntimeTarget,
+    environment: productEnvironmentProfile.workerDeploymentTarget,
     storeItems,
     storeOfferSnapshots: new PrismaStoreOfferSnapshotRepository(prisma),
     stripeCatalog: createStripeCatalogGateway(bindings),
@@ -27,15 +27,15 @@ export async function runScheduledCatalogVerification(bindings: AppBindings): Pr
 
   try {
     const result = await catalogReconciler.verifyBuyableCatalog({
-      apply: productEnvironmentProfile.catalogVerification.applyScheduledChanges,
-      expectedPrices: createCurrentCatalogExpectedSandboxPriceMap(productEnvironmentProfile.workerRuntimeTarget),
+      apply: productEnvironmentProfile.catalogVerificationPolicy.applyScheduledChanges,
+      expectedPrices: createCurrentCatalogExpectedSandboxPriceMap(productEnvironmentProfile.workerDeploymentTarget),
       expectedProductProjections: createCurrentCatalogExpectedProductProjectionMap(),
     });
 
     if (result.issues.length) {
       console.warn(
         [
-          `Scheduled Stripe catalog verification found ${result.issues.length} issue(s) in ${productEnvironmentProfile.label}.`,
+          `Scheduled Stripe catalog verification found ${result.issues.length} issue(s) in ${formatProductEnvironmentLabel(productEnvironmentProfile.productEnvironment)}.`,
           formatScheduledCatalogIssueBreakdown(result.issues),
         ].join(' '),
       );

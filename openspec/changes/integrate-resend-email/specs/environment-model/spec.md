@@ -8,10 +8,21 @@ The system SHALL scope Resend provider resources and runtime config to the canon
 
 - **GIVEN** the Worker runs in Local, UAT, or PRD
 - **WHEN** paid-order email behavior reads runtime config
-- **THEN** it uses only that environment's Resend API key, sender, reply-to, ops recipient, newsletter Topic, and recipient/contact override.
+- **THEN** it uses only that environment's Resend API key, sender, reply-to, ops recipient, newsletter Topic, recipient/contact override, email brand logo URL, and email brand home URL.
 - **AND** UAT maps to the Worker sandbox runtime target and requires `RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL=blackboxrecordsathens+TESTING@gmail.com`
 - **AND** UAT uses that override as the sink recipient for application email and the sink Contact for newsletter registration
 - **AND** PRD maps to the Worker production runtime target and must not honor the UAT recipient override.
+
+#### Scenario: Email brand assets are environment scoped
+
+- **GIVEN** paid-order email templates render a BlackBox logo and homepage link
+- **WHEN** the Worker reads email runtime config
+- **THEN** it validates `EMAIL_BRAND_LOGO_URL` as an absolute HTTPS URL for the public logo image
+- **AND** it validates `EMAIL_BRAND_HOME_URL` as an absolute HTTPS URL for the public site home
+- **AND** UAT uses the GitHub Pages UAT site and logo URLs
+- **AND** PRD uses the Cloudflare Pages PRD site and logo URLs until an approved custom public site domain replaces them
+- **AND** Local and automated tests may use stable public or mock HTTPS URLs without requiring private provider secrets
+- **AND** these public URLs do not expose Resend IDs, Stripe IDs, D1 fields, raw provider payloads, or secret verification evidence.
 
 #### Scenario: Local development runs without real provider secrets
 

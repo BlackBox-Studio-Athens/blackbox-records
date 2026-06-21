@@ -41,6 +41,17 @@
 - [x] 4.2 Update README/env docs with Resend SDK runtime usage, newsletter signup behavior, Free tier limits, `blackboxrecordsathens.com` sending-domain setup, Cloudflare Email Routing inbound alias behavior where it supports reply routing, CLI verification, manual DNS/secret checkpoints, Local/UAT/PRD config, and runtime-vs-verification boundaries.
 - [x] 4.3 Run OpenSpec validation, unit tests, check, and build; record any provider-side checks that remain manual.
 
+## 5. Email Art Direction Polish
+
+- [ ] 5.1 Add non-secret Worker email brand config for `EMAIL_BRAND_LOGO_URL` and `EMAIL_BRAND_HOME_URL`, with validation, Local/UAT/PRD Wrangler values, docs, and tests. UAT should point at the GitHub Pages UAT logo/home URLs; PRD should point at the Cloudflare Pages PRD logo/home URLs until a custom public site domain is approved.
+- [ ] 5.2 Refactor the paid-order email frame into explicit email-safe BlackBox design tokens: near-black shell, hard-edged 620px panel, off-white text, muted metadata, restrained Store Blood warning/accent treatment, email-safe font stack, mobile table behavior, and no generic provider receipt styling.
+- [ ] 5.3 Add the BlackBox logo header lockup using the configured public HTTPS logo URL, explicit dimensions, useful alt text, a home link, and live text fallback so blocked images still show `BlackBox Records` and never hide transactional content.
+- [ ] 5.4 Redesign the shopper confirmation as a compact editorial receipt: logo lockup, subject/preheader, order reference, item/quantity summary, total paid, safe payment received wording, fulfillment expectations, support CTA, and explicit no-tax-invoice/no-VAT-receipt note without newsletter or marketing upsell blocks.
+- [ ] 5.5 Redesign the ops fulfillment email as an action-first internal note: logo lockup, subject/preheader, top fulfillment checklist, order/item/variant/quantity/payment summary, shopper contact, shipping/contact summary, and prominent missing-data or shopper-send warnings without raw Stripe, D1, webhook, shipping, or Resend payload dumps.
+- [ ] 5.6 Extend previews and tests for logo-loaded and logo-blocked states, mobile-width rendering, long item/address/name cases, UAT sink notices, missing shopper email, shopper send failure warning, dark/light client color behavior, text fallbacks, and snapshot coverage.
+- [ ] 5.7 Add a visual QA path for rendered email preview HTML using the native Codex Browser Use plugin when previews are rendered through a local file or route; record Browser Use as not required only if the task remains source/spec/test-only without rendered email inspection.
+- [ ] 5.8 Run `pnpm openspec -- validate integrate-resend-email --type change --strict`, `pnpm openspec -- validate --all --strict`, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record any provider-side or email-client checks that remain manual.
+
 Implementation notes:
 
 - Runtime implementation uses the official Resend SDK through the backend email boundary; no provider payloads or secrets cross into the browser.

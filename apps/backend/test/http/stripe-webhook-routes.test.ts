@@ -49,7 +49,7 @@ vi.mock('../../src/interfaces/http/routes/stripe-webhook-services', () => ({
 const webhookSecret = 'whsec_fixture_secret';
 
 const testBindings = {
-  APP_ENV: 'local' as const,
+  PRODUCT_ENVIRONMENT: 'LOCAL' as const,
   COMMERCE_DB: {} as D1Database,
   STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: 'pmc_test_blackbox_checkout',
   STRIPE_SECRET_KEY: 'sk_test_123',

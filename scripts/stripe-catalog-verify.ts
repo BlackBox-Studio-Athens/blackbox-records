@@ -15,6 +15,7 @@ import {
 import { parseStoreItemSlug, parseStripePriceId, parseVariantId } from '../apps/backend/src/domain/commerce';
 import {
   parseProductEnvironmentCliTarget,
+  formatProductEnvironmentLabel,
   productEnvironmentProfileFromWorkerRuntimeTarget,
   workerRuntimeTargetForProductEnvironment,
   type ProductEnvironmentProfile,
@@ -142,7 +143,7 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 
     if (arg === '--help' || arg === '-h') {
       console.log(
-        'Usage: pnpm stripe:catalog:verify --env uat|prd [--apply] [--artifact-commit-sha <sha> --promotion-run-id <id> --ci-promotion]',
+        'Usage: pnpm stripe:catalog:verify --env local|uat|prd [--apply] [--artifact-commit-sha <sha> --promotion-run-id <id> --ci-promotion] (legacy platform aliases accepted: sandbox, production)',
       );
       process.exit(0);
     }
@@ -152,7 +153,7 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 
   if (
     options.apply &&
-    productEnvironmentProfileFromWorkerRuntimeTarget(options.environment).productEnvironment === 'prd'
+    productEnvironmentProfileFromWorkerRuntimeTarget(options.environment).productEnvironment === 'PRD'
   ) {
     assertProductionApplyPromotionContext(options.promotionContext);
   }
@@ -169,7 +170,7 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
   }
 
   const contracts = await loadStripeCatalogStoreItemContracts({
-    productEnvironment: productEnvironmentProfile.productEnvironment === 'prd' ? 'prd' : 'uat',
+    productEnvironment: productEnvironmentProfile.productEnvironment === 'PRD' ? 'PRD' : 'UAT',
   });
   const rows = readD1CatalogRows(options.environment, contracts);
   const repositories = createD1CatalogRepositories(options.environment, rows);
@@ -246,8 +247,9 @@ export function formatStripeCatalogVerifyReport(result: CatalogSyncRunResult): s
   const issueCounts = countIssuesByDriftCategory(result);
   const lines = [
     `Stripe catalog verification ${result.issues.length ? 'failed' : 'OK'}.`,
-    `Environment: ${result.environment}`,
-    `Product Environment: ${productEnvironmentProfile.label}`,
+    `Product Environment: ${productEnvironmentProfile.productEnvironment}`,
+    `Product Environment label: ${formatProductEnvironmentLabel(productEnvironmentProfile.productEnvironment)}`,
+    `Worker deployment target: ${productEnvironmentProfile.workerDeploymentTarget}`,
     `Mode: ${result.dryRun ? 'dry-run' : 'apply'}`,
     `Checked variants: ${result.results.length}`,
     '',
@@ -617,12 +619,12 @@ function parseEnvironment(value: string | undefined): StripeCatalogEnvironment {
   try {
     return workerRuntimeTargetForProductEnvironment(parseProductEnvironmentCliTarget(value));
   } catch {
-    throw new Error('--env must be one of: local, uat, prd, sandbox, production.');
+    throw new Error('--env must be one of: local, uat, prd. Legacy platform aliases accepted: sandbox, production.');
   }
 }
 
 function toDesiredCatalogEnvironment(productEnvironmentProfile: ProductEnvironmentProfile) {
-  return productEnvironmentProfile.productEnvironment === 'prd' ? 'production' : 'sandbox';
+  return productEnvironmentProfile.productEnvironment === 'PRD' ? 'production' : 'sandbox';
 }
 
 async function main() {
