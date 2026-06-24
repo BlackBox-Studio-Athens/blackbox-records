@@ -196,7 +196,19 @@ export class CatalogReconciler {
     }
 
     if (!resolvedPrice) {
-      issues.push(createIssue(storeItem, 'missing_price', `No unambiguous active Stripe Price matches ${lookupKey}.`));
+      issues.push(
+        createIssue(
+          storeItem,
+          'missing_price',
+          `No unambiguous active Stripe Price matches ${lookupKey}. ${describePriceCandidates(
+            candidates,
+            storeItem,
+            this.dependencies.environment,
+            lookupKey,
+            metadata,
+          )}`,
+        ),
+      );
     }
 
     if (resolvedPrice) {
@@ -454,6 +466,38 @@ function matchesCatalogIdentity(
 
 function hasMetadata(candidate: Record<string, string>, expected: Record<string, string>): boolean {
   return Object.entries(expected).every(([key, value]) => candidate[key] === value);
+}
+
+function describePriceCandidates(
+  candidates: StripeCatalogPrice[],
+  storeItem: StoreItemOptionRecord,
+  environment: StripeCatalogEnvironment,
+  lookupKey: string,
+  metadata: Record<string, string>,
+): string {
+  if (candidates.length === 0) {
+    return 'Stripe returned 0 candidate Prices.';
+  }
+
+  const summaries = candidates
+    .slice(0, 10)
+    .map((price) =>
+      [
+        redactStripeObjectId(price.priceId),
+        `active=${price.active}`,
+        `productActive=${price.productActive}`,
+        `amount=${price.amountMinor ?? 'unknown'}`,
+        `currency=${price.currencyCode ?? 'unknown'}`,
+        `lookup=${price.lookupKey === lookupKey ? 'match' : price.lookupKey ? 'other' : 'missing'}`,
+        `priceMetadata=${hasMetadata(price.metadata, metadata) ? 'match' : 'missing'}`,
+        `productMetadata=${hasMetadata(price.productMetadata, metadata) ? 'match' : 'missing'}`,
+        `identity=${matchesCatalogIdentity(price, storeItem, environment, lookupKey) ? 'match' : 'missing'}`,
+      ].join(','),
+    );
+  const truncatedCount = Math.max(0, candidates.length - summaries.length);
+  const suffix = truncatedCount > 0 ? `; ${truncatedCount} more omitted` : '';
+
+  return `Stripe returned ${candidates.length} candidate Price(s): ${summaries.join(' | ')}${suffix}.`;
 }
 
 function matchesExpectedPrice(price: StripeCatalogPrice, expectedPrice: StripeCatalogExpectedPrice): boolean {
