@@ -175,7 +175,7 @@ export class CatalogReconciler {
 
     if (!resolvedPrice && options.apply && options.expectedPrice && issues.length === 0) {
       const repairIdentity =
-        mappedPrice && activeMatches.length === 0 ? createMappedPriceRepairMutationIdentity(mappedPrice) : null;
+        activeMatches.length === 0 ? createPriceRepairMutationIdentity(mappedPrice, mapping, snapshot) : null;
       resolvedPrice = await this.dependencies.stripeCatalog.createCatalogPrice(
         {
           amountMinor: options.expectedPrice.amountMinor,
@@ -574,13 +574,34 @@ function createCatalogPriceMutationIdentity(
   return repairIdentity ? `${baseIdentity}:${repairIdentity}` : baseIdentity;
 }
 
-function createMappedPriceRepairMutationIdentity(price: StripeCatalogPrice): string {
-  return [
-    'replace',
-    price.priceId,
-    price.active ? 'price_active' : 'price_inactive',
-    price.productActive ? 'product_active' : 'product_inactive',
-  ].join('_');
+function createPriceRepairMutationIdentity(
+  price: StripeCatalogPrice | null,
+  mapping: { stripePriceId: string } | null,
+  snapshot: { priceActive: boolean; productActive: boolean; stripePriceId: string } | null,
+): string | null {
+  if (price) {
+    return [
+      'replace_price',
+      price.priceId,
+      price.active ? 'price_active' : 'price_inactive',
+      price.productActive ? 'product_active' : 'product_inactive',
+    ].join('_');
+  }
+
+  if (mapping) {
+    return ['replace_mapping', mapping.stripePriceId].join('_');
+  }
+
+  if (snapshot) {
+    return [
+      'replace_snapshot',
+      snapshot.stripePriceId,
+      snapshot.priceActive ? 'price_active' : 'price_inactive',
+      snapshot.productActive ? 'product_active' : 'product_inactive',
+    ].join('_');
+  }
+
+  return null;
 }
 
 function createStableShortHash(value: string): string {
