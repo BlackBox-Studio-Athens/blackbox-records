@@ -86,6 +86,19 @@ class StripeCatalogGatewayClient implements StripeCatalogGateway {
       return this.updatePriceMetadata(existingPrice.priceId, input.metadata, context);
     }
 
+    const inactivePrice = (await this.listInactivePricesByMetadata(input.metadata)).find(
+      (price) =>
+        (!price.active || !price.productActive) &&
+        price.amountMinor === input.amountMinor &&
+        price.currencyCode?.toUpperCase() === input.currencyCode.toUpperCase() &&
+        price.productId,
+    );
+
+    if (inactivePrice) {
+      await this.releaseInactiveLookupKey(input.lookupKey, context);
+      return this.restoreInactiveCatalogPrice(inactivePrice, input, context);
+    }
+
     await this.releaseInactiveLookupKey(input.lookupKey, context);
 
     const product = await this.stripe.products.create(
@@ -117,6 +130,66 @@ class StripeCatalogGatewayClient implements StripeCatalogGateway {
     )) as StripePriceWithExpandedProduct;
 
     return toCatalogPrice(price);
+  }
+
+  private async listInactivePricesByMetadata(metadata: StripeCatalogIdentityMetadata): Promise<StripeCatalogPrice[]> {
+    const [activePrices, inactivePrices] = await Promise.all([
+      this.listPrices({
+        active: true,
+        expand: ['data.product'],
+      }),
+      this.listPrices({
+        active: false,
+        expand: ['data.product'],
+      }),
+    ]);
+
+    return [...activePrices, ...inactivePrices].filter(
+      (price) =>
+        (!price.active || !price.productActive) &&
+        (hasMetadata(price.metadata, metadata) ||
+          hasMetadata(price.productMetadata, metadata) ||
+          price.lookupKey === `blackbox:${metadata.appEnv}:${metadata.storeItemSlug}:${metadata.variantId}`),
+    );
+  }
+
+  private async restoreInactiveCatalogPrice(
+    price: StripeCatalogPrice,
+    input: StripeCatalogPriceCreateInput,
+    context?: StripeCatalogMutationContext,
+  ): Promise<StripeCatalogPrice> {
+    if (!price.productId) {
+      return price;
+    }
+
+    await this.stripe.products.update(
+      price.productId,
+      {
+        active: true,
+        description: input.productProjection?.description,
+        images: input.productProjection?.imageUrls,
+        metadata: {
+          ...(input.productProjection?.metadata ?? {}),
+          ...input.metadata,
+        },
+        name: input.productProjection?.name ?? input.productName,
+        tax_code: input.productProjection?.taxCode ?? undefined,
+      },
+      toStripeRequestOptions(deriveChildMutationContext(context, `restore_product_${price.priceId}`)),
+    );
+
+    const restoredPrice = (await this.stripe.prices.update(
+      price.priceId,
+      {
+        active: true,
+        expand: ['product'],
+        lookup_key: input.lookupKey,
+        metadata: input.metadata,
+      },
+      toStripeRequestOptions(deriveChildMutationContext(context, `restore_price_${price.priceId}`)),
+    )) as StripePriceWithExpandedProduct;
+
+    return toCatalogPrice(restoredPrice);
   }
 
   private async releaseInactiveLookupKey(lookupKey: string, context?: StripeCatalogMutationContext): Promise<void> {
