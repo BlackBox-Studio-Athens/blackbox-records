@@ -184,6 +184,7 @@ function createCatalogPrice(input: {
   currencyCode?: string;
   environment?: StripeCatalogEnvironment;
   priceId: string;
+  productActive?: boolean;
   productProjection?: StripeCatalogProductProjection | null;
 }): StripeCatalogPrice {
   const environment = input.environment ?? 'uat';
@@ -203,7 +204,7 @@ function createCatalogPrice(input: {
     lookupKey,
     metadata,
     priceId: stripePriceId(input.priceId),
-    productActive: true,
+    productActive: input.productActive ?? true,
     productDescription: input.productProjection?.description ?? 'Disintegration by Afterwise.',
     productId: `prod_${input.priceId}`,
     productImages: input.productProjection?.imageUrls ?? [
@@ -544,6 +545,46 @@ describe('CatalogReconciler', () => {
       expect.objectContaining({ code: 'ambiguous_active_price' }),
       expect.objectContaining({ code: 'missing_price' }),
     ]);
+  });
+
+  it('salts create idempotency when replacing an inactive mapped Product', async () => {
+    const stalePrice = createCatalogPrice({
+      priceId: 'price_test_inactive_product',
+      productActive: false,
+    });
+    const { mappings, reconciler, stripeCatalog } = createReconciler();
+    stripeCatalog.prices.set(stalePrice.priceId, stalePrice);
+    mappings.records.set(storeItem.variantId, {
+      stripePriceId: stalePrice.priceId,
+      variantId: storeItem.variantId,
+    });
+
+    const result = await reconciler.reconcileVariant(storeItem, {
+      apply: true,
+      expectedPrice: {
+        amountMinor: 2800,
+        currencyCode: 'EUR',
+        revision: 'disintegration-black-vinyl-lp-2800-eur',
+      },
+      now: new Date('2026-05-23T10:00:00.000Z'),
+    });
+
+    expect(result.issues).toEqual([]);
+    expect(stripeCatalog.createCatalogPrice).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        idempotencyKey: expect.stringContaining(
+          'revision_disintegration-black-vinyl-lp-2800-eur:replace_price_test_inactive_product_price_active_product_inactive',
+        ),
+      }),
+    );
+    expect(result.actions).toEqual(
+      expect.arrayContaining([
+        { kind: 'create_catalog_price' },
+        { kind: 'update_mapping', stripePriceId: 'price_test_disintegration_2800' },
+        { kind: 'update_snapshot' },
+      ]),
+    );
   });
 
   it('applies production replacement Prices only through app-owned active matches', async () => {

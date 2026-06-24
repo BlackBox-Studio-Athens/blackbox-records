@@ -174,6 +174,8 @@ export class CatalogReconciler {
     }
 
     if (!resolvedPrice && options.apply && options.expectedPrice && issues.length === 0) {
+      const repairIdentity =
+        mappedPrice && activeMatches.length === 0 ? createMappedPriceRepairMutationIdentity(mappedPrice) : null;
       resolvedPrice = await this.dependencies.stripeCatalog.createCatalogPrice(
         {
           amountMinor: options.expectedPrice.amountMinor,
@@ -187,7 +189,7 @@ export class CatalogReconciler {
           this.dependencies.environment,
           storeItem.variantId,
           'create_catalog_price',
-          createCatalogPriceMutationIdentity(options.expectedPrice, options.productProjection ?? null),
+          createCatalogPriceMutationIdentity(options.expectedPrice, options.productProjection ?? null, repairIdentity),
         ),
       );
       actions.push({ kind: 'create_catalog_price' });
@@ -557,18 +559,28 @@ function createMutationContext(
 function createCatalogPriceMutationIdentity(
   expectedPrice: StripeCatalogExpectedPrice,
   productProjection: StripeCatalogProductProjection | null,
+  repairIdentity: string | null = null,
 ): string {
-  if (expectedPrice.revision) {
-    return `revision_${expectedPrice.revision}`;
-  }
+  const baseIdentity = expectedPrice.revision
+    ? `revision_${expectedPrice.revision}`
+    : createStableShortHash(
+        JSON.stringify({
+          amountMinor: expectedPrice.amountMinor,
+          currencyCode: expectedPrice.currencyCode.toUpperCase(),
+          productProjection,
+        }),
+      );
 
-  return createStableShortHash(
-    JSON.stringify({
-      amountMinor: expectedPrice.amountMinor,
-      currencyCode: expectedPrice.currencyCode.toUpperCase(),
-      productProjection,
-    }),
-  );
+  return repairIdentity ? `${baseIdentity}:${repairIdentity}` : baseIdentity;
+}
+
+function createMappedPriceRepairMutationIdentity(price: StripeCatalogPrice): string {
+  return [
+    'replace',
+    price.priceId,
+    price.active ? 'price_active' : 'price_inactive',
+    price.productActive ? 'product_active' : 'product_inactive',
+  ].join('_');
 }
 
 function createStableShortHash(value: string): string {
