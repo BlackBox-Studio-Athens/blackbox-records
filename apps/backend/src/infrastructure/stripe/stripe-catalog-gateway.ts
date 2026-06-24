@@ -86,6 +86,8 @@ class StripeCatalogGatewayClient implements StripeCatalogGateway {
       return this.updatePriceMetadata(existingPrice.priceId, input.metadata, context);
     }
 
+    await this.releaseInactiveLookupKey(input.lookupKey, context);
+
     const product = await this.stripe.products.create(
       {
         active: true,
@@ -115,6 +117,24 @@ class StripeCatalogGatewayClient implements StripeCatalogGateway {
     )) as StripePriceWithExpandedProduct;
 
     return toCatalogPrice(price);
+  }
+
+  private async releaseInactiveLookupKey(lookupKey: string, context?: StripeCatalogMutationContext): Promise<void> {
+    const prices = await this.listPricesByLookupKey(lookupKey);
+    const inactivePrices = prices.filter(
+      (price) => price.lookupKey === lookupKey && (!price.active || !price.productActive),
+    );
+
+    for (const price of inactivePrices) {
+      await this.stripe.prices.update(
+        price.priceId,
+        {
+          expand: ['product'],
+          lookup_key: '',
+        },
+        toStripeRequestOptions(deriveChildMutationContext(context, `release_lookup_${price.priceId}`)),
+      );
+    }
   }
 
   public async updatePriceMetadata(
