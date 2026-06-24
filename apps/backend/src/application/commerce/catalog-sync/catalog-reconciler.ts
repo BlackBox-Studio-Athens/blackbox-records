@@ -625,7 +625,7 @@ function createPriceRepairMutationIdentity(
 ): string | null {
   if (price) {
     return [
-      'replace_price',
+      'replace_price_v2',
       price.priceId,
       price.active ? 'price_active' : 'price_inactive',
       price.productActive ? 'product_active' : 'product_inactive',

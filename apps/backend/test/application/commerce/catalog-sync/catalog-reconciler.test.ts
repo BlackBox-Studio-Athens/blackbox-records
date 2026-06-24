@@ -574,7 +574,7 @@ describe('CatalogReconciler', () => {
       expect.any(Object),
       expect.objectContaining({
         idempotencyKey: expect.stringContaining(
-          'revision_disintegration-black-vinyl-lp-2800-eur:replace_price_price_test_inactive_product_price_active_product_inactive',
+          'revision_disintegration-black-vinyl-lp-2800-eur:replace_price_v2_price_test_inactive_product_price_active_product_inactive',
         ),
       }),
     );
