@@ -50,30 +50,24 @@ class StripeCatalogGatewayClient implements StripeCatalogGateway {
   }
 
   public async listPricesByLookupKey(lookupKey: string): Promise<StripeCatalogPrice[]> {
-    const prices = await this.stripe.prices.list({
+    return this.listPrices({
       expand: ['data.product'],
-      limit: 100,
       lookup_keys: [lookupKey],
     });
-
-    return prices.data.map((price) => toCatalogPrice(price as StripePriceWithExpandedProduct));
   }
 
   public async listPricesByMetadata(metadata: StripeCatalogIdentityMetadata): Promise<StripeCatalogPrice[]> {
-    const prices = await this.stripe.prices.list({
+    const prices = await this.listPrices({
       active: true,
       expand: ['data.product'],
-      limit: 100,
     });
 
-    return prices.data
-      .map((price) => toCatalogPrice(price as StripePriceWithExpandedProduct))
-      .filter(
-        (price) =>
-          hasMetadata(price.metadata, metadata) ||
-          hasMetadata(price.productMetadata, metadata) ||
-          price.lookupKey === `blackbox:${metadata.appEnv}:${metadata.storeItemSlug}:${metadata.variantId}`,
-      );
+    return prices.filter(
+      (price) =>
+        hasMetadata(price.metadata, metadata) ||
+        hasMetadata(price.productMetadata, metadata) ||
+        price.lookupKey === `blackbox:${metadata.appEnv}:${metadata.storeItemSlug}:${metadata.variantId}`,
+    );
   }
 
   public async createCatalogPrice(
@@ -169,6 +163,26 @@ class StripeCatalogGatewayClient implements StripeCatalogGateway {
       },
       toStripeRequestOptions(context),
     );
+  }
+
+  private async listPrices(
+    params: Omit<Stripe.PriceListParams, 'limit' | 'starting_after'>,
+  ): Promise<StripeCatalogPrice[]> {
+    const prices: StripeCatalogPrice[] = [];
+    let startingAfter: string | undefined;
+
+    do {
+      const page = await this.stripe.prices.list({
+        ...params,
+        limit: 100,
+        starting_after: startingAfter,
+      });
+
+      prices.push(...page.data.map((price) => toCatalogPrice(price as StripePriceWithExpandedProduct)));
+      startingAfter = page.has_more ? page.data.at(-1)?.id : undefined;
+    } while (startingAfter);
+
+    return prices;
   }
 }
 
