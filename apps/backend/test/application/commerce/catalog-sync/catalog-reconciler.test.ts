@@ -149,7 +149,7 @@ class InMemoryStripeCatalog implements StripeCatalogGateway {
       input: StripeCatalogPriceCreateInput,
       _context?: StripeCatalogMutationContext,
     ): Promise<StripeCatalogPrice> => {
-      const pricePrefix = input.metadata.appEnv === 'production' ? 'price_live' : 'price_test';
+      const pricePrefix = input.metadata.appEnv === 'prd' ? 'price_live' : 'price_test';
       const price = createCatalogPrice({
         amountMinor: input.amountMinor,
         currencyCode: input.currencyCode,
@@ -186,7 +186,7 @@ function createCatalogPrice(input: {
   priceId: string;
   productProjection?: StripeCatalogProductProjection | null;
 }): StripeCatalogPrice {
-  const environment = input.environment ?? 'sandbox';
+  const environment = input.environment ?? 'uat';
   const lookupKey = createStripeCatalogLookupKey(environment, storeItem);
   const metadata = {
     appEnv: environment,
@@ -227,7 +227,7 @@ function createReconciler(
     stripeCatalog?: InMemoryStripeCatalog;
   } = {},
 ) {
-  const environment = input.environment ?? 'sandbox';
+  const environment = input.environment ?? 'uat';
   const mappings = input.mappings ?? new InMemoryVariantMappings();
   const snapshots = input.snapshots ?? new InMemoryStoreOfferSnapshots();
   const stripeCatalog = input.stripeCatalog ?? new InMemoryStripeCatalog();
@@ -304,7 +304,7 @@ describe('CatalogReconciler', () => {
       priceActive: true,
       productActive: true,
       storeItemSlug: storeItem.storeItemSlug,
-      stripeLookupKey: createStripeCatalogLookupKey('sandbox', storeItem),
+      stripeLookupKey: createStripeCatalogLookupKey('uat', storeItem),
       stripePriceId: price.priceId,
       syncedAt: new Date('2026-05-21T10:00:00.000Z'),
       variantId: storeItem.variantId,
@@ -426,7 +426,7 @@ describe('CatalogReconciler', () => {
       priceActive: true,
       productActive: true,
       storeItemSlug: storeItem.storeItemSlug,
-      stripeLookupKey: createStripeCatalogLookupKey('sandbox', storeItem),
+      stripeLookupKey: createStripeCatalogLookupKey('uat', storeItem),
       stripePriceId: price.priceId,
       syncedAt: new Date('2026-05-21T10:00:00.000Z'),
       variantId: storeItem.variantId,
@@ -549,10 +549,10 @@ describe('CatalogReconciler', () => {
   it('applies production replacement Prices only through app-owned active matches', async () => {
     const oldPrice = createCatalogPrice({
       amountMinor: 1000,
-      environment: 'production',
+      environment: 'prd',
       priceId: 'price_live_disintegration_1000',
     });
-    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler({ environment: 'production' });
+    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler({ environment: 'prd' });
     stripeCatalog.prices.set(oldPrice.priceId, oldPrice);
     mappings.records.set(storeItem.variantId, {
       stripePriceId: oldPrice.priceId,
@@ -581,7 +581,7 @@ describe('CatalogReconciler', () => {
     expect(stripeCatalog.archivePrice).toHaveBeenCalledWith(
       oldPrice.priceId,
       expect.objectContaining({
-        idempotencyKey: expect.stringContaining('production'),
+        idempotencyKey: expect.stringContaining('prd'),
       }),
     );
     expect(stripeCatalog.createCatalogPrice).toHaveBeenCalledWith(
@@ -601,14 +601,14 @@ describe('CatalogReconciler', () => {
   it('does not mutate production metadata when the resolved Price is ambiguous or not app-owned', async () => {
     const wrongPrice = {
       ...createCatalogPrice({
-        environment: 'production',
+        environment: 'prd',
         priceId: 'price_live_wrong_owner',
       }),
       lookupKey: 'other-app:production:disintegration-black-vinyl-lp',
       metadata: {},
       productMetadata: {},
     };
-    const { mappings, reconciler, stripeCatalog } = createReconciler({ environment: 'production' });
+    const { mappings, reconciler, stripeCatalog } = createReconciler({ environment: 'prd' });
     stripeCatalog.prices.set(wrongPrice.priceId, wrongPrice);
     mappings.records.set(storeItem.variantId, {
       stripePriceId: wrongPrice.priceId,

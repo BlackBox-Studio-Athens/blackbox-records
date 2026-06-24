@@ -9,11 +9,11 @@ import {
 import { redactSensitiveSmokeText, scanHighRiskSmokeExposure } from '../../../../scripts/smoke-core';
 
 describe('Resend UAT smoke runner', () => {
-  it('defaults to the deployed sandbox Worker and parses overrides', () => {
+  it('defaults to the deployed UAT Worker and parses overrides', () => {
     expect(parseResendUatSmokeArgs([])).toMatchObject({
       evidenceDir: expect.stringContaining('resend-uat'),
       timeoutMs: 30_000,
-      workerUrl: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
+      workerUrl: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
     });
 
     expect(

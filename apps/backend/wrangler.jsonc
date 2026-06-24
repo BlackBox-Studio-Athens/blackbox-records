@@ -1,10 +1,22 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "blackbox-records-backend-dev",
+  "name": "blackbox-records-backend-local",
   "main": "src/index.ts",
   "compatibility_date": "2026-04-20",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+    },
+  },
   "d1_databases": [
     {
       "binding": "COMMERCE_DB",
@@ -25,8 +37,20 @@
   },
   "env": {
     "mock": {
-      "name": "blackbox-records-backend-dev-mock",
+      "name": "blackbox-records-backend-local-mock",
       "workers_dev": true,
+      "observability": {
+        "enabled": true,
+        "logs": {
+          "enabled": true,
+          "head_sampling_rate": 1,
+          "invocation_logs": true,
+        },
+        "traces": {
+          "enabled": true,
+          "head_sampling_rate": 1,
+        },
+      },
       "d1_databases": [
         {
           "binding": "COMMERCE_DB",
@@ -51,8 +75,20 @@
       },
     },
     "mock-api": {
-      "name": "blackbox-records-backend-dev-mock-api",
+      "name": "blackbox-records-backend-local-mock-api",
       "workers_dev": true,
+      "observability": {
+        "enabled": true,
+        "logs": {
+          "enabled": true,
+          "head_sampling_rate": 1,
+          "invocation_logs": true,
+        },
+        "traces": {
+          "enabled": true,
+          "head_sampling_rate": 1,
+        },
+      },
       "d1_databases": [
         {
           "binding": "COMMERCE_DB",
@@ -76,17 +112,29 @@
         "STRIPE_WEBHOOK_SECRET": "whsec_local_mock",
       },
     },
-    "sandbox": {
-      "name": "blackbox-records-backend-sandbox",
+    "uat": {
+      "name": "blackbox-records-backend-uat",
       "workers_dev": true,
+      "observability": {
+        "enabled": true,
+        "logs": {
+          "enabled": true,
+          "head_sampling_rate": 1,
+          "invocation_logs": true,
+        },
+        "traces": {
+          "enabled": true,
+          "head_sampling_rate": 0.1,
+        },
+      },
       "triggers": {
         "crons": ["17 */6 * * *"],
       },
       "d1_databases": [
         {
           "binding": "COMMERCE_DB",
-          "database_name": "blackbox-records-commerce-sandbox",
-          "database_id": "d8971b93-5db5-4583-9c06-7edf33e78cde",
+          "database_name": "blackbox-records-commerce-uat",
+          "database_id": "a1459267-096e-4b8c-8826-f3e5d4131cfd",
           "migrations_dir": "prisma/migrations",
         },
       ],
@@ -102,13 +150,25 @@
         "RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL": "blackboxrecordsathens+TESTING@gmail.com",
       },
     },
-    "production": {
-      "name": "blackbox-records-backend",
+    "prd": {
+      "name": "blackbox-records-backend-prd",
+      "observability": {
+        "enabled": true,
+        "logs": {
+          "enabled": true,
+          "head_sampling_rate": 1,
+          "invocation_logs": true,
+        },
+        "traces": {
+          "enabled": true,
+          "head_sampling_rate": 0.01,
+        },
+      },
       "d1_databases": [
         {
           "binding": "COMMERCE_DB",
-          "database_name": "blackbox-records-commerce-production",
-          "database_id": "ec342b1d-86e1-4491-beab-fc9ea58c5c48",
+          "database_name": "blackbox-records-commerce-prd",
+          "database_id": "de66a606-908d-446c-8415-39504e653f49",
           "migrations_dir": "prisma/migrations",
         },
       ],

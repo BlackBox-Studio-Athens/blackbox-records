@@ -2,7 +2,8 @@ import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
 export const defaultHostedCacheAuditSiteUrl = 'https://blackbox-records-web.pages.dev';
-export const defaultHostedCacheAuditWorkerUrl = 'https://blackbox-records-backend.blackboxrecordsathens.workers.dev';
+export const defaultHostedCacheAuditWorkerUrl =
+  'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev';
 export const defaultHostedCacheAuditStoreItemSlug = 'disintegration-black-vinyl-lp';
 export const defaultHostedCacheAuditOverlayPath = '/app-shell-overlay/releases/disintegration/';
 export const hostedCacheAuditRequestBudget = 6;

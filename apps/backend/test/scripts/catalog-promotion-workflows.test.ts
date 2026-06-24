@@ -20,9 +20,7 @@ describe('catalog promotion workflows', () => {
     expect(workflow).toContain(
       'apps/backend/src/application/commerce/catalog-sync/(catalog-product-projections|desired-catalog-state)\\.ts',
     );
-    expect(workflow).toContain(
-      'apps/backend/prisma/seeds/(sandbox-uat-commerce-state|production-commerce-readiness)\\.sql',
-    );
+    expect(workflow).toContain('apps/backend/prisma/seeds/(uat-commerce-state|prd-commerce-readiness)\\.sql');
   });
 
   it('prevents artifact commit loops and uses the GitHub Actions bot identity', () => {
@@ -49,8 +47,8 @@ describe('catalog promotion workflows', () => {
     expect(workflow).toContain('pnpm check');
     expect(workflow).toContain('pnpm build');
     expect(workflow).toContain('pnpm runtime:config:verify --env prd');
-    expect(workflow).toContain('pnpm production:catalog-readiness:check -- --phase pre-apply');
-    expect(workflow).toContain('pnpm production:catalog-readiness:check -- --phase post-apply');
+    expect(workflow).toContain('pnpm prd:catalog-readiness:check -- --phase pre-apply');
+    expect(workflow).toContain('pnpm prd:catalog-readiness:check -- --phase post-apply');
     expect(workflow).toContain('pnpm stripe:catalog:verify --env prd --apply --ci-promotion');
     expect(workflow).toContain('--artifact-commit-sha "${{ inputs.artifact_commit_sha }}"');
     expect(workflow).toContain('--promotion-run-id "${{ github.run_id }}"');

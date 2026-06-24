@@ -7,7 +7,7 @@ If this file conflicts with the global file, follow the global file.
 
 Build and maintain the BlackBox Records Astro site.
 
-Current product environments are Local, UAT, and PRD. UAT is GitHub Pages plus the sandbox Worker; PRD is Cloudflare Pages plus the production Worker with checkout and live provider mutation disabled until the explicit PRD-open gate exists. The live commerce handoff still has external Fourthwall history, but the repo now carries native commerce migration work; follow the active planning docs when working in that area.
+Current product environments are Local, UAT, and PRD. UAT is GitHub Pages plus the UAT Worker; PRD is Cloudflare Pages plus the PRD Worker with checkout and live provider mutation disabled until the explicit PRD-open gate exists. The live commerce handoff still has external Fourthwall history, but the repo now carries native commerce migration work; follow the active planning docs when working in that area.
 
 ## Current stack
 
@@ -60,8 +60,8 @@ Read these first before editing:
 - Full local stack with mock Stripe mode: `pnpm dev:stack:stripe-mock`
 - Alias for the same official stripe-mock API mode: `pnpm dev:stack:stripe-mock-api`
 - Real Stripe test checkout preflight: `pnpm checkout:preflight:stripe-test`
-- At-will automated Stripe sandbox Playwright smoke: `pnpm smoke:stripe-sandbox`
-- Production no-payment catalog promotion smoke: `pnpm smoke:stripe-promotion -- --env production --scenario all`
+- At-will automated Stripe UAT Playwright smoke: `pnpm smoke:stripe-uat`
+- Production no-payment catalog promotion smoke: `pnpm smoke:stripe-promotion -- --env prd --scenario all`
 - Local signed Stripe webhook fixture simulator: `pnpm stripe:webhook:simulate:local`
 - Backend local D1 smoke check: `pnpm --filter @blackbox/backend d1:smoke:local`
 - Backend local D1 seed apply: `pnpm --filter @blackbox/backend d1:seed:local`
@@ -72,18 +72,18 @@ Read these first before editing:
 - Backend local D1 migration list/apply:
   - `pnpm --filter @blackbox/backend d1:migrations:list:local`
   - `pnpm --filter @blackbox/backend d1:migrations:apply:local`
-- Backend sandbox D1 migration list/apply:
-  - `pnpm --filter @blackbox/backend d1:migrations:list:sandbox`
-  - `pnpm --filter @blackbox/backend d1:migrations:apply:sandbox`
-- Backend sandbox D1 non-secret seed apply: `pnpm --filter @blackbox/backend d1:seed:sandbox`
-- Backend sandbox catalog readiness seed apply: `pnpm --filter @blackbox/backend d1:seed:sandbox:uat-catalog`
-- Backend production catalog readiness dry-run/report: `pnpm production:catalog-readiness:check -- --phase pre-apply`
-- Backend production catalog readiness seed apply: `pnpm --filter @blackbox/backend d1:seed:production:catalog-readiness`
+- Backend UAT D1 migration list/apply:
+  - `pnpm --filter @blackbox/backend d1:migrations:list:uat`
+  - `pnpm --filter @blackbox/backend d1:migrations:apply:uat`
+- Backend UAT D1 non-secret seed apply: `pnpm --filter @blackbox/backend d1:seed:uat`
+- Backend UAT catalog readiness seed apply: `pnpm --filter @blackbox/backend d1:seed:uat:catalog`
+- Backend PRD catalog readiness dry-run/report: `pnpm prd:catalog-readiness:check -- --phase pre-apply`
+- Backend PRD catalog readiness seed apply: `pnpm --filter @blackbox/backend d1:seed:prd:catalog-readiness`
 - Catalog checkout pause dry-run/apply: `pnpm catalog:checkout:pause -- --variant-id <variantId> [--apply]`
-- Runtime config category verifier: `pnpm runtime:config:verify --env local|uat|prd` (`sandbox` and `production` remain Worker runtime target aliases)
-- Backend production D1 migration list/apply:
-  - `pnpm --filter @blackbox/backend d1:migrations:list:production`
-  - `pnpm --filter @blackbox/backend d1:migrations:apply:production`
+- Runtime config category verifier: `pnpm runtime:config:verify --env local|uat|prd` (`sandbox` and `production` remain CLI aliases only)
+- Backend PRD D1 migration list/apply:
+  - `pnpm --filter @blackbox/backend d1:migrations:list:prd`
+  - `pnpm --filter @blackbox/backend d1:migrations:apply:prd`
 - Backend Prisma client generation: `pnpm --filter @blackbox/backend prisma:generate`
 - Backend local secrets: copy `apps/backend/.dev.vars.example` to `apps/backend/.dev.vars`
 - Generate backend OpenAPI docs and client package: `pnpm generate:api`
@@ -102,7 +102,7 @@ Read these first before editing:
 - The canonical committed IDE launcher is `.run/BlackBox Local Stack.run.xml`.
 - It must keep running the root script `pnpm dev:stack:stripe-mock` so the default local stack works without real Stripe keys.
 - Do not add more committed WebStorm run configurations unless the user explicitly asks; keep the IDE surface to one working local-stack entry.
-- The explicitly requested additional committed IDE launcher is `.run/Stripe Sandbox Smoke.run.xml`; it must keep running the automated Playwright command `pnpm smoke:stripe-sandbox -- --scenario all` and must not require committing Stripe secrets or evidence.
+- The explicitly requested additional committed IDE launcher is `.run/Stripe Sandbox Smoke.run.xml`; it must keep running the automated Playwright command `pnpm smoke:stripe-uat -- --scenario all` and must not require committing Stripe secrets or evidence.
 - The root script `pnpm dev:backend:mock` must keep running the backend package script `pnpm --filter @blackbox/backend dev:mock`.
 - `pnpm site:dev` must keep the site on `http://127.0.0.1:4321/blackbox-records/`.
 - If that port is unavailable, the launcher should fail clearly rather than silently drifting to another port.
@@ -114,7 +114,7 @@ Read these first before editing:
 - `pnpm dev:stack:uat-connected` runs the local static frontend against the deployed UAT Worker/API. It must not require copying UAT Stripe secrets or UAT Worker secrets into local files.
 - `pnpm dev:stack:stripe-test` is an advanced provider diagnostic path and requires `STRIPE_SECRET_KEY`, `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`, `STRIPE_WEBHOOK_SECRET`, and ignored local Stripe test Price mappings.
 - Run `pnpm checkout:preflight:stripe-test` before the advanced `pnpm dev:stack:stripe-test`; it verifies the backend local secret/config file, ignored local Price mapping seed, and gitignore protection without printing secrets.
-- `pnpm smoke:stripe-sandbox` is sandbox-only and automated through Playwright. It requires the deployed Pages site, sandbox Worker, sandbox D1 real Price mappings/stock, sandbox Worker Stripe secret names, and a separately running `stripe listen --forward-to <sandbox-worker>/api/stripe/webhooks` whose signing secret matches the sandbox Worker secret.
+- `pnpm smoke:stripe-uat` is Stripe test-mode only and automated through Playwright. It requires the deployed Pages site, UAT Worker, UAT D1 real Price mappings/stock, UAT Worker Stripe secret names, and a persistent Stripe Dashboard/Workbench webhook endpoint targeting the UAT Worker.
 - `pnpm dev:stack:stripe-mock` starts official `stripe-mock` locally through Go, points the real Stripe SDK at the local proxy on `http://127.0.0.1:12110`, generates local-only fake `Stock`, `ItemAvailability`, and `price_mock_*` mappings for every current store item, and returns a local-only mock Checkout URL. It must not require Docker or `apps/backend/.dev.vars`. It is not a real Stripe-hosted Checkout browser substitute, and the generated 99/99 stock values are not real inventory counts.
 - `pnpm dev:stack:stripe-mock-api` is kept as a terminal alias for the same official stripe-mock API path. Do not reintroduce the old in-process mock gateway as the default local stack.
 - `pnpm stripe-mock:local` owns the local dev-only compatibility proxy. Mock-specific patches for official `stripe-mock` limitations belong there or in tests/scripts, not in production checkout/order use cases.
@@ -129,7 +129,7 @@ Read these first before editing:
 - `apps/backend/prisma/schema.prisma` is on Prisma 7 style datasource configuration without an inline URL; `apps/backend/prisma.config.ts` supplies the local CLI datasource URL.
 - Worker runtime queries still go through `env.COMMERCE_DB`; do not add runtime database URLs to the schema.
 - D1 migrations live under `apps/backend/prisma/migrations/`, and Wrangler applies them through the `COMMERCE_DB` binding.
-- The current pre-production D1 schema history is consolidated into one baseline migration; do not rewrite migration history after real sandbox or production commerce data exists.
+- The current pre-PRD D1 schema history is consolidated into one baseline migration; do not rewrite migration history after real sandbox or production commerce data exists.
 - Backend-local seed SQL lives under `apps/backend/prisma/seeds/`.
 - The first backend application read seam now lives under `apps/backend/src/application/commerce/readers/` and resolves offer availability by `storeItemSlug` without mirroring the frontend `ItemAvailability` type.
 - The backend stock application seam now lives under `apps/backend/src/application/commerce/stock/`.
@@ -153,7 +153,7 @@ Read these first before editing:
 - `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` is a required backend runtime variable for Stripe-backed checkout; missing or blank values fail at gateway construction.
 - `PUBLIC_CHECKOUT_CLIENT_MODE` is the browser checkout mode switch. Use `stripe` for real hosted Stripe Checkout and `mock` only for the local stripe-mock flow.
 - Native checkout availability is controlled by the Worker-owned `native_checkout_enabled` feature gate. The browser may read `/api/store/capabilities`, but it must not receive provider names, flag keys, Stripe IDs, D1 bindings, or internal evaluation errors.
-- Feature gates do not replace Worker environments. Sandbox and production still isolate D1 data, secrets, webhook endpoints, checkout return origins, and release evidence.
+- Feature gates do not replace Worker environments. UAT and PRD still isolate D1 data, secrets, webhook endpoints, checkout return origins, and release evidence.
 - Cloudflare Flagship setup uses binding name `FLAGS`; do not commit a Flagship app ID to `wrangler.jsonc` until the app exists and the non-secret account-specific ID is explicitly approved.
 - StoreCart is convenience state only. Keep it behind `apps/web/src/lib/store-cart.ts`, use native `localStorage` for the current browser-only storage scope, and do not add Zustand, Redux Persist, Dexie, IndexedDB wrappers, or cart SaaS libraries unless carts become account-backed, cross-device, large/offline, or operationally authoritative.
 - Future multi-item cart work should use the canonical terms `StoreCart`, `CartDraft`, `CartLine`, `CartLineItemSnapshot`, `Primary Line Item`, and `CartQuantity`. The Worker must validate every CartLine and CartQuantity before Stripe Checkout; StoreCart must not contain Stripe Price IDs, stock authority, payment state, order state, D1 fields, or backend runtime secrets.
@@ -209,7 +209,7 @@ Read these first before editing:
 - Cloudflare Pages PRD deploys must run through `.github/workflows/cloudflare-pages.yml`. Manual local `wrangler pages deploy` is diagnostic only and is not acceptance evidence.
 - Cloudflare Pages must not own backend routes, Pages Functions, D1 access, Stripe secrets, webhooks, operator auth, stock mutations, order state, or future BOX NOW runtime secrets.
 - GitHub Pages is the UAT static host. Do not describe it as PRD rollback or legacy production hosting.
-- Native commerce migration work must treat UAT as GitHub Pages plus sandbox Worker and PRD as Cloudflare Pages plus production Worker. External-shop behavior remains historical commerce context, not the final architecture.
+- Native commerce migration work must treat UAT as GitHub Pages plus UAT Worker and PRD as Cloudflare Pages plus PRD Worker. External-shop behavior remains historical commerce context, not the final architecture.
 
 ## Project map
 

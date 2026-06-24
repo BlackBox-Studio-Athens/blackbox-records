@@ -423,7 +423,7 @@ export class CatalogReconciler {
     resolvedPrice: StripeCatalogPrice,
     action: CatalogSyncAction['kind'],
   ): void {
-    if (this.dependencies.environment !== 'production') {
+    if (this.dependencies.environment !== 'prd') {
       return;
     }
 

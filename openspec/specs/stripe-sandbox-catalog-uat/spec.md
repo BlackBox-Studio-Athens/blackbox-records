@@ -77,7 +77,7 @@ The Stripe sandbox catalog reset SHALL be dry-run by default, require explicit c
 
 #### Scenario: Confirm deactivates rather than deletes
 
-- **GIVEN** the reset command is run with `--env sandbox --confirm`
+- **GIVEN** the reset command is run with `--env uat --confirm`
 - **WHEN** matching repo-owned sandbox catalog objects are found
 - **THEN** active Prices are updated with `active = false`
 - **AND** active Products are updated with `active = false`

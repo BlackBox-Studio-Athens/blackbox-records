@@ -3,7 +3,7 @@
     <package-json value="$PROJECT_DIR$/package.json" />
     <command value="run" />
     <scripts>
-      <script value="smoke:stripe-sandbox" />
+      <script value="smoke:stripe-uat" />
     </scripts>
     <arguments value="-- --scenario all --screenshots always --timeout-ms 120000" />
     <node-interpreter value="project" />

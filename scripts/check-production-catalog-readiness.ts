@@ -67,7 +67,7 @@ export function parseProductionCatalogReadinessArgs(args: string[]): ProductionC
     }
 
     if (arg === '--help' || arg === '-h') {
-      console.log('Usage: pnpm production:catalog-readiness:check [--phase pre-apply|post-apply]');
+      console.log('Usage: pnpm prd:catalog-readiness:check [--phase pre-apply|post-apply]');
       process.exit(0);
     }
 
@@ -93,7 +93,7 @@ export function evaluateProductionCatalogReadiness(input: {
   phase: ProductionCatalogReadinessPhase;
   rows: readonly ProductionCatalogReadinessRow[];
 }): ProductionCatalogReadinessResult {
-  const productionEntries = input.entries.filter((entry) => entry.targetEnvironments.includes('production'));
+  const productionEntries = input.entries.filter((entry) => entry.targetEnvironments.includes('prd'));
   const rowsByVariantId = new Map(input.rows.map((row) => [row.variantId, row]));
   const issues = productionEntries.flatMap((entry) =>
     evaluateProductionCatalogEntryReadiness(entry, rowsByVariantId.get(entry.variantId) ?? null, input.phase),
@@ -110,7 +110,7 @@ export function formatProductionCatalogReadinessReport(result: ProductionCatalog
   const blockingIssues = result.issues.filter((issue) => issue.severity === 'blocking');
   const pendingIssues = result.issues.filter((issue) => issue.severity === 'pending');
   const lines = [
-    `Production catalog D1 readiness ${blockingIssues.length ? 'failed' : 'OK'}.`,
+    `PRD catalog D1 readiness ${blockingIssues.length ? 'failed' : 'OK'}.`,
     `Phase: ${result.phase}`,
     `Checked variants: ${result.checkedVariants}`,
     `Blocking issues: ${blockingIssues.length}`,
@@ -191,7 +191,7 @@ function evaluateProductionCatalogEntryReadiness(
         phase,
         'blocking',
         'missing_stock',
-        'Published production item has no Stock row; set explicit initial stock or create operator-owned stock before promotion.',
+        'Published PRD item has no Stock row; set explicit initial stock or create operator-owned stock before promotion.',
       ),
     );
   } else if (row.onlineQuantity <= 0) {
@@ -254,7 +254,7 @@ function createIssue(
 
 function readProductionCatalogReadinessRows(entries: readonly DesiredCatalogEntry[]): ProductionCatalogReadinessRow[] {
   const variants = entries
-    .filter((entry) => entry.targetEnvironments.includes('production'))
+    .filter((entry) => entry.targetEnvironments.includes('prd'))
     .map((entry) => sqlString(entry.variantId));
 
   if (variants.length === 0) {
@@ -299,7 +299,7 @@ function runD1Sql(sql: string): string {
     'execute',
     'COMMERCE_DB',
     '--env',
-    'production',
+    'prd',
     '--remote',
     '--command',
     commandSql,
@@ -366,7 +366,7 @@ function parsePhase(value: string | undefined): ProductionCatalogReadinessPhase 
     return value;
   }
 
-  throw new Error('Production catalog readiness phase must be pre-apply or post-apply.');
+  throw new Error('PRD catalog readiness phase must be pre-apply or post-apply.');
 }
 
 async function main(): Promise<void> {

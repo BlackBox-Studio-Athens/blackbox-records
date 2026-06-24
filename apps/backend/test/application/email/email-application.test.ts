@@ -91,13 +91,13 @@ describe('email application module', () => {
 
     expect(result).toEqual(
       expect.objectContaining({
-        idempotencyKey: 'blackbox:sandbox:paid-order-shopper:cs_test_123',
+        idempotencyKey: 'blackbox:uat:paid-order-shopper:cs_test_123',
         status: 'sent',
       }),
     );
     expect(provider.sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
-        idempotencyKey: 'blackbox:sandbox:paid-order-shopper:cs_test_123',
+        idempotencyKey: 'blackbox:uat:paid-order-shopper:cs_test_123',
         tags: expect.arrayContaining([
           { name: 'purpose', value: 'paid-order-shopper' },
           { name: 'sink_routed', value: 'true' },

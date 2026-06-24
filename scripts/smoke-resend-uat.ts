@@ -53,7 +53,7 @@ export type ResendUatSmokeSummary = {
   workerUrl: string;
 };
 
-const defaultWorkerUrl = 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev';
+const defaultWorkerUrl = 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev';
 const defaultEvidenceDir = path.join('.codex-artifacts', 'smoke', 'uat', 'resend-uat');
 const uatSiteOrigin = 'https://blackbox-studio-athens.github.io';
 
@@ -183,18 +183,18 @@ async function checkWorkerHealth(options: ResendUatSmokeOptions): Promise<Resend
   const url = `${options.workerUrl}${pathName}`;
   const issues: string[] = [];
   const response = await fetchSmokeResponse(url, options.timeoutMs).catch((error: unknown) => {
-    issues.push(`Expected sandbox Worker health route to be reachable: ${redactSensitiveSmokeText(String(error))}.`);
+    issues.push(`Expected UAT Worker health route to be reachable: ${redactSensitiveSmokeText(String(error))}.`);
     return null;
   });
   const bodyText = response ? await response.text() : '';
   const contentType = response?.headers.get('content-type') ?? null;
 
   if (response && !response.ok) {
-    issues.push(`Expected sandbox Worker health route to return HTTP 200; received ${response.status}.`);
+    issues.push(`Expected UAT Worker health route to return HTTP 200; received ${response.status}.`);
   }
 
   if (response?.ok && !bodyText.includes('nativeCheckout')) {
-    issues.push('Expected sandbox Worker health route to return Store Capabilities JSON.');
+    issues.push('Expected UAT Worker health route to return Store Capabilities JSON.');
   }
 
   return {

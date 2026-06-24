@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  CatalogDriftError,
   CheckoutConfigurationError,
   CheckoutUnavailableError,
   NativeCheckoutDisabledError,
@@ -21,6 +22,7 @@ vi.mock('../../src/interfaces/http/routes/public-commerce-services', () => ({
   createPublicCommerceServices: () => ({
     disconnect: mockDisconnect,
     errors: {
+      CatalogDriftError,
       CheckoutConfigurationError,
       CheckoutUnavailableError,
       NativeCheckoutDisabledError,

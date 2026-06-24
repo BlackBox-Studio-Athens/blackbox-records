@@ -1,19 +1,19 @@
-name: Deploy Worker sandbox
+name: Deploy Worker UAT
 
 on:
   push:
-    branches: ['sandbox']
+    branches: ['uat']
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: 'cloudflare-sandbox'
+  group: 'cloudflare-uat'
   cancel-in-progress: true
 
 jobs:
-  deploy-backend-sandbox:
+  deploy-backend-uat:
     runs-on: ubuntu-latest
     environment: catalog-promotion-uat
     env:

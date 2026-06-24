@@ -28,8 +28,9 @@ import {
   CatalogReconciler,
   createCurrentCatalogProductProjectionReader,
 } from '../../../application/commerce/catalog-sync';
+import type { AppLogger } from '../../../observability';
 
-export function createPublicCommerceServices(bindings: AppBindings) {
+export function createPublicCommerceServices(bindings: AppBindings, logger?: Pick<AppLogger, 'warn'>) {
   const productEnvironmentProfile = productEnvironmentProfileFromBindings(bindings);
   const prisma = createPrismaClient(bindings);
   const storeItems = new PrismaStoreItemOptionRepository(prisma);
@@ -69,7 +70,7 @@ export function createPublicCommerceServices(bindings: AppBindings) {
       ),
     readCheckoutState: async (checkoutSessionId: string) =>
       readCheckoutState(createStripeCheckoutGateway(bindings), orders, checkoutSessionId),
-    readStoreCapabilities: async () => readStoreCapabilities(createFeatureFlagReader(bindings)),
+    readStoreCapabilities: async () => readStoreCapabilities(createFeatureFlagReader(bindings, logger)),
     readStoreOffer: async (storeItemSlug: string) =>
       readStoreOffer(storeItems, itemAvailability, stock, createCatalogReconciler(), productProjections, storeItemSlug),
     startCheckout: async (command: StartCheckoutCommand) =>
@@ -82,7 +83,7 @@ export function createPublicCommerceServices(bindings: AppBindings) {
         createStripeCheckoutGateway(bindings),
         orders,
         command,
-        createFeatureFlagReader(bindings),
+        createFeatureFlagReader(bindings, logger),
       ),
   };
 }

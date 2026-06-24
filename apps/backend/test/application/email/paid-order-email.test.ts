@@ -51,7 +51,7 @@ describe('paid-order email notifications', () => {
     expect(sendEmail).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
-        idempotencyKey: 'blackbox:sandbox:paid-order-shopper:cs_test_123',
+        idempotencyKey: 'blackbox:uat:paid-order-shopper:cs_test_123',
         subject: 'Payment received - BBR-ORDER1',
         tags: expect.arrayContaining([
           { name: 'purpose', value: 'paid-order-shopper' },
@@ -64,7 +64,7 @@ describe('paid-order email notifications', () => {
     expect(sendEmail).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
-        idempotencyKey: 'blackbox:sandbox:paid-order-ops:cs_test_123',
+        idempotencyKey: 'blackbox:uat:paid-order-ops:cs_test_123',
         subject: 'Fulfill BBR-ORDER1 - paid checkout',
         tags: expect.arrayContaining([
           { name: 'purpose', value: 'paid-order-ops' },
@@ -104,7 +104,7 @@ describe('paid-order email notifications', () => {
     expect(shopperMessage.text).toContain('Support: support@blackboxrecordsathens.com');
     expect(logger.info).toHaveBeenCalledWith(
       expect.objectContaining({
-        idempotencyKey: 'blackbox:sandbox:paid-order-shopper:cs_test_123',
+        idempotencyKey: 'blackbox:uat:paid-order-shopper:cs_test_123',
         orderReference: 'BBR-ORDER1',
         purpose: 'paid-order-shopper',
         status: 'sent',

@@ -3,6 +3,7 @@ import type { FlagshipBinding } from '@cloudflare/flagship/server';
 
 import type { FeatureFlagReader } from '../../application/commerce/checkout/spi';
 import { productEnvironmentProfileFromBindings, type AppBindings, type ProductEnvironmentProfile } from '../../env';
+import type { AppLogger } from '../../observability';
 
 export const NATIVE_CHECKOUT_ENABLED_FLAG = 'native_checkout_enabled';
 
@@ -13,6 +14,7 @@ export class CloudflareFeatureFlagReader implements FeatureFlagReader {
     private readonly productEnvironmentProfile: ProductEnvironmentProfile,
     private readonly evaluator: BooleanFlagEvaluator | undefined,
     private readonly nativeCheckoutOverride: string | undefined,
+    private readonly logger?: Pick<AppLogger, 'warn'>,
   ) {}
 
   public async isNativeCheckoutEnabled(): Promise<boolean> {
@@ -35,6 +37,13 @@ export class CloudflareFeatureFlagReader implements FeatureFlagReader {
         workerDeploymentTarget: this.productEnvironmentProfile.workerDeploymentTarget,
       });
     } catch {
+      this.logger?.warn({
+        capability: 'native_checkout',
+        event: 'feature_gate_evaluation_failed',
+        outcome: 'defaulted',
+        safeReason: 'provider_error',
+      });
+
       return defaultValue;
     }
   }
@@ -42,11 +51,13 @@ export class CloudflareFeatureFlagReader implements FeatureFlagReader {
 
 export function createFeatureFlagReader(
   bindings: Pick<AppBindings, 'PRODUCT_ENVIRONMENT' | 'FLAGS' | 'NATIVE_CHECKOUT_ENABLED'>,
+  logger?: Pick<AppLogger, 'warn'>,
 ): FeatureFlagReader {
   return new CloudflareFeatureFlagReader(
     productEnvironmentProfileFromBindings(bindings),
     bindings.FLAGS,
     bindings.NATIVE_CHECKOUT_ENABLED,
+    logger,
   );
 }
 

@@ -38,12 +38,12 @@ The system SHALL maintain a single mapping from product environments to static h
 #### Scenario: UAT mapping is evaluated
 
 - **WHEN** UAT is described or validated
-- **THEN** it maps to GitHub Pages static hosting, the sandbox Worker runtime target, sandbox D1, Stripe test mode, UAT-scoped GitHub Actions credentials, and UAT Promotion Evidence.
+- **THEN** it maps to GitHub Pages static hosting, the uat Worker runtime target, UAT D1, Stripe test mode, UAT-scoped GitHub Actions credentials, and UAT Promotion Evidence.
 
 #### Scenario: PRD mapping is evaluated
 
 - **WHEN** PRD is described or validated
-- **THEN** it maps to Cloudflare Pages static hosting, the production Worker runtime target, production D1, Stripe live mode, and PRD-scoped GitHub Actions credentials
+- **THEN** it maps to Cloudflare Pages static hosting, the prd Worker runtime target, PRD D1, Stripe live mode, and PRD-scoped GitHub Actions credentials
 - **AND** it records that PRD checkout and live provider mutation are disabled until an explicit production-readiness gate opens them.
 - **AND** it treats pre-go-live PRD evidence as readiness, disabled, or `not_configured` evidence rather than successful PRD Promotion Evidence.
 

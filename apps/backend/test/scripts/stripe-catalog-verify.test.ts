@@ -17,28 +17,31 @@ const storeItem = {
 };
 
 describe('stripe catalog verify script helpers', () => {
-  it('parses sandbox dry-run and apply flags while requiring promotion context for production apply', () => {
-    expect(parseStripeCatalogVerifyArgs(['--env', 'sandbox'])).toEqual({
+  it('parses UAT dry-run and apply flags while requiring promotion context for PRD apply', () => {
+    expect(parseStripeCatalogVerifyArgs(['--env', 'uat'])).toEqual({
       apply: false,
-      environment: 'sandbox',
+      environment: 'uat',
       promotionContext: null,
     });
-    expect(parseStripeCatalogVerifyArgs(['--env=sandbox', '--apply'])).toEqual({
+    expect(parseStripeCatalogVerifyArgs(['--env', 'sandbox'])).toMatchObject({
+      environment: 'uat',
+    });
+    expect(parseStripeCatalogVerifyArgs(['--env=uat', '--apply'])).toEqual({
       apply: true,
-      environment: 'sandbox',
+      environment: 'uat',
       promotionContext: null,
     });
     expect(parseStripeCatalogVerifyArgs(['--env', 'uat'])).toEqual({
       apply: false,
-      environment: 'sandbox',
+      environment: 'uat',
       promotionContext: null,
     });
-    expect(() => parseStripeCatalogVerifyArgs(['--env', 'production', '--apply'])).toThrow(
-      'Production Stripe catalog apply requires promotion context.',
+    expect(() => parseStripeCatalogVerifyArgs(['--env', 'prd', '--apply'])).toThrow(
+      'PRD Stripe catalog apply requires promotion context.',
     );
     expect(
       parseStripeCatalogVerifyArgs([
-        '--env=production',
+        '--env=prd',
         '--apply',
         '--artifact-commit-sha',
         'abc123',
@@ -47,7 +50,7 @@ describe('stripe catalog verify script helpers', () => {
       ]),
     ).toEqual({
       apply: true,
-      environment: 'production',
+      environment: 'prd',
       promotionContext: {
         artifactCommitSha: 'abc123',
         ci: true,
@@ -56,26 +59,26 @@ describe('stripe catalog verify script helpers', () => {
     });
   });
 
-  it('allows production dry-run without promotion context', () => {
+  it('allows PRD dry-run without promotion context', () => {
     expect(parseStripeCatalogVerifyArgs(['--env', 'prd'])).toEqual({
       apply: false,
-      environment: 'production',
+      environment: 'prd',
       promotionContext: null,
     });
-    expect(parseStripeCatalogVerifyArgs(['--env', 'production'])).toEqual({
+    expect(parseStripeCatalogVerifyArgs(['--env', 'prd'])).toEqual({
       apply: false,
-      environment: 'production',
+      environment: 'prd',
       promotionContext: null,
     });
-    expect(() =>
-      parseStripeCatalogVerifyArgs(['--env', 'production', '--apply', '--artifact-commit-sha', 'abc123']),
-    ).toThrow('Run from CI with --ci-promotion, --artifact-commit-sha <sha>, and --promotion-run-id <id>.');
+    expect(() => parseStripeCatalogVerifyArgs(['--env', 'prd', '--apply', '--artifact-commit-sha', 'abc123'])).toThrow(
+      'Run from CI with --ci-promotion, --artifact-commit-sha <sha>, and --promotion-run-id <id>.',
+    );
   });
 
   it('formats redacted diagnostics without printing full Stripe object IDs', () => {
     const result: CatalogSyncRunResult = {
       dryRun: false,
-      environment: 'sandbox',
+      environment: 'uat',
       issues: [
         {
           code: 'wrong_amount',
@@ -111,13 +114,13 @@ describe('stripe catalog verify script helpers', () => {
               variantId: storeItem.variantId,
             },
           ],
-          lookupKey: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+          lookupKey: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
           mapping: null,
           resolvedPrice: {
             active: true,
             amountMinor: 1000,
             currencyCode: 'EUR',
-            lookupKey: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+            lookupKey: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
             metadata: {},
             priceId: stripePriceId('price_1234567890abcdef'),
             productActive: true,
@@ -142,7 +145,7 @@ describe('stripe catalog verify script helpers', () => {
     expect(report).toContain('Price Authority: 1 issue.');
     expect(report).toContain('D1 readiness: 0 issues.');
     expect(report).toContain('Store Offer snapshots: 0 issues.');
-    expect(report).toContain('Webhook readiness: run pnpm stripe:webhooks:verify --env sandbox');
+    expect(report).toContain('Webhook readiness: run pnpm stripe:webhooks:verify --env uat');
     expect(report).toContain(
       'Dry-run immutability: Stripe Products, Stripe Prices, D1 mappings, Store Offer snapshots, repo files, and evidence files are not mutated unless --apply is set.',
     );
@@ -171,14 +174,14 @@ describe('stripe catalog verify script helpers', () => {
         },
       ],
       dryRun: false,
-      environment: 'sandbox',
+      environment: 'uat',
       issues: [],
       results: [
         {
           actions: [],
           issueCount: 0,
           issues: [],
-          lookupKey: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+          lookupKey: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
           mapping: null,
           resolvedPrice: null,
           snapshot: null,

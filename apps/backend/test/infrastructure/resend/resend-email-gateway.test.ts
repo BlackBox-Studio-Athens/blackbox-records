@@ -39,7 +39,7 @@ describe('ResendEmailGateway', () => {
       gateway.sendEmail({
         from: 'orders@blackboxrecordsathens.com',
         html: '<p>Paid</p>',
-        idempotencyKey: 'blackbox:sandbox:paid-order-shopper:cs_test_123',
+        idempotencyKey: 'blackbox:uat:paid-order-shopper:cs_test_123',
         replyTo: 'support@blackboxrecordsathens.com',
         subject: 'Order paid',
         tags: [{ name: 'purpose', value: 'paid-order-shopper' }],
@@ -59,7 +59,7 @@ describe('ResendEmailGateway', () => {
         to: 'blackboxrecordsathens+TESTING@gmail.com',
       },
       {
-        idempotencyKey: 'blackbox:sandbox:paid-order-shopper:cs_test_123',
+        idempotencyKey: 'blackbox:uat:paid-order-shopper:cs_test_123',
       },
     );
   });
@@ -157,7 +157,7 @@ describe('ResendEmailGateway', () => {
       gateway.sendEmail({
         from: 'orders@blackboxrecordsathens.com',
         html: '<p>Paid</p>',
-        idempotencyKey: 'blackbox:sandbox:paid-order-shopper:cs_test_123',
+        idempotencyKey: 'blackbox:uat:paid-order-shopper:cs_test_123',
         replyTo: 'support@blackboxrecordsathens.com',
         subject: 'Order paid',
         tags: [],
@@ -188,7 +188,7 @@ describe('ResendEmailGateway', () => {
       gateway.sendEmail({
         from: 'orders@blackboxrecordsathens.com',
         html: '<p>Paid</p>',
-        idempotencyKey: 'blackbox:sandbox:paid-order-shopper:cs_test_123',
+        idempotencyKey: 'blackbox:uat:paid-order-shopper:cs_test_123',
         replyTo: 'support@blackboxrecordsathens.com',
         subject: 'Order paid',
         tags: [],

@@ -19,13 +19,13 @@ UAT is the GitHub Pages static frontend:
 
 - `site`: `https://blackbox-studio-athens.github.io`
 - `base`: `/blackbox-records/`
-- browser API target: `UAT_PUBLIC_BACKEND_BASE_URL`, expected to point at the sandbox Worker
+- browser API target: `UAT_PUBLIC_BACKEND_BASE_URL`, expected to point at the UAT Worker
 
 PRD is the Cloudflare Pages static frontend:
 
 - `site`: `https://blackbox-records-web.pages.dev`
 - `base`: `/`
-- browser API target: `PRD_PUBLIC_BACKEND_BASE_URL`, expected to point at the production Worker
+- browser API target: `PRD_PUBLIC_BACKEND_BASE_URL`, expected to point at the PRD Worker
 - commerce state: disabled until the explicit PRD-open production-readiness gate is present
 
 The Cloudflare Pages workflow sets these non-secret build-time variables before deploying the disabled PRD static artifact from `apps/web/dist`:
@@ -39,7 +39,9 @@ GitHub Pages UAT keeps the repo defaults in `apps/web/astro.config.mjs`:
 - `site`: `https://blackbox-studio-athens.github.io`
 - `base`: `/blackbox-records/`
 
-For label-member UAT, the GitHub Pages URL is intentionally wired to the sandbox Worker on every `main` push. Tester instructions live in [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md). This is Stripe test mode only and is not PRD go-live approval.
+For label-member UAT, the GitHub Pages URL is intentionally wired to the UAT Worker on every `main` push. Tester instructions live in [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md). This is Stripe test mode only and is not PRD go-live approval.
+
+Backend Worker observability uses source-controlled Workers Logs/Traces config and structured safe runtime events. Operator notes live in [`docs/worker-observability.md`](docs/worker-observability.md).
 
 ## Navigation model
 
@@ -51,7 +53,7 @@ For label-member UAT, the GitHub Pages URL is intentionally wired to the sandbox
 
 ## Catalog Promotion
 
-Decap remains editorial-only. Content publication and buyable status are separate: generated catalog artifacts derive from current Store Item content, UAT provider state is applied through sandbox catalog tooling, and runtime checkout safety stays with D1, Worker gates, and operator controls. GitHub Pages UAT is validated by a separate post-merge sandbox smoke workflow after `pages.yml` completes. See [docs/catalog-promotion.md](docs/catalog-promotion.md) for catalog artifact, rollback, and Promotion Evidence expectations.
+Decap remains editorial-only. Content publication and buyable status are separate: generated catalog artifacts derive from current Store Item content, UAT provider state is applied through Stripe test-mode catalog tooling, and runtime checkout safety stays with D1, Worker gates, and operator controls. GitHub Pages UAT is validated by a separate post-merge UAT provider smoke workflow after `pages.yml` completes. See [docs/catalog-promotion.md](docs/catalog-promotion.md) for catalog artifact, rollback, and Promotion Evidence expectations.
 
 ## Prerequisites
 
@@ -125,25 +127,25 @@ pnpm checkout:preflight:stripe-test
 pnpm dev:stack:stripe-test
 ```
 
-Run the at-will automated Stripe sandbox smoke:
+Run the at-will automated Stripe UAT smoke:
 
 ```sh
-pnpm smoke:stripe-sandbox -- --scenario all
+pnpm smoke:stripe-uat -- --scenario all
 ```
 
-The Stripe sandbox smoke runner targets the deployed UAT Worker path, drives Stripe-hosted Checkout with Playwright, checks sandbox D1 remotely through Wrangler, and writes ignored evidence to `.codex-artifacts/smoke/uat/stripe-sandbox/<run-id>/` with a `summary.json` at the run root and `evidence.json` per scenario.
+The Stripe UAT smoke runner targets the deployed UAT Worker path, drives Stripe-hosted Checkout with Playwright, checks UAT D1 remotely through Wrangler, and writes ignored evidence to `.codex-artifacts/smoke/uat/stripe-sandbox/<run-id>/` with a `summary.json` at the run root and `evidence.json` per scenario.
 
 The runner defaults to the GitHub Pages UAT site and is also used by the downstream GitHub Actions `catalog-promotion-uat` environment after the UAT Pages deploy succeeds.
 
-Supported scenarios are `happy_path_paid`, `three_d_secure`, `card_declined`, `insufficient_funds`, `expired_card`, `incorrect_cvc`, `processing_error`, and `all`. The committed JetBrains run configuration `Stripe Sandbox Smoke` runs `--scenario all`. Stripe’s current test card reference lives at <https://docs.stripe.com/testing#cards>. Paid deployed-sandbox smoke now expects the persistent Stripe Dashboard/Workbench webhook endpoint to deliver to `https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev/api/stripe/webhooks`; `stripe listen` is local/temporary diagnostic tooling only and is not persistent readiness evidence.
+Supported scenarios are `happy_path_paid`, `three_d_secure`, `card_declined`, `insufficient_funds`, `expired_card`, `incorrect_cvc`, `processing_error`, and `all`. The committed JetBrains run configuration `Stripe Sandbox Smoke` runs `--scenario all` through `pnpm smoke:stripe-uat`. Stripe’s current test card reference lives at <https://docs.stripe.com/testing#cards>. Paid deployed UAT smoke expects the persistent Stripe Dashboard/Workbench webhook endpoint to deliver to `https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev/api/stripe/webhooks`; `stripe listen` is local/temporary diagnostic tooling only and is not persistent readiness evidence.
 
-Run the UAT Resend smoke when you need to prove the sandbox Worker can register a newsletter Contact through Resend:
+Run the UAT Resend smoke when you need to prove the UAT Worker can register a newsletter Contact through Resend:
 
 ```sh
 pnpm smoke:resend-uat
 ```
 
-The Resend UAT smoke posts a synthetic consented signup to `/api/newsletter/registrations`, expects the sandbox sink routing to return `{"status":"registered"}`, and writes ignored evidence to `.codex-artifacts/smoke/uat/resend-uat/<run-id>/`. It does not print Resend API keys, Topic IDs, Contact IDs, or account diagnostics.
+The Resend UAT smoke posts a synthetic consented signup to `/api/newsletter/registrations`, expects the UAT sink routing to return `{"status":"registered"}`, and writes ignored evidence to `.codex-artifacts/smoke/uat/resend-uat/<run-id>/`. It does not print Resend API keys, Topic IDs, Contact IDs, or account diagnostics.
 
 Render local paid-order email previews when you need to inspect the generated shopper and ops HTML:
 
@@ -166,7 +168,7 @@ The PRD no-payment promotion smoke runner writes ignored evidence to `.codex-art
 Before accepting sandbox catalog or paid-order webhook readiness, run:
 
 ```sh
-pnpm stripe:webhooks:verify --env sandbox
+pnpm stripe:webhooks:verify --env uat
 pnpm stripe:catalog:verify --env uat
 ```
 
@@ -174,7 +176,7 @@ Catalog Field Ownership is one-way. Repo content owns Product Projection fields 
 
 Full GitHub Pages UAT catalog alignment uses generated repo artifacts and a sandbox-only reset/apply flow. Run `pnpm stripe:catalog:artifacts:generate` after Store Item content changes and let `pnpm stripe:catalog:artifacts:check` catch drift in `pnpm check`. The reset command is dry-run by default and only deactivates BlackBox-owned Stripe sandbox Products/Prices; `pnpm stripe:catalog:verify --env uat --apply` creates the fresh active sandbox catalog and syncs D1 mappings/snapshots. See [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md) for the full reset, D1 seed, deploy, and smoke sequence.
 
-The webhook verifier is read-only. It proves the persistent endpoint URL, test-mode status, required catalog event subscriptions, sandbox Worker `STRIPE_WEBHOOK_SECRET` presence, and the six-hour scheduled catalog-verification backstop when Cloudflare schedule credentials are available. It does not prove the existing endpoint signing secret equals the Worker secret because Stripe does not return an existing endpoint secret through list/retrieve APIs. After endpoint creation, endpoint recreation, or secret rotation, update the sandbox Worker from `apps/backend` with `pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env sandbox` without logging the value, then rerun the verifier and paid smoke.
+The webhook verifier is read-only. It proves the persistent endpoint URL, test-mode status, required catalog event subscriptions, UAT Worker `STRIPE_WEBHOOK_SECRET` presence, and the six-hour scheduled catalog-verification backstop when Cloudflare schedule credentials are available. It does not prove the existing endpoint signing secret equals the Worker secret because Stripe does not return an existing endpoint secret through list/retrieve APIs. After endpoint creation, endpoint recreation, or secret rotation, update the UAT Worker from `apps/backend` with `pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env uat` without logging the value, then rerun the verifier and paid smoke.
 
 Before using `dev:stack:stripe-test`:
 
@@ -193,7 +195,7 @@ pnpm dev:stack:stripe-mock
 
 This mode runs official `stripe-mock` locally through `go run github.com/stripe/stripe-mock@latest`, points the Worker Stripe SDK at a local compatibility proxy on `http://127.0.0.1:12110`, generates local-only mock commerce state for every current store item, and returns a local-only mock Checkout URL. It validates backend checkout flow control and Stripe API request shape, but it is not a real Stripe-hosted Checkout browser experience. It requires Go, but it does not require Docker, real Stripe keys, or `apps/backend/.dev.vars`.
 
-The first run may download and compile `stripe-mock` through Go. Official `stripe-mock` can return a null hosted Checkout `url`, so the local proxy applies a dev-only URL patch before the Worker receives the response. Production checkout code still sends the real Stripe SDK request shape.
+The first run may download and compile `stripe-mock` through Go. Official `stripe-mock` can return a null hosted Checkout `url`, so the local proxy applies a dev-only URL patch before the Worker receives the response. Real checkout code still sends the real Stripe SDK request shape.
 
 Run the explicit alias for the same official stripe-mock API stack:
 
@@ -310,11 +312,11 @@ Current Worker scope:
 - `pnpm dev:stack:stripe-test` prepares local D1, applies the ignored real Stripe test mapping seed, starts the Worker, and starts the static site
 - `pnpm dev:stack:stripe-mock` prepares local D1, generates local-only mock commerce state for every current store item, starts official `stripe-mock` through Go, starts the Worker with the Stripe SDK pointed at the local mock API proxy, and starts the static site in mock checkout mode
 - no webhook order authority, stock decrement, or frontend D1 wiring yet
-- no backend production deployment path yet
+- PRD Worker deployment remains gated by PRD-open readiness
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
 - generated frontend-facing types and `openapi-typescript-fetch` wrappers live in `packages/api-client/`
 - frontend discovers the backend only through `PUBLIC_BACKEND_BASE_URL`
-- the dedicated sandbox deploy target is the `blackbox-records-backend-sandbox` Worker on `workers.dev`
+- the dedicated UAT deploy target is the `blackbox-records-backend-uat` Worker on `workers.dev`
 - runtime business secrets stay in Worker secrets or backend-local Wrangler `.dev.vars`, not in browser env vars or GitHub deploy credentials
 - Resend transactional email and newsletter Contact operations are Worker-owned through the backend email module and official Resend SDK; the static frontend never receives Resend API keys, Topic/Segment IDs, provider responses, or delivery diagnostics
 
@@ -378,21 +380,21 @@ pnpm audit:commerce-boundaries
 - Browser cart state must never contain Stripe Price IDs, stock authority, payment state, order state, D1 fields, or
   backend runtime secrets. The Worker must re-read authoritative availability, OnlineStock, and Stripe mappings before
   checkout.
-- Cloudflare Pages production builds use GitHub Actions variables for browser-safe public env:
+- Cloudflare Pages PRD builds use GitHub Actions variables for browser-safe public env:
   - `PUBLIC_BACKEND_BASE_URL`
-- Cloudflare Pages production builds also set non-secret Astro build-target env:
+- Cloudflare Pages PRD builds also set non-secret Astro build-target env:
   - `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev`
   - `ASTRO_BASE_PATH=/`
-- Do not set `PUBLIC_CHECKOUT_CLIENT_MODE` on the production Pages workflow; reserve `mock` for explicit non-production local/mock testing.
+- Do not set `PUBLIC_CHECKOUT_CLIENT_MODE` on the PRD Pages workflow; reserve `mock` for explicit non-PRD local/mock testing.
 - Local development uses:
   - `pnpm dev:web`
   - `pnpm dev:backend`
   - `PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787`
-- Sandbox will use the same env var with a future stable Worker hostname from Phase `05-05`.
-- The sandbox backend target is the dedicated `workers.dev` Worker named `blackbox-records-backend-sandbox`.
-- Its stable URL shape is `https://blackbox-records-backend-sandbox.<your-account-subdomain>.workers.dev`.
-- The account-level `workers.dev` subdomain is owned in Cloudflare, not in this repo, so the Worker name is the repo-controlled stable portion of the sandbox hostname.
-- The frontend must not guess production or sandbox backend origins in code.
+- UAT uses the same env var with its stable Worker hostname.
+- The UAT backend target is the dedicated `workers.dev` Worker named `blackbox-records-backend-uat`.
+- Its stable URL shape is `https://blackbox-records-backend-uat.<your-account-subdomain>.workers.dev`.
+- The account-level `workers.dev` subdomain is owned in Cloudflare, not in this repo, so the Worker name is the repo-controlled stable portion of the UAT hostname.
+- The frontend must not guess PRD or UAT backend origins in code.
 - Worker secrets, D1 bindings, Stripe secret keys, Cloudflare Access config, and CI credentials remain backend/server-side only.
 - Cloudflare Flagship setup uses binding name `FLAGS` and flag key `native_checkout_enabled`. Do not commit a Flagship
   app ID until the app exists and that non-secret account-specific value is explicitly approved.
@@ -414,7 +416,7 @@ pnpm audit:commerce-boundaries
 - The internal Worker API now exposes read-only checkout order inspection under `/api/internal/orders*` for low-volume reconciliation. It is Access-protected, not a shopper API, and does not mutate order or stock state.
 - The protected stock operations UI is built by the static Astro app at `/stock/`; it calls same-origin `/api/internal/*` on the protected operator hostname.
 - For local split-port development, set `PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787` so the static UI can call the local Worker; the Worker allows browser API calls only from origins listed in `CHECKOUT_RETURN_ORIGINS`.
-- The stock UI is intentionally absent from public navigation. If served directly from public Cloudflare Pages or GitHub Pages rollback before the protected ops hostname is provisioned, it is not a production-safe stock operations surface.
+- The stock UI is intentionally absent from public navigation. If served directly from public Cloudflare Pages or GitHub Pages UAT before the protected ops hostname is provisioned, it is not a PRD-safe stock operations surface.
 - D1 is the stock source of truth. Spreadsheets are temporary capture/reporting only; operators reconcile offline movement through `/stock/` using `StockChange` for known deltas and `StockCount` for recounts.
 - `OnlineStock` is the conservative checkout-facing quantity and may be lower than physical `Stock`.
 - This contract does not introduce shopper login; public storefront, public checkout, and sandbox shopper browsing remain unauthenticated.
@@ -440,7 +442,7 @@ pnpm audit:commerce-boundaries
   - `RESEND_OPS_TO_EMAIL=blackboxrecordsathens@gmail.com`
   - `RESEND_NEWSLETTER_TOPIC_ID`
   - optional `RESEND_NEWSLETTER_SEGMENT_ID`
-  - `RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL=blackboxrecordsathens+TESTING@gmail.com` for the sandbox Worker target only
+  - `RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL=blackboxrecordsathens+TESTING@gmail.com` for the UAT Worker target only
 - Paid-order email brand URLs are non-secret Worker runtime config and must match the Product Environment profile:
   - `EMAIL_BRAND_HOME_URL`
   - `EMAIL_BRAND_LOGO_URL`
@@ -448,8 +450,8 @@ pnpm audit:commerce-boundaries
   - PRD uses the Cloudflare Pages public site and logo URLs until an approved custom public site domain replaces them.
 - Resend uses `blackboxrecordsathens.com` as the single approved Free-tier sending domain. DNS verification, SPF/DKIM/DMARC alignment, Cloudflare Email Routing for support replies, Topic/Segment setup, and Worker secret upload are manual operator checkpoints; do not commit provider-readiness evidence.
 - Local and automated tests use application-level provider mocks and committed fake `re_mock_*` values. UAT application email and newsletter Contact writes route to the sink recipient; PRD ignores that override and uses real recipients only after provider setup is complete.
-- The sandbox Worker persistent webhook readiness check is:
-  - `pnpm stripe:webhooks:verify --env sandbox`
+- The UAT Worker persistent webhook readiness check is:
+  - `pnpm stripe:webhooks:verify --env uat`
   - it must stay verify-only and must not create, update, delete, rotate, log, or commit Stripe webhook endpoint secrets
 - Future BOX NOW credentials remain Worker runtime secrets or out-of-band operator credentials. They must not be exposed through Astro `PUBLIC_*` env, Cloudflare Pages public build variables, generated frontend clients, static content, or committed seed files.
 - The optional backend-local Stripe mock/test override is:
@@ -547,7 +549,7 @@ cp apps/backend/.dev.vars.example apps/backend/.dev.vars
   creating or reading Checkout Sessions.
 - Hosted Worker checkout fails closed if the `FLAGS` binding is absent or feature evaluation fails; local/mock checkout
   remains enabled by default for no-account development.
-- Checkout session creation and split-port browser API reads accept origins only from `CHECKOUT_RETURN_ORIGINS`; configured origins include local static dev, Cloudflare Pages, and the GitHub Pages rollback origin.
+- Checkout session creation and split-port browser API reads accept origins only from `CHECKOUT_RETURN_ORIGINS`; configured origins include local static dev, Cloudflare Pages PRD, and the GitHub Pages UAT origin.
 - The static checkout shell does not load Stripe.js or receive a Checkout `client_secret`; it redirects to the Worker-returned hosted Checkout URL.
 - `stripe-mock` mode does not require `apps/backend/.dev.vars` because the Worker `mock` env binds harmless local Stripe mock configuration and the browser redirects to a local-only mock Checkout URL.
 
@@ -561,7 +563,7 @@ CI/deploy credentials and public build variables:
 - `PUBLIC_BACKEND_BASE_URL`
 
 - `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are only for authenticating CI or a developer into Cloudflare for deployment.
-- `ASTRO_SITE_URL` and `ASTRO_BASE_PATH` are non-secret static build target values. Cloudflare Pages uses `https://blackbox-records-web.pages.dev` plus `/`; GitHub Pages rollback uses `https://blackbox-studio-athens.github.io` plus `/blackbox-records/`.
+- `ASTRO_SITE_URL` and `ASTRO_BASE_PATH` are non-secret static build target values. Cloudflare Pages PRD uses `https://blackbox-records-web.pages.dev` plus `/`; GitHub Pages UAT uses `https://blackbox-studio-athens.github.io` plus `/blackbox-records/`.
 - `PUBLIC_BACKEND_BASE_URL` is the browser-visible backend discovery variable for the static Astro frontend.
 - None of these values are the Worker's runtime business secrets.
 - Deployed runtime secrets terminate as Cloudflare Worker secrets/bindings, not as browser env vars and not as GitHub-only config.
@@ -571,9 +573,9 @@ CI/deploy credentials and public build variables:
 - The static Astro site has two deployment workflows:
   - `.github/workflows/pages.yml` uploads the prebuilt UAT static artifact to GitHub Pages.
   - `.github/workflows/cloudflare-pages.yml` uploads the prebuilt disabled PRD static artifact to Cloudflare Pages.
-- The separate UAT Worker deploy path is isolated in `.github/workflows/cloudflare-sandbox.yml`; `sandbox` is the Wrangler runtime target mapped to UAT.
+- The separate UAT Worker deploy path is isolated in `.github/workflows/cloudflare-uat.yml`; `uat` is the Wrangler runtime target.
 - That workflow:
-  - runs on pushes to `sandbox`
+  - runs on pushes to `uat`
   - can also be triggered manually
   - runs `pnpm generate:api`
   - runs `pnpm test:unit`
@@ -581,7 +583,7 @@ CI/deploy credentials and public build variables:
   - deploys only the backend workspace to Cloudflare Workers
 - The UAT `workers.dev` backend is reachable for browser checks, Stripe return URLs, and webhook testing.
 - Cloudflare Access is not part of public UAT browsing at this stage.
-- Phase `06.1.1` now locks a separate protected staff-only hostname and Google-backed Access contract for internal stock work, while keeping the public sandbox backend reachable and unauthenticated.
+- Phase `06.1.1` now locks a separate protected staff-only hostname and Google-backed Access contract for internal stock work, while keeping the public UAT backend reachable and unauthenticated.
 
 ## GitHub Pages UAT CI/CD
 
@@ -699,7 +701,7 @@ Default local ports:
 
 ### DecapBridge hosted setup
 
-Hosted `/admin/config.yml` is generated during the static frontend build, so the DecapBridge values must be present in the deploy workflow environment that is intended to serve production admin access. The values below are already wired for the GitHub Pages rollback workflow; mirror them into the Cloudflare Pages build path in a focused CMS/deploy task before treating hosted Decap admin as validated on Cloudflare Pages.
+Hosted `/admin/config.yml` is generated during the static frontend build, so the DecapBridge values must be present in the deploy workflow environment that is intended to serve PRD admin access. The values below are already wired for the GitHub Pages UAT workflow; mirror them into the Cloudflare Pages build path in a focused CMS/deploy task before treating hosted Decap admin as validated on Cloudflare Pages.
 
 Add these in GitHub:
 
@@ -800,7 +802,7 @@ If a source crops badly, replace the source image rather than adding focal-point
 ## WebStorm run configuration
 
 - `.run/BlackBox Local Stack.run.xml` is the canonical committed local-stack launcher.
-- `.run/Stripe Sandbox Smoke.run.xml` is the at-will automated Playwright sandbox checkout launcher and runs `pnpm smoke:stripe-sandbox -- --scenario all`.
+- `.run/Stripe Sandbox Smoke.run.xml` is the at-will automated Playwright Stripe test-mode checkout launcher and runs `pnpm smoke:stripe-uat -- --scenario all`.
 - It targets the GitHub Pages UAT site by default.
 - It runs `pnpm dev:stack:stripe-mock`, which starts local D1 prep, local official `stripe-mock` through Go, the local Worker backend pointed at the local stripe-mock proxy, and the local Astro frontend without Docker or real Stripe keys.
 - Real Stripe test mode remains available from the terminal through `pnpm dev:stack:stripe-test`.

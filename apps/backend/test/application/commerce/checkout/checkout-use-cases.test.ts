@@ -191,7 +191,7 @@ class InMemoryCatalogReconciler implements Pick<CatalogReconciler, 'reconcileVar
       actions: [],
       issueCount: issues.length,
       issues,
-      lookupKey: `blackbox:sandbox:${storeItem.storeItemSlug}:${storeItem.variantId}`,
+      lookupKey: `blackbox:uat:${storeItem.storeItemSlug}:${storeItem.variantId}`,
       mapping: resolvedPrice
         ? {
             stripePriceId: resolvedPrice.priceId,
@@ -223,9 +223,9 @@ function createCatalogPrice(input: {
     active: true,
     amountMinor: input.amountMinor ?? 2800,
     currencyCode: input.currencyCode ?? 'EUR',
-    lookupKey: `blackbox:sandbox:${input.storeItem.storeItemSlug}:${input.storeItem.variantId}`,
+    lookupKey: `blackbox:uat:${input.storeItem.storeItemSlug}:${input.storeItem.variantId}`,
     metadata: {
-      appEnv: 'sandbox',
+      appEnv: 'uat',
       sourceId: input.storeItem.sourceId,
       sourceKind: input.storeItem.sourceKind,
       storeItemSlug: input.storeItem.storeItemSlug,
@@ -237,7 +237,7 @@ function createCatalogPrice(input: {
     productId: 'prod_test_barren_point',
     productImages: ['https://blackbox-records-web.pages.dev/admin/media/releases/disintegration.jpg'],
     productMetadata: {
-      appEnv: 'sandbox',
+      appEnv: 'uat',
       sourceId: input.storeItem.sourceId,
       sourceKind: input.storeItem.sourceKind,
       storeItemSlug: input.storeItem.storeItemSlug,

@@ -91,7 +91,7 @@ The system MUST evaluate checkout readiness against the canonical Local, UAT, an
 
 - **GIVEN** UAT checkout is enabled
 - **WHEN** the shopper starts checkout from GitHub Pages
-- **THEN** the request is handled by the UAT Worker against sandbox D1 and Stripe test mode.
+- **THEN** the request is handled by the UAT Worker against UAT D1 and Stripe test mode.
 
 #### Scenario: PRD checkout is disabled
 
@@ -230,7 +230,7 @@ The system MUST prevent provider catalog mutation unless the target product envi
 
 - **GIVEN** a generated Desired Catalog State targets UAT
 - **WHEN** the promotion workflow applies provider catalog changes
-- **THEN** it uses the sandbox Worker/D1/Stripe test mapping
+- **THEN** it uses the UAT Worker/D1/Stripe test mapping
 - **AND** Product Projection image URLs resolve from the GitHub Pages UAT asset base
 - **AND** records UAT Promotion Evidence.
 
@@ -239,7 +239,7 @@ The system MUST prevent provider catalog mutation unless the target product envi
 - **GIVEN** a generated Desired Catalog State targets PRD
 - **WHEN** the promotion workflow reaches the PRD apply step before the PRD-open gate exists
 - **THEN** the apply step fails closed or records `not_configured` evidence
-- **AND** it does not mutate Stripe live mode, production D1, or production Worker checkout availability
+- **AND** it does not mutate Stripe live mode, PRD D1, or PRD Worker checkout availability
 - **AND** it does not record successful PRD Promotion Evidence.
 
 #### Scenario: PRD catalog readiness checks product image URLs

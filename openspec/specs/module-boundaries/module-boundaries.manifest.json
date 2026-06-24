@@ -426,6 +426,7 @@
         "apps/web/src/utils/urls.ts",
         "apps/web/src/lib/backend/api-client.ts",
         "apps/web/src/lib/backend/public-backend-config.ts",
+        "apps/backend/src/observability/index.ts",
         "apps/backend/src/env.ts",
         "apps/backend/src/interfaces/http/error-handler.ts",
         "apps/backend/src/interfaces/http/not-found-handler.ts"
@@ -435,6 +436,7 @@
         "apps/web/src/lib/backend/api-client.ts",
         "apps/web/src/lib/backend/public-backend-config.ts",
         "apps/web/src/utils/urls.ts",
+        "apps/backend/src/observability/index.ts",
         "apps/backend/src/env.ts",
         "apps/backend/src/interfaces/http/error-handler.ts",
         "apps/backend/src/interfaces/http/not-found-handler.ts"

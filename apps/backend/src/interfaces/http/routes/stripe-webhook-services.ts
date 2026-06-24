@@ -19,6 +19,8 @@ import {
 } from '../../../application/email';
 import type { StoreItemOptionRecord } from '../../../domain/commerce/repositories/spi';
 import { productEnvironmentProfileFromBindings, type AppBindings } from '../../../env';
+import type { AppLogger } from '../../../observability';
+import { createBindingLogger, runWithTraceSpan } from '../../../observability';
 import { createStripeCatalogGateway, createStripeCheckoutGateway } from '../../../infrastructure/stripe';
 import {
   createPrismaClient,
@@ -31,7 +33,13 @@ import {
 import { D1PaidCheckoutFinalizationRepository } from './d1-paid-checkout-finalization-repository';
 import { createEmailRuntimeServices } from './email-runtime-services';
 
-export function createStripeWebhookServices(bindings: AppBindings) {
+type TraceContext = Parameters<typeof runWithTraceSpan>[0];
+
+export function createStripeWebhookServices(
+  bindings: AppBindings,
+  logger: AppLogger = createBindingLogger(bindings),
+  traceContext?: TraceContext,
+) {
   const productEnvironmentProfile = productEnvironmentProfileFromBindings(bindings);
   const prisma = createPrismaClient(bindings);
   const orders = new PrismaOrderStateRepository(prisma);
@@ -62,6 +70,7 @@ export function createStripeWebhookServices(bindings: AppBindings) {
           applyPaidCheckoutReconciliation(orders, paidCheckoutFinalizer, reconciliation, new Date(), lineItems),
         ),
     disconnect: async () => prisma.$disconnect(),
+    logger,
     findStoreItemByVariantId: (variantId: string) => storeItems.findByVariantId(variantId),
     publishCheckoutOrderPaid: async (event: CheckoutOrderPaid): Promise<void> => {
       let emailConfig: EmailRuntimeConfig;
@@ -72,20 +81,20 @@ export function createStripeWebhookServices(bindings: AppBindings) {
         emailConfig = emailRuntime.config;
         emailProvider = emailRuntime.provider;
       } catch (error) {
-        console.warn({
+        logger.warn({
           event: 'paid_order_email_outcome',
           orderReference: event.orderReference,
           purpose: 'paid-order-notifications',
           safeReason: error instanceof EmailConfigurationError ? error.safeReason : 'unknown',
           status: 'failed',
         });
-        logCheckoutNewsletterOptInConfigurationFailure(event, error);
+        logCheckoutNewsletterOptInConfigurationFailure(event, error, logger);
 
         return;
       }
 
-      await safelySendPaidOrderEmailNotifications(event, emailConfig, emailProvider);
-      await safelyRegisterCheckoutNewsletterOptIn(event, emailConfig, emailProvider);
+      await safelySendPaidOrderEmailNotifications(event, emailConfig, emailProvider, logger, traceContext);
+      await safelyRegisterCheckoutNewsletterOptIn(event, emailConfig, emailProvider, logger, traceContext);
     },
     recordCatalogWebhookEvent: catalogWebhookEvents.recordCatalogEvent.bind(catalogWebhookEvents),
     reconcileCatalogVariant: (storeItem: StoreItemOptionRecord) =>
@@ -97,15 +106,27 @@ async function safelySendPaidOrderEmailNotifications(
   event: CheckoutOrderPaid,
   config: EmailRuntimeConfig,
   provider: EmailProviderGateway,
+  logger: Pick<AppLogger, 'info' | 'warn'>,
+  traceContext: TraceContext | undefined,
 ): Promise<void> {
   try {
-    await sendPaidOrderEmailNotifications({
-      config,
-      order: toPaidOrderEmailInput(event),
-      provider,
-    });
+    await runWithTraceSpan(
+      traceContext,
+      'email.send_paid_order_notifications',
+      {
+        operation: 'email_send_paid_order_notifications',
+        orderReference: event.orderReference,
+      },
+      () =>
+        sendPaidOrderEmailNotifications({
+          config,
+          logger,
+          order: toPaidOrderEmailInput(event),
+          provider,
+        }),
+    );
   } catch (error) {
-    console.warn({
+    logger.warn({
       event: 'paid_order_email_outcome',
       orderReference: event.orderReference,
       purpose: 'paid-order-notifications',
@@ -119,28 +140,39 @@ async function safelyRegisterCheckoutNewsletterOptIn(
   event: CheckoutOrderPaid,
   config: EmailRuntimeConfig,
   provider: EmailProviderGateway,
+  logger: Pick<AppLogger, 'info' | 'warn'>,
+  traceContext: TraceContext | undefined,
 ): Promise<void> {
   if (!event.newsletterOptIn) {
     return;
   }
 
   try {
-    const result = await registerNewsletterContact(provider, config, {
-      consentCopyVersion: NEWSLETTER_CONSENT_COPY_VERSION,
-      consentSource: 'checkout-opt-in',
-      consentedAt: event.paidAt ?? event.occurredAt,
-      email: event.shopperContact.email,
-      properties: {
-        checkoutSessionId: event.checkoutSessionId,
+    const result = await runWithTraceSpan(
+      traceContext,
+      'newsletter.register_checkout_opt_in',
+      {
+        operation: 'newsletter_register_checkout_opt_in',
         orderReference: event.orderReference,
       },
-    });
+      () =>
+        registerNewsletterContact(provider, config, {
+          consentCopyVersion: NEWSLETTER_CONSENT_COPY_VERSION,
+          consentSource: 'checkout-opt-in',
+          consentedAt: event.paidAt ?? event.occurredAt,
+          email: event.shopperContact.email,
+          properties: {
+            checkoutSessionId: event.checkoutSessionId,
+            orderReference: event.orderReference,
+          },
+        }),
+    );
 
-    logNewsletterRegistrationOutcome(console, result, {
+    logNewsletterRegistrationOutcome(logger, result, {
       source: 'checkout-opt-in',
     });
   } catch (error) {
-    console.warn({
+    logger.warn({
       event: 'newsletter_registration_outcome',
       orderReference: event.orderReference,
       retryable: false,
@@ -151,12 +183,16 @@ async function safelyRegisterCheckoutNewsletterOptIn(
   }
 }
 
-function logCheckoutNewsletterOptInConfigurationFailure(event: CheckoutOrderPaid, error: unknown): void {
+function logCheckoutNewsletterOptInConfigurationFailure(
+  event: CheckoutOrderPaid,
+  error: unknown,
+  logger: Pick<AppLogger, 'warn'>,
+): void {
   if (!event.newsletterOptIn) {
     return;
   }
 
-  console.warn({
+  logger.warn({
     event: 'newsletter_registration_outcome',
     orderReference: event.orderReference,
     retryable: false,

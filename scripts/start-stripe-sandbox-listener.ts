@@ -1,8 +1,7 @@
 import { spawn } from 'node:child_process';
 import process from 'node:process';
 
-const sandboxWebhookUrl =
-  'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev/api/stripe/webhooks';
+const sandboxWebhookUrl = 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev/api/stripe/webhooks';
 
 let reportedTemporarySecret = false;
 
@@ -29,7 +28,7 @@ function handleStripeOutput(chunk: string) {
   if (secret && !reportedTemporarySecret) {
     reportedTemporarySecret = true;
     console.log(
-      'Temporary Stripe CLI listener signing secret detected and redacted. It was not synced to the sandbox Worker; persistent deployed-sandbox readiness uses the Dashboard/Workbench endpoint secret.',
+      'Temporary Stripe CLI listener signing secret detected and redacted. It was not synced to the UAT Worker; persistent deployed-sandbox readiness uses the Dashboard/Workbench endpoint secret.',
     );
   }
 

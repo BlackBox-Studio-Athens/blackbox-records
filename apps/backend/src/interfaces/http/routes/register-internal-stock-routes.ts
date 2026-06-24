@@ -1,6 +1,8 @@
 import { createRoute, z } from '@hono/zod-openapi';
 
 import type { AppBindings, AppOpenApi } from '../../../env';
+import type { AppLogger } from '../../../observability';
+import { requestLogger, runWithTraceSpan, traceContextFromHono } from '../../../observability';
 import { readOperatorIdentityFromAccessHeaders } from '../auth';
 import { createInternalStockServices } from './internal-stock-services';
 
@@ -18,6 +20,22 @@ const jsonNoStore = <TResponse extends Response>(response: TResponse): TResponse
 
 const readOperatorEmail = (headers: Headers): string | null =>
   readOperatorIdentityFromAccessHeaders(headers)?.email ?? null;
+
+function logStockOutcome(
+  logger: Pick<AppLogger, 'error' | 'info' | 'warn'>,
+  severity: 'error' | 'info' | 'warn',
+  record: {
+    operation: 'count' | 'history' | 'read' | 'search' | 'change';
+    outcome: string;
+    safeReason?: string;
+    variantId?: string;
+  },
+): void {
+  logger[severity]({
+    event: 'internal_stock_outcome',
+    ...record,
+  });
+}
 
 async function withInternalStockServices<TResponse>(
   bindings: AppBindings,
@@ -381,9 +399,16 @@ const postStockCountRoute = createRoute({
 
 export function registerInternalStockRoutes(app: AppOpenApi): void {
   app.openapi(searchVariantsRoute, async (context) => {
+    const logger = requestLogger(context);
     const operatorEmail = readOperatorEmail(context.req.raw.headers);
 
     if (!operatorEmail) {
+      logStockOutcome(logger, 'warn', {
+        operation: 'search',
+        outcome: 'unauthorized',
+        safeReason: 'missing_operator_identity',
+      });
+
       return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
@@ -391,14 +416,26 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
       const query = context.req.valid('query');
       const variants = await services.searchVariants(query.q ?? null, query.limit ?? 20);
 
+      logStockOutcome(logger, 'info', {
+        operation: 'search',
+        outcome: 'ok',
+      });
+
       return jsonNoStore(context.json(variants, 200));
     });
   });
 
   app.openapi(getVariantStockRoute, async (context) => {
+    const logger = requestLogger(context);
     const operatorEmail = readOperatorEmail(context.req.raw.headers);
 
     if (!operatorEmail) {
+      logStockOutcome(logger, 'warn', {
+        operation: 'read',
+        outcome: 'unauthorized',
+        safeReason: 'missing_operator_identity',
+      });
+
       return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
@@ -407,6 +444,12 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         const { variantId } = context.req.valid('param');
         const detail = await services.readVariantStock(variantId);
 
+        logStockOutcome(logger, 'info', {
+          operation: 'read',
+          outcome: 'ok',
+          variantId,
+        });
+
         return jsonNoStore(context.json(toStockDetailResponse(detail), 200));
       } catch (error) {
         const routeError = toInternalStockRouteError(services, error, {
@@ -414,6 +457,12 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         });
 
         if (routeError) {
+          logStockOutcome(logger, 'warn', {
+            operation: 'read',
+            outcome: 'failed',
+            safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
+          });
+
           return jsonNoStore(context.json({ error: routeError.message }, routeError.status));
         }
 
@@ -423,9 +472,16 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
   });
 
   app.openapi(getVariantStockHistoryRoute, async (context) => {
+    const logger = requestLogger(context);
     const operatorEmail = readOperatorEmail(context.req.raw.headers);
 
     if (!operatorEmail) {
+      logStockOutcome(logger, 'warn', {
+        operation: 'history',
+        outcome: 'unauthorized',
+        safeReason: 'missing_operator_identity',
+      });
+
       return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
@@ -435,6 +491,12 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         const query = context.req.valid('query');
         const entries = await services.readVariantStockHistory(variantId, query.limit ?? 50);
 
+        logStockOutcome(logger, 'info', {
+          operation: 'history',
+          outcome: 'ok',
+          variantId,
+        });
+
         return jsonNoStore(context.json({ entries: entries.map(toHistoryEntryResponse), variantId }, 200));
       } catch (error) {
         const routeError = toInternalStockRouteError(services, error, {
@@ -442,6 +504,12 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         });
 
         if (routeError) {
+          logStockOutcome(logger, 'warn', {
+            operation: 'history',
+            outcome: 'failed',
+            safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
+          });
+
           return jsonNoStore(context.json({ error: routeError.message }, routeError.status));
         }
 
@@ -451,9 +519,16 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
   });
 
   app.openapi(postStockChangeRoute, async (context) => {
+    const logger = requestLogger(context);
     const operatorEmail = readOperatorEmail(context.req.raw.headers);
 
     if (!operatorEmail) {
+      logStockOutcome(logger, 'warn', {
+        operation: 'change',
+        outcome: 'unauthorized',
+        safeReason: 'missing_operator_identity',
+      });
+
       return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
@@ -461,11 +536,27 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
       try {
         const { variantId } = context.req.valid('param');
         const body = context.req.valid('json');
-        const result = await services.recordStockChange({
-          actorEmail: operatorEmail,
-          notes: body.notes ?? null,
-          quantityDelta: body.delta,
-          reason: body.reason,
+        const result = await runWithTraceSpan(
+          traceContextFromHono(context),
+          'stock.mutate',
+          {
+            operation: 'stock_change',
+            productEnvironment: context.env.PRODUCT_ENVIRONMENT,
+            variantId,
+          },
+          () =>
+            services.recordStockChange({
+              actorEmail: operatorEmail,
+              notes: body.notes ?? null,
+              quantityDelta: body.delta,
+              reason: body.reason,
+              variantId,
+            }),
+        );
+
+        logStockOutcome(logger, 'info', {
+          operation: 'change',
+          outcome: 'ok',
           variantId,
         });
 
@@ -486,6 +577,12 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         });
 
         if (routeError) {
+          logStockOutcome(logger, 'warn', {
+            operation: 'change',
+            outcome: 'failed',
+            safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
+          });
+
           return jsonNoStore(context.json({ error: routeError.message }, routeError.status));
         }
 
@@ -495,9 +592,16 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
   });
 
   app.openapi(postStockCountRoute, async (context) => {
+    const logger = requestLogger(context);
     const operatorEmail = readOperatorEmail(context.req.raw.headers);
 
     if (!operatorEmail) {
+      logStockOutcome(logger, 'warn', {
+        operation: 'count',
+        outcome: 'unauthorized',
+        safeReason: 'missing_operator_identity',
+      });
+
       return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
     }
 
@@ -505,11 +609,27 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
       try {
         const { variantId } = context.req.valid('param');
         const body = context.req.valid('json');
-        const result = await services.recordStockCount({
-          actorEmail: operatorEmail,
-          countedQuantity: body.countedQuantity,
-          notes: body.notes ?? null,
-          onlineQuantity: body.onlineQuantity,
+        const result = await runWithTraceSpan(
+          traceContextFromHono(context),
+          'stock.mutate',
+          {
+            operation: 'stock_count',
+            productEnvironment: context.env.PRODUCT_ENVIRONMENT,
+            variantId,
+          },
+          () =>
+            services.recordStockCount({
+              actorEmail: operatorEmail,
+              countedQuantity: body.countedQuantity,
+              notes: body.notes ?? null,
+              onlineQuantity: body.onlineQuantity,
+              variantId,
+            }),
+        );
+
+        logStockOutcome(logger, 'info', {
+          operation: 'count',
+          outcome: 'ok',
           variantId,
         });
 
@@ -530,6 +650,12 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         });
 
         if (routeError) {
+          logStockOutcome(logger, 'warn', {
+            operation: 'count',
+            outcome: 'failed',
+            safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
+          });
+
           return jsonNoStore(context.json({ error: routeError.message }, routeError.status));
         }
 

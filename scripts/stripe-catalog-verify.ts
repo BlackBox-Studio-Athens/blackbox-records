@@ -66,7 +66,7 @@ const backendDir = path.join(process.cwd(), 'apps', 'backend');
 export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptions {
   const options: CatalogVerifyOptions = {
     apply: false,
-    environment: 'sandbox',
+    environment: 'uat',
     promotionContext: null,
   };
 
@@ -155,7 +155,7 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
     options.apply &&
     productEnvironmentProfileFromWorkerRuntimeTarget(options.environment).productEnvironment === 'PRD'
   ) {
-    assertProductionApplyPromotionContext(options.promotionContext);
+    assertPrdApplyPromotionContext(options.promotionContext);
   }
 
   return options;
@@ -221,11 +221,11 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
   return result;
 }
 
-function assertProductionApplyPromotionContext(context: CatalogPromotionContext | null): void {
+function assertPrdApplyPromotionContext(context: CatalogPromotionContext | null): void {
   if (!context?.ci || !context.artifactCommitSha || !context.runId) {
     throw new Error(
       [
-        'Production Stripe catalog apply requires promotion context.',
+        'PRD Stripe catalog apply requires promotion context.',
         'Run from CI with --ci-promotion, --artifact-commit-sha <sha>, and --promotion-run-id <id>.',
         'Use --env prd without --apply for a local dry run.',
       ].join(' '),
@@ -259,7 +259,7 @@ export function formatStripeCatalogVerifyReport(result: CatalogSyncRunResult): s
     `- Price Authority: ${formatIssueCount(issueCounts.price_authority)}.`,
     `- D1 readiness: ${formatIssueCount(issueCounts.d1_readiness)}.`,
     `- Store Offer snapshots: ${formatIssueCount(issueCounts.store_offer_snapshot)}.`,
-    `- Webhook readiness: run pnpm stripe:webhooks:verify --env sandbox for persistent endpoint proof.`,
+    `- Webhook readiness: run pnpm stripe:webhooks:verify --env uat for persistent endpoint proof.`,
     `- Dry-run immutability: Stripe Products, Stripe Prices, D1 mappings, Store Offer snapshots, repo files, and evidence files are not mutated unless --apply is set.`,
   ];
 
@@ -624,7 +624,7 @@ function parseEnvironment(value: string | undefined): StripeCatalogEnvironment {
 }
 
 function toDesiredCatalogEnvironment(productEnvironmentProfile: ProductEnvironmentProfile) {
-  return productEnvironmentProfile.productEnvironment === 'PRD' ? 'production' : 'sandbox';
+  return productEnvironmentProfile.productEnvironment === 'PRD' ? 'prd' : 'uat';
 }
 
 async function main() {

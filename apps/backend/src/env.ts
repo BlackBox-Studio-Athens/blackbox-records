@@ -1,10 +1,11 @@
 import type { OpenAPIHono } from '@hono/zod-openapi';
 import type { FlagshipBinding } from '@cloudflare/flagship/server';
+import type { RequestIdVariables } from 'hono/request-id';
 import { z } from 'zod';
 
 export const productEnvironmentSchema = z.enum(['LOCAL', 'UAT', 'PRD']);
-export const workerRuntimeTargetSchema = z.enum(['local', 'sandbox', 'production']);
-export const stripeModeSchema = z.enum(['mock', 'test', 'live']);
+export const workerRuntimeTargetSchema = z.enum(['local', 'uat', 'prd']);
+export const stripeModeSchema = workerRuntimeTargetSchema;
 export const emailDeliveryPolicySchema = z.enum(['direct', 'uat-sink']);
 const absoluteHttpsUrlSchema = z
   .string()
@@ -52,7 +53,7 @@ export const productEnvironmentProfiles = productEnvironmentProfileMapSchema.par
     emailProviderTag: 'local',
     nativeCheckoutEnabledByDefault: true,
     productEnvironment: 'LOCAL',
-    stripeMode: 'mock',
+    stripeMode: 'local',
     requiresDeployedSecretsByDefault: false,
     workerDeploymentTarget: 'local',
   },
@@ -65,12 +66,12 @@ export const productEnvironmentProfiles = productEnvironmentProfileMapSchema.par
       homeUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/',
       logoUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
     },
-    emailProviderTag: 'sandbox',
+    emailProviderTag: 'uat',
     nativeCheckoutEnabledByDefault: false,
     productEnvironment: 'UAT',
-    stripeMode: 'test',
+    stripeMode: 'uat',
     requiresDeployedSecretsByDefault: true,
-    workerDeploymentTarget: 'sandbox',
+    workerDeploymentTarget: 'uat',
   },
   PRD: {
     catalogVerificationPolicy: {
@@ -81,12 +82,12 @@ export const productEnvironmentProfiles = productEnvironmentProfileMapSchema.par
       homeUrl: 'https://blackbox-records-web.pages.dev/',
       logoUrl: 'https://blackbox-records-web.pages.dev/assets/images/brand/logo-horizontal.png',
     },
-    emailProviderTag: 'production',
+    emailProviderTag: 'prd',
     nativeCheckoutEnabledByDefault: false,
     productEnvironment: 'PRD',
-    stripeMode: 'live',
+    stripeMode: 'prd',
     requiresDeployedSecretsByDefault: false,
-    workerDeploymentTarget: 'production',
+    workerDeploymentTarget: 'prd',
   },
 });
 
@@ -97,11 +98,11 @@ export function getProductEnvironmentProfile(productEnvironment: ProductEnvironm
 export function productEnvironmentFromWorkerRuntimeTarget(
   workerRuntimeTarget: WorkerRuntimeTarget,
 ): ProductEnvironment {
-  if (workerRuntimeTarget === 'production') {
+  if (workerRuntimeTarget === 'prd') {
     return 'PRD';
   }
 
-  if (workerRuntimeTarget === 'sandbox') {
+  if (workerRuntimeTarget === 'uat') {
     return 'UAT';
   }
 
@@ -121,11 +122,11 @@ export function workerRuntimeTargetForProductEnvironment(productEnvironment: Pro
 export function parseProductEnvironmentCliTarget(value: string | undefined): ProductEnvironment {
   const normalized = value?.trim().toLowerCase();
 
-  if (normalized === 'sandbox') {
+  if (normalized === 'uat' || normalized === 'sandbox') {
     return 'UAT';
   }
 
-  if (normalized === 'production') {
+  if (normalized === 'prd' || normalized === 'production') {
     return 'PRD';
   }
 
@@ -165,6 +166,7 @@ export type AppBindings = {
 
 export type AppEnv = {
   Bindings: AppBindings;
+  Variables: RequestIdVariables;
 };
 
 export type AppOpenApi = OpenAPIHono<AppEnv>;

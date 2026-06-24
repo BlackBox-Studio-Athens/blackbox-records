@@ -4,7 +4,7 @@ import {
   createCurrentCatalogExpectedSandboxPriceMap,
   type CatalogSyncIssue,
 } from '../../application/commerce/catalog-sync';
-import { formatProductEnvironmentLabel, productEnvironmentProfileFromBindings, type AppBindings } from '../../env';
+import { productEnvironmentProfileFromBindings, type AppBindings } from '../../env';
 import {
   createPrismaClient,
   PrismaStoreItemOptionRepository,
@@ -12,9 +12,11 @@ import {
   PrismaVariantStripeMappingRepository,
 } from '../../infrastructure/persistence/prisma';
 import { createStripeCatalogGateway } from '../../infrastructure/stripe';
+import { createBindingLogger, normalizeUnknownError } from '../../observability';
 
 export async function runScheduledCatalogVerification(bindings: AppBindings): Promise<void> {
   const productEnvironmentProfile = productEnvironmentProfileFromBindings(bindings);
+  const logger = createBindingLogger(bindings);
   const prisma = createPrismaClient(bindings);
   const storeItems = new PrismaStoreItemOptionRepository(prisma);
   const catalogReconciler = new CatalogReconciler({
@@ -25,6 +27,11 @@ export async function runScheduledCatalogVerification(bindings: AppBindings): Pr
     variantStripeMappings: new PrismaVariantStripeMappingRepository(prisma),
   });
 
+  logger.info({
+    event: 'catalog_verification_scheduled_start',
+    outcome: 'started',
+  });
+
   try {
     const result = await catalogReconciler.verifyBuyableCatalog({
       apply: productEnvironmentProfile.catalogVerificationPolicy.applyScheduledChanges,
@@ -33,25 +40,39 @@ export async function runScheduledCatalogVerification(bindings: AppBindings): Pr
     });
 
     if (result.issues.length) {
-      console.warn(
-        [
-          `Scheduled Stripe catalog verification found ${result.issues.length} issue(s) in ${formatProductEnvironmentLabel(productEnvironmentProfile.productEnvironment)}.`,
-          formatScheduledCatalogIssueBreakdown(result.issues),
-        ].join(' '),
-      );
+      logger.warn({
+        ...countCatalogIssueBreakdown(result.issues),
+        event: 'catalog_verification_scheduled_issue_summary',
+        issueCount: result.issues.length,
+        outcome: 'issues_found',
+        safeReason: 'catalog_drift',
+      });
+    } else {
+      logger.info({
+        event: 'catalog_verification_scheduled_success',
+        issueCount: 0,
+        outcome: 'success',
+      });
     }
+  } catch (error) {
+    logger.error({
+      ...normalizeUnknownError(error),
+      event: 'catalog_verification_scheduled_failure',
+      outcome: 'failed',
+    });
+    throw error;
   } finally {
     await prisma.$disconnect();
   }
 }
 
-function formatScheduledCatalogIssueBreakdown(issues: CatalogSyncIssue[]): string {
-  return [
-    `Product Projection: ${countCatalogIssues(issues, 'product_projection')}`,
-    `Price Authority: ${countCatalogIssues(issues, 'price_authority')}`,
-    `D1 readiness: ${countCatalogIssues(issues, 'd1_readiness')}`,
-    `Store Offer snapshots: ${countCatalogIssues(issues, 'store_offer_snapshot')}`,
-  ].join('; ');
+function countCatalogIssueBreakdown(issues: CatalogSyncIssue[]) {
+  return {
+    d1ReadinessIssues: countCatalogIssues(issues, 'd1_readiness'),
+    priceAuthorityIssues: countCatalogIssues(issues, 'price_authority'),
+    productProjectionIssues: countCatalogIssues(issues, 'product_projection'),
+    storeOfferSnapshotIssues: countCatalogIssues(issues, 'store_offer_snapshot'),
+  };
 }
 
 function countCatalogIssues(issues: CatalogSyncIssue[], driftCategory: CatalogSyncIssue['driftCategory']): number {

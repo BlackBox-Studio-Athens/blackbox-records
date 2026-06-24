@@ -6,7 +6,7 @@ import type {
 import type { StripePriceId } from '../../../domain/commerce';
 import type { CatalogDriftCategory } from './field-ownership';
 
-export type StripeCatalogEnvironment = 'local' | 'production' | 'sandbox';
+export type StripeCatalogEnvironment = 'local' | 'prd' | 'uat';
 
 export type StoreOfferPrice = {
   amountMinor: number;
@@ -50,7 +50,7 @@ export type StripeCatalogProductProjection = {
   taxCode: string | null;
 };
 
-export type DesiredCatalogEnvironment = Extract<StripeCatalogEnvironment, 'production' | 'sandbox'>;
+export type DesiredCatalogEnvironment = Extract<StripeCatalogEnvironment, 'prd' | 'uat'>;
 
 export type DesiredCatalogAvailability = 'published' | 'retired' | 'withheld';
 

@@ -70,16 +70,16 @@ type StripeCheckoutLineItemsResponse = {
   }>;
 };
 
-const defaultProductionSiteUrl = 'https://blackbox-records-web.pages.dev';
-const defaultProductionWorkerUrl = 'https://blackbox-records-backend.blackboxrecordsathens.workers.dev';
+const defaultPrdSiteUrl = 'https://blackbox-records-web.pages.dev';
+const defaultPrdWorkerUrl = 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev';
 
 export function parsePromotionSmokeArgs(args: string[]): PromotionSmokeOptions {
   const options: PromotionSmokeOptions = {
     environment: 'PRD',
     evidenceDir: path.join('.codex-artifacts', 'smoke', 'prd', 'stripe-promotion'),
     scenario: 'checkout_surface',
-    siteUrl: defaultProductionSiteUrl,
-    workerUrl: defaultProductionWorkerUrl,
+    siteUrl: defaultPrdSiteUrl,
+    workerUrl: defaultPrdWorkerUrl,
   };
 
   for (let index = 0; index < args.length; index += 1) {
@@ -213,7 +213,8 @@ export function createPaidSmokePolicyEvidence(
   options: PromotionSmokeOptions,
   entry: DesiredCatalogEntry,
 ): PromotionSmokeEvidence {
-  const paidSmokeConfigured = process.env.PRODUCTION_PAID_SMOKE_POLICY === 'enabled';
+  const paidSmokeConfigured =
+    (process.env.PRD_PAID_SMOKE_POLICY ?? process.env.PRODUCTION_PAID_SMOKE_POLICY) === 'enabled';
 
   return {
     amountMinor: null,
@@ -232,8 +233,8 @@ export function createPaidSmokePolicyEvidence(
     status: paidSmokeConfigured ? 'failed' : 'not_configured',
     storeItemSlug: entry.storeItemSlug,
     summary: paidSmokeConfigured
-      ? 'Production paid smoke policy is enabled, but no live paid smoke implementation is configured in this runner.'
-      : 'Production paid smoke policy is not configured; no live payment was attempted.',
+      ? 'PRD paid smoke policy is enabled, but no live paid smoke implementation is configured in this runner.'
+      : 'PRD paid smoke policy is not configured; no live payment was attempted.',
     variantId: entry.variantId,
     workerUrl: options.workerUrl,
   };
@@ -308,20 +309,20 @@ async function startCheckoutSession(workerUrl: string, entry: DesiredCatalogEntr
     }),
     headers: {
       'content-type': 'application/json',
-      origin: defaultProductionSiteUrl,
+      origin: defaultPrdSiteUrl,
     },
     method: 'POST',
   });
   const bodyText = await response.text();
 
   if (!response.ok) {
-    throw new Error(`Production checkout start failed (${response.status}): ${bodyText}`);
+    throw new Error(`PRD checkout start failed (${response.status}): ${bodyText}`);
   }
 
   const payload = JSON.parse(bodyText) as { checkoutUrl?: unknown };
 
   if (typeof payload.checkoutUrl !== 'string' || !payload.checkoutUrl.trim()) {
-    throw new Error('Production checkout start did not return checkoutUrl.');
+    throw new Error('PRD checkout start did not return checkoutUrl.');
   }
 
   return { checkoutUrl: payload.checkoutUrl };
@@ -391,7 +392,7 @@ function parseEnvironment(value: string | undefined): PromotionSmokeEnvironment 
 }
 
 function toDesiredCatalogEnvironment(environment: PromotionSmokeEnvironment): DesiredCatalogEnvironment {
-  return environment === 'PRD' ? 'production' : 'sandbox';
+  return environment === 'PRD' ? 'prd' : 'uat';
 }
 
 function parseScenario(value: string | undefined): PromotionSmokeScenarioSelection {

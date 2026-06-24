@@ -35,7 +35,7 @@ const contract: StripeCatalogStoreItemContract = {
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'disintegration-black-vinyl-lp',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_disintegration-black-vinyl-lp_standard',
   },
   expectedSandboxPrice: {
@@ -62,16 +62,16 @@ const contract: StripeCatalogStoreItemContract = {
 
 describe('stripe sandbox catalog reset', () => {
   it('defaults to sandbox dry-run and rejects production resets', () => {
-    expect(parseStripeCatalogResetSandboxArgs(['--env', 'sandbox'])).toEqual({
-      environment: 'sandbox',
+    expect(parseStripeCatalogResetSandboxArgs(['--env', 'uat'])).toEqual({
+      environment: 'uat',
       mode: 'dry-run',
     });
-    expect(parseStripeCatalogResetSandboxArgs(['--env=sandbox', '--confirm'])).toEqual({
-      environment: 'sandbox',
+    expect(parseStripeCatalogResetSandboxArgs(['--env=uat', '--confirm'])).toEqual({
+      environment: 'uat',
       mode: 'confirm',
     });
-    expect(() => parseStripeCatalogResetSandboxArgs(['--env', 'production', '--confirm'])).toThrow(
-      'Stripe sandbox catalog reset is allowed only with --env sandbox.',
+    expect(() => parseStripeCatalogResetSandboxArgs(['--env', 'prd', '--confirm'])).toThrow(
+      'Stripe sandbox catalog reset is allowed only with --env uat.',
     );
   });
 
@@ -79,7 +79,7 @@ describe('stripe sandbox catalog reset', () => {
     const stripe = createFakeStripeClient();
 
     await expect(
-      createResetPlan('sandbox', stripe as unknown as Parameters<typeof createResetPlan>[1], [contract]),
+      createResetPlan('uat', stripe as unknown as Parameters<typeof createResetPlan>[1], [contract]),
     ).resolves.toEqual({
       pricesToDeactivate: ['price_blackboxOwned1111', 'price_legacyOwned4444', 'price_lookupOwned2222'],
       productsToDeactivate: ['prod_blackboxOwned1111', 'prod_legacyOwned4444', 'prod_lookupOwned2222'],
@@ -90,7 +90,7 @@ describe('stripe sandbox catalog reset', () => {
     const stripe = createFakeStripeClient();
 
     const dryRunPlan = await resetStripeSandboxCatalog(
-      { environment: 'sandbox', mode: 'dry-run' },
+      { environment: 'uat', mode: 'dry-run' },
       stripe as unknown as Parameters<typeof resetStripeSandboxCatalog>[1],
       [contract],
     );
@@ -99,7 +99,7 @@ describe('stripe sandbox catalog reset', () => {
     expect(stripe.products.update).not.toHaveBeenCalled();
 
     await resetStripeSandboxCatalog(
-      { environment: 'sandbox', mode: 'confirm' },
+      { environment: 'uat', mode: 'confirm' },
       stripe as unknown as Parameters<typeof resetStripeSandboxCatalog>[1],
       [contract],
     );
@@ -122,7 +122,7 @@ describe('stripe sandbox catalog reset', () => {
         pricesToDeactivate: ['price_blackboxOwned1111'],
         productsToDeactivate: ['prod_blackboxOwned1111'],
       },
-      { environment: 'sandbox', mode: 'dry-run' },
+      { environment: 'uat', mode: 'dry-run' },
     );
 
     expect(report).toContain('price_...1111');
@@ -153,7 +153,7 @@ function createFakeStripeClient() {
             id: 'price_lookupOwned2222',
             lookup_key: null,
             metadata: {
-              appEnv: 'sandbox',
+              appEnv: 'uat',
               sourceId: 'disintegration',
               sourceKind: 'release',
               storeItemSlug: 'disintegration-black-vinyl-lp',

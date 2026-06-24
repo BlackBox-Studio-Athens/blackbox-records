@@ -310,7 +310,7 @@ export function checkStripeSandboxSmokePreflight(input: StripeSandboxSmokePrefli
   }
 
   if (!input.wranglerReady) {
-    issues.push('Wrangler is not authenticated for sandbox D1/secret-name inspection.');
+    issues.push('Wrangler is not authenticated for UAT D1/secret-name inspection.');
   }
 
   if (!input.gitignoreText?.includes('.codex-artifacts/')) {
@@ -319,13 +319,13 @@ export function checkStripeSandboxSmokePreflight(input: StripeSandboxSmokePrefli
 
   if (!input.secretNames.includes('STRIPE_SECRET_KEY')) {
     issues.push(
-      'Sandbox Worker secret STRIPE_SECRET_KEY is not configured. Set it from apps/backend with: pnpm exec wrangler secret put STRIPE_SECRET_KEY --env sandbox',
+      'Sandbox Worker secret STRIPE_SECRET_KEY is not configured. Set it from apps/backend with: pnpm exec wrangler secret put STRIPE_SECRET_KEY --env uat',
     );
   }
 
   if (requiresPaidWebhook && !input.secretNames.includes('STRIPE_WEBHOOK_SECRET')) {
     issues.push(
-      'Sandbox Worker secret STRIPE_WEBHOOK_SECRET is not configured. Set it from apps/backend with: pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env sandbox',
+      'Sandbox Worker secret STRIPE_WEBHOOK_SECRET is not configured. Set it from apps/backend with: pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env uat',
     );
   }
 
@@ -380,10 +380,10 @@ export function formatStripeSandboxSmokeRunHeader(input: {
     '',
     'Required outside this process for paid scenarios:',
     `- Persistent Stripe Dashboard/Workbench webhook endpoint: ${input.options.workerUrl}/api/stripe/webhooks`,
-    '- The sandbox Worker STRIPE_WEBHOOK_SECRET must match the persistent endpoint signing secret.',
-    '- Run pnpm stripe:webhooks:verify --env sandbox before accepting deployed-sandbox webhook readiness.',
+    '- The UAT Worker STRIPE_WEBHOOK_SECRET must match the persistent endpoint signing secret.',
+    '- Run pnpm stripe:webhooks:verify --env uat before accepting deployed-sandbox webhook readiness.',
     '- stripe listen is local/temporary diagnostic tooling only; it is not persistent readiness evidence.',
-    '- Real sandbox Stripe Price mappings and positive online stock must exist in sandbox D1.',
+    '- Real sandbox Stripe Price mappings and positive online stock must exist in UAT D1.',
     '',
     `Stripe test card reference: ${STRIPE_TEST_CARD_DOCS_URL}`,
     '============================================================',
@@ -1390,7 +1390,7 @@ function readRemoteD1ReadinessSummary(): RemoteD1ReadinessSummary | null {
 }
 
 function readSandboxSecretNames(): string[] {
-  const result = runWrangler(['secret', 'list', '--env', 'sandbox']);
+  const result = runWrangler(['secret', 'list', '--env', 'uat']);
 
   if (result.error || result.status !== 0) {
     return [];
@@ -1418,17 +1418,7 @@ function parseWranglerSecretNames(text: string): string[] {
 }
 
 function runRemoteD1Sql(sql: string): string {
-  const result = runWrangler([
-    'd1',
-    'execute',
-    'COMMERCE_DB',
-    '--env',
-    'sandbox',
-    '--remote',
-    '--command',
-    sql,
-    '--json',
-  ]);
+  const result = runWrangler(['d1', 'execute', 'COMMERCE_DB', '--env', 'uat', '--remote', '--command', sql, '--json']);
 
   if (result.error) {
     throw result.error;

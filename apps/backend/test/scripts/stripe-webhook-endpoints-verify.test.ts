@@ -12,9 +12,9 @@ import {
   formatStripeWebhookEndpointVerificationReport,
   parseStripeWebhookVerifyArgs,
   parseWranglerSecretNames,
-  PRODUCTION_WEBHOOK_URL,
+  PRD_WEBHOOK_URL,
   redactSensitiveValues,
-  SANDBOX_WEBHOOK_URL,
+  UAT_WEBHOOK_URL,
   verifyStripeWebhookEndpointConfiguration,
   type StripeWebhookEndpoint,
   type StripeWebhookEndpointListClient,
@@ -29,7 +29,7 @@ function endpoint(overrides: Partial<StripeWebhookEndpoint> = {}): StripeWebhook
     id: 'we_1234567890abcdef',
     livemode: false,
     status: 'enabled',
-    url: SANDBOX_WEBHOOK_URL,
+    url: UAT_WEBHOOK_URL,
     ...overrides,
   };
 }
@@ -52,14 +52,14 @@ function fakeClient(pages: StripeWebhookEndpoint[][]): StripeWebhookEndpointList
 
 describe('Stripe webhook endpoint verifier', () => {
   it('requires explicit target environment argument parsing', () => {
-    expect(parseStripeWebhookVerifyArgs(['--env', 'sandbox'])).toEqual({ environment: 'sandbox' });
-    expect(parseStripeWebhookVerifyArgs(['--env', 'production'])).toEqual({ environment: 'production' });
-    expect(parseStripeWebhookVerifyArgs(['--', '--env=sandbox'])).toEqual({ environment: 'sandbox' });
-    expect(() => parseStripeWebhookVerifyArgs([])).toThrow(
-      'Usage: pnpm stripe:webhooks:verify --env sandbox|production',
-    );
+    expect(parseStripeWebhookVerifyArgs(['--env', 'uat'])).toEqual({ environment: 'uat' });
+    expect(parseStripeWebhookVerifyArgs(['--env', 'prd'])).toEqual({ environment: 'prd' });
+    expect(parseStripeWebhookVerifyArgs(['--env', 'sandbox'])).toEqual({ environment: 'uat' });
+    expect(parseStripeWebhookVerifyArgs(['--env', 'production'])).toEqual({ environment: 'prd' });
+    expect(parseStripeWebhookVerifyArgs(['--', '--env=uat'])).toEqual({ environment: 'uat' });
+    expect(() => parseStripeWebhookVerifyArgs([])).toThrow('Usage: pnpm stripe:webhooks:verify --env uat|prd');
     expect(() => parseStripeWebhookVerifyArgs(['--env', 'local'])).toThrow(
-      'Stripe webhook endpoint verification requires --env sandbox or --env production.',
+      'Stripe webhook endpoint verification requires --env uat or --env prd.',
     );
   });
 
@@ -81,7 +81,7 @@ describe('Stripe webhook endpoint verifier', () => {
     expect(result.issues).toEqual([]);
     expect(result.endpointAnalysis.extraEvents).toEqual(['checkout.session.completed']);
     expect(result.signingSecretMatchProof).toBe('not_proven_by_api');
-    expect(report).toContain('Stripe sandbox webhook endpoint verification OK.');
+    expect(report).toContain('Stripe UAT webhook endpoint verification OK.');
     expect(report).toContain('we_...cdef');
     expect(report).toContain('Signing-secret match proof: not_proven_by_api');
     expect(report).not.toContain('we_1234567890abcdef');
@@ -93,20 +93,20 @@ describe('Stripe webhook endpoint verifier', () => {
         [
           endpoint({
             livemode: true,
-            url: PRODUCTION_WEBHOOK_URL,
+            url: PRD_WEBHOOK_URL,
           }),
         ],
       ]),
       committedCron: { status: 'unverified', detail: 'not configured' },
       deployedCron: { status: 'unverified', detail: 'not configured' },
-      environment: 'production',
+      environment: 'prd',
       workerSecret: { status: 'present' },
     });
     const report = formatStripeWebhookEndpointVerificationReport(result);
 
     expect(result.issues).toEqual([]);
-    expect(report).toContain('Stripe production webhook endpoint verification OK.');
-    expect(report).toContain(`Endpoint URL: ${PRODUCTION_WEBHOOK_URL}`);
+    expect(report).toContain('Stripe PRD webhook endpoint verification OK.');
+    expect(report).toContain(`Endpoint URL: ${PRD_WEBHOOK_URL}`);
   });
 
   it('follows Stripe pagination while listing endpoints', async () => {
@@ -119,19 +119,19 @@ describe('Stripe webhook endpoint verifier', () => {
 
     expect(result.endpointAnalysis.matchingEndpointCount).toBe(2);
     expect(result.issues).toContain(
-      `Multiple enabled account webhook endpoints target ${SANDBOX_WEBHOOK_URL}: we_..._one, we_..._two.`,
+      `Multiple enabled account webhook endpoints target ${UAT_WEBHOOK_URL}: we_..._one, we_..._two.`,
     );
   });
 
   it('fails missing, disabled, duplicate, live-mode, and Connect-only endpoint states', () => {
     expect(analyzeStripeWebhookEndpoints([]).issues).toContain(
-      `No Stripe account webhook endpoint targets ${SANDBOX_WEBHOOK_URL}.`,
+      `No Stripe account webhook endpoint targets ${UAT_WEBHOOK_URL}.`,
     );
     expect(analyzeStripeWebhookEndpoints([endpoint({ status: 'disabled' })]).issues).toContain(
       'Matching webhook endpoint is disabled: we_...cdef.',
     );
     expect(analyzeStripeWebhookEndpoints([endpoint(), endpoint({ id: 'we_abcdef1234567890' })]).issues).toContain(
-      `Multiple enabled account webhook endpoints target ${SANDBOX_WEBHOOK_URL}: we_...cdef, we_...7890.`,
+      `Multiple enabled account webhook endpoints target ${UAT_WEBHOOK_URL}: we_...cdef, we_...7890.`,
     );
     expect(analyzeStripeWebhookEndpoints([endpoint({ livemode: true })]).issues).toContain(
       'Webhook endpoint we_...cdef is not in Stripe test mode.',
@@ -141,14 +141,14 @@ describe('Stripe webhook endpoint verifier', () => {
         [
           endpoint({
             livemode: false,
-            url: PRODUCTION_WEBHOOK_URL,
+            url: PRD_WEBHOOK_URL,
           }),
         ],
-        'production',
+        'prd',
       ).issues,
     ).toContain('Webhook endpoint we_...cdef is not in Stripe live mode.');
     expect(analyzeStripeWebhookEndpoints([endpoint({ application: 'ca_1234567890abcdef' })]).issues).toContain(
-      `Matching webhook endpoint(s) for ${SANDBOX_WEBHOOK_URL} are Connect-only or application-owned; create an account endpoint.`,
+      `Matching webhook endpoint(s) for ${UAT_WEBHOOK_URL} are Connect-only or application-owned; create an account endpoint.`,
     );
   });
 
@@ -203,10 +203,10 @@ describe('Stripe webhook endpoint verifier', () => {
     });
 
     expect(missingResult.issues).toContain(
-      'Sandbox Worker secret STRIPE_WEBHOOK_SECRET is missing. Set it from apps/backend with: pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env sandbox',
+      'UAT Worker secret STRIPE_WEBHOOK_SECRET is missing. Set it from apps/backend with: pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env uat',
     );
     expect(unverifiedResult.issues).toContain(
-      'Sandbox Worker secret STRIPE_WEBHOOK_SECRET presence is unverified. (wrangler failed with [redacted_stripe_webhook_secret])',
+      'UAT Worker secret STRIPE_WEBHOOK_SECRET presence is unverified. (wrangler failed with [redacted_stripe_webhook_secret])',
     );
     expect(formatStripeWebhookEndpointVerificationReport(unverifiedResult)).toContain(
       'Deployed cron presence is unverified. (no token)',
@@ -242,6 +242,6 @@ describe('Stripe webhook endpoint verifier', () => {
 
     expect(scriptText).not.toContain('secret put');
     expect(scriptText).not.toContain('syncSandboxWebhookSecret');
-    expect(scriptText).toContain('It was not synced to the sandbox Worker');
+    expect(scriptText).toContain('It was not synced to the UAT Worker');
   });
 });

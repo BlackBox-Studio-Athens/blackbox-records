@@ -10,13 +10,19 @@ describe('catalog checkout pause command', () => {
   it('parses dry-run and apply arguments', () => {
     expect(parsePauseCatalogCheckoutArgs(['--variant-id', 'variant_demo_standard'])).toEqual({
       apply: false,
-      environment: 'production',
+      environment: 'prd',
       variantId: 'variant_demo_standard',
     });
-    expect(parsePauseCatalogCheckoutArgs(['--env=sandbox', '--variant-id=variant_demo_standard', '--apply'])).toEqual({
+    expect(parsePauseCatalogCheckoutArgs(['--env=uat', '--variant-id=variant_demo_standard', '--apply'])).toEqual({
       apply: true,
-      environment: 'sandbox',
+      environment: 'uat',
       variantId: 'variant_demo_standard',
+    });
+    expect(parsePauseCatalogCheckoutArgs(['--env=sandbox', '--variant-id=variant_demo_standard'])).toMatchObject({
+      environment: 'uat',
+    });
+    expect(parsePauseCatalogCheckoutArgs(['--env=production', '--variant-id=variant_demo_standard'])).toMatchObject({
+      environment: 'prd',
     });
   });
 
@@ -36,7 +42,7 @@ describe('catalog checkout pause command', () => {
     expect(
       formatPauseCatalogCheckoutReport({
         apply: false,
-        environment: 'production',
+        environment: 'prd',
         variantId: 'variant_demo_standard',
       }),
     ).toContain('Stripe Products, Stripe Prices, orders, stock rows, and evidence are not deleted');

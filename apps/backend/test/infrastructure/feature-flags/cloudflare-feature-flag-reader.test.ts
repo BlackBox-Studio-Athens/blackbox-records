@@ -53,11 +53,14 @@ describe('CloudflareFeatureFlagReader', () => {
       capability: 'native_checkout',
       productEnvironment: 'UAT',
       targetingKey: 'blackbox-records-UAT',
-      workerDeploymentTarget: 'sandbox',
+      workerDeploymentTarget: 'uat',
     });
   });
 
   it('falls back to the environment default when provider evaluation fails', async () => {
+    const logger = {
+      warn: vi.fn(),
+    };
     const evaluator = {
       getBooleanValue: vi.fn(async () => {
         throw new Error('Flagship unavailable');
@@ -65,7 +68,18 @@ describe('CloudflareFeatureFlagReader', () => {
     };
 
     await expect(
-      new CloudflareFeatureFlagReader(productEnvironmentProfiles.PRD, evaluator, undefined).isNativeCheckoutEnabled(),
+      new CloudflareFeatureFlagReader(
+        productEnvironmentProfiles.PRD,
+        evaluator,
+        undefined,
+        logger,
+      ).isNativeCheckoutEnabled(),
     ).resolves.toBe(false);
+    expect(logger.warn).toHaveBeenCalledWith({
+      capability: 'native_checkout',
+      event: 'feature_gate_evaluation_failed',
+      outcome: 'defaulted',
+      safeReason: 'provider_error',
+    });
   });
 });

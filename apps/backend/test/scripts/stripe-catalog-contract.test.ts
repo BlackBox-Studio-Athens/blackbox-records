@@ -34,7 +34,7 @@ describe('stripe catalog contract projection', () => {
           amountMinor: 2800,
           currencyCode: 'EUR',
         },
-        targetEnvironments: ['sandbox'],
+        targetEnvironments: ['uat'],
       },
       expectedSandboxPrice: {
         amountMinor: 2800,
@@ -59,7 +59,7 @@ describe('stripe catalog contract projection', () => {
           amountMinor: 2800,
           currencyCode: 'EUR',
         },
-        targetEnvironments: ['sandbox'],
+        targetEnvironments: ['uat'],
       },
       expectedSandboxPrice: {
         amountMinor: 2800,
@@ -141,11 +141,9 @@ describe('stripe catalog contract projection', () => {
       stockInitialization: {
         initialOnlineQuantity: null,
       },
-      targetEnvironments: ['sandbox'],
+      targetEnvironments: ['uat'],
     });
-    expect(contracts.flatMap((contract) => contract.desiredCatalogEntry.targetEnvironments)).not.toContain(
-      'production',
-    );
+    expect(contracts.flatMap((contract) => contract.desiredCatalogEntry.targetEnvironments)).not.toContain('prd');
     expect(source).toContain('export const currentDesiredCatalogState');
     expect(source).toContain('createCurrentDesiredCatalogEntriesForEnvironment');
     expect(source).not.toContain('smokeCandidate');
@@ -215,7 +213,7 @@ describe('stripe catalog contract projection', () => {
           initialOnlineQuantity: null,
         },
         storeItemSlug: 'afterglow-tape',
-        targetEnvironments: ['sandbox'],
+        targetEnvironments: ['uat'],
         variantId: 'variant_afterglow-tape_standard',
       },
       expectedSandboxPrice: null,
@@ -276,7 +274,7 @@ describe('stripe catalog contract projection', () => {
     expect(sql).not.toContain('sk_');
   });
 
-  it('generates production D1 readiness without sandbox stock defaults or stock overwrites', async () => {
+  it('generates PRD D1 readiness without sandbox stock defaults or stock overwrites', async () => {
     const contracts = await loadStripeCatalogStoreItemContracts({ productEnvironment: 'PRD' });
     const sql = createProductionCommerceReadinessSql(contracts);
 

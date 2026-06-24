@@ -8,11 +8,12 @@ import {
   type NewsletterRegistrationResult,
 } from '../../../application/email';
 import type { AppBindings } from '../../../env';
+import type { AppLogger } from '../../../observability';
 import { createEmailRuntimeServices } from './email-runtime-services';
 
 const publicNewsletterEmail = z.string().trim().email();
 
-export function createPublicNewsletterServices(bindings: AppBindings) {
+export function createPublicNewsletterServices(bindings: AppBindings, logger: Pick<AppLogger, 'info' | 'warn'>) {
   return {
     errors: {
       EmailConfigurationError,
@@ -30,7 +31,7 @@ export function createPublicNewsletterServices(bindings: AppBindings) {
         email: publicNewsletterEmail.parse(input.email),
       });
 
-      logNewsletterRegistrationOutcome(console, result, {
+      logNewsletterRegistrationOutcome(logger, result, {
         source: 'site-form',
       });
 

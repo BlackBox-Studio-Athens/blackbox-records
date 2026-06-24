@@ -1,8 +1,8 @@
 ## Context
 
-The repo-side webhook handler already accepts Stripe catalog events, dispatches Product/Price events to catalog reconciliation, and runs sandbox reconciliation with `apply: true`. The sandbox Worker also has a six-hour scheduled catalog verification backstop in `apps/backend/wrangler.jsonc`.
+The repo-side webhook handler already accepts Stripe catalog events, dispatches Product/Price events to catalog reconciliation, and runs UAT reconciliation with `apply: true`. The UAT Worker also has a six-hour scheduled catalog verification backstop in `apps/backend/wrangler.jsonc`.
 
-The missing control is outside the repo: Stripe must have a persistent account webhook endpoint for the deployed sandbox Worker, and Cloudflare must hold that endpoint's signing secret as `STRIPE_WEBHOOK_SECRET`. Current smoke tooling includes `scripts/start-stripe-sandbox-listener.ts`, which starts `stripe listen --forward-to https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev/api/stripe/webhooks` and syncs the transient CLI listener signing secret into the sandbox Worker. That proves one smoke run can receive forwarded events, but it can also replace the persistent endpoint secret and does not prove the Dashboard endpoint remains configured when the listener is gone.
+The missing control is outside the repo: Stripe must have a persistent account webhook endpoint for the deployed UAT Worker, and Cloudflare must hold that endpoint's signing secret as `STRIPE_WEBHOOK_SECRET`. Current smoke tooling includes `scripts/start-stripe-sandbox-listener.ts`, which starts `stripe listen --forward-to https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev/api/stripe/webhooks` for UAT diagnostics. That proves one smoke run can receive forwarded events, but a transient CLI listener must not replace the persistent endpoint secret and does not prove the Dashboard endpoint remains configured when the listener is gone.
 
 Stripe's current docs support both Dashboard/Workbench setup and API setup for webhook endpoints. The API can create, update, retrieve, and list webhook endpoints. Endpoint creation returns the signing secret once, while later retrieval returns endpoint configuration without the secret value. Stripe CLI `listen` prints a separate signing secret for the active listener and forwards events only while the listener is running.
 
@@ -10,9 +10,9 @@ Stripe's current docs support both Dashboard/Workbench setup and API setup for w
 
 **Goals:**
 
-- Add an operational verification plan for the sandbox Stripe webhook endpoint URL and required catalog event subscriptions.
+- Add an operational verification plan for the UAT Stripe test-mode webhook endpoint URL and required catalog event subscriptions.
 - Make persistent endpoint setup visible through a repo command that can run before smoke, in CI, or in launch readiness checks.
-- Verify sandbox Worker `STRIPE_WEBHOOK_SECRET` presence without printing the secret.
+- Verify UAT Worker `STRIPE_WEBHOOK_SECRET` presence without printing the secret.
 - Prevent transient `stripe listen` secrets from being mistaken for persistent webhook configuration.
 - Preserve the layered catalog safety model: webhook near-real-time sync, Store Offer read reconciliation, checkout start revalidation, scheduled backstop, and `pnpm stripe:catalog:verify --env uat`.
 
@@ -27,10 +27,10 @@ Stripe's current docs support both Dashboard/Workbench setup and API setup for w
 
 ### Add a dedicated webhook endpoint verifier
 
-Introduce `pnpm stripe:webhooks:verify --env sandbox`, backed by a script such as `scripts/verify-stripe-webhook-endpoints.ts`. The verifier reads Stripe with the selected environment credentials and lists account webhook endpoints. It fails unless it finds exactly one enabled account endpoint with:
+Introduce `pnpm stripe:webhooks:verify --env uat`, backed by a script such as `scripts/verify-stripe-webhook-endpoints.ts`. The verifier reads Stripe with the selected environment credentials and lists account webhook endpoints. It fails unless it finds exactly one enabled account endpoint with:
 
-- `url` equal to `https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev/api/stripe/webhooks`
-- `livemode` false for sandbox/test mode
+- `url` equal to `https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev/api/stripe/webhooks`
+- `livemode` false for UAT Stripe test mode
 - no Connect-only destination
 - enabled events including `product.created`, `product.updated`, `product.deleted`, `price.created`, `price.updated`, and `price.deleted`
 
@@ -44,7 +44,7 @@ The first implementation should not mutate Stripe account state. It should verif
 
 If the endpoint already exists, the verifier cannot prove the Worker secret equals the endpoint secret from the Stripe retrieve/list APIs because Stripe does not return the secret on later reads. In that state it can prove endpoint URL/events/status and Worker secret presence, but matching-secret proof requires one of:
 
-- endpoint creation/rotation where the operator immediately writes the returned or revealed secret to the sandbox Worker
+- endpoint creation/rotation where the operator immediately writes the returned or revealed secret to the UAT Worker
 - a manual Dashboard secret reveal followed by `wrangler secret put`
 - a live delivery probe whose result is recorded as redacted evidence
 
@@ -54,9 +54,9 @@ Alternative considered: store the webhook signing secret or fingerprint in repo 
 
 ### Stop overwriting the persistent Worker secret with transient listener secrets
 
-`scripts/start-stripe-sandbox-listener.ts` currently syncs the active `stripe listen` secret into the deployed sandbox Worker. After the persistent endpoint becomes the sandbox source of truth, that behavior must change. The plan should either remove deployed-sandbox secret syncing from that script or require an explicitly isolated local/temporary mode that cannot replace the primary `STRIPE_WEBHOOK_SECRET`.
+`scripts/start-stripe-sandbox-listener.ts` previously synced the active `stripe listen` secret into the deployed UAT Worker. After the persistent endpoint becomes the UAT source of truth, that behavior must stay isolated from the primary `STRIPE_WEBHOOK_SECRET`.
 
-For deployed sandbox smoke, prefer the persistent Dashboard endpoint and let Stripe deliver checkout/catalog events directly to the Worker. Use `stripe listen` for local Worker diagnostics or temporary smoke-only investigation, but do not treat it as persistent endpoint evidence.
+For deployed UAT smoke, prefer the persistent Dashboard endpoint and let Stripe deliver checkout/catalog events directly to the Worker. Use `stripe listen` for local Worker diagnostics or temporary smoke-only investigation, but do not treat it as persistent endpoint evidence.
 
 If a future smoke still needs both persistent Dashboard delivery and CLI-forwarded delivery against the same deployed Worker, add an explicit multi-secret verification design first, such as a primary `STRIPE_WEBHOOK_SECRET` plus short-lived additional listener secret support. Do not silently overwrite the primary secret.
 
@@ -66,11 +66,11 @@ Alternative considered: keep syncing the listener secret before every smoke run.
 
 The verifier should call Wrangler or Cloudflare APIs only for non-secret evidence:
 
-- the sandbox Worker exists under the expected name
+- the UAT Worker exists under the expected name
 - `STRIPE_WEBHOOK_SECRET` is configured as a secret binding
-- the sandbox Worker still has the six-hour cron backstop configured
+- the UAT Worker still has the six-hour cron backstop configured
 
-If Wrangler cannot expose secret names reliably, the verifier should report "secret presence unverified" with a focused manual action rather than printing or requesting secret values. Manual acceptance can be: `wrangler secret put STRIPE_WEBHOOK_SECRET --env sandbox` followed by a successful webhook delivery probe or paid smoke run using the persistent endpoint.
+If Wrangler cannot expose secret names reliably, the verifier should report "secret presence unverified" with a focused manual action rather than printing or requesting secret values. Manual acceptance can be: `wrangler secret put STRIPE_WEBHOOK_SECRET --env uat` followed by a successful webhook delivery probe or paid smoke run using the persistent endpoint.
 
 Alternative considered: add a Worker admin route that reports secret configuration. Rejected for this slice because it increases runtime API surface for an operator-only diagnostic that Wrangler or Cloudflare state should own.
 
@@ -80,7 +80,7 @@ The persistent webhook endpoint is near-real-time synchronization, not blind tru
 
 - Store Offer reads reconcile stale or missing snapshots before showing checkout readiness.
 - Checkout start revalidates the active Stripe Price before creating a Checkout Session.
-- Scheduled sandbox catalog verification remains enabled every six hours.
+- Scheduled UAT catalog verification remains enabled every six hours.
 - `pnpm stripe:catalog:verify --env uat` remains the operator proof for current catalog state.
 
 The new `stripe:webhooks:verify` command proves the operational path that feeds webhook reconciliation; it does not replace catalog verification.
@@ -96,8 +96,8 @@ The new `stripe:webhooks:verify` command proves the operational path that feeds 
 ## Migration Plan
 
 1. Add `stripe:webhooks:verify` script and tests for endpoint matching, missing events, duplicate endpoints, disabled endpoints, extra events, redaction, and Worker secret-presence classification.
-2. Register or repair the sandbox Stripe endpoint through Dashboard/Workbench, then put the endpoint signing secret into the sandbox Worker as `STRIPE_WEBHOOK_SECRET`.
+2. Register or repair the UAT Stripe endpoint through Dashboard/Workbench, then put the endpoint signing secret into the UAT Worker as `STRIPE_WEBHOOK_SECRET`.
 3. Use the verifier to prove endpoint URL, status, required events, and Worker secret presence after manual setup.
-4. Change `scripts/start-stripe-sandbox-listener.ts` so it no longer overwrites the deployed sandbox Worker's primary webhook secret with a transient listener secret.
-5. Run `pnpm stripe:webhooks:verify --env sandbox`, `pnpm stripe:catalog:verify --env uat`, and a sandbox checkout smoke that relies on the persistent endpoint for webhook delivery.
+4. Keep `scripts/start-stripe-sandbox-listener.ts` from overwriting the deployed UAT Worker's primary webhook secret with a transient listener secret.
+5. Run `pnpm stripe:webhooks:verify --env uat`, `pnpm stripe:catalog:verify --env uat`, and a UAT checkout smoke that relies on the persistent endpoint for webhook delivery.
 6. Keep rollback simple: disable the new verifier gate if credentials are unavailable, but do not remove the persistent endpoint or scheduled backstop once configured.

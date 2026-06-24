@@ -8,7 +8,7 @@ import {
 } from '../../../../scripts/check-production-catalog-readiness';
 import type { DesiredCatalogEntry } from '../../src/application/commerce/catalog-sync';
 
-const productionEntry: DesiredCatalogEntry = {
+const prdEntry: DesiredCatalogEntry = {
   availability: 'published',
   desiredPrice: {
     amountMinor: 2800,
@@ -28,7 +28,7 @@ const productionEntry: DesiredCatalogEntry = {
     initialOnlineQuantity: 2,
   },
   storeItemSlug: 'disintegration-black-vinyl-lp',
-  targetEnvironments: ['sandbox', 'production'],
+  targetEnvironments: ['uat', 'prd'],
   variantId: 'variant_disintegration-black-vinyl-lp_standard',
 };
 
@@ -48,15 +48,15 @@ const readyRow: ProductionCatalogReadinessRow = {
   variantId: 'variant_disintegration-black-vinyl-lp_standard',
 };
 
-describe('production catalog readiness check', () => {
+describe('PRD catalog readiness check', () => {
   it('parses the dry-run phase default and explicit post-apply phase', () => {
     expect(parseProductionCatalogReadinessArgs([])).toEqual({ phase: 'pre-apply' });
     expect(parseProductionCatalogReadinessArgs(['--phase', 'post-apply'])).toEqual({ phase: 'post-apply' });
   });
 
-  it('blocks production readiness when published production items have no Stock row', () => {
+  it('blocks PRD readiness when published PRD items have no Stock row', () => {
     const result = evaluateProductionCatalogReadiness({
-      entries: [productionEntry],
+      entries: [prdEntry],
       phase: 'pre-apply',
       rows: [
         {
@@ -89,7 +89,7 @@ describe('production catalog readiness check', () => {
 
   it('promotes mapping and snapshot expectations to blockers after catalog apply', () => {
     const result = evaluateProductionCatalogReadiness({
-      entries: [productionEntry],
+      entries: [prdEntry],
       phase: 'post-apply',
       rows: [
         {
@@ -106,9 +106,9 @@ describe('production catalog readiness check', () => {
     ]);
   });
 
-  it('accepts a production item with stock, mapping, and Store Offer snapshot', () => {
+  it('accepts a PRD item with stock, mapping, and Store Offer snapshot', () => {
     const result = evaluateProductionCatalogReadiness({
-      entries: [productionEntry],
+      entries: [prdEntry],
       phase: 'post-apply',
       rows: [readyRow],
     });
@@ -116,9 +116,9 @@ describe('production catalog readiness check', () => {
     expect(result.issues).toEqual([]);
   });
 
-  it('keeps retired production items non-buyable without requiring stock', () => {
+  it('keeps retired PRD items non-buyable without requiring stock', () => {
     const retiredEntry = {
-      ...productionEntry,
+      ...prdEntry,
       availability: 'retired',
     } satisfies DesiredCatalogEntry;
     const result = evaluateProductionCatalogReadiness({

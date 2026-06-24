@@ -1,6 +1,6 @@
 # Stripe Sandbox UAT Guide
 
-This guide is for label-member testing of UAT checkout on GitHub Pages. `sandbox` is the mapped Worker runtime target and Stripe test-mode provider layer, not a separate Product Environment.
+This guide is for label-member testing of UAT checkout on GitHub Pages. `sandbox` means Stripe test-mode provider behavior here, not a Cloudflare or Wrangler Product Environment.
 
 ## Test URL
 
@@ -8,16 +8,16 @@ Use the GitHub Pages UAT site:
 
 https://blackbox-studio-athens.github.io/blackbox-records/
 
-The site is static, but checkout calls the UAT Worker/API. That Worker is deployed through the Wrangler `sandbox` runtime target:
+The site is static, but checkout calls the UAT Worker/API. That Worker is deployed through the Wrangler `uat` runtime target:
 
-https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev
+https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev
 
 ## Important Rules
 
 - This is Stripe test mode only.
 - Do not enter real card details.
 - No real charges are created.
-- Orders, stock changes, and webhook evidence are UAT-only and backed by sandbox D1 plus Stripe test mode.
+- Orders, stock changes, and webhook evidence are UAT-only and backed by UAT D1 plus Stripe test mode.
 - Report buyer-facing UI issues, confusing wording, broken flows, and anything that feels unsafe or unclear.
 
 ## Operator Webhook Readiness
@@ -25,7 +25,7 @@ https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev
 UAT paid-order and catalog webhook evidence must use the persistent Stripe Dashboard/Workbench test-mode webhook endpoint:
 
 ```text
-https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev/api/stripe/webhooks
+https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev/api/stripe/webhooks
 ```
 
 The endpoint must be a Stripe test-mode account endpoint and include these catalog events:
@@ -42,17 +42,17 @@ price.deleted
 Before accepting UAT webhook readiness, run:
 
 ```sh
-pnpm stripe:webhooks:verify --env sandbox
+pnpm stripe:webhooks:verify --env uat
 pnpm stripe:catalog:verify --env uat
 ```
 
 If the endpoint is newly created, recreated, or its signing secret is rotated, update the UAT Worker from `apps/backend`:
 
 ```sh
-pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env sandbox
+pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env uat
 ```
 
-Do not paste the signing secret into docs, chat, screenshots, evidence files, Astro public env vars, or committed files. For an existing endpoint, reveal/copy the signing secret from Stripe Dashboard/Workbench and put it directly into Wrangler. Stripe endpoint list/retrieve APIs do not return an existing endpoint secret, so `pnpm stripe:webhooks:verify --env sandbox` separates endpoint configuration proof from signing-secret match proof.
+Do not paste the signing secret into docs, chat, screenshots, evidence files, Astro public env vars, or committed files. For an existing endpoint, reveal/copy the signing secret from Stripe Dashboard/Workbench and put it directly into Wrangler. Stripe endpoint list/retrieve APIs do not return an existing endpoint secret, so `pnpm stripe:webhooks:verify --env uat` separates endpoint configuration proof from signing-secret match proof.
 
 Catalog correctness is layered: persistent webhooks provide near-real-time sync, Store Offer reads reconcile stale snapshots, checkout start revalidates the active Stripe Price, scheduled UAT catalog verification runs every six hours, and `pnpm stripe:catalog:verify --env uat` remains the Product Environment command for current UAT catalog alignment.
 
@@ -93,10 +93,10 @@ Operator sequence for a full UAT catalog reset:
 ```powershell
 git status --short
 git push origin main
-pnpm stripe:webhooks:verify --env sandbox
+pnpm stripe:webhooks:verify --env uat
 pnpm stripe:catalog:verify --env uat
-pnpm stripe:catalog:reset-sandbox --env sandbox --dry-run
-pnpm stripe:catalog:reset-sandbox --env sandbox --confirm
+pnpm stripe:catalog:reset-uat --env uat --dry-run
+pnpm stripe:catalog:reset-uat --env uat --confirm
 pnpm --filter @blackbox/backend d1:seed:uat:catalog
 pnpm stripe:catalog:verify --env uat --apply
 pnpm stripe:catalog:verify --env uat
@@ -107,21 +107,21 @@ Provider execution notes:
 
 - Repo-complete is not provider-complete. A pushed commit does not mutate Stripe Products, Stripe Prices, D1 stock, D1 mappings, or Store Offer snapshots.
 - Start from a clean final tree that already passed `pnpm test:unit`, `pnpm check`, `pnpm build`, and OpenSpec validation. `git status --short` should print nothing before provider mutation begins.
-- Run the provider sequence from the final pushed commit. If reset/apply/smoke work requires a code or script fix, rerun `pnpm test:unit`, `pnpm check`, and `pnpm build`, push the fix, redeploy the sandbox Worker, and rerun catalog verification.
+- Run the provider sequence from the final pushed commit. If reset/apply/smoke work requires a code or script fix, rerun `pnpm test:unit`, `pnpm check`, and `pnpm build`, push the fix, redeploy the UAT Worker, and rerun catalog verification.
 - Reset cleanup must cover current ownership metadata and documented legacy sandbox names such as `BlackBox UAT - ...`. Keep that fallback until there are no legacy sandbox catalog objects left.
 - `pnpm stripe:catalog:verify --env uat` and `pnpm stripe:catalog:verify --env uat --apply` are intentionally throttled. If Stripe returns a rate-limit error after reset or apply work, wait for a short cooldown and rerun verification instead of trusting Dashboard row counts.
 - Stripe Dashboard product counts are diagnostic only. Acceptance proof is the CLI report showing every expected variant checked with zero Product Projection, Price Authority, D1 readiness, and Store Offer snapshot issues, plus UAT smoke evidence.
-- `pnpm stripe:webhooks:verify --env sandbox` proves endpoint shape, mode, status, and event coverage. Existing endpoint signing-secret match is proven by `happy_path_paid` reaching a paid Worker order, not by Stripe endpoint list/retrieve APIs.
+- `pnpm stripe:webhooks:verify --env uat` proves endpoint shape, mode, status, and event coverage. Existing endpoint signing-secret match is proven by `happy_path_paid` reaching a paid Worker order, not by Stripe endpoint list/retrieve APIs.
 - Keep `afterglow-tape` reserved for low-stock behavior. Generic happy-path smoke should use a high-stock item so repeated proof runs do not consume the low-stock test case.
 
 GitHub Pages UAT smoke:
 
 ```powershell
-pnpm smoke:stripe-sandbox -- --site-url https://blackbox-studio-athens.github.io/blackbox-records/ --scenario checkout_surface
-pnpm smoke:stripe-sandbox -- --site-url https://blackbox-studio-athens.github.io/blackbox-records/ --scenario happy_path_paid
+pnpm smoke:stripe-uat -- --site-url https://blackbox-studio-athens.github.io/blackbox-records/ --scenario checkout_surface
+pnpm smoke:stripe-uat -- --site-url https://blackbox-studio-athens.github.io/blackbox-records/ --scenario happy_path_paid
 ```
 
-Run the Resend UAT smoke after the sandbox Worker has `RESEND_API_KEY` and `RESEND_NEWSLETTER_TOPIC_ID` configured:
+Run the Resend UAT smoke after the UAT Worker has `RESEND_API_KEY` and `RESEND_NEWSLETTER_TOPIC_ID` configured:
 
 ```sh
 pnpm smoke:resend-uat

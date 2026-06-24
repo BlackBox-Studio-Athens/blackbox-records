@@ -99,7 +99,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       siteUrl: 'https://blackbox-studio-athens.github.io/blackbox-records',
       timeoutMs: 120_000,
       trace: false,
-      workerUrl: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
+      workerUrl: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
     });
   });
 
@@ -251,7 +251,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
         minimumSmokeOnlineQuantity: 2,
         options: {
           siteUrl: 'https://blackbox-records-web.pages.dev',
-          workerUrl: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
+          workerUrl: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
         },
         remoteD1Summary: readySummary,
         scenarios: [STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface],
@@ -267,7 +267,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       minimumSmokeOnlineQuantity: 2,
       options: {
         siteUrl: 'https://blackbox-records-web.pages.dev',
-        workerUrl: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
+        workerUrl: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
       },
       remoteD1Summary: {
         availableStockCount: 0,
@@ -284,10 +284,10 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     });
 
     expect(issues).toContain(
-      'Sandbox Worker secret STRIPE_SECRET_KEY is not configured. Set it from apps/backend with: pnpm exec wrangler secret put STRIPE_SECRET_KEY --env sandbox',
+      'Sandbox Worker secret STRIPE_SECRET_KEY is not configured. Set it from apps/backend with: pnpm exec wrangler secret put STRIPE_SECRET_KEY --env uat',
     );
     expect(issues).toContain(
-      'Sandbox Worker secret STRIPE_WEBHOOK_SECRET is not configured. Set it from apps/backend with: pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env sandbox',
+      'Sandbox Worker secret STRIPE_WEBHOOK_SECRET is not configured. Set it from apps/backend with: pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env uat',
     );
     expect(issues).toContain('Sandbox D1 has no real Stripe price mappings.');
     expect(issues).toContain('Sandbox D1 has no positive online stock rows.');
@@ -318,7 +318,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
 
     expect(header).toContain('Stripe sandbox checkout Playwright smoke');
     expect(header).toContain('Persistent Stripe Dashboard/Workbench webhook endpoint');
-    expect(header).toContain('pnpm stripe:webhooks:verify --env sandbox');
+    expect(header).toContain('pnpm stripe:webhooks:verify --env uat');
     expect(header).toContain('stripe listen is local/temporary diagnostic tooling only');
     expect(header).not.toContain('STRIPE_WEBHOOK_SECRET must match that listener');
     expect(header).toContain(STRIPE_TEST_CARD_DOCS_URL);
@@ -534,7 +534,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       checkoutPageUrl: 'https://blackbox-records-web.pages.dev/store/disintegration-black-vinyl-lp/checkout/',
       options: {
         siteUrl: 'https://blackbox-records-web.pages.dev',
-        workerUrl: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
+        workerUrl: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
       },
       result: {
         checkoutSurface: createStripeCheckoutSurfaceObservation(
@@ -609,12 +609,12 @@ describe('Stripe sandbox Playwright smoke runner', () => {
           siteUrl: 'https://blackbox-records-web.pages.dev',
           tracePath: null,
           webhookDeliveryDiagnostics: null,
-          workerUrl: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
+          workerUrl: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
         },
       ],
       options: {
         siteUrl: 'https://blackbox-records-web.pages.dev',
-        workerUrl: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
+        workerUrl: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
       },
       runId: '20260517000102',
       scenarios: [STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface],
@@ -625,7 +625,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       evidence: [],
       options: {
         siteUrl: 'https://blackbox-records-web.pages.dev',
-        workerUrl: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
+        workerUrl: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
       },
       runId: '20260517000102',
       scenarios: [STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface],

@@ -29,7 +29,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'afterglow-tape',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_afterglow-tape_standard',
   },
   {
@@ -60,7 +60,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'aftermaths',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_aftermaths_standard',
   },
   {
@@ -91,7 +91,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'against-his-story-against-leviathan',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_against-his-story-against-leviathan_standard',
   },
   {
@@ -121,7 +121,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'anarchotribal-vinyl',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_anarchotribal-vinyl_standard',
   },
   {
@@ -152,7 +152,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'barren-point',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_barren-point_standard',
   },
   {
@@ -183,7 +183,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'big-fish',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_big-fish_standard',
   },
   {
@@ -212,7 +212,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'bloed-tranen',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_bloed-tranen_standard',
   },
   {
@@ -243,7 +243,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'caregivers-vinyl',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_caregivers-vinyl_standard',
   },
   {
@@ -274,7 +274,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'crawl-eat-them-dead-or-alive-split-7',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_crawl-eat-them-dead-or-alive-split-7_standard',
   },
   {
@@ -305,7 +305,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'disintegration-black-vinyl-lp',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_disintegration-black-vinyl-lp_standard',
   },
   {
@@ -336,7 +336,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'endless-searcher',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_endless-searcher_standard',
   },
   {
@@ -367,7 +367,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'in-your-absence',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_in-your-absence_standard',
   },
   {
@@ -398,7 +398,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'magic-sleazeball-corrida',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_magic-sleazeball-corrida_standard',
   },
   {
@@ -429,7 +429,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'noise-without-decay',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_noise-without-decay_standard',
   },
   {
@@ -459,7 +459,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'on-the-quiet',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_on-the-quiet_standard',
   },
   {
@@ -490,7 +490,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'primal-ephemeral',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_primal-ephemeral_standard',
   },
   {
@@ -521,7 +521,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'rehearsal-room-tee',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_rehearsal-room-tee_standard',
   },
   {
@@ -552,7 +552,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'rise-of-the-black-fang',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_rise-of-the-black-fang_standard',
   },
   {
@@ -583,7 +583,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'rite',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_rite_standard',
   },
   {
@@ -613,7 +613,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'selenopolis',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_selenopolis_standard',
   },
   {
@@ -641,7 +641,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'spinners',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_spinners_standard',
   },
   {
@@ -671,7 +671,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'steelwitch',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_steelwitch_standard',
   },
   {
@@ -700,7 +700,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'the-chemical-bath',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_the-chemical-bath_standard',
   },
   {
@@ -731,7 +731,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'the-feathers-of-oblivion',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_the-feathers-of-oblivion_standard',
   },
   {
@@ -762,7 +762,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'the-last-second',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_the-last-second_standard',
   },
   {
@@ -793,7 +793,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'transatlantic-transiberian',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_transatlantic-transiberian_standard',
   },
   {
@@ -821,7 +821,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'unkraut',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_unkraut_standard',
   },
   {
@@ -851,7 +851,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'voyage-voyage',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_voyage-voyage_standard',
   },
   {
@@ -881,13 +881,13 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       initialOnlineQuantity: null,
     },
     storeItemSlug: 'wreckquiem',
-    targetEnvironments: ['sandbox'],
+    targetEnvironments: ['uat'],
     variantId: 'variant_wreckquiem_standard',
   },
 ];
 
 export const currentDesiredCatalogState: DesiredCatalogState = {
-  revision: 'desired-catalog-0734b631',
+  revision: 'desired-catalog-640d8e96',
   entries: currentDesiredCatalogEntries,
 };
 

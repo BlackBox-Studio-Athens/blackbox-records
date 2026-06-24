@@ -27,7 +27,7 @@ export type StackPlan = {
 const rootDir = process.cwd();
 const BACKEND_PORT = 8787;
 const STATIC_PORT = 4321;
-const UAT_WORKER_URL = 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev';
+const UAT_WORKER_URL = 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev';
 
 export function buildStackPlan(mode: LocalStackMode): StackPlan {
   const prepare: StackCommand[] =

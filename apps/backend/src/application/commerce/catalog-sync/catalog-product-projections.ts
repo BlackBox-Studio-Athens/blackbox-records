@@ -789,7 +789,7 @@ export function createCurrentCatalogExpectedProductProjectionMap(): Map<string, 
 export function createCurrentCatalogExpectedSandboxPriceMap(
   environment: StripeCatalogEnvironment,
 ): Map<string, StripeCatalogExpectedPrice> {
-  if (environment !== 'sandbox') {
+  if (environment !== 'uat') {
     return new Map();
   }
 

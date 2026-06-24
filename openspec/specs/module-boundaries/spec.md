@@ -39,6 +39,13 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** the helper is listed under the owning `public-commerce-http` roots in `module-boundaries.manifest.json`
 - **AND** it is not listed as a provided entrypoint unless another module is allowed to import it.
 
+#### Scenario: Backend shared observability helper is added
+
+- **GIVEN** backend modules need shared Worker-safe logging or tracing helpers
+- **WHEN** the helper is added
+- **THEN** it is listed as a provided `platform-shared` entrypoint in `module-boundaries.manifest.json`
+- **AND** feature modules import that entrypoint directly instead of deep-importing HTTP route internals.
+
 ### Requirement: Compatibility facades are disallowed
 
 The system SHALL avoid temporary compatibility facades during boundary work unless a new OpenSpec change explicitly approves an exception.

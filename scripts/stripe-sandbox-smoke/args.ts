@@ -129,7 +129,7 @@ export function parseStripeSandboxSmokeArgs(args: string[]): StripeSandboxSmokeO
         index += 1;
       }
 
-      console.warn(`${arg} is ignored; smoke:stripe-sandbox now targets the deployed sandbox only.`);
+      console.warn(`${arg} is ignored; smoke:stripe-uat now targets deployed UAT only.`);
       continue;
     }
 

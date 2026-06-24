@@ -77,7 +77,7 @@ export function parseRemoteD1ReadinessSummary(jsonText: string): RemoteD1Readine
   const row = Array.isArray(firstResult?.results) ? firstResult.results[0] : null;
 
   if (!firstResult?.success || !row || typeof row !== 'object') {
-    throw new Error('Wrangler did not return sandbox D1 readiness rows.');
+    throw new Error('Wrangler did not return UAT D1 readiness rows.');
   }
 
   return {

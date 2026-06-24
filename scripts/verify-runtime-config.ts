@@ -25,7 +25,7 @@ export type RuntimeConfigCategory = {
     | 'EMAIL_BRAND_HOME_URL'
     | 'EMAIL_BRAND_LOGO_URL'
     | 'PRD_OPEN_GATE'
-    | 'PRODUCTION_CATALOG_CRON'
+    | 'PRD_CATALOG_CRON'
     | 'PRODUCT_ENVIRONMENT_MAPPING'
     | 'RESEND_API_KEY'
     | 'RESEND_FROM_EMAIL'
@@ -136,7 +136,7 @@ export function verifyRuntimeConfig(input: {
     ...classifyResendRuntimeConfig(productEnvironmentProfile, environmentBlock, input.secretNames),
     classifyFlagsPresence(environmentBlock),
     classifyPrdOpenGate(productEnvironmentProfile),
-    classifyProductionCronPresence(productEnvironmentProfile, environmentBlock),
+    classifyPrdCatalogCronPresence(productEnvironmentProfile, environmentBlock),
   ];
   const issues = categories.flatMap((category) =>
     category.status === 'missing' || category.status === 'unverified'
@@ -337,7 +337,7 @@ function classifyResendUatRecipientOverride(
   }
 
   return {
-    detail: 'UAT sink recipient applies only to the sandbox Worker runtime target.',
+    detail: 'UAT sink recipient applies only to the uat Worker runtime target.',
     name: 'RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL',
     status: 'not_applicable',
   };
@@ -434,14 +434,14 @@ function classifyFlagsPresence(environmentBlock: string): RuntimeConfigCategory 
   };
 }
 
-function classifyProductionCronPresence(
+function classifyPrdCatalogCronPresence(
   productEnvironmentProfile: ProductEnvironmentProfile,
   environmentBlock: string,
 ): RuntimeConfigCategory {
   if (productEnvironmentProfile.productEnvironment !== 'PRD') {
     return {
-      detail: 'Only production cron backstop is classified here.',
-      name: 'PRODUCTION_CATALOG_CRON',
+      detail: 'Only PRD cron backstop is classified here.',
+      name: 'PRD_CATALOG_CRON',
       status: 'not_applicable',
     };
   }
@@ -449,8 +449,8 @@ function classifyProductionCronPresence(
   const hasCron = /"crons"\s*:/.test(environmentBlock);
 
   return {
-    detail: hasCron ? undefined : 'Production promotion does not currently rely on a cron backstop.',
-    name: 'PRODUCTION_CATALOG_CRON',
+    detail: hasCron ? undefined : 'PRD promotion does not currently rely on a cron backstop.',
+    name: 'PRD_CATALOG_CRON',
     status: hasCron ? 'present' : 'not_applicable',
   };
 }

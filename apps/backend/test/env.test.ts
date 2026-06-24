@@ -23,7 +23,7 @@ describe('Product Environment Profile', () => {
       emailDeliveryPolicy: 'direct',
       nativeCheckoutEnabledByDefault: true,
       productEnvironment: 'LOCAL',
-      stripeMode: 'mock',
+      stripeMode: 'local',
       workerDeploymentTarget: 'local',
     });
     expect(getProductEnvironmentProfile('UAT')).toMatchObject({
@@ -32,12 +32,12 @@ describe('Product Environment Profile', () => {
         logoUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
       },
       emailDeliveryPolicy: 'uat-sink',
-      emailProviderTag: 'sandbox',
+      emailProviderTag: 'uat',
       nativeCheckoutEnabledByDefault: false,
       productEnvironment: 'UAT',
-      stripeMode: 'test',
+      stripeMode: 'uat',
       requiresDeployedSecretsByDefault: true,
-      workerDeploymentTarget: 'sandbox',
+      workerDeploymentTarget: 'uat',
     });
     expect(getProductEnvironmentProfile('PRD')).toMatchObject({
       catalogVerificationPolicy: {
@@ -50,8 +50,8 @@ describe('Product Environment Profile', () => {
       emailDeliveryPolicy: 'direct',
       nativeCheckoutEnabledByDefault: false,
       productEnvironment: 'PRD',
-      stripeMode: 'live',
-      workerDeploymentTarget: 'production',
+      stripeMode: 'prd',
+      workerDeploymentTarget: 'prd',
     });
   });
 
@@ -63,9 +63,9 @@ describe('Product Environment Profile', () => {
 
   it('maps Worker runtime targets at boundary adapters', () => {
     expect(productEnvironmentFromWorkerRuntimeTarget('local')).toBe('LOCAL');
-    expect(productEnvironmentFromWorkerRuntimeTarget('sandbox')).toBe('UAT');
-    expect(productEnvironmentFromWorkerRuntimeTarget('production')).toBe('PRD');
-    expect(productEnvironmentProfileFromWorkerRuntimeTarget('sandbox')).toBe(productEnvironmentProfiles.UAT);
+    expect(productEnvironmentFromWorkerRuntimeTarget('uat')).toBe('UAT');
+    expect(productEnvironmentFromWorkerRuntimeTarget('prd')).toBe('PRD');
+    expect(productEnvironmentProfileFromWorkerRuntimeTarget('uat')).toBe(productEnvironmentProfiles.UAT);
   });
 
   it('maps Product Environment CLI targets while accepting legacy platform aliases at edges', () => {
@@ -75,7 +75,7 @@ describe('Product Environment Profile', () => {
     expect(parseProductEnvironmentCliTarget('prd')).toBe('PRD');
     expect(parseProductEnvironmentCliTarget('sandbox')).toBe('UAT');
     expect(parseProductEnvironmentCliTarget('production')).toBe('PRD');
-    expect(workerRuntimeTargetForProductEnvironment('UAT')).toBe('sandbox');
+    expect(workerRuntimeTargetForProductEnvironment('UAT')).toBe('uat');
     expect(formatProductEnvironmentLabel('LOCAL')).toBe('Local');
     expect(formatProductEnvironmentLabel('UAT')).toBe('UAT');
     expect(() => parseProductEnvironmentCliTarget('test')).toThrow();

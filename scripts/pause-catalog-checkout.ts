@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 
 export type PauseCatalogCheckoutOptions = {
   apply: boolean;
-  environment: 'production' | 'sandbox';
+  environment: 'prd' | 'uat';
   variantId: string;
 };
 
@@ -14,7 +14,7 @@ const backendDir = path.join(process.cwd(), 'apps', 'backend');
 export function parsePauseCatalogCheckoutArgs(args: string[]): PauseCatalogCheckoutOptions {
   const options: PauseCatalogCheckoutOptions = {
     apply: false,
-    environment: 'production',
+    environment: 'prd',
     variantId: '',
   };
 
@@ -26,7 +26,9 @@ export function parsePauseCatalogCheckoutArgs(args: string[]): PauseCatalogCheck
     }
 
     if (arg === '--help' || arg === '-h') {
-      console.log('Usage: pnpm catalog:checkout:pause -- --variant-id <variant> [--env production|sandbox] [--apply]');
+      console.log(
+        'Usage: pnpm catalog:checkout:pause -- --variant-id <variant> [--env prd|uat] [--apply] (legacy platform aliases accepted: sandbox, production)',
+      );
       process.exit(0);
     }
 
@@ -117,11 +119,19 @@ function runD1Sql(options: PauseCatalogCheckoutOptions): void {
 }
 
 function parseEnvironment(value: string | undefined): PauseCatalogCheckoutOptions['environment'] {
-  if (value === 'production' || value === 'sandbox') {
+  if (value === 'prd' || value === 'uat') {
     return value;
   }
 
-  throw new Error('--env must be production or sandbox.');
+  if (value === 'production') {
+    return 'prd';
+  }
+
+  if (value === 'sandbox') {
+    return 'uat';
+  }
+
+  throw new Error('--env must be prd or uat. Legacy platform aliases accepted: sandbox, production.');
 }
 
 function parseRequiredValue(name: string, value: string | undefined): string {

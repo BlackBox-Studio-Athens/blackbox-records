@@ -13,7 +13,7 @@ export type StripeWebhookVerifyOptions = {
   environment: StripeWebhookVerifyEnvironment;
 };
 
-export type StripeWebhookVerifyEnvironment = 'production' | 'sandbox';
+export type StripeWebhookVerifyEnvironment = 'prd' | 'uat';
 
 export type StripeWebhookEndpoint = {
   application?: string | null;
@@ -61,12 +61,12 @@ const rootDir = process.cwd();
 const backendDir = path.join(rootDir, 'apps', 'backend');
 const wranglerConfigPath = path.join(backendDir, 'wrangler.jsonc');
 
-export const SANDBOX_WORKER_URL = 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev';
-export const SANDBOX_WEBHOOK_URL = `${SANDBOX_WORKER_URL}/api/stripe/webhooks`;
-export const SANDBOX_WORKER_NAME = 'blackbox-records-backend-sandbox';
-export const PRODUCTION_WORKER_URL = 'https://blackbox-records-backend.blackboxrecordsathens.workers.dev';
-export const PRODUCTION_WEBHOOK_URL = `${PRODUCTION_WORKER_URL}/api/stripe/webhooks`;
-export const EXPECTED_SANDBOX_CRON = '17 */6 * * *';
+export const UAT_WORKER_URL = 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev';
+export const UAT_WEBHOOK_URL = `${UAT_WORKER_URL}/api/stripe/webhooks`;
+export const UAT_WORKER_NAME = 'blackbox-records-backend-uat';
+export const PRD_WORKER_URL = 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev';
+export const PRD_WEBHOOK_URL = `${PRD_WORKER_URL}/api/stripe/webhooks`;
+export const EXPECTED_UAT_CRON = '17 */6 * * *';
 
 const requiredCatalogEvents = [...STRIPE_CATALOG_WEBHOOK_EVENT_TYPES];
 const requiredCatalogEventSet = new Set<string>(requiredCatalogEvents);
@@ -90,7 +90,9 @@ export function parseStripeWebhookVerifyArgs(args: string[]): StripeWebhookVerif
     }
 
     if (arg === '--help' || arg === '-h') {
-      console.log('Usage: pnpm stripe:webhooks:verify --env sandbox|production');
+      console.log(
+        'Usage: pnpm stripe:webhooks:verify --env uat|prd (legacy platform aliases accepted: sandbox, production)',
+      );
       process.exit(0);
     }
 
@@ -110,7 +112,9 @@ export function parseStripeWebhookVerifyArgs(args: string[]): StripeWebhookVerif
   }
 
   if (!environment) {
-    throw new StripeWebhookEndpointVerificationError('Usage: pnpm stripe:webhooks:verify --env sandbox|production');
+    throw new StripeWebhookEndpointVerificationError(
+      'Usage: pnpm stripe:webhooks:verify --env uat|prd (legacy platform aliases accepted: sandbox, production)',
+    );
   }
 
   return { environment };
@@ -123,7 +127,7 @@ export async function verifyStripeWebhookEndpointConfiguration(input: {
   environment?: StripeWebhookVerifyEnvironment;
   workerSecret?: VerificationPresence;
 }): Promise<StripeWebhookEndpointVerificationResult> {
-  const environment = input.environment ?? 'sandbox';
+  const environment = input.environment ?? 'uat';
   const endpoints = await listAllStripeWebhookEndpoints(input.client);
   const endpointAnalysis = analyzeStripeWebhookEndpoints(endpoints, environment);
   const workerSecret = input.workerSecret ?? readWorkerSecretPresence(environment);
@@ -141,12 +145,12 @@ export async function verifyStripeWebhookEndpointConfiguration(input: {
     );
   }
 
-  if (environment === 'sandbox' && committedCron.status !== 'present') {
-    issues.push(`Committed sandbox cron ${EXPECTED_SANDBOX_CRON} is ${committedCron.status}.`);
+  if (environment === 'uat' && committedCron.status !== 'present') {
+    issues.push(`Committed UAT cron ${EXPECTED_UAT_CRON} is ${committedCron.status}.`);
   }
 
-  if (environment === 'sandbox' && deployedCron.status === 'missing') {
-    issues.push(`Deployed sandbox cron ${EXPECTED_SANDBOX_CRON} is missing.`);
+  if (environment === 'uat' && deployedCron.status === 'missing') {
+    issues.push(`Deployed UAT cron ${EXPECTED_UAT_CRON} is missing.`);
   }
 
   return {
@@ -186,7 +190,7 @@ export async function listAllStripeWebhookEndpoints(
 
 export function analyzeStripeWebhookEndpoints(
   endpoints: StripeWebhookEndpoint[],
-  environment: StripeWebhookVerifyEnvironment = 'sandbox',
+  environment: StripeWebhookVerifyEnvironment = 'uat',
 ): StripeWebhookEndpointAnalysis {
   const expectedUrl = getWebhookUrl(environment);
   const exactUrlMatches = endpoints.filter((endpoint) => endpoint.url === expectedUrl);
@@ -222,10 +226,10 @@ export function analyzeStripeWebhookEndpoints(
   const extraEvents = endpoint ? findExtraWebhookEvents(endpoint.enabled_events ?? []) : [];
 
   if (endpoint) {
-    if (endpoint.livemode !== (environment === 'production')) {
+    if (endpoint.livemode !== (environment === 'prd')) {
       issues.push(
         `Webhook endpoint ${redactStripeObjectId(endpoint.id)} is not in Stripe ${
-          environment === 'production' ? 'live' : 'test'
+          environment === 'prd' ? 'live' : 'test'
         } mode.`,
       );
     }
@@ -316,8 +320,8 @@ export function parseWranglerSecretNames(jsonText: string): string[] {
   return parsed.flatMap((secret) => (typeof secret.name === 'string' ? [secret.name] : []));
 }
 
-export function readSandboxWorkerSecretPresence(): VerificationPresence {
-  return readWorkerSecretPresence('sandbox');
+export function readUatWorkerSecretPresence(): VerificationPresence {
+  return readWorkerSecretPresence('uat');
 }
 
 export function readWorkerSecretPresence(environment: StripeWebhookVerifyEnvironment): VerificationPresence {
@@ -345,24 +349,24 @@ export function readWorkerSecretPresence(environment: StripeWebhookVerifyEnviron
   }
 }
 
-export function readCommittedSandboxCronPresence(configPath = wranglerConfigPath): VerificationPresence {
-  return readCommittedCronPresence('sandbox', configPath);
+export function readCommittedUatCronPresence(configPath = wranglerConfigPath): VerificationPresence {
+  return readCommittedCronPresence('uat', configPath);
 }
 
 export function readCommittedCronPresence(
   environment: StripeWebhookVerifyEnvironment,
   configPath = wranglerConfigPath,
 ): VerificationPresence {
-  if (environment === 'production') {
+  if (environment === 'prd') {
     return {
-      detail: 'Production catalog cron is not configured in wrangler.jsonc.',
+      detail: 'PRD catalog cron is not configured in wrangler.jsonc.',
       status: 'unverified',
     };
   }
 
   try {
     const configText = readFileSync(configPath, 'utf8');
-    const hasExpectedCron = new RegExp(`"crons"\\s*:\\s*\\[\\s*"${escapeRegExp(EXPECTED_SANDBOX_CRON)}"\\s*\\]`).test(
+    const hasExpectedCron = new RegExp(`"crons"\\s*:\\s*\\[\\s*"${escapeRegExp(EXPECTED_UAT_CRON)}"\\s*\\]`).test(
       configText,
     );
 
@@ -377,19 +381,17 @@ export function readCommittedCronPresence(
   }
 }
 
-export async function readDeployedSandboxCronPresence(
-  env: NodeJS.ProcessEnv = process.env,
-): Promise<VerificationPresence> {
-  return readDeployedCronPresence('sandbox', env);
+export async function readDeployedUatCronPresence(env: NodeJS.ProcessEnv = process.env): Promise<VerificationPresence> {
+  return readDeployedCronPresence('uat', env);
 }
 
 export async function readDeployedCronPresence(
   environment: StripeWebhookVerifyEnvironment,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<VerificationPresence> {
-  if (environment === 'production') {
+  if (environment === 'prd') {
     return {
-      detail: 'Production catalog cron is not configured as a promotion prerequisite.',
+      detail: 'PRD catalog cron is not configured as a promotion prerequisite.',
       status: 'unverified',
     };
   }
@@ -441,13 +443,13 @@ export async function readDeployedCronPresence(
   }
 
   return {
-    status: crons.includes(EXPECTED_SANDBOX_CRON) ? 'present' : 'missing',
+    status: crons.includes(EXPECTED_UAT_CRON) ? 'present' : 'missing',
   };
 }
 
 export function formatStripeWebhookEndpointVerificationReport(result: StripeWebhookEndpointVerificationResult): string {
   const endpoint = result.endpointAnalysis.endpoint;
-  const environmentLabel = formatEnvironmentLabel(result.environment).toLowerCase();
+  const environmentLabel = formatEnvironmentLabel(result.environment);
   const lines = [
     `Stripe ${environmentLabel} webhook endpoint verification ${result.issues.length ? 'failed' : 'OK'}.`,
     `Environment: ${result.environment}`,
@@ -463,8 +465,8 @@ export function formatStripeWebhookEndpointVerificationReport(result: StripeWebh
     `Matching endpoint count: ${result.endpointAnalysis.matchingEndpointCount}`,
     `Worker STRIPE_WEBHOOK_SECRET presence: ${formatPresence(result.workerSecret)}`,
     'Signing-secret match proof: not_proven_by_api',
-    `Committed sandbox cron ${EXPECTED_SANDBOX_CRON}: ${formatPresence(result.committedCron)}`,
-    `Deployed sandbox cron ${EXPECTED_SANDBOX_CRON}: ${formatPresence(result.deployedCron)}`,
+    `Committed UAT cron ${EXPECTED_UAT_CRON}: ${formatPresence(result.committedCron)}`,
+    `Deployed UAT cron ${EXPECTED_UAT_CRON}: ${formatPresence(result.deployedCron)}`,
   ];
 
   if (result.endpointAnalysis.extraEvents.length) {
@@ -474,7 +476,7 @@ export function formatStripeWebhookEndpointVerificationReport(result: StripeWebh
   lines.push(
     '',
     'Secret match note:',
-    '- Stripe list/retrieve APIs do not return an existing endpoint signing secret. Prove a match by immediately writing a newly revealed/rotated endpoint secret to the sandbox Worker, or by recording redacted persistent delivery evidence.',
+    '- Stripe list/retrieve APIs do not return an existing endpoint signing secret. Prove a match by immediately writing a newly revealed/rotated endpoint secret to the UAT Worker, or by recording redacted persistent delivery evidence.',
   );
 
   if (result.endpointAnalysis.warnings.length || result.deployedCron.status === 'unverified') {
@@ -560,12 +562,16 @@ function createPnpmCommand(args: string[]): { args: string[]; command: string } 
 }
 
 function parseEnvironment(value: string | undefined): StripeWebhookVerifyEnvironment {
-  if (value === 'sandbox' || value === 'production') {
-    return value;
+  if (value === 'uat' || value === 'sandbox') {
+    return 'uat';
+  }
+
+  if (value === 'prd' || value === 'production') {
+    return 'prd';
   }
 
   throw new StripeWebhookEndpointVerificationError(
-    'Stripe webhook endpoint verification requires --env sandbox or --env production.',
+    'Stripe webhook endpoint verification requires --env uat or --env prd. Legacy platform aliases accepted: sandbox, production.',
   );
 }
 
@@ -592,15 +598,15 @@ function escapeRegExp(value: string): string {
 }
 
 function getWebhookUrl(environment: StripeWebhookVerifyEnvironment): string {
-  return environment === 'production' ? PRODUCTION_WEBHOOK_URL : SANDBOX_WEBHOOK_URL;
+  return environment === 'prd' ? PRD_WEBHOOK_URL : UAT_WEBHOOK_URL;
 }
 
 function getWorkerName(environment: StripeWebhookVerifyEnvironment): string {
-  return environment === 'production' ? 'blackbox-records-backend' : SANDBOX_WORKER_NAME;
+  return environment === 'prd' ? 'blackbox-records-backend-prd' : UAT_WORKER_NAME;
 }
 
 function formatEnvironmentLabel(environment: StripeWebhookVerifyEnvironment): string {
-  return environment === 'production' ? 'Production' : 'Sandbox';
+  return environment === 'prd' ? 'PRD' : 'UAT';
 }
 
 async function main() {

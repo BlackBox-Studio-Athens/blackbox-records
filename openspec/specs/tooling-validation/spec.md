@@ -94,15 +94,15 @@ The system SHALL keep smoke runners on the shared `.codex-artifacts/smoke/<envir
 - **AND** static smoke and provider smoke remain separate suite boundaries
 - **AND** focused unit tests cover the shared harness and runner contracts.
 
-### Requirement: Post-merge UAT sandbox smoke workflow
+### Requirement: Post-merge UAT provider smoke workflow
 
-The system SHALL validate the deployed GitHub Pages UAT site with sandbox smoke after the Pages deploy completes successfully on `main`.
+The system SHALL validate the deployed GitHub Pages UAT site with Stripe test-mode smoke after the Pages deploy completes successfully on `main`.
 
 #### Scenario: UAT Pages deploy completes successfully
 
 - **GIVEN** the `Deploy UAT static site to GitHub Pages` workflow completes successfully on `main`
 - **WHEN** the downstream `workflow_run` smoke workflow starts
-- **THEN** it runs `pnpm smoke:stripe-sandbox -- --scenario happy_path_paid --screenshots on-failure` against the deployed GitHub Pages UAT site
+- **THEN** it runs `pnpm smoke:stripe-uat -- --scenario happy_path_paid --screenshots on-failure` against the deployed GitHub Pages UAT site
 - **AND** it uses the `catalog-promotion-uat` GitHub Actions environment for the same UAT Cloudflare and sandbox Stripe credentials already used by UAT promotion
 - **AND** it uploads the standard smoke summary and evidence artifacts
 - **AND** the catalog promotion workflow does not run smoke steps itself.
@@ -266,7 +266,7 @@ The system SHALL include a pre-payment Stripe sandbox smoke scenario that verifi
 
 - **GIVEN** the deployed UAT sandbox storefront and Worker use the intended Stripe Payment Method Configuration
 - **AND** the expected payment labels are configured for the documented browser, checkout country, amount, and currency context
-- **WHEN** `pnpm smoke:stripe-sandbox -- --scenario checkout_surface` runs against that deployment
+- **WHEN** `pnpm smoke:stripe-uat -- --scenario checkout_surface` runs against that deployment
 - **THEN** it reaches Stripe-hosted Checkout without submitting payment
 - **AND** it asserts the expected Store Offer amount, currency, and configured dynamic payment method labels.
 
@@ -279,7 +279,7 @@ The system SHALL include a pre-payment Stripe sandbox smoke scenario that verifi
 #### Scenario: Hosted Checkout surface drifts from storefront authority
 
 - **GIVEN** the deployed sandbox storefront can redirect to Stripe-hosted Checkout
-- **WHEN** `pnpm smoke:stripe-sandbox -- --scenario checkout_surface` runs
+- **WHEN** `pnpm smoke:stripe-uat -- --scenario checkout_surface` runs
 - **THEN** it records the hosted amount texts and visible payment method labels
 - **AND** it fails before payment submission if the hosted amount or dynamic payment surface does not match expectations.
 
@@ -296,7 +296,7 @@ The system SHALL verify catalog field ownership, Product projection, Price autho
 #### Scenario: Operator runs catalog verification
 
 - **GIVEN** an operator runs `pnpm stripe:catalog:verify --env uat` without `--apply`
-- **WHEN** the command inspects repo projection, sandbox D1, and Stripe catalog state
+- **WHEN** the command inspects repo projection, UAT D1, and Stripe catalog state
 - **THEN** it reports Product projection drift, Price authority drift, Store Offer snapshot drift, missing D1 readiness, and redacted provider diagnostics
 - **AND** it does not mutate Stripe Products, Stripe Prices, D1 mappings, Store Offer snapshots, repo content, or committed evidence.
 
@@ -344,7 +344,7 @@ The system SHALL test catalog field ownership through deterministic unit tests, 
 
 - **GIVEN** sandbox Stripe and Cloudflare credentials are available
 - **WHEN** live/operator checks run
-- **THEN** `pnpm stripe:webhooks:verify --env sandbox`, `pnpm stripe:catalog:verify --env uat`, UAT apply when needed, and Stripe sandbox smoke prove persistent webhook delivery and hosted Checkout catalog alignment without exposing secrets.
+- **THEN** `pnpm stripe:webhooks:verify --env uat`, `pnpm stripe:catalog:verify --env uat`, UAT apply when needed, and Stripe sandbox smoke prove persistent webhook delivery and hosted Checkout catalog alignment without exposing secrets.
 
 ### Requirement: Commerce validation MUST cover generated UAT catalog artifacts
 
@@ -358,11 +358,11 @@ The validation workflow SHALL include a deterministic check that the backend Pro
 
 ### Requirement: Sandbox UAT proof MUST follow reset, seed, apply, and smoke sequence
 
-The sandbox UAT proof sequence SHALL verify webhook readiness, catalog readiness, reset/apply behavior, sandbox D1 seed application, backend deployment, and GitHub Pages hosted checkout smoke without committing secrets or full provider IDs. A pushed repo commit alone SHALL NOT be accepted as proof that Stripe sandbox catalog objects, D1 checkout readiness, or Store Offer snapshots have been updated.
+The sandbox UAT proof sequence SHALL verify webhook readiness, catalog readiness, reset/apply behavior, UAT D1 seed application, backend deployment, and GitHub Pages hosted checkout smoke without committing secrets or full provider IDs. A pushed repo commit alone SHALL NOT be accepted as proof that Stripe sandbox catalog objects, D1 checkout readiness, or Store Offer snapshots have been updated.
 
 #### Scenario: Full UAT catalog proof is run
 
-- **GIVEN** Stripe sandbox credentials, the sandbox Worker, and the GitHub Pages UAT storefront are available
+- **GIVEN** Stripe sandbox credentials, the UAT Worker, and the GitHub Pages UAT storefront are available
 - **WHEN** the operator follows the documented UAT sequence
 - **THEN** catalog reset dry-run runs before confirmed mutation
 - **AND** D1 seed runs before catalog apply
@@ -377,7 +377,7 @@ The sandbox UAT proof sequence SHALL verify webhook readiness, catalog readiness
 - **THEN** CLI catalog verification and smoke evidence are authoritative over Stripe Dashboard row counts
 - **AND** legacy BlackBox sandbox Product cleanup is considered only through current ownership metadata, lookup keys, or documented catalog-derived legacy names
 - **AND** webhook endpoint verification is treated as endpoint configuration proof, while paid smoke is treated as signing-secret and paid-order proof
-- **AND** the sandbox Worker is redeployed from the final pushed commit after any live-run script or runtime fixes
+- **AND** the UAT Worker is redeployed from the final pushed commit after any live-run script or runtime fixes
 - **AND** low-stock smoke uses `afterglow-tape` only when low-stock behavior is the behavior under test.
 
 ### Requirement: Secret presence checks are redacted

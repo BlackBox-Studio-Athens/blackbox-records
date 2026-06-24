@@ -58,7 +58,7 @@ jobs:
             exit 0
           fi
 
-          allowed='^(apps/backend/src/application/commerce/catalog-sync/(catalog-product-projections|desired-catalog-state)\.ts|apps/backend/prisma/seeds/(sandbox-uat-commerce-state|production-commerce-readiness)\.sql)$'
+          allowed='^(apps/backend/src/application/commerce/catalog-sync/(catalog-product-projections|desired-catalog-state)\.ts|apps/backend/prisma/seeds/(uat-commerce-state|prd-commerce-readiness)\.sql)$'
           unexpected="$(printf '%s\n' "$changed" | grep -Ev "$allowed" || true)"
           if [ -n "$unexpected" ]; then
             echo "Unexpected generated artifact drift:"
@@ -75,8 +75,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add apps/backend/src/application/commerce/catalog-sync/catalog-product-projections.ts
           git add apps/backend/src/application/commerce/catalog-sync/desired-catalog-state.ts
-          git add apps/backend/prisma/seeds/sandbox-uat-commerce-state.sql
-          git add apps/backend/prisma/seeds/production-commerce-readiness.sql
+          git add apps/backend/prisma/seeds/uat-commerce-state.sql
+          git add apps/backend/prisma/seeds/prd-commerce-readiness.sql
           git commit -m "chore(catalog): regenerate promotion artifacts"
           git push
 

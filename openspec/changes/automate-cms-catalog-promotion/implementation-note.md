@@ -30,6 +30,7 @@
 
 ## Provider Proof Limitation
 
+- 2026-06-24 environment rename note: forward-looking commands and Cloudflare resource names are now UAT/PRD. Historical evidence below may still name the old sandbox/production resources that existed when the proof was gathered.
 - UAT Promotion Evidence and PRD readiness or PRD Promotion Evidence are still required before the change can be archived. PRD Promotion Evidence can only succeed after the PRD-open gate exists.
 - GitHub Actions credential scope `catalog-promotion-uat` exists. The production-named scope should be migrated to `catalog-promotion-prd` with required secrets, variables, and protection rules before PRD proof runs.
 - Both catalog promotion environments still need environment-scoped `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`, `CLOUDFLARE_API_TOKEN`, and `STRIPE_SECRET_KEY` before workflow proof can run. GitHub reports no secret names on either catalog promotion environment yet, and only `CLOUDFLARE_ACCOUNT_ID` is listed as a variable.

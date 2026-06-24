@@ -1,4 +1,5 @@
 import type { AppOpenApi } from '../../../env';
+import { normalizeUnknownError, requestLogger, runWithTraceSpan, traceContextFromHono } from '../../../observability';
 import {
   StripeWebhookConfigurationError,
   StripeWebhookMissingSignatureError,
@@ -16,7 +17,9 @@ const jsonNoStore = <TResponse extends Response>(response: TResponse): TResponse
 
 export function registerStripeWebhookRoutes(app: AppOpenApi): void {
   app.post('/api/stripe/webhooks', async (context) => {
-    const services = createStripeWebhookServices(context.env);
+    const logger = requestLogger(context);
+    const traceContext = traceContextFromHono(context);
+    const services = createStripeWebhookServices(context.env, logger, traceContext);
 
     try {
       const rawBody = await context.req.text();
@@ -25,21 +28,66 @@ export function registerStripeWebhookRoutes(app: AppOpenApi): void {
         signature: context.req.header('stripe-signature') ?? null,
         webhookSecret: context.env.STRIPE_WEBHOOK_SECRET,
       });
-      const acknowledgement = await acknowledgeVerifiedStripeWebhookEvent(event, services);
+
+      logger.info({
+        event: 'stripe_webhook_received',
+        outcome: 'verified',
+        provider: 'stripe',
+        stripeEventType: event.type,
+      });
+
+      const acknowledgement = await runWithTraceSpan(
+        traceContext,
+        'stripe.webhook.reconcile',
+        {
+          operation: 'stripe_webhook_reconcile',
+          productEnvironment: context.env.PRODUCT_ENVIRONMENT,
+          stripeEventType: event.type,
+        },
+        () => acknowledgeVerifiedStripeWebhookEvent(event, services),
+      );
 
       return jsonNoStore(context.json(acknowledgement, 200));
     } catch (error) {
       if (error instanceof StripeWebhookConfigurationError) {
+        logger.error({
+          event: 'stripe_webhook_outcome',
+          outcome: 'configuration_failed',
+          provider: 'stripe',
+          safeReason: 'webhook_not_configured',
+        });
+
         return jsonNoStore(context.json({ error: error.message }, 500));
       }
 
       if (error instanceof StripeWebhookMissingSignatureError) {
+        logger.error({
+          event: 'stripe_webhook_outcome',
+          outcome: 'verification_failed',
+          provider: 'stripe',
+          safeReason: 'missing_signature',
+        });
+
         return jsonNoStore(context.json({ error: error.message }, 400));
       }
 
       if (error instanceof StripeWebhookSignatureVerificationError) {
+        logger.error({
+          event: 'stripe_webhook_outcome',
+          outcome: 'verification_failed',
+          provider: 'stripe',
+          safeReason: 'signature_verification_failed',
+        });
+
         return jsonNoStore(context.json({ error: error.message }, 400));
       }
+
+      logger.error({
+        ...normalizeUnknownError(error),
+        event: 'stripe_webhook_outcome',
+        outcome: 'unexpected_failure',
+        provider: 'stripe',
+      });
 
       throw error;
     } finally {

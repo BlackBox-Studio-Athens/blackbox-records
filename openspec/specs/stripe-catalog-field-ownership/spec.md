@@ -114,14 +114,14 @@ The system MUST verify sandbox catalog alignment for every checkout-eligible Sto
 
 #### Scenario: UAT catalog verification runs
 
-- **GIVEN** the repo has current Store Items and sandbox D1 has checkout eligibility state
+- **GIVEN** the repo has current Store Items and UAT D1 has checkout eligibility state
 - **WHEN** `pnpm stripe:catalog:verify --env uat` runs
 - **THEN** the report covers every checkout-eligible Store Item variant
 - **AND** classifies identity, Product projection, Price authority, D1 readiness, and Store Offer snapshot status.
 
 #### Scenario: UAT catalog apply succeeds
 
-- **GIVEN** sandbox Stripe credentials and sandbox D1 access are available
+- **GIVEN** sandbox Stripe credentials and UAT D1 access are available
 - **WHEN** `pnpm stripe:catalog:verify --env uat --apply` runs after a clean dry-run plan is reviewed
 - **THEN** sandbox Stripe Products, sandbox Stripe Prices where permitted, D1 mappings, and Store Offer snapshots are aligned for checkout-eligible variants
 - **AND** the follow-up dry-run reports no blocking catalog drift.

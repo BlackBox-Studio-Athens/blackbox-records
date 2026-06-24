@@ -19,21 +19,14 @@ const projectionPath = path.join(
   'catalog-sync',
   'catalog-product-projections.ts',
 );
-const sandboxUatSeedPath = path.join(
-  process.cwd(),
-  'apps',
-  'backend',
-  'prisma',
-  'seeds',
-  'sandbox-uat-commerce-state.sql',
-);
+const sandboxUatSeedPath = path.join(process.cwd(), 'apps', 'backend', 'prisma', 'seeds', 'uat-commerce-state.sql');
 const productionReadinessSeedPath = path.join(
   process.cwd(),
   'apps',
   'backend',
   'prisma',
   'seeds',
-  'production-commerce-readiness.sql',
+  'prd-commerce-readiness.sql',
 );
 const desiredCatalogStatePath = path.join(
   process.cwd(),
@@ -128,7 +121,7 @@ export function createCatalogProductProjectionSource(contracts: StripeCatalogSto
     'export function createCurrentCatalogExpectedSandboxPriceMap(',
     '  environment: StripeCatalogEnvironment,',
     '): Map<string, StripeCatalogExpectedPrice> {',
-    "  if (environment !== 'sandbox') {",
+    "  if (environment !== 'uat') {",
     '    return new Map();',
     '  }',
     '',
@@ -198,7 +191,7 @@ export function createSandboxUatCommerceSql(contracts: StripeCatalogStoreItemCon
 
 export function createProductionCommerceReadinessSql(contracts: StripeCatalogStoreItemContract[]): string {
   const productionContracts = contracts.filter((contract) =>
-    contract.desiredCatalogEntry.targetEnvironments.includes('production'),
+    contract.desiredCatalogEntry.targetEnvironments.includes('prd'),
   );
 
   return [
@@ -234,12 +227,12 @@ async function run(mode: GenerateMode): Promise<void> {
     },
     {
       content: createSandboxUatCommerceSql(contracts),
-      label: 'sandbox UAT commerce seed',
+      label: 'UAT commerce seed',
       path: sandboxUatSeedPath,
     },
     {
       content: createProductionCommerceReadinessSql(contracts),
-      label: 'production commerce readiness seed',
+      label: 'PRD commerce readiness seed',
       path: productionReadinessSeedPath,
     },
   ];

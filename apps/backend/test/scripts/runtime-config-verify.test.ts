@@ -9,8 +9,8 @@ import {
 const wranglerConfigText = `
 {
   "env": {
-    "production": {
-      "name": "blackbox-records-backend",
+    "prd": {
+      "name": "blackbox-records-backend-prd",
       "d1_databases": [{ "binding": "COMMERCE_DB" }],
       "vars": {
         "PRODUCT_ENVIRONMENT": "PRD",
@@ -30,7 +30,7 @@ const requiredResendSecrets = ['RESEND_API_KEY', 'RESEND_NEWSLETTER_TOPIC_ID'];
 
 describe('runtime config verification', () => {
   it('parses the target environment argument', () => {
-    expect(parseRuntimeConfigVerifyArgs(['--env', 'production'])).toEqual({
+    expect(parseRuntimeConfigVerifyArgs(['--env', 'prd'])).toEqual({
       environment: 'PRD',
       productEnvironment: 'PRD',
       requireLiveSecrets: false,
@@ -85,7 +85,7 @@ describe('runtime config verification', () => {
         expect.objectContaining({ name: 'RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL', status: 'not_applicable' }),
         expect.objectContaining({ name: 'FLAGS', status: 'not_applicable' }),
         expect.objectContaining({ name: 'PRD_OPEN_GATE', status: 'not_applicable' }),
-        expect.objectContaining({ name: 'PRODUCTION_CATALOG_CRON', status: 'not_applicable' }),
+        expect.objectContaining({ name: 'PRD_CATALOG_CRON', status: 'not_applicable' }),
       ]),
     );
   });
@@ -95,7 +95,7 @@ describe('runtime config verification', () => {
       environment: 'PRD',
       requireLiveSecrets: true,
       secretNames: ['STRIPE_SECRET_KEY'],
-      wranglerConfigText: '{"env":{"production":{"vars":{"PRODUCT_ENVIRONMENT":"PRD"}}}}',
+      wranglerConfigText: '{"env":{"prd":{"vars":{"PRODUCT_ENVIRONMENT":"PRD"}}}}',
     });
     const report = formatRuntimeConfigVerificationReport(result);
 
@@ -155,7 +155,7 @@ describe('runtime config verification', () => {
   it('requires UAT Resend sink routing and rejects the same override in PRD', () => {
     const sandboxConfig = `{
       "env": {
-        "sandbox": {
+        "uat": {
           "d1_databases": [{ "binding": "COMMERCE_DB" }],
           "vars": {
             "PRODUCT_ENVIRONMENT": "UAT",

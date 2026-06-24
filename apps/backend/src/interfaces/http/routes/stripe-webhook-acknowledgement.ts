@@ -12,6 +12,8 @@ import type {
   RecordStripeCatalogWebhookEventResult,
   StoreItemOptionRecord,
 } from '../../../domain/commerce/repositories/spi';
+import type { AppLogger } from '../../../observability';
+import { safeCheckoutSessionId } from '../../../observability';
 
 export type StripeWebhookAcknowledgement = {
   ignored?: true;
@@ -31,6 +33,7 @@ export type StripeWebhookAcknowledgementServices = {
     input: RecordStripeCatalogWebhookEventInput,
   ) => Promise<RecordStripeCatalogWebhookEventResult>;
   reconcileCatalogVariant: (storeItem: StoreItemOptionRecord) => Promise<unknown>;
+  logger?: Pick<AppLogger, 'info' | 'warn'>;
 };
 
 export async function acknowledgeVerifiedStripeWebhookEvent(
@@ -38,6 +41,14 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
   services: StripeWebhookAcknowledgementServices,
 ): Promise<StripeWebhookAcknowledgement> {
   if (!event.isAllowed) {
+    services.logger?.warn({
+      event: 'stripe_webhook_outcome',
+      outcome: 'unsupported_event_type',
+      provider: 'stripe',
+      safeReason: 'unsupported_event_type',
+      stripeEventType: event.type,
+    });
+
     return {
       ignored: true,
       received: true,
@@ -57,6 +68,15 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
     });
 
     if (recordResult.status === 'duplicate') {
+      services.logger?.warn({
+        event: 'stripe_webhook_outcome',
+        outcome: 'duplicate_event',
+        provider: 'stripe',
+        safeReason: 'duplicate_event',
+        stripeEventType: event.type,
+        variantId: variantId ?? undefined,
+      });
+
       return {
         received: true,
       };
@@ -67,6 +87,15 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
     if (storeItem) {
       await services.reconcileCatalogVariant(storeItem);
     }
+
+    services.logger?.info({
+      event: 'stripe_webhook_outcome',
+      outcome: storeItem ? 'catalog_reconciled' : 'catalog_ignored',
+      provider: 'stripe',
+      safeReason: storeItem ? undefined : 'variant_not_found',
+      stripeEventType: event.type,
+      variantId: variantId ?? undefined,
+    });
 
     return storeItem
       ? {
@@ -83,6 +112,15 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
   if (reconciliation.recommendedOrderStatus === 'paid') {
     const result = await services.applyPaidCheckoutReconciliation(reconciliation);
 
+    services.logger?.info({
+      checkoutSessionIdHash: safeCheckoutSessionId(reconciliation.source.checkoutSessionId),
+      event: 'stripe_webhook_outcome',
+      outcome: `paid_${result.kind}`,
+      provider: 'stripe',
+      retryable: result.kind === 'missing_order' || result.kind === 'stock_unavailable',
+      safeReason: 'reason' in result ? result.reason : undefined,
+    });
+
     if (result.kind === 'applied') {
       await services.publishCheckoutOrderPaid(result.checkoutOrderPaid);
     }
@@ -90,7 +128,24 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
     reconciliation.recommendedOrderStatus === 'needs_review' ||
     reconciliation.recommendedOrderStatus === 'not_paid'
   ) {
-    await services.applyNonPaidCheckoutReconciliation(reconciliation);
+    const result = await services.applyNonPaidCheckoutReconciliation(reconciliation);
+
+    services.logger?.info({
+      checkoutSessionIdHash: safeCheckoutSessionId(reconciliation.source.checkoutSessionId),
+      event: 'stripe_webhook_outcome',
+      outcome: `non_paid_${result.kind}`,
+      provider: 'stripe',
+      retryable: result.kind === 'missing_order',
+      safeReason: 'reason' in result ? result.reason : undefined,
+    });
+  } else {
+    services.logger?.info({
+      checkoutSessionIdHash: safeCheckoutSessionId(reconciliation.source.checkoutSessionId),
+      event: 'stripe_webhook_outcome',
+      outcome: 'checkout_no_mutation',
+      provider: 'stripe',
+      safeReason: 'pending_payment',
+    });
   }
 
   return {

@@ -277,7 +277,7 @@ function createContract(input: {
         initialOnlineQuantity: null,
       },
       storeItemSlug: input.storeItemSlug,
-      targetEnvironments: ['sandbox'],
+      targetEnvironments: ['uat'],
       variantId: input.variantId,
     },
     expectedSandboxPrice: input.expectedSandboxPrice,

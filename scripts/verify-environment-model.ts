@@ -31,7 +31,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
   const pagesWorkflow = read('.github/workflows/pages.yml');
   const cloudflarePagesWorkflow = read('.github/workflows/cloudflare-pages.yml');
   const catalogPromotionWorkflow = read('.github/workflows/catalog-promotion.yml');
-  const uatSandboxSmokeWorkflow = read('.github/workflows/uat-sandbox-smoke.yml');
+  const uatSandboxSmokeWorkflow = read('.github/workflows/uat-smoke.yml');
   const wranglerConfig = read('apps/backend/wrangler.jsonc');
   const staticSiteSpec = read('openspec/specs/static-site-and-deployment/spec.md');
   const catalogVerifyScript = read('scripts/stripe-catalog-verify.ts');
@@ -68,7 +68,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
     },
     {
       detail:
-        'Post-merge UAT sandbox smoke runs after the GitHub Pages deploy, deploys the sandbox Worker, and reuses the UAT promotion credential scope.',
+        'Post-merge UAT provider smoke runs after the GitHub Pages deploy, deploys the UAT Worker, and reuses the UAT promotion credential scope.',
       ok:
         uatSandboxSmokeWorkflow.includes('workflow_run') &&
         uatSandboxSmokeWorkflow.includes('Deploy UAT static site to GitHub Pages') &&
@@ -78,7 +78,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
         uatSandboxSmokeWorkflow.includes('environment: catalog-promotion-uat') &&
         uatSandboxSmokeWorkflow.includes('github.event.workflow_run.head_sha') &&
         uatSandboxSmokeWorkflow.includes('pnpm deploy:backend:uat') &&
-        uatSandboxSmokeWorkflow.includes('pnpm smoke:stripe-sandbox -- \\') &&
+        uatSandboxSmokeWorkflow.includes('pnpm smoke:stripe-uat -- \\') &&
         uatSandboxSmokeWorkflow.includes('pnpm smoke:resend-uat -- \\') &&
         uatSandboxSmokeWorkflow.includes('--site-url "${UAT_SITE_URL}"') &&
         uatSandboxSmokeWorkflow.includes('--worker-url "${UAT_WORKER_URL}"') &&
@@ -100,7 +100,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
       detail: 'UAT Worker checkout origins allow GitHub Pages plus local uat-connected diagnostics only.',
       ok: hasCheckoutOrigins(
         wranglerConfig,
-        'sandbox',
+        'uat',
         ['http://127.0.0.1:4321', 'http://localhost:4321', uatStaticHost],
         [prdStaticHost, prdPreviewHostFragment],
       ),
@@ -109,7 +109,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
       detail: 'PRD Worker checkout origins allow Cloudflare Pages PRD only.',
       ok: hasCheckoutOrigins(
         wranglerConfig,
-        'production',
+        'prd',
         [prdStaticHost],
         ['http://127.0.0.1:4321', 'http://localhost:4321', uatStaticHost, prdPreviewHostFragment],
       ),
@@ -153,7 +153,7 @@ function findRawPlatformAliasPolicyLeaks(): string[] {
 
 function hasCheckoutOrigins(
   wranglerConfig: string,
-  environment: 'local-root' | 'production' | 'sandbox',
+  environment: 'local-root' | 'prd' | 'uat',
   requiredOrigins: string[],
   forbiddenOrigins: string[],
 ): boolean {
@@ -197,7 +197,7 @@ function extractCheckoutOrigins(block: string): string[] {
 }
 
 function hasProductionTargetWithUatAssetUrl(desiredCatalogState: string): boolean {
-  return /targetEnvironments:\s*\[[^\]]*'production'[\s\S]*?https:\/\/blackbox-studio-athens\.github\.io\/blackbox-records/.test(
+  return /targetEnvironments:\s*\[[^\]]*'prd'[\s\S]*?https:\/\/blackbox-studio-athens\.github\.io\/blackbox-records/.test(
     desiredCatalogState,
   );
 }

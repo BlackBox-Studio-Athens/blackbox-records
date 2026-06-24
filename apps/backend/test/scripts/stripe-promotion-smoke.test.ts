@@ -10,7 +10,7 @@ import {
 } from '../../../../scripts/smoke-stripe-promotion';
 import type { DesiredCatalogEntry } from '../../src/application/commerce/catalog-sync';
 
-const productionEntry: DesiredCatalogEntry = {
+const prdEntry: DesiredCatalogEntry = {
   availability: 'published',
   desiredPrice: {
     amountMinor: 2800,
@@ -30,12 +30,12 @@ const productionEntry: DesiredCatalogEntry = {
     initialOnlineQuantity: 2,
   },
   storeItemSlug: 'disintegration-black-vinyl-lp',
-  targetEnvironments: ['sandbox', 'production'],
+  targetEnvironments: ['uat', 'prd'],
   variantId: 'variant_disintegration-black-vinyl-lp_standard',
 };
 
 describe('Stripe promotion smoke runner', () => {
-  it('parses production checkout surface defaults and evidence path overrides', () => {
+  it('parses PRD checkout surface defaults and evidence path overrides', () => {
     expect(
       parsePromotionSmokeArgs([
         '--env',
@@ -51,7 +51,7 @@ describe('Stripe promotion smoke runner', () => {
       scenario: 'all',
     });
 
-    expect(parsePromotionSmokeArgs(['--env', 'production'])).toMatchObject({
+    expect(parsePromotionSmokeArgs(['--env', 'prd'])).toMatchObject({
       evidenceDir: path.join('.codex-artifacts', 'smoke', 'prd', 'stripe-promotion'),
       environment: 'PRD',
       scenario: 'checkout_surface',
@@ -59,19 +59,19 @@ describe('Stripe promotion smoke runner', () => {
   });
 
   it('falls back to the first published entry for the target environment', () => {
-    expect(selectPromotionSmokeEntry([productionEntry], 'PRD')).toEqual(productionEntry);
+    expect(selectPromotionSmokeEntry([prdEntry], 'PRD')).toEqual(prdEntry);
   });
 
-  it('reports production paid smoke as not_configured when no live paid policy exists', () => {
+  it('reports PRD paid smoke as not_configured when no live paid policy exists', () => {
     const evidence = createPaidSmokePolicyEvidence(
       {
         environment: 'PRD',
         evidenceDir: '.codex-artifacts/catalog-promotion',
         scenario: 'paid',
         siteUrl: 'https://blackbox-records-web.pages.dev',
-        workerUrl: 'https://blackbox-records-backend.blackboxrecordsathens.workers.dev',
+        workerUrl: 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev',
       },
-      productionEntry,
+      prdEntry,
     );
 
     expect(evidence.status).toBe('not_configured');

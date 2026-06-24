@@ -118,7 +118,7 @@ describe('Stripe webhook acknowledgement catalog events', () => {
     const event: VerifiedStripeWebhookEvent = {
       catalogObject: {
         id: 'price_test_123',
-        lookup_key: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+        lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
         metadata: {},
         object: 'price',
       },
@@ -150,7 +150,7 @@ describe('Stripe webhook acknowledgement catalog events', () => {
     const event: VerifiedStripeWebhookEvent = {
       catalogObject: {
         id: 'price_test_123',
-        lookup_key: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+        lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
         metadata: {},
         object: 'price',
       },
@@ -171,7 +171,7 @@ describe('Stripe webhook acknowledgement catalog events', () => {
       catalogObject: {
         active: false,
         id: 'price_test_old_payload',
-        lookup_key: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+        lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
         metadata: {},
         object: 'price',
         unit_amount: 1000,

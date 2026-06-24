@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const scheduledMocks = vi.hoisted(() => ({
   createStripeCatalogGateway: vi.fn(() => ({})),
@@ -24,7 +24,7 @@ vi.mock('../../src/application/commerce/catalog-sync', () => ({
       ]),
   ),
   createCurrentCatalogExpectedSandboxPriceMap: vi.fn((environment: string) =>
-    environment === 'sandbox'
+    environment === 'uat'
       ? new Map([['variant_disintegration-black-vinyl-lp_standard', { amountMinor: 2800 }]])
       : new Map(),
   ),
@@ -63,9 +63,14 @@ function createBindings(appEnv: AppBindings['PRODUCT_ENVIRONMENT']): AppBindings
 describe('runScheduledCatalogVerification', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(console, 'info').mockImplementation(() => undefined);
     scheduledMocks.verifyBuyableCatalog.mockResolvedValue({
       issues: [],
     });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('applies non-production scheduled catalog reconciliation and disconnects Prisma', async () => {
@@ -114,7 +119,18 @@ describe('runScheduledCatalogVerification', () => {
     try {
       await runScheduledCatalogVerification(createBindings('UAT'));
       expect(warn).toHaveBeenCalledWith(
-        'Scheduled Stripe catalog verification found 2 issue(s) in UAT. Product Projection: 1; Price Authority: 1; D1 readiness: 0; Store Offer snapshots: 0',
+        expect.objectContaining({
+          d1ReadinessIssues: 0,
+          event: 'catalog_verification_scheduled_issue_summary',
+          issueCount: 2,
+          outcome: 'issues_found',
+          priceAuthorityIssues: 1,
+          productEnvironment: 'UAT',
+          productProjectionIssues: 1,
+          safeReason: 'catalog_drift',
+          storeOfferSnapshotIssues: 0,
+          workerDeploymentTarget: 'uat',
+        }),
       );
     } finally {
       warn.mockRestore();

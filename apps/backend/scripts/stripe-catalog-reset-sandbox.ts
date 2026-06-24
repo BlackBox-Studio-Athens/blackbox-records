@@ -41,7 +41,7 @@ type ResetStripeClient = {
 
 export function parseStripeCatalogResetSandboxArgs(args: string[]): ResetOptions {
   const options: ResetOptions = {
-    environment: 'sandbox',
+    environment: 'uat',
     mode: 'dry-run',
   };
 
@@ -70,15 +70,15 @@ export function parseStripeCatalogResetSandboxArgs(args: string[]): ResetOptions
     }
 
     if (arg === '--help' || arg === '-h') {
-      console.log('Usage: pnpm stripe:catalog:reset-sandbox --env sandbox [--dry-run|--confirm]');
+      console.log('Usage: pnpm stripe:catalog:reset-uat --env uat [--dry-run|--confirm]');
       process.exit(0);
     }
 
     throw new Error(`Unknown argument: ${arg}`);
   }
 
-  if (options.environment !== 'sandbox') {
-    throw new Error('Stripe sandbox catalog reset is allowed only with --env sandbox.');
+  if (options.environment !== 'uat') {
+    throw new Error('Stripe sandbox catalog reset is allowed only with --env uat.');
   }
 
   return options;
@@ -104,7 +104,10 @@ export async function createResetPlan(
   contracts: StripeCatalogStoreItemContract[],
 ): Promise<ResetPlan> {
   const expectedLookupKeys = new Set(
-    contracts.map((contract) => createStripeCatalogLookupKey(environment, toStoreItemOptionRecord(contract))),
+    contracts.flatMap((contract) => {
+      const storeItem = toStoreItemOptionRecord(contract);
+      return [createStripeCatalogLookupKey(environment, storeItem), createLegacySandboxLookupKey(storeItem)];
+    }),
   );
   const expectedIdentities = contracts.map((contract) =>
     createStripeCatalogMetadata(environment, toStoreItemOptionRecord(contract)),
@@ -155,7 +158,7 @@ export function formatStripeCatalogResetSandboxReport(plan: ResetPlan, options: 
     ...plan.productsToDeactivate.map((productId) => `- ${redactStripeObjectId(productId)}`),
     options.mode === 'dry-run'
       ? 'Dry-run only. Rerun with --confirm to deactivate these sandbox objects.'
-      : 'Confirmed reset completed. Run pnpm stripe:catalog:verify --env sandbox --apply to create fresh Products/Prices and sync D1.',
+      : 'Confirmed reset completed. Run pnpm stripe:catalog:verify --env uat --apply to create fresh Products/Prices and sync D1.',
   ].join('\n');
 }
 
@@ -244,15 +247,23 @@ function toStoreItemOptionRecord(contract: StripeCatalogStoreItemContract): Stor
 }
 
 function parseEnvironment(value: string | undefined): StripeCatalogEnvironment {
-  if (value === 'sandbox') {
+  if (value === 'uat') {
     return value;
   }
 
-  if (value === 'local' || value === 'production') {
+  if (value === 'sandbox') {
+    return 'uat';
+  }
+
+  if (value === 'local' || value === 'prd') {
     return value;
   }
 
   throw new Error(`Unsupported Stripe catalog environment: ${value ?? '(missing)'}`);
+}
+
+function createLegacySandboxLookupKey(storeItem: Pick<StoreItemOptionRecord, 'storeItemSlug' | 'variantId'>): string {
+  return `blackbox:sandbox:${storeItem.storeItemSlug}:${storeItem.variantId}`;
 }
 
 async function main(): Promise<void> {

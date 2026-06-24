@@ -1,4 +1,5 @@
 import type { AppOpenApi } from '../../../env';
+import { requestLogger } from '../../../observability';
 import { postNewsletterRegistrationRoute } from '../contracts/public-contracts';
 import { createPublicNewsletterServices } from './public-newsletter-services';
 
@@ -14,7 +15,8 @@ const jsonNoStore = <TResponse extends Response>(response: TResponse): TResponse
 
 export function registerPublicNewsletterRoutes(app: AppOpenApi): void {
   app.openapi(postNewsletterRegistrationRoute, async (context) => {
-    const services = createPublicNewsletterServices(context.env);
+    const logger = requestLogger(context);
+    const services = createPublicNewsletterServices(context.env, logger);
 
     try {
       const result = await services.registerNewsletterSignup({

@@ -99,7 +99,7 @@ describe('local stack launcher plan', () => {
         args: ['site:dev'],
         command: 'pnpm',
         env: expect.objectContaining({
-          PUBLIC_BACKEND_BASE_URL: 'https://blackbox-records-backend-sandbox.blackboxrecordsathens.workers.dev',
+          PUBLIC_BACKEND_BASE_URL: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
           PUBLIC_CHECKOUT_CLIENT_MODE: 'stripe',
         }),
         name: 'Static site',

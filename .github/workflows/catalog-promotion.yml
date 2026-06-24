@@ -87,7 +87,7 @@ jobs:
       - name: Verify UAT webhook and payment configuration
         run: |
           pnpm runtime:config:verify --env uat
-          pnpm stripe:webhooks:verify --env sandbox
+          pnpm stripe:webhooks:verify --env uat
           pnpm stripe:payment-methods:verify
 
       - name: Prepare UAT D1 catalog readiness
@@ -170,16 +170,16 @@ jobs:
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         run: |
           pnpm runtime:config:verify --env prd --require-live-secrets
-          pnpm stripe:webhooks:verify --env production
+          pnpm stripe:webhooks:verify --env prd
           pnpm stripe:payment-methods:verify
 
       - name: Prepare PRD D1 catalog readiness
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         run: |
           pnpm --filter @blackbox/backend d1:migrations:apply:prd
-          pnpm production:catalog-readiness:check -- --phase pre-apply
+          pnpm prd:catalog-readiness:check -- --phase pre-apply
           pnpm --filter @blackbox/backend d1:seed:prd:catalog-readiness
-          pnpm production:catalog-readiness:check -- --phase pre-apply
+          pnpm prd:catalog-readiness:check -- --phase pre-apply
 
       - name: Plan PRD provider catalog
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
@@ -192,7 +192,7 @@ jobs:
         run: |
           pnpm stripe:catalog:verify --env prd --apply --ci-promotion --artifact-commit-sha "${{ inputs.artifact_commit_sha }}" --promotion-run-id "${{ github.run_id }}"
           pnpm stripe:catalog:verify --env prd 2>&1 | tee .codex-artifacts/catalog-promotion/prd/catalog-post-apply.txt
-          pnpm production:catalog-readiness:check -- --phase post-apply
+          pnpm prd:catalog-readiness:check -- --phase post-apply
 
       - name: Deploy PRD Worker
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
