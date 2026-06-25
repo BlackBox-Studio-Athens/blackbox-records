@@ -8,22 +8,28 @@ vi.mock('astro:config/client', () => ({
 import {
   calculateHomepageHeroScrollProgress,
   connectHomepageHeroScrollProgress,
-  HOMEPAGE_HERO_SCROLL_PROGRESS_PROPERTY,
+  HOMEPAGE_HERO_SCROLLED_CLASS,
 } from './shell-hero-scroll-progress';
 
 type FakeHeroElement = Pick<HTMLElement, 'getBoundingClientRect'> & {
-  style: {
-    removeProperty: ReturnType<typeof vi.fn<(property: string) => string>>;
-    setProperty: ReturnType<typeof vi.fn<(property: string, value: string, priority?: string) => void>>;
+  classList: {
+    remove: ReturnType<typeof vi.fn<(className: string) => void>>;
+    toggle: ReturnType<typeof vi.fn<(className: string, force?: boolean) => boolean>>;
   };
+  setTop(top: number): void;
 };
 
 function createHeroElement({ height = 500, top = 0 } = {}): FakeHeroElement {
+  let heroTop = top;
+
   return {
-    getBoundingClientRect: vi.fn(() => ({ height, top }) as DOMRect),
-    style: {
-      removeProperty: vi.fn<(property: string) => string>(() => ''),
-      setProperty: vi.fn<(property: string, value: string, priority?: string) => void>(),
+    classList: {
+      remove: vi.fn<(className: string) => void>(),
+      toggle: vi.fn<(className: string, force?: boolean) => boolean>(() => true),
+    },
+    getBoundingClientRect: vi.fn(() => ({ height, top: heroTop }) as DOMRect),
+    setTop(nextTop: number) {
+      heroTop = nextTop;
     },
   };
 }
@@ -81,7 +87,7 @@ describe('calculateHomepageHeroScrollProgress', () => {
 });
 
 describe('connectHomepageHeroScrollProgress', () => {
-  it('sets homepage hero scroll progress on the next animation frame', () => {
+  it('toggles the homepage hero scrolled class on the next animation frame', () => {
     const heroElement = createHeroElement({ top: -210 });
     const scheduler = createScheduler();
 
@@ -93,12 +99,12 @@ describe('connectHomepageHeroScrollProgress', () => {
 
     scheduler.flushAnimationFrame();
 
-    expect(heroElement.style.setProperty).toHaveBeenCalledWith(HOMEPAGE_HERO_SCROLL_PROGRESS_PROPERTY, '0.5000');
+    expect(heroElement.classList.toggle).toHaveBeenCalledWith(HOMEPAGE_HERO_SCROLLED_CLASS, true);
     expect(scheduler.addEventListener).toHaveBeenCalledWith('scroll', expect.any(Function), { passive: true });
     expect(scheduler.addEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
   });
 
-  it('does not set progress outside the homepage route', () => {
+  it('does not toggle the scrolled class outside the homepage route', () => {
     const heroElement = createHeroElement({ top: -210 });
     const scheduler = createScheduler();
 
@@ -110,10 +116,52 @@ describe('connectHomepageHeroScrollProgress', () => {
 
     scheduler.flushAnimationFrame();
 
-    expect(heroElement.style.setProperty).not.toHaveBeenCalled();
+    expect(heroElement.classList.toggle).not.toHaveBeenCalled();
   });
 
-  it('removes listeners, cancels pending work, and clears the CSS property during cleanup', () => {
+  it('does not mutate the hero when the threshold state has not changed', () => {
+    const heroElement = createHeroElement({ top: -210 });
+    const scheduler = createScheduler();
+
+    connectHomepageHeroScrollProgress({
+      activePathname: '/',
+      queryHeroElement: () => heroElement,
+      scheduler,
+    });
+
+    scheduler.flushAnimationFrame();
+    const scrollListener = scheduler.addEventListener.mock.calls.find(([type]) => type === 'scroll')?.[1] as
+      | (() => void)
+      | undefined;
+    scrollListener?.();
+    scheduler.flushAnimationFrame();
+
+    expect(heroElement.classList.toggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('toggles the hero when the threshold state changes', () => {
+    const heroElement = createHeroElement({ top: 0 });
+    const scheduler = createScheduler();
+
+    connectHomepageHeroScrollProgress({
+      activePathname: '/',
+      queryHeroElement: () => heroElement,
+      scheduler,
+    });
+
+    scheduler.flushAnimationFrame();
+    heroElement.setTop(-210);
+    const scrollListener = scheduler.addEventListener.mock.calls.find(([type]) => type === 'scroll')?.[1] as
+      | (() => void)
+      | undefined;
+    scrollListener?.();
+    scheduler.flushAnimationFrame();
+
+    expect(heroElement.classList.toggle).toHaveBeenNthCalledWith(1, HOMEPAGE_HERO_SCROLLED_CLASS, false);
+    expect(heroElement.classList.toggle).toHaveBeenNthCalledWith(2, HOMEPAGE_HERO_SCROLLED_CLASS, true);
+  });
+
+  it('removes listeners, cancels pending work, and clears the scrolled class during cleanup', () => {
     const heroElement = createHeroElement({ top: -210 });
     const scheduler = createScheduler();
 
@@ -128,7 +176,7 @@ describe('connectHomepageHeroScrollProgress', () => {
 
     expect(scheduler.removeEventListener).toHaveBeenCalledWith('scroll', expect.any(Function));
     expect(scheduler.removeEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
-    expect(heroElement.style.removeProperty).toHaveBeenCalledWith(HOMEPAGE_HERO_SCROLL_PROGRESS_PROPERTY);
+    expect(heroElement.classList.remove).toHaveBeenCalledWith(HOMEPAGE_HERO_SCROLLED_CLASS);
   });
 
   it('cancels a queued animation frame that has not run yet', () => {

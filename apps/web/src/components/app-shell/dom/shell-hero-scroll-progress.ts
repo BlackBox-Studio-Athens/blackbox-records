@@ -1,7 +1,8 @@
 import { isCurrentPath } from '@/utils/urls';
 
-export const HOMEPAGE_HERO_SCROLL_PROGRESS_PROPERTY = '--homepage-hero-scroll-progress';
+export const HOMEPAGE_HERO_SCROLLED_CLASS = 'homepage-hero-section--scrolled';
 export const HOMEPAGE_HERO_SELECTOR = '#homepage-hero-section';
+const HOMEPAGE_HERO_SCROLLED_PROGRESS_THRESHOLD = 0.5;
 
 type HeroScrollScheduler = {
   addEventListener(type: 'resize' | 'scroll', listener: () => void, options?: AddEventListenerOptions): void;
@@ -12,7 +13,7 @@ type HeroScrollScheduler = {
 };
 
 type HomepageHeroElement = Pick<HTMLElement, 'getBoundingClientRect'> & {
-  style: Pick<CSSStyleDeclaration, 'removeProperty' | 'setProperty'>;
+  classList: Pick<DOMTokenList, 'remove' | 'toggle'>;
 };
 
 export function calculateHomepageHeroScrollProgress({
@@ -41,6 +42,8 @@ export function connectHomepageHeroScrollProgress({
 }) {
   let animationFrameId: number | null = null;
   let currentHeroElement: HomepageHeroElement | null = null;
+  let syncedHeroElement: HomepageHeroElement | null = null;
+  let isHeroScrolled: boolean | null = null;
 
   const applyHeroScrollProgress = () => {
     animationFrameId = null;
@@ -54,7 +57,16 @@ export function connectHomepageHeroScrollProgress({
       heroTop: heroRect.top,
       viewportHeight: scheduler.innerHeight,
     });
-    currentHeroElement.style.setProperty(HOMEPAGE_HERO_SCROLL_PROGRESS_PROPERTY, progress.toFixed(4));
+    const nextIsHeroScrolled = progress >= HOMEPAGE_HERO_SCROLLED_PROGRESS_THRESHOLD;
+    if (syncedHeroElement === currentHeroElement && isHeroScrolled === nextIsHeroScrolled) return;
+
+    if (syncedHeroElement !== currentHeroElement) {
+      syncedHeroElement?.classList.remove(HOMEPAGE_HERO_SCROLLED_CLASS);
+    }
+
+    currentHeroElement.classList.toggle(HOMEPAGE_HERO_SCROLLED_CLASS, nextIsHeroScrolled);
+    syncedHeroElement = currentHeroElement;
+    isHeroScrolled = nextIsHeroScrolled;
   };
 
   const queueHeroScrollSync = () => {
@@ -75,6 +87,6 @@ export function connectHomepageHeroScrollProgress({
       scheduler.cancelAnimationFrame(animationFrameId);
     }
 
-    currentHeroElement?.style.removeProperty(HOMEPAGE_HERO_SCROLL_PROGRESS_PROPERTY);
+    syncedHeroElement?.classList.remove(HOMEPAGE_HERO_SCROLLED_CLASS);
   };
 }

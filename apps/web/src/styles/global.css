@@ -2720,7 +2720,6 @@
   }
 
   .homepage-hero-section {
-    --homepage-hero-scroll-progress: 0;
     position: relative;
     background-color: #050505;
     min-height: 100svh;
@@ -2737,8 +2736,7 @@
     z-index: 0;
     overflow: hidden;
     pointer-events: none;
-    opacity: calc(0.07 + ((1 - var(--homepage-hero-scroll-progress)) * 0.93));
-    transition: opacity 0.1s linear;
+    opacity: 1;
   }
 
   .homepage-hero-section__media-image {
@@ -2786,15 +2784,14 @@
         rgba(5, 5, 5, 0.82) 100%
       );
     pointer-events: none;
-    opacity: calc(0.05 + ((1 - var(--homepage-hero-scroll-progress)) * 0.95));
-    transition: opacity 0.12s linear;
+    opacity: 1;
   }
 
   .homepage-hero-section__grain-layer {
     position: fixed;
     inset: -8%;
     z-index: 1;
-    opacity: calc(0.015 + ((1 - var(--homepage-hero-scroll-progress)) * 0.135));
+    opacity: 0.15;
     mix-blend-mode: screen;
     background-image:
       repeating-linear-gradient(
@@ -2814,7 +2811,6 @@
       17rem 17rem;
     animation: hero-grain-drift 6.5s linear infinite alternate;
     pointer-events: none;
-    transition: opacity 0.1s linear;
   }
 
   .homepage-hero-section__tagline-text {
@@ -2844,8 +2840,23 @@
     font-size: 0.65rem;
     letter-spacing: 0.26em;
     text-transform: uppercase;
-    opacity: calc(1 - (var(--homepage-hero-scroll-progress) * 1.25));
-    transition: opacity 0.14s linear;
+    opacity: 1;
+  }
+
+  .homepage-hero-section--scrolled .homepage-hero-section__media-layer {
+    opacity: 0.07;
+  }
+
+  .homepage-hero-section--scrolled .homepage-hero-section__shade-layer {
+    opacity: 0.05;
+  }
+
+  .homepage-hero-section--scrolled .homepage-hero-section__grain-layer {
+    opacity: 0.015;
+  }
+
+  .homepage-hero-section--scrolled .homepage-hero-section__scroll-indicator {
+    opacity: 0;
   }
 
   .homepage-hero-section__scroll-indicator-line {
