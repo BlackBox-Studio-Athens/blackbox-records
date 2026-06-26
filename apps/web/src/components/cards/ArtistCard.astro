@@ -20,6 +20,7 @@ const releaseCount = releaseContext?.releaseCount ?? 0;
 const latestReleaseTitle = releaseContext?.latestReleaseTitle || 'No releases yet';
 const latestReleaseYear = releaseContext?.latestReleaseYear ? String(releaseContext.latestReleaseYear) : '';
 const hasLatestRelease = Boolean(releaseContext?.latestReleaseTitle);
+const artistCardImageWidths = [480, 720, 960, 1200, 1440];
 ---
 
 <a class="group block h-full" href={artistUrl} data-astro-prefetch>
@@ -31,6 +32,7 @@ const hasLatestRelease = Boolean(releaseContext?.latestReleaseTitle);
             src={artist.data.image}
             alt={artist.data.image_alt || artistName}
             class="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.025]"
+            widths={artistCardImageWidths}
             sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
           />
           <div class="absolute inset-0 bg-gradient-to-t from-black via-black/76 via-32% to-black/12" />
@@ -49,6 +51,7 @@ const hasLatestRelease = Boolean(releaseContext?.latestReleaseTitle);
             src={artist.data.image}
             alt={artist.data.image_alt || artistName}
             class="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.025]"
+            widths={artistCardImageWidths}
             sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
           />
           <div class="absolute inset-0 bg-gradient-to-t from-black via-black/76 via-32% to-black/12" />
@@ -89,6 +92,7 @@ const hasLatestRelease = Boolean(releaseContext?.latestReleaseTitle);
             src={artist.data.image}
             alt={artist.data.image_alt || artistName}
             class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            widths={artistCardImageWidths}
             sizes="(min-width: 1280px) 19vw, (min-width: 640px) 50vw, 100vw"
           />
           <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
