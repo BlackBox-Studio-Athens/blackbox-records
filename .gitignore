@@ -4,6 +4,9 @@
 npm-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+__pycache__/
+*.egg-info/
+.venv/
 
 # Build outputs and caches
 /_site/
@@ -35,6 +38,12 @@ logs/
 *~
 *.swp
 *.tmp
+
+# Local artwork fetcher outputs
+/tools/artwork-fetcher/artwork/
+/tools/artwork-fetcher/artwork_test/
+/tools/artwork-fetcher/.cache/
+/tools/artwork-fetcher/mockups/
 
 # Operating system files
 .DS_Store
