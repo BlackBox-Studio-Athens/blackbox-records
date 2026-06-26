@@ -108,3 +108,25 @@ Rationale: this avoids false positives from single runs, manual rerun gaps, or p
 - UAT Pages deploy p90 may remain high because the slow part is external. Mitigation: acceptance distinguishes validated-build time from deploy-complete time.
 - Splitting workflows can break environment variable propagation. Mitigation: keep target-specific build env on the build job and deploy secrets only on the deploy job.
 - `pnpm openspec:guard` currently fails through pnpm because local dependency install hits lockfile config mismatch after `node_modules` recreation. Mitigation: resolve local dependency state before implementation validation, and do not treat that as part of the CI speed change itself.
+
+## Runner-minute follow-up
+
+Post-change evidence showed the static workflow split improved wall-clock time but raised runner job-duration medians: UAT Pages `3m35s -> 4m10s`, PRD Pages `2m34s -> 4m22s`.
+
+The avoidable cost is duplicated job scaffolding, not dependency install or a missing cache:
+
+- UAT `unused-audit` job median: `27s`, while the audit command itself is `3s`.
+- PRD `unused-audit` job median: `29s`, while the audit command itself is `3s`.
+- PRD deploy job median: `40s`, but it installs the full workspace only to run Wrangler. The actual Cloudflare deploy command is about `8s`.
+
+The runner-budget follow-up keeps deploy gates intact and avoids a custom cache:
+
+- Fold `pnpm audit:unused` into `workspace-checks` as a separately timed step.
+- Remove the standalone `unused-audit` jobs from UAT and PRD deploy workflows.
+- Replace PRD deploy job checkout/setup/install with the official `cloudflare/wrangler-action@v4.0.0`, pinned and running Wrangler `4.94.0`.
+
+Expected impact from current medians:
+
+- UAT Pages runner job-duration should drop by about `24s` with no wall-clock regression because `workspace-checks` remains below the current unit-test critical path.
+- PRD Pages runner job-duration should drop by about `40s-50s` and wall-clock should improve because the deploy job no longer performs a full workspace install.
+- UAT provider smoke and Catalog promotion are untouched.

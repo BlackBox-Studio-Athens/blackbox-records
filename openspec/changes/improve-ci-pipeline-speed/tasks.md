@@ -55,3 +55,14 @@
 - [x] 6.8 Re-run the CI speed measurement and compare pre-change vs post-change median, p75, p90, success rate, and runner-minute/job-duration impact.
 - [x] 6.9 Accept the change only if PRD Pages wall-clock median improves materially without gate removal and UAT Pages validated-build feedback improves or stays stable while deploy-tail latency is reported separately.
 - [x] 6.10 Update the report with final measured outcome and any remaining low-confidence workflows.
+
+## 7. Runner-minute Follow-up
+
+- [x] 7.1 Use the 5-run post-change timing report to identify runner job-duration regressions by job and step.
+- [x] 7.2 Keep cache policy unchanged; reject `node_modules`, generated output, and Playwright cache work because install time is not the measured bottleneck.
+- [x] 7.3 Fold UAT and PRD `pnpm audit:unused` into `workspace-checks` so the audit still gates deploy without a separate runner job.
+- [x] 7.4 Replace PRD deploy job checkout/setup/install with the official pinned Wrangler action while keeping Cloudflare credentials scoped to the deploy job.
+- [x] 7.5 Run workflow syntax/static validation for the edited workflow files.
+- [x] 7.6 Run `pnpm test:unit`, `pnpm check`, and `pnpm build`.
+- [ ] 7.7 Push one evidence commit and collect UAT/PRD static workflow timings for the runner-minute fix.
+- [ ] 7.8 Compare post-fix runner job-duration and wall-clock timing against the 5-run split-workflow report and confirm UAT smoke/Catalog promotion are not changed.
