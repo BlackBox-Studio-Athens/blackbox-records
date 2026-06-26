@@ -33,7 +33,7 @@
 - [x] 4.1 Do not cache `node_modules`, `.astro`, `.vite`, build output, or Playwright browsers in the first implementation pass.
 - [x] 4.2 Keep dependency caching limited to setup-node's pnpm store cache unless post-change measurement proves a material bottleneck.
 - [x] 4.3 Keep uploaded static artifacts scoped to deploy output only and set short retention suitable for deployment diagnostics.
-- [ ] 4.4 Measure artifact upload/download overhead and reject cross-job splitting if artifact overhead erases the wall-clock gain.
+- [x] 4.4 Measure artifact upload/download overhead and reject cross-job splitting if artifact overhead erases the wall-clock gain.
 
 ## 5. Reliability-First Workflows
 
@@ -51,7 +51,7 @@
 - [x] 6.4 Run `pnpm build`.
 - [x] 6.5 Run `openspec validate improve-ci-pipeline-speed --type change --strict`.
 - [x] 6.6 Run `openspec validate --all --strict`.
-- [ ] 6.7 Trigger enough post-change workflow runs to collect at least 5 successful runs for each optimized static deploy workflow.
-- [ ] 6.8 Re-run the CI speed measurement and compare pre-change vs post-change median, p75, p90, success rate, and runner-minute/job-duration impact.
-- [ ] 6.9 Accept the change only if PRD Pages wall-clock median improves materially without gate removal and UAT Pages validated-build feedback improves or stays stable while deploy-tail latency is reported separately.
-- [ ] 6.10 Update the report with final measured outcome and any remaining low-confidence workflows.
+- [x] 6.7 Trigger enough post-change workflow runs to collect at least 5 successful runs for each optimized static deploy workflow.
+- [x] 6.8 Re-run the CI speed measurement and compare pre-change vs post-change median, p75, p90, success rate, and runner-minute/job-duration impact.
+- [x] 6.9 Accept the change only if PRD Pages wall-clock median improves materially without gate removal and UAT Pages validated-build feedback improves or stays stable while deploy-tail latency is reported separately.
+- [x] 6.10 Update the report with final measured outcome and any remaining low-confidence workflows.
