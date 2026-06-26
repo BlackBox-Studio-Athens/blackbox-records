@@ -30,6 +30,16 @@
 - [x] 5.2 Copy old D1 data to the new D1 databases using ignored local exports.
 - [x] 5.3 Deploy renamed UAT/PRD Worker scripts.
 - [ ] 5.4 Re-enter Worker secrets, update GitHub Actions variables, and update Stripe webhook endpoints for the new Worker URLs.
+  - Verified 2026-06-24: `pnpm runtime:config:verify --env uat` passes; the renamed UAT Worker reports required runtime categories present, including Stripe, D1, Resend, and return-origin config.
+  - Verified 2026-06-24: `pnpm runtime:config:verify --env prd` passes for disabled PRD readiness; the renamed PRD Worker has D1, Resend, and return-origin config needed while PRD checkout/live mutation remain closed.
+  - Missing 2026-06-24: `pnpm runtime:config:verify --env prd --require-live-secrets` fails because PRD live checkout/promotion still lacks `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` on the deployed PRD Worker.
+  - Verified 2026-06-24: repo-level GitHub Actions variables `UAT_PUBLIC_BACKEND_BASE_URL` and `PRD_PUBLIC_BACKEND_BASE_URL` point at the renamed UAT/PRD Worker URLs.
+  - Missing 2026-06-24: repo-level GitHub Actions variable `PUBLIC_BACKEND_BASE_URL` still exists and points at the old sandbox Worker URL. Workflows no longer consume it for UAT/PRD builds, but it remains stale naming drift.
+  - Verified 2026-06-24: `catalog-promotion-uat` GitHub environment has `CLOUDFLARE_ACCOUNT_ID`, `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`, `CLOUDFLARE_API_TOKEN`, and `STRIPE_SECRET_KEY`.
+  - Missing 2026-06-24: `catalog-promotion-prd` GitHub environment has `CLOUDFLARE_ACCOUNT_ID` and `PRD_OPEN_GATE=closed`, but lacks the PRD `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` variable and `STRIPE_SECRET_KEY` secret required when `PRD_OPEN_GATE=open`.
+  - Missing 2026-06-24: old GitHub environment `catalog-promotion-production` still exists with `CLOUDFLARE_ACCOUNT_ID`; it is no longer referenced by workflows but remains a legacy environment-name artifact.
+  - Blocked 2026-06-24: `pnpm stripe:webhooks:verify --env uat|prd` cannot run from this local shell because no local `STRIPE_SECRET_KEY` is loaded. UAT has the GitHub environment secret needed for CI verification; PRD does not yet have the live Stripe secret.
+  - Still required: verify or update persistent Stripe webhook endpoints for `https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev/api/stripe/webhooks` and `https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev/api/stripe/webhooks` with provider credentials, without printing signing secrets.
 - [x] 5.5 Record any external cutover steps that remain manual because secrets or provider dashboards are required.
 
 ## 6. Validation

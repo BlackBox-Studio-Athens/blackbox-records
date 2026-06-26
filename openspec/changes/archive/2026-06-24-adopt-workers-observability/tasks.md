@@ -74,5 +74,5 @@
 - [x] 9.3 Run `pnpm test:unit`.
 - [x] 9.4 Run `pnpm check`.
 - [x] 9.5 Run `pnpm build`.
-- [ ] 9.6 If Cloudflare credentials are available, deploy or use an existing sandbox/UAT Worker target and verify a request appears in `wrangler tail` or Workers Logs with the expected structured fields.
+- [x] 9.6 If Cloudflare credentials are available, deploy or use an existing sandbox/UAT Worker target and verify a request appears in `wrangler tail` or Workers Logs with the expected structured fields.
 - [x] 9.7 If deployed log verification is blocked by credentials or environment availability, record the blocker and the exact local validation completed.

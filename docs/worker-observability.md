@@ -42,6 +42,6 @@ pnpm exec wrangler tail --env prd --format json
 
 Use Cloudflare dashboard → Workers & Pages → selected Worker → Logs / Observability Query Builder for stored logs. Select `blackbox-records-backend-uat` or `blackbox-records-backend-prd`.
 
-This implementation pass did not run deployed `wrangler tail` verification because Cloudflare credentials and deployed-traffic access were not available in the local Codex session. Local validation completed: `pnpm openspec -- validate adopt-workers-observability --type change --strict`, focused backend observability tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`.
+Deployed UAT verification completed on 2026-06-24: a GET to `https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev/api/store/capabilities` returned `200` with `X-Request-Id: e45a7bb3-7dc7-423d-81f4-f6cc02cfcec4`, and `pnpm exec wrangler tail --env uat --format json` showed matching `checkout_capability_evaluated` and `http_request_completed` records with `productEnvironment: UAT`, `workerDeploymentTarget: uat`, `method: GET`, `path: /api/store/capabilities`, `status: 200`, and `outcome: ok`. Local validation also completed: `pnpm openspec -- validate adopt-workers-observability --type change --strict`, focused backend observability tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`.
 
 Frontend browser RUM, client-side errors, and Core Web Vitals are separate scope. Do not route browser telemetry through Workers Logs without a later OpenSpec change.
