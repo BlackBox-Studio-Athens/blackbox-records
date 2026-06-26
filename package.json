@@ -3,12 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "packageManager": "pnpm@10.33.4",
-  "pnpm": {
-    "overrides": {
-      "unicorn-magic": "0.4.0",
-      "npm-run-path": "5.0.1"
-    }
-  },
   "scripts": {
     "dev": "pnpm dev:web",
     "dev:web": "pnpm --filter @blackbox/web dev",

@@ -136,20 +136,6 @@ jobs:
         with:
           ref: ${{ inputs.artifact_commit_sha }}
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.8
-        with:
-          version: 10.33.4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6.4.0
-        with:
-          node-version: 24
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: Confirm PRD open gate
         run: |
           mkdir -p .codex-artifacts/catalog-promotion/prd
@@ -165,6 +151,23 @@ jobs:
               echo "run_id=${{ github.run_id }}"
             } > .codex-artifacts/catalog-promotion/prd/prd-not-configured.txt
           fi
+
+      - name: Setup pnpm
+        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
+        uses: pnpm/action-setup@v6.0.8
+        with:
+          version: 10.33.4
+
+      - name: Setup Node.js
+        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
+        run: pnpm install --frozen-lockfile
 
       - name: Verify PRD webhook and payment configuration
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'

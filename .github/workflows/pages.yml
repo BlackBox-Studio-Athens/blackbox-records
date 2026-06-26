@@ -7,16 +7,98 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: 'pages'
+  group: 'pages-${{ github.ref }}'
   cancel-in-progress: true
 
 jobs:
-  verify:
+  unit-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.8
+        with:
+          version: 10.33.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run unit tests
+        run: pnpm test:unit
+
+  workspace-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.8
+        with:
+          version: 10.33.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run workspace checks
+        run: pnpm check
+
+  unused-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.8
+        with:
+          version: 10.33.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run unused code audit
+        run: pnpm audit:unused
+
+  build-uat-static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DECAP_SITE_URL: ${{ vars.DECAP_SITE_URL }}
+      DECAP_REPOSITORY: ${{ vars.DECAP_REPOSITORY }}
+      DECAP_BRANCH: ${{ vars.DECAP_BRANCH }}
+      DECAPBRIDGE_BASE_URL: ${{ vars.DECAPBRIDGE_BASE_URL }}
+      DECAPBRIDGE_AUTH_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_ENDPOINT }}
+      DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT }}
+      DECAPBRIDGE_GATEWAY_URL: ${{ vars.DECAPBRIDGE_GATEWAY_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.1
@@ -24,30 +106,45 @@ jobs:
       - name: Configure GitHub Pages UAT
         uses: actions/configure-pages@v6.0.0
 
-      - name: Build UAT site and Pages artifact
-        uses: withastro/action@v6.1.1
-        env:
-          DECAP_SITE_URL: ${{ vars.DECAP_SITE_URL }}
-          DECAP_REPOSITORY: ${{ vars.DECAP_REPOSITORY }}
-          DECAP_BRANCH: ${{ vars.DECAP_BRANCH }}
-          DECAPBRIDGE_BASE_URL: ${{ vars.DECAPBRIDGE_BASE_URL }}
-          DECAPBRIDGE_AUTH_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_ENDPOINT }}
-          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT }}
-          DECAPBRIDGE_GATEWAY_URL: ${{ vars.DECAPBRIDGE_GATEWAY_URL }}
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.8
         with:
-          path: ./apps/web
+          version: 10.33.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
           node-version: 24
-          package-manager: pnpm@10.33.4
-          cache: true
-          build-cmd: >-
-            pnpm --workspace-root test:unit &&
-            pnpm --workspace-root check &&
-            pnpm --workspace-root audit:unused &&
-            ASTRO_SITE_URL="https://blackbox-studio-athens.github.io" ASTRO_BASE_PATH="/blackbox-records/" PUBLIC_BACKEND_BASE_URL="${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}" pnpm --workspace-root build:web
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build UAT static frontend
+        env:
+          ASTRO_SITE_URL: https://blackbox-studio-athens.github.io
+          ASTRO_BASE_PATH: /blackbox-records/
+          PUBLIC_BACKEND_BASE_URL: ${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}
+        run: pnpm build:web
+
+      - name: Upload UAT Pages artifact
+        uses: actions/upload-pages-artifact@v5.0.0
+        with:
+          path: apps/web/dist
+          retention-days: 1
 
   deploy:
-    needs: verify
+    needs:
+      - unit-tests
+      - workspace-checks
+      - unused-audit
+      - build-uat-static
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

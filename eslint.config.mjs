@@ -18,6 +18,7 @@ export default tseslint.config(
       '**/build/**',
       '**/out/**',
       '**/.astro/**',
+      '**/.codex-artifacts/**',
       '**/.wrangler/**',
       '**/.vite/**',
       '**/coverage/**',
