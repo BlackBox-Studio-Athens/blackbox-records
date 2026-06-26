@@ -5,8 +5,12 @@ npm-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 __pycache__/
+*.pyc
 *.egg-info/
 .venv/
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Build outputs and caches
 /_site/
