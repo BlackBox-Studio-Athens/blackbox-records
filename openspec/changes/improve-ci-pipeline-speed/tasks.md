@@ -74,4 +74,4 @@
 - [x] 8.3 Update UAT provider smoke to follow the shared static workflow name without changing smoke steps, cadence, or Playwright browser caching.
 - [x] 8.4 Update docs, tests, verifier, and OpenSpec language for the shared workflow contract.
 - [x] 8.5 Run workflow validation, `pnpm test:unit`, `pnpm check`, `pnpm build`, and OpenSpec strict validation.
-- [ ] 8.6 Push the implementation and collect first-run UAT/PRD static workflow evidence.
+- [x] 8.6 Push the implementation and collect first-run UAT/PRD static workflow evidence.
