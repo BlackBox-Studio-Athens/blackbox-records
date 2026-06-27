@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
@@ -27,9 +27,12 @@ function read(relativePath: string): string {
   return readFileSync(path.join(rootDir, ...relativePath.split('/')), 'utf8');
 }
 
+function exists(relativePath: string): boolean {
+  return existsSync(path.join(rootDir, ...relativePath.split('/')));
+}
+
 export function verifyEnvironmentModel(): CheckResult[] {
-  const pagesWorkflow = read('.github/workflows/pages.yml');
-  const cloudflarePagesWorkflow = read('.github/workflows/cloudflare-pages.yml');
+  const staticDeployWorkflow = read('.github/workflows/pages.yml');
   const catalogPromotionWorkflow = read('.github/workflows/catalog-promotion.yml');
   const uatSandboxSmokeWorkflow = read('.github/workflows/uat-smoke.yml');
   const wranglerConfig = read('apps/backend/wrangler.jsonc');
@@ -39,20 +42,23 @@ export function verifyEnvironmentModel(): CheckResult[] {
 
   return [
     {
-      detail: 'GitHub Pages workflow is the UAT static deployment and uses UAT_PUBLIC_BACKEND_BASE_URL.',
+      detail: 'Shared static deployment workflow deploys UAT to GitHub Pages with UAT_PUBLIC_BACKEND_BASE_URL.',
       ok:
-        pagesWorkflow.includes('Deploy UAT static site to GitHub Pages') &&
-        pagesWorkflow.includes('UAT_PUBLIC_BACKEND_BASE_URL') &&
-        !pagesWorkflow.includes('PUBLIC_BACKEND_BASE_URL="${{ vars.PUBLIC_BACKEND_BASE_URL }}"'),
+        staticDeployWorkflow.includes('Deploy UAT and PRD static sites') &&
+        staticDeployWorkflow.includes('Deploy UAT to GitHub Pages') &&
+        staticDeployWorkflow.includes('UAT_PUBLIC_BACKEND_BASE_URL') &&
+        !staticDeployWorkflow.includes('PUBLIC_BACKEND_BASE_URL="${{ vars.PUBLIC_BACKEND_BASE_URL }}"'),
     },
     {
       detail:
-        'Cloudflare Pages workflow is the PRD static deployment and does not create branch or preview product deploys.',
+        'Shared static deployment workflow deploys PRD to Cloudflare Pages without branch or preview product deploys.',
       ok:
-        cloudflarePagesWorkflow.includes('Deploy PRD static site to Cloudflare Pages') &&
-        cloudflarePagesWorkflow.includes('PRD_PUBLIC_BACKEND_BASE_URL') &&
-        !cloudflarePagesWorkflow.includes('pages/**') &&
-        !cloudflarePagesWorkflow.includes('--branch=${{ github.ref_name }}'),
+        staticDeployWorkflow.includes('Deploy disabled PRD static frontend to Cloudflare Pages') &&
+        staticDeployWorkflow.includes('PRD_PUBLIC_BACKEND_BASE_URL') &&
+        staticDeployWorkflow.includes('--project-name=blackbox-records-web --branch=main') &&
+        !staticDeployWorkflow.includes('pages/**') &&
+        !staticDeployWorkflow.includes('--branch=${{ github.ref_name }}') &&
+        !exists('.github/workflows/cloudflare-pages.yml'),
     },
     {
       detail:
@@ -68,10 +74,10 @@ export function verifyEnvironmentModel(): CheckResult[] {
     },
     {
       detail:
-        'Post-merge UAT provider smoke runs after the GitHub Pages deploy, deploys the UAT Worker, and reuses the UAT promotion credential scope.',
+        'Post-merge UAT provider smoke runs after the shared static deployment workflow, deploys the UAT Worker, and reuses the UAT promotion credential scope.',
       ok:
         uatSandboxSmokeWorkflow.includes('workflow_run') &&
-        uatSandboxSmokeWorkflow.includes('Deploy UAT static site to GitHub Pages') &&
+        uatSandboxSmokeWorkflow.includes('Deploy UAT and PRD static sites') &&
         uatSandboxSmokeWorkflow.includes("branches: ['main']") &&
         uatSandboxSmokeWorkflow.includes('types: [completed]') &&
         uatSandboxSmokeWorkflow.includes('concurrency:') &&

@@ -28,7 +28,7 @@ PRD is the Cloudflare Pages static frontend:
 - browser API target: `PRD_PUBLIC_BACKEND_BASE_URL`, expected to point at the PRD Worker
 - commerce state: disabled until the explicit PRD-open production-readiness gate is present
 
-The Cloudflare Pages workflow sets these non-secret build-time variables before deploying the disabled PRD static artifact from `apps/web/dist`:
+The PRD build job in the shared static workflow sets these non-secret build-time variables before deploying the disabled PRD static artifact from `apps/web/dist`:
 
 - `ASTRO_SITE_URL`: `https://blackbox-records-web.pages.dev`
 - `ASTRO_BASE_PATH`: `/`
@@ -53,7 +53,7 @@ Backend Worker observability uses source-controlled Workers Logs/Traces config a
 
 ## Catalog Promotion
 
-Decap remains editorial-only. Content publication and buyable status are separate: generated catalog artifacts derive from current Store Item content, UAT provider state is applied through Stripe test-mode catalog tooling, and runtime checkout safety stays with D1, Worker gates, and operator controls. GitHub Pages UAT is validated by a separate post-merge UAT provider smoke workflow after `pages.yml` completes. See [docs/catalog-promotion.md](docs/catalog-promotion.md) for catalog artifact, rollback, and Promotion Evidence expectations.
+Decap remains editorial-only. Content publication and buyable status are separate: generated catalog artifacts derive from current Store Item content, UAT provider state is applied through Stripe test-mode catalog tooling, and runtime checkout safety stays with D1, Worker gates, and operator controls. GitHub Pages UAT is validated by a separate post-merge UAT provider smoke workflow after the shared static deployment workflow in `pages.yml` completes. See [docs/catalog-promotion.md](docs/catalog-promotion.md) for catalog artifact, rollback, and Promotion Evidence expectations.
 
 ## Prerequisites
 
@@ -570,9 +570,8 @@ CI/deploy credentials and public build variables:
 
 ## UAT backend CI/CD
 
-- The static Astro site has two deployment workflows:
-  - `.github/workflows/pages.yml` uploads the prebuilt UAT static artifact to GitHub Pages.
-  - `.github/workflows/cloudflare-pages.yml` uploads the prebuilt disabled PRD static artifact to Cloudflare Pages.
+- The static Astro site has one shared deployment workflow:
+  - `.github/workflows/pages.yml` runs shared repository gates once, uploads the prebuilt UAT static artifact to GitHub Pages, and uploads the prebuilt disabled PRD static artifact to Cloudflare Pages.
 - The separate UAT Worker deploy path is isolated in `.github/workflows/cloudflare-uat.yml`; `uat` is the Wrangler runtime target.
 - That workflow:
   - runs on pushes to `uat`
@@ -588,10 +587,11 @@ CI/deploy credentials and public build variables:
 ## GitHub Pages UAT CI/CD
 
 - UAT deployment is handled by `.github/workflows/pages.yml`.
-- The workflow uses `withastro/action@v6.1.1`, Node 24, and pnpm 10.33.4, and only deploys if all of these succeed:
+- The shared static workflow uses Node 24, pnpm 10.33.4, explicit pnpm setup/install steps, and only deploys UAT if all of these succeed:
   - `pnpm test:unit`
   - `pnpm check`
-  - `pnpm build`
+  - `pnpm audit:unused`
+  - `pnpm build:web` for the UAT artifact
 - The build step passes `PUBLIC_BACKEND_BASE_URL` from `UAT_PUBLIC_BACKEND_BASE_URL` so the GitHub Pages URL serves as the public UAT surface.
 - Pushes go directly to `main` in this repo.
 - If CI fails on `main`, GitHub Pages does not publish the broken UAT revision; fix it with a follow-up commit or revert the bad commit on `main`.
@@ -601,8 +601,8 @@ CI/deploy credentials and public build variables:
 
 - Cloudflare Pages is the PRD static frontend host and remains a disabled commerce readiness surface until the PRD-open gate exists.
 - The deploy artifact remains the prebuilt Astro output at `apps/web/dist`.
-- Cloudflare Pages Direct Upload acceptance is handled by `.github/workflows/cloudflare-pages.yml`, not by local manual `wrangler pages deploy`.
-- The workflow runs `pnpm test:unit`, `pnpm check`, and `pnpm build` before uploading `apps/web/dist` to the `blackbox-records-web` Pages project.
+- Cloudflare Pages Direct Upload acceptance is handled by `.github/workflows/pages.yml`, not by local manual `wrangler pages deploy`.
+- The shared static workflow runs `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and the PRD `pnpm build` before uploading `apps/web/dist` to the `blackbox-records-web` Pages project.
 - The workflow sets Cloudflare-root static build values with `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/`.
 - The workflow passes only browser-safe public Astro variables into the frontend runtime: `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`.
 - The Worker remains separate and owns `/api/*`, Stripe secrets, webhooks, D1, stock operations, order state, and future BOX NOW work.

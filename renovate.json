@@ -145,8 +145,7 @@
         "actions/setup-node",
         "actions/configure-pages",
         "actions/deploy-pages",
-        "pnpm/action-setup",
-        "withastro/action"
+        "pnpm/action-setup"
       ],
       "groupName": "GitHub Actions workflow dependencies",
       "groupSlug": "github-actions-workflows",

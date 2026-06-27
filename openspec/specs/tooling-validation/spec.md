@@ -96,11 +96,11 @@ The system SHALL keep smoke runners on the shared `.codex-artifacts/smoke/<envir
 
 ### Requirement: Post-merge UAT provider smoke workflow
 
-The system SHALL validate the deployed GitHub Pages UAT site with Stripe test-mode smoke after the Pages deploy completes successfully on `main`.
+The system SHALL validate the deployed GitHub Pages UAT site with Stripe test-mode smoke after the shared static deployment workflow completes successfully on `main`.
 
-#### Scenario: UAT Pages deploy completes successfully
+#### Scenario: Shared static deployment completes successfully
 
-- **GIVEN** the `Deploy UAT static site to GitHub Pages` workflow completes successfully on `main`
+- **GIVEN** the `Deploy UAT and PRD static sites` workflow completes successfully on `main`
 - **WHEN** the downstream `workflow_run` smoke workflow starts
 - **THEN** it runs `pnpm smoke:stripe-uat -- --scenario happy_path_paid --screenshots on-failure` against the deployed GitHub Pages UAT site
 - **AND** it uses the `catalog-promotion-uat` GitHub Actions environment for the same UAT Cloudflare and sandbox Stripe credentials already used by UAT promotion

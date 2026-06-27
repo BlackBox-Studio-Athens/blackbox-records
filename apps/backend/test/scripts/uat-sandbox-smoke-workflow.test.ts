@@ -16,7 +16,7 @@ describe('UAT provider smoke workflow', () => {
     expect(workflow).toContain('name: UAT provider smoke');
     expect(workflow).toContain('workflow_dispatch:');
     expect(workflow).toContain('workflow_run');
-    expect(workflow).toContain('Deploy UAT static site to GitHub Pages');
+    expect(workflow).toContain('Deploy UAT and PRD static sites');
     expect(workflow).toContain("branches: ['main']");
     expect(workflow).toContain('types: [completed]');
     expect(workflow).toContain('permissions:');

@@ -130,3 +130,18 @@ Expected impact from current medians:
 - UAT Pages runner job-duration should drop by about `24s` with no wall-clock regression because `workspace-checks` remains below the current unit-test critical path.
 - PRD Pages runner job-duration should drop by about `40s-50s` and wall-clock should improve because the deploy job no longer performs a full workspace install.
 - UAT provider smoke and Catalog promotion are untouched.
+
+## Shared static deploy follow-up
+
+After the runner-minute fix, UAT Pages and PRD Pages still duplicated the expensive repository gates in separate workflows. Move both static targets into `.github/workflows/pages.yml` so `unit-tests` and `workspace-checks` run once per commit, then gate separate UAT and PRD build/deploy jobs.
+
+The target boundaries stay unchanged:
+
+- UAT builds with GitHub Pages site/base values and deploys through `actions/deploy-pages`.
+- PRD builds with Cloudflare Pages site/base values and deploys through the pinned Wrangler action.
+- `.github/workflows/cloudflare-pages.yml` is retired so PRD does not deploy twice.
+- UAT provider smoke stays in `.github/workflows/uat-smoke.yml`; only the upstream workflow name changes.
+
+No Playwright browser cache is present or introduced. The smoke workflows keep installing browsers at runtime.
+
+Future smoke policy idea: if the shared static workflow makes UAT provider smoke too dependent on unrelated PRD deploy failures, propose a separate smoke-policy change that either runs provider smoke from a `deploy-uat`-scoped job or lets the smoke workflow inspect the `deploy-uat` job conclusion. That future change should decide cadence and gate semantics first; Playwright browser caching remains rejected unless timing data shows browser install is a material bottleneck.

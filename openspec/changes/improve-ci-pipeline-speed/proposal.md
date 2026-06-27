@@ -24,7 +24,7 @@ None.
 
 ## Impact
 
-- GitHub Actions workflows under `.github/workflows/`, especially `pages.yml`, `cloudflare-pages.yml`, `uat-smoke.yml`, and `catalog-promotion.yml`.
+- GitHub Actions workflows under `.github/workflows/`, especially `pages.yml`, `uat-smoke.yml`, and `catalog-promotion.yml`.
 - Existing package scripts only where needed to reuse current gates; no new CI dependency should be added unless measurement proves it is necessary.
 - Measurement artifacts under `.codex-artifacts/ci-speed-analysis/` or a committed script/docs location selected during implementation.
 - GitHub Actions cache/artifact behavior, limited to pnpm store caching and static build artifact handoff.

@@ -51,7 +51,7 @@ Read these first before editing:
 - Backend sandbox dev server: `pnpm dev:backend:sandbox`
 - Backend sandbox deploy: `pnpm deploy:backend:sandbox`
 - Backend production deploy: `pnpm deploy:backend:production`
-- Cloudflare Pages frontend deploy workflow: `.github/workflows/cloudflare-pages.yml`
+- Static frontend deploy workflow: `.github/workflows/pages.yml`
 - Catalog artifact regeneration workflow: `.github/workflows/catalog-artifacts.yml`
 - Catalog promotion workflow: `.github/workflows/catalog-promotion.yml`
 - Full local stack with real Stripe test mode: `pnpm dev:stack:stripe-test`
@@ -190,23 +190,23 @@ Read these first before editing:
 
 - UAT static deployment target: GitHub Pages
 - PRD static deployment target: Cloudflare Pages, with live commerce disabled until the PRD-open gate exists
-- Canonical CI/CD workflow: `.github/workflows/cloudflare-pages.yml`
-- UAT CI/CD workflow: `.github/workflows/pages.yml`
-- Both static frontend workflows are gated by:
+- Canonical static CI/CD workflow: `.github/workflows/pages.yml`
+- The static frontend workflow deploys UAT to GitHub Pages and PRD to Cloudflare Pages.
+- Both static frontend deploy targets are gated by:
   - `pnpm test:unit`
   - `pnpm check`
-  - `pnpm build`
+  - target-specific static build (`pnpm build:web` for UAT, `pnpm build` for PRD)
 - `pnpm check` is intentionally editor-independent; do not rely on WebStorm formatting or inspections as the only style gate.
-- The workflow uses `withastro/action@v6.1.1` with Node 24, pnpm 10.33.4, and built-in pnpm/Astro caching
+- The workflow uses explicit pnpm setup/install steps with Node 24, pnpm 10.33.4, and setup-node pnpm-store caching
 - Configured in `apps/web/astro.config.mjs`
   - default `site: https://blackbox-studio-athens.github.io`
   - default `base: /blackbox-records/`
 - Cloudflare Pages PRD builds override those defaults through non-secret `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/` so the artifact serves from the Pages domain root.
 - Do not change `site` or `base` behavior unless the task explicitly requires deployment URL changes.
 - Cloudflare Pages hosting must keep the PRD frontend static and deploy only the prebuilt `apps/web/dist` artifact.
-- The Cloudflare Pages workflow must run `pnpm test:unit`, `pnpm check`, and `pnpm build` before Direct Upload to the `blackbox-records-web` Pages project.
-- The Cloudflare Pages workflow may pass only non-secret PRD build-target env plus browser-safe public Astro env into the build: `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, and `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`; keep `PUBLIC_CHECKOUT_CLIENT_MODE` unset.
-- Cloudflare Pages PRD deploys must run through `.github/workflows/cloudflare-pages.yml`. Manual local `wrangler pages deploy` is diagnostic only and is not acceptance evidence.
+- The static frontend workflow must run `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and PRD `pnpm build` before Direct Upload to the `blackbox-records-web` Pages project.
+- The PRD static build job may pass only non-secret PRD build-target env plus browser-safe public Astro env into the build: `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, and `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`; keep `PUBLIC_CHECKOUT_CLIENT_MODE` unset.
+- Cloudflare Pages PRD deploys must run through `.github/workflows/pages.yml`. Manual local `wrangler pages deploy` is diagnostic only and is not acceptance evidence.
 - Cloudflare Pages must not own backend routes, Pages Functions, D1 access, Stripe secrets, webhooks, operator auth, stock mutations, order state, or future BOX NOW runtime secrets.
 - GitHub Pages is the UAT static host. Do not describe it as PRD rollback or legacy production hosting.
 - Native commerce migration work must treat UAT as GitHub Pages plus UAT Worker and PRD as Cloudflare Pages plus PRD Worker. External-shop behavior remains historical commerce context, not the final architecture.

@@ -1,18 +1,18 @@
 ## ADDED Requirements
 
-### Requirement: Static deploy workflows expose measurable stages
+### Requirement: Static deploy automation exposes measurable stages
 
-The system SHALL keep UAT and PRD static deploy workflows split into measurable verification, build, and deploy stages while preserving the existing deployment targets.
+The system SHALL keep UAT and PRD static deploy automation split into measurable verification, build, and deploy stages while preserving the existing deployment targets.
 
 #### Scenario: UAT Pages workflow reports verification and deploy timing separately
 
-- **WHEN** the GitHub Pages UAT workflow runs
+- **WHEN** the shared static deployment workflow runs the GitHub Pages UAT target
 - **THEN** unit tests, workspace checks, unused audit, UAT static build, artifact upload, and GitHub Pages deploy appear as separately timed workflow jobs or steps
 - **AND** the deployed target remains GitHub Pages UAT.
 
 #### Scenario: PRD Pages workflow reports verification and deploy timing separately
 
-- **WHEN** the Cloudflare Pages PRD workflow runs
+- **WHEN** the shared static deployment workflow runs the Cloudflare Pages PRD target
 - **THEN** unit tests, workspace checks, unused audit, PRD static build, artifact handoff, and Cloudflare Pages deploy appear as separately timed workflow jobs or steps
 - **AND** the deployed target remains Cloudflare Pages PRD.
 
@@ -22,14 +22,14 @@ The system MUST deploy UAT and PRD static artifacts only after the required repo
 
 #### Scenario: UAT static deployment waits for required work
 
-- **GIVEN** the GitHub Pages UAT workflow is triggered for a commit
+- **GIVEN** the shared static deployment workflow is triggered for a commit
 - **WHEN** deployment starts
 - **THEN** `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and the UAT `pnpm build:web` artifact build have succeeded for that commit
 - **AND** the deployed artifact was built with the UAT site/base/backend environment values.
 
 #### Scenario: PRD static deployment waits for required work
 
-- **GIVEN** the Cloudflare Pages PRD workflow is triggered for a commit
+- **GIVEN** the shared static deployment workflow is triggered for a commit
 - **WHEN** deployment starts
 - **THEN** `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and the PRD `pnpm build` artifact build have succeeded for that commit
 - **AND** the deployed artifact was built with the PRD site/base/backend environment values.

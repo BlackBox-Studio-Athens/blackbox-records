@@ -66,3 +66,12 @@
 - [x] 7.6 Run `pnpm test:unit`, `pnpm check`, and `pnpm build`.
 - [x] 7.7 Push one evidence commit and collect UAT/PRD static workflow timings for the runner-minute fix.
 - [x] 7.8 Compare post-fix runner job-duration and wall-clock timing against the 5-run split-workflow report and confirm UAT smoke/Catalog promotion are not changed.
+
+## 8. Shared Static Deployment Workflow
+
+- [x] 8.1 Merge UAT and PRD static deployments into `.github/workflows/pages.yml` so unit tests and workspace checks run once per commit.
+- [x] 8.2 Retire `.github/workflows/cloudflare-pages.yml` after moving PRD build, artifact handoff, and Cloudflare Pages deploy into the shared workflow.
+- [x] 8.3 Update UAT provider smoke to follow the shared static workflow name without changing smoke steps, cadence, or Playwright browser caching.
+- [x] 8.4 Update docs, tests, verifier, and OpenSpec language for the shared workflow contract.
+- [x] 8.5 Run workflow validation, `pnpm test:unit`, `pnpm check`, `pnpm build`, and OpenSpec strict validation.
+- [ ] 8.6 Push the implementation and collect first-run UAT/PRD static workflow evidence.

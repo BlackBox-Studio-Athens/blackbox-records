@@ -3,7 +3,7 @@ name: UAT provider smoke
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ['Deploy UAT static site to GitHub Pages']
+    workflows: ['Deploy UAT and PRD static sites']
     branches: ['main']
     types: [completed]
 

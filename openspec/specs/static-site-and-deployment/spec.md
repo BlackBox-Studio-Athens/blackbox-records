@@ -8,19 +8,19 @@ Specify the static Astro frontend, GitHub Pages UAT deployment, disabled Cloudfl
 
 The system SHALL serve the Astro frontend as a prebuilt static artifact with GitHub Pages as the only UAT static host and Cloudflare Pages as the only PRD static host.
 
-#### Scenario: GitHub Pages deploys the UAT frontend
+#### Scenario: Shared workflow deploys the UAT frontend to GitHub Pages
 
-- **GIVEN** the GitHub Pages workflow runs
+- **GIVEN** the shared static frontend workflow runs the UAT target
 - **WHEN** CI builds the site
-- **THEN** it runs `pnpm test:unit`, `pnpm check`, and `pnpm build`
+- **THEN** it runs `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and `pnpm build:web`
 - **AND** it uploads only the prebuilt `apps/web/dist` artifact with browser-safe UAT build variables
 - **AND** the deployed static site calls the UAT Worker/API.
 
-#### Scenario: Cloudflare Pages deploys the PRD frontend
+#### Scenario: Shared workflow deploys the PRD frontend to Cloudflare Pages
 
-- **GIVEN** the Cloudflare Pages workflow runs
+- **GIVEN** the shared static frontend workflow runs the PRD target
 - **WHEN** CI builds the site
-- **THEN** it runs `pnpm test:unit`, `pnpm check`, and `pnpm build`
+- **THEN** it runs `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and `pnpm build`
 - **AND** it uploads only the prebuilt `apps/web/dist` artifact with browser-safe PRD build variables
 - **AND** the static PRD storefront may deploy as a readiness surface
 - **AND** PRD checkout and live provider mutation remain disabled until an explicit production-readiness gate opens them.
@@ -105,14 +105,14 @@ The system SHALL emit repo-owned cache headers for PRD static assets served by C
 
 #### Scenario: PRD static artifact is built
 
-- **GIVEN** the Cloudflare Pages PRD workflow builds `apps/web/dist`
+- **GIVEN** the shared static frontend workflow builds the PRD `apps/web/dist`
 - **WHEN** the artifact includes fingerprinted Astro assets
 - **THEN** the artifact includes cache header policy for those fingerprinted assets
 - **AND** the policy stays within Cloudflare Pages Free-tier `_headers` rule and line limits.
 
 #### Scenario: PRD deploy uploads static frontend
 
-- **GIVEN** the Cloudflare Pages workflow deploys the PRD static artifact
+- **GIVEN** the shared static frontend workflow deploys the PRD static artifact
 - **WHEN** it uploads `apps/web/dist`
 - **THEN** it deploys the cache header artifact with the same commit as the static files
 - **AND** it does not require Pages Functions, Astro SSR, or a paid Cloudflare product.
