@@ -28,6 +28,7 @@ describe('NewsletterSignupForm', () => {
     expect(html).toContain('type="email"');
     expect(html).toContain(NEWSLETTER_CONSENT_LABEL);
     expect(html).toContain('No spam. Unsubscribe anytime.');
+    expect(html).toContain('newsletter-signup-consent-checkbox');
     expect(html).toContain('rounded-none');
     expect(html).toContain('sm:flex-row');
     expect(html).toContain('role="status"');

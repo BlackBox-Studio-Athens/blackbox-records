@@ -133,7 +133,7 @@ export default function NewsletterSignupForm({
         <input
           id={consentId}
           type="checkbox"
-          className="mt-0.5 size-4 shrink-0 accent-foreground"
+          className="newsletter-signup-consent-checkbox mt-0.5 size-4 shrink-0 accent-foreground"
           checked={consentAccepted}
           disabled={view.isSubmitting}
           aria-describedby={view.consentInvalid ? errorId : undefined}
