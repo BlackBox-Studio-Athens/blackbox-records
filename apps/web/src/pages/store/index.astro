@@ -39,7 +39,11 @@ const collectionEntries = await listStoreCollectionEntries();
 
   <section class="layout-container pb-14" aria-label="Store collection">
     <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-      {collectionEntries.map((entry) => <StoreItemCard entry={entry} />)}
+      {
+        collectionEntries.map((entry, index) => (
+          <StoreItemCard entry={entry} imageLoading={index < 3 ? 'eager' : 'lazy'} />
+        ))
+      }
     </div>
   </section>
 </SiteLayout>

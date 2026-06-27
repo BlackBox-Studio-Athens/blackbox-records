@@ -60,6 +60,8 @@ function formatReleaseFormats(formats: string[] | undefined) {
               src={latestReleaseEntry.data.cover_image}
               alt={latestReleaseEntry.data.cover_image_alt || latestReleaseEntry.data.title}
               class="releases-latest-feature__artwork"
+              priority
+              widths={[720, 1080, 1440, 1800]}
               sizes="(min-width: 1100px) 42vw, 100vw"
             />
           </a>
@@ -122,9 +124,11 @@ function formatReleaseFormats(formats: string[] | undefined) {
   <section class="layout-container">
     <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
       {
-        releaseCatalogEntries.map((releaseEntry) => {
+        releaseCatalogEntries.map((releaseEntry, index) => {
           const artistProfile = artistProfileById.get(releaseEntry.data.artist.id);
-          return <ReleaseCard release={releaseEntry} artist={artistProfile} />;
+          return (
+            <ReleaseCard release={releaseEntry} artist={artistProfile} imageLoading={index < 3 ? 'eager' : 'lazy'} />
+          );
         })
       }
     </div>

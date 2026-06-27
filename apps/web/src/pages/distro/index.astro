@@ -17,6 +17,7 @@ const DISTRO_GROUP_INTROS: Record<DistroGroupName, string> = {
 
 const distroEntries = await listDistroEntries();
 const groupedDistroEntries = groupDistroEntries(distroEntries);
+const eagerDistroEntryIds = new Set(distroEntries.slice(0, 3).map((entry) => entry.id));
 ---
 
 <SiteLayout
@@ -52,7 +53,7 @@ const groupedDistroEntries = groupDistroEntries(distroEntries);
           </div>
           <div class="distro-group-grid">
             {group.entries.map((item) => (
-              <DistroCard item={item} />
+              <DistroCard item={item} imageLoading={eagerDistroEntryIds.has(item.id) ? 'eager' : 'lazy'} />
             ))}
           </div>
         </section>

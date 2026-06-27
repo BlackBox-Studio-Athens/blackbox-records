@@ -11,7 +11,11 @@ const newsArticles = await listNewsArticles();
   <InternalPageHero sectionLabel="Updates" title="News" />
   <section class="layout-container">
     <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-      {newsArticles.map((newsArticle) => <NewsCard item={newsArticle} />)}
+      {
+        newsArticles.map((newsArticle, index) => (
+          <NewsCard item={newsArticle} imageLoading={index < 3 ? 'eager' : 'lazy'} />
+        ))
+      }
     </div>
   </section>
 </SiteLayout>

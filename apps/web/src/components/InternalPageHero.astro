@@ -43,7 +43,13 @@ const heroImageClass = `h-[20rem] w-full object-cover sm:h-[24rem]${imageColor ?
         {typeof image === 'string' ? (
           <img src={createProjectRelativeUrl(image)} alt={imageAlt || title} class={heroImageClass} />
         ) : (
-          <Image src={image} alt={imageAlt || title} class={heroImageClass} sizes="(min-width: 1024px) 72rem, 100vw" />
+          <Image
+            src={image}
+            alt={imageAlt || title}
+            class={heroImageClass}
+            widths={[720, 1080, 1440, 1800]}
+            sizes="(min-width: 1024px) 72rem, 100vw"
+          />
         )}
         <div
           class={`absolute inset-0${imageColor ? ' bg-gradient-to-t from-black/45 via-transparent to-black/15' : ' bg-gradient-to-t from-black/70 via-black/20 to-transparent'}`}

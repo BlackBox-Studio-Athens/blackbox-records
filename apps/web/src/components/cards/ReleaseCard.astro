@@ -10,10 +10,11 @@ import { buildEmbeddedPlayerData } from '@/utils/music';
 interface Props {
   release: CollectionEntry<'releases'>;
   artist: CollectionEntry<'artists'> | undefined;
+  imageLoading?: 'eager' | 'lazy';
   variant?: 'default' | 'framed-artwork' | 'artist-discography';
 }
 
-const { release, artist, variant = 'default' } = Astro.props;
+const { release, artist, imageLoading = 'lazy', variant = 'default' } = Astro.props;
 const artistFallbackName = release.data.artist.id ? release.data.artist.id.replace(/-/g, ' ') : 'Artist';
 const artistName = artist?.data.title || artistFallbackName;
 const releaseCardTitle = `${release.data.title} — ${artistName}`;
@@ -21,6 +22,7 @@ const embeddedPlayerData = buildEmbeddedPlayerData(release.data, releaseCardTitl
 const isFramedArtwork = variant === 'framed-artwork';
 const isArtistDiscography = variant === 'artist-discography';
 const usesFramedArtworkLayout = isFramedArtwork || isArtistDiscography;
+const releaseCardImageWidths = isArtistDiscography ? [240, 320, 480, 640] : [320, 480, 640, 800, 960];
 
 const dataAttributes = embeddedPlayerData.hasProvider
   ? {
@@ -60,7 +62,9 @@ const dataAttributes = embeddedPlayerData.hasProvider
           class={usesFramedArtworkLayout
             ? 'release-card-artwork release-card-artwork--framed h-full w-full object-cover'
             : 'release-card-artwork h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]'}
+          widths={releaseCardImageWidths}
           sizes="(min-width: 1280px) 260px, (min-width: 768px) 50vw, 100vw"
+          loading={imageLoading}
         />
         <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div>
         <div class="release-card-meta-row absolute inset-x-0 bottom-0 px-2.5 py-3">

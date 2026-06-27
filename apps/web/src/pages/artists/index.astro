@@ -14,7 +14,7 @@ const releaseContextByArtistId = await mapArtistRosterReleaseContextById();
     <div data-artists-roster-filters></div>
     <div class="artists-roster-grid">
       {
-        artistProfiles.map((artistProfile) => {
+        artistProfiles.map((artistProfile, index) => {
           const releaseContext = releaseContextByArtistId.get(artistProfile.id) || {
             latestReleaseTitle: null,
             latestReleaseYear: null,
@@ -33,7 +33,12 @@ const releaseContextByArtistId = await mapArtistRosterReleaseContextById();
                 releaseContext.latestReleaseYear ? String(releaseContext.latestReleaseYear) : ''
               }
             >
-              <ArtistCard artist={artistProfile} releaseContext={releaseContext} variant="roster-detailed" />
+              <ArtistCard
+                artist={artistProfile}
+                imageLoading={index < 3 ? 'eager' : 'lazy'}
+                releaseContext={releaseContext}
+                variant="roster-detailed"
+              />
             </div>
           );
         })

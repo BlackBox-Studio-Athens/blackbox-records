@@ -10,9 +10,10 @@ import { formatMonthYear } from '@/utils/content';
 
 interface Props {
   item: CollectionEntry<'news'>;
+  imagePriority?: boolean;
 }
 
-const { item } = Astro.props;
+const { item, imagePriority = true } = Astro.props;
 const { Content } = await render(item);
 const sectionLabel = item.data.section_label || 'News';
 ---
@@ -33,8 +34,10 @@ const sectionLabel = item.data.section_label || 'News';
             <Image
               src={item.data.image}
               alt={item.data.image_alt || item.data.title}
-              class="h-auto w-full object-cover"
+              class="news-detail-lead__image h-auto w-full object-cover"
+              widths={[720, 1080, 1440, 1800]}
               sizes="(min-width: 1024px) 72rem, 100vw"
+              priority={imagePriority}
             />
           </div>
         )

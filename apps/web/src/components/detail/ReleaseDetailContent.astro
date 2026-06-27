@@ -37,8 +37,10 @@ const commerceLink = await getReleaseCommerceLink(release);
         <Image
           src={release.data.cover_image}
           alt={release.data.cover_image_alt || release.data.title}
-          class="h-full w-full object-cover"
+          class="release-detail-cover__image h-full w-full object-cover"
+          widths={[720, 1080, 1440, 1800]}
           sizes="(min-width: 1024px) 36vw, 100vw"
+          priority={showRouteNavigation}
         />
         <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
       </div>

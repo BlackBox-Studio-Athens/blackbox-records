@@ -43,7 +43,9 @@ const cartSeed = createPricedCartSeedForStorePage(storeItem, primaryAvailability
         <Image
           src={storeItem.image}
           alt={storeItem.imageAlt}
-          class="aspect-[4/5] h-full w-full object-cover"
+          class="store-item-detail__image aspect-[4/5] h-full w-full object-cover"
+          priority
+          widths={[720, 1080, 1440, 1800]}
           sizes="(min-width: 1024px) 40vw, 100vw"
         />
         <div class="absolute inset-0 bg-gradient-to-t from-black/78 via-black/10 to-transparent"></div>

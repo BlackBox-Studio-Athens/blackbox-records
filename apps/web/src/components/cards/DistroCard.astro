@@ -8,12 +8,14 @@ import { formatMonthYear } from '@/utils/content';
 
 interface Props {
   item: CollectionEntry<'distro'>;
+  imageLoading?: 'eager' | 'lazy';
   variant?: 'home' | 'page';
 }
 
-const { item, variant = 'page' } = Astro.props;
+const { item, imageLoading = 'lazy', variant = 'page' } = Astro.props;
 const storeItem = createStoreItemFromDistroEntry(item);
 const isHomeVariant = variant === 'home';
+const distroCardImageWidths = [320, 480, 640, 800, 960];
 const metadataItems = [
   item.data.eyebrow || null,
   item.data.format || item.data.group,
@@ -32,9 +34,11 @@ const metadataItems = [
         src={item.data.image}
         alt={item.data.image_alt}
         class="distro-card__image"
+        widths={distroCardImageWidths}
         sizes={isHomeVariant
           ? '(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw'
           : '(min-width: 1280px) 22vw, (min-width: 768px) 45vw, 100vw'}
+        loading={imageLoading}
       />
     </div>
     <CardContent className={cn('distro-card__content', isHomeVariant ? 'space-y-2 p-4' : 'space-y-3 p-5')}>

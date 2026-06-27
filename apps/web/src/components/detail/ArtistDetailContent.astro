@@ -63,7 +63,9 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
           src={artist.data.image}
           alt={artist.data.image_alt || artistName}
           class="artist-detail-hero__image h-full w-full object-cover object-center"
+          widths={[720, 1080, 1440, 1800]}
           sizes="(min-width: 1024px) 34rem, 100vw"
+          priority={showRouteNavigation}
         />
       </div>
     </div>
@@ -138,6 +140,7 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
             src={latestRelease.data.cover_image}
             alt={latestRelease.data.cover_image_alt || latestRelease.data.title}
             class="artist-latest-release-panel__artwork h-full w-full object-cover"
+            widths={[160, 240, 320, 480]}
             sizes="(min-width: 1024px) 13rem, 42vw"
           />
         </a>
@@ -267,6 +270,7 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
               src={release.data.cover_image}
               alt={release.data.cover_image_alt || release.data.title}
               class="artist-previous-release__artwork h-full w-full object-cover"
+              widths={[96, 160, 240]}
               sizes="5rem"
             />
             <span class="artist-previous-release__copy">

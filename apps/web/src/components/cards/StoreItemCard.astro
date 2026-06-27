@@ -6,13 +6,15 @@ import type { StoreCollectionEntry } from '@/lib/store-collection';
 
 interface Props {
   entry: StoreCollectionEntry;
+  imageLoading?: 'eager' | 'lazy';
 }
 
-const { entry } = Astro.props;
+const { entry, imageLoading = 'lazy' } = Astro.props;
 const { storeItem, primaryAvailability } = entry;
 const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
 const metadataLabel = storeItem.metadata.join(' · ');
 const collectionLabel = storeItem.eyebrow || (storeItem.sourceKind === 'release' ? 'Release' : 'Distro');
+const storeItemCardImageWidths = [320, 480, 640, 800, 960];
 ---
 
 <a class="group block h-full" href={storeItem.storePath} data-astro-prefetch>
@@ -23,8 +25,10 @@ const collectionLabel = storeItem.eyebrow || (storeItem.sourceKind === 'release'
       <Image
         src={storeItem.image}
         alt={storeItem.imageAlt}
-        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        class="store-item-card__image h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        widths={storeItemCardImageWidths}
         sizes="(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw"
+        loading={imageLoading}
       />
       <div class="absolute inset-0 bg-gradient-to-t from-black via-black/18 to-transparent"></div>
       <div class="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 px-4 py-4">
