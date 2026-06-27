@@ -110,7 +110,7 @@ Run the default full local commerce stack:
 pnpm dev:stack:stripe-mock
 ```
 
-This is what `BlackBox Local Stack` runs in WebStorm. It prepares local D1, starts official `stripe-mock` through local Go tooling, starts the Worker with the Stripe SDK pointed at the local mock API proxy, and starts the static Astro site with a mock checkout panel. It does not require Docker, real Stripe keys, or `apps/backend/.dev.vars`.
+This is what `BlackBox Local Stack` runs in WebStorm. It prepares local D1, starts official `stripe-mock` through local Go tooling, starts the Worker with the Stripe SDK pointed at the local mock API proxy, and starts the static Astro site with a mock checkout panel. Local newsletter signup uses the committed fake `re_mock_*` Resend config through a no-network provider mock. It does not require Docker, real Stripe keys, real Resend keys, or `apps/backend/.dev.vars`.
 
 Local mock checkout smoke path:
 
@@ -193,7 +193,7 @@ Run the full local commerce stack with stripe-mock:
 pnpm dev:stack:stripe-mock
 ```
 
-This mode runs official `stripe-mock` locally through `go run github.com/stripe/stripe-mock@latest`, points the Worker Stripe SDK at a local compatibility proxy on `http://127.0.0.1:12110`, generates local-only mock commerce state for every current store item, and returns a local-only mock Checkout URL. It validates backend checkout flow control and Stripe API request shape, but it is not a real Stripe-hosted Checkout browser experience. It requires Go, but it does not require Docker, real Stripe keys, or `apps/backend/.dev.vars`.
+This mode runs official `stripe-mock` locally through `go run github.com/stripe/stripe-mock@latest`, points the Worker Stripe SDK at a local compatibility proxy on `http://127.0.0.1:12110`, generates local-only mock commerce state for every current store item, and returns a local-only mock Checkout URL. It validates backend checkout flow control and Stripe API request shape, and local newsletter signup returns registered through the Worker-owned no-network Resend mock. It is not a real Stripe-hosted Checkout browser experience. It requires Go, but it does not require Docker, real Stripe keys, real Resend keys, or `apps/backend/.dev.vars`.
 
 The first run may download and compile `stripe-mock` through Go. Official `stripe-mock` can return a null hosted Checkout `url`, so the local proxy applies a dev-only URL patch before the Worker receives the response. Real checkout code still sends the real Stripe SDK request shape.
 
@@ -217,7 +217,7 @@ Run the Astro frontend explicitly:
 pnpm dev:web
 ```
 
-Run the frontend-only static-site launcher used by the committed WebStorm run configuration:
+Run the frontend-only static-site launcher used inside local stack scripts:
 
 ```sh
 pnpm site:dev

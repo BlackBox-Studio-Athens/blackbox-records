@@ -12,6 +12,19 @@ export function createEmailRuntimeServices(bindings: AppBindings): EmailRuntimeS
 
   return {
     config,
-    provider: createResendEmailGatewayFromConfig(config),
+    provider: shouldUseLocalMockEmailProvider(config)
+      ? createLocalMockEmailProviderGateway()
+      : createResendEmailGatewayFromConfig(config),
+  };
+}
+
+function shouldUseLocalMockEmailProvider(config: EmailRuntimeConfig): boolean {
+  return config.productEnvironmentProfile.productEnvironment === 'LOCAL' && config.apiKey.startsWith('re_mock_');
+}
+
+function createLocalMockEmailProviderGateway(): EmailProviderGateway {
+  return {
+    registerNewsletterContact: async () => ({ ok: true }),
+    sendEmail: async () => ({ ok: true }),
   };
 }

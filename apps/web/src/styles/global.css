@@ -166,6 +166,23 @@
   }
 }
 
+@keyframes newsletter-success-rise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0.42rem, 0);
+  }
+
+  70% {
+    opacity: 1;
+    transform: translate3d(0, -0.04rem, 0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 @keyframes hero-scroll-cue {
   0% {
     transform: translateY(-105%) scaleY(0.85);
@@ -1277,6 +1294,11 @@
   .artist-detail-action--secondary:hover,
   .artist-detail-action--secondary:focus-visible {
     color: var(--foreground);
+  }
+
+  .newsletter-signup-status--success {
+    color: color-mix(in srgb, var(--foreground) 74%, var(--services-accent-active));
+    animation: newsletter-success-rise 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   .artist-detail-action__indicator {
@@ -3297,6 +3319,11 @@ body.is-app-shell-overlay-open {
   .loading-feedback-mark__scale {
     animation: none;
     opacity: 1;
+    transform: none;
+  }
+
+  .newsletter-signup-status--success {
+    animation: none;
     transform: none;
   }
 
