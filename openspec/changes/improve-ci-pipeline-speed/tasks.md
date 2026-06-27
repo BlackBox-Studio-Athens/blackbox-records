@@ -64,5 +64,5 @@
 - [x] 7.4 Replace PRD deploy job checkout/setup/install with the official pinned Wrangler action while keeping Cloudflare credentials scoped to the deploy job.
 - [x] 7.5 Run workflow syntax/static validation for the edited workflow files.
 - [x] 7.6 Run `pnpm test:unit`, `pnpm check`, and `pnpm build`.
-- [ ] 7.7 Push one evidence commit and collect UAT/PRD static workflow timings for the runner-minute fix.
-- [ ] 7.8 Compare post-fix runner job-duration and wall-clock timing against the 5-run split-workflow report and confirm UAT smoke/Catalog promotion are not changed.
+- [x] 7.7 Push one evidence commit and collect UAT/PRD static workflow timings for the runner-minute fix.
+- [x] 7.8 Compare post-fix runner job-duration and wall-clock timing against the 5-run split-workflow report and confirm UAT smoke/Catalog promotion are not changed.
