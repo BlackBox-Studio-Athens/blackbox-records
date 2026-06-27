@@ -37,7 +37,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.8
         with:
-          version: 10.33.4
+          version: 10.34.4
 
       - name: Setup Node.js
         uses: actions/setup-node@v6.4.0
@@ -73,7 +73,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.8
         with:
-          version: 10.33.4
+          version: 10.34.4
 
       - name: Setup Node.js
         uses: actions/setup-node@v6.4.0
@@ -156,7 +156,7 @@ jobs:
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         uses: pnpm/action-setup@v6.0.8
         with:
-          version: 10.33.4
+          version: 10.34.4
 
       - name: Setup Node.js
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
