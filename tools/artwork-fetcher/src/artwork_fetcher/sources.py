@@ -7,7 +7,7 @@ from dataclasses import asdict, is_dataclass
 
 from .models import Candidate, Release
 from .net import Http, cache_key, read_json, write_json
-from .text import append_note, clean_text, format_mismatch_note, score_confidence
+from .text import append_note, clean_text, format_mismatch_note, score_confidence, search_variants
 
 
 def bandcamp(release: Release, http: Http, overrides: dict[str, str]) -> Candidate | None:
@@ -27,15 +27,32 @@ def bandcamp(release: Release, http: Http, overrides: dict[str, str]) -> Candida
 
 
 def bandcamp_api_candidates(release: Release, cache_dir: Path) -> list[Candidate]:
-    path = cache_dir / f"bandcamp-search-{cache_key(release.normalized_artist + release.normalized_title)}.json"
-    data = read_json(path)
-    if data is None:
-        try:
-            data = asyncio.run(_bandcamp_search([f"{release.normalized_artist} {release.normalized_title}", release.normalized_title, release.normalized_artist]))
-            write_json(path, data)
-        except Exception as exc:  # noqa: BLE001
-            logging.warning("Bandcamp search failed for %s: %s", release.normalized_title, exc)
-            return []
+    artist_variants = search_variants(release.normalized_artist)
+    title_variants = search_variants(release.normalized_title)
+    query_groups = {
+        "strict": [f"{artist} {title}" for artist in artist_variants for title in title_variants],
+        "broad": title_variants + artist_variants,
+    }
+    data = []
+    for group, queries in query_groups.items():
+        path = cache_dir / f"bandcamp-search-v4-{group}-{cache_key(release.normalized_artist + release.normalized_title)}.json"
+        group_data = read_json(path)
+        if group_data is None:
+            try:
+                group_data = asyncio.run(_bandcamp_search(queries))
+                write_json(path, group_data)
+            except Exception as exc:  # noqa: BLE001
+                logging.warning("Bandcamp search failed for %s: %s", release.normalized_title, exc)
+                group_data = []
+        data.extend(group_data)
+        candidates = bandcamp_candidates_from_data(release, data)
+        candidate = best(candidates)
+        if candidate and candidate.image_url and candidate.confidence in {"high", "medium"}:
+            return candidates
+    return bandcamp_candidates_from_data(release, data)
+
+
+def bandcamp_candidates_from_data(release: Release, data: list[dict]) -> list[Candidate]:
     candidates = []
     seen = set()
     for item in data:
@@ -73,7 +90,20 @@ async def _bandcamp_search(queries: list[str]) -> list[dict]:
     try:
         results = []
         for query in queries:
-            results.extend(await client.search(query))
+            try:
+                results.extend(await client.search(query))
+            except Exception as exc:  # noqa: BLE001
+                wait = int(getattr(exc, "retry_after", 0) or 0)
+                if wait <= 0:
+                    logging.info("Bandcamp query skipped for %s: %s", query, exc)
+                    continue
+                logging.info("Bandcamp rate limit for %s; retrying after %ss", query, wait)
+                await asyncio.sleep(wait)
+                try:
+                    results.extend(await client.search(query))
+                except Exception as retry_exc:  # noqa: BLE001
+                    logging.info("Bandcamp query skipped after retry for %s: %s", query, retry_exc)
+            await asyncio.sleep(0.35)
         return [asdict(item) if is_dataclass(item) else dict(item) for item in results]
     finally:
         await (await client._ensure_session()).close()
@@ -145,6 +175,7 @@ def musicbrainz(release: Release, cache_dir: Path, contact: str) -> Candidate | 
         media = ", ".join(medium.get("format", "") for medium in item.get("medium-list", []))
         score, confidence = score_confidence(release, item.get("artist-credit-phrase", ""), item.get("title", ""), media)
         image_url = cover_art_url(item.get("id", ""), cache_dir)
+        image_url = image_url or release_group_cover_art_url(item.get("release-group", {}).get("id", ""), cache_dir)
         candidates.append(
             Candidate(
                 source="MusicBrainz/Cover Art Archive",
@@ -175,6 +206,26 @@ def cover_art_url(mbid: str, cache_dir: Path) -> str:
             write_json(path, data)
         except Exception as exc:  # noqa: BLE001
             logging.info("Cover Art Archive miss for %s: %s", mbid, exc)
+            return ""
+    for image in data.get("images", []):
+        if image.get("front") or "Front" in image.get("types", []):
+            return image.get("image", "")
+    return ""
+
+
+def release_group_cover_art_url(release_group_mbid: str, cache_dir: Path) -> str:
+    if not release_group_mbid:
+        return ""
+    import musicbrainzngs
+
+    path = cache_dir / f"coverart-release-group-{release_group_mbid}.json"
+    data = read_json(path)
+    if data is None:
+        try:
+            data = musicbrainzngs.get_release_group_image_list(release_group_mbid)
+            write_json(path, data)
+        except Exception as exc:  # noqa: BLE001
+            logging.info("Cover Art Archive release-group miss for %s: %s", release_group_mbid, exc)
             return ""
     for image in data.get("images", []):
         if image.get("front") or "Front" in image.get("types", []):
@@ -229,7 +280,11 @@ def discogs(release: Release, user_agent: str) -> Candidate | None:
 def best(candidates: list[Candidate | None]) -> Candidate | None:
     candidates = [candidate for candidate in candidates if candidate and candidate.confidence != "none"]
     confidence_rank = {"low": 1, "medium": 2, "high": 3}
-    return max(candidates, key=lambda candidate: (confidence_rank.get(candidate.confidence, 0), candidate.score)) if candidates else None
+    return (
+        max(candidates, key=lambda candidate: (bool(candidate.image_url), confidence_rank.get(candidate.confidence, 0), candidate.score))
+        if candidates
+        else None
+    )
 
 
 def meta_content(soup, key: str) -> str:

@@ -27,6 +27,8 @@ python -m artwork_fetcher --input examples/blackbox_artwork.tsv --dry-run
 Input must be CSV or TSV with `artist,title,format` columns. Header is optional.
 
 Source order is Bandcamp autocomplete, MusicBrainz/Cover Art Archive, then Discogs when `DISCOGS_TOKEN` exists.
+Bandcamp lookup tries strict `artist title` queries first, then broader title/artist queries only when needed. A title-only or artist-only hit is manual review, not an accepted download.
+MusicBrainz uses release cover art first, then release-group cover art.
 
 Bandcamp page HTML is often protected by a client challenge. The tool does not bypass that. It uses Bandcamp's autocomplete data through `bandcamp_async_api`, which returns album/track URLs and image URLs directly.
 

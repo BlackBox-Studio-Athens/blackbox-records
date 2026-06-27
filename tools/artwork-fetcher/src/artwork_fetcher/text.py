@@ -6,6 +6,36 @@ from pathlib import Path
 
 from .models import Release
 
+GREEK_TO_LATIN = str.maketrans(
+    {
+        "α": "a",
+        "β": "v",
+        "γ": "g",
+        "δ": "d",
+        "ε": "e",
+        "ζ": "z",
+        "η": "i",
+        "θ": "th",
+        "ι": "i",
+        "κ": "k",
+        "λ": "l",
+        "μ": "m",
+        "ν": "n",
+        "ξ": "x",
+        "ο": "o",
+        "π": "p",
+        "ρ": "r",
+        "σ": "s",
+        "ς": "s",
+        "τ": "t",
+        "υ": "y",
+        "φ": "f",
+        "χ": "ch",
+        "ψ": "ps",
+        "ω": "o",
+    }
+)
+
 
 def clean_text(value: str) -> str:
     return re.sub(r"\s+", " ", unicodedata.normalize("NFC", value or "").strip())
@@ -26,10 +56,18 @@ def comparable(value: str) -> str:
     return clean_text(value).casefold()
 
 
+def folded(value: str) -> str:
+    value = unicodedata.normalize("NFKD", clean_text(value)).casefold()
+    value = "".join(char for char in value if not unicodedata.combining(char))
+    for greek, latin in {"ου": "u", "ει": "i", "οι": "i", "αι": "e", "υι": "i", "γγ": "ng"}.items():
+        value = value.replace(greek, latin)
+    return value.translate(GREEK_TO_LATIN).replace("ph", "f")
+
+
 def loose(value: str) -> str:
-    value = comparable(value)
+    value = folded(value)
     value = re.sub(r"^(the|a|an)\s+", "", value)
-    return re.sub(r"[^a-z0-9α-ωάέήίόύώϊϋΐΰ]+", " ", value).strip()
+    return re.sub(r"[^a-z0-9]+", " ", value).strip()
 
 
 def normalize_release(row_number: int, artist: str, title: str, fmt: str) -> Release:
@@ -81,8 +119,6 @@ def score_confidence(release: Release, matched_artist: str, matched_title: str, 
         return score, "low"
     if artist_match and title_match:
         return score, "medium"
-    if artist_match or title_match:
-        return score, "low"
     return score, "none"
 
 
@@ -96,9 +132,28 @@ def names_match(expected: str, actual: str) -> bool:
             expected == actual
             or actual.startswith(f"{expected} ")
             or actual.startswith(f"{expected},")
-            or SequenceMatcher(None, expected, actual).ratio() >= 0.86
+            or SequenceMatcher(None, expected, actual).ratio() >= 0.83
+            or acronym_matches(expected, actual)
         )
     )
+
+
+def acronym_matches(expected: str, actual: str) -> bool:
+    compact = expected.replace(" ", "")
+    if len(compact) < 4 or " " not in actual:
+        return False
+    acronym = "".join(word[0] for word in actual.split() if word)
+    return len(acronym) - len(compact) <= 2 and is_subsequence(compact, acronym)
+
+
+def is_subsequence(needle: str, haystack: str) -> bool:
+    iterator = iter(haystack)
+    return all(char in iterator for char in needle)
+
+
+def search_variants(value: str) -> list[str]:
+    variants = [clean_text(value), loose(value)]
+    return list(dict.fromkeys(item for item in variants if item))
 
 
 def format_matches(expected: str, candidate_format: str) -> bool:
