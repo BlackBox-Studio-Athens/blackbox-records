@@ -46,6 +46,10 @@ class Candidate:
     score: int
     source_page_url: str = ""
     image_url: str = ""
+    thumbnail_url: str = ""
+    image_width: int = 0
+    image_height: int = 0
+    image_score: int = 0
     matched_artist: str = ""
     matched_title: str = ""
     matched_format: str = ""

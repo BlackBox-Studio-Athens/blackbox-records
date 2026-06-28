@@ -17,7 +17,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--dry-run", action="store_true", help="Resolve candidates but do not download images.")
     parser.add_argument("--force", action="store_true", help="Allow new collision filenames when prior files exist.")
     parser.add_argument("--user-agent-contact", default="example@example.com", help="Contact string for API User-Agent.")
-    parser.add_argument("--bandcamp-overrides", type=Path, help="Optional JSON map of 'Artist<TAB>Title' to Bandcamp URL.")
+    parser.add_argument(
+        "--artwork-overrides",
+        "--bandcamp-overrides",
+        dest="artwork_overrides",
+        type=Path,
+        help="Optional JSON map of 'Artist<TAB>Title' to a verified artwork, Bandcamp, or Discogs release URL.",
+    )
     return parser
 
 
@@ -26,7 +32,7 @@ def main(argv: list[str] | None = None) -> int:
     out_dir = args.out
     manifest_path = args.manifest or out_dir / "manifest.csv"
     setup_logging(out_dir / "logs")
-    overrides = load_overrides(args.bandcamp_overrides)
+    overrides = load_overrides(args.artwork_overrides)
     fetcher = ArtworkFetcher(out_dir=out_dir, user_agent_contact=args.user_agent_contact, bandcamp_overrides=overrides)
     fetcher.prepare()
 
@@ -46,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def load_overrides(path: Path | None) -> dict[str, str]:
+def load_overrides(path: Path | None) -> dict[str, object]:
     if not path:
         return {}
     return json.loads(path.read_text(encoding="utf-8"))

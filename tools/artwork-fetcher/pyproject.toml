@@ -10,15 +10,17 @@ requires-python = ">=3.11"
 dependencies = [
   "beautifulsoup4>=4.12",
   "bandcamp_async_api>=0.2.2",
-  "discogs-client>=2.3",
   "musicbrainzngs>=0.7",
   "Pillow>=10",
   "requests>=2.31",
+  "yt-dlp>=2024.8.6",
 ]
 
 [project.scripts]
 artwork-fetcher = "artwork_fetcher.cli:main"
 vinyl-mockup = "artwork_fetcher.mockup:main"
+cd-front-mockup = "artwork_fetcher.cd_mockup:main"
+distro-sync = "artwork_fetcher.distro_sync:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -125,16 +125,51 @@ def score_confidence(release: Release, matched_artist: str, matched_title: str, 
 def names_match(expected: str, actual: str) -> bool:
     expected = loose(expected)
     actual = loose(actual)
+    if conflicting_release_suffix(expected, actual):
+        return False
     return bool(
         expected
         and actual
         and (
             expected == actual
+            or one_sided_suffix_match(expected, actual)
             or actual.startswith(f"{expected} ")
             or actual.startswith(f"{expected},")
             or SequenceMatcher(None, expected, actual).ratio() >= 0.83
             or acronym_matches(expected, actual)
         )
+    )
+
+
+def without_release_suffix(value: str) -> str:
+    return re.sub(r"\s+(ep|lp|single|album)$", "", value).strip()
+
+
+def release_suffix(value: str) -> str:
+    match = re.search(r"\s+(ep|lp|single|album)$", value)
+    return match.group(1) if match else ""
+
+
+def conflicting_release_suffix(expected: str, actual: str) -> bool:
+    expected_suffix = release_suffix(expected)
+    actual_suffix = release_suffix(actual)
+    return bool(
+        expected_suffix
+        and actual_suffix
+        and expected_suffix != actual_suffix
+        and without_release_suffix(expected) == without_release_suffix(actual)
+    )
+
+
+def one_sided_suffix_match(expected: str, actual: str) -> bool:
+    expected_without_suffix = without_release_suffix(expected)
+    actual_without_suffix = without_release_suffix(actual)
+    expected_had_suffix = expected_without_suffix != expected
+    actual_had_suffix = actual_without_suffix != actual
+    return (
+        expected_had_suffix
+        != actual_had_suffix
+        and expected_without_suffix == actual_without_suffix
     )
 
 
@@ -152,7 +187,7 @@ def is_subsequence(needle: str, haystack: str) -> bool:
 
 
 def search_variants(value: str) -> list[str]:
-    variants = [clean_text(value), loose(value)]
+    variants = [clean_text(value), loose(value), without_release_suffix(loose(value))]
     return list(dict.fromkeys(item for item in variants if item))
 
 

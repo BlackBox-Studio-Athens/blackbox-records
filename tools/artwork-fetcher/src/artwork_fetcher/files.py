@@ -41,6 +41,22 @@ def image_dimensions(data: bytes) -> tuple[int | str, int | str]:
         return image.size
 
 
+def image_average_hash(data: bytes, size: int = 8) -> int:
+    from PIL import Image
+
+    with Image.open(BytesIO(data)) as image:
+        pixels = list(image.convert("L").resize((size, size), Image.Resampling.LANCZOS).tobytes())
+    average = sum(pixels) / len(pixels)
+    result = 0
+    for pixel in pixels:
+        result = (result << 1) | int(pixel >= average)
+    return result
+
+
+def hamming_distance(left: int, right: int) -> int:
+    return (left ^ right).bit_count()
+
+
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 

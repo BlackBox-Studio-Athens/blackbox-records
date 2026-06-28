@@ -47,6 +47,9 @@ logs/
 # Local artwork fetcher outputs
 /tools/artwork-fetcher/artwork/
 /tools/artwork-fetcher/artwork_test/
+/tools/artwork-fetcher/artwork_run_*/
+/tools/artwork-fetcher/artwork_*_run_*/
+/tools/artwork-fetcher/artwork_youtube_smoke/
 /tools/artwork-fetcher/.cache/
 /tools/artwork-fetcher/mockups/
 
