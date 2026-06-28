@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Luchtbegrafenis",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Aufhebung",
+  "image": "aufhebung-luchtbegrafenis-vinyl.webp",
+  "image_alt": "Luchtbegrafenis Vinyl front mockup",
+  "summary": "Vinyl edition of Luchtbegrafenis by Aufhebung. Source metadata identifies it as a 6-track release, released February 26, 2026.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 50,
+  "release_date": "2026-02-26"
+}

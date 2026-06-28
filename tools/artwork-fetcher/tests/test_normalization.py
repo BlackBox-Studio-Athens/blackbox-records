@@ -6,6 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import artwork_fetcher.sources as sources
+from artwork_fetcher.cli import resolve_artwork_overrides_path
 from artwork_fetcher.models import Candidate
 from artwork_fetcher.text import (
     clean_text,
@@ -19,7 +20,7 @@ from artwork_fetcher.text import (
 )
 from artwork_fetcher.sources import (
     artwork_override,
-    bandcamp_override_candidate,
+    bandcamp_cassette_product_image_urls,
     best,
     best_cover_art_image,
     best_discogs_image,
@@ -28,7 +29,7 @@ from artwork_fetcher.sources import (
     discogs_release_candidate,
     discogs_release_id_from_url,
     override_candidate_from_url,
-    release_group_cover_art_url,
+    release_group_cover_art_image,
     split_bandcamp_title,
     without_discogs_noise,
     youtube_artist_title,
@@ -63,6 +64,7 @@ class NormalizationTests(unittest.TestCase):
     def test_format_normalization(self):
         self.assertEqual(normalize_format("CD"), "CD")
         self.assertEqual(normalize_format("Tape"), "Tape")
+        self.assertEqual(normalize_format("Cassette"), "Tape")
         self.assertEqual(normalize_format("Vinyl 12''"), "Vinyl 12in")
 
     def test_csv_and_tsv_parsing(self):
@@ -73,6 +75,17 @@ class NormalizationTests(unittest.TestCase):
             tsv_path.write_text("artist\ttitle\tformat\nΑτοπια \tΑτοπια \tCD\n", encoding="utf-8")
             self.assertEqual(parse_input(csv_path)[0].normalized_title, "B")
             self.assertEqual(parse_input(tsv_path)[0].normalized_artist, "Ατοπια")
+
+    def test_cli_finds_sibling_overrides_by_default(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            input_path = Path(tmp) / "blackbox_artwork.tsv"
+            overrides_path = Path(tmp) / "blackbox_artwork_overrides.json"
+            input_path.write_text("artist\ttitle\tformat\n", encoding="utf-8")
+            overrides_path.write_text("{}", encoding="utf-8")
+
+            self.assertEqual(resolve_artwork_overrides_path(input_path, None), overrides_path)
+            explicit_path = Path(tmp) / "custom.json"
+            self.assertEqual(resolve_artwork_overrides_path(input_path, explicit_path), explicit_path)
 
     def test_limit_three_picks_formats(self):
         releases = [
@@ -163,7 +176,7 @@ class NormalizationTests(unittest.TestCase):
         )
         try:
             with tempfile.TemporaryDirectory() as tmp:
-                self.assertEqual(release_group_cover_art_url("group-id", Path(tmp)), "https://example.com/group.jpg")
+                self.assertEqual(release_group_cover_art_image("group-id", Path(tmp))["image"], "https://example.com/group.jpg")
         finally:
             if previous is None:
                 sys.modules.pop("musicbrainzngs", None)
@@ -172,7 +185,11 @@ class NormalizationTests(unittest.TestCase):
 
     def test_verified_bandcamp_override_promotes_high(self):
         release = normalize_release(1, "Artist", "Title", "CD")
-        candidate = bandcamp_override_candidate(release, FakeJsonHttp(), {"url": "https://artist.bandcamp.com/album/title", "verified": True})
+        candidate = artwork_override(
+            release,
+            FakeJsonHttp(),
+            {"Artist\tTitle": {"url": "https://artist.bandcamp.com/album/title", "verified": True}},
+        )
         self.assertEqual(candidate.confidence, "high")
         self.assertIn("verified override", candidate.notes)
 
@@ -188,6 +205,25 @@ class NormalizationTests(unittest.TestCase):
         self.assertEqual(candidate.confidence, "high")
         self.assertEqual(candidate.source_page_url, "https://huracantheband.bandcamp.com/album/2025")
         self.assertEqual(candidate.image_url, "https://f4.bcbits.com/img/a2531581096_10.jpg")
+
+    def test_bandcamp_cassette_product_image_urls_from_json_ld(self):
+        html = """<script type="application/ld+json">{
+  "@graph": [{
+    "@type": ["MusicRelease", "Product"],
+    "name": "Limited Edition Cassette",
+    "musicReleaseFormat": "CassetteFormat",
+    "image": ["https://f4.bcbits.com/img/0013073977_10.jpg"]
+  }, {
+    "@type": "MusicRelease",
+    "musicReleaseFormat": "DigitalFormat",
+    "image": ["https://f4.bcbits.com/img/a4106594308_10.jpg"]
+  }]
+}</script>"""
+
+        self.assertEqual(
+            bandcamp_cassette_product_image_urls(html),
+            ["https://f4.bcbits.com/img/0013073977_10.jpg"],
+        )
 
     def test_known_missing_override_records_manual_dead_end(self):
         release = normalize_release(1, "The Vagina lips", "Random Tapes", "Tape")

@@ -2,6 +2,7 @@ import argparse
 from dataclasses import dataclass
 from pathlib import Path
 
+import requests
 from PIL import Image, ImageDraw, ImageFilter
 
 
@@ -71,12 +72,25 @@ def resolve_background(path: Path | None = None) -> Path:
 
 def fit_background(path: Path, size: tuple[int, int]) -> Image.Image:
     with Image.open(path) as image:
-        image = image.convert("RGBA")
-        scale = max(size[0] / image.width, size[1] / image.height)
-        resized = image.resize((round(image.width * scale), round(image.height * scale)), Image.Resampling.LANCZOS)
+        return crop_to_fill(image.convert("RGBA"), size)
+
+
+def crop_to_fill(image: Image.Image, size: tuple[int, int]) -> Image.Image:
+    scale = max(size[0] / image.width, size[1] / image.height)
+    resized = image.resize((round(image.width * scale), round(image.height * scale)), Image.Resampling.LANCZOS)
     left = (resized.width - size[0]) // 2
     top = (resized.height - size[1]) // 2
     return resized.crop((left, top, left + size[0], top + size[1]))
+
+
+def download_asset(url: str, path: Path) -> Path:
+    if path.exists() and path.stat().st_size:
+        return path
+    response = requests.get(url, headers={"User-Agent": "BlackBox Records mockup renderer"}, timeout=45)
+    response.raise_for_status()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(response.content)
+    return path
 
 
 def batch(input_dir: Path, out_dir: Path, presets: list[str] | None = None, background_path: Path | None = None) -> list[Path]:

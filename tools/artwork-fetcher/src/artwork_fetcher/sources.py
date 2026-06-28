@@ -1,4 +1,5 @@
 import logging
+import json
 import os
 import re
 from pathlib import Path
@@ -63,29 +64,12 @@ def bandcamp(release: Release, http: Http) -> Candidate | None:
     candidate = best(candidates)
     if candidate:
         return candidate
-    urls = []
-    urls.extend(bandcamp_search_urls(release, http))
     candidates = []
-    for url in urls[:5]:
+    for url in bandcamp_search_urls(release, http)[:5]:
         candidate = bandcamp_page(release, http, url, "Bandcamp search result")
         if candidate and candidate.image_url:
             candidates.append(candidate)
     return best(candidates)
-
-
-def bandcamp_override_candidate(release: Release, http: Http, override: object) -> Candidate | None:
-    url = override_url(override)
-    image_url = override_image_url(override)
-    if not url and not image_url:
-        return None
-    candidate = override_candidate_from_url(release, http, url, override_verified(override), image_url)
-    if not candidate:
-        return None
-    if override_verified(override):
-        candidate.confidence = "high"
-        candidate.score += 50
-        candidate.notes = append_note(candidate.notes, "verified override")
-    return candidate
 
 
 def override_url(value: object) -> str:
@@ -126,6 +110,73 @@ def is_direct_image_url(url: str) -> bool:
 def is_bandcamp_url(url: str) -> bool:
     hostname = urlparse(url).hostname or ""
     return hostname == "bandcamp.com" or hostname.endswith(".bandcamp.com")
+
+
+def bandcamp_cassette_product_image_urls(html: str) -> list[str]:
+    urls: list[str] = []
+    seen = set()
+    for item in bandcamp_json_ld_items(html):
+        if not bandcamp_json_ld_item_is_cassette_product(item):
+            continue
+        for url in json_ld_image_urls(item.get("image")):
+            if url not in seen:
+                seen.add(url)
+                urls.append(url)
+    return urls
+
+
+def bandcamp_json_ld_items(html: str) -> list[dict]:
+    items: list[dict] = []
+    for match in re.finditer(
+        r"<script[^>]+type=[\"']application/ld\+json[\"'][^>]*>(.*?)</script>",
+        html,
+        flags=re.IGNORECASE | re.DOTALL,
+    ):
+        try:
+            data = json.loads(match.group(1).strip())
+        except json.JSONDecodeError:
+            continue
+        items.extend(dicts_in_json_ld(data))
+    return items
+
+
+def dicts_in_json_ld(value: object) -> list[dict]:
+    if isinstance(value, dict):
+        items = [value]
+        for child in value.values():
+            items.extend(dicts_in_json_ld(child))
+        return items
+    if isinstance(value, list):
+        items = []
+        for child in value:
+            items.extend(dicts_in_json_ld(child))
+        return items
+    return []
+
+
+def bandcamp_json_ld_item_is_cassette_product(item: dict) -> bool:
+    item_type = item.get("@type")
+    types = item_type if isinstance(item_type, list) else [item_type]
+    if "Product" not in types and "MusicRelease" not in types:
+        return False
+    if "Cassette" in str(item.get("musicReleaseFormat", "")):
+        return True
+    for prop in item.get("additionalProperty", []) or []:
+        if not isinstance(prop, dict):
+            continue
+        name = str(prop.get("name", ""))
+        value = str(prop.get("value", ""))
+        if name == "type_name" and value == "Cassette":
+            return True
+    return False
+
+
+def json_ld_image_urls(value: object) -> list[str]:
+    if isinstance(value, str):
+        return [value] if is_direct_image_url(value) else []
+    if isinstance(value, list):
+        return [url for item in value for url in json_ld_image_urls(item)]
+    return []
 
 
 def discogs_release_id_from_url(url: str) -> str:
@@ -303,10 +354,6 @@ def musicbrainz(release: Release, cache_dir: Path, contact: str) -> Candidate | 
     return best(candidates)
 
 
-def cover_art_url(mbid: str, cache_dir: Path) -> str:
-    return cover_art_image(mbid, cache_dir).get("image", "")
-
-
 def cover_art_image(mbid: str, cache_dir: Path) -> dict:
     if not mbid:
         return {}
@@ -322,10 +369,6 @@ def cover_art_image(mbid: str, cache_dir: Path) -> dict:
             logging.info("Cover Art Archive miss for %s: %s", mbid, exc)
             return {}
     return best_cover_art_image(data.get("images", []))
-
-
-def release_group_cover_art_url(release_group_mbid: str, cache_dir: Path) -> str:
-    return release_group_cover_art_image(release_group_mbid, cache_dir).get("image", "")
 
 
 def release_group_cover_art_image(release_group_mbid: str, cache_dir: Path) -> dict:

@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Omonoia",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Allochiria",
+  "image": "allochiria-omonoia-vinyl.webp",
+  "image_alt": "Omonoia Vinyl front mockup",
+  "summary": "Vinyl edition of Omonoia by Allochiria. Source metadata identifies it as a 7-track release, released January 4, 2014.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 58,
+  "release_date": "2014-01-04"
+}

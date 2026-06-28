@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Vendetta",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Malämmar",
+  "image": "malammar-vendetta-vinyl.webp",
+  "image_alt": "Vendetta Vinyl front mockup",
+  "summary": "Vinyl edition of Vendetta by Malämmar. Source metadata identifies it as a 6-track release, released December 1, 2016.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 52,
+  "release_date": "2016-12-01"
+}

@@ -109,6 +109,22 @@ python -m artwork_fetcher.cd_mockup --input-dir ./artwork_test/images --out-dir 
 
 The CD renderer uses MockupBro's front-view plastic CD box geometry and ambientCG `Concrete036` as a CC0 concrete background. It shows front artwork only: no disc face, tray, back cover, booklet, or interior packaging.
 
+## Cassette Front Mockups
+
+Generate neutral clear cassette case / J-card mockups from fetched covers:
+
+```powershell
+python -m artwork_fetcher.cassette_mockup --cover ./artwork_test/images/example.jpg --out ./mockups/example-cassette-front-mockup.jpg --mockup-psd "D:\Downloads\free-cassette-tape-mockup\Free Cassette Tap Mockup.psd"
+python -m artwork_fetcher.cassette_mockup --input-dir ./artwork_test/images --out-dir ./mockups/cassette-front --mockup-psd "D:\Downloads\free-cassette-tape-mockup\Free Cassette Tap Mockup.psd"
+python -m artwork_fetcher.cassette_mockup --manifest ./artwork_run_20260628/manifest.csv --out-dir ./artwork_run_20260628/mockups/cassette-front --mockup-psd "D:\Downloads\free-cassette-tape-mockup\Free Cassette Tap Mockup.psd" --discover-bandcamp-references
+```
+
+The cassette renderer uses the Pixpine cassette tape PSD, keeps only the clear case / front J-card layers, hides the cassette shell and Pixpine promo banner, and composites the result over ambientCG `Asphalt023S`. It is intentionally neutral: cassette shell and label printing are not shown.
+The J-card insertion preserves the full source artwork. If the source is square or landscape rather than cassette-front proportions, the renderer uses a neutral matte instead of cropping the artwork into a fake cassette layout.
+Manifest mode renders downloaded `Tape` rows only. `--discover-bandcamp-references` reads Bandcamp JSON-LD cassette product images into `<run>/cassette-reference/`; per-release J-card crops live in `cassette_mockup_overrides.json`.
+Source mockup: `https://pixpine.com/product/free-cassette-tape-mockup/`.
+Disclosure used for generated tape distro entries: `Cassette case artwork mockup. Actual cassette shell and labels may vary.`
+
 ## Distro Sync
 
 Plan or apply generated mockups into the Astro distro collection:
@@ -116,13 +132,15 @@ Plan or apply generated mockups into the Astro distro collection:
 ```powershell
 python -m artwork_fetcher.distro_sync --manifest ./artwork_run_20260628/manifest.csv --format CD
 python -m artwork_fetcher.distro_sync --manifest ./artwork_run_20260628/manifest.csv --format CD --apply
+python -m artwork_fetcher.distro_sync --manifest ./artwork_run_20260628/manifest.csv --format Tape --apply
 ```
 
-The command is dry-run by default. It reads downloaded rows from `manifest.csv`, finds matching CD or vinyl mockups under `<run>/mockups`, copies the selected mockup image into `apps/web/src/content/distro`, and writes or updates the matching distro JSON entry only when `--apply` is passed.
+The command is dry-run by default. It reads downloaded rows from `manifest.csv`, finds matching CD, cassette, or vinyl mockups under `<run>/mockups`, copies the selected mockup image into `apps/web/src/content/distro`, and writes or updates the matching distro JSON entry only when `--apply` is passed.
 
 Supported normalized formats:
 
 - `CD` expects `*-cd-front-mockup.jpg`
+- `Tape` expects `*-cassette-front-mockup.jpg`
 - `Vinyl 12in` expects `*-vinyl-mockup.webp`
 
 Duplicate protection happens before writes. Existing entries are matched by artist, title, and distro group; matching entries are updated instead of duplicated. Existing duplicate keys, likely fuzzy duplicates, slug collisions, and image filename collisions stop the sync so the collection can be fixed manually.
@@ -132,5 +150,7 @@ Run the relevant mockup command first, then run `distro_sync` for the same forma
 
 ```powershell
 python -m artwork_fetcher.cd_mockup --input-dir ./artwork_run_20260628/images --out-dir ./artwork_run_20260628/mockups/cd-front-concrete
+python -m artwork_fetcher.cassette_mockup --manifest ./artwork_run_20260628/manifest.csv --out-dir ./artwork_run_20260628/mockups/cassette-front --mockup-psd "D:\Downloads\free-cassette-tape-mockup\Free Cassette Tap Mockup.psd" --discover-bandcamp-references
 python -m artwork_fetcher.distro_sync --manifest ./artwork_run_20260628/manifest.csv --format CD --apply
+python -m artwork_fetcher.distro_sync --manifest ./artwork_run_20260628/manifest.csv --format Tape --apply
 ```

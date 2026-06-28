@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Throes",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Allochiria",
+  "image": "allochiria-throes-vinyl.webp",
+  "image_alt": "Throes Vinyl front mockup",
+  "summary": "Vinyl edition of Throes by Allochiria. Source metadata identifies it as a 6-track release, released March 17, 2017.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 57,
+  "release_date": "2017-03-17"
+}

@@ -18,13 +18,15 @@ def mime_extension(mime_type: str) -> str:
     return {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}.get(mime, mimetypes.guess_extension(mime) or ".img")
 
 
-def safe_filename(release: Release, mime_type: str, images_dir: Path) -> Path:
+def safe_filename(release: Release, mime_type: str, images_dir: Path, allow_collision: bool = False) -> Path:
     ext = mime_extension(mime_type)
     stem = (
         f"{release.row_number:03d} - {safe_filename_component(release.normalized_artist)} - "
         f"{safe_filename_component(release.normalized_title)} [{safe_filename_component(release.normalized_format)}] - cover"
     )
     path = images_dir / f"{stem}{ext}"
+    if not allow_collision:
+        return path
     for suffix in range(2, 1000):
         if not path.exists():
             return path

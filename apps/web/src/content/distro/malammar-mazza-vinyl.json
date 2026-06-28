@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Mazza",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Malämmar",
+  "image": "malammar-mazza-vinyl.webp",
+  "image_alt": "Mazza Vinyl front mockup",
+  "summary": "Vinyl edition of Mazza by Malämmar. Source metadata identifies it as a 6-track release, released April 30, 2021.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 53,
+  "release_date": "2021-04-30"
+}

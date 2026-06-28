@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Live at Dunk! Fest 2024",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Maserati",
+  "image": "maserati-live-at-dunk-fest-2024-vinyl.webp",
+  "image_alt": "Live at Dunk! Fest 2024 Vinyl front mockup",
+  "summary": "Vinyl edition of Live at Dunk! Fest 2024 by Maserati. Source metadata identifies it as released May 23, 2025.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 61,
+  "release_date": "2025-05-23"
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Commotion",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Allochiria",
+  "image": "allochiria-commotion-vinyl.webp",
+  "image_alt": "Commotion Vinyl front mockup",
+  "summary": "Vinyl edition of Commotion by Allochiria. Source metadata identifies it as a 9-track release, released April 23, 2023.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 59,
+  "release_date": "2023-04-23"
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Depressionland",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Bipolar Architecture",
+  "image": "bipolar-architecture-depressionland-vinyl.webp",
+  "image_alt": "Depressionland Vinyl front mockup",
+  "summary": "Vinyl edition of Depressionland by Bipolar Architecture. Source metadata identifies it as a 9-track release, released June 24, 2022.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 45,
+  "release_date": "2022-06-24"
+}

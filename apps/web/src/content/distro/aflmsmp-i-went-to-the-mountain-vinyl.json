@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "I went to the mountain",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "AFLMSMP",
+  "image": "aflmsmp-i-went-to-the-mountain-vinyl.webp",
+  "image_alt": "I went to the mountain Vinyl front mockup",
+  "summary": "Vinyl edition of I went to the mountain by AFLMSMP. Source metadata identifies it as a 9-track release, released February 27, 2025.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 48,
+  "release_date": "2025-02-27"
+}

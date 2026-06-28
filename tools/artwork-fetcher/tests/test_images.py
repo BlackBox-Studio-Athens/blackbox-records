@@ -4,7 +4,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from artwork_fetcher.files import hamming_distance, image_average_hash
+from artwork_fetcher.files import hamming_distance, image_average_hash, safe_filename
 from artwork_fetcher.models import Candidate
 from artwork_fetcher.net import retry_after_seconds
 from artwork_fetcher.runner import THUMBNAIL_MATCH_SCORE, apply_independent_metadata_agreement, apply_thumbnail_agreement, ArtworkFetcher, should_query_youtube
@@ -73,7 +73,7 @@ class ImageTests(unittest.TestCase):
             fetcher = ArtworkFetcher(Path(tmp), "test@example.com")
             fetcher.prepare()
             fetcher.http.image = lambda _: self.fail("dry-run must not fetch image bytes")
-            fetcher.bandcamp_overrides = {}
+            fetcher.artwork_overrides = {}
             release = normalize_release(1, "Artist", "Title", "CD")
 
             import artwork_fetcher.runner as runner
@@ -108,6 +108,22 @@ class ImageTests(unittest.TestCase):
     def test_youtube_query_skipped_when_high_image_candidate_exists(self):
         self.assertFalse(should_query_youtube([Candidate(source="Discogs", confidence="high", score=100, image_url="cover.jpg")]))
         self.assertTrue(should_query_youtube([Candidate(source="Bandcamp", confidence="medium", score=100, image_url="cover.jpg")]))
+
+    def test_download_image_requires_force_for_collision_suffix(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fetcher = ArtworkFetcher(Path(tmp), "test@example.com")
+            fetcher.prepare()
+            release = normalize_release(1, "Artist", "Title", "CD")
+            safe_filename(release, "image/png", fetcher.images_dir).write_bytes(b"existing")
+            image = sample_image((0, 0, 0), (255, 255, 255))
+            fetcher.http.image = lambda _: (image, "image/png")
+            candidate = Candidate(source="Manual override", confidence="high", score=100, image_url="https://example.com/cover.png")
+
+            with self.assertRaisesRegex(RuntimeError, "file exists"):
+                fetcher.download_image(release, candidate, force=False)
+
+            result = fetcher.download_image(release, candidate, force=True)
+            self.assertTrue(result.local_path.endswith("001 - Artist - Title [CD] - cover - 2.png"))
 
     def test_known_missing_override_skips_provider_queries(self):
         with tempfile.TemporaryDirectory() as tmp:

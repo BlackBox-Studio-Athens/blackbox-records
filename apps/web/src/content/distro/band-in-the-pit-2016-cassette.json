@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "2016",
+  "group": "Tapes",
+  "artist_or_label": "Band in the pit",
+  "image": "band-in-the-pit-2016-cassette.jpg",
+  "image_alt": "2016 cassette case artwork mockup",
+  "summary": "Cassette edition of 2016 by Band in the pit. Source metadata identifies it as a 3-track release, released November 21, 2016. Cassette case artwork mockup. Actual cassette shell and labels may vary.",
+  "eyebrow": "Distro",
+  "format": "Cassette",
+  "order": 39,
+  "release_date": "2016-11-21"
+}

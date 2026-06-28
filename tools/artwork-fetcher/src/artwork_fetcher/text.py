@@ -45,7 +45,7 @@ def normalize_format(value: str) -> str:
     lower = clean_text(value).lower().replace('"', "''")
     if lower == "cd":
         return "CD"
-    if lower == "tape":
+    if lower in {"cassette", "tape"}:
         return "Tape"
     if lower in {"vinyl 12''", "vinyl 12'", "vinyl 12in", "vinyl 12 in"}:
         return "Vinyl 12in"

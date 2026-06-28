@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "A single flower",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "We lost the Sea",
+  "image": "we-lost-the-sea-a-single-flower-vinyl.webp",
+  "image_alt": "A single flower Vinyl front mockup",
+  "summary": "Vinyl edition of A single flower by We lost the Sea. Source metadata identifies it as a 6-track release, released July 4, 2025.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 43,
+  "release_date": "2025-07-04"
+}

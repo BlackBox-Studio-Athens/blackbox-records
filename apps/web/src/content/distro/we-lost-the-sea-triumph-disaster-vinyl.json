@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Triumph & Disaster",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "We lost the Sea",
+  "image": "we-lost-the-sea-triumph-disaster-vinyl.webp",
+  "image_alt": "Triumph & Disaster Vinyl front mockup",
+  "summary": "Vinyl edition of Triumph & Disaster by We lost the Sea. Source metadata identifies it as a 7-track release, released October 4, 2019.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 44,
+  "release_date": "2019-10-04"
+}

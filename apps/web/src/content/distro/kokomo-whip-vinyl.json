@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Whip",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Kokomo",
+  "image": "kokomo-whip-vinyl.webp",
+  "image_alt": "Whip Vinyl front mockup",
+  "summary": "Vinyl edition of Whip by Kokomo. Source metadata identifies it as a 6-track release, released May 16, 2026.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 51,
+  "release_date": "2026-05-16"
+}

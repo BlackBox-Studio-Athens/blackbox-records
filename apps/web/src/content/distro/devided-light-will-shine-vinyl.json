@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Light will shine",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Devided",
+  "image": "devided-light-will-shine-vinyl.webp",
+  "image_alt": "Light will shine Vinyl front mockup",
+  "summary": "Vinyl edition of Light will shine by Devided. Source metadata identifies it as an 8-track release, released March 29, 2024.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 47,
+  "release_date": "2024-03-29"
+}

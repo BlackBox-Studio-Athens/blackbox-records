@@ -23,6 +23,7 @@ DEFAULT_CONTENT_DIR = REPO_ROOT / "apps" / "web" / "src" / "content" / "distro"
 DISTRO_SCHEMA = "../../../.astro/collections/distro.schema.json"
 DISTRO_GROUPS = {"Vinyl 12-inch", "Vinyl 7-inch", "CDs", "Clothes", "Tapes", "Other"}
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
+CASSETTE_MOCKUP_DISCLOSURE = "Cassette case artwork mockup. Actual cassette shell and labels may vary."
 
 
 @dataclass(frozen=True)
@@ -35,6 +36,7 @@ class FormatConfig:
 
 SUPPORTED_FORMATS = {
     "CD": FormatConfig("CDs", "CD", ("cd-front-concrete",), "cd-front-mockup.jpg"),
+    "Tape": FormatConfig("Tapes", "Cassette", ("cassette-front",), "cassette-front-mockup.jpg"),
     "Vinyl 12in": FormatConfig("Vinyl 12-inch", "Vinyl", ("vinyl", "vinyl-square"), "vinyl-mockup.webp"),
 }
 
@@ -391,6 +393,8 @@ def path_is_inside(path: Path, directory: Path) -> bool:
 
 
 def image_alt(item: ManifestItem, config: FormatConfig) -> str:
+    if config.group == "Tapes":
+        return f"{item.title} cassette case artwork mockup"
     return f"{item.title} {config.format_label} front mockup"
 
 
@@ -401,7 +405,20 @@ def default_summary(item: ManifestItem, config: FormatConfig, metadata: Research
         facts.append(f"{metadata.track_count}-track release")
     if metadata.release_date:
         facts.append(f"released {display_date(metadata.release_date)}")
-    return f"{base}. Source metadata identifies it as a {', '.join(facts)}." if facts else f"{base} in the BlackBox Records distro catalog."
+    fact_phrase = ", ".join(facts)
+    summary = (
+        f"{base}. Source metadata identifies it as {indefinite_article(fact_phrase)} {fact_phrase}."
+        if facts
+        else f"{base} in the BlackBox Records distro catalog."
+    )
+    return f"{summary} {CASSETTE_MOCKUP_DISCLOSURE}" if config.group == "Tapes" else summary
+
+
+def indefinite_article(phrase: str) -> str:
+    normalized = phrase.strip().lower()
+    if normalized.startswith(("8", "11", "18")) or normalized[:1] in {"a", "e", "i", "o", "u"}:
+        return "an"
+    return "a"
 
 
 def research_metadata(item: ManifestItem, config: FormatConfig, http: Http, user_agent_contact: str) -> ResearchedMetadata:

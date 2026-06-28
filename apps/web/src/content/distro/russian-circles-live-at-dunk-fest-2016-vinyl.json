@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Live at Dunk! Fest 2016",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Russian Circles",
+  "image": "russian-circles-live-at-dunk-fest-2016-vinyl.webp",
+  "image_alt": "Live at Dunk! Fest 2016 Vinyl front mockup",
+  "summary": "Vinyl edition of Live at Dunk! Fest 2016 by Russian Circles. Source metadata identifies it as a 9-track release, released April 7, 2017.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 55,
+  "release_date": "2017-04-07"
+}

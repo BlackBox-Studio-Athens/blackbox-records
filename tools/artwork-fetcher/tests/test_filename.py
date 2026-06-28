@@ -16,12 +16,15 @@ class FilenameTests(unittest.TestCase):
             path = safe_filename(release, "image/jpeg", Path(tmp))
             self.assertEqual(path.name, "024 - We lost the Sea - Departure Songs [Vinyl 12in] - cover.jpg")
 
-    def test_collision_suffix(self):
+    def test_collision_suffix_requires_allow_collision(self):
         with tempfile.TemporaryDirectory() as tmp:
             release = normalize_release(1, "A", "B", "CD")
             first = safe_filename(release, "image/png", Path(tmp))
             first.write_bytes(b"x")
             second = safe_filename(release, "image/png", Path(tmp))
+            self.assertEqual(second.name, "001 - A - B [CD] - cover.png")
+
+            second = safe_filename(release, "image/png", Path(tmp), allow_collision=True)
             self.assertEqual(second.name, "001 - A - B [CD] - cover - 2.png")
 
 

@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Cassette sessions",
+  "group": "Tapes",
+  "artist_or_label": "Magmarus",
+  "image": "magmarus-cassette-sessions-cassette.jpg",
+  "image_alt": "Cassette sessions cassette case artwork mockup",
+  "summary": "Cassette edition of Cassette sessions by Magmarus. Source metadata identifies it as a 4-track release, released July 21, 2017. Cassette case artwork mockup. Actual cassette shell and labels may vary.",
+  "eyebrow": "Distro",
+  "format": "Cassette",
+  "order": 41,
+  "release_date": "2017-07-21"
+}

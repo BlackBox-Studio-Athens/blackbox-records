@@ -21,7 +21,7 @@
 ## 4. Validation
 
 - [x] 4.1 Run `pnpm test:unit`.
-- [ ] 4.2 Run `pnpm check`.
+- [x] 4.2 Run `pnpm check`.
 - [x] 4.3 Run `pnpm build`.
 - [x] 4.4 Use Browser Use on a mobile-first local viewport to verify the homepage hero still renders and scrolls into the next section.
 - [x] 4.5 In Browser Use or DevTools, confirm a short hero scroll no longer repeatedly starts/cancels opacity transitions for the affected hero selectors.

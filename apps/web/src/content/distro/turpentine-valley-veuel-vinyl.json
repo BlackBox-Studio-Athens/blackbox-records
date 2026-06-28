@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Veuel",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Turpentine Valley",
+  "image": "turpentine-valley-veuel-vinyl.webp",
+  "image_alt": "Veuel Vinyl front mockup",
+  "summary": "Vinyl edition of Veuel by Turpentine Valley. Source metadata identifies it as a 10-track release, released March 6, 2026.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 49,
+  "release_date": "2026-03-06"
+}

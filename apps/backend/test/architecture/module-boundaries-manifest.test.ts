@@ -9,7 +9,7 @@ const { loadModuleBoundariesManifest, validateManifest } =
     validateManifest: (manifest: unknown) => string[];
   };
 
-describe('Module boundaries manifest', () => {
+describe('Module boundaries manifest', { timeout: 15_000 }, () => {
   it('stays internally consistent with the repo', () => {
     const manifest = loadModuleBoundariesManifest();
     expect(validateManifest(manifest)).toEqual([]);

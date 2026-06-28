@@ -8,6 +8,37 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     desiredPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
+      revision: 'aflmsmp-i-went-to-the-mountain-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of I went to the mountain by AFLMSMP. Source metadata identifies it as a 9-track release, released February 27, 2025.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/aflmsmp-i-went-to-the-mountain-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'aflmsmp-i-went-to-the-mountain-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'aflmsmp-i-went-to-the-mountain-vinyl',
+        variantId: 'variant_aflmsmp-i-went-to-the-mountain-vinyl_standard',
+      },
+      name: 'BlackBox Records - I went to the mountain - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'aflmsmp-i-went-to-the-mountain-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'aflmsmp-i-went-to-the-mountain-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_aflmsmp-i-went-to-the-mountain-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
       revision: 'aftermaths-2800-eur',
     },
     productProjection: {
@@ -64,6 +95,99 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     storeItemSlug: 'against-his-story-against-leviathan',
     targetEnvironments: ['uat'],
     variantId: 'variant_against-his-story-against-leviathan_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+      revision: 'allochiria-commotion-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Commotion by Allochiria. Source metadata identifies it as a 9-track release, released April 23, 2023.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/allochiria-commotion-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'allochiria-commotion-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'allochiria-commotion-vinyl',
+        variantId: 'variant_allochiria-commotion-vinyl_standard',
+      },
+      name: 'BlackBox Records - Commotion - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'allochiria-commotion-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'allochiria-commotion-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_allochiria-commotion-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+      revision: 'allochiria-omonoia-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Omonoia by Allochiria. Source metadata identifies it as a 7-track release, released January 4, 2014.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/allochiria-omonoia-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'allochiria-omonoia-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'allochiria-omonoia-vinyl',
+        variantId: 'variant_allochiria-omonoia-vinyl_standard',
+      },
+      name: 'BlackBox Records - Omonoia - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'allochiria-omonoia-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'allochiria-omonoia-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_allochiria-omonoia-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+      revision: 'allochiria-throes-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Throes by Allochiria. Source metadata identifies it as a 6-track release, released March 17, 2017.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/allochiria-throes-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'allochiria-throes-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'allochiria-throes-vinyl',
+        variantId: 'variant_allochiria-throes-vinyl_standard',
+      },
+      name: 'BlackBox Records - Throes - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'allochiria-throes-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'allochiria-throes-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_allochiria-throes-vinyl_standard',
   },
   {
     availability: 'published',
@@ -221,6 +345,68 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     desiredPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
+      revision: 'aufhebung-luchtbegrafenis-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Luchtbegrafenis by Aufhebung. Source metadata identifies it as a 6-track release, released February 26, 2026.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/aufhebung-luchtbegrafenis-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'aufhebung-luchtbegrafenis-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'aufhebung-luchtbegrafenis-vinyl',
+        variantId: 'variant_aufhebung-luchtbegrafenis-vinyl_standard',
+      },
+      name: 'BlackBox Records - Luchtbegrafenis - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'aufhebung-luchtbegrafenis-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'aufhebung-luchtbegrafenis-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_aufhebung-luchtbegrafenis-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 1200,
+      currencyCode: 'EUR',
+      revision: 'band-in-the-pit-2016-cassette-1200-eur',
+    },
+    productProjection: {
+      description:
+        'Cassette edition of 2016 by Band in the pit. Source metadata identifies it as a 3-track release, released November 21, 2016. Cassette case artwork mockup. Actual cassette shell and labels may vary.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/band-in-the-pit-2016-cassette.jpg',
+      ],
+      metadata: {
+        sourceId: 'band-in-the-pit-2016-cassette',
+        sourceKind: 'distro',
+        storeItemSlug: 'band-in-the-pit-2016-cassette',
+        variantId: 'variant_band-in-the-pit-2016-cassette_standard',
+      },
+      name: 'BlackBox Records - 2016 - Cassette',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'band-in-the-pit-2016-cassette',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'band-in-the-pit-2016-cassette',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_band-in-the-pit-2016-cassette_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
       revision: 'barren-point-2800-eur',
     },
     productProjection: {
@@ -283,6 +469,37 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     desiredPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
+      revision: 'bipolar-architecture-depressionland-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Depressionland by Bipolar Architecture. Source metadata identifies it as a 9-track release, released June 24, 2022.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/bipolar-architecture-depressionland-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'bipolar-architecture-depressionland-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'bipolar-architecture-depressionland-vinyl',
+        variantId: 'variant_bipolar-architecture-depressionland-vinyl_standard',
+      },
+      name: 'BlackBox Records - Depressionland - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'bipolar-architecture-depressionland-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'bipolar-architecture-depressionland-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_bipolar-architecture-depressionland-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
       revision: 'bloed-tranen-2800-eur',
     },
     productProjection: {
@@ -306,6 +523,37 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     storeItemSlug: 'bloed-tranen',
     targetEnvironments: ['uat'],
     variantId: 'variant_bloed-tranen_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 1200,
+      currencyCode: 'EUR',
+      revision: 'broken-fingers-ego-cassette-1200-eur',
+    },
+    productProjection: {
+      description:
+        'Cassette edition of Ego by Broken Fingers. Source metadata identifies it as an 11-track release, released November 29, 2019. Cassette case artwork mockup. Actual cassette shell and labels may vary.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/broken-fingers-ego-cassette.jpg',
+      ],
+      metadata: {
+        sourceId: 'broken-fingers-ego-cassette',
+        sourceKind: 'distro',
+        storeItemSlug: 'broken-fingers-ego-cassette',
+        variantId: 'variant_broken-fingers-ego-cassette_standard',
+      },
+      name: 'BlackBox Records - Ego - Cassette',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'broken-fingers-ego-cassette',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'broken-fingers-ego-cassette',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_broken-fingers-ego-cassette_standard',
   },
   {
     availability: 'published',
@@ -337,6 +585,37 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     storeItemSlug: 'caregivers-vinyl',
     targetEnvironments: ['uat'],
     variantId: 'variant_caregivers-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+      revision: 'cisnienie-angry-noises-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Angry Noises by Ciśnienie. Source metadata identifies it as a 4-track release, released September 19, 2025.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/cisnienie-angry-noises-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'cisnienie-angry-noises-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'cisnienie-angry-noises-vinyl',
+        variantId: 'variant_cisnienie-angry-noises-vinyl_standard',
+      },
+      name: 'BlackBox Records - Angry Noises - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'cisnienie-angry-noises-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'cisnienie-angry-noises-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_cisnienie-angry-noises-vinyl_standard',
   },
   {
     availability: 'published',
@@ -430,6 +709,37 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     storeItemSlug: 'dead-flag-blues-traumatique-cd',
     targetEnvironments: ['uat'],
     variantId: 'variant_dead-flag-blues-traumatique-cd_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+      revision: 'devided-light-will-shine-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Light will shine by Devided. Source metadata identifies it as an 8-track release, released March 29, 2024.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/devided-light-will-shine-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'devided-light-will-shine-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'devided-light-will-shine-vinyl',
+        variantId: 'variant_devided-light-will-shine-vinyl_standard',
+      },
+      name: 'BlackBox Records - Light will shine - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'devided-light-will-shine-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'devided-light-will-shine-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_devided-light-will-shine-vinyl_standard',
   },
   {
     availability: 'published',
@@ -651,6 +961,37 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     desiredPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
+      revision: 'huracan-2025-ep-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of 2025 EP by Huracan. Source metadata identifies it as a 4-track release, released September 18, 2025.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/huracan-2025-ep-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'huracan-2025-ep-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'huracan-2025-ep-vinyl',
+        variantId: 'variant_huracan-2025-ep-vinyl_standard',
+      },
+      name: 'BlackBox Records - 2025 EP - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'huracan-2025-ep-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'huracan-2025-ep-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_huracan-2025-ep-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
       revision: 'in-your-absence-2800-eur',
     },
     productProjection: {
@@ -682,6 +1023,37 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     desiredPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
+      revision: 'kokomo-whip-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Whip by Kokomo. Source metadata identifies it as a 6-track release, released May 16, 2026.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/kokomo-whip-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'kokomo-whip-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'kokomo-whip-vinyl',
+        variantId: 'variant_kokomo-whip-vinyl_standard',
+      },
+      name: 'BlackBox Records - Whip - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'kokomo-whip-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'kokomo-whip-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_kokomo-whip-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
       revision: 'magic-sleazeball-corrida-2800-eur',
     },
     productProjection: {
@@ -707,6 +1079,130 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     storeItemSlug: 'magic-sleazeball-corrida',
     targetEnvironments: ['uat'],
     variantId: 'variant_magic-sleazeball-corrida_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 1200,
+      currencyCode: 'EUR',
+      revision: 'magmarus-cassette-sessions-cassette-1200-eur',
+    },
+    productProjection: {
+      description:
+        'Cassette edition of Cassette sessions by Magmarus. Source metadata identifies it as a 4-track release, released July 21, 2017. Cassette case artwork mockup. Actual cassette shell and labels may vary.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/magmarus-cassette-sessions-cassette.jpg',
+      ],
+      metadata: {
+        sourceId: 'magmarus-cassette-sessions-cassette',
+        sourceKind: 'distro',
+        storeItemSlug: 'magmarus-cassette-sessions-cassette',
+        variantId: 'variant_magmarus-cassette-sessions-cassette_standard',
+      },
+      name: 'BlackBox Records - Cassette sessions - Cassette',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'magmarus-cassette-sessions-cassette',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'magmarus-cassette-sessions-cassette',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_magmarus-cassette-sessions-cassette_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+      revision: 'malammar-mazza-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Mazza by Malämmar. Source metadata identifies it as a 6-track release, released April 30, 2021.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/malammar-mazza-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'malammar-mazza-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'malammar-mazza-vinyl',
+        variantId: 'variant_malammar-mazza-vinyl_standard',
+      },
+      name: 'BlackBox Records - Mazza - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'malammar-mazza-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'malammar-mazza-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_malammar-mazza-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+      revision: 'malammar-vendetta-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Vendetta by Malämmar. Source metadata identifies it as a 6-track release, released December 1, 2016.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/malammar-vendetta-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'malammar-vendetta-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'malammar-vendetta-vinyl',
+        variantId: 'variant_malammar-vendetta-vinyl_standard',
+      },
+      name: 'BlackBox Records - Vendetta - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'malammar-vendetta-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'malammar-vendetta-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_malammar-vendetta-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+      revision: 'maserati-live-at-dunk-fest-2024-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Live at Dunk! Fest 2024 by Maserati. Source metadata identifies it as released May 23, 2025.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/maserati-live-at-dunk-fest-2024-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'maserati-live-at-dunk-fest-2024-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'maserati-live-at-dunk-fest-2024-vinyl',
+        variantId: 'variant_maserati-live-at-dunk-fest-2024-vinyl_standard',
+      },
+      name: 'BlackBox Records - Live at Dunk! Fest 2024 - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'maserati-live-at-dunk-fest-2024-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'maserati-live-at-dunk-fest-2024-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_maserati-live-at-dunk-fest-2024-vinyl_standard',
   },
   {
     availability: 'published',
@@ -867,6 +1363,68 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     desiredPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
+      revision: 'onrust-van-woede-tot-wanhoop-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Van Woede Tot Wanhoop by Onrust. Source metadata identifies it as an 8-track release, released October 20, 2025.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/onrust-van-woede-tot-wanhoop-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'onrust-van-woede-tot-wanhoop-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'onrust-van-woede-tot-wanhoop-vinyl',
+        variantId: 'variant_onrust-van-woede-tot-wanhoop-vinyl_standard',
+      },
+      name: 'BlackBox Records - Van Woede Tot Wanhoop - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'onrust-van-woede-tot-wanhoop-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'onrust-van-woede-tot-wanhoop-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_onrust-van-woede-tot-wanhoop-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+      revision: 'pelican-live-at-dunk-fest-2016-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Live at Dunk! Fest 2016 by Pelican. Source metadata identifies it as a 10-track release, released November 22, 2016.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/pelican-live-at-dunk-fest-2016-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'pelican-live-at-dunk-fest-2016-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'pelican-live-at-dunk-fest-2016-vinyl',
+        variantId: 'variant_pelican-live-at-dunk-fest-2016-vinyl_standard',
+      },
+      name: 'BlackBox Records - Live at Dunk! Fest 2016 - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'pelican-live-at-dunk-fest-2016-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'pelican-live-at-dunk-fest-2016-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_pelican-live-at-dunk-fest-2016-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
       revision: 'primal-ephemeral-2800-eur',
     },
     productProjection: {
@@ -954,6 +1512,37 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     storeItemSlug: 'rite',
     targetEnvironments: ['uat'],
     variantId: 'variant_rite_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+      revision: 'russian-circles-live-at-dunk-fest-2016-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Live at Dunk! Fest 2016 by Russian Circles. Source metadata identifies it as a 9-track release, released April 7, 2017.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/russian-circles-live-at-dunk-fest-2016-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'russian-circles-live-at-dunk-fest-2016-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'russian-circles-live-at-dunk-fest-2016-vinyl',
+        variantId: 'variant_russian-circles-live-at-dunk-fest-2016-vinyl_standard',
+      },
+      name: 'BlackBox Records - Live at Dunk! Fest 2016 - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'russian-circles-live-at-dunk-fest-2016-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'russian-circles-live-at-dunk-fest-2016-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_russian-circles-live-at-dunk-fest-2016-vinyl_standard',
   },
   {
     availability: 'published',
@@ -1263,6 +1852,37 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     desiredPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
+      revision: 'turpentine-valley-veuel-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Veuel by Turpentine Valley. Source metadata identifies it as a 10-track release, released March 6, 2026.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/turpentine-valley-veuel-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'turpentine-valley-veuel-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'turpentine-valley-veuel-vinyl',
+        variantId: 'variant_turpentine-valley-veuel-vinyl_standard',
+      },
+      name: 'BlackBox Records - Veuel - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'turpentine-valley-veuel-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'turpentine-valley-veuel-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_turpentine-valley-veuel-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
       revision: 'unkraut-2800-eur',
     },
     productProjection: {
@@ -1321,6 +1941,99 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     desiredPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
+      revision: 'we-lost-the-sea-a-single-flower-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of A single flower by We lost the Sea. Source metadata identifies it as a 6-track release, released July 4, 2025.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/we-lost-the-sea-a-single-flower-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'we-lost-the-sea-a-single-flower-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'we-lost-the-sea-a-single-flower-vinyl',
+        variantId: 'variant_we-lost-the-sea-a-single-flower-vinyl_standard',
+      },
+      name: 'BlackBox Records - A single flower - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'we-lost-the-sea-a-single-flower-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'we-lost-the-sea-a-single-flower-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_we-lost-the-sea-a-single-flower-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+      revision: 'we-lost-the-sea-departure-songs-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Departure Songs by We lost the Sea. Source metadata identifies it as a 5-track release, released July 23, 2015.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/we-lost-the-sea-departure-songs-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'we-lost-the-sea-departure-songs-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'we-lost-the-sea-departure-songs-vinyl',
+        variantId: 'variant_we-lost-the-sea-departure-songs-vinyl_standard',
+      },
+      name: 'BlackBox Records - Departure Songs - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'we-lost-the-sea-departure-songs-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'we-lost-the-sea-departure-songs-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_we-lost-the-sea-departure-songs-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+      revision: 'we-lost-the-sea-triumph-disaster-vinyl-2800-eur',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Triumph & Disaster by We lost the Sea. Source metadata identifies it as a 7-track release, released October 4, 2019.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/we-lost-the-sea-triumph-disaster-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'we-lost-the-sea-triumph-disaster-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'we-lost-the-sea-triumph-disaster-vinyl',
+        variantId: 'variant_we-lost-the-sea-triumph-disaster-vinyl_standard',
+      },
+      name: 'BlackBox Records - Triumph & Disaster - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'we-lost-the-sea-triumph-disaster-vinyl',
+    sourceKind: 'distro',
+    stockInitialization: {
+      initialOnlineQuantity: null,
+    },
+    storeItemSlug: 'we-lost-the-sea-triumph-disaster-vinyl',
+    targetEnvironments: ['uat'],
+    variantId: 'variant_we-lost-the-sea-triumph-disaster-vinyl_standard',
+  },
+  {
+    availability: 'published',
+    desiredPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
       revision: 'wreckquiem-2800-eur',
     },
     productProjection: {
@@ -1349,7 +2062,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
 ];
 
 export const currentDesiredCatalogState: DesiredCatalogState = {
-  revision: 'desired-catalog-c84cf800',
+  revision: 'desired-catalog-24f93cd1',
   entries: currentDesiredCatalogEntries,
 };
 

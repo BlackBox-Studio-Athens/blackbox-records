@@ -32,6 +32,14 @@ class DistroSyncTests(unittest.TestCase):
             "CD edition of Album by Artist. Source metadata identifies it as a 9-track release, released October 20, 2017.",
         )
 
+    def test_default_summary_uses_an_before_eleven_track_release(self):
+        item = ManifestItem("001", "Artist", "Album", "Tape", "downloaded", "")
+
+        self.assertIn(
+            "Source metadata identifies it as an 11-track release",
+            default_summary(item, SUPPORTED_FORMATS["Tape"], ResearchedMetadata(track_count=11)),
+        )
+
     def test_dry_run_does_not_write_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -61,6 +69,30 @@ class DistroSyncTests(unittest.TestCase):
             self.assertIn('"$schema": "../../../.astro/collections/distro.schema.json"', created)
             self.assertIn('"group": "CDs"', created)
             self.assertEqual((content_dir / "artist-album-cd.jpg").read_bytes(), b"mockup")
+
+    def test_apply_creates_tape_distro_entry(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = write_manifest(root, normalized_format="Tape")
+            mockup = write_mockup(
+                root,
+                "001 - Artist - Album [Tape] - cover-cassette-front-mockup.jpg",
+                mockup_dir="cassette-front",
+            )
+            content_dir = root / "content"
+
+            result = sync_manifest(manifest, content_dir=content_dir, mockups_root=mockup.parent, formats={"Tape"}, apply=True)
+
+            self.assertTrue(result.applied)
+            created = (content_dir / "artist-album-cassette.json").read_text(encoding="utf-8")
+            self.assertIn('"group": "Tapes"', created)
+            self.assertIn('"format": "Cassette"', created)
+            self.assertIn('"image_alt": "Album cassette case artwork mockup"', created)
+            self.assertIn(
+                "Cassette case artwork mockup. Actual cassette shell and labels may vary.",
+                created,
+            )
+            self.assertEqual((content_dir / "artist-album-cassette.jpg").read_bytes(), b"mockup")
 
     def test_apply_updates_existing_duplicate_key_instead_of_creating_second_json(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -150,10 +182,10 @@ class DistroSyncTests(unittest.TestCase):
             self.assertIn('"$schema": "../../../.astro/collections/distro.schema.json"', updated)
 
 
-def write_manifest(root: Path) -> Path:
+def write_manifest(root: Path, normalized_format: str = "CD") -> Path:
     images = root / "images"
     images.mkdir()
-    cover = images / "001 - Artist - Album [CD] - cover.jpg"
+    cover = images / f"001 - Artist - Album [{normalized_format}] - cover.jpg"
     cover.write_bytes(b"cover")
     manifest = root / "manifest.csv"
     with manifest.open("w", encoding="utf-8", newline="") as handle:
@@ -167,7 +199,7 @@ def write_manifest(root: Path) -> Path:
                 "row_number": "001",
                 "normalized_artist": "Artist",
                 "normalized_title": "Album",
-                "normalized_format": "CD",
+                "normalized_format": normalized_format,
                 "status": "downloaded",
                 "local_path": str(cover),
             }
@@ -175,8 +207,8 @@ def write_manifest(root: Path) -> Path:
     return manifest
 
 
-def write_mockup(root: Path, name: str) -> Path:
-    mockups = root / "mockups" / "cd-front-concrete"
+def write_mockup(root: Path, name: str, mockup_dir: str = "cd-front-concrete") -> Path:
+    mockups = root / "mockups" / mockup_dir
     mockups.mkdir(parents=True)
     mockup = mockups / name
     mockup.write_bytes(b"mockup")

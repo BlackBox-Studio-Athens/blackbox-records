@@ -3,10 +3,9 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-import requests
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter, ImageOps
 
-from .mockup import SAFE_SUFFIXES
+from .mockup import SAFE_SUFFIXES, crop_to_fill, download_asset
 
 
 CANVAS_SIZE = (2800, 2100)
@@ -35,7 +34,7 @@ def render_cd_front_mockup(
     cache_dir.mkdir(parents=True, exist_ok=True)
     assets = load_assets(cache_dir, asset_paths)
     cover = load_cover(cover_path)
-    background = build_background(background_path or download(CONCRETE_BACKGROUND_URL, cache_dir / "concrete036-background.jpg"))
+    background = build_background(background_path or download_asset(CONCRETE_BACKGROUND_URL, cache_dir / "concrete036-background.jpg"))
 
     shadow = Image.new("RGBA", CANVAS_SIZE, (0, 0, 0, 0))
     draw = ImageDraw.Draw(shadow)
@@ -67,12 +66,12 @@ def batch(
 
 
 def load_assets(cache_dir: Path, asset_paths: dict[str, Path] | None = None) -> dict[str, Image.Image]:
-    paths = asset_paths or {name: download(url, cache_dir / f"mockupbro-{name}.png") for name, url in MOCKUPBRO_ASSETS.items()}
+    paths = asset_paths or {name: download_asset(url, cache_dir / f"mockupbro-{name}.png") for name, url in MOCKUPBRO_ASSETS.items()}
     return {name: load_rgba(path) for name, path in paths.items()}
 
 
 def build_background(path: Path) -> Image.Image:
-    image = fit(Image.open(path).convert("RGB"), CANVAS_SIZE)
+    image = crop_to_fill(Image.open(path).convert("RGB"), CANVAS_SIZE)
     image = ImageOps.grayscale(image).convert("RGBA")
     image = ImageEnhance.Contrast(image).enhance(1.12)
     image = ImageEnhance.Brightness(image).enhance(0.50)
@@ -122,7 +121,7 @@ def solve(matrix: list[list[float]], vector: list[float]) -> list[float]:
 
 
 def load_cover(path: Path) -> Image.Image:
-    return fit(Image.open(path).convert("RGBA"), (COVER_SIZE, COVER_SIZE))
+    return crop_to_fill(Image.open(path).convert("RGBA"), (COVER_SIZE, COVER_SIZE))
 
 
 def load_rgba(path: Path) -> Image.Image:
@@ -130,14 +129,6 @@ def load_rgba(path: Path) -> Image.Image:
     if image.size != CANVAS_SIZE:
         image = image.resize(CANVAS_SIZE, Image.Resampling.LANCZOS)
     return image
-
-
-def fit(image: Image.Image, size: tuple[int, int]) -> Image.Image:
-    scale = max(size[0] / image.width, size[1] / image.height)
-    resized = image.resize((round(image.width * scale), round(image.height * scale)), Image.Resampling.LANCZOS)
-    left = (resized.width - size[0]) // 2
-    top = (resized.height - size[1]) // 2
-    return resized.crop((left, top, left + size[0], top + size[1]))
 
 
 def add_vignette(image: Image.Image) -> Image.Image:
@@ -155,15 +146,6 @@ def add_vignette(image: Image.Image) -> Image.Image:
     layer = layer.filter(ImageFilter.GaussianBlur(8)).resize(CANVAS_SIZE, Image.Resampling.LANCZOS)
     image.alpha_composite(layer)
     return image
-
-
-def download(url: str, path: Path) -> Path:
-    if path.exists() and path.stat().st_size:
-        return path
-    response = requests.get(url, headers={"User-Agent": "BlackBox Records mockup renderer"}, timeout=45)
-    response.raise_for_status()
-    path.write_bytes(response.content)
-    return path
 
 
 def main(argv: list[str] | None = None) -> int:

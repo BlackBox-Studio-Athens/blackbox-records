@@ -32,8 +32,8 @@ def main(argv: list[str] | None = None) -> int:
     out_dir = args.out
     manifest_path = args.manifest or out_dir / "manifest.csv"
     setup_logging(out_dir / "logs")
-    overrides = load_overrides(args.artwork_overrides)
-    fetcher = ArtworkFetcher(out_dir=out_dir, user_agent_contact=args.user_agent_contact, bandcamp_overrides=overrides)
+    overrides = load_overrides(resolve_artwork_overrides_path(args.input, args.artwork_overrides))
+    fetcher = ArtworkFetcher(out_dir=out_dir, user_agent_contact=args.user_agent_contact, artwork_overrides=overrides)
     fetcher.prepare()
 
     releases = select_releases(parse_input(args.input), args.limit)
@@ -50,6 +50,13 @@ def main(argv: list[str] | None = None) -> int:
     logging.info("Wrote %s", manifest_path)
     logging.info("Wrote %s", out_dir / "manual_review.tsv")
     return 0
+
+
+def resolve_artwork_overrides_path(input_path: Path, explicit_path: Path | None) -> Path | None:
+    if explicit_path:
+        return explicit_path
+    sibling = input_path.with_name(f"{input_path.stem}_overrides.json")
+    return sibling if sibling.exists() else None
 
 
 def load_overrides(path: Path | None) -> dict[str, object]:

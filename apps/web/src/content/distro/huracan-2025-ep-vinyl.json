@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "2025 EP",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Huracan",
+  "image": "huracan-2025-ep-vinyl.webp",
+  "image_alt": "2025 EP Vinyl front mockup",
+  "summary": "Vinyl edition of 2025 EP by Huracan. Source metadata identifies it as a 4-track release, released September 18, 2025.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 60,
+  "release_date": "2025-09-18"
+}

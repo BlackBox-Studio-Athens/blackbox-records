@@ -13,21 +13,21 @@ METADATA_AGREEMENT_SCORE = 10
 
 
 class ArtworkFetcher:
-    def __init__(self, out_dir: Path, user_agent_contact: str, bandcamp_overrides: dict[str, object] | None = None):
+    def __init__(self, out_dir: Path, user_agent_contact: str, artwork_overrides: dict[str, object] | None = None):
         self.out_dir = out_dir
         self.images_dir = out_dir / "images"
         self.cache_dir = out_dir / ".cache"
         self.contact = user_agent_contact
         self.user_agent = f"release-artwork-fetcher/1.0 (local personal catalog; contact: {user_agent_contact})"
         self.http = Http(self.cache_dir, self.user_agent)
-        self.bandcamp_overrides = bandcamp_overrides or {}
+        self.artwork_overrides = artwork_overrides or {}
 
     def prepare(self) -> None:
         self.images_dir.mkdir(parents=True, exist_ok=True)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def fetch_release(self, release: Release, force: bool = False, dry_run: bool = False) -> FetchResult:
-        override_candidate = artwork_override(release, self.http, self.bandcamp_overrides)
+        override_candidate = artwork_override(release, self.http, self.artwork_overrides)
         if override_candidate and override_candidate.source == "Known missing":
             return result_from_candidate(release, override_candidate, "missing", override_candidate.notes)
         candidates = [
@@ -59,7 +59,7 @@ class ArtworkFetcher:
         if not mime_type.startswith("image/"):
             raise RuntimeError(f"not an image: {mime_type}")
         width, height = image_dimensions(image_bytes)
-        local_path = safe_filename(release, mime_type, self.images_dir)
+        local_path = safe_filename(release, mime_type, self.images_dir, allow_collision=force)
         if local_path.exists() and not force:
             raise RuntimeError(f"file exists: {local_path}")
         local_path.write_bytes(image_bytes)
