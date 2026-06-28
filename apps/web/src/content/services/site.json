@@ -12,7 +12,7 @@
         {
           "id": "tour-booking",
           "title": "Tour Booking",
-          "image": "img_20230526_105710.jpg",
+          "image": "tour-booking-soft-matte.jpg",
           "image_alt": "Band members rehearsing together in a studio",
           "summary": "We are here to help you tour and make the necessary arrangements so you can get your music to Europe and Balkan grounds.",
           "bullets": [
@@ -25,7 +25,7 @@
         {
           "id": "merch-printing",
           "title": "Merch Printing",
-          "image": "printing.png",
+          "image": "merch-printing-soft-matte.jpg",
           "image_alt": "Workshop scene with a person preparing a t-shirt with a heat press",
           "summary": "Merch production support for bands that need solid runs handled cleanly, without turning the whole thing into a generic catalog exercise.",
           "bullets": [
