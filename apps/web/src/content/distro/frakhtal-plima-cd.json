@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "plima",
+  "group": "CDs",
+  "artist_or_label": "Frakhtal",
+  "image": "frakhtal-plima-cd.jpg",
+  "image_alt": "plima CD front mockup",
+  "summary": "CD edition of plima by Frakhtal. Source metadata identifies it as a 5-track release, released April 10, 2022.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 35,
+  "release_date": "2022-04-10"
+}

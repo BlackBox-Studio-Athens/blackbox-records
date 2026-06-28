@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Kuro",
+  "group": "CDs",
+  "artist_or_label": "Granna's House",
+  "image": "granna-s-house-kuro-cd.jpg",
+  "image_alt": "Kuro CD front mockup",
+  "summary": "CD edition of Kuro by Granna's House. Source metadata identifies it as a 11-track release, released May 8, 2023.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 23,
+  "release_date": "2023-05-08"
+}

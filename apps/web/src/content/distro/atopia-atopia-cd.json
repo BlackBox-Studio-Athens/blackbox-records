@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Ατοπια",
+  "group": "CDs",
+  "artist_or_label": "Ατοπια",
+  "image": "atopia-atopia-cd.jpg",
+  "image_alt": "Ατοπια CD front mockup",
+  "summary": "CD edition of Ατοπια by Ατοπια in the BlackBox Records distro catalog.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 33
+}

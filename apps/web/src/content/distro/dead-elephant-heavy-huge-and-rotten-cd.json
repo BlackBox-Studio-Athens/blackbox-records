@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Heavy Huge and Rotten",
+  "group": "CDs",
+  "artist_or_label": "Dead Elephant",
+  "image": "dead-elephant-heavy-huge-and-rotten-cd.jpg",
+  "image_alt": "Heavy Huge and Rotten CD front mockup",
+  "summary": "CD edition of Heavy Huge and Rotten by Dead Elephant. Source metadata identifies it as a 6-track release, released February 13, 2016.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 26,
+  "release_date": "2016-02-13"
+}

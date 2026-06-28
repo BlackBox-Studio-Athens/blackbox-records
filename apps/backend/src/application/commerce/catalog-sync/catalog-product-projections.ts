@@ -127,6 +127,107 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     },
     productProjection: {
       description:
+        'CD edition of Alone by Anima Triste. Source metadata identifies it as a 9-track release, released January 27, 2023.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/anima-triste-alone-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'anima-triste-alone-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'anima-triste-alone-cd',
+        variantId: 'variant_anima-triste-alone-cd_standard',
+      },
+      name: 'BlackBox Records - Alone - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'anima-triste-alone-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'anima-triste-alone-cd',
+    variantId: 'variant_anima-triste-alone-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description:
+        'CD edition of Anima Triste by Anima Triste. Source metadata identifies it as a 10-track release, released December 7, 2016.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/anima-triste-anima-triste-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'anima-triste-anima-triste-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'anima-triste-anima-triste-cd',
+        variantId: 'variant_anima-triste-anima-triste-cd_standard',
+      },
+      name: 'BlackBox Records - Anima Triste - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'anima-triste-anima-triste-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'anima-triste-anima-triste-cd',
+    variantId: 'variant_anima-triste-anima-triste-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description:
+        'CD edition of Humanity by Anima Triste. Source metadata identifies it as a 10-track release, released September 19, 2019.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/anima-triste-humanity-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'anima-triste-humanity-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'anima-triste-humanity-cd',
+        variantId: 'variant_anima-triste-humanity-cd_standard',
+      },
+      name: 'BlackBox Records - Humanity - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'anima-triste-humanity-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'anima-triste-humanity-cd',
+    variantId: 'variant_anima-triste-humanity-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description: 'CD edition of Ατοπια by Ατοπια in the BlackBox Records distro catalog.',
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/atopia-atopia-cd.jpg'],
+      metadata: {
+        sourceId: 'atopia-atopia-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'atopia-atopia-cd',
+        variantId: 'variant_atopia-atopia-cd_standard',
+      },
+      name: 'BlackBox Records - Ατοπια - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'atopia-atopia-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'atopia-atopia-cd',
+    variantId: 'variant_atopia-atopia-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description:
         "Mass Culture's Barren Point keeps the Greek band's post-hardcore and metal pressure direct and physical.",
       imageUrls: [
         'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/mass-culture-barren-point.jpg',
@@ -255,6 +356,84 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     },
     productProjection: {
       description:
+        'CD edition of Heavy Huge and Rotten by Dead Elephant. Source metadata identifies it as a 6-track release, released February 13, 2016.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/dead-elephant-heavy-huge-and-rotten-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'dead-elephant-heavy-huge-and-rotten-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'dead-elephant-heavy-huge-and-rotten-cd',
+        variantId: 'variant_dead-elephant-heavy-huge-and-rotten-cd_standard',
+      },
+      name: 'BlackBox Records - Heavy Huge and Rotten - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'dead-elephant-heavy-huge-and-rotten-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'dead-elephant-heavy-huge-and-rotten-cd',
+    variantId: 'variant_dead-elephant-heavy-huge-and-rotten-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description:
+        'CD edition of Traumatique by Dead Flag Blues. Source metadata identifies it as a 5-track release, released February 3, 2021.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/dead-flag-blues-traumatique-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'dead-flag-blues-traumatique-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'dead-flag-blues-traumatique-cd',
+        variantId: 'variant_dead-flag-blues-traumatique-cd_standard',
+      },
+      name: 'BlackBox Records - Traumatique - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'dead-flag-blues-traumatique-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'dead-flag-blues-traumatique-cd',
+    variantId: 'variant_dead-flag-blues-traumatique-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description:
+        "CD edition of Dirty ol' dogs by Dirty ol' dogs. Source metadata identifies it as a 8-track release, released March 9, 2019.",
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/dirty-ol-dogs-dirty-ol-dogs-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'dirty-ol-dogs-dirty-ol-dogs-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'dirty-ol-dogs-dirty-ol-dogs-cd',
+        variantId: 'variant_dirty-ol-dogs-dirty-ol-dogs-cd_standard',
+      },
+      name: "BlackBox Records - Dirty ol' dogs - CD",
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'dirty-ol-dogs-dirty-ol-dogs-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'dirty-ol-dogs-dirty-ol-dogs-cd',
+    variantId: 'variant_dirty-ol-dogs-dirty-ol-dogs-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description:
         'The first release of the band is a mix of post rock elements. Engineering, recording, and mixing by Jim Spanos at BlackBox Studio, Athens, Greece. Mastered by Nikos Dimitrakakos and Jim Spanos at Unreal Studio, Athens, Greece.',
       imageUrls: [
         'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
@@ -298,6 +477,108 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     sourceKind: 'distro',
     storeItemSlug: 'endless-searcher',
     variantId: 'variant_endless-searcher_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description:
+        'CD edition of plima by Frakhtal. Source metadata identifies it as a 5-track release, released April 10, 2022.',
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/frakhtal-plima-cd.jpg'],
+      metadata: {
+        sourceId: 'frakhtal-plima-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'frakhtal-plima-cd',
+        variantId: 'variant_frakhtal-plima-cd_standard',
+      },
+      name: 'BlackBox Records - plima - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'frakhtal-plima-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'frakhtal-plima-cd',
+    variantId: 'variant_frakhtal-plima-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description:
+        'CD edition of Reshaping the symbols by Full Moon Bonzai. Source metadata identifies it as a 8-track release, released December 1, 2017.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/full-moon-bonzai-reshaping-the-symbols-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'full-moon-bonzai-reshaping-the-symbols-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'full-moon-bonzai-reshaping-the-symbols-cd',
+        variantId: 'variant_full-moon-bonzai-reshaping-the-symbols-cd_standard',
+      },
+      name: 'BlackBox Records - Reshaping the symbols - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'full-moon-bonzai-reshaping-the-symbols-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'full-moon-bonzai-reshaping-the-symbols-cd',
+    variantId: 'variant_full-moon-bonzai-reshaping-the-symbols-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description:
+        "CD edition of Kuro by Granna's House. Source metadata identifies it as a 11-track release, released May 8, 2023.",
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/granna-s-house-kuro-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'granna-s-house-kuro-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'granna-s-house-kuro-cd',
+        variantId: 'variant_granna-s-house-kuro-cd_standard',
+      },
+      name: 'BlackBox Records - Kuro - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'granna-s-house-kuro-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'granna-s-house-kuro-cd',
+    variantId: 'variant_granna-s-house-kuro-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description:
+        'CD edition of Hey Stealthy by Hey Stealthy. Source metadata identifies it as a 6-track release, released November 1, 2024.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/hey-stealthy-hey-stealthy-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'hey-stealthy-hey-stealthy-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'hey-stealthy-hey-stealthy-cd',
+        variantId: 'variant_hey-stealthy-hey-stealthy-cd_standard',
+      },
+      name: 'BlackBox Records - Hey Stealthy - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'hey-stealthy-hey-stealthy-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'hey-stealthy-hey-stealthy-cd',
+    variantId: 'variant_hey-stealthy-hey-stealthy-cd_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',
@@ -359,6 +640,32 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     },
     productProjection: {
       description:
+        'CD edition of Υγειής by Millions of Dead tourists. Source metadata identifies it as a 4-track release, released March 23, 2023.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/millions-of-dead-tourists-ygiis-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'millions-of-dead-tourists-ygiis-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'millions-of-dead-tourists-ygiis-cd',
+        variantId: 'variant_millions-of-dead-tourists-ygiis-cd_standard',
+      },
+      name: 'BlackBox Records - Υγειής - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'millions-of-dead-tourists-ygiis-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'millions-of-dead-tourists-ygiis-cd',
+    variantId: 'variant_millions-of-dead-tourists-ygiis-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description:
         'Last Rizla lean into Athens sludge and noise-rock on Noise Without Decay, keeping the sound heavy and frayed.',
       imageUrls: [
         'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/last-rizla-noise-without-decay.jpg',
@@ -401,6 +708,58 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     sourceKind: 'distro',
     storeItemSlug: 'on-the-quiet',
     variantId: 'variant_on-the-quiet_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description:
+        'CD edition of I, a Seawolf, a Madman by One leg Mary. Source metadata identifies it as a 8-track release, released December 27, 2014.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/one-leg-mary-i-a-seawolf-a-madman-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'one-leg-mary-i-a-seawolf-a-madman-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'one-leg-mary-i-a-seawolf-a-madman-cd',
+        variantId: 'variant_one-leg-mary-i-a-seawolf-a-madman-cd_standard',
+      },
+      name: 'BlackBox Records - I, a Seawolf, a Madman - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'one-leg-mary-i-a-seawolf-a-madman-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'one-leg-mary-i-a-seawolf-a-madman-cd',
+    variantId: 'variant_one-leg-mary-i-a-seawolf-a-madman-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description:
+        'CD edition of On the quiet by One leg Mary. Source metadata identifies it as a 10-track release, released February 1, 2017.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/one-leg-mary-on-the-quiet-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'one-leg-mary-on-the-quiet-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'one-leg-mary-on-the-quiet-cd',
+        variantId: 'variant_one-leg-mary-on-the-quiet-cd_standard',
+      },
+      name: 'BlackBox Records - On the quiet - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'one-leg-mary-on-the-quiet-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'one-leg-mary-on-the-quiet-cd',
+    variantId: 'variant_one-leg-mary-on-the-quiet-cd_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',
@@ -513,6 +872,32 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       currencyCode: 'EUR',
     },
     productProjection: {
+      description:
+        'CD edition of The big fish by Sadhus. Source metadata identifies it as a 6-track release, released November 15, 2018.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/sadhus-the-big-fish-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'sadhus-the-big-fish-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'sadhus-the-big-fish-cd',
+        variantId: 'variant_sadhus-the-big-fish-cd_standard',
+      },
+      name: 'BlackBox Records - The big fish - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'sadhus-the-big-fish-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'sadhus-the-big-fish-cd',
+    variantId: 'variant_sadhus-the-big-fish-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
       description: "Selenopolis keeps Olaf Olafsonn and the Big Bad Trip in Prague's psych and kraut rock'n'roll lane.",
       imageUrls: [
         'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/olaf-olafsson-and-the-big-bad-trip-selenepolis.jpg',
@@ -578,6 +963,58 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     sourceKind: 'distro',
     storeItemSlug: 'steelwitch',
     variantId: 'variant_steelwitch_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description:
+        'CD edition of Baltica by Stefan Clor. Source metadata identifies it as a 17-track release, released October 20, 2017.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/stefan-clor-baltica-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'stefan-clor-baltica-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'stefan-clor-baltica-cd',
+        variantId: 'variant_stefan-clor-baltica-cd_standard',
+      },
+      name: 'BlackBox Records - Baltica - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'stefan-clor-baltica-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'stefan-clor-baltica-cd',
+    variantId: 'variant_stefan-clor-baltica-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2800,
+      currencyCode: 'EUR',
+    },
+    productProjection: {
+      description:
+        'CD edition of The guilt of feeling alive by Sun of Nothing. Source metadata identifies it as a 5-track release, released January 12, 2011.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/sun-of-nothing-the-guilt-of-feeling-alive-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
+        variantId: 'variant_sun-of-nothing-the-guilt-of-feeling-alive-cd_standard',
+      },
+      name: 'BlackBox Records - The guilt of feeling alive - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
+    variantId: 'variant_sun-of-nothing-the-guilt-of-feeling-alive-cd_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',

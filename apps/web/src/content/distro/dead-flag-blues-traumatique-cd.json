@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Traumatique",
+  "group": "CDs",
+  "artist_or_label": "Dead Flag Blues",
+  "image": "dead-flag-blues-traumatique-cd.jpg",
+  "image_alt": "Traumatique CD front mockup",
+  "summary": "CD edition of Traumatique by Dead Flag Blues. Source metadata identifies it as a 5-track release, released February 3, 2021.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 27,
+  "release_date": "2021-02-03"
+}

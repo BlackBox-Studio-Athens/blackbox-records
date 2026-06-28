@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Dirty ol' dogs",
+  "group": "CDs",
+  "artist_or_label": "Dirty ol' dogs",
+  "image": "dirty-ol-dogs-dirty-ol-dogs-cd.jpg",
+  "image_alt": "Dirty ol' dogs CD front mockup",
+  "summary": "CD edition of Dirty ol' dogs by Dirty ol' dogs. Source metadata identifies it as a 8-track release, released March 9, 2019.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 25,
+  "release_date": "2019-03-09"
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Reshaping the symbols",
+  "group": "CDs",
+  "artist_or_label": "Full Moon Bonzai",
+  "image": "full-moon-bonzai-reshaping-the-symbols-cd.jpg",
+  "image_alt": "Reshaping the symbols CD front mockup",
+  "summary": "CD edition of Reshaping the symbols by Full Moon Bonzai. Source metadata identifies it as a 8-track release, released December 1, 2017.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 32,
+  "release_date": "2017-12-01"
+}

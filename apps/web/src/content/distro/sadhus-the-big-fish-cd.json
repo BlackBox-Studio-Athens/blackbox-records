@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "The big fish",
+  "group": "CDs",
+  "artist_or_label": "Sadhus",
+  "image": "sadhus-the-big-fish-cd.jpg",
+  "image_alt": "The big fish CD front mockup",
+  "summary": "CD edition of The big fish by Sadhus. Source metadata identifies it as a 6-track release, released November 15, 2018.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 28,
+  "release_date": "2018-11-15"
+}

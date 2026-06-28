@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Υγειής",
+  "group": "CDs",
+  "artist_or_label": "Millions of Dead tourists",
+  "image": "millions-of-dead-tourists-ygiis-cd.jpg",
+  "image_alt": "Υγειής CD front mockup",
+  "summary": "CD edition of Υγειής by Millions of Dead tourists. Source metadata identifies it as a 4-track release, released March 23, 2023.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 36,
+  "release_date": "2023-03-23"
+}

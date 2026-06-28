@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Anima Triste",
+  "group": "CDs",
+  "artist_or_label": "Anima Triste",
+  "image": "anima-triste-anima-triste-cd.jpg",
+  "image_alt": "Anima Triste CD front mockup",
+  "summary": "CD edition of Anima Triste by Anima Triste. Source metadata identifies it as a 10-track release, released December 7, 2016.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 30,
+  "release_date": "2016-12-07"
+}

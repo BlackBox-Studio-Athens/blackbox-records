@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Hey Stealthy",
+  "group": "CDs",
+  "artist_or_label": "Hey Stealthy",
+  "image": "hey-stealthy-hey-stealthy-cd.jpg",
+  "image_alt": "Hey Stealthy CD front mockup",
+  "summary": "CD edition of Hey Stealthy by Hey Stealthy. Source metadata identifies it as a 6-track release, released November 1, 2024.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 24,
+  "release_date": "2024-11-01"
+}

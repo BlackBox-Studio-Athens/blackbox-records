@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Alone",
+  "group": "CDs",
+  "artist_or_label": "Anima Triste",
+  "image": "anima-triste-alone-cd.jpg",
+  "image_alt": "Alone CD front mockup",
+  "summary": "CD edition of Alone by Anima Triste. Source metadata identifies it as a 9-track release, released January 27, 2023.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 29,
+  "release_date": "2023-01-27"
+}

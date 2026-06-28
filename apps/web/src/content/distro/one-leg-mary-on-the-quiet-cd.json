@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "On the quiet",
+  "group": "CDs",
+  "artist_or_label": "One leg Mary",
+  "image": "one-leg-mary-on-the-quiet-cd.jpg",
+  "image_alt": "On the quiet CD front mockup",
+  "summary": "CD edition of On the quiet by One leg Mary. Source metadata identifies it as a 10-track release, released February 1, 2017.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 38,
+  "release_date": "2017-02-01"
+}

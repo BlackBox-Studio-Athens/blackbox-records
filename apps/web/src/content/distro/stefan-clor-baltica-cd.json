@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Baltica",
+  "group": "CDs",
+  "artist_or_label": "Stefan Clor",
+  "image": "stefan-clor-baltica-cd.jpg",
+  "image_alt": "Baltica CD front mockup",
+  "summary": "CD edition of Baltica by Stefan Clor. Source metadata identifies it as a 17-track release, released October 20, 2017.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 22,
+  "release_date": "2017-10-20"
+}
