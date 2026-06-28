@@ -39,7 +39,6 @@ INSERT INTO "StoreItemOption" (
     "updatedAt"
 )
 VALUES
-    ('store_item_option_afterglow_tape', 'afterglow-tape', 'distro', 'afterglow-tape', 'variant_afterglow-tape_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_aftermaths', 'aftermaths', 'distro', 'aftermaths', 'variant_aftermaths_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_against_his_story_against_leviathan', 'against-his-story-against-leviathan', 'distro', 'against-his-story-against-leviathan', 'variant_against-his-story-against-leviathan_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_anarchotribal_vinyl', 'anarchotribal-vinyl', 'release', 'anarchotribal', 'variant_anarchotribal-vinyl_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
@@ -69,7 +68,6 @@ VALUES
     ('store_item_option_one_leg_mary_i_a_seawolf_a_madman_cd', 'one-leg-mary-i-a-seawolf-a-madman-cd', 'distro', 'one-leg-mary-i-a-seawolf-a-madman-cd', 'variant_one-leg-mary-i-a-seawolf-a-madman-cd_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_one_leg_mary_on_the_quiet_cd', 'one-leg-mary-on-the-quiet-cd', 'distro', 'one-leg-mary-on-the-quiet-cd', 'variant_one-leg-mary-on-the-quiet-cd_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_primal_ephemeral', 'primal-ephemeral', 'distro', 'primal-ephemeral', 'variant_primal-ephemeral_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    ('store_item_option_rehearsal_room_tee', 'rehearsal-room-tee', 'distro', 'rehearsal-room-tee', 'variant_rehearsal-room-tee_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_rise_of_the_black_fang', 'rise-of-the-black-fang', 'distro', 'rise-of-the-black-fang', 'variant_rise-of-the-black-fang_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_rite', 'rite', 'distro', 'rite', 'variant_rite_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_sadhus_the_big_fish_cd', 'sadhus-the-big-fish-cd', 'distro', 'sadhus-the-big-fish-cd', 'variant_sadhus-the-big-fish-cd_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
@@ -99,7 +97,6 @@ INSERT INTO "ItemAvailability" (
     "updatedAt"
 )
 VALUES
-    ('item_availability_afterglow_tape', 'variant_afterglow-tape_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_aftermaths', 'variant_aftermaths_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_against_his_story_against_leviathan', 'variant_against-his-story-against-leviathan_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_anarchotribal_vinyl', 'variant_anarchotribal-vinyl_standard', 'available', TRUE, CURRENT_TIMESTAMP),
@@ -129,7 +126,6 @@ VALUES
     ('item_availability_one_leg_mary_i_a_seawolf_a_madman_cd', 'variant_one-leg-mary-i-a-seawolf-a-madman-cd_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_one_leg_mary_on_the_quiet_cd', 'variant_one-leg-mary-on-the-quiet-cd_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_primal_ephemeral', 'variant_primal-ephemeral_standard', 'available', TRUE, CURRENT_TIMESTAMP),
-    ('item_availability_rehearsal_room_tee', 'variant_rehearsal-room-tee_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_rise_of_the_black_fang', 'variant_rise-of-the-black-fang_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_rite', 'variant_rite_standard', 'available', TRUE, CURRENT_TIMESTAMP),
     ('item_availability_sadhus_the_big_fish_cd', 'variant_sadhus-the-big-fish-cd_standard', 'available', TRUE, CURRENT_TIMESTAMP),
@@ -159,7 +155,6 @@ INSERT INTO "Stock" (
     "updatedAt"
 )
 VALUES
-    ('stock_afterglow_tape', 'variant_afterglow-tape_standard', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_aftermaths', 'variant_aftermaths_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_against_his_story_against_leviathan', 'variant_against-his-story-against-leviathan_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_anarchotribal_vinyl', 'variant_anarchotribal-vinyl_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
@@ -189,7 +184,6 @@ VALUES
     ('stock_one_leg_mary_i_a_seawolf_a_madman_cd', 'variant_one-leg-mary-i-a-seawolf-a-madman-cd_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_one_leg_mary_on_the_quiet_cd', 'variant_one-leg-mary-on-the-quiet-cd_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_primal_ephemeral', 'variant_primal-ephemeral_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    ('stock_rehearsal_room_tee', 'variant_rehearsal-room-tee_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_rise_of_the_black_fang', 'variant_rise-of-the-black-fang_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_rite', 'variant_rite_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('stock_sadhus_the_big_fish_cd', 'variant_sadhus-the-big-fish-cd_standard', 99, 99, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),

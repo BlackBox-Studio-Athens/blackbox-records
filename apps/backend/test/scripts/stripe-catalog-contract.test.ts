@@ -24,7 +24,7 @@ describe('stripe catalog contract projection', () => {
     const contractsBySlug = new Map(contracts.map((contract) => [contract.storeItemSlug, contract]));
 
     expect(contracts.length).toBeGreaterThan(20);
-    expect(contracts).toHaveLength(46);
+    expect(contracts).toHaveLength(44);
     expect(new Set(contracts.map((contract) => contract.alignmentStatus))).toEqual(new Set(['checkout_eligible']));
     expect(contractsBySlug.get('anarchotribal-vinyl')).toMatchObject({
       alignmentStatus: 'checkout_eligible',
@@ -97,26 +97,8 @@ describe('stripe catalog contract projection', () => {
       sourceKind: 'release',
       variantId: 'variant_caregivers-vinyl_standard',
     });
-    expect(contractsBySlug.get('afterglow-tape')).toMatchObject({
-      alignmentStatus: 'checkout_eligible',
-      expectedSandboxPrice: {
-        amountMinor: 1200,
-        currencyCode: 'EUR',
-      },
-      productProjection: {
-        imageUrls: ['https://blackbox-records-web.pages.dev/admin/media/distro/cassette-tape.jpg'],
-        name: 'BlackBox Records - Afterglow Cassette - Cassette',
-        taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
-      },
-      sourceKind: 'distro',
-      variantId: 'variant_afterglow-tape_standard',
-    });
-    expect(contractsBySlug.get('rehearsal-room-tee')).toMatchObject({
-      expectedSandboxPrice: {
-        amountMinor: 2000,
-        currencyCode: 'EUR',
-      },
-    });
+    expect(contractsBySlug.has('afterglow-tape')).toBe(false);
+    expect(contractsBySlug.has('rehearsal-room-tee')).toBe(false);
     expect(contracts.every((contract) => contract.productProjection.taxCode === STRIPE_PHYSICAL_GOODS_TAX_CODE)).toBe(
       true,
     );
@@ -240,29 +222,22 @@ describe('stripe catalog contract projection', () => {
     );
   });
 
-  it('generates sandbox UAT D1 readiness rows with only afterglow as low stock', async () => {
+  it('generates sandbox UAT D1 readiness rows with default stock for current Store Items', async () => {
     const contracts = await loadStripeCatalogStoreItemContracts({ productEnvironment: 'UAT' });
     const stockBySlug = new Map(
       contracts.map((contract) => [contract.storeItemSlug, createSandboxUatCatalogStock(contract)]),
     );
     const sql = createSandboxUatCommerceSql(contracts);
 
-    expect(stockBySlug.get('afterglow-tape')).toEqual({
-      onlineQuantity: 1,
-      quantity: 1,
-    });
     expect(
-      contracts
-        .filter((contract) => contract.storeItemSlug !== 'afterglow-tape')
-        .every((contract) => {
-          const stock = stockBySlug.get(contract.storeItemSlug);
-          return stock?.quantity === 99 && stock.onlineQuantity === 99;
-        }),
+      contracts.every((contract) => {
+        const stock = stockBySlug.get(contract.storeItemSlug);
+        return stock?.quantity === 99 && stock.onlineQuantity === 99;
+      }),
     ).toBe(true);
     expect(sql.match(/INSERT INTO "StoreItemOption"/g)).toHaveLength(1);
     expect(sql.match(/INSERT INTO "ItemAvailability"/g)).toHaveLength(1);
     expect(sql.match(/INSERT INTO "Stock"/g)).toHaveLength(1);
-    expect(sql).toContain("'stock_afterglow_tape', 'variant_afterglow-tape_standard', 1, 1");
     expect(sql).toContain(
       "'disintegration-black-vinyl-lp', 'release', 'disintegration', 'variant_disintegration-black-vinyl-lp_standard'",
     );

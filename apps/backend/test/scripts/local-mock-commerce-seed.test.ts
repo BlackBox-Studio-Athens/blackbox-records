@@ -42,14 +42,6 @@ describe('local mock commerce seed generator', () => {
           storeItemSlug: 'caregivers-vinyl',
           variantId: 'variant_caregivers-vinyl_standard',
         }),
-        expect.objectContaining({
-          mockCheckoutEnabled: true,
-          taxCategory: 'physical_goods',
-          sourceId: 'afterglow-tape',
-          sourceKind: 'distro',
-          storeItemSlug: 'afterglow-tape',
-          variantId: 'variant_afterglow-tape_standard',
-        }),
       ]),
     );
     expect(storeItems.length).toBeGreaterThan(20);
@@ -115,7 +107,7 @@ describe('local mock commerce seed generator', () => {
           variantId: 'variant_the-chemical-bath_standard',
         }),
         expect.objectContaining({
-          mockCheckoutEnabled: true,
+          mockCheckoutEnabled: false,
           taxCategory: 'physical_goods',
           sourceId: 'afterglow-tape',
           sourceKind: 'distro',
@@ -159,11 +151,11 @@ describe('local mock commerce seed generator', () => {
       {
         mockCheckoutEnabled: true,
         taxCategory: 'physical_goods',
-        sourceId: 'afterglow-tape',
-        sourceKind: 'distro',
-        storeItemSlug: 'afterglow-tape',
-        title: 'Afterglow Cassette',
-        variantId: 'variant_afterglow-tape_standard',
+        sourceId: 'disintegration',
+        sourceKind: 'release',
+        storeItemSlug: 'disintegration-black-vinyl-lp',
+        title: 'Disintegration',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
     ]);
 
@@ -180,9 +172,11 @@ describe('local mock commerce seed generator', () => {
     expect(sql).toContain('TRUE');
     expect(sql).toContain('FALSE');
     expect(sql).toContain('99');
-    expect(sql).toContain("'price_mock_afterglow_tape'");
+    expect(sql).toContain("'price_mock_disintegration_black_vinyl_lp'");
     expect(sql).toContain("'price_mock_anarchotribal_vinyl'");
-    expect(sql).toContain("'blackbox:local:afterglow-tape:variant_afterglow-tape_standard'");
+    expect(sql).toContain(
+      "'blackbox:local:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard'",
+    );
     expect(sql).toContain("datetime('now', '+1 day')");
     expect(sql).not.toContain("'price_mock_caregivers_vinyl'");
     expect(sql).toContain('not real inventory evidence');

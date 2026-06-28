@@ -39,19 +39,14 @@ const desiredCatalogStatePath = path.join(
   'desired-catalog-state.ts',
 );
 
-export function createSandboxUatCatalogStock(contract: Pick<StripeCatalogStoreItemContract, 'storeItemSlug'>): {
+export function createSandboxUatCatalogStock(_contract: Pick<StripeCatalogStoreItemContract, 'storeItemSlug'>): {
   onlineQuantity: number;
   quantity: number;
 } {
-  return contract.storeItemSlug === 'afterglow-tape'
-    ? {
-        onlineQuantity: 1,
-        quantity: 1,
-      }
-    : {
-        onlineQuantity: 99,
-        quantity: 99,
-      };
+  return {
+    onlineQuantity: 99,
+    quantity: 99,
+  };
 }
 
 export function createCatalogProductProjectionSource(contracts: StripeCatalogStoreItemContract[]): string {

@@ -6,35 +6,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
   {
     availability: 'published',
     desiredPrice: {
-      amountMinor: 1200,
-      currencyCode: 'EUR',
-      revision: 'afterglow-tape-1200-eur',
-    },
-    productProjection: {
-      description:
-        'Exactly the kind of cassette we still want around: small-run, hand-carried, and more at home on a distro table than in a feed.',
-      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/cassette-tape.jpg'],
-      metadata: {
-        sourceId: 'afterglow-tape',
-        sourceKind: 'distro',
-        storeItemSlug: 'afterglow-tape',
-        variantId: 'variant_afterglow-tape_standard',
-      },
-      name: 'BlackBox Records - Afterglow Cassette - Cassette',
-      taxCode: 'txcd_99999999',
-    },
-    sourceId: 'afterglow-tape',
-    sourceKind: 'distro',
-    stockInitialization: {
-      initialOnlineQuantity: null,
-    },
-    storeItemSlug: 'afterglow-tape',
-    targetEnvironments: ['uat'],
-    variantId: 'variant_afterglow-tape_standard',
-  },
-  {
-    availability: 'published',
-    desiredPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
       revision: 'aftermaths-2800-eur',
@@ -925,37 +896,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
   {
     availability: 'published',
     desiredPrice: {
-      amountMinor: 2000,
-      currencyCode: 'EUR',
-      revision: 'rehearsal-room-tee-2000-eur',
-    },
-    productProjection: {
-      description:
-        'A BlackBox Studio shirt for keeping the collective visible beyond the rehearsal room and record table.',
-      imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/485959560_1089455589866031_1642364305898457824_n.jpg',
-      ],
-      metadata: {
-        sourceId: 'rehearsal-room-tee',
-        sourceKind: 'distro',
-        storeItemSlug: 'rehearsal-room-tee',
-        variantId: 'variant_rehearsal-room-tee_standard',
-      },
-      name: 'BlackBox Records - BlackBox Studio T-Shirt - T-Shirt',
-      taxCode: 'txcd_99999999',
-    },
-    sourceId: 'rehearsal-room-tee',
-    sourceKind: 'distro',
-    stockInitialization: {
-      initialOnlineQuantity: null,
-    },
-    storeItemSlug: 'rehearsal-room-tee',
-    targetEnvironments: ['uat'],
-    variantId: 'variant_rehearsal-room-tee_standard',
-  },
-  {
-    availability: 'published',
-    desiredPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
       revision: 'rise-of-the-black-fang-2800-eur',
@@ -1409,7 +1349,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
 ];
 
 export const currentDesiredCatalogState: DesiredCatalogState = {
-  revision: 'desired-catalog-d2a3fffe',
+  revision: 'desired-catalog-c84cf800',
   entries: currentDesiredCatalogEntries,
 };
 

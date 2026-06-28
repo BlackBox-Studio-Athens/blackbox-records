@@ -21,30 +21,6 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 1200,
-      currencyCode: 'EUR',
-    },
-    productProjection: {
-      description:
-        'Exactly the kind of cassette we still want around: small-run, hand-carried, and more at home on a distro table than in a feed.',
-      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/cassette-tape.jpg'],
-      metadata: {
-        sourceId: 'afterglow-tape',
-        sourceKind: 'distro',
-        storeItemSlug: 'afterglow-tape',
-        variantId: 'variant_afterglow-tape_standard',
-      },
-      name: 'BlackBox Records - Afterglow Cassette - Cassette',
-      taxCode: 'txcd_99999999',
-    },
-    sourceId: 'afterglow-tape',
-    sourceKind: 'distro',
-    storeItemSlug: 'afterglow-tape',
-    variantId: 'variant_afterglow-tape_standard',
-  },
-  {
-    alignmentStatus: 'checkout_eligible',
-    expectedSandboxPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
     },
@@ -786,32 +762,6 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     sourceKind: 'distro',
     storeItemSlug: 'primal-ephemeral',
     variantId: 'variant_primal-ephemeral_standard',
-  },
-  {
-    alignmentStatus: 'checkout_eligible',
-    expectedSandboxPrice: {
-      amountMinor: 2000,
-      currencyCode: 'EUR',
-    },
-    productProjection: {
-      description:
-        'A BlackBox Studio shirt for keeping the collective visible beyond the rehearsal room and record table.',
-      imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/485959560_1089455589866031_1642364305898457824_n.jpg',
-      ],
-      metadata: {
-        sourceId: 'rehearsal-room-tee',
-        sourceKind: 'distro',
-        storeItemSlug: 'rehearsal-room-tee',
-        variantId: 'variant_rehearsal-room-tee_standard',
-      },
-      name: 'BlackBox Records - BlackBox Studio T-Shirt - T-Shirt',
-      taxCode: 'txcd_99999999',
-    },
-    sourceId: 'rehearsal-room-tee',
-    sourceKind: 'distro',
-    storeItemSlug: 'rehearsal-room-tee',
-    variantId: 'variant_rehearsal-room-tee_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',
