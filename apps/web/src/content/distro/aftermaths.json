@@ -1,6 +1,7 @@
 {
   "image_alt": "aftermaths front",
   "$schema": "../../../.astro/collections/distro.schema.json",
+  "release_date": "2015-10-13",
   "summary": "A raw Croatian hardcore punk record from Indoctrinate, direct in delivery and stripped of unnecessary polish.",
   "order": 1,
   "artist_or_label": "Indoctrinate",
