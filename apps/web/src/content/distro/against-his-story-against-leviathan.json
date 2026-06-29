@@ -1,6 +1,7 @@
 {
   "image_alt": "Against Leviathan front",
   "$schema": "../../../.astro/collections/distro.schema.json",
+  "release_date": "2013-12-07",
   "summary": "Hazarder's Zagreb sludge, stoner, and doom metal leans on downtuned guitars and raw vocals from start to finish.",
   "order": 1,
   "artist_or_label": "Hazarder",
