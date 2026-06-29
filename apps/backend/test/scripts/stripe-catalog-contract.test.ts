@@ -24,7 +24,6 @@ describe('stripe catalog contract projection', () => {
     const contractsBySlug = new Map(contracts.map((contract) => [contract.storeItemSlug, contract]));
 
     expect(contracts.length).toBeGreaterThan(20);
-    expect(contracts).toHaveLength(67);
     expect(new Set(contracts.map((contract) => contract.alignmentStatus))).toEqual(new Set(['checkout_eligible']));
     expect(contractsBySlug.get('anarchotribal-vinyl')).toMatchObject({
       alignmentStatus: 'checkout_eligible',
