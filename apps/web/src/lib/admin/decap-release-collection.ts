@@ -26,7 +26,7 @@ export function buildReleaseCollection(artistOptions: DecapSelectOption[]) {
         label: 'Release date',
         name: 'release_date',
         widget: 'datetime',
-        hint: 'Release day only. Time is ignored. Example: 2026-09-18.',
+        hint: 'Official release date used by the public site for display and release ordering/latest behavior. Time is ignored. Example: 2026-09-18.',
         extras: ['date_format: YYYY-MM-DD', 'time_format: false'],
       }),
       buildField({

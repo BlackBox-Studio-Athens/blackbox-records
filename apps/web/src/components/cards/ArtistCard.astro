@@ -19,7 +19,7 @@ const isFeaturedRosterVariant = variant === 'featured-roster';
 const isRosterDetailedVariant = variant === 'roster-detailed';
 const releaseCount = releaseContext?.releaseCount ?? 0;
 const latestReleaseTitle = releaseContext?.latestReleaseTitle || 'No releases yet';
-const latestReleaseYear = releaseContext?.latestReleaseYear ? String(releaseContext.latestReleaseYear) : '';
+const latestReleaseDate = releaseContext?.latestReleaseDate || '';
 const hasLatestRelease = Boolean(releaseContext?.latestReleaseTitle);
 const artistCardImageWidths = [480, 720, 960, 1200, 1440];
 ---
@@ -79,7 +79,7 @@ const artistCardImageWidths = [480, 720, 960, 1200, 1440];
               {hasLatestRelease ? (
                 <>
                   <p class="artist-latest-teaser__title">{latestReleaseTitle}</p>
-                  {latestReleaseYear && <p class="artist-latest-teaser__meta">{latestReleaseYear}</p>}
+                  {latestReleaseDate && <p class="artist-latest-teaser__meta">{latestReleaseDate}</p>}
                 </>
               ) : (
                 <p class="artist-latest-teaser__title artist-latest-teaser__title--muted">{latestReleaseTitle}</p>

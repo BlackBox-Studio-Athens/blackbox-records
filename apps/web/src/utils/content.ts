@@ -12,6 +12,10 @@ export function formatMonthYear(value: Date) {
   return value.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
+export function formatDayMonthYear(value: Date) {
+  return value.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
 export function formatYear(value: Date) {
   return String(value.getUTCFullYear());
 }

@@ -16,6 +16,9 @@ describe('Decap release collection', () => {
     expect(yaml).toContain('label: "Mass Culture"');
     expect(yaml).toContain('value: "mass-culture"');
     expect(yaml).toContain('name: "release_date"');
+    expect(yaml).toContain(
+      'hint: "Official release date used by the public site for display and release ordering/latest behavior. Time is ignored. Example: 2026-09-18."',
+    );
     expect(yaml).toContain('date_format: YYYY-MM-DD');
     expect(yaml).toContain('name: "bandcamp_embed_url"');
     expect(yaml).toContain('name: "tidal_url"');

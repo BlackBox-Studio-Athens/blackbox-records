@@ -194,7 +194,7 @@ describe('StoreItem projection contract', () => {
       image: { src: '/cover.jpg', width: 100, height: 100, format: 'jpg' },
       imageAlt: 'Caregivers cover',
       eyebrow: 'Release',
-      metadata: ['2024', 'Vinyl', 'Digital'],
+      metadata: ['Nov 2024', 'Vinyl', 'Digital'],
       storePath: '/blackbox-records/store/caregivers-vinyl/',
       checkoutPath: '/blackbox-records/store/caregivers-vinyl/checkout/',
     });
@@ -286,7 +286,7 @@ describe('StoreItem projection contract', () => {
     expect(storeItem.taxCategory).toBe('physical_goods');
     expect(storeItem.storePath).toBe('/blackbox-records/store/afterglow-tape/');
     expect(storeItem.checkoutPath).toBe('/blackbox-records/store/afterglow-tape/checkout/');
-    expect(storeItem.metadata).toEqual(['Tapes', '2021', 'Cassette']);
+    expect(storeItem.metadata).toEqual(['Tapes', 'Jun 2021', 'Cassette']);
     expect(storeItem).not.toHaveProperty('merch_url');
   });
 

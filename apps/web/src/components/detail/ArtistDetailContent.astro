@@ -9,7 +9,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl, resolveLinkAttributes } from '@/config/site';
 import { createReleaseDetailPath, listReleaseCatalogByArtistId } from '@/lib/catalog-data';
 import { cn } from '@/lib/utils';
-import { formatYear } from '@/utils/content';
+import { formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/utils/music';
 
 interface Props {
@@ -28,7 +28,8 @@ const artistVideos = artist.data.videos || [];
 
 const artistReleases = await listReleaseCatalogByArtistId(artist.id);
 const latestRelease = artistReleases[0] || null;
-const latestReleaseYear = latestRelease ? formatYear(latestRelease.data.release_date) : '';
+const latestReleaseDate = latestRelease ? formatMonthYear(latestRelease.data.release_date) : '';
+const latestReleaseDateMachineValue = latestRelease ? latestRelease.data.release_date.toISOString().slice(0, 10) : '';
 const latestReleaseFormats = latestRelease?.data.formats?.length ? latestRelease.data.formats.join(' / ') : 'Release';
 const latestReleaseHref = latestRelease
   ? createReleaseDetailPath(latestRelease)
@@ -150,7 +151,12 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
           </a>
           <p class="artist-latest-release-panel__meta">
             {latestReleaseFormats}
-            {latestReleaseYear && <> / {latestReleaseYear}</>}
+            {latestReleaseDate && (
+              <>
+                {' / '}
+                <time datetime={latestReleaseDateMachineValue}>{latestReleaseDate}</time>
+              </>
+            )}
           </p>
           {latestRelease.data.summary && (
             <p class="artist-latest-release-panel__summary">{latestRelease.data.summary}</p>
@@ -264,27 +270,35 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
         </div>
       </div>
       <div class="artist-previous-release-list">
-        {previousReleases.map((release) => (
-          <a class="artist-previous-release" href={createReleaseDetailPath(release)} data-astro-prefetch>
-            <Image
-              src={release.data.cover_image}
-              alt={release.data.cover_image_alt || release.data.title}
-              class="artist-previous-release__artwork h-full w-full object-cover"
-              widths={[96, 160, 240]}
-              sizes="5rem"
-            />
-            <span class="artist-previous-release__copy">
-              <span class="artist-previous-release__title">{release.data.title}</span>
-              <span class="artist-previous-release__meta">
-                {release.data.formats?.join(' / ') || 'Release'}
-                {formatYear(release.data.release_date) && <> / {formatYear(release.data.release_date)}</>}
+        {previousReleases.map((release) => {
+          const releaseDate = formatMonthYear(release.data.release_date);
+          return (
+            <a class="artist-previous-release" href={createReleaseDetailPath(release)} data-astro-prefetch>
+              <Image
+                src={release.data.cover_image}
+                alt={release.data.cover_image_alt || release.data.title}
+                class="artist-previous-release__artwork h-full w-full object-cover"
+                widths={[96, 160, 240]}
+                sizes="5rem"
+              />
+              <span class="artist-previous-release__copy">
+                <span class="artist-previous-release__title">{release.data.title}</span>
+                <span class="artist-previous-release__meta">
+                  {release.data.formats?.join(' / ') || 'Release'}
+                  {releaseDate && (
+                    <>
+                      {' / '}
+                      <time datetime={release.data.release_date.toISOString().slice(0, 10)}>{releaseDate}</time>
+                    </>
+                  )}
+                </span>
               </span>
-            </span>
-            <span class="artist-previous-release__arrow" aria-hidden="true">
-              &rarr;
-            </span>
-          </a>
-        ))}
+              <span class="artist-previous-release__arrow" aria-hidden="true">
+                &rarr;
+              </span>
+            </a>
+          );
+        })}
       </div>
     </section>
   )

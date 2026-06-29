@@ -10,7 +10,7 @@ import { createProjectRelativeUrl } from '@/config/site';
 import { resolveArtistProfileForRelease, resolveReleaseArtistDisplayName } from '@/lib/catalog-data';
 import { getReleaseCommerceLink } from '@/lib/release-commerce';
 import { cn } from '@/lib/utils';
-import { formatYear } from '@/utils/content';
+import { formatDayMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/utils/music';
 
 interface Props {
@@ -24,7 +24,8 @@ const artistName = resolveReleaseArtistDisplayName(release, releaseArtist);
 const artistUrl = releaseArtist
   ? createProjectRelativeUrl(`/artists/${releaseArtist.data.slug}/`)
   : createProjectRelativeUrl('/artists/');
-const releaseYear = formatYear(release.data.release_date);
+const releaseDate = formatDayMonthYear(release.data.release_date);
+const releaseDateMachineValue = release.data.release_date.toISOString().slice(0, 10);
 const embeddedPlayerTitle = `${release.data.title} — ${artistName}`;
 const embeddedPlayerData = buildEmbeddedPlayerData(release.data, embeddedPlayerTitle);
 const commerceLink = await getReleaseCommerceLink(release);
@@ -59,7 +60,11 @@ const commerceLink = await getReleaseCommerceLink(release);
             >{artistName}</a
           >
         </p>
-        <p class="text-sm uppercase tracking-[0.12em] text-muted-foreground">{releaseYear}</p>
+        <p class="text-sm uppercase tracking-[0.12em] text-muted-foreground">
+          <span>Release date</span>
+          <span aria-hidden="true"> / </span>
+          <time datetime={releaseDateMachineValue}>{releaseDate}</time>
+        </p>
         {
           release.data.summary && (
             <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">{release.data.summary}</p>

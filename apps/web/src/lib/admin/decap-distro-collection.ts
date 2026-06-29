@@ -73,7 +73,7 @@ export function buildDistroCollection() {
         name: 'release_date',
         widget: 'datetime',
         required: false,
-        hint: 'Optional known release date. Leave empty when unknown; do not infer from description text.',
+        hint: 'Optional known release date used for public display metadata. Leave empty when unknown; do not infer from description text.',
         extras: ['date_format: YYYY-MM-DD', 'time_format: false'],
       }),
       buildField({

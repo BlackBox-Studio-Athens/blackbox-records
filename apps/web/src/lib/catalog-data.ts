@@ -33,11 +33,15 @@ type StoreItemImageOverride = {
 };
 export type ArtistRosterReleaseContext = {
   latestReleaseTitle: string | null;
-  latestReleaseYear: number | null;
+  latestReleaseDate: string | null;
   releaseCount: number;
 };
 
 const nonPhysicalReleaseFormats = new Set(['digital']);
+
+function formatMonthYear(value: Date) {
+  return value.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
 
 function sortArtistProfilesByName(left: ArtistProfileEntry, right: ArtistProfileEntry) {
   return left.data.title.localeCompare(right.data.title);
@@ -78,7 +82,7 @@ export async function mapArtistRosterReleaseContextById() {
     if (!existingContext) {
       releaseContextByArtistId.set(artistId, {
         latestReleaseTitle: releaseEntry.data.title,
-        latestReleaseYear: releaseEntry.data.release_date.getFullYear(),
+        latestReleaseDate: formatMonthYear(releaseEntry.data.release_date),
         releaseCount: 1,
       });
       return;
@@ -182,7 +186,7 @@ export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEnt
   const artistProfile = await resolveArtistProfileForRelease(releaseEntry);
   const artistDisplayName = resolveReleaseArtistDisplayName(releaseEntry, artistProfile || undefined);
   const slug = createReleaseStoreItemSlug(releaseEntry);
-  const metadata = [String(releaseEntry.data.release_date.getFullYear()), ...(releaseEntry.data.formats || [])];
+  const metadata = [formatMonthYear(releaseEntry.data.release_date), ...(releaseEntry.data.formats || [])];
 
   return {
     slug,
@@ -202,8 +206,8 @@ export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEnt
 
 export function createStoreItemFromDistroEntry(distroEntry: DistroCatalogEntry): StoreItem {
   const slug = distroEntry.id;
-  const releaseYear = distroEntry.data.release_date ? String(distroEntry.data.release_date.getFullYear()) : null;
-  const metadata = [distroEntry.data.group, releaseYear, distroEntry.data.format].filter(Boolean) as string[];
+  const releaseDate = distroEntry.data.release_date ? formatMonthYear(distroEntry.data.release_date) : null;
+  const metadata = [distroEntry.data.group, releaseDate, distroEntry.data.format].filter(Boolean) as string[];
 
   return {
     slug,

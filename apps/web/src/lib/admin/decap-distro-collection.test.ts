@@ -16,6 +16,9 @@ describe('Decap distro collection', () => {
     expect(yaml).toContain('label: "Vinyl 12-inch"');
     expect(yaml).toContain('value: "Vinyl 7-inch"');
     expect(yaml).toContain('name: "release_date"');
+    expect(yaml).toContain(
+      'hint: "Optional known release date used for public display metadata. Leave empty when unknown; do not infer from description text."',
+    );
     expect(yaml).toContain('date_format: YYYY-MM-DD');
     expect(yaml).toContain('name: "order"');
     expect(yaml).toContain('value_type: int');
