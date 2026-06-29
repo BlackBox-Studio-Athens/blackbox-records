@@ -21,6 +21,19 @@ The system SHALL record PRD evidence without committing secrets, full Stripe IDs
 - **WHEN** evidence is written to OpenSpec
 - **THEN** it is redacted to safe identifiers and summary status only.
 
+### Requirement: Release data promotion boundary
+
+The system MUST use Decap-authored repo content and generated catalog artifacts as the launch data path for PRD, and MUST NOT copy UAT runtime/provider state into PRD.
+
+#### Scenario: UAT-prepared content is selected for launch
+
+- **GIVEN** colleagues have prepared release content in UAT through Decap
+- **WHEN** that content is considered for PRD launch
+- **THEN** the launch artifact commit is generated from the repo content and has UAT proof for the same commit
+- **AND** approved launch Store Items have explicit PRD target policy, live price authority, first-publication stock readiness, PRD D1 readiness rows, and live provider ownership evidence
+- **AND** UAT D1 rows, Stripe test-mode Products/Prices, synthetic stock quantities, and UAT smoke evidence are not copied or treated as PRD launch data
+- **AND** PRD catalog assets use PRD asset URLs instead of UAT asset URLs.
+
 ### Requirement: Rollback and disable path
 
 The system MUST have documented rollback and emergency-disable behavior before native commerce receives production traffic.

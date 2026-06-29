@@ -1,10 +1,10 @@
 ## Why
 
-UAT evidence exists, but PRD native-commerce launch still depends on live Stripe access, final domain wiring, production webhook configuration, production Worker/D1 configuration, emergency-disable behavior, and named human approval.
+UAT evidence exists, but PRD native-commerce launch still depends on live Stripe access, final domain wiring, production webhook configuration, production Worker/D1 configuration, emergency-disable behavior, named human approval, and a release-data promotion decision that reuses repo/Decap content without copying UAT runtime provider data.
 
 ## What Changes
 
-Define the final PRD-open gates as an OpenSpec change instead of leaving them in historical launch-readiness/backlog docs.
+Define the final PRD-open gates as an OpenSpec change instead of leaving them in historical launch-readiness/backlog docs. Make the launch data path explicit: Decap-authored repo content may become PRD release content through generated artifacts, but UAT D1, Stripe test-mode objects, synthetic stock, and UAT evidence are not promoted into PRD.
 
 ## Capabilities
 
