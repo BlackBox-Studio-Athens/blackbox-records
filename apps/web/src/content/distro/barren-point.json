@@ -1,6 +1,7 @@
 {
   "image_alt": "Stack of vinyl records",
   "$schema": "../../../.astro/collections/distro.schema.json",
+  "release_date": "2023-05-15",
   "summary": "Mass Culture's Barren Point keeps the Greek band's post-hardcore and metal pressure direct and physical.",
   "eyebrow": "BlackBox Pick",
   "order": 1,
