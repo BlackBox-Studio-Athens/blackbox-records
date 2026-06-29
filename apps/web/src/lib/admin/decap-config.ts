@@ -2,6 +2,7 @@ import { escapeYamlScalar, indentYamlBlock, type DecapSelectOption } from './dec
 import { buildAboutFields } from './decap-about-fields';
 import { buildArtistCollection } from './decap-artist-collection';
 import { buildDistroCollection } from './decap-distro-collection';
+import { buildDistroPageFields } from './decap-distro-page-fields';
 import { buildHomeFields } from './decap-home-fields';
 import { buildNewsCollection } from './decap-news-collection';
 import { buildNewsletterFields } from './decap-newsletter-fields';
@@ -38,12 +39,20 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
 
   const homeFields = buildHomeFields();
   const aboutFields = buildAboutFields();
+  const distroPageFields = buildDistroPageFields();
   const servicesFields = buildServicesFields();
   const settingsFields = buildSettingsFields();
   const newsletterFields = buildNewsletterFields();
 
   const collections = [
-    ...buildPageFileCollections({ homeFields, aboutFields, servicesFields, settingsFields, newsletterFields }),
+    ...buildPageFileCollections({
+      homeFields,
+      aboutFields,
+      distroPageFields,
+      servicesFields,
+      settingsFields,
+      newsletterFields,
+    }),
     ...buildSiteChromeCollections(),
     buildArtistCollection(),
     buildReleaseCollection(options.artistOptions),

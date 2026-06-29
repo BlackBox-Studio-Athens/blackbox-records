@@ -1,0 +1,18 @@
+{
+  "$schema": "../../../.astro/collections/distroPage.schema.json",
+  "page_title": "Distro",
+  "page_description": "A curated distro of records, clothes, and tapes carried through the BlackBox store.",
+  "hero": {
+    "section_label": "Distro",
+    "title": "Distro",
+    "intro": "A small curated layer around the store: records, clothes, and tapes that fit naturally beside the releases BlackBox is already putting into the world."
+  },
+  "group_intros": {
+    "Vinyl 12-inch": "Full-size records worth keeping in circulation: BlackBox releases, close allies, and a few things that still belong on an actual shelf.",
+    "Vinyl 7-inch": "Seven-inch records and split releases that fit the distro shelf without needing a separate archive.",
+    "CDs": "Compact disc editions carried as part of the same small, physical catalog.",
+    "Clothes": "Shirts and wearable pieces that feel closer to the label table than to generic merch filler.",
+    "Tapes": "Small-run cassette releases and tape editions that still make sense in a real distro, not just as a novelty format.",
+    "Other": "Fallback shelf for physical distro pieces that do not fit the main format groups."
+  }
+}

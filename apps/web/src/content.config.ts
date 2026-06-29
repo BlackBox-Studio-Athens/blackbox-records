@@ -102,6 +102,20 @@ const distro = defineCollection({
     }),
 });
 
+const distroPage = defineCollection({
+  loader: glob({ pattern: '**/*.json', base: './src/content/distro-page' }),
+  schema: z.object({
+    page_title: z.string(),
+    page_description: z.string(),
+    hero: z.object({
+      section_label: z.string(),
+      title: z.string(),
+      intro: z.string(),
+    }),
+    group_intros: z.record(z.enum(distroGroupValues), z.string()),
+  }),
+});
+
 const navigation = defineCollection({
   loader: glob({ pattern: '**/*.json', base: './src/content/navigation' }),
   schema: z.object({
@@ -308,6 +322,7 @@ export const collections = {
   releases,
   news,
   distro,
+  distroPage,
   navigation,
   socials,
   settings,

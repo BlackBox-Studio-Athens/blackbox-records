@@ -21,6 +21,7 @@ export type NewsletterContent = CollectionEntry<'newsletter'>['data'];
 export type HomeContent = CollectionEntry<'home'>['data'];
 export type AboutContent = CollectionEntry<'about'>['data'];
 export type ServicesContent = CollectionEntry<'services'>['data'];
+export type DistroPageContent = CollectionEntry<'distroPage'>['data'];
 
 function sortByOrderAndTitle<T extends { order: number; title: string }>(left: T, right: T) {
   if (left.order !== right.order) {
@@ -106,4 +107,13 @@ export async function getServicesContent(): Promise<ServicesContent> {
   }
 
   return servicesContent.data;
+}
+
+export async function getDistroPageContent(): Promise<DistroPageContent> {
+  const distroPageContent = await getEntry('distroPage', 'site');
+  if (!distroPageContent) {
+    throw new Error('Missing distro page content entry at src/content/distro-page/site.json.');
+  }
+
+  return distroPageContent.data;
 }

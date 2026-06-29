@@ -7,6 +7,10 @@
     "dev": "pnpm dev:web",
     "dev:web": "pnpm --filter @blackbox/web dev",
     "site:dev": "pnpm --filter @blackbox/web dev:static",
+    "site:dev:bg": "pnpm --filter @blackbox/web dev:bg",
+    "site:dev:status": "pnpm --filter @blackbox/web dev:status",
+    "site:dev:logs": "pnpm --filter @blackbox/web dev:logs",
+    "site:dev:stop": "pnpm --filter @blackbox/web dev:stop",
     "dev:clean": "pnpm --filter @blackbox/web dev:clean",
     "cms:dev": "pnpm --filter @blackbox/web cms:dev",
     "cms:proxy": "pnpm --filter @blackbox/web cms:proxy",
@@ -87,7 +91,7 @@
     "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.4",
-    "eslint-plugin-astro": "^1.7.0",
+    "eslint-plugin-astro": "^2.1.1",
     "eslint-plugin-boundaries": "^6.0.2",
     "execa": "9.6.1",
     "knip": "^6.14.2",
@@ -96,7 +100,7 @@
     "prettier-plugin-astro": "0.14.1",
     "tsx": "4.22.3",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.59.4",
+    "typescript-eslint": "^8.62.0",
     "zod": "^4.4.3"
   }
 }

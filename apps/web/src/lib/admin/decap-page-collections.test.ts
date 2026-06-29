@@ -7,6 +7,7 @@ describe('Decap page file collections', () => {
     const yaml = buildPageFileCollections({
       homeFields: ['home-field'],
       aboutFields: ['about-field'],
+      distroPageFields: ['distro-page-field'],
       servicesFields: ['services-field'],
       settingsFields: ['settings-field'],
       newsletterFields: ['newsletter-field'],
@@ -20,6 +21,9 @@ describe('Decap page file collections', () => {
     expect(yaml).toContain('name: "about"');
     expect(yaml).toContain('file: "apps/web/src/content/about/site.json"');
     expect(yaml).toContain('about-field');
+    expect(yaml).toContain('name: "distro-page"');
+    expect(yaml).toContain('file: "apps/web/src/content/distro-page/site.json"');
+    expect(yaml).toContain('distro-page-field');
     expect(yaml).toContain('name: "services"');
     expect(yaml).toContain('file: "apps/web/src/content/services/site.json"');
     expect(yaml).toContain('services-field');
@@ -35,12 +39,13 @@ describe('Decap page file collections', () => {
     const yaml = buildPageFileCollections({
       homeFields: ['home-field'],
       aboutFields: ['about-field'],
+      distroPageFields: ['distro-page-field'],
       servicesFields: ['services-field'],
       settingsFields: ['settings-field'],
       newsletterFields: ['newsletter-field'],
     });
 
-    expect(yaml).toHaveLength(5);
+    expect(yaml).toHaveLength(6);
     for (const collectionYaml of yaml) {
       expect(collectionYaml).toContain('extension: json');
       expect(collectionYaml).toContain('format: json');
@@ -48,6 +53,7 @@ describe('Decap page file collections', () => {
 
     expect(yaml.join('\n')).toContain('file: "apps/web/src/content/home/site.json"');
     expect(yaml.join('\n')).toContain('file: "apps/web/src/content/about/site.json"');
+    expect(yaml.join('\n')).toContain('file: "apps/web/src/content/distro-page/site.json"');
     expect(yaml.join('\n')).toContain('file: "apps/web/src/content/services/site.json"');
     expect(yaml.join('\n')).toContain('file: "apps/web/src/content/newsletter/site.json"');
     expect(yaml.join('\n')).toContain('file: "apps/web/src/content/settings/site.json"');

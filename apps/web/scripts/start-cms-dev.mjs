@@ -11,6 +11,7 @@ const decapServerExecutable = resolve(
   process.platform === 'win32' ? 'decap-server.cmd' : 'decap-server',
 );
 const astroExecutable = resolve(webRoot, 'node_modules', '.bin', process.platform === 'win32' ? 'astro.cmd' : 'astro');
+const foregroundAstroEnv = { ...process.env, ASTRO_DEV_BACKGROUND: '0' };
 const cmsPort = process.env.CMS_DEV_PORT ?? '4322';
 const proxyPort = process.env.DECAP_LOCAL_PROXY_PORT ?? '8082';
 
@@ -26,7 +27,7 @@ const children = [
   }),
   spawn(astroExecutable, ['dev', '--port', cmsPort], {
     cwd: webRoot,
-    env: process.env,
+    env: foregroundAstroEnv,
     shell: process.platform === 'win32',
     stdio: 'inherit',
   }),

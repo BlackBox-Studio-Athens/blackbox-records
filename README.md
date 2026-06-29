@@ -4,7 +4,7 @@ Static Astro site for the BlackBox Records label.
 
 ## Stack
 
-- Astro 6 (static output)
+- Astro 7 (static output)
 - React integration (for shadcn-ui primitives)
 - Tailwind CSS v4 + shadcn-ui setup (design implemented in Astro templates + `apps/web/src/styles/global.css`)
 - Type-safe content collections (`apps/web/src/content`)
@@ -103,6 +103,17 @@ Notes:
 ```sh
 pnpm dev
 ```
+
+For Codex/browser smoke checks, prefer Astro's background dev server:
+
+```sh
+pnpm site:dev:bg
+pnpm site:dev:status
+pnpm site:dev:logs
+pnpm site:dev:stop
+```
+
+`pnpm site:dev` remains the foreground static-site launcher for WebStorm and local stack process supervision.
 
 Run the default full local commerce stack:
 

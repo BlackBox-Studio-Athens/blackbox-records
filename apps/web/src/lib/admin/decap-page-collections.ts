@@ -3,6 +3,7 @@ import { buildFileCollection } from './decap-yaml-builder';
 type BuildPageFileCollectionsOptions = {
   homeFields: string[];
   aboutFields: string[];
+  distroPageFields: string[];
   servicesFields: string[];
   settingsFields: string[];
   newsletterFields: string[];
@@ -11,6 +12,7 @@ type BuildPageFileCollectionsOptions = {
 export function buildPageFileCollections({
   homeFields,
   aboutFields,
+  distroPageFields,
   servicesFields,
   settingsFields,
   newsletterFields,
@@ -49,6 +51,22 @@ export function buildPageFileCollections({
           mediaFolder: '.',
           publicFolder: './',
           fields: aboutFields,
+        },
+      ],
+    }),
+    buildFileCollection({
+      name: 'distro-page',
+      label: 'Distro Page',
+      create: false,
+      delete: false,
+      extension: 'json',
+      format: 'json',
+      files: [
+        {
+          name: 'distro-page-site',
+          label: 'Distro Page Content',
+          file: 'apps/web/src/content/distro-page/site.json',
+          fields: distroPageFields,
         },
       ],
     }),

@@ -8,6 +8,7 @@ const HOST = '127.0.0.1';
 const PORT = 4321;
 const SITE_PATH = '/blackbox-records/';
 const webDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const foregroundAstroEnv = { ...process.env, ASTRO_DEV_BACKGROUND: '0' };
 
 function assertPortAvailable(host, port) {
   return new Promise((resolve, reject) => {
@@ -52,7 +53,7 @@ function spawnAstroDev() {
     return spawn(commandString, [], {
       cwd: webDir,
       stdio: 'inherit',
-      env: process.env,
+      env: foregroundAstroEnv,
       shell: true,
     });
   }
@@ -60,7 +61,7 @@ function spawnAstroDev() {
   return spawn(astroCommand, ['dev', '--root', '.', '--host', HOST, '--port', String(PORT)], {
     cwd: webDir,
     stdio: 'inherit',
-    env: process.env,
+    env: foregroundAstroEnv,
   });
 }
 

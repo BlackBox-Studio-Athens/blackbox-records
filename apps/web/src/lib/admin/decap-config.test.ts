@@ -25,8 +25,10 @@ describe('buildDecapConfig', () => {
     expect(yaml).toContain('value: "mass-culture"');
     expect(yaml).toContain('summary: "{{fields.tagline}}"');
     expect(yaml).toContain('file: "apps/web/src/content/newsletter/site.json"');
+    expect(yaml).toContain('file: "apps/web/src/content/distro-page/site.json"');
     expect(yaml).not.toMatch(/file: "src\/content\/|folder: "src\/content\/|media_folder: src\/content\//);
     expect(yaml).toContain('default: "../../../.astro/collections/newsletter.schema.json"');
+    expect(yaml).toContain('default: "../../../.astro/collections/distroPage.schema.json"');
     expect(yaml).toContain('hint: "Short line over the hero still. Example: \\"Heavy music on record.\\""');
     expect(yaml).toContain('hint: "Pick the matching artist entry so Astro references stay valid."');
     expect(yaml).toContain('summary: "{{fields.title}}"');
@@ -78,5 +80,31 @@ describe('buildDecapConfig', () => {
     expect(yaml).toContain('label: "Quote"');
     expect(yaml).toContain('label: "Services list"');
     expect(yaml).toContain('summary: "{{fields.locality}}, {{fields.country}}"');
+  });
+
+  it('exposes distro page copy and distro item fields without commerce authority', () => {
+    const yaml = buildDecapConfig({
+      artistOptions: [{ label: 'Mass Culture', value: 'mass-culture' }],
+      authEndpoint: '/unused',
+      authTokenEndpoint: '/unused-token',
+      baseUrl: 'https://auth.decapbridge.com',
+      branch: 'main',
+      gatewayUrl: 'https://gateway.decapbridge.com',
+      useLocalBackend: true,
+      localBackendPort: '8082',
+      logoUrl: 'https://example.com/logo.png',
+      repository: 'BlackBox-Studio-Athens/blackbox-records',
+      siteRootUrl: 'http://127.0.0.1:4322/blackbox-records/',
+    });
+
+    expect(yaml).toContain('label: "Distro Page"');
+    expect(yaml).toContain('name: "group_intros"');
+    expect(yaml).toContain('label: "Vinyl 12-inch"');
+    expect(yaml).toContain('folder: "apps/web/src/content/distro"');
+    expect(yaml).toContain('name: "artist_or_label"');
+    expect(yaml).toContain('name: "summary"');
+    expect(yaml).toContain('name: "format"');
+    expect(yaml).not.toContain('name: "price"');
+    expect(yaml).not.toContain('name: "stripe_price_id"');
   });
 });

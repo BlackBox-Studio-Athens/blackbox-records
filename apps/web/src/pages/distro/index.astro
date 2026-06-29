@@ -2,36 +2,19 @@
 import DistroCard from '@/components/cards/DistroCard.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { groupDistroEntries, listDistroEntries } from '@/lib/catalog-data';
-import type { DistroGroupName } from '@/lib/distro-data';
+import { getDistroPageContent } from '@/lib/site-data';
 
-const DISTRO_GROUP_INTROS: Record<DistroGroupName, string> = {
-  'Vinyl 12-inch':
-    'Full-size records worth keeping in circulation: BlackBox releases, close allies, and a few things that still belong on an actual shelf.',
-  'Vinyl 7-inch': 'Seven-inch records and split releases that fit the distro shelf without needing a separate archive.',
-  CDs: 'Compact disc editions carried as part of the same small, physical catalog.',
-  Clothes: 'Shirts and wearable pieces that feel closer to the label table than to generic merch filler.',
-  Tapes:
-    'Small-run cassette releases and tape editions that still make sense in a real distro, not just as a novelty format.',
-  Other: 'Fallback shelf for physical distro pieces that do not fit the main format groups.',
-};
-
-const distroEntries = await listDistroEntries();
+const [distroEntries, distroPageContent] = await Promise.all([listDistroEntries(), getDistroPageContent()]);
 const groupedDistroEntries = groupDistroEntries(distroEntries);
 const eagerDistroEntryIds = new Set(distroEntries.slice(0, 3).map((entry) => entry.id));
 ---
 
-<SiteLayout
-  pageTitle="Distro"
-  pageDescription="A curated distro of records, clothes, and tapes carried through the BlackBox store."
->
+<SiteLayout pageTitle={distroPageContent.page_title} pageDescription={distroPageContent.page_description}>
   <section class="layout-container distro-page-intro">
     <div class="distro-page-intro__surface">
-      <p class="distro-page-intro__eyebrow">Distro</p>
-      <h1 class="distro-page-intro__title">Distro</h1>
-      <p class="distro-page-intro__copy">
-        A small curated layer around the store: records, clothes, and tapes that fit naturally beside the releases
-        BlackBox is already putting into the world.
-      </p>
+      <p class="distro-page-intro__eyebrow">{distroPageContent.hero.section_label}</p>
+      <h1 class="distro-page-intro__title">{distroPageContent.hero.title}</h1>
+      <p class="distro-page-intro__copy">{distroPageContent.hero.intro}</p>
     </div>
   </section>
 
@@ -49,7 +32,7 @@ const eagerDistroEntryIds = new Set(distroEntries.slice(0, 3).map((entry) => ent
             >
               {group.groupName}
             </h2>
-            <p class="distro-group-section__copy">{DISTRO_GROUP_INTROS[group.groupName]}</p>
+            <p class="distro-group-section__copy">{distroPageContent.group_intros[group.groupName]}</p>
           </div>
           <div class="distro-group-grid">
             {group.entries.map((item) => (

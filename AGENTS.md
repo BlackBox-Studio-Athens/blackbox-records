@@ -12,7 +12,7 @@ Current product environments are Local, UAT, and PRD. UAT is GitHub Pages plus t
 ## Current stack
 
 - pnpm workspace monorepo
-- Astro 6, static output
+- Astro 7, static output
 - React integration for shadcn-ui primitives and the persistent app shell
 - Tailwind CSS v4 + shadcn-ui primitives
 - Worker backend uses TypeScript + Hono + code-first OpenAPI
@@ -45,6 +45,8 @@ Read these first before editing:
 - Install deps: `pnpm install`
 - Frontend dev server: `pnpm dev` or `pnpm dev:web`
 - Frontend-only static-site launcher: `pnpm site:dev`
+- Codex/browser-smoke background site launcher: `pnpm site:dev:bg`
+- Background site controls: `pnpm site:dev:status`, `pnpm site:dev:logs`, `pnpm site:dev:stop`
 - Backend dev server: `pnpm dev:backend`
 - Backend dev server with local stripe-mock API override: `pnpm dev:backend:mock`
 - Backend dev server with official local stripe-mock API override: `pnpm dev:backend:mock-api`
@@ -105,6 +107,7 @@ Read these first before editing:
 - The explicitly requested additional committed IDE launcher is `.run/Stripe Sandbox Smoke.run.xml`; it must keep running the automated Playwright command `pnpm smoke:stripe-uat -- --scenario all` and must not require committing Stripe secrets or evidence.
 - The root script `pnpm dev:backend:mock` must keep running the backend package script `pnpm --filter @blackbox/backend dev:mock`.
 - `pnpm site:dev` must keep the site on `http://127.0.0.1:4321/blackbox-records/`.
+- `pnpm site:dev` remains foreground for WebStorm/local stack supervision; use `pnpm site:dev:bg` for Codex-oriented browser smoke checks.
 - If that port is unavailable, the launcher should fail clearly rather than silently drifting to another port.
 - Only the static-site launcher should keep a browser/debug target attached.
 - Backend local D1 comes from Wrangler automatically during Worker dev; do not add a second D1 process to the run-config flow.
