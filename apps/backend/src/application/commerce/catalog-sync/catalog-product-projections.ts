@@ -1442,32 +1442,6 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     },
     productProjection: {
       description:
-        'CD edition of The guilt of feeling alive by Sun of Nothing. Source metadata identifies it as a 5-track release, released January 12, 2011.',
-      imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/sun-of-nothing-the-guilt-of-feeling-alive-cd.jpg',
-      ],
-      metadata: {
-        sourceId: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
-        sourceKind: 'distro',
-        storeItemSlug: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
-        variantId: 'variant_sun-of-nothing-the-guilt-of-feeling-alive-cd_standard',
-      },
-      name: 'BlackBox Records - The guilt of feeling alive - CD',
-      taxCode: 'txcd_99999999',
-    },
-    sourceId: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
-    sourceKind: 'distro',
-    storeItemSlug: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
-    variantId: 'variant_sun-of-nothing-the-guilt-of-feeling-alive-cd_standard',
-  },
-  {
-    alignmentStatus: 'checkout_eligible',
-    expectedSandboxPrice: {
-      amountMinor: 2800,
-      currencyCode: 'EUR',
-    },
-    productProjection: {
-      description:
         "Demikhov's fuzzcore power trio from Desenzano del Garda gathers six unreleased tracks on The Chemical Bath.",
       imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/demikhov.jpg'],
       metadata: {

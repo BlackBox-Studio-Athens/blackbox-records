@@ -1699,37 +1699,6 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     desiredPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
-      revision: 'sun-of-nothing-the-guilt-of-feeling-alive-cd-2800-eur',
-    },
-    productProjection: {
-      description:
-        'CD edition of The guilt of feeling alive by Sun of Nothing. Source metadata identifies it as a 5-track release, released January 12, 2011.',
-      imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/sun-of-nothing-the-guilt-of-feeling-alive-cd.jpg',
-      ],
-      metadata: {
-        sourceId: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
-        sourceKind: 'distro',
-        storeItemSlug: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
-        variantId: 'variant_sun-of-nothing-the-guilt-of-feeling-alive-cd_standard',
-      },
-      name: 'BlackBox Records - The guilt of feeling alive - CD',
-      taxCode: 'txcd_99999999',
-    },
-    sourceId: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
-    sourceKind: 'distro',
-    stockInitialization: {
-      initialOnlineQuantity: null,
-    },
-    storeItemSlug: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
-    targetEnvironments: ['uat'],
-    variantId: 'variant_sun-of-nothing-the-guilt-of-feeling-alive-cd_standard',
-  },
-  {
-    availability: 'published',
-    desiredPrice: {
-      amountMinor: 2800,
-      currencyCode: 'EUR',
       revision: 'the-chemical-bath-2800-eur',
     },
     productProjection: {
@@ -2062,7 +2031,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
 ];
 
 export const currentDesiredCatalogState: DesiredCatalogState = {
-  revision: 'desired-catalog-24f93cd1',
+  revision: 'desired-catalog-8df391a3',
   entries: currentDesiredCatalogEntries,
 };
 
