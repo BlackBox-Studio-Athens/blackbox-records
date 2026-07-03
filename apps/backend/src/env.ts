@@ -59,7 +59,7 @@ export const productEnvironmentProfiles = productEnvironmentProfileMapSchema.par
   },
   UAT: {
     catalogVerificationPolicy: {
-      applyScheduledChanges: true,
+      applyScheduledChanges: false,
     },
     emailDeliveryPolicy: 'uat-sink',
     emailBrand: {

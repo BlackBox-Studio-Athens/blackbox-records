@@ -97,4 +97,4 @@ The system MUST reconcile Stripe Product and Price changes made outside the repo
 
 - **GIVEN** Stripe catalog state has changed since the last D1 snapshot
 - **WHEN** scheduled catalog verification runs
-- **THEN** the Worker detects drift and updates or reports the affected Store Item variants according to the selected environment policy.
+- **THEN** the Worker detects and reports drift for the affected Store Item variants without creating or reactivating Stripe catalog objects.

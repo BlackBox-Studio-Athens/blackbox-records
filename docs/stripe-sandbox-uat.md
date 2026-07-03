@@ -54,7 +54,7 @@ pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env uat
 
 Do not paste the signing secret into docs, chat, screenshots, evidence files, Astro public env vars, or committed files. For an existing endpoint, reveal/copy the signing secret from Stripe Dashboard/Workbench and put it directly into Wrangler. Stripe endpoint list/retrieve APIs do not return an existing endpoint secret, so `pnpm stripe:webhooks:verify --env uat` separates endpoint configuration proof from signing-secret match proof.
 
-Catalog correctness is layered: persistent webhooks provide near-real-time sync, Store Offer reads reconcile stale snapshots, checkout start revalidates the active Stripe Price, scheduled UAT catalog verification runs every six hours, and `pnpm stripe:catalog:verify --env uat` remains the Product Environment command for current UAT catalog alignment.
+Catalog correctness is layered: persistent webhooks provide near-real-time sync, Store Offer reads reconcile stale snapshots, checkout start revalidates the active Stripe Price, scheduled UAT catalog verification reports drift every six hours without mutating Stripe, and `pnpm stripe:catalog:verify --env uat --apply` remains the explicit Product Environment command for current UAT catalog alignment.
 
 UAT is also the first leg of the generated catalog artifact pipeline described in [`docs/catalog-promotion.md`](catalog-promotion.md). Normal content publication should use the generated artifact commit and promotion workflow instead of treating sandbox apply as a detached manual checklist.
 

@@ -27,6 +27,9 @@ describe('Product Environment Profile', () => {
       workerDeploymentTarget: 'local',
     });
     expect(getProductEnvironmentProfile('UAT')).toMatchObject({
+      catalogVerificationPolicy: {
+        applyScheduledChanges: false,
+      },
       emailBrand: {
         homeUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/',
         logoUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',

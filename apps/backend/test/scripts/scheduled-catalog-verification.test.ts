@@ -73,11 +73,11 @@ describe('runScheduledCatalogVerification', () => {
     vi.restoreAllMocks();
   });
 
-  it('applies non-production scheduled catalog reconciliation and disconnects Prisma', async () => {
+  it('runs UAT scheduled catalog reconciliation as report-only and disconnects Prisma', async () => {
     await runScheduledCatalogVerification(createBindings('UAT'));
 
     expect(scheduledMocks.verifyBuyableCatalog).toHaveBeenCalledWith({
-      apply: true,
+      apply: false,
       expectedPrices: expect.any(Map),
       expectedProductProjections: expect.any(Map),
     });
