@@ -13,7 +13,7 @@ import {
   createRemoteD1ReadinessSql,
   createSandboxSmokeStockTopUpSql,
   createScenarioEmail,
-  createSmokeStoreCartLineItemSnapshot,
+  createSmokeStoreCartStorageEntry,
   createStripeSandboxWebhookDeliveryDiagnostics,
   countPaidStripeSandboxScenarios,
   didScenarioPass,
@@ -34,12 +34,7 @@ import {
   type LocalCheckoutOrderRow,
   type RemoteD1ReadinessSummary,
 } from '../../../../scripts/smoke-stripe-sandbox';
-import {
-  addStoreCartItem,
-  readStoreCartState,
-  STORE_CART_STORAGE_KEY,
-  writeStoreCartState,
-} from '../../../../apps/web/src/lib/store-cart';
+import { readStoreCartState, STORE_CART_STORAGE_KEY } from '../../../../apps/web/src/lib/store-cart';
 
 const paidOrder: LocalCheckoutOrderRow = {
   checkoutSessionId: 'cs_test_123',
@@ -238,10 +233,12 @@ describe('Stripe sandbox Playwright smoke runner', () => {
   });
 
   it('creates a browser cart seed for the smoke checkout route', () => {
+    const storageEntry = createSmokeStoreCartStorageEntry();
     const storage = createMemoryStorage();
 
-    writeStoreCartState(storage, addStoreCartItem(createSmokeStoreCartLineItemSnapshot()));
+    storage.setItem(storageEntry.key, storageEntry.value);
 
+    expect(storageEntry.key).toBe(STORE_CART_STORAGE_KEY);
     expect(storage.getItem(STORE_CART_STORAGE_KEY)).toContain('disintegration-black-vinyl-lp');
     expect(readStoreCartState(storage).lines).toMatchObject([
       {

@@ -1340,23 +1340,23 @@ async function clickFirstMatchingButton(scope: Page | Frame, name: RegExp): Prom
   return false;
 }
 
-function createSmokeStoreCartStorageEntry(): { key: string; value: string } {
-  let value: string | null = null;
+export function createSmokeStoreCartStorageEntry(): { key: string; value: string } {
+  const values = new Map<string, string>();
 
   writeStoreCartState(
     {
-      getItem: () => null,
-      removeItem: () => {
-        value = null;
+      getItem: (key) => values.get(key) ?? null,
+      removeItem: (key) => {
+        values.delete(key);
       },
       setItem: (key, nextValue) => {
-        if (key === STORE_CART_STORAGE_KEY) {
-          value = nextValue;
-        }
+        values.set(key, nextValue);
       },
     },
     addStoreCartItem(createSmokeStoreCartLineItemSnapshot()),
   );
+
+  const value = values.get(STORE_CART_STORAGE_KEY);
 
   if (!value) {
     throw new Error('Could not create sandbox smoke StoreCart state.');
