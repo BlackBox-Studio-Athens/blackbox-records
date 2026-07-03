@@ -76,6 +76,30 @@ export function createInitialCheckoutOfferView(
   };
 }
 
+export function createCartCheckoutOfferView(capabilities: StoreCapabilities): CheckoutOfferStatusView {
+  if (!capabilities.nativeCheckout.enabled) {
+    return {
+      badgeLabel: 'Checkout paused',
+      canStartCheckout: false,
+      detail: capabilities.nativeCheckout.unavailableReason ?? 'Checkout is temporarily unavailable.',
+      isReady: false,
+      statusLabel: 'Cart checkout',
+      tone: 'unavailable',
+      variantId: null,
+    };
+  }
+
+  return {
+    badgeLabel: 'Checkout ready',
+    canStartCheckout: true,
+    detail: 'You will finish payment on Stripe.',
+    isReady: true,
+    statusLabel: 'Cart checkout',
+    tone: 'ready',
+    variantId: null,
+  };
+}
+
 export function createCheckoutOfferView(loadState: CheckoutOfferLoadState): CheckoutOfferStatusView {
   if (loadState.kind === 'error') {
     return {
@@ -170,14 +194,8 @@ export async function startHostedCheckout({
             variantId: line.variantId,
           }))
         : [];
-    const shouldSendMultiLineContract =
-      checkoutLines.length > 1 ||
-      (checkoutLines.length === 1 &&
-        (checkoutLines[0]!.quantity !== 1 ||
-          checkoutLines[0]!.storeItemSlug !== storeItemSlug ||
-          checkoutLines[0]!.variantId !== variantId));
     const { checkoutUrl } = await api.startCheckout({
-      ...(shouldSendMultiLineContract ? { lines: checkoutLines } : {}),
+      ...(checkoutLines.length > 0 ? { lines: checkoutLines } : {}),
       ...(newsletterOptIn ? { newsletterOptIn: true } : {}),
       storeItemSlug,
       variantId,

@@ -138,7 +138,6 @@ function createStoreItemCollisionRecord(
     eyebrow: null,
     metadata: [],
     storePath: `/blackbox-records/store/${slug}/`,
-    checkoutPath: `/blackbox-records/store/${slug}/checkout/`,
   };
 }
 
@@ -170,7 +169,7 @@ describe('groupDistroEntries', () => {
 });
 
 describe('StoreItem projection contract', () => {
-  it('creates a release-derived store item with stable store and checkout paths', async () => {
+  it('creates a release-derived store item with a stable store path', async () => {
     const storeItem = await createStoreItemFromRelease(
       createReleaseEntry('caregivers-control', {
         artist: { collection: 'artists', id: 'afterwise' },
@@ -196,8 +195,8 @@ describe('StoreItem projection contract', () => {
       eyebrow: 'Release',
       metadata: ['Nov 2024', 'Vinyl', 'Digital'],
       storePath: '/blackbox-records/store/caregivers-vinyl/',
-      checkoutPath: '/blackbox-records/store/caregivers-vinyl/checkout/',
     });
+    expect(storeItem).not.toHaveProperty('checkoutPath');
   });
 
   it('uses the disintegration mockup cover override only for the store item', async () => {
@@ -285,9 +284,9 @@ describe('StoreItem projection contract', () => {
     expect(storeItem.sourceKind).toBe('distro');
     expect(storeItem.taxCategory).toBe('physical_goods');
     expect(storeItem.storePath).toBe('/blackbox-records/store/afterglow-tape/');
-    expect(storeItem.checkoutPath).toBe('/blackbox-records/store/afterglow-tape/checkout/');
     expect(storeItem.metadata).toEqual(['Tapes', 'Jun 2021', 'Cassette']);
     expect(storeItem).not.toHaveProperty('merch_url');
+    expect(storeItem).not.toHaveProperty('checkoutPath');
   });
 
   it('omits unknown distro release dates from store item metadata', () => {
@@ -364,6 +363,12 @@ describe('StoreItem projection contract', () => {
         createStoreItemCollisionRecord('distro', 'caregivers-vinyl', 'caregivers-vinyl'),
       ]),
     ).toThrow('Slug collision detected: caregivers-vinyl: release:caregivers, distro:caregivers-vinyl');
+  });
+
+  it('rejects checkout as a reserved store item slug', () => {
+    expect(() => mapStoreItemsBySlug([createStoreItemCollisionRecord('distro', 'checkout', 'checkout')])).toThrow(
+      'Reserved Store Item slug detected: checkout',
+    );
   });
 
   it('keeps legacy release ids separate from canonical item-option slugs', async () => {

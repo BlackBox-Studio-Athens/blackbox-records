@@ -5,6 +5,8 @@ const DEFAULT_CHECKOUT_RETURN_ORIGINS = [
   'http://localhost:4321',
   'https://blackbox-studio-athens.github.io/blackbox-records',
 ];
+const CART_CHECKOUT_PATH = '/store/checkout/';
+const CART_CHECKOUT_RETURN_PATH = '/store/checkout/return/';
 
 export function createPublicCheckoutReturnUrl(
   headers: Headers,
@@ -23,9 +25,12 @@ export function createPublicCheckoutReturnUrl(
 
       if (
         hasAllowedOrigin(allowedReturnTargets, refererUrl.origin) &&
-        isCheckoutPathForStoreItem(checkoutPath, storeItemSlug)
+        isAllowedCheckoutPath(checkoutPath, storeItemSlug)
       ) {
-        return `${refererUrl.origin}${checkoutPath}return?session_id={CHECKOUT_SESSION_ID}`;
+        const returnTarget = findAllowedReturnTarget(allowedReturnTargets, refererUrl.origin);
+        if (returnTarget) {
+          return `${readCheckoutBaseUrl(refererUrl, checkoutPath) ?? returnTarget.baseUrl}${CART_CHECKOUT_RETURN_PATH}?session_id={CHECKOUT_SESSION_ID}`;
+        }
       }
     }
   }
@@ -37,7 +42,7 @@ export function createPublicCheckoutReturnUrl(
     throw new CheckoutConfigurationError('Checkout return URL is not allowed.');
   }
 
-  return `${returnTarget.baseUrl}/store/${encodeURIComponent(storeItemSlug)}/checkout/return?session_id={CHECKOUT_SESSION_ID}`;
+  return `${returnTarget.baseUrl}${CART_CHECKOUT_RETURN_PATH}?session_id={CHECKOUT_SESSION_ID}`;
 }
 
 export function createPublicCheckoutCancelUrl(
@@ -57,9 +62,12 @@ export function createPublicCheckoutCancelUrl(
 
       if (
         hasAllowedOrigin(allowedReturnTargets, refererUrl.origin) &&
-        isCheckoutPathForStoreItem(checkoutPath, storeItemSlug)
+        isAllowedCheckoutPath(checkoutPath, storeItemSlug)
       ) {
-        return `${refererUrl.origin}${checkoutPath}`;
+        const returnTarget = findAllowedReturnTarget(allowedReturnTargets, refererUrl.origin);
+        if (returnTarget) {
+          return `${readCheckoutBaseUrl(refererUrl, checkoutPath) ?? returnTarget.baseUrl}${CART_CHECKOUT_PATH}`;
+        }
       }
     }
   }
@@ -71,7 +79,7 @@ export function createPublicCheckoutCancelUrl(
     throw new CheckoutConfigurationError('Checkout return URL is not allowed.');
   }
 
-  return `${returnTarget.baseUrl}/store/${encodeURIComponent(storeItemSlug)}/checkout/`;
+  return `${returnTarget.baseUrl}${CART_CHECKOUT_PATH}`;
 }
 
 export function readAllowedCheckoutReturnOrigins(configuredReturnOrigins?: string): Set<string> {
@@ -119,7 +127,16 @@ function hasAllowedOrigin(allowedReturnTargets: AllowedCheckoutReturnTarget[], o
   return allowedReturnTargets.some((target) => target.origin === origin);
 }
 
-function isCheckoutPathForStoreItem(pathname: string, storeItemSlug: string): boolean {
+function readCheckoutBaseUrl(url: URL, checkoutPath: string): string | null {
+  const storeSegmentIndex = checkoutPath.lastIndexOf('/store/');
+  if (storeSegmentIndex < 0) return null;
+
+  return `${url.origin}${checkoutPath.slice(0, storeSegmentIndex)}`;
+}
+
+function isAllowedCheckoutPath(pathname: string, storeItemSlug: string): boolean {
+  if (pathname.endsWith(CART_CHECKOUT_PATH)) return true;
+
   return pathname.endsWith(`/store/${encodeURIComponent(storeItemSlug)}/checkout/`);
 }
 

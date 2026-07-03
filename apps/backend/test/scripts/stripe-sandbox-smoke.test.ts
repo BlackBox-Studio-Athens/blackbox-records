@@ -223,7 +223,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
 
   it('creates stable sandbox URLs and scenario emails', () => {
     expect(createCheckoutPageUrl('https://blackbox-records-web.pages.dev/')).toBe(
-      'https://blackbox-records-web.pages.dev/store/disintegration-black-vinyl-lp/checkout/',
+      'https://blackbox-records-web.pages.dev/store/checkout/',
     );
     expect(createScenarioEmail('20260517000102', 'happy_path_paid')).toBe(
       'sandbox-checkout+20260517000102-happy_path_paid@blackbox.example',
@@ -531,7 +531,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       artifactPaths: {
         tracePath: '.codex-artifacts/smoke/uat/stripe-sandbox/run/happy_path_paid/trace.zip',
       },
-      checkoutPageUrl: 'https://blackbox-records-web.pages.dev/store/disintegration-black-vinyl-lp/checkout/',
+      checkoutPageUrl: 'https://blackbox-records-web.pages.dev/store/checkout/',
       options: {
         siteUrl: 'https://blackbox-records-web.pages.dev',
         workerUrl: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
@@ -550,8 +550,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
           stripeFormFillMs: 200,
           totalMs: 600,
         },
-        finalUrl:
-          'https://blackbox-records-web.pages.dev/store/disintegration-black-vinyl-lp/checkout/return?session_id=cs_test_123',
+        finalUrl: 'https://blackbox-records-web.pages.dev/store/checkout/return/?session_id=cs_test_123',
         observedStripeUi: 'Checkout paid',
         order: paidOrder,
         screenshotPath: null,
@@ -591,11 +590,11 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     const passedSummary = buildStripeSandboxSmokeSummary({
       evidence: [
         {
-          checkoutPageUrl: 'https://blackbox-records-web.pages.dev/store/disintegration-black-vinyl-lp/checkout/',
+          checkoutPageUrl: 'https://blackbox-records-web.pages.dev/store/checkout/',
           checkoutSessionProjection: null,
           checkoutSurface: null,
           durations: createEmptyStripeSandboxSmokeDurations(),
-          finalUrl: 'https://blackbox-records-web.pages.dev/store/disintegration-black-vinyl-lp/checkout/',
+          finalUrl: 'https://blackbox-records-web.pages.dev/store/checkout/',
           generatedAt: '2026-05-17T00:00:00.000Z',
           observedStripeUi: 'Checkout ready',
           order: null,

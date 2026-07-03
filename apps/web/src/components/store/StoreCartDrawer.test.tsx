@@ -38,7 +38,7 @@ describe('StoreCartDrawer', () => {
 
   it('creates a filled drawer view with canonical checkout route and subtotal', () => {
     expect(createStoreCartDrawerView(addStoreCartItem(cartItem), resolveHref)).toMatchObject({
-      checkoutHref: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
+      checkoutHref: '/blackbox-records/store/checkout/',
       itemCount: 1,
       subtotalDisplay: '€20.00',
     });
@@ -63,7 +63,7 @@ describe('StoreCartDrawer', () => {
       title: 'Disintegration',
     });
     expect(view.subtotalDisplay).toBe('€20.00');
-    expect(view.checkoutHref).toBe('/blackbox-records/store/disintegration-black-vinyl-lp/checkout/');
+    expect(view.checkoutHref).toBe('/blackbox-records/store/checkout/');
     expect(STORE_CART_DRAWER_COPY.remove).toBe('Remove');
   });
 
@@ -91,6 +91,7 @@ describe('StoreCartDrawer', () => {
 
     expect(view.itemCount).toBe(2);
     expect(view.subtotalDisplay).toBe('€40.00');
+    expect(view.checkoutHref).toBe('/blackbox-records/store/checkout/');
   });
 
   it('does not render forbidden checkout, Stripe, D1, stock, or order fields', () => {

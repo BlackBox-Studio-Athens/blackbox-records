@@ -113,7 +113,7 @@ Read these first before editing:
 - Backend local D1 comes from Wrangler automatically during Worker dev; do not add a second D1 process to the run-config flow.
 - The stack launcher scripts must run D1 migrations and seed SQL before starting the Worker/static site.
 - Keep `BlackBox Local Stack` working whenever frontend env, backend env, ports, checkout setup, D1 migrations, seed files, or WebStorm run configs change. If a change breaks the canonical launcher, fix the launcher or docs in the same commit.
-- The deterministic local mock checkout smoke path is `http://127.0.0.1:4321/blackbox-records/store/disintegration-black-vinyl-lp/checkout/`; stripe-mock mode now seeds every current visible store item with fake local checkout state.
+- The deterministic local mock checkout smoke path is `http://127.0.0.1:4321/blackbox-records/store/checkout/`; stripe-mock mode now seeds every current visible store item with fake local checkout state.
 - `pnpm dev:stack:uat-connected` runs the local static frontend against the deployed UAT Worker/API. It must not require copying UAT Stripe secrets or UAT Worker secrets into local files.
 - `pnpm dev:stack:stripe-test` is an advanced provider diagnostic path and requires `STRIPE_SECRET_KEY`, `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`, `STRIPE_WEBHOOK_SECRET`, and ignored local Stripe test Price mappings.
 - Run `pnpm checkout:preflight:stripe-test` before the advanced `pnpm dev:stack:stripe-test`; it verifies the backend local secret/config file, ignored local Price mapping seed, and gitignore protection without printing secrets.

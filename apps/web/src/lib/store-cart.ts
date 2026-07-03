@@ -88,8 +88,8 @@ export function getStoreCartCount(state: StoreCartState): number {
   return normalizeStoreCartState(state).lines.reduce((total, line) => total + line.quantity, 0);
 }
 
-export function createCheckoutPathForCartLineItem(item: CartLineItemSnapshot): string {
-  return `/store/${item.storeItemSlug}/checkout/`;
+export function createCartCheckoutPath(): string {
+  return '/store/checkout/';
 }
 
 export function parseCartLineItemSnapshot(value: unknown): CartLineItemSnapshot | null {

@@ -188,7 +188,7 @@ describe('public commerce routes', () => {
         }),
         headers: {
           origin: 'https://blackbox.example',
-          referer: 'https://blackbox.example/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
+          referer: 'https://blackbox.example/blackbox-records/store/checkout/',
           'content-type': 'application/json',
         },
         method: 'POST',
@@ -197,9 +197,8 @@ describe('public commerce routes', () => {
     );
 
     expect(mockStartCheckout).toHaveBeenCalledWith({
-      cancelUrl: 'https://blackbox.example/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
-      successUrl:
-        'https://blackbox.example/blackbox-records/store/disintegration-black-vinyl-lp/checkout/return?session_id={CHECKOUT_SESSION_ID}',
+      cancelUrl: 'https://blackbox.example/blackbox-records/store/checkout/',
+      successUrl: 'https://blackbox.example/blackbox-records/store/checkout/return/?session_id={CHECKOUT_SESSION_ID}',
       newsletterOptIn: false,
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_disintegration-black-vinyl-lp_standard',

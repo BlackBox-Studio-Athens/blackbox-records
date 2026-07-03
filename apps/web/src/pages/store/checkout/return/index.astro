@@ -1,0 +1,17 @@
+---
+import CheckoutReturnStatus from '@/components/store/CheckoutReturnStatus';
+import { createProjectRelativeUrl } from '@/config/site';
+import SiteLayout from '@/layouts/SiteLayout.astro';
+
+const checkoutPath = createProjectRelativeUrl('/store/checkout/');
+const storePath = createProjectRelativeUrl('/store/');
+---
+
+<SiteLayout
+  pageTitle="Order Status | Store"
+  pageDescription="Payment and order status for BlackBox Records cart checkout."
+>
+  <section class="layout-container pt-14 pb-8">
+    <CheckoutReturnStatus client:load checkoutPath={checkoutPath} storePath={storePath} />
+  </section>
+</SiteLayout>

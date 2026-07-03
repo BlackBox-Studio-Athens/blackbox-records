@@ -39,6 +39,13 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** the helper is listed under the owning `public-commerce-http` roots in `module-boundaries.manifest.json`
 - **AND** it is not listed as a provided entrypoint unless another module is allowed to import it.
 
+#### Scenario: Cart-scoped checkout route is added
+
+- **GIVEN** cart-scoped checkout pages are added under `apps/web/src/pages/store/checkout/`
+- **WHEN** boundary validation runs
+- **THEN** those route files are owned by the closed `checkout-web` module
+- **AND** item-scoped checkout compatibility pages stay owned by `checkout-web` until removed.
+
 #### Scenario: Backend shared observability helper is added
 
 - **GIVEN** backend modules need shared Worker-safe logging or tracing helpers

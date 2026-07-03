@@ -53,7 +53,6 @@ describe('store page data helper', () => {
       eyebrow: 'Release',
       metadata: ['2024', 'LP'],
       storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
-      checkoutPath: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
     });
 
     mockItemAvailability.getPrimaryAvailabilityForStoreItem.mockResolvedValue({
@@ -76,7 +75,6 @@ describe('store page data helper', () => {
       storeItem: {
         slug: 'disintegration-black-vinyl-lp',
         storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
-        checkoutPath: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
       },
       primaryAvailability: {
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
@@ -92,7 +90,7 @@ describe('store page data helper', () => {
     expect(mockItemAvailability.getPrimaryAvailabilityForStoreItem).not.toHaveBeenCalled();
   });
 
-  it('creates static paths for every store item with matching checkout links', async () => {
+  it('creates static paths for every store item with matching store links', async () => {
     mockCatalogData.listStoreItems.mockResolvedValue([
       {
         slug: 'disintegration-black-vinyl-lp',
@@ -107,7 +105,6 @@ describe('store page data helper', () => {
         eyebrow: 'Release',
         metadata: ['2024', 'LP'],
         storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
-        checkoutPath: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
       },
       {
         slug: 'afterglow-tape',
@@ -122,7 +119,6 @@ describe('store page data helper', () => {
         eyebrow: 'Distro',
         metadata: ['Cassette'],
         storePath: '/blackbox-records/store/afterglow-tape/',
-        checkoutPath: '/blackbox-records/store/afterglow-tape/checkout/',
       },
       {
         slug: 'caregivers-vinyl',
@@ -137,7 +133,6 @@ describe('store page data helper', () => {
         eyebrow: 'Release',
         metadata: ['2026', 'Vinyl'],
         storePath: '/blackbox-records/store/caregivers-vinyl/',
-        checkoutPath: '/blackbox-records/store/caregivers-vinyl/checkout/',
       },
     ]);
 
@@ -174,7 +169,7 @@ describe('store page data helper', () => {
           entry: {
             storeItem: expect.objectContaining({
               slug: 'disintegration-black-vinyl-lp',
-              checkoutPath: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
+              storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
             }),
             primaryAvailability: expect.objectContaining({
               storeItemSlug: 'disintegration-black-vinyl-lp',
@@ -188,7 +183,7 @@ describe('store page data helper', () => {
           entry: {
             storeItem: expect.objectContaining({
               slug: 'afterglow-tape',
-              checkoutPath: '/blackbox-records/store/afterglow-tape/checkout/',
+              storePath: '/blackbox-records/store/afterglow-tape/',
             }),
             primaryAvailability: expect.objectContaining({
               storeItemSlug: 'afterglow-tape',
@@ -202,7 +197,7 @@ describe('store page data helper', () => {
           entry: {
             storeItem: expect.objectContaining({
               slug: 'caregivers-vinyl',
-              checkoutPath: '/blackbox-records/store/caregivers-vinyl/checkout/',
+              storePath: '/blackbox-records/store/caregivers-vinyl/',
             }),
             primaryAvailability: expect.objectContaining({
               storeItemSlug: 'caregivers-vinyl',
@@ -229,7 +224,6 @@ describe('store page data helper', () => {
         eyebrow: 'Release',
         metadata: ['2024', 'LP'],
         storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
-        checkoutPath: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
       },
       {
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
@@ -264,7 +258,6 @@ describe('store page data helper', () => {
         eyebrow: 'Distro',
         metadata: ['Cassette'],
         storePath: '/blackbox-records/store/afterglow-tape/',
-        checkoutPath: '/blackbox-records/store/afterglow-tape/checkout/',
       },
       {
         variantId: 'variant_afterglow-tape_standard',
@@ -294,7 +287,6 @@ describe('store page data helper', () => {
       eyebrow: 'Distro',
       metadata: ['Cassette'],
       storePath: '/blackbox-records/store/afterglow-tape/',
-      checkoutPath: '/blackbox-records/store/afterglow-tape/checkout/',
     };
     const availability = {
       variantId: 'variant_afterglow-tape_standard',
@@ -334,7 +326,6 @@ describe('store page data helper', () => {
       eyebrow: 'Distro',
       metadata: [],
       storePath: '/blackbox-records/store/aftermaths/',
-      checkoutPath: '/blackbox-records/store/aftermaths/checkout/',
     };
 
     expect(

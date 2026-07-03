@@ -132,7 +132,8 @@ export function groupStripeSandboxSmokeScenarios(
 }
 
 export function createCheckoutPageUrl(siteUrl: string, storeItemSlug = smokeStoreItemSlug): string {
-  return createRouteUrl(siteUrl, `/store/${encodeURIComponent(storeItemSlug)}/checkout/`);
+  void storeItemSlug;
+  return createRouteUrl(siteUrl, '/store/checkout/');
 }
 
 export function createScenarioEmail(runId: string, scenarioName: string): string {

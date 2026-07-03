@@ -3,66 +3,43 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import CheckoutOrderSummary from '@/components/store/CheckoutOrderSummary';
 import CheckoutOfferStatus from '@/components/store/CheckoutOfferStatus';
-import StoreItemPurchaseActions from '@/components/store/StoreItemPurchaseActions';
-import StoreOfferPriceDisplay, { STORE_OFFER_PRICE_DISPLAY_COPY } from '@/components/store/StoreOfferPriceDisplay';
+import { STORE_OFFER_PRICE_DISPLAY_COPY } from '@/components/store/StoreOfferPriceDisplay';
 import { createProjectRelativeUrl } from '@/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
-import {
-  createPricedCartSeedForStorePage,
-  type StorePageEntry,
-  createStorePageStaticPaths,
-} from '@/lib/store-page-data';
 
-export async function getStaticPaths() {
-  return createStorePageStaticPaths();
-}
-
-interface Props {
-  entry: StorePageEntry;
-}
-
-const { entry } = Astro.props;
-const { storeItem, primaryAvailability } = entry;
-const priceLabel = STORE_OFFER_PRICE_DISPLAY_COPY.loading;
-const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
-const canBuy = primaryAvailability?.canBuy ?? false;
-const fallbackCartSeed = createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
 const initialCheckoutAvailability = {
   canBuy: true,
   label: 'Cart checkout',
   optionLabel: null,
-  priceDisplay: priceLabel,
+  priceDisplay: STORE_OFFER_PRICE_DISPLAY_COPY.loading,
 };
 const summaryItem = {
-  availabilityLabel,
-  canBuy,
-  image: storeItem.image.src,
-  imageAlt: storeItem.imageAlt,
-  itemHref: storeItem.storePath,
-  optionLabel: primaryAvailability?.optionLabel ?? null,
-  priceDisplay: priceLabel,
-  storeItemSlug: storeItem.slug,
-  subtitle: storeItem.subtitle,
-  title: storeItem.title,
-  variantId: primaryAvailability?.variantId ?? '',
+  availabilityLabel: 'Cart checkout',
+  canBuy: true,
+  image: null,
+  imageAlt: 'Cart checkout',
+  itemHref: createProjectRelativeUrl('/store/'),
+  optionLabel: null,
+  priceDisplay: STORE_OFFER_PRICE_DISPLAY_COPY.loading,
+  subtitle: 'BlackBox Records',
+  title: 'Cart Checkout',
 };
 ---
 
 <SiteLayout
-  pageTitle={`${storeItem.title} Checkout Compatibility | Store`}
-  pageDescription={`Compatibility checkout entry for ${storeItem.title} by ${storeItem.subtitle}.`}
-  robots="noindex"
+  pageTitle="Checkout | Store"
+  pageDescription="Review your cart, confirm Greece-only shipping, then pay through Stripe."
 >
   <section class="layout-container pt-14 pb-8">
     <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
       <div class="space-y-3">
         <Badge variant="outline" className="border-border/70 bg-background/80 text-xs tracking-[0.15em] uppercase">
-          Checkout Compatibility
+          Cart Checkout
         </Badge>
         <div class="space-y-2">
           <h1 class="font-display text-5xl tracking-[0.08em] uppercase text-foreground sm:text-6xl">Checkout</h1>
           <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Old checkout links stay available while cart checkout moves to the store-level route.
+            Review the cart, confirm Greece-only shipping, then pay through Stripe.
           </p>
         </div>
       </div>
@@ -84,11 +61,6 @@ const summaryItem = {
             class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground marker:hidden sm:px-5"
           >
             <span class="min-w-0">Order Summary</span>
-            <StoreOfferPriceDisplay
-              client:load
-              storeItemSlug={storeItem.slug}
-              className="min-w-0 text-right font-display text-xl tracking-[0.08em] sm:text-2xl"
-            />
           </summary>
           <div class="min-w-0 border-t border-border/70 p-3 sm:p-4">
             <CheckoutOrderSummary client:load {...summaryItem} />
@@ -107,21 +79,6 @@ const summaryItem = {
           </div>
 
           <CheckoutOfferStatus client:load initialAvailability={initialCheckoutAvailability} />
-
-          <div class="grid gap-3 border border-border/70 bg-background/55 p-4">
-            <p class="text-sm leading-relaxed text-muted-foreground">
-              Recover this item by adding it to the cart, then continue through cart checkout.
-            </p>
-            <StoreItemPurchaseActions client:load cartItem={null} cartSeed={fallbackCartSeed} />
-          </div>
-
-          {
-            !canBuy && (
-              <p class="border border-border/70 bg-background/55 p-4 text-sm leading-relaxed text-muted-foreground">
-                This item stays viewable, but checkout stays closed while it is unavailable.
-              </p>
-            )
-          }
         </CardContent>
       </Card>
 

@@ -148,7 +148,7 @@ describe('store purchase happy path', () => {
 
     expect(getStoreCartCount(persistedCartState)).toBe(1);
     expect(drawerView).toMatchObject({
-      checkoutHref: '/blackbox-records/store/disintegration-black-vinyl-lp/checkout/',
+      checkoutHref: '/blackbox-records/store/checkout/',
       primaryLineItem: {
         optionLabel: 'Black Vinyl LP',
         priceAmountMinor: 2800,
@@ -177,6 +177,7 @@ describe('store purchase happy path', () => {
 
     const handoffState = await startHostedCheckout({
       api,
+      lines: persistedCartState.lines,
       storeItemSlug: persistedCartState.primaryLineItem!.storeItemSlug,
       variantId: checkoutView.variantId!,
     });
@@ -190,6 +191,13 @@ describe('store purchase happy path', () => {
       '/api/checkout/sessions',
       expect.objectContaining({
         body: JSON.stringify({
+          lines: [
+            {
+              quantity: 1,
+              storeItemSlug: 'disintegration-black-vinyl-lp',
+              variantId: 'variant_disintegration-black-vinyl-lp_standard',
+            },
+          ],
           storeItemSlug: 'disintegration-black-vinyl-lp',
           variantId: 'variant_disintegration-black-vinyl-lp_standard',
         }),

@@ -14,16 +14,25 @@ interface Props {
 
 const { entry } = Astro.props;
 const { storeItem } = entry;
+const cartReturnPath = createProjectRelativeUrl('/store/checkout/return/');
 ---
 
 <SiteLayout
   pageTitle={`${storeItem.title} Order Status | Store`}
   pageDescription={`Payment and order status for ${storeItem.title} by ${storeItem.subtitle}.`}
+  robots="noindex"
 >
+  <script is:inline data-cart-return-path={cartReturnPath}>
+    const currentScriptElement = document.currentScript;
+    const cartReturnPath = currentScriptElement?.dataset.cartReturnPath;
+    if (cartReturnPath) {
+      window.location.replace(`${cartReturnPath}${window.location.search}${window.location.hash}`);
+    }
+  </script>
   <section class="layout-container pt-14 pb-8">
     <CheckoutReturnStatus
       client:load
-      checkoutPath={storeItem.checkoutPath}
+      checkoutPath={createProjectRelativeUrl('/store/checkout/')}
       itemPath={storeItem.storePath}
       storePath={createProjectRelativeUrl('/store/')}
     />

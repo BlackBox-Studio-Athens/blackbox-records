@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   addStoreCartItem,
+  createCartCheckoutPath,
   createEmptyStoreCartState,
-  createCheckoutPathForCartLineItem,
   getStoreCartCount,
   parseSerializedStoreCartState,
   readStoreCartState,
@@ -220,7 +220,7 @@ describe('store cart state', () => {
     expect(state.primaryLineItem?.storeItemSlug).not.toBe('barren-point');
   });
 
-  it('generates the canonical checkout route from the item option slug', () => {
-    expect(createCheckoutPathForCartLineItem(canonicalItem)).toBe('/store/disintegration-black-vinyl-lp/checkout/');
+  it('generates the canonical cart checkout route', () => {
+    expect(createCartCheckoutPath()).toBe('/store/checkout/');
   });
 });

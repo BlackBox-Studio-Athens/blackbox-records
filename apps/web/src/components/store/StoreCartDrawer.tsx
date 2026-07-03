@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
-  createCheckoutPathForCartLineItem,
+  createCartCheckoutPath,
   getCartLineTotalDisplay,
   getCartSubtotalDisplay,
   getStoreCartCount,
@@ -39,7 +39,7 @@ export function createStoreCartDrawerView(cartState: StoreCartState, resolveHref
   const state = normalizeStoreCartState(cartState);
   const primaryLineItem = state.primaryLineItem;
   const view = {
-    checkoutHref: primaryLineItem ? resolveHref(createCheckoutPathForCartLineItem(primaryLineItem)) : null,
+    checkoutHref: state.lines.length > 0 ? resolveHref(createCartCheckoutPath()) : null,
     itemCount: getStoreCartCount(state),
     primaryLineItem,
     subtotalDisplay: getCartSubtotalDisplay(state.lines),

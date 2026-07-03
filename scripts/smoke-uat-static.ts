@@ -478,7 +478,7 @@ async function readCmsAdminRenderedState(page: Page, timeoutMs: number): Promise
 }
 
 async function checkCheckoutShellPage(page: Page, options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck> {
-  const url = createRouteUrl(options.siteUrl, `/store/${representativeStoreItemSlug}/checkout/`);
+  const url = createRouteUrl(options.siteUrl, '/store/checkout/');
   const probe = await probeSmokeRoute(page, url, options.timeoutMs);
   const issues = [...probe.issues];
 
@@ -505,7 +505,7 @@ async function checkCheckoutShellPage(page: Page, options: UatStaticSmokeOptions
     contentType: null,
     issues,
     kind: 'page',
-    path: `/store/${representativeStoreItemSlug}/checkout/`,
+    path: '/store/checkout/',
     status: probe.status,
     title: probe.title,
     url,

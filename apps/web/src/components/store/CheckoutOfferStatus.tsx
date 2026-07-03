@@ -8,6 +8,7 @@ import { createPublicCheckoutApi, type PublicCheckoutApi } from '@/lib/backend/p
 import { getStoreCartCount, readStoreCartState, type CartLine, type CartLineItemSnapshot } from '@/lib/store-cart';
 import { cn } from '@/lib/utils';
 import {
+  createCartCheckoutOfferView,
   createCheckoutOfferView,
   createInitialCheckoutOfferView,
   loadCheckoutOfferState,
@@ -25,7 +26,7 @@ interface CheckoutOfferStatusProps {
   fallbackCartSeed?: StoreItemCartSeed | null;
   fallbackLineItem?: CartLineItemSnapshot | null;
   initialAvailability: CheckoutOfferInitialAvailability;
-  storeItemSlug: string;
+  storeItemSlug?: string;
   api?: PublicCheckoutApi;
 }
 
@@ -93,6 +94,26 @@ export default function CheckoutOfferStatus({
     const checkoutApi = api ?? createPublicCheckoutApi();
 
     async function loadOffer() {
+      if (!storeItemSlug) {
+        try {
+          const capabilities = await checkoutApi.readStoreCapabilities();
+          if (isActive) setView(createCartCheckoutOfferView(capabilities));
+        } catch {
+          if (isActive) {
+            setView({
+              badgeLabel: 'Checkout unavailable',
+              canStartCheckout: false,
+              detail: 'Could not load checkout status.',
+              isReady: false,
+              statusLabel: 'Checkout unavailable',
+              tone: 'error',
+              variantId: null,
+            });
+          }
+        }
+        return;
+      }
+
       const loadState = await loadCheckoutOfferState(checkoutApi, storeItemSlug);
 
       if (isActive) {
@@ -134,14 +155,15 @@ export default function CheckoutOfferStatus({
       return;
     }
 
-    if (!view.variantId) {
-      setCheckoutError('Checkout is not ready for this item yet.');
-      return;
-    }
-
     const currentCartLines = readStoreCartState(window.localStorage).lines;
     if (currentCartLines.length === 0 && !workerFallbackLineItem) {
       setCheckoutError('Add a priced item to the cart before checkout.');
+      return;
+    }
+
+    const fallbackStartLine = currentCartLines[0] ?? workerFallbackLineItem;
+    if (!fallbackStartLine || (currentCartLines.length === 0 && !view.variantId)) {
+      setCheckoutError('Checkout is not ready for this item yet.');
       return;
     }
 
@@ -152,8 +174,8 @@ export default function CheckoutOfferStatus({
       api: checkoutApi,
       lines: currentCartLines,
       newsletterOptIn: isNewsletterOptedIn,
-      storeItemSlug,
-      variantId: view.variantId,
+      storeItemSlug: fallbackStartLine.storeItemSlug,
+      variantId: currentCartLines[0]?.variantId ?? view.variantId ?? fallbackStartLine.variantId,
     });
 
     if (checkoutState.kind === 'redirect') {

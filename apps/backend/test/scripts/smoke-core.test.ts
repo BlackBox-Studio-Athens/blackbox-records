@@ -21,9 +21,9 @@ import {
 
 describe('smoke core helpers', () => {
   it('builds normalized smoke routes and artifact paths', () => {
-    expect(
-      createRouteUrl('https://blackbox.example/blackbox-records/', '/store/disintegration-black-vinyl-lp/checkout/'),
-    ).toBe('https://blackbox.example/blackbox-records/store/disintegration-black-vinyl-lp/checkout/');
+    expect(createRouteUrl('https://blackbox.example/blackbox-records/', '/store/checkout/')).toBe(
+      'https://blackbox.example/blackbox-records/store/checkout/',
+    );
     expect(createRunId(new Date('2026-05-17T00:01:02.345Z'))).toBe('20260517000102');
     expect(createSmokeRunArtifactDir('C:\\repo', 'uat', 'stripe-sandbox', '20260517000102')).toBe(
       path.join('C:\\repo', '.codex-artifacts', 'smoke', 'uat', 'stripe-sandbox', '20260517000102'),

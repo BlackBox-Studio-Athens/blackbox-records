@@ -71,7 +71,7 @@ export const catalogFieldOwnershipMatrix: readonly CatalogFieldOwnership[] = [
   {
     driftCategory: 'product_projection',
     fieldGroup: 'storefront_editorial_presentation',
-    fields: ['title', 'subtitle', 'summary', 'image', 'imageAlt', 'storePath', 'checkoutPath'],
+    fields: ['title', 'subtitle', 'summary', 'image', 'imageAlt', 'storePath'],
     mutationPolicy: 'repo_deploy_only',
     owner: 'repo_astro',
     syncDirection: 'repo_to_storefront',

@@ -36,6 +36,39 @@ The system MUST create Stripe Checkout Sessions only from the Worker through the
 - **THEN** it creates a Stripe-hosted Checkout Session with Worker-owned success and cancel URLs
 - **AND** the browser receives only the hosted `checkoutUrl`.
 
+### Requirement: Cart-scoped checkout document routing
+
+The system SHALL expose shopper checkout documents at cart-scoped store routes and keep item-scoped checkout routes compatibility-only.
+
+#### Scenario: Shopper opens cart checkout
+
+- **GIVEN** `StoreCart` contains one or more `CartLine`s
+- **WHEN** the shopper chooses Checkout from the cart drawer
+- **THEN** the browser navigates to `/store/checkout/`
+- **AND** the route does not include a `storeItemSlug`.
+
+#### Scenario: Cart checkout direct load has no cart
+
+- **GIVEN** the shopper opens `/store/checkout/` with no browser `StoreCart` lines
+- **WHEN** the checkout page renders
+- **THEN** it presents empty-cart checkout state
+- **AND** it does not create a Stripe Checkout Session.
+
+#### Scenario: Checkout return uses cart route
+
+- **GIVEN** Stripe redirects the shopper after hosted Checkout
+- **WHEN** the Worker builds return and cancel URLs
+- **THEN** success targets `/store/checkout/return/?session_id={CHECKOUT_SESSION_ID}`
+- **AND** cancellation targets `/store/checkout/`.
+
+#### Scenario: Old item-scoped checkout route is opened
+
+- **GIVEN** a shopper opens `/store/{storeItemSlug}/checkout/`
+- **WHEN** the route is handled during the compatibility window
+- **THEN** the page is noindex
+- **AND** it may help recover item intent through a validated item add-to-cart action
+- **AND** hosted checkout still starts only from browser `StoreCart` lines validated by the Worker.
+
 ### Requirement: Stripe payment method configuration
 
 The system MUST use a required Stripe Payment Method Configuration for Stripe-backed checkout.

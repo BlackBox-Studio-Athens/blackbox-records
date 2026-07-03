@@ -126,10 +126,10 @@ This is what `BlackBox Local Stack` runs in WebStorm. It prepares local D1, star
 Local mock checkout smoke path:
 
 ```text
-http://127.0.0.1:4321/blackbox-records/store/disintegration-black-vinyl-lp/checkout/
+http://127.0.0.1:4321/blackbox-records/store/checkout/
 ```
 
-That canonical path remains the fastest smoke path for Disintegration. `/store/barren-point/` is the separate Barren Point distro item and is not a Disintegration alias. In stripe-mock mode, the local seed generator now creates fake development `Stock`, `ItemAvailability`, and `price_mock_*` mappings for every current store item so each item can exercise the local no-network checkout path. Those values are not real inventory counts or Stripe test evidence.
+That canonical path remains the fastest cart checkout smoke path. `/store/barren-point/` is the separate Barren Point distro item and is not a Disintegration alias. In stripe-mock mode, the local seed generator now creates fake development `Stock`, `ItemAvailability`, and `price_mock_*` mappings for every current store item so each item can exercise the local no-network checkout path. Those values are not real inventory counts or Stripe test evidence.
 
 Run the full local commerce stack with real Stripe test mode:
 

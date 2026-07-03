@@ -17,7 +17,7 @@ import {
 
 type CheckoutReturnStatusProps = {
   checkoutPath: string;
-  itemPath: string;
+  itemPath?: string | null | undefined;
   storePath: string;
   api?: Pick<PublicCheckoutApi, 'readCheckoutState'>;
 };
@@ -201,7 +201,7 @@ export function CheckoutReturnStatusScreen({
   view,
 }: {
   checkoutPath: string;
-  itemPath: string;
+  itemPath?: string | null | undefined;
   storePath: string;
   view: CheckoutReturnStatusView;
 }) {
@@ -234,12 +234,14 @@ export function CheckoutReturnStatusScreen({
           >
             {CHECKOUT_RETURN_ACTION_COPY.retryCheckout}
           </a>
-          <a
-            className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            href={itemPath}
-          >
-            {CHECKOUT_RETURN_ACTION_COPY.backToItem}
-          </a>
+          {itemPath && (
+            <a
+              className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              href={itemPath}
+            >
+              {CHECKOUT_RETURN_ACTION_COPY.backToItem}
+            </a>
+          )}
           <button
             type="button"
             className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"

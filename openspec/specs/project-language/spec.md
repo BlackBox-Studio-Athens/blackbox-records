@@ -15,6 +15,19 @@ The system SHALL distinguish content identity, shopper-facing sellable identity,
 - **THEN** the payload uses app-owned identities such as `storeItemSlug`, `variantId`, `CartLine`, and `CartQuantity`
 - **AND** it does not include Stripe Price IDs, D1 identifiers, payment state, order state, or backend secrets.
 
+#### Scenario: Checkout route is named
+
+- **WHEN** specs, code, tests, docs, or UI copy name the shopper checkout document route
+- **THEN** they use `/store/checkout/` for checkout review and payment start
+- **AND** they use `/store/checkout/return/` for hosted checkout return status
+- **AND** they describe `/store/{storeItemSlug}/checkout/` only as an item-scoped compatibility route.
+
+#### Scenario: Store Item projection is named
+
+- **WHEN** specs, code, tests, docs, or UI copy describe a `StoreItem`
+- **THEN** they use `storePath` for the item detail route
+- **AND** they do not describe `checkoutPath` as a Store Item projection field.
+
 ### Requirement: Authority terms
 
 The system MUST preserve the distinction between browser convenience state, Worker authority, Stripe authority, and D1 operational state.

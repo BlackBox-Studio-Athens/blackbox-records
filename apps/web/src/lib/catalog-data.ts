@@ -23,7 +23,6 @@ export type StoreItem = {
   eyebrow: string | null;
   metadata: string[];
   storePath: string;
-  checkoutPath: string;
 };
 type StoreItemImageOverride = {
   src: string;
@@ -130,13 +129,10 @@ export function resolveReleaseArtistDisplayName(
   return artistProfile?.data.title || artistSlugFallbackName.replace(/-/g, ' ');
 }
 
-function createStoreItemPaths(slug: string) {
-  const storePath = createProjectRelativeUrl(`/store/${slug}/`);
+const reservedStoreItemSlugs = new Set(['checkout']);
 
-  return {
-    storePath,
-    checkoutPath: createProjectRelativeUrl(`/store/${slug}/checkout/`),
-  };
+function createStoreItemPath(slug: string) {
+  return createProjectRelativeUrl(`/store/${slug}/`);
 }
 
 const RELEASE_STORE_ITEM_IMAGE_OVERRIDES: Record<string, StoreItemImageOverride> = {
@@ -200,7 +196,7 @@ export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEnt
     imageAlt: normalizeStoreItemImageAlt(releaseEntry.data.cover_image_alt, releaseEntry.data.title),
     eyebrow: 'Release',
     metadata,
-    ...createStoreItemPaths(slug),
+    storePath: createStoreItemPath(slug),
   };
 }
 
@@ -221,7 +217,7 @@ export function createStoreItemFromDistroEntry(distroEntry: DistroCatalogEntry):
     imageAlt: normalizeStoreItemImageAlt(distroEntry.data.image_alt, distroEntry.data.title),
     eyebrow: distroEntry.data.eyebrow || null,
     metadata,
-    ...createStoreItemPaths(slug),
+    storePath: createStoreItemPath(slug),
   };
 }
 
@@ -242,6 +238,11 @@ export async function listStoreItems(): Promise<StoreItem[]> {
 }
 
 export function mapStoreItemsBySlug(storeItems: StoreItem[]) {
+  const reservedSlug = storeItems.find((storeItem) => reservedStoreItemSlugs.has(storeItem.slug));
+  if (reservedSlug) {
+    throw new Error(`Reserved Store Item slug detected: ${reservedSlug.slug}`);
+  }
+
   assertNoSlugCollisions(
     storeItems.map((storeItem) => ({
       owner: `${storeItem.sourceKind}:${storeItem.sourceId}`,
