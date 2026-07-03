@@ -1,4 +1,6 @@
 import { currentCatalogProductProjectionEntries } from '../../apps/backend/src/application/commerce/catalog-sync/catalog-product-projections';
+import { createMoney, formatMoney, moneyToCurrencyCode, moneyToMinorAmount } from '../../apps/web/src/lib/money';
+import type { CartLineItemSnapshot } from '../../apps/web/src/lib/store-cart';
 import { createRouteUrl, resolveSmokeScenarioSelection } from '../smoke-core';
 import type {
   StripeCheckoutSurfaceExpectation,
@@ -134,6 +136,25 @@ export function groupStripeSandboxSmokeScenarios(
 export function createCheckoutPageUrl(siteUrl: string, storeItemSlug = smokeStoreItemSlug): string {
   void storeItemSlug;
   return createRouteUrl(siteUrl, '/store/checkout/');
+}
+
+export function createSmokeStoreCartLineItemSnapshot(): CartLineItemSnapshot {
+  const { expectedSandboxPrice, productProjection, storeItemSlug, variantId } = requireSmokeCatalogProjectionEntry();
+  const price = createMoney(expectedSandboxPrice);
+
+  return {
+    availabilityLabel: 'Available',
+    image: productProjection.imageUrls[0] ?? null,
+    imageAlt: productProjection.name,
+    optionLabel: null,
+    priceAmountMinor: moneyToMinorAmount(price),
+    priceCurrencyCode: moneyToCurrencyCode(price),
+    priceDisplay: formatMoney(price),
+    storeItemSlug,
+    subtitle: productProjection.description,
+    title: productProjection.name,
+    variantId,
+  };
 }
 
 export function createScenarioEmail(runId: string, scenarioName: string): string {

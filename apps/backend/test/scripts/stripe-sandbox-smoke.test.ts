@@ -13,6 +13,7 @@ import {
   createRemoteD1ReadinessSql,
   createSandboxSmokeStockTopUpSql,
   createScenarioEmail,
+  createSmokeStoreCartLineItemSnapshot,
   createStripeSandboxWebhookDeliveryDiagnostics,
   countPaidStripeSandboxScenarios,
   didScenarioPass,
@@ -33,6 +34,12 @@ import {
   type LocalCheckoutOrderRow,
   type RemoteD1ReadinessSummary,
 } from '../../../../scripts/smoke-stripe-sandbox';
+import {
+  addStoreCartItem,
+  readStoreCartState,
+  STORE_CART_STORAGE_KEY,
+  writeStoreCartState,
+} from '../../../../apps/web/src/lib/store-cart';
 
 const paidOrder: LocalCheckoutOrderRow = {
   checkoutSessionId: 'cs_test_123',
@@ -228,6 +235,22 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(createScenarioEmail('20260517000102', 'happy_path_paid')).toBe(
       'sandbox-checkout+20260517000102-happy_path_paid@blackbox.example',
     );
+  });
+
+  it('creates a browser cart seed for the smoke checkout route', () => {
+    const storage = createMemoryStorage();
+
+    writeStoreCartState(storage, addStoreCartItem(createSmokeStoreCartLineItemSnapshot()));
+
+    expect(storage.getItem(STORE_CART_STORAGE_KEY)).toContain('disintegration-black-vinyl-lp');
+    expect(readStoreCartState(storage).lines).toMatchObject([
+      {
+        priceAmountMinor: 2800,
+        priceCurrencyCode: 'EUR',
+        storeItemSlug: 'disintegration-black-vinyl-lp',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      },
+    ]);
   });
 
   it('runs bounded parallel batches in input order groups', async () => {
@@ -764,3 +787,17 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     );
   });
 });
+
+function createMemoryStorage() {
+  const values = new Map<string, string>();
+
+  return {
+    getItem: (key: string) => values.get(key) ?? null,
+    removeItem: (key: string) => {
+      values.delete(key);
+    },
+    setItem: (key: string, value: string) => {
+      values.set(key, value);
+    },
+  };
+}

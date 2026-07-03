@@ -7,6 +7,7 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 
 import { chromium, type Browser, type Frame, type Page } from 'playwright';
 
+import { addStoreCartItem, STORE_CART_STORAGE_KEY, writeStoreCartState } from '../apps/web/src/lib/store-cart';
 import {
   createRunId as createSmokeRunId,
   createSmokeEvidencePath,
@@ -38,6 +39,7 @@ import {
   calculateMinimumSmokeOnlineQuantity,
   createCheckoutPageUrl,
   createScenarioEmail,
+  createSmokeStoreCartLineItemSnapshot,
   groupStripeSandboxSmokeScenarios,
   resolveSelectedStripeSandboxScenarios,
   STRIPE_TEST_CARD_DOCS_URL,
@@ -63,6 +65,7 @@ export {
   countPaidStripeSandboxScenarios,
   createCheckoutPageUrl,
   createScenarioEmail,
+  createSmokeStoreCartLineItemSnapshot,
   groupStripeSandboxSmokeScenarios,
   resolveSelectedStripeSandboxScenarios,
   STRIPE_SANDBOX_SMOKE_SCENARIOS,
@@ -1038,6 +1041,10 @@ async function runScenarioWithBrowser(input: {
 
   try {
     await timeStripeSandboxStep(input.scenario.name, 'checkout open', durations, 'checkoutOpenMs', async () => {
+      await page.addInitScript(
+        ({ key, value }) => window.localStorage.setItem(key, value),
+        createSmokeStoreCartStorageEntry(),
+      );
       await page.goto(input.checkoutPageUrl, { waitUntil: 'domcontentloaded' });
       const newsletterOptIn = page.getByLabel(/Email me BlackBox Records/i);
       const checkoutButton = page.getByRole('button', {
@@ -1331,6 +1338,31 @@ async function clickFirstMatchingButton(scope: Page | Frame, name: RegExp): Prom
   }
 
   return false;
+}
+
+function createSmokeStoreCartStorageEntry(): { key: string; value: string } {
+  let value: string | null = null;
+
+  writeStoreCartState(
+    {
+      getItem: () => null,
+      removeItem: () => {
+        value = null;
+      },
+      setItem: (key, nextValue) => {
+        if (key === STORE_CART_STORAGE_KEY) {
+          value = nextValue;
+        }
+      },
+    },
+    addStoreCartItem(createSmokeStoreCartLineItemSnapshot()),
+  );
+
+  if (!value) {
+    throw new Error('Could not create sandbox smoke StoreCart state.');
+  }
+
+  return { key: STORE_CART_STORAGE_KEY, value };
 }
 
 async function waitForRemoteOrderAfterCheckout(
