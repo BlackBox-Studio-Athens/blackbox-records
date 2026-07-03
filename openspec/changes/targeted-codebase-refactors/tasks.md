@@ -34,8 +34,8 @@
 ## 6. Verification
 
 - [x] 6.1 Add or update unit tests for profile mapping, schema-inferred runtime config, email sink/direct routing, order reference token formatting, and any accepted value objects.
-- [ ] 6.2 Run `pnpm runtime:config:verify --env local`, `pnpm runtime:config:verify --env uat`, and `pnpm runtime:config:verify --env prd`.
-  - Local and UAT passed. PRD failed because production Worker runtime config/secrets are missing `RESEND_NEWSLETTER_TOPIC_ID`.
+- [x] 6.2 Run `pnpm runtime:config:verify --env local`, `pnpm runtime:config:verify --env uat`, and `pnpm runtime:config:verify --env prd`.
+  - Local, UAT, and PRD passed.
 - [x] 6.3 Run `pnpm test:unit`, `pnpm check`, and `pnpm build`.
 - [x] 6.4 If email routing behavior is touched, run `pnpm smoke:resend-uat` and attach the Smoke Evidence path.
   - Evidence: `.codex-artifacts/smoke/uat/resend-uat/20260620232747/summary.json`
