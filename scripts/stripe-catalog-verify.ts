@@ -172,20 +172,25 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
   const contracts = await loadStripeCatalogStoreItemContracts({
     productEnvironment: productEnvironmentProfile.productEnvironment === 'PRD' ? 'PRD' : 'UAT',
   });
-  const rows = readD1CatalogRows(options.environment, contracts);
-  const repositories = createD1CatalogRepositories(options.environment, rows);
   const expectedPrices = createExpectedPriceMap(contracts, options.environment);
   const expectedProductProjections = createExpectedProductProjectionMap(contracts, options.environment);
-  const reconciler = new CatalogReconciler({
-    environment: options.environment,
-    storeItems: repositories.storeItems,
-    storeOfferSnapshots: repositories.storeOfferSnapshots,
-    stripeCatalog: createStripeCatalogGateway({
-      STRIPE_API_BASE_URL: process.env.STRIPE_API_BASE_URL,
-      STRIPE_SECRET_KEY: stripeSecretKey,
-    }),
-    variantStripeMappings: repositories.variantStripeMappings,
+  const stripeCatalog = createStripeCatalogGateway({
+    STRIPE_API_BASE_URL: process.env.STRIPE_API_BASE_URL,
+    STRIPE_SECRET_KEY: stripeSecretKey,
   });
+  const createReconciler = () => {
+    const rows = readD1CatalogRows(options.environment, contracts);
+    const repositories = createD1CatalogRepositories(options.environment, rows);
+
+    return new CatalogReconciler({
+      environment: options.environment,
+      storeItems: repositories.storeItems,
+      storeOfferSnapshots: repositories.storeOfferSnapshots,
+      stripeCatalog,
+      variantStripeMappings: repositories.variantStripeMappings,
+    });
+  };
+  const reconciler = createReconciler();
 
   const result = await reconciler.verifyBuyableCatalog({
     apply: options.apply,
@@ -209,7 +214,7 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
       : [];
 
   if (options.apply && appliedActions.length > 0) {
-    const postApplyResult = await reconciler.verifyBuyableCatalog({
+    const postApplyResult = await createReconciler().verifyBuyableCatalog({
       apply: false,
       expectedPrices,
       expectedProductProjections,
