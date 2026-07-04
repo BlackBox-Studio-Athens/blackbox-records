@@ -21,6 +21,7 @@ import {
   formatStripeSandboxSmokePreflightSummary,
   formatStripeSandboxSmokeRunHeader,
   groupStripeSandboxSmokeScenarios,
+  isPresetCustomCheckoutAmountText,
   parseD1CheckoutOrderRows,
   parseRemoteD1ReadinessSummary,
   parseStripeSandboxSmokeArgs,
@@ -271,6 +272,19 @@ describe('Stripe sandbox Playwright smoke runner', () => {
         variantId: 'variant_atopia-atopia-cd_standard',
       },
     ]);
+  });
+
+  it('accepts hosted Checkout preset custom amount text', () => {
+    expect(
+      isPresetCustomCheckoutAmountText(
+        'BlackBox Records - Atopia - CD €5.00 CD edition. Change amount OR Shipping information Email',
+        '€5.00',
+      ),
+    ).toBe(true);
+    expect(isPresetCustomCheckoutAmountText('BlackBox Records - Atopia - CD €5.00 Shipping information', '€5.00')).toBe(
+      false,
+    );
+    expect(isPresetCustomCheckoutAmountText('BlackBox Records - Atopia - CD Change amount', '€5.00')).toBe(false);
   });
 
   it('runs bounded parallel batches in input order groups', async () => {

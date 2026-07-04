@@ -1235,7 +1235,7 @@ async function fillStripeCustomAmount(
     return;
   }
 
-  if (await isPresetCheckoutAmountVisible(page, scenario, fieldActionTimeoutMs)) {
+  if (await waitForPresetCheckoutAmount(page, scenario, fieldActionTimeoutMs)) {
     return;
   }
 
@@ -1252,7 +1252,39 @@ async function fillStripeCustomAmount(
     (await fillFirstVisibleSelector(page, 'input[name="amount"]', amount, fieldActionTimeoutMs));
 
   if (!filled) {
+    if (await isPresetCheckoutAmountVisible(page, scenario, fieldActionTimeoutMs)) {
+      return;
+    }
+
     throw new Error(`Stripe Checkout custom amount field did not become fillable for ${scenario.name}.`);
+  }
+}
+
+async function waitForPresetCheckoutAmount(
+  page: Page,
+  scenario: StripeSandboxSmokeScenario,
+  fieldActionTimeoutMs: number,
+): Promise<boolean> {
+  const expectedAmountText = scenario.checkoutSurfaceExpectation?.expectedAmountText;
+
+  if (!expectedAmountText) {
+    return false;
+  }
+
+  try {
+    await page.waitForFunction(
+      (amountText) => {
+        const bodyText = document.body?.innerText ?? '';
+
+        return bodyText.includes(amountText) && /change amount/i.test(bodyText);
+      },
+      expectedAmountText,
+      { timeout: fieldActionTimeoutMs },
+    );
+
+    return true;
+  } catch {
+    return isPresetCheckoutAmountVisible(page, scenario, fieldActionTimeoutMs);
   }
 }
 
@@ -1270,10 +1302,14 @@ async function isPresetCheckoutAmountVisible(
   try {
     const bodyText = await page.locator('body').innerText({ timeout: fieldActionTimeoutMs });
 
-    return bodyText.includes(expectedAmountText) && /change amount/i.test(bodyText);
+    return isPresetCustomCheckoutAmountText(bodyText, expectedAmountText);
   } catch {
     return false;
   }
+}
+
+export function isPresetCustomCheckoutAmountText(bodyText: string, expectedAmountText: string | undefined): boolean {
+  return Boolean(expectedAmountText && bodyText.includes(expectedAmountText) && /change amount/i.test(bodyText));
 }
 
 function formatCustomCheckoutAmountInput(amountMinor: number): string {
