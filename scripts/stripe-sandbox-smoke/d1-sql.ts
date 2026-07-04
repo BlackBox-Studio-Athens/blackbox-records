@@ -17,10 +17,12 @@ export function createRemoteD1ReadinessSql(): string {
   ].join('\n');
 }
 
-export function createSandboxSmokeStockTopUpSql(minimumQuantity: number): string {
+export function createSandboxSmokeStockTopUpSql(minimumQuantity: number, variantId = smokeVariantId): string {
   if (!Number.isInteger(minimumQuantity) || minimumQuantity < 1) {
     throw new Error('Sandbox smoke stock top-up quantity must be a positive integer.');
   }
+
+  const escapedVariantId = escapeSqlLiteral(variantId);
 
   return [
     'UPDATE "Stock"',
@@ -28,14 +30,14 @@ export function createSandboxSmokeStockTopUpSql(minimumQuantity: number): string
     `  "quantity" = CASE WHEN "quantity" < ${minimumQuantity} THEN ${minimumQuantity} ELSE "quantity" END,`,
     `  "onlineQuantity" = CASE WHEN "onlineQuantity" < ${minimumQuantity} THEN ${minimumQuantity} ELSE "onlineQuantity" END,`,
     '  "updatedAt" = CURRENT_TIMESTAMP',
-    `WHERE "variantId" = '${smokeVariantId}';`,
+    `WHERE "variantId" = '${escapedVariantId}';`,
     '',
     'UPDATE "ItemAvailability"',
     'SET',
     '  "status" = \'available\',',
     '  "canBuy" = 1,',
     '  "updatedAt" = CURRENT_TIMESTAMP',
-    `WHERE "variantId" = '${smokeVariantId}';`,
+    `WHERE "variantId" = '${escapedVariantId}';`,
   ].join('\n');
 }
 

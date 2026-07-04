@@ -7,7 +7,12 @@ import { pathToFileURL, fileURLToPath } from 'node:url';
 
 import { chromium, type Browser, type Frame, type Page } from 'playwright';
 
-import { addStoreCartItem, STORE_CART_STORAGE_KEY, writeStoreCartState } from '../apps/web/src/lib/store-cart';
+import {
+  addStoreCartItem,
+  STORE_CART_STORAGE_KEY,
+  type CartLineItemSnapshot,
+  writeStoreCartState,
+} from '../apps/web/src/lib/store-cart';
 import {
   createRunId as createSmokeRunId,
   createSmokeEvidencePath,
@@ -40,6 +45,7 @@ import {
   createCheckoutPageUrl,
   createScenarioEmail,
   createSmokeStoreCartLineItemSnapshot,
+  getStripeSandboxSmokeScenarioVariantId,
   groupStripeSandboxSmokeScenarios,
   resolveSelectedStripeSandboxScenarios,
   STRIPE_TEST_CARD_DOCS_URL,
@@ -66,6 +72,7 @@ export {
   createCheckoutPageUrl,
   createScenarioEmail,
   createSmokeStoreCartLineItemSnapshot,
+  getStripeSandboxSmokeScenarioVariantId,
   groupStripeSandboxSmokeScenarios,
   resolveSelectedStripeSandboxScenarios,
   STRIPE_SANDBOX_SMOKE_SCENARIOS,
@@ -79,6 +86,7 @@ export type StripeSandboxSmokeScenarioName =
   | 'happy_path_paid'
   | 'incorrect_cvc'
   | 'insufficient_funds'
+  | 'pay_what_you_want_paid'
   | 'processing_error'
   | 'three_d_secure';
 
@@ -87,10 +95,12 @@ export type StripeSandboxScreenshotMode = 'always' | 'never' | 'on-failure';
 
 export type StripeSandboxSmokeScenario = {
   cardNumber?: string;
+  checkoutAmountMinor?: number;
   checkoutSurfaceExpectation?: StripeCheckoutSurfaceExpectation;
   description: string;
   expectedOrderStatus: 'not_paid_or_pending' | 'not_submitted' | 'paid';
   expectedStripeErrorPattern?: RegExp;
+  lineItemSnapshot?: CartLineItemSnapshot;
   name: StripeSandboxSmokeScenarioName;
   stripeFormExpectation: string;
 };
@@ -783,7 +793,9 @@ async function verifyStripeSandboxSmokeReadiness(input: {
   options: StripeSandboxSmokeOptions;
   scenarios: readonly StripeSandboxSmokeScenario[];
 }): Promise<void> {
-  ensureSandboxSmokeStock(input.minimumSmokeOnlineQuantity);
+  ensureSandboxSmokeStock(input.minimumSmokeOnlineQuantity, [
+    ...new Set(input.scenarios.map((scenario) => getStripeSandboxSmokeScenarioVariantId(scenario))),
+  ]);
 
   const preflight = await runPreflight(input.options);
   const preflightIssues = checkStripeSandboxSmokePreflight({
@@ -904,6 +916,7 @@ async function runScenarioAndWriteEvidence(input: {
           input.options.workerUrl,
           input.scenario.checkoutSurfaceExpectation,
           input.options.expectedPaymentMethodLabels,
+          input.scenario.lineItemSnapshot?.storeItemSlug,
         ),
       }
     : input.scenario;
@@ -985,15 +998,17 @@ export async function runInBatches<T>(
   return runSmokeInBatches(items, concurrency, task);
 }
 
-function ensureSandboxSmokeStock(minimumQuantity: number): void {
+function ensureSandboxSmokeStock(minimumQuantity: number, variantIds: readonly string[]): void {
   if (minimumQuantity < 1) {
     return;
   }
 
-  console.log(
-    `Ensuring sandbox smoke stock for ${smokeVariantId}: at least ${minimumQuantity} online unit(s), without deleting or resetting D1.`,
-  );
-  runRemoteD1Sql(createSandboxSmokeStockTopUpSql(minimumQuantity));
+  for (const variantId of variantIds) {
+    console.log(
+      `Ensuring sandbox smoke stock for ${variantId}: at least ${minimumQuantity} online unit(s), without deleting or resetting D1.`,
+    );
+    runRemoteD1Sql(createSandboxSmokeStockTopUpSql(minimumQuantity, variantId));
+  }
 }
 
 async function runPreflight(
@@ -1043,7 +1058,7 @@ async function runScenarioWithBrowser(input: {
     await timeStripeSandboxStep(input.scenario.name, 'checkout open', durations, 'checkoutOpenMs', async () => {
       await page.addInitScript(
         ({ key, value }) => window.localStorage.setItem(key, value),
-        createSmokeStoreCartStorageEntry(),
+        createSmokeStoreCartStorageEntry(input.scenario),
       );
       await page.goto(input.checkoutPageUrl, { waitUntil: 'domcontentloaded' });
       const newsletterOptIn = page.getByLabel(/Email me BlackBox Records/i);
@@ -1061,6 +1076,9 @@ async function runScenarioWithBrowser(input: {
     });
 
     const checkoutSessionId = extractCheckoutSessionId(page.url());
+    if (input.scenario.checkoutAmountMinor !== undefined) {
+      await fillStripeCustomAmount(page, input.scenario, input.options.fieldActionTimeoutMs);
+    }
     const checkoutSurface = input.scenario.checkoutSurfaceExpectation
       ? await readStripeCheckoutSurface(page, input.scenario.checkoutSurfaceExpectation, input.options.timeoutMs)
       : null;
@@ -1208,6 +1226,36 @@ async function readStripeCheckoutSurface(
   return createStripeCheckoutSurfaceObservation(bodyText, expectation);
 }
 
+async function fillStripeCustomAmount(
+  page: Page,
+  scenario: StripeSandboxSmokeScenario,
+  fieldActionTimeoutMs: number,
+): Promise<void> {
+  if (scenario.checkoutAmountMinor === undefined) {
+    return;
+  }
+
+  const amount = formatCustomCheckoutAmountInput(scenario.checkoutAmountMinor);
+  const filled =
+    (await fillFirstVisible(
+      page,
+      [/amount/i, /pay what you want/i, /payment amount/i, /custom amount/i],
+      amount,
+      fieldActionTimeoutMs,
+    )) ||
+    (await fillFirstVisibleSelector(page, 'input[name="customAmount"]', amount, fieldActionTimeoutMs)) ||
+    (await fillFirstVisibleSelector(page, 'input[name="custom_amount"]', amount, fieldActionTimeoutMs)) ||
+    (await fillFirstVisibleSelector(page, 'input[name="amount"]', amount, fieldActionTimeoutMs));
+
+  if (!filled) {
+    throw new Error(`Stripe Checkout custom amount field did not become fillable for ${scenario.name}.`);
+  }
+}
+
+function formatCustomCheckoutAmountInput(amountMinor: number): string {
+  return (amountMinor / 100).toFixed(2);
+}
+
 async function fillStripeHostedCheckout(
   page: Page,
   scenario: StripeSandboxSmokeScenario,
@@ -1340,7 +1388,10 @@ async function clickFirstMatchingButton(scope: Page | Frame, name: RegExp): Prom
   return false;
 }
 
-export function createSmokeStoreCartStorageEntry(): { key: string; value: string } {
+export function createSmokeStoreCartStorageEntry(scenario?: StripeSandboxSmokeScenario): {
+  key: string;
+  value: string;
+} {
   const values = new Map<string, string>();
 
   writeStoreCartState(
@@ -1353,7 +1404,7 @@ export function createSmokeStoreCartStorageEntry(): { key: string; value: string
         values.set(key, nextValue);
       },
     },
-    addStoreCartItem(createSmokeStoreCartLineItemSnapshot()),
+    addStoreCartItem(scenario?.lineItemSnapshot ?? createSmokeStoreCartLineItemSnapshot()),
   );
 
   const value = values.get(STORE_CART_STORAGE_KEY);

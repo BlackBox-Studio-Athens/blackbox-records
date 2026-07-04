@@ -198,6 +198,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(scenarios.map((scenario) => scenario.name)).toEqual([
       'checkout_surface',
       'happy_path_paid',
+      'pay_what_you_want_paid',
       'three_d_secure',
       'card_declined',
       'insufficient_funds',
@@ -205,8 +206,8 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       'incorrect_cvc',
       'processing_error',
     ]);
-    expect(countPaidStripeSandboxScenarios(scenarios)).toBe(2);
-    expect(calculateMinimumSmokeOnlineQuantity(scenarios)).toBe(3);
+    expect(countPaidStripeSandboxScenarios(scenarios)).toBe(3);
+    expect(calculateMinimumSmokeOnlineQuantity(scenarios)).toBe(4);
     expect(calculateMinimumSmokeOnlineQuantity([STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid])).toBe(1);
     expect(calculateMinimumSmokeOnlineQuantity([STRIPE_SANDBOX_SMOKE_SCENARIOS.card_declined])).toBe(1);
 
@@ -219,7 +220,11 @@ describe('Stripe sandbox Playwright smoke runner', () => {
         STRIPE_SANDBOX_SMOKE_SCENARIOS.incorrect_cvc,
         STRIPE_SANDBOX_SMOKE_SCENARIOS.processing_error,
       ],
-      paidScenarios: [STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid, STRIPE_SANDBOX_SMOKE_SCENARIOS.three_d_secure],
+      paidScenarios: [
+        STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid,
+        STRIPE_SANDBOX_SMOKE_SCENARIOS.pay_what_you_want_paid,
+        STRIPE_SANDBOX_SMOKE_SCENARIOS.three_d_secure,
+      ],
     });
   });
 
@@ -246,6 +251,24 @@ describe('Stripe sandbox Playwright smoke runner', () => {
         priceCurrencyCode: 'EUR',
         storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      },
+    ]);
+  });
+
+  it('creates a browser cart seed for the pay-what-you-want smoke checkout route', () => {
+    const storageEntry = createSmokeStoreCartStorageEntry(STRIPE_SANDBOX_SMOKE_SCENARIOS.pay_what_you_want_paid);
+    const storage = createMemoryStorage();
+
+    storage.setItem(storageEntry.key, storageEntry.value);
+
+    expect(readStoreCartState(storage).lines).toMatchObject([
+      {
+        priceAmountMinor: null,
+        priceCurrencyCode: 'EUR',
+        priceDisplay: 'Pay what you want',
+        priceKind: 'pay_what_you_want',
+        storeItemSlug: 'atopia-atopia-cd',
+        variantId: 'variant_atopia-atopia-cd_standard',
       },
     ]);
   });
@@ -352,6 +375,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(createRemoteD1ReadinessSql()).toContain('smokeVariantOnlineQuantity');
     expect(createSandboxSmokeStockTopUpSql(2)).toContain('"onlineQuantity" < 2');
     expect(createSandboxSmokeStockTopUpSql(2)).toContain('variant_disintegration-black-vinyl-lp_standard');
+    expect(createSandboxSmokeStockTopUpSql(2, "variant_'quoted")).toContain("variant_''quoted");
     expect(() => createSandboxSmokeStockTopUpSql(0)).toThrow(
       'Sandbox smoke stock top-up quantity must be a positive integer.',
     );

@@ -34,8 +34,9 @@ export async function resolveCheckoutSurfaceExpectation(
   workerUrl: string,
   baseExpectation: StripeCheckoutSurfaceExpectation,
   expectedPaymentMethodLabels: string[],
+  storeItemSlug = smokeStoreItemSlug,
 ): Promise<StripeCheckoutSurfaceExpectation> {
-  const offer = await readWorkerStoreOffer(workerUrl);
+  const offer = await readWorkerStoreOffer(workerUrl, storeItemSlug);
 
   if (!offer.canCheckout || !offer.price?.display) {
     throw new Error('Worker Store Offer is not checkout-ready for sandbox smoke.');
@@ -43,7 +44,10 @@ export async function resolveCheckoutSurfaceExpectation(
 
   return {
     ...baseExpectation,
-    expectedAmountText: offer.price.display,
+    expectedAmountText:
+      baseExpectation.expectedAmountText === 'Worker Store Offer price'
+        ? offer.price.display
+        : baseExpectation.expectedAmountText,
     expectedPaymentMethodLabels,
   };
 }
@@ -221,9 +225,9 @@ export function createStripeCheckoutSessionProjectionObservation(
   };
 }
 
-async function readWorkerStoreOffer(workerUrl: string): Promise<PublicStoreOfferResponse> {
+async function readWorkerStoreOffer(workerUrl: string, storeItemSlug: string): Promise<PublicStoreOfferResponse> {
   const response = await fetch(
-    `${normalizeBaseUrl(workerUrl, 'workerUrl')}/api/store/items/${encodeURIComponent(smokeStoreItemSlug)}`,
+    `${normalizeBaseUrl(workerUrl, 'workerUrl')}/api/store/items/${encodeURIComponent(storeItemSlug)}`,
   );
 
   if (!response.ok) {

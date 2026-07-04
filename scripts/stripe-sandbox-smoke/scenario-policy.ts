@@ -9,15 +9,25 @@ import type {
   StripeSandboxSmokeScenarioName,
   StripeSandboxSmokeScenarioSelection,
 } from '../smoke-stripe-sandbox';
-import { smokeStoreItemSlug, smokeVariantId } from './constants';
+import {
+  payWhatYouWantSmokeStoreItemSlug,
+  payWhatYouWantSmokeVariantId,
+  smokeStoreItemSlug,
+  smokeVariantId,
+} from './constants';
 
 const smokeCatalogProjectionEntry = currentCatalogProductProjectionEntries.find(
   (entry) => entry.storeItemSlug === smokeStoreItemSlug && entry.variantId === smokeVariantId,
+);
+const payWhatYouWantSmokeCatalogProjectionEntry = currentCatalogProductProjectionEntries.find(
+  (entry) =>
+    entry.storeItemSlug === payWhatYouWantSmokeStoreItemSlug && entry.variantId === payWhatYouWantSmokeVariantId,
 );
 
 export const allScenarioNames: readonly StripeSandboxSmokeScenarioName[] = [
   'checkout_surface',
   'happy_path_paid',
+  'pay_what_you_want_paid',
   'three_d_secure',
   'card_declined',
   'insufficient_funds',
@@ -26,14 +36,32 @@ export const allScenarioNames: readonly StripeSandboxSmokeScenarioName[] = [
   'processing_error',
 ];
 
-function requireSmokeCatalogProjectionEntry() {
-  const expectedSandboxPrice = smokeCatalogProjectionEntry?.expectedSandboxPrice;
+function requireCatalogProjectionEntry(
+  entry: (typeof currentCatalogProductProjectionEntries)[number] | undefined,
+  storeItemSlug: string,
+  variantId: string,
+) {
+  const expectedSandboxPrice = entry?.expectedSandboxPrice;
 
-  if (!smokeCatalogProjectionEntry || !expectedSandboxPrice) {
-    throw new Error(`Missing checkout-eligible Product Projection for ${smokeStoreItemSlug} / ${smokeVariantId}.`);
+  if (!entry || !expectedSandboxPrice) {
+    throw new Error(`Missing checkout-eligible Product Projection for ${storeItemSlug} / ${variantId}.`);
   }
 
-  return { ...smokeCatalogProjectionEntry, expectedSandboxPrice };
+  return { ...entry, expectedSandboxPrice };
+}
+
+type SmokeCatalogProjectionEntry = ReturnType<typeof requireCatalogProjectionEntry>;
+
+function requireSmokeCatalogProjectionEntry() {
+  return requireCatalogProjectionEntry(smokeCatalogProjectionEntry, smokeStoreItemSlug, smokeVariantId);
+}
+
+function requirePayWhatYouWantSmokeCatalogProjectionEntry() {
+  return requireCatalogProjectionEntry(
+    payWhatYouWantSmokeCatalogProjectionEntry,
+    payWhatYouWantSmokeStoreItemSlug,
+    payWhatYouWantSmokeVariantId,
+  );
 }
 
 function requireFixedSmokeCatalogProjectionEntry() {
@@ -41,6 +69,18 @@ function requireFixedSmokeCatalogProjectionEntry() {
 
   if (entry.expectedSandboxPrice.kind !== 'fixed') {
     throw new Error(`Smoke Store Item ${smokeStoreItemSlug} must use a fixed expected sandbox price.`);
+  }
+
+  return { ...entry, expectedSandboxPrice: entry.expectedSandboxPrice };
+}
+
+function requirePayWhatYouWantSmokeCatalogPrice() {
+  const entry = requirePayWhatYouWantSmokeCatalogProjectionEntry();
+
+  if (entry.expectedSandboxPrice.kind !== 'pay_what_you_want') {
+    throw new Error(
+      `Smoke Store Item ${payWhatYouWantSmokeStoreItemSlug} must use a pay-what-you-want expected sandbox price.`,
+    );
   }
 
   return { ...entry, expectedSandboxPrice: entry.expectedSandboxPrice };
@@ -54,6 +94,24 @@ const disintegrationCheckoutSurfaceExpectation: StripeCheckoutSurfaceExpectation
     expectedCurrencyCode: requireFixedSmokeCatalogProjectionEntry().expectedSandboxPrice.currencyCode,
     expectedProductImageUrl: requireSmokeCatalogProjectionEntry().productProjection.imageUrls[0] ?? '',
     expectedProductName: requireSmokeCatalogProjectionEntry().productProjection.name,
+  },
+  minimumDynamicPaymentMethodCount: 1,
+};
+const payWhatYouWantCheckoutAmountMinor =
+  requirePayWhatYouWantSmokeCatalogPrice().expectedSandboxPrice.presetAmountMinor;
+const payWhatYouWantCheckoutSurfaceExpectation: StripeCheckoutSurfaceExpectation = {
+  expectedAmountText: formatMoney(
+    createMoney({
+      amountMinor: payWhatYouWantCheckoutAmountMinor,
+      currencyCode: requirePayWhatYouWantSmokeCatalogPrice().expectedSandboxPrice.currencyCode,
+    }),
+  ),
+  expectedPaymentMethodLabels: [],
+  expectedSessionProjection: {
+    expectedAmountMinor: payWhatYouWantCheckoutAmountMinor,
+    expectedCurrencyCode: requirePayWhatYouWantSmokeCatalogPrice().expectedSandboxPrice.currencyCode,
+    expectedProductImageUrl: requirePayWhatYouWantSmokeCatalogProjectionEntry().productProjection.imageUrls[0] ?? '',
+    expectedProductName: requirePayWhatYouWantSmokeCatalogProjectionEntry().productProjection.name,
   },
   minimumDynamicPaymentMethodCount: 1,
 };
@@ -76,6 +134,17 @@ export const STRIPE_SANDBOX_SMOKE_SCENARIOS: Record<StripeSandboxSmokeScenarioNa
     name: 'happy_path_paid',
     stripeFormExpectation:
       'Stripe should accept the card, return to the checkout return page, and emit a paid webhook.',
+  },
+  pay_what_you_want_paid: {
+    cardNumber: '4242 4242 4242 4242',
+    checkoutAmountMinor: payWhatYouWantCheckoutAmountMinor,
+    checkoutSurfaceExpectation: payWhatYouWantCheckoutSurfaceExpectation,
+    description: 'Immediate successful pay-what-you-want card payment.',
+    expectedOrderStatus: 'paid',
+    lineItemSnapshot: createSmokeStoreCartLineItemSnapshot(requirePayWhatYouWantSmokeCatalogProjectionEntry()),
+    name: 'pay_what_you_want_paid',
+    stripeFormExpectation:
+      'Stripe should accept the custom amount, return to the checkout return page, and emit a paid webhook.',
   },
   three_d_secure: {
     cardNumber: '4000 0000 0000 3220',
@@ -148,25 +217,30 @@ export function createCheckoutPageUrl(siteUrl: string, storeItemSlug = smokeStor
   return createRouteUrl(siteUrl, '/store/checkout/');
 }
 
-export function createSmokeStoreCartLineItemSnapshot(): CartLineItemSnapshot {
-  const { expectedSandboxPrice, productProjection, storeItemSlug, variantId } =
-    requireFixedSmokeCatalogProjectionEntry();
-  const price = createMoney(expectedSandboxPrice);
+export function createSmokeStoreCartLineItemSnapshot(
+  entry: SmokeCatalogProjectionEntry = requireFixedSmokeCatalogProjectionEntry(),
+): CartLineItemSnapshot {
+  const { expectedSandboxPrice, productProjection, storeItemSlug, variantId } = entry;
+  const price = expectedSandboxPrice.kind === 'fixed' ? createMoney(expectedSandboxPrice) : null;
 
   return {
     availabilityLabel: 'Available',
     image: productProjection.imageUrls[0] ?? null,
     imageAlt: productProjection.name,
     optionLabel: null,
-    priceAmountMinor: moneyToMinorAmount(price),
-    priceCurrencyCode: moneyToCurrencyCode(price),
-    priceDisplay: formatMoney(price),
-    priceKind: 'fixed',
+    priceAmountMinor: price ? moneyToMinorAmount(price) : null,
+    priceCurrencyCode: price ? moneyToCurrencyCode(price) : expectedSandboxPrice.currencyCode,
+    priceDisplay: price ? formatMoney(price) : 'Pay what you want',
+    priceKind: expectedSandboxPrice.kind,
     storeItemSlug,
     subtitle: productProjection.description,
     title: productProjection.name,
     variantId,
   };
+}
+
+export function getStripeSandboxSmokeScenarioVariantId(scenario: StripeSandboxSmokeScenario): string {
+  return scenario.lineItemSnapshot?.variantId ?? smokeVariantId;
 }
 
 export function createScenarioEmail(runId: string, scenarioName: string): string {

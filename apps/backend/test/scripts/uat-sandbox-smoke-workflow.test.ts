@@ -35,6 +35,7 @@ describe('UAT provider smoke workflow', () => {
     expect(workflow).toContain('pnpm smoke:stripe-uat -- \\');
     expect(workflow).toContain('--site-url "${UAT_SITE_URL}"');
     expect(workflow).toContain('--scenario happy_path_paid');
+    expect(workflow).toContain('--scenario pay_what_you_want_paid');
     expect(workflow).toContain('--screenshots on-failure');
     expect(workflow).toContain('.codex-artifacts/smoke/uat/stripe-sandbox/**');
     expect(workflow).toContain('uat-smoke-${{ github.run_id }}-${{ github.run_attempt }}');
