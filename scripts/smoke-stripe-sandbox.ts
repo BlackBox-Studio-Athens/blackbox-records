@@ -1235,6 +1235,10 @@ async function fillStripeCustomAmount(
     return;
   }
 
+  if (await isPresetCheckoutAmountVisible(page, scenario, fieldActionTimeoutMs)) {
+    return;
+  }
+
   const amount = formatCustomCheckoutAmountInput(scenario.checkoutAmountMinor);
   const filled =
     (await fillFirstVisible(
@@ -1249,6 +1253,26 @@ async function fillStripeCustomAmount(
 
   if (!filled) {
     throw new Error(`Stripe Checkout custom amount field did not become fillable for ${scenario.name}.`);
+  }
+}
+
+async function isPresetCheckoutAmountVisible(
+  page: Page,
+  scenario: StripeSandboxSmokeScenario,
+  fieldActionTimeoutMs: number,
+): Promise<boolean> {
+  const expectedAmountText = scenario.checkoutSurfaceExpectation?.expectedAmountText;
+
+  if (!expectedAmountText) {
+    return false;
+  }
+
+  try {
+    const bodyText = await page.locator('body').innerText({ timeout: fieldActionTimeoutMs });
+
+    return bodyText.includes(expectedAmountText) && /change amount/i.test(bodyText);
+  } catch {
+    return false;
   }
 }
 
