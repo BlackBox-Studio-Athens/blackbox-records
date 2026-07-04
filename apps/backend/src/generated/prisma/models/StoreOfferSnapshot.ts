@@ -233,7 +233,7 @@ export type StoreOfferSnapshotGroupByOutputType = {
   variantId: string
   stripePriceId: string
   stripeLookupKey: string
-  amountMinor: number
+  amountMinor: number | null
   currencyCode: string
   priceActive: boolean
   productActive: boolean
@@ -272,7 +272,7 @@ export type StoreOfferSnapshotWhereInput = {
   variantId?: Prisma.StringFilter<"StoreOfferSnapshot"> | string
   stripePriceId?: Prisma.StringFilter<"StoreOfferSnapshot"> | string
   stripeLookupKey?: Prisma.StringFilter<"StoreOfferSnapshot"> | string
-  amountMinor?: Prisma.IntFilter<"StoreOfferSnapshot"> | number
+  amountMinor?: Prisma.IntNullableFilter<"StoreOfferSnapshot"> | number | null
   currencyCode?: Prisma.StringFilter<"StoreOfferSnapshot"> | string
   priceActive?: Prisma.BoolFilter<"StoreOfferSnapshot"> | boolean
   productActive?: Prisma.BoolFilter<"StoreOfferSnapshot"> | boolean
@@ -288,7 +288,7 @@ export type StoreOfferSnapshotOrderByWithRelationInput = {
   variantId?: Prisma.SortOrder
   stripePriceId?: Prisma.SortOrder
   stripeLookupKey?: Prisma.SortOrder
-  amountMinor?: Prisma.SortOrder
+  amountMinor?: Prisma.SortOrderInput | Prisma.SortOrder
   currencyCode?: Prisma.SortOrder
   priceActive?: Prisma.SortOrder
   productActive?: Prisma.SortOrder
@@ -307,7 +307,7 @@ export type StoreOfferSnapshotWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.StoreOfferSnapshotWhereInput | Prisma.StoreOfferSnapshotWhereInput[]
   stripePriceId?: Prisma.StringFilter<"StoreOfferSnapshot"> | string
   stripeLookupKey?: Prisma.StringFilter<"StoreOfferSnapshot"> | string
-  amountMinor?: Prisma.IntFilter<"StoreOfferSnapshot"> | number
+  amountMinor?: Prisma.IntNullableFilter<"StoreOfferSnapshot"> | number | null
   currencyCode?: Prisma.StringFilter<"StoreOfferSnapshot"> | string
   priceActive?: Prisma.BoolFilter<"StoreOfferSnapshot"> | boolean
   productActive?: Prisma.BoolFilter<"StoreOfferSnapshot"> | boolean
@@ -323,7 +323,7 @@ export type StoreOfferSnapshotOrderByWithAggregationInput = {
   variantId?: Prisma.SortOrder
   stripePriceId?: Prisma.SortOrder
   stripeLookupKey?: Prisma.SortOrder
-  amountMinor?: Prisma.SortOrder
+  amountMinor?: Prisma.SortOrderInput | Prisma.SortOrder
   currencyCode?: Prisma.SortOrder
   priceActive?: Prisma.SortOrder
   productActive?: Prisma.SortOrder
@@ -347,7 +347,7 @@ export type StoreOfferSnapshotScalarWhereWithAggregatesInput = {
   variantId?: Prisma.StringWithAggregatesFilter<"StoreOfferSnapshot"> | string
   stripePriceId?: Prisma.StringWithAggregatesFilter<"StoreOfferSnapshot"> | string
   stripeLookupKey?: Prisma.StringWithAggregatesFilter<"StoreOfferSnapshot"> | string
-  amountMinor?: Prisma.IntWithAggregatesFilter<"StoreOfferSnapshot"> | number
+  amountMinor?: Prisma.IntNullableWithAggregatesFilter<"StoreOfferSnapshot"> | number | null
   currencyCode?: Prisma.StringWithAggregatesFilter<"StoreOfferSnapshot"> | string
   priceActive?: Prisma.BoolWithAggregatesFilter<"StoreOfferSnapshot"> | boolean
   productActive?: Prisma.BoolWithAggregatesFilter<"StoreOfferSnapshot"> | boolean
@@ -363,7 +363,7 @@ export type StoreOfferSnapshotCreateInput = {
   variantId: string
   stripePriceId: string
   stripeLookupKey: string
-  amountMinor: number
+  amountMinor?: number | null
   currencyCode: string
   priceActive: boolean
   productActive: boolean
@@ -379,7 +379,7 @@ export type StoreOfferSnapshotUncheckedCreateInput = {
   variantId: string
   stripePriceId: string
   stripeLookupKey: string
-  amountMinor: number
+  amountMinor?: number | null
   currencyCode: string
   priceActive: boolean
   productActive: boolean
@@ -395,7 +395,7 @@ export type StoreOfferSnapshotUpdateInput = {
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   stripePriceId?: Prisma.StringFieldUpdateOperationsInput | string
   stripeLookupKey?: Prisma.StringFieldUpdateOperationsInput | string
-  amountMinor?: Prisma.IntFieldUpdateOperationsInput | number
+  amountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currencyCode?: Prisma.StringFieldUpdateOperationsInput | string
   priceActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   productActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -411,7 +411,7 @@ export type StoreOfferSnapshotUncheckedUpdateInput = {
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   stripePriceId?: Prisma.StringFieldUpdateOperationsInput | string
   stripeLookupKey?: Prisma.StringFieldUpdateOperationsInput | string
-  amountMinor?: Prisma.IntFieldUpdateOperationsInput | number
+  amountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currencyCode?: Prisma.StringFieldUpdateOperationsInput | string
   priceActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   productActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -427,7 +427,7 @@ export type StoreOfferSnapshotCreateManyInput = {
   variantId: string
   stripePriceId: string
   stripeLookupKey: string
-  amountMinor: number
+  amountMinor?: number | null
   currencyCode: string
   priceActive: boolean
   productActive: boolean
@@ -443,7 +443,7 @@ export type StoreOfferSnapshotUpdateManyMutationInput = {
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   stripePriceId?: Prisma.StringFieldUpdateOperationsInput | string
   stripeLookupKey?: Prisma.StringFieldUpdateOperationsInput | string
-  amountMinor?: Prisma.IntFieldUpdateOperationsInput | number
+  amountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currencyCode?: Prisma.StringFieldUpdateOperationsInput | string
   priceActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   productActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -459,7 +459,7 @@ export type StoreOfferSnapshotUncheckedUpdateManyInput = {
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   stripePriceId?: Prisma.StringFieldUpdateOperationsInput | string
   stripeLookupKey?: Prisma.StringFieldUpdateOperationsInput | string
-  amountMinor?: Prisma.IntFieldUpdateOperationsInput | number
+  amountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currencyCode?: Prisma.StringFieldUpdateOperationsInput | string
   priceActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   productActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -525,8 +525,8 @@ export type StoreOfferSnapshotSumOrderByAggregateInput = {
   amountMinor?: Prisma.SortOrder
 }
 
-export type IntFieldUpdateOperationsInput = {
-  set?: number
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
   increment?: number
   decrement?: number
   multiply?: number
@@ -614,7 +614,7 @@ export type $StoreOfferSnapshotPayload<ExtArgs extends runtime.Types.Extensions.
     variantId: string
     stripePriceId: string
     stripeLookupKey: string
-    amountMinor: number
+    amountMinor: number | null
     currencyCode: string
     priceActive: boolean
     productActive: boolean

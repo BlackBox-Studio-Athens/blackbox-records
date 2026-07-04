@@ -1,7 +1,7 @@
 import type { StoreItemSlug, StripePriceId, VariantId } from '../ids';
 
 export type StoreOfferSnapshotRecord = {
-  amountMinor: number;
+  amountMinor: number | null;
   currencyCode: string;
   freshUntil: Date;
   priceActive: boolean;

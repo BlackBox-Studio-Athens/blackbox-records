@@ -479,7 +479,7 @@ describe('CatalogReconciler', () => {
     expect(snapshots.records.get(storeItem.variantId)?.freshUntil.toISOString()).toBe('2026-05-22T10:00:00.000Z');
   });
 
-  it('replaces fixed Stripe Prices with custom pay-what-you-want Prices without writing fixed snapshots', async () => {
+  it('replaces fixed Stripe Prices with custom pay-what-you-want Prices and writes nullable snapshots', async () => {
     const fixedPrice = createCatalogPrice({ amountMinor: 1000, priceId: 'price_test_disintegration_1000' });
     const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
     stripeCatalog.prices.set(fixedPrice.priceId, fixedPrice);
@@ -533,10 +533,14 @@ describe('CatalogReconciler', () => {
         expect.objectContaining({ kind: 'archive_price', stripePriceId: fixedPrice.priceId }),
         expect.objectContaining({ kind: 'create_catalog_price' }),
         { kind: 'update_mapping', stripePriceId: 'price_test_disintegration_pay_what_you_want' },
+        { kind: 'update_snapshot' },
       ]),
     );
-    expect(result.actions).not.toEqual(expect.arrayContaining([{ kind: 'update_snapshot' }]));
-    expect(snapshots.records.has(storeItem.variantId)).toBe(false);
+    expect(snapshots.records.get(storeItem.variantId)).toMatchObject({
+      amountMinor: null,
+      currencyCode: 'EUR',
+      stripePriceId: 'price_test_disintegration_pay_what_you_want',
+    });
   });
 
   it('repairs a stale D1 mapping when a correct active Price already exists', async () => {

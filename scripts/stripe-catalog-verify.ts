@@ -431,7 +431,7 @@ function createD1CatalogRepositories(environment: StripeCatalogEnvironment, rows
         [
           row.variantId,
           {
-            amountMinor: Number(row.amountMinor),
+            amountMinor: row.amountMinor === null ? null : Number(row.amountMinor),
             currencyCode: String(row.currencyCode),
             freshUntil: new Date(row.freshUntil),
             priceActive: isD1True(row.priceActive),
@@ -612,7 +612,7 @@ function createStoreOfferSnapshotUpsertSql(snapshot: StoreOfferSnapshotState): s
       sqlString(snapshot.variantId),
       sqlString(snapshot.stripePriceId),
       sqlString(snapshot.stripeLookupKey),
-      snapshot.amountMinor,
+      sqlIntegerOrNull(snapshot.amountMinor),
       sqlString(snapshot.currencyCode),
       snapshot.priceActive ? 1 : 0,
       snapshot.productActive ? 1 : 0,
@@ -641,6 +641,10 @@ function isD1True(value: boolean | number | null): boolean {
 
 function sqlString(value: string): string {
   return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+function sqlIntegerOrNull(value: number | null): string {
+  return value === null ? 'NULL' : String(value);
 }
 
 function toSqlIdFragment(value: string): string {

@@ -52,7 +52,7 @@ model StoreOfferSnapshot {
   variantId       String   @unique
   stripePriceId   String
   stripeLookupKey String
-  amountMinor     Int
+  amountMinor     Int?
   currencyCode    String
   priceActive     Boolean
   productActive   Boolean

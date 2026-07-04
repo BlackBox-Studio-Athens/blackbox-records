@@ -7,7 +7,7 @@ import { parseStoreItemSlug, parseStripePriceId, parseVariantId } from '../../..
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapStoreOfferSnapshot(record: {
-  amountMinor: number;
+  amountMinor: number | null;
   currencyCode: string;
   freshUntil: Date;
   priceActive: boolean;

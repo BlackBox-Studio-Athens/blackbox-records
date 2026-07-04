@@ -299,10 +299,11 @@ export class CatalogReconciler {
         }
       }
 
+      const snapshotAmountMinor = getStoreOfferSnapshotAmountMinor(resolvedPrice);
       if (
-        resolvedPrice.priceKind === 'fixed' &&
+        snapshotAmountMinor !== undefined &&
         (!snapshot ||
-          snapshot.amountMinor !== resolvedPrice.amountMinor ||
+          snapshot.amountMinor !== snapshotAmountMinor ||
           snapshot.currencyCode.toUpperCase() !== resolvedPrice.currencyCode?.toUpperCase() ||
           snapshot.stripePriceId !== resolvedPrice.priceId ||
           snapshot.stripeLookupKey !== lookupKey ||
@@ -317,7 +318,8 @@ export class CatalogReconciler {
 
       if (
         snapshot &&
-        ((resolvedPrice.priceKind === 'fixed' && snapshot.amountMinor !== resolvedPrice.amountMinor) ||
+        (snapshotAmountMinor === undefined ||
+          snapshot.amountMinor !== snapshotAmountMinor ||
           snapshot.currencyCode.toUpperCase() !== resolvedPrice.currencyCode?.toUpperCase() ||
           snapshot.stripePriceId !== resolvedPrice.priceId)
       ) {
@@ -456,13 +458,14 @@ export class CatalogReconciler {
           stripePriceId: resolvedPrice.priceId,
           variantId: storeItem.variantId,
         });
-      } else if (
-        action.kind === 'update_snapshot' &&
-        resolvedPrice.amountMinor !== null &&
-        resolvedPrice.currencyCode
-      ) {
+      } else if (action.kind === 'update_snapshot' && resolvedPrice.currencyCode) {
+        const amountMinor = getStoreOfferSnapshotAmountMinor(resolvedPrice);
+        if (amountMinor === undefined) {
+          continue;
+        }
+
         await this.dependencies.storeOfferSnapshots.save({
-          amountMinor: resolvedPrice.amountMinor,
+          amountMinor,
           currencyCode: resolvedPrice.currencyCode.toUpperCase(),
           freshUntil: new Date(now.getTime() + STORE_OFFER_FRESHNESS_MS),
           priceActive: resolvedPrice.active,
@@ -626,6 +629,14 @@ function findExpectedPriceIssues(
   }
 
   return issues;
+}
+
+function getStoreOfferSnapshotAmountMinor(price: StripeCatalogPrice): number | null | undefined {
+  if (price.priceKind === 'pay_what_you_want') {
+    return null;
+  }
+
+  return price.amountMinor ?? undefined;
 }
 
 export function hasBlockingCatalogIssue(issues: CatalogSyncIssue[]): boolean {
