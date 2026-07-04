@@ -953,7 +953,7 @@ async function runScenarioAndWriteEvidence(input: {
       `Scenario ${scenario.name}: ${evidence.passed ? 'PASSED' : 'FAILED'} in ${formatDuration(
         evidence.durations.totalMs,
       )}`,
-      `- checkout session: ${result.checkoutSessionId ?? 'not observed'}`,
+      `- checkout session: ${scrubSensitiveStripeSmokeText(result.checkoutSessionId ?? 'not observed')}`,
       `- checkout surface: ${
         result.checkoutSurface
           ? result.checkoutSurface.issues.length

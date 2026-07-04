@@ -42,18 +42,18 @@
 
 ## 6. UAT Proof
 
-- [ ] 6.1 Decide whether UAT uses manual cleanup inside the current Stripe test environment or a fresh Stripe test environment.
-- [ ] 6.2 If using a fresh UAT Stripe environment, update UAT GitHub/Worker Stripe secrets, payment method configuration, webhook endpoint, and runtime config.
+- [x] 6.1 Decide whether UAT uses manual cleanup inside the current Stripe test environment or a fresh Stripe test environment. Decision: retain the current UAT Stripe test environment with workflow-scoped reset/archive, not a fresh Stripe test environment.
+- [x] 6.2 If using a fresh UAT Stripe environment, update UAT GitHub/Worker Stripe secrets, payment method configuration, webhook endpoint, and runtime config. Not applicable; the current UAT Stripe test environment was retained.
 - [x] 6.3 Run catalog artifact generation/checks after implementation.
-- [ ] 6.4 Run UAT D1 catalog seed, catalog apply, and catalog post-verify.
-- [ ] 6.5 Deploy UAT Worker and run hosted UAT smoke for one fixed-price item and one pay-what-you-want item.
-- [ ] 6.6 Record redacted UAT evidence without committing secrets, raw provider payloads, or full Stripe object IDs.
+- [x] 6.4 Run UAT D1 catalog seed, catalog apply, and catalog post-verify. Evidence: Catalog promotion run `28713586951`, UAT artifact `catalog-promotion-uat-28713586951` (`8083795932`, `sha256:d22a78e30fe391c527b32f0d3df1fc78fbc8735afd5893832f5e6cefd4fdb3bd`).
+- [x] 6.5 Deploy UAT Worker and run hosted UAT smoke for one fixed-price item and one pay-what-you-want item. Evidence: static deploy run `28714799447`; UAT provider smoke run `28714881460` passed `happy_path_paid` and `pay_what_you_want_paid`; artifact `uat-smoke-28714881460-1` (`8084139936`, `sha256:648b8218207f9e3279759edd526f53c713cd3fc4e8834401d449c11aa1fbc42b`).
+- [x] 6.6 Record redacted UAT evidence without committing secrets, raw provider payloads, or full Stripe object IDs. Evidence is in GitHub Actions artifacts; no secrets, raw provider payloads, or full Stripe object IDs are committed.
 
 ## 7. PRD Readiness
 
 - [x] 7.1 Keep PRD reset out of scope.
-- [ ] 7.2 Decide whether PRD uses manual cleanup where Stripe permits it or a fresh live Stripe environment before PRD-open.
-- [ ] 7.3 Run PRD readiness checks without live provider mutation until explicit PRD-open approval exists.
+- [x] 7.2 Decide whether PRD uses manual cleanup where Stripe permits it or a fresh live Stripe environment before PRD-open. Decision: defer live cleanup/fresh-live-environment choice to the PRD-open gate; do not mutate live provider state before explicit approval.
+- [x] 7.3 Run PRD readiness checks without live provider mutation until explicit PRD-open approval exists. Evidence: Catalog promotion run `28713586951`, PRD artifact `catalog-promotion-prd-28713586951` (`8083797792`, `sha256:f068edd6db2acf92ad4d91a3ed06f4e00d2b27c3bfd1ee4116cc4bb06a4031b3`).
 - [ ] 7.4 After PRD-open approval, run normal catalog promotion from the artifact commit that passed UAT proof.
 
 ## 8. Validation Gates
