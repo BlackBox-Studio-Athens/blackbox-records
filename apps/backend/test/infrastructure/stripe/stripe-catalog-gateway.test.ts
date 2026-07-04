@@ -122,6 +122,7 @@ describe('StripeCatalogGatewayClient', () => {
       {
         amountMinor: 2800,
         currencyCode: 'EUR',
+        kind: 'fixed',
         lookupKey: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
         metadata,
         productName: 'BlackBox Records - Disintegration - Black Vinyl LP',
@@ -166,6 +167,89 @@ describe('StripeCatalogGatewayClient', () => {
       priceId: 'price_1234567890abcdef',
       productId: 'prod_1234567890abcdef',
       requestId: 'req_catalog_create',
+    });
+  });
+
+  it('creates pay-what-you-want Prices with Stripe custom unit amount fields', async () => {
+    const metadata = {
+      appEnv: 'uat' as const,
+      sourceId: 'random-tapes',
+      sourceKind: 'distro' as const,
+      storeItemSlug: 'random-tapes',
+      variantId: 'variant_random-tapes_standard',
+    };
+    const product = {
+      active: true,
+      id: 'prod_pay_what_you_want',
+      metadata,
+      name: 'BlackBox Records - Random Tapes - Tape',
+    };
+    const productsCreate = vi.fn(async () => product);
+    const pricesCreate = vi.fn(async () => ({
+      active: true,
+      currency: 'eur',
+      custom_unit_amount: {
+        enabled: true,
+        maximum: 10000,
+        minimum: 100,
+        preset: 500,
+      },
+      id: 'price_pay_what_you_want',
+      lookup_key: 'blackbox:uat:random-tapes:variant_random-tapes_standard',
+      metadata: product.metadata,
+      product,
+      unit_amount: null,
+    }));
+    const gateway = new StripeCatalogGatewayClient({
+      prices: {
+        create: pricesCreate,
+        list: vi.fn(async () => ({
+          data: [],
+          has_more: false,
+        })),
+        update: vi.fn(),
+      },
+      products: {
+        create: productsCreate,
+        list: vi.fn(),
+        update: vi.fn(),
+      },
+    } as never);
+
+    const result = await gateway.createCatalogPrice({
+      currencyCode: 'EUR',
+      kind: 'pay_what_you_want',
+      lookupKey: 'blackbox:uat:random-tapes:variant_random-tapes_standard',
+      maximumAmountMinor: 10000,
+      metadata,
+      minimumAmountMinor: 100,
+      presetAmountMinor: 500,
+      productName: 'BlackBox Records - Random Tapes - Tape',
+    });
+
+    expect(pricesCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        custom_unit_amount: {
+          enabled: true,
+          maximum: 10000,
+          minimum: 100,
+          preset: 500,
+        },
+        product: 'prod_pay_what_you_want',
+      }),
+      undefined,
+    );
+    const priceCreateCalls = pricesCreate.mock.calls as unknown as Array<[Record<string, unknown>, unknown]>;
+    expect(priceCreateCalls[0]?.[0]).not.toHaveProperty('unit_amount');
+    expect(result).toMatchObject({
+      amountMinor: null,
+      customUnitAmount: {
+        maximumAmountMinor: 10000,
+        minimumAmountMinor: 100,
+        presetAmountMinor: 500,
+      },
+      priceKind: 'pay_what_you_want',
+      priceId: 'price_pay_what_you_want',
     });
   });
 

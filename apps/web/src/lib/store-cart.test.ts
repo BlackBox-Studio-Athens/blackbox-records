@@ -22,6 +22,7 @@ const canonicalItem: CartLineItemSnapshot = {
   priceAmountMinor: 2000,
   priceCurrencyCode: 'EUR',
   priceDisplay: '€20',
+  priceKind: 'fixed',
   storeItemSlug: 'disintegration-black-vinyl-lp',
   subtitle: 'Afterwise',
   title: 'Disintegration',
@@ -97,6 +98,19 @@ describe('store cart state', () => {
 
     expect(getCartLineTotalDisplay(state.lines[0]!)).toBe('€40.00');
     expect(getCartSubtotalDisplay(state.lines)).toBe('€40.00');
+  });
+
+  it('keeps pay-what-you-want cart lines out of browser subtotal math', async () => {
+    const { getCartLineTotalDisplay, getCartSubtotalDisplay } = await import('./store-cart');
+    const state = addStoreCartItem({
+      ...canonicalItem,
+      priceAmountMinor: null,
+      priceDisplay: 'Pay what you want',
+      priceKind: 'pay_what_you_want',
+    });
+
+    expect(getCartLineTotalDisplay(state.lines[0]!)).toBe('Pay what you want');
+    expect(getCartSubtotalDisplay(state.lines)).toBe('Set in Checkout');
   });
 
   it('drops legacy cart lines without structured price fields', () => {

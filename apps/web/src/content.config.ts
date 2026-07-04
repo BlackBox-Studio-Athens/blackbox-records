@@ -83,7 +83,15 @@ const news = defineCollection({
     }),
 });
 
-const distroGroupValues = ['Vinyl 12-inch', 'Vinyl 7-inch', 'CDs', 'Clothes', 'Tapes', 'Other'] as const;
+const distroGroupValues = [
+  'Vinyl 12-inch',
+  'Vinyl 10-inch',
+  'Vinyl 7-inch',
+  'CDs',
+  'Clothes',
+  'Tapes',
+  'Other',
+] as const;
 
 const distro = defineCollection({
   loader: glob({ pattern: '**/*.json', base: './src/content/distro' }),

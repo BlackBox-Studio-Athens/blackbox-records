@@ -15,6 +15,7 @@ const prdEntry: DesiredCatalogEntry = {
   desiredPrice: {
     amountMinor: 2800,
     currencyCode: 'EUR',
+    kind: 'fixed',
     revision: 'disintegration-black-vinyl-lp-2800-eur',
   },
   productProjection: {

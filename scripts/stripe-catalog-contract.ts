@@ -9,6 +9,11 @@ import type {
 } from '../apps/backend/src/application/commerce/catalog-sync';
 import { parseProductEnvironmentCliTarget, type ProductEnvironment } from '../apps/backend/src/env';
 import { createSlugSuggestion } from '../apps/web/src/lib/slugs';
+import {
+  assertDistroContentCoveredByInventorySource,
+  loadDistroInventorySource,
+  type DistroInventorySourceRow,
+} from './distro-inventory-source';
 
 type StoreItemSourceKind = 'distro' | 'release';
 export type CatalogProductEnvironment = Extract<ProductEnvironment, 'UAT' | 'PRD'>;
@@ -44,6 +49,7 @@ type ReleaseContent = {
 type DistroContent = {
   artist_or_label: string;
   format?: string;
+  group: string;
   image: string;
   order: number;
   summary?: string;
@@ -186,16 +192,21 @@ async function readDistroContracts(
   distroDir: string,
   options: LoadStripeCatalogContractsOptions,
 ): Promise<StripeCatalogStoreItemContract[]> {
+  const inventorySource = await loadDistroInventorySource(options.projectRoot);
   const entries = await readdir(distroDir, { withFileTypes: true });
   const distro = await Promise.all(
     entries
-      .filter((entry) => entry.isFile() && entry.name.endsWith('.json') && entry.name !== '___.json')
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
       .map(async (entry) => {
         const sourceId = path.basename(entry.name, '.json');
         const content = JSON.parse(await readFile(path.join(distroDir, entry.name), 'utf8')) as DistroContent;
+        const inventoryRow = assertDistroContentCoveredByInventorySource(inventorySource, {
+          ...content,
+          sourceId,
+        });
         const optionLabel = content.format ?? null;
         const titleParts = ['BlackBox Records', content.title, optionLabel].filter(Boolean);
-        const expectedPrice = createExpectedSandboxPrice(optionLabel);
+        const expectedPrice = createExpectedSandboxPriceForDistroInventoryRow(inventoryRow);
 
         return createContract({
           alignmentStatus: 'checkout_eligible',
@@ -294,9 +305,9 @@ function createDesiredPrice(
   storeItemSlug: string,
 ): DesiredCatalogEntry['desiredPrice'] {
   return {
-    amountMinor: price.amountMinor,
+    ...price,
     currencyCode: price.currencyCode,
-    revision: createSlugSuggestion([storeItemSlug, price.amountMinor, price.currencyCode].join(' ')),
+    revision: createPriceRevision(storeItemSlug, price),
   };
 }
 
@@ -467,6 +478,7 @@ export function createExpectedSandboxPrice(formatOrOptionLabel: string | null | 
     return {
       amountMinor: 1200,
       currencyCode: 'EUR',
+      kind: 'fixed',
     };
   }
 
@@ -474,13 +486,36 @@ export function createExpectedSandboxPrice(formatOrOptionLabel: string | null | 
     return {
       amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     };
   }
 
   return {
     amountMinor: 2800,
     currencyCode: 'EUR',
+    kind: 'fixed',
   };
+}
+
+function createExpectedSandboxPriceForDistroInventoryRow(row: DistroInventorySourceRow): StripeCatalogExpectedPrice {
+  return row.pricePolicy;
+}
+
+function createPriceRevision(storeItemSlug: string, price: StripeCatalogExpectedPrice): string {
+  if (price.kind === 'pay_what_you_want') {
+    return createSlugSuggestion(
+      [
+        storeItemSlug,
+        'pay what you want',
+        price.minimumAmountMinor,
+        price.presetAmountMinor,
+        price.maximumAmountMinor,
+        price.currencyCode,
+      ].join(' '),
+    );
+  }
+
+  return createSlugSuggestion([storeItemSlug, price.amountMinor, price.currencyCode].join(' '));
 }
 
 function createContentAssetUrl(

@@ -342,7 +342,21 @@ export type components = {
             canCheckout: boolean;
             /** @enum {string} */
             catalogStatus: "catalog_drift" | "ready" | "sold_out";
-            price: components["schemas"]["PublicStoreOfferPrice"] | null;
+            price: {
+                amountMinor: number;
+                currencyCode: string;
+                display: string;
+                /** @enum {string} */
+                kind: "fixed";
+            } | {
+                currencyCode: string;
+                display: string;
+                /** @enum {string} */
+                kind: "pay_what_you_want";
+                maximumAmountMinor: number;
+                minimumAmountMinor: number;
+                presetAmountMinor: number;
+            } | null;
             storeItemSlug: string;
             variantId: string;
         };
@@ -350,11 +364,6 @@ export type components = {
             label: string;
             /** @enum {string} */
             status: "available" | "sold_out";
-        };
-        PublicStoreOfferPrice: {
-            amountMinor: number;
-            currencyCode: string;
-            display: string;
         };
         StartCheckoutBody: {
             lines?: components["schemas"]["StartCheckoutLine"][];

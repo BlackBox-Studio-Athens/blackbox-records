@@ -33,6 +33,7 @@ from artwork_fetcher.sources import (
     split_bandcamp_title,
     without_discogs_noise,
     youtube_artist_title,
+    youtube_candidates_from_data,
     youtube_candidate_from_entry,
     youtube_thumbnail_is_cover_like,
 )
@@ -333,6 +334,26 @@ class NormalizationTests(unittest.TestCase):
         )
         self.assertEqual(candidate.image_url, "")
         self.assertEqual(candidate.thumbnail_url, "wide.jpg")
+
+    def test_youtube_candidates_skip_null_entries(self):
+        release = normalize_release(1, "Artist", "Title", "CD")
+        candidates = youtube_candidates_from_data(
+            release,
+            {
+                "entries": [
+                    None,
+                    {
+                        "id": "abc123",
+                        "title": "Artist - Title (Official Audio)",
+                        "channel": "Artist - Topic",
+                        "thumbnails": [{"url": "cover.jpg", "width": 544, "height": 544}],
+                    },
+                ],
+            },
+        )
+
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0].source_page_url, "https://www.youtube.com/watch?v=abc123")
 
     def test_best_youtube_thumbnail_chooses_largest(self):
         self.assertEqual(

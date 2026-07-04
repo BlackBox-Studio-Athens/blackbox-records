@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Medicine",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Coyotes Arrow",
+  "image": "coyotes-arrow-medicine-vinyl.webp",
+  "image_alt": "Medicine Vinyl front mockup",
+  "summary": "Vinyl edition of Medicine by Coyotes Arrow in the BlackBox Records distro catalog.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 66
+}

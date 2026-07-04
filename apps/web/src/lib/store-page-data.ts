@@ -9,7 +9,7 @@ export type StorePageEntry = {
 
 export type StorePagePricedCartSeed = Omit<
   CartLineItemSnapshot,
-  'availabilityLabel' | 'priceAmountMinor' | 'priceCurrencyCode' | 'priceDisplay' | 'variantId'
+  'availabilityLabel' | 'priceAmountMinor' | 'priceCurrencyCode' | 'priceDisplay' | 'priceKind' | 'variantId'
 > & {
   availabilityLabel: string;
   variantId: string | null;

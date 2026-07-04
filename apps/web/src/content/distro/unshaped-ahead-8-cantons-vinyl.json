@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "8 Cantons",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Unshaped Ahead",
+  "image": "unshaped-ahead-8-cantons-vinyl.webp",
+  "image_alt": "8 Cantons Vinyl front mockup",
+  "summary": "Vinyl edition of 8 Cantons by Unshaped Ahead in the BlackBox Records distro catalog.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 68
+}

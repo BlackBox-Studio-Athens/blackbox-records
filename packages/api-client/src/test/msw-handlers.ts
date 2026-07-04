@@ -63,6 +63,7 @@ export const publicCheckoutFixtures = {
       amountMinor: 2800,
       currencyCode: 'EUR',
       display: '€28.00',
+      kind: 'fixed',
     },
     storeItemSlug: 'disintegration-black-vinyl-lp',
     variantId: 'variant_disintegration-black-vinyl-lp_standard',

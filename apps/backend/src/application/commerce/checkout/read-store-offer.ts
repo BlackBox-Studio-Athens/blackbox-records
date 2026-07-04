@@ -5,7 +5,7 @@ import type {
 } from '../../../domain/commerce/repositories/spi';
 import { parseStoreItemSlug, type StoreItemSlug, type VariantId } from '../../../domain/commerce';
 import {
-  createStoreOfferPrice,
+  createStoreOfferPriceFromCatalogPrice,
   hasBlockingCatalogIssue,
   type CatalogProductProjectionReader,
   type CatalogReconciler,
@@ -70,13 +70,9 @@ export async function readStoreOffer(
 
   const catalogResult = await catalogReconciler.reconcileVariant(storeItem, { apply: true, productProjection });
   const resolvedPrice = catalogResult.resolvedPrice;
+  const price = resolvedPrice ? createStoreOfferPriceFromCatalogPrice(resolvedPrice) : null;
 
-  if (
-    !resolvedPrice ||
-    resolvedPrice.amountMinor === null ||
-    !resolvedPrice.currencyCode ||
-    hasBlockingCatalogIssue(catalogResult.issues)
-  ) {
+  if (!price || hasBlockingCatalogIssue(catalogResult.issues)) {
     return unavailableOffer(storeItem.storeItemSlug, storeItem.variantId, 'Checkout Paused', 'catalog_drift');
   }
 
@@ -89,10 +85,7 @@ export async function readStoreOffer(
     },
     canCheckout: true,
     catalogStatus: 'ready',
-    price: createStoreOfferPrice({
-      amountMinor: resolvedPrice.amountMinor,
-      currencyCode: resolvedPrice.currencyCode,
-    }),
+    price,
   };
 }
 

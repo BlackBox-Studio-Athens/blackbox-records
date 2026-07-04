@@ -149,6 +149,7 @@ describe('groupDistroEntries', () => {
       { data: { group: 'Clothes', order: 3, title: 'D' } },
       { data: { group: 'Vinyl 7-inch', order: 2, title: 'B' } },
       { data: { group: 'CDs', order: 4, title: 'E' } },
+      { data: { group: 'Vinyl 10-inch', order: 7, title: 'G' } },
       { data: { group: 'Vinyl 12-inch', order: 1, title: 'A' } },
     ];
 
@@ -156,6 +157,7 @@ describe('groupDistroEntries', () => {
 
     expect(groups.map((group) => group.groupName)).toEqual([
       'Vinyl 12-inch',
+      'Vinyl 10-inch',
       'Vinyl 7-inch',
       'CDs',
       'Clothes',

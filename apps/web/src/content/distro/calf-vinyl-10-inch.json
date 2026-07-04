@@ -1,13 +1,13 @@
 {
-  "image_alt": "Calf ____",
+  "image_alt": "Calf — vinyl 10-inch artwork",
   "$schema": "../../../.astro/collections/distro.schema.json",
   "release_date": "2019-09-22",
   "summary": "CALF's noise rock and post-hardcore from Karditsa follows the trail of Unwound, Melvins, and Slint without losing its own weight.",
   "eyebrow": "",
   "order": 2,
   "artist_or_label": "Calf",
-  "format": "Vinyl",
-  "title": "___",
+  "format": "Vinyl 10-inch",
+  "title": "—",
   "image": "calf-karditsa.jpg",
-  "group": "Vinyl 12-inch"
+  "group": "Vinyl 10-inch"
 }

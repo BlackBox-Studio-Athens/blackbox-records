@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "No easy Way",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Gun Fever",
+  "image": "gun-fever-no-easy-way-vinyl.webp",
+  "image_alt": "No easy Way Vinyl front mockup",
+  "summary": "Vinyl edition of No easy Way by Gun Fever. Source metadata identifies it as a 6-track release, released November 26, 2024.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 63,
+  "release_date": "2024-11-26"
+}

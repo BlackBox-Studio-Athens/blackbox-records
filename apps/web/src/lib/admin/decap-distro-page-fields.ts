@@ -1,6 +1,6 @@
 import { buildField, buildSchemaField } from './decap-yaml-builder';
 
-const distroGroupOptions = ['Vinyl 12-inch', 'Vinyl 7-inch', 'CDs', 'Clothes', 'Tapes', 'Other'];
+const distroGroupOptions = ['Vinyl 12-inch', 'Vinyl 10-inch', 'Vinyl 7-inch', 'CDs', 'Clothes', 'Tapes', 'Other'];
 
 export function buildDistroPageFields() {
   return [

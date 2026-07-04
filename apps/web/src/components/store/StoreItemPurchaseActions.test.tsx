@@ -18,6 +18,7 @@ const cartItem: CartLineItemSnapshot = {
   priceAmountMinor: 2800,
   priceCurrencyCode: 'EUR',
   priceDisplay: '€28.00',
+  priceKind: 'fixed',
   storeItemSlug: 'disintegration-black-vinyl-lp',
   subtitle: 'Afterwise',
   title: 'Disintegration',
@@ -94,6 +95,7 @@ describe('StoreItemPurchaseActions', () => {
         amountMinor: 2800,
         currencyCode: 'EUR',
         display: '€28.00',
+        kind: 'fixed',
       },
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_disintegration-black-vinyl-lp_standard',
@@ -105,6 +107,34 @@ describe('StoreItemPurchaseActions', () => {
     });
     expect(JSON.stringify(workerCartItem)).not.toContain('price_');
     expect(JSON.stringify(workerCartItem)).not.toContain('clientSecret');
+  });
+
+  it('creates a pay-what-you-want CartLineItemSnapshot without a fixed amount', () => {
+    expect(
+      createCartLineItemSnapshotFromWorkerOffer(cartSeed, {
+        availability: {
+          label: 'Available',
+          status: 'available',
+        },
+        canCheckout: true,
+        catalogStatus: 'ready',
+        price: {
+          currencyCode: 'EUR',
+          display: 'Pay what you want',
+          kind: 'pay_what_you_want',
+          maximumAmountMinor: 10000,
+          minimumAmountMinor: 100,
+          presetAmountMinor: 500,
+        },
+        storeItemSlug: 'band-in-the-pit-2016-cassette',
+        variantId: 'variant_band-in-the-pit-2016-cassette_standard',
+      }),
+    ).toMatchObject({
+      priceAmountMinor: null,
+      priceCurrencyCode: 'EUR',
+      priceDisplay: 'Pay what you want',
+      priceKind: 'pay_what_you_want',
+    });
   });
 
   it('does not create a CartLineItemSnapshot from unavailable Worker state', () => {
@@ -136,6 +166,7 @@ describe('StoreItemPurchaseActions', () => {
           amountMinor: 2800,
           currencyCode: 'EUR',
           display: '€28.00',
+          kind: 'fixed',
         },
         storeItemSlug: 'aftermaths',
         variantId: 'variant_aftermaths_standard',

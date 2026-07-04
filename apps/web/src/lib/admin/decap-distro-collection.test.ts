@@ -14,6 +14,7 @@ describe('Decap distro collection', () => {
     expect(yaml).toContain('default: "../../../.astro/collections/distro.schema.json"');
     expect(yaml).toContain('name: "group"');
     expect(yaml).toContain('label: "Vinyl 12-inch"');
+    expect(yaml).toContain('value: "Vinyl 10-inch"');
     expect(yaml).toContain('value: "Vinyl 7-inch"');
     expect(yaml).toContain('name: "release_date"');
     expect(yaml).toContain(

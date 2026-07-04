@@ -20,6 +20,7 @@ import {
 } from './errors';
 import {
   CatalogDriftError,
+  createStoreOfferPriceFromCatalogPrice,
   hasBlockingCatalogIssue,
   type CatalogProductProjectionReader,
   type CatalogReconciler,
@@ -159,8 +160,7 @@ export async function startCheckout(
 
     if (
       !resolvedPrice ||
-      resolvedPrice.amountMinor === null ||
-      !resolvedPrice.currencyCode ||
+      !createStoreOfferPriceFromCatalogPrice(resolvedPrice) ||
       hasBlockingCatalogIssue(catalogResult.issues)
     ) {
       throw new CatalogDriftError();

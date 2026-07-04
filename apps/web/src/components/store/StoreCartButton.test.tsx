@@ -13,11 +13,12 @@ const cartItem = {
   priceAmountMinor: 2000,
   priceCurrencyCode: 'EUR',
   priceDisplay: '€20',
+  priceKind: 'fixed',
   storeItemSlug: 'disintegration-black-vinyl-lp',
   subtitle: 'Afterwise',
   title: 'Disintegration',
   variantId: 'variant_disintegration-black-vinyl-lp_standard',
-};
+} as const;
 
 describe('StoreCartButton', () => {
   it('renders an accessible empty cart button without a count badge', () => {

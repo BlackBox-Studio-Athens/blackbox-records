@@ -21,7 +21,7 @@ from .text import score_confidence
 REPO_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_CONTENT_DIR = REPO_ROOT / "apps" / "web" / "src" / "content" / "distro"
 DISTRO_SCHEMA = "../../../.astro/collections/distro.schema.json"
-DISTRO_GROUPS = {"Vinyl 12-inch", "Vinyl 7-inch", "CDs", "Clothes", "Tapes", "Other"}
+DISTRO_GROUPS = {"Vinyl 12-inch", "Vinyl 10-inch", "Vinyl 7-inch", "CDs", "Clothes", "Tapes", "Other"}
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp"}
 CASSETTE_MOCKUP_DISCLOSURE = "Cassette case artwork mockup. Actual cassette shell and labels may vary."
 
@@ -37,6 +37,7 @@ class FormatConfig:
 SUPPORTED_FORMATS = {
     "CD": FormatConfig("CDs", "CD", ("cd-front-concrete",), "cd-front-mockup.jpg"),
     "Tape": FormatConfig("Tapes", "Cassette", ("cassette-front",), "cassette-front-mockup.jpg"),
+    "Vinyl 10in": FormatConfig("Vinyl 10-inch", "Vinyl 10-inch", ("vinyl", "vinyl-square"), "vinyl-mockup.webp"),
     "Vinyl 12in": FormatConfig("Vinyl 12-inch", "Vinyl", ("vinyl", "vinyl-square"), "vinyl-mockup.webp"),
 }
 

@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Caregivers",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Chronoboros",
+  "image": "chronoboros-caregivers-vinyl.webp",
+  "image_alt": "Caregivers Vinyl front mockup",
+  "summary": "Vinyl edition of Caregivers by Chronoboros. Source metadata identifies it as a 7-track release, released March 13, 2026.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 62,
+  "release_date": "2026-03-13"
+}

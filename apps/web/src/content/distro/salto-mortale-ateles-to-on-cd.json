@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Ατελές το ον",
+  "group": "CDs",
+  "artist_or_label": "Salto Mortale",
+  "image": "salto-mortale-ateles-to-on-cd-front-mockup.jpg",
+  "image_alt": "Ατελές το ον CD front mockup",
+  "summary": "CD edition of Ατελές το ον by Salto Mortale in the BlackBox Records distro catalog.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 75
+}

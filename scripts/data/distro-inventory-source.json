@@ -1,0 +1,940 @@
+{
+  "currencyCode": "EUR",
+  "blankPriceDefaults": {
+    "Vinyl 12-inch": 2000,
+    "Vinyl 7-inch": 1500,
+    "Vinyl 10-inch": 2000,
+    "Tape": 500,
+    "CD": 1000
+  },
+  "payWhatYouWantPrice": {
+    "minimumAmountMinor": 100,
+    "presetAmountMinor": 500,
+    "maximumAmountMinor": 10000
+  },
+  "rows": [
+    {
+      "id": "skinny-peachfuzz-magic-sleazball-corrida-vinyl-7-inch",
+      "sourceArtist": "Skinny Peachfuzz",
+      "sourceTitle": "Magic sleazball corrida",
+      "itemType": "Vinyl 7-inch",
+      "sourcePrice": "15",
+      "resolvedPricePolicy": "fixed 1500 EUR",
+      "releaseDate": "2023-12-27",
+      "currentSiteExtra": false,
+      "sourceAliases": [
+        {
+          "artist": "Skinny Peachfuzz",
+          "title": "Magic Sleazeball Corrida",
+          "itemType": "Vinyl 7-inch"
+        }
+      ]
+    },
+    {
+      "id": "zebu-dead-elephant-eat-them-dead-or-alive-crawl-vinyl-7-inch",
+      "sourceArtist": "Zebu / Dead Elephant",
+      "sourceTitle": "Eat Them Dead Or Alive/Crawl",
+      "itemType": "Vinyl 7-inch",
+      "sourcePrice": "ΕΣ",
+      "resolvedPricePolicy": "pay-what-you-want",
+      "releaseDate": "2017-10-06",
+      "currentSiteExtra": false,
+      "sourceAliases": [
+        {
+          "artist": "Zebu / Dead Elephant",
+          "title": "Crawl / Eat Them Dead Or Alive, Split 7\"",
+          "itemType": "Vinyl 7-inch"
+        }
+      ]
+    },
+    {
+      "id": "mass-culture-barren-point-vinyl-12-inch",
+      "sourceArtist": "Mass Culture",
+      "sourceTitle": "Barren point",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": "2023-05-15",
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "mass-culture-primal-ephemeral-vinyl-12-inch",
+      "sourceArtist": "Mass Culture",
+      "sourceTitle": "Primal | Ephemeral",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": "2018-08-10",
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "their-methlab-the-last-second-vinyl-12-inch",
+      "sourceArtist": "Their Methlab",
+      "sourceTitle": "The last second",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": "2019-02-18",
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "chronoboros-caregivers-vinyl-12-inch",
+      "sourceArtist": "Chronoboros",
+      "sourceTitle": "Caregivers",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": "2026-03-13",
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "last-rizla-noise-without-decay-vinyl-12-inch",
+      "sourceArtist": "Last Rizla",
+      "sourceTitle": "Noise without decay",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": "2023-05-12",
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "sadhus-the-big-fish-vinyl-12-inch",
+      "sourceArtist": "Sadhus",
+      "sourceTitle": "The big fish",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": "2018-11-15",
+      "currentSiteExtra": false,
+      "sourceAliases": [
+        {
+          "artist": "Sadhus, The Smoking Community",
+          "title": "Big Fish",
+          "itemType": "Vinyl 12-inch"
+        }
+      ]
+    },
+    {
+      "id": "killgrave-rise-of-the-black-fang-vinyl-12-inch",
+      "sourceArtist": "Killgrave",
+      "sourceTitle": "Rise of the black fang",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": "2024-11-29",
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "gun-fever-no-easy-way-vinyl-12-inch",
+      "sourceArtist": "Gun Fever",
+      "sourceTitle": "No easy Way",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": "2024-11-26",
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "living-under-drones-knot-on-knot-vinyl-12-inch",
+      "sourceArtist": "Living Under Drones",
+      "sourceTitle": "Knot On Knot",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": "2021-11-30",
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "mammock-itch-vinyl-12-inch",
+      "sourceArtist": "Mammock",
+      "sourceTitle": "Itch",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": "2020-01-01",
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "one-leg-mary-on-the-quiet-vinyl-12-inch",
+      "sourceArtist": "One Leg Mary",
+      "sourceTitle": "On the quiet",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": "2017-02-01",
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "coyotes-arrow-medicine-vinyl-12-inch",
+      "sourceArtist": "Coyotes Arrow",
+      "sourceTitle": "Medicine",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "three-way-plane-your-kingdom-my-life-vinyl-12-inch",
+      "sourceArtist": "Three Way plane",
+      "sourceTitle": "Your Kingdom, my life",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "steelwitch-steelwitch-vinyl-12-inch",
+      "sourceArtist": "Steelwitch",
+      "sourceTitle": "Steelwitch",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": null,
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "we-own-the-sky-in-your-absence-vinyl-12-inch",
+      "sourceArtist": "We.own.the.sky",
+      "sourceTitle": "In your absence",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "25",
+      "resolvedPricePolicy": "fixed 2500 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "unshaped-ahead-8-cantons-vinyl-12-inch",
+      "sourceArtist": "Unshaped Ahead",
+      "sourceTitle": "8 Cantons",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "the-you-and-what-army-faction-rite-vinyl-12-inch",
+      "sourceArtist": "The You and what army faction",
+      "sourceTitle": "RITE",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "nothing-thrives-tales-of-disgrace-vinyl-12-inch",
+      "sourceArtist": "Nothing Thrives",
+      "sourceTitle": "Tales of disgrace",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "zaperlipopette-voyage-voyage-vinyl-12-inch",
+      "sourceArtist": "Zaperlipopette!",
+      "sourceTitle": "Voyage Voyage",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": [
+        {
+          "artist": "Zapetli Popette",
+          "title": "Voyage Voyage",
+          "itemType": "Vinyl 12-inch"
+        }
+      ]
+    },
+    {
+      "id": "bloed-tranen-vinyl-12-inch",
+      "sourceArtist": "Bloed",
+      "sourceTitle": "Tranen",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "goodbye-kings-transatlantic-transiberian-vinyl-12-inch",
+      "sourceArtist": "Goodbye Kings",
+      "sourceTitle": "Transatlantic // Transiberian",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": [
+        {
+          "artist": "Goodbye, Kings",
+          "title": "Transatlantic // Transiberian",
+          "itemType": "Vinyl 12-inch"
+        }
+      ]
+    },
+    {
+      "id": "indoctrinate-aftermaths-vinyl-12-inch",
+      "sourceArtist": "Indoctrinate",
+      "sourceTitle": "aftermaths",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": "2015-10-13",
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "demikhov-the-chemical-bath-vinyl-12-inch",
+      "sourceArtist": "Demikhov",
+      "sourceTitle": "The Chemical Bath",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "hazarder-against-his-story-against-leviathan-vinyl-12-inch",
+      "sourceArtist": "Hazarder",
+      "sourceTitle": "Against his story, Against leviathan",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": "2013-12-07",
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "speck-unkraut-vinyl-12-inch",
+      "sourceArtist": "Speck",
+      "sourceTitle": "Unkraut",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "olaf-olafsonn-and-the-big-bad-trip-the-feathers-of-oblivion-vinyl-12-inch",
+      "sourceArtist": "Olaf Olafsonn and the Big Bad Trip",
+      "sourceTitle": "The Feathers of Oblivion",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "30",
+      "resolvedPricePolicy": "fixed 3000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "olaf-olafsonn-and-the-big-bad-trip-selenopolis-vinyl-12-inch",
+      "sourceArtist": "Olaf Olafsonn and the Big Bad Trip",
+      "sourceTitle": "Selenopolis",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "pirate-city-fortunate-isles-vinyl-12-inch",
+      "sourceArtist": "Pirate City",
+      "sourceTitle": "Fortunate Isles",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "15",
+      "resolvedPricePolicy": "fixed 1500 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "pirate-city-πειρατεια-vinyl-12-inch",
+      "sourceArtist": "Pirate City",
+      "sourceTitle": "Πειρατεία",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "15",
+      "resolvedPricePolicy": "fixed 1500 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "pirate-city-λωβη-vinyl-12-inch",
+      "sourceArtist": "Pirate City",
+      "sourceTitle": "Λωβή",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "15",
+      "resolvedPricePolicy": "fixed 1500 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "we-lost-the-sea-departure-songs-vinyl-12-inch",
+      "sourceArtist": "We lost the Sea",
+      "sourceTitle": "Departure Songs",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "30",
+      "resolvedPricePolicy": "fixed 3000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "we-lost-the-sea-a-single-flower-vinyl-12-inch",
+      "sourceArtist": "We lost the Sea",
+      "sourceTitle": "A single flower",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "30",
+      "resolvedPricePolicy": "fixed 3000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "we-lost-the-sea-triumph-disaster-vinyl-12-inch",
+      "sourceArtist": "We lost the Sea",
+      "sourceTitle": "Triumph & Disaster",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "30",
+      "resolvedPricePolicy": "fixed 3000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "bipolar-architecture-depressionland-vinyl-12-inch",
+      "sourceArtist": "Bipolar Architecture",
+      "sourceTitle": "Depressionland",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "onrust-van-woede-tot-wanhoop-vinyl-12-inch",
+      "sourceArtist": "Onrust",
+      "sourceTitle": "Van Woede Tot Wanhoop",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "30",
+      "resolvedPricePolicy": "fixed 3000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "devided-light-will-shine-vinyl-12-inch",
+      "sourceArtist": "Devided",
+      "sourceTitle": "Light will shine",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "aflmsmp-i-went-to-the-mountain-vinyl-12-inch",
+      "sourceArtist": "AFLMSMP",
+      "sourceTitle": "I went to the mountain",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "turpentine-valley-veuel-vinyl-12-inch",
+      "sourceArtist": "Turpentine Valley",
+      "sourceTitle": "Veuel",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "aufhebung-luchtbegrafenis-vinyl-12-inch",
+      "sourceArtist": "Aufhebung",
+      "sourceTitle": "Luchtbegrafenis",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "kokomo-whip-vinyl-12-inch",
+      "sourceArtist": "Kokomo",
+      "sourceTitle": "Whip",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "huracan-2025-ep-vinyl-12-inch",
+      "sourceArtist": "Huracan",
+      "sourceTitle": "2025 EP",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "malammar-vendetta-vinyl-12-inch",
+      "sourceArtist": "Malämmar",
+      "sourceTitle": "Vendetta",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "malammar-mazza-vinyl-12-inch",
+      "sourceArtist": "Malämmar",
+      "sourceTitle": "Mazza",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "maserati-live-at-dunk-fest-2024-vinyl-12-inch",
+      "sourceArtist": "Maserati",
+      "sourceTitle": "Live at Dunk! Fest 2024",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "25",
+      "resolvedPricePolicy": "fixed 2500 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "cisnienie-angry-noises-vinyl-12-inch",
+      "sourceArtist": "Ciśnienie",
+      "sourceTitle": "Angry Noises",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "russian-circles-live-at-dunk-fest-2016-vinyl-12-inch",
+      "sourceArtist": "Russian Circles",
+      "sourceTitle": "Live at Dunk! Fest 2016",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "30",
+      "resolvedPricePolicy": "fixed 3000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "pelican-live-at-dunk-fest-2016-vinyl-12-inch",
+      "sourceArtist": "Pelican",
+      "sourceTitle": "Live at Dunk! Fest 2016",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "30",
+      "resolvedPricePolicy": "fixed 3000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "allochiria-throes-vinyl-12-inch",
+      "sourceArtist": "Allochiria",
+      "sourceTitle": "Throes",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "allochiria-omonoia-vinyl-12-inch",
+      "sourceArtist": "Allochiria",
+      "sourceTitle": "Omonoia",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "allochiria-commotion-vinyl-12-inch",
+      "sourceArtist": "Allochiria",
+      "sourceTitle": "Commotion",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "maha-sohona-endless-sercher-vinyl-12-inch",
+      "sourceArtist": "Maha Sohona",
+      "sourceTitle": "Endless sercher",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": [
+        {
+          "artist": "Maha Sohona",
+          "title": "Endless Searcher",
+          "itemType": "Vinyl 12-inch"
+        }
+      ]
+    },
+    {
+      "id": "calf-vinyl-10-inch",
+      "sourceArtist": "Calf",
+      "sourceTitle": "—",
+      "itemType": "Vinyl 10-inch",
+      "sourcePrice": "20",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": "2019-09-22",
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "band-in-the-pit-2016-tape",
+      "sourceArtist": "Band in the pit",
+      "sourceTitle": "2016",
+      "itemType": "Tape",
+      "sourcePrice": "ΕΣ",
+      "resolvedPricePolicy": "pay-what-you-want",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "broken-fingers-ego-tape",
+      "sourceArtist": "Broken Fingers",
+      "sourceTitle": "Ego",
+      "itemType": "Tape",
+      "sourcePrice": "5",
+      "resolvedPricePolicy": "fixed 500 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "the-vagina-lips-random-tapes-tape",
+      "sourceArtist": "The Vagina lips",
+      "sourceTitle": "Random Tapes",
+      "itemType": "Tape",
+      "sourcePrice": "ΕΣ",
+      "resolvedPricePolicy": "pay-what-you-want",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "magmarus-cassette-sessions-tape",
+      "sourceArtist": "Magmarus",
+      "sourceTitle": "Cassette sessions",
+      "itemType": "Tape",
+      "sourcePrice": "ΕΣ",
+      "resolvedPricePolicy": "pay-what-you-want",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "stefan-clor-baltica-cd",
+      "sourceArtist": "Stefan Clor",
+      "sourceTitle": "Baltica",
+      "itemType": "CD",
+      "sourcePrice": "10",
+      "resolvedPricePolicy": "fixed 1000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "nausea-bomb-slap-punkabilly-cd",
+      "sourceArtist": "Nausea Bomb",
+      "sourceTitle": "Slap punkabilly",
+      "itemType": "CD",
+      "sourcePrice": "10",
+      "resolvedPricePolicy": "fixed 1000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "granna-s-house-kuro-cd",
+      "sourceArtist": "Granna's House",
+      "sourceTitle": "Kuro",
+      "itemType": "CD",
+      "sourcePrice": "10",
+      "resolvedPricePolicy": "fixed 1000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "hay-stealthy-hey-stealthy-cd",
+      "sourceArtist": "Hay Stealthy",
+      "sourceTitle": "Hey Stealthy",
+      "itemType": "CD",
+      "sourcePrice": "ΕΣ",
+      "resolvedPricePolicy": "pay-what-you-want",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": [
+        {
+          "artist": "Hey Stealthy",
+          "title": "Hey Stealthy",
+          "itemType": "CD"
+        }
+      ]
+    },
+    {
+      "id": "dirty-ol-dogs-dirty-ol-dogs-cd",
+      "sourceArtist": "Dirty ol' dogs",
+      "sourceTitle": "Dirty ol' dogs",
+      "itemType": "CD",
+      "sourcePrice": "10",
+      "resolvedPricePolicy": "fixed 1000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "dead-elephant-heavy-huge-and-rotten-cd",
+      "sourceArtist": "Dead Elephant",
+      "sourceTitle": "Heavy Huge and Rotten",
+      "itemType": "CD",
+      "sourcePrice": "ΕΣ",
+      "resolvedPricePolicy": "pay-what-you-want",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "dead-flag-blues-traumatique-cd",
+      "sourceArtist": "Dead Flag Blues",
+      "sourceTitle": "Traumatique",
+      "itemType": "CD",
+      "sourcePrice": "10",
+      "resolvedPricePolicy": "fixed 1000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "sadhus-the-big-fish-cd",
+      "sourceArtist": "Sadhus",
+      "sourceTitle": "The big fish",
+      "itemType": "CD",
+      "sourcePrice": "10",
+      "resolvedPricePolicy": "fixed 1000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "anima-triste-alone-cd",
+      "sourceArtist": "Anima Triste",
+      "sourceTitle": "Alone",
+      "itemType": "CD",
+      "sourcePrice": "10",
+      "resolvedPricePolicy": "fixed 1000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "anima-triste-anima-triste-cd",
+      "sourceArtist": "Anima Triste",
+      "sourceTitle": "Anima Triste",
+      "itemType": "CD",
+      "sourcePrice": "10",
+      "resolvedPricePolicy": "fixed 1000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "anima-triste-humanity-cd",
+      "sourceArtist": "Anima Triste",
+      "sourceTitle": "Humanity",
+      "itemType": "CD",
+      "sourcePrice": "10",
+      "resolvedPricePolicy": "fixed 1000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "full-moon-bonzai-reshaping-the-symbols-cd",
+      "sourceArtist": "Full Moon Bonzai",
+      "sourceTitle": "Reshaping the symbols",
+      "itemType": "CD",
+      "sourcePrice": "10",
+      "resolvedPricePolicy": "fixed 1000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "salto-mortale-ατελες-το-ον-cd",
+      "sourceArtist": "Salto Mortale",
+      "sourceTitle": "Ατελές το ον",
+      "itemType": "CD",
+      "sourcePrice": "10",
+      "resolvedPricePolicy": "fixed 1000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "ατοπια-ατοπια-cd",
+      "sourceArtist": "Ατοπια",
+      "sourceTitle": "Ατοπια",
+      "itemType": "CD",
+      "sourcePrice": "ΕΣ",
+      "resolvedPricePolicy": "pay-what-you-want",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "frakhtal-plima-cd",
+      "sourceArtist": "Frakhtal",
+      "sourceTitle": "plima",
+      "itemType": "CD",
+      "sourcePrice": "10",
+      "resolvedPricePolicy": "fixed 1000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "millions-of-dead-tourists-υγειης-cd",
+      "sourceArtist": "Millions of Dead tourists",
+      "sourceTitle": "Υγειής",
+      "itemType": "CD",
+      "sourcePrice": "10",
+      "resolvedPricePolicy": "fixed 1000 EUR",
+      "releaseDate": "2023-03-23",
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "one-leg-mary-i-a-seawolf-a-madman-cd",
+      "sourceArtist": "One leg Mary",
+      "sourceTitle": "I, a Seawolf, a Madman",
+      "itemType": "CD",
+      "sourcePrice": "10",
+      "resolvedPricePolicy": "fixed 1000 EUR",
+      "releaseDate": "2014-12-27",
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "one-leg-mary-on-the-quiet-cd",
+      "sourceArtist": "One leg Mary",
+      "sourceTitle": "On the quiet",
+      "itemType": "CD",
+      "sourcePrice": "10",
+      "resolvedPricePolicy": "fixed 1000 EUR",
+      "releaseDate": "2017-02-01",
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "sun-of-nothing-the-guilt-of-feeling-alive-cd",
+      "sourceArtist": "Sun of Nothing",
+      "sourceTitle": "The guilt of feeling alive",
+      "itemType": "CD",
+      "sourcePrice": "10",
+      "resolvedPricePolicy": "fixed 1000 EUR",
+      "releaseDate": null,
+      "currentSiteExtra": false,
+      "sourceAliases": []
+    },
+    {
+      "id": "s-t-spinners-vinyl-12-inch",
+      "sourceArtist": "S/T",
+      "sourceTitle": "Spinners",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "current-site extra",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": "use current content",
+      "currentSiteExtra": true,
+      "sourceAliases": []
+    },
+    {
+      "id": "three-way-plane-wreckquiem-vinyl-12-inch",
+      "sourceArtist": "Three Way Plane",
+      "sourceTitle": "Wreckquiem",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": "current-site extra",
+      "resolvedPricePolicy": "fixed 2000 EUR",
+      "releaseDate": "use current content",
+      "currentSiteExtra": true,
+      "sourceAliases": []
+    }
+  ],
+  "rejectedDuplicateRows": [
+    {
+      "id": "living-under-drones-knot-on-knot-vinyl-12-inch",
+      "sourceArtist": "Living Under Drones",
+      "sourceTitle": "Knot On Knot?",
+      "itemType": "Vinyl 12-inch",
+      "sourcePrice": null,
+      "releaseDate": "2021-11-30",
+      "duplicateOf": "living-under-drones-knot-on-knot-vinyl-12-inch",
+      "resolution": "duplicate of `Knot On Knot`; do not emit"
+    }
+  ]
+}

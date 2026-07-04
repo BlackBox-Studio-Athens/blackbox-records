@@ -15,9 +15,10 @@ export type CartLineItemSnapshot = {
   image: string | null;
   imageAlt: string | null;
   optionLabel: string | null;
-  priceAmountMinor: number;
+  priceAmountMinor: number | null;
   priceCurrencyCode: string;
   priceDisplay: string;
+  priceKind: 'fixed' | 'pay_what_you_want';
   storeItemSlug: string;
   subtitle: string;
   title: string;
@@ -42,6 +43,7 @@ export type StoreCartState = {
 type StoreCartStorage = Pick<Storage, 'getItem' | 'removeItem' | 'setItem'>;
 
 const CART_MONEY_FORMAT_LOCALE = 'en-US';
+const CUSTOM_PRICE_SUBTOTAL_DISPLAY = 'Set in Checkout';
 
 const nullableStringSchema = z
   .string()
@@ -55,15 +57,35 @@ const cartLineItemSnapshotSchema = z
     image: nullableStringSchema,
     imageAlt: nullableStringSchema,
     optionLabel: nullableStringSchema,
-    priceAmountMinor: z.number().int().min(0),
+    priceAmountMinor: z.number().int().min(0).nullable(),
     priceCurrencyCode: z.string().trim().length(3),
     priceDisplay: z.string().trim().min(1),
+    priceKind: z.enum(['fixed', 'pay_what_you_want']).optional(),
     storeItemSlug: z.string().trim().min(1),
     subtitle: z.string(),
     title: z.string().trim().min(1),
     variantId: z.string().trim().min(1),
   })
-  .transform((snapshot): CartLineItemSnapshot => {
+  .transform((snapshot, context): CartLineItemSnapshot => {
+    const priceKind = snapshot.priceKind ?? 'fixed';
+
+    if (priceKind === 'pay_what_you_want') {
+      return {
+        ...snapshot,
+        priceAmountMinor: null,
+        priceCurrencyCode: snapshot.priceCurrencyCode.toUpperCase(),
+        priceKind,
+      };
+    }
+
+    if (snapshot.priceAmountMinor === null) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Fixed cart line price amount is missing.',
+      });
+      return z.NEVER;
+    }
+
     const price = createMoney({
       amountMinor: snapshot.priceAmountMinor,
       currencyCode: snapshot.priceCurrencyCode,
@@ -73,6 +95,7 @@ const cartLineItemSnapshotSchema = z
       ...snapshot,
       priceAmountMinor: moneyToMinorAmount(price),
       priceCurrencyCode: moneyToCurrencyCode(price),
+      priceKind,
     };
   });
 
@@ -125,6 +148,7 @@ export function normalizeStoreCartState(state: StoreCartState | CartDraft): Stor
         image: firstLine.image,
         imageAlt: firstLine.imageAlt,
         optionLabel: firstLine.optionLabel,
+        priceKind: firstLine.priceKind,
         priceDisplay: firstLine.priceDisplay,
         storeItemSlug: firstLine.storeItemSlug,
         subtitle: firstLine.subtitle,
@@ -143,11 +167,18 @@ function formatCartMoney(amountMinor: number, currencyCode: string): string {
 }
 
 export function getCartLineTotalDisplay(line: CartLine): string {
+  if (line.priceKind === 'pay_what_you_want' || line.priceAmountMinor === null) {
+    return line.priceDisplay;
+  }
+
   return formatCartMoney(line.priceAmountMinor * line.quantity, line.priceCurrencyCode);
 }
 
 export function getCartSubtotalDisplay(lines: CartLine[]): string | null {
   if (!lines.length) return null;
+  if (lines.some((line) => line.priceKind === 'pay_what_you_want' || line.priceAmountMinor === null)) {
+    return CUSTOM_PRICE_SUBTOTAL_DISPLAY;
+  }
 
   const currencyCode = lines[0]?.priceCurrencyCode;
   const canCalculateSubtotal = Boolean(currencyCode && lines.every((line) => line.priceCurrencyCode === currencyCode));

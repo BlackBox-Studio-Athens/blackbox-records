@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Fortunate Isles",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Pirate City",
+  "image": "pirate-city-fortunate-isles-vinyl.webp",
+  "image_alt": "Fortunate Isles Vinyl front mockup",
+  "summary": "Vinyl edition of Fortunate Isles by Pirate City in the BlackBox Records distro catalog.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 70
+}

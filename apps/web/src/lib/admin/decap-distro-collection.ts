@@ -23,6 +23,7 @@ export function buildDistroCollection() {
         hint: 'Choose the shelf this item appears under.',
         options: [
           { label: 'Vinyl 12-inch', value: 'Vinyl 12-inch' },
+          { label: 'Vinyl 10-inch', value: 'Vinyl 10-inch' },
           { label: 'Vinyl 7-inch', value: 'Vinyl 7-inch' },
           { label: 'CDs', value: 'CDs' },
           { label: 'Clothes', value: 'Clothes' },

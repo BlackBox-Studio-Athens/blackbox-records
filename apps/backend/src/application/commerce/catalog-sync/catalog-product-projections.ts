@@ -21,8 +21,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -47,8 +48,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -73,8 +75,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -99,8 +102,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -125,8 +129,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -151,8 +156,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -179,6 +185,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     expectedSandboxPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description: "Ouranopithecus' Anarchotribal joins the BlackBox Records store as a vinyl release.",
@@ -202,8 +209,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -228,8 +236,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -254,8 +263,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -280,8 +290,11 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
       currencyCode: 'EUR',
+      kind: 'pay_what_you_want',
+      minimumAmountMinor: 100,
+      presetAmountMinor: 500,
+      maximumAmountMinor: 10000,
     },
     productProjection: {
       description: 'CD edition of Ατοπια by Ατοπια in the BlackBox Records distro catalog.',
@@ -303,8 +316,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -329,8 +343,11 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 1200,
       currencyCode: 'EUR',
+      kind: 'pay_what_you_want',
+      minimumAmountMinor: 100,
+      presetAmountMinor: 500,
+      maximumAmountMinor: 10000,
     },
     productProjection: {
       description:
@@ -355,8 +372,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -381,8 +399,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -407,8 +426,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -433,8 +453,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -457,8 +478,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 1200,
+      amountMinor: 500,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -483,8 +505,34 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
+      amountMinor: 2000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        "CALF's noise rock and post-hardcore from Karditsa follows the trail of Unwound, Melvins, and Slint without losing its own weight.",
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/calf-karditsa.jpg'],
+      metadata: {
+        sourceId: 'calf-vinyl-10-inch',
+        sourceKind: 'distro',
+        storeItemSlug: 'calf-vinyl-10-inch',
+        variantId: 'variant_calf-vinyl-10-inch_standard',
+      },
+      name: 'BlackBox Records - — - Vinyl 10-inch',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'calf-vinyl-10-inch',
+    sourceKind: 'distro',
+    storeItemSlug: 'calf-vinyl-10-inch',
+    variantId: 'variant_calf-vinyl-10-inch_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -509,8 +557,36 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Caregivers by Chronoboros. Source metadata identifies it as a 7-track release, released March 13, 2026.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/chronoboros-caregivers-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'chronoboros-caregivers-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'chronoboros-caregivers-vinyl',
+        variantId: 'variant_chronoboros-caregivers-vinyl_standard',
+      },
+      name: 'BlackBox Records - Caregivers - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'chronoboros-caregivers-vinyl',
+    sourceKind: 'distro',
+    storeItemSlug: 'chronoboros-caregivers-vinyl',
+    variantId: 'variant_chronoboros-caregivers-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -535,8 +611,37 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description: 'Vinyl edition of Medicine by Coyotes Arrow in the BlackBox Records distro catalog.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/coyotes-arrow-medicine-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'coyotes-arrow-medicine-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'coyotes-arrow-medicine-vinyl',
+        variantId: 'variant_coyotes-arrow-medicine-vinyl_standard',
+      },
+      name: 'BlackBox Records - Medicine - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'coyotes-arrow-medicine-vinyl',
+    sourceKind: 'distro',
+    storeItemSlug: 'coyotes-arrow-medicine-vinyl',
+    variantId: 'variant_coyotes-arrow-medicine-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      currencyCode: 'EUR',
+      kind: 'pay_what_you_want',
+      minimumAmountMinor: 100,
+      presetAmountMinor: 500,
+      maximumAmountMinor: 10000,
     },
     productProjection: {
       description:
@@ -561,8 +666,11 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
       currencyCode: 'EUR',
+      kind: 'pay_what_you_want',
+      minimumAmountMinor: 100,
+      presetAmountMinor: 500,
+      maximumAmountMinor: 10000,
     },
     productProjection: {
       description:
@@ -587,8 +695,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -613,8 +722,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -639,8 +749,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -667,6 +778,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     expectedSandboxPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -691,8 +803,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -717,8 +830,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -741,8 +855,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -767,8 +882,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -793,8 +909,38 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of No easy Way by Gun Fever. Source metadata identifies it as a 6-track release, released November 26, 2024.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/gun-fever-no-easy-way-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'gun-fever-no-easy-way-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'gun-fever-no-easy-way-vinyl',
+        variantId: 'variant_gun-fever-no-easy-way-vinyl_standard',
+      },
+      name: 'BlackBox Records - No easy Way - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'gun-fever-no-easy-way-vinyl',
+    sourceKind: 'distro',
+    storeItemSlug: 'gun-fever-no-easy-way-vinyl',
+    variantId: 'variant_gun-fever-no-easy-way-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      currencyCode: 'EUR',
+      kind: 'pay_what_you_want',
+      minimumAmountMinor: 100,
+      presetAmountMinor: 500,
+      maximumAmountMinor: 10000,
     },
     productProjection: {
       description:
@@ -819,8 +965,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -845,8 +992,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2500,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -871,8 +1019,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -897,8 +1046,36 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Knot On Knot by Living Under Drones. Source metadata identifies it as a 6-track release, released November 30, 2021.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/living-under-drones-knot-on-knot-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'living-under-drones-knot-on-knot-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'living-under-drones-knot-on-knot-vinyl',
+        variantId: 'variant_living-under-drones-knot-on-knot-vinyl_standard',
+      },
+      name: 'BlackBox Records - Knot On Knot - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'living-under-drones-knot-on-knot-vinyl',
+    sourceKind: 'distro',
+    storeItemSlug: 'living-under-drones-knot-on-knot-vinyl',
+    variantId: 'variant_living-under-drones-knot-on-knot-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1500,
+      currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -923,8 +1100,11 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 1200,
       currencyCode: 'EUR',
+      kind: 'pay_what_you_want',
+      minimumAmountMinor: 100,
+      presetAmountMinor: 500,
+      maximumAmountMinor: 10000,
     },
     productProjection: {
       description:
@@ -949,8 +1129,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -975,8 +1156,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1001,8 +1183,36 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Itch by Mammock. Source metadata identifies it as a 6-track release, released January 1, 2020.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/mammock-itch-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'mammock-itch-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'mammock-itch-vinyl',
+        variantId: 'variant_mammock-itch-vinyl_standard',
+      },
+      name: 'BlackBox Records - Itch - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'mammock-itch-vinyl',
+    sourceKind: 'distro',
+    storeItemSlug: 'mammock-itch-vinyl',
+    variantId: 'variant_mammock-itch-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2500,
+      currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1027,8 +1237,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1053,8 +1264,35 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1000,
       currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description: 'CD edition of Slap punkabilly by Nausea Bomb in the BlackBox Records distro catalog.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/nausea-bomb-slap-punkabilly-cd-front-mockup.jpg',
+      ],
+      metadata: {
+        sourceId: 'nausea-bomb-slap-punkabilly-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'nausea-bomb-slap-punkabilly-cd',
+        variantId: 'variant_nausea-bomb-slap-punkabilly-cd_standard',
+      },
+      name: 'BlackBox Records - Slap punkabilly - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'nausea-bomb-slap-punkabilly-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'nausea-bomb-slap-punkabilly-cd',
+    variantId: 'variant_nausea-bomb-slap-punkabilly-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1079,8 +1317,35 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description: 'Vinyl edition of Tales of disgrace by Nothing Thrives in the BlackBox Records distro catalog.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/nothing-thrives-tales-of-disgrace-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'nothing-thrives-tales-of-disgrace-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'nothing-thrives-tales-of-disgrace-vinyl',
+        variantId: 'variant_nothing-thrives-tales-of-disgrace-vinyl_standard',
+      },
+      name: 'BlackBox Records - Tales of disgrace - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'nothing-thrives-tales-of-disgrace-vinyl',
+    sourceKind: 'distro',
+    storeItemSlug: 'nothing-thrives-tales-of-disgrace-vinyl',
+    variantId: 'variant_nothing-thrives-tales-of-disgrace-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description: 'One Leg Mary balance alternative post-hardcore with layered melodies and sharp instrumental turns.',
@@ -1104,8 +1369,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1130,8 +1396,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1156,8 +1423,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 3000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1182,8 +1450,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 3000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1208,8 +1477,87 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1500,
       currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description: 'Vinyl edition of Fortunate Isles by Pirate City in the BlackBox Records distro catalog.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/pirate-city-fortunate-isles-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'pirate-city-fortunate-isles-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'pirate-city-fortunate-isles-vinyl',
+        variantId: 'variant_pirate-city-fortunate-isles-vinyl_standard',
+      },
+      name: 'BlackBox Records - Fortunate Isles - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'pirate-city-fortunate-isles-vinyl',
+    sourceKind: 'distro',
+    storeItemSlug: 'pirate-city-fortunate-isles-vinyl',
+    variantId: 'variant_pirate-city-fortunate-isles-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1500,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description: 'Vinyl edition of Λωβή by Pirate City in the BlackBox Records distro catalog.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/pirate-city-lovi-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'pirate-city-lovi-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'pirate-city-lovi-vinyl',
+        variantId: 'variant_pirate-city-lovi-vinyl_standard',
+      },
+      name: 'BlackBox Records - Λωβή - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'pirate-city-lovi-vinyl',
+    sourceKind: 'distro',
+    storeItemSlug: 'pirate-city-lovi-vinyl',
+    variantId: 'variant_pirate-city-lovi-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1500,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description: 'Vinyl edition of Πειρατεία by Pirate City in the BlackBox Records distro catalog.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/pirate-city-piratia-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'pirate-city-piratia-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'pirate-city-piratia-vinyl',
+        variantId: 'variant_pirate-city-piratia-vinyl_standard',
+      },
+      name: 'BlackBox Records - Πειρατεία - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'pirate-city-piratia-vinyl',
+    sourceKind: 'distro',
+    storeItemSlug: 'pirate-city-piratia-vinyl',
+    variantId: 'variant_pirate-city-piratia-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1234,8 +1582,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1260,8 +1609,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1286,8 +1636,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 3000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1312,8 +1663,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1338,8 +1690,35 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1000,
       currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description: 'CD edition of Ατελές το ον by Salto Mortale in the BlackBox Records distro catalog.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/salto-mortale-ateles-to-on-cd-front-mockup.jpg',
+      ],
+      metadata: {
+        sourceId: 'salto-mortale-ateles-to-on-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'salto-mortale-ateles-to-on-cd',
+        variantId: 'variant_salto-mortale-ateles-to-on-cd_standard',
+      },
+      name: 'BlackBox Records - Ατελές το ον - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'salto-mortale-ateles-to-on-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'salto-mortale-ateles-to-on-cd',
+    variantId: 'variant_salto-mortale-ateles-to-on-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description: "Selenopolis keeps Olaf Olafsonn and the Big Bad Trip in Prague's psych and kraut rock'n'roll lane.",
@@ -1363,8 +1742,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description: 'Spinners keep their Athens indie rock, punk, and post-hardcore sound direct and unvarnished.',
@@ -1386,8 +1766,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description: 'Steelwitch bring Athens heavy and power metal into a clean, direct first full-length album.',
@@ -1411,8 +1792,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1437,8 +1819,35 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 1000,
       currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description: 'CD edition of The guilt of feeling alive by Sun of Nothing in the BlackBox Records distro catalog.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/sun-of-nothing-the-guilt-of-feeling-alive-cd-front-mockup.jpg',
+      ],
+      metadata: {
+        sourceId: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
+        variantId: 'variant_sun-of-nothing-the-guilt-of-feeling-alive-cd_standard',
+      },
+      name: 'BlackBox Records - The guilt of feeling alive - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
+    variantId: 'variant_sun-of-nothing-the-guilt-of-feeling-alive-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1461,8 +1870,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 3000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1487,8 +1897,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1513,8 +1924,62 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
       currencyCode: 'EUR',
+      kind: 'pay_what_you_want',
+      minimumAmountMinor: 100,
+      presetAmountMinor: 500,
+      maximumAmountMinor: 10000,
+    },
+    productProjection: {
+      description:
+        'Cassette edition of Random Tapes by The Vagina lips. Artwork is known-missing from the verified source, so this item uses the distro cassette fallback.',
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/cassette-tape.jpg'],
+      metadata: {
+        sourceId: 'the-vagina-lips-random-tapes-cassette',
+        sourceKind: 'distro',
+        storeItemSlug: 'the-vagina-lips-random-tapes-cassette',
+        variantId: 'variant_the-vagina-lips-random-tapes-cassette_standard',
+      },
+      name: 'BlackBox Records - Random Tapes - Cassette',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'the-vagina-lips-random-tapes-cassette',
+    sourceKind: 'distro',
+    storeItemSlug: 'the-vagina-lips-random-tapes-cassette',
+    variantId: 'variant_the-vagina-lips-random-tapes-cassette_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description: 'Vinyl edition of Your Kingdom, my life by Three Way plane in the BlackBox Records distro catalog.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/three-way-plane-your-kingdom-my-life-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'three-way-plane-your-kingdom-my-life-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'three-way-plane-your-kingdom-my-life-vinyl',
+        variantId: 'variant_three-way-plane-your-kingdom-my-life-vinyl_standard',
+      },
+      name: 'BlackBox Records - Your Kingdom, my life - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'three-way-plane-your-kingdom-my-life-vinyl',
+    sourceKind: 'distro',
+    storeItemSlug: 'three-way-plane-your-kingdom-my-life-vinyl',
+    variantId: 'variant_three-way-plane-your-kingdom-my-life-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1539,8 +2004,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1565,8 +2031,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description: "Speck keep UnKraut's Austrian space-kraut and heavy-psych energy locked into a long-form record.",
@@ -1588,8 +2055,35 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description: 'Vinyl edition of 8 Cantons by Unshaped Ahead in the BlackBox Records distro catalog.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/unshaped-ahead-8-cantons-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'unshaped-ahead-8-cantons-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'unshaped-ahead-8-cantons-vinyl',
+        variantId: 'variant_unshaped-ahead-8-cantons-vinyl_standard',
+      },
+      name: 'BlackBox Records - 8 Cantons - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'unshaped-ahead-8-cantons-vinyl',
+    sourceKind: 'distro',
+    storeItemSlug: 'unshaped-ahead-8-cantons-vinyl',
+    variantId: 'variant_unshaped-ahead-8-cantons-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description: 'Zaperlipopette! keep their Swiss experimental rock and math-rock focus sharp on Voyage Voyage.',
@@ -1613,8 +2107,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 3000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1639,8 +2134,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 3000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1665,8 +2161,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 3000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description:
@@ -1691,8 +2188,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
+      amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     },
     productProjection: {
       description: 'Three Way Plane carry their Athens alternative, punk, and noise-rock line into Wreckquiem.',

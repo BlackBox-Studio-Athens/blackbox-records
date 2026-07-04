@@ -15,8 +15,69 @@ import {
   createSandboxUatCatalogStock,
   createSandboxUatCommerceSql,
 } from '../../../../scripts/generate-stripe-uat-catalog-artifacts';
+import {
+  findDistroInventoryRowForContent,
+  loadDistroInventorySource,
+} from '../../../../scripts/distro-inventory-source';
 
 describe('stripe catalog contract projection', () => {
+  it('loads the Distro Inventory Source with approved duplicate and price policy decisions', async () => {
+    const source = await loadDistroInventorySource();
+    const rowsById = new Map(source.rows.map((row) => [row.id, row]));
+    const rejectedDuplicate = source.rejectedDuplicateRows[0];
+
+    expect(source.rows).toHaveLength(79);
+    expect(source.rejectedDuplicateRows).toEqual([
+      expect.objectContaining({
+        duplicateOf: 'living-under-drones-knot-on-knot-vinyl-12-inch',
+        sourceTitle: 'Knot On Knot?',
+      }),
+    ]);
+    expect(rowsById.get('mass-culture-barren-point-vinyl-12-inch')?.pricePolicy).toEqual({
+      amountMinor: 2000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    });
+    expect(rowsById.get('broken-fingers-ego-tape')?.pricePolicy).toEqual({
+      amountMinor: 500,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    });
+    expect(rowsById.get('the-vagina-lips-random-tapes-tape')?.pricePolicy).toEqual({
+      currencyCode: 'EUR',
+      kind: 'pay_what_you_want',
+      maximumAmountMinor: 10000,
+      minimumAmountMinor: 100,
+      presetAmountMinor: 500,
+    });
+    expect(rejectedDuplicate?.id).toBe(rejectedDuplicate?.duplicateOf);
+  });
+
+  it('matches current distro content aliases back to the Distro Inventory Source', async () => {
+    const source = await loadDistroInventorySource();
+
+    expect(
+      findDistroInventoryRowForContent(source, {
+        artist_or_label: 'Skinny Peachfuzz',
+        group: 'Vinyl 7-inch',
+        title: 'Magic Sleazeball Corrida',
+      })?.id,
+    ).toBe('skinny-peachfuzz-magic-sleazball-corrida-vinyl-7-inch');
+    expect(
+      findDistroInventoryRowForContent(source, {
+        artist_or_label: 'Zebu / Dead Elephant',
+        group: 'Vinyl 7-inch',
+        title: 'Crawl / Eat Them Dead Or Alive, Split 7"',
+      })?.pricePolicy,
+    ).toEqual({
+      currencyCode: 'EUR',
+      kind: 'pay_what_you_want',
+      maximumAmountMinor: 10000,
+      minimumAmountMinor: 100,
+      presetAmountMinor: 500,
+    });
+  });
+
   it('derives Product Projection contracts for all current Store Items without Astro runtime imports', async () => {
     const contracts = await loadStripeCatalogStoreItemContracts({
       productEnvironment: 'PRD',
@@ -134,18 +195,22 @@ describe('stripe catalog contract projection', () => {
     expect(createExpectedSandboxPrice('Cassette')).toEqual({
       amountMinor: 1200,
       currencyCode: 'EUR',
+      kind: 'fixed',
     });
     expect(createExpectedSandboxPrice('T-Shirt')).toEqual({
       amountMinor: 2000,
       currencyCode: 'EUR',
+      kind: 'fixed',
     });
     expect(createExpectedSandboxPrice('Vinyl LP')).toEqual({
       amountMinor: 2800,
       currencyCode: 'EUR',
+      kind: 'fixed',
     });
     expect(createExpectedSandboxPrice(null)).toEqual({
       amountMinor: 2800,
       currencyCode: 'EUR',
+      kind: 'fixed',
     });
   });
 

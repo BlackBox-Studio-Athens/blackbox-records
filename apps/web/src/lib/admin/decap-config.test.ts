@@ -100,6 +100,7 @@ describe('buildDecapConfig', () => {
     expect(yaml).toContain('label: "Distro Page"');
     expect(yaml).toContain('name: "group_intros"');
     expect(yaml).toContain('label: "Vinyl 12-inch"');
+    expect(yaml).toContain('label: "Vinyl 10-inch"');
     expect(yaml).toContain('folder: "apps/web/src/content/distro"');
     expect(yaml).toContain('name: "artist_or_label"');
     expect(yaml).toContain('name: "summary"');

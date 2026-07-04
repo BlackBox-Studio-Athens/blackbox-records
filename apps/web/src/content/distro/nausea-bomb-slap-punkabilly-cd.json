@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Slap punkabilly",
+  "group": "CDs",
+  "artist_or_label": "Nausea Bomb",
+  "image": "nausea-bomb-slap-punkabilly-cd-front-mockup.jpg",
+  "image_alt": "Slap punkabilly CD front mockup",
+  "summary": "CD edition of Slap punkabilly by Nausea Bomb in the BlackBox Records distro catalog.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 74
+}

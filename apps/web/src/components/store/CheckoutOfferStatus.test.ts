@@ -38,6 +38,7 @@ const workerOfferPrice = {
   amountMinor: 2800,
   currencyCode: 'EUR',
   display: '€28.00',
+  kind: 'fixed' as const,
 };
 
 function createReadyStoreOffer(overrides: Partial<PublicStoreOffer> = {}): PublicStoreOffer {
@@ -86,6 +87,7 @@ const cartItem: CartLineItemSnapshot = {
   priceAmountMinor: 2800,
   priceCurrencyCode: 'EUR',
   priceDisplay: '€28.00',
+  priceKind: 'fixed',
   storeItemSlug: 'disintegration-black-vinyl-lp',
   subtitle: 'Afterwise',
   title: 'Disintegration',

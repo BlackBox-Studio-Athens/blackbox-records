@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Random Tapes",
+  "group": "Tapes",
+  "artist_or_label": "The Vagina lips",
+  "image": "cassette-tape.jpg",
+  "image_alt": "Generic cassette fallback image for Random Tapes",
+  "summary": "Cassette edition of Random Tapes by The Vagina lips. Artwork is known-missing from the verified source, so this item uses the distro cassette fallback.",
+  "eyebrow": "Distro",
+  "format": "Cassette",
+  "order": 73
+}

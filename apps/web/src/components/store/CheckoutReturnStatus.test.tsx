@@ -210,6 +210,7 @@ describe('CheckoutReturnStatus', () => {
         priceAmountMinor: 2800,
         priceCurrencyCode: 'EUR',
         priceDisplay: '€28.00',
+        priceKind: 'fixed',
         storeItemSlug: 'disintegration-black-vinyl-lp',
         subtitle: 'Afterwise',
         title: 'Disintegration',

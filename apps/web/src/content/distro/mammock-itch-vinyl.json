@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Itch",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Mammock",
+  "image": "mammock-itch-vinyl.webp",
+  "image_alt": "Itch Vinyl front mockup",
+  "summary": "Vinyl edition of Itch by Mammock. Source metadata identifies it as a 6-track release, released January 1, 2020.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 65,
+  "release_date": "2020-01-01"
+}

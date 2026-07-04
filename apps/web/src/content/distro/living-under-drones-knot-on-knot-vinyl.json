@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Knot On Knot",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Living Under Drones",
+  "image": "living-under-drones-knot-on-knot-vinyl.webp",
+  "image_alt": "Knot On Knot Vinyl front mockup",
+  "summary": "Vinyl edition of Knot On Knot by Living Under Drones. Source metadata identifies it as a 6-track release, released November 30, 2021.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 64,
+  "release_date": "2021-11-30"
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Your Kingdom, my life",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Three Way plane",
+  "image": "three-way-plane-your-kingdom-my-life-vinyl.webp",
+  "image_alt": "Your Kingdom, my life Vinyl front mockup",
+  "summary": "Vinyl edition of Your Kingdom, my life by Three Way plane in the BlackBox Records distro catalog.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 67
+}

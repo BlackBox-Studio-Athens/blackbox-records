@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Πειρατεία",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Pirate City",
+  "image": "pirate-city-piratia-vinyl.webp",
+  "image_alt": "Πειρατεία Vinyl front mockup",
+  "summary": "Vinyl edition of Πειρατεία by Pirate City in the BlackBox Records distro catalog.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 71
+}

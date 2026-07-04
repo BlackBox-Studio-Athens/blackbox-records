@@ -34,7 +34,7 @@ export {
   classifyCatalogSyncIssue,
   hasBlockingCatalogIssue,
 } from './catalog-reconciler';
-export { createStoreOfferPrice } from './money';
+export { createStoreOfferPrice, createStoreOfferPriceFromCatalogPrice } from './money';
 export type {
   CatalogSyncAction,
   CatalogSyncIssue,

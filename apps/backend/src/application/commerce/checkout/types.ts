@@ -7,6 +7,7 @@ import type {
   StripePriceId,
   VariantId,
 } from '../../../domain/commerce';
+import type { StoreOfferPrice } from '../catalog-sync';
 
 export type StoreOfferAvailability = {
   status: 'available' | 'sold_out';
@@ -14,12 +15,6 @@ export type StoreOfferAvailability = {
 };
 
 export type StoreOfferCatalogStatus = 'catalog_drift' | 'ready' | 'sold_out';
-
-export type StoreOfferPrice = {
-  amountMinor: number;
-  currencyCode: string;
-  display: string;
-};
 
 export type StoreOffer = {
   storeItemSlug: StoreItemSlug;

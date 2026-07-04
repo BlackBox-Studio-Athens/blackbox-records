@@ -255,12 +255,13 @@ async function runCheckoutSurfaceSmoke(
   const lineItems = await retrieveStripeCheckoutLineItems(checkoutSessionId);
   const product = lineItems.data?.[0]?.price?.product ?? null;
   const desiredPrice = entry.desiredPrice;
+  const fixedDesiredPrice = desiredPrice?.kind === 'fixed' ? desiredPrice : null;
   const productNameMatched = product?.name === entry.productProjection.name;
   const productImageMatched = Boolean(
     entry.productProjection.imageUrls.length &&
     product?.images?.some((imageUrl) => entry.productProjection.imageUrls.includes(imageUrl)),
   );
-  const amountMatched = desiredPrice ? session.amount_total === desiredPrice.amountMinor : false;
+  const amountMatched = fixedDesiredPrice ? session.amount_total === fixedDesiredPrice.amountMinor : false;
   const currencyMatched = desiredPrice ? session.currency?.toUpperCase() === desiredPrice.currencyCode : false;
   const shippingAddressCollection = Boolean(session.shipping_address_collection);
   const hasPaymentMethods = Boolean(session.payment_method_types?.length);

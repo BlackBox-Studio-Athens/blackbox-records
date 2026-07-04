@@ -16,6 +16,11 @@ on:
           - all
           - uat
           - prd
+      reset_uat_catalog:
+        description: Archive active repo-owned UAT Stripe catalog objects before applying.
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -94,6 +99,12 @@ jobs:
         run: |
           pnpm --filter @blackbox/backend d1:migrations:apply:uat
           pnpm --filter @blackbox/backend d1:seed:uat:catalog
+
+      - name: Reset UAT provider catalog
+        if: ${{ inputs.reset_uat_catalog }}
+        run: |
+          mkdir -p .codex-artifacts/catalog-promotion/uat
+          pnpm stripe:catalog:reset-uat --env uat --confirm 2>&1 | tee .codex-artifacts/catalog-promotion/uat/catalog-reset.txt
 
       - name: Plan UAT provider catalog
         run: |

@@ -532,7 +532,12 @@ def youtube_search(release: Release) -> dict:
 
 
 def youtube_candidates_from_data(release: Release, data: dict) -> list[Candidate]:
-    return [candidate for entry in data.get("entries", [])[:5] if (candidate := youtube_candidate_from_entry(release, entry))]
+    return [
+        candidate
+        for entry in data.get("entries", [])[:5]
+        if isinstance(entry, dict)
+        if (candidate := youtube_candidate_from_entry(release, entry))
+    ]
 
 
 def youtube_candidate_from_entry(release: Release, entry: dict) -> Candidate | None:

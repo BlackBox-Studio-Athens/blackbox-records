@@ -69,6 +69,7 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
           priceAmountMinor: props.priceAmountMinor,
           priceCurrencyCode: props.priceCurrencyCode,
           priceDisplay: props.priceDisplay,
+          priceKind: 'fixed',
           quantity: createCartQuantity(1),
           storeItemSlug: props.storeItemSlug || props.itemHref,
           subtitle: props.subtitle,

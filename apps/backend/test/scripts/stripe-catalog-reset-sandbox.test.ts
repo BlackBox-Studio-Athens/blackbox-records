@@ -15,6 +15,7 @@ const contract: StripeCatalogStoreItemContract = {
     desiredPrice: {
       amountMinor: 2800,
       currencyCode: 'EUR',
+      kind: 'fixed',
       revision: 'disintegration-black-vinyl-lp-2800-eur',
     },
     productProjection: {
@@ -41,6 +42,7 @@ const contract: StripeCatalogStoreItemContract = {
   expectedSandboxPrice: {
     amountMinor: 2800,
     currencyCode: 'EUR',
+    kind: 'fixed',
   },
   productProjection: {
     description: 'Projected product.',

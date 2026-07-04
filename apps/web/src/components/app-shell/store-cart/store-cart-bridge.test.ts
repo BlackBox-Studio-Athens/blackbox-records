@@ -46,6 +46,7 @@ const cartItem: CartLineItemSnapshot = {
   priceAmountMinor: 2500,
   priceCurrencyCode: 'EUR',
   priceDisplay: '25 EUR',
+  priceKind: 'fixed',
   storeItemSlug: 'disintegration-black-vinyl-lp',
   subtitle: 'Black Vinyl LP',
   title: 'Disintegration',

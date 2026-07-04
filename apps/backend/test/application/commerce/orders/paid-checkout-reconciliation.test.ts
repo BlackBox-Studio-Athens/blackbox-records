@@ -355,6 +355,37 @@ describe('paid checkout reconciliation', () => {
     });
   });
 
+  it('uses the Stripe paid session amount for pay-what-you-want finalization', async () => {
+    const result = await applyPaidCheckoutReconciliation(
+      orders,
+      paidCheckoutFinalizer,
+      paidReconciliation({
+        amountTotalMinor: 3700,
+      }),
+      appliedAt,
+      [
+        {
+          quantity: cartQuantity(1),
+          stripePriceId: primaryStripePriceId,
+        },
+      ],
+    );
+
+    expect(result).toMatchObject({
+      checkoutOrderPaid: {
+        amountTotalMinor: 3700,
+        currencyCode: 'EUR',
+        lineItems: [
+          {
+            quantity: 1,
+            stripePriceId: primaryStripePriceId,
+          },
+        ],
+      },
+      kind: 'applied',
+    });
+  });
+
   it('moves paid checkout to needs_review when finalized Stripe line items cannot be mapped', async () => {
     await expect(
       applyPaidCheckoutReconciliation(orders, paidCheckoutFinalizer, paidReconciliation(), appliedAt, [

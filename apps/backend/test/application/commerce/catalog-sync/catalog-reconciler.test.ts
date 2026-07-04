@@ -10,6 +10,7 @@ import {
   type StripeCatalogGateway,
   type StripeCatalogIdentityMetadata,
   type StripeCatalogMutationContext,
+  type StripeCatalogExpectedPrice,
   type StripeCatalogPrice,
   type StripeCatalogPriceCreateInput,
   type StripeCatalogProductProjection,
@@ -39,6 +40,15 @@ const unavailableStoreItem: StoreItemOptionRecord = {
   storeItemSlug: storeItemSlug('noise-without-decay'),
   variantId: variantId('variant_noise-without-decay_standard'),
 };
+
+function fixedExpectedPrice(amountMinor = 2800, revision?: string): StripeCatalogExpectedPrice {
+  return {
+    amountMinor,
+    currencyCode: 'EUR',
+    kind: 'fixed',
+    ...(revision ? { revision } : {}),
+  };
+}
 
 class InMemoryStoreItems implements StoreItemOptionRepository {
   public constructor(private readonly records: StoreItemOptionRecord[]) {}
@@ -175,10 +185,22 @@ class InMemoryStripeCatalog implements StripeCatalogGateway {
     ): Promise<StripeCatalogPrice> => {
       const pricePrefix = input.metadata.appEnv === 'prd' ? 'price_live' : 'price_test';
       const price = createCatalogPrice({
-        amountMinor: input.amountMinor,
+        amountMinor: input.kind === 'fixed' ? input.amountMinor : undefined,
+        customUnitAmount:
+          input.kind === 'pay_what_you_want'
+            ? {
+                maximumAmountMinor: input.maximumAmountMinor,
+                minimumAmountMinor: input.minimumAmountMinor,
+                presetAmountMinor: input.presetAmountMinor,
+              }
+            : null,
         currencyCode: input.currencyCode,
         environment: input.metadata.appEnv,
-        priceId: `${pricePrefix}_disintegration_2800`,
+        priceId:
+          input.kind === 'pay_what_you_want'
+            ? `${pricePrefix}_disintegration_pay_what_you_want`
+            : `${pricePrefix}_disintegration_${input.amountMinor}`,
+        priceKind: input.kind,
         productProjection: input.productProjection ?? null,
       });
       this.prices.set(price.priceId, price);
@@ -231,9 +253,11 @@ class InMemoryStripeCatalog implements StripeCatalogGateway {
 function createCatalogPrice(input: {
   active?: boolean;
   amountMinor?: number;
+  customUnitAmount?: StripeCatalogPrice['customUnitAmount'];
   currencyCode?: string;
   environment?: StripeCatalogEnvironment;
   priceId: string;
+  priceKind?: StripeCatalogPrice['priceKind'];
   productActive?: boolean;
   productProjection?: StripeCatalogProductProjection | null;
 }): StripeCatalogPrice {
@@ -249,10 +273,12 @@ function createCatalogPrice(input: {
 
   return {
     active: input.active ?? true,
-    amountMinor: input.amountMinor ?? 2800,
+    amountMinor: input.priceKind === 'pay_what_you_want' ? null : (input.amountMinor ?? 2800),
     currencyCode: input.currencyCode ?? 'EUR',
+    customUnitAmount: input.customUnitAmount ?? null,
     lookupKey,
     metadata,
+    priceKind: input.priceKind ?? 'fixed',
     priceId: stripePriceId(input.priceId),
     productActive: input.productActive ?? true,
     productDescription: input.productProjection?.description ?? 'Disintegration by Afterwise.',
@@ -391,11 +417,7 @@ describe('CatalogReconciler', () => {
 
     const result = await reconciler.reconcileVariant(storeItem, {
       apply: true,
-      expectedPrice: {
-        amountMinor: 2800,
-        currencyCode: 'EUR',
-        revision: 'disintegration-black-vinyl-lp-2800-eur',
-      },
+      expectedPrice: fixedExpectedPrice(2800, 'disintegration-black-vinyl-lp-2800-eur'),
       now: new Date('2026-05-23T10:00:00.000Z'),
     });
 
@@ -457,6 +479,66 @@ describe('CatalogReconciler', () => {
     expect(snapshots.records.get(storeItem.variantId)?.freshUntil.toISOString()).toBe('2026-05-22T10:00:00.000Z');
   });
 
+  it('replaces fixed Stripe Prices with custom pay-what-you-want Prices without writing fixed snapshots', async () => {
+    const fixedPrice = createCatalogPrice({ amountMinor: 1000, priceId: 'price_test_disintegration_1000' });
+    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
+    stripeCatalog.prices.set(fixedPrice.priceId, fixedPrice);
+    mappings.records.set(storeItem.variantId, {
+      stripePriceId: fixedPrice.priceId,
+      variantId: storeItem.variantId,
+    });
+
+    const result = await reconciler.reconcileVariant(storeItem, {
+      apply: true,
+      expectedPrice: {
+        currencyCode: 'EUR',
+        kind: 'pay_what_you_want',
+        maximumAmountMinor: 10000,
+        minimumAmountMinor: 100,
+        presetAmountMinor: 500,
+        revision: 'disintegration-black-vinyl-lp-pay-what-you-want-100-500-10000-eur',
+      },
+      now: new Date('2026-05-23T10:00:00.000Z'),
+    });
+
+    expect(result.issues).toEqual([]);
+    expect(stripeCatalog.archivePrice).toHaveBeenCalledWith(
+      fixedPrice.priceId,
+      expect.objectContaining({
+        idempotencyKey: expect.stringContaining('archive_price'),
+      }),
+    );
+    expect(stripeCatalog.createCatalogPrice).toHaveBeenCalledWith(
+      expect.objectContaining({
+        currencyCode: 'EUR',
+        kind: 'pay_what_you_want',
+        maximumAmountMinor: 10000,
+        minimumAmountMinor: 100,
+        presetAmountMinor: 500,
+      }),
+      expect.objectContaining({
+        idempotencyKey: expect.stringContaining('pay-what-you-want-100-500-10000-eur'),
+      }),
+    );
+    expect(result.resolvedPrice).toMatchObject({
+      customUnitAmount: {
+        maximumAmountMinor: 10000,
+        minimumAmountMinor: 100,
+        presetAmountMinor: 500,
+      },
+      priceKind: 'pay_what_you_want',
+    });
+    expect(result.actions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'archive_price', stripePriceId: fixedPrice.priceId }),
+        expect.objectContaining({ kind: 'create_catalog_price' }),
+        { kind: 'update_mapping', stripePriceId: 'price_test_disintegration_pay_what_you_want' },
+      ]),
+    );
+    expect(result.actions).not.toEqual(expect.arrayContaining([{ kind: 'update_snapshot' }]));
+    expect(snapshots.records.has(storeItem.variantId)).toBe(false);
+  });
+
   it('repairs a stale D1 mapping when a correct active Price already exists', async () => {
     const stalePrice = {
       ...createCatalogPrice({ amountMinor: 1000, priceId: 'price_test_legacy_1000' }),
@@ -475,11 +557,7 @@ describe('CatalogReconciler', () => {
 
     const result = await reconciler.reconcileVariant(storeItem, {
       apply: true,
-      expectedPrice: {
-        amountMinor: 2800,
-        currencyCode: 'EUR',
-        revision: 'disintegration-black-vinyl-lp-2800-eur',
-      },
+      expectedPrice: fixedExpectedPrice(2800, 'disintegration-black-vinyl-lp-2800-eur'),
       now: new Date('2026-05-23T10:00:00.000Z'),
     });
 
@@ -569,10 +647,7 @@ describe('CatalogReconciler', () => {
 
     const result = await reconciler.reconcileVariant(storeItem, {
       apply: false,
-      expectedPrice: {
-        amountMinor: 2800,
-        currencyCode: 'EUR',
-      },
+      expectedPrice: fixedExpectedPrice(),
       now: new Date('2026-05-23T10:00:00.000Z'),
       productProjection: {
         description: 'Disintegration by Afterwise.',
@@ -623,7 +698,7 @@ describe('CatalogReconciler', () => {
 
     const result = await reconciler.verifyBuyableCatalog({
       apply: false,
-      expectedPrices: new Map([[storeItem.variantId, { amountMinor: 2800, currencyCode: 'EUR' }]]),
+      expectedPrices: new Map([[storeItem.variantId, fixedExpectedPrice()]]),
     });
     const unavailableResult = result.results.find(
       (item) => item.storeItem.variantId === unavailableStoreItem.variantId,
@@ -710,7 +785,7 @@ describe('CatalogReconciler', () => {
 
     const result = await reconciler.verifyBuyableCatalog({
       apply: false,
-      expectedPrices: new Map([[storeItem.variantId, { amountMinor: 2800, currencyCode: 'EUR' }]]),
+      expectedPrices: new Map([[storeItem.variantId, fixedExpectedPrice()]]),
     });
 
     expect(result.issues).toEqual(
@@ -763,7 +838,7 @@ describe('CatalogReconciler', () => {
 
     const result = await reconciler.verifyBuyableCatalog({
       apply: true,
-      expectedPrices: new Map([[storeItem.variantId, { amountMinor: 2800, currencyCode: 'EUR' }]]),
+      expectedPrices: new Map([[storeItem.variantId, fixedExpectedPrice()]]),
     });
 
     expect(result.dryRun).toBe(true);
@@ -815,7 +890,7 @@ describe('CatalogReconciler', () => {
 
     const result = await reconciler.verifyBuyableCatalog({
       apply: false,
-      expectedPrices: new Map([[storeItem.variantId, { amountMinor: 2800, currencyCode: 'EUR' }]]),
+      expectedPrices: new Map([[storeItem.variantId, fixedExpectedPrice()]]),
     });
 
     expect(result.issues).toEqual(
@@ -893,11 +968,7 @@ describe('CatalogReconciler', () => {
 
     const result = await reconciler.reconcileVariant(storeItem, {
       apply: true,
-      expectedPrice: {
-        amountMinor: 2800,
-        currencyCode: 'EUR',
-        revision: 'disintegration-black-vinyl-lp-2800-eur',
-      },
+      expectedPrice: fixedExpectedPrice(2800, 'disintegration-black-vinyl-lp-2800-eur'),
       now: new Date('2026-05-23T10:00:00.000Z'),
     });
 
@@ -928,11 +999,7 @@ describe('CatalogReconciler', () => {
 
     const result = await reconciler.reconcileVariant(storeItem, {
       apply: true,
-      expectedPrice: {
-        amountMinor: 2800,
-        currencyCode: 'EUR',
-        revision: 'disintegration-black-vinyl-lp-2800-eur',
-      },
+      expectedPrice: fixedExpectedPrice(2800, 'disintegration-black-vinyl-lp-2800-eur'),
       now: new Date('2026-05-23T10:00:00.000Z'),
     });
 
@@ -962,11 +1029,7 @@ describe('CatalogReconciler', () => {
 
     const result = await reconciler.reconcileVariant(storeItem, {
       apply: true,
-      expectedPrice: {
-        amountMinor: 2800,
-        currencyCode: 'EUR',
-        revision: 'disintegration-black-vinyl-lp-2800-eur',
-      },
+      expectedPrice: fixedExpectedPrice(2800, 'disintegration-black-vinyl-lp-2800-eur'),
       now: new Date('2026-05-23T10:00:00.000Z'),
     });
 
@@ -1018,10 +1081,7 @@ describe('CatalogReconciler', () => {
 
     const result = await reconciler.reconcileVariant(storeItem, {
       apply: true,
-      expectedPrice: {
-        amountMinor: 2800,
-        currencyCode: 'EUR',
-      },
+      expectedPrice: fixedExpectedPrice(),
     });
 
     expect(result.issues).toEqual([

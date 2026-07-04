@@ -36,12 +36,22 @@ function requireSmokeCatalogProjectionEntry() {
   return { ...smokeCatalogProjectionEntry, expectedSandboxPrice };
 }
 
+function requireFixedSmokeCatalogProjectionEntry() {
+  const entry = requireSmokeCatalogProjectionEntry();
+
+  if (entry.expectedSandboxPrice.kind !== 'fixed') {
+    throw new Error(`Smoke Store Item ${smokeStoreItemSlug} must use a fixed expected sandbox price.`);
+  }
+
+  return { ...entry, expectedSandboxPrice: entry.expectedSandboxPrice };
+}
+
 const disintegrationCheckoutSurfaceExpectation: StripeCheckoutSurfaceExpectation = {
   expectedAmountText: 'Worker Store Offer price',
   expectedPaymentMethodLabels: [],
   expectedSessionProjection: {
-    expectedAmountMinor: requireSmokeCatalogProjectionEntry().expectedSandboxPrice.amountMinor,
-    expectedCurrencyCode: requireSmokeCatalogProjectionEntry().expectedSandboxPrice.currencyCode,
+    expectedAmountMinor: requireFixedSmokeCatalogProjectionEntry().expectedSandboxPrice.amountMinor,
+    expectedCurrencyCode: requireFixedSmokeCatalogProjectionEntry().expectedSandboxPrice.currencyCode,
     expectedProductImageUrl: requireSmokeCatalogProjectionEntry().productProjection.imageUrls[0] ?? '',
     expectedProductName: requireSmokeCatalogProjectionEntry().productProjection.name,
   },
@@ -139,7 +149,8 @@ export function createCheckoutPageUrl(siteUrl: string, storeItemSlug = smokeStor
 }
 
 export function createSmokeStoreCartLineItemSnapshot(): CartLineItemSnapshot {
-  const { expectedSandboxPrice, productProjection, storeItemSlug, variantId } = requireSmokeCatalogProjectionEntry();
+  const { expectedSandboxPrice, productProjection, storeItemSlug, variantId } =
+    requireFixedSmokeCatalogProjectionEntry();
   const price = createMoney(expectedSandboxPrice);
 
   return {
@@ -150,6 +161,7 @@ export function createSmokeStoreCartLineItemSnapshot(): CartLineItemSnapshot {
     priceAmountMinor: moneyToMinorAmount(price),
     priceCurrencyCode: moneyToCurrencyCode(price),
     priceDisplay: formatMoney(price),
+    priceKind: 'fixed',
     storeItemSlug,
     subtitle: productProjection.description,
     title: productProjection.name,

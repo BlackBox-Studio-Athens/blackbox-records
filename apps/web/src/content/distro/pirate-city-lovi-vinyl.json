@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Λωβή",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Pirate City",
+  "image": "pirate-city-lovi-vinyl.webp",
+  "image_alt": "Λωβή Vinyl front mockup",
+  "summary": "Vinyl edition of Λωβή by Pirate City in the BlackBox Records distro catalog.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 72
+}

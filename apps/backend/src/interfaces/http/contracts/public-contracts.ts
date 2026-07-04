@@ -25,12 +25,24 @@ const offerAvailabilitySchema = z
   })
   .openapi('PublicStoreOfferAvailability');
 
+const fixedOfferPriceSchema = z.object({
+  amountMinor: z.number().int().nonnegative(),
+  currencyCode: z.string().trim().length(3),
+  display: z.string(),
+  kind: z.literal('fixed'),
+});
+
+const payWhatYouWantOfferPriceSchema = z.object({
+  currencyCode: z.string().trim().length(3),
+  display: z.string(),
+  kind: z.literal('pay_what_you_want'),
+  maximumAmountMinor: z.number().int().positive(),
+  minimumAmountMinor: z.number().int().positive(),
+  presetAmountMinor: z.number().int().positive(),
+});
+
 const offerPriceSchema = z
-  .object({
-    amountMinor: z.number().int().nonnegative(),
-    currencyCode: z.string().trim().length(3),
-    display: z.string(),
-  })
+  .discriminatedUnion('kind', [fixedOfferPriceSchema, payWhatYouWantOfferPriceSchema])
   .openapi('PublicStoreOfferPrice');
 
 const storeOfferSchema = z

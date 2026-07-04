@@ -18,6 +18,7 @@ const cartItem: CartLineItemSnapshot = {
   priceAmountMinor: 2000,
   priceCurrencyCode: 'EUR',
   priceDisplay: '€20',
+  priceKind: 'fixed',
   storeItemSlug: 'disintegration-black-vinyl-lp',
   subtitle: 'Afterwise',
   title: 'Disintegration',

@@ -215,14 +215,17 @@ class InMemoryCatalogProductProjectionReader implements CatalogProductProjection
 
 function createCatalogPrice(input: {
   amountMinor?: number;
+  customUnitAmount?: StripeCatalogPrice['customUnitAmount'];
   currencyCode?: string;
   priceId?: string;
+  priceKind?: StripeCatalogPrice['priceKind'];
   storeItem: StoreItemOptionRecord;
 }): StripeCatalogPrice {
   return {
     active: true,
-    amountMinor: input.amountMinor ?? 2800,
+    amountMinor: input.priceKind === 'pay_what_you_want' ? null : (input.amountMinor ?? 2800),
     currencyCode: input.currencyCode ?? 'EUR',
+    customUnitAmount: input.customUnitAmount ?? null,
     lookupKey: `blackbox:uat:${input.storeItem.storeItemSlug}:${input.storeItem.variantId}`,
     metadata: {
       appEnv: 'uat',
@@ -231,6 +234,7 @@ function createCatalogPrice(input: {
       storeItemSlug: input.storeItem.storeItemSlug,
       variantId: input.storeItem.variantId,
     },
+    priceKind: input.priceKind ?? 'fixed',
     priceId: stripePriceId(input.priceId ?? 'price_test_barren_point'),
     productActive: true,
     productDescription: 'Disintegration by Afterwise.',
@@ -339,6 +343,7 @@ describe('checkout use cases', () => {
         amountMinor: 2800,
         currencyCode: 'EUR',
         display: '€28.00',
+        kind: 'fixed',
       },
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_disintegration-black-vinyl-lp_standard',
@@ -373,6 +378,45 @@ describe('checkout use cases', () => {
           amountMinor: 3200,
           currencyCode: 'EUR',
           display: '€32.00',
+          kind: 'fixed',
+        },
+      }),
+    );
+  });
+
+  it('reads pay-what-you-want Store Offers from Stripe custom prices', async () => {
+    catalogReconciler.prices.set(
+      storeItem.variantId,
+      createCatalogPrice({
+        customUnitAmount: {
+          maximumAmountMinor: 10000,
+          minimumAmountMinor: 100,
+          presetAmountMinor: 500,
+        },
+        priceId: 'price_test_pay_what_you_want',
+        priceKind: 'pay_what_you_want',
+        storeItem,
+      }),
+    );
+
+    await expect(
+      readStoreOffer(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        storeItem.storeItemSlug,
+      ),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        price: {
+          currencyCode: 'EUR',
+          display: 'Pay what you want',
+          kind: 'pay_what_you_want',
+          maximumAmountMinor: 10000,
+          minimumAmountMinor: 100,
+          presetAmountMinor: 500,
         },
       }),
     );
@@ -636,6 +680,57 @@ describe('checkout use cases', () => {
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
       }),
     );
+  });
+
+  it('starts hosted Checkout for pay-what-you-want items using only the Stripe Price ID', async () => {
+    catalogReconciler.prices.set(
+      storeItem.variantId,
+      createCatalogPrice({
+        customUnitAmount: {
+          maximumAmountMinor: 10000,
+          minimumAmountMinor: 100,
+          presetAmountMinor: 500,
+        },
+        priceId: 'price_test_pay_what_you_want',
+        priceKind: 'pay_what_you_want',
+        storeItem,
+      }),
+    );
+
+    await expect(
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+      ),
+    ).resolves.toEqual({
+      checkoutSessionId: 'cs_test_123',
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
+    });
+
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledWith({
+      lineItems: [
+        {
+          quantity: 1,
+          storeItemSlug: 'disintegration-black-vinyl-lp',
+          stripePriceId: 'price_test_pay_what_you_want',
+          variantId: 'variant_disintegration-black-vinyl-lp_standard',
+        },
+      ],
+      cancelUrl: 'https://example.com/checkout',
+      newsletterOptIn: false,
+      successUrl: 'https://example.com/return',
+    });
   });
 
   it('starts hosted Checkout with requested CartQuantity and fixed Stripe quantity', async () => {

@@ -56,7 +56,72 @@
           "price": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/PublicStoreOfferPrice"
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "currencyCode": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3
+                  },
+                  "display": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "fixed"
+                    ]
+                  }
+                },
+                "required": [
+                  "amountMinor",
+                  "currencyCode",
+                  "display",
+                  "kind"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "currencyCode": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 3
+                  },
+                  "display": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "pay_what_you_want"
+                    ]
+                  },
+                  "maximumAmountMinor": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "minimumAmountMinor": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "presetAmountMinor": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "currencyCode",
+                  "display",
+                  "kind",
+                  "maximumAmountMinor",
+                  "minimumAmountMinor",
+                  "presetAmountMinor"
+                ]
               },
               {
                 "type": "null"
@@ -96,28 +161,6 @@
         "required": [
           "label",
           "status"
-        ]
-      },
-      "PublicStoreOfferPrice": {
-        "type": "object",
-        "properties": {
-          "amountMinor": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "currencyCode": {
-            "type": "string",
-            "minLength": 3,
-            "maxLength": 3
-          },
-          "display": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "amountMinor",
-          "currencyCode",
-          "display"
         ]
       },
       "PublicCommerceError": {

@@ -83,8 +83,10 @@ export class CatalogReconciler {
           active: snapshot.priceActive,
           amountMinor: snapshot.amountMinor,
           currencyCode: snapshot.currencyCode,
+          customUnitAmount: null,
           lookupKey: snapshot.stripeLookupKey,
           metadata,
+          priceKind: 'fixed',
           priceId: snapshot.stripePriceId,
           productActive: snapshot.productActive,
           productDescription: null,
@@ -120,6 +122,7 @@ export class CatalogReconciler {
     const candidates = uniquePrices([...lookupPrices, ...metadataPrices, ...(mappedPrice ? [mappedPrice] : [])]);
     const issues: CatalogSyncIssue[] = [];
     const actions: CatalogSyncAction[] = [];
+    const expectedPrice = options.expectedPrice ? normalizeExpectedPrice(options.expectedPrice) : null;
 
     if (mapping && isPlaceholderStripePriceId(mapping.stripePriceId, this.dependencies.environment)) {
       issues.push(createIssue(storeItem, 'placeholder_price_mapping', 'D1 points at a placeholder Stripe Price ID.'));
@@ -154,25 +157,20 @@ export class CatalogReconciler {
 
     let resolvedPrice = activeMatches.length === 1 ? activeMatches[0]! : null;
 
-    if (
-      resolvedPrice &&
-      options.expectedPrice &&
-      issues.length === 0 &&
-      !matchesExpectedPrice(resolvedPrice, options.expectedPrice)
-    ) {
+    if (resolvedPrice && expectedPrice && issues.length === 0 && !matchesExpectedPrice(resolvedPrice, expectedPrice)) {
       actions.push(createArchivePriceAction(this.dependencies.environment, storeItem.variantId, resolvedPrice.priceId));
       const priceInput = createCatalogPriceInput(
         storeItem,
         lookupKey,
         metadata,
-        options.expectedPrice,
+        expectedPrice,
         options.productProjection,
       );
       const createContext = createMutationContext(
         this.dependencies.environment,
         storeItem.variantId,
         'create_catalog_price',
-        createCatalogPriceMutationIdentity(options.expectedPrice, options.productProjection ?? null),
+        createCatalogPriceMutationIdentity(expectedPrice, options.productProjection ?? null),
         priceInput,
       );
       if (options.apply) {
@@ -183,21 +181,21 @@ export class CatalogReconciler {
       }
     }
 
-    if (!resolvedPrice && options.expectedPrice && issues.length === 0) {
+    if (!resolvedPrice && expectedPrice && issues.length === 0) {
       const repairIdentity =
         activeMatches.length === 0 ? createPriceRepairMutationIdentity(mappedPrice, mapping, snapshot) : null;
       const priceInput = createCatalogPriceInput(
         storeItem,
         lookupKey,
         metadata,
-        options.expectedPrice,
+        expectedPrice,
         options.productProjection,
       );
       const createContext = createMutationContext(
         this.dependencies.environment,
         storeItem.variantId,
         'create_catalog_price',
-        createCatalogPriceMutationIdentity(options.expectedPrice, options.productProjection ?? null, repairIdentity),
+        createCatalogPriceMutationIdentity(expectedPrice, options.productProjection ?? null, repairIdentity),
         priceInput,
       );
       if (options.apply) {
@@ -237,27 +235,10 @@ export class CatalogReconciler {
         issues.push(createIssue(storeItem, 'wrong_variant_identity', 'Resolved Stripe Price metadata is wrong.'));
       }
 
-      if (options.expectedPrice && resolvedPrice.amountMinor !== options.expectedPrice.amountMinor) {
-        issues.push(
-          createIssue(
-            storeItem,
-            'wrong_amount',
-            `Expected ${options.expectedPrice.amountMinor}; Stripe has ${resolvedPrice.amountMinor ?? 'unknown'}.`,
-          ),
-        );
-      }
-
-      if (
-        options.expectedPrice &&
-        resolvedPrice.currencyCode?.toUpperCase() !== options.expectedPrice.currencyCode.toUpperCase()
-      ) {
-        issues.push(
-          createIssue(
-            storeItem,
-            'wrong_currency',
-            `Expected ${options.expectedPrice.currencyCode}; Stripe has ${resolvedPrice.currencyCode ?? 'unknown'}.`,
-          ),
-        );
+      if (expectedPrice) {
+        for (const priceIssue of findExpectedPriceIssues(resolvedPrice, expectedPrice)) {
+          issues.push(createIssue(storeItem, priceIssue.code, priceIssue.detail));
+        }
       }
 
       if (mapping?.stripePriceId !== resolvedPrice.priceId) {
@@ -319,12 +300,13 @@ export class CatalogReconciler {
       }
 
       if (
-        !snapshot ||
-        snapshot.amountMinor !== resolvedPrice.amountMinor ||
-        snapshot.currencyCode.toUpperCase() !== resolvedPrice.currencyCode?.toUpperCase() ||
-        snapshot.stripePriceId !== resolvedPrice.priceId ||
-        snapshot.stripeLookupKey !== lookupKey ||
-        snapshot.freshUntil.getTime() <= now.getTime()
+        resolvedPrice.priceKind === 'fixed' &&
+        (!snapshot ||
+          snapshot.amountMinor !== resolvedPrice.amountMinor ||
+          snapshot.currencyCode.toUpperCase() !== resolvedPrice.currencyCode?.toUpperCase() ||
+          snapshot.stripePriceId !== resolvedPrice.priceId ||
+          snapshot.stripeLookupKey !== lookupKey ||
+          snapshot.freshUntil.getTime() <= now.getTime())
       ) {
         actions.push({ kind: 'update_snapshot' });
       }
@@ -335,7 +317,7 @@ export class CatalogReconciler {
 
       if (
         snapshot &&
-        (snapshot.amountMinor !== resolvedPrice.amountMinor ||
+        ((resolvedPrice.priceKind === 'fixed' && snapshot.amountMinor !== resolvedPrice.amountMinor) ||
           snapshot.currencyCode.toUpperCase() !== resolvedPrice.currencyCode?.toUpperCase() ||
           snapshot.stripePriceId !== resolvedPrice.priceId)
       ) {
@@ -569,7 +551,9 @@ function describePriceCandidates(
         redactStripeObjectId(price.priceId),
         `active=${price.active}`,
         `productActive=${price.productActive}`,
+        `kind=${price.priceKind}`,
         `amount=${price.amountMinor ?? 'unknown'}`,
+        `custom=${describeCustomUnitAmount(price.customUnitAmount)}`,
         `currency=${price.currencyCode ?? 'unknown'}`,
         `lookup=${price.lookupKey === lookupKey ? 'match' : price.lookupKey ? 'other' : 'missing'}`,
         `priceMetadata=${hasMetadata(price.metadata, metadata) ? 'match' : 'missing'}`,
@@ -584,10 +568,64 @@ function describePriceCandidates(
 }
 
 function matchesExpectedPrice(price: StripeCatalogPrice, expectedPrice: StripeCatalogExpectedPrice): boolean {
-  return (
-    price.amountMinor === expectedPrice.amountMinor &&
-    price.currencyCode?.toUpperCase() === expectedPrice.currencyCode.toUpperCase()
-  );
+  return findExpectedPriceIssues(price, expectedPrice).length === 0;
+}
+
+function normalizeExpectedPrice(expectedPrice: StripeCatalogExpectedPrice): StripeCatalogExpectedPrice {
+  if ((expectedPrice as { kind?: string }).kind) {
+    return expectedPrice;
+  }
+
+  return {
+    ...expectedPrice,
+    kind: 'fixed',
+  } as StripeCatalogExpectedPrice;
+}
+
+function findExpectedPriceIssues(
+  price: StripeCatalogPrice,
+  expectedPrice: StripeCatalogExpectedPrice,
+): Array<{ code: CatalogSyncIssue['code']; detail: string }> {
+  const issues: Array<{ code: CatalogSyncIssue['code']; detail: string }> = [];
+
+  if (price.priceKind !== expectedPrice.kind) {
+    issues.push({
+      code: 'wrong_price_kind',
+      detail: `Expected ${describeExpectedPriceKind(expectedPrice)}; Stripe has ${price.priceKind}.`,
+    });
+  }
+
+  if (price.currencyCode?.toUpperCase() !== expectedPrice.currencyCode.toUpperCase()) {
+    issues.push({
+      code: 'wrong_currency',
+      detail: `Expected ${expectedPrice.currencyCode}; Stripe has ${price.currencyCode ?? 'unknown'}.`,
+    });
+  }
+
+  if (expectedPrice.kind === 'fixed') {
+    if (price.amountMinor !== expectedPrice.amountMinor) {
+      issues.push({
+        code: 'wrong_amount',
+        detail: `Expected ${expectedPrice.amountMinor}; Stripe has ${price.amountMinor ?? 'unknown'}.`,
+      });
+    }
+    return issues;
+  }
+
+  if (
+    price.customUnitAmount?.minimumAmountMinor !== expectedPrice.minimumAmountMinor ||
+    price.customUnitAmount?.presetAmountMinor !== expectedPrice.presetAmountMinor ||
+    price.customUnitAmount?.maximumAmountMinor !== expectedPrice.maximumAmountMinor
+  ) {
+    issues.push({
+      code: 'wrong_custom_amount',
+      detail: `Expected ${describeExpectedCustomAmount(expectedPrice)}; Stripe has ${describeCustomUnitAmount(
+        price.customUnitAmount,
+      )}.`,
+    });
+  }
+
+  return issues;
 }
 
 export function hasBlockingCatalogIssue(issues: CatalogSyncIssue[]): boolean {
@@ -605,7 +643,9 @@ export function hasBlockingCatalogIssue(issues: CatalogSyncIssue[]): boolean {
       'placeholder_price_mapping',
       'product_projection_mismatch',
       'wrong_amount',
+      'wrong_custom_amount',
       'wrong_currency',
+      'wrong_price_kind',
       'wrong_variant_identity',
     ].includes(issue.code),
   );
@@ -701,7 +741,7 @@ function createCatalogPriceInput(
   productProjection: StripeCatalogProductProjection | null | undefined,
 ) {
   return {
-    amountMinor: expectedPrice.amountMinor,
+    ...expectedPrice,
     currencyCode: expectedPrice.currencyCode,
     lookupKey,
     metadata,
@@ -788,12 +828,30 @@ function createCatalogPriceMutationIdentity(
   const baseIdentity = expectedPrice.revision
     ? `revision_${expectedPrice.revision}`
     : createStripeCatalogRequestShapeFingerprint({
-        amountMinor: expectedPrice.amountMinor,
+        expectedPrice,
         currencyCode: expectedPrice.currencyCode.toUpperCase(),
         productProjection,
       });
 
   return repairIdentity ? `${baseIdentity}:${repairIdentity}` : baseIdentity;
+}
+
+function describeExpectedPriceKind(price: StripeCatalogExpectedPrice): string {
+  return price.kind === 'fixed' ? 'fixed' : 'pay_what_you_want';
+}
+
+function describeExpectedCustomAmount(
+  price: Extract<StripeCatalogExpectedPrice, { kind: 'pay_what_you_want' }>,
+): string {
+  return `min=${price.minimumAmountMinor},preset=${price.presetAmountMinor},max=${price.maximumAmountMinor}`;
+}
+
+function describeCustomUnitAmount(amount: StripeCatalogPrice['customUnitAmount']): string {
+  return amount
+    ? `min=${amount.minimumAmountMinor ?? 'unknown'},preset=${amount.presetAmountMinor ?? 'unknown'},max=${
+        amount.maximumAmountMinor ?? 'unknown'
+      }`
+    : 'none';
 }
 
 function createPriceRepairMutationIdentity(

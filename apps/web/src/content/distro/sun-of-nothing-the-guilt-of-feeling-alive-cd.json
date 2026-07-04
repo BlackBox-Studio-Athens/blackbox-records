@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "The guilt of feeling alive",
+  "group": "CDs",
+  "artist_or_label": "Sun of Nothing",
+  "image": "sun-of-nothing-the-guilt-of-feeling-alive-cd-front-mockup.jpg",
+  "image_alt": "The guilt of feeling alive CD front mockup",
+  "summary": "CD edition of The guilt of feeling alive by Sun of Nothing in the BlackBox Records distro catalog.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 76
+}

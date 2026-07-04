@@ -11,7 +11,7 @@ import { STORE_CART_ADD_ITEM_EVENT, type CartLineItemSnapshot } from '@/lib/stor
 
 export type StoreItemCartSeed = Omit<
   CartLineItemSnapshot,
-  'availabilityLabel' | 'priceAmountMinor' | 'priceCurrencyCode' | 'priceDisplay' | 'variantId'
+  'availabilityLabel' | 'priceAmountMinor' | 'priceCurrencyCode' | 'priceDisplay' | 'priceKind' | 'variantId'
 > & {
   availabilityLabel: string;
   variantId: string | null;
@@ -44,13 +44,16 @@ export function createCartLineItemSnapshotFromWorkerOffer(
   if (!cartSeed || !offer.canCheckout || !offer.variantId.trim() || !offer.price) {
     return null;
   }
+  const price = offer.price;
+  const priceKind = price.kind ?? 'fixed';
 
   return {
     ...cartSeed,
     availabilityLabel: offer.availability.label,
-    priceAmountMinor: offer.price.amountMinor,
-    priceCurrencyCode: offer.price.currencyCode,
-    priceDisplay: offer.price.display,
+    priceAmountMinor: priceKind === 'fixed' && 'amountMinor' in price ? price.amountMinor : null,
+    priceCurrencyCode: price.currencyCode,
+    priceDisplay: price.display,
+    priceKind,
     storeItemSlug: offer.storeItemSlug,
     variantId: offer.variantId,
   };

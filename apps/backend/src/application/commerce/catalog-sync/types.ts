@@ -9,18 +9,38 @@ import type { CatalogDriftCategory } from './field-ownership';
 export type StripeCatalogEnvironment = 'local' | 'prd' | 'uat';
 
 export type StoreOfferPrice = {
-  amountMinor: number;
   currencyCode: string;
   display: string;
+} & (
+  | {
+      amountMinor: number;
+      kind: 'fixed';
+    }
+  | {
+      kind: 'pay_what_you_want';
+      maximumAmountMinor: number;
+      minimumAmountMinor: number;
+      presetAmountMinor: number;
+    }
+);
+
+export type StripeCatalogPriceKind = StoreOfferPrice['kind'];
+
+export type StripeCatalogCustomUnitAmount = {
+  maximumAmountMinor: number | null;
+  minimumAmountMinor: number | null;
+  presetAmountMinor: number | null;
 };
 
 export type StripeCatalogPrice = {
   active: boolean;
   amountMinor: number | null;
   currencyCode: string | null;
+  customUnitAmount: StripeCatalogCustomUnitAmount | null;
   idempotentReplayed?: boolean | null;
   lookupKey: string | null;
   metadata: Record<string, string>;
+  priceKind: StripeCatalogPriceKind;
   productActive: boolean;
   productDescription: string | null;
   productId: string | null;
@@ -42,16 +62,36 @@ export type StripeCatalogProduct = {
 };
 
 export type StripeCatalogExpectedPrice = {
-  amountMinor: number;
   currencyCode: string;
   revision?: string;
-};
+} & (
+  | {
+      amountMinor: number;
+      kind: 'fixed';
+    }
+  | {
+      kind: 'pay_what_you_want';
+      maximumAmountMinor: number;
+      minimumAmountMinor: number;
+      presetAmountMinor: number;
+    }
+);
 
 export type DesiredPrice = {
-  amountMinor: number;
   currencyCode: string;
   revision: string;
-};
+} & (
+  | {
+      amountMinor: number;
+      kind: 'fixed';
+    }
+  | {
+      kind: 'pay_what_you_want';
+      maximumAmountMinor: number;
+      minimumAmountMinor: number;
+      presetAmountMinor: number;
+    }
+);
 
 export type StripeCatalogProductProjection = {
   description: string;
@@ -137,13 +177,23 @@ export type StripeCatalogIdentityMetadata = {
 };
 
 export type StripeCatalogPriceCreateInput = {
-  amountMinor: number;
   currencyCode: string;
   lookupKey: string;
   metadata: StripeCatalogIdentityMetadata;
   productName: string;
   productProjection?: StripeCatalogProductProjection | null;
-};
+} & (
+  | {
+      amountMinor: number;
+      kind: 'fixed';
+    }
+  | {
+      kind: 'pay_what_you_want';
+      maximumAmountMinor: number;
+      minimumAmountMinor: number;
+      presetAmountMinor: number;
+    }
+);
 
 export type StripeCatalogProductProjectionUpdateInput = {
   projection: StripeCatalogProductProjection;
@@ -171,7 +221,9 @@ export type CatalogSyncIssueCode =
   | 'snapshot_mismatch'
   | 'snapshot_stale'
   | 'wrong_amount'
+  | 'wrong_custom_amount'
   | 'wrong_currency'
+  | 'wrong_price_kind'
   | 'wrong_variant_identity';
 
 export type CatalogSyncIssue = {

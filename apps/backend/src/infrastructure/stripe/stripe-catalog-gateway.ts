@@ -113,11 +113,7 @@ export class StripeCatalogGatewayClient implements StripeCatalogGateway {
     context?: StripeCatalogMutationContext,
   ): Promise<StripeCatalogPrice> {
     const existingPrice = (await this.listPricesByMetadata(input.metadata)).find(
-      (price) =>
-        price.active &&
-        price.productActive &&
-        price.amountMinor === input.amountMinor &&
-        price.currencyCode?.toUpperCase() === input.currencyCode.toUpperCase(),
+      (price) => price.active && price.productActive && matchesCatalogPriceInput(price, input),
     );
 
     if (existingPrice) {
@@ -125,11 +121,7 @@ export class StripeCatalogGatewayClient implements StripeCatalogGateway {
     }
 
     const inactivePrice = (await this.listInactivePricesByMetadata(input.metadata)).find(
-      (price) =>
-        (!price.active || !price.productActive) &&
-        price.amountMinor === input.amountMinor &&
-        price.currencyCode?.toUpperCase() === input.currencyCode.toUpperCase() &&
-        price.productId,
+      (price) => (!price.active || !price.productActive) && matchesCatalogPriceInput(price, input) && price.productId,
     );
 
     if (inactivePrice) {
@@ -154,16 +146,7 @@ export class StripeCatalogGatewayClient implements StripeCatalogGateway {
       toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, 'product')),
     );
     const price = (await this.stripe.prices.create(
-      {
-        active: true,
-        currency: input.currencyCode.toLowerCase(),
-        lookup_key: input.lookupKey,
-        metadata: input.metadata,
-        product: product.id,
-        transfer_lookup_key: true,
-        unit_amount: input.amountMinor,
-        expand: ['product'],
-      },
+      createStripePriceCreateParams(input, product.id),
       toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, 'price')),
     )) as StripePriceWithExpandedProduct;
 
@@ -338,9 +321,11 @@ function toCatalogPrice(price: StripePriceWithExpandedProduct): StripeCatalogPri
     active: price.active,
     amountMinor: price.unit_amount,
     currencyCode: price.currency?.toUpperCase() ?? null,
+    customUnitAmount: toCatalogCustomUnitAmount(price.custom_unit_amount),
     idempotentReplayed: getStripeIdempotentReplayed(price),
     lookupKey: price.lookup_key,
     metadata: normalizeMetadata(price.metadata),
+    priceKind: price.custom_unit_amount ? 'pay_what_you_want' : 'fixed',
     priceId: parseStripePriceId(price.id),
     productActive: product?.active ?? false,
     productDescription: product?.description ?? null,
@@ -350,6 +335,68 @@ function toCatalogPrice(price: StripePriceWithExpandedProduct): StripeCatalogPri
     productName: product?.name ?? null,
     productTaxCode: normalizeProductTaxCode(product?.tax_code),
     requestId: getStripeRequestId(price),
+  };
+}
+
+function createStripePriceCreateParams(
+  input: StripeCatalogPriceCreateInput,
+  productId: string,
+): Stripe.PriceCreateParams {
+  const baseParams = {
+    active: true,
+    currency: input.currencyCode.toLowerCase(),
+    expand: ['product'],
+    lookup_key: input.lookupKey,
+    metadata: input.metadata,
+    product: productId,
+    transfer_lookup_key: true,
+  } satisfies Omit<Stripe.PriceCreateParams, 'custom_unit_amount' | 'unit_amount'>;
+
+  if (input.kind === 'pay_what_you_want') {
+    return {
+      ...baseParams,
+      custom_unit_amount: {
+        enabled: true,
+        maximum: input.maximumAmountMinor,
+        minimum: input.minimumAmountMinor,
+        preset: input.presetAmountMinor,
+      },
+    };
+  }
+
+  return {
+    ...baseParams,
+    unit_amount: input.amountMinor,
+  };
+}
+
+function matchesCatalogPriceInput(price: StripeCatalogPrice, input: StripeCatalogPriceCreateInput): boolean {
+  if (price.priceKind !== input.kind || price.currencyCode?.toUpperCase() !== input.currencyCode.toUpperCase()) {
+    return false;
+  }
+
+  if (input.kind === 'fixed') {
+    return price.amountMinor === input.amountMinor;
+  }
+
+  return (
+    price.customUnitAmount?.minimumAmountMinor === input.minimumAmountMinor &&
+    price.customUnitAmount?.presetAmountMinor === input.presetAmountMinor &&
+    price.customUnitAmount?.maximumAmountMinor === input.maximumAmountMinor
+  );
+}
+
+function toCatalogCustomUnitAmount(
+  customUnitAmount: Stripe.Price.CustomUnitAmount | null,
+): StripeCatalogPrice['customUnitAmount'] {
+  if (!customUnitAmount) {
+    return null;
+  }
+
+  return {
+    maximumAmountMinor: customUnitAmount.maximum ?? null,
+    minimumAmountMinor: customUnitAmount.minimum ?? null,
+    presetAmountMinor: customUnitAmount.preset ?? null,
   };
 }
 

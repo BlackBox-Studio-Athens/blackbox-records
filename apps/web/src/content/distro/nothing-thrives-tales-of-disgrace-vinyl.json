@@ -1,0 +1,12 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Tales of disgrace",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Nothing Thrives",
+  "image": "nothing-thrives-tales-of-disgrace-vinyl.webp",
+  "image_alt": "Tales of disgrace Vinyl front mockup",
+  "summary": "Vinyl edition of Tales of disgrace by Nothing Thrives in the BlackBox Records distro catalog.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 69
+}
