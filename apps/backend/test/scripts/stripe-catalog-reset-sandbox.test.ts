@@ -81,8 +81,18 @@ describe('stripe sandbox catalog reset', () => {
     await expect(
       createResetPlan('uat', stripe as unknown as Parameters<typeof createResetPlan>[1], [contract]),
     ).resolves.toEqual({
-      pricesToDeactivate: ['price_blackboxOwned1111', 'price_legacyOwned4444', 'price_lookupOwned2222'],
-      productsToDeactivate: ['prod_blackboxOwned1111', 'prod_legacyOwned4444', 'prod_lookupOwned2222'],
+      pricesToDeactivate: [
+        'price_blackboxOwned1111',
+        'price_legacyMetadata5555',
+        'price_legacyOwned4444',
+        'price_lookupOwned2222',
+      ],
+      productsToDeactivate: [
+        'prod_blackboxOwned1111',
+        'prod_legacyMetadata6666',
+        'prod_legacyOwned4444',
+        'prod_lookupOwned2222',
+      ],
     });
   });
 
@@ -94,7 +104,7 @@ describe('stripe sandbox catalog reset', () => {
       stripe as unknown as Parameters<typeof resetStripeSandboxCatalog>[1],
       [contract],
     );
-    expect(dryRunPlan.pricesToDeactivate).toHaveLength(3);
+    expect(dryRunPlan.pricesToDeactivate).toHaveLength(4);
     expect(stripe.prices.update).not.toHaveBeenCalled();
     expect(stripe.products.update).not.toHaveBeenCalled();
 
@@ -107,12 +117,20 @@ describe('stripe sandbox catalog reset', () => {
     expect(stripe.prices.update).toHaveBeenCalledWith(
       'price_blackboxOwned1111',
       { active: false },
-      { idempotencyKey: 'blackbox-sandbox-catalog-reset-price-price_blackboxOwned1111' },
+      {
+        idempotencyKey: expect.stringMatching(
+          /^blackbox:catalog:uat:catalog-reset:reset_price:price:shape_v[a-f0-9]{32}$/,
+        ),
+      },
     );
     expect(stripe.products.update).toHaveBeenCalledWith(
       'prod_blackboxOwned1111',
       { active: false },
-      { idempotencyKey: 'blackbox-sandbox-catalog-reset-product-prod_blackboxOwned1111' },
+      {
+        idempotencyKey: expect.stringMatching(
+          /^blackbox:catalog:uat:catalog-reset:reset_product:product:shape_v[a-f0-9]{32}$/,
+        ),
+      },
     );
   });
 
@@ -188,6 +206,23 @@ function createFakeStripeClient() {
               name: 'BlackBox UAT - Disintegration',
             },
           },
+          {
+            active: true,
+            id: 'price_legacyMetadata5555',
+            lookup_key: null,
+            metadata: {
+              appEnv: 'sandbox',
+              sourceId: 'afterglow-tape',
+              sourceKind: 'distro',
+              storeItemSlug: 'afterglow-tape',
+              variantId: 'variant_afterglow-tape_standard',
+            },
+            product: {
+              deleted: false,
+              id: 'prod_legacyMetadata5555',
+              metadata: {},
+            },
+          },
         ],
       })),
       update: vi.fn(async () => ({})),
@@ -218,6 +253,18 @@ function createFakeStripeClient() {
             id: 'prod_unrelated3333',
             metadata: {},
             name: 'Unrelated Product',
+          },
+          {
+            active: true,
+            id: 'prod_legacyMetadata6666',
+            metadata: {
+              appEnv: 'sandbox',
+              sourceId: 'primal-ephemeral',
+              sourceKind: 'distro',
+              storeItemSlug: 'primal-ephemeral',
+              variantId: 'variant_primal-ephemeral_standard',
+            },
+            name: 'Legacy Metadata Product',
           },
         ],
       })),

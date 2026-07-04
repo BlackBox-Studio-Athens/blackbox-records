@@ -66,6 +66,55 @@ Catalog Field Ownership keeps UAT alignment explicit:
 - `pnpm stripe:catalog:verify --env uat --apply` is UAT-only and should follow a reviewed dry-run plan.
 - Full-catalog sandbox reset is a deactivation flow, not hard deletion. It only targets Stripe test-mode objects identified by BlackBox sandbox metadata, lookup keys, or documented catalog-derived legacy sandbox names.
 
+## Catalog Mutation Forensics
+
+Use this when Stripe test-mode Products or Prices are unexpectedly created, reactivated, archived, or moved to a different lookup key. This is separate from Dashboard price replacement and webhook propagation; that active change lives in [`openspec/changes/stripe-dashboard-price-webhook-propagation/`](../openspec/changes/stripe-dashboard-price-webhook-propagation/).
+
+Start with a local report:
+
+```sh
+pnpm stripe:catalog:verify --env uat
+```
+
+The report includes Product Environment, Store Item identity, lookup key, planned action kind, idempotency key, request shape, request ID when Stripe exposes it, replay status when Stripe exposes it, drift classification, and redacted Stripe object IDs. It must not print Stripe secrets, webhook signatures, raw provider payloads, card data, shopper PII, or full `prod_...`, `price_...`, `evt_...`, or `we_...` IDs.
+
+In Stripe Workbench or Dashboard Events, start with these filters around the suspected timestamp:
+
+```text
+POST /v1/products
+POST /v1/prices
+product.created
+price.created
+product.*
+price.*
+```
+
+Capture these fields before cleanup:
+
+- timestamp and event type
+- redacted Product or Price ID
+- lookup key and metadata identity (`appEnv`, `sourceId`, `sourceKind`, `storeItemSlug`, `variantId`)
+- `api_version`
+- `request.id`
+- `request.idempotency_key`
+- API key label when visible
+- source, endpoint, method, IP when visible, and status
+
+Stripe Events API full-payload access is limited to 30 days. Keep older operator evidence as ignored local exports under `.codex-artifacts/` or another ignored evidence path, redacted before sharing. Stripe Search may help with diagnostics, drift discovery, duplicate scans, or backfill; it does not replace current-state checkout reconciliation by lookup key, metadata, and D1 mapping.
+
+Product IDs remain Stripe-generated for existing catalog objects. Do not switch to deterministic Product IDs unless a future full recreate/import explicitly approves it and covers collision behavior.
+
+Stripe idempotency keys are retry protection for mutating `POST` requests, not long-term audit storage, actor attribution, or an independent-run lock. Catalog tooling keeps Stripe SDK retry behavior at the default client setting and relies on verify dry-runs, run identity, and operator review for independent apply runs.
+
+Cleanup order:
+
+1. Run `pnpm stripe:catalog:verify --env uat` and review the dry-run report.
+2. Capture the Workbench/Event fields above before mutating anything.
+3. Classify ownership and environment. Cleanup may target only confirmed BlackBox-owned UAT test-mode objects.
+4. Refuse unclassified objects and foreign-environment objects.
+5. Run the explicit cleanup/apply command only after dry-run review.
+6. Rerun `pnpm stripe:catalog:verify --env uat` and confirm current active catalog state.
+
 ## Full Catalog UAT Alignment
 
 The UAT catalog is generated from current Astro Store Item content. The placeholder `___.json` distro file remains excluded by the projection loader until it becomes an explicit content decision.

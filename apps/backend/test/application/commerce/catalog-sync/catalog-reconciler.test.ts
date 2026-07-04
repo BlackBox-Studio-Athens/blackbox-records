@@ -3,6 +3,9 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   CatalogReconciler,
   createStripeCatalogLookupKey,
+  createStripeCatalogMetadata,
+  createStripeCatalogMutationContext,
+  deriveStripeCatalogChildMutationContext,
   type StripeCatalogEnvironment,
   type StripeCatalogGateway,
   type StripeCatalogIdentityMetadata,
@@ -104,6 +107,17 @@ class InMemoryStripeCatalog implements StripeCatalogGateway {
     return archived;
   });
   public readonly prices = new Map<string, StripeCatalogPrice>();
+  public readonly products = new Map<
+    string,
+    {
+      active: boolean;
+      idempotentReplayed?: boolean | null;
+      metadata: Record<string, string>;
+      name: string | null;
+      productId: string;
+      requestId?: string | null;
+    }
+  >();
   public readonly updatePriceMetadata = vi.fn(
     async (priceId: string, metadata: StripeCatalogIdentityMetadata, _context?: StripeCatalogMutationContext) => {
       const price = this.prices.get(priceId);
@@ -130,7 +144,7 @@ class InMemoryStripeCatalog implements StripeCatalogGateway {
         throw new Error(`Missing product ${productId}.`);
       }
 
-      this.prices.set(price.priceId, {
+      const updatedPrice = {
         ...price,
         productDescription: input.projection.description,
         productImages: input.projection.imageUrls,
@@ -140,7 +154,17 @@ class InMemoryStripeCatalog implements StripeCatalogGateway {
         },
         productName: input.projection.name,
         productTaxCode: input.projection.taxCode,
-      });
+      };
+      this.prices.set(price.priceId, updatedPrice);
+
+      return {
+        active: updatedPrice.productActive,
+        idempotentReplayed: true,
+        metadata: updatedPrice.productMetadata,
+        name: updatedPrice.productName,
+        productId,
+        requestId: 'req_update_product_projection',
+      };
     },
   );
 
@@ -171,6 +195,32 @@ class InMemoryStripeCatalog implements StripeCatalogGateway {
     return [...this.prices.values()].filter(
       (price) => hasMetadata(price.metadata, metadata) || hasMetadata(price.productMetadata, metadata),
     );
+  }
+
+  public async listOwnedPrices(_environment: StripeCatalogEnvironment): Promise<StripeCatalogPrice[]> {
+    return [...this.prices.values()].filter(
+      (price) =>
+        price.active &&
+        (price.lookupKey?.startsWith('blackbox:') ||
+          hasCatalogMetadataHint(price.metadata) ||
+          hasCatalogMetadataHint(price.productMetadata)),
+    );
+  }
+
+  public async listOwnedProducts(_environment: StripeCatalogEnvironment) {
+    const priceProducts = [...this.prices.values()]
+      .filter((price) => price.productActive && price.productId && hasCatalogMetadataHint(price.productMetadata))
+      .map((price) => ({
+        active: price.productActive,
+        metadata: price.productMetadata,
+        name: price.productName,
+        productId: price.productId!,
+      }));
+
+    return [
+      ...this.products.values().filter((product) => hasCatalogMetadataHint(product.metadata)),
+      ...priceProducts.filter((priceProduct) => !this.products.has(priceProduct.productId)),
+    ];
   }
 
   public async retrievePrice(priceId: string): Promise<StripeCatalogPrice | null> {
@@ -247,6 +297,88 @@ function hasMetadata(candidate: Record<string, string>, expected: Record<string,
   return Object.entries(expected).every(([key, value]) => candidate[key] === value);
 }
 
+function hasCatalogMetadataHint(metadata: Record<string, string>): boolean {
+  return Boolean(
+    metadata.appEnv || metadata.sourceId || metadata.sourceKind || metadata.storeItemSlug || metadata.variantId,
+  );
+}
+
+describe('Stripe catalog identity helpers', () => {
+  it('builds canonical lookup keys and required metadata for UAT and PRD', () => {
+    expect(createStripeCatalogLookupKey('uat', storeItem)).toBe(
+      'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+    );
+    expect(createStripeCatalogLookupKey('prd', storeItem)).toBe(
+      'blackbox:prd:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+    );
+    expect(createStripeCatalogMetadata('uat', storeItem)).toEqual({
+      appEnv: 'uat',
+      sourceId: 'disintegration',
+      sourceKind: 'release',
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+    });
+  });
+
+  it('builds deterministic idempotency keys that change with logical mutation identity', () => {
+    const baseInput = {
+      action: 'create_catalog_price' as const,
+      environment: 'uat' as const,
+      identity: 'revision_disintegration-black-vinyl-lp-2800-eur',
+      requestShape: {
+        amountMinor: 2800,
+        currencyCode: 'EUR',
+        productProjection: { name: 'BlackBox Records - Disintegration - Black Vinyl LP' },
+      },
+      variantId: storeItem.variantId,
+    };
+    const first = createStripeCatalogMutationContext(baseInput);
+    const same = createStripeCatalogMutationContext(baseInput);
+    const changedAmount = createStripeCatalogMutationContext({
+      ...baseInput,
+      requestShape: { ...baseInput.requestShape, amountMinor: 2900 },
+    });
+    const changedCurrency = createStripeCatalogMutationContext({
+      ...baseInput,
+      requestShape: { ...baseInput.requestShape, currencyCode: 'USD' },
+    });
+    const changedProductProjection = createStripeCatalogMutationContext({
+      ...baseInput,
+      requestShape: {
+        ...baseInput.requestShape,
+        productProjection: { name: 'BlackBox Records - Disintegration - White Vinyl LP' },
+      },
+    });
+    const changedPurpose = createStripeCatalogMutationContext({
+      ...baseInput,
+      action: 'archive_price',
+      identity: 'price_test_disintegration_2800',
+    });
+    const changedRepairTarget = createStripeCatalogMutationContext({
+      ...baseInput,
+      identity: 'revision_disintegration-black-vinyl-lp-2800-eur:replace_mapping_price_old',
+    });
+    const longKey = createStripeCatalogMutationContext({
+      ...baseInput,
+      identity: 'x'.repeat(400),
+      variantId: `variant_${'long'.repeat(100)}`,
+    });
+
+    expect(first).toEqual(same);
+    expect(first.idempotencyKey.length).toBeLessThanOrEqual(255);
+    expect(longKey.idempotencyKey.length).toBeLessThanOrEqual(255);
+    expect(changedAmount.idempotencyKey).not.toBe(first.idempotencyKey);
+    expect(changedCurrency.idempotencyKey).not.toBe(first.idempotencyKey);
+    expect(changedProductProjection.idempotencyKey).not.toBe(first.idempotencyKey);
+    expect(changedPurpose.idempotencyKey).not.toBe(first.idempotencyKey);
+    expect(changedRepairTarget.idempotencyKey).not.toBe(first.idempotencyKey);
+    expect(deriveStripeCatalogChildMutationContext(first, 'price')?.idempotencyKey).toBe(
+      `${first.idempotencyKey}:price`,
+    );
+    expect(deriveStripeCatalogChildMutationContext(longKey, 'price')?.idempotencyKey.length).toBeLessThanOrEqual(255);
+  });
+});
+
 describe('CatalogReconciler', () => {
   it('creates a corrected sandbox Price, archives the stale Price, and refreshes D1 authority in apply mode', async () => {
     const oldPrice = createCatalogPrice({ amountMinor: 1000, priceId: 'price_test_disintegration_1000' });
@@ -270,8 +402,8 @@ describe('CatalogReconciler', () => {
     expect(result.issues).toEqual([]);
     expect(result.actions).toEqual(
       expect.arrayContaining([
-        { kind: 'archive_price', stripePriceId: oldPrice.priceId },
-        { kind: 'create_catalog_price' },
+        expect.objectContaining({ kind: 'archive_price', stripePriceId: oldPrice.priceId }),
+        expect.objectContaining({ kind: 'create_catalog_price' }),
         { kind: 'update_mapping', stripePriceId: 'price_test_disintegration_2800' },
         { kind: 'update_snapshot' },
       ]),
@@ -399,12 +531,14 @@ describe('CatalogReconciler', () => {
       }),
     ]);
     expect(result.actions).toEqual(
-      expect.arrayContaining([{ kind: 'update_product_projection', productId: price.productId }]),
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'update_product_projection', productId: price.productId }),
+      ]),
     );
     expect(result.actions).not.toEqual(
       expect.arrayContaining([
-        { kind: 'create_catalog_price' },
-        { kind: 'archive_price', stripePriceId: price.priceId },
+        expect.objectContaining({ kind: 'create_catalog_price' }),
+        expect.objectContaining({ kind: 'archive_price', stripePriceId: price.priceId }),
       ]),
     );
   });
@@ -463,7 +597,12 @@ describe('CatalogReconciler', () => {
     );
     expect(result.actions).toEqual(
       expect.arrayContaining([
-        { kind: 'update_product_projection', productId: price.productId },
+        expect.objectContaining({ kind: 'archive_price', idempotencyKey: expect.stringContaining('archive_price') }),
+        expect.objectContaining({
+          kind: 'create_catalog_price',
+          idempotencyKey: expect.stringContaining('create_catalog_price'),
+        }),
+        expect.objectContaining({ kind: 'update_product_projection', productId: price.productId }),
         { kind: 'update_snapshot' },
       ]),
     );
@@ -500,6 +639,190 @@ describe('CatalogReconciler', () => {
     );
   });
 
+  it('reports malformed, legacy, foreign, and owned-orphan catalog identities without cleanup mutation', async () => {
+    const { reconciler, stripeCatalog } = createReconciler();
+    const currentPrice = createCatalogPrice({ priceId: 'price_test_disintegration_2800' });
+    const orphanMetadata = {
+      appEnv: 'uat' as const,
+      sourceId: 'orphan-release',
+      sourceKind: 'release' as const,
+      storeItemSlug: 'orphan-release-black-vinyl-lp',
+      variantId: 'variant_orphan-release-black-vinyl-lp_standard',
+    };
+    stripeCatalog.prices.set(currentPrice.priceId, currentPrice);
+    stripeCatalog.prices.set('price_malformed', {
+      ...createCatalogPrice({ priceId: 'price_malformed' }),
+      lookupKey: 'blackbox:uat:missing-variant',
+      metadata: {},
+      productMetadata: {},
+    });
+    stripeCatalog.prices.set('price_legacy', {
+      ...createCatalogPrice({ priceId: 'price_legacy' }),
+      lookupKey: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+      metadata: {
+        ...createStripeCatalogMetadata('uat', storeItem),
+        appEnv: 'sandbox',
+      },
+    });
+    stripeCatalog.prices.set('price_foreign', createCatalogPrice({ environment: 'prd', priceId: 'price_foreign' }));
+    stripeCatalog.prices.set('price_orphan', {
+      ...createCatalogPrice({ priceId: 'price_orphan' }),
+      lookupKey: 'blackbox:uat:orphan-release-black-vinyl-lp:variant_orphan-release-black-vinyl-lp_standard',
+      metadata: orphanMetadata,
+      productMetadata: orphanMetadata,
+    });
+    stripeCatalog.prices.set('price_partial_metadata_12345678', {
+      ...createCatalogPrice({ priceId: 'price_partial_metadata_12345678' }),
+      lookupKey: null,
+      metadata: { appEnv: 'uat' },
+      productMetadata: {},
+    });
+    stripeCatalog.prices.set('price_source_only_metadata_87654321', {
+      ...createCatalogPrice({ priceId: 'price_source_only_metadata_87654321' }),
+      lookupKey: null,
+      metadata: { sourceId: 'orphan-release', sourceKind: 'release' },
+      productMetadata: {},
+    });
+    stripeCatalog.prices.set('price_unowned', {
+      ...createCatalogPrice({ priceId: 'price_unowned' }),
+      lookupKey: null,
+      metadata: {},
+      productMetadata: {},
+    });
+    stripeCatalog.products.set('prod_orphan', {
+      active: true,
+      metadata: orphanMetadata,
+      name: 'Orphan Release',
+      productId: 'prod_orphan',
+    });
+    stripeCatalog.products.set('prod_partial_metadata_12345678', {
+      active: true,
+      metadata: { appEnv: 'uat' },
+      name: 'Partial Product',
+      productId: 'prod_partial_metadata_12345678',
+    });
+    stripeCatalog.products.set('prod_source_only_metadata_87654321', {
+      active: true,
+      metadata: { sourceId: 'orphan-release', sourceKind: 'release' },
+      name: 'Source-only Product',
+      productId: 'prod_source_only_metadata_87654321',
+    });
+
+    const result = await reconciler.verifyBuyableCatalog({
+      apply: false,
+      expectedPrices: new Map([[storeItem.variantId, { amountMinor: 2800, currencyCode: 'EUR' }]]),
+    });
+
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'malformed_catalog_identity', driftCategory: 'catalog_identity' }),
+        expect.objectContaining({ code: 'legacy_environment_identity', driftCategory: 'catalog_identity' }),
+        expect.objectContaining({ code: 'foreign_environment_identity', driftCategory: 'catalog_identity' }),
+        expect.objectContaining({ code: 'owned_orphan_price', driftCategory: 'catalog_identity' }),
+        expect.objectContaining({ code: 'owned_orphan_product', driftCategory: 'catalog_identity' }),
+      ]),
+    );
+    expect(result.issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ detail: expect.stringContaining('price_unowned') })]),
+    );
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ detail: expect.stringContaining('price_...4321') }),
+        expect.objectContaining({ detail: expect.stringContaining('prod_...4321') }),
+      ]),
+    );
+    expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
+    expect(stripeCatalog.updatePriceMetadata).not.toHaveBeenCalled();
+    expect(stripeCatalog.updateProductProjection).not.toHaveBeenCalled();
+  });
+
+  it('aborts apply-mode mutation when global owned-object drift exists', async () => {
+    const { reconciler, stripeCatalog } = createReconciler();
+    stripeCatalog.prices.set(
+      'price_test_disintegration_1000',
+      createCatalogPrice({ amountMinor: 1000, priceId: 'price_test_disintegration_1000' }),
+    );
+    stripeCatalog.prices.set('price_orphan', {
+      ...createCatalogPrice({ priceId: 'price_orphan' }),
+      lookupKey: 'blackbox:uat:orphan-release-black-vinyl-lp:variant_orphan-release-black-vinyl-lp_standard',
+      metadata: {
+        appEnv: 'uat',
+        sourceId: 'orphan-release',
+        sourceKind: 'release',
+        storeItemSlug: 'orphan-release-black-vinyl-lp',
+        variantId: 'variant_orphan-release-black-vinyl-lp_standard',
+      },
+      productMetadata: {
+        appEnv: 'uat',
+        sourceId: 'orphan-release',
+        sourceKind: 'release',
+        storeItemSlug: 'orphan-release-black-vinyl-lp',
+        variantId: 'variant_orphan-release-black-vinyl-lp_standard',
+      },
+    });
+
+    const result = await reconciler.verifyBuyableCatalog({
+      apply: true,
+      expectedPrices: new Map([[storeItem.variantId, { amountMinor: 2800, currencyCode: 'EUR' }]]),
+    });
+
+    expect(result.dryRun).toBe(true);
+    expect(result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'owned_orphan_price' })]));
+    expect(result.results[0]?.actions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'archive_price' }),
+        expect.objectContaining({ kind: 'create_catalog_price' }),
+      ]),
+    );
+    expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
+    expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
+    expect(stripeCatalog.updatePriceMetadata).not.toHaveBeenCalled();
+    expect(stripeCatalog.updateProductProjection).not.toHaveBeenCalled();
+  });
+
+  it('reports owned objects outside the expected environment catalog as orphan drift', async () => {
+    const { reconciler, stripeCatalog } = createReconciler({ environment: 'prd' });
+    stripeCatalog.prices.set(
+      'price_live_unexpected_prd',
+      createCatalogPrice({ environment: 'prd', priceId: 'price_live_unexpected_prd' }),
+    );
+
+    const result = await reconciler.verifyBuyableCatalog({
+      apply: false,
+      expectedPrices: new Map(),
+    });
+
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'owned_orphan_price', variantId: storeItem.variantId }),
+        expect.objectContaining({ code: 'owned_orphan_product', variantId: storeItem.variantId }),
+      ]),
+    );
+  });
+
+  it('reports mixed lookup and metadata identities as malformed catalog identity', async () => {
+    const { reconciler, stripeCatalog } = createReconciler();
+    stripeCatalog.prices.set('price_mixed_identity', {
+      ...createCatalogPrice({ priceId: 'price_mixed_identity' }),
+      metadata: {
+        appEnv: 'uat',
+        sourceId: 'orphan-release',
+        sourceKind: 'release',
+        storeItemSlug: 'orphan-release-black-vinyl-lp',
+        variantId: 'variant_orphan-release-black-vinyl-lp_standard',
+      },
+    });
+
+    const result = await reconciler.verifyBuyableCatalog({
+      apply: false,
+      expectedPrices: new Map([[storeItem.variantId, { amountMinor: 2800, currencyCode: 'EUR' }]]),
+    });
+
+    expect(result.issues).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'malformed_catalog_identity' })]),
+    );
+  });
+
   it('applies sandbox Product Projection updates with idempotency keys', async () => {
     const price = {
       ...createCatalogPrice({ priceId: 'price_test_disintegration_2800' }),
@@ -508,7 +831,7 @@ describe('CatalogReconciler', () => {
     const { reconciler, stripeCatalog } = createReconciler();
     stripeCatalog.prices.set(price.priceId, price);
 
-    await reconciler.reconcileVariant(storeItem, {
+    const result = await reconciler.reconcileVariant(storeItem, {
       apply: true,
       productProjection: {
         description: 'Disintegration by Afterwise.',
@@ -530,6 +853,15 @@ describe('CatalogReconciler', () => {
       expect.objectContaining({
         idempotencyKey: expect.stringContaining('update_product_projection'),
       }),
+    );
+    expect(result.actions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'update_product_projection',
+          replayed: true,
+          requestId: 'req_update_product_projection',
+        }),
+      ]),
     );
   });
 
@@ -580,7 +912,7 @@ describe('CatalogReconciler', () => {
     );
     expect(result.actions).toEqual(
       expect.arrayContaining([
-        { kind: 'create_catalog_price' },
+        expect.objectContaining({ kind: 'create_catalog_price' }),
         { kind: 'update_mapping', stripePriceId: 'price_test_disintegration_2800' },
         { kind: 'update_snapshot' },
       ]),
@@ -641,8 +973,8 @@ describe('CatalogReconciler', () => {
     expect(result.issues).toEqual([]);
     expect(result.actions).toEqual(
       expect.arrayContaining([
-        { kind: 'archive_price', stripePriceId: oldPrice.priceId },
-        { kind: 'create_catalog_price' },
+        expect.objectContaining({ kind: 'archive_price', stripePriceId: oldPrice.priceId }),
+        expect.objectContaining({ kind: 'create_catalog_price' }),
         { kind: 'update_mapping', stripePriceId: 'price_live_disintegration_2800' },
         { kind: 'update_snapshot' },
       ]),

@@ -4,7 +4,13 @@ import type {
   StoreOfferSnapshotRepository,
   VariantStripeMappingRepository,
 } from '../../../domain/commerce/repositories/spi';
-import { createStripeCatalogLookupKey, createStripeCatalogMetadata, redactStripeObjectId } from './catalog-identifiers';
+import {
+  createStripeCatalogLookupKey,
+  createStripeCatalogMetadata,
+  createStripeCatalogMutationContext,
+  createStripeCatalogRequestShapeFingerprint,
+  redactStripeObjectId,
+} from './catalog-identifiers';
 import type {
   CatalogSyncAction,
   CatalogSyncIssue,
@@ -14,6 +20,8 @@ import type {
   StripeCatalogGateway,
   StripeCatalogPrice,
   StripeCatalogEnvironment,
+  StripeCatalogMutationContext,
+  StripeCatalogProduct,
   StripeCatalogProductProjection,
 } from './types';
 
@@ -148,51 +156,56 @@ export class CatalogReconciler {
 
     if (
       resolvedPrice &&
-      options.apply &&
       options.expectedPrice &&
       issues.length === 0 &&
       !matchesExpectedPrice(resolvedPrice, options.expectedPrice)
     ) {
-      actions.push({ kind: 'archive_price', stripePriceId: resolvedPrice.priceId });
-      resolvedPrice = await this.dependencies.stripeCatalog.createCatalogPrice(
-        {
-          amountMinor: options.expectedPrice.amountMinor,
-          currencyCode: options.expectedPrice.currencyCode,
-          lookupKey,
-          metadata,
-          productName: options.productProjection?.name ?? storeItem.storeItemSlug,
-          productProjection: options.productProjection ?? null,
-        },
-        createMutationContext(
-          this.dependencies.environment,
-          storeItem.variantId,
-          'create_catalog_price',
-          createCatalogPriceMutationIdentity(options.expectedPrice, options.productProjection ?? null),
-        ),
+      actions.push(createArchivePriceAction(this.dependencies.environment, storeItem.variantId, resolvedPrice.priceId));
+      const priceInput = createCatalogPriceInput(
+        storeItem,
+        lookupKey,
+        metadata,
+        options.expectedPrice,
+        options.productProjection,
       );
-      actions.push({ kind: 'create_catalog_price' });
+      const createContext = createMutationContext(
+        this.dependencies.environment,
+        storeItem.variantId,
+        'create_catalog_price',
+        createCatalogPriceMutationIdentity(options.expectedPrice, options.productProjection ?? null),
+        priceInput,
+      );
+      if (options.apply) {
+        resolvedPrice = await this.dependencies.stripeCatalog.createCatalogPrice(priceInput, createContext);
+        actions.push({ kind: 'create_catalog_price', ...createMutationEvidence(createContext, resolvedPrice) });
+      } else {
+        actions.push({ kind: 'create_catalog_price', ...createMutationEvidence(createContext) });
+      }
     }
 
-    if (!resolvedPrice && options.apply && options.expectedPrice && issues.length === 0) {
+    if (!resolvedPrice && options.expectedPrice && issues.length === 0) {
       const repairIdentity =
         activeMatches.length === 0 ? createPriceRepairMutationIdentity(mappedPrice, mapping, snapshot) : null;
-      resolvedPrice = await this.dependencies.stripeCatalog.createCatalogPrice(
-        {
-          amountMinor: options.expectedPrice.amountMinor,
-          currencyCode: options.expectedPrice.currencyCode,
-          lookupKey,
-          metadata,
-          productName: options.productProjection?.name ?? storeItem.storeItemSlug,
-          productProjection: options.productProjection ?? null,
-        },
-        createMutationContext(
-          this.dependencies.environment,
-          storeItem.variantId,
-          'create_catalog_price',
-          createCatalogPriceMutationIdentity(options.expectedPrice, options.productProjection ?? null, repairIdentity),
-        ),
+      const priceInput = createCatalogPriceInput(
+        storeItem,
+        lookupKey,
+        metadata,
+        options.expectedPrice,
+        options.productProjection,
       );
-      actions.push({ kind: 'create_catalog_price' });
+      const createContext = createMutationContext(
+        this.dependencies.environment,
+        storeItem.variantId,
+        'create_catalog_price',
+        createCatalogPriceMutationIdentity(options.expectedPrice, options.productProjection ?? null, repairIdentity),
+        priceInput,
+      );
+      if (options.apply) {
+        resolvedPrice = await this.dependencies.stripeCatalog.createCatalogPrice(priceInput, createContext);
+        actions.push({ kind: 'create_catalog_price', ...createMutationEvidence(createContext, resolvedPrice) });
+      } else {
+        actions.push({ kind: 'create_catalog_price', ...createMutationEvidence(createContext) });
+      }
     }
 
     if (!resolvedPrice) {
@@ -252,7 +265,21 @@ export class CatalogReconciler {
       }
 
       if (!hasMetadata(resolvedPrice.metadata, metadata) || !hasMetadata(resolvedPrice.productMetadata, metadata)) {
-        actions.push({ kind: 'update_stripe_metadata', stripePriceId: resolvedPrice.priceId });
+        const metadataContext = createMutationContext(
+          this.dependencies.environment,
+          storeItem.variantId,
+          'update_stripe_metadata',
+          resolvedPrice.priceId,
+          {
+            metadata,
+            priceId: resolvedPrice.priceId,
+          },
+        );
+        actions.push({
+          kind: 'update_stripe_metadata',
+          stripePriceId: resolvedPrice.priceId,
+          ...createMutationEvidence(metadataContext),
+        });
       }
 
       if (options.productProjection) {
@@ -271,7 +298,22 @@ export class CatalogReconciler {
           );
 
           if (resolvedPrice.productId) {
-            actions.push({ kind: 'update_product_projection', productId: resolvedPrice.productId });
+            const productContext = createMutationContext(
+              this.dependencies.environment,
+              storeItem.variantId,
+              'update_product_projection',
+              resolvedPrice.productId,
+              {
+                productId: resolvedPrice.productId,
+                productProjection: options.productProjection,
+                stripeMetadata: metadata,
+              },
+            );
+            actions.push({
+              kind: 'update_product_projection',
+              productId: resolvedPrice.productId,
+              ...createMutationEvidence(productContext),
+            });
           }
         }
       }
@@ -324,11 +366,19 @@ export class CatalogReconciler {
     now?: Date;
   }): Promise<CatalogSyncRunResult> {
     const storeItems = await this.dependencies.storeItems.search(null, MAX_CATALOG_ITEMS);
-    const results = await this.verifyCatalogSequentially(storeItems, input);
-    const issues = results.flatMap((result) => result.issues);
+    const expectedVariantIds = input.expectedPrices
+      ? new Set(input.expectedPrices.keys())
+      : new Set(storeItems.map((item) => item.variantId));
+    const ownedObjectDriftIssues = await this.findOwnedObjectDriftIssues(expectedVariantIds);
+    const apply = input.apply && !hasBlockingCatalogIssue(ownedObjectDriftIssues);
+    const results = await this.verifyCatalogSequentially(storeItems, {
+      ...input,
+      apply,
+    });
+    const issues = [...results.flatMap((result) => result.issues), ...ownedObjectDriftIssues];
 
     return {
-      dryRun: !input.apply,
+      dryRun: !apply,
       environment: this.dependencies.environment,
       issues,
       results,
@@ -374,6 +424,36 @@ export class CatalogReconciler {
     });
   }
 
+  private async findOwnedObjectDriftIssues(expectedVariantIds: Set<string>): Promise<CatalogSyncIssue[]> {
+    const [ownedPrices, ownedProducts] = await Promise.all([
+      this.dependencies.stripeCatalog.listOwnedPrices(this.dependencies.environment),
+      this.dependencies.stripeCatalog.listOwnedProducts(this.dependencies.environment),
+    ]);
+    const issues: CatalogSyncIssue[] = [];
+
+    for (const price of ownedPrices) {
+      const identity = readPriceCatalogIdentity(price);
+      const code = classifyOwnedObjectIdentity(identity, expectedVariantIds, this.dependencies.environment, 'price');
+
+      if (code) {
+        issues.push(createOwnedObjectIssue(identity, code, `Stripe Price ${redactStripeObjectId(price.priceId)}`));
+      }
+    }
+
+    for (const product of ownedProducts) {
+      const identity = readMetadataCatalogIdentity(product.metadata) ?? emptyCatalogIdentity();
+      const code = classifyOwnedObjectIdentity(identity, expectedVariantIds, this.dependencies.environment, 'product');
+
+      if (code) {
+        issues.push(
+          createOwnedObjectIssue(identity, code, `Stripe Product ${redactStripeObjectId(product.productId)}`),
+        );
+      }
+    }
+
+    return issues;
+  }
+
   private async applyActions(
     storeItem: StoreItemOptionRecord,
     lookupKey: string,
@@ -384,10 +464,11 @@ export class CatalogReconciler {
   ): Promise<void> {
     for (const action of actions) {
       if (action.kind === 'archive_price') {
-        await this.dependencies.stripeCatalog.archivePrice(
+        const archivedPrice = await this.dependencies.stripeCatalog.archivePrice(
           action.stripePriceId,
-          createMutationContext(this.dependencies.environment, storeItem.variantId, action.kind, action.stripePriceId),
+          mutationContextFromAction(action),
         );
+        applyMutationResponseEvidence(action, archivedPrice);
       } else if (action.kind === 'update_mapping') {
         await this.dependencies.variantStripeMappings.save({
           stripePriceId: resolvedPrice.priceId,
@@ -412,21 +493,23 @@ export class CatalogReconciler {
         });
       } else if (action.kind === 'update_stripe_metadata') {
         this.assertCatalogMutationAllowed(storeItem, lookupKey, resolvedPrice, action.kind);
-        await this.dependencies.stripeCatalog.updatePriceMetadata(
+        const updatedPrice = await this.dependencies.stripeCatalog.updatePriceMetadata(
           resolvedPrice.priceId,
           createStripeCatalogMetadata(this.dependencies.environment, storeItem),
-          createMutationContext(this.dependencies.environment, storeItem.variantId, action.kind, resolvedPrice.priceId),
+          mutationContextFromAction(action),
         );
+        applyMutationResponseEvidence(action, updatedPrice);
       } else if (action.kind === 'update_product_projection' && productProjection) {
         this.assertCatalogMutationAllowed(storeItem, lookupKey, resolvedPrice, action.kind);
-        await this.dependencies.stripeCatalog.updateProductProjection(
+        const updatedProduct = await this.dependencies.stripeCatalog.updateProductProjection(
           action.productId,
           {
             projection: productProjection,
             stripeMetadata: createStripeCatalogMetadata(this.dependencies.environment, storeItem),
           },
-          createMutationContext(this.dependencies.environment, storeItem.variantId, action.kind, action.productId),
+          mutationContextFromAction(action),
         );
+        applyProductMutationResponseEvidence(action, updatedProduct);
       }
     }
   }
@@ -511,9 +594,14 @@ export function hasBlockingCatalogIssue(issues: CatalogSyncIssue[]): boolean {
   return issues.some((issue) =>
     [
       'ambiguous_active_price',
+      'foreign_environment_identity',
       'inactive_price',
       'inactive_product',
+      'legacy_environment_identity',
+      'malformed_catalog_identity',
       'missing_price',
+      'owned_orphan_price',
+      'owned_orphan_product',
       'placeholder_price_mapping',
       'product_projection_mismatch',
       'wrong_amount',
@@ -536,7 +624,14 @@ export function classifyCatalogSyncIssue(code: CatalogSyncIssue['code']): Catalo
     return 'store_offer_snapshot';
   }
 
-  if (code === 'wrong_variant_identity') {
+  if (
+    code === 'foreign_environment_identity' ||
+    code === 'legacy_environment_identity' ||
+    code === 'malformed_catalog_identity' ||
+    code === 'owned_orphan_product' ||
+    code === 'owned_orphan_price' ||
+    code === 'wrong_variant_identity'
+  ) {
     return 'catalog_identity';
   }
 
@@ -589,15 +684,100 @@ function sameStringList(left: string[], right: string[]): boolean {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
+type CatalogObjectIdentity = {
+  appEnv: string | null;
+  appEnvs: string[];
+  malformed: boolean;
+  proven: boolean;
+  storeItemSlug: string;
+  variantId: string;
+};
+
+function createCatalogPriceInput(
+  storeItem: StoreItemOptionRecord,
+  lookupKey: string,
+  metadata: ReturnType<typeof createStripeCatalogMetadata>,
+  expectedPrice: StripeCatalogExpectedPrice,
+  productProjection: StripeCatalogProductProjection | null | undefined,
+) {
+  return {
+    amountMinor: expectedPrice.amountMinor,
+    currencyCode: expectedPrice.currencyCode,
+    lookupKey,
+    metadata,
+    productName: productProjection?.name ?? storeItem.storeItemSlug,
+    productProjection: productProjection ?? null,
+  };
+}
+
 function createMutationContext(
   environment: StripeCatalogEnvironment,
   variantId: string,
   action: CatalogSyncAction['kind'],
   identity = 'new',
-) {
+  requestShape: unknown,
+): StripeCatalogMutationContext {
+  return createStripeCatalogMutationContext({
+    action,
+    environment,
+    identity,
+    requestShape,
+    variantId,
+  });
+}
+
+function createArchivePriceAction(
+  environment: StripeCatalogEnvironment,
+  variantId: string,
+  stripePriceId: StripeCatalogPrice['priceId'],
+): Extract<CatalogSyncAction, { kind: 'archive_price' }> {
+  const context = createMutationContext(environment, variantId, 'archive_price', stripePriceId, {
+    active: false,
+    stripePriceId,
+  });
+
   return {
-    idempotencyKey: ['blackbox', 'catalog', environment, variantId, action, identity].join(':'),
+    kind: 'archive_price',
+    stripePriceId,
+    ...createMutationEvidence(context),
   };
+}
+
+function mutationContextFromAction(
+  action: Extract<
+    CatalogSyncAction,
+    { kind: 'archive_price' | 'create_catalog_price' | 'update_product_projection' | 'update_stripe_metadata' }
+  >,
+): StripeCatalogMutationContext | undefined {
+  return action.idempotencyKey && action.requestShapeFingerprint
+    ? {
+        idempotencyKey: action.idempotencyKey,
+        requestShapeFingerprint: action.requestShapeFingerprint,
+      }
+    : undefined;
+}
+
+function createMutationEvidence(context: StripeCatalogMutationContext, price?: StripeCatalogPrice) {
+  return {
+    idempotencyKey: context.idempotencyKey,
+    requestId: price?.requestId ?? null,
+    requestShapeFingerprint: context.requestShapeFingerprint,
+    replayed: price?.idempotentReplayed ?? null,
+  };
+}
+
+function applyMutationResponseEvidence(action: CatalogSyncAction, price: StripeCatalogPrice): void {
+  Object.assign(action, {
+    requestId: price.requestId ?? null,
+    replayed: price.idempotentReplayed ?? null,
+  });
+}
+
+function applyProductMutationResponseEvidence(action: CatalogSyncAction, product: StripeCatalogProduct): void {
+  Object.assign(action, {
+    requestId: product.requestId ?? null,
+    replayed: product.idempotentReplayed ?? null,
+  });
 }
 
 function createCatalogPriceMutationIdentity(
@@ -607,13 +787,11 @@ function createCatalogPriceMutationIdentity(
 ): string {
   const baseIdentity = expectedPrice.revision
     ? `revision_${expectedPrice.revision}`
-    : createStableShortHash(
-        JSON.stringify({
-          amountMinor: expectedPrice.amountMinor,
-          currencyCode: expectedPrice.currencyCode.toUpperCase(),
-          productProjection,
-        }),
-      );
+    : createStripeCatalogRequestShapeFingerprint({
+        amountMinor: expectedPrice.amountMinor,
+        currencyCode: expectedPrice.currencyCode.toUpperCase(),
+        productProjection,
+      });
 
   return repairIdentity ? `${baseIdentity}:${repairIdentity}` : baseIdentity;
 }
@@ -648,14 +826,133 @@ function createPriceRepairMutationIdentity(
   return null;
 }
 
-function createStableShortHash(value: string): string {
-  let hash = 0;
+function readPriceCatalogIdentity(price: StripeCatalogPrice): CatalogObjectIdentity {
+  return mergeCatalogIdentities([
+    readLookupKeyCatalogIdentity(price.lookupKey),
+    readMetadataCatalogIdentity(price.metadata),
+    readMetadataCatalogIdentity(price.productMetadata),
+  ]);
+}
 
-  for (let index = 0; index < value.length; index += 1) {
-    hash = Math.imul(31, hash) + value.charCodeAt(index);
+function readLookupKeyCatalogIdentity(lookupKey: string | null): CatalogObjectIdentity | null {
+  if (!lookupKey?.startsWith('blackbox:')) {
+    return null;
   }
 
-  return `v${(hash >>> 0).toString(36)}`;
+  const parts = lookupKey.split(':');
+  const appEnv = parts[1] ?? null;
+  const storeItemSlug = parts[2] || 'unknown';
+  const variantId = parts[3] || 'unknown';
+
+  return {
+    appEnv,
+    appEnvs: appEnv ? [appEnv] : [],
+    malformed: parts.length !== 4 || !appEnv || !parts[2] || !parts[3],
+    proven: true,
+    storeItemSlug,
+    variantId,
+  };
+}
+
+function readMetadataCatalogIdentity(metadata: Record<string, string>): CatalogObjectIdentity | null {
+  if (
+    !metadata.appEnv &&
+    !metadata.sourceId &&
+    !metadata.sourceKind &&
+    !metadata.storeItemSlug &&
+    !metadata.variantId
+  ) {
+    return null;
+  }
+
+  return {
+    appEnv: metadata.appEnv ?? null,
+    appEnvs: metadata.appEnv ? [metadata.appEnv] : [],
+    malformed:
+      !metadata.appEnv || !metadata.sourceId || !metadata.sourceKind || !metadata.storeItemSlug || !metadata.variantId,
+    proven: true,
+    storeItemSlug: metadata.storeItemSlug || 'unknown',
+    variantId: metadata.variantId || 'unknown',
+  };
+}
+
+function mergeCatalogIdentities(identities: Array<CatalogObjectIdentity | null>): CatalogObjectIdentity {
+  const provenIdentities = identities.filter((identity): identity is CatalogObjectIdentity =>
+    Boolean(identity?.proven),
+  );
+  const primary = provenIdentities[0];
+  const storeItemSlugs = new Set(
+    provenIdentities.map((identity) => identity.storeItemSlug).filter(isKnownIdentityValue),
+  );
+  const variantIds = new Set(provenIdentities.map((identity) => identity.variantId).filter(isKnownIdentityValue));
+
+  return {
+    appEnv: primary?.appEnv ?? null,
+    appEnvs: [...new Set(provenIdentities.flatMap((identity) => identity.appEnvs))],
+    malformed:
+      provenIdentities.some((identity) => identity.malformed) || storeItemSlugs.size > 1 || variantIds.size > 1,
+    proven: provenIdentities.length > 0,
+    storeItemSlug: primary?.storeItemSlug ?? 'unknown',
+    variantId: primary?.variantId ?? 'unknown',
+  };
+}
+
+function isKnownIdentityValue(value: string): boolean {
+  return value !== 'unknown';
+}
+
+function emptyCatalogIdentity(): CatalogObjectIdentity {
+  return {
+    appEnv: null,
+    appEnvs: [],
+    malformed: false,
+    proven: false,
+    storeItemSlug: 'unknown',
+    variantId: 'unknown',
+  };
+}
+
+function classifyOwnedObjectIdentity(
+  identity: CatalogObjectIdentity,
+  knownVariants: Set<string>,
+  environment: StripeCatalogEnvironment,
+  objectKind: 'price' | 'product',
+): CatalogSyncIssue['code'] | null {
+  if (!identity.proven) {
+    return null;
+  }
+
+  if (identity.malformed) {
+    return 'malformed_catalog_identity';
+  }
+
+  if (identity.appEnvs.includes('sandbox')) {
+    return 'legacy_environment_identity';
+  }
+
+  if (identity.appEnvs.some((appEnv) => appEnv !== environment)) {
+    return 'foreign_environment_identity';
+  }
+
+  if (!knownVariants.has(identity.variantId)) {
+    return objectKind === 'price' ? 'owned_orphan_price' : 'owned_orphan_product';
+  }
+
+  return null;
+}
+
+function createOwnedObjectIssue(
+  identity: CatalogObjectIdentity,
+  code: CatalogSyncIssue['code'],
+  objectLabel: string,
+): CatalogSyncIssue {
+  return {
+    code,
+    detail: `${objectLabel} has ${code.replaceAll('_', ' ')}.`,
+    driftCategory: classifyCatalogSyncIssue(code),
+    storeItemSlug: identity.storeItemSlug,
+    variantId: identity.variantId,
+  };
 }
 
 function canApplyCatalogActions(issues: CatalogSyncIssue[]): boolean {

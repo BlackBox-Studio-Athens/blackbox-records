@@ -1,4 +1,11 @@
-export { createStripeCatalogLookupKey, createStripeCatalogMetadata, redactStripeObjectId } from './catalog-identifiers';
+export {
+  createStripeCatalogLookupKey,
+  createStripeCatalogMetadata,
+  createStripeCatalogMutationContext,
+  createStripeCatalogRequestShapeFingerprint,
+  deriveStripeCatalogChildMutationContext,
+  redactStripeObjectId,
+} from './catalog-identifiers';
 export {
   assertCompleteCatalogFieldOwnership,
   catalogFieldOwnershipMatrix,
@@ -48,6 +55,7 @@ export type {
   StripeCatalogMutationContext,
   StripeCatalogPrice,
   StripeCatalogPriceCreateInput,
+  StripeCatalogProduct,
   StripeCatalogProductProjection,
   StripeCatalogProductProjectionUpdateInput,
 } from './types';

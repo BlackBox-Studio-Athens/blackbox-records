@@ -7,8 +7,10 @@ import type {
   StripeCatalogMutationContext,
   StripeCatalogPrice,
   StripeCatalogPriceCreateInput,
+  StripeCatalogProduct,
   StripeCatalogProductProjectionUpdateInput,
 } from '../../application/commerce/catalog-sync';
+import { deriveStripeCatalogChildMutationContext } from '../../application/commerce/catalog-sync';
 import { CheckoutConfigurationError } from '../../application/commerce/checkout';
 import type { AppBindings } from '../../env';
 import { createStripeClientOptions } from './stripe-checkout-gateway';
@@ -17,7 +19,7 @@ type StripePriceWithExpandedProduct = Stripe.Price & {
   product: string | Stripe.Product | Stripe.DeletedProduct;
 };
 
-class StripeCatalogGatewayClient implements StripeCatalogGateway {
+export class StripeCatalogGatewayClient implements StripeCatalogGateway {
   public constructor(private readonly stripe: Stripe) {}
 
   public async archivePrice(priceId: string, context?: StripeCatalogMutationContext): Promise<StripeCatalogPrice> {
@@ -70,6 +72,42 @@ class StripeCatalogGatewayClient implements StripeCatalogGateway {
     );
   }
 
+  public async listOwnedPrices(_environment: StripeCatalogIdentityMetadata['appEnv']): Promise<StripeCatalogPrice[]> {
+    const prices = await this.listPrices({
+      active: true,
+      expand: ['data.product'],
+    });
+
+    return prices.filter(
+      (price) =>
+        price.lookupKey?.startsWith('blackbox:') ||
+        hasBlackBoxCatalogMetadataHint(price.metadata) ||
+        hasBlackBoxCatalogMetadataHint(price.productMetadata),
+    );
+  }
+
+  public async listOwnedProducts(
+    _environment: StripeCatalogIdentityMetadata['appEnv'],
+  ): Promise<StripeCatalogProduct[]> {
+    const products: StripeCatalogProduct[] = [];
+    let startingAfter: string | undefined;
+
+    do {
+      const page = await this.stripe.products.list({
+        active: true,
+        limit: 100,
+        starting_after: startingAfter,
+      });
+
+      products.push(
+        ...page.data.map(toCatalogProduct).filter((product) => hasBlackBoxCatalogMetadataHint(product.metadata)),
+      );
+      startingAfter = page.has_more ? page.data.at(-1)?.id : undefined;
+    } while (startingAfter);
+
+    return products;
+  }
+
   public async createCatalogPrice(
     input: StripeCatalogPriceCreateInput,
     context?: StripeCatalogMutationContext,
@@ -113,7 +151,7 @@ class StripeCatalogGatewayClient implements StripeCatalogGateway {
         name: input.productProjection?.name ?? input.productName,
         tax_code: input.productProjection?.taxCode ?? undefined,
       },
-      toStripeRequestOptions(deriveChildMutationContext(context, 'product')),
+      toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, 'product')),
     );
     const price = (await this.stripe.prices.create(
       {
@@ -126,7 +164,7 @@ class StripeCatalogGatewayClient implements StripeCatalogGateway {
         unit_amount: input.amountMinor,
         expand: ['product'],
       },
-      toStripeRequestOptions(deriveChildMutationContext(context, 'price')),
+      toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, 'price')),
     )) as StripePriceWithExpandedProduct;
 
     return toCatalogPrice(price);
@@ -175,7 +213,7 @@ class StripeCatalogGatewayClient implements StripeCatalogGateway {
         name: input.productProjection?.name ?? input.productName,
         tax_code: input.productProjection?.taxCode ?? undefined,
       },
-      toStripeRequestOptions(deriveChildMutationContext(context, `restore_product_${price.priceId}`)),
+      toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, `restore_product_${price.priceId}`)),
     );
 
     const restoredPrice = (await this.stripe.prices.update(
@@ -186,7 +224,7 @@ class StripeCatalogGatewayClient implements StripeCatalogGateway {
         lookup_key: input.lookupKey,
         metadata: input.metadata,
       },
-      toStripeRequestOptions(deriveChildMutationContext(context, `restore_price_${price.priceId}`)),
+      toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, `restore_price_${price.priceId}`)),
     )) as StripePriceWithExpandedProduct;
 
     return toCatalogPrice(restoredPrice);
@@ -205,7 +243,7 @@ class StripeCatalogGatewayClient implements StripeCatalogGateway {
           expand: ['product'],
           lookup_key: '',
         },
-        toStripeRequestOptions(deriveChildMutationContext(context, `release_lookup_${price.priceId}`)),
+        toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, `release_lookup_${price.priceId}`)),
       );
     }
   }
@@ -221,7 +259,7 @@ class StripeCatalogGatewayClient implements StripeCatalogGateway {
         metadata,
         expand: ['product'],
       },
-      toStripeRequestOptions(deriveChildMutationContext(context, 'price')),
+      toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, 'price')),
     )) as StripePriceWithExpandedProduct;
 
     const product = getActiveProduct(price.product);
@@ -230,7 +268,7 @@ class StripeCatalogGatewayClient implements StripeCatalogGateway {
       await this.stripe.products.update(
         product.id,
         { metadata },
-        toStripeRequestOptions(deriveChildMutationContext(context, 'product')),
+        toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, 'product')),
       );
     }
 
@@ -241,8 +279,8 @@ class StripeCatalogGatewayClient implements StripeCatalogGateway {
     productId: string,
     input: StripeCatalogProductProjectionUpdateInput,
     context?: StripeCatalogMutationContext,
-  ): Promise<void> {
-    await this.stripe.products.update(
+  ): Promise<StripeCatalogProduct> {
+    const product = await this.stripe.products.update(
       productId,
       {
         description: input.projection.description,
@@ -256,6 +294,8 @@ class StripeCatalogGatewayClient implements StripeCatalogGateway {
       },
       toStripeRequestOptions(context),
     );
+
+    return toCatalogProduct(product);
   }
 
   private async listPrices(
@@ -298,6 +338,7 @@ function toCatalogPrice(price: StripePriceWithExpandedProduct): StripeCatalogPri
     active: price.active,
     amountMinor: price.unit_amount,
     currencyCode: price.currency?.toUpperCase() ?? null,
+    idempotentReplayed: getStripeIdempotentReplayed(price),
     lookupKey: price.lookup_key,
     metadata: normalizeMetadata(price.metadata),
     priceId: parseStripePriceId(price.id),
@@ -308,6 +349,18 @@ function toCatalogPrice(price: StripePriceWithExpandedProduct): StripeCatalogPri
     productMetadata: normalizeMetadata(product?.metadata ?? {}),
     productName: product?.name ?? null,
     productTaxCode: normalizeProductTaxCode(product?.tax_code),
+    requestId: getStripeRequestId(price),
+  };
+}
+
+function toCatalogProduct(product: Stripe.Product): StripeCatalogProduct {
+  return {
+    active: product.active,
+    idempotentReplayed: getStripeIdempotentReplayed(product),
+    metadata: normalizeMetadata(product.metadata),
+    name: product.name ?? null,
+    productId: product.id,
+    requestId: getStripeRequestId(product),
   };
 }
 
@@ -335,15 +388,43 @@ function toStripeRequestOptions(context: StripeCatalogMutationContext | undefine
   return context ? { idempotencyKey: context.idempotencyKey } : undefined;
 }
 
-function deriveChildMutationContext(
-  context: StripeCatalogMutationContext | undefined,
-  child: string,
-): StripeCatalogMutationContext | undefined {
-  return context ? { idempotencyKey: `${context.idempotencyKey}:${child}` } : undefined;
-}
-
 function hasMetadata(candidate: Record<string, string>, expected: Record<string, string>): boolean {
   return Object.entries(expected).every(([key, value]) => candidate[key] === value);
+}
+
+function hasBlackBoxCatalogMetadataHint(metadata: Record<string, string>): boolean {
+  return Boolean(
+    metadata.appEnv || metadata.sourceId || metadata.sourceKind || metadata.storeItemSlug || metadata.variantId,
+  );
+}
+
+function getStripeRequestId(object: unknown): string | null {
+  return getStripeLastResponse(object)?.requestId ?? null;
+}
+
+function getStripeIdempotentReplayed(object: unknown): boolean | null {
+  const value = getStripeLastResponse(object)?.headers?.['idempotent-replayed'];
+
+  if (Array.isArray(value)) {
+    return value.some((item) => item.toLowerCase() === 'true');
+  }
+
+  return typeof value === 'string' ? value.toLowerCase() === 'true' : null;
+}
+
+function getStripeLastResponse(object: unknown): {
+  headers?: Record<string, string | string[] | undefined>;
+  requestId?: string;
+} | null {
+  if (!object || typeof object !== 'object' || !('lastResponse' in object)) {
+    return null;
+  }
+
+  const lastResponse = object.lastResponse;
+
+  return lastResponse && typeof lastResponse === 'object'
+    ? (lastResponse as { headers?: Record<string, string | string[] | undefined>; requestId?: string })
+    : null;
 }
 
 function isStripeNotFoundError(error: unknown): boolean {

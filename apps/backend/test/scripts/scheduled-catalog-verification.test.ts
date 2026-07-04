@@ -121,6 +121,7 @@ describe('runScheduledCatalogVerification', () => {
       expect(warn).toHaveBeenCalledWith(
         expect.objectContaining({
           d1ReadinessIssues: 0,
+          catalogIdentityIssues: 0,
           event: 'catalog_verification_scheduled_issue_summary',
           issueCount: 2,
           outcome: 'issues_found',

@@ -192,17 +192,21 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
     expectedPrices,
     expectedProductProjections,
   });
-  const appliedActions = result.results.flatMap((resultItem) =>
-    resultItem.actions.length
-      ? [
-          {
-            actions: resultItem.actions,
-            storeItemSlug: resultItem.storeItem.storeItemSlug,
-            variantId: resultItem.storeItem.variantId,
-          },
-        ]
-      : [],
-  );
+  const appliedActions =
+    options.apply && !result.dryRun
+      ? result.results.flatMap((resultItem) =>
+          resultItem.actions.length
+            ? [
+                {
+                  actions: resultItem.actions,
+                  lookupKey: resultItem.lookupKey,
+                  storeItemSlug: resultItem.storeItem.storeItemSlug,
+                  variantId: resultItem.storeItem.variantId,
+                },
+              ]
+            : [],
+        )
+      : [];
 
   if (options.apply && appliedActions.length > 0) {
     const postApplyResult = await reconciler.verifyBuyableCatalog({
@@ -255,12 +259,15 @@ export function formatStripeCatalogVerifyReport(result: CatalogSyncRunResult): s
     '',
     'Report sections:',
     `- Catalog Field Ownership: ${catalogFieldOwnershipMatrix.length} field groups declare owner, direction, mutation policy, and verification policy.`,
+    `- Catalog Identity: ${formatIssueCount(issueCounts.catalog_identity)}.`,
     `- Product Projection: ${formatIssueCount(issueCounts.product_projection)}.`,
     `- Price Authority: ${formatIssueCount(issueCounts.price_authority)}.`,
     `- D1 readiness: ${formatIssueCount(issueCounts.d1_readiness)}.`,
     `- Store Offer snapshots: ${formatIssueCount(issueCounts.store_offer_snapshot)}.`,
+    `- Owned orphan drift: ${formatIssueCount(countOwnedOrphanIssues(result))}.`,
     `- Webhook readiness: run pnpm stripe:webhooks:verify --env uat for persistent endpoint proof.`,
     `- Dry-run immutability: Stripe Products, Stripe Prices, D1 mappings, Store Offer snapshots, repo files, and evidence files are not mutated unless --apply is set.`,
+    `- Forensics handles: Product Environment, Store Item identity, lookup key, action kind, idempotency key, request shape, request ID when available, replay status when available, and redacted Stripe object IDs.`,
   ];
 
   if (result.appliedActions?.length) {
@@ -269,7 +276,7 @@ export function formatStripeCatalogVerifyReport(result: CatalogSyncRunResult): s
 
     for (const item of result.appliedActions) {
       lines.push(
-        `- Apply completed for ${item.storeItemSlug} / ${item.variantId}: ${item.actions
+        `- Apply completed for ${item.storeItemSlug} / ${item.variantId}: lookup=${item.lookupKey}; ${item.actions
           .map(formatCatalogSyncActionLabel)
           .join(', ')}`,
       );
@@ -281,11 +288,12 @@ export function formatStripeCatalogVerifyReport(result: CatalogSyncRunResult): s
       ? redactStripeObjectId(resultItem.resolvedPrice.priceId)
       : 'not resolved';
     const actionLabels = resultItem.actions.map(formatCatalogSyncActionLabel);
+    const driftLabels = [...new Set(resultItem.issues.map((issue) => `${issue.driftCategory}:${issue.code}`))];
 
     lines.push(
-      `- ${resultItem.storeItem.storeItemSlug} / ${resultItem.storeItem.variantId}: ${priceLabel}; issues=${resultItem.issueCount}; actions=${
-        actionLabels.length ? actionLabels.join(', ') : 'none'
-      }`,
+      `- ${resultItem.storeItem.storeItemSlug} / ${resultItem.storeItem.variantId}: env=${productEnvironmentProfile.productEnvironment}; lookup=${resultItem.lookupKey}; price=${priceLabel}; issues=${resultItem.issueCount}; drift=${
+        driftLabels.length ? driftLabels.join(',') : 'none'
+      }; actions=${actionLabels.length ? actionLabels.join(', ') : 'none'}`,
     );
   }
 
@@ -305,22 +313,36 @@ export function formatStripeCatalogVerifyReport(result: CatalogSyncRunResult): s
 }
 
 function formatCatalogSyncActionLabel(action: CatalogSyncAction): string {
+  const evidence = [
+    'idempotencyKey' in action && action.idempotencyKey
+      ? `idempotency=${redactStripeCatalogDiagnostic(action.idempotencyKey)}`
+      : null,
+    'requestShapeFingerprint' in action && action.requestShapeFingerprint
+      ? `request_shape=${action.requestShapeFingerprint}`
+      : null,
+    'requestId' in action && action.requestId ? `request_id=${action.requestId}` : null,
+    'replayed' in action && action.replayed !== undefined && action.replayed !== null
+      ? `replayed=${action.replayed}`
+      : null,
+  ].filter(Boolean);
+  const suffix = evidence.length ? `;${evidence.join(';')}` : '';
+
   if (action.kind === 'archive_price' || action.kind === 'update_mapping' || action.kind === 'update_stripe_metadata') {
-    return `${action.kind}:${redactStripeObjectId(action.stripePriceId)}`;
+    return `${action.kind}:${redactStripeObjectId(action.stripePriceId)}${suffix}`;
   }
 
   if (action.kind === 'update_product_projection') {
-    return `${action.kind}:${redactStripeObjectId(action.productId)}`;
+    return `${action.kind}:${redactStripeObjectId(action.productId)}${suffix}`;
   }
 
-  return action.kind;
+  return `${action.kind}${suffix}`;
 }
 
 export function redactStripeCatalogDiagnostic(value: string): string {
   return value
     .replace(/sk_(test|live)_[A-Za-z0-9_]+/g, '[redacted_stripe_secret_key]')
     .replace(/whsec_[A-Za-z0-9_]+/g, '[redacted_stripe_webhook_secret]')
-    .replace(/\b(price|prod|we)_[A-Za-z0-9]{8,}\b/g, (match) => redactStripeObjectId(match));
+    .replace(/\b(price|prod|evt|we)_[A-Za-z0-9]{8,}\b/g, (match) => redactStripeObjectId(match));
 }
 
 function countIssuesByDriftCategory(result: CatalogSyncRunResult): Record<CatalogDriftCategory, number> {
@@ -338,6 +360,11 @@ function countIssuesByDriftCategory(result: CatalogSyncRunResult): Record<Catalo
   }
 
   return counts;
+}
+
+function countOwnedOrphanIssues(result: CatalogSyncRunResult): number {
+  return result.issues.filter((issue) => issue.code === 'owned_orphan_price' || issue.code === 'owned_orphan_product')
+    .length;
 }
 
 function formatIssueCount(count: number): string {

@@ -18,6 +18,7 @@ export type StripeCatalogPrice = {
   active: boolean;
   amountMinor: number | null;
   currencyCode: string | null;
+  idempotentReplayed?: boolean | null;
   lookupKey: string | null;
   metadata: Record<string, string>;
   productActive: boolean;
@@ -28,6 +29,16 @@ export type StripeCatalogPrice = {
   productName: string | null;
   productTaxCode: string | null;
   priceId: StripePriceId;
+  requestId?: string | null;
+};
+
+export type StripeCatalogProduct = {
+  active: boolean;
+  idempotentReplayed?: boolean | null;
+  metadata: Record<string, string>;
+  name: string | null;
+  productId: string;
+  requestId?: string | null;
 };
 
 export type StripeCatalogExpectedPrice = {
@@ -100,6 +111,8 @@ export type StripeCatalogGateway = {
     input: StripeCatalogPriceCreateInput,
     context?: StripeCatalogMutationContext,
   ): Promise<StripeCatalogPrice>;
+  listOwnedPrices(environment: StripeCatalogEnvironment): Promise<StripeCatalogPrice[]>;
+  listOwnedProducts(environment: StripeCatalogEnvironment): Promise<StripeCatalogProduct[]>;
   listPricesByLookupKey(lookupKey: string): Promise<StripeCatalogPrice[]>;
   listPricesByMetadata(metadata: StripeCatalogIdentityMetadata): Promise<StripeCatalogPrice[]>;
   retrievePrice(priceId: StripePriceId): Promise<StripeCatalogPrice | null>;
@@ -112,7 +125,7 @@ export type StripeCatalogGateway = {
     productId: string,
     input: StripeCatalogProductProjectionUpdateInput,
     context?: StripeCatalogMutationContext,
-  ): Promise<void>;
+  ): Promise<StripeCatalogProduct>;
 };
 
 export type StripeCatalogIdentityMetadata = {
@@ -139,14 +152,20 @@ export type StripeCatalogProductProjectionUpdateInput = {
 
 export type StripeCatalogMutationContext = {
   idempotencyKey: string;
+  requestShapeFingerprint: string;
 };
 
 export type CatalogSyncIssueCode =
   | 'ambiguous_active_price'
+  | 'foreign_environment_identity'
   | 'inactive_price'
   | 'inactive_product'
+  | 'legacy_environment_identity'
+  | 'malformed_catalog_identity'
   | 'mapping_points_to_wrong_price'
   | 'missing_price'
+  | 'owned_orphan_price'
+  | 'owned_orphan_product'
   | 'placeholder_price_mapping'
   | 'product_projection_mismatch'
   | 'snapshot_mismatch'
@@ -165,25 +184,41 @@ export type CatalogSyncIssue = {
 
 export type CatalogSyncAction =
   | {
+      idempotencyKey?: string;
+      requestId?: string | null;
+      requestShapeFingerprint?: string;
       kind: 'archive_price';
+      replayed?: boolean | null;
       stripePriceId: StripePriceId;
     }
   | {
+      idempotencyKey?: string;
       kind: 'create_catalog_price';
+      requestId?: string | null;
+      requestShapeFingerprint?: string;
+      replayed?: boolean | null;
     }
   | {
       kind: 'update_mapping';
       stripePriceId: StripePriceId;
     }
   | {
+      idempotencyKey?: string;
       kind: 'update_product_projection';
       productId: string;
+      requestId?: string | null;
+      requestShapeFingerprint?: string;
+      replayed?: boolean | null;
     }
   | {
       kind: 'update_snapshot';
     }
   | {
+      idempotencyKey?: string;
       kind: 'update_stripe_metadata';
+      requestId?: string | null;
+      requestShapeFingerprint?: string;
+      replayed?: boolean | null;
       stripePriceId: StripePriceId;
     };
 
@@ -200,6 +235,7 @@ export type CatalogSyncVariantResult = {
 
 export type CatalogSyncAppliedAction = {
   actions: CatalogSyncAction[];
+  lookupKey: string;
   storeItemSlug: string;
   variantId: string;
 };

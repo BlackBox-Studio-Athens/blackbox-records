@@ -141,15 +141,20 @@ describe('stripe catalog verify script helpers', () => {
 
     expect(report).toContain('Stripe catalog verification failed.');
     expect(report).toContain('Catalog Field Ownership');
+    expect(report).toContain('Catalog Identity: 0 issues.');
     expect(report).toContain('Product Projection: 0 issues.');
     expect(report).toContain('Price Authority: 1 issue.');
     expect(report).toContain('D1 readiness: 0 issues.');
     expect(report).toContain('Store Offer snapshots: 0 issues.');
+    expect(report).toContain('Owned orphan drift: 0 issues.');
     expect(report).toContain('Webhook readiness: run pnpm stripe:webhooks:verify --env uat');
     expect(report).toContain(
       'Dry-run immutability: Stripe Products, Stripe Prices, D1 mappings, Store Offer snapshots, repo files, and evidence files are not mutated unless --apply is set.',
     );
     expect(report).toContain('price_authority:wrong_amount');
+    expect(report).toContain(
+      'lookup=blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+    );
     expect(report).toContain('price_...cdef');
     expect(report).toContain('price_...7890');
     expect(report).toContain('prod_...cdef');
@@ -166,9 +171,15 @@ describe('stripe catalog verify script helpers', () => {
           actions: [
             {
               kind: 'update_product_projection',
+              idempotencyKey:
+                'blackbox:catalog:uat:variant_disintegration-black-vinyl-lp_standard:update_product_projection:prod_1234567890abcdef:shape_abc',
               productId: 'prod_1234567890abcdef',
+              replayed: true,
+              requestId: 'req_product_projection_update',
+              requestShapeFingerprint: 'shape_abc',
             },
           ],
+          lookupKey: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
           storeItemSlug: storeItem.storeItemSlug,
           variantId: storeItem.variantId,
         },
@@ -196,6 +207,9 @@ describe('stripe catalog verify script helpers', () => {
     expect(report).toContain('Mode: apply');
     expect(report).toContain('Apply actions: completed 1 action.');
     expect(report).toContain('update_product_projection:prod_...cdef');
+    expect(report).toContain('request_id=req_product_projection_update');
+    expect(report).toContain('replayed=true');
+    expect(report).toContain('request_shape=shape_abc');
     expect(report).not.toContain('prod_1234567890abcdef');
   });
 
@@ -207,6 +221,7 @@ describe('stripe catalog verify script helpers', () => {
     ).toBe(
       'failed for [redacted_stripe_secret_key] price_...cdef prod_...cdef we_...cdef [redacted_stripe_webhook_secret]',
     );
+    expect(redactStripeCatalogDiagnostic('evt_1234567890abcdef')).toBe('evt_...cdef');
   });
 
   it('parses remote Wrangler D1 JSON even when upload progress precedes it', () => {

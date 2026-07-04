@@ -6,6 +6,7 @@ import Stripe from 'stripe';
 import {
   createStripeCatalogLookupKey,
   createStripeCatalogMetadata,
+  createStripeCatalogMutationContext,
   redactStripeObjectId,
   type StripeCatalogEnvironment,
 } from '../src/application/commerce/catalog-sync';
@@ -92,7 +93,7 @@ export async function resetStripeSandboxCatalog(
   const plan = await createResetPlan(options.environment, stripe, contracts);
 
   if (options.mode === 'confirm') {
-    await applyResetPlan(stripe, plan);
+    await applyResetPlan(options.environment, stripe, plan);
   }
 
   return plan;
@@ -162,21 +163,39 @@ export function formatStripeCatalogResetSandboxReport(plan: ResetPlan, options: 
   ].join('\n');
 }
 
-async function applyResetPlan(stripe: ResetStripeClient, plan: ResetPlan): Promise<void> {
+async function applyResetPlan(
+  environment: StripeCatalogEnvironment,
+  stripe: ResetStripeClient,
+  plan: ResetPlan,
+): Promise<void> {
   for (const priceId of plan.pricesToDeactivate) {
-    await stripe.prices.update(
-      priceId,
-      { active: false },
-      { idempotencyKey: `blackbox-sandbox-catalog-reset-price-${priceId}` },
-    );
+    const context = createStripeCatalogMutationContext({
+      action: 'reset_price',
+      environment,
+      identity: 'price',
+      requestShape: {
+        active: false,
+        priceId,
+      },
+      variantId: 'catalog-reset',
+    });
+
+    await stripe.prices.update(priceId, { active: false }, { idempotencyKey: context.idempotencyKey });
   }
 
   for (const productId of plan.productsToDeactivate) {
-    await stripe.products.update(
-      productId,
-      { active: false },
-      { idempotencyKey: `blackbox-sandbox-catalog-reset-product-${productId}` },
-    );
+    const context = createStripeCatalogMutationContext({
+      action: 'reset_product',
+      environment,
+      identity: 'product',
+      requestShape: {
+        active: false,
+        productId,
+      },
+      variantId: 'catalog-reset',
+    });
+
+    await stripe.products.update(productId, { active: false }, { idempotencyKey: context.idempotencyKey });
   }
 }
 
@@ -192,14 +211,31 @@ function isRepoOwnedSandboxPrice(
 
   return (
     Boolean(price.lookup_key && expectedLookupKeys.has(price.lookup_key)) ||
+    Boolean(price.lookup_key && isLegacySandboxLookupKey(price.lookup_key)) ||
     hasExpectedMetadata(priceMetadata, expectedIdentities) ||
     hasExpectedMetadata(productMetadata, expectedIdentities) ||
+    hasLegacySandboxCatalogMetadata(priceMetadata) ||
+    hasLegacySandboxCatalogMetadata(productMetadata) ||
     Boolean(product && isLegacyRepoOwnedSandboxProduct(product, expectedLegacyProductNames))
   );
 }
 
 function isLegacyRepoOwnedSandboxProduct(product: Stripe.Product, expectedLegacyProductNames: Set<string>): boolean {
-  return Boolean(product.name && expectedLegacyProductNames.has(normalizeLegacyProductName(product.name)));
+  return Boolean(
+    hasLegacySandboxCatalogMetadata(normalizeMetadata(product.metadata)) ||
+    (product.name && expectedLegacyProductNames.has(normalizeLegacyProductName(product.name))),
+  );
+}
+
+function isLegacySandboxLookupKey(value: string): boolean {
+  return value.startsWith('blackbox:sandbox:');
+}
+
+function hasLegacySandboxCatalogMetadata(metadata: Record<string, string>): boolean {
+  return (
+    metadata.appEnv === 'sandbox' &&
+    Boolean(metadata.sourceId && metadata.sourceKind && metadata.storeItemSlug && metadata.variantId)
+  );
 }
 
 function createLegacySandboxProductNames(productProjectionName: string): string[] {

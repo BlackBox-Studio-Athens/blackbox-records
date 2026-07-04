@@ -68,6 +68,7 @@ export async function runScheduledCatalogVerification(bindings: AppBindings): Pr
 
 function countCatalogIssueBreakdown(issues: CatalogSyncIssue[]) {
   return {
+    catalogIdentityIssues: countCatalogIssues(issues, 'catalog_identity'),
     d1ReadinessIssues: countCatalogIssues(issues, 'd1_readiness'),
     priceAuthorityIssues: countCatalogIssues(issues, 'price_authority'),
     productProjectionIssues: countCatalogIssues(issues, 'product_projection'),
