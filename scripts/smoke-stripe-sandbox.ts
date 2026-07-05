@@ -90,7 +90,10 @@ export type StripeSandboxSmokeScenarioName =
   | 'processing_error'
   | 'three_d_secure';
 
-export type StripeSandboxSmokeScenarioSelection = StripeSandboxSmokeScenarioName | 'all';
+export type StripeSandboxSmokeScenarioSelection =
+  | StripeSandboxSmokeScenarioName
+  | readonly StripeSandboxSmokeScenarioName[]
+  | 'all';
 export type StripeSandboxScreenshotMode = 'always' | 'never' | 'on-failure';
 
 export type StripeSandboxSmokeScenario = {
@@ -172,6 +175,19 @@ export type LocalCheckoutOrderRow = {
   status: 'needs_review' | 'not_paid' | 'paid' | 'pending_payment';
   stripePaymentIntentId: string | null;
   updatedAt: string;
+};
+
+export type PublicCheckoutStateResponse = {
+  checkoutSessionId: string;
+  orderStatus: LocalCheckoutOrderRow['status'] | null;
+  paymentStatus: 'no_payment_required' | 'paid' | 'unpaid';
+  shippingLocker: {
+    country_code: string | null;
+    locker_id: string | null;
+    locker_name_or_label: string | null;
+  } | null;
+  state: 'expired' | 'open' | 'paid' | 'processing' | 'unknown';
+  status: 'complete' | 'expired' | 'open' | null;
 };
 
 export type StripeSandboxSmokePreflightInput = {
@@ -1144,8 +1160,12 @@ async function runScenarioWithBrowser(input: {
     const finalUrl = page.url();
     const resolvedCheckoutSessionId = extractCheckoutSessionId(finalUrl) ?? checkoutSessionId;
     const order = resolvedCheckoutSessionId
-      ? await timeStripeSandboxStep(input.scenario.name, 'remote D1 poll', durations, 'remoteOrderPollMs', async () =>
-          waitForRemoteOrderAfterCheckout(resolvedCheckoutSessionId, input.scenario, input.options.timeoutMs),
+      ? await timeStripeSandboxStep(
+          input.scenario.name,
+          'remote order poll',
+          durations,
+          'remoteOrderPollMs',
+          async () => waitForRemoteOrderAfterCheckout(resolvedCheckoutSessionId, input.scenario, input.options),
         )
       : null;
     const webhookDeliveryDiagnostics =
@@ -1479,16 +1499,24 @@ export function createSmokeStoreCartStorageEntry(scenario?: StripeSandboxSmokeSc
 async function waitForRemoteOrderAfterCheckout(
   checkoutSessionId: string,
   scenario: StripeSandboxSmokeScenario,
-  timeoutMs: number,
+  options: Pick<StripeSandboxSmokeOptions, 'timeoutMs' | 'workerUrl'>,
 ): Promise<LocalCheckoutOrderRow | null> {
-  const deadline = Date.now() + (scenario.expectedOrderStatus === 'paid' ? Math.max(timeoutMs, 120_000) : 15_000);
+  const timeoutMs = scenario.expectedOrderStatus === 'paid' ? Math.max(options.timeoutMs, 120_000) : 15_000;
+  const deadline = Date.now() + timeoutMs;
   let latest: LocalCheckoutOrderRow | null = null;
+  let usePublicCheckoutState = true;
 
   while (Date.now() < deadline) {
-    latest = readRemoteCheckoutOrderBySession(checkoutSessionId);
+    if (usePublicCheckoutState) {
+      const workerResult = await readPublicCheckoutStateOrder(options.workerUrl, checkoutSessionId);
+      latest = workerResult.order;
+      usePublicCheckoutState = workerResult.source !== 'fallback';
+    } else {
+      latest = readRemoteCheckoutOrderBySession(checkoutSessionId);
+    }
 
     if (latest && didScenarioPass(latest, scenario, scenario.expectedStripeErrorPattern?.source ?? '')) {
-      return latest;
+      return readRemoteCheckoutOrderBySession(checkoutSessionId) ?? latest;
     }
 
     if (latest && scenario.expectedOrderStatus !== 'paid') {
@@ -1499,6 +1527,56 @@ async function waitForRemoteOrderAfterCheckout(
   }
 
   return latest;
+}
+
+async function readPublicCheckoutStateOrder(
+  workerUrl: string,
+  checkoutSessionId: string,
+): Promise<{ order: LocalCheckoutOrderRow | null; source: 'fallback' | 'worker' }> {
+  try {
+    const response = await fetch(createPublicCheckoutStateUrl(workerUrl, checkoutSessionId));
+
+    if (response.status === 404) {
+      return { order: null, source: 'worker' };
+    }
+
+    if (!response.ok) {
+      return { order: null, source: 'fallback' };
+    }
+
+    return {
+      order: toLocalCheckoutOrderRow((await response.json()) as PublicCheckoutStateResponse),
+      source: 'worker',
+    };
+  } catch {
+    return { order: null, source: 'fallback' };
+  }
+}
+
+function createPublicCheckoutStateUrl(workerUrl: string, checkoutSessionId: string): string {
+  const baseUrl = workerUrl.replace(/\/+$/, '');
+  return `${baseUrl}/api/checkout/sessions/${encodeURIComponent(checkoutSessionId)}/state`;
+}
+
+export function toLocalCheckoutOrderRow(order: PublicCheckoutStateResponse): LocalCheckoutOrderRow | null {
+  if (!order.orderStatus) {
+    return null;
+  }
+
+  return {
+    checkoutSessionId: order.checkoutSessionId,
+    createdAt: '',
+    id: order.checkoutSessionId,
+    needsReviewAt: null,
+    notPaidAt: null,
+    paidAt: null,
+    shippingLockerCountryCode: order.shippingLocker?.country_code ?? null,
+    shippingLockerId: order.shippingLocker?.locker_id ?? null,
+    shippingLockerNameOrLabel: order.shippingLocker?.locker_name_or_label ?? null,
+    status: order.orderStatus,
+    stripePaymentIntentId: null,
+    updatedAt: '',
+  };
 }
 
 function readRemoteCheckoutOrderBySession(checkoutSessionId: string): LocalCheckoutOrderRow | null {

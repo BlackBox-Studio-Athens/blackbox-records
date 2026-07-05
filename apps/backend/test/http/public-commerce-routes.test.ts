@@ -460,6 +460,7 @@ describe('public commerce routes', () => {
   it('returns app-owned ReadCheckoutState output for return and retry UI', async () => {
     mockReadCheckoutState.mockResolvedValueOnce({
       checkoutSessionId: 'cs_test_123',
+      orderStatus: 'paid',
       paymentStatus: 'paid',
       shippingLocker,
       state: 'paid',
@@ -473,6 +474,7 @@ describe('public commerce routes', () => {
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
+      orderStatus: 'paid',
       paymentStatus: 'paid',
       shippingLocker,
       state: 'paid',

@@ -31,6 +31,7 @@ const shippingLocker = {
 
 const checkoutState = {
   checkoutSessionId: 'cs_mock_variant_disintegration-black-vinyl-lp_standard',
+  orderStatus: 'pending_payment',
   paymentStatus: 'unpaid',
   shippingLocker,
   state: 'open',

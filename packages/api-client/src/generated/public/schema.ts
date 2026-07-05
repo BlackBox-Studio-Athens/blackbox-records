@@ -310,6 +310,8 @@ export type components = {
     schemas: {
         CheckoutState: {
             checkoutSessionId: string;
+            /** @enum {string|null} */
+            orderStatus: "pending_payment" | "paid" | "not_paid" | "needs_review" | null;
             /** @enum {string} */
             paymentStatus: "paid" | "unpaid" | "no_payment_required";
             shippingLocker: components["schemas"]["CheckoutStateShippingLocker"] | null;

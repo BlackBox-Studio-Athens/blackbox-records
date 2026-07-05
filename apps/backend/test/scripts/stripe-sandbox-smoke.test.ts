@@ -32,6 +32,7 @@ import {
   selectFirstVisibleSelector,
   STRIPE_SANDBOX_SMOKE_SCENARIOS,
   STRIPE_TEST_CARD_DOCS_URL,
+  toLocalCheckoutOrderRow,
   type LocalCheckoutOrderRow,
   type RemoteD1ReadinessSummary,
 } from '../../../../scripts/smoke-stripe-sandbox';
@@ -150,9 +151,45 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(
       parseStripeSandboxSmokeArgs(['--expected-payment-labels=Link,Google Pay']).expectedPaymentMethodLabels,
     ).toEqual(['Link', 'Google Pay']);
+    expect(
+      parseStripeSandboxSmokeArgs(['--scenario', 'happy_path_paid,pay_what_you_want_paid']).scenarioSelection,
+    ).toEqual(['happy_path_paid', 'pay_what_you_want_paid']);
+    expect(() => parseStripeSandboxSmokeArgs(['--scenario', 'all,happy_path_paid'])).toThrow(
+      'Stripe sandbox smoke scenario lists cannot include all.',
+    );
     expect(() => parseStripeSandboxSmokeArgs(['--expected-payment-label', ''])).toThrow(
       '--expected-payment-label must include a payment method label.',
     );
+  });
+
+  it('maps public Checkout State readback to smoke order evidence shape', () => {
+    expect(
+      toLocalCheckoutOrderRow({
+        checkoutSessionId: 'cs_test_123',
+        orderStatus: 'paid',
+        paymentStatus: 'paid',
+        shippingLocker: {
+          country_code: 'GR',
+          locker_id: 'locker_1',
+          locker_name_or_label: 'Locker 1',
+        },
+        state: 'paid',
+        status: 'complete',
+      }),
+    ).toEqual({
+      checkoutSessionId: 'cs_test_123',
+      createdAt: '',
+      id: 'cs_test_123',
+      needsReviewAt: null,
+      notPaidAt: null,
+      paidAt: null,
+      shippingLockerCountryCode: 'GR',
+      shippingLockerId: 'locker_1',
+      shippingLockerNameOrLabel: 'Locker 1',
+      status: 'paid',
+      stripePaymentIntentId: null,
+      updatedAt: '',
+    });
   });
 
   it('derives the checkout surface amount from the Worker Store Offer', async () => {

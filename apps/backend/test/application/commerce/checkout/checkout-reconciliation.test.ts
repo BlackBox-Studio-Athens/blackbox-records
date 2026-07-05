@@ -35,6 +35,7 @@ describe('checkout reconciliation', () => {
     ).toEqual({
       checkoutState: {
         checkoutSessionId: 'cs_test_123',
+        orderStatus: null,
         paymentStatus: 'paid',
         shippingLocker: null,
         state: 'paid',

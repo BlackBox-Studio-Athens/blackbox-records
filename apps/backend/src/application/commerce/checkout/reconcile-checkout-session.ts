@@ -22,6 +22,7 @@ export function reconcileCheckoutSession(session: StripeCheckoutSessionState): C
   return {
     checkoutState: {
       checkoutSessionId: session.checkoutSessionId,
+      orderStatus: null,
       paymentStatus: session.paymentStatus,
       shippingLocker: null,
       state: mapCheckoutState(session),

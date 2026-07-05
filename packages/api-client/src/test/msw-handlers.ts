@@ -24,6 +24,7 @@ type RecordedStockChangeResponse = InternalApiComponents['schemas']['RecordedSto
 export const publicCheckoutFixtures = {
   checkoutState: {
     checkoutSessionId: 'cs_test_123',
+    orderStatus: 'paid',
     paymentStatus: 'paid',
     shippingLocker: null,
     state: 'paid',

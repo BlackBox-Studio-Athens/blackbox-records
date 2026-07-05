@@ -101,6 +101,7 @@ const startCheckoutResponseSchema = z
 const checkoutStateSchema = z
   .object({
     checkoutSessionId: z.string(),
+    orderStatus: z.enum(['pending_payment', 'paid', 'not_paid', 'needs_review']).nullable(),
     paymentStatus: z.enum(['paid', 'unpaid', 'no_payment_required']),
     shippingLocker: z.union([checkoutStateShippingLockerSchema, z.null()]),
     state: z.enum(['open', 'paid', 'processing', 'expired', 'unknown']),

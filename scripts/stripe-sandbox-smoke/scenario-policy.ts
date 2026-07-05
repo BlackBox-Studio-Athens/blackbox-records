@@ -199,6 +199,10 @@ export const STRIPE_SANDBOX_SMOKE_SCENARIOS: Record<StripeSandboxSmokeScenarioNa
 export function resolveSelectedStripeSandboxScenarios(
   selection: StripeSandboxSmokeScenarioSelection,
 ): StripeSandboxSmokeScenario[] {
+  if (typeof selection !== 'string') {
+    return selection.map((name) => STRIPE_SANDBOX_SMOKE_SCENARIOS[name]);
+  }
+
   return resolveSmokeScenarioSelection(selection, Object.values(STRIPE_SANDBOX_SMOKE_SCENARIOS));
 }
 

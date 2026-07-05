@@ -9,6 +9,7 @@ import {
 import type {
   StripeSandboxScreenshotMode,
   StripeSandboxSmokeOptions,
+  StripeSandboxSmokeScenarioName,
   StripeSandboxSmokeScenarioSelection,
 } from '../smoke-stripe-sandbox';
 import { defaultSiteUrl, defaultWorkerUrl } from './constants';
@@ -193,6 +194,18 @@ export function parseStripeSandboxSmokeArgs(args: string[]): StripeSandboxSmokeO
 }
 
 function parseScenarioSelection(value: string | undefined): StripeSandboxSmokeScenarioSelection {
+  if (value?.includes(',')) {
+    const selected = value
+      .split(',')
+      .map((item) => parseNamedSmokeScenarioSelection(item.trim(), allScenarioNames, 'Stripe sandbox smoke'));
+
+    if (selected.includes('all')) {
+      throw new Error('Stripe sandbox smoke scenario lists cannot include all.');
+    }
+
+    return [...new Set(selected.filter((item): item is StripeSandboxSmokeScenarioName => item !== 'all'))];
+  }
+
   return parseNamedSmokeScenarioSelection(value, allScenarioNames, 'Stripe sandbox smoke');
 }
 

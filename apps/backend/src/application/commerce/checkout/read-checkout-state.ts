@@ -17,6 +17,7 @@ export async function readCheckoutState(
 
   return {
     ...reconcileCheckoutSession(session).checkoutState,
+    orderStatus: order?.status ?? null,
     shippingLocker: order?.shippingLocker ?? null,
   };
 }

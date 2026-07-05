@@ -7,6 +7,7 @@ import type {
   StripePriceId,
   VariantId,
 } from '../../../domain/commerce';
+import type { OrderStatus } from '../../../domain/commerce/repositories/spi';
 import type { StoreOfferPrice } from '../catalog-sync';
 
 export type StoreOfferAvailability = {
@@ -85,6 +86,7 @@ export type StripeCheckoutSessionState = {
 
 export type CheckoutState = {
   checkoutSessionId: CheckoutSessionId;
+  orderStatus: OrderStatus | null;
   paymentStatus: StripeCheckoutPaymentStatus;
   shippingLocker: ShippingLockerSnapshot | null;
   state: 'open' | 'paid' | 'processing' | 'expired' | 'unknown';

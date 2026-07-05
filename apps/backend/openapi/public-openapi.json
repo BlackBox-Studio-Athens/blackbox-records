@@ -240,6 +240,19 @@
           "checkoutSessionId": {
             "type": "string"
           },
+          "orderStatus": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "pending_payment",
+              "paid",
+              "not_paid",
+              "needs_review",
+              null
+            ]
+          },
           "paymentStatus": {
             "type": "string",
             "enum": [
@@ -283,6 +296,7 @@
         },
         "required": [
           "checkoutSessionId",
+          "orderStatus",
           "paymentStatus",
           "shippingLocker",
           "state",

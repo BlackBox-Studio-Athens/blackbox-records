@@ -803,6 +803,7 @@ describe('checkout use cases', () => {
   it('maps Stripe Checkout Session status into app-owned return state without D1 writes', async () => {
     await expect(readCheckoutState(checkoutGateway, orders, checkoutSessionId('cs_test_123'))).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
+      orderStatus: null,
       paymentStatus: 'paid',
       shippingLocker: null,
       state: 'paid',
@@ -831,6 +832,7 @@ describe('checkout use cases', () => {
 
     await expect(readCheckoutState(checkoutGateway, orders, checkoutSessionId('cs_test_123'))).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
+      orderStatus: 'pending_payment',
       paymentStatus: 'paid',
       shippingLocker: null,
       state: 'paid',
