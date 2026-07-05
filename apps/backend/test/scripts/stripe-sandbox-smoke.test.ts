@@ -4,6 +4,7 @@ import {
   buildStripeSandboxSmokeEvidence,
   buildStripeSandboxSmokeSummary,
   calculateMinimumSmokeOnlineQuantity,
+  calculatePaidStripeSandboxSmokeConcurrency,
   checkStripeSandboxSmokePreflight,
   createStripeCheckoutSessionProjectionObservation,
   createStripeCheckoutSurfaceObservation,
@@ -27,9 +28,12 @@ import {
   parseStripeSandboxSmokeArgs,
   resolveCheckoutSurfaceExpectation,
   resolveSelectedStripeSandboxScenarios,
+  readStripeSandboxSmokeErrorEvidence,
   runInBatches,
+  runInSettledBatches,
   scrubSensitiveStripeSmokeText,
   selectFirstVisibleSelector,
+  StripeSandboxSmokeScenarioGroupError,
   STRIPE_SANDBOX_SMOKE_SCENARIOS,
   STRIPE_TEST_CARD_DOCS_URL,
   toLocalCheckoutOrderRow,
@@ -160,6 +164,13 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(() => parseStripeSandboxSmokeArgs(['--expected-payment-label', ''])).toThrow(
       '--expected-payment-label must include a payment method label.',
     );
+  });
+
+  it('caps paid scenario smoke concurrency at two hosted checkouts', () => {
+    expect(calculatePaidStripeSandboxSmokeConcurrency(0)).toBe(1);
+    expect(calculatePaidStripeSandboxSmokeConcurrency(1)).toBe(1);
+    expect(calculatePaidStripeSandboxSmokeConcurrency(2)).toBe(2);
+    expect(calculatePaidStripeSandboxSmokeConcurrency(5)).toBe(2);
   });
 
   it('maps public Checkout State readback to smoke order evidence shape', () => {
@@ -336,6 +347,25 @@ describe('Stripe sandbox Playwright smoke runner', () => {
 
     expect(started).toEqual([1, 2, 3, 4]);
     expect(finished).toEqual([1, 2, 3, 4]);
+  });
+
+  it('waits for a started settled batch before stopping on failure', async () => {
+    const events: string[] = [];
+
+    const results = await runInSettledBatches([1, 2, 3], 2, async (value) => {
+      events.push(`start:${value}`);
+      await Promise.resolve();
+      if (value === 1) {
+        events.push(`fail:${value}`);
+        throw new Error('boom');
+      }
+      events.push(`finish:${value}`);
+    });
+
+    expect(events).toEqual(['start:1', 'start:2', 'fail:1', 'finish:2']);
+    expect(results).toHaveLength(2);
+    expect(results[0]?.status).toBe('rejected');
+    expect(results[1]?.status).toBe('fulfilled');
   });
 
   it('checks sandbox preflight without printing secret values', () => {
@@ -682,30 +712,29 @@ describe('Stripe sandbox Playwright smoke runner', () => {
   });
 
   it('builds a standardized run summary for passed and blocked runs', () => {
+    const checkoutSurfaceEvidence = {
+      checkoutPageUrl: 'https://blackbox-records-web.pages.dev/store/checkout/',
+      checkoutSessionProjection: null,
+      checkoutSurface: null,
+      durations: createEmptyStripeSandboxSmokeDurations(),
+      finalUrl: 'https://blackbox-records-web.pages.dev/store/checkout/',
+      generatedAt: '2026-05-17T00:00:00.000Z',
+      observedStripeUi: 'Checkout ready',
+      order: null,
+      passed: true,
+      runId: '20260517000102',
+      scenario: {
+        expectedOrderStatus: 'not_submitted' as const,
+        name: 'checkout_surface' as const,
+      },
+      screenshotPath: null,
+      siteUrl: 'https://blackbox-records-web.pages.dev',
+      tracePath: null,
+      webhookDeliveryDiagnostics: null,
+      workerUrl: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
+    };
     const passedSummary = buildStripeSandboxSmokeSummary({
-      evidence: [
-        {
-          checkoutPageUrl: 'https://blackbox-records-web.pages.dev/store/checkout/',
-          checkoutSessionProjection: null,
-          checkoutSurface: null,
-          durations: createEmptyStripeSandboxSmokeDurations(),
-          finalUrl: 'https://blackbox-records-web.pages.dev/store/checkout/',
-          generatedAt: '2026-05-17T00:00:00.000Z',
-          observedStripeUi: 'Checkout ready',
-          order: null,
-          passed: true,
-          runId: '20260517000102',
-          scenario: {
-            expectedOrderStatus: 'not_submitted',
-            name: 'checkout_surface',
-          },
-          screenshotPath: null,
-          siteUrl: 'https://blackbox-records-web.pages.dev',
-          tracePath: null,
-          webhookDeliveryDiagnostics: null,
-          workerUrl: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
-        },
-      ],
+      evidence: [checkoutSurfaceEvidence],
       options: {
         siteUrl: 'https://blackbox-records-web.pages.dev',
         workerUrl: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
@@ -743,6 +772,31 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       scenarioNames: ['checkout_surface'],
       status: 'failed',
       suite: 'stripe-sandbox',
+    });
+
+    const groupedError = new StripeSandboxSmokeScenarioGroupError(
+      'Stripe checkout failed',
+      [checkoutSurfaceEvidence],
+      new Error('Stripe checkout failed'),
+    );
+    const recoveredEvidence = readStripeSandboxSmokeErrorEvidence(groupedError);
+    const blockedSummaryWithRecoveredEvidence = buildStripeSandboxSmokeSummary({
+      blocker: groupedError.message,
+      evidence: recoveredEvidence,
+      options: {
+        siteUrl: 'https://blackbox-records-web.pages.dev',
+        workerUrl: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
+      },
+      runId: '20260517000102',
+      scenarios: [STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface],
+    });
+
+    expect(recoveredEvidence).toEqual([checkoutSurfaceEvidence]);
+    expect(blockedSummaryWithRecoveredEvidence).toMatchObject({
+      blocker: 'Stripe checkout failed',
+      failedScenarioCount: 0,
+      passedScenarioCount: 1,
+      status: 'failed',
     });
   });
 

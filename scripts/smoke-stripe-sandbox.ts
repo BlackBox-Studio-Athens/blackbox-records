@@ -315,6 +315,18 @@ const stripeCheckoutWebhookEventTypes = [
   'checkout.session.expired',
 ] as const;
 
+export class StripeSandboxSmokeScenarioGroupError extends Error {
+  readonly cause: unknown;
+  readonly evidence: StripeSandboxSmokeEvidence[];
+
+  constructor(message: string, evidence: readonly StripeSandboxSmokeEvidence[], cause: unknown) {
+    super(message);
+    this.name = 'StripeSandboxSmokeScenarioGroupError';
+    this.cause = cause;
+    this.evidence = [...evidence];
+  }
+}
+
 const sandboxFormDefaults = {
   addressLine1: '1 Stripe Test Street',
   city: 'Athens',
@@ -766,6 +778,14 @@ export function buildStripeSandboxSmokeSummary(input: {
   };
 }
 
+export function calculatePaidStripeSandboxSmokeConcurrency(scenarioCount: number): number {
+  return Math.max(1, Math.min(2, scenarioCount));
+}
+
+export function readStripeSandboxSmokeErrorEvidence(error: unknown): StripeSandboxSmokeEvidence[] {
+  return error instanceof StripeSandboxSmokeScenarioGroupError ? [...error.evidence] : [];
+}
+
 async function main() {
   const options = parseStripeSandboxSmokeArgs(process.argv.slice(2));
   const scenarios = resolveSelectedStripeSandboxScenarios(options.scenarioSelection);
@@ -797,6 +817,7 @@ async function main() {
 
     console.log(JSON.stringify(evidence, null, 2));
   } catch (error) {
+    evidence.push(...readStripeSandboxSmokeErrorEvidence(error));
     const blocker = scrubSensitiveStripeSmokeText(error instanceof Error ? error.message : String(error));
     writeJsonFile(summaryPath, buildStripeSandboxSmokeSummary({ blocker, evidence, options, runId, scenarios }));
     console.error(blocker);
@@ -871,8 +892,25 @@ async function runStripeSandboxSmokeScenarioGroups(input: {
     return evidence;
   }
 
-  for (const scenario of scenarioGroups.paidScenarios) {
-    evidence.push(await runScenarioAndWriteEvidence({ ...input, scenario }));
+  if (scenarioGroups.paidScenarios.length) {
+    const paidConcurrency = calculatePaidStripeSandboxSmokeConcurrency(scenarioGroups.paidScenarios.length);
+    console.log(`Running ${scenarioGroups.paidScenarios.length} paid scenario(s) with concurrency ${paidConcurrency}.`);
+    const paidEvidenceByScenarioName = new Map<StripeSandboxSmokeScenarioName, StripeSandboxSmokeEvidence>();
+    const paidResults = await runInSettledBatches(scenarioGroups.paidScenarios, paidConcurrency, async (scenario) => {
+      paidEvidenceByScenarioName.set(scenario.name, await runScenarioAndWriteEvidence({ ...input, scenario }));
+    });
+    evidence.push(
+      ...scenarioGroups.paidScenarios.flatMap((scenario) => {
+        const scenarioEvidence = paidEvidenceByScenarioName.get(scenario.name);
+        return scenarioEvidence ? [scenarioEvidence] : [];
+      }),
+    );
+    const firstPaidFailure = paidResults.find((result) => result.status === 'rejected');
+    if (firstPaidFailure?.status === 'rejected') {
+      const message =
+        firstPaidFailure.reason instanceof Error ? firstPaidFailure.reason.message : String(firstPaidFailure.reason);
+      throw new StripeSandboxSmokeScenarioGroupError(message, evidence, firstPaidFailure.reason);
+    }
   }
 
   if (hasFailedStripeSandboxSmokeEvidence(evidence)) {
@@ -1012,6 +1050,25 @@ export async function runInBatches<T>(
   task: (item: T) => Promise<void>,
 ): Promise<void> {
   return runSmokeInBatches(items, concurrency, task);
+}
+
+export async function runInSettledBatches<T>(
+  items: readonly T[],
+  concurrency: number,
+  task: (item: T) => Promise<void>,
+): Promise<PromiseSettledResult<void>[]> {
+  const results: PromiseSettledResult<void>[] = [];
+
+  for (let index = 0; index < items.length; index += concurrency) {
+    const batchResults = await Promise.allSettled(items.slice(index, index + concurrency).map((item) => task(item)));
+    results.push(...batchResults);
+
+    if (batchResults.some((result) => result.status === 'rejected')) {
+      break;
+    }
+  }
+
+  return results;
 }
 
 function ensureSandboxSmokeStock(minimumQuantity: number, variantIds: readonly string[]): void {
