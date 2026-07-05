@@ -308,6 +308,13 @@ describe('stripe catalog contract projection', () => {
     expect(sql).toContain("'anarchotribal-vinyl', 'release', 'anarchotribal', 'variant_anarchotribal-vinyl_standard'");
     expect(sql).toContain("'barren-point', 'distro', 'barren-point', 'variant_barren-point_standard'");
     expect(sql).toContain('DELETE FROM "StoreItemOption"\nWHERE "storeItemSlug" = \'mass-culture-lp\'');
+    expect(sql).toContain(
+      'DELETE FROM "VariantStripeMapping"\nWHERE "variantId" = \'variant_mass-culture-lp_standard\'',
+    );
+    expect(sql).toContain(
+      '"variantId" = \'variant_barren-point_standard\'\n       AND NOT EXISTS (\n           SELECT 1\n           FROM "StoreItemOption" current_store_item',
+    );
+    expect(sql).not.toContain("\"variantId\" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard'");
     expect(sql).not.toContain("'mass-culture-lp', 'distro'");
     expect(sql).not.toContain('price_');
     expect(sql).not.toContain('sk_');

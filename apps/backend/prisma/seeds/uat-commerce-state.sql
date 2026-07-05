@@ -14,16 +14,108 @@ WHERE "storeItemSlug" = 'disintegration-black-vinyl-lp'
 
 DELETE FROM "StoreOfferSnapshot"
 WHERE "storeItemSlug" = 'mass-culture-lp'
-   OR "variantId" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard', 'variant_disintegration-black-vinyl-lp_standard');
+   OR "variantId" = 'variant_mass-culture-lp_standard'
+   OR (
+       "variantId" = 'variant_barren-point_standard'
+       AND NOT EXISTS (
+           SELECT 1
+           FROM "StoreItemOption" current_store_item
+           WHERE current_store_item."variantId" = 'variant_barren-point_standard'
+             AND current_store_item."storeItemSlug" = 'barren-point'
+             AND current_store_item."sourceKind" = 'distro'
+             AND current_store_item."sourceId" = 'barren-point'
+       )
+)
+   OR (
+       "variantId" = 'variant_disintegration-black-vinyl-lp_standard'
+       AND NOT EXISTS (
+           SELECT 1
+           FROM "StoreItemOption" current_store_item
+           WHERE current_store_item."variantId" = 'variant_disintegration-black-vinyl-lp_standard'
+             AND current_store_item."storeItemSlug" = 'disintegration-black-vinyl-lp'
+             AND current_store_item."sourceKind" = 'release'
+             AND current_store_item."sourceId" = 'disintegration'
+       )
+)
+;
 
 DELETE FROM "VariantStripeMapping"
-WHERE "variantId" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard', 'variant_disintegration-black-vinyl-lp_standard');
+WHERE "variantId" = 'variant_mass-culture-lp_standard'
+   OR (
+       "variantId" = 'variant_barren-point_standard'
+       AND NOT EXISTS (
+           SELECT 1
+           FROM "StoreItemOption" current_store_item
+           WHERE current_store_item."variantId" = 'variant_barren-point_standard'
+             AND current_store_item."storeItemSlug" = 'barren-point'
+             AND current_store_item."sourceKind" = 'distro'
+             AND current_store_item."sourceId" = 'barren-point'
+       )
+)
+   OR (
+       "variantId" = 'variant_disintegration-black-vinyl-lp_standard'
+       AND NOT EXISTS (
+           SELECT 1
+           FROM "StoreItemOption" current_store_item
+           WHERE current_store_item."variantId" = 'variant_disintegration-black-vinyl-lp_standard'
+             AND current_store_item."storeItemSlug" = 'disintegration-black-vinyl-lp'
+             AND current_store_item."sourceKind" = 'release'
+             AND current_store_item."sourceId" = 'disintegration'
+       )
+)
+;
 
 DELETE FROM "Stock"
-WHERE "variantId" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard', 'variant_disintegration-black-vinyl-lp_standard');
+WHERE "variantId" = 'variant_mass-culture-lp_standard'
+   OR (
+       "variantId" = 'variant_barren-point_standard'
+       AND NOT EXISTS (
+           SELECT 1
+           FROM "StoreItemOption" current_store_item
+           WHERE current_store_item."variantId" = 'variant_barren-point_standard'
+             AND current_store_item."storeItemSlug" = 'barren-point'
+             AND current_store_item."sourceKind" = 'distro'
+             AND current_store_item."sourceId" = 'barren-point'
+       )
+)
+   OR (
+       "variantId" = 'variant_disintegration-black-vinyl-lp_standard'
+       AND NOT EXISTS (
+           SELECT 1
+           FROM "StoreItemOption" current_store_item
+           WHERE current_store_item."variantId" = 'variant_disintegration-black-vinyl-lp_standard'
+             AND current_store_item."storeItemSlug" = 'disintegration-black-vinyl-lp'
+             AND current_store_item."sourceKind" = 'release'
+             AND current_store_item."sourceId" = 'disintegration'
+       )
+)
+;
 
 DELETE FROM "ItemAvailability"
-WHERE "variantId" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard', 'variant_disintegration-black-vinyl-lp_standard');
+WHERE "variantId" = 'variant_mass-culture-lp_standard'
+   OR (
+       "variantId" = 'variant_barren-point_standard'
+       AND NOT EXISTS (
+           SELECT 1
+           FROM "StoreItemOption" current_store_item
+           WHERE current_store_item."variantId" = 'variant_barren-point_standard'
+             AND current_store_item."storeItemSlug" = 'barren-point'
+             AND current_store_item."sourceKind" = 'distro'
+             AND current_store_item."sourceId" = 'barren-point'
+       )
+)
+   OR (
+       "variantId" = 'variant_disintegration-black-vinyl-lp_standard'
+       AND NOT EXISTS (
+           SELECT 1
+           FROM "StoreItemOption" current_store_item
+           WHERE current_store_item."variantId" = 'variant_disintegration-black-vinyl-lp_standard'
+             AND current_store_item."storeItemSlug" = 'disintegration-black-vinyl-lp'
+             AND current_store_item."sourceKind" = 'release'
+             AND current_store_item."sourceId" = 'disintegration'
+       )
+)
+;
 
 DELETE FROM "StoreItemOption"
 WHERE "storeItemSlug" = 'mass-culture-lp'

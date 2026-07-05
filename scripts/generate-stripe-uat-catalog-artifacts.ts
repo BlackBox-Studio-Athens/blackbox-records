@@ -272,6 +272,19 @@ function createDesiredCatalogStateRevision(contracts: StripeCatalogStoreItemCont
 }
 
 function createStaleIdentityCleanupSql(): string {
+  const staleBarrenPointVariantPredicate = createStaleCurrentVariantPredicate({
+    sourceId: 'barren-point',
+    sourceKind: 'distro',
+    storeItemSlug: 'barren-point',
+    variantId: 'variant_barren-point_standard',
+  });
+  const staleDisintegrationVariantPredicate = createStaleCurrentVariantPredicate({
+    sourceId: 'disintegration',
+    sourceKind: 'release',
+    storeItemSlug: 'disintegration-black-vinyl-lp',
+    variantId: 'variant_disintegration-black-vinyl-lp_standard',
+  });
+
   return [
     '-- Cleanup for renamed sandbox-only identities from the pre-decoupling Barren Point / Disintegration catalog.',
     'UPDATE "StoreItemOption"',
@@ -285,21 +298,54 @@ function createStaleIdentityCleanupSql(): string {
     '',
     'DELETE FROM "StoreOfferSnapshot"',
     'WHERE "storeItemSlug" = \'mass-culture-lp\'',
-    "   OR \"variantId\" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard', 'variant_disintegration-black-vinyl-lp_standard');",
+    '   OR "variantId" = \'variant_mass-culture-lp_standard\'',
+    ...formatOrPredicates([staleBarrenPointVariantPredicate, staleDisintegrationVariantPredicate]),
+    ';',
     '',
     'DELETE FROM "VariantStripeMapping"',
-    "WHERE \"variantId\" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard', 'variant_disintegration-black-vinyl-lp_standard');",
+    'WHERE "variantId" = \'variant_mass-culture-lp_standard\'',
+    ...formatOrPredicates([staleBarrenPointVariantPredicate, staleDisintegrationVariantPredicate]),
+    ';',
     '',
     'DELETE FROM "Stock"',
-    "WHERE \"variantId\" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard', 'variant_disintegration-black-vinyl-lp_standard');",
+    'WHERE "variantId" = \'variant_mass-culture-lp_standard\'',
+    ...formatOrPredicates([staleBarrenPointVariantPredicate, staleDisintegrationVariantPredicate]),
+    ';',
     '',
     'DELETE FROM "ItemAvailability"',
-    "WHERE \"variantId\" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard', 'variant_disintegration-black-vinyl-lp_standard');",
+    'WHERE "variantId" = \'variant_mass-culture-lp_standard\'',
+    ...formatOrPredicates([staleBarrenPointVariantPredicate, staleDisintegrationVariantPredicate]),
+    ';',
     '',
     'DELETE FROM "StoreItemOption"',
     'WHERE "storeItemSlug" = \'mass-culture-lp\'',
     '   OR "variantId" = \'variant_mass-culture-lp_standard\';',
   ].join('\n');
+}
+
+function createStaleCurrentVariantPredicate(input: {
+  sourceId: string;
+  sourceKind: StripeCatalogStoreItemContract['sourceKind'];
+  storeItemSlug: string;
+  variantId: string;
+}): string[] {
+  return [
+    '(',
+    `       "variantId" = ${formatSqlValue(input.variantId)}`,
+    '       AND NOT EXISTS (',
+    '           SELECT 1',
+    '           FROM "StoreItemOption" current_store_item',
+    `           WHERE current_store_item."variantId" = ${formatSqlValue(input.variantId)}`,
+    `             AND current_store_item."storeItemSlug" = ${formatSqlValue(input.storeItemSlug)}`,
+    `             AND current_store_item."sourceKind" = ${formatSqlValue(input.sourceKind)}`,
+    `             AND current_store_item."sourceId" = ${formatSqlValue(input.sourceId)}`,
+    '       )',
+    ')',
+  ];
+}
+
+function formatOrPredicates(predicates: string[][]): string[] {
+  return predicates.flatMap((predicate) => predicate.map((line, index) => (index === 0 ? `   OR ${line}` : line)));
 }
 
 function createStoreItemOptionSql(contracts: StripeCatalogStoreItemContract[]): string {
