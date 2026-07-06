@@ -4,9 +4,10 @@ import type {
   ApplyPaidCheckoutReconciliationResult,
   CheckoutOrderPaid,
 } from '../../../application/commerce/orders';
+import type { StripeCatalogEnvironment } from '../../../application/commerce/catalog-sync';
 import { toStripeCheckoutSessionState } from '../../../infrastructure/stripe';
 import type { VerifiedStripeWebhookEvent } from '../../../infrastructure/stripe';
-import { parseVariantId } from '../../../domain/commerce';
+import { parseStoreItemSlug, parseVariantId, type StoreItemSlug } from '../../../domain/commerce';
 import type {
   RecordStripeCatalogWebhookEventInput,
   RecordStripeCatalogWebhookEventResult,
@@ -27,7 +28,11 @@ export type StripeWebhookAcknowledgementServices = {
   applyPaidCheckoutReconciliation: (
     reconciliation: ReturnType<typeof reconcileCheckoutSession>,
   ) => Promise<ApplyPaidCheckoutReconciliationResult>;
+  catalogEnvironment: StripeCatalogEnvironment;
+  catalogWebhookMutationEnabled: boolean;
   findStoreItemByVariantId: (variantId: string) => Promise<StoreItemOptionRecord | null>;
+  markCatalogEventFailed: (eventId: string, failureReason: string) => Promise<void>;
+  markCatalogEventSucceeded: (eventId: string) => Promise<void>;
   publishCheckoutOrderPaid: (event: CheckoutOrderPaid) => Promise<void>;
   recordCatalogWebhookEvent: (
     input: RecordStripeCatalogWebhookEventInput,
@@ -56,25 +61,42 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
   }
 
   if ('catalogObject' in event) {
-    const variantId = readVariantIdFromCatalogObject(event.catalogObject);
+    const identity = readCatalogObjectEventIdentity(event.catalogObject, services.catalogEnvironment);
     const catalogObjectIdentity = readCatalogObjectIdentity(event.catalogObject);
+
+    if (!services.catalogWebhookMutationEnabled) {
+      logCatalogWebhookOutcome(services, {
+        outcome: 'catalog_readiness_only',
+        retryable: false,
+        safeReason: 'prd_open_gate_closed',
+        storeItemSlug: identity.storeItemSlug,
+        stripeEventType: event.type,
+        variantId: identity.variantId,
+      });
+
+      return {
+        ignored: true,
+        received: true,
+      };
+    }
+
     const recordResult = await services.recordCatalogWebhookEvent({
       catalogObjectId: catalogObjectIdentity.catalogObjectId,
       catalogObjectKind: catalogObjectIdentity.catalogObjectKind,
       eventId: event.id,
       eventType: event.type,
       stripeCreatedAt: new Date(event.created * 1000),
-      variantId,
+      variantId: identity.variantId,
     });
 
-    if (recordResult.status === 'duplicate') {
-      services.logger?.warn({
-        event: 'stripe_webhook_outcome',
+    if (recordResult.status === 'duplicate_succeeded') {
+      logCatalogWebhookOutcome(services, {
         outcome: 'duplicate_event',
-        provider: 'stripe',
+        retryable: false,
         safeReason: 'duplicate_event',
+        storeItemSlug: identity.storeItemSlug,
         stripeEventType: event.type,
-        variantId: variantId ?? undefined,
+        variantId: identity.variantId,
       });
 
       return {
@@ -82,29 +104,70 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
       };
     }
 
-    const storeItem = variantId ? await services.findStoreItemByVariantId(variantId) : null;
+    if (identity.safeReason) {
+      await services.markCatalogEventSucceeded(event.id);
+      logCatalogWebhookOutcome(services, {
+        outcome: 'catalog_ignored',
+        retryable: false,
+        safeReason: identity.safeReason,
+        storeItemSlug: identity.storeItemSlug,
+        stripeEventType: event.type,
+        variantId: identity.variantId,
+      });
 
-    if (storeItem) {
-      await services.reconcileCatalogVariant(storeItem);
+      return {
+        ignored: true,
+        received: true,
+      };
     }
 
-    services.logger?.info({
-      event: 'stripe_webhook_outcome',
-      outcome: storeItem ? 'catalog_reconciled' : 'catalog_ignored',
-      provider: 'stripe',
-      safeReason: storeItem ? undefined : 'variant_not_found',
+    const storeItem = identity.variantId ? await services.findStoreItemByVariantId(identity.variantId) : null;
+
+    if (!storeItem) {
+      await services.markCatalogEventSucceeded(event.id);
+      logCatalogWebhookOutcome(services, {
+        outcome: 'catalog_ignored',
+        retryable: false,
+        safeReason: 'variant_not_found',
+        storeItemSlug: identity.storeItemSlug,
+        stripeEventType: event.type,
+        variantId: identity.variantId,
+      });
+
+      return {
+        ignored: true,
+        received: true,
+      };
+    }
+
+    try {
+      await services.reconcileCatalogVariant(storeItem);
+      await services.markCatalogEventSucceeded(event.id);
+    } catch (error) {
+      await services.markCatalogEventFailed(event.id, 'reconciliation_failed');
+      logCatalogWebhookOutcome(services, {
+        outcome: 'catalog_reconciliation_failed',
+        retryable: true,
+        safeReason: 'reconciliation_failed',
+        storeItemSlug: storeItem.storeItemSlug,
+        stripeEventType: event.type,
+        variantId: storeItem.variantId,
+      });
+
+      throw error;
+    }
+
+    logCatalogWebhookOutcome(services, {
+      outcome: 'catalog_reconciled',
+      retryable: false,
+      storeItemSlug: storeItem.storeItemSlug,
       stripeEventType: event.type,
-      variantId: variantId ?? undefined,
+      variantId: storeItem.variantId,
     });
 
-    return storeItem
-      ? {
-          received: true,
-        }
-      : {
-          ignored: true,
-          received: true,
-        };
+    return {
+      received: true,
+    };
   }
 
   const reconciliation = reconcileCheckoutSession(toStripeCheckoutSessionState(event.checkoutSession));
@@ -162,32 +225,209 @@ function readCatalogObjectIdentity(
   };
 }
 
-function readVariantIdFromCatalogObject(
+type CatalogWebhookIgnoredReason =
+  | 'conflicting_catalog_identity'
+  | 'duplicate_event'
+  | 'foreign_environment_identity'
+  | 'malformed_catalog_identity'
+  | 'missing_variant_identity'
+  | 'prd_open_gate_closed'
+  | 'reconciliation_failed'
+  | 'variant_not_found';
+
+type CatalogObjectEventIdentity = {
+  safeReason?: CatalogWebhookIgnoredReason;
+  storeItemSlug: StoreItemSlug | null;
+  variantId: RecordStripeCatalogWebhookEventInput['variantId'];
+};
+
+type ParsedCatalogIdentity =
+  | {
+      environment: StripeCatalogEnvironment;
+      storeItemSlug: StoreItemSlug;
+      type: 'valid';
+      variantId: NonNullable<RecordStripeCatalogWebhookEventInput['variantId']>;
+    }
+  | {
+      type: 'malformed';
+    }
+  | {
+      type: 'external';
+    }
+  | {
+      type: 'missing';
+    };
+
+function readCatalogObjectEventIdentity(
   catalogObject: Extract<VerifiedStripeWebhookEvent, { catalogObject: unknown }>['catalogObject'],
-): RecordStripeCatalogWebhookEventInput['variantId'] {
+  environment: StripeCatalogEnvironment,
+): CatalogObjectEventIdentity {
   if ('deleted' in catalogObject) {
-    return null;
+    return {
+      safeReason: 'missing_variant_identity',
+      storeItemSlug: null,
+      variantId: null,
+    };
   }
 
-  const metadataVariantId = readOptionalString(catalogObject.metadata?.variantId);
+  const metadataIdentity = readMetadataEventIdentity(catalogObject.metadata ?? {});
+  const lookupIdentity =
+    'lookup_key' in catalogObject
+      ? readLookupKeyEventIdentity(catalogObject.lookup_key)
+      : ({ type: 'missing' } as const);
+  const parsedIdentities = [metadataIdentity, lookupIdentity];
 
-  if (metadataVariantId) {
-    return parseVariantId(metadataVariantId);
+  if (parsedIdentities.some((identity) => identity.type === 'malformed')) {
+    return {
+      safeReason: 'malformed_catalog_identity',
+      storeItemSlug: null,
+      variantId: null,
+    };
   }
 
-  if ('lookup_key' in catalogObject) {
-    return readVariantIdFromLookupKey(catalogObject.lookup_key);
+  const validIdentities = parsedIdentities.filter(
+    (identity): identity is Extract<ParsedCatalogIdentity, { type: 'valid' }> => identity.type === 'valid',
+  );
+  const firstIdentity = validIdentities[0];
+
+  if (firstIdentity && validIdentities.some((identity) => !sameParsedCatalogIdentity(identity, firstIdentity))) {
+    return {
+      safeReason: 'conflicting_catalog_identity',
+      storeItemSlug: firstIdentity.storeItemSlug,
+      variantId: firstIdentity.variantId,
+    };
   }
 
-  return null;
+  if (firstIdentity?.environment === environment) {
+    if (lookupIdentity.type === 'external') {
+      return {
+        safeReason: 'conflicting_catalog_identity',
+        storeItemSlug: firstIdentity.storeItemSlug,
+        variantId: firstIdentity.variantId,
+      };
+    }
+
+    return firstIdentity;
+  }
+
+  if (firstIdentity) {
+    return {
+      safeReason: 'foreign_environment_identity',
+      storeItemSlug: firstIdentity.storeItemSlug,
+      variantId: firstIdentity.variantId,
+    };
+  }
+
+  return {
+    safeReason: 'missing_variant_identity',
+    storeItemSlug: null,
+    variantId: null,
+  };
 }
 
-function readVariantIdFromLookupKey(lookupKey: string | null): RecordStripeCatalogWebhookEventInput['variantId'] {
-  const parts = lookupKey?.split(':') ?? [];
-
-  return parts.length === 4 && parts[3]?.startsWith('variant_') ? parseVariantId(parts[3]) : null;
+function sameParsedCatalogIdentity(
+  left: Extract<ParsedCatalogIdentity, { type: 'valid' }>,
+  right: Extract<ParsedCatalogIdentity, { type: 'valid' }>,
+): boolean {
+  return (
+    left.environment === right.environment &&
+    left.storeItemSlug === right.storeItemSlug &&
+    left.variantId === right.variantId
+  );
 }
 
-function readOptionalString(value: unknown): string | null {
-  return typeof value === 'string' && value.trim() ? value : null;
+function readMetadataEventIdentity(metadata: Record<string, string>): ParsedCatalogIdentity {
+  if (
+    !metadata.appEnv &&
+    !metadata.sourceId &&
+    !metadata.sourceKind &&
+    !metadata.storeItemSlug &&
+    !metadata.variantId
+  ) {
+    return { type: 'missing' };
+  }
+
+  if (
+    !metadata.appEnv ||
+    !metadata.sourceId ||
+    !metadata.sourceKind ||
+    !metadata.storeItemSlug ||
+    !metadata.variantId
+  ) {
+    return { type: 'malformed' };
+  }
+
+  const environment = parseCatalogEnvironment(metadata.appEnv);
+
+  if (!environment) {
+    return { type: 'malformed' };
+  }
+
+  try {
+    return {
+      environment,
+      storeItemSlug: parseStoreItemSlug(metadata.storeItemSlug),
+      type: 'valid',
+      variantId: parseVariantId(metadata.variantId),
+    };
+  } catch {
+    return { type: 'malformed' };
+  }
+}
+
+function readLookupKeyEventIdentity(lookupKey: string | null): ParsedCatalogIdentity {
+  if (!lookupKey) {
+    return { type: 'missing' };
+  }
+
+  if (!lookupKey.startsWith('blackbox:')) {
+    return { type: 'external' };
+  }
+
+  const parts = lookupKey.split(':');
+  const environment = parseCatalogEnvironment(parts[1]);
+
+  if (parts.length !== 4 || !environment || !parts[2] || !parts[3]) {
+    return { type: 'malformed' };
+  }
+
+  try {
+    return {
+      environment,
+      storeItemSlug: parseStoreItemSlug(parts[2]),
+      type: 'valid',
+      variantId: parseVariantId(parts[3]),
+    };
+  } catch {
+    return { type: 'malformed' };
+  }
+}
+
+function parseCatalogEnvironment(value: unknown): StripeCatalogEnvironment | null {
+  return value === 'local' || value === 'uat' || value === 'prd' ? value : null;
+}
+
+function logCatalogWebhookOutcome(
+  services: StripeWebhookAcknowledgementServices,
+  input: {
+    outcome: string;
+    retryable: boolean;
+    safeReason?: CatalogWebhookIgnoredReason;
+    storeItemSlug: StoreItemSlug | null;
+    stripeEventType: string;
+    variantId: RecordStripeCatalogWebhookEventInput['variantId'];
+  },
+): void {
+  const log = input.retryable ? services.logger?.warn : services.logger?.info;
+
+  log?.({
+    event: 'stripe_webhook_outcome',
+    outcome: input.outcome,
+    provider: 'stripe',
+    retryable: input.retryable,
+    safeReason: input.safeReason,
+    storeItemSlug: input.storeItemSlug ?? undefined,
+    stripeEventType: input.stripeEventType,
+    variantId: input.variantId ?? undefined,
+  });
 }

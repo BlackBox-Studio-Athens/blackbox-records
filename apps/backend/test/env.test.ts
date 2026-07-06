@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   getProductEnvironmentProfile,
+  isCatalogMutationEnabledForWorkerRuntimeTarget,
+  isCatalogMutationEnabledFromBindings,
   parseProductEnvironmentCliTarget,
   productEnvironmentFromWorkerRuntimeTarget,
   productEnvironmentProfileFromWorkerRuntimeTarget,
@@ -82,5 +84,24 @@ describe('Product Environment Profile', () => {
     expect(formatProductEnvironmentLabel('LOCAL')).toBe('Local');
     expect(formatProductEnvironmentLabel('UAT')).toBe('UAT');
     expect(() => parseProductEnvironmentCliTarget('test')).toThrow();
+  });
+
+  it('keeps PRD catalog mutation disabled until the open gate is explicit', () => {
+    expect(isCatalogMutationEnabledForWorkerRuntimeTarget('local', undefined)).toBe(true);
+    expect(isCatalogMutationEnabledForWorkerRuntimeTarget('uat', undefined)).toBe(true);
+    expect(isCatalogMutationEnabledForWorkerRuntimeTarget('prd', undefined)).toBe(false);
+    expect(isCatalogMutationEnabledForWorkerRuntimeTarget('prd', 'review')).toBe(false);
+    expect(isCatalogMutationEnabledForWorkerRuntimeTarget('prd', 'open')).toBe(true);
+    expect(
+      isCatalogMutationEnabledFromBindings({
+        PRODUCT_ENVIRONMENT: 'PRD',
+      }),
+    ).toBe(false);
+    expect(
+      isCatalogMutationEnabledFromBindings({
+        PRODUCT_ENVIRONMENT: 'PRD',
+        PRD_OPEN_GATE: 'open',
+      }),
+    ).toBe(true);
   });
 });

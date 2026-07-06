@@ -16,7 +16,7 @@ Release and distro entries carry editorial Store Item content only:
 - releases: title, artist, release date, cover image, summary, formats, embeds, credits, and optional direct merch URL.
 - distro: title, group, artist or label, image, summary, eyebrow, format, release date, and order.
 - generated catalog policy: every current visible Store Item generates a UAT Desired Catalog Entry by default.
-- UAT Stripe test-mode prices derive from format or option labels: cassette/tape `1200 EUR`, T-shirt/tee `2000 EUR`, and other physical goods `2800 EUR`.
+- Generated Desired Price derives from format or option labels for promotion/apply mode: cassette/tape `1200 EUR`, T-shirt/tee `2000 EUR`, and other physical goods `2800 EUR`. Day-to-day UAT price checks treat one valid active Stripe Dashboard replacement Price as Price Authority.
 - default Stripe Tax code for generated physical goods remains `txcd_99999999`.
 - smoke selection uses the first published entry for the target environment.
 
@@ -95,7 +95,7 @@ Rerun catalog promotion from the artifact commit that contains generated Desired
 - Promotion success: UAT finishes from the artifact commit and, after PRD is opened, PRD finishes from the same artifact commit; catalog verification reports no blocking drift, and smoke evidence records the promoted item.
 - Content validation failure: the artifact workflow fails before provider mutation because required Store Item identity, copy, format, or image data cannot be resolved.
 - Provider ambiguity failure: catalog dry-run finds multiple active provider Prices or non-app-owned provider objects for one variant, so apply does not run.
-- PRD disabled: the PRD job records `not_configured` because `PRD_OPEN_GATE` is absent; this is expected before go-live and does not mutate live providers.
+- PRD disabled: the PRD job records `not_configured` because `PRD_OPEN_GATE` is absent; this is expected before go-live and does not mutate live providers or PRD catalog read models.
 - PRD smoke failure: provider apply may have succeeded after PRD was opened, but the live checkout surface proof failed; treat the item as not PRD buyable until a corrective promotion passes.
 - PRD paid smoke not configured: live checkout surface proof may pass after PRD was opened, but paid smoke evidence records `not_configured`; this is expected until a live paid smoke policy is approved.
 

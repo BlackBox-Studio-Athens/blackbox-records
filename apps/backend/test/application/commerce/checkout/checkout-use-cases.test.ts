@@ -384,6 +384,27 @@ describe('checkout use cases', () => {
     );
   });
 
+  it('can read Store Offer price without applying catalog mutations', async () => {
+    await expect(
+      readStoreOffer(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        storeItem.storeItemSlug,
+        { applyCatalogMutations: false },
+      ),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        canCheckout: true,
+        catalogStatus: 'ready',
+      }),
+    );
+
+    expect(catalogReconciler.calls[0]?.options.apply).toBe(false);
+  });
+
   it('reads pay-what-you-want Store Offers from Stripe custom prices', async () => {
     catalogReconciler.prices.set(
       storeItem.variantId,
@@ -467,6 +488,33 @@ describe('checkout use cases', () => {
       shippingLocker: null,
       status: 'pending_payment',
     });
+  });
+
+  it('can start checkout without applying catalog mutations', async () => {
+    await expect(
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+        undefined,
+        { applyCatalogMutations: false },
+      ),
+    ).resolves.toEqual({
+      checkoutSessionId: 'cs_test_123',
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
+    });
+
+    expect(catalogReconciler.calls[0]?.options.apply).toBe(false);
   });
 
   it('rejects disabled native checkout before Stripe or order writes', async () => {
@@ -680,6 +728,82 @@ describe('checkout use cases', () => {
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
       }),
     );
+  });
+
+  it('starts hosted Checkout with the current replacement Stripe Price', async () => {
+    catalogReconciler.prices.set(
+      storeItem.variantId,
+      createCatalogPrice({
+        amountMinor: 3200,
+        priceId: 'price_test_replacement_black_vinyl',
+        storeItem,
+      }),
+    );
+
+    await expect(
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+      ),
+    ).resolves.toEqual({
+      checkoutSessionId: 'cs_test_123',
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
+    });
+
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lineItems: [
+          expect.objectContaining({
+            stripePriceId: 'price_test_replacement_black_vinyl',
+          }),
+        ],
+      }),
+    );
+  });
+
+  it('rejects checkout when active Stripe Price Authority is ambiguous', async () => {
+    catalogReconciler.prices.clear();
+    catalogReconciler.issues.set(storeItem.variantId, [
+      {
+        code: 'ambiguous_active_price',
+        detail: 'Multiple active Prices match this Store Item variant.',
+        driftCategory: 'price_authority',
+        storeItemSlug: storeItem.storeItemSlug,
+        variantId: storeItem.variantId,
+      },
+    ]);
+
+    await expect(
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+      ),
+    ).rejects.toBeInstanceOf(CatalogDriftError);
+
+    expect(checkoutGateway.createHostedCheckoutSession).not.toHaveBeenCalled();
+    expect(orders.records.size).toBe(0);
   });
 
   it('starts hosted Checkout for pay-what-you-want items using only the Stripe Price ID', async () => {

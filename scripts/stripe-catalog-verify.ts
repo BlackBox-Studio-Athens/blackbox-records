@@ -14,6 +14,7 @@ import {
 } from '../apps/backend/src/application/commerce/catalog-sync';
 import { parseStoreItemSlug, parseStripePriceId, parseVariantId } from '../apps/backend/src/domain/commerce';
 import {
+  isCatalogMutationEnabledForWorkerRuntimeTarget,
   parseProductEnvironmentCliTarget,
   formatProductEnvironmentLabel,
   productEnvironmentProfileFromWorkerRuntimeTarget,
@@ -163,6 +164,13 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 
 export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promise<CatalogSyncRunResult> {
   const productEnvironmentProfile = productEnvironmentProfileFromWorkerRuntimeTarget(options.environment);
+  if (
+    options.apply &&
+    !isCatalogMutationEnabledForWorkerRuntimeTarget(options.environment, process.env.PRD_OPEN_GATE)
+  ) {
+    throw new Error('PRD Stripe catalog apply is disabled until PRD_OPEN_GATE=open.');
+  }
+
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
 
   if (!stripeSecretKey) {
@@ -172,7 +180,8 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
   const contracts = await loadStripeCatalogStoreItemContracts({
     productEnvironment: productEnvironmentProfile.productEnvironment === 'PRD' ? 'PRD' : 'UAT',
   });
-  const expectedPrices = createExpectedPriceMap(contracts, options.environment);
+  const desiredPrices = createExpectedPriceMap(contracts, options.environment);
+  const expectedPrices = desiredPrices;
   const expectedProductProjections = createExpectedProductProjectionMap(contracts, options.environment);
   const stripeCatalog = createStripeCatalogGateway({
     STRIPE_API_BASE_URL: process.env.STRIPE_API_BASE_URL,
@@ -216,7 +225,7 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
   if (options.apply && appliedActions.length > 0) {
     const postApplyResult = await createReconciler().verifyBuyableCatalog({
       apply: false,
-      expectedPrices,
+      expectedPrices: desiredPrices,
       expectedProductProjections,
     });
 

@@ -37,7 +37,6 @@ const maxConcurrentStoreOfferPriceReads = 4;
 let activeStoreOfferPriceReads = 0;
 
 const pendingStoreOfferPriceReads: Array<() => void> = [];
-const cachedStoreOfferPriceDisplayReads = new Map<string, Promise<StoreOfferPriceDisplayView>>();
 
 function enqueueStoreOfferPriceRead(
   task: () => Promise<StoreOfferPriceDisplayView>,
@@ -92,20 +91,11 @@ export async function loadStoreOfferPriceDisplayView(
   }
 }
 
-function loadDefaultStoreOfferPriceDisplayView(
+export function loadDefaultStoreOfferPriceDisplayView(
   api: PublicCheckoutApi,
   storeItemSlug: string,
 ): Promise<StoreOfferPriceDisplayView> {
-  const cachedRead = cachedStoreOfferPriceDisplayReads.get(storeItemSlug);
-
-  if (cachedRead) {
-    return cachedRead;
-  }
-
-  const nextRead = enqueueStoreOfferPriceRead(() => loadStoreOfferPriceDisplayView(api, storeItemSlug));
-  cachedStoreOfferPriceDisplayReads.set(storeItemSlug, nextRead);
-
-  return nextRead;
+  return enqueueStoreOfferPriceRead(() => loadStoreOfferPriceDisplayView(api, storeItemSlug));
 }
 
 export default function StoreOfferPriceDisplay({ api, className, storeItemSlug }: StoreOfferPriceDisplayProps) {

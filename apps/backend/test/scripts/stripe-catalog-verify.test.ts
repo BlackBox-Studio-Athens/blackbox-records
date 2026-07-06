@@ -1,13 +1,34 @@
-import { describe, expect, it } from 'vitest';
+import { spawnSync } from 'node:child_process';
 
-import type { CatalogSyncRunResult } from '../../src/application/commerce/catalog-sync';
+import { describe, expect, it, vi } from 'vitest';
+
+import {
+  createStripeCatalogLookupKey,
+  createStripeCatalogMetadata,
+  type CatalogSyncRunResult,
+  type StripeCatalogGateway,
+  type StripeCatalogPrice,
+} from '../../src/application/commerce/catalog-sync';
+import { createStripeCatalogGateway } from '../../src/infrastructure/stripe';
 import { storeItemSlug, stripePriceId, variantId } from '../support/commerce-value-objects';
 import {
   formatStripeCatalogVerifyReport,
   parseD1Rows,
   parseStripeCatalogVerifyArgs,
   redactStripeCatalogDiagnostic,
+  verifyStripeCatalog,
 } from '../../../../scripts/stripe-catalog-verify';
+
+vi.mock('node:child_process', () => ({
+  spawnSync: vi.fn(),
+}));
+
+vi.mock('../../src/infrastructure/stripe', () => ({
+  createStripeCatalogGateway: vi.fn(),
+}));
+
+const createStripeCatalogGatewayMock = vi.mocked(createStripeCatalogGateway);
+const spawnSyncMock = vi.mocked(spawnSync);
 
 const storeItem = {
   sourceId: 'disintegration',
@@ -73,6 +94,130 @@ describe('stripe catalog verify script helpers', () => {
     expect(() => parseStripeCatalogVerifyArgs(['--env', 'prd', '--apply', '--artifact-commit-sha', 'abc123'])).toThrow(
       'Run from CI with --ci-promotion, --artifact-commit-sha <sha>, and --promotion-run-id <id>.',
     );
+  });
+
+  it('blocks PRD apply while the open gate is absent', async () => {
+    const previousPrdOpenGate = process.env.PRD_OPEN_GATE;
+    delete process.env.PRD_OPEN_GATE;
+
+    try {
+      await expect(
+        verifyStripeCatalog({
+          apply: true,
+          environment: 'prd',
+          promotionContext: {
+            artifactCommitSha: 'abc123',
+            ci: true,
+            runId: 'run-456',
+          },
+        }),
+      ).rejects.toThrow('PRD Stripe catalog apply is disabled until PRD_OPEN_GATE=open.');
+    } finally {
+      if (previousPrdOpenGate === undefined) {
+        delete process.env.PRD_OPEN_GATE;
+      } else {
+        process.env.PRD_OPEN_GATE = previousPrdOpenGate;
+      }
+    }
+  });
+
+  it('reports generated price authority drift during dry-run verification', async () => {
+    const previousStripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    const lookupKey = createStripeCatalogLookupKey('uat', storeItem);
+    const metadata = createStripeCatalogMetadata('uat', storeItem);
+    const wrongAmountPrice: StripeCatalogPrice = {
+      active: true,
+      amountMinor: 1,
+      currencyCode: 'EUR',
+      customUnitAmount: null,
+      lookupKey,
+      metadata,
+      priceKind: 'fixed',
+      priceId: stripePriceId('price_wrongamount1234'),
+      productActive: true,
+      productDescription: null,
+      productId: 'prod_wrongamount1234',
+      productImages: [],
+      productMetadata: metadata,
+      productName: null,
+      productTaxCode: null,
+    };
+    const stripeCatalog = {
+      archivePrice: vi.fn(),
+      createCatalogPrice: vi.fn(),
+      listOwnedPrices: vi.fn().mockResolvedValue([]),
+      listOwnedProducts: vi.fn().mockResolvedValue([]),
+      listPricesByLookupKey: vi.fn().mockResolvedValue([wrongAmountPrice]),
+      listPricesByMetadata: vi.fn().mockResolvedValue([wrongAmountPrice]),
+      retrievePrice: vi.fn().mockResolvedValue(null),
+      updatePriceMetadata: vi.fn(),
+      updateProductProjection: vi.fn(),
+    } satisfies StripeCatalogGateway;
+
+    process.env.STRIPE_SECRET_KEY = 'sk_test_script_dry_run';
+    createStripeCatalogGatewayMock.mockReturnValue(stripeCatalog);
+    spawnSyncMock.mockReturnValue({
+      error: undefined,
+      output: [],
+      pid: 0,
+      signal: null,
+      status: 0,
+      stderr: '',
+      stdout: JSON.stringify([
+        {
+          results: [
+            {
+              amountMinor: null,
+              currencyCode: null,
+              freshUntil: null,
+              mappingStripePriceId: null,
+              priceActive: null,
+              productActive: null,
+              snapshotStripePriceId: null,
+              sourceId: storeItem.sourceId,
+              sourceKind: storeItem.sourceKind,
+              storeItemSlug: storeItem.storeItemSlug,
+              stripeLookupKey: null,
+              syncedAt: null,
+              variantId: storeItem.variantId,
+            },
+          ],
+          success: true,
+        },
+      ]),
+    } as unknown as ReturnType<typeof spawnSync>);
+
+    try {
+      const result = await verifyStripeCatalog({
+        apply: false,
+        environment: 'uat',
+        promotionContext: null,
+      });
+
+      expect(result.dryRun).toBe(true);
+      expect(result.issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'wrong_amount',
+            driftCategory: 'price_authority',
+            storeItemSlug: storeItem.storeItemSlug,
+            variantId: storeItem.variantId,
+          }),
+        ]),
+      );
+      expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
+      expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
+      expect(stripeCatalog.updatePriceMetadata).not.toHaveBeenCalled();
+      expect(stripeCatalog.updateProductProjection).not.toHaveBeenCalled();
+    } finally {
+      createStripeCatalogGatewayMock.mockReset();
+      spawnSyncMock.mockReset();
+      if (previousStripeSecretKey === undefined) {
+        delete process.env.STRIPE_SECRET_KEY;
+      } else {
+        process.env.STRIPE_SECRET_KEY = previousStripeSecretKey;
+      }
+    }
   });
 
   it('formats redacted diagnostics without printing full Stripe object IDs', () => {

@@ -143,12 +143,33 @@ export function productEnvironmentProfileFromBindings(
   return getProductEnvironmentProfile(productEnvironmentSchema.parse(bindings.PRODUCT_ENVIRONMENT));
 }
 
+export function isPrdOpenGateEnabled(value: string | undefined): boolean {
+  return value?.trim() === 'open';
+}
+
+export function isCatalogMutationEnabledForWorkerRuntimeTarget(
+  workerRuntimeTarget: WorkerRuntimeTarget,
+  prdOpenGate: string | undefined,
+): boolean {
+  return workerRuntimeTarget !== 'prd' || isPrdOpenGateEnabled(prdOpenGate);
+}
+
+export function isCatalogMutationEnabledFromBindings(
+  bindings: Pick<AppBindings, 'PRODUCT_ENVIRONMENT' | 'PRD_OPEN_GATE'>,
+): boolean {
+  return isCatalogMutationEnabledForWorkerRuntimeTarget(
+    productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget,
+    bindings.PRD_OPEN_GATE,
+  );
+}
+
 export type AppBindings = {
   PRODUCT_ENVIRONMENT: ProductEnvironment;
   COMMERCE_DB: D1Database;
   CHECKOUT_RETURN_ORIGINS?: string;
   FLAGS?: FlagshipBinding;
   NATIVE_CHECKOUT_ENABLED?: string;
+  PRD_OPEN_GATE?: string;
   EMAIL_BRAND_HOME_URL?: string;
   EMAIL_BRAND_LOGO_URL?: string;
   RESEND_API_KEY?: string;

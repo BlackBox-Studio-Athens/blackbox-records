@@ -13,6 +13,9 @@ function mapStripeCatalogWebhookEvent(record: {
   catalogObjectKind: string;
   eventId: string;
   eventType: string;
+  processingCompletedAt: Date | null;
+  processingFailureReason: string | null;
+  processingStatus: string;
   processedAt: Date;
   stripeCreatedAt: Date;
   variantId: string | null;
@@ -22,6 +25,9 @@ function mapStripeCatalogWebhookEvent(record: {
     catalogObjectKind: parseCatalogObjectKind(record.catalogObjectKind),
     eventId: record.eventId,
     eventType: record.eventType,
+    processingCompletedAt: record.processingCompletedAt,
+    processingFailureReason: record.processingFailureReason,
+    processingStatus: parseProcessingStatus(record.processingStatus),
     processedAt: record.processedAt,
     stripeCreatedAt: record.stripeCreatedAt,
     variantId: record.variantId ? parseVariantId(record.variantId) : null,
@@ -41,6 +47,7 @@ export class PrismaStripeCatalogWebhookEventRepository implements StripeCatalogW
           catalogObjectKind: input.catalogObjectKind,
           eventId: input.eventId,
           eventType: input.eventType,
+          processingStatus: 'pending',
           stripeCreatedAt: input.stripeCreatedAt,
           variantId: input.variantId,
         },
@@ -60,12 +67,38 @@ export class PrismaStripeCatalogWebhookEventRepository implements StripeCatalogW
       if (existingRecord && isUniqueConstraintError(error)) {
         return {
           record: mapStripeCatalogWebhookEvent(existingRecord),
-          status: 'duplicate',
+          status: existingRecord.processingStatus === 'succeeded' ? 'duplicate_succeeded' : 'duplicate_retryable',
         };
       }
 
       throw error;
     }
+  }
+
+  public async markCatalogEventSucceeded(eventId: string): Promise<void> {
+    await this.prisma.stripeCatalogWebhookEvent.update({
+      data: {
+        processingCompletedAt: new Date(),
+        processingFailureReason: null,
+        processingStatus: 'succeeded',
+      },
+      where: {
+        eventId,
+      },
+    });
+  }
+
+  public async markCatalogEventFailed(eventId: string, failureReason: string): Promise<void> {
+    await this.prisma.stripeCatalogWebhookEvent.update({
+      data: {
+        processingCompletedAt: null,
+        processingFailureReason: failureReason,
+        processingStatus: 'failed',
+      },
+      where: {
+        eventId,
+      },
+    });
   }
 }
 
@@ -75,6 +108,14 @@ function parseCatalogObjectKind(value: string): StripeCatalogWebhookObjectKind {
   }
 
   throw new Error(`Unsupported Stripe catalog webhook object kind: ${value}.`);
+}
+
+function parseProcessingStatus(value: string): StripeCatalogWebhookEventRecord['processingStatus'] {
+  if (value === 'failed' || value === 'pending' || value === 'succeeded') {
+    return value;
+  }
+
+  throw new Error(`Unsupported Stripe catalog webhook processing status: ${value}.`);
 }
 
 function isUniqueConstraintError(error: unknown): boolean {

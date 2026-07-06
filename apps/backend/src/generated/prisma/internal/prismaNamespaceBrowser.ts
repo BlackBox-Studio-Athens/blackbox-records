@@ -126,7 +126,10 @@ export const StripeCatalogWebhookEventScalarFieldEnum = {
   catalogObjectKind: 'catalogObjectKind',
   variantId: 'variantId',
   stripeCreatedAt: 'stripeCreatedAt',
-  processedAt: 'processedAt'
+  processedAt: 'processedAt',
+  processingStatus: 'processingStatus',
+  processingCompletedAt: 'processingCompletedAt',
+  processingFailureReason: 'processingFailureReason'
 } as const
 
 export type StripeCatalogWebhookEventScalarFieldEnum = (typeof StripeCatalogWebhookEventScalarFieldEnum)[keyof typeof StripeCatalogWebhookEventScalarFieldEnum]

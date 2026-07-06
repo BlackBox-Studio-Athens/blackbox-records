@@ -8,7 +8,12 @@ const {
   mockApplyNonPaidCheckoutReconciliation,
   mockApplyPaidCheckoutReconciliation,
   mockDisconnectStripeWebhookServices,
+  mockFindStoreItemByVariantId,
+  mockMarkCatalogEventFailed,
+  mockMarkCatalogEventSucceeded,
   mockPublishCheckoutOrderPaid,
+  mockReconcileCatalogVariant,
+  mockRecordCatalogWebhookEvent,
 } = vi.hoisted(() => ({
   mockApplyNonPaidCheckoutReconciliation: vi.fn(async () => ({
     kind: 'transitioned',
@@ -43,15 +48,46 @@ const {
     kind: 'applied',
   })),
   mockDisconnectStripeWebhookServices: vi.fn(async () => {}),
+  mockFindStoreItemByVariantId: vi.fn(async () => ({
+    sourceId: 'disintegration',
+    sourceKind: 'release',
+    storeItemSlug: 'disintegration-black-vinyl-lp',
+    variantId: 'variant_disintegration-black-vinyl-lp_standard',
+  })),
+  mockMarkCatalogEventFailed: vi.fn(async () => undefined),
+  mockMarkCatalogEventSucceeded: vi.fn(async () => undefined),
   mockPublishCheckoutOrderPaid: vi.fn(async () => {}),
+  mockReconcileCatalogVariant: vi.fn(async () => ({})),
+  mockRecordCatalogWebhookEvent: vi.fn(async () => ({
+    record: {
+      catalogObjectId: 'price_test_123',
+      catalogObjectKind: 'price' as const,
+      eventId: 'evt_price_updated',
+      eventType: 'price.updated',
+      processingCompletedAt: null,
+      processingFailureReason: null,
+      processingStatus: 'pending' as const,
+      processedAt: new Date('2026-05-24T00:00:00.000Z'),
+      stripeCreatedAt: new Date('2026-05-24T00:00:00.000Z'),
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+    },
+    status: 'recorded' as const,
+  })),
 }));
 
 vi.mock('../../src/interfaces/http/routes/stripe-webhook-services', () => ({
   createStripeWebhookServices: () => ({
     applyNonPaidCheckoutReconciliation: mockApplyNonPaidCheckoutReconciliation,
     applyPaidCheckoutReconciliation: mockApplyPaidCheckoutReconciliation,
+    catalogEnvironment: 'uat',
+    catalogWebhookMutationEnabled: true,
     disconnect: mockDisconnectStripeWebhookServices,
+    findStoreItemByVariantId: mockFindStoreItemByVariantId,
+    markCatalogEventFailed: mockMarkCatalogEventFailed,
+    markCatalogEventSucceeded: mockMarkCatalogEventSucceeded,
     publishCheckoutOrderPaid: mockPublishCheckoutOrderPaid,
+    reconcileCatalogVariant: mockReconcileCatalogVariant,
+    recordCatalogWebhookEvent: mockRecordCatalogWebhookEvent,
   }),
 }));
 
@@ -90,6 +126,30 @@ function createStripeEventPayload(type: string): string {
   });
 }
 
+function createStripeCatalogPriceEventPayload(type: 'price.created' | 'price.updated'): string {
+  return JSON.stringify({
+    api_version: '2026-04-25.basil',
+    created: 1777132800,
+    data: {
+      object: {
+        active: true,
+        currency: 'eur',
+        id: 'price_test_123',
+        lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+        metadata: {},
+        object: 'price',
+        unit_amount: 3200,
+      },
+    },
+    id: `evt_${type.replaceAll('.', '_')}`,
+    livemode: false,
+    object: 'event',
+    pending_webhooks: 1,
+    request: null,
+    type,
+  });
+}
+
 function createSignatureHeader(payload: string): string {
   return Stripe.webhooks.generateTestHeaderString({
     payload,
@@ -103,7 +163,12 @@ describe('Stripe webhook routes', () => {
     mockApplyNonPaidCheckoutReconciliation.mockClear();
     mockApplyPaidCheckoutReconciliation.mockClear();
     mockDisconnectStripeWebhookServices.mockClear();
+    mockFindStoreItemByVariantId.mockClear();
+    mockMarkCatalogEventFailed.mockClear();
+    mockMarkCatalogEventSucceeded.mockClear();
     mockPublishCheckoutOrderPaid.mockClear();
+    mockReconcileCatalogVariant.mockClear();
+    mockRecordCatalogWebhookEvent.mockClear();
   });
 
   it('acknowledges valid allowed checkout-session events after signature verification', async () => {
@@ -403,5 +468,71 @@ describe('Stripe webhook routes', () => {
       error: 'Stripe webhook is not configured.',
       requestId: expect.any(String),
     });
+  });
+
+  it('returns a retryable non-2xx response when catalog reconciliation fails', async () => {
+    const payload = createStripeCatalogPriceEventPayload('price.updated');
+    mockReconcileCatalogVariant.mockRejectedValueOnce(new Error('Stripe unavailable'));
+
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://backend.test/api/stripe/webhooks',
+      {
+        body: payload,
+        headers: {
+          'content-type': 'application/json',
+          'stripe-signature': createSignatureHeader(payload),
+        },
+        method: 'POST',
+      },
+      testBindings,
+    );
+
+    expect(response.status).toBe(500);
+    expectNoStoreCacheControl(response);
+    await expect(response.json()).resolves.toEqual({
+      code: 'internal_server_error',
+      error: 'Internal Server Error',
+      requestId: expect.any(String),
+    });
+    expect(mockMarkCatalogEventFailed).toHaveBeenCalledWith('evt_price_updated', 'reconciliation_failed');
+    expect(mockMarkCatalogEventSucceeded).not.toHaveBeenCalled();
+  });
+
+  it('acknowledges signed price-created catalog events through reconciliation', async () => {
+    const payload = createStripeCatalogPriceEventPayload('price.created');
+
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://backend.test/api/stripe/webhooks',
+      {
+        body: payload,
+        headers: {
+          'content-type': 'application/json',
+          'stripe-signature': createSignatureHeader(payload),
+        },
+        method: 'POST',
+      },
+      testBindings,
+    );
+
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    await expect(response.json()).resolves.toEqual({
+      received: true,
+    });
+    expect(mockRecordCatalogWebhookEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventId: 'evt_price_created',
+        eventType: 'price.created',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      }),
+    );
+    expect(mockReconcileCatalogVariant).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      }),
+    );
+    expect(mockMarkCatalogEventSucceeded).toHaveBeenCalledWith('evt_price_created');
   });
 });

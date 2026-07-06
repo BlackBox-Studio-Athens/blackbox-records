@@ -18,7 +18,11 @@ import {
   type PaidOrderEmailInput,
 } from '../../../application/email';
 import type { StoreItemOptionRecord } from '../../../domain/commerce/repositories/spi';
-import { productEnvironmentProfileFromBindings, type AppBindings } from '../../../env';
+import {
+  isCatalogMutationEnabledFromBindings,
+  productEnvironmentProfileFromBindings,
+  type AppBindings,
+} from '../../../env';
 import type { AppLogger } from '../../../observability';
 import { createBindingLogger, runWithTraceSpan } from '../../../observability';
 import { createStripeCatalogGateway, createStripeCheckoutGateway } from '../../../infrastructure/stripe';
@@ -70,8 +74,12 @@ export function createStripeWebhookServices(
           applyPaidCheckoutReconciliation(orders, paidCheckoutFinalizer, reconciliation, new Date(), lineItems),
         ),
     disconnect: async () => prisma.$disconnect(),
+    catalogEnvironment: productEnvironmentProfile.workerDeploymentTarget,
+    catalogWebhookMutationEnabled: isCatalogMutationEnabledFromBindings(bindings),
     logger,
     findStoreItemByVariantId: (variantId: string) => storeItems.findByVariantId(variantId),
+    markCatalogEventFailed: catalogWebhookEvents.markCatalogEventFailed.bind(catalogWebhookEvents),
+    markCatalogEventSucceeded: catalogWebhookEvents.markCatalogEventSucceeded.bind(catalogWebhookEvents),
     publishCheckoutOrderPaid: async (event: CheckoutOrderPaid): Promise<void> => {
       let emailConfig: EmailRuntimeConfig;
       let emailProvider: EmailProviderGateway;

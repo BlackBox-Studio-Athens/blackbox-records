@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { PublicCheckoutApi, PublicStoreOffer } from '@/lib/backend/public-checkout-api';
 import StoreOfferPriceDisplay, {
   createStoreOfferPriceDisplayView,
+  loadDefaultStoreOfferPriceDisplayView,
   loadStoreOfferPriceDisplayView,
   STORE_OFFER_PRICE_DISPLAY_COPY,
 } from './StoreOfferPriceDisplay';
@@ -47,6 +48,35 @@ describe('StoreOfferPriceDisplay', () => {
       tone: 'ready',
     });
     expect(api.readStoreOffer).toHaveBeenCalledWith('disintegration-black-vinyl-lp');
+  });
+
+  it('rereads the Worker Store Offer for the same item in one browser session', async () => {
+    const api = createApi({
+      readStoreOffer: vi
+        .fn()
+        .mockResolvedValueOnce(workerOffer)
+        .mockResolvedValueOnce({
+          ...workerOffer,
+          price: {
+            amountMinor: 3200,
+            currencyCode: 'EUR',
+            display: '€32.00',
+            kind: 'fixed',
+          },
+        }),
+    });
+
+    await expect(loadDefaultStoreOfferPriceDisplayView(api, 'disintegration-black-vinyl-lp')).resolves.toEqual(
+      expect.objectContaining({
+        label: '€28.00',
+      }),
+    );
+    await expect(loadDefaultStoreOfferPriceDisplayView(api, 'disintegration-black-vinyl-lp')).resolves.toEqual(
+      expect.objectContaining({
+        label: '€32.00',
+      }),
+    );
+    expect(api.readStoreOffer).toHaveBeenCalledTimes(2);
   });
 
   it('does not show a fake price when Worker cannot confirm checkout', () => {

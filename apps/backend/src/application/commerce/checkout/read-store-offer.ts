@@ -12,6 +12,10 @@ import {
 } from '../catalog-sync';
 import type { StoreOffer } from './types';
 
+type CatalogMutationPolicy = {
+  applyCatalogMutations?: boolean;
+};
+
 function unavailableOffer(
   storeItemSlug: StoreItemSlug,
   variantId: VariantId,
@@ -38,6 +42,7 @@ export async function readStoreOffer(
   catalogReconciler: Pick<CatalogReconciler, 'reconcileVariant'>,
   productProjections: CatalogProductProjectionReader,
   storeItemSlug: unknown,
+  options: CatalogMutationPolicy = {},
 ): Promise<StoreOffer | null> {
   const parsedStoreItemSlug = parseStoreItemSlug(storeItemSlug);
   const storeItem = await storeItems.findByStoreItemSlug(parsedStoreItemSlug);
@@ -68,7 +73,10 @@ export async function readStoreOffer(
     return unavailableOffer(storeItem.storeItemSlug, storeItem.variantId, 'Checkout Paused', 'catalog_drift');
   }
 
-  const catalogResult = await catalogReconciler.reconcileVariant(storeItem, { apply: true, productProjection });
+  const catalogResult = await catalogReconciler.reconcileVariant(storeItem, {
+    apply: options.applyCatalogMutations ?? true,
+    productProjection,
+  });
   const resolvedPrice = catalogResult.resolvedPrice;
   const price = resolvedPrice ? createStoreOfferPriceFromCatalogPrice(resolvedPrice) : null;
 
@@ -96,6 +104,7 @@ export async function listVariantOffersForStoreItem(
   catalogReconciler: Pick<CatalogReconciler, 'reconcileVariant'>,
   productProjections: CatalogProductProjectionReader,
   storeItemSlug: unknown,
+  options: CatalogMutationPolicy = {},
 ): Promise<StoreOffer[] | null> {
   const offer = await readStoreOffer(
     storeItems,
@@ -104,6 +113,7 @@ export async function listVariantOffersForStoreItem(
     catalogReconciler,
     productProjections,
     storeItemSlug,
+    options,
   );
 
   return offer ? [offer] : null;

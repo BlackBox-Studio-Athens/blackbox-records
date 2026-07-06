@@ -541,10 +541,6 @@ export type EnumOrderStatusFieldUpdateOperationsInput = {
   set?: $Enums.OrderStatus
 }
 
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
-}
-
 export type CheckoutOrderCreateNestedOneWithoutLinesInput = {
   create?: Prisma.XOR<Prisma.CheckoutOrderCreateWithoutLinesInput, Prisma.CheckoutOrderUncheckedCreateWithoutLinesInput>
   connectOrCreate?: Prisma.CheckoutOrderCreateOrConnectWithoutLinesInput

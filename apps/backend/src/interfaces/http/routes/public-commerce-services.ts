@@ -12,7 +12,11 @@ import {
   VariantMismatchError,
   type StartCheckoutCommand,
 } from '../../../application/commerce/checkout';
-import { productEnvironmentProfileFromBindings, type AppBindings } from '../../../env';
+import {
+  isCatalogMutationEnabledFromBindings,
+  productEnvironmentProfileFromBindings,
+  type AppBindings,
+} from '../../../env';
 import {
   createPrismaClient,
   PrismaItemAvailabilityRepository,
@@ -40,6 +44,7 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
   const storeOfferSnapshots = new PrismaStoreOfferSnapshotRepository(prisma);
   const orders = new PrismaOrderStateRepository(prisma);
   const productProjections = createCurrentCatalogProductProjectionReader();
+  const catalogMutationEnabled = isCatalogMutationEnabledFromBindings(bindings);
   const createCatalogReconciler = () =>
     new CatalogReconciler({
       environment: productEnvironmentProfile.workerDeploymentTarget,
@@ -67,12 +72,23 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
         createCatalogReconciler(),
         productProjections,
         storeItemSlug,
+        { applyCatalogMutations: catalogMutationEnabled },
       ),
     readCheckoutState: async (checkoutSessionId: string) =>
       readCheckoutState(createStripeCheckoutGateway(bindings), orders, checkoutSessionId),
     readStoreCapabilities: async () => readStoreCapabilities(createFeatureFlagReader(bindings, logger)),
     readStoreOffer: async (storeItemSlug: string) =>
-      readStoreOffer(storeItems, itemAvailability, stock, createCatalogReconciler(), productProjections, storeItemSlug),
+      readStoreOffer(
+        storeItems,
+        itemAvailability,
+        stock,
+        createCatalogReconciler(),
+        productProjections,
+        storeItemSlug,
+        {
+          applyCatalogMutations: catalogMutationEnabled,
+        },
+      ),
     startCheckout: async (command: StartCheckoutCommand) =>
       startCheckout(
         storeItems,
@@ -84,6 +100,7 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
         orders,
         command,
         createFeatureFlagReader(bindings, logger),
+        { applyCatalogMutations: catalogMutationEnabled },
       ),
   };
 }

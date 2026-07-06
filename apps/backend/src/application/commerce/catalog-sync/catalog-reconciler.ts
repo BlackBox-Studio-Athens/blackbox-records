@@ -27,6 +27,7 @@ import type {
 
 const STORE_OFFER_FRESHNESS_MS = 24 * 60 * 60 * 1_000;
 const MAX_CATALOG_ITEMS = 500;
+const PRICE_AUTHORITY_CURRENCY_CODE = 'EUR';
 
 export class CatalogDriftError extends Error {
   public constructor(message = 'Checkout catalog needs review before payment can start.') {
@@ -138,6 +139,15 @@ export class CatalogReconciler {
       );
     }
 
+    if (
+      !issues.some((issue) => issue.code === 'wrong_variant_identity') &&
+      candidates.some((price) => hasCatalogIdentityConflict(price, storeItem, this.dependencies.environment, lookupKey))
+    ) {
+      issues.push(
+        createIssue(storeItem, 'wrong_variant_identity', `Stripe Price identity signals disagree for ${lookupKey}.`),
+      );
+    }
+
     const activeMatches = candidates.filter(
       (price) =>
         price.active &&
@@ -233,6 +243,16 @@ export class CatalogReconciler {
 
       if (!matchesCatalogIdentity(resolvedPrice, storeItem, this.dependencies.environment, lookupKey)) {
         issues.push(createIssue(storeItem, 'wrong_variant_identity', 'Resolved Stripe Price metadata is wrong.'));
+      }
+
+      if (!expectedPrice && resolvedPrice.currencyCode?.toUpperCase() !== PRICE_AUTHORITY_CURRENCY_CODE) {
+        issues.push(
+          createIssue(
+            storeItem,
+            'wrong_currency',
+            `Expected ${PRICE_AUTHORITY_CURRENCY_CODE}; Stripe has ${resolvedPrice.currencyCode ?? 'unknown'}.`,
+          ),
+        );
       }
 
       if (expectedPrice) {
@@ -398,12 +418,13 @@ export class CatalogReconciler {
     },
   ): Promise<CatalogSyncVariantResult> {
     const expectedPrice = input.expectedPrices?.get(storeItem.variantId) ?? null;
+    const requirePriceAuthority = input.expectedPrices ? input.expectedPrices.has(storeItem.variantId) : true;
 
     return this.reconcileVariant(storeItem, {
       apply: input.apply,
       expectedPrice,
       productProjection: input.expectedProductProjections?.get(storeItem.variantId) ?? null,
-      requirePriceAuthority: Boolean(expectedPrice),
+      requirePriceAuthority,
       now: input.now,
     });
   }
@@ -525,15 +546,60 @@ function matchesCatalogIdentity(
   environment: StripeCatalogEnvironment,
   lookupKey: string,
 ): boolean {
+  const expectedMetadata = createStripeCatalogMetadata(environment, storeItem);
+  const identitySignals = [
+    {
+      matches: price.lookupKey === lookupKey,
+      present: Boolean(price.lookupKey),
+    },
+    {
+      matches: hasMetadata(price.metadata, expectedMetadata),
+      present: hasAnyMetadata(price.metadata, expectedMetadata),
+    },
+    {
+      matches: hasMetadata(price.productMetadata, expectedMetadata),
+      present: hasAnyMetadata(price.productMetadata, expectedMetadata),
+    },
+  ];
+  const presentSignals = identitySignals.filter((signal) => signal.present);
+
+  return presentSignals.length > 0 && presentSignals.every((signal) => signal.matches);
+}
+
+function hasCatalogIdentityConflict(
+  price: StripeCatalogPrice,
+  storeItem: StoreItemOptionRecord,
+  environment: StripeCatalogEnvironment,
+  lookupKey: string,
+): boolean {
+  const expectedMetadata = createStripeCatalogMetadata(environment, storeItem);
+  const identitySignals = [
+    {
+      matches: price.lookupKey === lookupKey,
+      present: Boolean(price.lookupKey),
+    },
+    {
+      matches: hasMetadata(price.metadata, expectedMetadata),
+      present: hasAnyMetadata(price.metadata, expectedMetadata),
+    },
+    {
+      matches: hasMetadata(price.productMetadata, expectedMetadata),
+      present: hasAnyMetadata(price.productMetadata, expectedMetadata),
+    },
+  ];
+
   return (
-    price.lookupKey === lookupKey ||
-    hasMetadata(price.metadata, createStripeCatalogMetadata(environment, storeItem)) ||
-    hasMetadata(price.productMetadata, createStripeCatalogMetadata(environment, storeItem))
+    identitySignals.some((signal) => signal.present && signal.matches) &&
+    identitySignals.some((signal) => signal.present && !signal.matches)
   );
 }
 
 function hasMetadata(candidate: Record<string, string>, expected: Record<string, string>): boolean {
   return Object.entries(expected).every(([key, value]) => candidate[key] === value);
+}
+
+function hasAnyMetadata(candidate: Record<string, string>, expected: Record<string, string>): boolean {
+  return Object.keys(expected).some((key) => key in candidate);
 }
 
 function describePriceCandidates(

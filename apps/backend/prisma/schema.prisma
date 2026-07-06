@@ -66,16 +66,20 @@ model StoreOfferSnapshot {
 }
 
 model StripeCatalogWebhookEvent {
-  eventId           String   @id
-  eventType         String
-  catalogObjectId   String
-  catalogObjectKind String
-  variantId         String?
-  stripeCreatedAt   DateTime
-  processedAt       DateTime @default(now())
+  eventId                 String    @id
+  eventType               String
+  catalogObjectId         String
+  catalogObjectKind       String
+  variantId               String?
+  stripeCreatedAt         DateTime
+  processedAt             DateTime  @default(now())
+  processingStatus        String    @default("pending")
+  processingCompletedAt   DateTime?
+  processingFailureReason String?
 
   @@index([catalogObjectKind, catalogObjectId])
   @@index([variantId, stripeCreatedAt])
+  @@index([processingStatus, stripeCreatedAt])
 }
 
 model ItemAvailability {

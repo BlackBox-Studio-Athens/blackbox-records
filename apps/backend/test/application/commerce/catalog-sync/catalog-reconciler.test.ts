@@ -479,6 +479,128 @@ describe('CatalogReconciler', () => {
     expect(snapshots.records.get(storeItem.variantId)?.freshUntil.toISOString()).toBe('2026-05-22T10:00:00.000Z');
   });
 
+  it('accepts a Dashboard replacement Price as day-to-day Price Authority without Desired Price repair', async () => {
+    const oldPrice = createCatalogPrice({
+      active: false,
+      amountMinor: 2800,
+      priceId: 'price_test_disintegration_2800',
+    });
+    const replacementPrice = createCatalogPrice({
+      amountMinor: 3200,
+      priceId: 'price_test_disintegration_3200_dashboard',
+    });
+    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
+    stripeCatalog.prices.set(oldPrice.priceId, oldPrice);
+    stripeCatalog.prices.set(replacementPrice.priceId, replacementPrice);
+    mappings.records.set(storeItem.variantId, {
+      stripePriceId: oldPrice.priceId,
+      variantId: storeItem.variantId,
+    });
+
+    const result = await reconciler.reconcileVariant(storeItem, {
+      apply: true,
+      now: new Date('2026-05-23T10:00:00.000Z'),
+    });
+
+    expect(result.issues).toEqual([]);
+    expect(result.actions).toEqual(
+      expect.arrayContaining([
+        { kind: 'update_mapping', stripePriceId: replacementPrice.priceId },
+        { kind: 'update_snapshot' },
+      ]),
+    );
+    expect(result.actions).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'archive_price' }),
+        expect.objectContaining({ kind: 'create_catalog_price' }),
+      ]),
+    );
+    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(replacementPrice.priceId);
+    expect(snapshots.records.get(storeItem.variantId)).toMatchObject({
+      amountMinor: 3200,
+      currencyCode: 'EUR',
+      stripePriceId: replacementPrice.priceId,
+    });
+  });
+
+  it('resolves a metadata-identified replacement Price when the lookup key is missing', async () => {
+    const replacementPrice = {
+      ...createCatalogPrice({
+        amountMinor: 3200,
+        priceId: 'price_test_disintegration_metadata_only',
+      }),
+      lookupKey: null,
+    };
+    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
+    stripeCatalog.prices.set(replacementPrice.priceId, replacementPrice);
+
+    const result = await reconciler.reconcileVariant(storeItem, {
+      apply: true,
+      now: new Date('2026-05-23T10:00:00.000Z'),
+    });
+
+    expect(result.issues).toEqual([]);
+    expect(result.actions).toEqual(
+      expect.arrayContaining([
+        { kind: 'update_mapping', stripePriceId: replacementPrice.priceId },
+        { kind: 'update_snapshot' },
+      ]),
+    );
+    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(replacementPrice.priceId);
+    expect(snapshots.records.get(storeItem.variantId)).toMatchObject({
+      amountMinor: 3200,
+      stripePriceId: replacementPrice.priceId,
+    });
+  });
+
+  it('fails closed when lookup key and metadata identify different variants', async () => {
+    const conflictingPrice = {
+      ...createCatalogPrice({
+        amountMinor: 3200,
+        priceId: 'price_test_disintegration_conflicting_identity',
+      }),
+      metadata: {
+        appEnv: 'uat',
+        sourceId: storeItem.sourceId,
+        sourceKind: storeItem.sourceKind,
+        storeItemSlug: storeItem.storeItemSlug,
+        variantId: 'variant_other_standard',
+      },
+    };
+    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
+    stripeCatalog.prices.set(conflictingPrice.priceId, conflictingPrice);
+
+    const result = await reconciler.reconcileVariant(storeItem, {
+      apply: true,
+      now: new Date('2026-05-23T10:00:00.000Z'),
+    });
+
+    expect(result.issues).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'wrong_variant_identity' })]),
+    );
+    expect(mappings.records.get(storeItem.variantId)).toBeUndefined();
+    expect(snapshots.records.get(storeItem.variantId)).toBeUndefined();
+  });
+
+  it('fails closed when a Dashboard replacement Price uses the wrong currency', async () => {
+    const price = createCatalogPrice({
+      amountMinor: 3200,
+      currencyCode: 'USD',
+      priceId: 'price_test_disintegration_usd',
+    });
+    const { reconciler, snapshots, stripeCatalog } = createReconciler();
+    stripeCatalog.prices.set(price.priceId, price);
+
+    const result = await reconciler.reconcileVariant(storeItem, {
+      apply: true,
+      now: new Date('2026-05-23T10:00:00.000Z'),
+    });
+
+    expect(result.issues).toEqual([expect.objectContaining({ code: 'wrong_currency' })]);
+    expect(result.actions).toEqual(expect.arrayContaining([{ kind: 'update_mapping', stripePriceId: price.priceId }]));
+    expect(snapshots.records.get(storeItem.variantId)).toBeUndefined();
+  });
+
   it('replaces fixed Stripe Prices with custom pay-what-you-want Prices and writes nullable snapshots', async () => {
     const fixedPrice = createCatalogPrice({ amountMinor: 1000, priceId: 'price_test_disintegration_1000' });
     const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
@@ -715,6 +837,31 @@ describe('CatalogReconciler', () => {
     });
     expect(result.issues).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ variantId: unavailableStoreItem.variantId })]),
+    );
+  });
+
+  it('requires Price Authority in day-to-day verification without comparing Desired Price amounts', async () => {
+    const replacementPrice = createCatalogPrice({
+      amountMinor: 3200,
+      priceId: 'price_test_disintegration_3200_dashboard',
+    });
+    const { reconciler, stripeCatalog } = createReconciler();
+    stripeCatalog.prices.set(replacementPrice.priceId, replacementPrice);
+
+    const result = await reconciler.verifyBuyableCatalog({
+      apply: false,
+    });
+
+    expect(result.issues).toEqual([]);
+    expect(result.results[0]?.resolvedPrice).toMatchObject({
+      amountMinor: 3200,
+      priceId: replacementPrice.priceId,
+    });
+    expect(result.results[0]?.actions).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'archive_price' }),
+        expect.objectContaining({ kind: 'create_catalog_price' }),
+      ]),
     );
   });
 

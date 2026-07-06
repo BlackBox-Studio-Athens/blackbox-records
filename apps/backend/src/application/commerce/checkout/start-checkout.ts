@@ -43,6 +43,10 @@ export type StartCheckoutLineCommand = {
   variantId: VariantId;
 };
 
+type CatalogMutationPolicy = {
+  applyCatalogMutations?: boolean;
+};
+
 const enabledFeatureFlags: FeatureFlagReader = {
   isNativeCheckoutEnabled: async () => true,
 };
@@ -110,6 +114,7 @@ export async function startCheckout(
   orders: OrderStateRepository,
   command: StartCheckoutCommand,
   featureFlags: FeatureFlagReader = enabledFeatureFlags,
+  options: CatalogMutationPolicy = {},
 ): Promise<HostedCheckoutSession> {
   if (!(await featureFlags.isNativeCheckoutEnabled())) {
     throw new NativeCheckoutDisabledError();
@@ -155,7 +160,10 @@ export async function startCheckout(
       throw new CatalogDriftError();
     }
 
-    const catalogResult = await catalogReconciler.reconcileVariant(storeItem, { apply: true, productProjection });
+    const catalogResult = await catalogReconciler.reconcileVariant(storeItem, {
+      apply: options.applyCatalogMutations ?? true,
+      productProjection,
+    });
     const resolvedPrice = catalogResult.resolvedPrice;
 
     if (

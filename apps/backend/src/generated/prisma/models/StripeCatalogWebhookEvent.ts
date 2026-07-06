@@ -32,6 +32,9 @@ export type StripeCatalogWebhookEventMinAggregateOutputType = {
   variantId: string | null
   stripeCreatedAt: Date | null
   processedAt: Date | null
+  processingStatus: string | null
+  processingCompletedAt: Date | null
+  processingFailureReason: string | null
 }
 
 export type StripeCatalogWebhookEventMaxAggregateOutputType = {
@@ -42,6 +45,9 @@ export type StripeCatalogWebhookEventMaxAggregateOutputType = {
   variantId: string | null
   stripeCreatedAt: Date | null
   processedAt: Date | null
+  processingStatus: string | null
+  processingCompletedAt: Date | null
+  processingFailureReason: string | null
 }
 
 export type StripeCatalogWebhookEventCountAggregateOutputType = {
@@ -52,6 +58,9 @@ export type StripeCatalogWebhookEventCountAggregateOutputType = {
   variantId: number
   stripeCreatedAt: number
   processedAt: number
+  processingStatus: number
+  processingCompletedAt: number
+  processingFailureReason: number
   _all: number
 }
 
@@ -64,6 +73,9 @@ export type StripeCatalogWebhookEventMinAggregateInputType = {
   variantId?: true
   stripeCreatedAt?: true
   processedAt?: true
+  processingStatus?: true
+  processingCompletedAt?: true
+  processingFailureReason?: true
 }
 
 export type StripeCatalogWebhookEventMaxAggregateInputType = {
@@ -74,6 +86,9 @@ export type StripeCatalogWebhookEventMaxAggregateInputType = {
   variantId?: true
   stripeCreatedAt?: true
   processedAt?: true
+  processingStatus?: true
+  processingCompletedAt?: true
+  processingFailureReason?: true
 }
 
 export type StripeCatalogWebhookEventCountAggregateInputType = {
@@ -84,6 +99,9 @@ export type StripeCatalogWebhookEventCountAggregateInputType = {
   variantId?: true
   stripeCreatedAt?: true
   processedAt?: true
+  processingStatus?: true
+  processingCompletedAt?: true
+  processingFailureReason?: true
   _all?: true
 }
 
@@ -167,6 +185,9 @@ export type StripeCatalogWebhookEventGroupByOutputType = {
   variantId: string | null
   stripeCreatedAt: Date
   processedAt: Date
+  processingStatus: string
+  processingCompletedAt: Date | null
+  processingFailureReason: string | null
   _count: StripeCatalogWebhookEventCountAggregateOutputType | null
   _min: StripeCatalogWebhookEventMinAggregateOutputType | null
   _max: StripeCatalogWebhookEventMaxAggregateOutputType | null
@@ -198,6 +219,9 @@ export type StripeCatalogWebhookEventWhereInput = {
   variantId?: Prisma.StringNullableFilter<"StripeCatalogWebhookEvent"> | string | null
   stripeCreatedAt?: Prisma.DateTimeFilter<"StripeCatalogWebhookEvent"> | Date | string
   processedAt?: Prisma.DateTimeFilter<"StripeCatalogWebhookEvent"> | Date | string
+  processingStatus?: Prisma.StringFilter<"StripeCatalogWebhookEvent"> | string
+  processingCompletedAt?: Prisma.DateTimeNullableFilter<"StripeCatalogWebhookEvent"> | Date | string | null
+  processingFailureReason?: Prisma.StringNullableFilter<"StripeCatalogWebhookEvent"> | string | null
 }
 
 export type StripeCatalogWebhookEventOrderByWithRelationInput = {
@@ -208,6 +232,9 @@ export type StripeCatalogWebhookEventOrderByWithRelationInput = {
   variantId?: Prisma.SortOrderInput | Prisma.SortOrder
   stripeCreatedAt?: Prisma.SortOrder
   processedAt?: Prisma.SortOrder
+  processingStatus?: Prisma.SortOrder
+  processingCompletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  processingFailureReason?: Prisma.SortOrderInput | Prisma.SortOrder
 }
 
 export type StripeCatalogWebhookEventWhereUniqueInput = Prisma.AtLeast<{
@@ -221,6 +248,9 @@ export type StripeCatalogWebhookEventWhereUniqueInput = Prisma.AtLeast<{
   variantId?: Prisma.StringNullableFilter<"StripeCatalogWebhookEvent"> | string | null
   stripeCreatedAt?: Prisma.DateTimeFilter<"StripeCatalogWebhookEvent"> | Date | string
   processedAt?: Prisma.DateTimeFilter<"StripeCatalogWebhookEvent"> | Date | string
+  processingStatus?: Prisma.StringFilter<"StripeCatalogWebhookEvent"> | string
+  processingCompletedAt?: Prisma.DateTimeNullableFilter<"StripeCatalogWebhookEvent"> | Date | string | null
+  processingFailureReason?: Prisma.StringNullableFilter<"StripeCatalogWebhookEvent"> | string | null
 }, "eventId">
 
 export type StripeCatalogWebhookEventOrderByWithAggregationInput = {
@@ -231,6 +261,9 @@ export type StripeCatalogWebhookEventOrderByWithAggregationInput = {
   variantId?: Prisma.SortOrderInput | Prisma.SortOrder
   stripeCreatedAt?: Prisma.SortOrder
   processedAt?: Prisma.SortOrder
+  processingStatus?: Prisma.SortOrder
+  processingCompletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  processingFailureReason?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.StripeCatalogWebhookEventCountOrderByAggregateInput
   _max?: Prisma.StripeCatalogWebhookEventMaxOrderByAggregateInput
   _min?: Prisma.StripeCatalogWebhookEventMinOrderByAggregateInput
@@ -247,6 +280,9 @@ export type StripeCatalogWebhookEventScalarWhereWithAggregatesInput = {
   variantId?: Prisma.StringNullableWithAggregatesFilter<"StripeCatalogWebhookEvent"> | string | null
   stripeCreatedAt?: Prisma.DateTimeWithAggregatesFilter<"StripeCatalogWebhookEvent"> | Date | string
   processedAt?: Prisma.DateTimeWithAggregatesFilter<"StripeCatalogWebhookEvent"> | Date | string
+  processingStatus?: Prisma.StringWithAggregatesFilter<"StripeCatalogWebhookEvent"> | string
+  processingCompletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"StripeCatalogWebhookEvent"> | Date | string | null
+  processingFailureReason?: Prisma.StringNullableWithAggregatesFilter<"StripeCatalogWebhookEvent"> | string | null
 }
 
 export type StripeCatalogWebhookEventCreateInput = {
@@ -257,6 +293,9 @@ export type StripeCatalogWebhookEventCreateInput = {
   variantId?: string | null
   stripeCreatedAt: Date | string
   processedAt?: Date | string
+  processingStatus?: string
+  processingCompletedAt?: Date | string | null
+  processingFailureReason?: string | null
 }
 
 export type StripeCatalogWebhookEventUncheckedCreateInput = {
@@ -267,6 +306,9 @@ export type StripeCatalogWebhookEventUncheckedCreateInput = {
   variantId?: string | null
   stripeCreatedAt: Date | string
   processedAt?: Date | string
+  processingStatus?: string
+  processingCompletedAt?: Date | string | null
+  processingFailureReason?: string | null
 }
 
 export type StripeCatalogWebhookEventUpdateInput = {
@@ -277,6 +319,9 @@ export type StripeCatalogWebhookEventUpdateInput = {
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCreatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   processedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  processingStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingFailureReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type StripeCatalogWebhookEventUncheckedUpdateInput = {
@@ -287,6 +332,9 @@ export type StripeCatalogWebhookEventUncheckedUpdateInput = {
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCreatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   processedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  processingStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingFailureReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type StripeCatalogWebhookEventCreateManyInput = {
@@ -297,6 +345,9 @@ export type StripeCatalogWebhookEventCreateManyInput = {
   variantId?: string | null
   stripeCreatedAt: Date | string
   processedAt?: Date | string
+  processingStatus?: string
+  processingCompletedAt?: Date | string | null
+  processingFailureReason?: string | null
 }
 
 export type StripeCatalogWebhookEventUpdateManyMutationInput = {
@@ -307,6 +358,9 @@ export type StripeCatalogWebhookEventUpdateManyMutationInput = {
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCreatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   processedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  processingStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingFailureReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type StripeCatalogWebhookEventUncheckedUpdateManyInput = {
@@ -317,6 +371,9 @@ export type StripeCatalogWebhookEventUncheckedUpdateManyInput = {
   variantId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCreatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   processedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  processingStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingFailureReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type StripeCatalogWebhookEventCountOrderByAggregateInput = {
@@ -327,6 +384,9 @@ export type StripeCatalogWebhookEventCountOrderByAggregateInput = {
   variantId?: Prisma.SortOrder
   stripeCreatedAt?: Prisma.SortOrder
   processedAt?: Prisma.SortOrder
+  processingStatus?: Prisma.SortOrder
+  processingCompletedAt?: Prisma.SortOrder
+  processingFailureReason?: Prisma.SortOrder
 }
 
 export type StripeCatalogWebhookEventMaxOrderByAggregateInput = {
@@ -337,6 +397,9 @@ export type StripeCatalogWebhookEventMaxOrderByAggregateInput = {
   variantId?: Prisma.SortOrder
   stripeCreatedAt?: Prisma.SortOrder
   processedAt?: Prisma.SortOrder
+  processingStatus?: Prisma.SortOrder
+  processingCompletedAt?: Prisma.SortOrder
+  processingFailureReason?: Prisma.SortOrder
 }
 
 export type StripeCatalogWebhookEventMinOrderByAggregateInput = {
@@ -347,10 +410,17 @@ export type StripeCatalogWebhookEventMinOrderByAggregateInput = {
   variantId?: Prisma.SortOrder
   stripeCreatedAt?: Prisma.SortOrder
   processedAt?: Prisma.SortOrder
+  processingStatus?: Prisma.SortOrder
+  processingCompletedAt?: Prisma.SortOrder
+  processingFailureReason?: Prisma.SortOrder
 }
 
 export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
+}
+
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
 }
 
 
@@ -363,6 +433,9 @@ export type StripeCatalogWebhookEventSelect<ExtArgs extends runtime.Types.Extens
   variantId?: boolean
   stripeCreatedAt?: boolean
   processedAt?: boolean
+  processingStatus?: boolean
+  processingCompletedAt?: boolean
+  processingFailureReason?: boolean
 }, ExtArgs["result"]["stripeCatalogWebhookEvent"]>
 
 export type StripeCatalogWebhookEventSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -373,6 +446,9 @@ export type StripeCatalogWebhookEventSelectCreateManyAndReturn<ExtArgs extends r
   variantId?: boolean
   stripeCreatedAt?: boolean
   processedAt?: boolean
+  processingStatus?: boolean
+  processingCompletedAt?: boolean
+  processingFailureReason?: boolean
 }, ExtArgs["result"]["stripeCatalogWebhookEvent"]>
 
 export type StripeCatalogWebhookEventSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -383,6 +459,9 @@ export type StripeCatalogWebhookEventSelectUpdateManyAndReturn<ExtArgs extends r
   variantId?: boolean
   stripeCreatedAt?: boolean
   processedAt?: boolean
+  processingStatus?: boolean
+  processingCompletedAt?: boolean
+  processingFailureReason?: boolean
 }, ExtArgs["result"]["stripeCatalogWebhookEvent"]>
 
 export type StripeCatalogWebhookEventSelectScalar = {
@@ -393,9 +472,12 @@ export type StripeCatalogWebhookEventSelectScalar = {
   variantId?: boolean
   stripeCreatedAt?: boolean
   processedAt?: boolean
+  processingStatus?: boolean
+  processingCompletedAt?: boolean
+  processingFailureReason?: boolean
 }
 
-export type StripeCatalogWebhookEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"eventId" | "eventType" | "catalogObjectId" | "catalogObjectKind" | "variantId" | "stripeCreatedAt" | "processedAt", ExtArgs["result"]["stripeCatalogWebhookEvent"]>
+export type StripeCatalogWebhookEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"eventId" | "eventType" | "catalogObjectId" | "catalogObjectKind" | "variantId" | "stripeCreatedAt" | "processedAt" | "processingStatus" | "processingCompletedAt" | "processingFailureReason", ExtArgs["result"]["stripeCatalogWebhookEvent"]>
 
 export type $StripeCatalogWebhookEventPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "StripeCatalogWebhookEvent"
@@ -408,6 +490,9 @@ export type $StripeCatalogWebhookEventPayload<ExtArgs extends runtime.Types.Exte
     variantId: string | null
     stripeCreatedAt: Date
     processedAt: Date
+    processingStatus: string
+    processingCompletedAt: Date | null
+    processingFailureReason: string | null
   }, ExtArgs["result"]["stripeCatalogWebhookEvent"]>
   composites: {}
 }
@@ -838,6 +923,9 @@ export interface StripeCatalogWebhookEventFieldRefs {
   readonly variantId: Prisma.FieldRef<"StripeCatalogWebhookEvent", 'String'>
   readonly stripeCreatedAt: Prisma.FieldRef<"StripeCatalogWebhookEvent", 'DateTime'>
   readonly processedAt: Prisma.FieldRef<"StripeCatalogWebhookEvent", 'DateTime'>
+  readonly processingStatus: Prisma.FieldRef<"StripeCatalogWebhookEvent", 'String'>
+  readonly processingCompletedAt: Prisma.FieldRef<"StripeCatalogWebhookEvent", 'DateTime'>
+  readonly processingFailureReason: Prisma.FieldRef<"StripeCatalogWebhookEvent", 'String'>
 }
     
 

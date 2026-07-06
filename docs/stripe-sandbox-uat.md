@@ -54,17 +54,52 @@ pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env uat
 
 Do not paste the signing secret into docs, chat, screenshots, evidence files, Astro public env vars, or committed files. For an existing endpoint, reveal/copy the signing secret from Stripe Dashboard/Workbench and put it directly into Wrangler. Stripe endpoint list/retrieve APIs do not return an existing endpoint secret, so `pnpm stripe:webhooks:verify --env uat` separates endpoint configuration proof from signing-secret match proof.
 
-Catalog correctness is layered: persistent webhooks provide near-real-time sync, Store Offer reads reconcile stale snapshots, checkout start revalidates the active Stripe Price, scheduled UAT catalog verification reports drift every six hours without mutating Stripe, and `pnpm stripe:catalog:verify --env uat --apply` remains the explicit Product Environment command for current UAT catalog alignment.
+Catalog correctness is layered: persistent webhooks provide near-real-time sync, Store Offer reads reconcile stale snapshots, checkout start revalidates the active Stripe Price, scheduled UAT catalog verification reports drift every six hours without mutating Stripe, and `pnpm stripe:catalog:verify --env uat --apply` remains the explicit Product Environment command for current UAT catalog alignment. PRD uses the same current-state read path, but catalog mutations stay disabled until `PRD_OPEN_GATE=open`.
 
 UAT is also the first leg of the generated catalog artifact pipeline described in [`docs/catalog-promotion.md`](catalog-promotion.md). Normal content publication should use the generated artifact commit and promotion workflow instead of treating sandbox apply as a detached manual checklist.
 
 Catalog Field Ownership keeps UAT alignment explicit:
 
 - Product Projection is repo-owned and may update Stripe Product name, description, image URLs, and metadata only through a reviewed UAT apply. UAT Product image URLs use the GitHub Pages UAT asset base.
-- Price Authority is Stripe-owned. Change prices by creating a replacement Stripe Price, moving lookup key/metadata to that Price, archiving the stale Price, and rerunning catalog verification.
+- Price Authority is Stripe-owned. Change prices by creating a replacement Stripe Price, moving lookup key or app metadata to that Price, archiving the stale Price, and rerunning catalog verification.
 - Stripe Dashboard edits to Product presentation are drift unless repo content/projection is updated first.
-- `pnpm stripe:catalog:verify --env uat --apply` is UAT-only and should follow a reviewed dry-run plan.
+- `pnpm stripe:catalog:verify --env uat` is day-to-day current-state verification; it accepts one valid active Stripe replacement Price as authority even when generated Desired Price still has the old amount.
+- `pnpm stripe:catalog:verify --env uat --apply` is UAT-only promotion/apply mode and should follow a reviewed dry-run plan. In this mode generated Desired Price is enforced again.
 - Full-catalog sandbox reset is a deactivation flow, not hard deletion. It only targets Stripe test-mode objects identified by BlackBox sandbox metadata, lookup keys, or documented catalog-derived legacy sandbox names.
+
+## Dashboard Price Change Runbook
+
+Use this when a colleague needs to change a buyable UAT Store Item price without a repo, Decap, or static deploy change.
+
+1. In Stripe Dashboard test mode, open the Product for the Store Item variant.
+2. Add a replacement Price with the intended amount and `EUR` currency.
+3. Preserve either the deterministic lookup key or complete app identity metadata on the new Price.
+4. Archive or deactivate the stale active Price so only one active Price identifies the variant.
+5. Run `pnpm stripe:webhooks:verify --env uat`.
+6. Run `pnpm stripe:catalog:verify --env uat`.
+7. Read `/api/store/items/<storeItemSlug>` on the UAT Worker and confirm the browser-safe price/readiness.
+8. Run the relevant `pnpm smoke:stripe-uat` scenario and confirm hosted Checkout displays the new amount before payment submission.
+
+Required app identity metadata:
+
+- `appEnv`: `uat`
+- `sourceId`: repo source ID
+- `sourceKind`: `release` or `distro`
+- `storeItemSlug`: public Store Item slug
+- `variantId`: canonical variant ID
+
+Decap remains editorial-only. Editors can change item information and page copy, but must not edit checkout price, Stripe IDs, D1 IDs, stock, provider mutation controls, or any runtime secret.
+
+Least-privilege Stripe access should be tested in UAT before handing this runbook to a colleague. The selected restricted role must be able to create replacement Prices and preserve app identity metadata. If Dashboard permissions do not allow lookup-key transfer, use metadata identity for the replacement Price and ask a developer to repair lookup-key alignment through an approved API step.
+
+Troubleshooting:
+
+- Missing metadata or lookup key: add `storeItemSlug` and `variantId` identity to the active replacement Price, then rerun catalog verification.
+- Multiple active Prices: archive or deactivate stale matching Prices until only one active Price identifies the variant.
+- Wrong currency: create a replacement `EUR` Price and archive the wrong-currency active Price.
+- Webhook signature failure: rotate the Stripe endpoint signing secret into the UAT Worker with `wrangler secret put STRIPE_WEBHOOK_SECRET --env uat`.
+- Stale Store Offer snapshot: run `pnpm stripe:catalog:verify --env uat`; checkout start still revalidates current Stripe state before creating a hosted session.
+- PRD disabled: UAT proof is not PRD acceptance. PRD catalog webhooks are readiness-only, public Store Offer/checkout catalog reconciliation is no-mutation, and `pnpm stripe:catalog:verify --env prd --apply` is blocked until `PRD_OPEN_GATE=open`.
 
 ## Catalog Mutation Forensics
 
