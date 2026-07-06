@@ -86,7 +86,7 @@
 
 - [x] 9.1 Run `pnpm openspec -- validate adopt-cart-scoped-checkout-routes --strict`.
 - [x] 9.2 Run `pnpm test:unit`.
-- [ ] 9.3 Run `pnpm check`.
+- [x] 9.3 Run `pnpm check`.
 - [x] 9.4 Run `pnpm build`.
 - [x] 9.5 Run `pnpm audit:commerce-boundaries`.
 - [x] 9.6 Run `pnpm audit:module-boundaries`.
@@ -97,11 +97,11 @@
 - [x] 9.11 Run Browser Use validation for old item-scoped checkout compatibility route.
 - [x] 9.12 If checkout return behavior changed, validate `/store/checkout/return/?session_id=<test-id>` renders the expected non-final or mocked status safely.
 - [x] 9.13 Validate old item-scoped return compatibility with `session_id` using Browser Use or a static route assertion.
-- [ ] 9.14 Run relevant checkout smoke script if route constants or UAT smoke files changed.
+- [x] 9.14 Run relevant checkout smoke script if route constants or UAT smoke files changed.
 
 ## 10. Rollout Cleanup
 
 - [x] 10.1 Record the chosen compatibility behavior in implementation notes.
 - [x] 10.2 Confirm no generated API contract changes are required beyond existing `lines[]`.
 - [x] 10.3 Confirm old item-scoped route removal is deferred to a separate change after compatibility evidence exists.
-- [ ] 10.4 Archive this OpenSpec change only after implementation, validation evidence, and baseline spec updates are complete.
+- [x] 10.4 Archive this OpenSpec change only after implementation, validation evidence, and baseline spec updates are complete.
