@@ -8,14 +8,11 @@ import shutil
 import sys
 import unicodedata
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 
 from .text import GREEK_TO_LATIN, clean_text, loose, names_match
-from .models import Release
-from .net import Http, cache_key, read_json, write_json
-from .sources import is_bandcamp_url, meta_content
-from .text import score_confidence
+from .net import Http
+from .release_dates import ResearchedMetadata, display_date, parse_bandcamp_release_date, research_metadata
 
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -95,12 +92,6 @@ class SyncResult:
 
     def count(self, kind: str) -> int:
         return sum(1 for action in self.actions if action.kind == kind)
-
-
-@dataclass(frozen=True)
-class ResearchedMetadata:
-    release_date: str = ""
-    track_count: int = 0
 
 
 def sync_manifest(
@@ -420,114 +411,6 @@ def indefinite_article(phrase: str) -> str:
     if normalized.startswith(("8", "11", "18")) or normalized[:1] in {"a", "e", "i", "o", "u"}:
         return "an"
     return "a"
-
-
-def research_metadata(item: ManifestItem, config: FormatConfig, http: Http, user_agent_contact: str) -> ResearchedMetadata:
-    page_metadata = bandcamp_metadata(item, http) if is_bandcamp_url(item.source_page_url) else ResearchedMetadata()
-    if page_metadata.release_date:
-        return page_metadata
-    musicbrainz = research_musicbrainz_metadata(item, config, http.cache_dir, user_agent_contact)
-    return ResearchedMetadata(
-        release_date=musicbrainz.release_date,
-        track_count=page_metadata.track_count or musicbrainz.track_count,
-    )
-
-
-def bandcamp_metadata(item: ManifestItem, http: Http) -> ResearchedMetadata:
-    from bs4 import BeautifulSoup
-
-    html = http.text(item.source_page_url)
-    if not html:
-        return ResearchedMetadata()
-    soup = BeautifulSoup(html, "html.parser")
-    description = meta_content(soup, "description")
-    release_date = parse_bandcamp_release_date(description)
-    track_count = parse_track_count(meta_content(soup, "og:description"))
-    return ResearchedMetadata(release_date=release_date, track_count=track_count)
-
-
-def research_musicbrainz_metadata(
-    item: ManifestItem,
-    config: FormatConfig,
-    cache_dir: Path,
-    user_agent_contact: str,
-) -> ResearchedMetadata:
-    try:
-        import musicbrainzngs
-    except ImportError:
-        return ResearchedMetadata()
-    release = Release(0, item.artist, item.title, config.format_label, item.artist, item.title, item.normalized_format)
-    path = cache_dir / f"distro-metadata-musicbrainz-{cache_key(item.artist + item.title + item.normalized_format)}.json"
-    data = read_json(path)
-    if data is None:
-        try:
-            musicbrainzngs.set_useragent("blackbox-distro-sync", "1.0", user_agent_contact)
-            musicbrainzngs.set_rate_limit(limit_or_interval=1.0, new_requests=1)
-            data = musicbrainzngs.search_releases(artist=item.artist, release=item.title, strict=True, limit=10)
-            write_json(path, data)
-        except Exception:
-            return ResearchedMetadata()
-    if not isinstance(data, dict):
-        return ResearchedMetadata()
-    candidates = []
-    for candidate in data.get("release-list", []):
-        media = ", ".join(medium.get("format", "") for medium in candidate.get("medium-list", []))
-        score, confidence = score_confidence(release, candidate.get("artist-credit-phrase", ""), candidate.get("title", ""), media)
-        date = parse_iso_date(candidate.get("date", ""))
-        if confidence != "none" and date:
-            candidates.append((score, date, track_count_from_musicbrainz(candidate)))
-    if not candidates:
-        return ResearchedMetadata()
-    _, release_date, track_count = max(candidates, key=lambda candidate: (candidate[0], bool(candidate[1]), candidate[2]))
-    return ResearchedMetadata(release_date=release_date, track_count=track_count)
-
-
-def parse_bandcamp_release_date(description: str) -> str:
-    for pattern in (r"\breleased\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})", r"\breleased\s+([A-Za-z]+\s+\d{1,2},\s+\d{4})"):
-        match = re.search(pattern, description, flags=re.IGNORECASE)
-        if match:
-            return parse_written_date(match.group(1))
-    return ""
-
-
-def parse_written_date(value: str) -> str:
-    value = clean_text(value).rstrip(".")
-    for fmt in ("%d %B %Y", "%d %b %Y", "%B %d, %Y", "%b %d, %Y"):
-        try:
-            return datetime.strptime(value, fmt).date().isoformat()
-        except ValueError:
-            pass
-    return ""
-
-
-def parse_iso_date(value: str) -> str:
-    value = clean_text(value)
-    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
-        return value
-    return ""
-
-
-def parse_track_count(value: str) -> int:
-    match = re.search(r"\b(\d{1,3})\s+track\b", value, flags=re.IGNORECASE)
-    return int(match.group(1)) if match else 0
-
-
-def track_count_from_musicbrainz(candidate: dict) -> int:
-    total = 0
-    for medium in candidate.get("medium-list", []):
-        try:
-            total += int(medium.get("track-count", 0))
-        except (TypeError, ValueError):
-            pass
-    return total
-
-
-def display_date(value: str) -> str:
-    try:
-        date = datetime.strptime(value, "%Y-%m-%d").date()
-        return f"{date.strftime('%B')} {date.day}, {date.year}"
-    except ValueError:
-        return value
 
 
 def parse_formats(values: list[str] | None) -> set[str] | None:

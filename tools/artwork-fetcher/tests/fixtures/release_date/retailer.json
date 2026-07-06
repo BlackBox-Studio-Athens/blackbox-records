@@ -1,0 +1,9 @@
+{
+  "artist": "Retail Band",
+  "title": "Retail Album",
+  "format": "Vinyl 12in",
+  "release_date": "2025-05-23",
+  "basis": "store_availability",
+  "source_name": "Retailer",
+  "source_url": "https://shop.example/release"
+}

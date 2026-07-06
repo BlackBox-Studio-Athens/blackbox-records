@@ -22,6 +22,7 @@ vinyl-mockup = "artwork_fetcher.mockup:main"
 cd-front-mockup = "artwork_fetcher.cd_mockup:main"
 cassette-front-mockup = "artwork_fetcher.cassette_mockup:main"
 distro-sync = "artwork_fetcher.distro_sync:main"
+release-date-research = "artwork_fetcher.release_date_research:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

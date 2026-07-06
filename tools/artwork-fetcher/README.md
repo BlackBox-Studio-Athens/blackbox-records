@@ -2,6 +2,8 @@
 
 Reusable local CLI for fetching front-cover artwork from CSV/TSV release lists.
 
+The package now exposes separate command modules for artwork fetching, vinyl/CD/cassette mockups, distro sync, and Release Date Research. Keep shared HTTP/cache, normalization, and source parsing helpers in common modules; do not make command runners import each other.
+
 ## Setup
 
 ```powershell
@@ -154,3 +156,45 @@ python -m artwork_fetcher.cassette_mockup --manifest ./artwork_run_20260628/mani
 python -m artwork_fetcher.distro_sync --manifest ./artwork_run_20260628/manifest.csv --format CD --apply
 python -m artwork_fetcher.distro_sync --manifest ./artwork_run_20260628/manifest.csv --format Tape --apply
 ```
+
+## Release Date Research
+
+Research Actual Release Dates for current release and distro content without touching Stripe, D1, checkout, stock, or provider mutation APIs:
+
+```powershell
+python -m artwork_fetcher.release_date_research
+python -m artwork_fetcher.release_date_research --source-limit 5 --user-agent-contact you@example.com
+python -m artwork_fetcher.release_date_research --out-dir ../../.codex-artifacts/release-date-research/manual-run
+python -m artwork_fetcher.release_date_research --overrides ../../scripts/data/release-date-overrides.json --apply
+```
+
+`release-date-research` is also installed as a console script. The command is dry-run by default and writes reports under `.codex-artifacts/release-date-research/<timestamp>/` unless `--out-dir` is passed.
+
+Reports:
+
+- `summary.json`
+- `candidates.tsv`
+- `missing.tsv`
+- `conflicts.tsv`
+- `proposed-updates.tsv`
+- `proposed-content-updates.patch`
+- `apply-evidence.tsv`
+
+Default `--source-limit 0` performs a local catalog and Distro Inventory Source audit only. Pass a positive limit to query cached public metadata sources, or `--source-limit -1` for no limit. Source candidates record date, precision, basis, source tier, source name, source URL, matched metadata, Release Date Confidence, and notes.
+
+Verified overrides are plain JSON:
+
+```json
+[
+  {
+    "collection": "distro",
+    "item_id": "example-item",
+    "chosen_date": "2026-03-13",
+    "basis": "format_release",
+    "source_url": "https://label.example/release",
+    "reviewer_note": "Confirmed label release page."
+  }
+]
+```
+
+`--apply` updates only day-precision high-confidence Actual Release Dates or verified overrides. Platform Upload Date, weak, partial, and conflicting evidence remains report-only.
