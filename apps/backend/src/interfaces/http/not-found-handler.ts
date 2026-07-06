@@ -1,13 +1,12 @@
 import type { NotFoundHandler } from 'hono';
 
 import type { AppEnv } from '../../env';
-
-const jsonNoStore = <TResponse extends Response>(response: TResponse): TResponse => {
-  response.headers.set('Cache-Control', 'no-store');
-
-  return response;
-};
+import { jsonError } from './responses';
 
 export const notFoundHandler: NotFoundHandler<AppEnv> = (context) => {
-  return jsonNoStore(context.json({ error: 'Not Found' }, 404));
+  return jsonError(context, {
+    code: 'not_found',
+    message: 'Not Found',
+    status: 404,
+  });
 };

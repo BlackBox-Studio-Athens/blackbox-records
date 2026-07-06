@@ -8,7 +8,7 @@ export const apiClientMswBaseUrl = 'http://blackbox.test';
 type CheckoutState = PublicApiComponents['schemas']['CheckoutState'];
 type NewsletterRegistrationBody = PublicApiComponents['schemas']['NewsletterRegistrationBody'];
 type NewsletterRegistrationResponse = PublicApiComponents['schemas']['NewsletterRegistrationResponse'];
-type PublicCommerceError = PublicApiComponents['schemas']['PublicCommerceError'];
+type PublicBackendErrorResponse = PublicApiComponents['schemas']['BackendErrorResponse'];
 type PublicStoreOffer = PublicApiComponents['schemas']['PublicStoreOffer'];
 type StartCheckoutBody = PublicApiComponents['schemas']['StartCheckoutBody'];
 type StartCheckoutResponse = PublicApiComponents['schemas']['StartCheckoutResponse'];
@@ -16,7 +16,7 @@ type StoreCapabilities = PublicApiComponents['schemas']['StoreCapabilities'];
 
 type InternalStockChangeBody = InternalApiComponents['schemas']['InternalStockChangeBody'];
 type InternalStockDetail = InternalApiComponents['schemas']['InternalStockDetail'];
-type InternalStockError = InternalApiComponents['schemas']['InternalStockError'];
+type InternalBackendErrorResponse = InternalApiComponents['schemas']['BackendErrorResponse'];
 type InternalStockHistoryResponse = InternalApiComponents['schemas']['InternalStockHistoryResponse'];
 type InternalVariantSummary = InternalApiComponents['schemas']['InternalVariantSummary'];
 type RecordedStockChangeResponse = InternalApiComponents['schemas']['RecordedStockChangeResponse'];
@@ -31,8 +31,10 @@ export const publicCheckoutFixtures = {
     status: 'complete',
   } satisfies CheckoutState,
   checkoutUnavailable: {
+    code: 'checkout_unavailable',
     error: 'Checkout unavailable or not configured.',
-  } satisfies PublicCommerceError,
+    requestId: 'req_test_checkout_unavailable',
+  } satisfies PublicBackendErrorResponse,
   newsletterRegistrationBody: {
     consentAccepted: true,
     email: 'fan@example.com',
@@ -73,8 +75,10 @@ export const publicCheckoutFixtures = {
 
 export const internalStockFixtures = {
   missingOperatorIdentity: {
+    code: 'missing_operator_identity',
     error: 'Missing operator identity.',
-  } satisfies InternalStockError,
+    requestId: 'req_test_missing_operator_identity',
+  } satisfies InternalBackendErrorResponse,
   stockChangeBody: {
     delta: -1,
     notes: 'Table sale',

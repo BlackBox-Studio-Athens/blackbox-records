@@ -1,17 +1,8 @@
 import type { AppOpenApi } from '../../../env';
 import { requestLogger } from '../../../observability';
 import { postNewsletterRegistrationRoute } from '../contracts/public-contracts';
+import { jsonError, jsonNoStore } from '../responses';
 import { createPublicNewsletterServices } from './public-newsletter-services';
-
-const newsletterUnavailableResponse = {
-  error: 'Newsletter signup is temporarily unavailable.',
-};
-
-const jsonNoStore = <TResponse extends Response>(response: TResponse): TResponse => {
-  response.headers.set('Cache-Control', 'no-store');
-
-  return response;
-};
 
 export function registerPublicNewsletterRoutes(app: AppOpenApi): void {
   app.openapi(postNewsletterRegistrationRoute, async (context) => {
@@ -24,7 +15,11 @@ export function registerPublicNewsletterRoutes(app: AppOpenApi): void {
       });
 
       if (result.status === 'failed') {
-        return jsonNoStore(context.json(newsletterUnavailableResponse, 503));
+        return jsonError(context, {
+          code: 'newsletter_unavailable',
+          message: 'Newsletter signup is temporarily unavailable.',
+          status: 503,
+        });
       }
 
       return jsonNoStore(
@@ -37,11 +32,19 @@ export function registerPublicNewsletterRoutes(app: AppOpenApi): void {
       );
     } catch (error) {
       if (error instanceof services.errors.ZodError) {
-        return jsonNoStore(context.json({ error: 'Enter a valid email address.' }, 400));
+        return jsonError(context, {
+          code: 'invalid_request',
+          message: 'Enter a valid email address.',
+          status: 400,
+        });
       }
 
       if (error instanceof services.errors.EmailConfigurationError) {
-        return jsonNoStore(context.json(newsletterUnavailableResponse, 503));
+        return jsonError(context, {
+          code: 'newsletter_unavailable',
+          message: 'Newsletter signup is temporarily unavailable.',
+          status: 503,
+        });
       }
 
       throw error;

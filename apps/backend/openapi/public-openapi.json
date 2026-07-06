@@ -163,14 +163,23 @@
           "status"
         ]
       },
-      "PublicCommerceError": {
+      "BackendErrorResponse": {
         "type": "object",
         "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
           "error": {
             "type": "string"
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 1
           }
         },
         "required": [
+          "code",
           "error"
         ]
       },
@@ -416,7 +425,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PublicCommerceError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -459,7 +468,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PublicCommerceError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -497,7 +506,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PublicCommerceError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -507,7 +516,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PublicCommerceError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -517,7 +526,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PublicCommerceError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -527,7 +536,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PublicCommerceError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -567,7 +576,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PublicCommerceError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -605,7 +614,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PublicCommerceError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -615,7 +624,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PublicCommerceError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }

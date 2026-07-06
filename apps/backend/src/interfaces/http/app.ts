@@ -6,11 +6,22 @@ import type { AppEnv, AppOpenApi } from '../../env';
 import { requestObservabilityMiddleware } from '../../observability';
 import { errorHandler } from './error-handler';
 import { notFoundHandler } from './not-found-handler';
+import { jsonError } from './responses';
 import { registerInternalRoutes } from './routes/register-internal-routes';
 import { registerPublicRoutes } from './routes/register-public-routes';
 
 export function createHttpApp(): AppOpenApi {
-  const app = new OpenAPIHono<AppEnv>();
+  const app = new OpenAPIHono<AppEnv>({
+    defaultHook(result, context) {
+      if (!result.success) {
+        return jsonError(context, {
+          code: 'invalid_request',
+          message: 'Invalid request.',
+          status: 400,
+        });
+      }
+    },
+  });
 
   app.use('/api/*', requestId({ limitLength: 80 }));
   app.use('/api/*', requestObservabilityMiddleware());

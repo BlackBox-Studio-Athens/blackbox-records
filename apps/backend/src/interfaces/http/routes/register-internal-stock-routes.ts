@@ -4,18 +4,14 @@ import type { AppBindings, AppOpenApi } from '../../../env';
 import type { AppLogger } from '../../../observability';
 import { requestLogger, runWithTraceSpan, traceContextFromHono } from '../../../observability';
 import { readOperatorIdentityFromAccessHeaders } from '../auth';
+import { backendErrorResponseSchema, jsonError, jsonNoStore } from '../responses';
 import { createInternalStockServices } from './internal-stock-services';
 
 type InternalStockServices = ReturnType<typeof createInternalStockServices>;
 type InternalStockRouteError = {
+  code: 'invalid_request' | 'not_found';
   message: string;
   status: 400 | 404;
-};
-
-const jsonNoStore = <TResponse extends Response>(response: TResponse): TResponse => {
-  response.headers.set('Cache-Control', 'no-store');
-
-  return response;
 };
 
 const readOperatorEmail = (headers: Headers): string | null =>
@@ -56,25 +52,19 @@ function toInternalStockRouteError(
   options: { includeInvalidStockOperation?: boolean; invalidRequestMessage: string },
 ): InternalStockRouteError | null {
   if (error instanceof services.errors.VariantNotFoundError) {
-    return { message: error.message, status: 404 };
+    return { code: 'not_found', message: error.message, status: 404 };
   }
 
   if (options.includeInvalidStockOperation && error instanceof services.errors.InvalidStockOperationError) {
-    return { message: error.message, status: 400 };
+    return { code: 'invalid_request', message: error.message, status: 400 };
   }
 
   if (error instanceof z.ZodError) {
-    return { message: options.invalidRequestMessage, status: 400 };
+    return { code: 'invalid_request', message: options.invalidRequestMessage, status: 400 };
   }
 
   return null;
 }
-
-const errorSchema = z
-  .object({
-    error: z.string(),
-  })
-  .openapi('InternalStockError');
 
 const variantParamsSchema = z
   .object({
@@ -201,7 +191,7 @@ const searchVariantsRoute = createRoute({
     401: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Missing operator identity.',
@@ -228,7 +218,7 @@ const getVariantStockRoute = createRoute({
     401: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Missing operator identity.',
@@ -236,7 +226,7 @@ const getVariantStockRoute = createRoute({
     400: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Invalid variant id.',
@@ -244,7 +234,7 @@ const getVariantStockRoute = createRoute({
     404: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Variant not found.',
@@ -272,7 +262,7 @@ const getVariantStockHistoryRoute = createRoute({
     401: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Missing operator identity.',
@@ -280,7 +270,7 @@ const getVariantStockHistoryRoute = createRoute({
     400: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Invalid variant id.',
@@ -288,7 +278,7 @@ const getVariantStockHistoryRoute = createRoute({
     404: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Variant not found.',
@@ -322,7 +312,7 @@ const postStockChangeRoute = createRoute({
     400: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Invalid stock change.',
@@ -330,7 +320,7 @@ const postStockChangeRoute = createRoute({
     401: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Missing operator identity.',
@@ -338,7 +328,7 @@ const postStockChangeRoute = createRoute({
     404: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Variant not found.',
@@ -372,7 +362,7 @@ const postStockCountRoute = createRoute({
     400: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Invalid stock count.',
@@ -380,7 +370,7 @@ const postStockCountRoute = createRoute({
     401: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Missing operator identity.',
@@ -388,7 +378,7 @@ const postStockCountRoute = createRoute({
     404: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Variant not found.',
@@ -409,7 +399,11 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         safeReason: 'missing_operator_identity',
       });
 
-      return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
+      return jsonError(context, {
+        code: 'missing_operator_identity',
+        message: 'Missing operator identity.',
+        status: 401,
+      });
     }
 
     return withInternalStockServices(context.env, async (services) => {
@@ -436,7 +430,11 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         safeReason: 'missing_operator_identity',
       });
 
-      return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
+      return jsonError(context, {
+        code: 'missing_operator_identity',
+        message: 'Missing operator identity.',
+        status: 401,
+      });
     }
 
     return withInternalStockServices(context.env, async (services) => {
@@ -463,7 +461,11 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
             safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
           });
 
-          return jsonNoStore(context.json({ error: routeError.message }, routeError.status));
+          return jsonError(context, {
+            code: routeError.code,
+            message: routeError.message,
+            status: routeError.status,
+          });
         }
 
         throw error;
@@ -482,7 +484,11 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         safeReason: 'missing_operator_identity',
       });
 
-      return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
+      return jsonError(context, {
+        code: 'missing_operator_identity',
+        message: 'Missing operator identity.',
+        status: 401,
+      });
     }
 
     return withInternalStockServices(context.env, async (services) => {
@@ -510,7 +516,11 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
             safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
           });
 
-          return jsonNoStore(context.json({ error: routeError.message }, routeError.status));
+          return jsonError(context, {
+            code: routeError.code,
+            message: routeError.message,
+            status: routeError.status,
+          });
         }
 
         throw error;
@@ -529,7 +539,11 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         safeReason: 'missing_operator_identity',
       });
 
-      return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
+      return jsonError(context, {
+        code: 'missing_operator_identity',
+        message: 'Missing operator identity.',
+        status: 401,
+      });
     }
 
     return withInternalStockServices(context.env, async (services) => {
@@ -583,7 +597,11 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
             safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
           });
 
-          return jsonNoStore(context.json({ error: routeError.message }, routeError.status));
+          return jsonError(context, {
+            code: routeError.code,
+            message: routeError.message,
+            status: routeError.status,
+          });
         }
 
         throw error;
@@ -602,7 +620,11 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         safeReason: 'missing_operator_identity',
       });
 
-      return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
+      return jsonError(context, {
+        code: 'missing_operator_identity',
+        message: 'Missing operator identity.',
+        status: 401,
+      });
     }
 
     return withInternalStockServices(context.env, async (services) => {
@@ -656,7 +678,11 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
             safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
           });
 
-          return jsonNoStore(context.json({ error: routeError.message }, routeError.status));
+          return jsonError(context, {
+            code: routeError.code,
+            message: routeError.message,
+            status: routeError.status,
+          });
         }
 
         throw error;

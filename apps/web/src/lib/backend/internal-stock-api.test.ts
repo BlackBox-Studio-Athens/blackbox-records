@@ -134,6 +134,17 @@ describe('createInternalStockApi', () => {
     await expect(api.searchVariants()).rejects.toEqual(new InternalStockApiError(401, 'Missing operator identity.'));
   });
 
+  it('keeps reading legacy internal error message bodies during deploy skew', async () => {
+    webMswServer.use(
+      http.get<Record<string, never>, never, { error: string }>('*/api/internal/variants', () =>
+        HttpResponse.json({ error: 'Legacy stock error.' }, { status: 400 }),
+      ),
+    );
+    const api = createInternalStockApi({ backendBaseUrl: apiClientMswBaseUrl });
+
+    await expect(api.searchVariants()).rejects.toEqual(new InternalStockApiError(400, 'Legacy stock error.'));
+  });
+
   it('falls back to status-based errors when a non-JSON response reaches the UI', async () => {
     webMswServer.use(http.get('*/api/internal/variants', () => HttpResponse.text('<!doctype html>', { status: 404 })));
     const api = createInternalStockApi({ backendBaseUrl: apiClientMswBaseUrl });

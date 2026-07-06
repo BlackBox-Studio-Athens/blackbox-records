@@ -10,7 +10,7 @@ export type NewsletterRegistrationBody = PublicApiComponents['schemas']['Newslet
 export type NewsletterRegistrationResponse = PublicApiComponents['schemas']['NewsletterRegistrationResponse'];
 export type StartCheckoutBody = PublicApiComponents['schemas']['StartCheckoutBody'];
 export type StartCheckoutResponse = PublicApiComponents['schemas']['StartCheckoutResponse'];
-export type PublicCommerceError = PublicApiComponents['schemas']['PublicCommerceError'];
+export type BackendErrorResponse = PublicApiComponents['schemas']['BackendErrorResponse'];
 
 type OpenApiErrorLike = {
   data: unknown;
@@ -113,7 +113,7 @@ function normalizePublicCheckoutApiError(error: unknown, fallbackMessage: string
   if (isOpenApiErrorLike(error)) {
     return new PublicCheckoutApiError(
       error.status,
-      extractPublicCommerceErrorMessage(error.data, fallbackMessage),
+      extractBackendErrorMessage(error.data, fallbackMessage),
       error.data,
     );
   }
@@ -135,7 +135,7 @@ function isOpenApiErrorLike(error: unknown): error is OpenApiErrorLike {
   );
 }
 
-function extractPublicCommerceErrorMessage(body: unknown, fallbackMessage: string): string {
+function extractBackendErrorMessage(body: unknown, fallbackMessage: string): string {
   if (body && typeof body === 'object' && 'error' in body) {
     const errorMessage = (body as { error?: unknown }).error;
 

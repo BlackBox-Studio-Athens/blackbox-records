@@ -1,4 +1,5 @@
 import { env } from 'cloudflare:workers';
+import { HTTPException } from 'hono/http-exception';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { AppBindings } from '../../src/env';
@@ -32,6 +33,7 @@ describe('createHttpApp', () => {
     const response = await app.request('http://backend.test/nope');
 
     await expect(response.json()).resolves.toEqual({
+      code: 'not_found',
       error: 'Not Found',
     });
     expectNoStoreCacheControl(response);
@@ -149,6 +151,13 @@ describe('createHttpApp', () => {
 
       expect(response.status).toBe(500);
       expectNoStoreCacheControl(response);
+      const body = await response.json();
+      expect(body).toEqual({
+        code: 'internal_server_error',
+        error: 'Internal Server Error',
+        requestId: expect.any(String),
+      });
+      expect(JSON.stringify(body)).not.toContain('sk_test_secret');
       expect(error).toHaveBeenCalledWith(
         expect.objectContaining({
           errorName: 'Error',
@@ -162,6 +171,23 @@ describe('createHttpApp', () => {
     } finally {
       error.mockRestore();
     }
+  });
+
+  it('converts Hono HTTPException values to the shared error response', async () => {
+    const app = createHttpApp();
+    app.get('/api/http-exception', () => {
+      throw new HTTPException(403, { message: 'Forbidden by policy.' });
+    });
+
+    const response = await app.request('http://backend.test/api/http-exception', {}, testBindings);
+
+    expect(response.status).toBe(403);
+    expectNoStoreCacheControl(response);
+    await expect(response.json()).resolves.toEqual({
+      code: 'forbidden',
+      error: 'Forbidden by policy.',
+      requestId: expect.any(String),
+    });
   });
 
   it('does not allow arbitrary browser origins on API routes', async () => {

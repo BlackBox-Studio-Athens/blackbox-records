@@ -32,7 +32,9 @@ describe('internal order routes', () => {
     expect(response.status).toBe(401);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      code: 'missing_operator_identity',
       error: 'Missing operator identity.',
+      requestId: expect.any(String),
     });
     expect(mockReadRecentCheckoutOrders).not.toHaveBeenCalled();
   });
@@ -172,7 +174,9 @@ describe('internal order routes', () => {
     expect(response.status).toBe(404);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      code: 'not_found',
       error: 'Checkout order not found.',
+      requestId: expect.any(String),
     });
   });
 });

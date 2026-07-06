@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { apiClientMswBaseUrl, publicCheckoutFixtures } from '@blackbox/api-client/test/msw-handlers';
 import { webMswServer } from '@/test/msw-server';
 import {
+  type BackendErrorResponse,
   createPublicCheckoutApi,
-  type PublicCommerceError,
   type PublicCheckoutApiError,
   type NewsletterRegistrationBody,
   type NewsletterRegistrationResponse,
@@ -95,7 +95,7 @@ describe('createPublicCheckoutApi', () => {
 
   it('surfaces visible API error objects with status and response body', async () => {
     webMswServer.use(
-      http.post<Record<string, never>, StartCheckoutBody, PublicCommerceError>('*/api/checkout/sessions', () =>
+      http.post<Record<string, never>, StartCheckoutBody, BackendErrorResponse>('*/api/checkout/sessions', () =>
         HttpResponse.json(publicCheckoutFixtures.checkoutUnavailable, { status: 409 }),
       ),
     );
@@ -104,10 +104,27 @@ describe('createPublicCheckoutApi', () => {
 
     await expect(api.startCheckout(publicCheckoutFixtures.startCheckoutBody)).rejects.toMatchObject({
       body: {
+        code: 'checkout_unavailable',
         error: 'Checkout unavailable or not configured.',
+        requestId: 'req_test_checkout_unavailable',
       },
       message: 'Checkout unavailable or not configured.',
       name: 'PublicCheckoutApiError',
+      status: 409,
+    } satisfies Partial<PublicCheckoutApiError>);
+  });
+
+  it('keeps reading legacy error message bodies during deploy skew', async () => {
+    webMswServer.use(
+      http.post<Record<string, never>, StartCheckoutBody, { error: string }>('*/api/checkout/sessions', () =>
+        HttpResponse.json({ error: 'Legacy checkout error.' }, { status: 409 }),
+      ),
+    );
+
+    const api = createPublicCheckoutApi(apiClientMswBaseUrl);
+
+    await expect(api.startCheckout(publicCheckoutFixtures.startCheckoutBody)).rejects.toMatchObject({
+      message: 'Legacy checkout error.',
       status: 409,
     } satisfies Partial<PublicCheckoutApiError>);
   });

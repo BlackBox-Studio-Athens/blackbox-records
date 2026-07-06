@@ -168,7 +168,9 @@ describe('public commerce routes', () => {
     expect(response.status).toBe(404);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      code: 'not_found',
       error: 'Store item not found.',
+      requestId: expect.any(String),
     });
   });
 
@@ -343,8 +345,40 @@ describe('public commerce routes', () => {
     expect(response.status).toBe(503);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      code: 'newsletter_unavailable',
       error: 'Newsletter signup is temporarily unavailable.',
+      requestId: expect.any(String),
     });
+  });
+
+  it('omits raw validation details from public request errors', async () => {
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://backend.test/api/newsletter/registrations',
+      {
+        body: JSON.stringify({
+          consentAccepted: true,
+          email: 'not-an-email',
+        }),
+        headers: {
+          'content-type': 'application/json',
+          origin: 'https://blackbox.example',
+        },
+        method: 'POST',
+      },
+      testBindings,
+    );
+
+    expect(response.status).toBe(400);
+    expectNoStoreCacheControl(response);
+    const body = await response.json();
+    expect(body).toEqual({
+      code: 'invalid_request',
+      error: 'Invalid request.',
+      requestId: expect.any(String),
+    });
+    expect(JSON.stringify(body)).not.toContain('issues');
+    expect(JSON.stringify(body)).not.toContain('not-an-email');
   });
 
   it('rejects checkout return URLs from unapproved origins', async () => {
@@ -370,7 +404,9 @@ describe('public commerce routes', () => {
     expect(response.status).toBe(409);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      code: 'checkout_unavailable',
       error: 'Checkout return URL is not allowed.',
+      requestId: expect.any(String),
     });
   });
 
@@ -397,7 +433,9 @@ describe('public commerce routes', () => {
     expect(response.status).toBe(409);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      code: 'checkout_unavailable',
       error: 'Checkout return URL is not allowed.',
+      requestId: expect.any(String),
     });
   });
 
@@ -425,7 +463,9 @@ describe('public commerce routes', () => {
     expect(response.status).toBe(409);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      code: 'checkout_unavailable',
       error: 'Checkout is not configured for this item.',
+      requestId: expect.any(String),
     });
   });
 
@@ -453,7 +493,9 @@ describe('public commerce routes', () => {
     expect(response.status).toBe(503);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      code: 'checkout_unavailable',
       error: 'Native checkout is temporarily unavailable.',
+      requestId: expect.any(String),
     });
   });
 

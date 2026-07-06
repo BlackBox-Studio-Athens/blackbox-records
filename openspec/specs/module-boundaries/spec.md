@@ -48,7 +48,7 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 
 #### Scenario: Backend shared observability helper is added
 
-- **GIVEN** backend modules need shared Worker-safe logging or tracing helpers
+- **GIVEN** backend modules need shared Worker-safe logging, tracing, or HTTP response helpers
 - **WHEN** the helper is added
 - **THEN** it is listed as a provided `platform-shared` entrypoint in `module-boundaries.manifest.json`
 - **AND** feature modules import that entrypoint directly instead of deep-importing HTTP route internals.

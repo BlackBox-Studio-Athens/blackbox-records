@@ -337,7 +337,9 @@ describe('Stripe webhook routes', () => {
     expect(response.status).toBe(400);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      code: 'invalid_request',
       error: 'Stripe webhook signature is required.',
+      requestId: expect.any(String),
     });
     expect(acknowledgeSpy).not.toHaveBeenCalled();
   });
@@ -362,9 +364,15 @@ describe('Stripe webhook routes', () => {
 
     expect(response.status).toBe(400);
     expectNoStoreCacheControl(response);
-    await expect(response.json()).resolves.toEqual({
+    const body = await response.json();
+    expect(body).toEqual({
+      code: 'invalid_request',
       error: 'Stripe webhook signature verification failed.',
+      requestId: expect.any(String),
     });
+    expect(JSON.stringify(body)).not.toContain('cs_test_123');
+    expect(JSON.stringify(body)).not.toContain('evt_checkout_session_completed');
+    expect(JSON.stringify(body)).not.toContain('stripe-signature');
     expect(acknowledgeSpy).not.toHaveBeenCalled();
   });
 
@@ -391,7 +399,9 @@ describe('Stripe webhook routes', () => {
     expect(response.status).toBe(500);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      code: 'internal_server_error',
       error: 'Stripe webhook is not configured.',
+      requestId: expect.any(String),
     });
   });
 });

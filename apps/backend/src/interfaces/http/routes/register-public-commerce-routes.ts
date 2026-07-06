@@ -8,14 +8,9 @@ import {
 } from '../contracts/public-contracts';
 import { createStartCheckoutLineCommand } from '../../../application/commerce/checkout';
 import { requestLogger, safeCheckoutSessionId, traceContextFromHono, runWithTraceSpan } from '../../../observability';
+import { jsonError, jsonNoStore } from '../responses';
 import { createPublicCheckoutCancelUrl, createPublicCheckoutReturnUrl } from './public-checkout-return-url';
 import { createPublicCommerceServices } from './public-commerce-services';
-
-const jsonNoStore = <TResponse extends Response>(response: TResponse): TResponse => {
-  response.headers.set('Cache-Control', 'no-store');
-
-  return response;
-};
 
 export function registerPublicCommerceRoutes(app: AppOpenApi): void {
   app.openapi(getStoreCapabilitiesRoute, async (context) => {
@@ -46,7 +41,11 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
       const offer = await services.readStoreOffer(storeItemSlug);
 
       if (!offer) {
-        return jsonNoStore(context.json({ error: 'Store item not found.' }, 404));
+        return jsonError(context, {
+          code: 'not_found',
+          message: 'Store item not found.',
+          status: 404,
+        });
       }
 
       return jsonNoStore(context.json(offer, 200));
@@ -63,7 +62,11 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
       const variants = await services.listVariantOffersForStoreItem(storeItemSlug);
 
       if (!variants) {
-        return jsonNoStore(context.json({ error: 'Store item not found.' }, 404));
+        return jsonError(context, {
+          code: 'not_found',
+          message: 'Store item not found.',
+          status: 404,
+        });
       }
 
       return jsonNoStore(context.json(variants, 200));
@@ -98,7 +101,11 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
           safeReason: 'missing_cart_line',
         });
 
-        return jsonNoStore(context.json({ error: 'Checkout requires at least one cart line.' }, 400));
+        return jsonError(context, {
+          code: 'invalid_request',
+          message: 'Checkout requires at least one cart line.',
+          status: 400,
+        });
       }
 
       const checkoutLines = lines.map(createStartCheckoutLineCommand);
@@ -151,7 +158,11 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
           safeReason: 'store_item_not_found',
         });
 
-        return jsonNoStore(context.json({ error: error.message }, 404));
+        return jsonError(context, {
+          code: 'not_found',
+          message: error.message,
+          status: 404,
+        });
       }
 
       if (error instanceof services.errors.VariantMismatchError) {
@@ -161,7 +172,11 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
           safeReason: 'variant_mismatch',
         });
 
-        return jsonNoStore(context.json({ error: error.message }, 400));
+        return jsonError(context, {
+          code: 'invalid_request',
+          message: error.message,
+          status: 400,
+        });
       }
 
       if (error instanceof services.errors.NativeCheckoutDisabledError) {
@@ -171,7 +186,11 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
           safeReason: 'native_checkout_disabled',
         });
 
-        return jsonNoStore(context.json({ error: error.message }, 503));
+        return jsonError(context, {
+          code: 'checkout_unavailable',
+          message: error.message,
+          status: 503,
+        });
       }
 
       if (error instanceof services.errors.CheckoutUnavailableError) {
@@ -181,7 +200,11 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
           safeReason: 'checkout_unavailable',
         });
 
-        return jsonNoStore(context.json({ error: error.message }, 409));
+        return jsonError(context, {
+          code: 'checkout_unavailable',
+          message: error.message,
+          status: 409,
+        });
       }
 
       if (error instanceof services.errors.CatalogDriftError) {
@@ -191,7 +214,11 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
           safeReason: 'catalog_drift',
         });
 
-        return jsonNoStore(context.json({ error: error.message }, 409));
+        return jsonError(context, {
+          code: 'catalog_drift',
+          message: error.message,
+          status: 409,
+        });
       }
 
       if (error instanceof services.errors.CheckoutConfigurationError) {
@@ -201,7 +228,11 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
           safeReason: 'checkout_configuration',
         });
 
-        return jsonNoStore(context.json({ error: error.message }, 409));
+        return jsonError(context, {
+          code: 'checkout_unavailable',
+          message: error.message,
+          status: 409,
+        });
       }
 
       throw error;
@@ -220,7 +251,11 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
       return jsonNoStore(context.json(checkoutState, 200));
     } catch (error) {
       if (error instanceof services.errors.CheckoutConfigurationError) {
-        return jsonNoStore(context.json({ error: error.message }, 409));
+        return jsonError(context, {
+          code: 'checkout_unavailable',
+          message: error.message,
+          status: 409,
+        });
       }
 
       throw error;

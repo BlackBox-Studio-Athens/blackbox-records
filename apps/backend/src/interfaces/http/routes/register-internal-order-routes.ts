@@ -3,19 +3,8 @@ import { createRoute, z } from '@hono/zod-openapi';
 import type { CheckoutOrderRecord, OrderStatus } from '../../../domain/commerce/repositories/spi';
 import type { AppOpenApi } from '../../../env';
 import { readOperatorIdentityFromAccessHeaders } from '../auth';
+import { backendErrorResponseSchema, jsonError, jsonNoStore } from '../responses';
 import { createInternalOrderServices } from './internal-order-services';
-
-const jsonNoStore = <TResponse extends Response>(response: TResponse): TResponse => {
-  response.headers.set('Cache-Control', 'no-store');
-
-  return response;
-};
-
-const errorSchema = z
-  .object({
-    error: z.string(),
-  })
-  .openapi('InternalOrderError');
 
 const orderStatusSchema = z
   .enum(['pending_payment', 'paid', 'not_paid', 'needs_review'])
@@ -75,7 +64,7 @@ const listOrdersRoute = createRoute({
     401: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Missing operator identity.',
@@ -102,7 +91,7 @@ const getOrderByCheckoutSessionRoute = createRoute({
     401: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Missing operator identity.',
@@ -110,7 +99,7 @@ const getOrderByCheckoutSessionRoute = createRoute({
     404: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Checkout order not found.',
@@ -124,7 +113,11 @@ export function registerInternalOrderRoutes(app: AppOpenApi): void {
     const operatorIdentity = readOperatorIdentityFromAccessHeaders(context.req.raw.headers);
 
     if (!operatorIdentity) {
-      return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
+      return jsonError(context, {
+        code: 'missing_operator_identity',
+        message: 'Missing operator identity.',
+        status: 401,
+      });
     }
 
     const services = createInternalOrderServices(context.env);
@@ -146,7 +139,11 @@ export function registerInternalOrderRoutes(app: AppOpenApi): void {
     const operatorIdentity = readOperatorIdentityFromAccessHeaders(context.req.raw.headers);
 
     if (!operatorIdentity) {
-      return jsonNoStore(context.json({ error: 'Missing operator identity.' }, 401));
+      return jsonError(context, {
+        code: 'missing_operator_identity',
+        message: 'Missing operator identity.',
+        status: 401,
+      });
     }
 
     const services = createInternalOrderServices(context.env);
@@ -156,7 +153,11 @@ export function registerInternalOrderRoutes(app: AppOpenApi): void {
       const order = await services.readCheckoutOrder(checkoutSessionId);
 
       if (!order) {
-        return jsonNoStore(context.json({ error: 'Checkout order not found.' }, 404));
+        return jsonError(context, {
+          code: 'not_found',
+          message: 'Checkout order not found.',
+          status: 404,
+        });
       }
 
       return jsonNoStore(context.json(toCheckoutOrderResponse(order), 200));

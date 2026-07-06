@@ -6,14 +6,9 @@ import {
   StripeWebhookSignatureVerificationError,
   verifyStripeWebhookEvent,
 } from '../../../infrastructure/stripe';
+import { jsonError, jsonNoStore } from '../responses';
 import { acknowledgeVerifiedStripeWebhookEvent } from './stripe-webhook-acknowledgement';
 import { createStripeWebhookServices } from './stripe-webhook-services';
-
-const jsonNoStore = <TResponse extends Response>(response: TResponse): TResponse => {
-  response.headers.set('Cache-Control', 'no-store');
-
-  return response;
-};
 
 export function registerStripeWebhookRoutes(app: AppOpenApi): void {
   app.post('/api/stripe/webhooks', async (context) => {
@@ -57,7 +52,11 @@ export function registerStripeWebhookRoutes(app: AppOpenApi): void {
           safeReason: 'webhook_not_configured',
         });
 
-        return jsonNoStore(context.json({ error: error.message }, 500));
+        return jsonError(context, {
+          code: 'internal_server_error',
+          message: error.message,
+          status: 500,
+        });
       }
 
       if (error instanceof StripeWebhookMissingSignatureError) {
@@ -68,7 +67,11 @@ export function registerStripeWebhookRoutes(app: AppOpenApi): void {
           safeReason: 'missing_signature',
         });
 
-        return jsonNoStore(context.json({ error: error.message }, 400));
+        return jsonError(context, {
+          code: 'invalid_request',
+          message: error.message,
+          status: 400,
+        });
       }
 
       if (error instanceof StripeWebhookSignatureVerificationError) {
@@ -79,7 +82,11 @@ export function registerStripeWebhookRoutes(app: AppOpenApi): void {
           safeReason: 'signature_verification_failed',
         });
 
-        return jsonNoStore(context.json({ error: error.message }, 400));
+        return jsonError(context, {
+          code: 'invalid_request',
+          message: error.message,
+          status: 400,
+        });
       }
 
       logger.error({

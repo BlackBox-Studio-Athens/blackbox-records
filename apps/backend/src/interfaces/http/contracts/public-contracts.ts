@@ -1,10 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
 
-const errorSchema = z
-  .object({
-    error: z.string(),
-  })
-  .openapi('PublicCommerceError');
+import { backendErrorResponseSchema } from '../responses';
 
 const storeItemParamsSchema = z
   .object({
@@ -141,7 +137,7 @@ export const getStoreItemRoute = createRoute({
     404: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Store item not found.',
@@ -184,7 +180,7 @@ export const getStoreItemVariantsRoute = createRoute({
     404: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Store item not found.',
@@ -217,7 +213,7 @@ export const postCheckoutSessionRoute = createRoute({
     400: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Invalid checkout request.',
@@ -225,7 +221,7 @@ export const postCheckoutSessionRoute = createRoute({
     404: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Store item not found.',
@@ -233,7 +229,7 @@ export const postCheckoutSessionRoute = createRoute({
     409: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Checkout unavailable or not configured.',
@@ -241,7 +237,7 @@ export const postCheckoutSessionRoute = createRoute({
     503: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Native checkout is temporarily unavailable.',
@@ -268,7 +264,7 @@ export const getCheckoutStateRoute = createRoute({
     409: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Checkout is not configured.',
@@ -301,7 +297,7 @@ export const postNewsletterRegistrationRoute = createRoute({
     400: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Invalid newsletter signup request.',
@@ -309,7 +305,7 @@ export const postNewsletterRegistrationRoute = createRoute({
     503: {
       content: {
         'application/json': {
-          schema: errorSchema,
+          schema: backendErrorResponseSchema,
         },
       },
       description: 'Newsletter signup is temporarily unavailable.',

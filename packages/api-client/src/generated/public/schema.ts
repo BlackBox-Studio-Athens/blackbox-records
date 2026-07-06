@@ -36,7 +36,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["PublicCommerceError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Store item not found. */
@@ -45,7 +45,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["PublicCommerceError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Checkout unavailable or not configured. */
@@ -54,7 +54,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["PublicCommerceError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Native checkout is temporarily unavailable. */
@@ -63,7 +63,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["PublicCommerceError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -107,7 +107,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["PublicCommerceError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -157,7 +157,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["PublicCommerceError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Newsletter signup is temporarily unavailable. */
@@ -166,7 +166,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["PublicCommerceError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -245,7 +245,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["PublicCommerceError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -291,7 +291,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["PublicCommerceError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -308,6 +308,11 @@ export type paths = {
 export type webhooks = Record<string, never>;
 export type components = {
     schemas: {
+        BackendErrorResponse: {
+            code: string;
+            error: string;
+            requestId?: string;
+        };
         CheckoutState: {
             checkoutSessionId: string;
             /** @enum {string|null} */
@@ -335,9 +340,6 @@ export type components = {
         NewsletterRegistrationResponse: {
             /** @enum {string} */
             status: "registered";
-        };
-        PublicCommerceError: {
-            error: string;
         };
         PublicStoreOffer: {
             availability: components["schemas"]["PublicStoreOfferAvailability"];

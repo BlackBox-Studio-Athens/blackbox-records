@@ -110,14 +110,23 @@
           "needs_review"
         ]
       },
-      "InternalOrderError": {
+      "BackendErrorResponse": {
         "type": "object",
         "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
           "error": {
             "type": "string"
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 1
           }
         },
         "required": [
+          "code",
           "error"
         ]
       },
@@ -146,17 +155,6 @@
           "sourceKind",
           "storeItemSlug",
           "variantId"
-        ]
-      },
-      "InternalStockError": {
-        "type": "object",
-        "properties": {
-          "error": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "error"
         ]
       },
       "InternalStockDetail": {
@@ -459,7 +457,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalOrderError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -499,7 +497,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalOrderError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -509,7 +507,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalOrderError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -562,7 +560,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalStockError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -602,7 +600,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalStockError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -612,7 +610,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalStockError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -622,7 +620,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalStockError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -672,7 +670,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalStockError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -682,7 +680,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalStockError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -692,7 +690,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalStockError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -741,7 +739,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalStockError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -751,7 +749,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalStockError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -761,7 +759,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalStockError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -810,7 +808,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalStockError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -820,7 +818,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalStockError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }
@@ -830,7 +828,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InternalStockError"
+                  "$ref": "#/components/schemas/BackendErrorResponse"
                 }
               }
             }

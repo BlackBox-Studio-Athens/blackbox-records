@@ -44,7 +44,9 @@ describe('internal stock routes', () => {
     expect(response.status).toBe(401);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      code: 'missing_operator_identity',
       error: 'Missing operator identity.',
+      requestId: expect.any(String),
     });
   });
 
@@ -225,7 +227,38 @@ describe('internal stock routes', () => {
     expect(response.status).toBe(400);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      code: 'invalid_request',
       error: 'Online stock cannot exceed counted stock.',
+      requestId: expect.any(String),
     });
+  });
+
+  it('returns 404 for missing variants without exposing internals', async () => {
+    mockReadVariantStock.mockRejectedValueOnce(new VariantNotFoundError('Variant not found.'));
+
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://backend.test/api/internal/variants/variant_missing/stock',
+      {
+        headers: {
+          [CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER]: 'operator@blackboxrecords.example',
+        },
+      },
+      {
+        PRODUCT_ENVIRONMENT: 'LOCAL',
+        COMMERCE_DB: {} as D1Database,
+      },
+    );
+
+    expect(response.status).toBe(404);
+    expectNoStoreCacheControl(response);
+    const body = await response.json();
+    expect(body).toEqual({
+      code: 'not_found',
+      error: 'Variant not found.',
+      requestId: expect.any(String),
+    });
+    expect(JSON.stringify(body)).not.toContain(CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER);
+    expect(JSON.stringify(body)).not.toContain('COMMERCE_DB');
   });
 });

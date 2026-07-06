@@ -33,7 +33,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["InternalOrderError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -79,7 +79,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["InternalOrderError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Checkout order not found. */
@@ -88,7 +88,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["InternalOrderError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -135,7 +135,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["InternalStockError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -181,7 +181,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["InternalStockError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Missing operator identity. */
@@ -190,7 +190,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["InternalStockError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Variant not found. */
@@ -199,7 +199,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["InternalStockError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -251,7 +251,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["InternalStockError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Missing operator identity. */
@@ -260,7 +260,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["InternalStockError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Variant not found. */
@@ -269,7 +269,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["InternalStockError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -319,7 +319,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["InternalStockError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Missing operator identity. */
@@ -328,7 +328,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["InternalStockError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Variant not found. */
@@ -337,7 +337,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["InternalStockError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -383,7 +383,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["InternalStockError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Missing operator identity. */
@@ -392,7 +392,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["InternalStockError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Variant not found. */
@@ -401,7 +401,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["InternalStockError"];
+                        "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -418,6 +418,11 @@ export type paths = {
 export type webhooks = Record<string, never>;
 export type components = {
     schemas: {
+        BackendErrorResponse: {
+            code: string;
+            error: string;
+            requestId?: string;
+        };
         InternalCheckoutOrder: {
             checkoutSessionId: string;
             /** Format: date-time */
@@ -442,9 +447,6 @@ export type components = {
             /** Format: date-time */
             updatedAt: string;
             variantId: string;
-        };
-        InternalOrderError: {
-            error: string;
         };
         /** @enum {string} */
         InternalOrderStatus: "pending_payment" | "paid" | "not_paid" | "needs_review";
@@ -486,9 +488,6 @@ export type components = {
         };
         InternalStockDetail: components["schemas"]["InternalVariantSummary"] & {
             stock: components["schemas"]["InternalStockState"];
-        };
-        InternalStockError: {
-            error: string;
         };
         InternalStockHistoryResponse: {
             entries: (components["schemas"]["InternalStockChangeEntry"] | components["schemas"]["InternalStockCountEntry"])[];

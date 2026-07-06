@@ -8,6 +8,7 @@ export type InternalStockChangeBody = InternalApiComponents['schemas']['Internal
 export type InternalStockCountBody = InternalApiComponents['schemas']['InternalStockCountBody'];
 export type RecordedStockChangeResponse = InternalApiComponents['schemas']['RecordedStockChangeResponse'];
 export type RecordedStockCountResponse = InternalApiComponents['schemas']['RecordedStockCountResponse'];
+type BackendErrorResponse = InternalApiComponents['schemas']['BackendErrorResponse'];
 
 type FetchLike = typeof fetch;
 
@@ -118,7 +119,7 @@ async function readJson<TResponse>(response: Response): Promise<TResponse> {
   return response.json() as Promise<TResponse>;
 }
 
-async function readErrorBody(response: Response): Promise<{ error?: string } | null> {
+async function readErrorBody(response: Response): Promise<BackendErrorResponse | { error?: string } | null> {
   const text = await response.text();
 
   if (!text) {
@@ -126,7 +127,7 @@ async function readErrorBody(response: Response): Promise<{ error?: string } | n
   }
 
   try {
-    return JSON.parse(text) as { error?: string };
+    return JSON.parse(text) as BackendErrorResponse | { error?: string };
   } catch {
     return null;
   }
