@@ -589,8 +589,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       kind: 'fixed',
     },
     productProjection: {
-      description:
-        'Vinyl edition of Angry Noises by Ciśnienie. Source metadata identifies it as a 4-track release, released September 19, 2025.',
+      description: 'Vinyl edition of Angry Noises by Ciśnienie. Source metadata identifies it as a 4-track release.',
       imageUrls: [
         'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/cisnienie-angry-noises-vinyl.webp',
       ],
@@ -1429,7 +1428,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     },
     productProjection: {
       description:
-        'Vinyl edition of Van Woede Tot Wanhoop by Onrust. Source metadata identifies it as an 8-track release, released October 20, 2025.',
+        'Vinyl edition of Van Woede Tot Wanhoop by Onrust. Source metadata identifies it as an 8-track release.',
       imageUrls: [
         'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/onrust-van-woede-tot-wanhoop-vinyl.webp',
       ],
@@ -1456,7 +1455,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     },
     productProjection: {
       description:
-        'Vinyl edition of Live at Dunk! Fest 2016 by Pelican. Source metadata identifies it as a 10-track release, released November 22, 2016.',
+        'Vinyl edition of Live at Dunk! Fest 2016 by Pelican. Source metadata identifies it as a 10-track release.',
       imageUrls: [
         'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/pelican-live-at-dunk-fest-2016-vinyl.webp',
       ],
@@ -2140,7 +2139,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     },
     productProjection: {
       description:
-        'Vinyl edition of Departure Songs by We lost the Sea. Source metadata identifies it as a 5-track release, released July 23, 2015.',
+        'Vinyl edition of Departure Songs by We lost the Sea. Source metadata identifies it as a 5-track release.',
       imageUrls: [
         'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/we-lost-the-sea-departure-songs-vinyl.webp',
       ],
@@ -2167,7 +2166,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     },
     productProjection: {
       description:
-        'Vinyl edition of Triumph & Disaster by We lost the Sea. Source metadata identifies it as a 7-track release, released October 4, 2019.',
+        'Vinyl edition of Triumph & Disaster by We lost the Sea. Source metadata identifies it as a 7-track release.',
       imageUrls: [
         'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/we-lost-the-sea-triumph-disaster-vinyl.webp',
       ],

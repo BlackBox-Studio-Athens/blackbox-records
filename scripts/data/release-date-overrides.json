@@ -1,0 +1,218 @@
+[
+  {
+    "collection": "distro",
+    "item_id": "big-fish",
+    "chosen_date": "2018-11-15",
+    "basis": "original_release",
+    "source_url": "https://musicbrainz.org/release/63d83571-793c-43b0-8317-f768a8e7fcd7",
+    "reviewer_note": "Exact original-release date from MusicBrainz; vinyl evidence is year-only."
+  },
+  {
+    "collection": "distro",
+    "item_id": "bloed-tranen",
+    "chosen_date": "2025-10-24",
+    "basis": "format_release",
+    "source_url": "https://www.discogs.com/release/35500522-Bloed-2-Tranen",
+    "reviewer_note": "Exact vinyl release date from Discogs."
+  },
+  {
+    "collection": "distro",
+    "item_id": "cisnienie-angry-noises-vinyl",
+    "chosen_date": "2026-04-24",
+    "basis": "format_release",
+    "source_url": "https://www.discogs.com/release/37190964-Ci%C5%9Bnienie-Angry-Noises",
+    "reviewer_note": "Earliest exact vinyl release date found; original digital/CD evidence is 2025-09-19."
+  },
+  {
+    "collection": "distro",
+    "item_id": "coyotes-arrow-medicine-vinyl",
+    "chosen_date": "2024-06-13",
+    "basis": "format_release",
+    "source_url": "https://www.discogs.com/release/32101377-Coyotes-Arrow-Medicine",
+    "reviewer_note": "Exact vinyl release date from Discogs."
+  },
+  {
+    "collection": "distro",
+    "item_id": "endless-searcher",
+    "chosen_date": "2022-01-24",
+    "basis": "format_release",
+    "source_url": "https://www.discogs.com/release/21270136-Maha-Sohona-Endless-Searcher",
+    "reviewer_note": "Exact vinyl release date from Discogs; earlier digital evidence is original-release only."
+  },
+  {
+    "collection": "distro",
+    "item_id": "in-your-absence",
+    "chosen_date": "2025-09-19",
+    "basis": "format_release",
+    "source_url": "https://www.discogs.com/release/37350498-WeOwnTheSky-In-Your-Absence",
+    "reviewer_note": "Exact vinyl release date matches current content; later vinyl candidates appear to be alternate editions."
+  },
+  {
+    "collection": "distro",
+    "item_id": "malammar-mazza-vinyl",
+    "chosen_date": "2021-04-30",
+    "basis": "format_release",
+    "source_url": "https://www.discogs.com/release/18804370-Mal%C3%A4mmar-Mazza",
+    "reviewer_note": "Exact vinyl release date matches current content; later vinyl candidate is a later edition."
+  },
+  {
+    "collection": "distro",
+    "item_id": "malammar-vendetta-vinyl",
+    "chosen_date": "2016-12-01",
+    "basis": "format_release",
+    "source_url": "https://www.discogs.com/release/9483226-Mal%C3%A4mmar-Vendetta",
+    "reviewer_note": "Exact vinyl release date matches current content; later vinyl candidate is a later edition."
+  },
+  {
+    "collection": "distro",
+    "item_id": "nothing-thrives-tales-of-disgrace-vinyl",
+    "chosen_date": "2024-11-29",
+    "basis": "original_release",
+    "source_url": "https://musicbrainz.org/release/0730828f-e549-4d7e-836b-d2874967fe7d",
+    "reviewer_note": "Exact original-release date from MusicBrainz; vinyl evidence is year-only."
+  },
+  {
+    "collection": "distro",
+    "item_id": "on-the-quiet",
+    "chosen_date": "2017-02-01",
+    "basis": "original_release",
+    "source_url": "https://musicbrainz.org/release/b2712214-bb8e-451d-a4f0-82a662bc2d9c",
+    "reviewer_note": "Exact original-release date from MusicBrainz; inventory format date agrees but has no source URL."
+  },
+  {
+    "collection": "distro",
+    "item_id": "pelican-live-at-dunk-fest-2016-vinyl",
+    "chosen_date": "2016-11-29",
+    "basis": "format_release",
+    "source_url": "https://www.discogs.com/release/9440355-Pelican-2-Live-At-DunkFest-2016",
+    "reviewer_note": "Exact vinyl release date from Discogs; current content date matches file/digital evidence."
+  },
+  {
+    "collection": "distro",
+    "item_id": "pirate-city-fortunate-isles-vinyl",
+    "chosen_date": "2019-07-12",
+    "basis": "original_release",
+    "source_url": "https://piratescity.bandcamp.com/album/fortunate-isles",
+    "reviewer_note": "Official Bandcamp album page gives the exact release date."
+  },
+  {
+    "collection": "distro",
+    "item_id": "pirate-city-lovi-vinyl",
+    "chosen_date": "2023-09-13",
+    "basis": "original_release",
+    "source_url": "https://piratescity.bandcamp.com/album/--4",
+    "reviewer_note": "Official Bandcamp album page gives the exact release date."
+  },
+  {
+    "collection": "distro",
+    "item_id": "pirate-city-piratia-vinyl",
+    "chosen_date": "2025-10-15",
+    "basis": "original_release",
+    "source_url": "https://piratescity.bandcamp.com/album/--5",
+    "reviewer_note": "Official Bandcamp album page gives the exact release date."
+  },
+  {
+    "collection": "distro",
+    "item_id": "russian-circles-live-at-dunk-fest-2016-vinyl",
+    "chosen_date": "2017-04-07",
+    "basis": "format_release",
+    "source_url": "https://www.discogs.com/release/10593705-Russian-Circles-Live-At-DunkFest-2016",
+    "reviewer_note": "Exact vinyl release date from Discogs matches current content; later vinyl candidates are later editions."
+  },
+  {
+    "collection": "distro",
+    "item_id": "salto-mortale-ateles-to-on-cd",
+    "chosen_date": "2018-04-16",
+    "basis": "original_release",
+    "source_url": "https://elliniko-greek-rock.blogspot.com/2015/01/salto-mortale.html",
+    "reviewer_note": "Release profile states the album was released on 2018-04-16."
+  },
+  {
+    "collection": "distro",
+    "item_id": "selenopolis",
+    "chosen_date": "2021-12-21",
+    "basis": "original_release",
+    "source_url": "https://bigbadtrip.bandcamp.com/album/selenopolis",
+    "reviewer_note": "Official Bandcamp album page gives the exact release date."
+  },
+  {
+    "collection": "distro",
+    "item_id": "the-chemical-bath",
+    "chosen_date": "2023-01-20",
+    "basis": "format_release",
+    "source_url": "https://www.discogs.com/release/25883569-Demikhov-The-Chemical-Bath",
+    "reviewer_note": "Exact vinyl release date from Discogs."
+  },
+  {
+    "collection": "distro",
+    "item_id": "the-feathers-of-oblivion",
+    "chosen_date": "2018-06-19",
+    "basis": "original_release",
+    "source_url": "https://bigbadtrip.bandcamp.com/album/the-feathers-of-oblivion",
+    "reviewer_note": "Official Bandcamp album page gives the exact release date."
+  },
+  {
+    "collection": "distro",
+    "item_id": "the-last-second",
+    "chosen_date": "2019-05-01",
+    "basis": "format_release",
+    "source_url": "https://www.discogs.com/release/13580889-Their-Methlab-The-Last-Second",
+    "reviewer_note": "Exact vinyl release date from Discogs; current content date matches original digital evidence."
+  },
+  {
+    "collection": "distro",
+    "item_id": "three-way-plane-your-kingdom-my-life-vinyl",
+    "chosen_date": "2018-06-22",
+    "basis": "format_release",
+    "source_url": "https://www.discogs.com/release/12526462-Three-Way-Plane-Your-Kingdom-My-Life-",
+    "reviewer_note": "Exact vinyl release date from Discogs."
+  },
+  {
+    "collection": "distro",
+    "item_id": "transatlantic-transiberian",
+    "chosen_date": "2025-05-02",
+    "basis": "format_release",
+    "source_url": "https://www.discogs.com/release/34189537-Goodbye-Kings-Transatlantic--Transiberian",
+    "reviewer_note": "Exact vinyl release date from Discogs; same day appears across original-release candidates."
+  },
+  {
+    "collection": "distro",
+    "item_id": "unkraut",
+    "chosen_date": "2021-12-10",
+    "basis": "format_release",
+    "source_url": "https://musicbrainz.org/release/3766c00d-2403-457b-9b04-1753186bf9ef",
+    "reviewer_note": "Exact vinyl release date from MusicBrainz matches current content; later vinyl candidate is a later edition."
+  },
+  {
+    "collection": "distro",
+    "item_id": "unshaped-ahead-8-cantons-vinyl",
+    "chosen_date": "2019-01-08",
+    "basis": "original_release",
+    "source_url": "https://musicbrainz.org/release/df6034f1-06e8-434f-be00-59aaf41a09d9",
+    "reviewer_note": "Exact original-release date from MusicBrainz; no day-level vinyl release evidence found."
+  },
+  {
+    "collection": "distro",
+    "item_id": "we-lost-the-sea-a-single-flower-vinyl",
+    "chosen_date": "2025-07-04",
+    "basis": "format_release",
+    "source_url": "https://www.discogs.com/release/34702032-We-Lost-The-Sea-A-Single-Flower",
+    "reviewer_note": "Exact vinyl release date from Discogs matches current content; later vinyl candidates are later editions."
+  },
+  {
+    "collection": "distro",
+    "item_id": "we-lost-the-sea-departure-songs-vinyl",
+    "chosen_date": "2017-05-02",
+    "basis": "format_release",
+    "source_url": "https://www.discogs.com/release/25428208-We-Lost-The-Sea-Departure-Songs",
+    "reviewer_note": "Earliest exact vinyl release date found; current content date matches original-release evidence."
+  },
+  {
+    "collection": "distro",
+    "item_id": "we-lost-the-sea-triumph-disaster-vinyl",
+    "chosen_date": "2019-10-05",
+    "basis": "format_release",
+    "source_url": "https://musicbrainz.org/release/681354fd-72d1-4036-9748-795e2426a03d",
+    "reviewer_note": "MusicBrainz and Discogs both identify 2019-10-05 as an exact vinyl release date."
+  }
+]
