@@ -1,9 +1,7 @@
 ## Purpose
 
 Specify repository validation gates, local tooling, dependency-audit posture, and OpenSpec workflow ownership.
-
 ## Requirements
-
 ### Requirement: Standard repository gates
 
 The system SHALL run the standard repository gates after behavior-changing implementation.
@@ -36,7 +34,7 @@ The system MUST centralize repo-authored slug generation and validation while pr
 
 ### Requirement: Runtime validation standard
 
-The system SHALL use Zod for repo-authored runtime input validation and OpenAPI contract schemas. The system SHALL use `@t3-oss/env-core` only for local/process environment contracts in Node scripts, launchers, and preflight checks where values come from `process.env`, `.env`, `.dev.vars`, or equivalent ignored local files.
+The system SHALL use Zod for repo-authored runtime input validation and OpenAPI contract schemas. The system SHALL use `@t3-oss/env-core` only for local/process environment contracts in Node scripts, launchers, and preflight checks where values come from `process.env`, `.env`, `.dev.vars`, or equivalent ignored local files. When a Zod schema owns a runtime contract, exported TypeScript types SHALL be inferred from the validated schema output unless an explicit external interface requires a hand-written type.
 
 #### Scenario: New validation code is added
 
@@ -45,9 +43,16 @@ The system SHALL use Zod for repo-authored runtime input validation and OpenAPI 
 - **THEN** it uses Zod unless an explicit OpenSpec change approves another validation library
 - **AND** any `@t3-oss/env-core` usage remains backed by Zod-compatible schemas and does not store, sync, print, or rotate secrets.
 
+#### Scenario: Runtime config type is exposed
+
+- **GIVEN** a runtime config reader validates data with a Zod schema
+- **WHEN** downstream code needs the config type
+- **THEN** the type is inferred from the schema output
+- **AND** duplicated hand-maintained type aliases are avoided unless they model an external boundary.
+
 ### Requirement: Environment matrix validation
 
-The system SHALL provide validation that detects drift from the canonical Local, UAT, and PRD product environment model.
+The system SHALL provide validation that detects drift from the canonical Local, UAT, and PRD product environment model, including raw platform/provider aliases used outside approved boundaries.
 
 #### Scenario: Deployment workflows are checked
 
@@ -82,6 +87,12 @@ The system SHALL provide validation that detects drift from the canonical Local,
 - **WHEN** environment validation or closeout review runs
 - **THEN** affected baseline OpenSpec specs do not retain stale Purpose, requirement, or scenario wording that describes GitHub Pages as rollback/legacy production or Cloudflare Pages as canonical production without PRD-disabled state
 - **AND** archive readiness is blocked until baseline source-of-truth prose matches the Local/UAT/PRD model.
+
+#### Scenario: Raw platform aliases are checked
+
+- **WHEN** environment validation or closeout review inspects code, scripts, workflows, docs, or specs
+- **THEN** raw platform/provider aliases such as `sandbox`, `production`, `test`, and `live` are allowed only at approved boundary locations
+- **AND** any product-policy use outside those locations fails validation or is reported as an explicit reviewed exception.
 
 ### Requirement: Shared smoke harness and evidence contract
 
@@ -719,3 +730,45 @@ The system MUST validate Stripe-native catalog forensics, identity, orphan detec
 
 - **WHEN** behavior-changing implementation finishes
 - **THEN** targeted tests, `pnpm test:unit`, `pnpm check`, `pnpm build`, and `pnpm openspec -- validate --all --strict` pass before completion is claimed.
+
+### Requirement: Artwork tool commands are standalone modules
+
+The system SHALL keep the local artwork/distro tool package organized as standalone commands backed by separated command modules.
+
+#### Scenario: Local tool commands resolve independently
+
+- **WHEN** the local tool package is installed or executed in development
+- **THEN** `artwork-fetcher`, `vinyl-mockup`, `cd-front-mockup`, `cassette-front-mockup`, `distro-sync`, and `release-date-research` resolve as standalone commands
+- **AND** no command requires another command to run first
+
+#### Scenario: Tool domains stay separated
+
+- **WHEN** implementation organizes code under `tools/artwork-fetcher`
+- **THEN** artwork fetching, mockup rendering, distro sync, and release-date research live behind separate module entrypoints
+- **AND** CLI entrypoints call domain modules rather than other CLI runners
+- **AND** distro sync does not own release-date candidate extraction or scoring
+- **AND** Release Date Research does not import mockup rendering modules
+- **AND** mockup rendering modules do not import Release Date Research modules
+
+#### Scenario: Existing commands keep current behavior
+
+- **WHEN** the module split lands
+- **THEN** `artwork-fetcher`, `vinyl-mockup`, `cd-front-mockup`, `cassette-front-mockup`, and `distro-sync` keep their current behavior unless an implementation task explicitly changes it
+- **AND** existing fixture-backed tests continue to cover dry-run and apply behavior where they already exist
+
+### Requirement: Value-object refactoring standard
+
+The system SHALL introduce value objects only for concepts that own validation, formatting, mapping, external contract limits, or cross-module identity semantics.
+
+#### Scenario: Value-object candidate is evaluated
+
+- **WHEN** a primitive value is considered for promotion to a value object
+- **THEN** the implementation identifies the invariant owned by the value object
+- **AND** the value object replaces duplicated primitive manipulation or protects an external contract.
+
+#### Scenario: Value object is introduced
+
+- **WHEN** a value object is added
+- **THEN** focused tests cover valid input, invalid input, formatting, and boundary behavior
+- **AND** the implementation does not add a wrapper that merely stores a primitive without behavior.
+

@@ -1,9 +1,7 @@
 ## Purpose
 
 Define canonical BlackBox Records commerce and workflow language so specs, code, tests, docs, and UI copy use one vocabulary.
-
 ## Requirements
-
 ### Requirement: Commerce identity terms
 
 The system SHALL distinguish content identity, shopper-facing sellable identity, backend sellable units, and external payment identifiers.
@@ -40,7 +38,7 @@ The system MUST preserve the distinction between browser convenience state, Work
 
 ### Requirement: Workflow terms
 
-The system SHALL treat OpenSpec as the source of truth for current plans, baseline requirements, active changes, validation evidence, and deferred gates.
+The system SHALL treat OpenSpec as the source of truth for current plans, baseline requirements, active changes, validation evidence, deferred gates, and approved refactor portfolios.
 
 #### Scenario: New decision changes domain language
 
@@ -48,9 +46,15 @@ The system SHALL treat OpenSpec as the source of truth for current plans, baseli
 - **WHEN** the term affects specs, tests, route names, UI copy, ADRs, or handoff notes
 - **THEN** the relevant OpenSpec baseline spec or active change is updated in the same work.
 
+#### Scenario: Refactor portfolio is named
+
+- **WHEN** specs, tasks, docs, tests, or closeout notes describe grouped simplification work
+- **THEN** they use Refactor Portfolio for an approved set of targeted behavior-preserving refactor candidates
+- **AND** they do not use Refactor Portfolio for unbounded cleanup, style-only churn, or unrelated rewrites.
+
 ### Requirement: Environment terms
 
-The system SHALL use canonical environment terminology across specs, docs, workflows, tests, validation output, and handoff notes.
+The system SHALL use canonical environment terminology across specs, docs, workflows, tests, validation output, handoff notes, and code-facing policy names. Product Environment is the only app-wide environment identity. Product Environment Profile is the typed implementation profile derived from Product Environment; it is not a new environment term.
 
 #### Scenario: Product Environment is named
 
@@ -58,17 +62,17 @@ The system SHALL use canonical environment terminology across specs, docs, workf
 - **THEN** it uses Local, UAT, or PRD
 - **AND** it does not use `sandbox`, `production`, `test`, `live`, GitHub Actions environment names, or Wrangler environment names as product environment substitutes.
 
-#### Scenario: Product Environment code value is named
-
-- **WHEN** code, config, tests, or generated evidence name a Product Environment value
-- **THEN** it uses `LOCAL`, `UAT`, or `PRD`
-- **AND** human-readable prose may use Local, UAT, or PRD as labels.
-
 #### Scenario: Platform Environment is named
 
 - **WHEN** an artifact describes a GitHub Actions environment, Wrangler environment, Cloudflare Pages project, Worker runtime target, Stripe mode, or secret store
 - **THEN** it labels that concept as a platform/provider/configuration layer
 - **AND** it maps the concept back to Local, UAT, or PRD.
+
+#### Scenario: Product Environment Profile is named
+
+- **WHEN** specs, tests, code, validation output, or handoff notes describe environment-derived policy in implementation
+- **THEN** they use Product Environment Profile for the typed profile derived from Local, UAT, or PRD
+- **AND** they do not introduce separate profile names for email, checkout, provider, or smoke policy unless those names describe fields owned by the Product Environment Profile.
 
 ### Requirement: Catalog Promotion terms
 
@@ -202,3 +206,32 @@ The system SHALL use canonical cache-policy terms across specs, docs, validation
 - **WHEN** docs or code comments describe the app-shell page snapshot cache or overlay fragment cache
 - **THEN** they use `Same-Session Shell Cache`
 - **AND** they do not describe it as CDN caching, browser HTTP caching, or Worker caching.
+
+### Requirement: Release date research terms are canonical
+
+The system SHALL use consistent terminology for release-date research across specs, tools, tests, reports, docs, and handoff notes.
+
+#### Scenario: Actual Release Date is named
+
+- **WHEN** an artifact describes the date a release or catalog item publicly became released
+- **THEN** it uses `Actual Release Date`
+- **AND** it does not use that term for upload, preorder, announcement, store availability, repress, or reissue dates unless the evidence basis confirms that date is the intended release event
+
+#### Scenario: Platform Upload Date is named
+
+- **WHEN** an artifact describes a date from a DSP, auto-generated video page, importer timestamp, or platform-specific availability record
+- **THEN** it uses `Platform Upload Date`
+- **AND** it does not treat that date as an Actual Release Date without independent release evidence
+
+#### Scenario: Release Date Evidence is named
+
+- **WHEN** an artifact describes source URLs, matched metadata, source tier, basis, precision, confidence, and notes used to support a date
+- **THEN** it uses `Release Date Evidence`
+- **AND** it keeps that evidence separate from public release summary copy and checkout/catalog authority
+
+#### Scenario: Release Date Confidence is named
+
+- **WHEN** an artifact describes whether a date may be applied automatically or needs review
+- **THEN** it uses `Release Date Confidence`
+- **AND** it distinguishes high-confidence exact dates from weak, partial, upload-only, or conflicting date candidates
+

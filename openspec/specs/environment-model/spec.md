@@ -1,24 +1,16 @@
 ## Purpose
 
 Define the Local, UAT, and PRD Product Environment model and map platform/provider-specific names under it.
-
 ## Requirements
-
 ### Requirement: Canonical product environments
 
-The system SHALL expose exactly three product environments in operator-facing docs, workflows, validation output, and OpenSpec language: Local, UAT, and PRD.
+The system SHALL expose exactly three product environments in operator-facing docs, workflows, validation output, OpenSpec language, and product-policy implementation: Local, UAT, and PRD.
 
 #### Scenario: Environment matrix is presented
 
 - **WHEN** a maintainer reads setup, deployment, promotion, or validation docs
 - **THEN** the docs identify Local, UAT, and PRD as the product environments
 - **AND** any platform-specific names are shown only as mapped implementation details.
-
-#### Scenario: Runtime config names a product environment
-
-- **WHEN** code, Worker bindings, tests, generated evidence, or validation reports name a Product Environment value
-- **THEN** the canonical values are `LOCAL`, `UAT`, and `PRD`
-- **AND** any `sandbox`, `production`, `test`, or `live` value is treated only as a mapped platform/provider trait.
 
 #### Scenario: New environment wording is introduced
 
@@ -31,19 +23,25 @@ The system SHALL expose exactly three product environments in operator-facing do
 - **THEN** that deployment MUST be classified as a non-product diagnostic surface
 - **AND** it MUST NOT be used as UAT acceptance, PRD readiness, Promotion Evidence, or shopper-facing commerce proof.
 
+#### Scenario: Application code needs environment policy
+
+- **WHEN** code outside a boundary adapter needs environment-specific product policy
+- **THEN** it uses Product Environment or Product Environment Profile
+- **AND** it does not branch on raw platform/provider strings such as `sandbox`, `production`, `test`, or `live`.
+
 ### Requirement: Product environment mapping
 
-The system SHALL maintain a single mapping from product environments to static hosts, Worker runtime targets, D1 data stores, Stripe/provider modes, secret stores, and validation gates.
+The system SHALL maintain a single mapping from product environments to static hosts, Worker runtime targets, D1 data stores, Stripe/provider modes, secret stores, validation gates, and environment-derived runtime policies.
 
 #### Scenario: UAT mapping is evaluated
 
 - **WHEN** UAT is described or validated
-- **THEN** it maps to GitHub Pages static hosting, the uat Worker runtime target, UAT D1, Stripe test mode, UAT-scoped GitHub Actions credentials, and UAT Promotion Evidence.
+- **THEN** it maps to GitHub Pages static hosting, the sandbox Worker runtime target, sandbox D1, Stripe test mode, UAT-scoped GitHub Actions credentials, UAT sink-routing policy, and UAT Promotion Evidence.
 
 #### Scenario: PRD mapping is evaluated
 
 - **WHEN** PRD is described or validated
-- **THEN** it maps to Cloudflare Pages static hosting, the prd Worker runtime target, PRD D1, Stripe live mode, and PRD-scoped GitHub Actions credentials
+- **THEN** it maps to Cloudflare Pages static hosting, the production Worker runtime target, production D1, Stripe live mode, direct production routing policy, and PRD-scoped GitHub Actions credentials
 - **AND** it records that PRD checkout and live provider mutation are disabled until an explicit production-readiness gate opens them.
 - **AND** it treats pre-go-live PRD evidence as readiness, disabled, or `not_configured` evidence rather than successful PRD Promotion Evidence.
 
@@ -60,9 +58,15 @@ The system SHALL maintain a single mapping from product environments to static h
 - **THEN** that change MUST be reconciled with the PRD-disabled model
 - **AND** it MUST identify whether the work is readiness-only, blocked by the PRD-open gate, or the owner of the PRD-open gate.
 
+#### Scenario: Runtime profile is resolved
+
+- **WHEN** backend request composition, scripts, smoke runners, or validation code need environment-derived values
+- **THEN** they resolve Product Environment through the single mapping
+- **AND** they pass Product Environment or Product Environment Profile downstream instead of repeating raw alias checks.
+
 ### Requirement: Platform names are scoped
 
-The system MUST distinguish Product Environment from Platform Environment, Worker Runtime Target, Provider Mode, and Secret Store.
+The system MUST distinguish Product Environment from Platform Environment, Worker Runtime Target, Provider Mode, and Secret Store. Raw platform/provider names MUST remain at config parsing, workflow config, provider adapters, CLI argument parsing, or provider command boundaries unless an implementation-specific value must be passed through to that provider.
 
 #### Scenario: GitHub Actions environment is referenced
 
@@ -81,6 +85,12 @@ The system MUST distinguish Product Environment from Platform Environment, Worke
 - **WHEN** Stripe test mode, Stripe live mode, or stripe-mock is referenced
 - **THEN** it is described as a provider mode mapped to Local, UAT, or PRD
 - **AND** it is not used as the product environment name.
+
+#### Scenario: Raw platform name is needed by a provider boundary
+
+- **WHEN** code must pass `sandbox`, `production`, `test`, `live`, or a provider-specific environment value to a platform API, CLI, workflow, or config file
+- **THEN** the raw name is produced from or mapped back to Product Environment
+- **AND** the raw name is not used as the app-wide policy identity.
 
 ### Requirement: Secret-store boundaries
 
@@ -119,3 +129,4 @@ The system MUST scope newsletter registration effects to the active Product Envi
 - **WHEN** PRD newsletter registration readiness is evaluated
 - **THEN** it is gated by PRD Resend readiness rather than checkout PRD-open status
 - **AND** failed or missing PRD Resend config blocks PRD newsletter Contact writes.
+
