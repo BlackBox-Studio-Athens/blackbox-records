@@ -8,6 +8,7 @@ const holdingRoot = path.join(webRoot, 'dist-holding');
 const canonicalUrl = 'https://blackboxrecordsathens.com/';
 const canonicalOrigin = new URL(canonicalUrl).origin;
 const referencedFiles = new Set<string>();
+const allowedImageFiles = new Set(['assets/images/brand/logo.png', 'favicon-96x96.png', 'favicon.ico', 'favicon.svg']);
 const requiredFiles = new Set([
   '404.html',
   '_headers',
@@ -69,8 +70,8 @@ const requiredMarkup = [
   `<link rel="canonical" href="${canonicalUrl}">`,
   `<meta property="og:url" content="${canonicalUrl}">`,
   '<meta name="robots" content="noindex, nofollow">',
-  'THE SITE IS IN THE PRESS.',
-  'FULL SITE COMING ONLINE SOON.',
+  'UNDER CONSTRUCTION.',
+  'BLACKBOX RECORDS IS ACTIVE.',
   'FOLLOW ON INSTAGRAM',
   'EMAIL THE LABEL',
 ];
@@ -88,6 +89,10 @@ for (const forbiddenMarkup of [
   'glancelytics',
   'googleapis.com',
   'gstatic.com',
+  '<picture',
+  'srcset=',
+  'background-image:',
+  'hero-live-band',
 ]) {
   if (indexHtml.toLowerCase().includes(forbiddenMarkup)) {
     throw new Error(`Forbidden PRD Holding Page markup found: ${forbiddenMarkup}`);
@@ -122,6 +127,9 @@ for (;;) {
 }
 
 for (const file of files) {
+  if (/\.(?:avif|gif|ico|jpe?g|png|svg|webp)$/i.test(file) && !allowedImageFiles.has(file)) {
+    throw new Error(`Unexpected image in PRD Holding Page artifact: ${file}`);
+  }
   if (!requiredFiles.has(file) && !referencedFiles.has(file)) {
     throw new Error(`Unexpected or unreferenced file in PRD Holding Page artifact: ${file}`);
   }

@@ -1,19 +1,10 @@
 ## Context
 
-As of 2026-07-10, Cloudflare contains one Pages project, `blackbox-records-web`, whose production `main` deployment serves the full disabled PRD readiness site at `https://blackbox-records-web.pages.dev/`. UAT independently serves the same visible site from GitHub Pages. The correct owned domain is `blackboxrecordsathens.com`; it uses Cloudflare nameservers but is not a Pages custom domain, still serves Spaceship parking over HTTP, has no working HTTPS response, and has no `www` record. The misspelled `blakboxrecordsathens.com` does not resolve.
+As of 2026-07-11, Cloudflare contains one Pages project, `blackbox-records-web`, whose production `main` deployment serves the full disabled PRD readiness site at `https://blackbox-records-web.pages.dev/`. UAT independently serves the same visible site from GitHub Pages. The verified PRD Holding Page is deployed at `https://holding.blackbox-records-web.pages.dev/`. The correct owned domain is `blackboxrecordsathens.com`; it uses Cloudflare nameservers but is not yet attached to the Pages holding target. The misspelled `blakboxrecordsathens.com` is never used.
 
-The repo also contains `apps/web/src/pages/demo/under-construction.astro`. It is useful as a route and build seam, but it is explicitly a direct MonoDeaf-style replica, loads unrelated Google Fonts, contains fake `javascript:void(0)` links, and claims to be local-only even though Astro emits it. It must not ship unchanged.
+The repo now contains the production-owned source route at `apps/web/src/pages/prd-holding/index.astro`, a strict holding artifact builder/checker, and a protected manual branch deployment. The first deployed composition proved the delivery path. On 2026-07-11, the owner approved use of `blackboxrecordsathens.com` for this holding surface and requested a plainer under-construction treatment without the live-performance landing image.
 
-This is a brand-register page. Physical scene: a listener opens the label link from a gig poster on a phone in a dark venue and needs immediate proof that BlackBox is active and reachable. Voice: **photocopied, nocturnal, working**.
-
-Reference lane:
-
-- [RCA Records](https://www.siteinspire.com/website/6180-rca-records): black-and-white, grid-led, typographic record-label framing.
-- [Inner Ear Records](https://www.siteinspire.com/website/5018-inner-ear-records): restrained black-and-white label identity.
-- [Oto Nove Swiss Paris](https://www.siteinspire.com/website/9361-oto-nove-swiss-paris): music-first typography with a strict monochrome system.
-- [NRLY coming-soon motion](https://www.awwwards.com/inspiration/coming-soon-page-animation-nrly): one controlled entrance sequence rather than scattered effects.
-
-These references define a lane, not a layout to copy. `PRODUCT.md`, `DESIGN.md`, the current site, and repo-owned imagery remain authoritative.
+This is a plain availability notice, not a campaign landing page. A visitor opening the label link needs immediate proof that BlackBox is active and reachable. Voice: **direct, quiet, working**. `PRODUCT.md`, `DESIGN.md`, and the current site remain authoritative; external visual references and imagery are unnecessary for this surface.
 
 ## Goals / Non-Goals
 
@@ -21,7 +12,7 @@ These references define a lane, not a layout to copy. `PRODUCT.md`, `DESIGN.md`,
 
 - Put a deliberate, original BlackBox presence on the correct HTTPS apex without changing the UAT review site.
 - Preserve the full `pages.dev` PRD readiness deployment for catalog assets and future launch checks.
-- Use one static page, one meaningful repo-owned image, existing brand assets, and existing typography with no client runtime.
+- Use one static page, the existing logo, existing typography, and no landing image or client runtime.
 - Make domain activation, retirement, go-live cutover, and rollback explicit and reversible.
 - Give non-technical visitors only useful public information: the label is active, the site is being prepared, and real contact paths work.
 - Keep the public apex on the PRD Holding Page until the existing production-go-live change proves live Stripe and every dependent PRD gate, followed by named go/no-go approval.
@@ -71,29 +62,24 @@ An artifact test enumerates emitted HTML and fails unless only `index.html` and 
 
 The existing demo is moved to `apps/web/src/pages/prd-holding/index.astro` and rewritten in place rather than creating another UI stack. The source route remains unlinked and noindex in normal UAT/PRD builds; only the allowlisted artifact promotes it to `/`.
 
-### Give the page one visual idea: “The Unfinished Sleeve”
+### Use a plain under-construction composition
 
-Desktop uses a hard two-field composition rather than a centered template:
+The page uses one restrained typographic field rather than a landing-page composition:
 
-- a 58–64% grayscale live-performance image field, cropped edge-to-edge and treated like a photocopied record sleeve;
-- a near-black information field with the label mark, one display headline, one short paragraph, a static status line, and two text links;
-- one thin hard border and an offset registration-mark detail to suggest a sleeve still in production;
-- no card grid, glass panel, gradient text, illustration pack, construction iconography, or generic yellow hazard tape.
+- the existing BlackBox logo, label/Athens kicker, `UNDER CONSTRUCTION.` headline, one short explanation, one active-status line, and the existing Instagram/email links;
+- a single-column reading order on desktop and mobile, with generous but ordinary spacing and no split-screen treatment;
+- no live-performance image, hero image, background image, decorative image, card grid, glass panel, gradient text, construction icon, hazard tape, registration marks, or simulated print effects.
 
-Mobile stacks identity and copy before the image, keeps the primary message visible without scrolling on common phone heights, then allows natural vertical scrolling on short devices. The layout supports 320px through wide desktop without horizontal overflow.
-
-Color comes directly from `DESIGN.md`: Void Background `#0d0d0d`, Ink Foreground `#f5f5f5`, Soft Muted `#b3b3b3`, and Hard Border `#262626`. No route accent is needed. Display type uses the existing self-hosted Veneer face; body text uses the existing Helvetica/Arial system fallback so the holding page makes no Google Fonts request. The existing BlackBox logo and `hero-live-band.jpg` are reused; no generated or stock imagery is added.
-
-CSS grain may be created with restrained pseudo-element gradients. It must not reduce text contrast, animate continuously, or require a texture download.
+The layout supports 320px through wide desktop without horizontal overflow and keeps the complete message and actions understandable at every viewport. Color comes directly from `DESIGN.md`: Void Background `#0d0d0d`, Ink Foreground `#f5f5f5`, Soft Muted `#b3b3b3`, and Hard Border `#262626`. Display type uses the existing self-hosted Veneer face; body text uses the existing Helvetica/Arial system fallback. No Google Fonts, generated imagery, stock imagery, or new asset is added.
 
 ### Lock concise public copy and real actions
 
 Default copy:
 
 - Kicker: `BLACKBOX RECORDS · ATHENS`
-- H1: `THE SITE IS IN THE PRESS.`
-- Body: `BlackBox Records is active. We’re building a new home for our artists, releases, distro, and services.`
-- Status: `FULL SITE COMING ONLINE SOON.`
+- H1: `UNDER CONSTRUCTION.`
+- Body: `We’re building a new home for our artists, releases, distro, and services.`
+- Status: `BLACKBOX RECORDS IS ACTIVE.`
 - Links: `FOLLOW ON INSTAGRAM` and `EMAIL THE LABEL`
 
 Instagram and email values come from existing repo content at build time. Placeholder `#` values are filtered out. No navigation to unfinished routes, private-preview language, environment names, provider status, countdown, or unapproved date appears.
@@ -102,7 +88,7 @@ Instagram and email values come from existing repo content at build time. Placeh
 
 The page has no hydrated component and emits no page-owned JavaScript. Only ordinary `https:` and `mailto:` anchors are interactive. Links receive visible keyboard focus and sufficiently large touch targets.
 
-One CSS entrance sequence may reveal the image field, headline, copy, and links over at most 700ms using opacity and transform. `prefers-reduced-motion: reduce` removes the sequence. There is no looping marquee, pointer-following effect, WebGL, parallax, autoplay media, or animated layout property.
+One CSS entrance sequence may reveal the headline, copy, and links over at most 400ms using opacity and transform. `prefers-reduced-motion: reduce` removes the sequence. Static rendering is acceptable and preferred if motion adds no clarity. There is no looping marquee, pointer-following effect, WebGL, parallax, autoplay media, or animated layout property.
 
 ### Treat the apex as canonical only for the holding artifact
 
@@ -140,15 +126,14 @@ Implementation verification includes:
 
 ## Migration Plan
 
-1. Rewrite and move the existing demo, add the artifact preparation script/tests, and add a separate manual-only holding workflow; do not change the shared UAT/PRD workflow, deploy, or change DNS while implementing code.
-2. Build locally, run repo gates, and validate the source route and assembled artifact with Browser Use.
-3. After explicit approval through `workflow_dispatch` and the protected `prd-holding` environment, deploy `dist-holding` to the existing Pages project's `holding` branch. Verify the branch alias before touching the domain.
-4. After separate domain-change approval, snapshot current DNS/rules, install the exact-apex temporary `302` guard to the verified holding alias, and verify the guard before Pages custom-domain association.
-5. With the guard active, associate `blackboxrecordsathens.com` with the existing Pages project, replace the Pages-created apex target with the holding branch alias, wait for Active TLS, and confirm the target without removing the guard.
-6. Create a proxied `www` CNAME to the apex, verify `www` DNS/TLS, then configure exact-host `308` rules for HTTP apex and `www` canonicalization with path/query preservation. Remove the temporary guard and immediately verify public desktop/mobile behavior, headers, redirects, 404 behavior, target identity, and absence of registrar parking. Re-enable the guard on any failure.
-7. For launch, complete and approve the existing `production-go-live-readiness` change first: verify live Stripe Products/Prices, Payment Method Configuration, production webhook, Worker/D1 and catalog/stock readiness, rollback, exact origins, and every other live gate as one reviewed cutover. Do not soft-launch the full site because its static artifact is ready.
-8. Deploy and verify the full PRD artifact, then repoint the apex from the holding branch alias to the production `main` Pages target. Keep the holding branch available as the immediate static rollback.
-9. After the launched site is stable, remove the holding deployment job, source route, artifact script, temporary branch deployment, and obsolete redirect rules in one cleanup change.
+1. Simplify the existing PRD Holding Page to the plain logo-and-type composition, remove the landing image and its emitted assets, and keep the existing artifact/workflow isolation.
+2. Build locally, run repo gates, validate the source route and assembled artifact with Browser Use, then redeploy and verify the `holding` branch through the protected workflow.
+3. Treat the owner's 2026-07-11 request to use `blackboxrecordsathens.com` as explicit domain-change approval. Snapshot current DNS/rules, install the exact-apex temporary `302` guard to the verified holding alias, and verify the guard before Pages custom-domain association.
+4. With the guard active, associate `blackboxrecordsathens.com` with the existing Pages project, replace the Pages-created apex target with the holding branch alias, wait for Active TLS, and confirm the target without removing the guard.
+5. Create a proxied `www` CNAME to the apex, verify `www` DNS/TLS, then configure exact-host `308` rules for HTTP apex and `www` canonicalization with path/query preservation. Remove the temporary guard and immediately verify public desktop/mobile behavior, headers, redirects, 404 behavior, target identity, and absence of registrar parking. Re-enable the guard on any failure.
+6. For launch, complete and approve the existing `production-go-live-readiness` change first: verify live Stripe Products/Prices, Payment Method Configuration, production webhook, Worker/D1 and catalog/stock readiness, rollback, exact origins, and every other live gate as one reviewed cutover. Do not soft-launch the full site because its static artifact is ready.
+7. Deploy and verify the full PRD artifact, then repoint the apex from the holding branch alias to the production `main` Pages target. Keep the holding branch available as the immediate static rollback.
+8. After the launched site is stable, remove the holding deployment job, source route, artifact script, temporary branch deployment, and obsolete redirect rules in one cleanup change.
 
 Rollback during activation: re-enable the temporary exact-apex `302` guard, restore the recorded parking DNS/redirect rules and prior `www` state if Pages activation never succeeded, and leave the custom domain detached if it never reached Active TLS. Rollback after launch: repoint the apex to the already-verified holding branch alias while retaining the verified `www` CNAME and exact-host HTTPS/`www` rules; do not detach the domain or improvise a new project during an incident.
 

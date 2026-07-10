@@ -34,18 +34,25 @@
 - [x] 5.3 Use Browser Use and bounded HTTP checks against `holding.blackbox-records-web.pages.dev` to verify desktop/mobile rendering, assets, noindex headers, 404 isolation, no final routes, and no unexpected network or console errors.
 - [x] 5.4 Stop before DNS work if the named branch alias cannot pass all hosted checks; do not create a second Pages project as an unreviewed fallback.
 
-## 6. Activate the Correct Public Domain
+## 6. Simplify and Redeploy the Holding Page
 
-- [ ] 6.1 After explicit domain-change approval, record a redacted snapshot of current apex, nameserver, `www`, Pages-domain, HTTP parking, and HTTPS state for rollback; use only `blackboxrecordsathens.com`, never `blakboxrecordsathens.com`.
-- [ ] 6.2 Before Pages custom-domain association, create an exact-apex temporary Cloudflare Single Redirect with status `302` to the verified HTTPS holding branch alias, preserving path/query; verify it and record its exact rule priority for rollback.
-- [ ] 6.3 With the temporary guard active, add `blackboxrecordsathens.com` as a custom domain on the existing Pages project, change the Pages-created proxied apex target to the holding branch alias, and wait until Cloudflare reports an active certificate; stop if the target differs.
-- [ ] 6.4 Create a proxied `www` CNAME to `blackboxrecordsathens.com`, verify public `www` DNS and edge TLS, then add exact-host Cloudflare Single Redirect rules using `308`: HTTP apex to the equivalent HTTPS apex path/query, and every `www` request to the equivalent HTTPS apex path/query; verify neither rule matches another hostname and do not enable HSTS.
-- [ ] 6.5 Remove the temporary guard and immediately verify apex target identity, DNS/TLS, both canonical redirects, no registrar parking, canonical/noindex headers, page rendering, guessed-route 404 behavior, and network/console cleanliness with Browser Use plus bounded DNS/HTTP probes.
-- [ ] 6.6 If activation exposes production `main`, uses the wrong target, or fails apex/`www` TLS or content checks, re-enable the temporary guard first, then restore the recorded apex, `www`, and redirect-rule state and keep the verified branch deployment available for diagnosis.
+- [x] 6.1 Replace the deployed “Unfinished Sleeve” split composition with the approved plain single-column under-construction treatment, retain the existing logo and real actions, change the headline to `UNDER CONSTRUCTION.`, and remove the live-performance landing image plus decorative print effects.
+- [x] 6.2 Tighten the holding artifact check so the deployable closure contains no landing, hero, background, or decorative image while retaining only required logo, font, favicon, HTML, CSS, and header assets.
+- [x] 6.3 Run focused artifact checks, `pnpm test:unit`, `pnpm check`, `pnpm build`, and Browser Use at phone and desktop sizes against the exact redesigned tree.
+- [ ] 6.4 Redeploy the verified artifact through the protected `prd-holding` workflow and confirm the named branch alias still passes copy, layout, asset, noindex, 404, network, and console checks before domain activation.
 
-## 7. Record the Launch Handoff
+## 7. Activate the Correct Public Domain
 
-- [ ] 7.1 Update `production-go-live-readiness` with redacted proof for domain ownership, holding-page TLS/routing, and the remaining full-site custom-domain cutover; do not mark Stripe, Worker, D1, catalog, webhook, or go/no-go gates complete from holding-page evidence.
-- [ ] 7.2 Keep the apex on the PRD Holding Page while any live Stripe Products/Prices, Payment Method Configuration, production webhook, Worker/D1, catalog/stock, rollback, exact-origin, or named go/no-go task remains open; do not soft-launch the full site because its static artifact is ready.
-- [ ] 7.3 After `production-go-live-readiness` is complete and its named reviewers record a go decision, update all full-site custom-domain origins together, deploy and verify the full PRD artifact, repoint the apex to the production `main` target, retain the holding branch as rollback, then remove holding code only after stability.
-- [ ] 7.4 Re-run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the exact final documented tree and record final OpenSpec status.
+- [ ] 7.1 Record the owner's 2026-07-11 request as explicit domain-change approval, then capture a redacted snapshot of current apex, nameserver, `www`, Pages-domain, HTTP parking, and HTTPS state for rollback; use only `blackboxrecordsathens.com`, never `blakboxrecordsathens.com`.
+- [ ] 7.2 Before Pages custom-domain association, create an exact-apex temporary Cloudflare Single Redirect with status `302` to the verified HTTPS holding branch alias, preserving path/query; verify it and record its exact rule priority for rollback.
+- [ ] 7.3 With the temporary guard active, add `blackboxrecordsathens.com` as a custom domain on the existing Pages project, change the Pages-created proxied apex target to the holding branch alias, and wait until Cloudflare reports an active certificate; stop if the target differs.
+- [ ] 7.4 Create a proxied `www` CNAME to `blackboxrecordsathens.com`, verify public `www` DNS and edge TLS, then add exact-host Cloudflare Single Redirect rules using `308`: HTTP apex to the equivalent HTTPS apex path/query, and every `www` request to the equivalent HTTPS apex path/query; verify neither rule matches another hostname and do not enable HSTS.
+- [ ] 7.5 Remove the temporary guard and immediately verify apex target identity, DNS/TLS, both canonical redirects, no registrar parking, canonical/noindex headers, page rendering, guessed-route 404 behavior, and network/console cleanliness with Browser Use plus bounded DNS/HTTP probes.
+- [ ] 7.6 If activation exposes production `main`, uses the wrong target, or fails apex/`www` TLS or content checks, re-enable the temporary guard first, then restore the recorded apex, `www`, and redirect-rule state and keep the verified branch deployment available for diagnosis.
+
+## 8. Record the Launch Handoff
+
+- [ ] 8.1 Update `production-go-live-readiness` with redacted proof for domain ownership, holding-page TLS/routing, and the remaining full-site custom-domain cutover; do not mark Stripe, Worker, D1, catalog, webhook, or go/no-go gates complete from holding-page evidence.
+- [ ] 8.2 Keep the apex on the PRD Holding Page while any live Stripe Products/Prices, Payment Method Configuration, production webhook, Worker/D1, catalog/stock, rollback, exact-origin, or named go/no-go task remains open; do not soft-launch the full site because its static artifact is ready.
+- [ ] 8.3 After `production-go-live-readiness` is complete and its named reviewers record a go decision, update all full-site custom-domain origins together, deploy and verify the full PRD artifact, repoint the apex to the production `main` target, retain the holding branch as rollback, then remove holding code only after stability.
+- [ ] 8.4 Re-run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the exact final documented tree and record final OpenSpec status.

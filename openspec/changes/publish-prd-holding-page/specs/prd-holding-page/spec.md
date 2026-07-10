@@ -8,7 +8,7 @@ The system SHALL present a concise public holding experience that says BlackBox 
 
 - **WHEN** a visitor opens `https://blackboxrecordsathens.com/`
 - **THEN** the page identifies BlackBox Records and Athens
-- **AND** it states that the label is active and the full site is coming online
+- **AND** it states that the label is active and the website is under construction
 - **AND** it exposes real Instagram and email actions.
 
 #### Scenario: Public copy is reviewed
@@ -17,21 +17,21 @@ The system SHALL present a concise public holding experience that says BlackBox 
 - **THEN** it does not expose Local, UAT, PRD, Cloudflare, Pages, Workers, Stripe, provider configuration, or private-preview language
 - **AND** it does not claim an unapproved launch date, countdown, product availability, or fake urgency.
 
-### Requirement: PRD Holding Page uses an original BlackBox visual system
+### Requirement: PRD Holding Page uses a plain BlackBox under-construction system
 
-The system MUST use an original, music-first composition derived from the repo's existing design system and assets rather than reproducing an external page or introducing a separate template aesthetic.
+The system MUST use a plain, landing-image-free under-construction composition derived from the repo's existing design system rather than reproducing an external page or introducing a landing-page template aesthetic.
 
 #### Scenario: Desktop composition is rendered
 
 - **WHEN** the holding page renders at a desktop viewport
-- **THEN** it uses a hard two-field composition with one repo-owned live-performance image and one typographic information field
+- **THEN** it uses one typographic field containing the existing logo, label identity, `UNDER CONSTRUCTION.` headline, short explanation, active-status line, and real contact actions
 - **AND** it uses the existing near-black, off-white, muted-gray, hard-border, logo, and Veneer brand vocabulary
-- **AND** it does not use card grids, glassmorphism, gradient text, construction icons, hazard tape, or generic ecommerce styling.
+- **AND** it contains no landing image, hero image, background image, decorative image, split-screen treatment, card grid, glassmorphism, gradient text, construction icon, hazard tape, or generic ecommerce styling.
 
 #### Scenario: Mobile composition is rendered
 
 - **WHEN** the holding page renders at 320px or wider on a mobile viewport
-- **THEN** identity and status copy remain legible before or alongside the image
+- **THEN** the single-column identity, status copy, and actions remain legible in reading order
 - **AND** actions remain reachable without horizontal overflow
 - **AND** short viewports may scroll naturally rather than clipping content.
 
@@ -53,7 +53,7 @@ The system MUST expose only valid public links sourced from existing repo conten
 
 ### Requirement: PRD Holding Page is accessible and motion-safe
 
-The system SHALL provide semantic, keyboard-usable content with visible focus, readable contrast, adequate touch targets, responsive image alternatives, and reduced-motion support.
+The system SHALL provide semantic, keyboard-usable content with visible focus, readable contrast, adequate touch targets, and reduced-motion support.
 
 #### Scenario: Keyboard visitor uses the page
 
@@ -68,11 +68,11 @@ The system SHALL provide semantic, keyboard-usable content with visible focus, r
 - **THEN** the optional entrance sequence is removed
 - **AND** all content remains visible and understandable.
 
-#### Scenario: Image is unavailable
+#### Scenario: Decorative media is inspected
 
-- **WHEN** the performance image cannot be seen or loaded
-- **THEN** meaningful alt text communicates its subject
-- **AND** the label status and actions remain complete without the image.
+- **WHEN** the holding document and its asset closure are inspected
+- **THEN** no landing, hero, background, or decorative image is requested beyond the existing brand logo and favicons
+- **AND** the label identity, status, and actions remain complete without visual media.
 
 ### Requirement: PRD Holding Page stays outside search indexes
 

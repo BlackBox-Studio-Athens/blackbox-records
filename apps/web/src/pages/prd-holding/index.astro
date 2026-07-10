@@ -1,8 +1,6 @@
 ---
-import { Image } from 'astro:assets';
-
 import { createProjectRelativeUrl, siteBrandAssets } from '@/config/site';
-import { getContentSection, getHomeContent, getServicesContent, getSocialItems } from '@/lib/site-data';
+import { getContentSection, getServicesContent, getSocialItems } from '@/lib/site-data';
 
 const pageTitle = 'BlackBox Records | Site Coming Online';
 const pageDescription = 'BlackBox Records is active. The full site is coming online soon.';
@@ -12,11 +10,7 @@ const socialImageUrl = new URL(siteBrandAssets.badgeLogo, pageUrl).toString();
 const veneerCssUrl = createProjectRelativeUrl('/assets/fonts/brand/veneer.css');
 const veneerFontUrl = createProjectRelativeUrl('/assets/fonts/brand/veneer_regular.woff2');
 
-const [homeContent, servicesContent, socialItems] = await Promise.all([
-  getHomeContent(),
-  getServicesContent(),
-  getSocialItems(),
-]);
+const [servicesContent, socialItems] = await Promise.all([getServicesContent(), getSocialItems()]);
 const inquiryEmail = getContentSection(servicesContent.sections, 'inquiry')?.email.trim();
 const instagramUrl = socialItems.find((item) => {
   if (item.id !== 'instagram' || !item.url || item.url === '#') return false;
@@ -73,30 +67,18 @@ if (!inquiryEmail || inquiryEmail === '#' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
 
         <div class="holding-page__message">
           <p class="holding-page__kicker">BLACKBOX RECORDS · ATHENS</p>
-          <h1 id="holding-title">THE SITE IS IN THE PRESS.</h1>
-          <p class="holding-page__copy">
-            BlackBox Records is active. We’re building a new home for our artists, releases, distro, and services.
-          </p>
+          <h1 id="holding-title">UNDER CONSTRUCTION.</h1>
+          <p class="holding-page__copy">We’re building a new home for our artists, releases, distro, and services.</p>
         </div>
 
         <div class="holding-page__footer">
-          <p class="holding-page__status">FULL SITE COMING ONLINE SOON.</p>
+          <p class="holding-page__status">BLACKBOX RECORDS IS ACTIVE.</p>
           <nav class="holding-page__actions" aria-label="Contact BlackBox Records">
             <a href={instagramUrl} rel="noreferrer noopener">FOLLOW ON INSTAGRAM <span aria-hidden="true">↗</span></a>
             <a href={`mailto:${inquiryEmail}`}>EMAIL THE LABEL <span aria-hidden="true">→</span></a>
           </nav>
         </div>
       </section>
-
-      <figure class="holding-page__image-field">
-        <Image
-          src={homeContent.hero.image}
-          alt={homeContent.hero.image_alt}
-          widths={[640, 960, 1440]}
-          sizes="(min-width: 760px) 62vw, 100vw"
-          loading="eager"
-        />
-      </figure>
     </main>
   </body>
 </html>
@@ -128,44 +110,18 @@ if (!inquiryEmail || inquiryEmail === '#' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
   }
 
   .holding-page {
-    display: grid;
     min-height: 100vh;
     min-height: 100svh;
-    overflow: hidden;
     background: var(--void);
   }
 
   .holding-page__info {
-    position: relative;
-    z-index: 1;
     display: grid;
     grid-template-rows: auto 1fr auto;
-    min-height: 64svh;
-    padding: clamp(1.25rem, 5vw, 4.5rem);
-    border-bottom: 1px solid var(--border);
-    isolation: isolate;
-  }
-
-  .holding-page__info::before {
-    position: absolute;
-    z-index: -1;
-    inset: 0;
-    background-image:
-      repeating-linear-gradient(0deg, transparent 0 3px, rgb(245 245 245 / 0.014) 3px 4px),
-      radial-gradient(circle at 82% 18%, rgb(245 245 245 / 0.035), transparent 32%);
-    content: '';
-    pointer-events: none;
-  }
-
-  .holding-page__info::after {
-    position: absolute;
-    top: 1.15rem;
-    right: -0.6rem;
-    width: 1.2rem;
-    height: 1.2rem;
-    border: 1px solid var(--ink);
-    content: '';
-    transform: rotate(45deg);
+    width: min(100%, 48rem);
+    min-height: 100vh;
+    min-height: 100svh;
+    padding: clamp(1.5rem, 6vw, 4rem);
   }
 
   .holding-page__logo {
@@ -175,8 +131,8 @@ if (!inquiryEmail || inquiryEmail === '#' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
 
   .holding-page__message {
     align-self: center;
-    max-width: 34rem;
-    padding-block: clamp(2rem, 5vh, 3.5rem);
+    max-width: 42rem;
+    padding-block: clamp(3rem, 10vh, 7rem);
   }
 
   .holding-page__kicker,
@@ -190,13 +146,13 @@ if (!inquiryEmail || inquiryEmail === '#' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
   }
 
   h1 {
-    max-width: 8ch;
-    margin: 0.55rem 0 1.35rem;
+    max-width: 12ch;
+    margin: 0.75rem 0 1.5rem;
     font-family: Veneer, Impact, sans-serif;
-    font-size: clamp(3.8rem, 8vw, 6.75rem);
+    font-size: clamp(3.5rem, 10vw, 7rem);
     font-weight: 900;
     letter-spacing: 0.025em;
-    line-height: 0.78;
+    line-height: 0.82;
     text-wrap: balance;
   }
 
@@ -244,81 +200,5 @@ if (!inquiryEmail || inquiryEmail === '#' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
   .holding-page__actions a:focus-visible {
     outline: 2px solid var(--ink);
     outline-offset: 0.25rem;
-  }
-
-  .holding-page__image-field {
-    position: relative;
-    min-height: 36svh;
-    margin: 0;
-    overflow: hidden;
-    background: var(--border);
-  }
-
-  .holding-page__image-field::after {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(118deg, rgb(13 13 13 / 0.04), rgb(13 13 13 / 0.3));
-    content: '';
-    pointer-events: none;
-  }
-
-  .holding-page__image-field :global(img) {
-    width: 100%;
-    height: 100%;
-    filter: grayscale(1) contrast(1.14);
-    object-fit: cover;
-    object-position: center;
-  }
-
-  @media (min-width: 760px) {
-    .holding-page {
-      grid-template-columns: minmax(0, 62fr) minmax(22rem, 38fr);
-    }
-
-    .holding-page__info {
-      grid-column: 2;
-      grid-row: 1;
-      min-height: 100svh;
-      border-bottom: 0;
-      border-left: 1px solid var(--border);
-    }
-
-    .holding-page__image-field {
-      grid-column: 1;
-      grid-row: 1;
-      min-height: 100svh;
-    }
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .holding-page__image-field {
-      animation: reveal-image 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
-    }
-
-    .holding-page__info > * {
-      animation: reveal-copy 550ms cubic-bezier(0.22, 1, 0.36, 1) both;
-    }
-
-    .holding-page__message {
-      animation-delay: 60ms;
-    }
-
-    .holding-page__footer {
-      animation-delay: 120ms;
-    }
-  }
-
-  @keyframes reveal-image {
-    from {
-      opacity: 0;
-      transform: scale(1.015);
-    }
-  }
-
-  @keyframes reveal-copy {
-    from {
-      opacity: 0;
-      transform: translateY(0.65rem);
-    }
   }
 </style>
