@@ -4,7 +4,12 @@ import type {
   ApplyPaidCheckoutReconciliationResult,
   CheckoutOrderPaid,
 } from '../../../application/commerce/orders';
-import type { StripeCatalogEnvironment } from '../../../application/commerce/catalog-sync';
+import {
+  hasBlockingCatalogIssue,
+  type CatalogSyncIssue,
+  type CatalogSyncVariantResult,
+  type StripeCatalogEnvironment,
+} from '../../../application/commerce/catalog-sync';
 import { toStripeCheckoutSessionState } from '../../../infrastructure/stripe';
 import type { VerifiedStripeWebhookEvent } from '../../../infrastructure/stripe';
 import { parseStoreItemSlug, parseVariantId, type StoreItemSlug } from '../../../domain/commerce';
@@ -37,7 +42,7 @@ export type StripeWebhookAcknowledgementServices = {
   recordCatalogWebhookEvent: (
     input: RecordStripeCatalogWebhookEventInput,
   ) => Promise<RecordStripeCatalogWebhookEventResult>;
-  reconcileCatalogVariant: (storeItem: StoreItemOptionRecord) => Promise<unknown>;
+  reconcileCatalogVariant: (storeItem: StoreItemOptionRecord) => Promise<CatalogSyncVariantResult>;
   logger?: Pick<AppLogger, 'info' | 'warn'>;
 };
 
@@ -141,8 +146,25 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
     }
 
     try {
-      await services.reconcileCatalogVariant(storeItem);
+      const catalogResult = await services.reconcileCatalogVariant(storeItem);
+      const blockingIssue = catalogResult.issues.find((issue) => hasBlockingCatalogIssue([issue]));
       await services.markCatalogEventSucceeded(event.id);
+
+      if (blockingIssue) {
+        logCatalogWebhookOutcome(services, {
+          outcome: 'catalog_drift',
+          retryable: false,
+          safeReason: blockingIssue.code,
+          storeItemSlug: storeItem.storeItemSlug,
+          stripeEventType: event.type,
+          variantId: storeItem.variantId,
+        });
+
+        return {
+          ignored: true,
+          received: true,
+        };
+      }
     } catch (error) {
       await services.markCatalogEventFailed(event.id, 'reconciliation_failed');
       logCatalogWebhookOutcome(services, {
@@ -234,6 +256,8 @@ type CatalogWebhookIgnoredReason =
   | 'prd_open_gate_closed'
   | 'reconciliation_failed'
   | 'variant_not_found';
+
+type CatalogWebhookSafeReason = CatalogWebhookIgnoredReason | CatalogSyncIssue['code'];
 
 type CatalogObjectEventIdentity = {
   safeReason?: CatalogWebhookIgnoredReason;
@@ -412,7 +436,7 @@ function logCatalogWebhookOutcome(
   input: {
     outcome: string;
     retryable: boolean;
-    safeReason?: CatalogWebhookIgnoredReason;
+    safeReason?: CatalogWebhookSafeReason;
     storeItemSlug: StoreItemSlug | null;
     stripeEventType: string;
     variantId: RecordStripeCatalogWebhookEventInput['variantId'];

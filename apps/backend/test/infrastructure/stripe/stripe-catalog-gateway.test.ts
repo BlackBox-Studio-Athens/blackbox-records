@@ -170,6 +170,64 @@ describe('StripeCatalogGatewayClient', () => {
     });
   });
 
+  it('repairs a replacement Price lookup key with an atomic transfer', async () => {
+    const metadata = {
+      appEnv: 'uat' as const,
+      sourceId: 'disintegration',
+      sourceKind: 'release' as const,
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+    };
+    const lookupKey = 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard';
+    const pricesUpdate = vi.fn(async () => ({
+      active: true,
+      currency: 'eur',
+      id: 'price_lookup_repair_12345678',
+      lookup_key: lookupKey,
+      metadata,
+      product: {
+        active: true,
+        id: 'prod_lookup_repair_12345678',
+        metadata,
+        name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+      },
+      unit_amount: 3200,
+    }));
+    const gateway = new StripeCatalogGatewayClient({
+      prices: {
+        update: pricesUpdate,
+      },
+    } as never);
+    const context = createStripeCatalogMutationContext({
+      action: 'repair_lookup_key',
+      environment: 'uat',
+      identity: 'price_lookup_repair_12345678',
+      requestShape: {
+        lookupKey,
+        transferLookupKey: true,
+      },
+      variantId: metadata.variantId,
+    });
+
+    await expect(
+      gateway.updatePriceLookupKey('price_lookup_repair_12345678', lookupKey, context),
+    ).resolves.toMatchObject({
+      lookupKey,
+      priceId: 'price_lookup_repair_12345678',
+    });
+    expect(pricesUpdate).toHaveBeenCalledWith(
+      'price_lookup_repair_12345678',
+      {
+        expand: ['product'],
+        lookup_key: lookupKey,
+        transfer_lookup_key: true,
+      },
+      {
+        idempotencyKey: context.idempotencyKey,
+      },
+    );
+  });
+
   it('creates pay-what-you-want Prices with Stripe custom unit amount fields', async () => {
     const metadata = {
       appEnv: 'uat' as const,

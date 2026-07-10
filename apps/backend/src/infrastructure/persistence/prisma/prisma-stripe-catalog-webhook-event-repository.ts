@@ -89,7 +89,7 @@ export class PrismaStripeCatalogWebhookEventRepository implements StripeCatalogW
   }
 
   public async markCatalogEventFailed(eventId: string, failureReason: string): Promise<void> {
-    await this.prisma.stripeCatalogWebhookEvent.update({
+    await this.prisma.stripeCatalogWebhookEvent.updateMany({
       data: {
         processingCompletedAt: null,
         processingFailureReason: failureReason,
@@ -97,6 +97,9 @@ export class PrismaStripeCatalogWebhookEventRepository implements StripeCatalogW
       },
       where: {
         eventId,
+        processingStatus: {
+          not: 'succeeded',
+        },
       },
     });
   }

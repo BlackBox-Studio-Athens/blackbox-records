@@ -206,6 +206,32 @@ export function resolveSelectedStripeSandboxScenarios(
   return resolveSmokeScenarioSelection(selection, Object.values(STRIPE_SANDBOX_SMOKE_SCENARIOS));
 }
 
+export function replaceFixedCheckoutAmountExpectation(
+  scenarios: readonly StripeSandboxSmokeScenario[],
+  expectedAmountMinor: number | null,
+): StripeSandboxSmokeScenario[] {
+  if (expectedAmountMinor === null) {
+    return [...scenarios];
+  }
+
+  return scenarios.map((scenario) => {
+    if (!scenario.checkoutSurfaceExpectation || scenario.checkoutAmountMinor !== undefined) {
+      return scenario;
+    }
+
+    return {
+      ...scenario,
+      checkoutSurfaceExpectation: {
+        ...scenario.checkoutSurfaceExpectation,
+        expectedSessionProjection: {
+          ...scenario.checkoutSurfaceExpectation.expectedSessionProjection,
+          expectedAmountMinor,
+        },
+      },
+    };
+  });
+}
+
 export function groupStripeSandboxSmokeScenarios(
   scenarios: readonly StripeSandboxSmokeScenario[],
 ): StripeSandboxScenarioGroups {

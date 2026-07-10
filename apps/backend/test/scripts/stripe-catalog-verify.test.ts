@@ -121,7 +121,7 @@ describe('stripe catalog verify script helpers', () => {
     }
   });
 
-  it('reports generated price authority drift during dry-run verification', async () => {
+  it('accepts current Stripe Price Authority during day-to-day dry-run verification', async () => {
     const previousStripeSecretKey = process.env.STRIPE_SECRET_KEY;
     const lookupKey = createStripeCatalogLookupKey('uat', storeItem);
     const metadata = createStripeCatalogMetadata('uat', storeItem);
@@ -149,6 +149,7 @@ describe('stripe catalog verify script helpers', () => {
       listOwnedProducts: vi.fn().mockResolvedValue([]),
       listPricesByLookupKey: vi.fn().mockResolvedValue([wrongAmountPrice]),
       listPricesByMetadata: vi.fn().mockResolvedValue([wrongAmountPrice]),
+      updatePriceLookupKey: vi.fn(),
       retrievePrice: vi.fn().mockResolvedValue(null),
       updatePriceMetadata: vi.fn(),
       updateProductProjection: vi.fn(),
@@ -195,16 +196,10 @@ describe('stripe catalog verify script helpers', () => {
       });
 
       expect(result.dryRun).toBe(true);
-      expect(result.issues).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            code: 'wrong_amount',
-            driftCategory: 'price_authority',
-            storeItemSlug: storeItem.storeItemSlug,
-            variantId: storeItem.variantId,
-          }),
-        ]),
-      );
+      expect(result.issues).not.toEqual(expect.arrayContaining([expect.objectContaining({ code: 'wrong_amount' })]));
+      expect(
+        result.results.find((item) => item.storeItem.variantId === storeItem.variantId)?.resolvedPrice?.priceId,
+      ).toBe(wrongAmountPrice.priceId);
       expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
       expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
       expect(stripeCatalog.updatePriceMetadata).not.toHaveBeenCalled();
@@ -239,6 +234,11 @@ describe('stripe catalog verify script helpers', () => {
             {
               kind: 'archive_price',
               stripePriceId: stripePriceId('price_1234567890abcdef'),
+            },
+            {
+              kind: 'repair_lookup_key',
+              lookupKey: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+              stripePriceId: stripePriceId('price_lookuprepair12345678'),
             },
             {
               kind: 'update_mapping',
@@ -303,9 +303,11 @@ describe('stripe catalog verify script helpers', () => {
       'lookup=blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
     );
     expect(report).toContain('price_...cdef');
+    expect(report).toContain('repair_lookup_key:price_...5678');
     expect(report).toContain('price_...7890');
     expect(report).toContain('prod_...cdef');
     expect(report).not.toContain('price_1234567890abcdef');
+    expect(report).not.toContain('price_lookuprepair12345678');
     expect(report).not.toContain('price_abcdef1234567890');
     expect(report).not.toContain('prod_1234567890abcdef');
     expect(report).not.toContain('sk_test');

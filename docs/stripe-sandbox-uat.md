@@ -77,8 +77,21 @@ Use this when a colleague needs to change a buyable UAT Store Item price without
 4. Archive or deactivate the stale active Price so only one active Price identifies the variant.
 5. Run `pnpm stripe:webhooks:verify --env uat`.
 6. Run `pnpm stripe:catalog:verify --env uat`.
+   The current UAT catalog has unrelated legacy identity and Product Projection drift, so the global command may exit nonzero. For this exercise, require the target variant to have no Price Authority, D1 readiness, or Store Offer snapshot issue. Do not use `--apply`.
 7. Read `/api/store/items/<storeItemSlug>` on the UAT Worker and confirm the browser-safe price/readiness.
-8. Run the relevant `pnpm smoke:stripe-uat` scenario and confirm hosted Checkout displays the new amount before payment submission.
+8. Run the non-payment Checkout surface smoke with the temporary amount in minor units and confirm hosted Checkout displays the new amount before payment submission:
+
+   ```sh
+   pnpm smoke:stripe-uat -- --scenario checkout_surface --expected-checkout-amount-minor <amount-minor>
+   ```
+
+   When local Cloudflare credentials are unavailable, dispatch the credentialed GitHub Actions proof instead:
+
+   ```sh
+   gh workflow run uat-smoke.yml --ref main -f expected_checkout_amount_minor=<amount-minor>
+   ```
+
+   The override changes only the smoke assertion for the Stripe Checkout Session. The browser cart snapshot and generated Desired Price remain stale on purpose, proving checkout uses the current Worker-owned Store Offer and Stripe Price.
 
 Required app identity metadata:
 
@@ -90,7 +103,9 @@ Required app identity metadata:
 
 Decap remains editorial-only. Editors can change item information and page copy, but must not edit checkout price, Stripe IDs, D1 IDs, stock, provider mutation controls, or any runtime secret.
 
-Least-privilege Stripe access should be tested in UAT before handing this runbook to a colleague. The selected restricted role must be able to create replacement Prices and preserve app identity metadata. If Dashboard permissions do not allow lookup-key transfer, use metadata identity for the replacement Price and ask a developer to repair lookup-key alignment through an approved API step.
+Stripe has no Product-catalog-only built-in team role. Use Support Specialist only as the least-broad built-in candidate, and assign it only to the isolated UAT Stripe Sandbox. It still grants broader refund, customer, dispute, and connected-account permissions. Do not assign it on the live parent account, and do not substitute Developer or Administrator access. Require two-step authentication. Before handoff, use the colleague's actual sandbox login to prove replacement-Price creation, required metadata entry, stale-Price archival, and absence of live-account access. See Stripe's [team role permissions](https://docs.stripe.com/get-started/account/teams/roles) and [sandbox-specific access](https://docs.stripe.com/sandboxes/dashboard/manage-access).
+
+If Dashboard permissions do not allow lookup-key transfer, give the replacement Price all five app identity metadata fields. When current-state reconciliation finds exactly one active metadata-identified Price with no lookup key, it atomically transfers the canonical lookup key to that Price. A different non-empty lookup key remains a fail-closed identity conflict; do not overwrite it manually.
 
 Troubleshooting:
 

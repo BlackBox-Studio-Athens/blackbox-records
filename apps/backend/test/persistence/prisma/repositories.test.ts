@@ -90,6 +90,28 @@ describe('Prisma repository seams', () => {
 
           return next;
         }),
+        updateMany: vi.fn(
+          async ({
+            data,
+            where,
+          }: {
+            data: Record<string, unknown>;
+            where: { eventId: string; processingStatus?: { not?: string } };
+          }) => {
+            const current = records.get(where.eventId);
+
+            if (!current || current.processingStatus === where.processingStatus?.not) {
+              return { count: 0 };
+            }
+
+            records.set(where.eventId, {
+              ...current,
+              ...data,
+            });
+
+            return { count: 1 };
+          },
+        ),
       },
     };
     const catalogWebhookEvents = new PrismaStripeCatalogWebhookEventRepository(prisma as never);
@@ -109,6 +131,7 @@ describe('Prisma repository seams', () => {
     const failed = records.get(eventId);
     const failedDuplicate = await catalogWebhookEvents.recordCatalogEvent(input);
     await catalogWebhookEvents.markCatalogEventSucceeded(eventId);
+    await catalogWebhookEvents.markCatalogEventFailed(eventId, 'late_concurrent_failure');
     const succeeded = records.get(eventId);
     const succeededDuplicate = await catalogWebhookEvents.recordCatalogEvent(input);
 

@@ -19,6 +19,7 @@ export function parseStripeSandboxSmokeArgs(args: string[]): StripeSandboxSmokeO
   const options: StripeSandboxSmokeOptions = {
     debug: false,
     declineConcurrency: 3,
+    expectedCheckoutAmountMinor: null,
     expectedPaymentMethodLabels: parsePaymentMethodLabelList(process.env.STRIPE_SANDBOX_EXPECTED_PAYMENT_LABELS ?? ''),
     fieldActionTimeoutMs: 2_000,
     headed: false,
@@ -80,6 +81,21 @@ export function parseStripeSandboxSmokeArgs(args: string[]): StripeSandboxSmokeO
       const value = args[index + 1];
       index += 1;
       options.expectedPaymentMethodLabels.push(parsePaymentMethodLabel(value, '--expected-payment-label'));
+      continue;
+    }
+
+    if (arg === '--expected-checkout-amount-minor') {
+      const value = args[index + 1];
+      index += 1;
+      options.expectedCheckoutAmountMinor = parsePositiveInteger(value, '--expected-checkout-amount-minor');
+      continue;
+    }
+
+    if (arg?.startsWith('--expected-checkout-amount-minor=')) {
+      options.expectedCheckoutAmountMinor = parsePositiveInteger(
+        arg.slice('--expected-checkout-amount-minor='.length),
+        '--expected-checkout-amount-minor',
+      );
       continue;
     }
 

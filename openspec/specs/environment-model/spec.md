@@ -1,7 +1,9 @@
 ## Purpose
 
 Define the Local, UAT, and PRD Product Environment model and map platform/provider-specific names under it.
+
 ## Requirements
+
 ### Requirement: Canonical product environments
 
 The system SHALL expose exactly three product environments in operator-facing docs, workflows, validation output, OpenSpec language, and product-policy implementation: Local, UAT, and PRD.
@@ -129,4 +131,3 @@ The system MUST scope newsletter registration effects to the active Product Envi
 - **WHEN** PRD newsletter registration readiness is evaluated
 - **THEN** it is gated by PRD Resend readiness rather than checkout PRD-open status
 - **AND** failed or missing PRD Resend config blocks PRD newsletter Contact writes.
-

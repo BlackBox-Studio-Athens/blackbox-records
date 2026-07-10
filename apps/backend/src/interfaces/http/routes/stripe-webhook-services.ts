@@ -5,7 +5,11 @@ import {
   type ApplyNonPaidCheckoutReconciliationResult,
   type ApplyPaidCheckoutReconciliationResult,
 } from '../../../application/commerce/orders';
-import { CatalogReconciler, currentCatalogProductProjectionEntries } from '../../../application/commerce/catalog-sync';
+import {
+  CatalogReconciler,
+  createCurrentCatalogProductProjectionReader,
+  currentCatalogProductProjectionEntries,
+} from '../../../application/commerce/catalog-sync';
 import type { CheckoutReconciliation } from '../../../application/commerce/checkout';
 import {
   EmailConfigurationError,
@@ -52,6 +56,7 @@ export function createStripeWebhookServices(
   const storeOfferSnapshots = new PrismaStoreOfferSnapshotRepository(prisma);
   const variantStripeMappings = new PrismaVariantStripeMappingRepository(prisma);
   const catalogWebhookEvents = new PrismaStripeCatalogWebhookEventRepository(prisma);
+  const productProjections = createCurrentCatalogProductProjectionReader();
   const checkoutGateway = createStripeCheckoutGateway(bindings);
   const catalogReconciler = new CatalogReconciler({
     environment: productEnvironmentProfile.workerDeploymentTarget,
@@ -106,7 +111,11 @@ export function createStripeWebhookServices(
     },
     recordCatalogWebhookEvent: catalogWebhookEvents.recordCatalogEvent.bind(catalogWebhookEvents),
     reconcileCatalogVariant: (storeItem: StoreItemOptionRecord) =>
-      catalogReconciler.reconcileVariant(storeItem, { apply: true }),
+      catalogReconciler.reconcileVariant(storeItem, {
+        apply: true,
+        applyProductProjection: false,
+        productProjection: productProjections.findByStoreItem(storeItem),
+      }),
   };
 }
 

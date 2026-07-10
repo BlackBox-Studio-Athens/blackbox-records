@@ -128,6 +128,20 @@ class InMemoryStripeCatalog implements StripeCatalogGateway {
       requestId?: string | null;
     }
   >();
+  public readonly updatePriceLookupKey = vi.fn(
+    async (priceId: string, lookupKey: string, _context?: StripeCatalogMutationContext) => {
+      const price = this.prices.get(priceId);
+
+      if (!price) {
+        throw new Error(`Missing price ${priceId}.`);
+      }
+
+      const updated = { ...price, lookupKey };
+      this.prices.set(priceId, updated);
+
+      return updated;
+    },
+  );
   public readonly updatePriceMetadata = vi.fn(
     async (priceId: string, metadata: StripeCatalogIdentityMetadata, _context?: StripeCatalogMutationContext) => {
       const price = this.prices.get(priceId);
@@ -542,9 +556,22 @@ describe('CatalogReconciler', () => {
     expect(result.issues).toEqual([]);
     expect(result.actions).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'repair_lookup_key',
+          lookupKey: createStripeCatalogLookupKey('uat', storeItem),
+          stripePriceId: replacementPrice.priceId,
+        }),
         { kind: 'update_mapping', stripePriceId: replacementPrice.priceId },
         { kind: 'update_snapshot' },
       ]),
+    );
+    expect(stripeCatalog.updatePriceLookupKey).toHaveBeenCalledWith(
+      replacementPrice.priceId,
+      createStripeCatalogLookupKey('uat', storeItem),
+      expect.objectContaining({ idempotencyKey: expect.stringContaining(':repair_lookup_key:') }),
+    );
+    expect(stripeCatalog.prices.get(replacementPrice.priceId)?.lookupKey).toBe(
+      createStripeCatalogLookupKey('uat', storeItem),
     );
     expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(replacementPrice.priceId);
     expect(snapshots.records.get(storeItem.variantId)).toMatchObject({
@@ -1089,6 +1116,42 @@ describe('CatalogReconciler', () => {
         }),
       ]),
     );
+  });
+
+  it('reports Product Projection drift without mutating Stripe during runtime reconciliation', async () => {
+    const price = {
+      ...createCatalogPrice({ priceId: 'price_test_disintegration_2800' }),
+      productDescription: 'Dashboard-edited description.',
+    };
+    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
+    stripeCatalog.prices.set(price.priceId, price);
+
+    const result = await reconciler.reconcileVariant(storeItem, {
+      apply: true,
+      applyProductProjection: false,
+      productProjection: {
+        description: 'Disintegration by Afterwise.',
+        imageUrls: ['https://blackbox-records-web.pages.dev/admin/media/releases/disintegration.jpg'],
+        metadata: {
+          sourceId: storeItem.sourceId,
+          sourceKind: storeItem.sourceKind,
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+        name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+        taxCode: null,
+      },
+    });
+
+    expect(result.issues).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'product_projection_mismatch' })]),
+    );
+    expect(result.actions).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ kind: 'update_product_projection' })]),
+    );
+    expect(stripeCatalog.updateProductProjection).not.toHaveBeenCalled();
+    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(price.priceId);
+    expect(snapshots.records.get(storeItem.variantId)?.stripePriceId).toBe(price.priceId);
   });
 
   it('fails closed when multiple active Stripe Prices match one Store Item variant', async () => {

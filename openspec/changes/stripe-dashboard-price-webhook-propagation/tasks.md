@@ -8,7 +8,7 @@
 - [x] 1.6 Inspect `apps/web/src/components/store/StoreOfferPriceDisplay.tsx` and public checkout API code to identify any same-session cache that could hide a just-changed price.
 - [x] 1.7 Inspect D1 schema and decide whether `StripeCatalogWebhookEvent` needs processing status fields or whether success-after-work recording is enough for retry-safe idempotency.
 - [x] 1.8 Confirm UAT persistent Stripe webhook endpoint and event set are already covered by `pnpm stripe:webhooks:verify --env uat`, or record the exact setup gap.
-  - Local gap recorded: `pnpm stripe:webhooks:verify --env uat` cannot run in this workspace because `STRIPE_SECRET_KEY` is not present.
+  - Verified 2026-07-10: one enabled test-mode account endpoint covers all six catalog events, the UAT Worker webhook secret is present, and the committed UAT cron is configured. Deployed-cron verification was unavailable because Cloudflare account/token environment variables were absent.
 - [x] 1.9 Inspect `scripts/stripe-catalog-verify.ts` and any `expectedPrices` path to identify where generated Desired Price currently acts as amount/currency authority.
 
 ## 2. Catalog Reconciler Behavior
@@ -39,6 +39,7 @@
 - [x] 3.10 Add tests for `appEnv` or environment-scoped lookup-key mismatch returning ignored success with no D1 mutation.
 - [x] 3.11 Add tests for malformed `variantId` or malformed identity payload returning ignored non-retryable success with redacted logs.
 - [x] 3.12 If status fields are needed, add the D1 migration, Prisma model changes, repository tests, and generated Prisma client update for webhook event processing status.
+  - Follow-up migration `0011_keep_legacy_stripe_catalog_webhook_events_retryable.sql` reclassifies legacy rows with unknown completion outcome as failed/retryable instead of trusting the former record-before-work success state.
 
 ## 4. Store Offer and Checkout Freshness
 
@@ -57,7 +58,7 @@
 - [x] 5.2 Document exact operator checklist: create replacement Price, preserve lookup key or app metadata, archive stale active Price, verify UAT.
 - [x] 5.3 Document required app identity metadata fields: `appEnv`, `sourceId`, `sourceKind`, `storeItemSlug`, and `variantId`.
 - [x] 5.4 Document Decap boundary: editors can change item information and page copy, not checkout price, Stripe IDs, D1 IDs, stock, or provider mutation controls.
-- [ ] 5.5 Document least-privilege Stripe account guidance and prove in UAT that the chosen restricted role can create replacement Prices, preserve metadata, and transfer or repair lookup keys.
+- [x] 5.5 Document least-privilege Stripe account guidance, including the lack of a Product-only built-in role, isolated Stripe Sandbox scope, the restricted-role candidate, and the metadata-only lookup-key repair fallback. Actual colleague-login proof remains in 6.2.
 - [x] 5.6 Add troubleshooting for missing metadata, duplicate active Prices, wrong currency, webhook signature failure, stale Store Offer snapshots, and PRD-disabled state.
 - [x] 5.7 Update `stripe:webhooks:verify` or its docs if current output does not clearly cover catalog events needed for price propagation.
 - [x] 5.8 Ensure all new diagnostics redact Stripe object IDs, endpoint IDs, API errors, and secrets according to existing redaction policy.
@@ -65,17 +66,20 @@
 
 ## 6. UAT Proof Path
 
-- [ ] 6.1 Run `pnpm stripe:webhooks:verify --env uat` and record redacted result in local notes or change evidence without committing secrets.
-  - Blocked locally: `STRIPE_SECRET_KEY` is not configured in this shell.
-- [ ] 6.2 In Stripe test mode, create a replacement Price for one safe UAT Store Item variant with correct app metadata or lookup key.
+- [x] 6.1 Run `pnpm stripe:webhooks:verify --env uat` and record redacted result in local notes or change evidence without committing secrets.
+  - Verified 2026-07-10: one enabled test-mode endpoint, all six catalog event types covered, UAT Worker webhook secret present, committed UAT cron present; no secret or full Stripe object ID was recorded.
+- [ ] 6.2 Using the selected restricted role in an isolated UAT Stripe Sandbox, prove a colleague can create a replacement Price for one safe Store Item variant with complete app metadata or the canonical lookup key.
 - [ ] 6.3 Archive or deactivate the stale matching Price so only one active Price identifies the variant.
 - [ ] 6.4 Observe Worker logs for a safe `catalog_reconciled` webhook outcome for `price.created` or `price.updated`.
 - [ ] 6.5 Read the public Store Offer endpoint for the item and confirm the updated display price and checkout readiness.
 - [ ] 6.6 Run `pnpm stripe:catalog:verify --env uat` in day-to-day verification mode and confirm the valid Dashboard replacement Price is not rejected because generated Desired Price is stale.
-  - Blocked locally: `STRIPE_SECRET_KEY` is not configured in this shell.
+  - Baseline run 2026-07-10: Price Authority, D1 readiness, and Store Offer snapshot checks each reported 0 issues; 33 pre-existing catalog-identity issues and 5 Product Projection description mismatches remain unrelated. Replacement-Price proof still depends on 6.2-6.5.
 - [ ] 6.7 Run the relevant UAT Stripe smoke path and confirm hosted Checkout displays the updated amount/currency before payment submission.
+  - Baseline provider smoke run `28779291457` succeeded after feature commit `08efb918`, but it proves existing hosted Checkout amounts only, not the replacement-Price exercise.
+  - For a diagnostic replacement amount, run `pnpm smoke:stripe-uat -- --scenario checkout_surface --expected-checkout-amount-minor <amount-minor>`, or dispatch `gh workflow run uat-smoke.yml --ref main -f expected_checkout_amount_minor=<amount-minor>` when credentialed CI is required. The hosted Session assertion follows the temporary Stripe-owned amount without changing generated Desired Price or the browser cart snapshot.
 - [ ] 6.8 Repair the UAT test catalog back to the intended accepted test price if the manual replacement Price was diagnostic-only.
-- [ ] 6.9 Simulate or observe a failed webhook reconciliation followed by Stripe retry and confirm the event is not skipped as an already-processed duplicate.
+- [x] 6.9 Prove through automated acknowledgement and repository tests that a failed webhook reconciliation remains retryable and is not skipped as an already-processed duplicate.
+  - Live failure injection is excluded from UAT acceptance because no safe deterministic provider-failure path exists; focused tests cover failed-first-attempt retry and late-failure protection for succeeded events.
 
 ## 7. PRD Gate and Safety
 

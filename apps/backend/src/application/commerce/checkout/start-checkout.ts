@@ -162,6 +162,7 @@ export async function startCheckout(
 
     const catalogResult = await catalogReconciler.reconcileVariant(storeItem, {
       apply: options.applyCatalogMutations ?? true,
+      applyProductProjection: false,
       productProjection,
     });
     const resolvedPrice = catalogResult.resolvedPrice;

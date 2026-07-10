@@ -258,6 +258,24 @@ export class StripeCatalogGatewayClient implements StripeCatalogGateway {
     return toCatalogPrice(price);
   }
 
+  public async updatePriceLookupKey(
+    priceId: string,
+    lookupKey: string,
+    context?: StripeCatalogMutationContext,
+  ): Promise<StripeCatalogPrice> {
+    const price = (await this.stripe.prices.update(
+      priceId,
+      {
+        expand: ['product'],
+        lookup_key: lookupKey,
+        transfer_lookup_key: true,
+      },
+      toStripeRequestOptions(context),
+    )) as StripePriceWithExpandedProduct;
+
+    return toCatalogPrice(price);
+  }
+
   public async updateProductProjection(
     productId: string,
     input: StripeCatalogProductProjectionUpdateInput,

@@ -55,7 +55,7 @@ Operators change prices in Stripe Product catalog using restricted Stripe accoun
 
 Rationale: This matches Stripe's Price model and keeps Price Authority in Stripe. It also avoids a new privileged app surface.
 
-Implementation note: before handing this to a colleague, UAT must prove that the selected restricted Stripe role can create replacement Prices and preserve or transfer the lookup key and app identity metadata. If Stripe Dashboard role limits block lookup-key transfer, the supported fallback is metadata-only identity plus a small approved API-assisted repair step; Decap remains out of scope for Price Authority.
+Implementation note: Stripe has no Product-catalog-only built-in team role. The least-broad built-in candidate is Support Specialist, but it still has broader payment/customer permissions and must be assigned only to the isolated UAT Stripe Sandbox, never to the live parent account. Before handoff, a colleague login must prove that this scoped role can create replacement Prices, preserve app identity metadata, and archive the stale Price. If Dashboard role limits block lookup-key transfer, complete metadata-only identity is sufficient: current-state reconciliation atomically assigns the canonical lookup key when it finds exactly one active metadata-identified Price. Decap remains out of scope for Price Authority.
 
 Alternative considered: add `desired_price` to Decap and let GitHub Actions mutate Stripe. Rejected for this slice because it creates a second price-editing surface and requires a promotion approval workflow before it is safe.
 
@@ -210,9 +210,9 @@ Rollback:
 - If propagation is broken, run `pnpm stripe:catalog:verify --env uat --apply` after reviewing dry-run output, then rerun Store Offer read and smoke.
 - If checkout must stop immediately, use the existing checkout pause path for the affected `variantId`.
 
-## Open Questions
+## Remaining Validation and Open Questions
 
-- Which Stripe restricted role gives the colleague enough Product catalog access without broader payment/account access? This should be confirmed in the live Stripe account before handing over.
-- Can that restricted role transfer lookup keys in Dashboard, or does it need metadata-only identity plus a developer-owned repair command for rare fixes?
+- Confirm through an actual colleague login that sandbox-scoped Support Specialist access can create replacement Prices, add the required metadata, and archive the stale Price. Do not broaden access if the candidate role is insufficient.
+- Record whether that role can transfer lookup keys in Dashboard. Lookup-key transfer is not required for the supported path because metadata-only identity now triggers guarded, atomic lookup-key repair.
 - Should same-tab storefront price display refresh after a Dashboard price change without reload? Current recommendation is no; checkout revalidation covers correctness.
 - Should PRD use the same webhook endpoint route as UAT after go-live, or separate endpoint/secrets by live account policy? Current environment model expects separate PRD Worker secret configuration.

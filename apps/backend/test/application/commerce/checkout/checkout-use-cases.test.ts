@@ -162,14 +162,22 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
 
 class InMemoryCatalogReconciler implements Pick<CatalogReconciler, 'reconcileVariant'> {
   public readonly calls: Array<{
-    options: { apply?: boolean; productProjection?: StripeCatalogProductProjection | null };
+    options: {
+      apply?: boolean;
+      applyProductProjection?: boolean;
+      productProjection?: StripeCatalogProductProjection | null;
+    };
   }> = [];
   public readonly issues = new Map<string, CatalogSyncIssue[]>();
   public readonly prices = new Map<string, StripeCatalogPrice>();
 
   public async reconcileVariant(
     storeItem: StoreItemOptionRecord,
-    options: { apply?: boolean; productProjection?: StripeCatalogProductProjection | null } = {},
+    options: {
+      apply?: boolean;
+      applyProductProjection?: boolean;
+      productProjection?: StripeCatalogProductProjection | null;
+    } = {},
   ): Promise<CatalogSyncVariantResult> {
     this.calls.push({ options });
     const resolvedPrice = this.prices.get(storeItem.variantId) ?? null;
@@ -351,6 +359,7 @@ describe('checkout use cases', () => {
     expect(catalogReconciler.calls[0]?.options.productProjection).toEqual(
       productProjections.projections.get(storeItem.variantId),
     );
+    expect(catalogReconciler.calls[0]?.options.applyProductProjection).toBe(false);
   });
 
   it('reads Store Offer price from a replacement Stripe Price without content changes', async () => {
@@ -403,6 +412,7 @@ describe('checkout use cases', () => {
     );
 
     expect(catalogReconciler.calls[0]?.options.apply).toBe(false);
+    expect(catalogReconciler.calls[0]?.options.applyProductProjection).toBe(false);
   });
 
   it('reads pay-what-you-want Store Offers from Stripe custom prices', async () => {

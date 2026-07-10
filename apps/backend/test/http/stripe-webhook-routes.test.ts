@@ -57,7 +57,21 @@ const {
   mockMarkCatalogEventFailed: vi.fn(async () => undefined),
   mockMarkCatalogEventSucceeded: vi.fn(async () => undefined),
   mockPublishCheckoutOrderPaid: vi.fn(async () => {}),
-  mockReconcileCatalogVariant: vi.fn(async () => ({})),
+  mockReconcileCatalogVariant: vi.fn(async () => ({
+    actions: [],
+    issueCount: 0,
+    issues: [],
+    lookupKey: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+    mapping: null,
+    resolvedPrice: null,
+    snapshot: null,
+    storeItem: {
+      sourceId: 'disintegration',
+      sourceKind: 'release' as const,
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+    },
+  })),
   mockRecordCatalogWebhookEvent: vi.fn(async () => ({
     record: {
       catalogObjectId: 'price_test_123',

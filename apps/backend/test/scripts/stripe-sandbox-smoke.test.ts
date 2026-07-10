@@ -26,6 +26,7 @@ import {
   parseD1CheckoutOrderRows,
   parseRemoteD1ReadinessSummary,
   parseStripeSandboxSmokeArgs,
+  replaceFixedCheckoutAmountExpectation,
   resolveCheckoutSurfaceExpectation,
   resolveSelectedStripeSandboxScenarios,
   readStripeSandboxSmokeErrorEvidence,
@@ -99,6 +100,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(parseStripeSandboxSmokeArgs([])).toEqual({
       debug: false,
       declineConcurrency: 3,
+      expectedCheckoutAmountMinor: null,
       expectedPaymentMethodLabels: [],
       fieldActionTimeoutMs: 2_000,
       headed: false,
@@ -122,6 +124,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
         '--decline-concurrency',
         '2',
         '--field-action-timeout-ms=1500',
+        '--expected-checkout-amount-minor=2900',
         '--expected-payment-label',
         'Link',
         '--expected-payment-label=Google Pay',
@@ -135,6 +138,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     ).toEqual({
       debug: false,
       declineConcurrency: 2,
+      expectedCheckoutAmountMinor: 2_900,
       expectedPaymentMethodLabels: ['Link', 'Google Pay'],
       fieldActionTimeoutMs: 1_500,
       headed: true,
@@ -163,6 +167,9 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     );
     expect(() => parseStripeSandboxSmokeArgs(['--expected-payment-label', ''])).toThrow(
       '--expected-payment-label must include a payment method label.',
+    );
+    expect(() => parseStripeSandboxSmokeArgs(['--expected-checkout-amount-minor', '0'])).toThrow(
+      '--expected-checkout-amount-minor must be a positive integer.',
     );
   });
 
@@ -275,6 +282,25 @@ describe('Stripe sandbox Playwright smoke runner', () => {
         STRIPE_SANDBOX_SMOKE_SCENARIOS.three_d_secure,
       ],
     });
+  });
+
+  it('replaces only fixed-price Checkout amount expectations without mutating scenario policy', () => {
+    const fixedScenario = STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface;
+    const customAmountScenario = STRIPE_SANDBOX_SMOKE_SCENARIOS.pay_what_you_want_paid;
+    const originalFixedAmount = fixedScenario.checkoutSurfaceExpectation?.expectedSessionProjection.expectedAmountMinor;
+    const originalCustomAmount =
+      customAmountScenario.checkoutSurfaceExpectation?.expectedSessionProjection.expectedAmountMinor;
+
+    const scenarios = replaceFixedCheckoutAmountExpectation([fixedScenario, customAmountScenario], 2_900);
+
+    expect(scenarios[0]?.checkoutSurfaceExpectation?.expectedSessionProjection.expectedAmountMinor).toBe(2_900);
+    expect(scenarios[1]?.checkoutSurfaceExpectation?.expectedSessionProjection.expectedAmountMinor).toBe(
+      originalCustomAmount,
+    );
+    expect(fixedScenario.checkoutSurfaceExpectation?.expectedSessionProjection.expectedAmountMinor).toBe(
+      originalFixedAmount,
+    );
+    expect(scenarios[0]?.lineItemSnapshot).toBe(fixedScenario.lineItemSnapshot);
   });
 
   it('creates stable sandbox URLs and scenario emails', () => {

@@ -1,7 +1,9 @@
 ## Purpose
 
 Define canonical BlackBox Records commerce and workflow language so specs, code, tests, docs, and UI copy use one vocabulary.
+
 ## Requirements
+
 ### Requirement: Commerce identity terms
 
 The system SHALL distinguish content identity, shopper-facing sellable identity, backend sellable units, and external payment identifiers.
@@ -234,4 +236,3 @@ The system SHALL use consistent terminology for release-date research across spe
 - **WHEN** an artifact describes whether a date may be applied automatically or needs review
 - **THEN** it uses `Release Date Confidence`
 - **AND** it distinguishes high-confidence exact dates from weak, partial, upload-only, or conflicting date candidates
-

@@ -55,5 +55,8 @@ jobs:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
         run: pnpm stripe:payment-methods:verify
 
+      - name: Apply UAT D1 migrations
+        run: pnpm --filter @blackbox/backend d1:migrations:apply:uat
+
       - name: Deploy UAT Worker
         run: pnpm deploy:backend:uat

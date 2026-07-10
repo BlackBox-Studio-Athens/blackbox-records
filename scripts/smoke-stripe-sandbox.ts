@@ -47,6 +47,7 @@ import {
   createSmokeStoreCartLineItemSnapshot,
   getStripeSandboxSmokeScenarioVariantId,
   groupStripeSandboxSmokeScenarios,
+  replaceFixedCheckoutAmountExpectation,
   resolveSelectedStripeSandboxScenarios,
   STRIPE_TEST_CARD_DOCS_URL,
 } from './stripe-sandbox-smoke/scenario-policy';
@@ -74,6 +75,7 @@ export {
   createSmokeStoreCartLineItemSnapshot,
   getStripeSandboxSmokeScenarioVariantId,
   groupStripeSandboxSmokeScenarios,
+  replaceFixedCheckoutAmountExpectation,
   resolveSelectedStripeSandboxScenarios,
   STRIPE_SANDBOX_SMOKE_SCENARIOS,
   STRIPE_TEST_CARD_DOCS_URL,
@@ -151,6 +153,7 @@ export type StripeCheckoutSessionProjectionObservation = {
 export type StripeSandboxSmokeOptions = {
   debug: boolean;
   declineConcurrency: number;
+  expectedCheckoutAmountMinor: number | null;
   expectedPaymentMethodLabels: string[];
   fieldActionTimeoutMs: number;
   headed: boolean;
@@ -788,7 +791,10 @@ export function readStripeSandboxSmokeErrorEvidence(error: unknown): StripeSandb
 
 async function main() {
   const options = parseStripeSandboxSmokeArgs(process.argv.slice(2));
-  const scenarios = resolveSelectedStripeSandboxScenarios(options.scenarioSelection);
+  const scenarios = replaceFixedCheckoutAmountExpectation(
+    resolveSelectedStripeSandboxScenarios(options.scenarioSelection),
+    options.expectedCheckoutAmountMinor,
+  );
   const runId = createRunId();
   const runArtifactDir = createSmokeRunArtifactDir(rootDir, 'uat', 'stripe-sandbox', runId);
   const summaryPath = createSmokeSummaryPath(runArtifactDir);

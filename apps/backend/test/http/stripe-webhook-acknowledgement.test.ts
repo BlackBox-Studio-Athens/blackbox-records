@@ -5,6 +5,7 @@ import {
   type StripeWebhookAcknowledgementServices,
 } from '../../src/interfaces/http/routes/stripe-webhook-acknowledgement';
 import { createCheckoutOrderReferenceToken, type CheckoutOrderPaid } from '../../src/application/commerce/orders';
+import type { CatalogSyncIssue, CatalogSyncVariantResult } from '../../src/application/commerce/catalog-sync';
 import type { VerifiedStripeWebhookEvent } from '../../src/infrastructure/stripe';
 import type { StoreItemOptionRecord } from '../../src/domain/commerce/repositories/spi';
 import { storeItemSlug, variantId } from '../support/commerce-value-objects';
@@ -41,7 +42,20 @@ function createServices(): StripeWebhookAcknowledgementServices {
       },
       status: 'recorded' as const,
     })),
-    reconcileCatalogVariant: vi.fn(),
+    reconcileCatalogVariant: vi.fn(async () => createCatalogResult()),
+  };
+}
+
+function createCatalogResult(issues: CatalogSyncIssue[] = []): CatalogSyncVariantResult {
+  return {
+    actions: [],
+    issueCount: issues.length,
+    issues,
+    lookupKey: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+    mapping: null,
+    resolvedPrice: null,
+    snapshot: null,
+    storeItem,
   };
 }
 
@@ -297,6 +311,55 @@ describe('Stripe webhook acknowledgement catalog events', () => {
     expect(services.reconcileCatalogVariant).toHaveBeenCalledWith(storeItem);
     expect(services.reconcileCatalogVariant).toHaveBeenCalledTimes(1);
     expect(services.markCatalogEventSucceeded).toHaveBeenCalledWith('evt_catalog_price_old_payload');
+  });
+
+  it('records blocking catalog drift without logging false reconciliation success', async () => {
+    const logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+    };
+    const services = {
+      ...createServices(),
+      logger,
+    };
+    vi.mocked(services.reconcileCatalogVariant).mockResolvedValueOnce(
+      createCatalogResult([
+        {
+          code: 'ambiguous_active_price',
+          detail: 'Multiple active Prices match the variant.',
+          driftCategory: 'price_authority',
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+      ]),
+    );
+    const event: VerifiedStripeWebhookEvent = {
+      catalogObject: {
+        id: 'price_test_ambiguous',
+        lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+        metadata: {},
+        object: 'price',
+      },
+      created: 1_790_000_000,
+      id: 'evt_catalog_ambiguous',
+      isAllowed: true,
+      type: 'price.updated',
+    } as unknown as VerifiedStripeWebhookEvent;
+
+    await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).resolves.toEqual({
+      ignored: true,
+      received: true,
+    });
+    expect(services.markCatalogEventSucceeded).toHaveBeenCalledWith('evt_catalog_ambiguous');
+    expect(services.markCatalogEventFailed).not.toHaveBeenCalled();
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: 'catalog_drift',
+        retryable: false,
+        safeReason: 'ambiguous_active_price',
+      }),
+    );
+    expect(logger.info).not.toHaveBeenCalledWith(expect.objectContaining({ outcome: 'catalog_reconciled' }));
   });
 
   it('acknowledges deleted catalog events without reconciliation when no variant can be read', async () => {

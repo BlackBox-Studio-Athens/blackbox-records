@@ -1,7 +1,6 @@
 import {
   CatalogReconciler,
   createCurrentCatalogExpectedProductProjectionMap,
-  createCurrentCatalogExpectedSandboxPriceMap,
   type CatalogSyncIssue,
 } from '../../application/commerce/catalog-sync';
 import { productEnvironmentProfileFromBindings, type AppBindings } from '../../env';
@@ -35,7 +34,6 @@ export async function runScheduledCatalogVerification(bindings: AppBindings): Pr
   try {
     const result = await catalogReconciler.verifyBuyableCatalog({
       apply: productEnvironmentProfile.catalogVerificationPolicy.applyScheduledChanges,
-      expectedPrices: createCurrentCatalogExpectedSandboxPriceMap(productEnvironmentProfile.workerDeploymentTarget),
       expectedProductProjections: createCurrentCatalogExpectedProductProjectionMap(),
     });
 

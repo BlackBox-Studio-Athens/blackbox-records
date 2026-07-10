@@ -2,6 +2,11 @@ name: UAT provider smoke
 
 on:
   workflow_dispatch:
+    inputs:
+      expected_checkout_amount_minor:
+        description: Optional replacement Price amount in minor units; runs the no-payment Checkout surface proof.
+        required: false
+        type: string
   workflow_run:
     workflows: ['Deploy UAT and PRD static sites']
     branches: ['main']
@@ -54,10 +59,14 @@ jobs:
           pnpm stripe:webhooks:verify --env uat
           pnpm stripe:payment-methods:verify
 
+      - name: Apply UAT D1 migrations
+        run: pnpm --filter @blackbox/backend d1:migrations:apply:uat
+
       - name: Deploy UAT Worker
         run: pnpm deploy:backend:uat
 
       - name: Run UAT provider smoke
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.expected_checkout_amount_minor == '' }}
         run: |
           pnpm smoke:stripe-uat -- \
             --site-url "${UAT_SITE_URL}" \
@@ -66,6 +75,18 @@ jobs:
             --screenshots on-failure
           pnpm smoke:resend-uat -- \
             --worker-url "${UAT_WORKER_URL}"
+
+      - name: Run replacement Price Checkout surface proof
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_checkout_amount_minor != '' }}
+        env:
+          EXPECTED_CHECKOUT_AMOUNT_MINOR: ${{ inputs.expected_checkout_amount_minor }}
+        run: |
+          pnpm smoke:stripe-uat -- \
+            --site-url "${UAT_SITE_URL}" \
+            --worker-url "${UAT_WORKER_URL}" \
+            --scenario checkout_surface \
+            --expected-checkout-amount-minor "${EXPECTED_CHECKOUT_AMOUNT_MINOR}" \
+            --screenshots on-failure
 
       - name: Upload UAT provider smoke evidence
         if: ${{ always() }}

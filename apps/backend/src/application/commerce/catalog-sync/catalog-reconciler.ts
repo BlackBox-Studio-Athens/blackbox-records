@@ -46,6 +46,7 @@ export type CatalogReconcilerDependencies = {
 
 export type ReconcileCatalogVariantOptions = {
   apply: boolean;
+  applyProductProjection?: boolean;
   expectedPrice?: StripeCatalogExpectedPrice | null;
   now?: Date;
   productProjection?: StripeCatalogProductProjection | null;
@@ -261,6 +262,26 @@ export class CatalogReconciler {
         }
       }
 
+      if (resolvedPrice.lookupKey === null) {
+        const lookupKeyContext = createMutationContext(
+          this.dependencies.environment,
+          storeItem.variantId,
+          'repair_lookup_key',
+          resolvedPrice.priceId,
+          {
+            lookupKey,
+            stripePriceId: resolvedPrice.priceId,
+            transferLookupKey: true,
+          },
+        );
+        actions.push({
+          kind: 'repair_lookup_key',
+          lookupKey,
+          stripePriceId: resolvedPrice.priceId,
+          ...createMutationEvidence(lookupKeyContext),
+        });
+      }
+
       if (mapping?.stripePriceId !== resolvedPrice.priceId) {
         actions.push({ kind: 'update_mapping', stripePriceId: resolvedPrice.priceId });
       }
@@ -298,7 +319,7 @@ export class CatalogReconciler {
             ),
           );
 
-          if (resolvedPrice.productId) {
+          if (resolvedPrice.productId && options.applyProductProjection !== false) {
             const productContext = createMutationContext(
               this.dependencies.environment,
               storeItem.variantId,
@@ -474,6 +495,14 @@ export class CatalogReconciler {
           mutationContextFromAction(action),
         );
         applyMutationResponseEvidence(action, archivedPrice);
+      } else if (action.kind === 'repair_lookup_key') {
+        this.assertCatalogMutationAllowed(storeItem, lookupKey, resolvedPrice, action.kind);
+        const updatedPrice = await this.dependencies.stripeCatalog.updatePriceLookupKey(
+          resolvedPrice.priceId,
+          action.lookupKey,
+          mutationContextFromAction(action),
+        );
+        applyMutationResponseEvidence(action, updatedPrice);
       } else if (action.kind === 'update_mapping') {
         await this.dependencies.variantStripeMappings.save({
           stripePriceId: resolvedPrice.priceId,
@@ -863,7 +892,14 @@ function createArchivePriceAction(
 function mutationContextFromAction(
   action: Extract<
     CatalogSyncAction,
-    { kind: 'archive_price' | 'create_catalog_price' | 'update_product_projection' | 'update_stripe_metadata' }
+    {
+      kind:
+        | 'archive_price'
+        | 'create_catalog_price'
+        | 'repair_lookup_key'
+        | 'update_product_projection'
+        | 'update_stripe_metadata';
+    }
   >,
 ): StripeCatalogMutationContext | undefined {
   return action.idempotencyKey && action.requestShapeFingerprint

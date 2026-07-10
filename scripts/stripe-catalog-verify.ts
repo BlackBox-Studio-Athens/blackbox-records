@@ -181,7 +181,7 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
     productEnvironment: productEnvironmentProfile.productEnvironment === 'PRD' ? 'PRD' : 'UAT',
   });
   const desiredPrices = createExpectedPriceMap(contracts, options.environment);
-  const expectedPrices = desiredPrices;
+  const expectedPrices = options.apply ? desiredPrices : undefined;
   const expectedProductProjections = createExpectedProductProjectionMap(contracts, options.environment);
   const stripeCatalog = createStripeCatalogGateway({
     STRIPE_API_BASE_URL: process.env.STRIPE_API_BASE_URL,
@@ -341,7 +341,12 @@ function formatCatalogSyncActionLabel(action: CatalogSyncAction): string {
   ].filter(Boolean);
   const suffix = evidence.length ? `;${evidence.join(';')}` : '';
 
-  if (action.kind === 'archive_price' || action.kind === 'update_mapping' || action.kind === 'update_stripe_metadata') {
+  if (
+    action.kind === 'archive_price' ||
+    action.kind === 'repair_lookup_key' ||
+    action.kind === 'update_mapping' ||
+    action.kind === 'update_stripe_metadata'
+  ) {
     return `${action.kind}:${redactStripeObjectId(action.stripePriceId)}${suffix}`;
   }
 

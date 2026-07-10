@@ -23,11 +23,6 @@ vi.mock('../../src/application/commerce/catalog-sync', () => ({
         ],
       ]),
   ),
-  createCurrentCatalogExpectedSandboxPriceMap: vi.fn((environment: string) =>
-    environment === 'uat'
-      ? new Map([['variant_disintegration-black-vinyl-lp_standard', { amountMinor: 2800 }]])
-      : new Map(),
-  ),
 }));
 
 vi.mock('../../src/infrastructure/persistence/prisma', () => ({
@@ -78,7 +73,6 @@ describe('runScheduledCatalogVerification', () => {
 
     expect(scheduledMocks.verifyBuyableCatalog).toHaveBeenCalledWith({
       apply: false,
-      expectedPrices: expect.any(Map),
       expectedProductProjections: expect.any(Map),
     });
     expect(
@@ -96,10 +90,8 @@ describe('runScheduledCatalogVerification', () => {
 
     expect(scheduledMocks.verifyBuyableCatalog).toHaveBeenCalledWith({
       apply: false,
-      expectedPrices: expect.any(Map),
       expectedProductProjections: expect.any(Map),
     });
-    expect(scheduledMocks.verifyBuyableCatalog.mock.calls[0]?.[0].expectedPrices.size).toBe(0);
     expect(scheduledMocks.disconnect).toHaveBeenCalledOnce();
   });
 

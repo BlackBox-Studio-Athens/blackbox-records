@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   CloudflareFeatureFlagReader,
+  createFeatureFlagReader,
   isNativeCheckoutEnabledByDefault,
   NATIVE_CHECKOUT_ENABLED_FLAG,
   parseBooleanOverride,
@@ -38,6 +39,23 @@ describe('CloudflareFeatureFlagReader', () => {
     expect(parseBooleanOverride(' TRUE ')).toBe(true);
     expect(parseBooleanOverride('false')).toBe(false);
     expect(parseBooleanOverride('')).toBeNull();
+  });
+
+  it('keeps PRD checkout closed until PRD_OPEN_GATE is open even when the runtime flag is true', async () => {
+    await expect(
+      createFeatureFlagReader({
+        NATIVE_CHECKOUT_ENABLED: 'true',
+        PRODUCT_ENVIRONMENT: 'PRD',
+      }).isNativeCheckoutEnabled(),
+    ).resolves.toBe(false);
+
+    await expect(
+      createFeatureFlagReader({
+        NATIVE_CHECKOUT_ENABLED: 'true',
+        PRD_OPEN_GATE: 'open',
+        PRODUCT_ENVIRONMENT: 'PRD',
+      }).isNativeCheckoutEnabled(),
+    ).resolves.toBe(true);
   });
 
   it('uses the provider value when the Flagship binding can evaluate the native checkout flag', async () => {

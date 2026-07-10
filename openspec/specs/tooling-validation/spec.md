@@ -1,7 +1,9 @@
 ## Purpose
 
 Specify repository validation gates, local tooling, dependency-audit posture, and OpenSpec workflow ownership.
+
 ## Requirements
+
 ### Requirement: Standard repository gates
 
 The system SHALL run the standard repository gates after behavior-changing implementation.
@@ -771,4 +773,3 @@ The system SHALL introduce value objects only for concepts that own validation, 
 - **WHEN** a value object is added
 - **THEN** focused tests cover valid input, invalid input, formatting, and boundary behavior
 - **AND** the implementation does not add a wrapper that merely stores a primitive without behavior.
-

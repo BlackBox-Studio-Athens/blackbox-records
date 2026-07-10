@@ -1,8 +1,11 @@
 # release-date-research Specification
 
 ## Purpose
+
 TBD - created by archiving change modularize-artwork-fetcher-add-release-date-research. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Release Date Research reads current catalog content
 
 The system SHALL provide a local Release Date Research tool that reads current release and distro catalog content without requiring provider secrets or runtime services.
@@ -168,4 +171,3 @@ The system SHALL include fixture-backed validation for date parsing, classificat
 - **WHEN** tests exercise apply mode
 - **THEN** high-confidence exact dates update fixture content
 - **AND** weak, partial, upload-only, or conflicting candidates leave fixture content unchanged
-

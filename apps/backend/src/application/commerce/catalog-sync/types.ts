@@ -156,6 +156,11 @@ export type StripeCatalogGateway = {
   listPricesByLookupKey(lookupKey: string): Promise<StripeCatalogPrice[]>;
   listPricesByMetadata(metadata: StripeCatalogIdentityMetadata): Promise<StripeCatalogPrice[]>;
   retrievePrice(priceId: StripePriceId): Promise<StripeCatalogPrice | null>;
+  updatePriceLookupKey(
+    priceId: StripePriceId,
+    lookupKey: string,
+    context?: StripeCatalogMutationContext,
+  ): Promise<StripeCatalogPrice>;
   updatePriceMetadata(
     priceId: StripePriceId,
     metadata: StripeCatalogIdentityMetadata,
@@ -261,6 +266,15 @@ export type CatalogSyncAction =
       requestId?: string | null;
       requestShapeFingerprint?: string;
       replayed?: boolean | null;
+    }
+  | {
+      idempotencyKey?: string;
+      kind: 'repair_lookup_key';
+      lookupKey: string;
+      requestId?: string | null;
+      requestShapeFingerprint?: string;
+      replayed?: boolean | null;
+      stripePriceId: StripePriceId;
     }
   | {
       kind: 'update_snapshot';

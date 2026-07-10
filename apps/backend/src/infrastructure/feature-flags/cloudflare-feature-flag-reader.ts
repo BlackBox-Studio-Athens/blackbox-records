@@ -2,7 +2,12 @@ import type { Client as OpenFeatureClient } from '@openfeature/server-sdk';
 import type { FlagshipBinding } from '@cloudflare/flagship/server';
 
 import type { FeatureFlagReader } from '../../application/commerce/checkout/spi';
-import { productEnvironmentProfileFromBindings, type AppBindings, type ProductEnvironmentProfile } from '../../env';
+import {
+  isCatalogMutationEnabledFromBindings,
+  productEnvironmentProfileFromBindings,
+  type AppBindings,
+  type ProductEnvironmentProfile,
+} from '../../env';
 import type { AppLogger } from '../../observability';
 
 export const NATIVE_CHECKOUT_ENABLED_FLAG = 'native_checkout_enabled';
@@ -15,9 +20,14 @@ export class CloudflareFeatureFlagReader implements FeatureFlagReader {
     private readonly evaluator: BooleanFlagEvaluator | undefined,
     private readonly nativeCheckoutOverride: string | undefined,
     private readonly logger?: Pick<AppLogger, 'warn'>,
+    private readonly nativeCheckoutAllowed = true,
   ) {}
 
   public async isNativeCheckoutEnabled(): Promise<boolean> {
+    if (!this.nativeCheckoutAllowed) {
+      return false;
+    }
+
     const defaultValue = isNativeCheckoutEnabledByDefault(this.productEnvironmentProfile);
     const override = parseBooleanOverride(this.nativeCheckoutOverride);
 
@@ -50,7 +60,7 @@ export class CloudflareFeatureFlagReader implements FeatureFlagReader {
 }
 
 export function createFeatureFlagReader(
-  bindings: Pick<AppBindings, 'PRODUCT_ENVIRONMENT' | 'FLAGS' | 'NATIVE_CHECKOUT_ENABLED'>,
+  bindings: Pick<AppBindings, 'PRODUCT_ENVIRONMENT' | 'FLAGS' | 'NATIVE_CHECKOUT_ENABLED' | 'PRD_OPEN_GATE'>,
   logger?: Pick<AppLogger, 'warn'>,
 ): FeatureFlagReader {
   return new CloudflareFeatureFlagReader(
@@ -58,6 +68,7 @@ export function createFeatureFlagReader(
     bindings.FLAGS,
     bindings.NATIVE_CHECKOUT_ENABLED,
     logger,
+    isCatalogMutationEnabledFromBindings(bindings),
   );
 }
 

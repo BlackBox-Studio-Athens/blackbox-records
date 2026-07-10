@@ -1,8 +1,11 @@
 # codebase-simplification Specification
 
 ## Purpose
+
 TBD - created by archiving change targeted-codebase-refactors. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Targeted refactor portfolio
 
 The system SHALL manage codebase simplification as a targeted refactor portfolio, not as a broad rewrite or style-only cleanup.
@@ -49,4 +52,3 @@ The system SHALL verify each refactor slice with tests and gates proportional to
 - **WHEN** a refactor touches UAT/PRD routing, email routing, provider mutation, checkout, smoke evidence, or runtime environment mapping
 - **THEN** the relevant runtime verification or smoke suite runs
 - **AND** evidence paths are recorded in the closeout.
-
