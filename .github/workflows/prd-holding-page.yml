@@ -20,10 +20,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      ASTRO_SITE_URL: https://blackbox-records-web.pages.dev
-      ASTRO_BASE_PATH: /
-      PUBLIC_BACKEND_BASE_URL: ${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.1
@@ -54,6 +50,10 @@ jobs:
 
       - name: Build PRD-shaped static frontend
         run: pnpm build
+        env:
+          ASTRO_SITE_URL: https://blackbox-records-web.pages.dev
+          ASTRO_BASE_PATH: /
+          PUBLIC_BACKEND_BASE_URL: ${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}
 
       - name: Prepare and check PRD Holding Page artifact
         run: pnpm prd:holding:prepare && pnpm prd:holding:check
