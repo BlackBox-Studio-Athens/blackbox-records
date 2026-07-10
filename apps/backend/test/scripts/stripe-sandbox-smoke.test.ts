@@ -210,13 +210,16 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     });
   });
 
-  it('derives the checkout surface amount from the Worker Store Offer', async () => {
+  it('derives checkout surface and Session price expectations from the Worker Store Offer', async () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
       json: async () => ({
         canCheckout: true,
         price: {
-          display: '€28.00',
+          amountMinor: 2_900,
+          currencyCode: 'EUR',
+          display: '€29.00',
+          kind: 'fixed',
         },
       }),
       status: 200,
@@ -230,15 +233,21 @@ describe('Stripe sandbox Playwright smoke runner', () => {
           {
             expectedAmountText: 'Worker Store Offer price',
             expectedPaymentMethodLabels: [],
-            expectedSessionProjection: sessionProjectionExpectation,
+            expectedSessionProjection: {
+              ...sessionProjectionExpectation,
+              expectedCurrencyCode: 'GBP',
+            },
             minimumDynamicPaymentMethodCount: 1,
           },
           ['Link'],
         ),
       ).resolves.toEqual({
-        expectedAmountText: '€28.00',
+        expectedAmountText: '€29.00',
         expectedPaymentMethodLabels: ['Link'],
-        expectedSessionProjection: sessionProjectionExpectation,
+        expectedSessionProjection: {
+          ...sessionProjectionExpectation,
+          expectedAmountMinor: 2_900,
+        },
         minimumDynamicPaymentMethodCount: 1,
       });
     } finally {
@@ -246,6 +255,39 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     }
 
     expect(fetchMock).toHaveBeenCalledWith('https://worker.example.test/api/store/items/disintegration-black-vinyl-lp');
+  });
+
+  it('keeps an explicit replacement-price assertion strict after reading the Worker Store Offer', async () => {
+    const [scenario] = replaceFixedCheckoutAmountExpectation([STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface], 2_900);
+    const expectation = scenario?.checkoutSurfaceExpectation;
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        canCheckout: true,
+        price: {
+          amountMinor: 2_800,
+          currencyCode: 'EUR',
+          display: '€28.00',
+          kind: 'fixed',
+        },
+      }),
+      status: 200,
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    try {
+      await expect(
+        resolveCheckoutSurfaceExpectation('https://worker.example.test', expectation!, []),
+      ).resolves.toMatchObject({
+        expectedAmountText: '€29.00',
+        expectedSessionProjection: {
+          expectedAmountMinor: 2_900,
+          expectedCurrencyCode: 'EUR',
+        },
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('resolves all supported Stripe sandbox scenarios including 3DS', () => {
@@ -293,6 +335,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
 
     const scenarios = replaceFixedCheckoutAmountExpectation([fixedScenario, customAmountScenario], 2_900);
 
+    expect(scenarios[0]?.checkoutSurfaceExpectation?.expectedAmountText).toBe('€29.00');
     expect(scenarios[0]?.checkoutSurfaceExpectation?.expectedSessionProjection.expectedAmountMinor).toBe(2_900);
     expect(scenarios[1]?.checkoutSurfaceExpectation?.expectedSessionProjection.expectedAmountMinor).toBe(
       originalCustomAmount,

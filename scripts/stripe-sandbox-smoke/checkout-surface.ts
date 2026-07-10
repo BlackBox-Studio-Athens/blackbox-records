@@ -26,7 +26,10 @@ type StripeProductApiObject = {
 type PublicStoreOfferResponse = {
   canCheckout?: boolean;
   price?: {
+    amountMinor?: number;
+    currencyCode?: string;
     display?: string;
+    kind?: string;
   } | null;
 };
 
@@ -37,18 +40,37 @@ export async function resolveCheckoutSurfaceExpectation(
   storeItemSlug = smokeStoreItemSlug,
 ): Promise<StripeCheckoutSurfaceExpectation> {
   const offer = await readWorkerStoreOffer(workerUrl, storeItemSlug);
+  const usesWorkerStoreOfferPrice = baseExpectation.expectedAmountText === 'Worker Store Offer price';
 
   if (!offer.canCheckout || !offer.price?.display) {
     throw new Error('Worker Store Offer is not checkout-ready for sandbox smoke.');
   }
 
+  if (!usesWorkerStoreOfferPrice) {
+    return {
+      ...baseExpectation,
+      expectedPaymentMethodLabels,
+    };
+  }
+
+  if (
+    offer.price.kind !== 'fixed' ||
+    typeof offer.price.amountMinor !== 'number' ||
+    !Number.isInteger(offer.price.amountMinor) ||
+    typeof offer.price.currencyCode !== 'string'
+  ) {
+    throw new Error('Worker Store Offer does not contain a valid fixed price for sandbox smoke.');
+  }
+
   return {
     ...baseExpectation,
-    expectedAmountText:
-      baseExpectation.expectedAmountText === 'Worker Store Offer price'
-        ? offer.price.display
-        : baseExpectation.expectedAmountText,
+    expectedAmountText: offer.price.display,
     expectedPaymentMethodLabels,
+    expectedSessionProjection: {
+      ...baseExpectation.expectedSessionProjection,
+      expectedAmountMinor: offer.price.amountMinor,
+      expectedCurrencyCode: offer.price.currencyCode,
+    },
   };
 }
 

@@ -102,7 +102,7 @@ Catalog-owner verification:
    gh workflow run uat-smoke.yml --ref main -f expected_checkout_amount_minor=<amount-minor>
    ```
 
-   The override changes only the smoke assertion for the Stripe Checkout Session. The browser cart snapshot and generated Desired Price remain stale on purpose, proving checkout uses the current Worker-owned Store Offer and Stripe Price.
+   The override changes only the smoke assertions for the hosted amount and Stripe Checkout Session. The browser cart snapshot and generated Desired Price remain stale on purpose, proving checkout uses the current Worker-owned Store Offer and Stripe Price.
 
 Decap remains editorial-only. Editors can change item information and page copy, but must not edit checkout price, Stripe IDs, D1 IDs, stock, provider mutation controls, or any runtime secret.
 

@@ -223,6 +223,12 @@ export function replaceFixedCheckoutAmountExpectation(
       ...scenario,
       checkoutSurfaceExpectation: {
         ...scenario.checkoutSurfaceExpectation,
+        expectedAmountText: formatMoney(
+          createMoney({
+            amountMinor: expectedAmountMinor,
+            currencyCode: scenario.checkoutSurfaceExpectation.expectedSessionProjection.expectedCurrencyCode,
+          }),
+        ),
         expectedSessionProjection: {
           ...scenario.checkoutSurfaceExpectation.expectedSessionProjection,
           expectedAmountMinor,
