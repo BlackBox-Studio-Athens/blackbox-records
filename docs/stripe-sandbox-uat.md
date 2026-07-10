@@ -120,7 +120,7 @@ Troubleshooting:
 
 ## Catalog Mutation Forensics
 
-Use this when Stripe test-mode Products or Prices are unexpectedly created, reactivated, archived, or moved to a different lookup key. This is separate from Dashboard price replacement and webhook propagation; that active change lives in [`openspec/changes/stripe-dashboard-price-webhook-propagation/`](../openspec/changes/stripe-dashboard-price-webhook-propagation/).
+Use this when Stripe test-mode Products or Prices are unexpectedly created, reactivated, archived, or moved to a different lookup key. This is separate from Dashboard price replacement and webhook propagation, which is recorded in the [archived OpenSpec change](../openspec/changes/archive/2026-07-10-stripe-dashboard-price-webhook-propagation/proposal.md).
 
 Start with a local report:
 
