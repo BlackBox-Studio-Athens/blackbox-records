@@ -4,14 +4,14 @@ BlackBox needs a safe way for operators to change item prices without turning De
 
 ## What Changes
 
-- Define the operator price-change workflow as Stripe-first: create a replacement Stripe Price for a known Store Item variant, preserve app-owned identity metadata or lookup key, archive/deactivate the stale Price, and let reconciliation update D1.
+- Define the operator price-change workflow as Stripe-first and metadata-free for the colleague: add a replacement Price under the existing app-identified Product, make it the default, archive/deactivate the stale Price, and let reconciliation inherit Product identity, repair Price metadata/lookup key, and update D1.
 - Harden Stripe catalog webhook handling so `product.*` and `price.*` events dynamically reconcile current Stripe state into `VariantStripeMapping` and `StoreOfferSnapshot`, with event processing status that only treats successful reconciliations as completed.
 - Require webhook processing to resolve current Stripe Product/Price state instead of trusting event ordering or event payload snapshots.
 - Adopt the common e-commerce ownership pattern: commerce systems own price, CMS/editorial systems own presentation, and event/webhook propagation keeps read models fresh.
 - Make storefront price display rely on Worker Store Offer reads with cache-safe freshness, so browser-visible prices update without an Astro content edit or static site deploy.
 - Keep checkout start as the final authority check: it must revalidate the active Stripe Price and fail closed when webhook propagation or Store Offer snapshots are stale or ambiguous.
 - Add operator diagnostics for price-change propagation: webhook endpoint verification, catalog verification, Store Offer read checks, and redacted drift reporting.
-- Document the practical UAT operating model: the colleague uses the same existing Stripe business account and UAT Sandbox as the owner, without a separate restricted-role proof; no Decap price fields in this slice.
+- Document the practical UAT operating model: the colleague uses the same existing Stripe business account and UAT Sandbox as the owner, without a separate restricted-role proof or manual metadata/lookup-key work; no Decap price fields in this slice.
 - Preserve UAT-first rollout and PRD-disabled gates. PRD live price propagation remains unavailable until the PRD-open gate approves live provider mutation and live checkout.
 
 ## Capabilities

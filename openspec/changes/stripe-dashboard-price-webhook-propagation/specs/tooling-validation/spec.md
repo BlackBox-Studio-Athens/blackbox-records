@@ -31,21 +31,29 @@ The system MUST document the supported Stripe Dashboard price-change workflow fo
 #### Scenario: Colleague receives price-change instructions
 
 - **WHEN** a colleague needs to update a buyable item price
-- **THEN** the runbook tells them to use Stripe Dashboard, create a replacement Price, preserve lookup key or app metadata, archive stale active Prices, and request UAT proof
+- **THEN** the runbook tells them to use Stripe Dashboard, open the existing app-owned Product, add the replacement EUR Price, make it the default, archive the stale active Price, and request UAT proof
+- **AND** it does not ask them to copy metadata, lookup keys, Stripe IDs, D1 IDs, or repository identifiers
 - **AND** it states that Decap edits item information only, not checkout price.
 
 #### Scenario: Existing Stripe account access is used
 
 - **WHEN** the colleague performs the UAT price-change exercise using the same existing Stripe business account and UAT Sandbox as the owner
 - **THEN** the runbook does not require a separate restricted-role proof or a second Stripe account
-- **AND** it requires Sandbox/test-mode confirmation, two-step authentication, app identity metadata, and the documented lookup-key repair fallback.
+- **AND** it requires Sandbox/test-mode confirmation, two-step authentication, and confirmation that the existing Product is the intended Store Item before adding the Price.
 
-#### Scenario: Metadata is missing
+#### Scenario: Replacement Price identity fields are empty
 
-- **GIVEN** a replacement Price was created without required app identity metadata or lookup key
-- **WHEN** propagation fails
-- **THEN** the runbook tells the operator how to identify and repair missing `storeItemSlug` and `variantId` identity
-- **AND** it tells them to rerun catalog verification after repair.
+- **GIVEN** a replacement Price was created under the correct app-identified Product without Price metadata or a lookup key
+- **WHEN** only that replacement Price remains active and reconciliation runs
+- **THEN** the system repairs Price metadata and the canonical lookup key automatically
+- **AND** the runbook does not send the colleague into Stripe advanced metadata fields.
+
+#### Scenario: Existing Product identity is missing or wrong
+
+- **GIVEN** the selected Product lacks complete app identity or identifies another Store Item variant
+- **WHEN** the colleague cannot safely confirm the Product
+- **THEN** the runbook tells them to stop and request catalog-owner repair
+- **AND** it does not ask them to invent or copy identity values.
 
 #### Scenario: Multiple active prices are found
 

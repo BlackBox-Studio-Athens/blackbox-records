@@ -7,8 +7,10 @@ The system MUST keep buyable amount, currency, active Price identity, lookup key
 #### Scenario: Operator changes price in Stripe Dashboard
 
 - **GIVEN** an authorized Stripe Dashboard operator needs to change the buyable amount for a Store Item variant
-- **WHEN** they create or activate a replacement Price that identifies the same `storeItemSlug` and `variantId`
+- **AND** they open the existing Stripe Product that already carries complete app identity for that variant
+- **WHEN** they create or activate a replacement Price under that Product and archive the stale active Price
 - **THEN** the system treats the replacement Price as the candidate Price Authority
+- **AND** the operator does not copy app metadata, lookup keys, Stripe IDs, or D1 IDs into the replacement Price
 - **AND** repo content, Decap content, browser state, and static build artifacts remain non-authoritative for the amount and currency.
 
 #### Scenario: Decap content includes an editorial item

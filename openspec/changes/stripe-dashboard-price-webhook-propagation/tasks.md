@@ -68,16 +68,21 @@
 
 - [x] 6.1 Run `pnpm stripe:webhooks:verify --env uat` and record redacted result in local notes or change evidence without committing secrets.
   - Verified 2026-07-10: one enabled test-mode endpoint, all six catalog event types covered, UAT Worker webhook secret present, committed UAT cron present; no secret or full Stripe object ID was recorded.
-- [ ] 6.2 Using the same existing Stripe business account and UAT Sandbox as the owner, have the colleague confirm Sandbox/test mode and create a replacement Price for one safe Store Item variant with complete app metadata or the canonical lookup key.
-- [ ] 6.3 Archive or deactivate the stale matching Price so only one active Price identifies the variant.
-- [ ] 6.4 Observe Worker logs for a safe `catalog_reconciled` webhook outcome for `price.created` or `price.updated`.
-- [ ] 6.5 Read the public Store Offer endpoint for the item and confirm the updated display price and checkout readiness.
-- [ ] 6.6 Run `pnpm stripe:catalog:verify --env uat` in day-to-day verification mode and confirm the valid Dashboard replacement Price is not rejected because generated Desired Price is stale.
-  - Baseline run 2026-07-10: Price Authority, D1 readiness, and Store Offer snapshot checks each reported 0 issues; 33 pre-existing catalog-identity issues and 5 Product Projection description mismatches remain unrelated. Replacement-Price proof still depends on 6.2-6.5.
-- [ ] 6.7 Run the relevant UAT Stripe smoke path and confirm hosted Checkout displays the updated amount/currency before payment submission.
-  - Baseline provider smoke run `28779291457` succeeded after feature commit `08efb918`, but it proves existing hosted Checkout amounts only, not the replacement-Price exercise.
+- [x] 6.2 Using the same existing Stripe business account and UAT Sandbox as the owner, have the colleague confirm Sandbox/test mode and create a replacement Price for one safe Store Item variant with complete app metadata or the canonical lookup key.
+  - Verified 2026-07-10: the colleague confirmed the Sandbox banner and created the `disintegration-black-vinyl-lp` replacement Price at 2900 EUR with complete app metadata; no live mutation or provider identifier was recorded.
+- [x] 6.3 Archive or deactivate the stale matching Price so only one active Price identifies the variant.
+  - Verified 2026-07-10: the stale 2800 EUR Price was archived before acceptance checks.
+- [x] 6.4 Observe Worker logs for a safe `catalog_reconciled` webhook outcome for `price.created` or `price.updated`.
+  - Verified 2026-07-10: the operator observed the final safe `catalog_reconciled` outcome after replacement and archival.
+- [x] 6.5 Read the public Store Offer endpoint for the item and confirm the updated display price and checkout readiness.
+  - Verified 2026-07-10: the public Store Offer returned `€29.00`, 2900 EUR, `canCheckout=true`, and the expected Store Item/variant identity.
+- [x] 6.6 Run `pnpm stripe:catalog:verify --env uat` in day-to-day verification mode and confirm the valid Dashboard replacement Price is not rejected because generated Desired Price is stale.
+  - Verified 2026-07-10: the target variant reported `issues=0`, `drift=none`, and `actions=none`; Price Authority, D1 readiness, and Store Offer snapshots each reported 0 issues. The global nonzero exit remains limited to 34 unrelated legacy catalog-identity issues and 5 Product Projection mismatches.
+- [x] 6.7 Run the relevant UAT Stripe smoke path and confirm hosted Checkout displays the updated amount/currency before payment submission.
+  - Verified 2026-07-10: GitHub Actions run `29103834124` passed `checkout_surface` without payment submission; the Checkout Session projection expected and observed 2900 EUR.
   - For a diagnostic replacement amount, run `pnpm smoke:stripe-uat -- --scenario checkout_surface --expected-checkout-amount-minor <amount-minor>`, or dispatch `gh workflow run uat-smoke.yml --ref main -f expected_checkout_amount_minor=<amount-minor>` when credentialed CI is required. The hosted Session assertion follows the temporary Stripe-owned amount without changing generated Desired Price or the browser cart snapshot.
-- [ ] 6.8 Repair the UAT test catalog back to the intended accepted test price if the manual replacement Price was diagnostic-only.
+- [x] 6.8 Repair the UAT test catalog back to the intended accepted test price if the manual replacement Price was diagnostic-only.
+  - Decision 2026-07-10: no repair needed. The accepted 2900 EUR replacement is valid current UAT Price Authority, not diagnostic-only state; reverting would add no acceptance evidence.
 - [x] 6.9 Prove through automated acknowledgement and repository tests that a failed webhook reconciliation remains retryable and is not skipped as an already-processed duplicate.
   - Live failure injection is excluded from UAT acceptance because no safe deterministic provider-failure path exists; focused tests cover failed-first-attempt retry and late-failure protection for succeeded events.
 
@@ -100,3 +105,12 @@
 - [x] 8.7 Run `pnpm build`.
 - [x] 8.8 Run `pnpm openspec -- validate stripe-dashboard-price-webhook-propagation --type change --strict`.
 - [x] 8.9 Run `pnpm openspec -- validate --all --strict`.
+
+## 9. Metadata-Free Operator Flow
+
+- [x] 9.1 Update OpenSpec to make the colleague workflow use the existing app-identified Product and forbid manual Price metadata, lookup-key, Stripe ID, or D1 ID entry.
+- [ ] 9.2 Add a focused reconciler regression test proving a sole active replacement Price with empty Price metadata and no lookup key inherits complete Product identity and receives automatic Price identity repair.
+- [ ] 9.3 Simplify the non-developer runbook to `Add another price`, make it default, archive the old Price, and leave advanced fields untouched.
+- [ ] 9.4 Run the focused catalog reconciler test.
+- [ ] 9.5 Run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the final implementation tree.
+- [ ] 9.6 Run strict change and all-spec OpenSpec validation.

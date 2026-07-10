@@ -25,6 +25,7 @@ Stripe's current model fits this boundary: Price amounts are not edited in-place
 
 - Make Stripe Dashboard the operator price-change surface for UAT and, after PRD opens, PRD.
 - Let authorized Stripe operators change an item price without repository edits, Decap changes, or static deploys.
+- Keep the colleague workflow out of Stripe metadata, lookup-key, provider-ID, and D1-ID fields.
 - Dynamically propagate Stripe Price changes to D1 `VariantStripeMapping` and `StoreOfferSnapshot`.
 - Make the public storefront read the new price from the Worker Store Offer path.
 - Keep checkout start fail-closed and revalidated against the active Stripe Price.
@@ -48,16 +49,19 @@ Operators change prices in Stripe Product catalog using the existing Stripe busi
 
 1. Open the Product for the Store Item variant.
 2. Add a new Price with the intended amount/currency.
-3. Preserve or transfer the deterministic lookup key.
-4. Preserve app identity metadata: `appEnv`, `sourceId`, `sourceKind`, `storeItemSlug`, and `variantId`.
-5. Archive or deactivate the old Price.
-6. Wait for webhook propagation or run catalog verification.
+3. Make the replacement Price the Product default.
+4. Archive or deactivate the old Price.
+5. Wait for webhook propagation or run catalog verification.
 
-Rationale: This matches Stripe's Price model and keeps Price Authority in Stripe. It also avoids a new privileged app surface.
+The Dashboard's `Edit price` action cannot change the immutable amount; the operator uses `Add another price` from that flow. They leave advanced metadata and lookup-key fields untouched.
 
-Implementation note: For UAT proof, the colleague uses the same existing Stripe business account and UAT Sandbox as the owner; separate restricted-role validation is out of scope. An owner-supervised authenticated session or existing team login is sufficient, but the operator must confirm the Sandbox banner/test mode and keep two-step authentication enabled. If Dashboard access cannot transfer the lookup key, complete metadata-only identity is sufficient: current-state reconciliation atomically assigns the canonical lookup key when it finds exactly one active metadata-identified Price. Decap remains out of scope for Price Authority.
+Rationale: This matches Stripe's Price model and keeps Price Authority in Stripe. Existing Product metadata already identifies the Store Item variant, so requiring a colleague to duplicate it onto every replacement Price adds error without authority. Reusing the Dashboard also avoids a new privileged app surface.
+
+Implementation note: For UAT proof, the colleague uses the same existing Stripe business account and UAT Sandbox as the owner; separate restricted-role validation is out of scope. An owner-supervised authenticated session or existing team login is sufficient, but the operator must confirm the Sandbox banner/test mode and keep two-step authentication enabled. Current-state reconciliation may identify the sole active replacement Price through its existing parent Product's complete app metadata, then atomically assign the canonical lookup key and Price metadata. Missing, foreign, or conflicting Product identity and multiple active Prices remain fail-closed. Decap remains out of scope for Price Authority.
 
 Alternative considered: add `desired_price` to Decap and let GitHub Actions mutate Stripe. Rejected for this slice because it creates a second price-editing surface and requires a promotion approval workflow before it is safe.
+
+Alternative considered: build a custom price-management UI or GitHub Actions form. Rejected because the native Dashboard already supplies the amount editor and the existing reconciler can safely inherit Product identity; another privileged surface would add authentication, mutation, and maintenance work without removing a required Stripe replacement Price.
 
 ### Keep Desired Price out of day-to-day price authority
 
@@ -151,7 +155,7 @@ Rationale: A live Price update can affect real shoppers. The environment model a
 
 ## Risks / Trade-offs
 
-- [Risk] Operator creates a new Price but forgets lookup key or metadata. -> Mitigation: webhook ignores unknown identity, catalog verification reports missing Price, Store Offer read fails closed, and docs require metadata/lookup-key checklist.
+- [Risk] Operator creates a new Price under the wrong Product. -> Mitigation: require Product confirmation before entry; missing, foreign, or conflicting Product identity fails closed and requires catalog-owner repair.
 - [Risk] Operator leaves two active Prices matching one variant. -> Mitigation: `CatalogReconciler` reports `ambiguous_active_price` and checkout remains unavailable for that variant until one Price is archived.
 - [Risk] Generated Desired Price still reflects the previous amount after a valid Dashboard price change. -> Mitigation: day-to-day verification treats Desired Price as promotion context only unless explicit promotion/apply mode is selected.
 - [Risk] Stripe event arrives before related Product/Price state is fully visible through API reads. -> Mitigation: return retryable failure only for transient provider errors, and keep manual/scheduled verification as backstop.
@@ -172,6 +176,7 @@ Rationale: A live Price update can affect real shoppers. The environment model a
    - one new active Price replaces old inactive Price
    - lookup-key transfer selects new Price
    - metadata-only identity selects new Price
+   - Product-metadata-only identity selects a replacement Price with empty Price metadata and no lookup key, then repairs both fields
    - two active matching Prices fail closed
    - stale/mismatched `StoreOfferSnapshot` updates on apply
    - valid Dashboard amount differs from stale generated Desired Price without being classified as wrong amount in day-to-day mode
@@ -189,7 +194,8 @@ Rationale: A live Price update can affect real shoppers. The environment model a
 
 - same-account UAT Sandbox guidance
 - exact price-change checklist
-- lookup-key transfer or metadata-only fallback
+- no manual metadata, lookup-key, Stripe ID, or D1 ID entry
+- automatic Product-identity inheritance and Price identity repair
 - UAT proof commands
 - troubleshooting for missing metadata, duplicate active Prices, webhook signature failure, and stale Store Offer snapshots
 
@@ -210,9 +216,9 @@ Rollback:
 - If propagation is broken, run `pnpm stripe:catalog:verify --env uat --apply` after reviewing dry-run output, then rerun Store Offer read and smoke.
 - If checkout must stop immediately, use the existing checkout pause path for the affected `variantId`.
 
-## Remaining Validation and Open Questions
+## Validation Decisions
 
-- Confirm through a colleague-operated session in the same existing Stripe business account and UAT Sandbox that they can create a replacement Price, add the required metadata, and archive the stale Price.
-- Record whether that Dashboard session can transfer lookup keys. Lookup-key transfer is not required for the supported path because metadata-only identity now triggers guarded, atomic lookup-key repair.
-- Should same-tab storefront price display refresh after a Dashboard price change without reload? Current recommendation is no; checkout revalidation covers correctness.
-- Should PRD use the same webhook endpoint route as UAT after go-live, or separate endpoint/secrets by live account policy? Current environment model expects separate PRD Worker secret configuration.
+- The colleague-operated UAT exercise proved the propagation path but also proved manual Price metadata is not an acceptable operator workflow.
+- The accepted replacement Price remains 2900 EUR; it is valid UAT Price Authority rather than diagnostic-only state, so reverting to 2800 EUR adds no acceptance evidence.
+- Same-tab live refresh remains out of scope; Store Offer reread and checkout revalidation preserve correctness.
+- PRD continues to require its own Worker secret configuration and explicit open gate before live catalog mutation.

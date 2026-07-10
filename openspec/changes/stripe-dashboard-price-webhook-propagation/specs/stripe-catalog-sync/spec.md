@@ -7,19 +7,26 @@ The system MUST treat a Stripe Dashboard replacement Price as the accepted opera
 #### Scenario: Replacement Price becomes active authority
 
 - **GIVEN** a Stripe Dashboard operator creates an active replacement Price for an existing Store Item variant
-- **AND** the replacement Price carries the deterministic lookup key or app identity metadata for `storeItemSlug` and `variantId`
+- **AND** the replacement Price belongs to the existing active Product with complete matching app identity metadata
 - **AND** the previous Price is inactive, archived, or no longer matches the active lookup key
 - **WHEN** catalog reconciliation runs for that variant
 - **THEN** D1 `VariantStripeMapping` points to the replacement Price
 - **AND** D1 `StoreOfferSnapshot` stores the replacement amount, currency, lookup key, active status, and Price identity.
 
-#### Scenario: Replacement Price uses metadata identity
+#### Scenario: Replacement Price inherits Product identity
 
-- **GIVEN** a replacement Price does not have the expected lookup key
-- **AND** it carries complete app identity metadata for the same Product Environment, Store Item, and variant
+- **GIVEN** a replacement Price has no lookup key or Price-level app identity metadata
+- **AND** its active parent Product carries complete app identity metadata for the same Product Environment, Store Item, and variant
 - **WHEN** catalog reconciliation runs
-- **THEN** the system MAY resolve that Price as the active authority only when it is the only active Product/Price candidate for that variant
-- **AND** the reconciliation report includes an action to repair missing or stale metadata/lookup-key alignment when apply mode is allowed.
+- **THEN** the system MAY resolve that Price as authority only when it is the sole active Price candidate under that identified Product
+- **AND** apply reconciliation repairs the canonical lookup key and Price metadata without operator entry.
+
+#### Scenario: Replacement Price or Product identity conflicts
+
+- **GIVEN** a replacement Price carries a non-empty lookup key or app identity that conflicts with its Product or expected Store Item variant
+- **WHEN** catalog reconciliation runs
+- **THEN** the system reports Price Authority drift and fails closed
+- **AND** it does not overwrite the conflicting identity or make checkout ready.
 
 #### Scenario: Amount or currency changed on old Price is not expected
 
