@@ -19,7 +19,8 @@ The system MUST treat a Stripe Dashboard replacement Price as the accepted opera
 - **AND** its active parent Product carries complete app identity metadata for the same Product Environment, Store Item, and variant
 - **WHEN** catalog reconciliation runs
 - **THEN** the system MAY resolve that Price as authority only when it is the sole active Price candidate under that identified Product
-- **AND** apply reconciliation repairs the canonical lookup key and Price metadata without operator entry.
+- **AND** apply reconciliation repairs the canonical lookup key and Price metadata without operator entry
+- **AND** it does not rewrite already-matching Product identity metadata as part of Price-only repair.
 
 #### Scenario: Replacement Price or Product identity conflicts
 

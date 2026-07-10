@@ -580,6 +580,66 @@ describe('CatalogReconciler', () => {
     });
   });
 
+  it('repairs a replacement Price that inherits identity from its Product', async () => {
+    const oldPrice = createCatalogPrice({
+      active: false,
+      amountMinor: 2800,
+      priceId: 'price_test_disintegration_2800_product_identity',
+    });
+    const replacementPrice = {
+      ...createCatalogPrice({
+        amountMinor: 2900,
+        priceId: 'price_test_disintegration_2900_product_identity',
+      }),
+      lookupKey: null,
+      metadata: {},
+      productId: oldPrice.productId,
+    };
+    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
+    stripeCatalog.prices.set(oldPrice.priceId, oldPrice);
+    stripeCatalog.prices.set(replacementPrice.priceId, replacementPrice);
+    mappings.records.set(storeItem.variantId, {
+      stripePriceId: oldPrice.priceId,
+      variantId: storeItem.variantId,
+    });
+
+    const result = await reconciler.reconcileVariant(storeItem, {
+      apply: true,
+      now: new Date('2026-05-23T10:00:00.000Z'),
+    });
+
+    expect(result.issues).toEqual([]);
+    expect(result.resolvedPrice).toMatchObject({
+      amountMinor: 2900,
+      currencyCode: 'EUR',
+      priceId: replacementPrice.priceId,
+    });
+    expect(result.actions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'repair_lookup_key',
+          stripePriceId: replacementPrice.priceId,
+        }),
+        { kind: 'update_mapping', stripePriceId: replacementPrice.priceId },
+        expect.objectContaining({
+          kind: 'update_stripe_metadata',
+          stripePriceId: replacementPrice.priceId,
+        }),
+        { kind: 'update_snapshot' },
+      ]),
+    );
+    expect(stripeCatalog.prices.get(replacementPrice.priceId)).toMatchObject({
+      lookupKey: createStripeCatalogLookupKey('uat', storeItem),
+      metadata: replacementPrice.productMetadata,
+    });
+    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(replacementPrice.priceId);
+    expect(snapshots.records.get(storeItem.variantId)).toMatchObject({
+      amountMinor: 2900,
+      currencyCode: 'EUR',
+      stripePriceId: replacementPrice.priceId,
+    });
+  });
+
   it('fails closed when lookup key and metadata identify different variants', async () => {
     const conflictingPrice = {
       ...createCatalogPrice({

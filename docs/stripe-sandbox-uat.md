@@ -61,7 +61,7 @@ UAT is also the first leg of the generated catalog artifact pipeline described i
 Catalog Field Ownership keeps UAT alignment explicit:
 
 - Product Projection is repo-owned and may update Stripe Product name, description, image URLs, and metadata only through a reviewed UAT apply. UAT Product image URLs use the GitHub Pages UAT asset base.
-- Price Authority is Stripe-owned. Change prices by creating a replacement Stripe Price, moving lookup key or app metadata to that Price, archiving the stale Price, and rerunning catalog verification.
+- Price Authority is Stripe-owned. Change prices by adding a replacement Price under the existing app-identified Product, making it the default, archiving the stale Price, and letting reconciliation repair Price identity.
 - Stripe Dashboard edits to Product presentation are drift unless repo content/projection is updated first.
 - `pnpm stripe:catalog:verify --env uat` is day-to-day current-state verification; it accepts one valid active Stripe replacement Price as authority even when generated Desired Price still has the old amount.
 - `pnpm stripe:catalog:verify --env uat --apply` is UAT-only promotion/apply mode and should follow a reviewed dry-run plan. In this mode generated Desired Price is enforced again.
@@ -71,15 +71,26 @@ Catalog Field Ownership keeps UAT alignment explicit:
 
 Use this when a colleague needs to change a buyable UAT Store Item price without a repo, Decap, or static deploy change.
 
-1. In Stripe Dashboard test mode, open the Product for the Store Item variant.
-2. Add a replacement Price with the intended amount and `EUR` currency.
-3. Preserve either the deterministic lookup key or complete app identity metadata on the new Price.
-4. Archive or deactivate the stale active Price so only one active Price identifies the variant.
-5. Run `pnpm stripe:webhooks:verify --env uat`.
-6. Run `pnpm stripe:catalog:verify --env uat`.
+[Stripe Price amounts are immutable](https://docs.stripe.com/products-prices/manage-prices). The Dashboard's `Edit price` action cannot change the amount; use `Add another price` from that flow to create the replacement.
+
+Colleague steps:
+
+1. Confirm the Stripe Sandbox/test-mode banner, then open the existing Product for the intended Store Item. Do not create a new Product.
+2. On the current Price, open the overflow menu, choose `Edit price`, then choose `Add another price`.
+3. Enter the new amount and select `EUR`.
+4. Make the replacement Price the default and save.
+5. Archive the old Price so only the replacement remains active.
+6. Stop there and request UAT verification. Leave Advanced fields, metadata, lookup keys, Stripe IDs, D1 IDs, and repository identifiers untouched.
+
+The existing Product already carries app identity. When reconciliation finds its sole active replacement Price, it transfers the canonical lookup key and fills the Price metadata automatically.
+
+Catalog-owner verification:
+
+1. Run `pnpm stripe:webhooks:verify --env uat`.
+2. Run `pnpm stripe:catalog:verify --env uat`.
    The current UAT catalog has unrelated legacy identity and Product Projection drift, so the global command may exit nonzero. For this exercise, require the target variant to have no Price Authority, D1 readiness, or Store Offer snapshot issue. Do not use `--apply`.
-7. Read `/api/store/items/<storeItemSlug>` on the UAT Worker and confirm the browser-safe price/readiness.
-8. Run the non-payment Checkout surface smoke with the temporary amount in minor units and confirm hosted Checkout displays the new amount before payment submission:
+3. Read `/api/store/items/<storeItemSlug>` on the UAT Worker and confirm the browser-safe price/readiness.
+4. Run the non-payment Checkout surface smoke with the temporary amount in minor units and confirm hosted Checkout displays the new amount before payment submission:
 
    ```sh
    pnpm smoke:stripe-uat -- --scenario checkout_surface --expected-checkout-amount-minor <amount-minor>
@@ -93,23 +104,14 @@ Use this when a colleague needs to change a buyable UAT Store Item price without
 
    The override changes only the smoke assertion for the Stripe Checkout Session. The browser cart snapshot and generated Desired Price remain stale on purpose, proving checkout uses the current Worker-owned Store Offer and Stripe Price.
 
-Required app identity metadata:
-
-- `appEnv`: `uat`
-- `sourceId`: repo source ID
-- `sourceKind`: `release` or `distro`
-- `storeItemSlug`: public Store Item slug
-- `variantId`: canonical variant ID
-
 Decap remains editorial-only. Editors can change item information and page copy, but must not edit checkout price, Stripe IDs, D1 IDs, stock, provider mutation controls, or any runtime secret.
 
 For this UAT exercise, the colleague uses the same existing Stripe business account and isolated UAT Stripe Sandbox as the owner. No separate restricted-role or live-access-isolation proof is required. An owner-supervised authenticated session or an existing team login is sufficient; do not create another Stripe account for this exercise. Confirm the Sandbox banner and test mode before editing, keep two-step authentication enabled, and never put passwords, recovery codes, API keys, or webhook secrets in evidence. See Stripe's [sandbox access guidance](https://docs.stripe.com/sandboxes/dashboard/manage-access).
 
-If Dashboard permissions do not allow lookup-key transfer, give the replacement Price all five app identity metadata fields. When current-state reconciliation finds exactly one active metadata-identified Price with no lookup key, it atomically transfers the canonical lookup key to that Price. A different non-empty lookup key remains a fail-closed identity conflict; do not overwrite it manually.
-
 Troubleshooting:
 
-- Missing metadata or lookup key: add `storeItemSlug` and `variantId` identity to the active replacement Price, then rerun catalog verification.
+- Missing Price metadata or lookup key: leave the advanced fields untouched. Reconciliation repairs them when the Price is under the correct app-identified Product and is the sole active candidate.
+- Product cannot be confirmed or identity drift remains: stop and ask the catalog owner to repair the Product. Do not invent or copy identity values.
 - Multiple active Prices: archive or deactivate stale matching Prices until only one active Price identifies the variant.
 - Wrong currency: create a replacement `EUR` Price and archive the wrong-currency active Price.
 - Webhook signature failure: rotate the Stripe endpoint signing secret into the UAT Worker with `wrangler secret put STRIPE_WEBHOOK_SECRET --env uat`.

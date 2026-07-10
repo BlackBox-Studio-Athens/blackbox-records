@@ -109,8 +109,21 @@
 ## 9. Metadata-Free Operator Flow
 
 - [x] 9.1 Update OpenSpec to make the colleague workflow use the existing app-identified Product and forbid manual Price metadata, lookup-key, Stripe ID, or D1 ID entry.
-- [ ] 9.2 Add a focused reconciler regression test proving a sole active replacement Price with empty Price metadata and no lookup key inherits complete Product identity and receives automatic Price identity repair.
-- [ ] 9.3 Simplify the non-developer runbook to `Add another price`, make it default, archive the old Price, and leave advanced fields untouched.
-- [ ] 9.4 Run the focused catalog reconciler test.
-- [ ] 9.5 Run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the final implementation tree.
-- [ ] 9.6 Run strict change and all-spec OpenSpec validation.
+- [x] 9.2 Add a focused reconciler regression test proving a sole active replacement Price with empty Price metadata and no lookup key inherits complete Product identity and receives automatic Price identity repair.
+  - Focused regression proof 2026-07-10: a synthetic 2900 EUR replacement inherited the mapped inactive Price's Product identity, then reconciliation repaired its lookup key and Price metadata, mapping, and snapshot. The live UAT replacement in task 6.2 carried complete Price metadata and is separate evidence.
+- [x] 9.3 Simplify the non-developer runbook to `Add another price`, make it default, archive the old Price, and leave advanced fields untouched.
+  - Updated `docs/stripe-sandbox-uat.md` to separate colleague steps from catalog-owner verification and forbid manual identity entry.
+- [x] 9.4 Run the focused catalog reconciler test.
+  - Passed `pnpm --filter @blackbox/backend exec vitest run test/application/commerce/catalog-sync/catalog-reconciler.test.ts`: 1 file, 26 tests.
+- [x] 9.5 Run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the final implementation tree.
+  - Passed 2026-07-10: unit tests, repository checks, and the 277-page production build with cache-policy and image-markup validation.
+- [x] 9.6 Run strict change and all-spec OpenSpec validation.
+  - Passed 2026-07-10: the change is valid in strict mode and strict all-spec validation passed 28/28 items.
+- [x] 9.7 Add Stripe gateway coverage proving active Price discovery accepts empty Price metadata when its expanded Product metadata carries complete matching identity.
+  - Synthetic adapter proof: an active 2900 EUR Price with empty metadata and no lookup key was discovered through its expanded Product's complete matching identity.
+- [x] 9.8 Prevent Price metadata repair from rewriting already-matching Product identity metadata, with focused adapter coverage.
+  - Matching Product metadata skipped `products.update`; incomplete Product metadata still triggered the existing repair write.
+- [x] 9.9 Run focused catalog reconciler and Stripe catalog gateway tests.
+  - Passed `pnpm --filter @blackbox/backend exec vitest run test/application/commerce/catalog-sync/catalog-reconciler.test.ts test/infrastructure/stripe/stripe-catalog-gateway.test.ts`: 2 files, 34 tests.
+- [x] 9.10 Rerun required full gates and strict OpenSpec validation against the final implementation tree.
+  - Passed 2026-07-10 after the Product-metadata mutation guard: all unit tests, repository checks, the 277-page build, strict change validation, and strict all-spec validation.

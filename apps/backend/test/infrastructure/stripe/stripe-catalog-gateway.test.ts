@@ -68,6 +68,48 @@ describe('StripeCatalogGatewayClient', () => {
     ]);
   });
 
+  it('discovers an active Price through its expanded Product metadata', async () => {
+    const metadata = {
+      appEnv: 'uat' as const,
+      sourceId: 'disintegration',
+      sourceKind: 'release' as const,
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+    };
+    const gateway = new StripeCatalogGatewayClient({
+      prices: {
+        list: vi.fn(async () => ({
+          data: [
+            {
+              active: true,
+              currency: 'eur',
+              id: 'price_product_identity_12345678',
+              lookup_key: null,
+              metadata: {},
+              product: {
+                active: true,
+                id: 'prod_product_identity_12345678',
+                metadata,
+                name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+              },
+              unit_amount: 2900,
+            },
+          ],
+          has_more: false,
+        })),
+      },
+    } as never);
+
+    await expect(gateway.listPricesByMetadata(metadata)).resolves.toEqual([
+      expect.objectContaining({
+        amountMinor: 2900,
+        metadata: {},
+        priceId: 'price_product_identity_12345678',
+        productMetadata: metadata,
+      }),
+    ]);
+  });
+
   it('creates a Price against the resolved Product without combined-create shortcuts', async () => {
     const metadata = {
       appEnv: 'uat' as const,
@@ -226,6 +268,91 @@ describe('StripeCatalogGatewayClient', () => {
         idempotencyKey: context.idempotencyKey,
       },
     );
+  });
+
+  it('repairs Price metadata without rewriting matching Product metadata', async () => {
+    const metadata = {
+      appEnv: 'uat' as const,
+      sourceId: 'disintegration',
+      sourceKind: 'release' as const,
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+    };
+    const productsUpdate = vi.fn();
+    const pricesUpdate = vi.fn(async () => ({
+      active: true,
+      currency: 'eur',
+      id: 'price_metadata_repair_12345678',
+      lookup_key: null,
+      metadata,
+      product: {
+        active: true,
+        id: 'prod_metadata_repair_12345678',
+        metadata,
+        name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+      },
+      unit_amount: 2900,
+    }));
+    const gateway = new StripeCatalogGatewayClient({
+      prices: {
+        update: pricesUpdate,
+      },
+      products: {
+        update: productsUpdate,
+      },
+    } as never);
+
+    await expect(gateway.updatePriceMetadata('price_metadata_repair_12345678', metadata)).resolves.toMatchObject({
+      metadata,
+      productMetadata: metadata,
+    });
+    expect(pricesUpdate).toHaveBeenCalledWith(
+      'price_metadata_repair_12345678',
+      {
+        expand: ['product'],
+        metadata,
+      },
+      undefined,
+    );
+    expect(productsUpdate).not.toHaveBeenCalled();
+  });
+
+  it('repairs incomplete Product metadata with Price metadata', async () => {
+    const metadata = {
+      appEnv: 'uat' as const,
+      sourceId: 'disintegration',
+      sourceKind: 'release' as const,
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+    };
+    const productsUpdate = vi.fn();
+    const gateway = new StripeCatalogGatewayClient({
+      prices: {
+        update: vi.fn(async () => ({
+          active: true,
+          currency: 'eur',
+          id: 'price_incomplete_product_metadata_12345678',
+          lookup_key: null,
+          metadata,
+          product: {
+            active: true,
+            id: 'prod_incomplete_metadata_12345678',
+            metadata: {
+              appEnv: 'uat',
+            },
+            name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+          },
+          unit_amount: 2900,
+        })),
+      },
+      products: {
+        update: productsUpdate,
+      },
+    } as never);
+
+    await gateway.updatePriceMetadata('price_incomplete_product_metadata_12345678', metadata);
+
+    expect(productsUpdate).toHaveBeenCalledWith('prod_incomplete_metadata_12345678', { metadata }, undefined);
   });
 
   it('creates pay-what-you-want Prices with Stripe custom unit amount fields', async () => {

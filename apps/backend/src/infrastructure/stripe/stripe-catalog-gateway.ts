@@ -247,7 +247,7 @@ export class StripeCatalogGatewayClient implements StripeCatalogGateway {
 
     const product = getActiveProduct(price.product);
 
-    if (product) {
+    if (product && !hasMetadata(normalizeMetadata(product.metadata), metadata)) {
       await this.stripe.products.update(
         product.id,
         { metadata },
