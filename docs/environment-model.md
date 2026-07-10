@@ -13,6 +13,28 @@ BlackBox Records uses three Product Environments: Local, UAT, and PRD. Other nam
 
 PRD exists as a deployable static readiness surface, but live checkout and live provider catalog mutation are disabled until an explicit production-readiness gate opens them. Before that gate, PRD evidence is readiness-only, disabled, or `not_configured`; it is not successful PRD Promotion Evidence.
 
+### PRD deployment surfaces before launch
+
+PRD has two static deployment surfaces in the same `blackbox-records-web` Cloudflare Pages project:
+
+- `main` serves the full disabled PRD readiness site at `https://blackbox-records-web.pages.dev/`.
+- `holding` serves the temporary PRD Holding Page at `https://holding.blackbox-records-web.pages.dev/` and, after separately approved activation, at `https://blackboxrecordsathens.com/`.
+
+The `holding` branch is not a fourth Product Environment. Its evidence proves only holding-page artifact, public-domain, TLS, redirect, and route-isolation readiness. It does not satisfy UAT acceptance, full-site PRD readiness, Promotion Evidence, Stripe, Worker, D1, catalog, webhook, or go/no-go gates.
+
+The manual `.github/workflows/prd-holding-page.yml` workflow builds and verifies `apps/web/dist-holding` without credentials. Its optional deploy job targets only the Pages `holding` branch and requires the protected `prd-holding` GitHub Actions environment. DNS is never changed by CI.
+
+Activation order is fixed:
+
+1. Verify the `holding` branch alias at phone and desktop sizes, including noindex headers and guessed-route isolation.
+2. Record a redacted rollback snapshot of apex, nameservers, `www`, Pages-domain, parking, HTTP, and HTTPS state.
+3. Add an exact-apex temporary `302` redirect to the verified HTTPS holding alias, preserving path and query.
+4. Associate `blackboxrecordsathens.com` with the existing Pages project, point the proxied apex target to the holding alias, and wait for active TLS.
+5. Add the proxied `www` CNAME and exact-host `308` rules for HTTP apex and `www` canonicalization, preserving path and query.
+6. Remove the temporary guard and immediately verify target identity, TLS, redirects, canonical/noindex headers, 404 behavior, and absence of registrar parking.
+
+Any wrong target, full-site exposure, or TLS failure re-enables the temporary guard first. Restore the recorded DNS and redirect state if activation cannot complete. At approved full-site launch, repoint the apex to production `main` only after every production-go-live gate passes, and keep the verified holding branch available as rollback until launch stability is accepted.
+
 The disabled PRD readiness probe does not require live Stripe secrets. Resend runtime config is still environment-scoped because email delivery and newsletter Contact writes are backend-owned. Opened PRD promotion runs use `pnpm runtime:config:verify --env prd --require-live-secrets` before live provider mutation.
 
 ## Platform Layers

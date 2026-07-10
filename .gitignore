@@ -17,6 +17,7 @@ htmlcov/
 /_site/
 /dist/
 dist/
+dist-holding/
 build/
 out/
 .astro/

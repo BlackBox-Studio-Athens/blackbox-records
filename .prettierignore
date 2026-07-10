@@ -1,6 +1,7 @@
 node_modules/
 
 dist/
+dist-holding/
 build/
 out/
 .astro/

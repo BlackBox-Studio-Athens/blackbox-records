@@ -67,7 +67,7 @@ The manual holding workflow runs one PRD-shaped Astro build. A small Node/TypeSc
 - write holding-only `_headers` with `X-Robots-Tag: noindex, nofollow` and safe static headers;
 - omit sitemap, admin, stock, store, checkout, shell partials, and every other route document.
 
-An artifact test enumerates emitted HTML and fails unless only `index.html` and `404.html` exist. A link/asset check fails when the HTML references a missing local file. Copying the built `/_astro` directory is intentionally broader than tracing individual hashed assets; it keeps the preparation script short while still withholding full route documents.
+An artifact test enumerates emitted HTML and fails unless only `index.html` and `404.html` exist. The preparation script traces the holding HTML and CSS asset references under `/_astro`, copies only that recursive closure, and fails on missing files. The artifact check independently rejects missing and unreferenced assets so unrelated full-site bundles and media cannot leak into the holding deployment.
 
 The existing demo is moved to `apps/web/src/pages/prd-holding/index.astro` and rewritten in place rather than creating another UI stack. The source route remains unlinked and noindex in normal UAT/PRD builds; only the allowlisted artifact promotes it to `/`.
 
@@ -130,7 +130,7 @@ Implementation verification includes:
 
 - **A branch alias is mistaken for a product environment** → Document it as a deployment surface inside PRD and exclude it from UAT, PRD readiness, Promotion Evidence, and launch acceptance.
 - **Artifact preparation accidentally publishes final routes** → Use an explicit copy allowlist and fail tests when any unexpected HTML document is present.
-- **Copying all `/_astro` assets uploads unused files** → Accept small static duplication; tracing hashed dependencies would add brittle code without improving route isolation.
+- **Hashed asset tracing misses a generated dependency** → Resolve the holding HTML and CSS reference closure recursively, fail on missing files, and keep the independent artifact check strict about unreferenced output.
 - **Custom-domain association briefly exposes production `main`** → Install the exact-host temporary `302` guard first, keep it active through CNAME/TLS setup, remove it only after the branch target is confirmed, and re-enable it on the first failed apex check.
 - **DNS or certificate activation breaks the apex** → Verify the branch URL first, record parking DNS, require Active TLS, keep the temporary guard ready, and retain exact rollback targets/rules.
 - **Temporary metadata leaks into the launched site** → Keep holding metadata inside the isolated artifact and make its retirement a launch checklist item.

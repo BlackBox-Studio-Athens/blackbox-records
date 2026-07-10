@@ -41,6 +41,18 @@ GitHub Pages UAT keeps the repo defaults in `apps/web/astro.config.mjs`:
 
 For label-member UAT, the GitHub Pages URL is intentionally wired to the UAT Worker on every `main` push. Tester instructions live in [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md). This is Stripe test mode only and is not PRD go-live approval.
 
+### PRD Holding Page
+
+The temporary public PRD Holding Page is built from the unlinked `/prd-holding/` source route and deployed only by the manual `.github/workflows/prd-holding-page.yml` workflow. The workflow prepares `apps/web/dist-holding`, uploads it as a one-day artifact, and can deploy it to the `holding` branch of the existing `blackbox-records-web` Pages project after approval through the protected `prd-holding` GitHub Actions environment.
+
+- Build the normal PRD-shaped site: `pnpm build`
+- Prepare the allowlisted holding artifact: `pnpm prd:holding:prepare`
+- Check route isolation, assets, metadata, and workflow isolation: `pnpm prd:holding:check`
+- Branch alias: `https://holding.blackbox-records-web.pages.dev`
+- Public apex after separately approved activation: `https://blackboxrecordsathens.com/`
+
+The holding branch is a temporary public surface inside PRD. It is not UAT, the full PRD readiness site, Promotion Evidence, or proof that checkout and live providers are ready. Domain activation remains an operator-controlled sequence: verify the branch alias, snapshot current DNS and redirect state, install the temporary exact-apex `302` guard, associate the apex with the existing Pages project, target the verified holding alias, wait for active TLS, configure exact-host HTTPS and `www` redirects, then remove the guard and verify. The full site stays at `https://blackbox-records-web.pages.dev/` until the production go-live change passes every live gate. At launch, retain the holding branch as the immediate rollback target until the full site is stable.
+
 Backend Worker observability uses source-controlled Workers Logs/Traces config and structured safe runtime events. Operator notes live in [`docs/worker-observability.md`](docs/worker-observability.md).
 
 ## Navigation model
