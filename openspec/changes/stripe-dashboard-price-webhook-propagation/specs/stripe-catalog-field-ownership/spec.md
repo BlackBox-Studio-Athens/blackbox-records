@@ -6,7 +6,7 @@ The system MUST keep buyable amount, currency, active Price identity, lookup key
 
 #### Scenario: Operator changes price in Stripe Dashboard
 
-- **GIVEN** a restricted Stripe Dashboard user needs to change the buyable amount for a Store Item variant
+- **GIVEN** an authorized Stripe Dashboard operator needs to change the buyable amount for a Store Item variant
 - **WHEN** they create or activate a replacement Price that identifies the same `storeItemSlug` and `variantId`
 - **THEN** the system treats the replacement Price as the candidate Price Authority
 - **AND** repo content, Decap content, browser state, and static build artifacts remain non-authoritative for the amount and currency.
@@ -27,7 +27,7 @@ The system MUST keep buyable amount, currency, active Price identity, lookup key
 
 #### Scenario: Dashboard price intentionally differs from Desired Price
 
-- **GIVEN** a restricted Stripe Dashboard user creates a valid replacement Price for a Store Item variant
+- **GIVEN** an authorized Stripe Dashboard operator creates a valid replacement Price for a Store Item variant
 - **AND** generated Desired Price data still contains the previous amount or currency
 - **WHEN** day-to-day webhook reconciliation, Store Offer reads, checkout start, or UAT catalog verification runs
 - **THEN** the valid Stripe replacement Price is accepted as Price Authority

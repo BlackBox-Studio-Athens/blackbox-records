@@ -58,7 +58,7 @@
 - [x] 5.2 Document exact operator checklist: create replacement Price, preserve lookup key or app metadata, archive stale active Price, verify UAT.
 - [x] 5.3 Document required app identity metadata fields: `appEnv`, `sourceId`, `sourceKind`, `storeItemSlug`, and `variantId`.
 - [x] 5.4 Document Decap boundary: editors can change item information and page copy, not checkout price, Stripe IDs, D1 IDs, stock, or provider mutation controls.
-- [x] 5.5 Document least-privilege Stripe account guidance, including the lack of a Product-only built-in role, isolated Stripe Sandbox scope, the restricted-role candidate, and the metadata-only lookup-key repair fallback. Actual colleague-login proof remains in 6.2.
+- [x] 5.5 Document the practical UAT access model: the colleague uses the same existing Stripe business account and UAT Sandbox as the owner, no separate restricted-role proof is required, and metadata-only lookup-key repair remains the fallback.
 - [x] 5.6 Add troubleshooting for missing metadata, duplicate active Prices, wrong currency, webhook signature failure, stale Store Offer snapshots, and PRD-disabled state.
 - [x] 5.7 Update `stripe:webhooks:verify` or its docs if current output does not clearly cover catalog events needed for price propagation.
 - [x] 5.8 Ensure all new diagnostics redact Stripe object IDs, endpoint IDs, API errors, and secrets according to existing redaction policy.
@@ -68,7 +68,7 @@
 
 - [x] 6.1 Run `pnpm stripe:webhooks:verify --env uat` and record redacted result in local notes or change evidence without committing secrets.
   - Verified 2026-07-10: one enabled test-mode endpoint, all six catalog event types covered, UAT Worker webhook secret present, committed UAT cron present; no secret or full Stripe object ID was recorded.
-- [ ] 6.2 Using the selected restricted role in an isolated UAT Stripe Sandbox, prove a colleague can create a replacement Price for one safe Store Item variant with complete app metadata or the canonical lookup key.
+- [ ] 6.2 Using the same existing Stripe business account and UAT Sandbox as the owner, have the colleague confirm Sandbox/test mode and create a replacement Price for one safe Store Item variant with complete app metadata or the canonical lookup key.
 - [ ] 6.3 Archive or deactivate the stale matching Price so only one active Price identifies the variant.
 - [ ] 6.4 Observe Worker logs for a safe `catalog_reconciled` webhook outcome for `price.created` or `price.updated`.
 - [ ] 6.5 Read the public Store Offer endpoint for the item and confirm the updated display price and checkout readiness.

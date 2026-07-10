@@ -24,7 +24,7 @@ Stripe's current model fits this boundary: Price amounts are not edited in-place
 **Goals:**
 
 - Make Stripe Dashboard the operator price-change surface for UAT and, after PRD opens, PRD.
-- Let restricted Stripe users change an item price without repository edits, Decap changes, or static deploys.
+- Let authorized Stripe operators change an item price without repository edits, Decap changes, or static deploys.
 - Dynamically propagate Stripe Price changes to D1 `VariantStripeMapping` and `StoreOfferSnapshot`.
 - Make the public storefront read the new price from the Worker Store Offer path.
 - Keep checkout start fail-closed and revalidated against the active Stripe Price.
@@ -44,7 +44,7 @@ Stripe's current model fits this boundary: Price amounts are not edited in-place
 
 ### Use Stripe Dashboard as the price editor
 
-Operators change prices in Stripe Product catalog using restricted Stripe accounts. The runbook must require a replacement Price for amount changes, not an in-place amount edit:
+Operators change prices in Stripe Product catalog using the existing Stripe business account and its UAT Sandbox. The runbook must require a replacement Price for amount changes, not an in-place amount edit:
 
 1. Open the Product for the Store Item variant.
 2. Add a new Price with the intended amount/currency.
@@ -55,7 +55,7 @@ Operators change prices in Stripe Product catalog using restricted Stripe accoun
 
 Rationale: This matches Stripe's Price model and keeps Price Authority in Stripe. It also avoids a new privileged app surface.
 
-Implementation note: Stripe has no Product-catalog-only built-in team role. The least-broad built-in candidate is Support Specialist, but it still has broader payment/customer permissions and must be assigned only to the isolated UAT Stripe Sandbox, never to the live parent account. Before handoff, a colleague login must prove that this scoped role can create replacement Prices, preserve app identity metadata, and archive the stale Price. If Dashboard role limits block lookup-key transfer, complete metadata-only identity is sufficient: current-state reconciliation atomically assigns the canonical lookup key when it finds exactly one active metadata-identified Price. Decap remains out of scope for Price Authority.
+Implementation note: For UAT proof, the colleague uses the same existing Stripe business account and UAT Sandbox as the owner; separate restricted-role validation is out of scope. An owner-supervised authenticated session or existing team login is sufficient, but the operator must confirm the Sandbox banner/test mode and keep two-step authentication enabled. If Dashboard access cannot transfer the lookup key, complete metadata-only identity is sufficient: current-state reconciliation atomically assigns the canonical lookup key when it finds exactly one active metadata-identified Price. Decap remains out of scope for Price Authority.
 
 Alternative considered: add `desired_price` to Decap and let GitHub Actions mutate Stripe. Rejected for this slice because it creates a second price-editing surface and requires a promotion approval workflow before it is safe.
 
@@ -187,7 +187,7 @@ Rationale: A live Price update can affect real shoppers. The environment model a
 9. Add PRD-disabled runtime tests proving catalog webhook delivery cannot mutate PRD D1 or live Stripe state before the PRD-open gate.
 10. Update operator docs:
 
-- restricted Stripe account role guidance
+- same-account UAT Sandbox guidance
 - exact price-change checklist
 - lookup-key transfer or metadata-only fallback
 - UAT proof commands
@@ -212,7 +212,7 @@ Rollback:
 
 ## Remaining Validation and Open Questions
 
-- Confirm through an actual colleague login that sandbox-scoped Support Specialist access can create replacement Prices, add the required metadata, and archive the stale Price. Do not broaden access if the candidate role is insufficient.
-- Record whether that role can transfer lookup keys in Dashboard. Lookup-key transfer is not required for the supported path because metadata-only identity now triggers guarded, atomic lookup-key repair.
+- Confirm through a colleague-operated session in the same existing Stripe business account and UAT Sandbox that they can create a replacement Price, add the required metadata, and archive the stale Price.
+- Record whether that Dashboard session can transfer lookup keys. Lookup-key transfer is not required for the supported path because metadata-only identity now triggers guarded, atomic lookup-key repair.
 - Should same-tab storefront price display refresh after a Dashboard price change without reload? Current recommendation is no; checkout revalidation covers correctness.
 - Should PRD use the same webhook endpoint route as UAT after go-live, or separate endpoint/secrets by live account policy? Current environment model expects separate PRD Worker secret configuration.

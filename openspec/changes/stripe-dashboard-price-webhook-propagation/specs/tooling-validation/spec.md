@@ -34,11 +34,11 @@ The system MUST document the supported Stripe Dashboard price-change workflow fo
 - **THEN** the runbook tells them to use Stripe Dashboard, create a replacement Price, preserve lookup key or app metadata, archive stale active Prices, and request UAT proof
 - **AND** it states that Decap edits item information only, not checkout price.
 
-#### Scenario: Restricted Stripe role is selected
+#### Scenario: Existing Stripe account access is used
 
-- **WHEN** the project chooses the colleague's Stripe role or permission set
-- **THEN** UAT validation proves that role can create replacement Prices and preserve app identity metadata
-- **AND** the runbook documents whether lookup-key transfer is supported in Dashboard or requires an approved developer-owned repair step.
+- **WHEN** the colleague performs the UAT price-change exercise using the same existing Stripe business account and UAT Sandbox as the owner
+- **THEN** the runbook does not require a separate restricted-role proof or a second Stripe account
+- **AND** it requires Sandbox/test-mode confirmation, two-step authentication, app identity metadata, and the documented lookup-key repair fallback.
 
 #### Scenario: Metadata is missing
 

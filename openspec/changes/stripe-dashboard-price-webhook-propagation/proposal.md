@@ -1,6 +1,6 @@
 ## Why
 
-BlackBox needs a safe way for operators to change item prices without turning Decap or Astro content into checkout price authority. The best fit for the current architecture is to let restricted Stripe Dashboard users change Prices, then make the deployed Worker propagate those changes into D1 Store Offers and the storefront through signed Stripe catalog webhooks.
+BlackBox needs a safe way for operators to change item prices without turning Decap or Astro content into checkout price authority. The best fit for the current architecture is to let authorized Stripe Dashboard operators use the existing Stripe business account and UAT Sandbox to change Prices, then make the deployed Worker propagate those changes into D1 Store Offers and the storefront through signed Stripe catalog webhooks.
 
 ## What Changes
 
@@ -11,7 +11,7 @@ BlackBox needs a safe way for operators to change item prices without turning De
 - Make storefront price display rely on Worker Store Offer reads with cache-safe freshness, so browser-visible prices update without an Astro content edit or static site deploy.
 - Keep checkout start as the final authority check: it must revalidate the active Stripe Price and fail closed when webhook propagation or Store Offer snapshots are stale or ambiguous.
 - Add operator diagnostics for price-change propagation: webhook endpoint verification, catalog verification, Store Offer read checks, and redacted drift reporting.
-- Document the least-privilege operating model: restricted Stripe accounts for price changes now; no Decap price fields in this slice.
+- Document the practical UAT operating model: the colleague uses the same existing Stripe business account and UAT Sandbox as the owner, without a separate restricted-role proof; no Decap price fields in this slice.
 - Preserve UAT-first rollout and PRD-disabled gates. PRD live price propagation remains unavailable until the PRD-open gate approves live provider mutation and live checkout.
 
 ## Capabilities
