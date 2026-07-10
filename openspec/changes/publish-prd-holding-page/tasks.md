@@ -30,9 +30,9 @@
 ## 5. Deploy and Verify the Isolated Branch
 
 - [x] 5.1 Reconfirm Wrangler identity, the single `blackbox-records-web` Pages project, and current production deployment without printing credentials or changing state.
-- [ ] 5.2 Configure the protected `prd-holding` GitHub Actions environment, then use the explicit `workflow_dispatch` input and required approval to deploy the verified artifact to the `holding` branch only; do not attach the domain yet.
-- [ ] 5.3 Use Browser Use and bounded HTTP checks against `holding.blackbox-records-web.pages.dev` to verify desktop/mobile rendering, assets, noindex headers, 404 isolation, no final routes, and no unexpected network or console errors.
-- [ ] 5.4 Stop before DNS work if the named branch alias cannot pass all hosted checks; do not create a second Pages project as an unreviewed fallback.
+- [x] 5.2 Configure the protected `prd-holding` GitHub Actions environment, then use the explicit `workflow_dispatch` input and required approval to deploy the verified artifact to the `holding` branch only; do not attach the domain yet.
+- [x] 5.3 Use Browser Use and bounded HTTP checks against `holding.blackbox-records-web.pages.dev` to verify desktop/mobile rendering, assets, noindex headers, 404 isolation, no final routes, and no unexpected network or console errors.
+- [x] 5.4 Stop before DNS work if the named branch alias cannot pass all hosted checks; do not create a second Pages project as an unreviewed fallback.
 
 ## 6. Activate the Correct Public Domain
 
