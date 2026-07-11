@@ -51,6 +51,12 @@ The system MUST expose only valid public links sourced from existing repo conten
 - **WHEN** the built holding document is checked
 - **THEN** it contains no `javascript:` URL, fake navigation, disabled-looking active control, private-review link, checkout action, form, or countdown.
 
+#### Scenario: Cloudflare serves the email action
+
+- **WHEN** the holding artifact passes through Cloudflare's edge
+- **THEN** the response prevents content transformation
+- **AND** the email action remains the built `mailto:` anchor without an injected email-decoder runtime or `/cdn-cgi/l/email-protection` route.
+
 ### Requirement: PRD Holding Page is accessible and motion-safe
 
 The system SHALL provide semantic, keyboard-usable content with visible focus, readable contrast, adequate touch targets, and reduced-motion support.

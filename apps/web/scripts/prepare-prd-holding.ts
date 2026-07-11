@@ -74,6 +74,7 @@ writeFileSync(
   path.join(holdingRoot, '_headers'),
   `/*
   X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-transform
   Content-Security-Policy: default-src 'self'; connect-src 'none'; font-src 'self'; frame-src 'none'; img-src 'self'; object-src 'none'; script-src 'none'; style-src 'self' 'unsafe-inline'; base-uri 'none'; form-action 'none'
   Referrer-Policy: strict-origin-when-cross-origin
   X-Content-Type-Options: nosniff

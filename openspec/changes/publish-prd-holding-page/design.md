@@ -86,7 +86,7 @@ Instagram and email values come from existing repo content at build time. The ca
 
 ### Keep interaction static and motion optional
 
-The page has no hydrated component and emits no page-owned JavaScript. Only ordinary `https:` and `mailto:` anchors are interactive. Links receive visible keyboard focus and sufficiently large touch targets.
+The page has no hydrated component and emits no page-owned JavaScript. Only ordinary `https:` and `mailto:` anchors are interactive. The holding response sends `Cache-Control: no-transform` so Cloudflare does not replace the email action with its JavaScript-dependent Email Address Obfuscation route. Links receive visible keyboard focus and sufficiently large touch targets.
 
 One CSS entrance sequence may reveal the headline, copy, and links over at most 400ms using opacity and transform. `prefers-reduced-motion: reduce` removes the sequence. Static rendering is acceptable and preferred if motion adds no clarity. There is no looping marquee, pointer-following effect, WebGL, parallax, autoplay media, or animated layout property.
 

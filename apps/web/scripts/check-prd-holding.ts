@@ -138,7 +138,9 @@ for (const file of files) {
 }
 
 const headers = readFileSync(path.join(holdingRoot, '_headers'), 'utf8');
-if (!headers.includes('X-Robots-Tag: noindex, nofollow')) throw new Error('Holding _headers lacks noindex policy.');
+if (!headers.includes('/*\n  X-Robots-Tag: noindex, nofollow\n  Cache-Control: no-transform')) {
+  throw new Error('Holding root headers must prevent indexing and Cloudflare mailto rewriting.');
+}
 if (!headers.includes('/_astro/*\n  Cache-Control: public, max-age=31536000, immutable')) {
   throw new Error('Holding _headers lacks immutable Astro asset caching.');
 }
