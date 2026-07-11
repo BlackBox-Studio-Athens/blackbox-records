@@ -140,20 +140,20 @@ The system MUST prepare the holding deployment from an explicit file allowlist r
 
 The system SHALL activate `blackboxrecordsathens.com` through the existing Pages project with working TLS before replacing registrar parking.
 
-#### Scenario: Custom-domain association is guarded
+#### Scenario: Custom-domain association is staged
 
 - **WHEN** the verified branch alias is ready and domain activation is approved
-- **THEN** an exact-host temporary Cloudflare Single Redirect sends apex requests to the verified HTTPS holding branch alias with status `302`, preserving path and query
-- **AND** that guard is active before the custom domain is associated with the Pages project
-- **AND** the guard remains active while the Pages-created apex target is changed from production `main` to the `holding` branch alias.
+- **THEN** the existing parking DNS and redirect state is recorded before the custom domain is associated with the Pages project
+- **AND** no redirect rule blocks Pages domain validation
+- **AND** the Pages-created apex target is changed from production `main` to the verified `holding` branch alias as part of the same staged operation.
 
 #### Scenario: Apex activation is prepared
 
-- **WHEN** the guarded custom domain is associated with `blackbox-records-web`
-- **THEN** its proxied apex target is changed to the verified holding branch alias before the temporary guard is removed
+- **WHEN** the custom domain is associated with `blackbox-records-web`
+- **THEN** its proxied apex target is changed to the verified holding branch alias before activation is accepted
 - **AND** activation waits for a valid Cloudflare certificate
-- **AND** removing the guard is followed immediately by bounded apex checks
-- **AND** any full-site response, certificate failure, or unexpected target re-enables the guard and stops activation.
+- **AND** the target change is followed immediately by bounded apex checks
+- **AND** any full-site response, certificate failure, or unexpected target restores the recorded parking state and stops activation.
 
 #### Scenario: Visitor uses a non-canonical origin
 

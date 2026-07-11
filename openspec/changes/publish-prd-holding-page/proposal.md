@@ -7,7 +7,7 @@
 - Publish an original, BlackBox-branded PRD Holding Page at `https://blackboxrecordsathens.com/` while the full site remains under review and live Stripe setup remains closed.
 - Replace the existing local-only direct-replica demo with a production-owned, plain under-construction page that uses real content links, the existing logo, self-hosted typography, no landing image, and no runtime API or provider calls.
 - Build a minimal holding artifact in a separate manual-only GitHub Actions workflow and deploy it to an isolated Cloudflare Pages branch target only through a protected approval gate, preserving both GitHub Pages UAT and the full `blackbox-records-web.pages.dev` PRD readiness site.
-- Make the apex hostname canonical through a guarded custom-domain association, redirect HTTP to HTTPS and `www` to the apex with exact-host rules, keep the temporary page out of search indexes, and define explicit launch cutover and rollback steps.
+- Make the apex hostname canonical through a staged custom-domain association that immediately targets the verified holding branch, redirect HTTP to HTTPS and `www` to the apex with exact-host rules, keep the temporary page out of search indexes, and define explicit launch cutover and rollback steps.
 - Keep the public message non-technical: the site is being prepared, the label is active, and visitors can use real contact and social paths. Do not expose environment names, Stripe status, private review links, or an invented launch date.
 - Keep the PRD Holding Page on the public apex until every production-go-live gate passes, including live Stripe catalog, payment configuration, webhook, Worker/D1, rollback, and named go/no-go evidence. A finished static site alone does not authorize a soft launch.
 

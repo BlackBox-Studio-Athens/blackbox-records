@@ -36,9 +36,9 @@ The holding deployment stays out of the shared static workflow. A separate `.git
 
 This preserves both current environments and avoids domain transfer between Pages projects at launch. A separate Pages project was rejected because it adds infrastructure and makes custom-domain handoff and certificate rollback more fragile. Replacing the production `main` artifact was rejected because it removes the full PRD readiness site. Replacing only the full site's root page was rejected because all other final routes would remain publicly reachable on the apex.
 
-Custom-domain association can temporarily point an apex at the Pages production `main` target before its CNAME is changed to a branch alias. To prevent that exposure, activation first creates an exact-host temporary Cloudflare Single Redirect from the apex to the already-verified HTTPS holding branch alias. It uses status `302` and preserves path and query. With that guard active, the operator associates the domain, changes the Pages-created apex target to the `holding` alias, waits for Active TLS, and confirms the target. The guard is then removed and bounded apex checks run immediately. Any full-site response, wrong target, or certificate failure re-enables the guard and stops activation.
+Cloudflare warns that redirect rules can block Pages HTTP domain validation, so activation does not place a redirect guard in front of certificate issuance. The operator snapshots the existing parking record, associates the apex with the Pages project, and immediately changes the Pages-created proxied CNAME from production `main` to the already-verified `holding` branch alias before accepting activation. The operation stops and restores the recorded parking state if the branch target cannot be applied or if any bounded check exposes the full site.
 
-If Cloudflare cannot activate the apex against the named branch alias under this guard, implementation stops. A separate-project fallback requires a new decision; it is not silently created.
+If Cloudflare cannot activate the apex against the named branch alias through this staged association, implementation stops. A separate-project fallback requires a new decision; it is not silently created.
 
 ### Keep the holding page until Stripe-ready production approval
 
@@ -99,7 +99,7 @@ After holding activation passes, `www` receives a proxied CNAME to `blackboxreco
 - apex requests with scheme `http` receive `308` to the same path and query on `https://blackboxrecordsathens.com`;
 - every `www.blackboxrecordsathens.com` request receives `308` to the same path and query on the HTTPS apex.
 
-The rules do not match other zone hostnames. The temporary activation guard is removed after these rules and the holding target pass checks. HSTS is not enabled as part of this change; it can be considered after HTTPS and redirects are stable.
+The rules do not match other zone hostnames. HSTS is not enabled as part of this change; it can be considered after HTTPS and redirects are stable.
 
 The full PRD readiness build keeps `blackbox-records-web.pages.dev` as its canonical origin until the production-go-live change updates every dependent origin together. The holding change must not partially rewrite checkout origins, email brand URLs, catalog image origins, or full-site sitemap metadata.
 
@@ -117,8 +117,8 @@ Implementation verification includes:
 - **A branch alias is mistaken for a product environment** → Document it as a deployment surface inside PRD and exclude it from UAT, PRD readiness, Promotion Evidence, and launch acceptance.
 - **Artifact preparation accidentally publishes final routes** → Use an explicit copy allowlist and fail tests when any unexpected HTML document is present.
 - **Hashed asset tracing misses a generated dependency** → Resolve the holding HTML and CSS reference closure recursively, fail on missing files, and keep the independent artifact check strict about unreferenced output.
-- **Custom-domain association briefly exposes production `main`** → Install the exact-host temporary `302` guard first, keep it active through CNAME/TLS setup, remove it only after the branch target is confirmed, and re-enable it on the first failed apex check.
-- **DNS or certificate activation breaks the apex** → Verify the branch URL first, record parking DNS, require Active TLS, keep the temporary guard ready, and retain exact rollback targets/rules.
+- **Custom-domain association briefly exposes production `main`** → Snapshot parking DNS, perform association and the holding-branch CNAME change as one staged operation, probe immediately, and restore parking state on the first wrong-target response.
+- **DNS or certificate activation breaks the apex** → Verify the branch URL first, record parking DNS, require Active TLS, and retain exact rollback targets/rules.
 - **Temporary metadata leaks into the launched site** → Keep holding metadata inside the isolated artifact and make its retirement a launch checklist item.
 - **The holding page becomes permanent** → Assign retirement to `production-go-live-readiness`; remove branch deployment only after the launched site is stable and rollback no longer needs it.
 - **The finished static site creates pressure for a soft launch** → Keep cutover mechanically and procedurally blocked until all live Stripe and production-go-live evidence exists and named reviewers record approval.
@@ -128,14 +128,14 @@ Implementation verification includes:
 
 1. Simplify the existing PRD Holding Page to the plain logo-and-type composition, remove the landing image and its emitted assets, and keep the existing artifact/workflow isolation.
 2. Build locally, run repo gates, validate the source route and assembled artifact with Browser Use, then redeploy and verify the `holding` branch through the protected workflow.
-3. Treat the owner's 2026-07-11 request to use `blackboxrecordsathens.com` as explicit domain-change approval. Snapshot current DNS/rules, install the exact-apex temporary `302` guard to the verified holding alias, and verify the guard before Pages custom-domain association.
-4. With the guard active, associate `blackboxrecordsathens.com` with the existing Pages project, replace the Pages-created apex target with the holding branch alias, wait for Active TLS, and confirm the target without removing the guard.
-5. Create a proxied `www` CNAME to the apex, verify `www` DNS/TLS, then configure exact-host `308` rules for HTTP apex and `www` canonicalization with path/query preservation. Remove the temporary guard and immediately verify public desktop/mobile behavior, headers, redirects, 404 behavior, target identity, and absence of registrar parking. Re-enable the guard on any failure.
+3. Treat the owner's 2026-07-11 request to use `blackboxrecordsathens.com` as explicit domain-change approval and snapshot current DNS/rules before Pages custom-domain association.
+4. Associate `blackboxrecordsathens.com` with the existing Pages project and immediately replace the Pages-created apex target with the holding branch alias. Wait for Active TLS, confirm the target, and restore the recorded parking state if the branch target cannot be applied or the full site appears.
+5. Create a proxied `www` CNAME to the apex, verify `www` DNS/TLS, then configure exact-host `308` rules for HTTP apex and `www` canonicalization with path/query preservation. Immediately verify public desktop/mobile behavior, headers, redirects, 404 behavior, target identity, and absence of registrar parking.
 6. For launch, complete and approve the existing `production-go-live-readiness` change first: verify live Stripe Products/Prices, Payment Method Configuration, production webhook, Worker/D1 and catalog/stock readiness, rollback, exact origins, and every other live gate as one reviewed cutover. Do not soft-launch the full site because its static artifact is ready.
 7. Deploy and verify the full PRD artifact, then repoint the apex from the holding branch alias to the production `main` Pages target. Keep the holding branch available as the immediate static rollback.
 8. After the launched site is stable, remove the holding deployment job, source route, artifact script, temporary branch deployment, and obsolete redirect rules in one cleanup change.
 
-Rollback during activation: re-enable the temporary exact-apex `302` guard, restore the recorded parking DNS/redirect rules and prior `www` state if Pages activation never succeeded, and leave the custom domain detached if it never reached Active TLS. Rollback after launch: repoint the apex to the already-verified holding branch alias while retaining the verified `www` CNAME and exact-host HTTPS/`www` rules; do not detach the domain or improvise a new project during an incident.
+Rollback during activation: restore the recorded parking DNS/redirect rules and prior `www` state if Pages activation never succeeded, and leave the custom domain detached if it never reached Active TLS. Rollback after launch: repoint the apex to the already-verified holding branch alias while retaining the verified `www` CNAME and exact-host HTTPS/`www` rules; do not detach the domain or improvise a new project during an incident.
 
 ## Open Questions
 
