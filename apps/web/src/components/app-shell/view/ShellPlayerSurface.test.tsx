@@ -34,6 +34,7 @@ function renderPlayerSurface(overrides: Partial<React.ComponentProps<typeof Shel
       miniPlayerStatusLabel="Player Ready · Bandcamp"
       modalCloseButtonRef={{ current: null }}
       onModalBackdropClick={vi.fn()}
+      onReady={vi.fn()}
       playerModalDismissActionLabel="Close"
       playerModalDismissAriaLabel="Close player"
       playerProviders={providers}

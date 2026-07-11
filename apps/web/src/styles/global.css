@@ -98,30 +98,6 @@
   }
 }
 
-@keyframes hero-ken-burns {
-  0% {
-    transform: scale(1.03) translate3d(0, 0, 0);
-  }
-
-  100% {
-    transform: scale(1.12) translate3d(-1.5%, -1%, 0);
-  }
-}
-
-@keyframes hero-grain-drift {
-  0% {
-    transform: translate3d(0, 0, 0);
-  }
-
-  50% {
-    transform: translate3d(-1.5%, 1%, 0);
-  }
-
-  100% {
-    transform: translate3d(1.5%, -1%, 0);
-  }
-}
-
 @keyframes release-listen-halo-primary {
   0% {
     opacity: 0;
@@ -1047,6 +1023,23 @@
   .distro-group-grid {
     display: grid;
     gap: 1.25rem;
+  }
+
+  .distro-card--page {
+    block-size: 40rem;
+    contain: strict;
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto 40rem;
+  }
+
+  .store-catalog-chunks {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .store-item-card--listing {
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto 40rem;
   }
 
   .artists-roster-section {
@@ -2838,8 +2831,6 @@
     height: 100%;
     object-fit: cover;
     object-position: center 26%;
-    filter: grayscale(1) contrast(1.05) brightness(0.64);
-    animation: hero-ken-burns 10.5s ease-out infinite alternate;
   }
 
   .homepage-hero-section__content-block {
@@ -2881,32 +2872,6 @@
     opacity: 1;
   }
 
-  .homepage-hero-section__grain-layer {
-    position: fixed;
-    inset: -8%;
-    z-index: 1;
-    opacity: 0.15;
-    mix-blend-mode: screen;
-    background-image:
-      repeating-linear-gradient(
-        0deg,
-        rgba(255, 255, 255, 0.045) 0,
-        rgba(255, 255, 255, 0.045) 1px,
-        transparent 1px,
-        transparent 3px
-      ),
-      radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.16) 0 1px, transparent 1.2px),
-      radial-gradient(circle at 78% 36%, rgba(255, 255, 255, 0.12) 0 1px, transparent 1.4px),
-      radial-gradient(circle at 56% 72%, rgba(255, 255, 255, 0.12) 0 1px, transparent 1.3px);
-    background-size:
-      100% 100%,
-      13rem 13rem,
-      11rem 11rem,
-      17rem 17rem;
-    animation: hero-grain-drift 6.5s linear infinite alternate;
-    pointer-events: none;
-  }
-
   .homepage-hero-section__tagline-text {
     max-width: min(28rem, 88vw);
     margin: 0;
@@ -2938,15 +2903,11 @@
   }
 
   .homepage-hero-section--scrolled .homepage-hero-section__media-layer {
-    opacity: 0.07;
+    visibility: hidden;
   }
 
   .homepage-hero-section--scrolled .homepage-hero-section__shade-layer {
-    opacity: 0.05;
-  }
-
-  .homepage-hero-section--scrolled .homepage-hero-section__grain-layer {
-    opacity: 0.015;
+    visibility: hidden;
   }
 
   .homepage-hero-section--scrolled .homepage-hero-section__scroll-indicator {
@@ -3253,6 +3214,10 @@ body.is-app-shell-overlay-open {
 }
 
 @media (min-width: 48rem) {
+  .store-catalog-chunks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   :root {
     --header-height: 80px;
     --header-padding-x-desktop: 32px;
@@ -3344,7 +3309,6 @@ body.is-app-shell-overlay-open {
   }
 
   .homepage-hero-section__media-image,
-  .homepage-hero-section__grain-layer,
   .homepage-hero-section__content-block,
   .homepage-hero-section__media-layer,
   .homepage-hero-section__shade-layer,
@@ -3587,6 +3551,11 @@ body.is-app-shell-overlay-open {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .distro-card--page {
+    block-size: auto;
+    contain: none;
+  }
+
   .artists-roster-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3774,6 +3743,10 @@ body.is-app-shell-overlay-open {
 }
 
 @media (min-width: 80rem) {
+  .store-catalog-chunks {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .home-featured-roster-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1.5rem;

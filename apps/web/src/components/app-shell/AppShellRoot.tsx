@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   readPlayerProvidersFromElement,
@@ -7,7 +7,6 @@ import {
   type PlayerProviderId,
 } from '@/components/app-shell/player-provider-data';
 import { type ActivePlayerSession } from '@/components/app-shell/player-iframe-session';
-import StoreCartDrawer from '@/components/store/StoreCartDrawer';
 import {
   markCurrentHistoryEntryForShellSection,
   syncDesktopNavigationState,
@@ -62,10 +61,12 @@ import { syncShellRenderedNavigationState } from './navigation/shell-rendered-na
 import { openShellSectionNavigation } from './navigation/shell-section-navigation';
 import { enableManualShellScrollRestoration } from './navigation/shell-scroll-restoration';
 import { scrollShellTargetIntoView } from './navigation/shell-target-scroll';
-import MobileNavigationSheet from './view/MobileNavigationSheet';
-import ShellOverlayPanel from './view/ShellOverlayPanel';
-import ShellPlayerSurface from './view/ShellPlayerSurface';
 import ShellPortalOutlets from './view/ShellPortalOutlets';
+
+const MobileNavigationSheet = lazy(() => import('./view/MobileNavigationSheet'));
+const ShellOverlayPanel = lazy(() => import('./view/ShellOverlayPanel'));
+const ShellPlayerSurface = lazy(() => import('./view/ShellPlayerSurface'));
+const StoreCartDrawer = lazy(() => import('@/components/store/StoreCartDrawer'));
 
 type OverlayState = ShellOverlayState;
 
@@ -124,6 +125,11 @@ export default function AppShellRoot({
 
   const modalCloseButtonRef = useRef<HTMLButtonElement | null>(null);
   const iframeFrameHostRef = useRef<HTMLDivElement | null>(null);
+  const pendingPlayerProviderRef = useRef<{
+    nextStatus: ActivePlayerSession['status'] | undefined;
+    provider: PlayerProvider;
+    releaseTitle: string;
+  } | null>(null);
   const activePlayerTriggerElementRef = useRef<HTMLElement | null>(null);
   const iframeCacheByEmbedUrlRef = useRef(new Map<string, HTMLIFrameElement>());
   const providerSelectionByTitleRef = useRef(new Map<string, PlayerProviderId>());
@@ -297,6 +303,7 @@ export default function AppShellRoot({
   const {
     applyPlayerProvider,
     closePlayerModal,
+    connectPlayerSurface,
     markActivePlayerSessionAsInteracted,
     markActivePlayerSurfaceAsInteracted,
     openPlayerModal,
@@ -312,6 +319,7 @@ export default function AppShellRoot({
     iframeCacheByEmbedUrlRef,
     iframeFrameHostRef,
     modalCloseButtonRef,
+    pendingPlayerProviderRef,
     providerSelectionByTitleRef,
     setActivePlayerEmbedLayout,
     setActivePlayerProviderId,
@@ -504,29 +512,49 @@ export default function AppShellRoot({
 
   return (
     <>
-      <MobileNavigationSheet
-        activeShellPathname={activeShellPathname}
-        items={mobileNavigationItems}
-        onNavigate={() => setIsMobileNavigationOpen(false)}
-        onOpenChange={setIsMobileNavigationOpen}
-        open={isMobileNavigationOpen}
-        siteTitle={siteTitle}
-      />
+      {isMobileNavigationOpen && (
+        <Suspense
+          fallback={
+            <span className="accessibility-visually-hidden-text" role="status">
+              Loading menu
+            </span>
+          }
+        >
+          <MobileNavigationSheet
+            activeShellPathname={activeShellPathname}
+            items={mobileNavigationItems}
+            onNavigate={() => setIsMobileNavigationOpen(false)}
+            onOpenChange={setIsMobileNavigationOpen}
+            open
+            siteTitle={siteTitle}
+          />
+        </Suspense>
+      )}
 
-      <StoreCartDrawer
-        cartState={storeCartState}
-        open={isStoreCartDrawerOpen}
-        resolveHref={createProjectRelativeUrl}
-        onContinueShopping={() => setIsStoreCartDrawerOpen(false)}
-        onDecrementItem={(variantId) =>
-          applyStoreCartState(decrementCartLineQuantityByVariant(variantId, storeCartState))
-        }
-        onIncrementItem={(variantId) =>
-          applyStoreCartState(incrementCartLineQuantityByVariant(variantId, storeCartState))
-        }
-        onOpenChange={setIsStoreCartDrawerOpen}
-        onRemoveItem={(variantId) => applyStoreCartState(removeCartLineByVariant(variantId, storeCartState))}
-      />
+      {isStoreCartDrawerOpen && (
+        <Suspense
+          fallback={
+            <span className="accessibility-visually-hidden-text" role="status">
+              Loading cart
+            </span>
+          }
+        >
+          <StoreCartDrawer
+            cartState={storeCartState}
+            open
+            resolveHref={createProjectRelativeUrl}
+            onContinueShopping={() => setIsStoreCartDrawerOpen(false)}
+            onDecrementItem={(variantId) =>
+              applyStoreCartState(decrementCartLineQuantityByVariant(variantId, storeCartState))
+            }
+            onIncrementItem={(variantId) =>
+              applyStoreCartState(incrementCartLineQuantityByVariant(variantId, storeCartState))
+            }
+            onOpenChange={setIsStoreCartDrawerOpen}
+            onRemoveItem={(variantId) => applyStoreCartState(removeCartLineByVariant(variantId, storeCartState))}
+          />
+        </Suspense>
+      )}
 
       <div
         className="app-shell-route-loading-indicator"
@@ -547,35 +575,63 @@ export default function AppShellRoot({
         aria-hidden="true"
       ></div>
 
-      <ShellOverlayPanel
-        closeButtonRef={overlayCloseButtonRef}
-        onClose={closeOverlayWithHistoryBack}
-        overlayState={overlayState}
-        scrollContainerRef={overlayScrollContainerRef}
-      />
-
-      <ShellPlayerSurface
-        activePlayerEmbedLayout={activePlayerEmbedLayout}
-        activePlayerProviderId={activePlayerProviderId}
-        activePlayerTitle={activePlayerTitle}
-        applyPlayerProvider={applyPlayerProvider}
-        iframeFrameHostRef={iframeFrameHostRef}
-        isMiniPlayerVisible={isMiniPlayerVisible}
-        isPlayerLoading={isPlayerLoading}
-        isPlayerModalOpen={isPlayerModalOpen}
-        markActivePlayerSurfaceAsInteracted={markActivePlayerSurfaceAsInteracted}
-        miniPlayerStatusLabel={miniPlayerStatusLabel}
-        modalCloseButtonRef={modalCloseButtonRef}
-        onModalBackdropClick={(event) => {
-          if (event.target === event.currentTarget) {
-            closePlayerModal();
+      {overlayState && (
+        <Suspense
+          fallback={
+            <span className="accessibility-visually-hidden-text" role="status">
+              Loading detail
+            </span>
           }
-        }}
-        playerModalDismissActionLabel={playerModalDismissActionLabel}
-        playerModalDismissAriaLabel={playerModalDismissAriaLabel}
-        playerProviders={playerProviders}
-        providerLogoUrls={providerLogoUrls}
-      />
+        >
+          <ShellOverlayPanel
+            closeButtonRef={overlayCloseButtonRef}
+            onClose={closeOverlayWithHistoryBack}
+            onReady={() => {
+              scheduleOverlayContentFocus({
+                getCloseButton: () => overlayCloseButtonRef.current,
+                getScrollContainer: () => overlayScrollContainerRef.current,
+                scheduler: window,
+              });
+            }}
+            overlayState={overlayState}
+            scrollContainerRef={overlayScrollContainerRef}
+          />
+        </Suspense>
+      )}
+
+      {(isPlayerModalOpen || isMiniPlayerVisible) && (
+        <Suspense
+          fallback={
+            <span className="accessibility-visually-hidden-text" role="status">
+              Loading player
+            </span>
+          }
+        >
+          <ShellPlayerSurface
+            activePlayerEmbedLayout={activePlayerEmbedLayout}
+            activePlayerProviderId={activePlayerProviderId}
+            activePlayerTitle={activePlayerTitle}
+            applyPlayerProvider={applyPlayerProvider}
+            iframeFrameHostRef={iframeFrameHostRef}
+            isMiniPlayerVisible={isMiniPlayerVisible}
+            isPlayerLoading={isPlayerLoading}
+            isPlayerModalOpen={isPlayerModalOpen}
+            markActivePlayerSurfaceAsInteracted={markActivePlayerSurfaceAsInteracted}
+            miniPlayerStatusLabel={miniPlayerStatusLabel}
+            modalCloseButtonRef={modalCloseButtonRef}
+            onModalBackdropClick={(event) => {
+              if (event.target === event.currentTarget) {
+                closePlayerModal();
+              }
+            }}
+            onReady={connectPlayerSurface}
+            playerModalDismissActionLabel={playerModalDismissActionLabel}
+            playerModalDismissAriaLabel={playerModalDismissAriaLabel}
+            playerProviders={playerProviders}
+            providerLogoUrls={providerLogoUrls}
+          />
+        </Suspense>
+      )}
 
       <ShellPortalOutlets
         activeShellPathname={activeShellPathname}

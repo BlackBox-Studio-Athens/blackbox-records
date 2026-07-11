@@ -11,7 +11,9 @@ const refs = {
 
 describe('ShellOverlayPanel', () => {
   it('renders the closed overlay shell without detail content', () => {
-    const html = renderToStaticMarkup(<ShellOverlayPanel {...refs} overlayState={null} onClose={vi.fn()} />);
+    const html = renderToStaticMarkup(
+      <ShellOverlayPanel {...refs} overlayState={null} onClose={vi.fn()} onReady={vi.fn()} />,
+    );
 
     expect(html).toContain('data-state="closed"');
     expect(html).toContain('aria-hidden="true"');
@@ -24,6 +26,7 @@ describe('ShellOverlayPanel', () => {
       <ShellOverlayPanel
         {...refs}
         onClose={vi.fn()}
+        onReady={vi.fn()}
         overlayState={{
           backgroundHref: 'https://example.test/blackbox-records/',
           href: 'https://example.test/blackbox-records/releases/disintegration/',
@@ -49,6 +52,7 @@ describe('ShellOverlayPanel', () => {
       <ShellOverlayPanel
         {...refs}
         onClose={vi.fn()}
+        onReady={vi.fn()}
         overlayState={{
           backgroundHref: 'https://example.test/blackbox-records/',
           href: 'https://example.test/blackbox-records/artists/afterwise/',

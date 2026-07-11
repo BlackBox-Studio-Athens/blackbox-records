@@ -27,6 +27,12 @@ type PlayerFocusScheduler = {
   requestAnimationFrame(callback: FrameRequestCallback): number;
 };
 
+type PendingPlayerProvider = {
+  nextStatus: ActivePlayerSession['status'] | undefined;
+  provider: PlayerProvider;
+  releaseTitle: string;
+};
+
 type ShellPlayerSessionControllerOptions = {
   activePlayerSessionRef: MutableRef<ActivePlayerSession | null>;
   activePlayerTriggerElementRef: MutableRef<HTMLElement | null>;
@@ -36,6 +42,7 @@ type ShellPlayerSessionControllerOptions = {
   iframeCacheByEmbedUrlRef: MutableRef<Map<string, HTMLIFrameElement>>;
   iframeFrameHostRef: MutableRef<HTMLElement | null>;
   modalCloseButtonRef: MutableRef<HTMLButtonElement | null>;
+  pendingPlayerProviderRef: MutableRef<PendingPlayerProvider | null>;
   providerSelectionByTitleRef: MutableRef<Map<string, PlayerProviderId>>;
   setActivePlayerEmbedLayout: (layout: PlayerShellViewState['activePlayerEmbedLayout']) => void;
   setActivePlayerProviderId: (providerId: PlayerShellViewState['activePlayerProviderId']) => void;
@@ -59,6 +66,7 @@ export function createShellPlayerSessionController({
   iframeCacheByEmbedUrlRef,
   iframeFrameHostRef,
   modalCloseButtonRef,
+  pendingPlayerProviderRef,
   providerSelectionByTitleRef,
   setActivePlayerEmbedLayout,
   setActivePlayerProviderId,
@@ -159,7 +167,12 @@ export function createShellPlayerSessionController({
     }
 
     const iframeElement = resolveIframe(provider, releaseTitle);
-    if (!iframeElement) return;
+    if (!iframeElement) {
+      pendingPlayerProviderRef.current = { nextStatus: options?.nextStatus, provider, releaseTitle };
+      return;
+    }
+
+    pendingPlayerProviderRef.current = null;
 
     const nextSession: ActivePlayerSession = {
       embedUrl: provider.embedUrl,
@@ -183,6 +196,7 @@ export function createShellPlayerSessionController({
   function stopPlayerSession({ restoreFocus = true } = {}) {
     retireActivePlayerSession(activePlayerSessionRef.current);
     activePlayerSessionRef.current = null;
+    pendingPlayerProviderRef.current = null;
     setIsPlayerModalOpen(false);
     updatePlayerUiFromSession(null);
 
@@ -217,6 +231,21 @@ export function createShellPlayerSessionController({
       getCloseButton: () => modalCloseButtonRef.current,
       scheduler: getScheduler(),
     });
+  }
+
+  function connectPlayerSurface() {
+    const pendingProvider = pendingPlayerProviderRef.current;
+    if (pendingProvider) {
+      applyPlayerProvider(
+        pendingProvider.provider,
+        pendingProvider.releaseTitle,
+        pendingProvider.nextStatus ? { nextStatus: pendingProvider.nextStatus } : undefined,
+      );
+    } else {
+      syncActivePlayerSessionIntoFrameHost();
+    }
+
+    if (getIsPlayerModalOpen()) focusPlayerModalCloseButtonSoon();
   }
 
   function reopenPlayerModal() {
@@ -266,6 +295,7 @@ export function createShellPlayerSessionController({
   return {
     applyPlayerProvider,
     closePlayerModal,
+    connectPlayerSurface,
     markActivePlayerSessionAsInteracted,
     markActivePlayerSurfaceAsInteracted,
     openPlayerModal,

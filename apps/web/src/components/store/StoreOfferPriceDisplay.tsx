@@ -4,6 +4,7 @@ import {
   createPublicCheckoutApi,
   type PublicCheckoutApi,
   type PublicStoreOffer,
+  type StoreCapabilities,
 } from '@/lib/backend/public-checkout-api';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,7 @@ export type StoreOfferPriceDisplayView = {
 type StoreOfferPriceDisplayProps = {
   api?: PublicCheckoutApi;
   className?: string;
+  listing?: boolean;
   storeItemSlug: string;
 };
 
@@ -37,6 +39,24 @@ const maxConcurrentStoreOfferPriceReads = 4;
 let activeStoreOfferPriceReads = 0;
 
 const pendingStoreOfferPriceReads: Array<() => void> = [];
+let listingCapabilityConsumers = 0;
+let listingCapabilityRead: Promise<StoreCapabilities> | null = null;
+
+export function acquireListingStoreCapabilities(api: PublicCheckoutApi) {
+  listingCapabilityConsumers += 1;
+  listingCapabilityRead ??= api.readStoreCapabilities();
+
+  let released = false;
+  return {
+    read: listingCapabilityRead,
+    release() {
+      if (released) return;
+      released = true;
+      listingCapabilityConsumers -= 1;
+      if (listingCapabilityConsumers === 0) listingCapabilityRead = null;
+    },
+  };
+}
 
 function enqueueStoreOfferPriceRead(
   task: () => Promise<StoreOfferPriceDisplayView>,
@@ -98,7 +118,12 @@ export function loadDefaultStoreOfferPriceDisplayView(
   return enqueueStoreOfferPriceRead(() => loadStoreOfferPriceDisplayView(api, storeItemSlug));
 }
 
-export default function StoreOfferPriceDisplay({ api, className, storeItemSlug }: StoreOfferPriceDisplayProps) {
+export default function StoreOfferPriceDisplay({
+  api,
+  className,
+  listing = false,
+  storeItemSlug,
+}: StoreOfferPriceDisplayProps) {
   const [view, setView] = React.useState<StoreOfferPriceDisplayView>(loadingView);
 
   React.useEffect(() => {
@@ -107,9 +132,18 @@ export default function StoreOfferPriceDisplay({ api, className, storeItemSlug }
 
     setView(loadingView);
 
-    const readStoreOfferPriceDisplayView = api
-      ? loadStoreOfferPriceDisplayView(checkoutApi, storeItemSlug)
-      : loadDefaultStoreOfferPriceDisplayView(checkoutApi, storeItemSlug);
+    const listingCapabilities = listing ? acquireListingStoreCapabilities(checkoutApi) : null;
+    const readStoreOfferPriceDisplayView = listingCapabilities
+      ? listingCapabilities.read
+          .then((capabilities) =>
+            capabilities.nativeCheckout.enabled
+              ? loadDefaultStoreOfferPriceDisplayView(checkoutApi, storeItemSlug)
+              : createStoreOfferPriceDisplayView(null),
+          )
+          .catch(() => createStoreOfferPriceDisplayView(null))
+      : api
+        ? loadStoreOfferPriceDisplayView(checkoutApi, storeItemSlug)
+        : loadDefaultStoreOfferPriceDisplayView(checkoutApi, storeItemSlug);
 
     void readStoreOfferPriceDisplayView.then((nextView) => {
       if (isActive) {
@@ -119,8 +153,9 @@ export default function StoreOfferPriceDisplay({ api, className, storeItemSlug }
 
     return () => {
       isActive = false;
+      listingCapabilities?.release();
     };
-  }, [api, storeItemSlug]);
+  }, [api, listing, storeItemSlug]);
 
   return (
     <span

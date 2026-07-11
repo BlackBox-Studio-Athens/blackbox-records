@@ -1,19 +1,16 @@
 ---
-import { createProjectRelativeUrl, siteBrandAssets } from '@/config/site';
+import { Image } from 'astro:assets';
+import logo from '@/content/brand-assets/logo-horizontal-ui.png';
+import { createProjectRelativeUrl } from '@/config/site';
 
 interface Props {
   href?: string;
   logoAlt?: string;
-  logoSrc?: string;
 }
 
-const {
-  href = createProjectRelativeUrl('/'),
-  logoAlt = 'BlackBox Records',
-  logoSrc = createProjectRelativeUrl(siteBrandAssets.wordmarkLogo),
-} = Astro.props;
+const { href = createProjectRelativeUrl('/'), logoAlt = 'BlackBox Records' } = Astro.props;
 ---
 
 <a class="header-brand-link" href={href} aria-label={logoAlt} data-astro-prefetch transition:name="site-brand">
-  <img class="header-brand-logo" src={logoSrc} alt={logoAlt} />
+  <Image class="header-brand-logo" src={logo} alt={logoAlt} width={308} />
 </a>

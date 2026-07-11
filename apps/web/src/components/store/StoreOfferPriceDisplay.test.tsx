@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { PublicCheckoutApi, PublicStoreOffer } from '@/lib/backend/public-checkout-api';
 import StoreOfferPriceDisplay, {
+  acquireListingStoreCapabilities,
   createStoreOfferPriceDisplayView,
   loadDefaultStoreOfferPriceDisplayView,
   loadStoreOfferPriceDisplayView,
@@ -48,6 +49,51 @@ describe('StoreOfferPriceDisplay', () => {
       tone: 'ready',
     });
     expect(api.readStoreOffer).toHaveBeenCalledWith('disintegration-black-vinyl-lp');
+  });
+
+  it('deduplicates capability reads for one mounted listing lifetime', async () => {
+    const api = createApi({
+      readStoreCapabilities: vi.fn(async () => ({ nativeCheckout: { enabled: true, unavailableReason: null } })),
+    });
+
+    const first = acquireListingStoreCapabilities(api);
+    const second = acquireListingStoreCapabilities(api);
+
+    await expect(Promise.all([first.read, second.read])).resolves.toHaveLength(2);
+    expect(api.readStoreCapabilities).toHaveBeenCalledOnce();
+
+    first.release();
+    second.release();
+
+    const nextVisit = acquireListingStoreCapabilities(api);
+    await nextVisit.read;
+    expect(api.readStoreCapabilities).toHaveBeenCalledTimes(2);
+    nextVisit.release();
+  });
+
+  it('retains a failed capability read until the listing visit ends', async () => {
+    const readStoreCapabilities = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Worker unavailable'))
+      .mockResolvedValueOnce({ nativeCheckout: { enabled: true, unavailableReason: null } });
+    const api = createApi({ readStoreCapabilities });
+
+    const first = acquireListingStoreCapabilities(api);
+    await expect(first.read).rejects.toThrow('Worker unavailable');
+
+    const laterIsland = acquireListingStoreCapabilities(api);
+    await expect(laterIsland.read).rejects.toThrow('Worker unavailable');
+    expect(readStoreCapabilities).toHaveBeenCalledOnce();
+
+    first.release();
+    laterIsland.release();
+
+    const nextVisit = acquireListingStoreCapabilities(api);
+    await expect(nextVisit.read).resolves.toEqual({
+      nativeCheckout: { enabled: true, unavailableReason: null },
+    });
+    expect(readStoreCapabilities).toHaveBeenCalledTimes(2);
+    nextVisit.release();
   });
 
   it('rereads the Worker Store Offer for the same item in one browser session', async () => {

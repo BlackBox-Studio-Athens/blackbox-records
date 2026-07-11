@@ -73,6 +73,7 @@ function createController(overrides: Partial<Parameters<typeof createShellPlayer
     iframeCacheByEmbedUrlRef,
     iframeFrameHostRef: { current: createFrameHost(iframeElement) },
     modalCloseButtonRef: { current: { focus: vi.fn() } as unknown as HTMLButtonElement },
+    pendingPlayerProviderRef: { current: null },
     providerSelectionByTitleRef: { current: new Map() },
     setActivePlayerEmbedLayout: vi.fn(),
     setActivePlayerProviderId: vi.fn(),
@@ -128,6 +129,27 @@ describe('shell player session controller', () => {
     expect(options.setPlayerProviders).toHaveBeenCalledWith([provider]);
     expect(options.setIsPlayerModalOpen).toHaveBeenCalledWith(true);
     expect(options.setIsPlayerLoading).toHaveBeenCalledWith(false);
+  });
+
+  it('creates the first player session after a lazy surface connects', () => {
+    const iframeFrameHostRef = { current: null as HTMLElement | null };
+    const closeButton = { focus: vi.fn() } as unknown as HTMLButtonElement;
+    const { controller, options } = createController({
+      getIsPlayerModalOpen: vi.fn(() => true),
+      iframeFrameHostRef,
+      modalCloseButtonRef: { current: closeButton },
+    });
+
+    controller.openPlayerModal(createTriggerElement(), createPlayerElement());
+    expect(options.activePlayerSessionRef.current).toBeNull();
+    expect(options.pendingPlayerProviderRef.current).not.toBeNull();
+
+    iframeFrameHostRef.current = createFrameHost();
+    controller.connectPlayerSurface();
+
+    expect(options.activePlayerSessionRef.current?.releaseTitle).toBe('Disintegration');
+    expect(options.pendingPlayerProviderRef.current).toBeNull();
+    expect(closeButton.focus).toHaveBeenCalled();
   });
 
   it('marks active sessions as interacted only when the embed URL matches', () => {

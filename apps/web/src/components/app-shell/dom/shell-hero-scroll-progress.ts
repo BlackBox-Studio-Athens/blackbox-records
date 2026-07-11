@@ -40,6 +40,8 @@ export function connectHomepageHeroScrollProgress({
   queryHeroElement: () => HomepageHeroElement | null;
   scheduler: HeroScrollScheduler;
 }) {
+  if (!isCurrentPath(activePathname, '/')) return () => {};
+
   let animationFrameId: number | null = null;
   let currentHeroElement: HomepageHeroElement | null = null;
   let syncedHeroElement: HomepageHeroElement | null = null;
@@ -49,7 +51,7 @@ export function connectHomepageHeroScrollProgress({
     animationFrameId = null;
     currentHeroElement = queryHeroElement();
 
-    if (!currentHeroElement || !isCurrentPath(activePathname, '/')) return;
+    if (!currentHeroElement) return;
 
     const heroRect = currentHeroElement.getBoundingClientRect();
     const progress = calculateHomepageHeroScrollProgress({

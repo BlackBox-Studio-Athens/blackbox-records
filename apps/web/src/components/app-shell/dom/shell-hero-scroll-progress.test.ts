@@ -117,6 +117,8 @@ describe('connectHomepageHeroScrollProgress', () => {
     scheduler.flushAnimationFrame();
 
     expect(heroElement.classList.toggle).not.toHaveBeenCalled();
+    expect(scheduler.addEventListener).not.toHaveBeenCalled();
+    expect(scheduler.requestAnimationFrame).not.toHaveBeenCalled();
   });
 
   it('does not mutate the hero when the threshold state has not changed', () => {

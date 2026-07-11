@@ -30,7 +30,6 @@ describe('Homepage hero CSS', () => {
     const scrollProgressOpacitySelectors = [
       '.homepage-hero-section__media-layer {',
       '.homepage-hero-section__shade-layer {',
-      '.homepage-hero-section__grain-layer {',
       '.homepage-hero-section__scroll-indicator {',
     ];
 
@@ -42,6 +41,10 @@ describe('Homepage hero CSS', () => {
     }
 
     expect(globalCss).not.toContain('--homepage-hero-scroll-progress');
+    expect(globalCss).not.toContain('hero-ken-burns');
+    expect(globalCss).not.toContain('hero-grain-drift');
+    expect(globalCss).not.toContain('.homepage-hero-section__grain-layer');
+    expect(globalCss).not.toMatch(/homepage-hero-section__media-image[^}]*filter:/s);
     expect(globalCss).toContain('.homepage-hero-section--scrolled .homepage-hero-section__media-layer');
   });
 });

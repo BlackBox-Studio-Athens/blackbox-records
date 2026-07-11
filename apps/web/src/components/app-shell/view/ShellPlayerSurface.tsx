@@ -22,6 +22,7 @@ type ShellPlayerSurfaceProps = {
   miniPlayerStatusLabel: string;
   modalCloseButtonRef: { current: HTMLButtonElement | null };
   onModalBackdropClick: (event: MouseEvent<HTMLDivElement>) => void;
+  onReady: () => void;
   playerModalDismissActionLabel: 'Close' | 'Minimize';
   playerModalDismissAriaLabel: 'Close player' | 'Minimize player';
   playerProviders: PlayerProvider[];
@@ -41,11 +42,19 @@ export default function ShellPlayerSurface({
   miniPlayerStatusLabel,
   modalCloseButtonRef,
   onModalBackdropClick,
+  onReady,
   playerModalDismissActionLabel,
   playerModalDismissAriaLabel,
   playerProviders,
   providerLogoUrls,
 }: ShellPlayerSurfaceProps) {
+  const onReadyRef = React.useRef(onReady);
+  onReadyRef.current = onReady;
+
+  React.useEffect(() => {
+    onReadyRef.current();
+  }, []);
+
   return (
     <>
       <div

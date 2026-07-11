@@ -1,5 +1,7 @@
 ---
-import { createProjectRelativeUrl, resolveLinkAttributes, siteConfig } from '@/config/site';
+import { resolveLinkAttributes, siteConfig } from '@/config/site';
+import { Image } from 'astro:assets';
+import logo from '@/content/brand-assets/logo-ui.png';
 import SocialIcon from '@/components/icons/SocialIcon.astro';
 import { getFooterNavigationItems, getLabelSettings, getSocialItems } from '@/lib/site-data';
 import { buttonVariants } from '@/components/ui/button';
@@ -24,11 +26,7 @@ const footerSocialItems = socialItems.filter((item) => item.url.trim() && item.u
   <div class="page-content-width-constrained-container site-footer-top site-footer-content-shell">
     <div class="site-footer-brand">
       <div class="site-footer-brand-topbar">
-        <img
-          src={createProjectRelativeUrl('/assets/images/brand/logo.png')}
-          alt="BlackBox Records"
-          class="site-footer-logo"
-        />
+        <Image src={logo} alt="BlackBox Records" class="site-footer-logo" width={152} />
         <div class="site-footer-social-row" aria-label="Connect">
           {
             footerSocialItems.map((item) => {

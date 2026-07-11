@@ -9,6 +9,7 @@ import type { ShellOverlayState } from '../overlay/shell-overlay-navigation';
 type ShellOverlayPanelProps = {
   closeButtonRef: { current: HTMLButtonElement | null };
   onClose: () => void;
+  onReady: () => void;
   overlayState: ShellOverlayState | null;
   scrollContainerRef: { current: HTMLDivElement | null };
 };
@@ -22,9 +23,17 @@ const OVERLAY_KIND_LABELS: Record<OverlayRoute['kind'], string> = {
 export default function ShellOverlayPanel({
   closeButtonRef,
   onClose,
+  onReady,
   overlayState,
   scrollContainerRef,
 }: ShellOverlayPanelProps) {
+  const onReadyRef = React.useRef(onReady);
+  onReadyRef.current = onReady;
+
+  React.useEffect(() => {
+    onReadyRef.current();
+  }, []);
+
   return (
     <div
       className="app-shell-content-overlay"
