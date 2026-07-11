@@ -63,7 +63,7 @@ describe('email runtime services', () => {
       ...localBindings,
       PRODUCT_ENVIRONMENT: 'UAT',
       RESEND_API_KEY: 're_mock_blackbox_uat',
-      RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL: 'blackboxrecordsathens+TESTING@gmail.com',
+      RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL: 'uat-sink@ambkime.resend.app',
     });
 
     expect(provider).toBeInstanceOf(ResendEmailGateway);

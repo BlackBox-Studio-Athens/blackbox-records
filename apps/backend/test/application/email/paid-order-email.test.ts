@@ -18,7 +18,7 @@ const sandboxConfig = readEmailRuntimeConfig({
   RESEND_NEWSLETTER_TOPIC_ID: 'topic_mock_blackbox_newsletter',
   RESEND_OPS_TO_EMAIL: 'blackboxrecordsathens@gmail.com',
   RESEND_REPLY_TO_EMAIL: 'support@blackboxrecordsathens.com',
-  RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL: 'blackboxrecordsathens+TESTING@gmail.com',
+  RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL: 'uat-sink@ambkime.resend.app',
 });
 
 const productionConfig = readEmailRuntimeConfig({
@@ -30,7 +30,7 @@ const productionConfig = readEmailRuntimeConfig({
   RESEND_NEWSLETTER_TOPIC_ID: 'topic_mock_blackbox_newsletter',
   RESEND_OPS_TO_EMAIL: 'blackboxrecordsathens@gmail.com',
   RESEND_REPLY_TO_EMAIL: 'support@blackboxrecordsathens.com',
-  RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL: 'blackboxrecordsathens+TESTING@gmail.com',
+  RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL: 'uat-sink@ambkime.resend.app',
 });
 
 describe('paid-order email notifications', () => {
@@ -58,7 +58,7 @@ describe('paid-order email notifications', () => {
           { name: 'category', value: 'paid-order' },
           { name: 'audience', value: 'shopper' },
         ]),
-        to: 'blackboxrecordsathens+TESTING@gmail.com',
+        to: 'uat-sink@ambkime.resend.app',
       }),
     );
     expect(sendEmail).toHaveBeenNthCalledWith(
@@ -70,7 +70,7 @@ describe('paid-order email notifications', () => {
           { name: 'purpose', value: 'paid-order-ops' },
           { name: 'audience', value: 'ops' },
         ]),
-        to: 'blackboxrecordsathens+TESTING@gmail.com',
+        to: 'uat-sink@ambkime.resend.app',
       }),
     );
 

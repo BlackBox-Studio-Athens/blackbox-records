@@ -13,6 +13,7 @@ import {
   type CartLineItemSnapshot,
   writeStoreCartState,
 } from '../apps/web/src/lib/store-cart';
+import { createCheckoutOrderReferenceToken } from '../apps/backend/src/application/commerce/orders';
 import {
   createRunId as createSmokeRunId,
   createSmokeEvidencePath,
@@ -25,6 +26,12 @@ import {
   writeJsonFile,
 } from './smoke-core';
 import { parseStripeSandboxSmokeArgs } from './stripe-sandbox-smoke/args';
+import {
+  createPaidOrderEmailReceiptExpectations,
+  pollResendEmailReceipts,
+  runResendReceivingPreflight,
+  type ResendEmailReceiptObservation,
+} from './stripe-sandbox-smoke/email-receipts';
 import {
   createCheckoutOrderBySessionSql,
   createRemoteD1ReadinessSql,
@@ -153,6 +160,7 @@ export type StripeCheckoutSessionProjectionObservation = {
 export type StripeSandboxSmokeOptions = {
   debug: boolean;
   declineConcurrency: number;
+  emailReceiptTimeoutMs: number;
   expectedCheckoutAmountMinor: number | null;
   expectedPaymentMethodLabels: string[];
   fieldActionTimeoutMs: number;
@@ -162,6 +170,7 @@ export type StripeSandboxSmokeOptions = {
   siteUrl: string;
   timeoutMs: number;
   trace: boolean;
+  verifyEmailReceipts: boolean;
   workerUrl: string;
 };
 
@@ -230,6 +239,11 @@ export type StripeSandboxSmokeEvidence = {
   checkoutSurface: StripeCheckoutSurfaceObservation | null;
   checkoutPageUrl: string;
   durations: StripeSandboxSmokeDurations;
+  emailReceipts?: {
+    observations: ResendEmailReceiptObservation[];
+    orderReference: string;
+    status: 'failed' | 'passed';
+  };
   finalUrl: string;
   generatedAt: string;
   observedStripeUi: string;
@@ -250,6 +264,7 @@ export type StripeSandboxSmokeEvidence = {
 export type StripeSandboxSmokeSummary = {
   blocker?: string;
   environment: 'uat';
+  emailReceiptStatus?: 'failed' | 'passed';
   failedScenarioCount: number;
   generatedAt: string;
   passedScenarioCount: number;
@@ -415,6 +430,7 @@ export function formatStripeSandboxSmokeRunHeader(input: {
     `Scenarios: ${input.scenarios.map((scenario) => scenario.name).join(', ')}`,
     `Headed: ${input.options.headed ? 'yes' : 'no'}`,
     `Trace: ${input.options.trace ? 'yes' : 'no'}`,
+    `Email receipt verification: ${input.options.verifyEmailReceipts ? `yes (${input.options.emailReceiptTimeoutMs}ms)` : 'no'}`,
     `Screenshots: ${input.options.screenshots}`,
     `Expected payment labels: ${
       input.options.expectedPaymentMethodLabels.length ? input.options.expectedPaymentMethodLabels.join(', ') : 'none'
@@ -758,7 +774,8 @@ function readOptionalBoolean(value: unknown): boolean | null {
 export function buildStripeSandboxSmokeSummary(input: {
   blocker?: string;
   evidence: readonly StripeSandboxSmokeEvidence[];
-  options: Pick<StripeSandboxSmokeOptions, 'siteUrl' | 'workerUrl'>;
+  options: Pick<StripeSandboxSmokeOptions, 'siteUrl' | 'workerUrl'> &
+    Partial<Pick<StripeSandboxSmokeOptions, 'verifyEmailReceipts'>>;
   runId: string;
   scenarios: readonly StripeSandboxSmokeScenario[];
 }): StripeSandboxSmokeSummary {
@@ -769,6 +786,11 @@ export function buildStripeSandboxSmokeSummary(input: {
   return {
     blocker: input.blocker,
     environment: 'uat',
+    emailReceiptStatus: input.options.verifyEmailReceipts
+      ? input.evidence.length > 0 && input.evidence.every((item) => item.emailReceipts?.status === 'passed')
+        ? 'passed'
+        : 'failed'
+      : undefined,
     failedScenarioCount,
     generatedAt: new Date().toISOString(),
     passedScenarioCount,
@@ -795,7 +817,15 @@ async function main() {
     resolveSelectedStripeSandboxScenarios(options.scenarioSelection),
     options.expectedCheckoutAmountMinor,
   );
+  if (
+    options.verifyEmailReceipts &&
+    (scenarios.length !== 2 ||
+      scenarios.some((scenario) => !['happy_path_paid', 'pay_what_you_want_paid'].includes(scenario.name)))
+  ) {
+    throw new Error('--verify-email-receipts requires exactly happy_path_paid,pay_what_you_want_paid scenarios.');
+  }
   const runId = createRunId();
+  const receiptRunStartedAt = Date.now();
   const runArtifactDir = createSmokeRunArtifactDir(rootDir, 'uat', 'stripe-sandbox', runId);
   const summaryPath = createSmokeSummaryPath(runArtifactDir);
   const minimumSmokeOnlineQuantity = calculateMinimumSmokeOnlineQuantity(scenarios);
@@ -810,7 +840,9 @@ async function main() {
       scenarios,
     });
 
-    evidence.push(...(await runStripeSandboxSmokeScenarios({ options, runArtifactDir, runId, scenarios })));
+    evidence.push(
+      ...(await runStripeSandboxSmokeScenarios({ options, receiptRunStartedAt, runArtifactDir, runId, scenarios })),
+    );
 
     writeJsonFile(summaryPath, buildStripeSandboxSmokeSummary({ evidence, options, runId, scenarios }));
 
@@ -836,6 +868,10 @@ async function verifyStripeSandboxSmokeReadiness(input: {
   options: StripeSandboxSmokeOptions;
   scenarios: readonly StripeSandboxSmokeScenario[];
 }): Promise<void> {
+  if (input.options.verifyEmailReceipts) {
+    await runResendReceivingPreflight();
+  }
+
   ensureSandboxSmokeStock(input.minimumSmokeOnlineQuantity, [
     ...new Set(input.scenarios.map((scenario) => getStripeSandboxSmokeScenarioVariantId(scenario))),
   ]);
@@ -857,6 +893,7 @@ async function verifyStripeSandboxSmokeReadiness(input: {
 
 async function runStripeSandboxSmokeScenarios(input: {
   options: StripeSandboxSmokeOptions;
+  receiptRunStartedAt: number;
   runArtifactDir: string;
   runId: string;
   scenarios: readonly StripeSandboxSmokeScenario[];
@@ -878,15 +915,17 @@ async function runStripeSandboxSmokeScenarios(input: {
 async function runStripeSandboxSmokeScenarioGroups(input: {
   browser: Browser;
   options: StripeSandboxSmokeOptions;
+  receiptRunStartedAt: number;
   runArtifactDir: string;
   runId: string;
   scenarios: readonly StripeSandboxSmokeScenario[];
 }): Promise<StripeSandboxSmokeEvidence[]> {
   const evidence: StripeSandboxSmokeEvidence[] = [];
+  const receiptOrders = new Map<StripeSandboxSmokeScenarioName, LocalCheckoutOrderRow | null>();
   const scenarioGroups = groupStripeSandboxSmokeScenarios(input.scenarios);
 
   for (const scenario of scenarioGroups.checkoutSurfaceScenarios) {
-    evidence.push(await runScenarioAndWriteEvidence({ ...input, scenario }));
+    evidence.push(await runScenarioAndWriteEvidence({ ...input, receiptOrders, scenario }));
   }
 
   if (hasFailedStripeSandboxSmokeEvidence(evidence)) {
@@ -903,7 +942,10 @@ async function runStripeSandboxSmokeScenarioGroups(input: {
     console.log(`Running ${scenarioGroups.paidScenarios.length} paid scenario(s) with concurrency ${paidConcurrency}.`);
     const paidEvidenceByScenarioName = new Map<StripeSandboxSmokeScenarioName, StripeSandboxSmokeEvidence>();
     const paidResults = await runInSettledBatches(scenarioGroups.paidScenarios, paidConcurrency, async (scenario) => {
-      paidEvidenceByScenarioName.set(scenario.name, await runScenarioAndWriteEvidence({ ...input, scenario }));
+      paidEvidenceByScenarioName.set(
+        scenario.name,
+        await runScenarioAndWriteEvidence({ ...input, receiptOrders, scenario }),
+      );
     });
     evidence.push(
       ...scenarioGroups.paidScenarios.flatMap((scenario) => {
@@ -916,6 +958,17 @@ async function runStripeSandboxSmokeScenarioGroups(input: {
       const message =
         firstPaidFailure.reason instanceof Error ? firstPaidFailure.reason.message : String(firstPaidFailure.reason);
       throw new StripeSandboxSmokeScenarioGroupError(message, evidence, firstPaidFailure.reason);
+    }
+
+    if (input.options.verifyEmailReceipts) {
+      await verifyPaidOrderEmailReceipts({
+        evidence,
+        orders: receiptOrders,
+        paidScenarios: scenarioGroups.paidScenarios,
+        runArtifactDir: input.runArtifactDir,
+        runStartedAt: input.receiptRunStartedAt,
+        timeoutMs: input.options.emailReceiptTimeoutMs,
+      });
     }
   }
 
@@ -931,7 +984,7 @@ async function runStripeSandboxSmokeScenarioGroups(input: {
     );
     const declineEvidence: StripeSandboxSmokeEvidence[] = [];
     await runInBatches(scenarioGroups.declineScenarios, input.options.declineConcurrency, async (scenario) => {
-      declineEvidence.push(await runScenarioAndWriteEvidence({ ...input, scenario }));
+      declineEvidence.push(await runScenarioAndWriteEvidence({ ...input, receiptOrders, scenario }));
     });
     evidence.push(...declineEvidence);
   }
@@ -961,6 +1014,7 @@ function logSkippedStripeSandboxSmokeScenarios(
 async function runScenarioAndWriteEvidence(input: {
   browser: Browser;
   options: StripeSandboxSmokeOptions;
+  receiptOrders: Map<StripeSandboxSmokeScenarioName, LocalCheckoutOrderRow | null>;
   runArtifactDir: string;
   runId: string;
   scenario: StripeSandboxSmokeScenario;
@@ -989,6 +1043,9 @@ async function runScenarioAndWriteEvidence(input: {
     scenario,
     scenarioArtifactDir,
   });
+  if (input.options.verifyEmailReceipts && input.scenario.expectedOrderStatus === 'paid') {
+    input.receiptOrders.set(input.scenario.name, result.order);
+  }
   const tracePath = input.options.trace ? path.join(scenarioArtifactDir, 'trace.zip') : null;
 
   const evidence = buildStripeSandboxSmokeEvidence({
@@ -1036,6 +1093,65 @@ async function runScenarioAndWriteEvidence(input: {
   );
 
   return evidence;
+}
+
+async function verifyPaidOrderEmailReceipts(input: {
+  evidence: StripeSandboxSmokeEvidence[];
+  orders: Map<StripeSandboxSmokeScenarioName, LocalCheckoutOrderRow | null>;
+  paidScenarios: readonly StripeSandboxSmokeScenario[];
+  runArtifactDir: string;
+  runStartedAt: number;
+  timeoutMs: number;
+}): Promise<void> {
+  const expectations = input.paidScenarios.flatMap((scenario) => {
+    const order = input.orders.get(scenario.name);
+
+    if (!order || order.status !== 'paid' || !order.id || !order.checkoutSessionId || !order.paidAt) {
+      throw new Error(`Receipt mode requires an authoritative paid UAT D1 order row for ${scenario.name}.`);
+    }
+
+    const orderReference = createCheckoutOrderReferenceToken({
+      checkoutSessionId: order.checkoutSessionId,
+      orderId: order.id,
+      referenceDate: new Date(order.paidAt),
+    });
+
+    return createPaidOrderEmailReceiptExpectations({
+      orderReference,
+      scenario: scenario.name,
+    });
+  });
+  const observations = await pollResendEmailReceipts({
+    expectations,
+    runStartedAt: input.runStartedAt,
+    timeoutMs: input.timeoutMs,
+  });
+
+  for (const scenario of input.paidScenarios) {
+    const scenarioEvidence = input.evidence.find((item) => item.scenario.name === scenario.name);
+    const scenarioObservations = observations.filter((observation) => observation.scenario === scenario.name);
+
+    if (!scenarioEvidence || !scenarioObservations.length) {
+      throw new Error(`Receipt evidence could not be attached to ${scenario.name}.`);
+    }
+
+    const orderReference = scenarioObservations[0]?.orderReference;
+    if (!orderReference) {
+      throw new Error(`Receipt evidence is missing an order reference for ${scenario.name}.`);
+    }
+
+    const status = scenarioObservations.every((observation) => observation.status === 'passed') ? 'passed' : 'failed';
+    scenarioEvidence.emailReceipts = {
+      observations: scenarioObservations,
+      orderReference,
+      status,
+    };
+    scenarioEvidence.passed = scenarioEvidence.passed && status === 'passed';
+    writeJsonFile(
+      createSmokeEvidencePath(createSmokeScenarioArtifactDir(input.runArtifactDir, scenario.name)),
+      scenarioEvidence,
+    );
+  }
 }
 
 export function createEmptyStripeSandboxSmokeDurations(): StripeSandboxSmokeDurations {
@@ -1562,12 +1678,12 @@ export function createSmokeStoreCartStorageEntry(scenario?: StripeSandboxSmokeSc
 async function waitForRemoteOrderAfterCheckout(
   checkoutSessionId: string,
   scenario: StripeSandboxSmokeScenario,
-  options: Pick<StripeSandboxSmokeOptions, 'timeoutMs' | 'workerUrl'>,
+  options: Pick<StripeSandboxSmokeOptions, 'timeoutMs' | 'workerUrl' | 'verifyEmailReceipts'>,
 ): Promise<LocalCheckoutOrderRow | null> {
   const timeoutMs = scenario.expectedOrderStatus === 'paid' ? Math.max(options.timeoutMs, 120_000) : 15_000;
   const deadline = Date.now() + timeoutMs;
   let latest: LocalCheckoutOrderRow | null = null;
-  let usePublicCheckoutState = true;
+  let usePublicCheckoutState = !options.verifyEmailReceipts;
 
   while (Date.now() < deadline) {
     if (usePublicCheckoutState) {

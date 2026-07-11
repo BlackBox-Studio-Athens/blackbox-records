@@ -36,6 +36,9 @@ describe('UAT provider smoke workflow', () => {
     expect(workflow).toContain('--site-url "${UAT_SITE_URL}"');
     expect(workflow).toContain('--scenario happy_path_paid,pay_what_you_want_paid');
     expect(workflow).toContain('--screenshots on-failure');
+    expect(workflow).not.toContain('--verify-email-receipts');
+    expect(workflow).not.toContain('RESEND_API_KEY');
+    expect(workflow).not.toContain('inbox receipt');
     expect(workflow).toContain('.codex-artifacts/smoke/uat/stripe-sandbox/**');
     expect(workflow).toContain('uat-smoke-${{ github.run_id }}-${{ github.run_attempt }}');
     expect(workflow).toContain('actions/upload-artifact@v5.0.0');

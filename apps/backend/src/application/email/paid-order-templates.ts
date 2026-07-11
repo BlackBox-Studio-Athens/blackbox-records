@@ -40,13 +40,21 @@ const shopperPaymentThankYouCopy =
   'Thank you for your order. We have received your payment and will prepare everything for manual fulfillment. If we need anything else for shipping, we will contact you directly.';
 const paymentDocumentCopy = 'This email confirms that payment was received. It is not a tax invoice or VAT receipt.';
 
+export function createPaidOrderShopperSubject(orderReference: string): string {
+  return `Payment received - ${orderReference}`;
+}
+
+export function createPaidOrderOpsSubject(orderReference: string): string {
+  return `Fulfill ${orderReference} - paid checkout`;
+}
+
 export function buildPaidOrderShopperEmail(input: {
   brand: PaidOrderEmailBrand;
   order: PaidOrderEmailInput;
   recipient: PaidOrderTemplateRecipientContext;
   replyToEmail: string;
 }): EmailMessageContent {
-  const subject = `Payment received - ${input.order.orderReference}`;
+  const subject = createPaidOrderShopperSubject(input.order.orderReference);
   const preheader = `Payment received for ${input.order.orderReference}. BlackBox Records will prepare fulfillment.`;
   const shopperLineItems = formatShopperLineItems(input.order);
   const totalPaid = formatTotalPaid(input.order);
@@ -91,7 +99,7 @@ export function buildPaidOrderOpsEmail(input: {
   recipient: PaidOrderTemplateRecipientContext;
   shopperNotification: ShopperNotificationStatus;
 }): EmailMessageContent {
-  const subject = `Fulfill ${input.order.orderReference} - paid checkout`;
+  const subject = createPaidOrderOpsSubject(input.order.orderReference);
   const preheader = `Paid order ${input.order.orderReference} is ready for manual fulfillment.`;
   const warnings = collectOpsWarnings(input.shopperNotification);
 

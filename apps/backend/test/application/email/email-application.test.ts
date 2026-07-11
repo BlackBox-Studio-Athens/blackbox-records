@@ -25,7 +25,7 @@ const localBindings = {
 const sandboxBindings = {
   ...localBindings,
   PRODUCT_ENVIRONMENT: 'UAT' as const,
-  RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL: 'blackboxrecordsathens+TESTING@gmail.com',
+  RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL: 'uat-sink@ambkime.resend.app',
 };
 
 describe('email application module', () => {
@@ -62,7 +62,7 @@ describe('email application module', () => {
     expect(routeTransactionalEmailRecipient(readEmailRuntimeConfig(sandboxBindings), 'buyer@example.com')).toEqual({
       intendedRecipient: 'buyer@example.com',
       isSinkRouted: true,
-      to: 'blackboxrecordsathens+TESTING@gmail.com',
+      to: 'uat-sink@ambkime.resend.app',
     });
 
     expect(routeTransactionalEmailRecipient(readEmailRuntimeConfig(localBindings), 'buyer@example.com')).toEqual({
@@ -103,7 +103,7 @@ describe('email application module', () => {
           { name: 'sink_routed', value: 'true' },
           { name: 'order-reference', value: 'BBR-123' },
         ]),
-        to: 'blackboxrecordsathens+TESTING@gmail.com',
+        to: 'uat-sink@ambkime.resend.app',
       }),
     );
   });
@@ -123,7 +123,7 @@ describe('email application module', () => {
     expect(result).toEqual(
       expect.objectContaining({
         contactRouting: {
-          contactEmail: 'blackboxrecordsathens+TESTING@gmail.com',
+          contactEmail: 'uat-sink@ambkime.resend.app',
           intendedSubscriberEmail: 'subscriber@example.com',
           isSinkRouted: true,
         },
@@ -131,7 +131,7 @@ describe('email application module', () => {
       }),
     );
     expect(provider.registerNewsletterContact).toHaveBeenCalledWith({
-      email: 'blackboxrecordsathens+TESTING@gmail.com',
+      email: 'uat-sink@ambkime.resend.app',
       properties: {
         consentCopyVersion: 'newsletter-v1',
         consentSource: 'site-form',

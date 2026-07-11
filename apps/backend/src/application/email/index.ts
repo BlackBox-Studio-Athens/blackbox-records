@@ -1,5 +1,5 @@
 export { EmailConfigurationError } from './errors';
-export { readEmailRuntimeConfig } from './config';
+export { readEmailRuntimeConfig, UAT_RESEND_RECEIVING_SINK_EMAIL } from './config';
 export type { EmailRuntimeBindingValues, EmailRuntimeConfig } from './config';
 export { buildPaidOrderEmailPreviews } from './paid-order-email-previews';
 export type { PaidOrderEmailPreview, PaidOrderEmailPreviewName } from './paid-order-email-previews';

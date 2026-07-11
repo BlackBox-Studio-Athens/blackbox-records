@@ -12,6 +12,7 @@ import {
   type ProductEnvironmentProfile,
   type WorkerRuntimeTarget,
 } from '../apps/backend/src/env';
+import { UAT_RESEND_RECEIVING_SINK_EMAIL } from '../apps/backend/src/application/email/config';
 
 export type RuntimeConfigEnvironment = ProductEnvironment;
 export type RuntimeConfigStatus = 'missing' | 'not_applicable' | 'present' | 'unverified';
@@ -317,7 +318,7 @@ function classifyResendUatRecipientOverride(
   const match = /"RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL"\s*:\s*"(?<email>[^"]*)"/.exec(environmentBlock);
 
   if (productEnvironmentProfile.emailDeliveryPolicy === 'uat-sink') {
-    const isSink = match?.groups?.email === 'blackboxrecordsathens+TESTING@gmail.com';
+    const isSink = match?.groups?.email === UAT_RESEND_RECEIVING_SINK_EMAIL;
 
     return {
       detail: isSink

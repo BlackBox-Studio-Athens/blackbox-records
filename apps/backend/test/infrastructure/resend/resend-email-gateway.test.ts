@@ -44,7 +44,7 @@ describe('ResendEmailGateway', () => {
         subject: 'Order paid',
         tags: [{ name: 'purpose', value: 'paid-order-shopper' }],
         text: 'Paid',
-        to: 'blackboxrecordsathens+TESTING@gmail.com',
+        to: 'uat-sink@ambkime.resend.app',
       }),
     ).resolves.toEqual({ ok: true });
 
@@ -56,7 +56,7 @@ describe('ResendEmailGateway', () => {
         subject: 'Order paid',
         tags: [{ name: 'purpose', value: 'paid-order-shopper' }],
         text: 'Paid',
-        to: 'blackboxrecordsathens+TESTING@gmail.com',
+        to: 'uat-sink@ambkime.resend.app',
       },
       {
         idempotencyKey: 'blackbox:uat:paid-order-shopper:cs_test_123',
@@ -80,7 +80,7 @@ describe('ResendEmailGateway', () => {
 
     await expect(
       gateway.registerNewsletterContact({
-        email: 'blackboxrecordsathens+TESTING@gmail.com',
+        email: 'uat-sink@ambkime.resend.app',
         properties: {
           consentSource: 'site-form',
         },
@@ -90,18 +90,18 @@ describe('ResendEmailGateway', () => {
     ).resolves.toEqual({ ok: true });
 
     expect(update).toHaveBeenCalledWith({
-      email: 'blackboxrecordsathens+TESTING@gmail.com',
+      email: 'uat-sink@ambkime.resend.app',
       properties: {
         consentSource: 'site-form',
       },
       unsubscribed: false,
     });
     expect(updateTopics).toHaveBeenCalledWith({
-      email: 'blackboxrecordsathens+TESTING@gmail.com',
+      email: 'uat-sink@ambkime.resend.app',
       topics: [{ id: 'topic_newsletter', subscription: 'opt_in' }],
     });
     expect(addSegment).toHaveBeenCalledWith({
-      email: 'blackboxrecordsathens+TESTING@gmail.com',
+      email: 'uat-sink@ambkime.resend.app',
       segmentId: 'seg_newsletter',
     });
   });
@@ -162,7 +162,7 @@ describe('ResendEmailGateway', () => {
         subject: 'Order paid',
         tags: [],
         text: 'Paid',
-        to: 'blackboxrecordsathens+TESTING@gmail.com',
+        to: 'uat-sink@ambkime.resend.app',
       }),
     ).resolves.toEqual({
       ok: false,
@@ -193,7 +193,7 @@ describe('ResendEmailGateway', () => {
         subject: 'Order paid',
         tags: [],
         text: 'Paid',
-        to: 'blackboxrecordsathens+TESTING@gmail.com',
+        to: 'uat-sink@ambkime.resend.app',
       }),
     ).resolves.toEqual({
       ok: false,

@@ -162,6 +162,16 @@ The runner defaults to the GitHub Pages UAT site and is also used by the downstr
 
 Supported scenarios are `happy_path_paid`, `three_d_secure`, `card_declined`, `insufficient_funds`, `expired_card`, `incorrect_cvc`, `processing_error`, and `all`. The committed JetBrains run configuration `Stripe Sandbox Smoke` runs `--scenario all` through `pnpm smoke:stripe-uat`. Stripe’s current test card reference lives at <https://docs.stripe.com/testing#cards>. Paid deployed UAT smoke expects the persistent Stripe Dashboard/Workbench webhook endpoint to deliver to `https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev/api/stripe/webhooks`; `stripe listen` is local/temporary diagnostic tooling only and is not persistent readiness evidence.
 
+Receipt-aware UAT proof is operator-started and stays out of GitHub Actions:
+
+```sh
+pnpm smoke:stripe-uat -- \
+  --scenario happy_path_paid,pay_what_you_want_paid \
+  --verify-email-receipts
+```
+
+The command requires the authenticated local Resend CLI profile, performs a quiet Receiving preflight, waits for exactly one shopper and one ops message per paid order at the managed UAT sink, and writes redacted receipt observations. The default receipt deadline is 120 seconds; use `--email-receipt-timeout-ms` only when overriding it. The checked-in post-merge workflow omits this flag and remains credential-free. Resend Free currently includes 3,000 sent-plus-received transactional emails per month, a 100-per-day limit, and 30-day retention; one canonical receipt run consumes eight units. See <https://resend.com/docs/knowledge-base/account-quotas-and-limits> and <https://resend.com/pricing>.
+
 Run the UAT Resend smoke when you need to prove the UAT Worker can register a newsletter Contact through Resend:
 
 ```sh
@@ -465,13 +475,13 @@ pnpm audit:commerce-boundaries
   - `RESEND_OPS_TO_EMAIL=blackboxrecordsathens@gmail.com`
   - `RESEND_NEWSLETTER_TOPIC_ID`
   - optional `RESEND_NEWSLETTER_SEGMENT_ID`
-  - `RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL=blackboxrecordsathens+TESTING@gmail.com` for the UAT Worker target only
+  - `RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL=uat-sink@ambkime.resend.app` for the UAT Worker target only
 - Paid-order email brand URLs are non-secret Worker runtime config and must match the Product Environment profile:
   - `EMAIL_BRAND_HOME_URL`
   - `EMAIL_BRAND_LOGO_URL`
   - Local/UAT use the GitHub Pages public site and logo URLs.
   - PRD uses the Cloudflare Pages public site and logo URLs until an approved custom public site domain replaces them.
-- Resend uses `blackboxrecordsathens.com` as the single approved Free-tier sending domain. DNS verification, SPF/DKIM/DMARC alignment, Cloudflare Email Routing for support replies, Topic/Segment setup, and Worker secret upload are manual operator checkpoints; do not commit provider-readiness evidence.
+- Resend uses `blackboxrecordsathens.com` for sending and a separate managed `*.resend.app` Receiving sink for UAT. Keep Receiving disabled on `blackboxrecordsathens.com`; DNS verification, SPF/DKIM/DMARC alignment, Cloudflare Email Routing for support replies, Topic/Segment setup, and Worker secret upload are manual operator checkpoints; do not commit provider-readiness evidence.
 - Local and automated tests use application-level provider mocks and committed fake `re_mock_*` values. UAT application email and newsletter Contact writes route to the sink recipient; PRD ignores that override and uses real recipients only after provider setup is complete.
 - The UAT Worker persistent webhook readiness check is:
   - `pnpm stripe:webhooks:verify --env uat`

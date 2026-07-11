@@ -13,12 +13,14 @@ import type {
   StripeSandboxSmokeScenarioSelection,
 } from '../smoke-stripe-sandbox';
 import { defaultSiteUrl, defaultWorkerUrl } from './constants';
+import { DEFAULT_RESEND_RECEIPT_TIMEOUT_MS } from './email-receipts';
 import { allScenarioNames } from './scenario-policy';
 
 export function parseStripeSandboxSmokeArgs(args: string[]): StripeSandboxSmokeOptions {
   const options: StripeSandboxSmokeOptions = {
     debug: false,
     declineConcurrency: 3,
+    emailReceiptTimeoutMs: DEFAULT_RESEND_RECEIPT_TIMEOUT_MS,
     expectedCheckoutAmountMinor: null,
     expectedPaymentMethodLabels: parsePaymentMethodLabelList(process.env.STRIPE_SANDBOX_EXPECTED_PAYMENT_LABELS ?? ''),
     fieldActionTimeoutMs: 2_000,
@@ -28,6 +30,7 @@ export function parseStripeSandboxSmokeArgs(args: string[]): StripeSandboxSmokeO
     siteUrl: defaultSiteUrl,
     timeoutMs: 120_000,
     trace: false,
+    verifyEmailReceipts: false,
     workerUrl: defaultWorkerUrl,
   };
 
@@ -40,6 +43,11 @@ export function parseStripeSandboxSmokeArgs(args: string[]): StripeSandboxSmokeO
 
     if (arg === '--headed') {
       options.headed = true;
+      continue;
+    }
+
+    if (arg === '--verify-email-receipts') {
+      options.verifyEmailReceipts = true;
       continue;
     }
 
@@ -159,6 +167,21 @@ export function parseStripeSandboxSmokeArgs(args: string[]): StripeSandboxSmokeO
       const value = args[index + 1];
       index += 1;
       options.timeoutMs = parsePositiveInteger(value, '--timeout-ms');
+      continue;
+    }
+
+    if (arg === '--email-receipt-timeout-ms') {
+      const value = args[index + 1];
+      index += 1;
+      options.emailReceiptTimeoutMs = parsePositiveInteger(value, '--email-receipt-timeout-ms');
+      continue;
+    }
+
+    if (arg?.startsWith('--email-receipt-timeout-ms=')) {
+      options.emailReceiptTimeoutMs = parsePositiveInteger(
+        arg.slice('--email-receipt-timeout-ms='.length),
+        '--email-receipt-timeout-ms',
+      );
       continue;
     }
 

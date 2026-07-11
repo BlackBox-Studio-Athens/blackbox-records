@@ -165,7 +165,7 @@ describe('runtime config verification', () => {
             "RESEND_FROM_EMAIL": "orders@blackboxrecordsathens.com",
             "RESEND_OPS_TO_EMAIL": "blackboxrecordsathens@gmail.com",
             "RESEND_REPLY_TO_EMAIL": "support@blackboxrecordsathens.com",
-            "RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL": "blackboxrecordsathens+TESTING@gmail.com"
+            "RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL": "uat-sink@ambkime.resend.app"
           }
         }
       }
@@ -186,7 +186,7 @@ describe('runtime config verification', () => {
       secretNames: requiredResendSecrets,
       wranglerConfigText: wranglerConfigText.replace(
         '"RESEND_REPLY_TO_EMAIL": "support@blackboxrecordsathens.com"',
-        '"RESEND_REPLY_TO_EMAIL": "support@blackboxrecordsathens.com", "RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL": "blackboxrecordsathens+TESTING@gmail.com"',
+        '"RESEND_REPLY_TO_EMAIL": "support@blackboxrecordsathens.com", "RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL": "uat-sink@ambkime.resend.app"',
       ),
     });
 

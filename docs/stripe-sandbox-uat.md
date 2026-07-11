@@ -222,6 +222,18 @@ pnpm smoke:stripe-uat -- --site-url https://blackbox-studio-athens.github.io/bla
 pnpm smoke:stripe-uat -- --site-url https://blackbox-studio-athens.github.io/blackbox-records/ --scenario happy_path_paid
 ```
 
+For explicit operator receipt proof, run the canonical paid pair with the existing authenticated Resend CLI profile:
+
+```powershell
+pnpm smoke:stripe-uat -- `
+  --site-url https://blackbox-studio-athens.github.io/blackbox-records/ `
+  --worker-url https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev `
+  --scenario happy_path_paid,pay_what_you_want_paid `
+  --verify-email-receipts
+```
+
+Receipt mode is non-interactive after start, with a default 120-second receipt deadline. It fails before paid provider state if the Resend CLI, profile, Receiving access, or JSON output is invalid; it does not invoke login or accept an API key argument. It requires one shopper and one ops receipt per paid order at `uat-sink@ambkime.resend.app`. Evidence records only safe order references, audience, received timestamp, match count, status, and issues. The credential-free GitHub workflow does not enable this mode.
+
 Run the Resend UAT smoke after the UAT Worker has `RESEND_API_KEY` and `RESEND_NEWSLETTER_TOPIC_ID` configured:
 
 ```sh

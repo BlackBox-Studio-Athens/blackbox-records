@@ -16,6 +16,8 @@ const optionalNonEmptyString = z
   .optional()
   .transform((value) => (value ? value : null));
 
+export const UAT_RESEND_RECEIVING_SINK_EMAIL = 'uat-sink@ambkime.resend.app';
+
 const emailRuntimeBindingInputSchema = z.object({
   EMAIL_BRAND_HOME_URL: z.string().optional(),
   EMAIL_BRAND_LOGO_URL: z.string().optional(),
@@ -77,7 +79,7 @@ export function readEmailRuntimeConfig(bindings: EmailRuntimeBindingValues): Ema
   }
 
   if (parsed.data.productEnvironmentProfile.emailDeliveryPolicy === 'uat-sink') {
-    if (parsed.data.uatRecipientOverrideEmail !== 'blackboxrecordsathens+TESTING@gmail.com') {
+    if (parsed.data.uatRecipientOverrideEmail !== UAT_RESEND_RECEIVING_SINK_EMAIL) {
       throw new EmailConfigurationError('UAT email recipient sink is not configured.');
     }
   }

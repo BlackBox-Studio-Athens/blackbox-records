@@ -100,6 +100,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(parseStripeSandboxSmokeArgs([])).toEqual({
       debug: false,
       declineConcurrency: 3,
+      emailReceiptTimeoutMs: 120_000,
       expectedCheckoutAmountMinor: null,
       expectedPaymentMethodLabels: [],
       fieldActionTimeoutMs: 2_000,
@@ -109,6 +110,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       siteUrl: 'https://blackbox-studio-athens.github.io/blackbox-records',
       timeoutMs: 120_000,
       trace: false,
+      verifyEmailReceipts: false,
       workerUrl: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
     });
   });
@@ -131,6 +133,8 @@ describe('Stripe sandbox Playwright smoke runner', () => {
         '--screenshots',
         'always',
         '--timeout-ms=30000',
+        '--verify-email-receipts',
+        '--email-receipt-timeout-ms=45000',
         '--site-url',
         'https://example.pages.dev/',
         '--worker-url=https://example.workers.dev/',
@@ -138,6 +142,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     ).toEqual({
       debug: false,
       declineConcurrency: 2,
+      emailReceiptTimeoutMs: 45_000,
       expectedCheckoutAmountMinor: 2_900,
       expectedPaymentMethodLabels: ['Link', 'Google Pay'],
       fieldActionTimeoutMs: 1_500,
@@ -147,6 +152,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       siteUrl: 'https://example.pages.dev',
       timeoutMs: 30_000,
       trace: true,
+      verifyEmailReceipts: true,
       workerUrl: 'https://example.workers.dev',
     });
 
@@ -170,6 +176,12 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     );
     expect(() => parseStripeSandboxSmokeArgs(['--expected-checkout-amount-minor', '0'])).toThrow(
       '--expected-checkout-amount-minor must be a positive integer.',
+    );
+    expect(() => parseStripeSandboxSmokeArgs(['--email-receipt-timeout-ms', '0'])).toThrow(
+      '--email-receipt-timeout-ms must be a positive integer.',
+    );
+    expect(() => parseStripeSandboxSmokeArgs(['--resend-api-key', 're_live_secret'])).toThrow(
+      'Unknown argument: --resend-api-key',
     );
   });
 
