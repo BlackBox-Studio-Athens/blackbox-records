@@ -27,7 +27,7 @@
 - [x] 4.2 Run `pnpm runtime:config:verify --env local`, `--env uat`, and `--env prd`; confirm only UAT accepts the managed Receiving override.
 - [x] 4.3 Run `pnpm openspec validate adopt-resend-receiving-uat-sink --type change --strict` and `pnpm openspec validate --all --strict`.
 - [x] 4.4 Run `pnpm test:unit`, `pnpm check`, and `pnpm build` after the final implementation tree is complete.
-- [ ] 4.5 Deploy the UAT Worker, run `pnpm smoke:resend-uat`, then run the documented receipt-aware Stripe smoke and retain ignored/redacted Smoke Evidence proving shopper and ops receipt for both canonical paid scenarios.
-- [ ] 4.6 After replacement proof passes, delete only the old `blackboxrecordsathens+TESTING@gmail.com` synthetic Contact and confirm subsequent UAT application email and Contact writes target the managed sink without reaching Gmail.
-- [ ] 4.7 Confirm a credential-free post-merge UAT workflow run finishes unattended with its existing checkout/order evidence while receipt verification remains explicitly operator-started.
-- [ ] 4.8 Re-run scoped/all strict OpenSpec validation, `pnpm test:unit`, `pnpm check`, and `pnpm build` against the exact final tree immediately before any push or completion claim.
+- [x] 4.5 Deploy the UAT Worker, run `pnpm smoke:resend-uat`, then run the documented receipt-aware Stripe smoke and retain ignored/redacted Smoke Evidence proving shopper and ops receipt for both canonical paid scenarios.
+- [x] 4.6 After replacement proof passes, delete only the old `blackboxrecordsathens+TESTING@gmail.com` synthetic Contact and confirm subsequent UAT application email and Contact writes target the managed sink without reaching Gmail.
+- [x] 4.7 Confirm a credential-free post-merge UAT workflow run finishes unattended with its existing checkout/order evidence while receipt verification remains explicitly operator-started.
+- [x] 4.8 Re-run scoped/all strict OpenSpec validation, `pnpm test:unit`, `pnpm check`, and `pnpm build` against the exact final tree immediately before any push or completion claim.
