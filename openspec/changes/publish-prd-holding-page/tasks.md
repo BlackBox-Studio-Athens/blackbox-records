@@ -16,8 +16,8 @@
 ## 3. Add an Isolated Manual Deployment Workflow
 
 - [x] 3.1 Add `.github/workflows/prd-holding-page.yml` as a separate `workflow_dispatch`-only workflow with a false-by-default deploy input; run install, `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, the PRD-shaped build, and holding-artifact preparation without invoking `.github/workflows/pages.yml`.
-- [x] 3.2 Split the manual workflow into a credential-free build/artifact job and a bounded deploy job for `pages deploy apps/web/dist-holding --project-name=blackbox-records-web --branch=holding`; require approval from the protected `prd-holding` GitHub Actions environment and keep DNS outside CI.
-- [x] 3.3 Add workflow assertions or tests proving `.github/workflows/pages.yml` contains no holding build, `dist-holding` artifact, `holding` branch, or holding deploy behavior; prove no `push` can deploy `holding` and only the approved manual workflow can consume `dist-holding` or target that branch.
+- [x] 3.2 Split the manual workflow into a credential-free build/artifact job and a bounded deploy job for `pages deploy apps/web/dist-holding --project-name=blackbox-records-web --branch=holding`; route deployment through the `prd-holding` GitHub Actions environment and keep DNS outside CI.
+- [x] 3.3 Add workflow assertions or tests proving `.github/workflows/pages.yml` contains no holding build, `dist-holding` artifact, `holding` branch, or holding deploy behavior; prove no `push` can deploy `holding` and only the explicit manual workflow can consume `dist-holding` or target that branch.
 - [x] 3.4 Update `README.md`, `docs/environment-model.md`, and affected baseline OpenSpec specs with the PRD Holding Page, branch target, evidence boundary, activation steps, and launch/rollback handoff; do not change the UAT URL or full-site PRD canonical origin yet.
 
 ## 4. Verify the Final Local Tree
@@ -30,7 +30,7 @@
 ## 5. Deploy and Verify the Isolated Branch
 
 - [x] 5.1 Reconfirm Wrangler identity, the single `blackbox-records-web` Pages project, and current production deployment without printing credentials or changing state.
-- [x] 5.2 Configure the protected `prd-holding` GitHub Actions environment, then use the explicit `workflow_dispatch` input and required approval to deploy the verified artifact to the `holding` branch only; do not attach the domain yet.
+- [x] 5.2 Configure the `prd-holding` GitHub Actions environment, then use the explicit `workflow_dispatch` input to deploy the verified artifact to the `holding` branch only; do not attach the domain yet.
 - [x] 5.3 Use Browser Use and bounded HTTP checks against `holding.blackbox-records-web.pages.dev` to verify desktop/mobile rendering, assets, noindex headers, 404 isolation, no final routes, and no unexpected network or console errors.
 - [x] 5.4 Stop before DNS work if the named branch alias cannot pass all hosted checks; do not create a second Pages project as an unreviewed fallback.
 
@@ -41,6 +41,7 @@
 - [x] 6.3 Run focused artifact checks, `pnpm test:unit`, `pnpm check`, `pnpm build`, and Browser Use at phone and desktop sizes against the exact redesigned tree.
 - [x] 6.4 Redeploy the verified artifact through the protected `prd-holding` workflow and confirm the named branch alias still passes copy, layout, asset, noindex, 404, network, and console checks before domain activation.
 - [x] 6.5 Replace public website contact content with `https://www.instagram.com/blackboxrecordsath/` and `info@blackboxrecordsathens.com`, add restrained Instagram and Mail icons to holding actions, and verify every generated public contact path while leaving backend operations routing unchanged.
+- [x] 6.6 Record the owner's decision to remove required deployment reviewers, keep the `prd-holding` environment restricted to `main`, and verify an explicit holding deploy completes without a separate approval prompt.
 
 ## 7. Activate the Correct Public Domain
 

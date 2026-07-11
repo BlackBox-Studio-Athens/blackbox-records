@@ -43,7 +43,7 @@ For label-member UAT, the GitHub Pages URL is intentionally wired to the UAT Wor
 
 ### PRD Holding Page
 
-The temporary public PRD Holding Page is built from the unlinked `/prd-holding/` source route and deployed only by the manual `.github/workflows/prd-holding-page.yml` workflow. The workflow prepares `apps/web/dist-holding`, uploads it as a one-day artifact, and can deploy it to the `holding` branch of the existing `blackbox-records-web` Pages project after approval through the protected `prd-holding` GitHub Actions environment.
+The temporary public PRD Holding Page is built from the unlinked `/prd-holding/` source route and deployed only by the manual `.github/workflows/prd-holding-page.yml` workflow. The workflow prepares `apps/web/dist-holding`, uploads it as a one-day artifact, and can deploy it to the `holding` branch of the existing `blackbox-records-web` Pages project through the `prd-holding` GitHub Actions environment. That environment restricts deployment sources to `main` but has no required reviewers, so an explicit `deploy=true` dispatch proceeds without a separate approval prompt.
 
 - Build the normal PRD-shaped site: `pnpm build`
 - Prepare the allowlisted holding artifact: `pnpm prd:holding:prepare`

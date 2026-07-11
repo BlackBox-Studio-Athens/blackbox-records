@@ -22,7 +22,7 @@ PRD has two static deployment surfaces in the same `blackbox-records-web` Cloudf
 
 The `holding` branch is not a fourth Product Environment. Its evidence proves only holding-page artifact, public-domain, TLS, redirect, and route-isolation readiness. It does not satisfy UAT acceptance, full-site PRD readiness, Promotion Evidence, Stripe, Worker, D1, catalog, webhook, or go/no-go gates.
 
-The manual `.github/workflows/prd-holding-page.yml` workflow builds and verifies `apps/web/dist-holding` without credentials. Its optional deploy job targets only the Pages `holding` branch and requires the protected `prd-holding` GitHub Actions environment. DNS is never changed by CI.
+The manual `.github/workflows/prd-holding-page.yml` workflow builds and verifies `apps/web/dist-holding` without credentials. Its optional deploy job targets only the Pages `holding` branch through the `prd-holding` GitHub Actions environment. The environment restricts deployment sources to `main` and has no required reviewers, so an explicit `deploy=true` dispatch needs no separate approval. DNS is never changed by CI.
 
 Activation order is fixed:
 

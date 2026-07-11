@@ -109,7 +109,8 @@ The system SHALL deploy the PRD Holding Page as a named branch artifact in the e
 #### Scenario: Operator requests a holding deployment
 
 - **WHEN** an operator starts the separate PRD Holding Page workflow with its `workflow_dispatch` deploy input enabled
-- **THEN** the holding deploy job waits for the protected `prd-holding` GitHub Actions environment approval
+- **THEN** the holding deploy job uses the `prd-holding` GitHub Actions environment without a required-reviewer gate
+- **AND** the environment accepts deployments only from `main`
 - **AND** it deploys the same commit's verified `dist-holding` artifact to the Pages `holding` branch
 - **AND** it does not invoke the shared static workflow, change DNS, redeploy UAT, or change the Pages production `main` deployment.
 
