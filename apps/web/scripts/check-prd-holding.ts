@@ -74,6 +74,8 @@ const requiredMarkup = [
   'BLACKBOX RECORDS IS ACTIVE.',
   'FOLLOW ON INSTAGRAM',
   'EMAIL THE LABEL',
+  'href="https://www.instagram.com/blackboxrecordsath/"',
+  'href="mailto:info@blackboxrecordsathens.com"',
 ];
 for (const markup of requiredMarkup) {
   if (!indexHtml.includes(markup)) throw new Error(`Missing required PRD Holding Page markup: ${markup}`);

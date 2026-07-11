@@ -25,4 +25,14 @@
 
 ## Activation result
 
-Paused by the owner on 2026-07-11 before any Cloudflare domain mutation. Resume from task 7.2 after dashboard authentication with DNS and Redirect Rules access.
+- The owner associated `blackboxrecordsathens.com` with the existing `blackbox-records-web` Pages project and changed the proxied apex target to `holding.blackbox-records-web.pages.dev`.
+- The authenticated Pages API reported the custom domain and HTTP validation as `active`.
+- Browser Use loaded `https://blackboxrecordsathens.com/` over HTTPS with the `UNDER CONSTRUCTION.` holding document, canonical apex metadata, `noindex, nofollow`, one logo, no form, and no console errors.
+- The full Pages production `main` site did not appear on the apex.
+- `www` DNS/TLS and exact-host canonical redirects remain pending under tasks 7.4–7.5.
+
+## Public contact correction — 2026-07-11
+
+- Shared public content now resolves Instagram to `https://www.instagram.com/blackboxrecordsath/` and inquiries to `info@blackboxrecordsathens.com`.
+- Backend order-operations routing remains unchanged.
+- The assembled holding artifact passed exact destination checks and Browser Use at desktop and 390 px widths with two 18 px SVG icons, 44 px actions, no horizontal overflow, and no console errors.

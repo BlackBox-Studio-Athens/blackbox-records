@@ -1,6 +1,8 @@
 ---
 import { createProjectRelativeUrl, siteBrandAssets } from '@/config/site';
+import InstagramIcon from '@/components/icons/InstagramIcon.astro';
 import { getContentSection, getServicesContent, getSocialItems } from '@/lib/site-data';
+import { Mail } from 'lucide-react';
 
 const pageTitle = 'BlackBox Records | Site Coming Online';
 const pageDescription = 'BlackBox Records is active. The full site is coming online soon.';
@@ -74,8 +76,14 @@ if (!inquiryEmail || inquiryEmail === '#' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
         <div class="holding-page__footer">
           <p class="holding-page__status">BLACKBOX RECORDS IS ACTIVE.</p>
           <nav class="holding-page__actions" aria-label="Contact BlackBox Records">
-            <a href={instagramUrl} rel="noreferrer noopener">FOLLOW ON INSTAGRAM <span aria-hidden="true">↗</span></a>
-            <a href={`mailto:${inquiryEmail}`}>EMAIL THE LABEL <span aria-hidden="true">→</span></a>
+            <a href={instagramUrl} rel="noreferrer noopener">
+              <InstagramIcon class="holding-page__action-icon" />
+              FOLLOW ON INSTAGRAM
+            </a>
+            <a href={`mailto:${inquiryEmail}`}>
+              <Mail className="holding-page__action-icon" aria-hidden="true" />
+              EMAIL THE LABEL
+            </a>
           </nav>
         </div>
       </section>
@@ -191,6 +199,12 @@ if (!inquiryEmail || inquiryEmail === '#' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
     font-weight: 700;
     letter-spacing: 0.14em;
     text-underline-offset: 0.32em;
+  }
+
+  :global(.holding-page__action-icon) {
+    width: 1.125rem;
+    height: 1.125rem;
+    flex: 0 0 auto;
   }
 
   .holding-page__actions a:hover {

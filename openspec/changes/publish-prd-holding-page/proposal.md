@@ -1,6 +1,6 @@
 ## Why
 
-`blackboxrecordsathens.com` is delegated to Cloudflare but still serves registrar parking over HTTP, has no working HTTPS site, and is not attached to the existing Cloudflare Pages project. The label needs a deliberate public presence on its future PRD hostname without changing the UAT review experience, exposing unfinished commerce, or removing the full `pages.dev` PRD readiness surface.
+`blackboxrecordsathens.com` was delegated to Cloudflare but served registrar parking without working HTTPS. It is now attached to the existing Cloudflare Pages project and serves the isolated PRD Holding Page while the label prepares the full site without changing UAT, exposing unfinished commerce, or removing the full `pages.dev` PRD readiness surface.
 
 ## What Changes
 

@@ -1,6 +1,6 @@
 ## Context
 
-As of 2026-07-11, Cloudflare contains one Pages project, `blackbox-records-web`, whose production `main` deployment serves the full disabled PRD readiness site at `https://blackbox-records-web.pages.dev/`. UAT independently serves the same visible site from GitHub Pages. The verified PRD Holding Page is deployed at `https://holding.blackbox-records-web.pages.dev/`. The correct owned domain is `blackboxrecordsathens.com`; it uses Cloudflare nameservers but is not yet attached to the Pages holding target. The misspelled `blakboxrecordsathens.com` is never used.
+As of 2026-07-11, Cloudflare contains one Pages project, `blackbox-records-web`, whose production `main` deployment serves the full disabled PRD readiness site at `https://blackbox-records-web.pages.dev/`. UAT independently serves the same visible site from GitHub Pages. The verified PRD Holding Page is deployed at `https://holding.blackbox-records-web.pages.dev/`, and the active custom apex `https://blackboxrecordsathens.com/` serves that holding target with valid TLS. The misspelled `blakboxrecordsathens.com` is never used.
 
 The repo now contains the production-owned source route at `apps/web/src/pages/prd-holding/index.astro`, a strict holding artifact builder/checker, and a protected manual branch deployment. The first deployed composition proved the delivery path. On 2026-07-11, the owner approved use of `blackboxrecordsathens.com` for this holding surface and requested a plainer under-construction treatment without the live-performance landing image.
 
@@ -82,7 +82,7 @@ Default copy:
 - Status: `BLACKBOX RECORDS IS ACTIVE.`
 - Links: `FOLLOW ON INSTAGRAM` and `EMAIL THE LABEL`
 
-Instagram and email values come from existing repo content at build time. Placeholder `#` values are filtered out. No navigation to unfinished routes, private-preview language, environment names, provider status, countdown, or unapproved date appears.
+Instagram and email values come from existing repo content at build time. The canonical public destinations are `https://www.instagram.com/blackboxrecordsath/` and `info@blackboxrecordsathens.com`; backend order-operations routing remains separate. Placeholder `#` values are filtered out. No navigation to unfinished routes, private-preview language, environment names, provider status, countdown, or unapproved date appears.
 
 ### Keep interaction static and motion optional
 
