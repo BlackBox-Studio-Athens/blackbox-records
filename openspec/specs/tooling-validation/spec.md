@@ -1,7 +1,9 @@
 ## Purpose
 
 Specify repository validation gates, local tooling, dependency-audit posture, and OpenSpec workflow ownership.
+
 ## Requirements
+
 ### Requirement: Standard repository gates
 
 The system SHALL run the standard repository gates after behavior-changing implementation.
@@ -997,4 +999,3 @@ The validation workflow SHALL apply repository and OpenSpec gates to the exact f
 - **WHEN** all accepted slices and decision gates are closed
 - **THEN** OpenSpec strict validation passes for this change and the full spec set
 - **AND** the final report lists before/after values, field-data confidence, skipped conditional fallbacks, and any separately proposed follow-up.
-

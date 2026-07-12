@@ -3,7 +3,9 @@
 ## Purpose
 
 TBD - created by archiving change standardize-site-images. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Simple Image Roles
 
 The system SHALL classify site image behavior with a small set of image roles.
@@ -229,4 +231,3 @@ The system SHALL serve local main-site header and footer brand imagery at dimens
 - **WHEN** a font or logo source used by the PRD holding artifact changes
 - **THEN** the holding artifact is rebuilt and its closed asset set is verified
 - **AND** its no-API, no-analytics, no-third-party-request contract remains unchanged.
-

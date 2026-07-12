@@ -1,8 +1,11 @@
 # frontend-runtime-performance Specification
 
 ## Purpose
+
 TBD - created by archiving change improve-site-runtime-performance. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Frontend performance evidence is comparable
 
 The system SHALL evaluate frontend runtime performance with route-specific, environment-specific, and reproducible evidence.
@@ -127,4 +130,3 @@ The system SHALL stop at the smallest change that meets the applicable performan
 - **WHEN** visibility deferral, native containment, direct dynamic imports, or static asset optimization misses its declared gate
 - **THEN** the trace identifies the remaining bottleneck
 - **AND** any batch API, virtualization, partial-document routing, custom telemetry backend, media service, or broad blur removal requires updated OpenSpec design and requirements before implementation.
-

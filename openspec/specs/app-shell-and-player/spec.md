@@ -1,7 +1,9 @@
 ## Purpose
 
 Specify persistent app-shell navigation, overlay routing, and music-player behavior in the static Astro frontend.
+
 ## Requirements
+
 ### Requirement: Same-document shell navigation
 
 The system SHALL intercept top-level section navigation through the persistent shell while preserving direct page loads.
@@ -219,4 +221,3 @@ The app shell SHALL keep navigation-critical behavior eager while loading dorman
 - **WHEN** a player session is opened, minimized, reopened, carried through shell navigation, or stopped
 - **THEN** the established single-session player behavior remains unchanged
 - **AND** code splitting does not move player ownership into page-local content.
-

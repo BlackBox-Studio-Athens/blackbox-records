@@ -1,7 +1,9 @@
 ## Purpose
 
 Specify native storefront, cart, checkout, Stripe, feature-gate, and secret-boundary behavior.
+
 ## Requirements
+
 ### Requirement: Native store projection
 
 The system SHALL render native store pages from repo-owned content and stable store projections.
@@ -595,4 +597,3 @@ The system SHALL retain per-visible-item Store Offer reads unless post-deferral 
 - **WHEN** repeatable profiling attributes the remaining miss to per-item Store Offer scheduling or island overhead
 - **THEN** the design and commerce requirements are updated before batching is implemented
 - **AND** any batch contract remains `no-store`, fail-closed, bounded in item count, browser-safe per item, and subject to checkout-start revalidation.
-
