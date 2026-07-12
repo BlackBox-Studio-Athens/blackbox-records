@@ -15,6 +15,12 @@ describe('app shell startup closure', () => {
     expect(source).toContain('connectShellDocumentEventRouting');
     expect(source).toContain('openShellSectionNavigation');
     expect(source).toContain('normalizeAppPathname(initialPathname)');
+    expect(source).toContain(
+      "setStoreCartHeaderContainer(document.querySelector<HTMLElement>('[data-store-cart-header-root]'))",
+    );
+    expect(source).toContain('.catch(() =>');
+    expect(portalSource).toContain('storeCartBridgeFailed ?');
+    expect(portalSource).toContain('Cart is unavailable.');
 
     for (const moduleName of ['ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton']) {
       expect(portalSource).toContain(`const ${moduleName} = React.lazy(`);

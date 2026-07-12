@@ -38,6 +38,7 @@ type ShellPortalOutletsProps = {
   servicesInquiryEmail: string;
   servicesInquirySubmitText: string;
   storeCartHeaderContainer: HTMLElement | null;
+  storeCartBridgeFailed: boolean;
   storeCartState: StoreCartState;
 };
 
@@ -49,6 +50,7 @@ export default function ShellPortalOutlets({
   servicesInquiryEmail,
   servicesInquirySubmitText,
   storeCartHeaderContainer,
+  storeCartBridgeFailed,
   storeCartState,
 }: ShellPortalOutletsProps) {
   return (
@@ -88,17 +90,21 @@ export default function ShellPortalOutlets({
 
       {storeCartHeaderContainer
         ? createPortal(
-            <PortalErrorBoundary
-              fallback={
-                <button type="button" onClick={onOpenStoreCart}>
-                  Cart
-                </button>
-              }
-            >
-              <React.Suspense fallback={loadingStatus('cart')}>
-                <StoreCartButton cartState={storeCartState} onClick={onOpenStoreCart} />
-              </React.Suspense>
-            </PortalErrorBoundary>,
+            storeCartBridgeFailed ? (
+              <span role="alert">Cart is unavailable.</span>
+            ) : (
+              <PortalErrorBoundary
+                fallback={
+                  <button type="button" onClick={onOpenStoreCart}>
+                    Cart
+                  </button>
+                }
+              >
+                <React.Suspense fallback={loadingStatus('cart')}>
+                  <StoreCartButton cartState={storeCartState} onClick={onOpenStoreCart} />
+                </React.Suspense>
+              </PortalErrorBoundary>
+            ),
             storeCartHeaderContainer,
           )
         : null}

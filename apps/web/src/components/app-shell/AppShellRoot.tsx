@@ -98,6 +98,7 @@ export default function AppShellRoot({
   const [artistsRosterFiltersContainer, setArtistsRosterFiltersContainer] = useState<HTMLElement | null>(null);
   const [servicesInquiryContainer, setServicesInquiryContainer] = useState<HTMLElement | null>(null);
   const [storeCartHeaderContainer, setStoreCartHeaderContainer] = useState<HTMLElement | null>(null);
+  const [storeCartBridgeFailed, setStoreCartBridgeFailed] = useState(false);
   const [storeCartState, setStoreCartState] = useState<StoreCartState>(() => ({ lines: [], primaryLineItem: null }));
   const [isStoreCartDrawerOpen, setIsStoreCartDrawerOpen] = useState(false);
 
@@ -237,8 +238,9 @@ export default function AppShellRoot({
 
     let disconnect: (() => void) | undefined;
     let cancelled = false;
-    void import('@/components/app-shell/store-cart/store-cart-bridge').then(
-      ({ connectStoreCartBridge, getStoreCartBrowserStorage }) => {
+    setStoreCartHeaderContainer(document.querySelector<HTMLElement>('[data-store-cart-header-root]'));
+    void import('@/components/app-shell/store-cart/store-cart-bridge')
+      .then(({ connectStoreCartBridge, getStoreCartBrowserStorage }) => {
         if (cancelled) return;
         disconnect = connectStoreCartBridge({
           eventTarget: window,
@@ -248,8 +250,10 @@ export default function AppShellRoot({
           setStoreCartHeaderContainer,
           setStoreCartState,
         });
-      },
-    );
+      })
+      .catch(() => {
+        if (!cancelled) setStoreCartBridgeFailed(true);
+      });
 
     return () => {
       cancelled = true;
@@ -651,6 +655,7 @@ export default function AppShellRoot({
         servicesInquiryEmail={servicesInquiryEmail}
         servicesInquirySubmitText={servicesInquirySubmitText}
         storeCartHeaderContainer={storeCartHeaderContainer}
+        storeCartBridgeFailed={storeCartBridgeFailed}
         storeCartState={storeCartState}
       />
     </>

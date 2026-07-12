@@ -44,7 +44,6 @@ export const CHECKOUT_ORDER_SUMMARY_COPY = {
   subtotal: 'Subtotal',
   title: 'Order Summary',
 } as const;
-export { CHECKOUT_CART_UPDATED_EVENT } from '@/lib/store-cart-events';
 
 export function createCheckoutOrderSummaryView(
   input: CheckoutOrderSummaryInput,
