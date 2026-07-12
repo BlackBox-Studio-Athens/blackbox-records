@@ -119,4 +119,12 @@ Browser Use preserved 82 server-rendered cards, 82 stable price frames, cart acc
 
 Under task 3.10 the Store item stops inside approved scope. Pagination, batching, and virtualization require an amended change.
 
+### License-safe Veneer delivery
+
+The existing 312,816-byte Veneer WOFF2 remains byte-for-byte unchanged. Both the stable Holding Page copy and the new Astro-owned source have SHA-256 `F02B74CB53A1640C6CBFC9A2AA5F5CE0609FA358231A9B30B93C1E0072622939`. Normal routes now discover only the fingerprinted `/_astro/veneer_regular.*.woff2` asset from bundled CSS with `font-display: optional`; they no longer link or request `/assets/fonts/brand/veneer.css`. The generated asset is covered by the immutable `_astro` cache rule. The stable public CSS/font pair remains owned by the PRD Holding Page and also uses `optional`.
+
+The Holding Page preload was retained after three mobile-stress A/B runs. With preload, LCP was 576/568/532 ms and CLS stayed zero. Without preload, LCP was 1,828/468/452 ms and CLS stayed zero. The retained preload avoided the cold outlier; neither variant produced a 50 ms font-attributed task or late layout shift. Main-route current-versus-optional traces likewise produced no repeatable 50 ms Veneer-attributed task or long animation frame and removed the prior late-swap layout burst. Raw traces are under `.codex-artifacts/runtime-performance/font-optional/`.
+
+Browser Use checks with the Veneer request blocked and cached covered Home, Distro, Store checkout, and the Holding Page at mobile and desktop widths. English, Greek, accents/diacritics, long headings, navigation, cards, labels, and calls to action stayed visible without horizontal overflow or geometry loss. Cached main routes loaded the fingerprinted asset and `document.fonts.check('900 48px Veneer')` returned true. Evidence screenshots are under `.codex-artifacts/runtime-performance/font-optional/browser-use/`. `pnpm brand-font:check`, cache policy validation, the production build, `pnpm prd:holding:prepare`, and `pnpm prd:holding:check` passed.
+
 Exact-final-tree acceptance remains pending.

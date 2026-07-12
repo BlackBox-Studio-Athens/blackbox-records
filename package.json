@@ -58,6 +58,7 @@
     "build:web": "pnpm --filter @blackbox/web build",
     "cache:policy:check": "pnpm --filter @blackbox/web cache:policy:check",
     "cache:policy:hosted-audit": "pnpm --filter @blackbox/web cache:policy:hosted-audit",
+    "brand-font:check": "pnpm --filter @blackbox/web brand-font:check",
     "performance:runtime": "tsx scripts/measure-runtime-performance.ts",
     "performance:bundles": "tsx scripts/check-runtime-bundle-graphs.ts",
     "generate:api": "pnpm --filter @blackbox/backend generate:openapi && pnpm --filter @blackbox/api-client generate",

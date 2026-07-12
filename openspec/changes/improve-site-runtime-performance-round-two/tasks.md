@@ -50,16 +50,16 @@
 
 ## 4. License-Safe Veneer Delivery Slice
 
-- [ ] 4.1 Preserve the existing public `veneer_regular.woff2` as immutable input and add a byte-identical Astro/Vite-owned main-site copy without subsetting, conversion, glyph removal, outline extraction, or derivative generation.
-- [ ] 4.2 Add a focused SHA-256 parity check covering the main-site and stable Holding Page copies and failing on any byte difference.
-- [ ] 4.3 Declare main-site Veneer from bundled CSS with `font-display: optional`, the existing fallback order, and a fingerprinted build URL.
-- [ ] 4.4 Remove the full main site's dependency on `/assets/fonts/brand/veneer.css` while retaining the stable public font/CSS pair required by the PRD Holding Page.
-- [ ] 4.5 Change the stable public declaration to prevent a late swap and keep the Holding Page preload only if its own repeated A/B remains layout-safe.
-- [ ] 4.6 Verify production output requests only the fingerprinted main-site font on normal routes, applies the immutable cache policy, and does not request the stable public font path.
-- [ ] 4.7 Run `pnpm prd:holding:prepare` and `pnpm prd:holding:check`; prove the closed artifact retains its exact byte-identical font, CSS, no-third-party, no-API, and no-analytics contract.
-- [ ] 4.8 Add or update focused tests for optional display, no global main-site preload, fingerprinted URL, immutable cache coverage, hash parity, and Holding Page stable-path ownership.
-- [ ] 4.9 Use Browser Use with font request blocked and cached to check English, Greek, accents/diacritics, long headings, navigation, cards, Store/checkout labels, and Holding Page layout at mobile and desktop widths.
-- [ ] 4.10 Re-run at least three equivalent current-versus-optional A/B traces; prove no repeatable font-attributed task or long animation frame reaches 50 ms and no late layout burst remains.
+- [x] 4.1 Preserve the existing public `veneer_regular.woff2` as immutable input and add a byte-identical Astro/Vite-owned main-site copy without subsetting, conversion, glyph removal, outline extraction, or derivative generation.
+- [x] 4.2 Add a focused SHA-256 parity check covering the main-site and stable Holding Page copies and failing on any byte difference.
+- [x] 4.3 Declare main-site Veneer from bundled CSS with `font-display: optional`, the existing fallback order, and a fingerprinted build URL.
+- [x] 4.4 Remove the full main site's dependency on `/assets/fonts/brand/veneer.css` while retaining the stable public font/CSS pair required by the PRD Holding Page.
+- [x] 4.5 Change the stable public declaration to prevent a late swap and keep the Holding Page preload only if its own repeated A/B remains layout-safe.
+- [x] 4.6 Verify production output requests only the fingerprinted main-site font on normal routes, applies the immutable cache policy, and does not request the stable public font path.
+- [x] 4.7 Run `pnpm prd:holding:prepare` and `pnpm prd:holding:check`; prove the closed artifact retains its exact byte-identical font, CSS, no-third-party, no-API, and no-analytics contract.
+- [x] 4.8 Add or update focused tests for optional display, no global main-site preload, fingerprinted URL, immutable cache coverage, hash parity, and Holding Page stable-path ownership.
+- [x] 4.9 Use Browser Use with font request blocked and cached to check English, Greek, accents/diacritics, long headings, navigation, cards, Store/checkout labels, and Holding Page layout at mobile and desktop widths.
+- [x] 4.10 Re-run at least three equivalent current-versus-optional A/B traces; prove no repeatable font-attributed task or long animation frame reaches 50 ms and no late layout burst remains.
 - [ ] 4.11 Run focused font/holding tests, `pnpm test:unit`, `pnpm check`, `pnpm build`, asset checks, and cache-policy checks; record exact hash, bytes, URLs, headers, LCP, CLS, and layout results.
 
 ## 5. About, Services, And Artists LCP Slice

@@ -2,6 +2,14 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
+@font-face {
+  font-family: 'Veneer';
+  src: url('../assets/fonts/brand/veneer_regular.woff2') format('woff2');
+  font-display: optional;
+  font-style: normal;
+  font-weight: 900;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
