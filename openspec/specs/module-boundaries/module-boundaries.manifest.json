@@ -161,12 +161,14 @@
       "status": "closed",
       "roots": [
         "apps/web/src/lib/store-cart.ts",
+        "apps/web/src/lib/store-cart-events.ts",
         "apps/web/src/lib/money.ts",
         "apps/web/src/components/store/StoreCartButton.tsx",
         "apps/web/src/components/store/StoreCartDrawer.tsx"
       ],
       "providedEntrypoints": [
         "apps/web/src/lib/store-cart.ts",
+        "apps/web/src/lib/store-cart-events.ts",
         "apps/web/src/components/store/StoreCartButton.tsx",
         "apps/web/src/components/store/StoreCartDrawer.tsx"
       ],

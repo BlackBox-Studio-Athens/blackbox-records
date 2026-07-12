@@ -163,4 +163,54 @@ The route-loading bar now computes `animation-name: none` while closed and `rout
 
 At 4× CPU, a two-second settled Home sample with the cue hidden and loading closed recorded 1.668 ms total task duration, 0 ms script, 0 ms layout, and 0 ms style recalculation. The round-two baseline attributed about 35.4 ms over the same settled interval to the two infinite animation owners. Browser Use confirmed `hero-scroll-cue` at the visible top state, no cue animation with the scrolled class, closed loading `none`, open loading `route-loading-sweep`, closed completion, `pointer-events: none`, focus on `MAIN`, scroll reset, and reduced-motion `none`. Browser Use's raw CDP bridge rejected new-document console instrumentation; the required DevTools fallback found no application errors or warnings, only three expected local Glancelytics CORB issues from `https://www.glancelytics.com/api/event`.
 
-Exact-final-tree acceptance remains pending.
+## Exact-final-tree acceptance
+
+Raw evidence: `.codex-artifacts/runtime-performance/2b96bbd7-final/`. The five profiles ran sequentially against the same production preview after an initial overlapped attempt was discarded. A Brooks review then found that trace aggregation mixed threads and overlapping intervals. Commit `33d1f89d` made the runner select the active Chromium renderer main thread and merge nested work before bucketing; the complete matrix below was rerun after that fix. No route errors occurred.
+
+### Final cold load
+
+| Route    | Desktop LCP median / p75 | Desktop CLS p75 | Desktop transfer / requests median | Mobile LCP median / p75 | Mobile CLS p75 | Mobile transfer / requests median | LCP element             |
+| -------- | -----------------------: | --------------: | ---------------------------------: | ----------------------: | -------------: | --------------------------------: | ----------------------- |
+| Home     |          1.164 / 1.200 s |         0.00024 |                     906,318 B / 34 |         1.648 / 1.656 s |        0.00064 |                  1,099,244 B / 33 | Hero tagline            |
+| Store    |          0.092 / 0.104 s |         0.00024 |                  2,081,815 B / 101 |         1.056 / 1.076 s |        0.01412 |                 4,471,155 B / 101 | First Store card image  |
+| Distro   |          0.136 / 0.136 s |         0.00024 |                   1,211,476 B / 98 |         1.484 / 1.484 s |        0.02103 |                  4,261,680 B / 98 | First Distro card image |
+| Artists  |          0.064 / 0.064 s |         0.04633 |                     634,340 B / 30 |         1.212 / 1.216 s |        0.09503 |                    875,882 B / 29 | First roster portrait   |
+| Services |          0.088 / 0.096 s |         0.00122 |                     935,192 B / 30 |         0.800 / 0.808 s |        0.01669 |                    703,234 B / 29 | First service image     |
+| About    |          0.076 / 0.088 s |         0.00024 |                     498,896 B / 30 |         0.716 / 0.724 s |        0.00064 |                    487,890 B / 29 | Direct hero image       |
+| Releases |          0.092 / 0.096 s |         0.00024 |                     649,615 B / 24 |                     n/a |            n/a |                               n/a | Latest feature artwork  |
+| News     |          0.064 / 0.072 s |         0.00037 |                     520,229 B / 21 |                     n/a |            n/a |                               n/a | First news card image   |
+
+All declared load gates pass: LCP is at most 2.5 s and CLS is at most 0.1. Mobile Distro transfers more responsive media because the accepted eager/native rung removes deferred rendering activation; its LCP remains 1.484 s. Trace files retain task/LoAF counts and time, font events, every run, selected LCP URL, status, and resource detail. Corrected desktop median renderer-main long-task counts are one on normal routes and four on Distro; mobile medians range from four to six on normal routes and 59 on eager Distro load. Those load tasks remain inside the accepted LCP/CLS outcome and are not combined with traversal work.
+
+### Final traversal
+
+| Profile | Route  | Traversal | Frame p95 / max |     Work p95 / max | Layout p95 | Long tasks median / time |
+| ------- | ------ | --------- | --------------: | -----------------: | ---------: | -----------------------: |
+| Wide    | Home   | first     |  18.0 / 18.6 ms |   0.380 / 3.260 ms |   0.410 ms |                 0 / 0 ms |
+| Wide    | Home   | repeat    |  18.1 / 18.8 ms |   0.370 / 2.240 ms |   0.390 ms |                 0 / 0 ms |
+| Wide    | Distro | first     |  18.0 / 18.8 ms |   4.280 / 5.340 ms |       0 ms |                 0 / 0 ms |
+| Wide    | Distro | repeat    |  18.0 / 20.3 ms |   1.290 / 5.040 ms |       0 ms |                 0 / 0 ms |
+| Wide    | Store  | first     | 18.3 / 218.3 ms | 16.670 / 16.670 ms | 107.700 ms |             6 / 641.1 ms |
+| Wide    | Store  | repeat    |  18.1 / 21.3 ms |   2.270 / 9.620 ms |   5.100 ms |                 0 / 0 ms |
+| Mobile  | Distro | first     |  18.0 / 18.6 ms |   0.200 / 3.650 ms |       0 ms |                 0 / 0 ms |
+| Mobile  | Distro | repeat    |  17.9 / 18.5 ms |   0.170 / 0.230 ms |       0 ms |                 0 / 0 ms |
+| Mobile  | Store  | first     | 18.2 / 335.2 ms | 16.670 / 16.670 ms | 216.860 ms |             8 / 978.6 ms |
+| Mobile  | Store  | repeat    |  18.0 / 18.5 ms |   1.710 / 2.670 ms |   1.610 ms |                 0 / 0 ms |
+| Legacy  | Distro | first     |  18.0 / 18.8 ms |   2.070 / 2.620 ms |       0 ms |                 0 / 0 ms |
+| Legacy  | Store  | first     | 19.5 / 344.3 ms | 16.670 / 16.670 ms |  97.660 ms |           9 / 1,117.9 ms |
+
+The exact-tree runner's cadence floor is about 18 ms: even Home first/repeat, with sub-millisecond layout and no long task, reports 18.0–18.1 ms frame p95. Distro retains zero traversal layout activation and no long tasks, but still misses the literal 16.7 ms frame gate. A Ponytail review proposed deleting its bounded six-card grid wrappers; the measured A/B regressed wide first traversal to 360.15 ms layout p95 and three long tasks, so those wrappers are retained. Store remains application-attributable and fails first traversal through large layout, 16.67 ms work p95, and six to nine long tasks. These results confirm the previously documented task 2.10 and 3.10 blockers; neither is reclassified as passing.
+
+### Authority, field confidence, and rendered UX
+
+Disabled PRD Store direct load plus first/repeat full traversal produced exactly one 200 `GET /api/store/capabilities`, zero Store Offer reads, and zero Store-related 5xx. The final local implementation created no checkout or mutation. Earlier bounded UAT evidence remains the enabled diagnostic: only two price islands inside the 240 px margin started two fresh 200 Offer reads, and checkout authority independently rereads current availability, stock, and price.
+
+No representative 28-day Search Console, CrUX, or PageSpeed Insights field result was available for the Pages origin in this session. Search Console access was unavailable, PageSpeed did not expose an indexed report for the origin, and CrUX documentation notes that absent origins may be undersampled. Field confidence is therefore unavailable; this report makes lab claims only and adds no custom RUM. See <https://developer.chrome.com/docs/crux/guides/crux-api>.
+
+Browser Use final coverage retained 79 Distro and 82 Store cards with no blank or zero-height card, full first/repeat traversal, source order, Greek text, last items, and zero horizontal overflow. Mobile menu navigation, header/footer shell navigation, focus on `MAIN`, scroll reset, detail overlay open/close, persisted cart count/drawer/quantity update, checkout presentation, player open/minimize/reopen/stop, reduced motion, font blocked/cached states, and direct/shell image behavior passed. DevTools was used only for console inspection after Browser Use rejected the required new-document CDP hook; no application error or warning was found.
+
+### Independent review and closure status
+
+Brooks review found the trace aggregation defect, the cart bridge rejection gap, and missing template-literal dynamic-import accounting. All three were fixed and covered. The corrected bundle report finds 12 shell dynamic imports, a 19,655-byte StoreCart closure, an 81,262-byte Home eager graph, a 17,361-byte shell closure, and no dormant portal diagnostic. Ponytail review removed an unused checkout event re-export; its Distro simplification was measured, rejected, and reversed as documented above.
+
+Exact-final-tree acceptance remains blocked. Tasks 2.11, 3.11, 4.11, 5.10, 6.13, 7.7, 8.6, and 8.12 remain open: Distro misses the literal frame gate at the runner cadence floor, Store misses application-work and long-task gates, and the repository-wide `pnpm check` is blocked only by Prettier on the unrelated untracked `openspec/changes/catalog-discovery-and-information-architecture/specs/catalog-discovery/spec.md`. Round two is not archived; the performance epic remains open.

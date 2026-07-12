@@ -26,11 +26,11 @@
 - [x] 2.6 If grouped containment misses first scroll, implement one route-owned ahead-of-viewport activation path that yields between bounded groups and retains each activated group until route exit.
 - [x] 2.7 Add focused tests for activation margin, retained state, route-exit cleanup, route-change cancellation, user-input yielding, and no generic virtualization/node recycling.
 - [x] 2.8 Re-run the complete Distro profile matrix after retained activation and stop at this rung if every gate passes.
-- [ ] 2.9 If retained activation still misses, disable `content-visibility` only for the failing Distro route/breakpoint and prove its cold-load LCP, CLS, and responsiveness remain passing.
+- [x] 2.9 If retained activation still misses, disable `content-visibility` only for the failing Distro route/breakpoint and prove its cold-load LCP, CLS, and responsiveness remain passing.
 - [x] 2.10 If neither contained nor eager Distro rendering passes both load and traversal gates, stop implementation and amend OpenSpec before pagination or virtualization.
 - [ ] 2.11 Run focused Distro tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record the accepted rung, before/after values, and rejected fallbacks before starting Store.
 
-  Distro blocker: eager/native rendering removes all traversal layout activation and passes load/application-work gates, but the comparable runner still reports 19.9 ms wide and 18.1 ms mobile first-scroll frame p95 against the absolute 16.7 ms gate. See PERF-003. Task 2.9 and acceptance task 2.11 remain open.
+  Distro blocker: eager/native rendering removes all traversal layout activation and passes load/application-work gates, but the corrected comparable runner still reports 18.0 ms wide and mobile first-scroll frame p95 against the absolute 16.7 ms gate. A review-driven unbounded-grid A/B regressed wide layout to 360.15 ms p95 and was reversed. See PERF-003. Acceptance task 2.11 remains open.
 
 ## 3. Store First-Traversal Slice
 
@@ -90,7 +90,7 @@
 - [x] 6.9 Rebuild and require Home's complete first-party eager graph at or below 95 KiB hosted Brotli, the scoped shell at or below 95 KiB, and no unrelated route portal in representative route graphs.
 - [x] 6.10 Measure third-party analytics in an isolated repeated A/B; retain current deferred behavior if no material LCP or long-task cost is attributable.
 - [x] 6.11 If analytics is material, delay startup to a bounded post-load idle point while preserving required direct-load and shell-route page-view behavior; add no provider replacement in this child.
-- [ ] 6.12 Use Browser Use to validate first-click Artists filters, Services submit path, cart open/add/update, mobile menu, detail overlay, player open/minimize/reopen/stop, shell navigation, focus reset, and scroll reset.
+- [x] 6.12 Use Browser Use to validate first-click Artists filters, Services submit path, cart open/add/update, mobile menu, detail overlay, player open/minimize/reopen/stop, shell navigation, focus reset, and scroll reset.
 - [ ] 6.13 Run focused shell/cart tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record before/after route graphs, interaction latency, and any retained conditional no-action.
 
 ## 7. Hidden And Closed Animation Slice
@@ -105,15 +105,15 @@
 
 ## 8. Final Performance, UX, And Program Closure
 
-- [ ] 8.1 Re-run the complete desktop cold, mobile stress, wide first/repeat, mobile first/repeat, and legacy narrow matrices against the exact final tree.
-- [ ] 8.2 Report median, p75, p95, maximum, task/LoAF count and time, transfer bytes, requests, route errors, LCP element, font events, and first-versus-repeat results without combining unlike profiles.
-- [ ] 8.3 Re-prove disabled PRD Store request behavior and run only bounded authority-safe enabled Local/UAT diagnostics; create no checkout or mutation.
-- [ ] 8.4 Check Search Console/CrUX or PageSpeed Insights for representative 28-day mobile/desktop field data; label it unavailable or low-confidence when undersampled and add no custom RUM.
-- [ ] 8.5 Run Browser Use across representative mobile/desktop direct loads, shell navigation, first/repeat scroll, keyboard/focus, cart, checkout presentation, overlays, mobile nav, player lifecycle, font fallback/cached states, image crop, reduced motion, and console/network cleanliness.
+- [x] 8.1 Re-run the complete desktop cold, mobile stress, wide first/repeat, mobile first/repeat, and legacy narrow matrices against the exact final tree.
+- [x] 8.2 Report median, p75, p95, maximum, task/LoAF count and time, transfer bytes, requests, route errors, LCP element, font events, and first-versus-repeat results without combining unlike profiles.
+- [x] 8.3 Re-prove disabled PRD Store request behavior and run only bounded authority-safe enabled Local/UAT diagnostics; create no checkout or mutation.
+- [x] 8.4 Check Search Console/CrUX or PageSpeed Insights for representative 28-day mobile/desktop field data; label it unavailable or low-confidence when undersampled and add no custom RUM.
+- [x] 8.5 Run Browser Use across representative mobile/desktop direct loads, shell navigation, first/repeat scroll, keyboard/focus, cart, checkout presentation, overlays, mobile nav, player lifecycle, font fallback/cached states, image crop, reduced motion, and console/network cleanliness.
 - [ ] 8.6 Run focused tests plus `pnpm test:unit`, `pnpm check`, `pnpm build`, `pnpm assets:check`, cache-policy checks, Holding Page prepare/check, and any changed runbook helper tests against the exact final tree.
-- [ ] 8.7 Run independent Brooks and Ponytail reviews over the final implementation and evidence; fix correctness, architecture, accessibility, or unnecessary-complexity findings and rerun affected gates.
-- [ ] 8.8 Run `pnpm openspec -- validate improve-site-runtime-performance-round-two --strict` and strict validation for the full spec set.
-- [ ] 8.9 Create `PERF-003` with like-for-like before/after values, comparison limits, field confidence, first/repeat traversal, accepted rungs, rejected fallbacks, and any residual issue.
-- [ ] 8.10 Append `PERF-003` to `../site-performance-program/performance-report-log.md` and update the epic register/tasks without rewriting `PERF-001` or `PERF-002`.
-- [ ] 8.11 Confirm no framework rewrite, batch Store API, virtualization, pagination, service worker, CDN/DAM, custom RUM, new dependency, or font-byte modification entered the final diff.
+- [x] 8.7 Run independent Brooks and Ponytail reviews over the final implementation and evidence; fix correctness, architecture, accessibility, or unnecessary-complexity findings and rerun affected gates.
+- [x] 8.8 Run `pnpm openspec -- validate improve-site-runtime-performance-round-two --strict` and strict validation for the full spec set.
+- [x] 8.9 Create `PERF-003` with like-for-like before/after values, comparison limits, field confidence, first/repeat traversal, accepted rungs, rejected fallbacks, and any residual issue.
+- [x] 8.10 Append `PERF-003` to `../site-performance-program/performance-report-log.md` and update the epic register/tasks without rewriting `PERF-001` or `PERF-002`.
+- [x] 8.11 Confirm no framework rewrite, batch Store API, virtualization, pagination, service worker, CDN/DAM, custom RUM, new dependency, or font-byte modification entered the final diff.
 - [ ] 8.12 After every child task and report gate is complete, archive round two so its delta specs become baseline while leaving the Site Performance Program open for measured future work.

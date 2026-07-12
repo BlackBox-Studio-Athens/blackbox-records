@@ -15,10 +15,12 @@
 ## 3. Round Two Planning And Implementation
 
 - [x] 3.1 Create and strict-validate `improve-site-runtime-performance-round-two` with a complete proposal, design, delta specs, and detailed implementation tasks.
-- [ ] 3.2 Apply the round-two child in its declared slice order, treating first traversal as the critical scroll experience and preserving the round-one Store request fix.
+- [x] 3.2 Apply the round-two child in its declared slice order, treating first traversal as the critical scroll experience and preserving the round-one Store request fix.
 - [ ] 3.3 Run focused regression coverage, Browser Use rendered acceptance, fixed load/scroll profiles, hosted diagnostics, and the exact final-tree repository gates required by the child.
-- [ ] 3.4 Append `PERF-003` with like-for-like before/after evidence, field-data confidence, residual misses, and any evidence-gated no-actions.
+- [x] 3.4 Append `PERF-003` with like-for-like before/after evidence, field-data confidence, residual misses, and any evidence-gated no-actions.
 - [ ] 3.5 Strict-validate and archive round two after its report is registered and every child task is complete.
+
+  Round-two status: `PERF-003` is registered. Tasks 3.3 and 3.5 remain open because the child documents unresolved Store and literal 16.7 ms first-scroll acceptance blockers and therefore cannot be archived.
 
 ## 4. Future Performance Rounds
 

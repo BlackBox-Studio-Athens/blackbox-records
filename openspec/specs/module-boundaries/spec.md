@@ -46,6 +46,13 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** those route files are owned by the closed `checkout-web` module
 - **AND** item-scoped checkout compatibility pages stay owned by `checkout-web` until removed.
 
+#### Scenario: StoreCart event contract is shared
+
+- **GIVEN** app-shell and checkout-web code coordinate browser-only StoreCart events
+- **WHEN** event names are imported across closed module boundaries
+- **THEN** they use the dependency-free `store-cart-events.ts` provided entrypoint
+- **AND** the app shell does not import checkout presentation to register the event bridge.
+
 #### Scenario: Backend shared observability helper is added
 
 - **GIVEN** backend modules need shared Worker-safe logging, tracing, or HTTP response helpers
