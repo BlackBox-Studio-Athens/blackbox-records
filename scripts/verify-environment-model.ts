@@ -165,7 +165,7 @@ export function verifyReviewSiteMarkerSources({
   holdingWorkflow,
   staticDeployWorkflow,
 }: ReviewSiteMarkerSources): boolean {
-  const uatBuildStep = staticDeployWorkflow.match(/- name: Build UAT static frontend[\s\S]*?run: pnpm build:web/)?.[0];
+  const uatBuildStep = /- name: Build UAT static frontend[\s\S]*?run: pnpm build:web/.exec(staticDeployWorkflow)?.[0];
   return (
     envDeclaration.includes("readonly SHOW_REVIEW_SITE_MARKER?: 'true';") &&
     header.includes("import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'") &&
