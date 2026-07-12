@@ -27,7 +27,7 @@
 
 ## 5. Accept the Hosted Review Surface
 
-- [ ] 5.1 After the normal shared workflow deploys the verified commit, run UAT Static Smoke `public_routes` and retain passing evidence that every representative route contains the marker.
-- [ ] 5.2 Use Browser Use on the deployed GitHub Pages UAT URL at mobile and desktop sizes to repeat header-persistence, control-clearance, accessibility, network, and console checks.
-- [ ] 5.3 Share the review URL using the documented non-technical template only after hosted checks pass; record that the marker is presentational and that checkout remains governed by Worker and Stripe controls.
-- [ ] 5.4 Re-run `pnpm openspec:guard`, strictly validate this change, and record final OpenSpec status before archiving.
+- [x] 5.1 After the normal shared workflow deploys the verified commit, run UAT Static Smoke `public_routes` and retain passing evidence that every representative route contains the marker.
+- [x] 5.2 Use Browser Use on the deployed GitHub Pages UAT URL at mobile and desktop sizes to repeat header-persistence, control-clearance, accessibility, network, and console checks.
+- [x] 5.3 Share the review URL using the documented non-technical template only after hosted checks pass; record that the marker is presentational and that checkout remains governed by Worker and Stripe controls.
+- [x] 5.4 Re-run `pnpm openspec:guard`, strictly validate this change, and record final OpenSpec status before archiving.
