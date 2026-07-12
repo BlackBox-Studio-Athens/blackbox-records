@@ -86,12 +86,12 @@ The 79-card catalog now remains fully server rendered in source order inside 16 
 Eager/native Distro rendering is the safest retained implementation because it removes traversal layout activation entirely:
 
 | Profile | Traversal | Baseline frame p95 | Eager frame p95 | Eager work p95 | Eager work max | Eager layout p95 | Eager long tasks |
-| ------- | --------- | -----------------: | --------------: | -------------: | -------------: | ----------------: | ---------------: |
-| Wide | first | 45.9 ms | 19.9 ms | 2.846 ms | 6.312 ms | 0 ms | 0 |
-| Wide | repeat | 43.1 ms | 20.0 ms | 0.950 ms | 8.099 ms | 0 ms | 1 |
-| Mobile | first | 26.0 ms | 18.1 ms | 0.623 ms | 4.478 ms | 0 ms | 0 |
-| Mobile | repeat | 18.8 ms | 17.9 ms | 0.382 ms | 1.560 ms | 0 ms | 0 |
-| Legacy | first | 31.8 ms | 19.3 ms | 2.479 ms | 7.879 ms | 0 ms | 0 |
+| ------- | --------- | -----------------: | --------------: | -------------: | -------------: | ---------------: | ---------------: |
+| Wide    | first     |            45.9 ms |         19.9 ms |       2.846 ms |       6.312 ms |             0 ms |                0 |
+| Wide    | repeat    |            43.1 ms |         20.0 ms |       0.950 ms |       8.099 ms |             0 ms |                1 |
+| Mobile  | first     |            26.0 ms |         18.1 ms |       0.623 ms |       4.478 ms |             0 ms |                0 |
+| Mobile  | repeat    |            18.8 ms |         17.9 ms |       0.382 ms |       1.560 ms |             0 ms |                0 |
+| Legacy  | first     |            31.8 ms |         19.3 ms |       2.479 ms |       7.879 ms |             0 ms |                0 |
 
 Cold load remains inside the declared route gates: desktop LCP 152 ms with CLS 0.000237; mobile-stress LCP 1.648 s with CLS 0.021031. No route errors occurred.
 
