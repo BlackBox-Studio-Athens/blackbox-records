@@ -186,9 +186,10 @@ export function verifyStaticDeployTriggerSources(staticDeployWorkflow: string): 
     /(?:^|\r?\n)on:\r?\n(?<events>[\s\S]*?)(?=\r?\n(?:permissions:|concurrency:|jobs:)|(?![\s\S]))/m.exec(
       staticDeployWorkflow,
     )?.groups?.events ?? '';
-  const push = /^  push:\r?\n(?<push>[\s\S]*?)(?=\r?\n  workflow_dispatch:)/m.exec(triggerEvents)?.groups?.push ?? '';
+  const push =
+    /^\x20{2}push:\r?\n(?<push>[\s\S]*?)(?=\r?\n\x20{2}workflow_dispatch:)/m.exec(triggerEvents)?.groups?.push ?? '';
   const ignoredPaths =
-    /^    paths-ignore:\r?\n(?<paths>(?:      - '[^']+'\r?\n?)+)/m
+    /^\x20{4}paths-ignore:\r?\n(?<paths>(?:\x20{6}- '[^']+'\r?\n?)+)/m
       .exec(push)
       ?.groups?.paths?.split(/\r?\n/)
       .filter(Boolean)
@@ -196,11 +197,11 @@ export function verifyStaticDeployTriggerSources(staticDeployWorkflow: string): 
   const expectedIgnoredPaths = ['docs/**', 'openspec/**', '*.md', 'LICENSE'];
 
   return (
-    /^  push:\r?$/m.test(triggerEvents) &&
-    /^    branches: \['main'\]\r?$/m.test(push) &&
+    /^\x20{2}push:\r?$/m.test(triggerEvents) &&
+    /^\x20{4}branches: \['main'\]\r?$/m.test(push) &&
     ignoredPaths.length === expectedIgnoredPaths.length &&
     expectedIgnoredPaths.every((path, index) => ignoredPaths[index] === path) &&
-    /^  workflow_dispatch:\r?$/m.test(triggerEvents) &&
+    /^\x20{2}workflow_dispatch:\r?$/m.test(triggerEvents) &&
     !/commit.?message|head_commit|github\.event\.commits/i.test(staticDeployWorkflow)
   );
 }
