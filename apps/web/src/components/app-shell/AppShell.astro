@@ -12,6 +12,7 @@ const servicesInquirySection = getContentSection(servicesContent.sections, 'inqu
 
 <AppShellRoot
   client:load
+  initialPathname={Astro.url.pathname}
   mobileNavigationItems={mobileNavigationItems}
   servicesInquiryEmail={servicesInquirySection?.email || ''}
   servicesInquirySubmitText={servicesInquirySection?.submit_text || 'Compose Inquiry'}

@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { LoadingButtonContent, LoadingInline } from '@/components/ui/loading-feedback';
 import { createPublicCheckoutApi, type PublicCheckoutApi } from '@/lib/backend/public-checkout-api';
 import { getStoreCartCount, readStoreCartState, type CartLine, type CartLineItemSnapshot } from '@/lib/store-cart';
+import { CHECKOUT_CART_UPDATED_EVENT } from '@/lib/store-cart-events';
 import { cn } from '@/lib/utils';
 import {
   createCartCheckoutOfferView,
@@ -17,7 +18,6 @@ import {
   type CheckoutOfferStatusView,
 } from './checkout-offer-status-state';
 import CheckoutShippingStep from './CheckoutShippingStep';
-import { CHECKOUT_CART_UPDATED_EVENT } from './CheckoutOrderSummary';
 import { createCheckoutShippingGateView } from './checkout-shipping-step-state';
 import { createCartLineItemSnapshotFromWorkerOffer, type StoreItemCartSeed } from './StoreItemPurchaseActions';
 

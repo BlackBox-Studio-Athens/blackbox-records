@@ -21,11 +21,6 @@ import {
 import { createShellPageSnapshotLoader } from '@/components/app-shell/navigation/shell-page-loader';
 import { connectShellPortalTarget } from '@/components/app-shell/dom/shell-portal-targets';
 import {
-  applyStoreCartStateAndPersist,
-  connectStoreCartBridge,
-  getStoreCartBrowserStorage,
-} from '@/components/app-shell/store-cart/store-cart-bridge';
-import {
   clearShellPageTransition,
   createShellSectionTransitionController,
   scrollShellViewportToTop,
@@ -34,13 +29,7 @@ import {
 import { createProjectRelativeUrl } from '@/config/site';
 import { normalizeAppPathname } from '@/lib/app-shell/routing';
 import type { SiteNavigationItem } from '@/lib/site-data';
-import {
-  createEmptyStoreCartState,
-  decrementCartLineQuantityByVariant,
-  incrementCartLineQuantityByVariant,
-  removeCartLineByVariant,
-  type StoreCartState,
-} from '@/lib/store-cart';
+import type { StoreCartState } from '@/lib/store-cart';
 import { createOverlayFragmentLoader } from './overlay/overlay-fragment-loader';
 import {
   closeOverlayWithHistoryBack as closeOverlayHistoryWithBack,
@@ -71,6 +60,7 @@ const StoreCartDrawer = lazy(() => import('@/components/store/StoreCartDrawer'))
 type OverlayState = ShellOverlayState;
 
 type AppShellRootProps = {
+  initialPathname: string;
   mobileNavigationItems: SiteNavigationItem[];
   servicesInquiryEmail: string;
   servicesInquirySubmitText: string;
@@ -78,14 +68,13 @@ type AppShellRootProps = {
 };
 
 export default function AppShellRoot({
+  initialPathname,
   mobileNavigationItems,
   servicesInquiryEmail,
   servicesInquirySubmitText,
   siteTitle,
 }: AppShellRootProps) {
-  const [activeShellPathname, setActiveShellPathname] = useState(() =>
-    typeof window === 'undefined' ? '' : normalizeAppPathname(window.location.pathname),
-  );
+  const [activeShellPathname, setActiveShellPathname] = useState(() => normalizeAppPathname(initialPathname));
   const [overlayState, setOverlayState] = useState<OverlayState | null>(null);
   const [isRouteLoading, setIsRouteLoading] = useState(false);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
@@ -109,7 +98,7 @@ export default function AppShellRoot({
   const [artistsRosterFiltersContainer, setArtistsRosterFiltersContainer] = useState<HTMLElement | null>(null);
   const [servicesInquiryContainer, setServicesInquiryContainer] = useState<HTMLElement | null>(null);
   const [storeCartHeaderContainer, setStoreCartHeaderContainer] = useState<HTMLElement | null>(null);
-  const [storeCartState, setStoreCartState] = useState<StoreCartState>(() => createEmptyStoreCartState());
+  const [storeCartState, setStoreCartState] = useState<StoreCartState>(() => ({ lines: [], primaryLineItem: null }));
   const [isStoreCartDrawerOpen, setIsStoreCartDrawerOpen] = useState(false);
 
   const overlayStateRef = useRef<OverlayState | null>(null);
@@ -192,7 +181,9 @@ export default function AppShellRoot({
 
   overlayStateRef.current = overlayState;
 
-  function applyStoreCartState(nextState: StoreCartState) {
+  async function applyStoreCartState(nextState: StoreCartState) {
+    const { applyStoreCartStateAndPersist, getStoreCartBrowserStorage } =
+      await import('@/components/app-shell/store-cart/store-cart-bridge');
     applyStoreCartStateAndPersist({
       readStorage: getStoreCartBrowserStorage,
       setStoreCartState,
@@ -244,14 +235,26 @@ export default function AppShellRoot({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    return connectStoreCartBridge({
-      eventTarget: window,
-      queryHeaderRoot: () => document.querySelector<HTMLElement>('[data-store-cart-header-root]'),
-      readStorage: getStoreCartBrowserStorage,
-      setStoreCartDrawerOpen: setIsStoreCartDrawerOpen,
-      setStoreCartHeaderContainer,
-      setStoreCartState,
-    });
+    let disconnect: (() => void) | undefined;
+    let cancelled = false;
+    void import('@/components/app-shell/store-cart/store-cart-bridge').then(
+      ({ connectStoreCartBridge, getStoreCartBrowserStorage }) => {
+        if (cancelled) return;
+        disconnect = connectStoreCartBridge({
+          eventTarget: window,
+          queryHeaderRoot: () => document.querySelector<HTMLElement>('[data-store-cart-header-root]'),
+          readStorage: getStoreCartBrowserStorage,
+          setStoreCartDrawerOpen: setIsStoreCartDrawerOpen,
+          setStoreCartHeaderContainer,
+          setStoreCartState,
+        });
+      },
+    );
+
+    return () => {
+      cancelled = true;
+      disconnect?.();
+    };
   }, []);
 
   useEffect(() => {
@@ -544,14 +547,19 @@ export default function AppShellRoot({
             open
             resolveHref={createProjectRelativeUrl}
             onContinueShopping={() => setIsStoreCartDrawerOpen(false)}
-            onDecrementItem={(variantId) =>
-              applyStoreCartState(decrementCartLineQuantityByVariant(variantId, storeCartState))
-            }
-            onIncrementItem={(variantId) =>
-              applyStoreCartState(incrementCartLineQuantityByVariant(variantId, storeCartState))
-            }
+            onDecrementItem={async (variantId) => {
+              const { decrementCartLineQuantityByVariant } = await import('@/lib/store-cart');
+              await applyStoreCartState(decrementCartLineQuantityByVariant(variantId, storeCartState));
+            }}
+            onIncrementItem={async (variantId) => {
+              const { incrementCartLineQuantityByVariant } = await import('@/lib/store-cart');
+              await applyStoreCartState(incrementCartLineQuantityByVariant(variantId, storeCartState));
+            }}
             onOpenChange={setIsStoreCartDrawerOpen}
-            onRemoveItem={(variantId) => applyStoreCartState(removeCartLineByVariant(variantId, storeCartState))}
+            onRemoveItem={async (variantId) => {
+              const { removeCartLineByVariant } = await import('@/lib/store-cart');
+              await applyStoreCartState(removeCartLineByVariant(variantId, storeCartState));
+            }}
           />
         </Suspense>
       )}

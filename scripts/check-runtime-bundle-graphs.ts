@@ -17,6 +17,8 @@ const routeDocuments = {
   services: 'services/index.html',
   store: 'store/index.html',
 };
+const eagerGraphBudgetBytes = 95 * 1024;
+const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton'];
 
 function localAssetPath(url: string) {
   const marker = '/_astro/';
@@ -114,7 +116,20 @@ const shellEntry = homeFiles.find((row) => row.file.includes('_astro/AppShellRoo
 const shell = shellEntry ? summarize(closure([join(distRoot, shellEntry.file)])) : null;
 const storeCartEntry = homeFiles.find((row) => row.file.includes('_astro/store-cart.'));
 const storeCart = storeCartEntry ? summarize(closure([join(distRoot, storeCartEntry.file)])) : null;
-const report = { distRoot, routes, shell, storeCart };
+const diagnostics: string[] = [];
+if (routes.home.graph.brotliBytes > eagerGraphBudgetBytes) {
+  diagnostics.push(`Home eager graph is ${routes.home.graph.brotliBytes} bytes (budget ${eagerGraphBudgetBytes}).`);
+}
+if (!shell || shell.brotliBytes > eagerGraphBudgetBytes) {
+  diagnostics.push(`Shell eager graph is ${shell?.brotliBytes ?? 'missing'} bytes (budget ${eagerGraphBudgetBytes}).`);
+}
+for (const [route, result] of Object.entries(routes)) {
+  const dormantFiles = result.graph.files.filter((row) => dormantPortalNames.some((name) => row.file.includes(name)));
+  if (dormantFiles.length > 0) {
+    diagnostics.push(`${route} eagerly includes dormant portals: ${dormantFiles.map((row) => row.file).join(', ')}.`);
+  }
+}
+const report = { distRoot, eagerGraphBudgetBytes, routes, shell, storeCart, diagnostics };
 const json = `${JSON.stringify(report, null, 2)}\n`;
 if (output) {
   const outputPath = resolve(output);
@@ -124,3 +139,4 @@ if (output) {
 } else {
   console.log(json);
 }
+if (diagnostics.length > 0) throw new Error(diagnostics.join('\n'));

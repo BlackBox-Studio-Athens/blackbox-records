@@ -2,12 +2,8 @@ import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  addStoreCartItem,
-  readStoreCartState,
-  STORE_CART_OPEN_REQUESTED_EVENT,
-  writeStoreCartState,
-} from '@/lib/store-cart';
+import { addStoreCartItem, readStoreCartState, writeStoreCartState } from '@/lib/store-cart';
+import { CHECKOUT_CART_UPDATED_EVENT, STORE_CART_OPEN_REQUESTED_EVENT } from '@/lib/store-cart-events';
 import CheckoutReturnStatus, {
   CHECKOUT_RETURN_ACTION_COPY,
   CheckoutReturnStatusScreen,
@@ -15,7 +11,6 @@ import CheckoutReturnStatus, {
   clearStoreCartAfterPaidCheckout,
   requestStoreCartOpen,
 } from './CheckoutReturnStatus';
-import { CHECKOUT_CART_UPDATED_EVENT } from './CheckoutOrderSummary';
 import {
   createCheckoutReturnStatusView,
   loadCheckoutReturnState,

@@ -14,6 +14,7 @@ import {
   writeStoreCartState,
   type CartLine,
 } from '@/lib/store-cart';
+import { CHECKOUT_CART_UPDATED_EVENT } from '@/lib/store-cart-events';
 import { cn } from '@/lib/utils';
 
 export type CheckoutOrderSummaryInput = {
@@ -43,7 +44,7 @@ export const CHECKOUT_ORDER_SUMMARY_COPY = {
   subtotal: 'Subtotal',
   title: 'Order Summary',
 } as const;
-export const CHECKOUT_CART_UPDATED_EVENT = 'blackbox:checkout-cart-updated';
+export { CHECKOUT_CART_UPDATED_EVENT } from '@/lib/store-cart-events';
 
 export function createCheckoutOrderSummaryView(
   input: CheckoutOrderSummaryInput,

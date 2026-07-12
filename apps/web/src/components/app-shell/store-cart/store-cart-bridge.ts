@@ -1,10 +1,12 @@
-import { CHECKOUT_CART_UPDATED_EVENT } from '@/components/store/CheckoutOrderSummary';
+import {
+  CHECKOUT_CART_UPDATED_EVENT,
+  STORE_CART_ADD_ITEM_EVENT,
+  STORE_CART_OPEN_REQUESTED_EVENT,
+} from '@/lib/store-cart-events';
 import {
   addStoreCartItem,
   parseCartLineItemSnapshot,
   readStoreCartState,
-  STORE_CART_ADD_ITEM_EVENT,
-  STORE_CART_OPEN_REQUESTED_EVENT,
   type StoreCartState,
   writeStoreCartState,
 } from '@/lib/store-cart';

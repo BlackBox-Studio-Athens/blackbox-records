@@ -1,15 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
-import { CHECKOUT_CART_UPDATED_EVENT } from '@/components/store/CheckoutOrderSummary';
 import {
   addStoreCartItem,
   createEmptyStoreCartState,
   readStoreCartState,
-  STORE_CART_ADD_ITEM_EVENT,
-  STORE_CART_OPEN_REQUESTED_EVENT,
   type CartLineItemSnapshot,
   type StoreCartState,
 } from '@/lib/store-cart';
+import {
+  CHECKOUT_CART_UPDATED_EVENT,
+  STORE_CART_ADD_ITEM_EVENT,
+  STORE_CART_OPEN_REQUESTED_EVENT,
+} from '@/lib/store-cart-events';
 
 import { applyStoreCartStateAndPersist, connectStoreCartBridge } from './store-cart-bridge';
 

@@ -4,9 +4,9 @@ import { CheckCircle2, PackageCheck, ReceiptText, Truck, type LucideIcon } from 
 
 import { createPublicCheckoutApi, type PublicCheckoutApi } from '@/lib/backend/public-checkout-api';
 import { LoadingStateBlock } from '@/components/ui/loading-feedback';
-import { createEmptyStoreCartState, STORE_CART_OPEN_REQUESTED_EVENT, writeStoreCartState } from '@/lib/store-cart';
+import { createEmptyStoreCartState, writeStoreCartState } from '@/lib/store-cart';
+import { CHECKOUT_CART_UPDATED_EVENT, STORE_CART_OPEN_REQUESTED_EVENT } from '@/lib/store-cart-events';
 import { cn } from '@/lib/utils';
-import { CHECKOUT_CART_UPDATED_EVENT } from './CheckoutOrderSummary';
 import {
   createCheckoutReturnStatusView,
   loadCheckoutReturnState,

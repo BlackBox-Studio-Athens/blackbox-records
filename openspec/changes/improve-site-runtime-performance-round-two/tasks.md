@@ -79,17 +79,17 @@
 
 ## 6. Route-Proportional JavaScript Slice
 
-- [ ] 6.1 Add a repeatable build-output check for complete first-party eager graphs per route using actual Brotli size, while reporting the scoped shell and third-party analytics separately.
-- [ ] 6.2 Add characterization tests for Artists filters, Services inquiry, Store cart button/drawer, StoreCart event handling, malformed localStorage, shell navigation, overlay, player, and mobile menu before changing import boundaries.
-- [ ] 6.3 Move shared cart event names into the smallest dependency-free module so the eager bridge no longer imports checkout presentation code.
-- [ ] 6.4 Split Artists filters, Services inquiry form, and Store cart portal presentation behind direct dynamic imports owned by the active pathname or existing first-intent/container signal.
-- [ ] 6.5 Preserve usable server content and accessible loading/error behavior while a route-specific portal chunk loads or fails.
-- [ ] 6.6 Characterize `store-cart.ts` Zod acceptance, rejection, normalization, quantity bounds, duplicate-line behavior, version handling, and malformed-storage recovery with unknown input.
-- [ ] 6.7 Replace browser-only StoreCart Zod parsing with the smallest explicit parser only if the characterization suite remains equivalent and the eager graph materially shrinks; otherwise retain Zod and record the evidence-gated no-action.
-- [ ] 6.8 Keep Zod unchanged at API, Worker, money, and other authoritative trust boundaries; add no new schema or state dependency.
-- [ ] 6.9 Rebuild and require Home's complete first-party eager graph at or below 95 KiB hosted Brotli, the scoped shell at or below 95 KiB, and no unrelated route portal in representative route graphs.
-- [ ] 6.10 Measure third-party analytics in an isolated repeated A/B; retain current deferred behavior if no material LCP or long-task cost is attributable.
-- [ ] 6.11 If analytics is material, delay startup to a bounded post-load idle point while preserving required direct-load and shell-route page-view behavior; add no provider replacement in this child.
+- [x] 6.1 Add a repeatable build-output check for complete first-party eager graphs per route using actual Brotli size, while reporting the scoped shell and third-party analytics separately.
+- [x] 6.2 Add characterization tests for Artists filters, Services inquiry, Store cart button/drawer, StoreCart event handling, malformed localStorage, shell navigation, overlay, player, and mobile menu before changing import boundaries.
+- [x] 6.3 Move shared cart event names into the smallest dependency-free module so the eager bridge no longer imports checkout presentation code.
+- [x] 6.4 Split Artists filters, Services inquiry form, and Store cart portal presentation behind direct dynamic imports owned by the active pathname or existing first-intent/container signal.
+- [x] 6.5 Preserve usable server content and accessible loading/error behavior while a route-specific portal chunk loads or fails.
+- [x] 6.6 Characterize `store-cart.ts` Zod acceptance, rejection, normalization, quantity bounds, duplicate-line behavior, version handling, and malformed-storage recovery with unknown input.
+- [x] 6.7 Replace browser-only StoreCart Zod parsing with the smallest explicit parser only if the characterization suite remains equivalent and the eager graph materially shrinks; otherwise retain Zod and record the evidence-gated no-action.
+- [x] 6.8 Keep Zod unchanged at API, Worker, money, and other authoritative trust boundaries; add no new schema or state dependency.
+- [x] 6.9 Rebuild and require Home's complete first-party eager graph at or below 95 KiB hosted Brotli, the scoped shell at or below 95 KiB, and no unrelated route portal in representative route graphs.
+- [x] 6.10 Measure third-party analytics in an isolated repeated A/B; retain current deferred behavior if no material LCP or long-task cost is attributable.
+- [x] 6.11 If analytics is material, delay startup to a bounded post-load idle point while preserving required direct-load and shell-route page-view behavior; add no provider replacement in this child.
 - [ ] 6.12 Use Browser Use to validate first-click Artists filters, Services submit path, cart open/add/update, mobile menu, detail overlay, player open/minimize/reopen/stop, shell navigation, focus reset, and scroll reset.
 - [ ] 6.13 Run focused shell/cart tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record before/after route graphs, interaction latency, and any retained conditional no-action.
 

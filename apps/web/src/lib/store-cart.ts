@@ -1,11 +1,10 @@
 import { z } from 'zod';
 
 import { createMoney, formatMoney, moneyToCurrencyCode, moneyToMinorAmount } from './money';
+export { STORE_CART_ADD_ITEM_EVENT, STORE_CART_OPEN_REQUESTED_EVENT } from './store-cart-events';
 
 export const STORE_CART_STORAGE_KEY = 'blackbox.storeCart.v2';
 const LEGACY_STORE_CART_STORAGE_KEY = 'blackbox.storeCart.v1';
-export const STORE_CART_ADD_ITEM_EVENT = 'blackbox:store-cart:add-item';
-export const STORE_CART_OPEN_REQUESTED_EVENT = 'blackbox:store-cart:open-requested';
 export const STORE_CART_MAX_QUANTITY = 9;
 
 const cartQuantitySchema = z.number().int().min(1).max(STORE_CART_MAX_QUANTITY).brand<'CartQuantity'>();
@@ -79,18 +78,11 @@ const cartLineItemSnapshotSchema = z
     }
 
     if (snapshot.priceAmountMinor === null) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Fixed cart line price amount is missing.',
-      });
+      context.addIssue({ code: z.ZodIssueCode.custom, message: 'Fixed cart line price amount is missing.' });
       return z.NEVER;
     }
 
-    const price = createMoney({
-      amountMinor: snapshot.priceAmountMinor,
-      currencyCode: snapshot.priceCurrencyCode,
-    });
-
+    const price = createMoney({ amountMinor: snapshot.priceAmountMinor, currencyCode: snapshot.priceCurrencyCode });
     return {
       ...snapshot,
       priceAmountMinor: moneyToMinorAmount(price),

@@ -18,6 +18,7 @@ const baseUrl = args.get('base-url') ?? 'http://127.0.0.1:4321/blackbox-records/
 const routes = (args.get('routes') ?? 'home,store,distro').split(/[,\s]+/);
 const runs = Number(args.get('runs') ?? (profile === 'desktop-load' ? 5 : 3));
 const output = args.get('output') ?? `.codex-artifacts/runtime-performance/${Date.now()}-${profile}.json`;
+const blockThirdPartyAnalytics = args.get('block-third-party-analytics') === 'true';
 
 const profiles = {
   'desktop-load': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 1 },
@@ -131,6 +132,10 @@ async function configure(context: BrowserContext, page: Page) {
   const cdp = await context.newCDPSession(page);
   const settings = profiles[profile];
   if (settings.cpu > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: settings.cpu });
+  if (blockThirdPartyAnalytics) {
+    await cdp.send('Network.enable');
+    await cdp.send('Network.setBlockedURLs', { urls: ['https://www.glancelytics.com/*'] });
+  }
   if ('network' in settings) {
     await cdp.send('Network.enable');
     await cdp.send('Network.emulateNetworkConditions', { offline: false, ...settings.network });
@@ -293,7 +298,7 @@ async function main() {
   await mkdir(dirname(output), { recursive: true });
   await writeFile(
     output,
-    `${JSON.stringify({ commit: process.env.RUNTIME_PERFORMANCE_COMMIT ?? 'record-with-git-rev-parse', baseUrl, profile, settings: profiles[profile], runs, routes, capturedAt: new Date().toISOString(), results }, null, 2)}\n`,
+    `${JSON.stringify({ commit: process.env.RUNTIME_PERFORMANCE_COMMIT ?? 'record-with-git-rev-parse', baseUrl, profile, settings: profiles[profile], runs, routes, blockThirdPartyAnalytics, capturedAt: new Date().toISOString(), results }, null, 2)}\n`,
   );
   console.log(output);
 }

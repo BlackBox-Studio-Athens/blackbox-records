@@ -141,4 +141,20 @@ About now exposes a direct-load-only first-viewport priority input and a 1200w c
 
 Five cache-cleared desktop and three mobile-stress runs use the final image tree at `http://127.0.0.1:4322/blackbox-records/`; raw results are under `.codex-artifacts/runtime-performance/images-final/`. Browser Use direct and shell-managed checks at 390×844 and 1440×900 retained crop, explicit geometry, zero horizontal overflow, one high-priority content image, lazy below-fold Services media, focus/scroll reset, and clean route content. Focused markup/CSS tests, `pnpm assets:check`, and the production build pass. Full `pnpm check` remains blocked only by the unrelated untracked catalog-discovery spec's existing Prettier warning.
 
+### Route-proportional JavaScript
+
+Artists filters, the Services inquiry form, Store cart button presentation, the cart bridge, and StoreCart behavior now sit behind direct dynamic imports owned by the existing route/container or cart signal. Shared cart event strings live in a dependency-free module, so the bridge no longer imports checkout presentation. Each portal provides an accessible loading status and a bounded error fallback while Astro server content remains usable. The app shell now receives the direct-load pathname from Astro, avoiding a server/client blank-path interval before route-owned effects attach.
+
+| Graph                         |   Baseline local Brotli | Final local Brotli |             Change |
+| ----------------------------- | ----------------------: | -----------------: | -----------------: |
+| Home complete eager graph     |               108,378 B |           81,167 B | -27,211 B (-25.1%) |
+| Scoped shell                  |                54,880 B |           17,266 B | -37,614 B (-68.5%) |
+| Artists complete eager graph  | not separately retained |           67,214 B |            Passing |
+| Services complete eager graph | not separately retained |           67,214 B |            Passing |
+| Store complete eager graph    | not separately retained |           67,214 B |            Passing |
+
+The repeatable graph check enforces the 97,280-byte Home/shell budget and fails if any representative eager graph contains `ArtistsRosterFilters`, `ServicesInquiryForm`, or `StoreCartButton`. Glancelytics remains reported separately as third party. StoreCart's existing Zod characterization suite passed, but replacing its parser did not shrink the graph because the required money boundary still owns Zod. The manual parser experiment was reverted; Zod remains unchanged at every trust boundary and in StoreCart.
+
+Three mobile-stress Home runs with current deferred analytics had 1.652 s median LCP versus 1.644 s with the Glancelytics URL blocked. The 8 ms difference is immaterial and trace work was not repeatably attributable to the third-party script, so startup remains deferred and no provider or page-view behavior changed. Raw graph and A/B evidence is under `.codex-artifacts/runtime-performance/javascript-final/`. Browser Use proved first-use Artists filtering, Services form loading/input, persisted cart count, drawer open, quantity update, and server-content continuity.
+
 Exact-final-tree acceptance remains pending.
