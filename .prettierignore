@@ -12,6 +12,7 @@ coverage/
 pnpm-lock.yaml
 compressed-repo.md
 tmp/
+.codegraph/
 
 apps/backend/openapi/*.json
 apps/backend/src/generated/

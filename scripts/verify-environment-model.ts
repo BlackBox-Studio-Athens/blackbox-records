@@ -8,6 +8,13 @@ type CheckResult = {
   ok: boolean;
 };
 
+type ReviewSiteMarkerSources = {
+  envDeclaration: string;
+  header: string;
+  holdingWorkflow: string;
+  staticDeployWorkflow: string;
+};
+
 const rootDir = process.cwd();
 const uatStaticHost = 'https://blackbox-studio-athens.github.io/blackbox-records';
 const prdStaticHost = 'https://blackbox-records-web.pages.dev';
@@ -33,6 +40,9 @@ function exists(relativePath: string): boolean {
 
 export function verifyEnvironmentModel(): CheckResult[] {
   const staticDeployWorkflow = read('.github/workflows/pages.yml');
+  const holdingWorkflow = read('.github/workflows/prd-holding-page.yml');
+  const envDeclaration = read('apps/web/src/env.d.ts');
+  const header = read('apps/web/src/components/Header.astro');
   const catalogPromotionWorkflow = read('.github/workflows/catalog-promotion.yml');
   const uatSandboxSmokeWorkflow = read('.github/workflows/uat-smoke.yml');
   const wranglerConfig = read('apps/backend/wrangler.jsonc');
@@ -48,6 +58,10 @@ export function verifyEnvironmentModel(): CheckResult[] {
         staticDeployWorkflow.includes('Deploy UAT to GitHub Pages') &&
         staticDeployWorkflow.includes('UAT_PUBLIC_BACKEND_BASE_URL') &&
         !staticDeployWorkflow.includes('PUBLIC_BACKEND_BASE_URL="${{ vars.PUBLIC_BACKEND_BASE_URL }}"'),
+    },
+    {
+      detail: 'Review Site Marker is private, exact, and enabled only by the UAT static build step.',
+      ok: verifyReviewSiteMarkerSources({ envDeclaration, header, holdingWorkflow, staticDeployWorkflow }),
     },
     {
       detail:
@@ -143,6 +157,25 @@ export function verifyEnvironmentModel(): CheckResult[] {
         staticSiteSpec.includes('Cloudflare Pages as the only PRD static host'),
     },
   ];
+}
+
+export function verifyReviewSiteMarkerSources({
+  envDeclaration,
+  header,
+  holdingWorkflow,
+  staticDeployWorkflow,
+}: ReviewSiteMarkerSources): boolean {
+  const uatBuildStep = staticDeployWorkflow.match(/- name: Build UAT static frontend[\s\S]*?run: pnpm build:web/)?.[0];
+  return (
+    envDeclaration.includes("readonly SHOW_REVIEW_SITE_MARKER?: 'true';") &&
+    header.includes("import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'") &&
+    header.includes('Review site · test payments') &&
+    !header.includes('PUBLIC_SHOW_REVIEW_SITE_MARKER') &&
+    !header.includes('Astro.url.hostname') &&
+    uatBuildStep?.includes("SHOW_REVIEW_SITE_MARKER: 'true'") === true &&
+    (staticDeployWorkflow.match(/SHOW_REVIEW_SITE_MARKER/g) ?? []).length === 1 &&
+    !holdingWorkflow.includes('SHOW_REVIEW_SITE_MARKER')
+  );
 }
 
 function findRawPlatformAliasPolicyLeaks(): string[] {

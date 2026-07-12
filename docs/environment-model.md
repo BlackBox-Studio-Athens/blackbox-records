@@ -13,6 +13,14 @@ BlackBox Records uses three Product Environments: Local, UAT, and PRD. Other nam
 
 PRD exists as a deployable static readiness surface, but live checkout and live provider catalog mutation are disabled until an explicit production-readiness gate opens them. Before that gate, PRD evidence is readiness-only, disabled, or `not_configured`; it is not successful PRD Promotion Evidence.
 
+## Review Site Marker
+
+The UAT static build sets the private build-time flag `SHOW_REVIEW_SITE_MARKER=true` and displays `Review site · test payments` beneath the header wordmark. Local, full PRD, PRD Holding Page, and diagnostic builds leave the flag unset, so they render no marker. Review Site Marker is presentational only: Worker feature gates and Stripe configuration still control checkout and payment authority.
+
+Use this non-technical template when sharing the UAT URL:
+
+> Here is the site link for review. It is not the public launch site, and any payments are tests.
+
 ### PRD deployment surfaces before launch
 
 PRD has two static deployment surfaces in the same `blackbox-records-web` Cloudflare Pages project:

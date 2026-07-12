@@ -41,6 +41,12 @@ GitHub Pages UAT keeps the repo defaults in `apps/web/astro.config.mjs`:
 
 For label-member UAT, the GitHub Pages URL is intentionally wired to the UAT Worker on every `main` push. Tester instructions live in [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md). This is Stripe test mode only and is not PRD go-live approval.
 
+The UAT build alone shows the Review Site Marker `Review site · test payments` beneath the header wordmark. This presentational cue identifies a review URL; it does not enable checkout or own payment authority, which remain controlled by the Worker and Stripe configuration. Local, full PRD, and PRD Holding Page builds leave the marker unset.
+
+Share the UAT link with non-technical reviewers using this template:
+
+> Here is the site link for review. It is not the public launch site, and any payments are tests.
+
 ### PRD Holding Page
 
 The temporary public PRD Holding Page is built from the unlinked `/prd-holding/` source route and deployed only by the manual `.github/workflows/prd-holding-page.yml` workflow. The workflow prepares `apps/web/dist-holding`, uploads it as a one-day artifact, and can deploy it to the `holding` branch of the existing `blackbox-records-web` Pages project through the `prd-holding` GitHub Actions environment. That environment restricts deployment sources to `main` but has no required reviewers, so an explicit `deploy=true` dispatch proceeds without a separate approval prompt.

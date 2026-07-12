@@ -15,7 +15,16 @@ const headerNavigationItems = await getHeaderNavigationItems();
 ---
 
 <HeaderShell>
-  <HeaderBrand href={createProjectRelativeUrl('/')} />
+  <div class="header-brand-group">
+    <HeaderBrand href={createProjectRelativeUrl('/')} />
+    {
+      import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true' && (
+        <span class="header-review-site-marker" aria-label="Review site. Test payments.">
+          Review site · test payments
+        </span>
+      )
+    }
+  </div>
   <HeaderDesktopNav items={headerNavigationItems} pathname={pathname} />
 
   <div class="flex items-center gap-1">

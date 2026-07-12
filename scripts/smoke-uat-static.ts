@@ -104,6 +104,7 @@ const representativeReleaseSlug = 'disintegration';
 const representativeArtistSlug = 'chronoboros';
 const representativeNewsSlug = 'lorem-ipsum';
 const representativeStoreItemSlug = 'disintegration-black-vinyl-lp';
+const reviewSiteMarkerText = 'Review site · test payments';
 
 const allScenarioNames: readonly UatStaticSmokeScenarioName[] = [
   'cms_admin',
@@ -226,6 +227,12 @@ export function parseUatStaticSmokeArgs(args: string[]): UatStaticSmokeOptions {
   }
 
   return options;
+}
+
+export function checkReviewSiteMarker(bodyText: string, routePath: string): string[] {
+  return bodyText.includes(reviewSiteMarkerText)
+    ? []
+    : [`Expected ${routePath} to include Review Site Marker "${reviewSiteMarkerText}".`];
 }
 
 export function resolveSelectedUatStaticSmokeScenarios(
@@ -568,6 +575,8 @@ async function checkPublicRoutes(page: Page, options: UatStaticSmokeOptions): Pr
         issues.push(`Expected ${routePath} to include "${expectedSnippet}".`);
       }
     }
+
+    issues.push(...checkReviewSiteMarker(probe.bodyText, routePath));
 
     for (const exposure of scanHighRiskSmokeExposure(probe.bodyText)) {
       issues.push(`${routePath} exposed ${exposure}.`);

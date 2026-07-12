@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildUatStaticSmokeEvidence,
+  checkReviewSiteMarker,
   checkCmsAdminRenderedState,
   checkCmsConfigPlaceholders,
   checkCmsSingletonJsonDeclarations,
@@ -57,6 +58,13 @@ describe('UAT static smoke runner', () => {
     ]);
 
     expect(checkCmsConfigPlaceholders(['backend:', '  auth_endpoint: /sites/blackbox/pkce'].join('\n'))).toEqual([]);
+  });
+
+  it('requires the Review Site Marker on every public route', () => {
+    expect(checkReviewSiteMarker('Review site · test payments', '/store/')).toEqual([]);
+    expect(checkReviewSiteMarker('Store', '/store/')).toEqual([
+      'Expected /store/ to include Review Site Marker "Review site · test payments".',
+    ]);
   });
 
   it('flags singleton CMS config entries that are not explicit JSON files', () => {
