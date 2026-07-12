@@ -73,4 +73,28 @@ Each row reports the median run's p95 and the worst retained maximum across thre
 
 ## Round-two results
 
-Pending implementation and exact-final-tree acceptance.
+### Distro containment ladder
+
+Raw evidence:
+
+- grouped chunks: `.codex-artifacts/runtime-performance/distro-grouped/`
+- retained activation: `.codex-artifacts/runtime-performance/distro-retained/`
+- eager/native rendering: `.codex-artifacts/runtime-performance/distro-eager/`
+
+The 79-card catalog now remains fully server rendered in source order inside 16 bounded six-card-or-smaller chunks. Card-level `contain: strict`, fixed 40 rem card sizing, and per-card `content-visibility` are gone. Five semantic headings, all links, responsive images, keyboard/source order, shell focus/scroll reset, and mobile/desktop overflow behavior passed Browser Use. Group-level containment was rejected after wide first traversal retained 333.108 ms of layout work and mobile first traversal retained 270.308 ms. The tested 200% retained route-owned activation was also rejected after wide first traversal retained a 242.566 ms layout slice and 24.7 ms frame p95.
+
+Eager/native Distro rendering is the safest retained implementation because it removes traversal layout activation entirely:
+
+| Profile | Traversal | Baseline frame p95 | Eager frame p95 | Eager work p95 | Eager work max | Eager layout p95 | Eager long tasks |
+| ------- | --------- | -----------------: | --------------: | -------------: | -------------: | ----------------: | ---------------: |
+| Wide | first | 45.9 ms | 19.9 ms | 2.846 ms | 6.312 ms | 0 ms | 0 |
+| Wide | repeat | 43.1 ms | 20.0 ms | 0.950 ms | 8.099 ms | 0 ms | 1 |
+| Mobile | first | 26.0 ms | 18.1 ms | 0.623 ms | 4.478 ms | 0 ms | 0 |
+| Mobile | repeat | 18.8 ms | 17.9 ms | 0.382 ms | 1.560 ms | 0 ms | 0 |
+| Legacy | first | 31.8 ms | 19.3 ms | 2.479 ms | 7.879 ms | 0 ms | 0 |
+
+Cold load remains inside the declared route gates: desktop LCP 152 ms with CLS 0.000237; mobile-stress LCP 1.648 s with CLS 0.021031. No route errors occurred.
+
+The eager rung still misses the absolute 16.7 ms frame-interval p95 gate despite having no matching layout work and application work below both the 8 ms p95 and 16.7 ms maximum gates. Wide first is 19.9 ms and mobile first is 18.1 ms. Under task 2.10 this blocks Distro acceptance inside the approved scope: grouped, retained, and eager strategies are exhausted, and pagination/virtualization are prohibited without an OpenSpec amendment. The Distro item stops here while independent slices continue. `pnpm test:unit` passed (93 web files/419 tests, 32+34 backend files/407 tests, one API-client file/6 tests); `pnpm build` plus cache and image checks passed. `pnpm check` reached formatting and then stopped on the unrelated untracked `openspec/changes/catalog-discovery-and-information-architecture/specs/catalog-discovery/spec.md`, which this change does not modify.
+
+Exact-final-tree acceptance remains pending.

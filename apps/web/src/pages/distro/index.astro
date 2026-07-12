@@ -6,6 +6,14 @@ import { getDistroPageContent } from '@/lib/site-data';
 
 const [distroEntries, distroPageContent] = await Promise.all([listDistroEntries(), getDistroPageContent()]);
 const groupedDistroEntries = groupDistroEntries(distroEntries);
+const groupedDistroChunks = groupedDistroEntries.map((group) => ({
+  ...group,
+  chunks: group.entries.reduce<(typeof group.entries)[]>((chunks, entry, index) => {
+    if (index % 6 === 0) chunks.push([]);
+    chunks.at(-1)!.push(entry);
+    return chunks;
+  }, []),
+}));
 const eagerDistroEntryIds = new Set(distroEntries.slice(0, 3).map((entry) => entry.id));
 ---
 
@@ -20,7 +28,7 @@ const eagerDistroEntryIds = new Set(distroEntries.slice(0, 3).map((entry) => ent
 
   <section class="layout-container distro-page-groups" aria-label="Distro">
     {
-      groupedDistroEntries.map((group) => (
+      groupedDistroChunks.map((group) => (
         <section
           class="distro-group-section"
           aria-labelledby={`distro-group-${group.groupName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
@@ -34,9 +42,13 @@ const eagerDistroEntryIds = new Set(distroEntries.slice(0, 3).map((entry) => ent
             </h2>
             <p class="distro-group-section__copy">{distroPageContent.group_intros[group.groupName]}</p>
           </div>
-          <div class="distro-group-grid">
-            {group.entries.map((item) => (
-              <DistroCard item={item} imageLoading={eagerDistroEntryIds.has(item.id) ? 'eager' : 'lazy'} />
+          <div class="distro-group-chunks">
+            {group.chunks.map((chunk) => (
+              <div class="distro-group-grid distro-group-chunk">
+                {chunk.map((item) => (
+                  <DistroCard item={item} imageLoading={eagerDistroEntryIds.has(item.id) ? 'eager' : 'lazy'} />
+                ))}
+              </div>
             ))}
           </div>
         </section>

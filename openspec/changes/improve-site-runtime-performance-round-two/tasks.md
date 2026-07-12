@@ -18,17 +18,19 @@
 
 ## 2. Distro First-Traversal Slice
 
-- [ ] 2.1 Map Distro group/card DOM, responsive breakpoints, current strict containment, intrinsic sizing, image loading, focus order, and shell-managed route ownership before editing.
-- [ ] 2.2 Add focused regression coverage that fails on card-level `contain: strict`, fixed 40 rem card block sizing, blank activation corridors, or loss of full server-rendered catalog/source order.
-- [ ] 2.3 Remove per-card strict/fixed containment and test the smallest semantic Distro group or bounded chunk boundaries with measured narrow and wide intrinsic sizes.
-- [ ] 2.4 Run Browser Use before any repeat traversal to verify first-scroll card appearance, scrollbar stability, headings, links, keyboard order, find-in-page, responsive images, no overflow, and shell scroll reset.
-- [ ] 2.5 Re-run Distro desktop/mobile load plus first/repeat scroll profiles; accept grouped containment only if every load and traversal gate passes.
-- [ ] 2.6 If grouped containment misses first scroll, implement one route-owned ahead-of-viewport activation path that yields between bounded groups and retains each activated group until route exit.
-- [ ] 2.7 Add focused tests for activation margin, retained state, route-exit cleanup, route-change cancellation, user-input yielding, and no generic virtualization/node recycling.
-- [ ] 2.8 Re-run the complete Distro profile matrix after retained activation and stop at this rung if every gate passes.
+- [x] 2.1 Map Distro group/card DOM, responsive breakpoints, current strict containment, intrinsic sizing, image loading, focus order, and shell-managed route ownership before editing.
+- [x] 2.2 Add focused regression coverage that fails on card-level `contain: strict`, fixed 40 rem card block sizing, blank activation corridors, or loss of full server-rendered catalog/source order.
+- [x] 2.3 Remove per-card strict/fixed containment and test the smallest semantic Distro group or bounded chunk boundaries with measured narrow and wide intrinsic sizes.
+- [x] 2.4 Run Browser Use before any repeat traversal to verify first-scroll card appearance, scrollbar stability, headings, links, keyboard order, find-in-page, responsive images, no overflow, and shell scroll reset.
+- [x] 2.5 Re-run Distro desktop/mobile load plus first/repeat scroll profiles; accept grouped containment only if every load and traversal gate passes.
+- [x] 2.6 If grouped containment misses first scroll, implement one route-owned ahead-of-viewport activation path that yields between bounded groups and retains each activated group until route exit.
+- [x] 2.7 Add focused tests for activation margin, retained state, route-exit cleanup, route-change cancellation, user-input yielding, and no generic virtualization/node recycling.
+- [x] 2.8 Re-run the complete Distro profile matrix after retained activation and stop at this rung if every gate passes.
 - [ ] 2.9 If retained activation still misses, disable `content-visibility` only for the failing Distro route/breakpoint and prove its cold-load LCP, CLS, and responsiveness remain passing.
-- [ ] 2.10 If neither contained nor eager Distro rendering passes both load and traversal gates, stop implementation and amend OpenSpec before pagination or virtualization.
+- [x] 2.10 If neither contained nor eager Distro rendering passes both load and traversal gates, stop implementation and amend OpenSpec before pagination or virtualization.
 - [ ] 2.11 Run focused Distro tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record the accepted rung, before/after values, and rejected fallbacks before starting Store.
+
+  Distro blocker: eager/native rendering removes all traversal layout activation and passes load/application-work gates, but the comparable runner still reports 19.9 ms wide and 18.1 ms mobile first-scroll frame p95 against the absolute 16.7 ms gate. See PERF-003. Task 2.9 and acceptance task 2.11 remain open.
 
 ## 3. Store First-Traversal Slice
 

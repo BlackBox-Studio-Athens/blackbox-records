@@ -1048,16 +1048,10 @@
     gap: 0.55rem;
   }
 
+  .distro-group-chunks,
   .distro-group-grid {
     display: grid;
     gap: 1.25rem;
-  }
-
-  .distro-card--page {
-    block-size: 40rem;
-    contain: strict;
-    content-visibility: auto;
-    contain-intrinsic-block-size: auto 40rem;
   }
 
   .store-catalog-chunks {
@@ -3579,11 +3573,6 @@ body.is-app-shell-overlay-open {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .distro-card--page {
-    block-size: auto;
-    contain: none;
-  }
-
   .artists-roster-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3788,6 +3777,10 @@ body.is-app-shell-overlay-open {
   .distro-home-grid,
   .distro-group-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+
+  .distro-group-chunks {
     gap: 1.5rem;
   }
 
