@@ -44,4 +44,4 @@
 - [x] 7.1 Run focused tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`; prove all cues are present in UAT artifacts and absent from Local and PRD artifacts.
 - [x] 7.2 Use Browser Use at desktop, 320px mobile, and 200% zoom to verify header fit and persistence, `[TEST]` title behavior, checkout warning placement, coexistence with layered UI, and console cleanliness.
 - [x] 7.3 Run independent Brooks Review and Ponytail Review passes, assess and fix valid findings, then rerun affected checks and all required gates.
-- [ ] 7.4 Commit and push the exact verified tree, monitor required GitHub Actions and UAT deployment to terminal success, then repeat hosted smoke and Browser Use acceptance.
+- [x] 7.4 Commit and push the exact verified tree, monitor required GitHub Actions and UAT deployment to terminal success, then repeat hosted smoke and Browser Use acceptance.
