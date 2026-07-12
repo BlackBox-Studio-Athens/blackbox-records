@@ -2,12 +2,12 @@
 
 ### Requirement: Review Site Marker communicates review and payment status
 
-The system SHALL identify every shopper-facing UAT page with the exact visible marker `Review site · test payments`.
+The system SHALL identify every shopper-facing UAT page with exact visible header text `TEST SITE` and `Test payments only`.
 
 #### Scenario: Reviewer opens a UAT shopper page
 
 - **WHEN** a reviewer opens a shopper-facing page in UAT
-- **THEN** the persistent header shows `Review site · test payments` directly beneath the BlackBox wordmark
+- **THEN** the persistent header shows a solid `TEST SITE` label followed by `Test payments only` directly beneath the BlackBox wordmark
 - **AND** the complete marker is visible without requiring interaction.
 
 #### Scenario: Reviewer considers payment behavior
@@ -15,6 +15,22 @@ The system SHALL identify every shopper-facing UAT page with the exact visible m
 - **WHEN** the marker is present on a store or checkout page
 - **THEN** its wording communicates that payment activity is for testing
 - **AND** the marker does not claim that checkout is available or replace Worker and Stripe controls.
+
+### Requirement: Review Site Marker uses layered test-site cues
+
+The system MUST reinforce UAT identity in the browser tab and at the final checkout action without changing public metadata or checkout authority.
+
+#### Scenario: Reviewer distinguishes browser tabs
+
+- **WHEN** a UAT shopper document is built
+- **THEN** its HTML document title starts with `[TEST] `
+- **AND** canonical, Open Graph, Twitter, and structured metadata keep their normal values.
+
+#### Scenario: Reviewer reaches the final checkout action
+
+- **WHEN** a UAT checkout page renders the final Stripe action
+- **THEN** the nearby static warning reads `Test checkout. No real payment will be taken.`
+- **AND** the warning does not use an alert role, live region, or browser-owned checkout decision.
 
 ### Requirement: Review Site Marker persists with the app shell
 
@@ -39,13 +55,13 @@ The system MUST render one marker inside the persistent header boundary so shell
 
 ### Requirement: Review Site Marker remains calm and responsive
 
-The system SHALL style the marker as restrained secondary identity text within the existing BlackBox header rather than as an alert or promotion.
+The system SHALL style the marker as a compact, high-contrast identity row within the existing BlackBox header rather than as an alert or promotion.
 
 #### Scenario: Marker renders at desktop width
 
 - **WHEN** the header renders at a desktop viewport
-- **THEN** the marker is left-aligned beneath the wordmark in existing system typography and Soft Muted color
-- **AND** it has no banner, pill, border, background, shadow, icon, animation, or route accent.
+- **THEN** the marker is left-aligned beneath the wordmark with a solid off-white `TEST SITE` label, near-black label text, and adjacent high-contrast payment text
+- **AND** it has no banner, rounded pill, shadow, icon, animation, or route accent.
 
 #### Scenario: Marker renders at narrow mobile width
 
@@ -66,7 +82,7 @@ The system MUST communicate the review state through readable text rather than c
 #### Scenario: Assistive technology reads the marker
 
 - **WHEN** the header is exposed to assistive technology
-- **THEN** the marker has a readable text alternative that communicates `Review site. Test payments.`
+- **THEN** the marker has a readable text alternative that communicates `Test site. Test payments only.`
 - **AND** its visible text meets WCAG AA contrast against the header.
 
 #### Scenario: Reviewer navigates by keyboard or requests reduced motion

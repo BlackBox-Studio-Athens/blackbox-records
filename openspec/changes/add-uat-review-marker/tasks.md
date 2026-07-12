@@ -31,3 +31,17 @@
 - [x] 5.2 Use Browser Use on the deployed GitHub Pages UAT URL at mobile and desktop sizes to repeat header-persistence, control-clearance, accessibility, network, and console checks.
 - [x] 5.3 Share the review URL using the documented non-technical template only after hosted checks pass; record that the marker is presentational and that checkout remains governed by Worker and Stripe controls.
 - [x] 5.4 Re-run `pnpm openspec:guard`, strictly validate this change, and record final OpenSpec status before archiving.
+
+## 6. Add Layered Test-Site Cues
+
+- [x] 6.1 Replace the subtle header sentence with a solid `TEST SITE` label and adjacent `Test payments only` text, preserving the existing private build flag, 80px header, accessibility contract, and 320px support.
+- [x] 6.2 Prefix only the UAT HTML document title with `[TEST] ` while leaving canonical, Open Graph, Twitter, and structured metadata unchanged.
+- [x] 6.3 Pass the private UAT build decision from both Astro checkout routes into the hydrated checkout component and render `Test checkout. No real payment will be taken.` beside the final Stripe action without adding browser configuration or changing checkout authority.
+- [x] 6.4 Update the existing verifier, hosted smoke, focused tests, docs, change specs, and baseline specs for all three exact cues.
+
+## 7. Reverify and Accept the Layered Marker
+
+- [x] 7.1 Run focused tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`; prove all cues are present in UAT artifacts and absent from Local and PRD artifacts.
+- [x] 7.2 Use Browser Use at desktop, 320px mobile, and 200% zoom to verify header fit and persistence, `[TEST]` title behavior, checkout warning placement, coexistence with layered UI, and console cleanliness.
+- [x] 7.3 Run independent Brooks Review and Ponytail Review passes, assess and fix valid findings, then rerun affected checks and all required gates.
+- [ ] 7.4 Commit and push the exact verified tree, monitor required GitHub Actions and UAT deployment to terminal success, then repeat hosted smoke and Browser Use acceptance.

@@ -61,9 +61,13 @@ describe('UAT static smoke runner', () => {
   });
 
   it('requires the Review Site Marker on every public route', () => {
-    expect(checkReviewSiteMarker('Review site · test payments', '/store/')).toEqual([]);
-    expect(checkReviewSiteMarker('Store', '/store/')).toEqual([
-      'Expected /store/ to include Review Site Marker "Review site · test payments".',
+    expect(checkReviewSiteMarker('TEST SITE Test payments only', '[TEST] Store | BlackBox Records', '/store/')).toEqual(
+      [],
+    );
+    expect(checkReviewSiteMarker('Store', 'Store | BlackBox Records', '/store/')).toEqual([
+      'Expected /store/ to include Review Site Marker text "TEST SITE".',
+      'Expected /store/ to include Review Site Marker text "Test payments only".',
+      'Expected /store/ document title to start with "[TEST] ".',
     ]);
   });
 

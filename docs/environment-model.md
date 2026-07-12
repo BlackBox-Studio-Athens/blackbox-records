@@ -15,7 +15,7 @@ PRD exists as a deployable static readiness surface, but live checkout and live 
 
 ## Review Site Marker
 
-The UAT static build sets the private build-time flag `SHOW_REVIEW_SITE_MARKER=true` and displays `Review site · test payments` beneath the header wordmark. Local, full PRD, PRD Holding Page, and diagnostic builds leave the flag unset, so they render no marker. Review Site Marker is presentational only: Worker feature gates and Stripe configuration still control checkout and payment authority.
+The UAT static build sets the private build-time flag `SHOW_REVIEW_SITE_MARKER=true` and renders three cues: a solid `TEST SITE` label with `Test payments only` beneath the header wordmark, a `[TEST]` browser-title prefix, and `Test checkout. No real payment will be taken.` beside the final checkout action. Local, full PRD, PRD Holding Page, and diagnostic builds leave the flag unset, so they render none of these cues. Review Site Marker is presentational only: Worker feature gates and Stripe configuration still control checkout and payment authority.
 
 Use this non-technical template when sharing the UAT URL:
 

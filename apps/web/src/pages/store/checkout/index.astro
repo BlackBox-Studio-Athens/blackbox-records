@@ -78,7 +78,11 @@ const summaryItem = {
             <span class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Secure Stripe Checkout</span>
           </div>
 
-          <CheckoutOfferStatus client:load initialAvailability={initialCheckoutAvailability} />
+          <CheckoutOfferStatus
+            client:load
+            initialAvailability={initialCheckoutAvailability}
+            showReviewSiteMarker={import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'}
+          />
         </CardContent>
       </Card>
 

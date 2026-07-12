@@ -3,10 +3,17 @@ import { describe, expect, it } from 'vitest';
 import { verifyReviewSiteMarkerSources } from '../../../../scripts/verify-environment-model';
 
 const validSources = {
+  checkoutRoutes: [
+    "showReviewSiteMarker={import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'}",
+    "showReviewSiteMarker={import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'}",
+  ].join('\n'),
+  checkoutStatus:
+    'showReviewSiteMarker view.canStartCheckout && shippingGateView.canContinueToPayment && hasCheckoutLine Test checkout. No real payment will be taken. <Button',
   envDeclaration: "readonly SHOW_REVIEW_SITE_MARKER?: 'true';",
-  header:
-    "const showReviewSiteMarker = import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'; Review site · test payments",
+  header: "import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'; TEST SITE Test payments only",
   holdingWorkflow: 'run: pnpm build',
+  siteLayout:
+    "const showReviewSiteMarker = import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'; const htmlTitle = `[TEST] ${baseHtmlTitle}`;",
   staticDeployWorkflow: [
     '- name: Build UAT static frontend',
     '  env:',

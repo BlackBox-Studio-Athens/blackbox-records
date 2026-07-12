@@ -12,7 +12,8 @@ This is a product-interface status cue, not a campaign surface. Physical scene: 
 
 **Goals:**
 
-- Make every shopper-facing UAT page visibly identifiable as a review site with test payments.
+- Make every shopper-facing UAT page visibly identifiable as a test site with test payments.
+- Reinforce that identity in the browser tab and at the final checkout action, where environment confusion has the highest cost.
 - Preserve the current BlackBox header hierarchy, dimensions, navigation, cart, player, and overlay behavior.
 - Keep the exact full marker legible from a 320px CSS viewport through wide desktop and at 200% browser page zoom when the resulting CSS viewport remains at least 320px.
 - Make marker presence an explicit UAT build contract with automated drift and hosted checks.
@@ -21,30 +22,38 @@ This is a product-interface status cue, not a campaign surface. Physical scene: 
 **Non-Goals:**
 
 - Changing checkout availability, Stripe mode, payment authority, stock, content, or any Worker behavior.
-- Adding a top banner, alert styling, badge pill, icon, tooltip, link, dismissal, animation, or saved state.
+- Adding a top banner, alert role, pill, icon, tooltip, link, dismissal, animation, or saved state.
 - Showing `UAT`, provider names, platform vocabulary, a test-card number, or technical instructions in the public header.
 - Adding a CMS setting, runtime configuration endpoint, hostname inference, component library primitive, dependency, or reusable abstraction for one static marker.
 - Changing the header height, app-shell route model, full-site design, UAT URL, PRD Holding Page, or production launch policy.
 
 ## Decisions
 
-### Place one text line directly beneath the wordmark
+### Place one high-contrast identity row directly beneath the wordmark
 
-`Header.astro` will wrap the existing `HeaderBrand` and a conditional static `<span>` in one identity group. The marker sits directly beneath the wordmark, left-aligned to it. This ties status to the most stable identity element and keeps it visible while desktop navigation, the mobile sheet, cart drawer, player, or detail overlay changes state.
+`Header.astro` keeps the existing wordmark and conditional static marker in one identity group. The marker sits directly beneath the wordmark, left-aligned to it. This ties status to the most stable identity element and keeps it visible while desktop navigation, the mobile sheet, cart drawer, player, or detail overlay changes state.
 
-The exact visible copy is `Review site · test payments`. It uses the existing system sans face, Soft Muted `#b3b3b3`, 11px type, 1.2 line height, restrained letter spacing, and no text transform. The full phrase remains on one line at default text sizing. It receives no border, background, rounded container, shadow, icon, route accent, or motion. A screen-reader label may replace the middle dot with sentence punctuation, but the visible words remain exact.
+The exact visible row contains a solid off-white `TEST SITE` label with near-black text followed by `Test payments only` in readable high-contrast text. It uses the existing system sans face, hard edges, compact type, and no shadow, icon, route accent, or motion. The full row remains on one line at default text sizing. Its accessible name is `Test site. Test payments only.`
 
 The identity group adds only a small vertical gap within the current 80px header. Existing logo sizing, header padding, navigation alignment, right-side control size, and page top offsets remain unchanged. At a 320px CSS viewport with default text sizing, the full marker must remain visible on one line without clipping, collision, or horizontal overflow; it is never shortened to an acronym or hidden behind a tooltip. A separate 200% browser page-zoom check uses a viewport whose resulting CSS width remains at least 320px and requires the same no-loss outcome. These are separate acceptance cases, not a demand to fit 200% text-only enlargement into a 320px layout.
 
-A separate announcement bar was rejected because it would shift every page, compete with the site content, and look like a temporary warning. A pill beside the desktop navigation was rejected because it would disappear or crowd the mobile header. Duplicating the marker inside the mobile sheet was rejected because the fixed header remains visible and duplicate status adds noise.
+A separate announcement bar was rejected because it would shift every page, compete with site content, and resemble a promotion. A rounded badge beside desktop navigation was rejected because it would disappear or crowd the mobile header. Duplicating the marker inside the mobile sheet was rejected because the fixed header remains visible and duplicate status adds noise.
 
 ### Compile the marker only when an explicit private flag is exactly true
 
 The build contract uses `SHOW_REVIEW_SITE_MARKER=true`. `Header.astro` compares the value to the exact string `true`; missing, blank, or any other value renders nothing. `apps/web/src/env.d.ts` declares the private build-time value without a `PUBLIC_` prefix because browser code does not need it.
 
-Only the `Build UAT static frontend` step in `.github/workflows/pages.yml` sets the flag. Local commands, UAT-connected local development, the full PRD build, the PRD Holding Page build, and preview/diagnostic builds leave it unset. This makes absence the safe default and prevents a shared repository variable from leaking review language into PRD.
+Only the `Build UAT static frontend` step in `.github/workflows/pages.yml` sets the flag. Local commands, UAT-connected local development, the full PRD build, the PRD Holding Page build, and preview/diagnostic builds leave it unset. This makes absence the safe default and prevents test-site language from leaking into PRD.
 
-Hostname detection was rejected because local base paths, Pages aliases, custom domains, and preview URLs make URL inference brittle. A content setting was rejected because review identity is deployment policy, not editorial content. A client-visible public variable and hydrated component were rejected because the marker is resolved completely at static build time.
+Hostname detection was rejected because local base paths, Pages aliases, custom domains, and preview URLs make URL inference brittle. A content setting was rejected because review identity is deployment policy, not editorial content. A client-visible public variable was rejected because Astro can resolve the decision at static build time and pass only a boolean into the existing checkout island.
+
+### Reinforce the environment in the browser tab and final checkout action
+
+`SiteLayout.astro` prefixes only the HTML document title with `[TEST] ` when the private flag is enabled. Open Graph, Twitter, canonical, and structured metadata keep their current values so the cue remains browser-facing rather than changing public metadata contracts.
+
+Both Astro checkout routes pass the same build-time boolean into `CheckoutOfferStatus`. The hydrated component renders the exact static sentence `Test checkout. No real payment will be taken.` beside the final Stripe action. It receives no alert role or live region because it is stable context, and it does not change checkout availability, provider behavior, or payment authority.
+
+The cart drawer remains unchanged. Repeating the warning before the final checkout page was rejected because the persistent header already supplies global context and the final action is the point where the payment reminder matters.
 
 ### Keep the marker inside the existing persistent-header boundary
 
@@ -54,13 +63,13 @@ No `aria-live`, status role, focus target, or click behavior is added; the marke
 
 ### Extend existing verification seams
 
-`scripts/verify-environment-model.ts` will assert that the exact flag/value occurs in the UAT build step, is absent from PRD and holding build scopes, and guards the exact header copy. Its existing output remains the repository-level drift check; no new verifier script or package dependency is added.
+`scripts/verify-environment-model.ts` will assert that the exact flag/value occurs in the UAT build step, is absent from PRD and holding build scopes, and guards the header, document title, and checkout cue. Its existing output remains the repository-level drift check; no new verifier script or package dependency is added.
 
-The existing UAT Static Smoke `public_routes` scenario will require the exact marker on every representative shopper route it already probes. Focused unit coverage will preserve any new smoke assertion helper or configuration check. Browser Use will verify the final UAT artifact at 320px mobile and desktop, shell navigation persistence, mobile navigation, cart/player/overlay coexistence, zoom, and console cleanliness.
+The existing UAT Static Smoke `public_routes` scenario will require the exact header cue and `[TEST]` title on every representative shopper route it already probes, while checkout acceptance requires the exact final-action warning. Focused unit coverage will preserve the smoke and configuration checks. Browser Use will verify the final UAT artifact at 320px mobile and desktop, shell navigation persistence, mobile navigation, cart/player/overlay coexistence, checkout placement, zoom, and console cleanliness.
 
 ## Risks / Trade-offs
 
-- **The marker is too subtle to prevent confusion** → Keep the unambiguous full words, AA contrast, permanent header placement, and include them in review-link instructions; do not rely on color alone.
+- **The marker is too subtle to prevent confusion** → Use a solid high-contrast `TEST SITE` label, explicit payment text, browser-title prefix, and final checkout warning; do not rely on color alone.
 - **The marker crowds a narrow header** → Keep it under the existing wordmark, lock one-line copy, preserve control geometry, and reject implementation unless 320px and text-scaling checks pass.
 - **Review language reaches PRD** → Use an unset-by-default private flag, scope it to the UAT build step, and make source/workflow verification fail on drift.
 - **The header cue implies test behavior is browser-owned** → Keep the marker presentational only; Worker feature gates and Stripe environment controls remain authoritative.
@@ -68,10 +77,10 @@ The existing UAT Static Smoke `public_routes` scenario will require the exact ma
 
 ## Migration Plan
 
-1. Add the conditional identity group and existing-system styles without changing header dimensions or behavior.
-2. Declare the private flag, set it only in the UAT build step, and extend repository verification and focused tests.
-3. Build both targets and prove the marker is present in the UAT artifact and absent from the full PRD and PRD Holding Page artifacts.
-4. Run repository gates, then use Browser Use locally with the flag enabled at mobile and desktop sizes plus a separate 200% page-zoom case whose resulting CSS viewport remains at least 320px.
+1. Replace the subtle marker treatment and add the title and checkout cues without changing header dimensions or checkout behavior.
+2. Extend repository verification, focused tests, docs, and specs for all three UAT-only cues.
+3. Build both targets and prove all cues are present in the UAT artifact and absent from full PRD and PRD Holding Page artifacts.
+4. Run repository gates and independent Brooks and Ponytail reviews, fix valid findings, then use Browser Use locally at mobile and desktop sizes plus a separate 200% page-zoom case whose resulting CSS viewport remains at least 320px.
 5. Deploy through the existing shared workflow and run hosted UAT Static Smoke plus manual Browser Use checks before distributing the review link.
 
 Rollback: remove the UAT build flag or revert the marker commit, rebuild UAT, and rerun the same hosted checks. No data, DNS, Worker, Stripe, or PRD rollback is required.

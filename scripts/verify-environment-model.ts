@@ -9,9 +9,12 @@ type CheckResult = {
 };
 
 type ReviewSiteMarkerSources = {
+  checkoutRoutes: string;
+  checkoutStatus: string;
   envDeclaration: string;
   header: string;
   holdingWorkflow: string;
+  siteLayout: string;
   staticDeployWorkflow: string;
 };
 
@@ -43,6 +46,12 @@ export function verifyEnvironmentModel(): CheckResult[] {
   const holdingWorkflow = read('.github/workflows/prd-holding-page.yml');
   const envDeclaration = read('apps/web/src/env.d.ts');
   const header = read('apps/web/src/components/Header.astro');
+  const siteLayout = read('apps/web/src/layouts/SiteLayout.astro');
+  const checkoutStatus = read('apps/web/src/components/store/CheckoutOfferStatus.tsx');
+  const checkoutRoutes = [
+    read('apps/web/src/pages/store/checkout/index.astro'),
+    read('apps/web/src/pages/store/[slug]/checkout/index.astro'),
+  ].join('\n');
   const catalogPromotionWorkflow = read('.github/workflows/catalog-promotion.yml');
   const uatSandboxSmokeWorkflow = read('.github/workflows/uat-smoke.yml');
   const wranglerConfig = read('apps/backend/wrangler.jsonc');
@@ -60,8 +69,16 @@ export function verifyEnvironmentModel(): CheckResult[] {
         !staticDeployWorkflow.includes('PUBLIC_BACKEND_BASE_URL="${{ vars.PUBLIC_BACKEND_BASE_URL }}"'),
     },
     {
-      detail: 'Review Site Marker is private, exact, and enabled only by the UAT static build step.',
-      ok: verifyReviewSiteMarkerSources({ envDeclaration, header, holdingWorkflow, staticDeployWorkflow }),
+      detail: 'Layered Review Site Marker cues are private, exact, and enabled only by the UAT static build step.',
+      ok: verifyReviewSiteMarkerSources({
+        checkoutRoutes,
+        checkoutStatus,
+        envDeclaration,
+        header,
+        holdingWorkflow,
+        siteLayout,
+        staticDeployWorkflow,
+      }),
     },
     {
       detail:
@@ -160,17 +177,33 @@ export function verifyEnvironmentModel(): CheckResult[] {
 }
 
 export function verifyReviewSiteMarkerSources({
+  checkoutRoutes,
+  checkoutStatus,
   envDeclaration,
   header,
   holdingWorkflow,
+  siteLayout,
   staticDeployWorkflow,
 }: ReviewSiteMarkerSources): boolean {
   const uatBuildStep = /- name: Build UAT static frontend[\s\S]*?run: pnpm build:web/.exec(staticDeployWorkflow)?.[0];
   return (
     envDeclaration.includes("readonly SHOW_REVIEW_SITE_MARKER?: 'true';") &&
     header.includes("import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'") &&
-    header.includes('Review site · test payments') &&
+    header.includes('TEST SITE') &&
+    header.includes('Test payments only') &&
+    siteLayout.includes("import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'") &&
+    siteLayout.includes('`[TEST] ${baseHtmlTitle}`') &&
+    checkoutStatus.includes('showReviewSiteMarker') &&
+    checkoutStatus.includes('Test checkout. No real payment will be taken.') &&
+    checkoutStatus.indexOf('view.canStartCheckout && shippingGateView.canContinueToPayment && hasCheckoutLine') <
+      checkoutStatus.indexOf('Test checkout. No real payment will be taken.') &&
+    checkoutStatus.indexOf('Test checkout. No real payment will be taken.') <
+      checkoutStatus.indexOf('<Button', checkoutStatus.indexOf('Test checkout. No real payment will be taken.')) &&
+    (checkoutRoutes.match(/showReviewSiteMarker=\{import\.meta\.env\.SHOW_REVIEW_SITE_MARKER === 'true'\}/g) ?? [])
+      .length === 2 &&
     !header.includes('PUBLIC_SHOW_REVIEW_SITE_MARKER') &&
+    !siteLayout.includes('PUBLIC_SHOW_REVIEW_SITE_MARKER') &&
+    !checkoutRoutes.includes('PUBLIC_SHOW_REVIEW_SITE_MARKER') &&
     !header.includes('Astro.url.hostname') &&
     uatBuildStep?.includes("SHOW_REVIEW_SITE_MARKER: 'true'") === true &&
     (staticDeployWorkflow.match(/SHOW_REVIEW_SITE_MARKER/g) ?? []).length === 1 &&

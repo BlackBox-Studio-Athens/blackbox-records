@@ -104,7 +104,9 @@ const representativeReleaseSlug = 'disintegration';
 const representativeArtistSlug = 'chronoboros';
 const representativeNewsSlug = 'lorem-ipsum';
 const representativeStoreItemSlug = 'disintegration-black-vinyl-lp';
-const reviewSiteMarkerText = 'Review site · test payments';
+const reviewSiteMarkerTexts = ['TEST SITE', 'Test payments only'] as const;
+const reviewSiteTitlePrefix = '[TEST] ';
+const reviewSiteCheckoutWarning = 'Test checkout. No real payment will be taken.';
 
 const allScenarioNames: readonly UatStaticSmokeScenarioName[] = [
   'cms_admin',
@@ -229,10 +231,16 @@ export function parseUatStaticSmokeArgs(args: string[]): UatStaticSmokeOptions {
   return options;
 }
 
-export function checkReviewSiteMarker(bodyText: string, routePath: string): string[] {
-  return bodyText.includes(reviewSiteMarkerText)
-    ? []
-    : [`Expected ${routePath} to include Review Site Marker "${reviewSiteMarkerText}".`];
+export function checkReviewSiteMarker(bodyText: string, documentTitle: string | null, routePath: string): string[] {
+  const issues = reviewSiteMarkerTexts
+    .filter((text) => !bodyText.includes(text))
+    .map((text) => `Expected ${routePath} to include Review Site Marker text "${text}".`);
+
+  if (!documentTitle?.startsWith(reviewSiteTitlePrefix)) {
+    issues.push(`Expected ${routePath} document title to start with "${reviewSiteTitlePrefix}".`);
+  }
+
+  return issues;
 }
 
 export function resolveSelectedUatStaticSmokeScenarios(
@@ -499,6 +507,12 @@ async function checkCheckoutShellPage(page: Page, options: UatStaticSmokeOptions
     }
   }
 
+  issues.push(...checkReviewSiteMarker(probe.bodyText, probe.title, '/store/checkout/'));
+
+  if (probe.bodyText.includes(reviewSiteCheckoutWarning)) {
+    issues.push('Expected the empty checkout shell to hide the final-action test-payment warning.');
+  }
+
   if (/checkout\.stripe\.com/i.test(probe.bodyText)) {
     issues.push('Checkout shell should not expose a hosted Checkout URL in the static shell copy.');
   }
@@ -576,7 +590,7 @@ async function checkPublicRoutes(page: Page, options: UatStaticSmokeOptions): Pr
       }
     }
 
-    issues.push(...checkReviewSiteMarker(probe.bodyText, routePath));
+    issues.push(...checkReviewSiteMarker(probe.bodyText, probe.title, routePath));
 
     for (const exposure of scanHighRiskSmokeExposure(probe.bodyText)) {
       issues.push(`${routePath} exposed ${exposure}.`);

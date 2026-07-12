@@ -8,12 +8,13 @@ The system MUST compile the Review Site Marker through an explicit UAT-only stat
 
 - **WHEN** the shared workflow runs the `Build UAT static frontend` step
 - **THEN** that step sets `SHOW_REVIEW_SITE_MARKER=true`
-- **AND** the generated shopper-facing documents contain the exact marker `Review site · test payments`.
+- **AND** generated shopper-facing documents contain the exact header words `TEST SITE` and `Test payments only` plus the `[TEST] ` HTML-title prefix
+- **AND** generated checkout documents contain `Test checkout. No real payment will be taken.` beside the final payment action.
 
 #### Scenario: Local or PRD artifact is built
 
 - **WHEN** Local, the full Cloudflare Pages PRD target, the PRD Holding Page, or a diagnostic target builds without the exact UAT flag
-- **THEN** the marker is absent
+- **THEN** all three cues are absent
 - **AND** missing, blank, `false`, or any value other than the exact string `true` cannot enable it.
 
 #### Scenario: Build configuration drifts
@@ -29,11 +30,12 @@ The system SHALL include marker presence in hosted UAT static acceptance rather 
 #### Scenario: UAT public-route smoke runs
 
 - **WHEN** the existing UAT Static Smoke `public_routes` scenario probes representative shopper routes
-- **THEN** every probed HTML page must contain the exact visible marker
-- **AND** missing marker text fails the scenario and its recorded evidence.
+- **THEN** every probed HTML page must contain the exact header cue and `[TEST] ` title prefix
+- **AND** probed checkout HTML must contain the exact final-action warning
+- **AND** any missing cue fails the scenario and its recorded evidence.
 
 #### Scenario: UAT interface is manually accepted
 
 - **WHEN** Browser Use validates the deployed UAT artifact at mobile and desktop sizes
-- **THEN** it checks direct loads, shell navigation persistence, header control clearance, and coexistence with mobile navigation, cart, player, and overlay states
-- **AND** it records no marker-caused overflow, layout shift, console error, or inaccessible text.
+- **THEN** it checks direct loads, title prefix, checkout warning placement, shell navigation persistence, header control clearance, and coexistence with mobile navigation, cart, player, and overlay states
+- **AND** it records no cue-caused overflow, layout shift, console error, or inaccessible text.

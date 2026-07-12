@@ -41,7 +41,7 @@ GitHub Pages UAT keeps the repo defaults in `apps/web/astro.config.mjs`:
 
 For label-member UAT, the GitHub Pages URL is intentionally wired to the UAT Worker on every `main` push. Tester instructions live in [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md). This is Stripe test mode only and is not PRD go-live approval.
 
-The UAT build alone shows the Review Site Marker `Review site · test payments` beneath the header wordmark. This presentational cue identifies a review URL; it does not enable checkout or own payment authority, which remain controlled by the Worker and Stripe configuration. Local, full PRD, and PRD Holding Page builds leave the marker unset.
+The UAT build alone shows the layered Review Site Marker: a solid `TEST SITE` label with `Test payments only` beneath the header wordmark, a `[TEST]` browser-title prefix, and `Test checkout. No real payment will be taken.` beside the final checkout action. These presentational cues identify a review URL; they do not enable checkout or own payment authority, which remain controlled by the Worker and Stripe configuration. Local, full PRD, and PRD Holding Page builds leave all three cues unset.
 
 Share the UAT link with non-technical reviewers using this template:
 

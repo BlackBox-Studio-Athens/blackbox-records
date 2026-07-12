@@ -26,6 +26,7 @@ interface CheckoutOfferStatusProps {
   fallbackCartSeed?: StoreItemCartSeed | null;
   fallbackLineItem?: CartLineItemSnapshot | null;
   initialAvailability: CheckoutOfferInitialAvailability;
+  showReviewSiteMarker?: boolean;
   storeItemSlug?: string;
   api?: PublicCheckoutApi;
 }
@@ -76,6 +77,7 @@ export default function CheckoutOfferStatus({
   fallbackCartSeed = null,
   fallbackLineItem = null,
   initialAvailability,
+  showReviewSiteMarker = false,
   storeItemSlug,
 }: CheckoutOfferStatusProps) {
   const [view, setView] = useState<CheckoutOfferStatusView>(() => createInitialCheckoutOfferView(initialAvailability));
@@ -257,6 +259,15 @@ export default function CheckoutOfferStatus({
                     Email me BlackBox Records release, distro, and event updates. You can unsubscribe anytime.
                   </span>
                 </label>
+
+                {showReviewSiteMarker && (
+                  <p
+                    className="text-xs font-semibold leading-relaxed text-foreground"
+                    data-review-site-checkout-warning
+                  >
+                    Test checkout. No real payment will be taken.
+                  </p>
+                )}
 
                 <Button
                   type="button"
