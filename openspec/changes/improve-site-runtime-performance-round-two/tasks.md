@@ -1,10 +1,10 @@
 ## 1. Preconditions And Round-Two Baseline
 
-- [ ] 1.1 Run `pnpm openspec:guard`; confirm `main`, the main worktree, and the exact implementation-start commit.
-- [ ] 1.2 Record all pre-existing dirty-tree paths and active-change overlaps; do not edit or stage unrelated work.
-- [ ] 1.3 Confirm `improve-site-runtime-performance` remains archived and its five performance capability deltas exist in baseline specs.
-- [ ] 1.4 Update `docs/runtime-performance.md` with the desktop cold, mobile stress, wide first/repeat scroll, mobile first/repeat scroll, and legacy narrow regression profiles from the design.
-- [ ] 1.5 Add or update the smallest local measurement helpers needed to produce deterministic scroll cadence, first-versus-repeat labels, frame intervals, main/style/layout/paint totals, tasks, and long animation frames without a new dependency.
+- [x] 1.1 Run `pnpm openspec:guard`; confirm `main`, the main worktree, and the exact implementation-start commit.
+- [x] 1.2 Record all pre-existing dirty-tree paths and active-change overlaps; do not edit or stage unrelated work.
+- [x] 1.3 Confirm `improve-site-runtime-performance` remains archived and its five performance capability deltas exist in baseline specs.
+- [x] 1.4 Update `docs/runtime-performance.md` with the desktop cold, mobile stress, wide first/repeat scroll, mobile first/repeat scroll, and legacy narrow regression profiles from the design.
+- [x] 1.5 Add or update the smallest local measurement helpers needed to produce deterministic scroll cadence, first-versus-repeat labels, frame intervals, main/style/layout/paint totals, tasks, and long animation frames without a new dependency.
 - [ ] 1.6 Capture five cache-cleared 1440×900 DPR-1 production loads for Home, Store, Distro, Artists, Services, About, Releases, and News.
 - [ ] 1.7 Capture at least three cache-cleared 390×844 DPR-2, 4× CPU, 150 ms RTT, 1.6 Mbps mobile-stress loads for Home, Store, Distro, Artists, Services, and About.
 - [ ] 1.8 Capture at least three wide first traversals and three wide repeat traversals for Home, Store, and Distro, without discarding the first run as warm-up.

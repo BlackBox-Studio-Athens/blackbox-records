@@ -1,6 +1,6 @@
 # Runtime performance profile
 
-Use this profile for Home, Store, and Distro. Store raw output under `.codex-artifacts/runtime-performance/<commit-or-run>/`; commit only concise reports.
+Use these profiles for performance acceptance. Store raw output under `.codex-artifacts/runtime-performance/<commit-or-run>/`; commit only concise reports.
 
 ## Product Environments
 
@@ -12,14 +12,28 @@ Record commit, URL, Product Environment, production build command, browser/versi
 
 ## Matrix
 
-| Profile        | Routes              | Viewport        | CPU | Network | Cache           | Runs | Report                                                                      |
-| -------------- | ------------------- | --------------- | --- | ------- | --------------- | ---- | --------------------------------------------------------------------------- |
-| Cold load      | Home, Store, Distro | 1440×900, DPR 1 | 1×  | none    | cleared         | 5    | median and p75 TTFB/FCP/LCP/CLS, bytes, resources, long tasks, route errors |
-| Settled scroll | Home, Store, Distro | 390×844, DPR 1  | 4×  | none    | warm after load | 3    | median, p95, maximum main/paint work, tasks ≥50 ms                          |
+| Profile           | Routes                                                        | Viewport        | CPU | Network                   | Cache/state              | Runs | Report                                                                              |
+| ----------------- | ------------------------------------------------------------- | --------------- | --- | ------------------------- | ------------------------ | ---- | ----------------------------------------------------------------------------------- |
+| Desktop cold      | Home, Store, Distro, Artists, Services, About, Releases, News | 1440×900, DPR 1 | 1×  | unthrottled               | cleared                  | 5    | median/p75 TTFB, FCP, LCP, CLS, bytes, resources, long tasks, route errors          |
+| Mobile stress     | Home, Store, Distro, Artists, Services, About                 | 390×844, DPR 2  | 4×  | 150 ms RTT, 1.6 Mbps down | cleared                  | ≥3   | individual/median LCP and CLS, long tasks, font/image/JavaScript bytes, LCP element |
+| Wide scroll       | Home, Store, Distro                                           | 1440×900, DPR 1 | 4×  | warm after load           | first and repeat         | 3+3  | frame/main/style/layout/paint median, p95, maximum, tasks and LoAFs ≥50 ms          |
+| Mobile scroll     | Store, Distro                                                 | 390×844, DPR 2  | 4×  | warm after load           | first and repeat         | 3+3  | same as wide scroll                                                                 |
+| Legacy regression | Store, Distro                                                 | 390×844, DPR 1  | 4×  | warm after load           | 48 px/rAF for 240 frames | 3    | p95, maximum, and long-task count                                                   |
 
 Store runs also record hydrated price islands, capability reads, Store Offer reads/statuses, and request-settle time. Disabled Store acceptance is one capability read, zero offers, and zero Store 5xx. Enabled Store acceptance is visible-margin offer reads only.
 
-For settled scroll, disable CSS smooth scrolling, start at `scrollY = 0`, and advance 48 CSS pixels per animation frame for 240 frames. This fixed 11,520 px segment is long enough to cross multiple containment boundaries without making route length change the input speed.
+For wide scroll, disable CSS smooth scrolling, start at `scrollY = 0`, and advance 24 CSS pixels per animation frame for 360 frames. Mobile scroll uses 24 CSS pixels per animation frame for 300 frames. Reset directly to the top, wait 500 ms, then repeat the same segment. Never discard the first traversal as warm-up. Legacy regression retains 48 CSS pixels per animation frame for 240 frames.
+
+Build and serve the production output, then run the existing-dependency helper. Use a new browser context per cold run. Set `RUNTIME_PERFORMANCE_COMMIT` to `git rev-parse HEAD` and keep baseline/final URLs and settings identical.
+
+```powershell
+$env:RUNTIME_PERFORMANCE_COMMIT = git rev-parse HEAD
+pnpm performance:runtime -- --profile=desktop-load --routes=home,store,distro,artists,services,about,releases,news --runs=5 --output=.codex-artifacts/runtime-performance/<commit-or-run>/desktop-load.json
+pnpm performance:runtime -- --profile=mobile-load --routes=home,store,distro,artists,services,about --runs=3 --output=.codex-artifacts/runtime-performance/<commit-or-run>/mobile-load.json
+pnpm performance:runtime -- --profile=wide-scroll --routes=home,store,distro --runs=3 --output=.codex-artifacts/runtime-performance/<commit-or-run>/wide-scroll.json
+pnpm performance:runtime -- --profile=mobile-scroll --routes=store,distro --runs=3 --output=.codex-artifacts/runtime-performance/<commit-or-run>/mobile-scroll.json
+pnpm performance:runtime -- --profile=legacy-scroll --routes=store,distro --runs=3 --output=.codex-artifacts/runtime-performance/<commit-or-run>/legacy-scroll.json
+```
 
 Browser Use is authority for screenshots, responsive layout, focus, keyboard order, scroll reset, overlays, player continuity, and console cleanliness. When Browser Use cannot expose trace categories or throttling, record the missing capability and use DevTools only for those trace metrics.
 
