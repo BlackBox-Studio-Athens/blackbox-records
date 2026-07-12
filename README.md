@@ -39,7 +39,7 @@ GitHub Pages UAT keeps the repo defaults in `apps/web/astro.config.mjs`:
 - `site`: `https://blackbox-studio-athens.github.io`
 - `base`: `/blackbox-records/`
 
-For label-member UAT, the GitHub Pages URL is intentionally wired to the UAT Worker on every `main` push. Tester instructions live in [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md). This is Stripe test mode only and is not PRD go-live approval.
+For label-member UAT, the GitHub Pages URL is intentionally wired to the UAT Worker on deploy-relevant `main` pushes. Repository-only documentation pushes are skipped by the shared static workflow, while `workflow_dispatch` remains available for a forced redeploy. Tester instructions live in [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md). This is Stripe test mode only and is not PRD go-live approval.
 
 The UAT build alone shows the layered Review Site Marker: a solid `TEST SITE` label with `Test payments only` beneath the header wordmark, a `[TEST]` browser-title prefix, and `Test checkout. No real payment will be taken.` beside the final checkout action. These presentational cues identify a review URL; they do not enable checkout or own payment authority, which remain controlled by the Worker and Stripe configuration. Local, full PRD, and PRD Holding Page builds leave all three cues unset.
 
@@ -626,6 +626,7 @@ CI/deploy credentials and public build variables:
 ## GitHub Pages UAT CI/CD
 
 - UAT deployment is handled by `.github/workflows/pages.yml`.
+- Deploy-relevant pushes to `main` run the shared UAT and PRD static deployment; pushes changing only `docs/**`, `openspec/**`, root `*.md`, or root `LICENSE` are skipped. `workflow_dispatch` remains available for a forced deployment.
 - The shared static workflow uses Node 24, pnpm 10.33.4, explicit pnpm setup/install steps, and only deploys UAT if all of these succeed:
   - `pnpm test:unit`
   - `pnpm check`

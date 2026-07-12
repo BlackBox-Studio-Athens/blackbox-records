@@ -61,6 +61,11 @@ export function verifyEnvironmentModel(): CheckResult[] {
 
   return [
     {
+      detail:
+        'Shared static deployment workflow skips only audited repository documentation and preserves manual dispatch.',
+      ok: verifyStaticDeployTriggerSources(staticDeployWorkflow),
+    },
+    {
       detail: 'Shared static deployment workflow deploys UAT to GitHub Pages with UAT_PUBLIC_BACKEND_BASE_URL.',
       ok:
         staticDeployWorkflow.includes('Deploy UAT and PRD static sites') &&
@@ -174,6 +179,30 @@ export function verifyEnvironmentModel(): CheckResult[] {
         staticSiteSpec.includes('Cloudflare Pages as the only PRD static host'),
     },
   ];
+}
+
+export function verifyStaticDeployTriggerSources(staticDeployWorkflow: string): boolean {
+  const triggerEvents =
+    /(?:^|\r?\n)on:\r?\n(?<events>[\s\S]*?)(?=\r?\n(?:permissions:|concurrency:|jobs:)|(?![\s\S]))/m.exec(
+      staticDeployWorkflow,
+    )?.groups?.events ?? '';
+  const push = /^  push:\r?\n(?<push>[\s\S]*?)(?=\r?\n  workflow_dispatch:)/m.exec(triggerEvents)?.groups?.push ?? '';
+  const ignoredPaths =
+    /^    paths-ignore:\r?\n(?<paths>(?:      - '[^']+'\r?\n?)+)/m
+      .exec(push)
+      ?.groups?.paths?.split(/\r?\n/)
+      .filter(Boolean)
+      .map((line) => /^\s*-\s+'([^']+)'$/.exec(line)?.[1] ?? '') ?? [];
+  const expectedIgnoredPaths = ['docs/**', 'openspec/**', '*.md', 'LICENSE'];
+
+  return (
+    /^  push:\r?$/m.test(triggerEvents) &&
+    /^    branches: \['main'\]\r?$/m.test(push) &&
+    ignoredPaths.length === expectedIgnoredPaths.length &&
+    expectedIgnoredPaths.every((path, index) => ignoredPaths[index] === path) &&
+    /^  workflow_dispatch:\r?$/m.test(triggerEvents) &&
+    !/commit.?message|head_commit|github\.event\.commits/i.test(staticDeployWorkflow)
+  );
 }
 
 export function verifyReviewSiteMarkerSources({

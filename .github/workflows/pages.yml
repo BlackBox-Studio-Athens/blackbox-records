@@ -3,6 +3,11 @@ name: Deploy UAT and PRD static sites
 on:
   push:
     branches: ['main']
+    paths-ignore:
+      - 'docs/**'
+      - 'openspec/**'
+      - '*.md'
+      - 'LICENSE'
   workflow_dispatch:
 
 permissions:
