@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 const source = (path: string) => readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8');
 
 describe('catalog containment', () => {
-  it('keeps Distro server HTML eager without fixed per-card containment', () => {
+  it('keeps Distro server HTML in eager bounded chunks without fixed per-card containment', () => {
     const css = source('./global.css');
     const distroPage = source('../pages/distro/index.astro');
 
@@ -14,8 +14,8 @@ describe('catalog containment', () => {
     expect(css).not.toMatch(/\.distro-(?:card--page|group-chunk)\s*{[^}]*content-visibility/s);
     expect(css).not.toMatch(/\.distro-group-chunk\s*{[^}]*contain-intrinsic-block-size/s);
     expect(distroPage).toContain('groupedDistroEntries.map');
-    expect(distroPage).toContain('group.entries.map');
-    expect(distroPage).not.toContain('distro-group-chunk');
+    expect(distroPage).toContain('group.entries.reduce');
+    expect(distroPage).toContain('chunk.map');
     expect(distroPage).not.toContain('data-distro-render-chunk');
   });
 
