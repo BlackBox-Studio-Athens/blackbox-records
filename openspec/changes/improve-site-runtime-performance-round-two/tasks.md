@@ -5,16 +5,16 @@
 - [x] 1.3 Confirm `improve-site-runtime-performance` remains archived and its five performance capability deltas exist in baseline specs.
 - [x] 1.4 Update `docs/runtime-performance.md` with the desktop cold, mobile stress, wide first/repeat scroll, mobile first/repeat scroll, and legacy narrow regression profiles from the design.
 - [x] 1.5 Add or update the smallest local measurement helpers needed to produce deterministic scroll cadence, first-versus-repeat labels, frame intervals, main/style/layout/paint totals, tasks, and long animation frames without a new dependency.
-- [ ] 1.6 Capture five cache-cleared 1440×900 DPR-1 production loads for Home, Store, Distro, Artists, Services, About, Releases, and News.
-- [ ] 1.7 Capture at least three cache-cleared 390×844 DPR-2, 4× CPU, 150 ms RTT, 1.6 Mbps mobile-stress loads for Home, Store, Distro, Artists, Services, and About.
-- [ ] 1.8 Capture at least three wide first traversals and three wide repeat traversals for Home, Store, and Distro, without discarding the first run as warm-up.
-- [ ] 1.9 Capture at least three mobile first traversals and three mobile repeat traversals for Store and Distro.
-- [ ] 1.10 Re-run the legacy 390×844 DPR-1, 4× CPU, 48 px/rAF for 240 frames Store and Distro profile and retain p95, maximum, and long-task count.
-- [ ] 1.11 Record disabled-PRD Store price labels, hydrated islands, capability requests, Store Offer requests/statuses, 5xx responses, and settle timing at route top and after the declared first-scroll segment.
-- [ ] 1.12 Record the current Veneer SHA-256, byte size, request URL, discovery path, `font-display`, response cache headers, and font-attributed trace events.
-- [ ] 1.13 Record scoped app-shell closure, complete first-party eager graphs for representative routes, route-specific chunks, StoreCart/Zod contribution, and third-party analytics separately using actual hosted Brotli sizes.
-- [ ] 1.14 Capture Browser Use mobile/desktop reference screenshots and accessibility/console checks for Home, Store, Distro, Artists, Services, About, route loading, cart, overlay, mobile navigation, and player states.
-- [ ] 1.15 Store all baseline evidence under a commit-tagged `.codex-artifacts/runtime-performance/` directory and add the concise baseline section to the future `PERF-003` report.
+- [x] 1.6 Capture five cache-cleared 1440×900 DPR-1 production loads for Home, Store, Distro, Artists, Services, About, Releases, and News.
+- [x] 1.7 Capture at least three cache-cleared 390×844 DPR-2, 4× CPU, 150 ms RTT, 1.6 Mbps mobile-stress loads for Home, Store, Distro, Artists, Services, and About.
+- [x] 1.8 Capture at least three wide first traversals and three wide repeat traversals for Home, Store, and Distro, without discarding the first run as warm-up.
+- [x] 1.9 Capture at least three mobile first traversals and three mobile repeat traversals for Store and Distro.
+- [x] 1.10 Re-run the legacy 390×844 DPR-1, 4× CPU, 48 px/rAF for 240 frames Store and Distro profile and retain p95, maximum, and long-task count.
+- [x] 1.11 Record disabled-PRD Store price labels, hydrated islands, capability requests, Store Offer requests/statuses, 5xx responses, and settle timing at route top and after the declared first-scroll segment.
+- [x] 1.12 Record the current Veneer SHA-256, byte size, request URL, discovery path, `font-display`, response cache headers, and font-attributed trace events.
+- [x] 1.13 Record scoped app-shell closure, complete first-party eager graphs for representative routes, route-specific chunks, StoreCart/Zod contribution, and third-party analytics separately using actual hosted Brotli sizes.
+- [x] 1.14 Capture Browser Use mobile/desktop reference screenshots and accessibility/console checks for Home, Store, Distro, Artists, Services, About, route loading, cart, overlay, mobile navigation, and player states.
+- [x] 1.15 Store all baseline evidence under a commit-tagged `.codex-artifacts/runtime-performance/` directory and add the concise baseline section to the future `PERF-003` report.
 
 ## 2. Distro First-Traversal Slice
 

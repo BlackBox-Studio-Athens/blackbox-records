@@ -28,11 +28,11 @@ Build and serve the production output, then run the existing-dependency helper. 
 
 ```powershell
 $env:RUNTIME_PERFORMANCE_COMMIT = git rev-parse HEAD
-pnpm performance:runtime -- --profile=desktop-load --routes=home,store,distro,artists,services,about,releases,news --runs=5 --output=.codex-artifacts/runtime-performance/<commit-or-run>/desktop-load.json
-pnpm performance:runtime -- --profile=mobile-load --routes=home,store,distro,artists,services,about --runs=3 --output=.codex-artifacts/runtime-performance/<commit-or-run>/mobile-load.json
-pnpm performance:runtime -- --profile=wide-scroll --routes=home,store,distro --runs=3 --output=.codex-artifacts/runtime-performance/<commit-or-run>/wide-scroll.json
-pnpm performance:runtime -- --profile=mobile-scroll --routes=store,distro --runs=3 --output=.codex-artifacts/runtime-performance/<commit-or-run>/mobile-scroll.json
-pnpm performance:runtime -- --profile=legacy-scroll --routes=store,distro --runs=3 --output=.codex-artifacts/runtime-performance/<commit-or-run>/legacy-scroll.json
+pnpm performance:runtime -- '--profile=desktop-load' '--routes=home,store,distro,artists,services,about,releases,news' '--runs=5' '--output=.codex-artifacts/runtime-performance/<commit-or-run>/desktop-load.json'
+pnpm performance:runtime -- '--profile=mobile-load' '--routes=home,store,distro,artists,services,about' '--runs=3' '--output=.codex-artifacts/runtime-performance/<commit-or-run>/mobile-load.json'
+pnpm performance:runtime -- '--profile=wide-scroll' '--routes=home,store,distro' '--runs=3' '--output=.codex-artifacts/runtime-performance/<commit-or-run>/wide-scroll.json'
+pnpm performance:runtime -- '--profile=mobile-scroll' '--routes=store,distro' '--runs=3' '--output=.codex-artifacts/runtime-performance/<commit-or-run>/mobile-scroll.json'
+pnpm performance:runtime -- '--profile=legacy-scroll' '--routes=store,distro' '--runs=3' '--output=.codex-artifacts/runtime-performance/<commit-or-run>/legacy-scroll.json'
 ```
 
 Browser Use is authority for screenshots, responsive layout, focus, keyboard order, scroll reset, overlays, player continuity, and console cleanliness. When Browser Use cannot expose trace categories or throttling, record the missing capability and use DevTools only for those trace metrics.
