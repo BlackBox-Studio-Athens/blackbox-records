@@ -95,12 +95,12 @@
 
 ## 7. Hidden And Closed Animation Slice
 
-- [ ] 7.1 Change route-loading CSS so the bar has no animation in its closed state and owns `route-loading-sweep` only while the indicator is open.
-- [ ] 7.2 Stop the Home scroll-cue child animation when the coarse scrolled class hides its parent; restore it only when Home returns above the threshold.
-- [ ] 7.3 Preserve reduced-motion rules, active loading meaning, hero orientation, and the existing transition-free coarse threshold.
-- [ ] 7.4 Extend focused CSS/state tests for closed loading, open loading, scrolled cue, restored cue, non-Home route, and reduced motion.
-- [ ] 7.5 Re-run the settled Home 4× CPU comparison and prove hidden/closed nonessential infinite animation work is absent.
-- [ ] 7.6 Use Browser Use to verify route-loading visibility, completion/cancellation, Home cue visibility, reduced motion, console cleanliness, and no focus or pointer regression.
+- [x] 7.1 Change route-loading CSS so the bar has no animation in its closed state and owns `route-loading-sweep` only while the indicator is open.
+- [x] 7.2 Stop the Home scroll-cue child animation when the coarse scrolled class hides its parent; restore it only when Home returns above the threshold.
+- [x] 7.3 Preserve reduced-motion rules, active loading meaning, hero orientation, and the existing transition-free coarse threshold.
+- [x] 7.4 Extend focused CSS/state tests for closed loading, open loading, scrolled cue, restored cue, non-Home route, and reduced motion.
+- [x] 7.5 Re-run the settled Home 4× CPU comparison and prove hidden/closed nonessential infinite animation work is absent.
+- [x] 7.6 Use Browser Use to verify route-loading visibility, completion/cancellation, Home cue visibility, reduced motion, console cleanliness, and no focus or pointer regression.
 - [ ] 7.7 Run focused animation/shell tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record the before/after settled task and animation evidence.
 
 ## 8. Final Performance, UX, And Program Closure

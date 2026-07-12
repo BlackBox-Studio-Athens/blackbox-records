@@ -2315,6 +2315,10 @@
     width: 64%;
     background: linear-gradient(90deg, rgba(245, 245, 245, 0), rgba(245, 245, 245, 0.82), rgba(245, 245, 245, 0));
     box-shadow: 0 0 12px rgba(245, 245, 245, 0.24);
+    animation: none;
+  }
+
+  .app-shell-route-loading-indicator[data-state='open'] .app-shell-route-loading-indicator__bar {
     animation: route-loading-sweep 0.92s cubic-bezier(0.22, 1, 0.36, 1) infinite;
   }
 
@@ -2946,6 +2950,10 @@
 
   .homepage-hero-section--scrolled .homepage-hero-section__scroll-indicator {
     opacity: 0;
+  }
+
+  .homepage-hero-section--scrolled .homepage-hero-section__scroll-indicator-line span {
+    animation: none;
   }
 
   .homepage-hero-section__scroll-indicator-line {

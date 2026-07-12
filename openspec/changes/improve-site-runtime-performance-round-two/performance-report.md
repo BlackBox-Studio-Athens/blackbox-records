@@ -157,4 +157,10 @@ The repeatable graph check enforces the 97,280-byte Home/shell budget and fails 
 
 Three mobile-stress Home runs with current deferred analytics had 1.652 s median LCP versus 1.644 s with the Glancelytics URL blocked. The 8 ms difference is immaterial and trace work was not repeatably attributable to the third-party script, so startup remains deferred and no provider or page-view behavior changed. Raw graph and A/B evidence is under `.codex-artifacts/runtime-performance/javascript-final/`. Browser Use proved first-use Artists filtering, Services form loading/input, persisted cart count, drawer open, quantity update, and server-content continuity.
 
+### Hidden and closed animation
+
+The route-loading bar now computes `animation-name: none` while closed and `route-loading-sweep` only while open. The Home cue still runs while visible, but the coarse scrolled owner stops its child animation instead of only making the parent transparent. Returning above the existing threshold restores the unchanged cue animation. Reduced motion continues to disable both.
+
+At 4× CPU, a two-second settled Home sample with the cue hidden and loading closed recorded 1.668 ms total task duration, 0 ms script, 0 ms layout, and 0 ms style recalculation. The round-two baseline attributed about 35.4 ms over the same settled interval to the two infinite animation owners. Browser Use confirmed `hero-scroll-cue` at the visible top state, no cue animation with the scrolled class, closed loading `none`, open loading `route-loading-sweep`, closed completion, `pointer-events: none`, focus on `MAIN`, scroll reset, and reduced-motion `none`. Browser Use's raw CDP bridge rejected new-document console instrumentation; the required DevTools fallback found no application errors or warnings, only three expected local Glancelytics CORB issues from `https://www.glancelytics.com/api/event`.
+
 Exact-final-tree acceptance remains pending.
