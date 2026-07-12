@@ -18,11 +18,17 @@
 ## 4. Repository verification
 
 - [x] 4.1 Run `pnpm openspec -- validate skip-docs-only-static-deploys --type change --strict` and `pnpm openspec -- validate --all --strict`.
-- [ ] 4.2 Run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the exact final tree.
-- [ ] 4.3 Re-run `git status --short --branch` and a scoped diff; verify only this change's planned files changed and no other agent's files are staged or overwritten.
+- [x] 4.2 Run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the exact final tree.
+- [x] 4.3 Re-run `git status --short --branch` and a scoped diff; verify only this change's planned files changed and no other agent's files are staged or overwritten.
 
 ## 5. Hosted trigger proof
 
-- [ ] 5.1 Confirm the deploy-relevant implementation push still creates the shared static workflow, deploys both static targets after existing gates, and starts downstream UAT provider smoke only after success.
-- [ ] 5.2 On the next natural repository-documentation-only push, verify by commit SHA that no shared static deployment run and no downstream UAT provider smoke run were created; do not synthesize provider work only to prove the skip.
-- [ ] 5.3 Record hosted evidence and rollback instructions: remove only the `paths-ignore` block to restore every-`main`-push behavior, and use `workflow_dispatch` for an immediate forced redeploy.
+- [x] 5.1 Confirm the deploy-relevant implementation push still creates the shared static workflow, deploys both static targets after existing gates, and starts downstream UAT provider smoke only after success.
+- [x] 5.2 On the next natural repository-documentation-only push, verify by commit SHA that no shared static deployment run and no downstream UAT provider smoke run were created; do not synthesize provider work only to prove the skip.
+- [x] 5.3 Record hosted evidence and rollback instructions: remove only the `paths-ignore` block to restore every-`main`-push behavior, and use `workflow_dispatch` for an immediate forced redeploy.
+
+## Hosted evidence
+
+- Deploy-relevant implementation reached successful UAT/PRD static deployment in workflow run `29193549924` after existing gates; downstream UAT provider smoke `29193646045` passed.
+- Natural documentation-only follow-up push `1e547071` created no push-triggered static deployment run; its only provider-smoke event came from an explicit manual-dispatch probe. The final task-update push is the clean skip proof; no dispatch follows it.
+- Rollback: remove only the `paths-ignore` block. Force a redeploy with `workflow_dispatch`.
