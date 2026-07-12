@@ -3,6 +3,8 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { brotliCompressSync, constants } from 'node:zlib';
 
+import { dynamicImportSpecifiers } from './runtime-performance-helpers';
+
 const args = new Map(
   process.argv.slice(2).map((argument) => {
     const [key, ...value] = argument.replace(/^--/, '').split('=');
@@ -63,8 +65,7 @@ function staticImports(file: string) {
 }
 
 function dynamicImports(file: string) {
-  const source = readFileSync(file, 'utf8');
-  return [...source.matchAll(/\bimport\(\s*["']([^"']+\.js)["']\s*\)/g)].map((match) => match[1]);
+  return dynamicImportSpecifiers(readFileSync(file, 'utf8'));
 }
 
 function closure(entries: string[]) {
@@ -114,8 +115,15 @@ const routes = Object.fromEntries(
 const homeFiles = routes.home.graph.files;
 const shellEntry = homeFiles.find((row) => row.file.includes('_astro/AppShellRoot.'));
 const shell = shellEntry ? summarize(closure([join(distRoot, shellEntry.file)])) : null;
-const storeCartEntry = homeFiles.find((row) => row.file.includes('_astro/store-cart.'));
-const storeCart = storeCartEntry ? summarize(closure([join(distRoot, storeCartEntry.file)])) : null;
+const shellDynamicEntries = shell
+  ? shell.files.flatMap((row) =>
+      row.dynamicImports
+        .filter((specifier) => specifier.startsWith('.'))
+        .map((specifier) => fileURLToPath(new URL(specifier, pathToFileURL(join(distRoot, row.file))))),
+    )
+  : [];
+const storeCartEntry = shellDynamicEntries.find((file) => /[\\/]store-cart\.[^\\/]+\.js$/.test(file));
+const storeCart = storeCartEntry ? summarize(closure([storeCartEntry])) : null;
 const diagnostics: string[] = [];
 if (routes.home.graph.brotliBytes > eagerGraphBudgetBytes) {
   diagnostics.push(`Home eager graph is ${routes.home.graph.brotliBytes} bytes (budget ${eagerGraphBudgetBytes}).`);

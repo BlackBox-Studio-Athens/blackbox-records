@@ -3,9 +3,9 @@ import { dirname } from 'node:path';
 
 import { chromium, type BrowserContext, type CDPSession, type Page } from 'playwright';
 
-type Profile = 'desktop-load' | 'mobile-load' | 'wide-scroll' | 'mobile-scroll' | 'legacy-scroll';
+import { summarize, summarizeTrace, type TraceEvent } from './runtime-performance-helpers';
 
-type TraceEvent = { name: string; dur?: number; ts?: number; cat?: string };
+type Profile = 'desktop-load' | 'mobile-load' | 'wide-scroll' | 'mobile-scroll' | 'legacy-scroll';
 
 const args = new Map(
   process.argv.slice(2).map((argument) => {
@@ -33,22 +33,6 @@ const profiles = {
   'legacy-scroll': { viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, cpu: 4, step: 48, frames: 240 },
 } as const;
 
-function percentile(values: number[], fraction: number) {
-  if (values.length === 0) return 0;
-  const sorted = values.toSorted((left, right) => left - right);
-  return sorted[Math.min(sorted.length - 1, Math.ceil(sorted.length * fraction) - 1)];
-}
-
-function summarize(values: number[]) {
-  return {
-    median: percentile(values, 0.5),
-    p75: percentile(values, 0.75),
-    p95: percentile(values, 0.95),
-    maximum: Math.max(0, ...values),
-    total: values.reduce((sum, value) => sum + value, 0),
-  };
-}
-
 async function readTrace(cdp: CDPSession) {
   const complete = new Promise<string>((resolve) =>
     cdp.once('Tracing.tracingComplete', ({ stream }: { stream: string }) => resolve(stream)),
@@ -63,69 +47,6 @@ async function readTrace(cdp: CDPSession) {
   }
   await cdp.send('IO.close', { handle: stream });
   return (JSON.parse(json) as { traceEvents: TraceEvent[] }).traceEvents;
-}
-
-function summarizeTrace(events: TraceEvent[]) {
-  const durations = (name: string) =>
-    events.filter((event) => event.name === name && event.dur).map((event) => event.dur! / 1000);
-  const style = [...durations('RecalculateStyles'), ...durations('UpdateLayoutTree')];
-  const layout = durations('Layout');
-  const paint = [...durations('Paint'), ...durations('CompositeLayers')];
-  const script = [
-    ...durations('EvaluateScript'),
-    ...durations('EventDispatch'),
-    ...durations('FireAnimationFrame'),
-    ...durations('FunctionCall'),
-  ];
-  const tasks = durations('RunTask');
-  const workEventNames = new Set([
-    'EvaluateScript',
-    'FunctionCall',
-    'RecalculateStyles',
-    'UpdateLayoutTree',
-    'Layout',
-    'Paint',
-    'CompositeLayers',
-  ]);
-  const workEvents = events.filter(
-    (event) => workEventNames.has(event.name) && event.ts !== undefined && event.dur !== undefined,
-  );
-  const workWindowMicroseconds = 16_667;
-  const workByWindow: number[] = [];
-  if (workEvents.length > 0) {
-    const firstWorkWindow = Math.floor(Math.min(...workEvents.map((event) => event.ts!)) / workWindowMicroseconds);
-    const lastWorkWindow = Math.floor(
-      Math.max(...workEvents.map((event) => event.ts! + event.dur!)) / workWindowMicroseconds,
-    );
-    workByWindow.push(...Array.from({ length: lastWorkWindow - firstWorkWindow + 1 }, () => 0));
-    for (const event of workEvents) {
-      let cursor = event.ts!;
-      let remaining = event.dur!;
-      while (remaining > 0) {
-        const windowIndex = Math.floor(cursor / workWindowMicroseconds);
-        const available = (windowIndex + 1) * workWindowMicroseconds - cursor;
-        const duration = Math.min(remaining, available);
-        workByWindow[windowIndex - firstWorkWindow] += duration / 1000;
-        cursor += duration;
-        remaining -= duration;
-      }
-    }
-  }
-  const fontEvents = events.filter((event) => /font/i.test(event.name)).map((event) => event.name);
-  return {
-    style: summarize(style),
-    layout: summarize(layout),
-    paint: summarize(paint),
-    mainStyleLayoutPaint: summarize(workByWindow),
-    script: summarize(script),
-    taskCount: tasks.length,
-    longTaskCount: tasks.filter((duration) => duration >= 50).length,
-    longTaskTime: tasks.filter((duration) => duration >= 50).reduce((total, duration) => total + duration, 0),
-    fontEvents: Object.entries(Object.groupBy(fontEvents, (name) => name)).map(([name, values]) => ({
-      name,
-      count: values?.length ?? 0,
-    })),
-  };
 }
 
 async function configure(context: BrowserContext, page: Page) {
