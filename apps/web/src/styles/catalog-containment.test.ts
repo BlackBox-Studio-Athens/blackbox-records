@@ -22,8 +22,12 @@ describe('catalog containment', () => {
   it('keeps Store listing containment independent from Distro rendering', () => {
     const css = source('./global.css');
     const storePage = source('../pages/store/index.astro');
+    const storeCard = source('../components/cards/StoreItemCard.astro');
 
     expect(css).toMatch(/\.store-item-card--listing\s*{[^}]*content-visibility:\s*auto/s);
     expect(storePage).toContain('collectionEntries.map');
+    expect(storeCard).toContain("client:visible={{ rootMargin: '240px' }}");
+    expect(storeCard).not.toMatch(/client:(?:load|idle|only)/);
+    expect(storePage).not.toContain('data-store-render-chunk');
   });
 });

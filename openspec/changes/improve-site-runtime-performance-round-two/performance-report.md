@@ -97,4 +97,26 @@ Cold load remains inside the declared route gates: desktop LCP 152 ms with CLS 0
 
 The eager rung still misses the absolute 16.7 ms frame-interval p95 gate despite having no matching layout work and application work below both the 8 ms p95 and 16.7 ms maximum gates. Wide first is 19.9 ms and mobile first is 18.1 ms. Under task 2.10 this blocks Distro acceptance inside the approved scope: grouped, retained, and eager strategies are exhausted, and pagination/virtualization are prohibited without an OpenSpec amendment. The Distro item stops here while independent slices continue. `pnpm test:unit` passed (93 web files/419 tests, 32+34 backend files/407 tests, one API-client file/6 tests); `pnpm build` plus cache and image checks passed. `pnpm check` reached formatting and then stopped on the unrelated untracked `openspec/changes/catalog-discovery-and-information-architecture/specs/catalog-discovery/spec.md`, which this change does not modify.
 
+### Store containment ladder
+
+Raw evidence:
+
+- grouped chunks: `.codex-artifacts/runtime-performance/store-grouped/`
+- retained activation: `.codex-artifacts/runtime-performance/store-retained/`
+- eager/native rendering: `.codex-artifacts/runtime-performance/store-eager/`
+- Browser request evidence: `.codex-artifacts/runtime-performance/store-authority/`
+
+All three approved Store strategies were measured and rejected. Six-card grouped containment kept mobile LCP at 1.012 s but retained a 310.555 ms mobile layout slice. Route-owned 300% retained activation reduced that layout p95 to 8.317 ms, but still produced 11.163 ms work p95 and a 32.425 ms application slice. Eager/native rendering moved too much work into load: mobile LCP rose to 3.672 s and first-scroll work p95 remained 10.834 ms. No Store rendering experiment is retained; the original Store rendering path remains in place pending an OpenSpec amendment.
+
+| Strategy | Desktop LCP | Mobile LCP | Wide first frame/work p95 | Mobile first frame/work p95 |    Mobile layout p95/max |
+| -------- | ----------: | ---------: | ------------------------: | --------------------------: | -----------------------: |
+| Baseline |     0.152 s |    1.032 s |          32.0 / 12.639 ms |            26.8 / 16.667 ms | 153.967 / 478.9 ms frame |
+| Grouped  |     0.116 s |    1.012 s |          22.0 / 11.279 ms |            18.3 / 16.667 ms |     310.555 / 310.555 ms |
+| Retained |     0.112 s |    1.060 s |          20.8 / 13.204 ms |            22.1 / 11.163 ms |        8.317 / 11.081 ms |
+| Eager    |     2.176 s |    3.672 s |          29.6 / 13.333 ms |            28.5 / 10.834 ms |         3.128 / 3.128 ms |
+
+Browser Use preserved 82 server-rendered cards, 82 stable price frames, cart access, source/keyboard order, the last catalog item, and no horizontal overflow. Disabled PRD first/repeat traversal plus route exit produced exactly one 200 capability read, zero Store Offer reads, and zero Store 5xx. Bounded enabled UAT at 390×844 found two price islands inside the 240 px visibility margin and exactly two fresh 200 Store Offer reads; the other 80 labels stayed pending. Checkout was not started. The Worker `startCheckout` use case independently rereads current availability and online stock, reconciles the catalog price, rejects drift, and only then creates a hosted Checkout Session. No batch endpoint, static price, cached commerce authority, checkout, Worker, D1, stock, order, Stripe, or provider mutation was introduced.
+
+Under task 3.10 the Store item stops inside approved scope. Pagination, batching, and virtualization require an amended change.
+
 Exact-final-tree acceptance remains pending.

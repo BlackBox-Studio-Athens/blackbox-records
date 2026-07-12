@@ -34,17 +34,19 @@
 
 ## 3. Store First-Traversal Slice
 
-- [ ] 3.1 Map Store chunk/card DOM, individual containment, Astro price-island roots, `client:visible` margin, capability promise lifetime, cart portal work, and route breakpoints before editing.
-- [ ] 3.2 Extend Store regression coverage so rendering activation cannot hydrate a price island or start a capability/Store Offer request outside the tested price visibility margin.
-- [ ] 3.3 Remove harmful per-card containment and test the smallest semantic Store chunks or route/breakpoint eager strategy using the same ladder as Distro.
-- [ ] 3.4 If Store still misses first scroll, add bounded retained activation ahead of the viewport without changing price-island visibility demand or Store Offer authority.
-- [ ] 3.5 Run Browser Use on the first traversal before warm-up; verify stable price-label geometry, card appearance, cart access, source/keyboard order, find-in-page, no overflow, and no visible input stall.
-- [ ] 3.6 Re-run Store desktop/mobile load plus first/repeat scroll profiles after each accepted rung; stop at the smallest strategy that passes all gates.
-- [ ] 3.7 Prove disabled PRD still issues exactly one capability read, zero Store Offer reads, and zero Store-related 5xx responses through route top, first traversal, repeat traversal, and route exit.
-- [ ] 3.8 Run a bounded enabled Local or UAT check proving only price islands inside the declared visibility margin start fresh Store Offer reads and checkout start still revalidates authority.
-- [ ] 3.9 Confirm no batch Store Offer endpoint, static price, cached commerce authority, checkout, Worker, D1, stock, order, Stripe, or provider change was introduced.
-- [ ] 3.10 If Store cannot pass both load and traversal gates, stop and amend OpenSpec before batching, pagination, or virtualization.
+- [x] 3.1 Map Store chunk/card DOM, individual containment, Astro price-island roots, `client:visible` margin, capability promise lifetime, cart portal work, and route breakpoints before editing.
+- [x] 3.2 Extend Store regression coverage so rendering activation cannot hydrate a price island or start a capability/Store Offer request outside the tested price visibility margin.
+- [x] 3.3 Remove harmful per-card containment and test the smallest semantic Store chunks or route/breakpoint eager strategy using the same ladder as Distro.
+- [x] 3.4 If Store still misses first scroll, add bounded retained activation ahead of the viewport without changing price-island visibility demand or Store Offer authority.
+- [x] 3.5 Run Browser Use on the first traversal before warm-up; verify stable price-label geometry, card appearance, cart access, source/keyboard order, find-in-page, no overflow, and no visible input stall.
+- [x] 3.6 Re-run Store desktop/mobile load plus first/repeat scroll profiles after each accepted rung; stop at the smallest strategy that passes all gates.
+- [x] 3.7 Prove disabled PRD still issues exactly one capability read, zero Store Offer reads, and zero Store-related 5xx responses through route top, first traversal, repeat traversal, and route exit.
+- [x] 3.8 Run a bounded enabled Local or UAT check proving only price islands inside the declared visibility margin start fresh Store Offer reads and checkout start still revalidates authority.
+- [x] 3.9 Confirm no batch Store Offer endpoint, static price, cached commerce authority, checkout, Worker, D1, stock, order, Stripe, or provider change was introduced.
+- [x] 3.10 If Store cannot pass both load and traversal gates, stop and amend OpenSpec before batching, pagination, or virtualization.
 - [ ] 3.11 Run focused Store/checkout tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record the accepted rung and before/after evidence before font work.
+
+  Store blocker: grouped chunks and retained activation miss first-scroll gates; eager rendering also fails mobile load. No Store rendering rung is retained. See PERF-003. Acceptance task 3.11 remains open.
 
 ## 4. License-Safe Veneer Delivery Slice
 
