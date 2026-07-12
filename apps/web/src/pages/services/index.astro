@@ -55,6 +55,7 @@ const inquirySection = getContentSection(servicesContent.sections, 'inquiry');
                   class="services-service-section__image"
                   widths={[720, 1200, 1600]}
                   sizes="(min-width: 80rem) 54rem, (min-width: 48rem) 60vw, calc(100vw - 2rem)"
+                  priority={index === 0}
                 />
                 <div class="services-service-section__media-overlay">
                   <h2 class="services-service-section__media-title">{service.title}</h2>

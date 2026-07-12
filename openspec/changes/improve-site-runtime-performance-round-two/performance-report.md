@@ -127,4 +127,18 @@ The Holding Page preload was retained after three mobile-stress A/B runs. With p
 
 Browser Use checks with the Veneer request blocked and cached covered Home, Distro, Store checkout, and the Holding Page at mobile and desktop widths. English, Greek, accents/diacritics, long headings, navigation, cards, labels, and calls to action stayed visible without horizontal overflow or geometry loss. Cached main routes loaded the fingerprinted asset and `document.fonts.check('900 48px Veneer')` returned true. Evidence screenshots are under `.codex-artifacts/runtime-performance/font-optional/browser-use/`. `pnpm brand-font:check`, cache policy validation, the production build, `pnpm prd:holding:prepare`, and `pnpm prd:holding:check` passed.
 
+### Direct-route image priority
+
+About now exposes a direct-load-only first-viewport priority input and a 1200w candidate. Services makes only its first feature image eager/high; the remaining two stay lazy/auto. Artists keeps its three mobile first-viewport portraits eager, makes only the first high priority, and uses the existing Astro image pipeline at quality 68 for card candidates. The Ouranopithecus 480w candidate fell from 127,334 bytes to 101,596 bytes without changing the source, crop, dimensions, subject placement, or alt text. The filter portal slot reserves its measured 7rem footprint, reducing mobile Artists CLS from 0.18981 to a repeatable 0.095615.
+
+| Route    | Desktop LCP median / max | Desktop CLS max | Mobile LCP median / max | Mobile CLS max | LCP element            |
+| -------- | -----------------------: | --------------: | ----------------------: | -------------: | ---------------------- |
+| About    |          0.108 / 0.184 s |         0.00024 |         0.712 / 0.720 s |        0.00064 | Direct hero image      |
+| Services |          0.108 / 0.116 s |         0.00122 |         0.880 / 1.028 s |        0.01669 | First service image    |
+| Artists  |          0.092 / 0.104 s |         0.09114 |         1.228 / 1.244 s |        0.09562 | First roster portrait  |
+| Releases |          0.096 / 0.172 s |         0.00024 |                     n/a |            n/a | Latest feature artwork |
+| News     |          0.076 / 0.104 s |         0.00037 |                     n/a |            n/a | First news card image  |
+
+Five cache-cleared desktop and three mobile-stress runs use the final image tree at `http://127.0.0.1:4322/blackbox-records/`; raw results are under `.codex-artifacts/runtime-performance/images-final/`. Browser Use direct and shell-managed checks at 390×844 and 1440×900 retained crop, explicit geometry, zero horizontal overflow, one high-priority content image, lazy below-fold Services media, focus/scroll reset, and clean route content. Focused markup/CSS tests, `pnpm assets:check`, and the production build pass. Full `pnpm check` remains blocked only by the unrelated untracked catalog-discovery spec's existing Prettier warning.
+
 Exact-final-tree acceptance remains pending.

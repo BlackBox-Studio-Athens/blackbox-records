@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
@@ -70,7 +70,7 @@ const routeChecks: RouteCheck[] = [
   },
   {
     route: 'artists/index.html',
-    maxHighPriorityImages: 0,
+    maxHighPriorityImages: 1,
     images: [
       {
         className: 'artist-roster-card__image',
@@ -183,8 +183,30 @@ const routeChecks: RouteCheck[] = [
   },
   {
     route: 'services/index.html',
-    maxHighPriorityImages: 0,
-    images: [{ className: 'services-service-section__image', minCount: 3, requireDecoding: true, requireSrcset: true }],
+    maxHighPriorityImages: 1,
+    images: [
+      {
+        className: 'services-service-section__image',
+        firstEagerCount: 1,
+        minCount: 3,
+        requireDecoding: true,
+        requireSrcset: true,
+      },
+    ],
+  },
+  {
+    route: 'about/index.html',
+    maxHighPriorityImages: 1,
+    images: [
+      {
+        className: 'internal-page-hero__image',
+        minCount: 1,
+        minSrcsetCandidates: 5,
+        requireDecoding: true,
+        requirePriority: true,
+        requireSrcset: true,
+      },
+    ],
   },
 ];
 
@@ -201,6 +223,14 @@ function countSrcsetCandidates(tag: string): number {
     .split(',')
     .map((candidate) => candidate.trim())
     .filter(Boolean).length;
+}
+
+export function getSrcsetCandidateUrl(tag: string, width: number): string {
+  const candidate = readAttribute(tag, 'srcset')
+    .split(',')
+    .map((value) => value.trim().split(/\s+/))
+    .find(([, descriptor]) => descriptor === `${width}w`);
+  return candidate?.[0] || '';
 }
 
 export function checkImageMarkup(routeHtmlByPath: Map<string, string>, checks: RouteCheck[]): ImageMarkupDiagnostic[] {
@@ -282,6 +312,20 @@ function run() {
   }
 
   const diagnostics = checkImageMarkup(routeHtmlByPath, routeChecks);
+  const artistsHtml = routeHtmlByPath.get('artists/index.html') || '';
+  const ouranopithecusTag = getImageTags(artistsHtml, 'artist-roster-card__image').find((tag) =>
+    tag.includes('alt="Ouranopithecus"'),
+  );
+  const candidateUrl = ouranopithecusTag ? getSrcsetCandidateUrl(ouranopithecusTag, 480) : '';
+  const candidatePath = candidateUrl ? join(distRoot, candidateUrl.replace(/^.*?\/_astro\//, '_astro/')) : '';
+  if (!candidatePath || !existsSync(candidatePath)) {
+    diagnostics.push({ route: 'artists/index.html', message: 'Ouranopithecus 480w candidate is missing.' });
+  } else if (statSync(candidatePath).size > 100 * 1024) {
+    diagnostics.push({
+      route: 'artists/index.html',
+      message: `Ouranopithecus 480w candidate exceeds 100 KiB (${statSync(candidatePath).size} bytes).`,
+    });
+  }
   if (diagnostics.length > 0) {
     console.error('Generated image markup validation failed.');
     for (const diagnostic of diagnostics) {

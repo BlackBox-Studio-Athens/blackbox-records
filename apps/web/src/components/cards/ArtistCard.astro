@@ -8,11 +8,12 @@ import { Card, CardContent } from '@/components/ui/card';
 interface Props {
   artist: CollectionEntry<'artists'>;
   imageLoading?: 'eager' | 'lazy';
+  imagePriority?: boolean;
   releaseContext?: ArtistRosterReleaseContext;
   variant?: 'default' | 'featured-roster' | 'roster-detailed';
 }
 
-const { artist, imageLoading = 'lazy', releaseContext, variant = 'default' } = Astro.props;
+const { artist, imageLoading = 'lazy', imagePriority = false, releaseContext, variant = 'default' } = Astro.props;
 const artistName = artist.data.title || 'Artist';
 const artistUrl = createProjectRelativeUrl(`/artists/${artist.data.slug}/`);
 const isFeaturedRosterVariant = variant === 'featured-roster';
@@ -36,6 +37,8 @@ const artistCardImageWidths = [480, 720, 960, 1200, 1440];
             widths={artistCardImageWidths}
             sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
             loading={imageLoading}
+            fetchpriority={imagePriority ? 'high' : 'auto'}
+            quality={68}
           />
           <div class="absolute inset-0 bg-gradient-to-t from-black via-black/76 via-32% to-black/12" />
           <CardContent className="home-featured-roster-card__content absolute inset-x-0 bottom-0 z-[1] space-y-3 p-5 sm:p-6">
@@ -56,6 +59,8 @@ const artistCardImageWidths = [480, 720, 960, 1200, 1440];
             widths={artistCardImageWidths}
             sizes="(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw"
             loading={imageLoading}
+            fetchpriority={imagePriority ? 'high' : 'auto'}
+            quality={68}
           />
           <div class="absolute inset-0 bg-gradient-to-t from-black via-black/76 via-32% to-black/12" />
           <div class="absolute inset-x-0 bottom-0 space-y-3 p-5 sm:p-6">
@@ -98,6 +103,8 @@ const artistCardImageWidths = [480, 720, 960, 1200, 1440];
             widths={artistCardImageWidths}
             sizes="(min-width: 1280px) 19vw, (min-width: 640px) 50vw, 100vw"
             loading={imageLoading}
+            fetchpriority={imagePriority ? 'high' : 'auto'}
+            quality={68}
           />
           <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
           <div class="absolute inset-x-0 bottom-0 space-y-3 p-5">

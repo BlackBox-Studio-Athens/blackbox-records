@@ -1812,6 +1812,10 @@
     padding: 1rem;
   }
 
+  [data-artists-roster-filters] {
+    min-block-size: 7rem;
+  }
+
   .artists-roster-filters-panel__input::placeholder {
     color: #8f8f8f;
   }

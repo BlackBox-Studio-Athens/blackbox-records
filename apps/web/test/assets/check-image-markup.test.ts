@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { checkImageMarkup } from '../../scripts/check-image-markup';
+import { checkImageMarkup, getSrcsetCandidateUrl } from '../../scripts/check-image-markup';
 
 describe('check-image-markup', () => {
   it('flags missing responsive candidates on card images', () => {
@@ -79,5 +79,11 @@ describe('check-image-markup', () => {
         message: 'Expected at most 1 high-priority image(s), found 2.',
       },
     ]);
+  });
+
+  it('selects an exact responsive candidate for byte-budget checks', () => {
+    const tag = '<img srcset="/portrait-480.webp 480w, /portrait-720.webp 720w">';
+
+    expect(getSrcsetCandidateUrl(tag, 480)).toBe('/portrait-480.webp');
   });
 });

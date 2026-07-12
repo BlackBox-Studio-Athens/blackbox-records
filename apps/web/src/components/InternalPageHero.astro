@@ -10,10 +10,11 @@ interface Props {
   image?: string | ImageMetadata;
   imageAlt?: string;
   imageColor?: boolean;
+  firstViewportPriority?: boolean;
 }
 
-const { sectionLabel, title, image, imageAlt, imageColor = false } = Astro.props;
-const heroImageClass = `h-[20rem] w-full object-cover sm:h-[24rem]${imageColor ? '' : ' grayscale'}`;
+const { sectionLabel, title, image, imageAlt, imageColor = false, firstViewportPriority = false } = Astro.props;
+const heroImageClass = `internal-page-hero__image h-[20rem] w-full object-cover sm:h-[24rem]${imageColor ? '' : ' grayscale'}`;
 ---
 
 <section class="mx-auto w-full max-w-6xl px-4 pt-14 pb-8 sm:px-6 lg:px-8">
@@ -41,14 +42,21 @@ const heroImageClass = `h-[20rem] w-full object-cover sm:h-[24rem]${imageColor ?
         transition:name="internal-page-hero-image"
       >
         {typeof image === 'string' ? (
-          <img src={createProjectRelativeUrl(image)} alt={imageAlt || title} class={heroImageClass} />
+          <img
+            src={createProjectRelativeUrl(image)}
+            alt={imageAlt || title}
+            class={heroImageClass}
+            loading={firstViewportPriority ? 'eager' : 'lazy'}
+            fetchpriority={firstViewportPriority ? 'high' : 'auto'}
+          />
         ) : (
           <Image
             src={image}
             alt={imageAlt || title}
             class={heroImageClass}
-            widths={[720, 1080, 1440, 1800]}
+            widths={[720, 1080, 1200, 1440, 1800]}
             sizes="(min-width: 1024px) 72rem, 100vw"
+            priority={firstViewportPriority}
           />
         )}
         <div

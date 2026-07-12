@@ -64,16 +64,18 @@
 
 ## 5. About, Services, And Artists LCP Slice
 
-- [ ] 5.1 Add an explicit first-viewport priority input to `InternalPageHero` without making overlay or later-fragment media eager by default.
-- [ ] 5.2 Add 1200w to the shared hero candidate ladder and set About direct-load hero to eager high priority with stable dimensions and current crop.
-- [ ] 5.3 Mark only the first direct-load Services feature image eager and high priority; keep subsequent Services media lazy with normal priority.
-- [ ] 5.4 Audit the Artists grid order and responsive columns; keep only the expected first-viewport portraits eager, assign high priority only to the expected LCP portrait, and leave later portraits lazy.
-- [ ] 5.5 Remediate the measured Ouranopithecus source or candidate through the existing editorial/Astro image workflow until the selected 480w candidate is at most 100 KiB without crop, detail, subject-placement, or alt-text regression.
-- [ ] 5.6 Add focused markup/build-output tests for one high-priority content image per direct page, About's 1200w candidate, Services priority cardinality, Artists eager/lazy boundaries, and the Ouranopithecus selected-candidate budget.
-- [ ] 5.7 Use Browser Use on direct and shell-managed About, Services, and Artists at mobile/desktop widths; verify crop, layout stability, no duplicate priority, and lazy behavior below fold.
-- [ ] 5.8 Capture five cache-cleared desktop runs and at least three mobile-stress runs for all three routes; require LCP at most 2.5 s and CLS at most 0.1.
-- [ ] 5.9 Re-run Releases and News desktop cold profiles to confirm the shared component/image changes do not regress their passing route class.
+- [x] 5.1 Add an explicit first-viewport priority input to `InternalPageHero` without making overlay or later-fragment media eager by default.
+- [x] 5.2 Add 1200w to the shared hero candidate ladder and set About direct-load hero to eager high priority with stable dimensions and current crop.
+- [x] 5.3 Mark only the first direct-load Services feature image eager and high priority; keep subsequent Services media lazy with normal priority.
+- [x] 5.4 Audit the Artists grid order and responsive columns; keep only the expected first-viewport portraits eager, assign high priority only to the expected LCP portrait, and leave later portraits lazy.
+- [x] 5.5 Remediate the measured Ouranopithecus source or candidate through the existing editorial/Astro image workflow until the selected 480w candidate is at most 100 KiB without crop, detail, subject-placement, or alt-text regression.
+- [x] 5.6 Add focused markup/build-output tests for one high-priority content image per direct page, About's 1200w candidate, Services priority cardinality, Artists eager/lazy boundaries, and the Ouranopithecus selected-candidate budget.
+- [x] 5.7 Use Browser Use on direct and shell-managed About, Services, and Artists at mobile/desktop widths; verify crop, layout stability, no duplicate priority, and lazy behavior below fold.
+- [x] 5.8 Capture five cache-cleared desktop runs and at least three mobile-stress runs for all three routes; require LCP at most 2.5 s and CLS at most 0.1.
+- [x] 5.9 Re-run Releases and News desktop cold profiles to confirm the shared component/image changes do not regress their passing route class.
 - [ ] 5.10 Run focused image tests, `pnpm assets:check`, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record candidate bytes, request priority, LCP element, LCP, CLS, and screenshots.
+
+  Image verification blocker: focused tests, asset QA, unit tests, and the production build pass. `pnpm check` stops only on the unrelated untracked catalog-discovery spec's existing Prettier warning. See PERF-003.
 
 ## 6. Route-Proportional JavaScript Slice
 

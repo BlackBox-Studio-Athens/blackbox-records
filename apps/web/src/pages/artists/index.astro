@@ -34,6 +34,7 @@ const releaseContextByArtistId = await mapArtistRosterReleaseContextById();
               <ArtistCard
                 artist={artistProfile}
                 imageLoading={index < 3 ? 'eager' : 'lazy'}
+                imagePriority={index === 0}
                 releaseContext={releaseContext}
                 variant="roster-detailed"
               />
