@@ -31,8 +31,9 @@ Rough Trade's current site uses broad browse categories and featured product rai
 - 1.3: [`add-static-distro-search`](../add-static-distro-search/proposal.md)
 - 2.1: [`harden-music-provider-data`](../harden-music-provider-data/proposal.md)
 - 2.2: [`define-music-link-audit`](../define-music-link-audit/proposal.md)
+- 2.3: [`run-first-music-link-audit`](../run-first-music-link-audit/proposal.md)
 
-Detailed evidence and decisions live in those child designs. Items 2.3 onward remain research-only until reviewed and approved.
+Detailed evidence and decisions live in those child designs. Items 3.1 onward remain research-only until reviewed and approved.
 
 Implement the promoted changes in numbered order. Item 1.1 establishes reconciled grouped Distro input consumed by 1.2 and 1.3; item 2.1 stabilizes provider roles before 2.2 hands its audit protocol to 2.3. Items 1.2 and 1.3 are otherwise independent, so no serious dependency warrants reordering them.
 

@@ -8,7 +8,7 @@
 
 - [x] 2.1 Research music-provider ownership, validation, coverage, and Release-to-player flow; promoted to [`harden-music-provider-data`](../harden-music-provider-data/proposal.md).
 - [x] 2.2 Define the single-file audit output and manual-verification rules; promoted to [`define-music-link-audit`](../define-music-link-audit/proposal.md).
-- [ ] 2.3 Run the first report and record verified content corrections as a separate implementation slice.
+- [x] 2.3 Research the first report and verified content-correction slice; promoted to [`run-first-music-link-audit`](../run-first-music-link-audit/proposal.md).
 
 ## 3. UI and performance decisions
 
