@@ -33,8 +33,9 @@ Rough Trade's current site uses broad browse categories and featured product rai
 - 2.2: [`define-music-link-audit`](../define-music-link-audit/proposal.md)
 - 2.3: [`run-first-music-link-audit`](../run-first-music-link-audit/proposal.md)
 - 3.1: [`gate-artists-search-by-roster-size`](../gate-artists-search-by-roster-size/proposal.md)
+- 3.2: skipped by product decision; no child change exists.
 
-Detailed evidence and decisions live in those child designs. Items 3.2 onward remain research-only until reviewed and approved.
+Detailed evidence and decisions live in those child designs. Items 3.3 onward remain research-only until reviewed and approved.
 
 Implement the promoted changes in numbered order. Item 1.1 establishes reconciled grouped Distro input consumed by 1.2 and 1.3; item 2.1 stabilizes provider roles before 2.2 hands its audit protocol to 2.3. Item 3.1 follows 1.3 in sequence but owns only Artists outlet availability, not the shared matcher or Distro search. No serious dependency warrants reordering the approved changes.
 
