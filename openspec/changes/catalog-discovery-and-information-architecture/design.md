@@ -23,6 +23,7 @@ Rough Trade's current site uses broad browse categories and repeated mixed-forma
 - Keep this change as the research index; child changes own normative implementation behavior.
 - Reuse existing content, catalog, player, browser, and CSS seams before adding abstractions.
 - Prefer static/client-side discovery and native scrolling unless measured scale or performance proves them insufficient.
+- Make the bounded rail comparison in 3.6 a hard gate for 3.7 so an implementation child cannot exist before the candidate passes scanability, performance, keyboard, reflow, and page-length checks.
 
 ### Promoted native changes
 
@@ -40,7 +41,7 @@ Rough Trade's current site uses broad browse categories and repeated mixed-forma
 
 Detailed evidence and decisions live in those child designs. Items 3.6 onward remain research-only until reviewed and approved.
 
-Implement the promoted changes in numbered order. Item 1.1 establishes reconciled grouped Distro input consumed by 1.2 and 1.3; item 2.1 stabilizes provider roles before 2.2 hands its audit protocol to 2.3. Item 3.1 follows 1.3 in sequence but owns only Artists outlet availability, not the shared matcher or Distro search. Item 3.3 owns only the Home media/shade fade and must wait for `improve-site-runtime-performance-round-two` to archive or validly release its conflicting transition-free contract. Item 3.4 consumes 1.1's populated group model and 1.3's active-query state but owns only native format navigation. No other serious dependency warrants reordering the approved changes.
+Implement the promoted changes in numbered order. Item 1.1 establishes reconciled grouped Distro input consumed by 1.2 and 1.3; item 2.1 stabilizes provider roles before 2.2 hands its audit protocol to 2.3. Item 3.1 follows 1.3 in sequence but owns only Artists outlet availability, not the shared matcher or Distro search. Item 3.3 owns only the Home media/shade fade and must wait for `improve-site-runtime-performance-round-two` to archive or validly release its conflicting transition-free contract. Item 3.4 consumes 1.1's populated group model and 1.3's active-query state but owns only native format navigation. Item 3.6 now compares the bounded rail candidate before 3.7 may promote implementation; this evidence gate is the only serious reason to reorder the remaining items.
 
 ## Risks / Trade-offs
 

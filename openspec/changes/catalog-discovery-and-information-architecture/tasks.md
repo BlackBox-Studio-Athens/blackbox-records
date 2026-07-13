@@ -17,8 +17,8 @@
 - [x] 3.3 Research and specify the bounded Home hero exit fade; promoted to [`soften-homepage-hero-exit`](../soften-homepage-hero-exit/proposal.md).
 - [x] 3.4 Research Rough Trade's current category and showcase patterns; promoted the approved native Distro format navigation to [`add-distro-format-jump-navigation`](../add-distro-format-jump-navigation/proposal.md).
 - [x] 3.5 Chose no featured vinyl showcase for the current program; no implementation child was created because Distro has no authoritative featured selection and 1.3/3.4 provide search and format discovery.
-- [ ] 3.6 Define accessible native-scroll behavior for long Distro category rails, including one-primary-item mobile visibility and next-item preview.
-- [ ] 3.7 Compare scroll-first rails against the current six-item chunk/grid behavior for scanability, loading, keyboard access, and page length.
+- [ ] 3.6 Compare a bounded mobile native-scroll category rail against the current six-item chunk/grid behavior for scanability, first-traversal cost, keyboard and reflow access, and page length; approve or reject rail promotion from measured evidence.
+- [ ] 3.7 If 3.6 approves rails, define accessible implementation behavior including one-primary-item mobile visibility and next-item preview; otherwise record the skip without creating a child change.
 
 ## 4. Follow-up implementation planning
 
