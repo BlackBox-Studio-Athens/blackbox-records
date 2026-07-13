@@ -12,7 +12,7 @@
 
 ## 3. UI and performance decisions
 
-- [ ] 3.1 Apply the Artists search threshold rule and add the smallest regression check.
+- [x] 3.1 Research the Artists search threshold and smallest regression check; promoted to [`gate-artists-search-by-roster-size`](../gate-artists-search-by-roster-size/proposal.md).
 - [ ] 3.2 Profile the homepage first-scroll loading animation after the performance change is validated.
 - [ ] 3.3 Select and specify a performant replacement animation with reduced-motion behavior.
 - [ ] 3.4 Compare Rough Trade's current browse/category and featured vinyl rail patterns at desktop and mobile widths.
