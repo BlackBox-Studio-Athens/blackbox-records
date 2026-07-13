@@ -9,7 +9,7 @@ Several useful follow-ups are easy to lose and cross multiple existing surfaces:
 - Reconcile the responsibilities and relationships of Releases, Distro, and Store.
 - Replace the abrupt Home hero threshold exit with a bounded, reduced-motion-safe fade after current performance ownership closes.
 - Hide Artists search until the roster contains more than five artists.
-- Research a BlackBox-native version of Rough Trade's browse/discovery pattern: category navigation plus a featured vinyl showcase rail.
+- Research BlackBox-native ideas from Rough Trade's browse/discovery patterns without assuming its large-catalog routes or rails fit Distro.
 - Research scroll-first Distro browsing for a growing catalog, with one visible item at a time on mobile and horizontally browsable category rails.
 - Keep all implementation blocked until the research decisions are recorded.
 

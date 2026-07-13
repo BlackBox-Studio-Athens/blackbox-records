@@ -2,7 +2,7 @@
 
 The repository already groups Distro entries, derives Store entries from catalog data, exposes Releases as editorial content, and has Artist search backed by Fuse.js. Existing OpenSpec work covers the full Distro catalog source of truth and runtime performance.
 
-Rough Trade's current site uses broad browse categories and featured product rails, including a horizontal vinyl-oriented showcase. This is an information-architecture reference only, not a visual or content copy target.
+Rough Trade's current site uses broad browse categories and repeated mixed-format product rails; no literal featured-vinyl rail was observed. This is an information-architecture reference only, not a visual or content copy target.
 
 ## Goals / Non-Goals
 
@@ -35,10 +35,11 @@ Rough Trade's current site uses broad browse categories and featured product rai
 - 3.1: [`gate-artists-search-by-roster-size`](../gate-artists-search-by-roster-size/proposal.md)
 - 3.2: skipped by product decision; no child change exists.
 - 3.3: [`soften-homepage-hero-exit`](../soften-homepage-hero-exit/proposal.md)
+- 3.4: [`add-distro-format-jump-navigation`](../add-distro-format-jump-navigation/proposal.md)
 
-Detailed evidence and decisions live in those child designs. Items 3.4 onward remain research-only until reviewed and approved.
+Detailed evidence and decisions live in those child designs. Items 3.5 onward remain research-only until reviewed and approved.
 
-Implement the promoted changes in numbered order. Item 1.1 establishes reconciled grouped Distro input consumed by 1.2 and 1.3; item 2.1 stabilizes provider roles before 2.2 hands its audit protocol to 2.3. Item 3.1 follows 1.3 in sequence but owns only Artists outlet availability, not the shared matcher or Distro search. Item 3.3 owns only the Home media/shade fade and must wait for `improve-site-runtime-performance-round-two` to archive or validly release its conflicting transition-free contract. No other serious dependency warrants reordering the approved changes.
+Implement the promoted changes in numbered order. Item 1.1 establishes reconciled grouped Distro input consumed by 1.2 and 1.3; item 2.1 stabilizes provider roles before 2.2 hands its audit protocol to 2.3. Item 3.1 follows 1.3 in sequence but owns only Artists outlet availability, not the shared matcher or Distro search. Item 3.3 owns only the Home media/shade fade and must wait for `improve-site-runtime-performance-round-two` to archive or validly release its conflicting transition-free contract. Item 3.4 consumes 1.1's populated group model and 1.3's active-query state but owns only native format navigation. No other serious dependency warrants reordering the approved changes.
 
 ## Risks / Trade-offs
 

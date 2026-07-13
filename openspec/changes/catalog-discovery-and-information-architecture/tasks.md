@@ -15,7 +15,7 @@
 - [x] 3.1 Research the Artists search threshold and smallest regression check; promoted to [`gate-artists-search-by-roster-size`](../gate-artists-search-by-roster-size/proposal.md).
 - [x] 3.2 Skipped by product decision; no profiling child change was created.
 - [x] 3.3 Research and specify the bounded Home hero exit fade; promoted to [`soften-homepage-hero-exit`](../soften-homepage-hero-exit/proposal.md).
-- [ ] 3.4 Compare Rough Trade's current browse/category and featured vinyl rail patterns at desktop and mobile widths.
+- [x] 3.4 Research Rough Trade's current category and showcase patterns; promoted the approved native Distro format navigation to [`add-distro-format-jump-navigation`](../add-distro-format-jump-navigation/proposal.md).
 - [ ] 3.5 Decide whether BlackBox needs a responsive featured vinyl showcase, a mobile-only version, or no equivalent.
 - [ ] 3.6 Define accessible native-scroll behavior for long Distro category rails, including one-primary-item mobile visibility and next-item preview.
 - [ ] 3.7 Compare scroll-first rails against the current six-item chunk/grid behavior for scanability, loading, keyboard access, and page length.
