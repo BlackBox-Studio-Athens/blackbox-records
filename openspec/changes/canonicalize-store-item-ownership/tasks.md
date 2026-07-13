@@ -1,6 +1,6 @@
 ## 1. Canonical Store Item projection
 
-- [ ] 1.1 Add the typed code-owned `caregivers` → `chronoboros-caregivers-vinyl` → `caregivers-vinyl` relation and validate relation endpoints, uniqueness, source tuples, slugs, variants, and inventory matches in one projection pass.
+- [ ] 1.1 Consume reconciled Distro inputs, add the typed code-owned `caregivers` → `chronoboros-caregivers-vinyl` → `caregivers-vinyl` relation, and validate relation endpoints, uniqueness, source tuples, slugs, variants, and unresolved cross-source duplicates in one projection pass.
 - [ ] 1.2 Make list/detail/release-commerce consumers use the Distro-owned projection, yielding 81 unique current Store Items and only `variant_caregivers-vinyl_standard` for the shared edition.
 - [ ] 1.3 Regenerate Desired Catalog State and Product Projections from the validated owner, preserving the 2000-cent Desired Price and Stripe runtime Price Authority.
 

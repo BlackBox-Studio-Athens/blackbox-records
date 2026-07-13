@@ -6,7 +6,7 @@ The 79-record Distro catalog currently mixes exact physical types with presentat
 
 - Keep exact Distro physical types in content and inventory data while deriving the combined `7-inch & 10-inch Vinyl` browse category only for presentation.
 - Correct `Magic Sleazeball Corrida` to `Vinyl 7-inch` and preserve deterministic group and item ordering.
-- Reject physical-type disagreement between matched Distro content and the Distro Inventory Source before catalog artifacts or Store Offers are derived.
+- Require bijective Distro Inventory Source matching and reject physical-type disagreement before catalog artifacts or Store Offers are derived.
 - Add focused regression coverage for grouping, ordering, source reconciliation, and the complete server-rendered catalog.
 
 ## Capabilities

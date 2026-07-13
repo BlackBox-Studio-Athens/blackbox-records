@@ -22,7 +22,7 @@ The measured Distro baseline is within current performance budgets: desktop/mobi
 1. Extract only the pure exact-first matcher into a neutral module and let callers supply searchable text. Artists supplies title; Distro supplies one normalized string containing title, `artist_or_label`, exact group, and format. Keep Fuse.js and its current exact-match preference.
 2. Keep React controls page-specific. The Distro control reads the server-rendered cards, applies the shared matcher, toggles unmatched cards, then toggles chunks and groups with no visible cards. It never reorders or recreates catalog nodes. Clearing the query restores every node and the original count.
 3. Add a Distro portal placeholder beside the intro. The app shell lazily imports the Distro control only when that placeholder exists, disconnects it on route exit, and clears the placeholder when caching a page snapshot. This mirrors Artists without creating a portal registry.
-4. Keep every card and heading in initial HTML. The search control is an enhancement; failed hydration or disabled JavaScript leaves the entire catalog browsable.
+4. Search adds no pre-hydration hidden state. Before a successful mount and active query, it leaves the baseline server-rendered DOM untouched.
 5. Verify the final route with the existing mobile-stress profile. It must retain the Distro LCP/CLS budgets and add no task of 50 milliseconds or longer. Select any remediation only after a measured failure identifies its cause.
 
 ## Risks / Trade-offs

@@ -13,7 +13,7 @@ The system MUST validate one canonical app-owned source, Store Item slug, and va
 
 #### Scenario: Catalog identity is ambiguous
 
-- **GIVEN** the projected catalog contains a duplicate source tuple, Store Item slug, variant ID, repeated relation endpoint, non-bijective inventory match, or unresolved cross-source physical duplicate
+- **GIVEN** the projected catalog contains a duplicate source tuple, Store Item slug, variant ID, repeated relation endpoint, or unresolved cross-source physical duplicate
 - **WHEN** catalog generation runs
 - **THEN** validation fails with the conflicting app identities
 - **AND** no provider, availability, stock, or Store Offer artifact is written

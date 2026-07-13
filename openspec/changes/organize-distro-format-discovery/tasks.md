@@ -9,5 +9,5 @@
 
 ## 3. Verification
 
-- [ ] 3.1 Add focused tests for combined grouping, empty groups, stable ordering, the three small-vinyl records, and fail-fast source mismatch.
+- [ ] 3.1 Add focused tests for combined grouping, empty groups, stable ordering, the three small-vinyl records, non-bijective source matching, and fail-fast type drift.
 - [ ] 3.2 Run `pnpm test:unit`, `pnpm check`, and `pnpm build`; use Browser Use to confirm the Distro page contains all accepted records, approved headings, and visible exact types.

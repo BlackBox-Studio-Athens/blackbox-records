@@ -4,6 +4,8 @@ The current projection independently turns three Releases and 79 Distro records 
 
 Editorial content must remain free of CMS-authored commerce controls. Store Item ownership therefore belongs at the code-owned projection boundary, while Stripe remains Price Authority and D1 remains operational authority.
 
+`organize-distro-format-discovery` runs first and owns Distro-to-inventory reconciliation. This change consumes that validated Distro input instead of repeating its matching rules.
+
 ## Goals / Non-Goals
 
 **Goals:**
@@ -24,7 +26,7 @@ Editorial content must remain free of CMS-authored commerce controls. Store Item
 
 1. Add one code-owned Release-to-Distro relation table at the Store Item projection boundary. Each row contains only `{ releaseId, distroId, storeItemSlug }`; the relation type makes Distro the canonical owner, so an independent `ownerKind` cannot contradict it. This is smaller and safer than commerce fields in editorial content.
 2. For a related edition, the Distro projection uses the relation's Store Item slug, the Release projection is omitted, and Release commerce lookup resolves the same Distro-owned Store Item. For `Caregivers`, the relation is `caregivers` → `chronoboros-caregivers-vinyl` → `caregivers-vinyl`; the current variant remains `variant_caregivers-vinyl_standard`.
-3. A single validation pass builds the complete projection and rejects missing relation endpoints, repeated Release or Distro endpoints, reserved or duplicate Store Item slugs, duplicate variant IDs, duplicate source tuples, non-bijective inventory matches, and unresolved cross-source physical duplicates. Provider, availability, and stock generators consume only that validated projection.
+3. A single validation pass builds the complete projection and rejects missing relation endpoints, repeated Release or Distro endpoints, reserved or duplicate Store Item slugs, duplicate variant IDs, duplicate source tuples, and unresolved cross-source physical duplicates. Provider, availability, and stock generators consume only that validated projection.
 4. Model the application and HTTP Store Offer as a union discriminated by `catalogStatus`:
    - `ready`: available, `canCheckout: true`, non-null price.
    - `sold_out`: sold out, `canCheckout: false`, null price.

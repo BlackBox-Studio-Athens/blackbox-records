@@ -39,10 +39,11 @@ The system MUST filter Distro without reordering, recreating, paginating, or vir
 - **THEN** the control exposes one visible accessible empty state and a zero-result count
 - **AND** clearing remains available
 
-#### Scenario: Search JavaScript is unavailable
+#### Scenario: Search is not active
 
 - **WHEN** the search component fails to load or JavaScript is disabled
-- **THEN** every server-rendered Distro card and group heading remains browsable
+- **THEN** search adds no pre-hydration hidden state or DOM mutation
+- **AND** the baseline server-rendered catalog remains unchanged
 
 ### Requirement: Distro search follows app-shell lifecycle
 

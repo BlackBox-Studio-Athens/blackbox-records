@@ -25,6 +25,12 @@ The system MUST preserve each Distro record's accepted physical type in content 
 - **WHEN** its normalized exact group differs from the source item type
 - **THEN** validation fails before Desired Catalog State, Product Projections, availability, stock, or Store Offers are generated
 
+#### Scenario: Content and inventory matching is not bijective
+
+- **GIVEN** a Distro content record or inventory row does not resolve to exactly one counterpart
+- **WHEN** source reconciliation runs
+- **THEN** validation fails before physical types are compared or catalog artifacts are generated
+
 ### Requirement: Distro browse ordering is deterministic
 
 The system SHALL derive a stable Distro browse sequence without renumbering existing content.

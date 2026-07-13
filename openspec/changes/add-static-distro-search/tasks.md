@@ -6,7 +6,7 @@
 ## 2. Distro search UI
 
 - [ ] 2.1 Emit the minimal Distro card/chunk/group hooks and add a Distro-specific control reusing the Artists input, count, clear, empty-state, and accessibility pattern.
-- [ ] 2.2 Filter existing DOM nodes in place, hide empty chunks/groups, preserve ordering, and restore the full server-rendered catalog on clear or failed JavaScript.
+- [ ] 2.2 Filter existing DOM nodes in place, hide empty chunks/groups, preserve ordering, remove only search-authored hidden state on clear, and leave the DOM untouched when mounting fails.
 
 ## 3. Shell lifecycle
 

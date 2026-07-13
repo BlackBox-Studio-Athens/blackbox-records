@@ -7,7 +7,7 @@ The Distro route server-renders 79 records across five populated groups, but vis
 - Reuse the Artists search control, count, clear action, empty state, accessibility behavior, exact-first matching, and Fuse.js fallback on Distro.
 - Generalize only the matcher input so Distro can search title, `artist_or_label`, exact group, and format.
 - Hide unmatched cards, then empty chunks and groups, without changing category or item order; clearing restores the server-rendered document.
-- Keep the complete catalog available without JavaScript and clear search state from app-shell snapshots and route exits.
+- Add no pre-hydration hidden state, leave existing server-rendered DOM untouched when search cannot mount, and clear search state from app-shell snapshots and route exits.
 - Load search only on Distro and enforce the existing Distro load, layout, and long-task budgets without a new service or dependency.
 
 ## Capabilities
