@@ -383,6 +383,28 @@ The sandbox UAT proof sequence SHALL verify webhook readiness, catalog readiness
 - **AND** checkout smoke covers `checkout_surface` and `happy_path_paid`
 - **AND** evidence remains redacted and contains no secrets.
 
+#### Scenario: Confirmed provider reset invalidates stale D1 catalog pointers
+
+- **GIVEN** catalog promotion runs with confirmed UAT provider reset enabled
+- **WHEN** repo-owned sandbox Products and Prices are reset
+- **THEN** current and renamed repo-owned UAT catalog identities are included in the reset
+- **AND** active and inactive Products are included so interrupted resets can recover
+- **AND** active and inactive Prices are included so interrupted resets cannot leave canonical lookup identity behind
+- **AND** each Product is deactivated and stripped of ownership metadata before its default Price is detached from repo lookup and metadata identity
+- **AND** a Price that Stripe identifies as default during archival falls back to the same detach operation
+- **AND** non-default Prices are deactivated and stripped of repo lookup and metadata identity
+- **AND** current Store Item `StoreOfferSnapshot` and `VariantStripeMapping` rows are cleared before catalog apply
+- **AND** provider reset failure stops promotion before those D1 pointers are cleared
+- **AND** Stock, Item Availability, order state, and checkout eligibility are not cleared by the reset.
+
+#### Scenario: Promotion previews intended apply repairs
+
+- **GIVEN** UAT or PRD catalog promotion has prepared provider and D1 state
+- **WHEN** the workflow runs catalog verification with `--plan-apply`
+- **THEN** Desired Price and Product Projection repairs are planned without mutation
+- **AND** the plan succeeds only when every reported issue has its required planned repair actions
+- **AND** provider/API failures, unowned identity conflicts, orphan drift, and other unrepairable issues stop promotion before apply.
+
 #### Scenario: Provider execution lessons are enforced
 
 - **GIVEN** full sandbox catalog alignment is being accepted after an end-to-end provider run
@@ -705,6 +727,7 @@ The system MUST validate Stripe-native catalog forensics, identity, orphan detec
 - **WHEN** catalog mutation tests run
 - **THEN** they prove the same logical mutation reuses the same idempotency key
 - **AND** changed amount, currency, Product Projection, repair target, or action purpose changes the key identity.
+- **AND** a changed promotion run scope changes create-mutation key identity so a reset cannot replay pre-reset Product or Price creation.
 
 #### Scenario: Idempotency key safety tests run
 

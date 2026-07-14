@@ -1,3 +1,4 @@
+import Stripe from 'stripe';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -83,7 +84,7 @@ describe('stripe sandbox catalog reset', () => {
     await expect(
       createResetPlan('uat', stripe as unknown as Parameters<typeof createResetPlan>[1], [contract]),
     ).resolves.toEqual({
-      pricesToDeactivate: [
+      pricesToReset: [
         'price_blackboxOwned1111',
         'price_legacyMetadata5555',
         'price_legacyOwned4444',
@@ -91,14 +92,119 @@ describe('stripe sandbox catalog reset', () => {
       ],
       productsToDeactivate: [
         'prod_blackboxOwned1111',
+        'prod_legacyMetadata5555',
         'prod_legacyMetadata6666',
         'prod_legacyOwned4444',
         'prod_lookupOwned2222',
       ],
     });
+    expect(stripe.prices.list).toHaveBeenCalledWith(expect.objectContaining({ active: false }));
   });
 
-  it('keeps dry-run mutation-free and confirm deactivates planned objects', async () => {
+  it('plans repo-owned objects across every Stripe list page', async () => {
+    const firstPrice = {
+      active: true,
+      id: 'price_pageOne1111',
+      lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+      metadata: {},
+      product: 'prod_pageOne1111',
+    };
+    const secondPrice = {
+      ...firstPrice,
+      id: 'price_pageTwo2222',
+      product: 'prod_pageTwo2222',
+    };
+    const stripe = {
+      prices: {
+        list: vi.fn(async (params: { starting_after?: string }) =>
+          params.starting_after ? { data: [secondPrice], has_more: false } : { data: [firstPrice], has_more: true },
+        ),
+        update: vi.fn(),
+      },
+      products: {
+        list: vi.fn(async (params: { starting_after?: string }) =>
+          params.starting_after
+            ? { data: [{ active: true, id: 'prod_pageTwo2222', metadata: {} }], has_more: false }
+            : { data: [{ active: true, id: 'prod_pageOne1111', metadata: {} }], has_more: true },
+        ),
+        update: vi.fn(),
+      },
+    };
+
+    await expect(
+      createResetPlan('uat', stripe as unknown as Parameters<typeof createResetPlan>[1], [contract]),
+    ).resolves.toEqual({
+      pricesToReset: ['price_pageOne1111', 'price_pageTwo2222'],
+      productsToDeactivate: ['prod_pageOne1111', 'prod_pageTwo2222'],
+    });
+    expect(stripe.prices.list).toHaveBeenLastCalledWith(
+      expect.objectContaining({ starting_after: 'price_pageOne1111' }),
+    );
+    expect(stripe.products.list).toHaveBeenLastCalledWith(
+      expect.objectContaining({ starting_after: 'prod_pageOne1111' }),
+    );
+  });
+
+  it('plans an inactive renamed repo-owned Price behind an inactive Product', async () => {
+    const orphanMetadata = {
+      appEnv: 'uat',
+      sourceId: 'chronoboros',
+      sourceKind: 'release',
+      storeItemSlug: 'chronoboros-caregivers-vinyl',
+      variantId: 'variant_chronoboros-caregivers-vinyl_standard',
+    };
+    const stripe = {
+      prices: {
+        list: vi.fn(async (params: { active?: boolean }) => ({
+          data:
+            params.active === false
+              ? [
+                  {
+                    active: false,
+                    id: 'price_orphan1111',
+                    lookup_key:
+                      'blackbox:uat:chronoboros-caregivers-vinyl:variant_chronoboros-caregivers-vinyl_standard',
+                    metadata: orphanMetadata,
+                    product: {
+                      active: false,
+                      deleted: false,
+                      id: 'prod_orphan1111',
+                      metadata: orphanMetadata,
+                    },
+                  },
+                ]
+              : [],
+          has_more: false,
+        })),
+        update: vi.fn(),
+      },
+      products: {
+        list: vi.fn(async (_params: { active?: boolean }) => ({
+          data: [
+            {
+              active: false,
+              default_price: 'price_orphan1111',
+              id: 'prod_orphan1111',
+              metadata: orphanMetadata,
+            },
+          ],
+          has_more: false,
+        })),
+        update: vi.fn(),
+      },
+    };
+
+    await expect(
+      createResetPlan('uat', stripe as unknown as Parameters<typeof createResetPlan>[1], [contract]),
+    ).resolves.toEqual({
+      pricesToReset: ['price_orphan1111'],
+      productsToDeactivate: ['prod_orphan1111'],
+    });
+    expect(stripe.prices.list).toHaveBeenCalledWith(expect.objectContaining({ active: false }));
+    expect(stripe.products.list.mock.calls[0]?.[0]).not.toHaveProperty('active');
+  });
+
+  it('keeps dry-run mutation-free and confirm resets planned objects', async () => {
     const stripe = createFakeStripeClient();
 
     const dryRunPlan = await resetStripeSandboxCatalog(
@@ -106,7 +212,7 @@ describe('stripe sandbox catalog reset', () => {
       stripe as unknown as Parameters<typeof resetStripeSandboxCatalog>[1],
       [contract],
     );
-    expect(dryRunPlan.pricesToDeactivate).toHaveLength(4);
+    expect(dryRunPlan.pricesToReset).toHaveLength(4);
     expect(stripe.prices.update).not.toHaveBeenCalled();
     expect(stripe.products.update).not.toHaveBeenCalled();
 
@@ -118,16 +224,35 @@ describe('stripe sandbox catalog reset', () => {
 
     expect(stripe.prices.update).toHaveBeenCalledWith(
       'price_blackboxOwned1111',
-      { active: false },
+      {
+        lookup_key: 'blackbox-reset:uat:price_blackboxOwned1111',
+        metadata: '',
+      },
+      {
+        idempotencyKey: expect.stringMatching(
+          /^blackbox:catalog:uat:catalog-reset:detach_default_price:price:shape_v[a-f0-9]{32}$/,
+        ),
+      },
+    );
+    expect(stripe.prices.update).toHaveBeenCalledWith(
+      'price_lookupOwned2222',
+      {
+        active: false,
+        lookup_key: 'blackbox-reset:uat:price_lookupOwned2222',
+        metadata: '',
+      },
       {
         idempotencyKey: expect.stringMatching(
           /^blackbox:catalog:uat:catalog-reset:reset_price:price:shape_v[a-f0-9]{32}$/,
         ),
       },
     );
+    expect(stripe.products.update.mock.invocationCallOrder[0]).toBeLessThan(
+      stripe.prices.update.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
+    );
     expect(stripe.products.update).toHaveBeenCalledWith(
       'prod_blackboxOwned1111',
-      { active: false },
+      { active: false, metadata: '' },
       {
         idempotencyKey: expect.stringMatching(
           /^blackbox:catalog:uat:catalog-reset:reset_product:product:shape_v[a-f0-9]{32}$/,
@@ -136,10 +261,66 @@ describe('stripe sandbox catalog reset', () => {
     );
   });
 
+  it('fails closed when Price archival fails for another reason', async () => {
+    const stripe = createFakeStripeClient();
+    stripe.prices.update.mockImplementation(async (priceId, params) => {
+      if (priceId === 'price_lookupOwned2222' && params.active === false) {
+        throw new Error('Stripe request failed.');
+      }
+
+      return {};
+    });
+
+    await expect(
+      resetStripeSandboxCatalog(
+        { environment: 'uat', mode: 'confirm' },
+        stripe as unknown as Parameters<typeof resetStripeSandboxCatalog>[1],
+        [contract],
+      ),
+    ).rejects.toThrow('Stripe request failed.');
+    expect(stripe.prices.update).not.toHaveBeenCalledWith(
+      'price_lookupOwned2222',
+      {
+        lookup_key: 'blackbox-reset:uat:price_lookupOwned2222',
+        metadata: '',
+      },
+      expect.anything(),
+    );
+  });
+
+  it('serializes metadata clear-all values onto Stripe requests', async () => {
+    const requestBodies: string[] = [];
+    const fetchMock = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+      requestBodies.push(String(init?.body ?? ''));
+
+      return new Response(JSON.stringify({ id: 'stripe_test_object', object: 'product' }), {
+        headers: { 'content-type': 'application/json' },
+        status: 200,
+      });
+    });
+    const stripe = new Stripe('sk_test_catalog_reset', {
+      httpClient: Stripe.createFetchHttpClient(fetchMock as typeof fetch),
+      maxNetworkRetries: 0,
+    });
+
+    await stripe.products.update('prod_test', { active: false, metadata: '' });
+    await stripe.prices.update('price_test', {
+      lookup_key: 'blackbox-reset:uat:price_test',
+      metadata: '',
+    });
+
+    expect(requestBodies).toHaveLength(2);
+    for (const requestBody of requestBodies) {
+      const formData = new URLSearchParams(requestBody);
+      expect(formData.has('metadata')).toBe(true);
+      expect(formData.get('metadata')).toBe('');
+    }
+  });
+
   it('redacts provider IDs in reports', () => {
     const report = formatStripeCatalogResetSandboxReport(
       {
-        pricesToDeactivate: ['price_blackboxOwned1111'],
+        pricesToReset: ['price_blackboxOwned1111'],
         productsToDeactivate: ['prod_blackboxOwned1111'],
       },
       { environment: 'uat', mode: 'dry-run' },
@@ -227,13 +408,20 @@ function createFakeStripeClient() {
           },
         ],
       })),
-      update: vi.fn(async () => ({})),
+      update: vi.fn(async (id: string, params: Stripe.PriceUpdateParams, _options?: Stripe.RequestOptions) => {
+        if (id === 'price_blackboxOwned1111' && params.active === false) {
+          throw new Error('This price cannot be archived because it is the default price of its product.');
+        }
+
+        return {};
+      }),
     },
     products: {
       list: vi.fn(async () => ({
         data: [
           {
             active: true,
+            default_price: 'price_blackboxOwned1111',
             id: 'prod_blackboxOwned1111',
             metadata: {},
             name: 'BlackBox Records - Disintegration - Black Vinyl LP',
@@ -270,7 +458,7 @@ function createFakeStripeClient() {
           },
         ],
       })),
-      update: vi.fn(async () => ({})),
+      update: vi.fn(async (_id: string, _params: Stripe.ProductUpdateParams, _options?: Stripe.RequestOptions) => ({})),
     },
   } as const;
 }

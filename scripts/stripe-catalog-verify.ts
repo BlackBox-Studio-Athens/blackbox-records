@@ -9,6 +9,7 @@ import {
   redactStripeObjectId,
   type CatalogDriftCategory,
   type CatalogSyncAction,
+  type CatalogSyncIssue,
   type CatalogSyncRunResult,
   type StripeCatalogEnvironment,
 } from '../apps/backend/src/application/commerce/catalog-sync';
@@ -37,6 +38,7 @@ import { loadStripeCatalogStoreItemContracts, type StripeCatalogStoreItemContrac
 type CatalogVerifyOptions = {
   apply: boolean;
   environment: StripeCatalogEnvironment;
+  planApply?: boolean;
   promotionContext: CatalogPromotionContext | null;
 };
 
@@ -68,6 +70,7 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
   const options: CatalogVerifyOptions = {
     apply: false,
     environment: 'uat',
+    planApply: false,
     promotionContext: null,
   };
 
@@ -80,6 +83,11 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 
     if (arg === '--apply') {
       options.apply = true;
+      continue;
+    }
+
+    if (arg === '--plan-apply') {
+      options.planApply = true;
       continue;
     }
 
@@ -144,12 +152,16 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 
     if (arg === '--help' || arg === '-h') {
       console.log(
-        'Usage: pnpm stripe:catalog:verify --env local|uat|prd [--apply] [--artifact-commit-sha <sha> --promotion-run-id <id> --ci-promotion] (legacy platform aliases accepted: sandbox, production)',
+        'Usage: pnpm stripe:catalog:verify --env local|uat|prd [--apply|--plan-apply] [--artifact-commit-sha <sha> --promotion-run-id <id> --ci-promotion] (legacy platform aliases accepted: sandbox, production)',
       );
       process.exit(0);
     }
 
     throw new Error(`Unknown argument: ${arg}`);
+  }
+
+  if (options.apply && options.planApply) {
+    throw new Error('--apply and --plan-apply cannot be combined.');
   }
 
   if (
@@ -181,7 +193,7 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
     productEnvironment: productEnvironmentProfile.productEnvironment === 'PRD' ? 'PRD' : 'UAT',
   });
   const desiredPrices = createExpectedPriceMap(contracts, options.environment);
-  const expectedPrices = options.apply ? desiredPrices : undefined;
+  const expectedPrices = options.apply || options.planApply ? desiredPrices : undefined;
   const expectedProductProjections = createExpectedProductProjectionMap(contracts, options.environment);
   const stripeCatalog = createStripeCatalogGateway({
     STRIPE_API_BASE_URL: process.env.STRIPE_API_BASE_URL,
@@ -192,6 +204,7 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
     const repositories = createD1CatalogRepositories(options.environment, rows);
 
     return new CatalogReconciler({
+      creationMutationScope: options.promotionContext?.runId,
       environment: options.environment,
       storeItems: repositories.storeItems,
       storeOfferSnapshots: repositories.storeOfferSnapshots,
@@ -260,15 +273,21 @@ function parseRequiredOptionValue(name: string, value: string | undefined): stri
   return normalized;
 }
 
-export function formatStripeCatalogVerifyReport(result: CatalogSyncRunResult): string {
+export function formatStripeCatalogVerifyReport(
+  result: CatalogSyncRunResult,
+  options: { planApply?: boolean } = {},
+): string {
   const productEnvironmentProfile = productEnvironmentProfileFromWorkerRuntimeTarget(result.environment);
   const issueCounts = countIssuesByDriftCategory(result);
+  const applyPlanReady = options.planApply && isCatalogApplyPlanReady(result);
   const lines = [
-    `Stripe catalog verification ${result.issues.length ? 'failed' : 'OK'}.`,
+    options.planApply
+      ? `Stripe catalog apply plan ${applyPlanReady ? 'ready' : 'blocked'}.`
+      : `Stripe catalog verification ${result.issues.length ? 'failed' : 'OK'}.`,
     `Product Environment: ${productEnvironmentProfile.productEnvironment}`,
     `Product Environment label: ${formatProductEnvironmentLabel(productEnvironmentProfile.productEnvironment)}`,
     `Worker deployment target: ${productEnvironmentProfile.workerDeploymentTarget}`,
-    `Mode: ${result.dryRun ? 'dry-run' : 'apply'}`,
+    `Mode: ${options.planApply ? 'apply-plan' : result.dryRun ? 'dry-run' : 'apply'}`,
     `Checked variants: ${result.results.length}`,
     '',
     'Report sections:',
@@ -324,6 +343,54 @@ export function formatStripeCatalogVerifyReport(result: CatalogSyncRunResult): s
   }
 
   return lines.join('\n');
+}
+
+export function isCatalogApplyPlanReady(result: CatalogSyncRunResult): boolean {
+  return result.issues.every((issue) => {
+    const variant = result.results.find(
+      (item) => item.storeItem.storeItemSlug === issue.storeItemSlug && item.storeItem.variantId === issue.variantId,
+    );
+    const requiredActions = requiredPlanActions(issue);
+
+    return (
+      variant !== undefined &&
+      requiredActions !== null &&
+      requiredActions.every((kind) => variant.actions.some((action) => action.kind === kind))
+    );
+  });
+}
+
+function requiredPlanActions(issue: CatalogSyncIssue): CatalogSyncAction['kind'][] | null {
+  if (issue.code === 'missing_price') {
+    return ['create_catalog_price'];
+  }
+
+  if (
+    issue.code === 'wrong_amount' ||
+    issue.code === 'wrong_currency' ||
+    issue.code === 'wrong_custom_amount' ||
+    issue.code === 'wrong_price_kind'
+  ) {
+    return ['archive_price', 'create_catalog_price'];
+  }
+
+  if (issue.code === 'product_projection_mismatch') {
+    return ['update_product_projection'];
+  }
+
+  if (issue.code === 'snapshot_mismatch' || issue.code === 'snapshot_stale') {
+    return ['update_snapshot'];
+  }
+
+  if (issue.code === 'mapping_points_to_wrong_price') {
+    return ['update_mapping'];
+  }
+
+  if (issue.code === 'wrong_variant_identity' && issue.detail.startsWith('Mapped Price ')) {
+    return ['update_mapping'];
+  }
+
+  return null;
 }
 
 function formatCatalogSyncActionLabel(action: CatalogSyncAction): string {
@@ -680,9 +747,9 @@ function toDesiredCatalogEnvironment(productEnvironmentProfile: ProductEnvironme
 async function main() {
   const options = parseStripeCatalogVerifyArgs(process.argv.slice(2));
   const result = await verifyStripeCatalog(options);
-  const report = formatStripeCatalogVerifyReport(result);
+  const report = formatStripeCatalogVerifyReport(result, options);
 
-  if (result.issues.length) {
+  if (result.issues.length && (!options.planApply || !isCatalogApplyPlanReady(result))) {
     console.error(report);
     process.exit(1);
   }

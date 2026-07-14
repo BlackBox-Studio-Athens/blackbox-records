@@ -184,6 +184,14 @@ The system MUST use deterministic Stripe idempotency keys for mutating Product a
 - **THEN** the Stripe idempotency key identity changes
 - **AND** Stripe does not treat the changed operation as a retry of the previous request.
 
+#### Scenario: Catalog creation follows a new promotion reset
+
+- **GIVEN** an independent catalog promotion resets repo-owned Products and Prices
+- **WHEN** that promotion creates replacement catalog objects
+- **THEN** Product and Price create idempotency includes a reset-cycle scope that is stable within one workflow attempt and changes on a rerun that repeats reset
+- **AND** a rerun that does not repeat reset keeps the prior scope so a partial Product and Price creation can retry safely
+- **AND** Stripe does not replay catalog objects created by an earlier promotion run.
+
 #### Scenario: Idempotency key is built
 
 - **GIVEN** catalog code prepares a Stripe mutating API request

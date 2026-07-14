@@ -13,6 +13,7 @@ import { createStripeCatalogGateway } from '../../src/infrastructure/stripe';
 import { storeItemSlug, stripePriceId, variantId } from '../support/commerce-value-objects';
 import {
   formatStripeCatalogVerifyReport,
+  isCatalogApplyPlanReady,
   parseD1Rows,
   parseStripeCatalogVerifyArgs,
   redactStripeCatalogDiagnostic,
@@ -42,6 +43,7 @@ describe('stripe catalog verify script helpers', () => {
     expect(parseStripeCatalogVerifyArgs(['--env', 'uat'])).toEqual({
       apply: false,
       environment: 'uat',
+      planApply: false,
       promotionContext: null,
     });
     expect(parseStripeCatalogVerifyArgs(['--env', 'sandbox'])).toMatchObject({
@@ -50,12 +52,18 @@ describe('stripe catalog verify script helpers', () => {
     expect(parseStripeCatalogVerifyArgs(['--env=uat', '--apply'])).toEqual({
       apply: true,
       environment: 'uat',
+      planApply: false,
       promotionContext: null,
     });
-    expect(parseStripeCatalogVerifyArgs(['--env', 'uat'])).toEqual({
+    expect(parseStripeCatalogVerifyArgs(['--env', 'uat', '--promotion-run-id', 'run-123'])).toEqual({
       apply: false,
       environment: 'uat',
-      promotionContext: null,
+      planApply: false,
+      promotionContext: {
+        artifactCommitSha: '',
+        ci: false,
+        runId: 'run-123',
+      },
     });
     expect(() => parseStripeCatalogVerifyArgs(['--env', 'prd', '--apply'])).toThrow(
       'PRD Stripe catalog apply requires promotion context.',
@@ -72,23 +80,33 @@ describe('stripe catalog verify script helpers', () => {
     ).toEqual({
       apply: true,
       environment: 'prd',
+      planApply: false,
       promotionContext: {
         artifactCommitSha: 'abc123',
         ci: true,
         runId: 'run-456',
       },
     });
+    expect(parseStripeCatalogVerifyArgs(['--env', 'uat', '--plan-apply'])).toMatchObject({
+      apply: false,
+      planApply: true,
+    });
+    expect(() => parseStripeCatalogVerifyArgs(['--env', 'uat', '--apply', '--plan-apply'])).toThrow(
+      '--apply and --plan-apply cannot be combined.',
+    );
   });
 
   it('allows PRD dry-run without promotion context', () => {
     expect(parseStripeCatalogVerifyArgs(['--env', 'prd'])).toEqual({
       apply: false,
       environment: 'prd',
+      planApply: false,
       promotionContext: null,
     });
     expect(parseStripeCatalogVerifyArgs(['--env', 'prd'])).toEqual({
       apply: false,
       environment: 'prd',
+      planApply: false,
       promotionContext: null,
     });
     expect(() => parseStripeCatalogVerifyArgs(['--env', 'prd', '--apply', '--artifact-commit-sha', 'abc123'])).toThrow(
@@ -204,6 +222,24 @@ describe('stripe catalog verify script helpers', () => {
       expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
       expect(stripeCatalog.updatePriceMetadata).not.toHaveBeenCalled();
       expect(stripeCatalog.updateProductProjection).not.toHaveBeenCalled();
+
+      const applyPlan = await verifyStripeCatalog({
+        apply: false,
+        environment: 'uat',
+        planApply: true,
+        promotionContext: null,
+      });
+
+      expect(applyPlan.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'wrong_amount' })]));
+      expect(applyPlan.results[0]?.actions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ kind: 'archive_price' }),
+          expect.objectContaining({ kind: 'create_catalog_price' }),
+        ]),
+      );
+      expect(isCatalogApplyPlanReady(applyPlan)).toBe(true);
+      expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
+      expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
     } finally {
       createStripeCatalogGatewayMock.mockReset();
       spawnSyncMock.mockReset();
@@ -311,6 +347,12 @@ describe('stripe catalog verify script helpers', () => {
     expect(report).not.toContain('price_abcdef1234567890');
     expect(report).not.toContain('prod_1234567890abcdef');
     expect(report).not.toContain('sk_test');
+
+    expect(isCatalogApplyPlanReady(result)).toBe(false);
+    result.results[0]!.actions.push({ kind: 'create_catalog_price' });
+    expect(isCatalogApplyPlanReady(result)).toBe(true);
+    expect(formatStripeCatalogVerifyReport(result, { planApply: true })).toContain('Stripe catalog apply plan ready.');
+    expect(formatStripeCatalogVerifyReport(result, { planApply: true })).toContain('Mode: apply-plan');
   });
 
   it('formats completed apply actions separately from the post-apply dry-run state', () => {

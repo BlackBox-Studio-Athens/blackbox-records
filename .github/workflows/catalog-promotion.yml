@@ -17,7 +17,7 @@ on:
           - uat
           - prd
       reset_uat_catalog:
-        description: Archive active repo-owned UAT Stripe catalog objects before applying.
+        description: Archive active repo-owned UAT Stripe catalog objects and clear current D1 catalog pointers before applying.
         required: false
         default: false
         type: boolean
@@ -65,6 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: catalog-promotion-uat
     env:
+      CATALOG_MUTATION_SCOPE: ${{ inputs.reset_uat_catalog && format('{0}-{1}', github.run_id, github.run_attempt) || github.run_id }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
       STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}
@@ -100,21 +101,29 @@ jobs:
           pnpm --filter @blackbox/backend d1:migrations:apply:uat
           pnpm --filter @blackbox/backend d1:seed:uat:catalog
 
-      - name: Reset UAT provider catalog
+      - name: Reset UAT provider catalog and D1 pointers
         if: ${{ inputs.reset_uat_catalog }}
         run: |
+          set -o pipefail
           mkdir -p .codex-artifacts/catalog-promotion/uat
           pnpm stripe:catalog:reset-uat --env uat --confirm 2>&1 | tee .codex-artifacts/catalog-promotion/uat/catalog-reset.txt
+          pnpm --filter @blackbox/backend exec wrangler d1 execute COMMERCE_DB \
+            --env uat \
+            --remote \
+            --command "DELETE FROM StoreOfferSnapshot WHERE variantId IN (SELECT variantId FROM StoreItemOption); DELETE FROM VariantStripeMapping WHERE variantId IN (SELECT variantId FROM StoreItemOption);" \
+            --json
 
       - name: Plan UAT provider catalog
         run: |
+          set -o pipefail
           mkdir -p .codex-artifacts/catalog-promotion/uat
-          pnpm stripe:catalog:verify --env uat 2>&1 | tee .codex-artifacts/catalog-promotion/uat/catalog-plan.txt
+          pnpm stripe:catalog:verify --env uat --plan-apply --promotion-run-id "$CATALOG_MUTATION_SCOPE" 2>&1 | tee .codex-artifacts/catalog-promotion/uat/catalog-plan.txt
 
       - name: Apply UAT provider catalog
         run: |
-          pnpm stripe:catalog:verify --env uat --apply
-          pnpm stripe:catalog:verify --env uat 2>&1 | tee .codex-artifacts/catalog-promotion/uat/catalog-post-apply.txt
+          set -o pipefail
+          pnpm stripe:catalog:verify --env uat --apply --promotion-run-id "$CATALOG_MUTATION_SCOPE"
+          pnpm stripe:catalog:verify --env uat --promotion-run-id "$CATALOG_MUTATION_SCOPE" 2>&1 | tee .codex-artifacts/catalog-promotion/uat/catalog-post-apply.txt
 
       - name: Deploy UAT Worker
         run: pnpm deploy:backend:uat
@@ -136,6 +145,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: catalog-promotion-prd
     env:
+      CATALOG_MUTATION_SCOPE: ${{ github.run_id }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
       PRD_OPEN_GATE: ${{ vars.PRD_OPEN_GATE }}
@@ -198,14 +208,16 @@ jobs:
       - name: Plan PRD provider catalog
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         run: |
+          set -o pipefail
           mkdir -p .codex-artifacts/catalog-promotion/prd
-          pnpm stripe:catalog:verify --env prd 2>&1 | tee .codex-artifacts/catalog-promotion/prd/catalog-plan.txt
+          pnpm stripe:catalog:verify --env prd --plan-apply --promotion-run-id "$CATALOG_MUTATION_SCOPE" 2>&1 | tee .codex-artifacts/catalog-promotion/prd/catalog-plan.txt
 
       - name: Apply PRD provider catalog
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         run: |
-          pnpm stripe:catalog:verify --env prd --apply --ci-promotion --artifact-commit-sha "${{ inputs.artifact_commit_sha }}" --promotion-run-id "${{ github.run_id }}"
-          pnpm stripe:catalog:verify --env prd 2>&1 | tee .codex-artifacts/catalog-promotion/prd/catalog-post-apply.txt
+          set -o pipefail
+          pnpm stripe:catalog:verify --env prd --apply --ci-promotion --artifact-commit-sha "${{ inputs.artifact_commit_sha }}" --promotion-run-id "$CATALOG_MUTATION_SCOPE"
+          pnpm stripe:catalog:verify --env prd --promotion-run-id "$CATALOG_MUTATION_SCOPE" 2>&1 | tee .codex-artifacts/catalog-promotion/prd/catalog-post-apply.txt
           pnpm prd:catalog-readiness:check -- --phase post-apply
 
       - name: Deploy PRD Worker

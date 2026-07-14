@@ -8,7 +8,7 @@ import type {
   StripeCatalogMutationContext,
 } from './types';
 
-type StripeCatalogMutationAction = CatalogSyncAction['kind'] | 'reset_price' | 'reset_product';
+type StripeCatalogMutationAction = CatalogSyncAction['kind'] | 'detach_default_price' | 'reset_price' | 'reset_product';
 
 export function createStripeCatalogLookupKey(
   environment: StripeCatalogEnvironment,
@@ -52,6 +52,7 @@ export function createStripeCatalogMutationContext(input: {
   environment: StripeCatalogEnvironment;
   identity?: string | null;
   requestShape: unknown;
+  scope?: string | null;
   variantId: string;
 }): StripeCatalogMutationContext {
   const requestShapeFingerprint = createStripeCatalogRequestShapeFingerprint(input.requestShape);
@@ -62,6 +63,7 @@ export function createStripeCatalogMutationContext(input: {
     input.variantId,
     input.action,
     input.identity || 'new',
+    ...(input.scope ? [`scope_${createStableShortHash(input.scope)}`] : []),
     requestShapeFingerprint,
   ]);
 

@@ -51,12 +51,66 @@ describe('catalog promotion workflows', () => {
     expect(workflow).toContain('pnpm prd:catalog-readiness:check -- --phase post-apply');
     expect(workflow).toContain('pnpm stripe:catalog:verify --env prd --apply --ci-promotion');
     expect(workflow).toContain('--artifact-commit-sha "${{ inputs.artifact_commit_sha }}"');
-    expect(workflow).toContain('--promotion-run-id "${{ github.run_id }}"');
+    expect(workflow).toContain('CATALOG_MUTATION_SCOPE: ${{ github.run_id }}');
+    expect(workflow).toContain('--promotion-run-id "$CATALOG_MUTATION_SCOPE"');
     expect(workflow).toContain('actions/upload-artifact@v5.0.0');
     expect(workflow).not.toContain('pnpm smoke:stripe-sandbox');
     expect(workflow).not.toContain('pnpm smoke:uat-static');
     expect(workflow).not.toContain('pnpm smoke:stripe-promotion');
     expect(workflow).not.toContain('.codex-artifacts/smoke/');
+  });
+
+  it('clears stale UAT catalog pointers when a provider reset is requested', () => {
+    const workflow = readWorkflow('catalog-promotion.yml');
+    const resetStep = workflow.slice(
+      workflow.indexOf('- name: Reset UAT provider catalog and D1 pointers'),
+      workflow.indexOf('- name: Plan UAT provider catalog'),
+    );
+    const resetIndex = workflow.indexOf('pnpm stripe:catalog:reset-uat --env uat --confirm');
+    const clearSnapshotsIndex = workflow.indexOf('DELETE FROM StoreOfferSnapshot');
+    const clearMappingsIndex = workflow.indexOf('DELETE FROM VariantStripeMapping');
+    const applyIndex = workflow.indexOf('pnpm stripe:catalog:verify --env uat --apply');
+
+    expect(resetIndex).toBeGreaterThan(-1);
+    expect(resetStep).toContain('set -o pipefail');
+    expect(clearSnapshotsIndex).toBeGreaterThan(resetIndex);
+    expect(clearMappingsIndex).toBeGreaterThan(clearSnapshotsIndex);
+    expect(applyIndex).toBeGreaterThan(clearMappingsIndex);
+    expect(workflow).toContain(
+      "CATALOG_MUTATION_SCOPE: ${{ inputs.reset_uat_catalog && format('{0}-{1}', github.run_id, github.run_attempt) || github.run_id }}",
+    );
+    expect(workflow).toContain(
+      'pnpm stripe:catalog:verify --env uat --apply --promotion-run-id "$CATALOG_MUTATION_SCOPE"',
+    );
+    expect(workflow).not.toContain('DELETE FROM Stock WHERE');
+    expect(workflow).not.toContain('DELETE FROM ItemAvailability WHERE');
+  });
+
+  it('fails promotion when a post-apply verification piped to evidence fails', () => {
+    const workflow = readWorkflow('catalog-promotion.yml');
+    const uatPlanStep = workflow.slice(
+      workflow.indexOf('- name: Plan UAT provider catalog'),
+      workflow.indexOf('- name: Apply UAT provider catalog'),
+    );
+    const uatApplyStep = workflow.slice(
+      workflow.indexOf('- name: Apply UAT provider catalog'),
+      workflow.indexOf('- name: Deploy UAT Worker'),
+    );
+    const prdPlanStep = workflow.slice(
+      workflow.indexOf('- name: Plan PRD provider catalog'),
+      workflow.indexOf('- name: Apply PRD provider catalog'),
+    );
+    const prdApplyStep = workflow.slice(
+      workflow.indexOf('- name: Apply PRD provider catalog'),
+      workflow.indexOf('- name: Deploy PRD Worker'),
+    );
+
+    expect(uatPlanStep).toContain('set -o pipefail');
+    expect(uatPlanStep).toContain('--plan-apply');
+    expect(uatApplyStep).toContain('set -o pipefail');
+    expect(prdPlanStep).toContain('set -o pipefail');
+    expect(prdPlanStep).toContain('--plan-apply');
+    expect(prdApplyStep).toContain('set -o pipefail');
   });
 
   it('defines a manual UAT static smoke workflow with the standard smoke inputs', () => {

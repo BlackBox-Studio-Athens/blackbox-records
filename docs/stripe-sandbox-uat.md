@@ -156,7 +156,7 @@ Stripe Events API full-payload access is limited to 30 days. Keep older operator
 
 Product IDs remain Stripe-generated for existing catalog objects. Do not switch to deterministic Product IDs unless a future full recreate/import explicitly approves it and covers collision behavior.
 
-Stripe idempotency keys are retry protection for mutating `POST` requests, not long-term audit storage, actor attribution, or an independent-run lock. Catalog tooling keeps Stripe SDK retry behavior at the default client setting and relies on verify dry-runs, run identity, and operator review for independent apply runs.
+Stripe idempotency keys are retry protection for mutating `POST` requests, not long-term audit storage, actor attribution, or an independent-run lock. Catalog tooling keeps Stripe SDK retry behavior at the default client setting and relies on verify dry-runs, run identity, and operator review for independent apply runs. Promotion CI scopes Product and Price creation to the GitHub run so a post-reset apply cannot replay pre-reset objects, while retries within that run remain deterministic.
 
 Cleanup order:
 
@@ -164,8 +164,9 @@ Cleanup order:
 2. Capture the Workbench/Event fields above before mutating anything.
 3. Classify ownership and environment. Cleanup may target only confirmed BlackBox-owned UAT test-mode objects.
 4. Refuse unclassified objects and foreign-environment objects.
-5. Run the explicit cleanup/apply command only after dry-run review.
-6. Rerun `pnpm stripe:catalog:verify --env uat` and confirm current active catalog state.
+5. Reset cleanup strips canonical lookup and metadata identity from every repo-owned Price; default Prices that Stripe refuses to archive are detached without deactivation.
+6. Run the explicit cleanup/apply command only after dry-run review.
+7. Rerun `pnpm stripe:catalog:verify --env uat` and confirm current active catalog state.
 
 ## Full Catalog UAT Alignment
 
@@ -194,6 +195,7 @@ Operator sequence for a full UAT catalog reset:
 ```powershell
 git status --short
 git push origin main
+$catalogResetCycle = "manual-$(Get-Date -Format yyyyMMddHHmmss)"
 pnpm stripe:webhooks:verify --env uat
 pnpm stripe:catalog:verify --env uat
 pnpm stripe:catalog:reset-uat --env uat --dry-run
@@ -201,8 +203,9 @@ pnpm stripe:catalog:reset-uat --env uat --confirm
 pnpm --filter @blackbox/backend d1:migrations:list:uat
 pnpm --filter @blackbox/backend d1:migrations:apply:uat
 pnpm --filter @blackbox/backend d1:seed:uat:catalog
-pnpm stripe:catalog:verify --env uat --apply
-pnpm stripe:catalog:verify --env uat
+pnpm stripe:catalog:verify --env uat --plan-apply --promotion-run-id $catalogResetCycle
+pnpm stripe:catalog:verify --env uat --apply --promotion-run-id $catalogResetCycle
+pnpm stripe:catalog:verify --env uat --promotion-run-id $catalogResetCycle
 pnpm deploy:backend:uat
 ```
 
@@ -213,6 +216,7 @@ Provider execution notes:
 - Start from a clean final tree that already passed `pnpm test:unit`, `pnpm check`, `pnpm build`, and OpenSpec validation. `git status --short` should print nothing before provider mutation begins.
 - Run the provider sequence from the final pushed commit. If reset/apply/smoke work requires a code or script fix, rerun `pnpm test:unit`, `pnpm check`, and `pnpm build`, push the fix, redeploy the UAT Worker, and rerun catalog verification.
 - Reset cleanup must cover current ownership metadata and documented legacy sandbox names such as `BlackBox UAT - ...`. Keep that fallback until there are no legacy sandbox catalog objects left.
+- Generate one unique catalog reset-cycle ID before each reset and reuse it for plan, apply retries, and post-apply verification. Generate a new ID only when starting another reset.
 - `pnpm stripe:catalog:verify --env uat` and `pnpm stripe:catalog:verify --env uat --apply` are intentionally throttled. If Stripe returns a rate-limit error after reset or apply work, wait for a short cooldown and rerun verification instead of trusting Dashboard row counts.
 - Stripe Dashboard product counts are diagnostic only. Acceptance proof is the CLI report showing every expected variant checked with zero Product Projection, Price Authority, D1 readiness, and Store Offer snapshot issues, plus UAT smoke evidence.
 - `pnpm stripe:webhooks:verify --env uat` proves endpoint shape, mode, status, and event coverage. Existing endpoint signing-secret match is proven by `happy_path_paid` reaching a paid Worker order, not by Stripe endpoint list/retrieve APIs.

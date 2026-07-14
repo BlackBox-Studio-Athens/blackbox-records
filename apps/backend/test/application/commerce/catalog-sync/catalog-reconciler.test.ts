@@ -311,6 +311,7 @@ function createCatalogPrice(input: {
 
 function createReconciler(
   input: {
+    creationMutationScope?: string;
     environment?: StripeCatalogEnvironment;
     mappings?: InMemoryVariantMappings;
     snapshots?: InMemoryStoreOfferSnapshots;
@@ -323,6 +324,7 @@ function createReconciler(
   const snapshots = input.snapshots ?? new InMemoryStoreOfferSnapshots();
   const stripeCatalog = input.stripeCatalog ?? new InMemoryStripeCatalog();
   const reconciler = new CatalogReconciler({
+    creationMutationScope: input.creationMutationScope,
     environment,
     storeItems: new InMemoryStoreItems(input.storeItems ?? [storeItem]),
     storeOfferSnapshots: snapshots,
@@ -398,6 +400,10 @@ describe('Stripe catalog identity helpers', () => {
       ...baseInput,
       identity: 'revision_disintegration-black-vinyl-lp-2800-eur:replace_mapping_price_old',
     });
+    const changedScope = createStripeCatalogMutationContext({
+      ...baseInput,
+      scope: 'promotion-run-456',
+    });
     const longKey = createStripeCatalogMutationContext({
       ...baseInput,
       identity: 'x'.repeat(400),
@@ -412,6 +418,8 @@ describe('Stripe catalog identity helpers', () => {
     expect(changedProductProjection.idempotencyKey).not.toBe(first.idempotencyKey);
     expect(changedPurpose.idempotencyKey).not.toBe(first.idempotencyKey);
     expect(changedRepairTarget.idempotencyKey).not.toBe(first.idempotencyKey);
+    expect(changedScope.idempotencyKey).not.toBe(first.idempotencyKey);
+    expect(createStripeCatalogMutationContext({ ...baseInput, scope: 'promotion-run-456' })).toEqual(changedScope);
     expect(deriveStripeCatalogChildMutationContext(first, 'price')?.idempotencyKey).toBe(
       `${first.idempotencyKey}:price`,
     );
@@ -420,6 +428,25 @@ describe('Stripe catalog identity helpers', () => {
 });
 
 describe('CatalogReconciler', () => {
+  it('scopes catalog creation idempotency to the promotion run', async () => {
+    const first = await createReconciler({ creationMutationScope: 'promotion-run-123' }).reconciler.reconcileVariant(
+      storeItem,
+      { apply: false, expectedPrice: fixedExpectedPrice() },
+    );
+    const retry = await createReconciler({ creationMutationScope: 'promotion-run-123' }).reconciler.reconcileVariant(
+      storeItem,
+      { apply: false, expectedPrice: fixedExpectedPrice() },
+    );
+    const nextPromotion = await createReconciler({
+      creationMutationScope: 'promotion-run-456',
+    }).reconciler.reconcileVariant(storeItem, { apply: false, expectedPrice: fixedExpectedPrice() });
+    const readCreateKey = (result: typeof first) =>
+      result.actions.find((action) => action.kind === 'create_catalog_price')?.idempotencyKey;
+
+    expect(readCreateKey(first)).toBe(readCreateKey(retry));
+    expect(readCreateKey(nextPromotion)).not.toBe(readCreateKey(first));
+  });
+
   it('creates a corrected sandbox Price, archives the stale Price, and refreshes D1 authority in apply mode', async () => {
     const oldPrice = createCatalogPrice({ amountMinor: 1000, priceId: 'price_test_disintegration_1000' });
     const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();

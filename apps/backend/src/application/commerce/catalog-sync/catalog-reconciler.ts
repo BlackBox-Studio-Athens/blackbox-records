@@ -37,6 +37,7 @@ export class CatalogDriftError extends Error {
 }
 
 export type CatalogReconcilerDependencies = {
+  creationMutationScope?: string | null;
   environment: StripeCatalogEnvironment;
   storeItems: StoreItemOptionRepository;
   storeOfferSnapshots: StoreOfferSnapshotRepository;
@@ -183,6 +184,7 @@ export class CatalogReconciler {
         'create_catalog_price',
         createCatalogPriceMutationIdentity(expectedPrice, options.productProjection ?? null),
         priceInput,
+        this.dependencies.creationMutationScope,
       );
       if (options.apply) {
         resolvedPrice = await this.dependencies.stripeCatalog.createCatalogPrice(priceInput, createContext);
@@ -208,6 +210,7 @@ export class CatalogReconciler {
         'create_catalog_price',
         createCatalogPriceMutationIdentity(expectedPrice, options.productProjection ?? null, repairIdentity),
         priceInput,
+        this.dependencies.creationMutationScope,
       );
       if (options.apply) {
         resolvedPrice = await this.dependencies.stripeCatalog.createCatalogPrice(priceInput, createContext);
@@ -862,12 +865,14 @@ function createMutationContext(
   action: CatalogSyncAction['kind'],
   identity = 'new',
   requestShape: unknown,
+  scope?: string | null,
 ): StripeCatalogMutationContext {
   return createStripeCatalogMutationContext({
     action,
     environment,
     identity,
     requestShape,
+    scope,
     variantId,
   });
 }

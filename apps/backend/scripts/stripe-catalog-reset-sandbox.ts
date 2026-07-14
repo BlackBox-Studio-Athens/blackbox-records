@@ -4,20 +4,18 @@ import { pathToFileURL } from 'node:url';
 import Stripe from 'stripe';
 
 import {
-  createStripeCatalogLookupKey,
-  createStripeCatalogMetadata,
   createStripeCatalogMutationContext,
   redactStripeObjectId,
   type StripeCatalogEnvironment,
 } from '../src/application/commerce/catalog-sync';
-import { parseStoreItemSlug, parseVariantId } from '../src/domain/commerce';
-import type { StoreItemOptionRecord } from '../src/domain/commerce/repositories/spi';
 import {
   loadStripeCatalogStoreItemContracts,
   type StripeCatalogStoreItemContract,
 } from '../../../scripts/stripe-catalog-contract';
 
 type ResetMode = 'confirm' | 'dry-run';
+
+const DEFAULT_PRICE_ARCHIVE_ERROR = 'This price cannot be archived because it is the default price of its product.';
 
 type ResetOptions = {
   environment: StripeCatalogEnvironment;
@@ -26,7 +24,7 @@ type ResetOptions = {
 
 type ResetPlan = {
   productsToDeactivate: string[];
-  pricesToDeactivate: string[];
+  pricesToReset: string[];
 };
 
 type ResetStripeClient = {
@@ -104,62 +102,90 @@ export async function createResetPlan(
   stripe: ResetStripeClient,
   contracts: StripeCatalogStoreItemContract[],
 ): Promise<ResetPlan> {
-  const expectedLookupKeys = new Set(
-    contracts.flatMap((contract) => {
-      const storeItem = toStoreItemOptionRecord(contract);
-      return [createStripeCatalogLookupKey(environment, storeItem), createLegacySandboxLookupKey(storeItem)];
-    }),
-  );
-  const expectedIdentities = contracts.map((contract) =>
-    createStripeCatalogMetadata(environment, toStoreItemOptionRecord(contract)),
-  );
   const expectedLegacyProductNames = new Set(
     contracts.flatMap((contract) => createLegacySandboxProductNames(contract.productProjection.name)),
   );
-  const [prices, products] = await Promise.all([
-    stripe.prices.list({ active: true, expand: ['data.product'], limit: 100 }),
-    stripe.products.list({ active: true, limit: 100 }),
+  const [activePrices, inactivePrices, products] = await Promise.all([
+    listAllStripeObjects((startingAfter) =>
+      stripe.prices.list({
+        active: true,
+        expand: ['data.product'],
+        limit: 100,
+        ...(startingAfter ? { starting_after: startingAfter } : {}),
+      }),
+    ),
+    listAllStripeObjects((startingAfter) =>
+      stripe.prices.list({
+        active: false,
+        expand: ['data.product'],
+        limit: 100,
+        ...(startingAfter ? { starting_after: startingAfter } : {}),
+      }),
+    ),
+    listAllStripeObjects((startingAfter) =>
+      stripe.products.list({
+        limit: 100,
+        ...(startingAfter ? { starting_after: startingAfter } : {}),
+      }),
+    ),
   ]);
 
-  const pricesToDeactivate = prices.data
-    .filter((price) =>
-      isRepoOwnedSandboxPrice(price, expectedLookupKeys, expectedIdentities, expectedLegacyProductNames),
-    )
-    .map((price) => price.id)
-    .sort();
+  const selectedPrices = [
+    ...new Map([...activePrices, ...inactivePrices].map((price) => [price.id, price])).values(),
+  ].filter((price) => isRepoOwnedSandboxPrice(price, environment, expectedLegacyProductNames));
+  const pricesToReset = selectedPrices.map((price) => price.id).sort();
   const productIdsFromPrices = new Set(
-    prices.data
-      .filter((price) => pricesToDeactivate.includes(price.id))
-      .map((price) => extractProductId(price.product))
-      .filter((value): value is string => Boolean(value)),
+    selectedPrices.map((price) => extractProductId(price.product)).filter((value): value is string => Boolean(value)),
   );
-  const productsToDeactivate = products.data
-    .filter(
-      (product) =>
-        productIdsFromPrices.has(product.id) ||
-        hasExpectedMetadata(normalizeMetadata(product.metadata), expectedIdentities) ||
-        isLegacyRepoOwnedSandboxProduct(product, expectedLegacyProductNames),
-    )
-    .map((product) => product.id)
-    .sort();
+  const productsToDeactivate = [
+    ...new Set([
+      ...productIdsFromPrices,
+      ...products
+        .filter(
+          (product) =>
+            hasRepoOwnedCatalogMetadata(normalizeMetadata(product.metadata), environment) ||
+            hasLegacyRepoOwnedSandboxProductName(product, expectedLegacyProductNames),
+        )
+        .map((product) => product.id),
+    ]),
+  ].sort();
 
   return {
-    pricesToDeactivate,
+    pricesToReset,
     productsToDeactivate,
   };
+}
+
+async function listAllStripeObjects<T extends { id: string }>(
+  listPage: (startingAfter?: string) => Promise<{ data: T[]; has_more: boolean }>,
+): Promise<T[]> {
+  const objects: T[] = [];
+  let startingAfter: string | undefined;
+
+  do {
+    const page = await listPage(startingAfter);
+    objects.push(...page.data);
+    startingAfter = page.has_more ? page.data.at(-1)?.id : undefined;
+
+    if (page.has_more && !startingAfter) {
+      throw new Error('Stripe catalog reset pagination did not return a cursor.');
+    }
+  } while (startingAfter);
+
+  return objects;
 }
 
 export function formatStripeCatalogResetSandboxReport(plan: ResetPlan, options: ResetOptions): string {
   return [
     'Stripe sandbox catalog reset report',
     `Mode: ${options.mode}`,
-    `Prices to deactivate: ${plan.pricesToDeactivate.length}`,
-    ...plan.pricesToDeactivate.map((priceId) => `- ${redactStripeObjectId(priceId)}`),
+    `Prices to reset: ${plan.pricesToReset.length}`,
+    ...plan.pricesToReset.map((priceId) => `- ${redactStripeObjectId(priceId)}`),
     `Products to deactivate: ${plan.productsToDeactivate.length}`,
     ...plan.productsToDeactivate.map((productId) => `- ${redactStripeObjectId(productId)}`),
     options.mode === 'dry-run'
-      ? 'Dry-run only. Rerun with --confirm to deactivate these sandbox objects.'
-      : 'Confirmed reset completed. Run pnpm stripe:catalog:verify --env uat --apply to create fresh Products/Prices and sync D1.',
+      ? 'Dry-run only. Rerun with --confirm to reset these sandbox objects.'
+      : 'Confirmed reset completed. Run pnpm stripe:catalog:verify --env uat --apply --promotion-run-id <stable-run-id> to create fresh Products/Prices and sync D1.',
   ].join('\n');
 }
 
@@ -168,21 +194,6 @@ async function applyResetPlan(
   stripe: ResetStripeClient,
   plan: ResetPlan,
 ): Promise<void> {
-  for (const priceId of plan.pricesToDeactivate) {
-    const context = createStripeCatalogMutationContext({
-      action: 'reset_price',
-      environment,
-      identity: 'price',
-      requestShape: {
-        active: false,
-        priceId,
-      },
-      variantId: 'catalog-reset',
-    });
-
-    await stripe.prices.update(priceId, { active: false }, { idempotencyKey: context.idempotencyKey });
-  }
-
   for (const productId of plan.productsToDeactivate) {
     const context = createStripeCatalogMutationContext({
       action: 'reset_product',
@@ -190,19 +201,82 @@ async function applyResetPlan(
       identity: 'product',
       requestShape: {
         active: false,
+        metadata: '',
         productId,
       },
       variantId: 'catalog-reset',
     });
 
-    await stripe.products.update(productId, { active: false }, { idempotencyKey: context.idempotencyKey });
+    await stripe.products.update(
+      productId,
+      { active: false, metadata: '' },
+      { idempotencyKey: context.idempotencyKey },
+    );
   }
+
+  for (const priceId of plan.pricesToReset) {
+    const lookupKey = createResetPriceLookupKey(environment, priceId);
+    const context = createStripeCatalogMutationContext({
+      action: 'reset_price',
+      environment,
+      identity: 'price',
+      requestShape: {
+        active: false,
+        lookupKey,
+        metadata: '',
+        priceId,
+      },
+      variantId: 'catalog-reset',
+    });
+
+    try {
+      await stripe.prices.update(
+        priceId,
+        { active: false, lookup_key: lookupKey, metadata: '' },
+        { idempotencyKey: context.idempotencyKey },
+      );
+    } catch (error: unknown) {
+      if (!isDefaultPriceArchiveError(error)) {
+        throw error;
+      }
+
+      await detachDefaultPrice(environment, stripe, priceId);
+    }
+  }
+}
+
+async function detachDefaultPrice(
+  environment: StripeCatalogEnvironment,
+  stripe: ResetStripeClient,
+  priceId: string,
+): Promise<void> {
+  const lookupKey = createResetPriceLookupKey(environment, priceId);
+  const context = createStripeCatalogMutationContext({
+    action: 'detach_default_price',
+    environment,
+    identity: 'price',
+    requestShape: {
+      lookupKey,
+      metadata: '',
+      priceId,
+    },
+    variantId: 'catalog-reset',
+  });
+
+  await stripe.prices.update(
+    priceId,
+    { lookup_key: lookupKey, metadata: '' },
+    { idempotencyKey: context.idempotencyKey },
+  );
+}
+
+function isDefaultPriceArchiveError(error: unknown): boolean {
+  return error instanceof Error && error.message === DEFAULT_PRICE_ARCHIVE_ERROR;
 }
 
 function isRepoOwnedSandboxPrice(
   price: Stripe.Price,
-  expectedLookupKeys: Set<string>,
-  expectedIdentities: Array<Record<string, string>>,
+  environment: StripeCatalogEnvironment,
   expectedLegacyProductNames: Set<string>,
 ): boolean {
   const priceMetadata = normalizeMetadata(price.metadata);
@@ -210,30 +284,28 @@ function isRepoOwnedSandboxPrice(
   const productMetadata = normalizeMetadata(product?.metadata);
 
   return (
-    Boolean(price.lookup_key && expectedLookupKeys.has(price.lookup_key)) ||
+    Boolean(price.lookup_key && price.lookup_key.startsWith(`blackbox:${environment}:`)) ||
     Boolean(price.lookup_key && isLegacySandboxLookupKey(price.lookup_key)) ||
-    hasExpectedMetadata(priceMetadata, expectedIdentities) ||
-    hasExpectedMetadata(productMetadata, expectedIdentities) ||
-    hasLegacySandboxCatalogMetadata(priceMetadata) ||
-    hasLegacySandboxCatalogMetadata(productMetadata) ||
-    Boolean(product && isLegacyRepoOwnedSandboxProduct(product, expectedLegacyProductNames))
+    hasRepoOwnedCatalogMetadata(priceMetadata, environment) ||
+    hasRepoOwnedCatalogMetadata(productMetadata, environment) ||
+    Boolean(product && hasLegacyRepoOwnedSandboxProductName(product, expectedLegacyProductNames))
   );
 }
 
-function isLegacyRepoOwnedSandboxProduct(product: Stripe.Product, expectedLegacyProductNames: Set<string>): boolean {
-  return Boolean(
-    hasLegacySandboxCatalogMetadata(normalizeMetadata(product.metadata)) ||
-    (product.name && expectedLegacyProductNames.has(normalizeLegacyProductName(product.name))),
-  );
+function hasLegacyRepoOwnedSandboxProductName(
+  product: Stripe.Product,
+  expectedLegacyProductNames: Set<string>,
+): boolean {
+  return Boolean(product.name && expectedLegacyProductNames.has(normalizeLegacyProductName(product.name)));
 }
 
 function isLegacySandboxLookupKey(value: string): boolean {
   return value.startsWith('blackbox:sandbox:');
 }
 
-function hasLegacySandboxCatalogMetadata(metadata: Record<string, string>): boolean {
+function hasRepoOwnedCatalogMetadata(metadata: Record<string, string>, environment: StripeCatalogEnvironment): boolean {
   return (
-    metadata.appEnv === 'sandbox' &&
+    (metadata.appEnv === environment || (environment === 'uat' && metadata.appEnv === 'sandbox')) &&
     Boolean(metadata.sourceId && metadata.sourceKind && metadata.storeItemSlug && metadata.variantId)
   );
 }
@@ -256,15 +328,6 @@ function normalizeLegacyProductName(value: string): string {
   return value.replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
-function hasExpectedMetadata(
-  candidate: Record<string, string>,
-  expectedIdentities: Array<Record<string, string>>,
-): boolean {
-  return expectedIdentities.some((expected) =>
-    Object.entries(expected).every(([key, value]) => candidate[key] === String(value)),
-  );
-}
-
 function normalizeMetadata(metadata: Stripe.Metadata | null | undefined): Record<string, string> {
   return Object.fromEntries(Object.entries(metadata ?? {}).map(([key, value]) => [key, String(value)]));
 }
@@ -273,13 +336,8 @@ function extractProductId(product: string | Stripe.Product | Stripe.DeletedProdu
   return typeof product === 'string' ? product : (product.id ?? null);
 }
 
-function toStoreItemOptionRecord(contract: StripeCatalogStoreItemContract): StoreItemOptionRecord {
-  return {
-    sourceId: contract.sourceId,
-    sourceKind: contract.sourceKind,
-    storeItemSlug: parseStoreItemSlug(contract.storeItemSlug),
-    variantId: parseVariantId(contract.variantId),
-  };
+function createResetPriceLookupKey(environment: StripeCatalogEnvironment, priceId: string): string {
+  return `blackbox-reset:${environment}:${priceId}`;
 }
 
 function parseEnvironment(value: string | undefined): StripeCatalogEnvironment {
@@ -296,10 +354,6 @@ function parseEnvironment(value: string | undefined): StripeCatalogEnvironment {
   }
 
   throw new Error(`Unsupported Stripe catalog environment: ${value ?? '(missing)'}`);
-}
-
-function createLegacySandboxLookupKey(storeItem: Pick<StoreItemOptionRecord, 'storeItemSlug' | 'variantId'>): string {
-  return `blackbox:sandbox:${storeItem.storeItemSlug}:${storeItem.variantId}`;
 }
 
 async function main(): Promise<void> {
