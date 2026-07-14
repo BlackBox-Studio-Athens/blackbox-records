@@ -7,6 +7,7 @@ import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { createSlugSuggestion, resolveExplicitOrSuggestedSlug } from '../../web/src/lib/slugs';
+import { loadStripeCatalogStoreItemContracts } from '../../../scripts/stripe-catalog-contract';
 
 export type LocalMockStoreItem = {
   mockCheckoutEnabled: boolean;
@@ -19,9 +20,6 @@ export type LocalMockStoreItem = {
 };
 
 const backendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const repoRoot = path.resolve(backendDir, '..', '..');
-const releasesDir = path.join(repoRoot, 'apps', 'web', 'src', 'content', 'releases');
-const distroDir = path.join(repoRoot, 'apps', 'web', 'src', 'content', 'distro');
 
 const nonPhysicalReleaseFormats = new Set(['digital']);
 const mockCheckoutStoreItemSlugs = new Set(['anarchotribal-vinyl', 'disintegration-black-vinyl-lp']);
@@ -33,12 +31,15 @@ const mockStoreOfferPricesBySlug = new Map([
 const mockQuantity = 99;
 
 export async function readLocalMockStoreItems(): Promise<LocalMockStoreItem[]> {
-  const [releases, distroItems] = await Promise.all([
-    readReleaseStoreItems(releasesDir),
-    readDistroStoreItems(distroDir),
-  ]);
-
-  return [...releases, ...distroItems].sort((left, right) => left.storeItemSlug.localeCompare(right.storeItemSlug));
+  return (await loadStripeCatalogStoreItemContracts({ productEnvironment: 'UAT' })).map((contract) => ({
+    mockCheckoutEnabled: mockCheckoutStoreItemSlugs.has(contract.storeItemSlug),
+    sourceId: contract.sourceId,
+    sourceKind: contract.sourceKind,
+    storeItemSlug: contract.storeItemSlug,
+    taxCategory: 'physical_goods',
+    title: contract.productProjection.name,
+    variantId: contract.variantId,
+  }));
 }
 
 export async function readReleaseStoreItems(directory: string): Promise<LocalMockStoreItem[]> {

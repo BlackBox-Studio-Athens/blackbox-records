@@ -113,7 +113,7 @@ export function createCheckoutOfferView(loadState: CheckoutOfferLoadState): Chec
     };
   }
 
-  if (!loadState.offer.canCheckout) {
+  if (loadState.offer.catalogStatus !== 'ready') {
     return {
       badgeLabel: 'Not available',
       canStartCheckout: false,

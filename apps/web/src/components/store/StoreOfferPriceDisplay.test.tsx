@@ -129,6 +129,10 @@ describe('StoreOfferPriceDisplay', () => {
     expect(
       createStoreOfferPriceDisplayView({
         ...workerOffer,
+        availability: {
+          label: 'Checkout Paused',
+          status: 'unavailable',
+        },
         canCheckout: false,
         catalogStatus: 'catalog_drift',
         price: null,

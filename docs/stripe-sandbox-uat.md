@@ -198,6 +198,8 @@ pnpm stripe:webhooks:verify --env uat
 pnpm stripe:catalog:verify --env uat
 pnpm stripe:catalog:reset-uat --env uat --dry-run
 pnpm stripe:catalog:reset-uat --env uat --confirm
+pnpm --filter @blackbox/backend d1:migrations:list:uat
+pnpm --filter @blackbox/backend d1:migrations:apply:uat
 pnpm --filter @blackbox/backend d1:seed:uat:catalog
 pnpm stripe:catalog:verify --env uat --apply
 pnpm stripe:catalog:verify --env uat
@@ -207,6 +209,7 @@ pnpm deploy:backend:uat
 Provider execution notes:
 
 - Repo-complete is not provider-complete. A pushed commit does not mutate Stripe Products, Stripe Prices, D1 stock, D1 mappings, or Store Offer snapshots.
+- `d1:migrations:list:uat` is the read-only migration check. `d1:migrations:apply:uat` and `stripe:catalog:verify --env uat --apply` are remote mutations and require the explicit UAT gate; implementation and local verification do not run them.
 - Start from a clean final tree that already passed `pnpm test:unit`, `pnpm check`, `pnpm build`, and OpenSpec validation. `git status --short` should print nothing before provider mutation begins.
 - Run the provider sequence from the final pushed commit. If reset/apply/smoke work requires a code or script fix, rerun `pnpm test:unit`, `pnpm check`, and `pnpm build`, push the fix, redeploy the UAT Worker, and rerun catalog verification.
 - Reset cleanup must cover current ownership metadata and documented legacy sandbox names such as `BlackBox UAT - ...`. Keep that fallback until there are no legacy sandbox catalog objects left.

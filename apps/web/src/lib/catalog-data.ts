@@ -4,6 +4,12 @@ import { createProjectRelativeUrl } from '../config/site';
 import { assertNoSlugCollisions, createSlugSuggestion } from './slugs';
 import type { StoreItemTaxCategory } from './store-tax-category';
 import { sortDistroEntries } from './distro-data';
+import {
+  createPhysicalEditionKey,
+  createValidatedStoreItemProjection,
+  findStoreItemRelationForRelease,
+  resolveStoreItemSlugForDistro,
+} from './store-item-ownership';
 
 export { groupDistroEntries } from './distro-data';
 
@@ -136,12 +142,6 @@ const RELEASE_STORE_ITEM_IMAGE_OVERRIDES: Record<string, StoreItemImageOverride>
     height: 3543,
     format: 'webp',
   },
-  caregivers: {
-    src: createProjectRelativeUrl('/admin/media/releases/chronoboros-album-cover-distro-mockup.webp'),
-    width: 3544,
-    height: 3543,
-    format: 'webp',
-  },
   disintegration: {
     src: createProjectRelativeUrl('/admin/media/releases/afterwise-album-cover-distro-mockup.webp'),
     width: 3544,
@@ -195,7 +195,7 @@ export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEnt
 }
 
 export function createStoreItemFromDistroEntry(distroEntry: DistroCatalogEntry): StoreItem {
-  const slug = distroEntry.id;
+  const slug = resolveStoreItemSlugForDistro(distroEntry.id);
   const releaseDate = distroEntry.data.release_date ? formatMonthYear(distroEntry.data.release_date) : null;
   const metadata = [distroEntry.data.group, releaseDate, distroEntry.data.format].filter(Boolean) as string[];
 
@@ -216,7 +216,14 @@ export function createStoreItemFromDistroEntry(distroEntry: DistroCatalogEntry):
 }
 
 export async function getStoreItemForRelease(releaseEntry: ReleaseCatalogEntry) {
-  return createStoreItemFromRelease(releaseEntry);
+  const relation = findStoreItemRelationForRelease(releaseEntry.id);
+  if (!relation) return createStoreItemFromRelease(releaseEntry);
+
+  return (
+    (await listStoreItems()).find(
+      (storeItem) => storeItem.sourceKind === 'distro' && storeItem.sourceId === relation.distroId,
+    ) ?? null
+  );
 }
 
 export async function listStoreItems(): Promise<StoreItem[]> {
@@ -227,8 +234,43 @@ export async function listStoreItems(): Promise<StoreItem[]> {
   );
 
   const distroStoreItems = distroEntries.map((distroEntry) => createStoreItemFromDistroEntry(distroEntry));
+  const storeItems = [...releaseStoreItems, ...distroStoreItems];
+  const projection = createValidatedStoreItemProjection([
+    ...releaseStoreItems.map((storeItem, index) => ({
+      physicalEditionKeys: [
+        createPhysicalEditionKey({
+          artist: storeItem.subtitle,
+          itemType: getPrimaryReleaseStoreFormat(releaseCatalog[index]?.data.formats) ?? '',
+          title: storeItem.title,
+        }),
+      ],
+      sourceId: storeItem.sourceId,
+      sourceKind: storeItem.sourceKind,
+      storeItemSlug: storeItem.slug,
+    })),
+    ...distroStoreItems.map((storeItem, index) => ({
+      physicalEditionKeys: [
+        createPhysicalEditionKey({
+          artist: storeItem.subtitle,
+          itemType: distroEntries[index]?.data.format ?? distroEntries[index]?.data.group ?? '',
+          title: storeItem.title,
+        }),
+      ],
+      sourceId: storeItem.sourceId,
+      sourceKind: storeItem.sourceKind,
+      storeItemSlug: storeItem.slug,
+    })),
+  ]);
+  const storeItemsBySource = new Map(storeItems.map((item) => [`${item.sourceKind}:${item.sourceId}`, item]));
 
-  return [...releaseStoreItems, ...distroStoreItems];
+  return projection.map((entry) => {
+    const storeItem = storeItemsBySource.get(`${entry.sourceKind}:${entry.sourceId}`)!;
+    return {
+      ...storeItem,
+      slug: entry.storeItemSlug,
+      storePath: createStoreItemPath(entry.storeItemSlug),
+    };
+  });
 }
 
 export function mapStoreItemsBySlug(storeItems: StoreItem[]) {

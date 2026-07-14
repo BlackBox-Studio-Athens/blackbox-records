@@ -10,6 +10,11 @@ import type {
 import { parseProductEnvironmentCliTarget, type ProductEnvironment } from '../apps/backend/src/env';
 import { createSlugSuggestion } from '../apps/web/src/lib/slugs';
 import {
+  createPhysicalEditionKey,
+  createValidatedStoreItemProjection,
+  type CanonicalStoreItemProjection,
+} from '../apps/web/src/lib/store-item-ownership';
+import {
   loadDistroInventorySource,
   reconcileDistroContentWithInventorySource,
   type DistroInventorySourceRow,
@@ -56,13 +61,24 @@ type DistroContent = {
   title: string;
 };
 
+type StripeCatalogContractCandidate = {
+  contract: StripeCatalogStoreItemContract;
+  physicalEditionKeys: string[];
+};
+
+type ReleaseCatalogContractCandidate = {
+  artistId: string;
+  contract: StripeCatalogStoreItemContract;
+  itemType: string;
+  title: string;
+};
+
 const defaultSiteUrl = 'https://blackbox-studio-athens.github.io';
 const defaultBasePath = '/blackbox-records/';
 const prdSiteUrl = 'https://blackbox-records-web.pages.dev';
 const prdBasePath = '/';
 const CATALOG_RELEASE_IMAGE_OVERRIDES: Record<string, string> = {
   anarchotribal: 'ouranopithecus-album-cover-distro-mockup.webp',
-  caregivers: 'chronoboros-album-cover-distro-mockup.webp',
   disintegration: 'afterwise-album-cover-distro-mockup.webp',
 };
 export const STRIPE_PHYSICAL_GOODS_TAX_CODE = 'txcd_99999999';
@@ -80,7 +96,27 @@ export async function loadStripeCatalogStoreItemContracts(
     readDistroContracts(path.join(webContentRoot, 'distro'), options),
   ]);
 
-  return [...releases.map((release) => applyArtistName(release, artistNames)), ...distroEntries]
+  const candidates = [...releases.map((release) => applyArtistName(release, artistNames)), ...distroEntries];
+  const contractsBySource = new Map(
+    candidates.map((candidate) => [
+      `${candidate.contract.sourceKind}:${candidate.contract.sourceId}`,
+      candidate.contract,
+    ]),
+  );
+  const projection = createValidatedStoreItemProjection(
+    candidates.map((candidate) => ({
+      physicalEditionKeys: candidate.physicalEditionKeys,
+      sourceId: candidate.contract.sourceId,
+      sourceKind: candidate.contract.sourceKind,
+      storeItemSlug: candidate.contract.storeItemSlug,
+    })),
+  );
+
+  return projection
+    .map((entry) => {
+      const contract = contractsBySource.get(`${entry.sourceKind}:${entry.sourceId}`)!;
+      return applyCanonicalCatalogIdentity(contract, entry);
+    })
     .map(assertValidStripeCatalogStoreItemContract)
     .sort((left, right) => left.storeItemSlug.localeCompare(right.storeItemSlug));
 }
@@ -147,7 +183,7 @@ async function readArtistDisplayNames(artistsDir: string): Promise<Map<string, s
 async function readReleaseContracts(
   releasesDir: string,
   options: LoadStripeCatalogContractsOptions,
-): Promise<Array<StripeCatalogStoreItemContract & { artistId: string }>> {
+): Promise<ReleaseCatalogContractCandidate[]> {
   const entries = await readdir(releasesDir, { withFileTypes: true });
   const releases = await Promise.all(
     entries
@@ -162,7 +198,8 @@ async function readReleaseContracts(
         const expectedPrice = createExpectedSandboxPrice(optionLabel);
 
         return {
-          ...createContract({
+          artistId: content.artist,
+          contract: createContract({
             alignmentStatus: 'checkout_eligible',
             description: normalizeDescription(content.summary, content.title),
             expectedSandboxPrice: expectedPrice,
@@ -180,18 +217,19 @@ async function readReleaseContracts(
             desiredPrice: expectedPrice,
             variantId: createDefaultVariantId(storeItemSlug),
           }),
-          artistId: content.artist,
+          itemType: optionLabel ?? '',
+          title: content.title,
         };
       }),
   );
 
-  return releases.sort((left, right) => left.storeItemSlug.localeCompare(right.storeItemSlug));
+  return releases.sort((left, right) => left.contract.storeItemSlug.localeCompare(right.contract.storeItemSlug));
 }
 
 async function readDistroContracts(
   distroDir: string,
   options: LoadStripeCatalogContractsOptions,
-): Promise<StripeCatalogStoreItemContract[]> {
+): Promise<StripeCatalogContractCandidate[]> {
   const inventorySource = await loadDistroInventorySource(options.projectRoot);
   const entries = await readdir(distroDir, { withFileTypes: true });
   const contents = await Promise.all(
@@ -216,45 +254,96 @@ async function readDistroContracts(
     const titleParts = ['BlackBox Records', content.title, optionLabel].filter(Boolean);
     const expectedPrice = createExpectedSandboxPriceForDistroInventoryRow(inventoryRow);
 
-    return createContract({
-      alignmentStatus: 'checkout_eligible',
-      description: normalizeDescription(content.summary, `${content.title} by ${content.artist_or_label}`),
-      expectedSandboxPrice: expectedPrice,
-      imageUrl: createContentAssetUrl('distro', content.image, options),
-      metadata: {
+    return {
+      contract: createContract({
+        alignmentStatus: 'checkout_eligible',
+        description: normalizeDescription(content.summary, `${content.title} by ${content.artist_or_label}`),
+        expectedSandboxPrice: expectedPrice,
+        imageUrl: createContentAssetUrl('distro', content.image, options),
+        metadata: {
+          sourceId,
+          sourceKind: 'distro',
+          storeItemSlug: sourceId,
+        },
+        name: titleParts.join(' - '),
         sourceId,
         sourceKind: 'distro',
         storeItemSlug: sourceId,
-      },
-      name: titleParts.join(' - '),
-      sourceId,
-      sourceKind: 'distro',
-      storeItemSlug: sourceId,
-      taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
-      desiredPrice: expectedPrice,
-      variantId: createDefaultVariantId(sourceId),
-    });
+        taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
+        desiredPrice: expectedPrice,
+        variantId: createDefaultVariantId(sourceId),
+      }),
+      physicalEditionKeys: [
+        createPhysicalEditionKey({
+          artist: inventoryRow.sourceArtist,
+          itemType: inventoryRow.itemType,
+          title: inventoryRow.sourceTitle,
+        }),
+        ...inventoryRow.sourceAliases.map((alias) => createPhysicalEditionKey(alias)),
+      ],
+    };
   });
 
-  return distro.sort((left, right) => left.storeItemSlug.localeCompare(right.storeItemSlug));
+  return distro.sort((left, right) => left.contract.storeItemSlug.localeCompare(right.contract.storeItemSlug));
 }
 
 function applyArtistName(
-  contract: StripeCatalogStoreItemContract & { artistId: string },
+  candidate: ReleaseCatalogContractCandidate,
   artistNames: Map<string, string>,
-): StripeCatalogStoreItemContract {
-  const { artistId, ...rest } = contract;
-  const artistName = artistNames.get(artistId) ?? artistId.replace(/-/g, ' ');
+): StripeCatalogContractCandidate {
+  const artistName = artistNames.get(candidate.artistId) ?? candidate.artistId.replace(/-/g, ' ');
+  const contract = candidate.contract;
 
   return {
-    ...rest,
-    productProjection: {
-      ...rest.productProjection,
-      description: normalizeDescription(
-        rest.productProjection.description,
-        `${rest.productProjection.name} by ${artistName}`,
-      ),
+    contract: {
+      ...contract,
+      productProjection: {
+        ...contract.productProjection,
+        description: normalizeDescription(
+          contract.productProjection.description,
+          `${contract.productProjection.name} by ${artistName}`,
+        ),
+      },
     },
+    physicalEditionKeys: [
+      createPhysicalEditionKey({ artist: artistName, itemType: candidate.itemType, title: candidate.title }),
+    ],
+  };
+}
+
+function applyCanonicalCatalogIdentity(
+  contract: StripeCatalogStoreItemContract,
+  projection: CanonicalStoreItemProjection,
+): StripeCatalogStoreItemContract {
+  const productProjection = {
+    ...contract.productProjection,
+    metadata: {
+      ...contract.productProjection.metadata,
+      sourceId: projection.sourceId,
+      sourceKind: projection.sourceKind,
+      storeItemSlug: projection.storeItemSlug,
+      variantId: projection.variantId,
+    },
+  };
+
+  return {
+    ...contract,
+    desiredCatalogEntry: {
+      ...contract.desiredCatalogEntry,
+      desiredPrice: contract.expectedSandboxPrice
+        ? createDesiredPrice(contract.expectedSandboxPrice, projection.storeItemSlug)
+        : null,
+      productProjection,
+      sourceId: projection.sourceId,
+      sourceKind: projection.sourceKind,
+      storeItemSlug: projection.storeItemSlug,
+      variantId: projection.variantId,
+    },
+    productProjection,
+    sourceId: projection.sourceId,
+    sourceKind: projection.sourceKind,
+    storeItemSlug: projection.storeItemSlug,
+    variantId: projection.variantId,
   };
 }
 

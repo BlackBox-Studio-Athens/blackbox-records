@@ -37,14 +37,16 @@ describe('local mock commerce seed generator', () => {
         expect.objectContaining({
           mockCheckoutEnabled: false,
           taxCategory: 'physical_goods',
-          sourceId: 'caregivers',
-          sourceKind: 'release',
+          sourceId: 'chronoboros-caregivers-vinyl',
+          sourceKind: 'distro',
           storeItemSlug: 'caregivers-vinyl',
           variantId: 'variant_caregivers-vinyl_standard',
         }),
       ]),
     );
-    expect(storeItems.length).toBeGreaterThan(20);
+    expect(storeItems).toHaveLength(81);
+    expect(storeItems.filter((item) => item.variantId === 'variant_caregivers-vinyl_standard')).toHaveLength(1);
+    expect(storeItems.some((item) => item.storeItemSlug === 'chronoboros-caregivers-vinyl')).toBe(false);
   });
 
   it('keeps release aliases and fallback release slugs deterministic', async () => {

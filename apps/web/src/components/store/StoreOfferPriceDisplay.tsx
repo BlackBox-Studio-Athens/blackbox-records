@@ -85,7 +85,7 @@ function enqueueStoreOfferPriceRead(
 export function createStoreOfferPriceDisplayView(
   offer: PublicStoreOffer | null | undefined,
 ): StoreOfferPriceDisplayView {
-  if (offer?.canCheckout && offer.price?.display) {
+  if (offer?.catalogStatus === 'ready') {
     return {
       isLoading: false,
       label: offer.price.display,

@@ -14,13 +14,6 @@ const checkoutSessionParamsSchema = z
   })
   .openapi('PublicCheckoutSessionParams');
 
-const offerAvailabilitySchema = z
-  .object({
-    label: z.string(),
-    status: z.enum(['available', 'sold_out']),
-  })
-  .openapi('PublicStoreOfferAvailability');
-
 const fixedOfferPriceSchema = z.object({
   amountMinor: z.number().int().nonnegative(),
   currencyCode: z.string().trim().length(3),
@@ -41,15 +34,32 @@ const offerPriceSchema = z
   .discriminatedUnion('kind', [fixedOfferPriceSchema, payWhatYouWantOfferPriceSchema])
   .openapi('PublicStoreOfferPrice');
 
+const storeOfferIdentitySchema = z.object({
+  storeItemSlug: z.string(),
+  variantId: z.string(),
+});
+
 const storeOfferSchema = z
-  .object({
-    availability: offerAvailabilitySchema,
-    canCheckout: z.boolean(),
-    catalogStatus: z.enum(['catalog_drift', 'ready', 'sold_out']),
-    price: z.union([offerPriceSchema, z.null()]),
-    storeItemSlug: z.string(),
-    variantId: z.string(),
-  })
+  .discriminatedUnion('catalogStatus', [
+    storeOfferIdentitySchema.extend({
+      availability: z.object({ label: z.string(), status: z.literal('available') }),
+      canCheckout: z.literal(true),
+      catalogStatus: z.literal('ready'),
+      price: offerPriceSchema,
+    }),
+    storeOfferIdentitySchema.extend({
+      availability: z.object({ label: z.string(), status: z.literal('sold_out') }),
+      canCheckout: z.literal(false),
+      catalogStatus: z.literal('sold_out'),
+      price: z.null(),
+    }),
+    storeOfferIdentitySchema.extend({
+      availability: z.object({ label: z.string(), status: z.literal('unavailable') }),
+      canCheckout: z.literal(false),
+      catalogStatus: z.literal('catalog_drift'),
+      price: z.null(),
+    }),
+  ])
   .openapi('PublicStoreOffer');
 
 const storeCapabilitiesSchema = z

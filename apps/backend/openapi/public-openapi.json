@@ -37,130 +37,235 @@
         ]
       },
       "PublicStoreOffer": {
-        "type": "object",
-        "properties": {
-          "availability": {
-            "$ref": "#/components/schemas/PublicStoreOfferAvailability"
-          },
-          "canCheckout": {
-            "type": "boolean"
-          },
-          "catalogStatus": {
-            "type": "string",
-            "enum": [
-              "catalog_drift",
-              "ready",
-              "sold_out"
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "storeItemSlug": {
+                "type": "string"
+              },
+              "variantId": {
+                "type": "string"
+              },
+              "availability": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "available"
+                    ]
+                  }
+                },
+                "required": [
+                  "label",
+                  "status"
+                ]
+              },
+              "canCheckout": {
+                "type": "boolean",
+                "enum": [
+                  true
+                ]
+              },
+              "catalogStatus": {
+                "type": "string",
+                "enum": [
+                  "ready"
+                ]
+              },
+              "price": {
+                "$ref": "#/components/schemas/PublicStoreOfferPrice"
+              }
+            },
+            "required": [
+              "storeItemSlug",
+              "variantId",
+              "availability",
+              "canCheckout",
+              "catalogStatus",
+              "price"
             ]
           },
-          "price": {
-            "anyOf": [
-              {
+          {
+            "type": "object",
+            "properties": {
+              "storeItemSlug": {
+                "type": "string"
+              },
+              "variantId": {
+                "type": "string"
+              },
+              "availability": {
                 "type": "object",
                 "properties": {
-                  "amountMinor": {
-                    "type": "integer",
-                    "minimum": 0
-                  },
-                  "currencyCode": {
-                    "type": "string",
-                    "minLength": 3,
-                    "maxLength": 3
-                  },
-                  "display": {
+                  "label": {
                     "type": "string"
                   },
-                  "kind": {
+                  "status": {
                     "type": "string",
                     "enum": [
-                      "fixed"
+                      "sold_out"
                     ]
                   }
                 },
                 "required": [
-                  "amountMinor",
-                  "currencyCode",
-                  "display",
-                  "kind"
+                  "label",
+                  "status"
                 ]
               },
-              {
-                "type": "object",
-                "properties": {
-                  "currencyCode": {
-                    "type": "string",
-                    "minLength": 3,
-                    "maxLength": 3
-                  },
-                  "display": {
-                    "type": "string"
-                  },
-                  "kind": {
-                    "type": "string",
-                    "enum": [
-                      "pay_what_you_want"
-                    ]
-                  },
-                  "maximumAmountMinor": {
-                    "type": "integer",
-                    "exclusiveMinimum": 0
-                  },
-                  "minimumAmountMinor": {
-                    "type": "integer",
-                    "exclusiveMinimum": 0
-                  },
-                  "presetAmountMinor": {
-                    "type": "integer",
-                    "exclusiveMinimum": 0
-                  }
-                },
-                "required": [
-                  "currencyCode",
-                  "display",
-                  "kind",
-                  "maximumAmountMinor",
-                  "minimumAmountMinor",
-                  "presetAmountMinor"
+              "canCheckout": {
+                "type": "boolean",
+                "enum": [
+                  false
                 ]
               },
-              {
+              "catalogStatus": {
+                "type": "string",
+                "enum": [
+                  "sold_out"
+                ]
+              },
+              "price": {
                 "type": "null"
               }
+            },
+            "required": [
+              "storeItemSlug",
+              "variantId",
+              "availability",
+              "canCheckout",
+              "catalogStatus",
+              "price"
             ]
           },
-          "storeItemSlug": {
-            "type": "string"
-          },
-          "variantId": {
-            "type": "string"
+          {
+            "type": "object",
+            "properties": {
+              "storeItemSlug": {
+                "type": "string"
+              },
+              "variantId": {
+                "type": "string"
+              },
+              "availability": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "unavailable"
+                    ]
+                  }
+                },
+                "required": [
+                  "label",
+                  "status"
+                ]
+              },
+              "canCheckout": {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              },
+              "catalogStatus": {
+                "type": "string",
+                "enum": [
+                  "catalog_drift"
+                ]
+              },
+              "price": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "storeItemSlug",
+              "variantId",
+              "availability",
+              "canCheckout",
+              "catalogStatus",
+              "price"
+            ]
           }
-        },
-        "required": [
-          "availability",
-          "canCheckout",
-          "catalogStatus",
-          "price",
-          "storeItemSlug",
-          "variantId"
         ]
       },
-      "PublicStoreOfferAvailability": {
-        "type": "object",
-        "properties": {
-          "label": {
-            "type": "string"
+      "PublicStoreOfferPrice": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "amountMinor": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "currencyCode": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3
+              },
+              "display": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "fixed"
+                ]
+              }
+            },
+            "required": [
+              "amountMinor",
+              "currencyCode",
+              "display",
+              "kind"
+            ]
           },
-          "status": {
-            "type": "string",
-            "enum": [
-              "available",
-              "sold_out"
+          {
+            "type": "object",
+            "properties": {
+              "currencyCode": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3
+              },
+              "display": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "pay_what_you_want"
+                ]
+              },
+              "maximumAmountMinor": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "minimumAmountMinor": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "presetAmountMinor": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              }
+            },
+            "required": [
+              "currencyCode",
+              "display",
+              "kind",
+              "maximumAmountMinor",
+              "minimumAmountMinor",
+              "presetAmountMinor"
             ]
           }
-        },
-        "required": [
-          "label",
-          "status"
         ]
       },
       "BackendErrorResponse": {

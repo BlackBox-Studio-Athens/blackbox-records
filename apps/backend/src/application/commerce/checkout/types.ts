@@ -10,21 +10,36 @@ import type {
 import type { OrderStatus } from '../../../domain/commerce/repositories/spi';
 import type { StoreOfferPrice } from '../catalog-sync';
 
-export type StoreOfferAvailability = {
-  status: 'available' | 'sold_out';
-  label: string;
-};
-
 export type StoreOfferCatalogStatus = 'catalog_drift' | 'ready' | 'sold_out';
 
-export type StoreOffer = {
+type StoreOfferIdentity = {
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
-  availability: StoreOfferAvailability;
-  canCheckout: boolean;
-  catalogStatus: StoreOfferCatalogStatus;
-  price: StoreOfferPrice | null;
 };
+
+export type StoreOffer = StoreOfferIdentity &
+  (
+    | {
+        availability: { label: string; status: 'available' };
+        canCheckout: true;
+        catalogStatus: 'ready';
+        price: StoreOfferPrice;
+      }
+    | {
+        availability: { label: string; status: 'sold_out' };
+        canCheckout: false;
+        catalogStatus: 'sold_out';
+        price: null;
+      }
+    | {
+        availability: { label: string; status: 'unavailable' };
+        canCheckout: false;
+        catalogStatus: 'catalog_drift';
+        price: null;
+      }
+  );
+
+export type StoreOfferAvailability = StoreOffer['availability'];
 
 export type HostedCheckoutSessionRequest = {
   cancelUrl: string;

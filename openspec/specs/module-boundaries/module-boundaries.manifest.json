@@ -126,6 +126,7 @@
       "roots": [
         "apps/web/src/lib/site-data.ts",
         "apps/web/src/lib/catalog-data.ts",
+        "apps/web/src/lib/store-item-ownership.ts",
         "apps/web/src/lib/distro-data.ts",
         "apps/web/src/lib/store-collection.ts",
         "apps/web/src/lib/store-page-data.ts",

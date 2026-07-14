@@ -41,11 +41,11 @@ export function createCartLineItemSnapshotFromWorkerOffer(
   cartSeed: StoreItemCartSeed | null,
   offer: PublicStoreOffer,
 ): CartLineItemSnapshot | null {
-  if (!cartSeed || !offer.canCheckout || !offer.variantId.trim() || !offer.price) {
+  if (!cartSeed || offer.catalogStatus !== 'ready' || !offer.variantId.trim()) {
     return null;
   }
   const price = offer.price;
-  const priceKind = price.kind ?? 'fixed';
+  const priceKind = price.kind;
 
   return {
     ...cartSeed,

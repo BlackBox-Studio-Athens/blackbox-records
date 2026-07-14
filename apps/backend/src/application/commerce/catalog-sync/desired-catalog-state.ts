@@ -610,42 +610,10 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
   {
     availability: 'published',
     desiredPrice: {
-      amountMinor: 2800,
-      currencyCode: 'EUR',
-      kind: 'fixed',
-      revision: 'caregivers-vinyl-2800-eur',
-    },
-    productProjection: {
-      description:
-        'released March 13, 2026 All music written and performed by Chronoboros All lyrics written by Nikos Zalimoglou Recorded live at Ignite Music Studio Jun 2025 Recorded, mixed, and mastered by George Christoforidis Artwork and layout by Healitwithsilver',
-      imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/chronoboros-album-cover-distro-mockup.webp',
-      ],
-      metadata: {
-        sourceId: 'caregivers',
-        sourceKind: 'release',
-        storeItemSlug: 'caregivers-vinyl',
-        variantId: 'variant_caregivers-vinyl_standard',
-      },
-      name: 'BlackBox Records - Caregivers - Vinyl',
-      taxCode: 'txcd_99999999',
-    },
-    sourceId: 'caregivers',
-    sourceKind: 'release',
-    stockInitialization: {
-      initialOnlineQuantity: null,
-    },
-    storeItemSlug: 'caregivers-vinyl',
-    targetEnvironments: ['uat'],
-    variantId: 'variant_caregivers-vinyl_standard',
-  },
-  {
-    availability: 'published',
-    desiredPrice: {
       amountMinor: 2000,
       currencyCode: 'EUR',
       kind: 'fixed',
-      revision: 'chronoboros-caregivers-vinyl-2000-eur',
+      revision: 'caregivers-vinyl-2000-eur',
     },
     productProjection: {
       description:
@@ -656,8 +624,8 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       metadata: {
         sourceId: 'chronoboros-caregivers-vinyl',
         sourceKind: 'distro',
-        storeItemSlug: 'chronoboros-caregivers-vinyl',
-        variantId: 'variant_chronoboros-caregivers-vinyl_standard',
+        storeItemSlug: 'caregivers-vinyl',
+        variantId: 'variant_caregivers-vinyl_standard',
       },
       name: 'BlackBox Records - Caregivers - Vinyl',
       taxCode: 'txcd_99999999',
@@ -667,9 +635,9 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     stockInitialization: {
       initialOnlineQuantity: null,
     },
-    storeItemSlug: 'chronoboros-caregivers-vinyl',
+    storeItemSlug: 'caregivers-vinyl',
     targetEnvironments: ['uat'],
-    variantId: 'variant_chronoboros-caregivers-vinyl_standard',
+    variantId: 'variant_caregivers-vinyl_standard',
   },
   {
     availability: 'published',
@@ -2608,7 +2576,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
 ];
 
 export const currentDesiredCatalogState: DesiredCatalogState = {
-  revision: 'desired-catalog-68ba3b80',
+  revision: 'desired-catalog-d44be0cc',
   entries: currentDesiredCatalogEntries,
 };
 

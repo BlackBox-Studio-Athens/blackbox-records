@@ -640,6 +640,34 @@ describe('checkout use cases', () => {
     ).rejects.toBeInstanceOf(CatalogDriftError);
   });
 
+  it('returns a coherent sold-out Store Offer when OnlineStock is exhausted', async () => {
+    await stock.save(storeItem.variantId, {
+      onlineQuantity: 0,
+      quantity: 3,
+    });
+
+    await expect(
+      readStoreOffer(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        storeItem.storeItemSlug,
+      ),
+    ).resolves.toEqual({
+      availability: {
+        label: 'Sold Out',
+        status: 'sold_out',
+      },
+      canCheckout: false,
+      catalogStatus: 'sold_out',
+      price: null,
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+    });
+  });
+
   it('pauses Store Offer checkout when Product Projection cannot be confirmed', async () => {
     catalogReconciler.issues.set(storeItem.variantId, [
       {
@@ -662,6 +690,10 @@ describe('checkout use cases', () => {
       ),
     ).resolves.toEqual(
       expect.objectContaining({
+        availability: {
+          label: 'Checkout Paused',
+          status: 'unavailable',
+        },
         canCheckout: false,
         catalogStatus: 'catalog_drift',
         price: null,

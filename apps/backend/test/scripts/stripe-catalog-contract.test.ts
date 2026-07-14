@@ -192,7 +192,7 @@ describe('stripe catalog contract projection', () => {
     });
     const contractsBySlug = new Map(contracts.map((contract) => [contract.storeItemSlug, contract]));
 
-    expect(contracts.length).toBeGreaterThan(20);
+    expect(contracts).toHaveLength(81);
     expect(new Set(contracts.map((contract) => contract.alignmentStatus))).toEqual(new Set(['checkout_eligible']));
     expect(contractsBySlug.get('anarchotribal-vinyl')).toMatchObject({
       alignmentStatus: 'checkout_eligible',
@@ -255,16 +255,27 @@ describe('stripe catalog contract projection', () => {
       variantId: 'variant_barren-point_standard',
     });
     expect(contractsBySlug.get('caregivers-vinyl')).toMatchObject({
+      desiredCatalogEntry: {
+        desiredPrice: {
+          amountMinor: 2000,
+          currencyCode: 'EUR',
+          revision: 'caregivers-vinyl-2000-eur',
+        },
+      },
+      expectedSandboxPrice: {
+        amountMinor: 2000,
+        currencyCode: 'EUR',
+      },
       productProjection: {
-        imageUrls: [
-          'https://blackbox-records-web.pages.dev/admin/media/releases/chronoboros-album-cover-distro-mockup.webp',
-        ],
+        imageUrls: ['https://blackbox-records-web.pages.dev/admin/media/distro/chronoboros-caregivers-vinyl.webp'],
         name: 'BlackBox Records - Caregivers - Vinyl',
       },
-      sourceId: 'caregivers',
-      sourceKind: 'release',
+      sourceId: 'chronoboros-caregivers-vinyl',
+      sourceKind: 'distro',
       variantId: 'variant_caregivers-vinyl_standard',
     });
+    expect(contractsBySlug.has('chronoboros-caregivers-vinyl')).toBe(false);
+    expect(contracts.filter((contract) => contract.variantId === 'variant_caregivers-vinyl_standard')).toHaveLength(1);
     expect(contractsBySlug.has('afterglow-tape')).toBe(false);
     expect(contractsBySlug.has('rehearsal-room-tee')).toBe(false);
     expect(contracts.every((contract) => contract.productProjection.taxCode === STRIPE_PHYSICAL_GOODS_TAX_CODE)).toBe(
@@ -415,6 +426,11 @@ describe('stripe catalog contract projection', () => {
     );
     expect(sql).toContain("'anarchotribal-vinyl', 'release', 'anarchotribal', 'variant_anarchotribal-vinyl_standard'");
     expect(sql).toContain("'barren-point', 'distro', 'barren-point', 'variant_barren-point_standard'");
+    expect(sql).toContain(
+      "'caregivers-vinyl', 'distro', 'chronoboros-caregivers-vinyl', 'variant_caregivers-vinyl_standard'",
+    );
+    expect(sql).not.toContain("'chronoboros-caregivers-vinyl', 'distro'");
+    expect(sql).not.toContain('variant_chronoboros-caregivers-vinyl_standard');
     expect(sql).toContain('DELETE FROM "StoreItemOption"\nWHERE "storeItemSlug" = \'mass-culture-lp\'');
     expect(sql).toContain(
       'DELETE FROM "VariantStripeMapping"\nWHERE "variantId" = \'variant_mass-culture-lp_standard\'',

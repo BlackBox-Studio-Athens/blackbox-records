@@ -17,6 +17,18 @@ vi.mock('astro:content', () => ({
             title: 'Disintegration',
           },
         },
+        {
+          id: 'caregivers',
+          data: {
+            artist: { id: 'chronoboros' },
+            cover_image: { src: '/caregivers.jpg' },
+            cover_image_alt: 'Caregivers by Chronoboros',
+            formats: ['Vinyl'],
+            release_date: new Date('2026-03-13T00:00:00.000Z'),
+            summary: 'Caregivers release.',
+            title: 'Caregivers',
+          },
+        },
       ];
     }
 
@@ -36,6 +48,20 @@ vi.mock('astro:content', () => ({
             title: 'Afterglow Tape',
           },
         },
+        {
+          id: 'chronoboros-caregivers-vinyl',
+          data: {
+            artist_or_label: 'Chronoboros',
+            eyebrow: 'Distro',
+            format: 'Vinyl',
+            group: 'Vinyl 12-inch',
+            image: { src: '/caregivers-distro.webp' },
+            image_alt: 'Caregivers vinyl',
+            order: 2,
+            summary: 'Caregivers vinyl edition.',
+            title: 'Caregivers',
+          },
+        },
       ];
     }
 
@@ -44,7 +70,7 @@ vi.mock('astro:content', () => ({
   getEntry: vi.fn(async (reference: { id: string }) => ({
     data: {
       slug: reference.id,
-      title: reference.id === 'afterwise' ? 'Afterwise' : 'Artist',
+      title: reference.id === 'afterwise' ? 'Afterwise' : reference.id === 'chronoboros' ? 'Chronoboros' : 'Artist',
     },
   })),
 }));
@@ -54,7 +80,7 @@ vi.mock('astro:config/client', () => ({
   site: 'https://blackbox-studio-athens.github.io',
 }));
 
-import { createPublicCheckoutApi } from '@/lib/backend/public-checkout-api';
+import { createPublicCheckoutApi, type PublicStoreOffer } from '@/lib/backend/public-checkout-api';
 import { listStoreCollectionEntries } from '@/lib/store-collection';
 import {
   addStoreCartItem,
@@ -275,19 +301,19 @@ function createCheckoutFetchStub() {
   });
 }
 
-function createWorkerStoreOffer() {
+function createWorkerStoreOffer(): Extract<PublicStoreOffer, { catalogStatus: 'ready' }> {
   return {
     availability: {
       label: 'Available',
-      status: 'available' as const,
+      status: 'available',
     },
     canCheckout: true,
-    catalogStatus: 'ready' as const,
+    catalogStatus: 'ready',
     price: {
       amountMinor: 2800,
       currencyCode: 'EUR',
       display: '€28.00',
-      kind: 'fixed' as const,
+      kind: 'fixed',
     },
     storeItemSlug: 'disintegration-black-vinyl-lp',
     variantId: 'variant_disintegration-black-vinyl-lp_standard',

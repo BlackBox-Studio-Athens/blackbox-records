@@ -530,33 +530,6 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
-      amountMinor: 2800,
-      currencyCode: 'EUR',
-      kind: 'fixed',
-    },
-    productProjection: {
-      description:
-        'released March 13, 2026 All music written and performed by Chronoboros All lyrics written by Nikos Zalimoglou Recorded live at Ignite Music Studio Jun 2025 Recorded, mixed, and mastered by George Christoforidis Artwork and layout by Healitwithsilver',
-      imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/chronoboros-album-cover-distro-mockup.webp',
-      ],
-      metadata: {
-        sourceId: 'caregivers',
-        sourceKind: 'release',
-        storeItemSlug: 'caregivers-vinyl',
-        variantId: 'variant_caregivers-vinyl_standard',
-      },
-      name: 'BlackBox Records - Caregivers - Vinyl',
-      taxCode: 'txcd_99999999',
-    },
-    sourceId: 'caregivers',
-    sourceKind: 'release',
-    storeItemSlug: 'caregivers-vinyl',
-    variantId: 'variant_caregivers-vinyl_standard',
-  },
-  {
-    alignmentStatus: 'checkout_eligible',
-    expectedSandboxPrice: {
       amountMinor: 2000,
       currencyCode: 'EUR',
       kind: 'fixed',
@@ -570,16 +543,16 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       metadata: {
         sourceId: 'chronoboros-caregivers-vinyl',
         sourceKind: 'distro',
-        storeItemSlug: 'chronoboros-caregivers-vinyl',
-        variantId: 'variant_chronoboros-caregivers-vinyl_standard',
+        storeItemSlug: 'caregivers-vinyl',
+        variantId: 'variant_caregivers-vinyl_standard',
       },
       name: 'BlackBox Records - Caregivers - Vinyl',
       taxCode: 'txcd_99999999',
     },
     sourceId: 'chronoboros-caregivers-vinyl',
     sourceKind: 'distro',
-    storeItemSlug: 'chronoboros-caregivers-vinyl',
-    variantId: 'variant_chronoboros-caregivers-vinyl_standard',
+    storeItemSlug: 'caregivers-vinyl',
+    variantId: 'variant_caregivers-vinyl_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',

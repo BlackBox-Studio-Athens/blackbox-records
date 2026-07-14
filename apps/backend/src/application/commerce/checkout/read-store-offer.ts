@@ -16,12 +16,11 @@ type CatalogMutationPolicy = {
   applyCatalogMutations?: boolean;
 };
 
-function unavailableOffer(
+function soldOutOffer(
   storeItemSlug: StoreItemSlug,
   variantId: VariantId,
   label: string,
-  catalogStatus: StoreOffer['catalogStatus'] = 'sold_out',
-): StoreOffer {
+): Extract<StoreOffer, { catalogStatus: 'sold_out' }> {
   return {
     storeItemSlug,
     variantId,
@@ -30,8 +29,43 @@ function unavailableOffer(
       label,
     },
     canCheckout: false,
-    catalogStatus,
+    catalogStatus: 'sold_out',
     price: null,
+  };
+}
+
+function catalogDriftOffer(
+  storeItemSlug: StoreItemSlug,
+  variantId: VariantId,
+): Extract<StoreOffer, { catalogStatus: 'catalog_drift' }> {
+  return {
+    storeItemSlug,
+    variantId,
+    availability: {
+      status: 'unavailable',
+      label: 'Checkout Paused',
+    },
+    canCheckout: false,
+    catalogStatus: 'catalog_drift',
+    price: null,
+  };
+}
+
+function readyOffer(
+  storeItemSlug: StoreItemSlug,
+  variantId: VariantId,
+  price: Extract<StoreOffer, { catalogStatus: 'ready' }>['price'],
+): Extract<StoreOffer, { catalogStatus: 'ready' }> {
+  return {
+    storeItemSlug,
+    variantId,
+    availability: {
+      status: 'available',
+      label: 'Available',
+    },
+    canCheckout: true,
+    catalogStatus: 'ready',
+    price,
   };
 }
 
@@ -54,23 +88,23 @@ export async function readStoreOffer(
   const availability = await itemAvailability.findByVariantId(storeItem.variantId);
 
   if (!availability) {
-    return unavailableOffer(storeItem.storeItemSlug, storeItem.variantId, 'Unavailable');
+    return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, 'Unavailable');
   }
 
   if (availability.status !== 'available' || !availability.canBuy) {
-    return unavailableOffer(storeItem.storeItemSlug, storeItem.variantId, 'Sold Out');
+    return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, 'Sold Out');
   }
 
   const currentStock = await stock.findByVariantId(storeItem.variantId);
 
   if (!currentStock || currentStock.onlineQuantity <= 0) {
-    return unavailableOffer(storeItem.storeItemSlug, storeItem.variantId, 'Sold Out');
+    return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, 'Sold Out');
   }
 
   const productProjection = productProjections.findByStoreItem(storeItem);
 
   if (!productProjection) {
-    return unavailableOffer(storeItem.storeItemSlug, storeItem.variantId, 'Checkout Paused', 'catalog_drift');
+    return catalogDriftOffer(storeItem.storeItemSlug, storeItem.variantId);
   }
 
   const catalogResult = await catalogReconciler.reconcileVariant(storeItem, {
@@ -82,20 +116,10 @@ export async function readStoreOffer(
   const price = resolvedPrice ? createStoreOfferPriceFromCatalogPrice(resolvedPrice) : null;
 
   if (!price || hasBlockingCatalogIssue(catalogResult.issues)) {
-    return unavailableOffer(storeItem.storeItemSlug, storeItem.variantId, 'Checkout Paused', 'catalog_drift');
+    return catalogDriftOffer(storeItem.storeItemSlug, storeItem.variantId);
   }
 
-  return {
-    storeItemSlug: storeItem.storeItemSlug,
-    variantId: storeItem.variantId,
-    availability: {
-      status: 'available',
-      label: 'Available',
-    },
-    canCheckout: true,
-    catalogStatus: 'ready',
-    price,
-  };
+  return readyOffer(storeItem.storeItemSlug, storeItem.variantId, price);
 }
 
 export async function listVariantOffersForStoreItem(

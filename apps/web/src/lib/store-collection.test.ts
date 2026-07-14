@@ -49,6 +49,20 @@ vi.mock('astro:content', () => ({
             title: 'Afterglow Tape',
           },
         },
+        {
+          id: 'chronoboros-caregivers-vinyl',
+          data: {
+            artist_or_label: 'Chronoboros',
+            eyebrow: 'Distro',
+            format: 'Vinyl',
+            group: 'Vinyl 12-inch',
+            image: { src: '/caregivers-distro.webp' },
+            image_alt: 'Caregivers vinyl',
+            order: 2,
+            summary: 'Caregivers vinyl edition.',
+            title: 'Caregivers',
+          },
+        },
       ];
     }
 
@@ -57,7 +71,7 @@ vi.mock('astro:content', () => ({
   getEntry: vi.fn(async (reference: { id: string }) => ({
     data: {
       slug: 'afterwise',
-      title: reference.id === 'afterwise' ? 'Afterwise' : 'Artist',
+      title: reference.id === 'afterwise' ? 'Afterwise' : reference.id === 'chronoboros' ? 'Chronoboros' : 'Artist',
     },
   })),
 }));
@@ -75,8 +89,8 @@ describe('store collection entries', () => {
 
     expect(collectionEntries.map((entry) => [entry.storeItem.slug, entry.storeItem.sourceKind])).toEqual([
       ['disintegration-black-vinyl-lp', 'release'],
-      ['caregivers-vinyl', 'release'],
       ['afterglow-tape', 'distro'],
+      ['caregivers-vinyl', 'distro'],
     ]);
 
     expect(collectionEntries[0]?.primaryAvailability).toMatchObject({
@@ -86,14 +100,14 @@ describe('store collection entries', () => {
     });
 
     expect(collectionEntries[1]?.primaryAvailability).toMatchObject({
-      storeItemSlug: 'caregivers-vinyl',
+      storeItemSlug: 'afterglow-tape',
       price: { display: 'Worker-confirmed at checkout' },
       availability: { status: 'available', label: 'Available' },
       canBuy: true,
     });
 
     expect(collectionEntries[2]?.primaryAvailability).toMatchObject({
-      storeItemSlug: 'afterglow-tape',
+      storeItemSlug: 'caregivers-vinyl',
       price: { display: 'Worker-confirmed at checkout' },
       availability: { status: 'available', label: 'Available' },
       canBuy: true,

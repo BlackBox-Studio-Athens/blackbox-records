@@ -41,8 +41,11 @@ const workerOfferPrice = {
   kind: 'fixed' as const,
 };
 
-function createReadyStoreOffer(overrides: Partial<PublicStoreOffer> = {}): PublicStoreOffer {
-  const offer: PublicStoreOffer = {
+type ReadyStoreOffer = Extract<PublicStoreOffer, { catalogStatus: 'ready' }>;
+type SoldOutStoreOffer = Extract<PublicStoreOffer, { catalogStatus: 'sold_out' }>;
+
+function createReadyStoreOffer(overrides: Partial<ReadyStoreOffer> = {}): ReadyStoreOffer {
+  const offer: ReadyStoreOffer = {
     availability: {
       label: 'Available',
       status: 'available',
@@ -60,8 +63,8 @@ function createReadyStoreOffer(overrides: Partial<PublicStoreOffer> = {}): Publi
   };
 }
 
-function createUnavailableStoreOffer(overrides: Partial<PublicStoreOffer> = {}): PublicStoreOffer {
-  const offer: PublicStoreOffer = {
+function createUnavailableStoreOffer(overrides: Partial<SoldOutStoreOffer> = {}): SoldOutStoreOffer {
+  const offer: SoldOutStoreOffer = {
     availability: {
       label: 'Sold Out',
       status: 'sold_out',

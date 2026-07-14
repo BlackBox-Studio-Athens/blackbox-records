@@ -36,6 +36,26 @@ vi.mock('astro:content', () => ({
       ];
     }
 
+    if (collectionName === 'distro') {
+      return [
+        {
+          collection: 'distro',
+          id: 'chronoboros-caregivers-vinyl',
+          data: {
+            artist_or_label: 'Chronoboros',
+            eyebrow: 'Distro',
+            format: 'Vinyl',
+            group: 'Vinyl 12-inch',
+            image: { src: '/caregivers-distro.webp', width: 100, height: 100, format: 'webp' },
+            image_alt: 'Caregivers vinyl',
+            order: 1,
+            summary: 'Caregivers vinyl edition.',
+            title: 'Caregivers',
+          },
+        },
+      ];
+    }
+
     return [];
   }),
   getEntry: vi.fn(async (reference: { id: string }) => ({

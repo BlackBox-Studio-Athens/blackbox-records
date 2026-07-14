@@ -342,32 +342,59 @@ export type components = {
             status: "registered";
         };
         PublicStoreOffer: {
-            availability: components["schemas"]["PublicStoreOfferAvailability"];
-            canCheckout: boolean;
+            availability: {
+                label: string;
+                /** @enum {string} */
+                status: "available";
+            };
+            /** @enum {boolean} */
+            canCheckout: true;
             /** @enum {string} */
-            catalogStatus: "catalog_drift" | "ready" | "sold_out";
-            price: {
-                amountMinor: number;
-                currencyCode: string;
-                display: string;
+            catalogStatus: "ready";
+            price: components["schemas"]["PublicStoreOfferPrice"];
+            storeItemSlug: string;
+            variantId: string;
+        } | {
+            availability: {
+                label: string;
                 /** @enum {string} */
-                kind: "fixed";
-            } | {
-                currencyCode: string;
-                display: string;
+                status: "sold_out";
+            };
+            /** @enum {boolean} */
+            canCheckout: false;
+            /** @enum {string} */
+            catalogStatus: "sold_out";
+            price: null;
+            storeItemSlug: string;
+            variantId: string;
+        } | {
+            availability: {
+                label: string;
                 /** @enum {string} */
-                kind: "pay_what_you_want";
-                maximumAmountMinor: number;
-                minimumAmountMinor: number;
-                presetAmountMinor: number;
-            } | null;
+                status: "unavailable";
+            };
+            /** @enum {boolean} */
+            canCheckout: false;
+            /** @enum {string} */
+            catalogStatus: "catalog_drift";
+            price: null;
             storeItemSlug: string;
             variantId: string;
         };
-        PublicStoreOfferAvailability: {
-            label: string;
+        PublicStoreOfferPrice: {
+            amountMinor: number;
+            currencyCode: string;
+            display: string;
             /** @enum {string} */
-            status: "available" | "sold_out";
+            kind: "fixed";
+        } | {
+            currencyCode: string;
+            display: string;
+            /** @enum {string} */
+            kind: "pay_what_you_want";
+            maximumAmountMinor: number;
+            minimumAmountMinor: number;
+            presetAmountMinor: number;
         };
         StartCheckoutBody: {
             lines?: components["schemas"]["StartCheckoutLine"][];

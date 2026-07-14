@@ -63,6 +63,20 @@ vi.mock('astro:content', () => ({
             title: 'Afterglow Tape',
           },
         },
+        {
+          id: 'chronoboros-caregivers-vinyl',
+          data: {
+            artist_or_label: 'Chronoboros',
+            eyebrow: 'Distro',
+            format: 'Vinyl',
+            group: 'Vinyl 12-inch',
+            image: { src: '/caregivers-distro.webp' },
+            image_alt: 'Caregivers vinyl',
+            order: 3,
+            summary: 'Caregivers vinyl edition.',
+            title: 'Caregivers',
+          },
+        },
       ];
     }
 
@@ -71,7 +85,7 @@ vi.mock('astro:content', () => ({
   getEntry: vi.fn(async (reference: { id: string }) => ({
     data: {
       slug: reference.id,
-      title: reference.id === 'afterwise' ? 'Afterwise' : 'Artist',
+      title: reference.id === 'afterwise' ? 'Afterwise' : reference.id === 'chronoboros' ? 'Chronoboros' : 'Artist',
     },
   })),
 }));
