@@ -22,9 +22,11 @@ describe('app shell startup closure', () => {
     expect(portalSource).toContain('storeCartBridgeFailed ?');
     expect(portalSource).toContain('Cart is unavailable.');
 
-    for (const moduleName of ['ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton']) {
+    for (const moduleName of ['ArtistsRosterFilters', 'DistroSearch', 'ServicesInquiryForm', 'StoreCartButton']) {
       expect(portalSource).toContain(`const ${moduleName} = React.lazy(`);
     }
+    expect(source).toContain("document.querySelector<HTMLElement>('[data-distro-search]')");
+    expect(source).toContain("targetPathname: '/distro/'");
     expect(portalSource).toContain('role="status"');
     expect(portalSource).toContain('role="alert"');
   });

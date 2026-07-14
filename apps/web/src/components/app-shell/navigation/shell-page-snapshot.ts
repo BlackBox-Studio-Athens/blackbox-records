@@ -29,6 +29,12 @@ export function readDocumentShellPageSnapshot(
   mainElementClone.querySelectorAll<HTMLElement>('[data-artists-roster-filters]').forEach((placeholderElement) => {
     placeholderElement.innerHTML = '';
   });
+  mainElementClone.querySelectorAll<HTMLElement>('[data-distro-search]').forEach((placeholderElement) => {
+    placeholderElement.innerHTML = '';
+  });
+  mainElementClone.querySelectorAll<HTMLElement>('[data-distro-search-hidden]').forEach((hiddenElement) => {
+    hiddenElement.removeAttribute('data-distro-search-hidden');
+  });
   mainElementClone.querySelectorAll<HTMLElement>('[data-services-inquiry-form]').forEach((placeholderElement) => {
     placeholderElement.innerHTML = '';
   });

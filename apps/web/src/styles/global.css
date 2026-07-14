@@ -1004,6 +1004,15 @@
     padding-top: 1.35rem;
   }
 
+  .distro-page-search {
+    min-block-size: 7rem;
+    margin-top: 1rem;
+  }
+
+  [data-distro-search-hidden] {
+    display: none !important;
+  }
+
   .distro-page-intro__eyebrow {
     color: var(--muted-foreground);
     font-size: 0.72rem;

@@ -87,4 +87,28 @@ describe('connectShellPortalTarget', () => {
 
     expect(scheduler.cancelAnimationFrame).toHaveBeenCalledWith(1);
   });
+
+  it('clears the Distro portal target after route exit', () => {
+    const target = { id: 'distro-search' } as HTMLElement;
+    const setTarget = vi.fn();
+    const scheduler = createScheduler();
+
+    connectShellPortalTarget({
+      activePathname: '/distro/',
+      queryTarget: () => target,
+      scheduler,
+      setTarget,
+      targetPathname: '/distro/',
+    });
+    connectShellPortalTarget({
+      activePathname: '/artists/',
+      queryTarget: vi.fn(),
+      scheduler,
+      setTarget,
+      targetPathname: '/distro/',
+    });
+
+    expect(setTarget).toHaveBeenNthCalledWith(1, target);
+    expect(setTarget).toHaveBeenLastCalledWith(null);
+  });
 });

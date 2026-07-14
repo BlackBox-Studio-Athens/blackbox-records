@@ -46,6 +46,13 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** those route files are owned by the closed `checkout-web` module
 - **AND** item-scoped checkout compatibility pages stay owned by `checkout-web` until removed.
 
+#### Scenario: Route-lazy Distro search crosses the app-shell boundary
+
+- **GIVEN** Distro search presentation is owned by `storefront-catalog`
+- **WHEN** the app shell lazily mounts that control on the Distro route
+- **THEN** `apps/web/src/components/distro/DistroSearch.tsx` is a provided `storefront-catalog` entrypoint
+- **AND** the app shell imports that entrypoint instead of a private storefront implementation.
+
 #### Scenario: StoreCart event contract is shared
 
 - **GIVEN** app-shell and checkout-web code coordinate browser-only StoreCart events

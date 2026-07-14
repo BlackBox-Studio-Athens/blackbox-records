@@ -34,11 +34,34 @@ class FakeElement {
   }
 
   querySelectorAll(selector: string) {
-    if (selector === '[data-artists-roster-filters]' && this.innerHTML.includes('data-artists-roster-filters')) {
-      return [new FakeElement({}, 'filters')];
+    const placeholderAttributes = ['data-artists-roster-filters', 'data-distro-search', 'data-services-inquiry-form'];
+    const placeholderAttribute = placeholderAttributes.find((attribute) => selector === `[${attribute}]`);
+    if (placeholderAttribute && this.innerHTML.includes(placeholderAttribute)) {
+      const clearPlaceholder = () => {
+        this.innerHTML = this.innerHTML.replace(
+          new RegExp(`(<[^>]*${placeholderAttribute}[^>]*>)[\\s\\S]*?(</[^>]+>)`),
+          '$1$2',
+        );
+      };
+      return [
+        {
+          set innerHTML(value: string) {
+            if (value === '') clearPlaceholder();
+          },
+        },
+      ];
     }
-    if (selector === '[data-services-inquiry-form]' && this.innerHTML.includes('data-services-inquiry-form')) {
-      return [new FakeElement({}, 'form')];
+    if (selector === '[data-distro-search-hidden]' && this.innerHTML.includes('data-distro-search-hidden')) {
+      const removeSearchHiddenAttribute = () => {
+        this.innerHTML = this.innerHTML.replace(/\s+data-distro-search-hidden(?:="")?/g, '');
+      };
+      return [
+        {
+          removeAttribute(name: string) {
+            if (name === 'data-distro-search-hidden') removeSearchHiddenAttribute();
+          },
+        },
+      ];
     }
     return [];
   }
@@ -47,7 +70,7 @@ class FakeElement {
 function createSnapshotDocument() {
   const main = new FakeElement(
     { class: 'catalog-page' },
-    '<section>Catalog</section><div data-artists-roster-filters>hydrated filters</div>',
+    '<section>Catalog</section><div data-artists-roster-filters>hydrated filters</div><div data-distro-search><input value="vinyl"></div><a hidden data-distro-search-hidden>Item</a>',
   );
   const canonical = new FakeElement();
   canonical.href = 'https://example.test/blackbox-records/releases/';
@@ -82,6 +105,10 @@ describe('shell page snapshots', () => {
       title: 'Releases | BlackBox',
     });
     expect(snapshot?.mainHtml).toContain('Catalog');
+    expect(snapshot?.mainHtml).not.toContain('hydrated filters');
+    expect(snapshot?.mainHtml).not.toContain('value="vinyl"');
+    expect(snapshot?.mainHtml).not.toContain('data-distro-search-hidden');
+    expect(snapshot?.mainHtml).toContain('<a hidden>Item</a>');
   });
 
   it('updates document metadata when a snapshot is applied', () => {

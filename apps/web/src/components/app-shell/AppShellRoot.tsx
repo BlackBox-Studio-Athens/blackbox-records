@@ -96,6 +96,7 @@ export default function AppShellRoot({
   const [shellSectionTransitionTarget, setShellSectionTransitionTarget] = useState('');
   const [shellNavigationSource, setShellNavigationSource] = useState<ShellNavigationSource>('programmatic');
   const [artistsRosterFiltersContainer, setArtistsRosterFiltersContainer] = useState<HTMLElement | null>(null);
+  const [distroSearchContainer, setDistroSearchContainer] = useState<HTMLElement | null>(null);
   const [servicesInquiryContainer, setServicesInquiryContainer] = useState<HTMLElement | null>(null);
   const [storeCartHeaderContainer, setStoreCartHeaderContainer] = useState<HTMLElement | null>(null);
   const [storeCartBridgeFailed, setStoreCartBridgeFailed] = useState(false);
@@ -271,6 +272,29 @@ export default function AppShellRoot({
       setTarget: setArtistsRosterFiltersContainer,
       targetPathname: '/artists/',
     });
+  }, [activeShellPathname]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let disconnect: (() => void) | undefined;
+    const connect = () => {
+      disconnect = connectShellPortalTarget({
+        activePathname: activeShellPathname,
+        queryTarget: () => document.querySelector<HTMLElement>('[data-distro-search]'),
+        scheduler: window,
+        setTarget: setDistroSearchContainer,
+        targetPathname: '/distro/',
+      });
+    };
+
+    if (document.readyState === 'complete') connect();
+    else window.addEventListener('load', connect, { once: true });
+
+    return () => {
+      window.removeEventListener('load', connect);
+      disconnect?.();
+    };
   }, [activeShellPathname]);
 
   useEffect(() => {
@@ -648,6 +672,7 @@ export default function AppShellRoot({
       <ShellPortalOutlets
         activeShellPathname={activeShellPathname}
         artistsRosterFiltersContainer={artistsRosterFiltersContainer}
+        distroSearchContainer={distroSearchContainer}
         onOpenStoreCart={() => {
           setIsStoreCartDrawerOpen(true);
         }}

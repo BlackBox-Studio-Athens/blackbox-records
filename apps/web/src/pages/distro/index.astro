@@ -24,14 +24,21 @@ const eagerDistroEntryIds = new Set(distroEntries.slice(0, 3).map((entry) => ent
       <h1 class="distro-page-intro__title">{distroPageContent.hero.title}</h1>
       <p class="distro-page-intro__copy">{distroPageContent.hero.intro}</p>
     </div>
+    <div class="distro-page-search" data-distro-search></div>
   </section>
 
-  <section class="layout-container distro-page-groups" aria-label="Distro">
+  <section
+    id="distro-search-results"
+    class="layout-container distro-page-groups"
+    aria-label="Distro"
+    data-distro-search-root
+  >
     {
       groupedDistroChunks.map((group) => (
         <section
           class="distro-group-section"
           aria-labelledby={`distro-group-${group.groupName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+          data-distro-search-group
         >
           <div class="distro-group-section__header">
             <h2
@@ -44,7 +51,7 @@ const eagerDistroEntryIds = new Set(distroEntries.slice(0, 3).map((entry) => ent
           </div>
           <div class="distro-group-chunks">
             {group.chunks.map((chunk) => (
-              <div class="distro-group-grid distro-group-chunk">
+              <div class="distro-group-grid distro-group-chunk" data-distro-search-chunk>
                 {chunk.map((item) => (
                   <DistroCard item={item} imageLoading={eagerDistroEntryIds.has(item.id) ? 'eager' : 'lazy'} />
                 ))}

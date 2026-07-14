@@ -18,10 +18,11 @@ The Distro route server-renders 79 records across five populated groups, but vis
 
 ### Modified Capabilities
 
-None.
+- `module-boundaries`: `storefront-catalog` owns the Distro search component and provides its route-lazy app-shell entrypoint.
 
 ## Impact
 
 - Existing Artists matcher/search seams and Distro-specific search UI.
 - Distro card/group markup and app-shell portal lifecycle.
+- Storefront catalog ownership and the Distro search provided entrypoint in the module-boundary manifest.
 - Focused matcher, DOM, shell, accessibility, and performance checks.

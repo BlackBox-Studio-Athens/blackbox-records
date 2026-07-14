@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import type { StoreCartState } from '@/lib/store-cart';
 
 const ArtistsRosterFilters = React.lazy(() => import('@/components/artists/ArtistsRosterFilters'));
+const DistroSearch = React.lazy(() => import('@/components/distro/DistroSearch'));
 const ServicesInquiryForm = React.lazy(() => import('@/components/services/ServicesInquiryForm'));
 const StoreCartButton = React.lazy(() => import('@/components/store/StoreCartButton'));
 
@@ -33,6 +34,7 @@ function loadingStatus(label: string) {
 type ShellPortalOutletsProps = {
   activeShellPathname: string;
   artistsRosterFiltersContainer: HTMLElement | null;
+  distroSearchContainer: HTMLElement | null;
   onOpenStoreCart: () => void;
   servicesInquiryContainer: HTMLElement | null;
   servicesInquiryEmail: string;
@@ -45,6 +47,7 @@ type ShellPortalOutletsProps = {
 export default function ShellPortalOutlets({
   activeShellPathname,
   artistsRosterFiltersContainer,
+  distroSearchContainer,
   onOpenStoreCart,
   servicesInquiryContainer,
   servicesInquiryEmail,
@@ -63,6 +66,17 @@ export default function ShellPortalOutlets({
               </React.Suspense>
             </PortalErrorBoundary>,
             artistsRosterFiltersContainer,
+          )
+        : null}
+
+      {distroSearchContainer
+        ? createPortal(
+            <PortalErrorBoundary fallback={<p role="alert">Distro search is unavailable.</p>}>
+              <React.Suspense fallback={loadingStatus('distro search')}>
+                <DistroSearch key={activeShellPathname} pageKey={activeShellPathname} />
+              </React.Suspense>
+            </PortalErrorBoundary>,
+            distroSearchContainer,
           )
         : null}
 

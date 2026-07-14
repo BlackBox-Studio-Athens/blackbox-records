@@ -133,6 +133,7 @@
         "apps/web/src/lib/item-availability.ts",
         "apps/web/src/lib/release-commerce.ts",
         "apps/web/src/lib/release-feature.ts",
+        "apps/web/src/lib/exact-first-search.ts",
         "apps/web/src/lib/slugs.ts",
         "apps/web/src/lib/store-tax-category.ts",
         "apps/web/src/pages/index.astro",
@@ -142,6 +143,7 @@
         "apps/web/src/pages/distro/**",
         "apps/web/src/pages/store/index.astro",
         "apps/web/src/pages/store/[slug]/index.astro",
+        "apps/web/src/components/distro/**",
         "apps/web/src/components/cards/**",
         "apps/web/src/components/detail/**"
       ],
@@ -151,6 +153,7 @@
         "apps/web/src/lib/site-data.ts",
         "apps/web/src/lib/store-page-data.ts",
         "apps/web/src/components/artists/ArtistsRosterFilters.tsx",
+        "apps/web/src/components/distro/DistroSearch.tsx",
         "apps/web/src/components/services/ServicesInquiryForm.tsx"
       ],
       "namedInterfaces": {},
