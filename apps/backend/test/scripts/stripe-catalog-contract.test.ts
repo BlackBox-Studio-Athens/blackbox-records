@@ -1,3 +1,6 @@
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import { currentCatalogProductProjectionEntries } from '../../src/application/commerce/catalog-sync';
@@ -18,6 +21,7 @@ import {
 import {
   findDistroInventoryRowForContent,
   loadDistroInventorySource,
+  reconcileDistroContentWithInventorySource,
 } from '../../../../scripts/distro-inventory-source';
 
 describe('stripe catalog contract projection', () => {
@@ -76,6 +80,110 @@ describe('stripe catalog contract projection', () => {
       minimumAmountMinor: 100,
       presetAmountMinor: 500,
     });
+  });
+
+  it('keeps all three small-vinyl records on exact physical types', async () => {
+    const contentRoot = path.join(path.resolve(process.cwd(), '..', '..'), 'apps', 'web', 'src', 'content', 'distro');
+    const records = await Promise.all(
+      ['magic-sleazeball-corrida', 'crawl-eat-them-dead-or-alive-split-7', 'calf-vinyl-10-inch'].map(
+        async (sourceId) =>
+          JSON.parse(await readFile(path.join(contentRoot, `${sourceId}.json`), 'utf8')) as {
+            format?: string;
+            group: string;
+          },
+      ),
+    );
+
+    expect(records.map(({ format, group }) => ({ format, group }))).toEqual([
+      { format: 'Vinyl 7-inch', group: 'Vinyl 7-inch' },
+      { format: 'Vinyl 7-inch', group: 'Vinyl 7-inch' },
+      { format: 'Vinyl 10-inch', group: 'Vinyl 10-inch' },
+    ]);
+  });
+
+  it('rejects non-bijective source matches before catalog projection', async () => {
+    const source = await loadDistroInventorySource();
+    const row = source.rows.find(
+      (candidate) => candidate.id === 'skinny-peachfuzz-magic-sleazball-corrida-vinyl-7-inch',
+    );
+    if (!row) throw new Error('Expected Magic Sleazeball Corrida inventory row.');
+
+    expect(() =>
+      reconcileDistroContentWithInventorySource(
+        {
+          ...source,
+          rows: [row, { ...row, id: 'duplicate-magic-sleazeball-corrida' }],
+        },
+        [
+          {
+            artist_or_label: 'Skinny Peachfuzz',
+            group: 'Vinyl 7-inch',
+            sourceId: 'magic-sleazeball-corrida',
+            title: 'Magic Sleazeball Corrida',
+          },
+        ],
+      ),
+    ).toThrow('does not resolve bijectively');
+  });
+
+  it('rejects inventory source rows without content counterparts', async () => {
+    const source = await loadDistroInventorySource();
+    const row = source.rows[0]!;
+
+    expect(() =>
+      reconcileDistroContentWithInventorySource(
+        {
+          ...source,
+          rows: [
+            row,
+            {
+              ...row,
+              id: 'unmatched-inventory-row',
+              sourceArtist: 'Unmatched Artist',
+              sourceTitle: 'Unmatched Item',
+            },
+          ],
+        },
+        [
+          {
+            artist_or_label: row.sourceArtist,
+            group: row.itemType === 'CD' ? 'CDs' : row.itemType === 'Tape' ? 'Tapes' : row.itemType,
+            sourceId: row.id,
+            title: row.sourceTitle,
+          },
+        ],
+      ),
+    ).toThrow('unmatched rows: unmatched-inventory-row');
+  });
+
+  it('rejects duplicate inventory source row IDs', async () => {
+    const source = await loadDistroInventorySource();
+    const row = source.rows[0]!;
+
+    expect(() =>
+      reconcileDistroContentWithInventorySource(
+        {
+          ...source,
+          rows: [row, { ...row, sourceTitle: 'Duplicate Source Row' }],
+        },
+        [],
+      ),
+    ).toThrow('duplicates: ' + row.id);
+  });
+
+  it('rejects physical-type drift before catalog projection', async () => {
+    const source = await loadDistroInventorySource();
+
+    expect(() =>
+      reconcileDistroContentWithInventorySource(source, [
+        {
+          artist_or_label: 'Skinny Peachfuzz',
+          group: 'Vinyl 12-inch',
+          sourceId: 'magic-sleazeball-corrida',
+          title: 'Magic Sleazeball Corrida',
+        },
+      ]),
+    ).toThrow('physical type mismatch');
   });
 
   it('derives Product Projection contracts for all current Store Items without Astro runtime imports', async () => {

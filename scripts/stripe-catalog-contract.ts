@@ -10,8 +10,8 @@ import type {
 import { parseProductEnvironmentCliTarget, type ProductEnvironment } from '../apps/backend/src/env';
 import { createSlugSuggestion } from '../apps/web/src/lib/slugs';
 import {
-  assertDistroContentCoveredByInventorySource,
   loadDistroInventorySource,
+  reconcileDistroContentWithInventorySource,
   type DistroInventorySourceRow,
 } from './distro-inventory-source';
 
@@ -194,40 +194,47 @@ async function readDistroContracts(
 ): Promise<StripeCatalogStoreItemContract[]> {
   const inventorySource = await loadDistroInventorySource(options.projectRoot);
   const entries = await readdir(distroDir, { withFileTypes: true });
-  const distro = await Promise.all(
+  const contents = await Promise.all(
     entries
       .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
       .map(async (entry) => {
         const sourceId = path.basename(entry.name, '.json');
         const content = JSON.parse(await readFile(path.join(distroDir, entry.name), 'utf8')) as DistroContent;
-        const inventoryRow = assertDistroContentCoveredByInventorySource(inventorySource, {
-          ...content,
-          sourceId,
-        });
-        const optionLabel = content.format ?? null;
-        const titleParts = ['BlackBox Records', content.title, optionLabel].filter(Boolean);
-        const expectedPrice = createExpectedSandboxPriceForDistroInventoryRow(inventoryRow);
-
-        return createContract({
-          alignmentStatus: 'checkout_eligible',
-          description: normalizeDescription(content.summary, `${content.title} by ${content.artist_or_label}`),
-          expectedSandboxPrice: expectedPrice,
-          imageUrl: createContentAssetUrl('distro', content.image, options),
-          metadata: {
-            sourceId,
-            sourceKind: 'distro',
-            storeItemSlug: sourceId,
-          },
-          name: titleParts.join(' - '),
-          sourceId,
-          sourceKind: 'distro',
-          storeItemSlug: sourceId,
-          taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
-          desiredPrice: expectedPrice,
-          variantId: createDefaultVariantId(sourceId),
-        });
+        return { content, sourceId };
       }),
   );
+  const inventoryRowsBySourceId =
+    contents.length === 0
+      ? new Map<string, DistroInventorySourceRow>()
+      : reconcileDistroContentWithInventorySource(
+          inventorySource,
+          contents.map(({ content, sourceId }) => ({ ...content, sourceId })),
+        );
+  const distro = contents.map(({ content, sourceId }) => {
+    const inventoryRow = inventoryRowsBySourceId.get(sourceId)!;
+    const optionLabel = content.format ?? null;
+    const titleParts = ['BlackBox Records', content.title, optionLabel].filter(Boolean);
+    const expectedPrice = createExpectedSandboxPriceForDistroInventoryRow(inventoryRow);
+
+    return createContract({
+      alignmentStatus: 'checkout_eligible',
+      description: normalizeDescription(content.summary, `${content.title} by ${content.artist_or_label}`),
+      expectedSandboxPrice: expectedPrice,
+      imageUrl: createContentAssetUrl('distro', content.image, options),
+      metadata: {
+        sourceId,
+        sourceKind: 'distro',
+        storeItemSlug: sourceId,
+      },
+      name: titleParts.join(' - '),
+      sourceId,
+      sourceKind: 'distro',
+      storeItemSlug: sourceId,
+      taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
+      desiredPrice: expectedPrice,
+      variantId: createDefaultVariantId(sourceId),
+    });
+  });
 
   return distro.sort((left, right) => left.storeItemSlug.localeCompare(right.storeItemSlug));
 }

@@ -142,12 +142,11 @@ function createStoreItemCollisionRecord(
 }
 
 describe('groupDistroEntries', () => {
-  it('returns distro groups in the intended editorial order and omits empty groups', () => {
+  it('combines small-vinyl groups, sorts items, and omits empty groups', () => {
     const entries: Array<{ data: { group: DistroGroupName; order: number; title: string } }> = [
       { data: { group: 'Tapes', order: 5, title: 'C' } },
-      { data: { group: 'Other', order: 6, title: 'F' } },
-      { data: { group: 'Clothes', order: 3, title: 'D' } },
       { data: { group: 'Vinyl 7-inch', order: 2, title: 'B' } },
+      { data: { group: 'Vinyl 7-inch', order: 2, title: 'A' } },
       { data: { group: 'CDs', order: 4, title: 'E' } },
       { data: { group: 'Vinyl 10-inch', order: 7, title: 'G' } },
       { data: { group: 'Vinyl 12-inch', order: 1, title: 'A' } },
@@ -155,18 +154,16 @@ describe('groupDistroEntries', () => {
 
     const groups = groupDistroEntries(entries);
 
-    expect(groups.map((group) => group.groupName)).toEqual([
-      'Vinyl 12-inch',
-      'Vinyl 10-inch',
-      'Vinyl 7-inch',
-      'CDs',
-      'Clothes',
-      'Tapes',
-      'Other',
-    ]);
+    expect(groups.map((group) => group.groupName)).toEqual(['Vinyl 12-inch', '7-inch & 10-inch Vinyl', 'CDs', 'Tapes']);
     expect(groups[0]?.entries).toHaveLength(1);
-    expect(groups[1]?.entries).toHaveLength(1);
+    expect(groups[1]?.entries).toHaveLength(3);
     expect(groups[2]?.entries).toHaveLength(1);
+    expect(groups[1]?.entries.map((entry) => entry.data.title)).toEqual(['A', 'B', 'G']);
+    expect(groups[1]?.entries.map((entry) => entry.data.group)).toEqual([
+      'Vinyl 7-inch',
+      'Vinyl 7-inch',
+      'Vinyl 10-inch',
+    ]);
   });
 });
 

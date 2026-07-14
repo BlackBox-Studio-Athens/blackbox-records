@@ -3,6 +3,8 @@ import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
 import { createProjectRelativeUrl } from '../config/site';
 import { assertNoSlugCollisions, createSlugSuggestion } from './slugs';
 import type { StoreItemTaxCategory } from './store-tax-category';
+import { sortDistroEntries } from './distro-data';
+
 export { groupDistroEntries } from './distro-data';
 
 export type ArtistProfileEntry = CollectionEntry<'artists'>;
@@ -52,14 +54,6 @@ function sortReleaseCatalogByDate(left: ReleaseCatalogEntry, right: ReleaseCatal
 
 function sortNewsArticlesByDate(left: NewsArticleEntry, right: NewsArticleEntry) {
   return right.data.date.getTime() - left.data.date.getTime();
-}
-
-function sortDistroEntries(left: DistroCatalogEntry, right: DistroCatalogEntry) {
-  if (left.data.order !== right.data.order) {
-    return left.data.order - right.data.order;
-  }
-
-  return left.data.title.localeCompare(right.data.title);
 }
 
 export async function listArtistProfiles() {

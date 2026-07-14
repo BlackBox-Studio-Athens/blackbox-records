@@ -40,7 +40,7 @@ const eagerDistroEntryIds = new Set(distroEntries.slice(0, 3).map((entry) => ent
             >
               {group.groupName}
             </h2>
-            <p class="distro-group-section__copy">{distroPageContent.group_intros[group.groupName]}</p>
+            <p class="distro-group-section__copy">{distroPageContent.group_intros[group.introGroupName]}</p>
           </div>
           <div class="distro-group-chunks">
             {group.chunks.map((chunk) => (

@@ -65,10 +65,14 @@ type RawDistroInventorySource = {
   rows: Array<Omit<DistroInventorySourceRow, 'pricePolicy'>>;
 };
 
-type DistroContentIdentity = {
+export type DistroContentIdentity = {
   artist_or_label: string;
   group: string;
   title: string;
+};
+
+export type DistroContentRecord = DistroContentIdentity & {
+  sourceId: string;
 };
 
 let cachedDistroInventorySource: Promise<DistroInventorySource> | null = null;
@@ -101,37 +105,86 @@ export function findDistroInventoryRowForContent(
   source: DistroInventorySource,
   content: DistroContentIdentity,
 ): DistroInventorySourceRow | null {
-  const contentType = normalizeDistroContentItemType(content.group);
-  const contentKey = createIdentityKey({
-    artist: content.artist_or_label,
-    itemType: contentType,
-    title: content.title,
-  });
-  const typedMatch = source.rows.find((row) => getRowIdentityKeys(row).includes(contentKey));
-
-  if (typedMatch) return typedMatch;
-
-  const looseKey = createLooseIdentityKey(content.artist_or_label, content.title);
-  const looseMatches = source.rows.filter((row) =>
-    getRowLooseIdentityKeys(row).some((candidateKey) => candidateKey === looseKey),
-  );
-
-  return looseMatches.length === 1 ? looseMatches[0]! : null;
+  const matches = findDistroInventoryMatches(source, content);
+  return matches.length === 1 ? matches[0]! : null;
 }
 
 export function assertDistroContentCoveredByInventorySource(
   source: DistroInventorySource,
-  content: DistroContentIdentity & { sourceId: string },
+  content: DistroContentRecord,
 ): DistroInventorySourceRow {
-  const row = findDistroInventoryRowForContent(source, content);
+  const matches = findDistroInventoryMatches(source, content);
 
-  if (!row) {
+  if (matches.length === 0) {
     throw new Error(
       `Distro Store Item ${content.sourceId} is absent from the Distro Inventory Source and approved Current-Site Extras.`,
     );
   }
 
+  if (matches.length > 1) {
+    throw new Error(
+      `Distro Store Item ${content.sourceId} does not resolve bijectively; matched inventory rows: ${matches
+        .map((row) => row.id)
+        .join(', ')}.`,
+    );
+  }
+
+  const row = matches[0]!;
+  const contentType = normalizeDistroContentItemType(content.group);
+  if (row.itemType !== contentType) {
+    throw new Error(
+      `Distro Store Item ${content.sourceId} physical type mismatch: content ${contentType}, inventory ${row.itemType}.`,
+    );
+  }
+
   return row;
+}
+
+export function reconcileDistroContentWithInventorySource(
+  source: DistroInventorySource,
+  contents: DistroContentRecord[],
+): Map<string, DistroInventorySourceRow> {
+  const rowsByContentId = new Map<string, DistroInventorySourceRow>();
+  const contentIdsByRowId = new Map<string, string>();
+  const seenSourceRowIds = new Set<string>();
+  const duplicateSourceRowIds = new Set<string>();
+
+  for (const row of source.rows) {
+    if (seenSourceRowIds.has(row.id)) duplicateSourceRowIds.add(row.id);
+    seenSourceRowIds.add(row.id);
+  }
+
+  if (duplicateSourceRowIds.size > 0) {
+    throw new Error(
+      `Distro Inventory Source rows must have unique IDs; duplicates: ${[...duplicateSourceRowIds].join(', ')}.`,
+    );
+  }
+
+  for (const content of contents) {
+    if (rowsByContentId.has(content.sourceId)) {
+      throw new Error(`Distro Store Item ${content.sourceId} appears more than once in Distro content.`);
+    }
+
+    const row = assertDistroContentCoveredByInventorySource(source, content);
+    const previousContentId = contentIdsByRowId.get(row.id);
+    if (previousContentId) {
+      throw new Error(
+        `Distro Inventory Source row ${row.id} matches multiple Distro Store Items: ${previousContentId}, ${content.sourceId}.`,
+      );
+    }
+
+    rowsByContentId.set(content.sourceId, row);
+    contentIdsByRowId.set(row.id, content.sourceId);
+  }
+
+  const orphanedRowIds = source.rows.filter((row) => !contentIdsByRowId.has(row.id)).map((row) => row.id);
+  if (orphanedRowIds.length > 0) {
+    throw new Error(
+      `Distro Inventory Source rows do not resolve bijectively; unmatched rows: ${orphanedRowIds.join(', ')}.`,
+    );
+  }
+
+  return rowsByContentId;
 }
 
 export function normalizeDistroInventoryIdentity(identity: DistroInventoryIdentity): DistroInventoryIdentity {
@@ -146,6 +199,24 @@ export function normalizeDistroContentItemType(group: string): DistroInventoryIt
   if (group === 'CDs') return 'CD';
   if (group === 'Tapes') return 'Tape';
   return group as DistroInventoryItemType;
+}
+
+function findDistroInventoryMatches(
+  source: DistroInventorySource,
+  content: DistroContentIdentity,
+): DistroInventorySourceRow[] {
+  const contentType = normalizeDistroContentItemType(content.group);
+  const contentKey = createIdentityKey({
+    artist: content.artist_or_label,
+    itemType: contentType,
+    title: content.title,
+  });
+  const typedMatches = source.rows.filter((row) => getRowIdentityKeys(row).includes(contentKey));
+
+  if (typedMatches.length > 0) return typedMatches;
+
+  const looseKey = createLooseIdentityKey(content.artist_or_label, content.title);
+  return source.rows.filter((row) => getRowLooseIdentityKeys(row).some((candidateKey) => candidateKey === looseKey));
 }
 
 function createPricePolicy(
