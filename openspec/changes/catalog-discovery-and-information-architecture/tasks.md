@@ -17,10 +17,10 @@
 - [x] 3.3 Research and specify the bounded Home hero exit fade; promoted to [`soften-homepage-hero-exit`](../soften-homepage-hero-exit/proposal.md).
 - [x] 3.4 Research Rough Trade's current category and showcase patterns; promoted the approved native Distro format navigation to [`add-distro-format-jump-navigation`](../add-distro-format-jump-navigation/proposal.md).
 - [x] 3.5 Chose no featured vinyl showcase for the current program; no implementation child was created because Distro has no authoritative featured selection and 1.3/3.4 provide search and format discovery.
-- [ ] 3.6 Compare a bounded mobile native-scroll category rail against the current six-item chunk/grid behavior for scanability, first-traversal cost, keyboard and reflow access, and page length; approve or reject rail promotion from measured evidence.
-- [ ] 3.7 If 3.6 approves rails, define accessible implementation behavior including one-primary-item mobile visibility and next-item preview; otherwise record the skip without creating a child change.
+- [x] 3.6 Compared the full-length mobile rail with the current chunk/grid using real catalog markup and measured traversal and runtime evidence; rejected the 54-item rail, then approved only a bounded first-six 3D Coverflow disclosure.
+- [x] 3.7 Defined the approved BlackBox Coverflow implementation in [`add-distro-coverflow-catalog-disclosure`](../add-distro-coverflow-catalog-disclosure/proposal.md), including exclusive browse modes, ordinary links, progressive fallback, accessibility, and fixed performance gates.
 
 ## 4. Follow-up implementation planning
 
 - [x] 4.1 Use one native child change per approved numbered item; keep this change as the research index.
-- [ ] 4.2 Run OpenSpec validation and keep implementation out of this research backlog until decisions are complete.
+- [x] 4.2 Ran strict OpenSpec validation for the completed research index and final promoted child; implementation remains in the separate native changes.

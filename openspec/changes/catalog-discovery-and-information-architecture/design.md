@@ -22,8 +22,8 @@ Rough Trade's current site uses broad browse categories and repeated mixed-forma
 
 - Keep this change as the research index; child changes own normative implementation behavior.
 - Reuse existing content, catalog, player, browser, and CSS seams before adding abstractions.
-- Prefer static/client-side discovery and native scrolling unless measured scale or performance proves them insufficient.
-- Make the bounded rail comparison in 3.6 a hard gate for 3.7 so an implementation child cannot exist before the candidate passes scanability, performance, keyboard, reflow, and page-length checks.
+- Prefer static/client-side discovery and native browser primitives; add custom interaction only when its scope and measured benefit are bounded.
+- The 3.6 gate rejected a 54-item horizontal rail because it increased two-axis traversal and runtime cost. A separate real-data prototype supported a first-six 3D Coverflow that discloses the existing full catalog, so 3.7 may own only that bounded enhancement.
 
 ### Promoted native changes
 
@@ -38,10 +38,12 @@ Rough Trade's current site uses broad browse categories and repeated mixed-forma
 - 3.3: [`soften-homepage-hero-exit`](../soften-homepage-hero-exit/proposal.md)
 - 3.4: [`add-distro-format-jump-navigation`](../add-distro-format-jump-navigation/proposal.md)
 - 3.5: skipped by product decision; no child change exists.
+- 3.6: rejected the full-length rail after measured comparison; no implementation child exists.
+- 3.7: [`add-distro-coverflow-catalog-disclosure`](../add-distro-coverflow-catalog-disclosure/proposal.md)
 
-Detailed evidence and decisions live in those child designs. Items 3.6 onward remain research-only until reviewed and approved.
+Detailed evidence and decisions live in those child designs. All numbered research items are decided; implementation remains in the separate native changes.
 
-Implement the promoted changes in numbered order. Item 1.1 establishes reconciled grouped Distro input consumed by 1.2 and 1.3; item 2.1 stabilizes provider roles before 2.2 hands its audit protocol to 2.3. Item 3.1 follows 1.3 in sequence but owns only Artists outlet availability, not the shared matcher or Distro search. Item 3.3 owns only the Home media/shade fade and must wait for `improve-site-runtime-performance-round-two` to archive or validly release its conflicting transition-free contract. Item 3.4 consumes 1.1's populated group model and 1.3's active-query state but owns only native format navigation. Item 3.6 now compares the bounded rail candidate before 3.7 may promote implementation; this evidence gate is the only serious reason to reorder the remaining items.
+Implement the promoted changes in numbered order. Item 1.1 establishes reconciled grouped Distro input consumed by 1.2 and 1.3; item 2.1 stabilizes provider roles before 2.2 hands its audit protocol to 2.3. Item 3.1 follows 1.3 in sequence but owns only Artists outlet availability, not the shared matcher or Distro search. Item 3.3 owns only the Home media/shade fade and must wait for `improve-site-runtime-performance-round-two` to archive or validly release its conflicting transition-free contract. Item 3.4 consumes 1.1's populated group model and 1.3's active-query state but owns only native format navigation. Item 3.7 follows implemented and archived 1.1, 1.3, and 3.4, and owns only the bounded Coverflow-to-catalog disclosure; it does not own grouping, matching, format navigation, card links, or catalog order.
 
 ## Risks / Trade-offs
 
