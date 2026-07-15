@@ -11,7 +11,7 @@ const releaseContextByArtistId = await mapArtistRosterReleaseContextById();
 <SiteLayout pageTitle="Artists" pageDescription="Artists roster.">
   <InternalPageHero sectionLabel="Roster" title="Artists" />
   <section class="layout-container artists-roster-section" data-artists-roster-root>
-    <div data-artists-roster-filters></div>
+    {artistProfiles.length > 5 && <div data-artists-roster-filters />}
     <div class="artists-roster-grid">
       {
         artistProfiles.map((artistProfile, index) => {
