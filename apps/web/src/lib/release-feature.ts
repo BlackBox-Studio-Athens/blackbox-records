@@ -53,6 +53,20 @@ export function splitReleaseCatalogByAvailability<T extends ReleaseDateEntry>(
   };
 }
 
+export function selectReleasePageEntries<T extends ReleaseDateEntry>(releaseEntries: T[], referenceDate = new Date()) {
+  const { outNowReleases, upcomingReleases } = splitReleaseCatalogByAvailability(releaseEntries, referenceDate);
+  const featuredReleaseEntry = outNowReleases[0] || releaseEntries[0] || null;
+  const upcomingReleaseEntry = upcomingReleases.find((releaseEntry) => releaseEntry !== featuredReleaseEntry) || null;
+
+  return {
+    featuredReleaseEntry,
+    upcomingReleaseEntry,
+    remainingReleaseEntries: releaseEntries.filter(
+      (releaseEntry) => releaseEntry !== featuredReleaseEntry && releaseEntry !== upcomingReleaseEntry,
+    ),
+  };
+}
+
 export function getLatestOutNowRelease<T extends ReleaseDateEntry>(releaseEntries: T[], referenceDate = new Date()) {
   return splitReleaseCatalogByAvailability(releaseEntries, referenceDate).outNowReleases[0] || null;
 }

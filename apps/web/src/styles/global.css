@@ -2075,7 +2075,8 @@ body {
 
   .releases-latest-feature__label,
   .releases-latest-feature__meta,
-  .releases-latest-feature__upcoming-meta {
+  .releases-latest-feature__upcoming-meta,
+  .releases-latest-feature__upcoming-formats {
     margin: 0;
     color: var(--muted-foreground);
     font-size: 0.72rem;
@@ -2152,8 +2153,32 @@ body {
   }
 
   .releases-latest-feature__upcoming {
+    display: grid;
+    grid-template-columns: minmax(6.5rem, 8.5rem) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
     border-top: 1px solid #2b2b2b;
     padding-top: 1rem;
+  }
+
+  .releases-latest-feature__upcoming-artwork-link {
+    display: block;
+    min-width: 0;
+    color: inherit;
+  }
+
+  .releases-latest-feature__upcoming-artwork {
+    display: block;
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border: 1px solid #2b2b2b;
+    background: #111111;
+  }
+
+  .releases-latest-feature__upcoming-copy {
+    min-width: 0;
   }
 
   .releases-latest-feature__upcoming-title {
@@ -2177,6 +2202,18 @@ body {
 
   .releases-latest-feature__upcoming-meta {
     margin-top: 0.45rem;
+    color: rgba(245, 245, 245, 0.66);
+  }
+
+  .releases-latest-feature__upcoming-summary {
+    margin: 0.75rem 0 0;
+    color: rgba(214, 214, 214, 0.82);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .releases-latest-feature__upcoming-formats {
+    margin-top: 0.65rem;
     color: rgba(245, 245, 245, 0.66);
   }
 
@@ -4075,6 +4112,7 @@ html[data-distro-coverflow-capable] [data-distro-coverflow-mode='catalog'] [data
 
   .releases-latest-feature__upcoming {
     grid-column: 2;
+    grid-template-columns: minmax(7.5rem, 10rem) minmax(0, 1fr);
   }
 
   .music-streaming-service-embedded-player-mini-player {

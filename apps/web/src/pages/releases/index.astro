@@ -12,16 +12,18 @@ import {
   resolveReleaseArtistDisplayName,
 } from '@/lib/catalog-data';
 import { getReleaseCommerceLink } from '@/lib/release-commerce';
-import { splitReleaseCatalogByAvailability } from '@/lib/release-feature';
+import { isReleaseOutNow, selectReleasePageEntries } from '@/lib/release-feature';
 import { formatDayMonthYear, formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/utils/music';
 
 const artistProfiles = await listArtistProfiles();
 const releaseCatalogEntries = await listReleaseCatalog();
 const artistProfileById = mapArtistProfilesById(artistProfiles);
-const { outNowReleases, upcomingReleases } = splitReleaseCatalogByAvailability(releaseCatalogEntries);
-const latestReleaseEntry = outNowReleases[0] || releaseCatalogEntries[0];
-const upcomingReleaseEntry = upcomingReleases.find((releaseEntry) => releaseEntry !== latestReleaseEntry);
+const {
+  featuredReleaseEntry: latestReleaseEntry,
+  upcomingReleaseEntry,
+  remainingReleaseEntries,
+} = selectReleasePageEntries(releaseCatalogEntries);
 const latestReleaseArtist = latestReleaseEntry ? artistProfileById.get(latestReleaseEntry.data.artist.id) : undefined;
 const latestReleaseArtistName = latestReleaseEntry
   ? resolveReleaseArtistDisplayName(latestReleaseEntry, latestReleaseArtist)
@@ -31,7 +33,10 @@ const latestReleasePlayerData = latestReleaseEntry
   : null;
 const latestReleaseCommerceLink = latestReleaseEntry ? await getReleaseCommerceLink(latestReleaseEntry) : null;
 const latestReleaseDetailPath = latestReleaseEntry ? createReleaseDetailPath(latestReleaseEntry) : '';
-const latestReleaseLabel = latestReleaseEntry === outNowReleases[0] ? 'Latest out now' : 'Next release';
+const latestReleaseLabel =
+  latestReleaseEntry?.data.release_date && isReleaseOutNow(latestReleaseEntry.data.release_date)
+    ? 'Latest out now'
+    : 'Next release';
 const latestReleaseDate = latestReleaseEntry ? formatMonthYear(latestReleaseEntry.data.release_date) : '';
 const latestReleaseDateMachineValue = latestReleaseEntry
   ? latestReleaseEntry.data.release_date.toISOString().slice(0, 10)
@@ -43,6 +48,7 @@ const upcomingReleaseArtist = upcomingReleaseEntry
 const upcomingReleaseArtistName = upcomingReleaseEntry
   ? resolveReleaseArtistDisplayName(upcomingReleaseEntry, upcomingReleaseArtist)
   : '';
+const upcomingReleaseDetailPath = upcomingReleaseEntry ? createReleaseDetailPath(upcomingReleaseEntry) : '';
 const upcomingReleaseDate = upcomingReleaseEntry ? formatDayMonthYear(upcomingReleaseEntry.data.release_date) : '';
 const upcomingReleaseDateMachineValue = upcomingReleaseEntry
   ? upcomingReleaseEntry.data.release_date.toISOString().slice(0, 10)
@@ -108,34 +114,56 @@ function formatReleaseFormats(formats: string[] | undefined) {
           </div>
           {upcomingReleaseEntry && (
             <aside class="releases-latest-feature__upcoming" aria-label="Upcoming release">
-              <p class="releases-latest-feature__label">Upcoming</p>
               <a
-                class="releases-latest-feature__upcoming-title"
-                href={createReleaseDetailPath(upcomingReleaseEntry)}
+                class="releases-latest-feature__upcoming-artwork-link"
+                href={upcomingReleaseDetailPath}
                 data-astro-prefetch
               >
-                {upcomingReleaseEntry.data.title}
+                <Image
+                  src={upcomingReleaseEntry.data.cover_image}
+                  alt={upcomingReleaseEntry.data.cover_image_alt || upcomingReleaseEntry.data.title}
+                  class="releases-latest-feature__upcoming-artwork"
+                  loading="lazy"
+                  widths={[240, 360, 480, 640]}
+                  sizes="(min-width: 640px) 10rem, 8.5rem"
+                />
               </a>
-              <p class="releases-latest-feature__upcoming-meta">
-                {upcomingReleaseArtistName} /{' '}
-                <time datetime={upcomingReleaseDateMachineValue}>{upcomingReleaseDate}</time>
-              </p>
+              <div class="releases-latest-feature__upcoming-copy">
+                <p class="releases-latest-feature__label">Upcoming</p>
+                <a class="releases-latest-feature__upcoming-title" href={upcomingReleaseDetailPath} data-astro-prefetch>
+                  {upcomingReleaseEntry.data.title}
+                </a>
+                <p class="releases-latest-feature__upcoming-meta">
+                  {upcomingReleaseArtistName} /{' '}
+                  <time datetime={upcomingReleaseDateMachineValue}>{upcomingReleaseDate}</time>
+                </p>
+                {upcomingReleaseEntry.data.summary && (
+                  <p class="releases-latest-feature__upcoming-summary">{upcomingReleaseEntry.data.summary}</p>
+                )}
+                {upcomingReleaseEntry.data.formats?.length && (
+                  <p class="releases-latest-feature__upcoming-formats">
+                    {formatReleaseFormats(upcomingReleaseEntry.data.formats)}
+                  </p>
+                )}
+              </div>
             </aside>
           )}
         </article>
       </section>
     )
   }
-  <section class="layout-container">
-    <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-      {
-        releaseCatalogEntries.map((releaseEntry, index) => {
-          const artistProfile = artistProfileById.get(releaseEntry.data.artist.id);
-          return (
-            <ReleaseCard release={releaseEntry} artist={artistProfile} imageLoading={index < 3 ? 'eager' : 'lazy'} />
-          );
-        })
-      }
-    </div>
-  </section>
+  {
+    remainingReleaseEntries.length > 0 && (
+      <section class="layout-container">
+        <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {remainingReleaseEntries.map((releaseEntry, index) => {
+            const artistProfile = artistProfileById.get(releaseEntry.data.artist.id);
+            return (
+              <ReleaseCard release={releaseEntry} artist={artistProfile} imageLoading={index < 3 ? 'eager' : 'lazy'} />
+            );
+          })}
+        </div>
+      </section>
+    )
+  }
 </SiteLayout>

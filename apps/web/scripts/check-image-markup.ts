@@ -111,7 +111,7 @@ const routeChecks: RouteCheck[] = [
       {
         className: 'release-card-artwork',
         firstEagerCount: 3,
-        minCount: 3,
+        minCount: 1,
         minSrcsetCandidates: 2,
         requireDecoding: true,
         requireSrcset: true,
