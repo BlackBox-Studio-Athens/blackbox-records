@@ -19,7 +19,7 @@ This change follows `organize-distro-format-discovery`, `add-static-distro-searc
 
 **Non-Goals:**
 
-- A full-length horizontal rail, featured-item model, autoplay, looping, swipe/drag physics, pagination, virtualization, or category route.
+- A full-length horizontal rail, featured-item model, autoplay or automatic looping, swipe/drag physics, pagination, virtualization, or category route.
 - Copying OriginKit code or styling, adding reflections, gloss, rounded cards, pagination dots, a carousel/motion dependency, or a reusable carousel framework.
 - Duplicating cards, changing catalog order, adding content fields, or changing commerce behavior.
 - Altering groups containing six or fewer records.
@@ -28,7 +28,7 @@ This change follows `organize-distro-format-discovery`, `add-static-distro-searc
 
 1. **Enhance large groups at every viewport.**
 
-   A group is eligible when its authoritative chunk list contains more than one chunk. Preview uses the first existing six-card chunk in canonical order. That order already comes from the editorial `order` field, so the six are deterministic label curation rather than random inventory; no new featured flag or content model is needed. After the grouping predecessor, this makes only the 53-item Vinyl 12-inch and 19-item CD groups eligible; all counts remain source-derived rather than encoded in client logic. Groups with six or fewer records remain the current catalog. The UI says `Selected 6 of {count}` and the active status says `01 / 06 · {record}`, never using the full catalog count as the active-position total.
+   A group is eligible when its authoritative chunk list contains more than one chunk. Preview uses the first existing six-card chunk in canonical order. That order already comes from the editorial `order` field, so the six are deterministic label curation rather than random inventory; no new featured flag or content model is needed. After the grouping predecessor, this makes only the 53-item Vinyl 12-inch and 19-item CD groups eligible; all counts remain source-derived rather than encoded in client logic. Groups with six or fewer records remain the current catalog. The UI says `Selected 6 of {count}` while the active status shows only `{record}` so its numeric position cannot be mistaken for a date.
 
 2. **Use one DOM and one exclusive state per group.**
 
@@ -43,9 +43,9 @@ This change follows `organize-distro-format-discovery`, `add-static-distro-searc
 
    The first six existing cards form a bounded perspective scene. An outer shell owns perspective and clipping; an inner stage owns `transform-style: preserve-3d` and avoids overflow, opacity, filters, or clipping that would flatten its children. Mobile uses an active cover near `clamp(14rem, 60vw, 17rem)` with compact side-cover spacing. Desktop uses a wider stage, restrained cover size, and larger lateral/depth offsets rather than stretching the mobile composition. Shared CSS variables feed the same six position rules at both widths. Existing square artwork, hard borders, Bebas/Geist typography, monochrome colors, and card links remain authoritative. Reflections, gloss, rounded corners, shadows, gradients, and carousel decoration remain absent.
 
-   Preview visually suppresses each card's copy while each link keeps one static, server-authored `{title} — {artist_or_label}` accessible name across all modes. One prominent, high-contrast `<p role="status">` between the controls and stage exposes position, title, and artist or label without leaving a large fixed-height gap. Preview mode applies `display: none` to every wrapper after the first, not opacity, offscreen positioning, or `aria-hidden`, so later records leave rendering, focus order, and the accessibility tree without empty wrapper gaps.
+   Preview visually suppresses each card's copy while each link keeps one static, server-authored `{title} — {artist_or_label}` accessible name across all modes. One prominent, high-contrast `<p role="status">` between the controls and stage exposes title and artist or label without leaving a large fixed-height gap. Preview mode applies `display: none` to every wrapper after the first, not opacity, offscreen positioning, or `aria-hidden`, so later records leave rendering, focus order, and the accessibility tree without empty wrapper gaps.
 
-   Previous/Next buttons are bounded rather than looping. At the ends they remain focusable with `aria-disabled="true"`, and activation is a no-op. Focusing any of the six links promotes it before its focus ring is presented. For pointer input, a side cover's first deliberate click selects it and only an already-active cover opens its Store link. A bounded pointer-intent guard suppresses link activation after more than 10px of movement so vertical scrolling cannot select a route accidentally. Keyboard activation retains ordinary link semantics. Pointer intent is not a drag model: it does not translate covers, capture the pointer, add velocity, or listen to scroll. No custom arrow-key model, autoplay, timer, animation frame loop, custom drag, or scroll listener is added.
+   Previous/Next buttons wrap manually across the same six records, so Previous moves from the first record to the sixth and Next moves from the sixth record to the first without disabling either control. Focusing any of the six links promotes it before its focus ring is presented. For pointer input, a side cover's first deliberate click selects it and only an already-active cover opens its Store link. A bounded pointer-intent guard suppresses link activation after more than 10px of movement so vertical scrolling cannot select a route accidentally. Keyboard activation retains ordinary link semantics. Pointer intent is not a drag model: it does not translate covers, capture the pointer, add velocity, or listen to scroll. No custom arrow-key model, autoplay, timer, animation frame loop, custom drag, or scroll listener is added.
 
 4. **Reveal one meaningful surface without page snapshots.**
 
@@ -89,7 +89,7 @@ This change follows `organize-distro-format-discovery`, `add-static-distro-searc
 
 1. Implement and archive the grouping, Distro search, and format-navigation predecessors.
 2. Add eligible-group hooks and controls while leaving the server-rendered catalog as the default.
-3. Extend the Distro controller with the exclusive group state, bounded controls, search transitions, snapshot sanitization, and route cleanup.
+3. Extend the Distro controller with the exclusive group state, cyclical controls, search transitions, snapshot sanitization, and route cleanup.
 4. Add BlackBox 3D styles and the component-local catalog reveal, then complete focused, browser, and performance checks.
 5. Roll back by removing the enhancement hooks/controller/styles; no content or data migration exists.
 

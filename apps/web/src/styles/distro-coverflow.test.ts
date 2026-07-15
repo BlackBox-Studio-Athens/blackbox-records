@@ -27,7 +27,8 @@ describe('Distro Coverflow progressive enhancement', () => {
     expect(pageSource).toContain('Selected {DISTRO_COVERFLOW_PREVIEW_SIZE} of {group.entries.length}');
     expect(pageSource).toContain('data-distro-coverflow-initial-label');
     expect(pageSource).toContain('class="distro-coverflow-reveal" aria-hidden="true"');
-    expect(pageSource).toMatch(/aria-disabled="true"\s+data-distro-coverflow-previous/);
+    expect(pageSource).not.toContain('01 / 06');
+    expect(pageSource).not.toMatch(/aria-disabled="true"\s+data-distro-coverflow-previous/);
     expect(cardSource).toContain('data-distro-coverflow-initial-position={coverflowPosition}');
     expect(pageSource.indexOf('data-distro-coverflow-toggle')).toBeLessThan(
       pageSource.indexOf('class="distro-coverflow-shell"'),

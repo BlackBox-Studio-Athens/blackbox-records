@@ -141,7 +141,7 @@ function createCoverflowHarness(finished: Promise<unknown> = Promise.resolve()) 
   nextButton.addClosestSelector('[data-distro-coverflow-next]');
   toggleButton.addClosestSelector('[data-distro-coverflow-toggle]');
   toggleButton.dataset.distroCoverflowViewAllLabel = 'View all 53';
-  status.dataset.distroCoverflowInitialLabel = '01 / 06 · Record 1 — Artist';
+  status.dataset.distroCoverflowInitialLabel = 'Record 1 — Artist';
 
   const cancelAnimation = vi.fn();
   reveal.setAnimations([{ cancel: cancelAnimation, finished }]);
@@ -246,14 +246,14 @@ describe('Distro Coverflow state', () => {
     ).toBeNull();
   });
 
-  it('bounds navigation and promotes focused cards without looping', () => {
+  it('wraps navigation and promotes focused cards', () => {
     expect(reduceDistroCoverflowState({ mode: 'preview', activeIndex: 0 }, { type: 'move', delta: -1 })).toEqual({
       mode: 'preview',
-      activeIndex: 0,
+      activeIndex: 5,
     });
     expect(reduceDistroCoverflowState({ mode: 'preview', activeIndex: 5 }, { type: 'move', delta: 1 })).toEqual({
       mode: 'preview',
-      activeIndex: 5,
+      activeIndex: 0,
     });
     expect(reduceDistroCoverflowState({ mode: 'preview', activeIndex: 1 }, { type: 'focus', activeIndex: 4 })).toEqual({
       mode: 'preview',
@@ -262,16 +262,22 @@ describe('Distro Coverflow state', () => {
   });
 
   it('mounts, navigates, focuses, and toggles the catalog through the real controller', async () => {
-    const { cards, controller, nextButton, section, status, toggleButton } = createCoverflowHarness();
+    const { cards, controller, nextButton, previousButton, section, status, toggleButton } = createCoverflowHarness();
 
     expect(section.dataset.distroCoverflowMode).toBe('preview');
-    expect(status.textContent).toBe('01 / 06 · Record 1 — Artist');
+    expect(status.textContent).toBe('Record 1 — Artist');
     expect(status.hidden).toBe(false);
+    expect(previousButton.getAttribute('aria-disabled')).toBeNull();
+    expect(nextButton.getAttribute('aria-disabled')).toBeNull();
 
+    section.dispatch('click', previousButton);
+    expect(cards[5]!.dataset.distroCoverflowPosition).toBe('active');
+    section.dispatch('click', nextButton);
+    expect(cards[0]!.dataset.distroCoverflowPosition).toBe('active');
     section.dispatch('click', nextButton);
     expect(cards[1]!.dataset.distroCoverflowPosition).toBe('active');
     section.dispatch('focusin', cards[3]!);
-    expect(status.textContent).toBe('04 / 06 · Record 4 — Artist');
+    expect(status.textContent).toBe('Record 4 — Artist');
 
     section.dispatch('click', toggleButton);
     await Promise.resolve();
@@ -299,7 +305,7 @@ describe('Distro Coverflow state', () => {
 
     section.dispatch('pointerdown', cards[1]!, { clientX: 20, clientY: 20 });
     section.dispatch('focusin', cards[1]!);
-    expect(status.textContent).toBe('01 / 06 · Record 1 — Artist');
+    expect(status.textContent).toBe('Record 1 — Artist');
 
     const selectionClick = section.dispatch('click', cards[1]!);
     expect(selectionClick.preventDefault).toHaveBeenCalledOnce();

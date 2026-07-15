@@ -11,7 +11,7 @@ The Distro route SHALL enhance a populated group into a responsive BlackBox 3D C
 - **AND** canonical order follows the existing authored catalog `order` rather than random selection or a second featured-item model
 - **AND** one cover is front-facing while neighboring covers use mirrored 3D depth, rotation, scale, and opacity
 - **AND** the group identifies the curation as `Selected 6 of {source-derived total}`
-- **AND** one prominent shared status identifies the active record as `{two-digit position} / 06`, title, and artist or label rather than using the full catalog count as the active-position total
+- **AND** one prominent shared status identifies the active record by title and artist or label without a numeric position prefix that could be mistaken for a date
 
 #### Scenario: Group is ineligible
 
@@ -31,8 +31,8 @@ The Distro route SHALL enhance a populated group into a responsive BlackBox 3D C
 
 - **WHEN** the visitor activates Previous or Next or focuses a preview card
 - **THEN** the selected record becomes the front-facing active cover without reordering the six records
-- **AND** the visible status exposes its position, title, and artist or label
-- **AND** Previous has `aria-disabled="true"` on the first record and Next has `aria-disabled="true"` on the sixth record while each remains focusable and activation is a no-op
+- **AND** the visible status exposes its title and artist or label
+- **AND** Previous wraps from the first record to the sixth and Next wraps from the sixth record to the first without reordering the records or disabling either control
 
 #### Scenario: Visitor activates a preview record
 

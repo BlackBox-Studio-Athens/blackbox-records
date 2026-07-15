@@ -5,7 +5,7 @@ After the required format reorganization, Distro still contains 53-item Vinyl 12
 ## What Changes
 
 - Add a responsive, artwork-only 3D Coverflow preview to populated Distro groups containing more than six records, using the first existing six-item chunk in the catalog's authored `order` rather than randomizing or adding a second curation model, and tune the stage separately for mobile and desktop widths.
-- Provide bounded Previous/Next controls, source-derived preview and catalog counts, concise accessible card names, one prominent shared active-record status, deliberate card-link activation, and one `View all {count}` action that reveals the existing vertical catalog with the selected record kept in context.
+- Provide cyclical Previous/Next controls, source-derived preview and catalog counts, concise accessible card names, one prominent shared active-record status, deliberate card-link activation, and one `View all {count}` action that reveals the existing vertical catalog with the selected record kept in context.
 - Treat preview, full catalog, and active search results as exclusive browse modes; active search always forces full results, and clearing search leaves the full catalog visible.
 - Keep the existing format navigation sticky below the site header across catalog groups, add one native `Top` return action, and offset group targets so headings remain visible below both navigation layers.
 - Server-render the initial Coverflow state to remove the catalog-to-Coverflow load flash, gate its presentation before paint on 3D transform support, and preserve the full catalog as the no-JavaScript and unsupported-browser baseline.

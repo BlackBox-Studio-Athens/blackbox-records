@@ -101,10 +101,7 @@ describe('shell page snapshots', () => {
       removeAttribute: (name: string) => removed.add(name),
     };
     const controls = { hidden: false };
-    const previousAttributes = new Map<string, string>();
-    const previousButton = {
-      setAttribute: (name: string, value: string) => previousAttributes.set(name, value),
-    };
+    const previousButton = { removeAttribute: (name: string) => removed.add(name) };
     const nextButton = { removeAttribute: (name: string) => removed.add(name) };
     const toggle = {
       dataset: { distroCoverflowViewAllLabel: 'View all 53' },
@@ -112,7 +109,7 @@ describe('shell page snapshots', () => {
       textContent: 'Show Coverflow',
     };
     const status = {
-      dataset: { distroCoverflowInitialLabel: '01 / 06 · Barren Point — Bonebrokk' },
+      dataset: { distroCoverflowInitialLabel: 'Barren Point — Bonebrokk' },
       hidden: true,
       textContent: '',
     };
@@ -121,8 +118,7 @@ describe('shell page snapshots', () => {
         if (selector === '[data-distro-coverflow-group]') return [group];
         if (selector === '[data-distro-coverflow-card]') return [card];
         if (selector === '[data-distro-coverflow-controls]') return [controls];
-        if (selector === '[data-distro-coverflow-previous]') return [previousButton];
-        if (selector.includes('[data-distro-coverflow-next]')) return [nextButton, toggle];
+        if (selector.includes('[data-distro-coverflow-next]')) return [previousButton, nextButton, toggle];
         if (selector === '[data-distro-coverflow-toggle]') return [toggle];
         if (selector === '[data-distro-coverflow-status]') return [status];
         return [];
@@ -143,9 +139,8 @@ describe('shell page snapshots', () => {
     expect(group.dataset.distroCoverflowMode).toBe('preview');
     expect(card.dataset.distroCoverflowPosition).toBe('active');
     expect(controls.hidden).toBe(false);
-    expect(previousAttributes.get('aria-disabled')).toBe('true');
     expect(toggle.textContent).toBe('View all 53');
-    expect(status.textContent).toBe('01 / 06 · Barren Point — Bonebrokk');
+    expect(status.textContent).toBe('Barren Point — Bonebrokk');
     expect(status.hidden).toBe(false);
   });
 

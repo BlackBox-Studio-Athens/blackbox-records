@@ -55,7 +55,7 @@ export function reduceDistroCoverflowState(
       : state;
   }
 
-  return { ...state, activeIndex: Math.max(0, Math.min(previewCount - 1, state.activeIndex + event.delta)) };
+  return { ...state, activeIndex: (state.activeIndex + event.delta + previewCount) % previewCount };
 }
 
 type DistroSearchProps = {
@@ -171,13 +171,13 @@ export function createDistroCoverflowController(dom: DistroSearchDom): DistroCov
     if (group.state.mode === 'preview') {
       group.controls.hidden = false;
       group.status.hidden = false;
-      setAriaDisabled(group.previousButton, group.state.activeIndex === 0);
-      setAriaDisabled(group.nextButton, group.state.activeIndex === group.cards.length - 1);
+      group.previousButton.removeAttribute('aria-disabled');
+      group.nextButton.removeAttribute('aria-disabled');
       group.toggleButton.textContent = group.toggleButton.dataset.distroCoverflowViewAllLabel || '';
       if (!group.element.hasAttribute('data-distro-coverflow-transitioning')) {
         setAriaDisabled(group.toggleButton, false);
       }
-      group.status.textContent = `${String(group.state.activeIndex + 1).padStart(2, '0')} / ${String(group.cards.length).padStart(2, '0')} · ${group.cards[group.state.activeIndex]!.getAttribute('aria-label') || ''}`;
+      group.status.textContent = group.cards[group.state.activeIndex]!.getAttribute('aria-label') || '';
       return;
     }
 
@@ -301,7 +301,7 @@ export function createDistroCoverflowController(dom: DistroSearchDom): DistroCov
       if (!target) return;
 
       if (target.closest('[data-distro-coverflow-previous]')) {
-        if (group.state.mode === 'preview' && group.state.activeIndex > 0) {
+        if (group.state.mode === 'preview') {
           setGroupState(
             group,
             reduceDistroCoverflowState(group.state, { type: 'move', delta: -1 }, group.cards.length),
@@ -310,7 +310,7 @@ export function createDistroCoverflowController(dom: DistroSearchDom): DistroCov
         return;
       }
       if (target.closest('[data-distro-coverflow-next]')) {
-        if (group.state.mode === 'preview' && group.state.activeIndex < group.cards.length - 1) {
+        if (group.state.mode === 'preview') {
           setGroupState(group, reduceDistroCoverflowState(group.state, { type: 'move', delta: 1 }, group.cards.length));
         }
         return;

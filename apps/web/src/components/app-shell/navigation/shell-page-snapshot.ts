@@ -30,11 +30,10 @@ export function sanitizeDistroCoverflowSnapshot(root: ParentNode) {
   root.querySelectorAll<HTMLElement>('[data-distro-coverflow-controls]').forEach((controlsElement) => {
     controlsElement.hidden = false;
   });
-  root.querySelectorAll<HTMLElement>('[data-distro-coverflow-previous]').forEach((buttonElement) => {
-    buttonElement.setAttribute('aria-disabled', 'true');
-  });
   root
-    .querySelectorAll<HTMLElement>('[data-distro-coverflow-next], [data-distro-coverflow-toggle]')
+    .querySelectorAll<HTMLElement>(
+      '[data-distro-coverflow-previous], [data-distro-coverflow-next], [data-distro-coverflow-toggle]',
+    )
     .forEach((buttonElement) => {
       buttonElement.removeAttribute('aria-disabled');
     });
