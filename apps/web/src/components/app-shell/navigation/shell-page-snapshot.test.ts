@@ -9,6 +9,7 @@ import {
   applyDocumentShellPageSnapshot,
   cacheDocumentShellPageSnapshot,
   readDocumentShellPageSnapshot,
+  sanitizeDistroCoverflowSnapshot,
   updateDocumentMetadata,
 } from './shell-page-snapshot';
 
@@ -89,6 +90,65 @@ function createSnapshotDocument() {
 }
 
 describe('shell page snapshots', () => {
+  it('restores the server-authored Coverflow state before caching a document snapshot', () => {
+    const removed = new Set<string>();
+    const group = {
+      dataset: { distroCoverflowMode: 'catalog' },
+      removeAttribute: (name: string) => removed.add(name),
+    };
+    const card = {
+      dataset: { distroCoverflowInitialPosition: 'active', distroCoverflowPosition: 'right-near' },
+      removeAttribute: (name: string) => removed.add(name),
+    };
+    const controls = { hidden: false };
+    const previousAttributes = new Map<string, string>();
+    const previousButton = {
+      setAttribute: (name: string, value: string) => previousAttributes.set(name, value),
+    };
+    const nextButton = { removeAttribute: (name: string) => removed.add(name) };
+    const toggle = {
+      dataset: { distroCoverflowViewAllLabel: 'View all 53' },
+      removeAttribute: (name: string) => removed.add(name),
+      textContent: 'Show Coverflow',
+    };
+    const status = {
+      dataset: { distroCoverflowInitialLabel: '01 / 06 · Barren Point — Bonebrokk' },
+      hidden: true,
+      textContent: '',
+    };
+    const root = {
+      querySelectorAll(selector: string) {
+        if (selector === '[data-distro-coverflow-group]') return [group];
+        if (selector === '[data-distro-coverflow-card]') return [card];
+        if (selector === '[data-distro-coverflow-controls]') return [controls];
+        if (selector === '[data-distro-coverflow-previous]') return [previousButton];
+        if (selector.includes('[data-distro-coverflow-next]')) return [nextButton, toggle];
+        if (selector === '[data-distro-coverflow-toggle]') return [toggle];
+        if (selector === '[data-distro-coverflow-status]') return [status];
+        return [];
+      },
+    } as unknown as ParentNode;
+
+    sanitizeDistroCoverflowSnapshot(root);
+
+    expect(removed).toEqual(
+      new Set([
+        'data-distro-coverflow-ready',
+        'data-distro-coverflow-reveal',
+        'data-distro-coverflow-transitioning',
+        'data-distro-coverflow-selected',
+        'aria-disabled',
+      ]),
+    );
+    expect(group.dataset.distroCoverflowMode).toBe('preview');
+    expect(card.dataset.distroCoverflowPosition).toBe('active');
+    expect(controls.hidden).toBe(false);
+    expect(previousAttributes.get('aria-disabled')).toBe('true');
+    expect(toggle.textContent).toBe('View all 53');
+    expect(status.textContent).toBe('01 / 06 · Barren Point — Bonebrokk');
+    expect(status.hidden).toBe(false);
+  });
+
   it('reads the swappable main payload and route metadata', () => {
     const snapshot = readDocumentShellPageSnapshot(
       createSnapshotDocument(),

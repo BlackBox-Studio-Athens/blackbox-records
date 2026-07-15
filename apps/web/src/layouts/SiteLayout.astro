@@ -99,6 +99,25 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
 
     <link rel="canonical" href={redirectUrl || metadataUrl} />
 
+    <script is:inline>
+      if (typeof CSS !== 'undefined' && CSS.supports('transform-style', 'preserve-3d')) {
+        document.documentElement.setAttribute('data-distro-coverflow-capable', '');
+
+        window.addEventListener(
+          'load',
+          () => {
+            window.setTimeout(() => {
+              const groups = [...document.querySelectorAll('[data-distro-coverflow-group]')];
+              if (groups.length > 0 && groups.some((group) => !group.hasAttribute('data-distro-coverflow-ready'))) {
+                document.documentElement.removeAttribute('data-distro-coverflow-capable');
+              }
+            }, 15000);
+          },
+          { once: true },
+        );
+      }
+    </script>
+
     <script
       is:inline
       type="application/ld+json"

@@ -235,6 +235,19 @@ export default function AppShellRoot({
   }, [isPlayerModalOpen, overlayState]);
 
   useEffect(() => {
+    if (activeShellPathname !== '/distro/' || typeof window === 'undefined') return;
+
+    const timeoutId = window.setTimeout(() => {
+      const groups = [...document.querySelectorAll('[data-distro-coverflow-group]')];
+      if (groups.length > 0 && groups.some((group) => !group.hasAttribute('data-distro-coverflow-ready'))) {
+        document.documentElement.removeAttribute('data-distro-coverflow-capable');
+      }
+    }, 15000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeShellPathname]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return;
 
     let disconnect: (() => void) | undefined;

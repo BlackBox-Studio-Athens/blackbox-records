@@ -54,6 +54,11 @@ export function routeShellAnchorClickNavigation({
   const resolvedUrl = resolveInternalUrl(anchorElement);
   if (!resolvedUrl || resolvedUrl.origin !== currentOrigin) return 'ignored';
 
+  const currentUrl = new URL(currentHref);
+  if (resolvedUrl.hash && resolvedUrl.pathname === currentUrl.pathname && resolvedUrl.search === currentUrl.search) {
+    return 'ignored';
+  }
+
   const isMobileNavigationLink = Boolean(anchorElement.closest('[data-app-shell-mobile-navigation]'));
   if (isMobileNavigationLink) {
     closeMobileNavigation();

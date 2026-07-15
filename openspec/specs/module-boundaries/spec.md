@@ -76,3 +76,14 @@ The system SHALL avoid temporary compatibility facades during boundary work unle
 - **GIVEN** an internal module path is closed
 - **WHEN** a caller must be migrated
 - **THEN** the caller moves to the documented root entrypoint or named interface in the same slice.
+
+### Requirement: Storefront catalog provides route-lazy Distro search
+
+The system MUST keep Distro search presentation inside the closed `storefront-catalog` module while exposing its app-shell integration through a provided entrypoint.
+
+#### Scenario: App shell mounts Distro search
+
+- **WHEN** the app shell imports the route-lazy Distro search control
+- **THEN** `apps/web/src/components/distro/**` is owned by `storefront-catalog`
+- **AND** `apps/web/src/components/distro/DistroSearch.tsx` is listed as a provided entrypoint
+- **AND** boundary validation passes without an ownership exception or compatibility facade.

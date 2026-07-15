@@ -7,12 +7,14 @@ import { cn } from '@/lib/utils';
 import { formatMonthYear } from '@/utils/content';
 
 interface Props {
+  coverflowPosition?: 'active' | 'back' | 'left-far' | 'left-near' | 'right-far' | 'right-near' | undefined;
+  coverflowPreview?: boolean;
   item: CollectionEntry<'distro'>;
   imageLoading?: 'eager' | 'lazy';
   variant?: 'home' | 'page';
 }
 
-const { item, imageLoading = 'lazy', variant = 'page' } = Astro.props;
+const { coverflowPosition, coverflowPreview = false, item, imageLoading = 'lazy', variant = 'page' } = Astro.props;
 const storeItem = createStoreItemFromDistroEntry(item);
 const isHomeVariant = variant === 'home';
 const distroCardImageWidths = [320, 480, 640, 800, 960];
@@ -29,7 +31,11 @@ const distroSearchText = [item.data.title, item.data.artist_or_label, item.data.
 <a
   class:list={['group block h-full distro-card', isHomeVariant ? 'distro-card--home' : 'distro-card--page']}
   href={storeItem.storePath}
+  aria-label={isHomeVariant ? undefined : `${item.data.title} — ${item.data.artist_or_label}`}
   data-astro-prefetch
+  data-distro-coverflow-card={coverflowPreview ? '' : undefined}
+  data-distro-coverflow-initial-position={coverflowPosition}
+  data-distro-coverflow-position={coverflowPosition}
   data-distro-search-item={isHomeVariant ? undefined : ''}
   data-distro-search-text={isHomeVariant ? undefined : distroSearchText}
 >

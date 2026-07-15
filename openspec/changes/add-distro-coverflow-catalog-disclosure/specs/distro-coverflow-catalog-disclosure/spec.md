@@ -2,21 +2,30 @@
 
 ### Requirement: Eligible Distro groups provide a bounded 3D Coverflow preview
 
-The Distro route SHALL enhance a populated group into a BlackBox 3D Coverflow only on mobile when the group contains more than six records and the required client platform support is available.
+The Distro route SHALL enhance a populated group into a responsive BlackBox 3D Coverflow when the group contains more than six records and the required client platform support is available.
 
-#### Scenario: Large group is eligible on mobile
+#### Scenario: Large group is eligible
 
-- **WHEN** a successfully mounted Distro client runs below `40rem`, native same-document View Transitions are available, no search query is active, and a populated group contains more than six records
+- **WHEN** a Distro document has JavaScript and `transform-style: preserve-3d` support, no search query is active, and a populated group contains more than six records
 - **THEN** the group enters `preview` mode with exactly the first six records in canonical order
+- **AND** canonical order follows the existing authored catalog `order` rather than random selection or a second featured-item model
 - **AND** one cover is front-facing while neighboring covers use mirrored 3D depth, rotation, scale, and opacity
-- **AND** the group identifies the preview as `Showing 6 of {source-derived total}` without featured-item language
-- **AND** one shared status identifies the active record as `{position} of 6 preview`, title, and artist or label rather than using the full catalog count as the active-position total
+- **AND** the group identifies the curation as `Selected 6 of {source-derived total}`
+- **AND** one prominent shared status identifies the active record as `{two-digit position} / 06`, title, and artist or label rather than using the full catalog count as the active-position total
 
-#### Scenario: Group or viewport is ineligible
+#### Scenario: Group is ineligible
 
-- **WHEN** a populated group contains six or fewer records or the viewport is at least `40rem`
+- **WHEN** a populated group contains six or fewer records
 - **THEN** the group remains in its existing catalog layout
 - **AND** no Coverflow control or alternative catalog order is exposed
+
+#### Scenario: Preview adapts to the viewport
+
+- **WHEN** an eligible group is in `preview` mode below `40rem`
+- **THEN** it uses a compact stage and side-cover spacing suited to the narrow viewport
+- **AND WHEN** the same group is viewed at `40rem` or wider
+- **THEN** it uses a wider stage with restrained cover size and larger lateral and depth spacing
+- **AND** both presentations use the same six card nodes, positions, controls, state, and canonical order
 
 #### Scenario: Visitor navigates the preview
 
@@ -27,9 +36,16 @@ The Distro route SHALL enhance a populated group into a BlackBox 3D Coverflow on
 
 #### Scenario: Visitor activates a preview record
 
-- **WHEN** the visitor activates any preview card link
+- **WHEN** the visitor uses the keyboard to activate a preview card or uses a pointer to activate the already-active front cover
 - **THEN** the existing Store link opens with ordinary link semantics
 - **AND** Coverflow does not substitute a modal, quick view, or alternate product route
+
+#### Scenario: Visitor selects a side cover or scrolls through the stage
+
+- **WHEN** the visitor uses a pointer on a side cover that was not active at pointer-down
+- **THEN** the record becomes active without opening its Store route on that first click
+- **AND WHEN** pointer movement exceeds 10px before click activation
+- **THEN** route activation is suppressed without moving the Coverflow, capturing the pointer, or implementing drag physics
 
 #### Scenario: Preview exposes artwork without losing record identity
 
@@ -46,21 +62,21 @@ Each eligible Distro group MUST occupy exactly one of `preview`, `catalog`, or `
 
 - **WHEN** the visitor activates `View all {total}` from `preview` mode
 - **THEN** that group enters `catalog` mode and exposes every record exactly once in its existing vertical order and six-item wrappers
-- **AND** the toggle keeps focus and becomes `Show Coverflow`
-- **AND** revealed wrappers are inserted below the toggle's stable document position
-- **AND** no programmatic scroll occurs
+- **AND** the previously active record receives focus, a visible selected outline, and an instant nearest-block scroll that makes it immediately recognizable below the sticky navigation
+- **AND** the toggle becomes `Show Coverflow`
+- **AND** a single hard-edged reveal exposes the catalog without a card-by-card stagger
 
 #### Scenario: Disclosure activation repeats while a transition is active
 
 - **WHEN** a catalog disclosure or collapse transition is already active
 - **THEN** its toggle remains focusable with `aria-disabled="true"` and repeated activation is ignored
-- **AND** temporary transition state is removed after completion, interruption, search, viewport promotion, or route cleanup
+- **AND** temporary transition state is removed after completion, interruption, search, or route cleanup
 
 #### Scenario: Visitor returns to the preview
 
 - **WHEN** the visitor activates `Show Coverflow` while no query is active
-- **THEN** the group returns to `preview` mode with the first record active
-- **AND** the toggle keeps focus and returns to `View all {total}`
+- **THEN** the group returns to `preview` mode with the catalog's selected record active, or the first record when no selection exists
+- **AND** the toggle returns to `View all {total}`
 
 #### Scenario: Distro search becomes active
 
@@ -75,18 +91,17 @@ Each eligible Distro group MUST occupy exactly one of `preview`, `catalog`, or `
 - **THEN** eligible groups leave `search-results` mode in `catalog` mode
 - **AND** the complete server-rendered group order is restored without automatically collapsing to Coverflow
 
-#### Scenario: Viewport widens
+#### Scenario: Viewport changes
 
-- **WHEN** an enhanced Distro viewport reaches at least `40rem`
-- **THEN** an eligible group enters `catalog` mode only when no search query is active
-- **AND** an active query keeps the group in `search-results` until search clears
-- **AND** narrowing the viewport again does not automatically collapse either state before route re-entry
+- **WHEN** an enhanced Distro viewport crosses the `40rem` presentation boundary
+- **THEN** responsive CSS adapts the scene without changing `preview`, `catalog`, or `search-results` state
+- **AND** no resize listener or viewport-specific client state is required
 
 #### Scenario: Distro route exits and re-enters
 
 - **WHEN** the app shell leaves Distro, caches its main content, and later restores or reloads the route
-- **THEN** pre-cache snapshot sanitization removes client-authored browse mode, card positions, control contents, and temporary transition names before controller cleanup
-- **AND** the restored server catalog may enhance again only after a fresh successful Distro mount
+- **THEN** pre-cache snapshot sanitization restores the server-authored first-record preview mode, initial card positions, control contents, and active label while removing selected and temporary transition state
+- **AND** the restored document paints directly in its capability-appropriate initial presentation
 
 ### Requirement: Coverflow disclosure is progressive and accessible
 
@@ -94,9 +109,15 @@ The Distro Coverflow enhancement MUST preserve full catalog access, ordinary car
 
 #### Scenario: JavaScript or platform support is unavailable
 
-- **WHEN** JavaScript is disabled, the Distro controller fails to mount, or native same-document View Transitions are unavailable
+- **WHEN** JavaScript is disabled, a direct-load or app-shell-entry Distro controller stalls or rejects mounting, or required 3D CSS support is unavailable
 - **THEN** the complete server-rendered catalog remains visible in canonical order
 - **AND** no nonfunctional Coverflow controls or pre-hydration hidden catalog state remain
+
+#### Scenario: Supported Distro route paints its initial state
+
+- **WHEN** JavaScript and required 3D CSS support are available
+- **THEN** a synchronous capability marker activates the server-authored preview mode before first paint
+- **AND** the visitor does not see a full-catalog frame before Coverflow
 
 #### Scenario: Visitor prefers reduced motion
 
@@ -109,9 +130,9 @@ The Distro Coverflow enhancement MUST preserve full catalog access, ordinary car
 - **WHEN** the visitor tabs through an eligible preview and activates its controls
 - **THEN** focus follows document order, every visible control has an accessible name and at least a 44px target, and no focus ring is clipped
 - **AND** focusing a preview card makes it active before ordinary link activation
-- **AND** disclosure and collapse leave focus on their toggle without the open mobile mini-player obscuring it
+- **AND** disclosure moves focus to the selected catalog record while collapse and all other controls retain visible focus without the open mobile mini-player obscuring it
 
-#### Scenario: Visitor enlarges the mobile presentation
+#### Scenario: Visitor enlarges the presentation
 
 - **WHEN** the visitor uses 200% text sizing or 400% browser zoom at the 320px CSS viewport equivalent
 - **THEN** Coverflow controls, active status, and the disclosure toggle reflow without two-dimensional page scrolling
@@ -126,7 +147,7 @@ The enhancement MUST reuse existing Distro cards and six-item wrappers, MUST NOT
 - **WHEN** an eligible group moves between `preview`, `catalog`, and `search-results`
 - **THEN** the same server-rendered card nodes and wrapper nodes change presentation in place
 - **AND** records are neither duplicated, recreated, reordered, paginated, nor virtualized
-- **AND** search remains the sole writer of card, wrapper, and group `hidden` state while Coverflow writes only its own group-mode, bounded card-position, control-state, status, and temporary transition attributes
+- **AND** search remains the sole writer of card, wrapper, and group `hidden` state while Coverflow writes only its own group-mode, bounded card-position, selected-card, control-state, status, and temporary transition attributes
 - **AND** no carousel, animation, gesture, or state-management dependency is added
 
 #### Scenario: Preview renders genuine bounded 3D depth
@@ -139,15 +160,15 @@ The enhancement MUST reuse existing Distro cards and six-item wrappers, MUST NOT
 #### Scenario: Motion is active
 
 - **WHEN** the visitor changes the active preview record or toggles catalog disclosure
-- **THEN** motion is event-driven, affects at most the six preview covers and one active shared image, and completes within 300ms of authored animation time
-- **AND** only the toggled group's active image receives a temporary unique transition name, root snapshot animation is disabled, and `try/finally` cleanup removes the name after completion or interruption
+- **THEN** motion is event-driven, affects at most the six preview covers and one group reveal surface; cover navigation completes within 300ms and disclosure completes within 480ms of authored animation time
+- **AND** disclosure uses component-local CSS rather than a document View Transition, and `try/finally` cleanup removes in-flight state after completion or interruption
 - **AND** the existing card-image hover or focus zoom does not run inside Coverflow
-- **AND** no autoplay, timer, animation-frame loop, pointer tracking, custom drag, scroll listener, or card-by-card catalog stagger runs
+- **AND** no autoplay, timer, animation-frame loop, custom drag, scroll listener, or card-by-card catalog stagger runs; pointer observation is limited to the down-to-click distance needed to reject accidental activation
 
 #### Scenario: Initial mount and disclosure performance are measured
 
-- **WHEN** the completed route runs fresh direct loads, app-shell entries, the fixed mobile-stress profile, and five normal-speed disclosure runs at 320px and 390px
+- **WHEN** the completed route runs fresh direct loads, app-shell entries, the fixed mobile-stress profile, and five normal-speed disclosure runs at 320px, 390px, and desktop width
 - **THEN** LCP remains no more than 2.5 seconds, CLS remains no more than 0.1, and Coverflow-control and disclosure INP remain no more than 200ms
 - **AND** the enhancement introduces no task of 50ms or longer
-- **AND** if automatic full-catalog-to-preview mount misses a gate, the change fails acceptance until simplified or separately respecified; it MUST NOT silently add pre-hydration hiding or a catalog-first branch
+- **AND** the supported server-authored preview produces no preceding full-catalog frame while unsupported clients retain the full catalog
 - **AND** one diagnostic-only 4x CPU trace records remaining layout or reflow risk without applying the normal-speed thresholds to that trace

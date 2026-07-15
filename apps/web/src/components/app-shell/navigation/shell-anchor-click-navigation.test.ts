@@ -43,6 +43,19 @@ describe('shell anchor click navigation', () => {
     expect(options.preventDefault).not.toHaveBeenCalled();
   });
 
+  it('allows same-document fragment anchors to use native navigation', () => {
+    const options = createOptions({
+      currentHref: 'https://example.test/blackbox-records/distro/',
+      isNavigableShellSectionAnchor: vi.fn(() => true),
+      resolveInternalUrl: vi.fn(() => new URL('https://example.test/blackbox-records/distro/#distro-group-cds')),
+    });
+
+    expect(routeShellAnchorClickNavigation(options)).toBe('ignored');
+
+    expect(options.preventDefault).not.toHaveBeenCalled();
+    expect(options.openShellSectionHref).not.toHaveBeenCalled();
+  });
+
   it('closes mobile navigation after internal URL validation', () => {
     const options = createOptions({
       anchorElement: createAnchor({ isMobile: true }),

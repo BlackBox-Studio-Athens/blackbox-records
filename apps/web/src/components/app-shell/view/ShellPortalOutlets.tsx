@@ -9,13 +9,17 @@ const ServicesInquiryForm = React.lazy(() => import('@/components/services/Servi
 const StoreCartButton = React.lazy(() => import('@/components/store/StoreCartButton'));
 
 class PortalErrorBoundary extends React.Component<
-  React.PropsWithChildren<{ fallback: React.ReactNode }>,
+  React.PropsWithChildren<{ fallback: React.ReactNode; onError?: () => void }>,
   { failed: boolean }
 > {
   override state = { failed: false };
 
   static getDerivedStateFromError() {
     return { failed: true };
+  }
+
+  override componentDidCatch() {
+    this.props.onError?.();
   }
 
   override render() {
@@ -71,7 +75,10 @@ export default function ShellPortalOutlets({
 
       {distroSearchContainer
         ? createPortal(
-            <PortalErrorBoundary fallback={<p role="alert">Distro search is unavailable.</p>}>
+            <PortalErrorBoundary
+              fallback={<p role="alert">Distro search is unavailable.</p>}
+              onError={() => document.documentElement.removeAttribute('data-distro-coverflow-capable')}
+            >
               <React.Suspense fallback={loadingStatus('distro search')}>
                 <DistroSearch key={activeShellPathname} pageKey={activeShellPathname} />
               </React.Suspense>

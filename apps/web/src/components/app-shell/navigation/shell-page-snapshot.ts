@@ -14,6 +14,39 @@ type ShellPageSnapshotCache = {
   cacheSnapshot: (pageSnapshot: ShellPageSnapshot) => void;
 };
 
+export function sanitizeDistroCoverflowSnapshot(root: ParentNode) {
+  root.querySelectorAll<HTMLElement>('[data-distro-coverflow-group]').forEach((groupElement) => {
+    groupElement.dataset.distroCoverflowMode = 'preview';
+    groupElement.removeAttribute('data-distro-coverflow-ready');
+    groupElement.removeAttribute('data-distro-coverflow-reveal');
+    groupElement.removeAttribute('data-distro-coverflow-transitioning');
+  });
+  root.querySelectorAll<HTMLElement>('[data-distro-coverflow-card]').forEach((cardElement) => {
+    const initialPosition = cardElement.dataset.distroCoverflowInitialPosition;
+    if (initialPosition) cardElement.dataset.distroCoverflowPosition = initialPosition;
+    else cardElement.removeAttribute('data-distro-coverflow-position');
+    cardElement.removeAttribute('data-distro-coverflow-selected');
+  });
+  root.querySelectorAll<HTMLElement>('[data-distro-coverflow-controls]').forEach((controlsElement) => {
+    controlsElement.hidden = false;
+  });
+  root.querySelectorAll<HTMLElement>('[data-distro-coverflow-previous]').forEach((buttonElement) => {
+    buttonElement.setAttribute('aria-disabled', 'true');
+  });
+  root
+    .querySelectorAll<HTMLElement>('[data-distro-coverflow-next], [data-distro-coverflow-toggle]')
+    .forEach((buttonElement) => {
+      buttonElement.removeAttribute('aria-disabled');
+    });
+  root.querySelectorAll<HTMLElement>('[data-distro-coverflow-toggle]').forEach((buttonElement) => {
+    buttonElement.textContent = buttonElement.dataset.distroCoverflowViewAllLabel || '';
+  });
+  root.querySelectorAll<HTMLElement>('[data-distro-coverflow-status]').forEach((statusElement) => {
+    statusElement.textContent = statusElement.dataset.distroCoverflowInitialLabel || '';
+    statusElement.hidden = false;
+  });
+}
+
 export function readDocumentShellPageSnapshot(
   targetDocument: Document,
   href: string,
@@ -35,6 +68,7 @@ export function readDocumentShellPageSnapshot(
   mainElementClone.querySelectorAll<HTMLElement>('[data-distro-search-hidden]').forEach((hiddenElement) => {
     hiddenElement.removeAttribute('data-distro-search-hidden');
   });
+  sanitizeDistroCoverflowSnapshot(mainElementClone);
   mainElementClone.querySelectorAll<HTMLElement>('[data-services-inquiry-form]').forEach((placeholderElement) => {
     placeholderElement.innerHTML = '';
   });
