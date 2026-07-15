@@ -32,6 +32,7 @@ function createActiveSession({
     hasEmbedInteraction: false,
     iframeElement,
     providerId: 'bandcamp',
+    releaseId: 'test-release',
     releaseTitle: 'Test Release',
     status,
   };

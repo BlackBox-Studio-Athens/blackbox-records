@@ -10,6 +10,7 @@ function createActiveSession(iframeElement = {} as HTMLIFrameElement): ActivePla
     hasEmbedInteraction: false,
     iframeElement,
     providerId: 'bandcamp',
+    releaseId: 'test-release',
     releaseTitle: 'Test Release',
     status: 'modal-open',
   };

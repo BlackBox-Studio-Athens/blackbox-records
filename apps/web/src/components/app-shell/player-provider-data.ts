@@ -1,11 +1,11 @@
-export type PlayerProviderId = 'bandcamp' | 'tidal';
-export type PlayerEmbedLayout = 'bandcamp-album' | 'bandcamp-track' | 'tidal';
+import {
+  buildBandcampPlayerProvider,
+  buildTidalPlayerProviderFromEmbedUrl,
+  type PlayerProvider,
+  type PlayerProviderId,
+} from '@/utils/music';
 
-export type PlayerProvider = {
-  embedLayout: PlayerEmbedLayout;
-  id: PlayerProviderId;
-  embedUrl: string;
-};
+export type { PlayerEmbedLayout, PlayerProvider, PlayerProviderId } from '@/utils/music';
 
 export type PlayerProviderEmbedUrls = {
   bandcampEmbedUrl?: string | undefined;
@@ -15,26 +15,9 @@ export type PlayerProviderEmbedUrls = {
 const EMBED_PROVIDER_PRIORITY: PlayerProviderId[] = ['bandcamp', 'tidal'];
 
 export function buildPlayerProviders({ bandcampEmbedUrl, tidalEmbedUrl }: PlayerProviderEmbedUrls): PlayerProvider[] {
-  const providers: PlayerProvider[] = [];
-
-  if (bandcampEmbedUrl) {
-    providers.push({
-      embedLayout: resolvePlayerEmbedLayout('bandcamp', bandcampEmbedUrl),
-      id: 'bandcamp',
-      embedUrl: bandcampEmbedUrl,
-    });
-  }
-
-  if (tidalEmbedUrl) {
-    providers.push({ embedLayout: 'tidal', id: 'tidal', embedUrl: tidalEmbedUrl });
-  }
-
-  return providers;
-}
-
-export function resolvePlayerEmbedLayout(providerId: PlayerProviderId, embedUrl: string): PlayerEmbedLayout {
-  if (providerId === 'tidal') return 'tidal';
-  return embedUrl.includes('/track=') ? 'bandcamp-track' : 'bandcamp-album';
+  return [buildBandcampPlayerProvider(bandcampEmbedUrl), buildTidalPlayerProviderFromEmbedUrl(tidalEmbedUrl)].filter(
+    (provider): provider is PlayerProvider => provider !== null,
+  );
 }
 
 export function readPlayerProvidersFromElement(element: HTMLElement) {
@@ -42,6 +25,10 @@ export function readPlayerProvidersFromElement(element: HTMLElement) {
     bandcampEmbedUrl: element.dataset.musicStreamingServiceEmbeddedPlayerBandcampEmbedUrl,
     tidalEmbedUrl: element.dataset.musicStreamingServiceEmbeddedPlayerTidalEmbedUrl,
   });
+}
+
+export function readPlayerReleaseIdFromElement(element: HTMLElement) {
+  return element.dataset.musicStreamingServiceEmbeddedPlayerReleaseId || '';
 }
 
 export function readPlayerTitleFromElement(element: HTMLElement) {

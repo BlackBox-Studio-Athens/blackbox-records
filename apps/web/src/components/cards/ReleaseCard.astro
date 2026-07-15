@@ -18,7 +18,9 @@ const { release, artist, imageLoading = 'lazy', variant = 'default' } = Astro.pr
 const artistFallbackName = release.data.artist.id ? release.data.artist.id.replace(/-/g, ' ') : 'Artist';
 const artistName = artist?.data.title || artistFallbackName;
 const releaseCardTitle = `${release.data.title} — ${artistName}`;
-const embeddedPlayerData = buildEmbeddedPlayerData(release.data, releaseCardTitle);
+const embeddedPlayerData = buildEmbeddedPlayerData(release.id, release.data, releaseCardTitle);
+const bandcampProvider = embeddedPlayerData?.providers.find((provider) => provider.id === 'bandcamp');
+const tidalProvider = embeddedPlayerData?.providers.find((provider) => provider.id === 'tidal');
 const isFramedArtwork = variant === 'framed-artwork';
 const isArtistDiscography = variant === 'artist-discography';
 const usesFramedArtworkLayout = isFramedArtwork || isArtistDiscography;
@@ -26,13 +28,13 @@ const releaseCardImageWidths = isArtistDiscography ? [240, 320, 480, 640] : [320
 const releaseDate = formatMonthYear(release.data.release_date);
 const releaseDateMachineValue = release.data.release_date.toISOString().slice(0, 10);
 
-const dataAttributes = embeddedPlayerData.hasProvider
+const dataAttributes = embeddedPlayerData
   ? {
       'data-music-streaming-service-embedded-player-card': true,
+      'data-music-streaming-service-embedded-player-release-id': embeddedPlayerData.releaseId,
       'data-music-streaming-service-embedded-player-title': embeddedPlayerData.title,
-      'data-music-streaming-service-embedded-player-bandcamp-embed-url':
-        embeddedPlayerData.bandcampEmbedUrl || undefined,
-      'data-music-streaming-service-embedded-player-tidal-embed-url': embeddedPlayerData.tidalEmbedUrl || undefined,
+      'data-music-streaming-service-embedded-player-bandcamp-embed-url': bandcampProvider?.embedUrl,
+      'data-music-streaming-service-embedded-player-tidal-embed-url': tidalProvider?.embedUrl,
     }
   : {};
 ---
@@ -71,7 +73,7 @@ const dataAttributes = embeddedPlayerData.hasProvider
         <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div>
         <div class="release-card-meta-row absolute inset-x-0 bottom-0 px-2.5 py-3">
           {
-            embeddedPlayerData.hasProvider && (
+            embeddedPlayerData && (
               <MusicStreamingServiceListenTrigger
                 as="span"
                 embeddedPlayerData={embeddedPlayerData}

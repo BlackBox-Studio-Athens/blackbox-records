@@ -1,12 +1,6 @@
 ---
 import { cn } from '@/lib/utils';
-
-type EmbeddedPlayerData = {
-  hasProvider: boolean;
-  title: string;
-  bandcampEmbedUrl: string;
-  tidalEmbedUrl: string;
-};
+import type { EmbeddedPlayerData } from '@/utils/music';
 
 interface Props {
   embeddedPlayerData: EmbeddedPlayerData;
@@ -32,35 +26,32 @@ const {
 
 const Tag = as;
 const elementAttributes = as === 'button' ? { type: 'button' as const } : {};
-const playerDataAttributes =
-  includePlayerData && embeddedPlayerData.hasProvider
-    ? {
-        'data-music-streaming-service-embedded-player-title': embeddedPlayerData.title,
-        'data-music-streaming-service-embedded-player-bandcamp-embed-url':
-          embeddedPlayerData.bandcampEmbedUrl || undefined,
-        'data-music-streaming-service-embedded-player-tidal-embed-url': embeddedPlayerData.tidalEmbedUrl || undefined,
-      }
-    : {};
+const bandcampProvider = embeddedPlayerData.providers.find((provider) => provider.id === 'bandcamp');
+const tidalProvider = embeddedPlayerData.providers.find((provider) => provider.id === 'tidal');
+const playerDataAttributes = includePlayerData
+  ? {
+      'data-music-streaming-service-embedded-player-release-id': embeddedPlayerData.releaseId,
+      'data-music-streaming-service-embedded-player-title': embeddedPlayerData.title,
+      'data-music-streaming-service-embedded-player-bandcamp-embed-url': bandcampProvider?.embedUrl,
+      'data-music-streaming-service-embedded-player-tidal-embed-url': tidalProvider?.embedUrl,
+    }
+  : {};
 ---
 
-{
-  embeddedPlayerData.hasProvider && (
-    <Tag
-      class={cn(
-        'music-listen-trigger release-card-listen-trigger inline-flex items-center border transition-[background-color,box-shadow,transform] duration-200',
-        `music-listen-trigger--${variant}`,
-        `music-listen-trigger--tone-${tone}`,
-        className,
-      )}
-      data-music-listen-trigger-variant={variant}
-      data-music-listen-trigger-tone={tone}
-      data-music-streaming-service-embedded-player-trigger
-      data-music-streaming-service-embedded-player-card={includeCardAttribute ? true : undefined}
-      {...elementAttributes}
-      {...playerDataAttributes}
-    >
-      <span class="music-listen-trigger__indicator release-card-listen-trigger__indicator" aria-hidden="true" />
-      {label}
-    </Tag>
-  )
-}
+<Tag
+  class={cn(
+    'music-listen-trigger release-card-listen-trigger inline-flex items-center border transition-[background-color,box-shadow,transform] duration-200',
+    `music-listen-trigger--${variant}`,
+    `music-listen-trigger--tone-${tone}`,
+    className,
+  )}
+  data-music-listen-trigger-variant={variant}
+  data-music-listen-trigger-tone={tone}
+  data-music-streaming-service-embedded-player-trigger
+  data-music-streaming-service-embedded-player-card={includeCardAttribute ? true : undefined}
+  {...elementAttributes}
+  {...playerDataAttributes}
+>
+  <span class="music-listen-trigger__indicator release-card-listen-trigger__indicator" aria-hidden="true"></span>
+  {label}
+</Tag>

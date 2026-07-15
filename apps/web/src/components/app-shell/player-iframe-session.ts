@@ -8,6 +8,7 @@ export type ActivePlayerSession = {
   hasEmbedInteraction: boolean;
   iframeElement: HTMLIFrameElement;
   providerId: PlayerProviderId;
+  releaseId: string;
   releaseTitle: string;
   status: 'minimized' | 'modal-open';
 };

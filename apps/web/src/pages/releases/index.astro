@@ -29,7 +29,11 @@ const latestReleaseArtistName = latestReleaseEntry
   ? resolveReleaseArtistDisplayName(latestReleaseEntry, latestReleaseArtist)
   : '';
 const latestReleasePlayerData = latestReleaseEntry
-  ? buildEmbeddedPlayerData(latestReleaseEntry.data, `${latestReleaseEntry.data.title} - ${latestReleaseArtistName}`)
+  ? buildEmbeddedPlayerData(
+      latestReleaseEntry.id,
+      latestReleaseEntry.data,
+      `${latestReleaseEntry.data.title} - ${latestReleaseArtistName}`,
+    )
   : null;
 const latestReleaseCommerceLink = latestReleaseEntry ? await getReleaseCommerceLink(latestReleaseEntry) : null;
 const latestReleaseDetailPath = latestReleaseEntry ? createReleaseDetailPath(latestReleaseEntry) : '';
@@ -41,7 +45,7 @@ const latestReleaseDate = latestReleaseEntry ? formatMonthYear(latestReleaseEntr
 const latestReleaseDateMachineValue = latestReleaseEntry
   ? latestReleaseEntry.data.release_date.toISOString().slice(0, 10)
   : '';
-const hasLatestReleaseActions = Boolean(latestReleasePlayerData?.hasProvider || latestReleaseCommerceLink);
+const hasLatestReleaseActions = Boolean(latestReleasePlayerData || latestReleaseCommerceLink);
 const upcomingReleaseArtist = upcomingReleaseEntry
   ? artistProfileById.get(upcomingReleaseEntry.data.artist.id)
   : undefined;
@@ -89,7 +93,7 @@ function formatReleaseFormats(formats: string[] | undefined) {
             )}
             {hasLatestReleaseActions && (
               <div class="releases-latest-feature__actions">
-                {latestReleasePlayerData?.hasProvider && (
+                {latestReleasePlayerData && (
                   <MusicStreamingServiceListenTrigger
                     embeddedPlayerData={latestReleasePlayerData}
                     tone="accent"

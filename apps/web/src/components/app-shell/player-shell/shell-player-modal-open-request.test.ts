@@ -5,20 +5,23 @@ import type { PlayerProvider } from '../player-provider-data';
 import { resolvePlayerModalOpenRequest } from './shell-player-modal-open-request';
 
 function createProvider(id: PlayerProvider['id'], embedUrl = `https://${id}.test/embed`): PlayerProvider {
+  if (id === 'tidal') return { embedLayout: 'tidal', embedUrl, id };
+
   return {
-    embedLayout: id === 'tidal' ? 'tidal' : 'bandcamp-album',
+    embedLayout: 'bandcamp-album',
     embedUrl,
     id,
   };
 }
 
-function createActiveSession(releaseTitle: string): ActivePlayerSession {
+function createActiveSession(releaseId: string, releaseTitle = 'Shared title'): ActivePlayerSession {
   return {
     embedLayout: 'bandcamp-album',
     embedUrl: 'https://bandcamp.test/embed',
     hasEmbedInteraction: true,
     iframeElement: {} as HTMLIFrameElement,
     providerId: 'bandcamp',
+    releaseId,
     releaseTitle,
     status: 'minimized',
   };
@@ -30,31 +33,31 @@ describe('player modal open request', () => {
       resolvePlayerModalOpenRequest({
         activeSession: null,
         providers: [],
-        releaseTitle: 'Disintegration',
+        releaseId: 'disintegration',
       }),
     ).toEqual({ kind: 'without-provider' });
   });
 
   it('reuses the active session when opening the same release', () => {
-    const activeSession = createActiveSession('Disintegration');
+    const activeSession = createActiveSession('disintegration');
 
     expect(
       resolvePlayerModalOpenRequest({
         activeSession,
         providers: [createProvider('bandcamp')],
-        releaseTitle: 'Disintegration',
+        releaseId: 'disintegration',
       }),
     ).toEqual({ activeSession, kind: 'reuse-active-session' });
   });
 
-  it('stops the active session before opening a different release', () => {
+  it('stops the active session before opening a different Release with the same display title', () => {
     const nextProvider = createProvider('bandcamp', 'https://bandcamp.test/next');
 
     expect(
       resolvePlayerModalOpenRequest({
-        activeSession: createActiveSession('Caregivers'),
+        activeSession: createActiveSession('caregivers'),
         providers: [nextProvider],
-        releaseTitle: 'Disintegration',
+        releaseId: 'disintegration',
       }),
     ).toEqual({
       kind: 'new-provider',
@@ -72,7 +75,7 @@ describe('player modal open request', () => {
         activeSession: null,
         cachedProviderId: 'tidal',
         providers: [bandcampProvider, tidalProvider],
-        releaseTitle: 'Disintegration',
+        releaseId: 'disintegration',
       }),
     ).toEqual({
       kind: 'new-provider',
@@ -90,7 +93,7 @@ describe('player modal open request', () => {
         activeSession: null,
         cachedProviderId: 'tidal',
         providers: [bandcampProvider],
-        releaseTitle: 'Disintegration',
+        releaseId: 'disintegration',
       }),
     ).toEqual({
       kind: 'new-provider',
@@ -102,7 +105,7 @@ describe('player modal open request', () => {
       resolvePlayerModalOpenRequest({
         activeSession: null,
         providers: [tidalProvider],
-        releaseTitle: 'Disintegration',
+        releaseId: 'disintegration',
       }),
     ).toEqual({
       kind: 'new-provider',

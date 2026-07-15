@@ -42,7 +42,7 @@ const hasUpcomingReleaseCallout = Boolean(
   (!latestReleaseTitleNormalized || !normalizedUpcomingRelease.includes(latestReleaseTitleNormalized)),
 );
 const latestReleasePlayerData = latestRelease
-  ? buildEmbeddedPlayerData(latestRelease.data, latestReleasePlayerTitle)
+  ? buildEmbeddedPlayerData(latestRelease.id, latestRelease.data, latestReleasePlayerTitle)
   : null;
 const previousReleases = latestRelease
   ? artistReleases.filter((release) => release.id !== latestRelease.id)
@@ -163,7 +163,7 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
           )}
         </div>
         <div class="artist-detail-actions artist-detail-actions--latest">
-          {latestReleasePlayerData?.hasProvider && (
+          {latestReleasePlayerData && (
             <MusicStreamingServiceListenTrigger
               embeddedPlayerData={latestReleasePlayerData}
               tone="accent"

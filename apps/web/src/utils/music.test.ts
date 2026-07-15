@@ -44,6 +44,12 @@ describe('Bandcamp embed URL resolution', () => {
     expect(buildBandcampEmbedUrl('https://chronoboros.bandcamp.com/album/caregivers')).toBe('');
     expect(buildBandcampEmbedUrl('https://afterwise.bandcamp.com/track/silverfeedssilence')).toBe('');
   });
+
+  it('rejects partially consumed and unsupported Bandcamp embed paths', () => {
+    expect(buildBandcampEmbedUrl('https://bandcamp.com/EmbeddedPlayer/album=1012756998/unknown=value/')).toBe('');
+    expect(buildBandcampEmbedUrl('https://bandcamp.com/EmbeddedPlayer/album=1012756998/size=large/extra')).toBe('');
+    expect(buildBandcampEmbedUrl('https://bandcamp.com/EmbeddedPlayer/artist=1012756998/size=large/')).toBe('');
+  });
 });
 
 describe('embedded player data', () => {
@@ -56,12 +62,21 @@ describe('embedded player data', () => {
     );
 
     expect(
-      buildEmbeddedPlayerData({
-        tidal_url: 'https://tidal.com/browse/track/987654321',
-      }),
+      buildEmbeddedPlayerData(
+        'release-id',
+        {
+          tidal_url: 'https://tidal.com/browse/track/987654321',
+        },
+        'Release title',
+      ),
     ).toMatchObject({
-      hasProvider: true,
-      tidalEmbedUrl: 'https://embed.tidal.com/tracks/987654321?coverInitially=true&disableAnalytics=true',
+      providers: [
+        {
+          embedLayout: 'tidal',
+          embedUrl: 'https://embed.tidal.com/tracks/987654321?coverInitially=true&disableAnalytics=true',
+          id: 'tidal',
+        },
+      ],
     });
   });
 
@@ -72,20 +87,25 @@ describe('embedded player data', () => {
 
   it('does not expose a provider when only a Tidal artist URL is present', () => {
     expect(
-      buildEmbeddedPlayerData({
-        tidal_url: 'https://tidal.com/artist/75705460/u',
-      }),
-    ).toEqual({
-      hasProvider: false,
-      title: '',
-      bandcampEmbedUrl: '',
-      tidalEmbedUrl: '',
-    });
+      buildEmbeddedPlayerData(
+        'release-id',
+        {
+          tidal_url: 'https://tidal.com/artist/75705460/u',
+        },
+        'Release title',
+      ),
+    ).toBeNull();
+  });
+
+  it('rejects partially consumed Tidal paths', () => {
+    expect(buildTidalEmbedUrl('https://tidal.com/album/505727858/credits')).toBe('');
+    expect(buildTidalEmbedUrl('https://tidal.com/browse/album/505727858/credits')).toBe('');
   });
 
   it('exposes Bandcamp and Tidal together when both provider URLs are valid', () => {
     expect(
       buildEmbeddedPlayerData(
+        'disintegration',
         {
           bandcamp_embed_url:
             'https://bandcamp.com/EmbeddedPlayer/track=2461449138/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/tracklist=false/transparent=true/',
@@ -94,34 +114,66 @@ describe('embedded player data', () => {
         'Disintegration - Afterwise',
       ),
     ).toEqual({
-      hasProvider: true,
+      releaseId: 'disintegration',
       title: 'Disintegration - Afterwise',
-      bandcampEmbedUrl:
-        'https://bandcamp.com/EmbeddedPlayer/track=2461449138/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/tracklist=false/transparent=true/',
-      tidalEmbedUrl: 'https://embed.tidal.com/albums/505727858?coverInitially=true&disableAnalytics=true',
+      providers: [
+        {
+          embedLayout: 'bandcamp-track',
+          embedUrl:
+            'https://bandcamp.com/EmbeddedPlayer/track=2461449138/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/tracklist=false/transparent=true/',
+          id: 'bandcamp',
+        },
+        {
+          embedLayout: 'tidal',
+          embedUrl: 'https://embed.tidal.com/albums/505727858?coverInitially=true&disableAnalytics=true',
+          id: 'tidal',
+        },
+      ],
     });
+  });
+
+  it('requires stable Release identity and nonblank display copy', () => {
+    const release = { tidal_url: 'https://tidal.com/album/505727858' };
+
+    expect(buildEmbeddedPlayerData('', release, 'Disintegration')).toBeNull();
+    expect(buildEmbeddedPlayerData('disintegration', release, '   ')).toBeNull();
   });
 
   it('keeps current release content aligned with the player embed contract', () => {
     const disintegration = readReleaseFrontmatter('disintegration');
     const caregivers = readReleaseFrontmatter('caregivers');
 
-    expect(buildEmbeddedPlayerData(disintegration)).toMatchObject({
-      hasProvider: true,
-      bandcampEmbedUrl:
-        'https://bandcamp.com/EmbeddedPlayer/track=2461449138/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/tracklist=false/transparent=true/',
-      tidalEmbedUrl: 'https://embed.tidal.com/albums/505727858?coverInitially=true&disableAnalytics=true',
+    expect(buildEmbeddedPlayerData('disintegration', disintegration, 'Disintegration')).toMatchObject({
+      releaseId: 'disintegration',
+      providers: [
+        {
+          embedLayout: 'bandcamp-track',
+          embedUrl:
+            'https://bandcamp.com/EmbeddedPlayer/track=2461449138/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/tracklist=false/transparent=true/',
+          id: 'bandcamp',
+        },
+        {
+          embedLayout: 'tidal',
+          embedUrl: 'https://embed.tidal.com/albums/505727858?coverInitially=true&disableAnalytics=true',
+          id: 'tidal',
+        },
+      ],
     });
     expect(disintegration.bandcamp_embed_url).toContain('/tracklist=false/');
     expect(disintegration.bandcamp_embed_url).toContain('/artwork=big/');
     expect(disintegration.tidal_url).toBe('https://tidal.com/album/505727858');
     expect(disintegration.tidal_url).not.toContain('/artist/');
 
-    expect(buildEmbeddedPlayerData(caregivers)).toMatchObject({
-      hasProvider: true,
-      bandcampEmbedUrl:
-        'https://bandcamp.com/EmbeddedPlayer/album=1012756998/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/',
-      tidalEmbedUrl: '',
+    expect(buildEmbeddedPlayerData('caregivers', caregivers, 'Caregivers')).toMatchObject({
+      releaseId: 'caregivers',
+      providers: [
+        {
+          embedLayout: 'bandcamp-album',
+          embedUrl:
+            'https://bandcamp.com/EmbeddedPlayer/album=1012756998/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/',
+          id: 'bandcamp',
+        },
+      ],
     });
     expect(caregivers.bandcamp_embed_url).toContain('/album=1012756998/');
     expect(caregivers.bandcamp_embed_url).toContain('/artwork=big/');
@@ -129,14 +181,13 @@ describe('embedded player data', () => {
 
   it('does not expose a provider when only an invalid Bandcamp public URL is present', () => {
     expect(
-      buildEmbeddedPlayerData({
-        bandcamp_embed_url: 'https://chronoboros.bandcamp.com/album/caregivers',
-      }),
-    ).toEqual({
-      hasProvider: false,
-      title: '',
-      bandcampEmbedUrl: '',
-      tidalEmbedUrl: '',
-    });
+      buildEmbeddedPlayerData(
+        'caregivers',
+        {
+          bandcamp_embed_url: 'https://chronoboros.bandcamp.com/album/caregivers',
+        },
+        'Caregivers',
+      ),
+    ).toBeNull();
   });
 });

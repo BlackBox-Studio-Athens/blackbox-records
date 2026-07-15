@@ -27,7 +27,7 @@ const artistUrl = releaseArtist
 const releaseDate = formatDayMonthYear(release.data.release_date);
 const releaseDateMachineValue = release.data.release_date.toISOString().slice(0, 10);
 const embeddedPlayerTitle = `${release.data.title} — ${artistName}`;
-const embeddedPlayerData = buildEmbeddedPlayerData(release.data, embeddedPlayerTitle);
+const embeddedPlayerData = buildEmbeddedPlayerData(release.id, release.data, embeddedPlayerTitle);
 const commerceLink = await getReleaseCommerceLink(release);
 ---
 
@@ -97,7 +97,7 @@ const commerceLink = await getReleaseCommerceLink(release);
             )
           }
           {
-            embeddedPlayerData.hasProvider && (
+            embeddedPlayerData && (
               <MusicStreamingServiceListenTrigger
                 embeddedPlayerData={embeddedPlayerData}
                 includeCardAttribute

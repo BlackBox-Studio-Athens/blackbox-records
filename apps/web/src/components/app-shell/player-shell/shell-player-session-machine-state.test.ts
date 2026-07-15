@@ -23,6 +23,7 @@ function createActiveSession({
       },
     } as unknown as HTMLIFrameElement,
     providerId: 'bandcamp',
+    releaseId: 'test-release',
     releaseTitle: 'Test Release',
     status,
   };

@@ -19,16 +19,16 @@ export function resolvePlayerModalOpenRequest({
   activeSession,
   cachedProviderId,
   providers,
-  releaseTitle,
+  releaseId,
 }: {
   activeSession: ActivePlayerSession | null;
   cachedProviderId?: PlayerProviderId | undefined;
   providers: PlayerProvider[];
-  releaseTitle: string;
+  releaseId: string;
 }): PlayerModalOpenRequest {
   if (providers.length === 0) return { kind: 'without-provider' };
 
-  const isSameRelease = Boolean(activeSession && activeSession.releaseTitle === releaseTitle);
+  const isSameRelease = Boolean(activeSession && activeSession.releaseId === releaseId);
   if (activeSession && isSameRelease) return { activeSession, kind: 'reuse-active-session' };
 
   const cachedProvider = providers.find((provider) => provider.id === cachedProviderId);

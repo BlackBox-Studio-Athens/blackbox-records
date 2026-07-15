@@ -196,6 +196,7 @@ describe('player iframe session helpers', () => {
       hasEmbedInteraction: false,
       iframeElement: iframe,
       providerId: bandcampProvider.id,
+      releaseId: 'disintegration',
       releaseTitle: 'Disintegration',
       status: 'modal-open',
     } satisfies ActivePlayerSession;

@@ -119,11 +119,12 @@ export default function AppShellRoot({
   const pendingPlayerProviderRef = useRef<{
     nextStatus: ActivePlayerSession['status'] | undefined;
     provider: PlayerProvider;
+    releaseId: string;
     releaseTitle: string;
   } | null>(null);
   const activePlayerTriggerElementRef = useRef<HTMLElement | null>(null);
   const iframeCacheByEmbedUrlRef = useRef(new Map<string, HTMLIFrameElement>());
-  const providerSelectionByTitleRef = useRef(new Map<string, PlayerProviderId>());
+  const providerSelectionByReleaseIdRef = useRef(new Map<string, PlayerProviderId>());
   const warmedOriginsRef = useRef(new Set<string>());
   const routeLoadingTimerRef = useRef<number | null>(null);
   const shellPageTransitionFrameRef = useRef<number | null>(null);
@@ -364,7 +365,7 @@ export default function AppShellRoot({
     iframeFrameHostRef,
     modalCloseButtonRef,
     pendingPlayerProviderRef,
-    providerSelectionByTitleRef,
+    providerSelectionByReleaseIdRef,
     setActivePlayerEmbedLayout,
     setActivePlayerProviderId,
     setActivePlayerTitle,
@@ -660,7 +661,12 @@ export default function AppShellRoot({
             activePlayerEmbedLayout={activePlayerEmbedLayout}
             activePlayerProviderId={activePlayerProviderId}
             activePlayerTitle={activePlayerTitle}
-            applyPlayerProvider={applyPlayerProvider}
+            applyPlayerProvider={(provider) => {
+              const activeSession = activePlayerSessionRef.current;
+              if (activeSession) {
+                applyPlayerProvider(provider, activeSession.releaseId, activeSession.releaseTitle);
+              }
+            }}
             iframeFrameHostRef={iframeFrameHostRef}
             isMiniPlayerVisible={isMiniPlayerVisible}
             isPlayerLoading={isPlayerLoading}

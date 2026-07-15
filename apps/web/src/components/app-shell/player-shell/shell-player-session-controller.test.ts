@@ -4,6 +4,9 @@ import type { ActivePlayerSession } from '../player-iframe-session';
 import type { PlayerProvider } from '../player-provider-data';
 import { createShellPlayerSessionController } from './shell-player-session-controller';
 
+const bandcampEmbedUrl =
+  'https://bandcamp.com/EmbeddedPlayer/album=1012756998/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/';
+
 function createIframe(loadState: 'loaded' | 'loading' = 'loaded') {
   return {
     addEventListener: vi.fn(),
@@ -36,7 +39,8 @@ function createTargetDocument() {
 function createPlayerElement() {
   return {
     dataset: {
-      musicStreamingServiceEmbeddedPlayerBandcampEmbedUrl: 'https://bandcamp.test/album=1',
+      musicStreamingServiceEmbeddedPlayerBandcampEmbedUrl: bandcampEmbedUrl,
+      musicStreamingServiceEmbeddedPlayerReleaseId: 'disintegration',
       musicStreamingServiceEmbeddedPlayerTitle: 'Disintegration',
     },
   } as unknown as HTMLElement;
@@ -53,7 +57,7 @@ function createController(overrides: Partial<Parameters<typeof createShellPlayer
   const iframeElement = createIframe();
   const provider: PlayerProvider = {
     embedLayout: 'bandcamp-album',
-    embedUrl: 'https://bandcamp.test/album=1',
+    embedUrl: bandcampEmbedUrl,
     id: 'bandcamp',
   };
   const activePlayerSessionRef = { current: null as ActivePlayerSession | null };
@@ -74,7 +78,7 @@ function createController(overrides: Partial<Parameters<typeof createShellPlayer
     iframeFrameHostRef: { current: createFrameHost(iframeElement) },
     modalCloseButtonRef: { current: { focus: vi.fn() } as unknown as HTMLButtonElement },
     pendingPlayerProviderRef: { current: null },
-    providerSelectionByTitleRef: { current: new Map() },
+    providerSelectionByReleaseIdRef: { current: new Map() },
     setActivePlayerEmbedLayout: vi.fn(),
     setActivePlayerProviderId: vi.fn(),
     setActivePlayerTitle: vi.fn(),
@@ -100,10 +104,11 @@ function createController(overrides: Partial<Parameters<typeof createShellPlayer
 function createActiveSession(iframeElement = createIframe()): ActivePlayerSession {
   return {
     embedLayout: 'bandcamp-album',
-    embedUrl: 'https://bandcamp.test/album=1',
+    embedUrl: bandcampEmbedUrl,
     hasEmbedInteraction: false,
     iframeElement,
     providerId: 'bandcamp',
+    releaseId: 'disintegration',
     releaseTitle: 'Disintegration',
     status: 'modal-open',
   };
@@ -123,6 +128,7 @@ describe('shell player session controller', () => {
       hasEmbedInteraction: false,
       iframeElement,
       providerId: 'bandcamp',
+      releaseId: 'disintegration',
       releaseTitle: 'Disintegration',
       status: 'modal-open',
     });

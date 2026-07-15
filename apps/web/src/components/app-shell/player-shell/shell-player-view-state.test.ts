@@ -24,6 +24,7 @@ function createActiveSession({
       },
     } as unknown as HTMLIFrameElement,
     providerId,
+    releaseId: 'disintegration',
     releaseTitle: 'Disintegration',
     status,
   };

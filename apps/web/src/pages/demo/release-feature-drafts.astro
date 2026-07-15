@@ -44,7 +44,11 @@ const releaseModels = await Promise.all(
     const artistName = resolveReleaseArtistDisplayName(releaseEntry, artistProfile);
     const detailPath = createReleaseDetailPath(releaseEntry);
     const commerceLink = await getReleaseCommerceLink(releaseEntry);
-    const playerData = buildEmbeddedPlayerData(releaseEntry.data, `${releaseEntry.data.title} - ${artistName}`);
+    const playerData = buildEmbeddedPlayerData(
+      releaseEntry.id,
+      releaseEntry.data,
+      `${releaseEntry.data.title} - ${artistName}`,
+    );
 
     return {
       artistName,
@@ -121,11 +125,13 @@ const archiveModels = releaseModels.slice(0, 8);
                   <p class="feature-wall__summary">{latestOutNowModel.releaseEntry.data.summary}</p>
                 )}
                 <div class="release-draft__actions">
-                  <MusicStreamingServiceListenTrigger
-                    embeddedPlayerData={latestOutNowModel.playerData}
-                    tone="accent"
-                    variant="standalone"
-                  />
+                  {latestOutNowModel.playerData && (
+                    <MusicStreamingServiceListenTrigger
+                      embeddedPlayerData={latestOutNowModel.playerData}
+                      tone="accent"
+                      variant="standalone"
+                    />
+                  )}
                   <a href={latestOutNowModel.detailPath} data-astro-prefetch>
                     View release
                   </a>
@@ -191,11 +197,13 @@ const archiveModels = releaseModels.slice(0, 8);
                     </div>
                   </dl>
                   <div class="release-draft__actions">
-                    <MusicStreamingServiceListenTrigger
-                      embeddedPlayerData={latestOutNowModel.playerData}
-                      tone="accent"
-                      variant="standalone"
-                    />
+                    {latestOutNowModel.playerData && (
+                      <MusicStreamingServiceListenTrigger
+                        embeddedPlayerData={latestOutNowModel.playerData}
+                        tone="accent"
+                        variant="standalone"
+                      />
+                    )}
                     <a href={latestOutNowModel.detailPath} data-astro-prefetch>
                       View release
                     </a>
@@ -249,11 +257,13 @@ const archiveModels = releaseModels.slice(0, 8);
                     {latestOutNowModel.artistName} / {latestOutNowModel.formattedFormats}
                   </p>
                   <div class="release-draft__actions release-draft__actions--wide">
-                    <MusicStreamingServiceListenTrigger
-                      embeddedPlayerData={latestOutNowModel.playerData}
-                      tone="accent"
-                      variant="standalone"
-                    />
+                    {latestOutNowModel.playerData && (
+                      <MusicStreamingServiceListenTrigger
+                        embeddedPlayerData={latestOutNowModel.playerData}
+                        tone="accent"
+                        variant="standalone"
+                      />
+                    )}
                     {latestOutNowModel.commerceLink && (
                       <a
                         href={latestOutNowModel.commerceLink.href}
@@ -291,12 +301,14 @@ const archiveModels = releaseModels.slice(0, 8);
                         {primaryUpcomingModel.artistName} / {primaryUpcomingModel.formattedDate}
                       </p>
                       <div class="release-draft__actions">
-                        <MusicStreamingServiceListenTrigger
-                          embeddedPlayerData={primaryUpcomingModel.playerData}
-                          tone="neutral"
-                          variant="standalone"
-                          label="Listen"
-                        />
+                        {primaryUpcomingModel.playerData && (
+                          <MusicStreamingServiceListenTrigger
+                            embeddedPlayerData={primaryUpcomingModel.playerData}
+                            tone="neutral"
+                            variant="standalone"
+                            label="Listen"
+                          />
+                        )}
                         {primaryUpcomingModel.commerceLink && (
                           <a
                             href={primaryUpcomingModel.commerceLink.href}

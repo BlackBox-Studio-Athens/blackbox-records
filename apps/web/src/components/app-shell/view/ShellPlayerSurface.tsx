@@ -13,7 +13,7 @@ type ShellPlayerSurfaceProps = {
   activePlayerEmbedLayout: PlayerEmbedLayout | '';
   activePlayerProviderId: PlayerProviderId | '';
   activePlayerTitle: string;
-  applyPlayerProvider: (provider: PlayerProvider, releaseTitle: string) => void;
+  applyPlayerProvider: (provider: PlayerProvider) => void;
   iframeFrameHostRef: { current: HTMLDivElement | null };
   isMiniPlayerVisible: boolean;
   isPlayerLoading: boolean;
@@ -105,7 +105,7 @@ export default function ShellPlayerSurface({
                     aria-pressed={activePlayerProviderId === providerId}
                     onClick={() => {
                       if (!provider) return;
-                      applyPlayerProvider(provider, activePlayerTitle);
+                      applyPlayerProvider(provider);
                     }}
                   >
                     <img

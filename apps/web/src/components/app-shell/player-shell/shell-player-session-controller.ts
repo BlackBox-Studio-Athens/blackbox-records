@@ -1,6 +1,7 @@
 import { reducePlayerSessionMachine } from '../player-session-machine';
 import {
   readPlayerProvidersFromElement,
+  readPlayerReleaseIdFromElement,
   readPlayerTitleFromElement,
   type PlayerProvider,
   type PlayerProviderId,
@@ -30,6 +31,7 @@ type PlayerFocusScheduler = {
 type PendingPlayerProvider = {
   nextStatus: ActivePlayerSession['status'] | undefined;
   provider: PlayerProvider;
+  releaseId: string;
   releaseTitle: string;
 };
 
@@ -43,7 +45,7 @@ type ShellPlayerSessionControllerOptions = {
   iframeFrameHostRef: MutableRef<HTMLElement | null>;
   modalCloseButtonRef: MutableRef<HTMLButtonElement | null>;
   pendingPlayerProviderRef: MutableRef<PendingPlayerProvider | null>;
-  providerSelectionByTitleRef: MutableRef<Map<string, PlayerProviderId>>;
+  providerSelectionByReleaseIdRef: MutableRef<Map<string, PlayerProviderId>>;
   setActivePlayerEmbedLayout: (layout: PlayerShellViewState['activePlayerEmbedLayout']) => void;
   setActivePlayerProviderId: (providerId: PlayerShellViewState['activePlayerProviderId']) => void;
   setActivePlayerTitle: (title: string) => void;
@@ -67,7 +69,7 @@ export function createShellPlayerSessionController({
   iframeFrameHostRef,
   modalCloseButtonRef,
   pendingPlayerProviderRef,
-  providerSelectionByTitleRef,
+  providerSelectionByReleaseIdRef,
   setActivePlayerEmbedLayout,
   setActivePlayerProviderId,
   setActivePlayerTitle,
@@ -155,6 +157,7 @@ export function createShellPlayerSessionController({
 
   function applyPlayerProvider(
     provider: PlayerProvider,
+    releaseId: string,
     releaseTitle: string,
     options?: {
       nextStatus?: ActivePlayerSession['status'];
@@ -168,7 +171,7 @@ export function createShellPlayerSessionController({
 
     const iframeElement = resolveIframe(provider, releaseTitle);
     if (!iframeElement) {
-      pendingPlayerProviderRef.current = { nextStatus: options?.nextStatus, provider, releaseTitle };
+      pendingPlayerProviderRef.current = { nextStatus: options?.nextStatus, provider, releaseId, releaseTitle };
       return;
     }
 
@@ -180,12 +183,13 @@ export function createShellPlayerSessionController({
       hasEmbedInteraction: false,
       iframeElement,
       providerId: provider.id,
+      releaseId,
       releaseTitle,
       status: options?.nextStatus ?? (getIsPlayerModalOpen() ? 'modal-open' : 'minimized'),
     };
 
     activePlayerSessionRef.current = nextSession;
-    providerSelectionByTitleRef.current.set(releaseTitle, provider.id);
+    providerSelectionByReleaseIdRef.current.set(releaseId, provider.id);
     setActivePlayerProviderId(provider.id);
     setActivePlayerEmbedLayout(provider.embedLayout);
     setActivePlayerTitle(releaseTitle);
@@ -238,6 +242,7 @@ export function createShellPlayerSessionController({
     if (pendingProvider) {
       applyPlayerProvider(
         pendingProvider.provider,
+        pendingProvider.releaseId,
         pendingProvider.releaseTitle,
         pendingProvider.nextStatus ? { nextStatus: pendingProvider.nextStatus } : undefined,
       );
@@ -262,12 +267,15 @@ export function createShellPlayerSessionController({
 
   function openPlayerModal(triggerElement: HTMLElement, playerElement: HTMLElement) {
     const providers = readPlayerProvidersFromElement(playerElement);
+    const releaseId = readPlayerReleaseIdFromElement(playerElement);
     const releaseTitle = readPlayerTitleFromElement(playerElement);
+    if (!releaseId || !releaseTitle) return;
+
     const playerModalOpenRequest = resolvePlayerModalOpenRequest({
       activeSession: activePlayerSessionRef.current,
-      cachedProviderId: providerSelectionByTitleRef.current.get(releaseTitle),
+      cachedProviderId: providerSelectionByReleaseIdRef.current.get(releaseId),
       providers,
-      releaseTitle,
+      releaseId,
     });
     if (playerModalOpenRequest.kind === 'without-provider') return;
 
@@ -288,7 +296,7 @@ export function createShellPlayerSessionController({
       return;
     }
 
-    applyPlayerProvider(playerModalOpenRequest.nextProvider, releaseTitle, { nextStatus: 'modal-open' });
+    applyPlayerProvider(playerModalOpenRequest.nextProvider, releaseId, releaseTitle, { nextStatus: 'modal-open' });
     focusPlayerModalCloseButtonSoon();
   }
 
