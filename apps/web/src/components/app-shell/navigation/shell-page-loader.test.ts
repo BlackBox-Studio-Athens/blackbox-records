@@ -57,6 +57,20 @@ describe('shell page snapshot loader', () => {
     expect(loader.hasCachedSnapshot('/blackbox-records/store/')).toBe(true);
   });
 
+  it('keeps each Store category snapshot distinct', async () => {
+    const categories = ['/store/', '/store/blackbox-releases/', '/store/distro/', '/store/merch/'];
+    const cache = new Map(categories.map((pathname) => [pathname, createSnapshot(pathname)]));
+    const loader = createShellPageSnapshotLoader({ cache, fetchPage: vi.fn() });
+
+    await expect(
+      Promise.all(
+        categories.map((pathname) =>
+          loader.fetchSnapshot(`/blackbox-records${pathname}`, `https://example.test/blackbox-records${pathname}`),
+        ),
+      ),
+    ).resolves.toEqual(categories.map(createSnapshot));
+  });
+
   it('ignores shell section prefetch failures', async () => {
     const fetchPage = vi.fn(async () => ({
       ok: false,

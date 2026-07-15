@@ -63,7 +63,9 @@ Backend Worker observability uses source-controlled Workers Logs/Traces config a
 
 ## Navigation model
 
-- Top-level sections (`/`, `/distro/`, `/artists/`, `/releases/`, `/services/`, `/about/`) are shell-routed in the browser and swapped in-place.
+- Top-level sections (`/`, `/artists/`, `/releases/`, `/services/`, `/about/`, and the four Store categories) are shell-routed in the browser and swapped in-place.
+- `Releases` remains editorial. Purchasable item options live in Store: `All` (`/store/`), `BlackBox Releases` (`/store/blackbox-releases/`), `Distro` (`/store/distro/`), and `Merch` (`/store/merch/`). Category membership is presentation-only and does not change Store Item, offer, checkout, or stock authority.
+- `/distro/` remains a compatibility redirect to `/store/distro/` and preserves a legacy group fragment when JavaScript is available.
 - Release, artist, and news detail routes remain direct-load Astro pages, but in-site clicks open them through the app-shell overlay.
 - The Bandcamp/Tidal player stays mounted in the persistent shell so playback can survive top-level section switches.
 - The minimized player is only shown after the user interacts with the embed area; a loaded embed alone does not create the pill.

@@ -1,0 +1,9 @@
+---
+import StoreCollectionPage from '@/components/store/StoreCollectionPage.astro';
+import { getStoreCatalogCategory } from '@/lib/store-categories';
+import { listStoreCollectionEntries } from '@/lib/store-collection';
+
+const collectionEntries = await listStoreCollectionEntries('merch');
+---
+
+<StoreCollectionPage category={getStoreCatalogCategory('merch')} entries={collectionEntries} />

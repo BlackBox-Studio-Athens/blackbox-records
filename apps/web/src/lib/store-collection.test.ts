@@ -81,7 +81,13 @@ vi.mock('astro:config/client', () => ({
   site: 'https://blackbox-studio-athens.github.io',
 }));
 
-import { listStoreCollectionEntries } from './store-collection';
+import {
+  classifyStoreCatalogMembership,
+  groupStoreDistroCollectionEntries,
+  listStoreCollectionEntries,
+  selectStoreCollectionEntries,
+  type StoreCollectionEntry,
+} from './store-collection';
 
 describe('store collection entries', () => {
   it('returns a unified collection with primary availability for all release and distro store candidates', async () => {
@@ -112,5 +118,154 @@ describe('store collection entries', () => {
       availability: { status: 'available', label: 'Available' },
       canBuy: true,
     });
+
+    expect(collectionEntries.map((entry) => [entry.storeItem.slug, entry.categoryIds])).toEqual([
+      ['disintegration-black-vinyl-lp', ['blackbox-releases']],
+      ['afterglow-tape', ['distro']],
+      ['caregivers-vinyl', ['blackbox-releases', 'distro']],
+    ]);
+
+    expect(collectionEntries[1]?.distro).toEqual({
+      format: 'Cassette',
+      group: 'Tapes',
+      order: 1,
+      searchText: 'Afterglow Tape Afterglow Tapes Cassette',
+    });
+  });
+
+  it('derives faceted memberships without persisting All on an item', () => {
+    expect(
+      classifyStoreCatalogMembership({
+        sourceId: 'disintegration',
+        sourceKind: 'release',
+      }),
+    ).toEqual(['blackbox-releases']);
+
+    expect(
+      classifyStoreCatalogMembership({
+        distroGroup: 'Vinyl 12-inch',
+        sourceId: 'chronoboros-caregivers-vinyl',
+        sourceKind: 'distro',
+      }),
+    ).toEqual(['blackbox-releases', 'distro']);
+
+    expect(
+      classifyStoreCatalogMembership({
+        distroGroup: 'Tapes',
+        sourceId: 'afterglow-tape',
+        sourceKind: 'distro',
+      }),
+    ).toEqual(['distro']);
+
+    expect(
+      classifyStoreCatalogMembership({
+        distroGroup: 'Clothes',
+        sourceId: 'shirt',
+        sourceKind: 'distro',
+      }),
+    ).toEqual(['distro', 'merch']);
+
+    expect(() =>
+      classifyStoreCatalogMembership({
+        sourceId: 'unsupported',
+        sourceKind: 'unsupported' as StoreCollectionEntry['storeItem']['sourceKind'],
+      }),
+    ).toThrow('Unsupported Store Item source kind: unsupported.');
+
+    expect(() =>
+      classifyStoreCatalogMembership({
+        sourceId: 'missing-group',
+        sourceKind: 'distro',
+      }),
+    ).toThrow('Distro Store Item missing-group is missing its Distro group.');
+  });
+
+  it('selects each category without duplicate Store Items when memberships overlap', async () => {
+    const entries = await listStoreCollectionEntries();
+
+    expect(selectStoreCollectionEntries(entries, 'all').map((entry) => entry.storeItem.slug)).toEqual([
+      'disintegration-black-vinyl-lp',
+      'afterglow-tape',
+      'caregivers-vinyl',
+    ]);
+    expect(selectStoreCollectionEntries(entries, 'blackbox-releases').map((entry) => entry.storeItem.slug)).toEqual([
+      'disintegration-black-vinyl-lp',
+      'caregivers-vinyl',
+    ]);
+    expect(selectStoreCollectionEntries(entries, 'distro').map((entry) => entry.storeItem.slug)).toEqual([
+      'afterglow-tape',
+      'caregivers-vinyl',
+    ]);
+    expect(selectStoreCollectionEntries(entries, 'merch')).toEqual([]);
+    expect(() => selectStoreCollectionEntries([...entries, entries[0]!], 'all')).toThrow(
+      'Store collection all contains Store Item disintegration-black-vinyl-lp more than once.',
+    );
+  });
+
+  it('keeps classified Distro entries in the authored group and item order', async () => {
+    const entries = await listStoreCollectionEntries('distro');
+
+    expect(groupStoreDistroCollectionEntries(entries)).toEqual([
+      {
+        groupName: 'Vinyl 12-inch',
+        introGroupName: 'Vinyl 12-inch',
+        entries: [expect.objectContaining({ storeItem: expect.objectContaining({ slug: 'caregivers-vinyl' }) })],
+      },
+      {
+        groupName: 'Tapes',
+        introGroupName: 'Tapes',
+        entries: [expect.objectContaining({ storeItem: expect.objectContaining({ slug: 'afterglow-tape' }) })],
+      },
+    ]);
+  });
+
+  it('retains physical group order, combined small vinyl, Clothes, and title tie-breakers', () => {
+    const createDistroEntry = (
+      slug: string,
+      group: NonNullable<StoreCollectionEntry['distro']>['group'],
+      order: number,
+      title = slug,
+    ): StoreCollectionEntry => ({
+      categoryIds: group === 'Clothes' ? ['distro', 'merch'] : ['distro'],
+      distro: { format: group, group, order, searchText: `${title} ${group}` },
+      primaryAvailability: null,
+      storeItem: {
+        eyebrow: null,
+        image: { format: 'jpg', height: 100, src: '/fixture.jpg', width: 100 },
+        imageAlt: 'Fixture image',
+        metadata: [],
+        slug,
+        sourceId: slug,
+        sourceKind: 'distro',
+        storePath: `/store/${slug}/`,
+        subtitle: 'Fixture',
+        summary: null,
+        taxCategory: 'physical_goods',
+        title,
+      },
+    });
+    const entries = [
+      createDistroEntry('vinyl-12', 'Vinyl 12-inch', 1),
+      createDistroEntry('small-vinyl-b', 'Vinyl 7-inch', 2, 'Beta'),
+      createDistroEntry('small-vinyl-a', 'Vinyl 7-inch', 2, 'Alpha'),
+      createDistroEntry('small-vinyl-10', 'Vinyl 10-inch', 3),
+      createDistroEntry('cd', 'CDs', 1),
+      createDistroEntry('tape', 'Tapes', 1),
+      createDistroEntry('shirt', 'Clothes', 1),
+      createDistroEntry('other', 'Other', 1),
+    ];
+
+    const groups = groupStoreDistroCollectionEntries(entries);
+
+    expect(groups.map((group) => group.groupName)).toEqual([
+      'Vinyl 12-inch',
+      '7-inch & 10-inch Vinyl',
+      'CDs',
+      'Tapes',
+      'Clothes',
+      'Other',
+    ]);
+    expect(groups[1]?.entries.map((entry) => entry.storeItem.title)).toEqual(['Alpha', 'Beta', 'small-vinyl-10']);
+    expect(groups.flatMap((group) => group.entries).map((entry) => entry.storeItem.slug)).toHaveLength(entries.length);
   });
 });

@@ -79,6 +79,14 @@ describe('shell navigation helpers', () => {
         `${windowOrigin}/blackbox-records/`,
       ),
     ).toBe(false);
+    for (const pathname of ['/store/', '/store/blackbox-releases/', '/store/distro/', '/store/merch/']) {
+      expect(
+        isNavigableShellSectionAnchor(
+          createAnchor(`${windowOrigin}/blackbox-records${pathname}`),
+          `${windowOrigin}/blackbox-records/`,
+        ),
+      ).toBe(true);
+    }
   });
 
   it('recognizes detail route anchors that can open as overlays', () => {
@@ -103,5 +111,18 @@ describe('shell navigation helpers', () => {
       '',
       `${windowOrigin}/blackbox-records/store/`,
     );
+  });
+
+  it('keeps every Store category as a distinct shell history path', () => {
+    const categories = ['/store/', '/store/blackbox-releases/', '/store/distro/', '/store/merch/'];
+
+    for (const pathname of categories) {
+      markCurrentHistoryEntryForShellSection(
+        `/blackbox-records${pathname}`,
+        `${windowOrigin}/blackbox-records${pathname}`,
+      );
+    }
+
+    expect(replaceState.mock.calls.map(([state]) => state.pathname)).toEqual(categories);
   });
 });

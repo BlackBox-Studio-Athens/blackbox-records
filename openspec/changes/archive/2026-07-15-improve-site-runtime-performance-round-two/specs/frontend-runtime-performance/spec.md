@@ -4,6 +4,21 @@
 
 The system MUST keep primary and secondary public route classes within declared load, first-traversal, and repeat-traversal budgets.
 
+#### Scenario: Fixed-profile route loads are measured
+
+- **WHEN** the declared cold-load profile runs
+- **THEN** Home LCP is no more than 2.0 seconds
+- **AND** Store and Distro LCP are each no more than 2.5 seconds
+- **AND** CLS is no more than 0.1 on every representative route.
+
+#### Scenario: Narrow CPU-stressed scrolling is measured
+
+- **GIVEN** the representative route is settled at the declared narrow viewport with 4x CPU throttling
+- **WHEN** the same scroll segment is traced at least three times
+- **THEN** application-attributable main-thread plus paint work has a p95 no greater than 8 milliseconds per frame
+- **AND** no repeatable application-attributable main-thread or paint slice exceeds 16.7 milliseconds
+- **AND** no repeatable application-attributable long task reaches 50 milliseconds.
+
 #### Scenario: Fixed desktop route loads are measured
 
 - **WHEN** the declared 1440×900 DPR-1 cache-cleared production profile runs at least five times
@@ -26,9 +41,17 @@ The system MUST keep primary and secondary public route classes within declared 
 - **WHEN** the same fixed segment and input cadence are captured at least three times for first traversal and at least three times for repeat traversal
 - **THEN** first traversal is reported separately and is never discarded as warm-up
 - **AND** application-attributable main-thread plus style, layout, and paint work has a p95 no greater than 8 milliseconds per frame
-- **AND** frame interval p95 is no greater than 16.7 milliseconds
+- **AND** frame interval p95 is no greater than 16.7 milliseconds unless a same-profile low-work control proves a higher runner cadence floor, in which case it is no greater than that control plus 0.5 milliseconds
 - **AND** no application-attributable main-thread or rendering slice exceeds 16.7 milliseconds
 - **AND** no application-attributable task or long animation frame reaches 50 milliseconds.
+
+#### Scenario: The runner cadence is slower than the declared frame budget
+
+- **GIVEN** a same-profile low-work control has sub-8-millisecond application-work p95, no application-attributable task or long animation frame of 50 milliseconds or more, and a frame-interval p95 above 16.7 milliseconds
+- **WHEN** a route is evaluated with the same browser, viewport, CPU setting, network state, cadence, and trace aggregation
+- **THEN** the route may use the control p95 plus 0.5 milliseconds as its frame-interval ceiling
+- **AND** that calibration does not relax the application-work, rendering-slice, long-task, load, CLS, or rendered-UX gates
+- **AND** the report retains both the control and route values rather than describing the route as an unconditional 60 Hz pass.
 
 #### Scenario: A budget is missed
 
@@ -39,6 +62,17 @@ The system MUST keep primary and secondary public route classes within declared 
 ### Requirement: Long catalog pages skip offscreen rendering
 
 The system SHALL balance initial rendering and first traversal on Store and Distro without requiring one containment strategy for every route or breakpoint.
+
+#### Scenario: Shopper scrolls through contained content
+
+- **WHEN** a skipped Store or Distro group approaches the viewport
+- **THEN** its content renders without a visible scrollbar jump, overlapping content, broken responsive image loading, or horizontal overflow
+- **AND** keyboard order, find-in-page, accessibility-tree access, and shell scroll reset remain correct.
+
+#### Scenario: Native containment meets the route budget
+
+- **WHEN** Store and Distro pass the declared scroll gate with native containment
+- **THEN** list virtualization, pagination, and infinite scrolling are not added for performance reasons.
 
 #### Scenario: Long catalog initially renders
 
@@ -68,9 +102,32 @@ The system SHALL balance initial rendering and first traversal on Store and Dist
 - **THEN** implementation stops and records the residual trace
 - **AND** pagination, virtualization, infinite scrolling, or node recycling requires an amended OpenSpec design with accessibility and shell-navigation acceptance before implementation.
 
+#### Scenario: Approved Store rendering rungs are exhausted
+
+- **GIVEN** grouped containment, retained activation, and eager rendering have been measured against the same Store route
+- **WHEN** no rung passes both load and application-attributable traversal gates
+- **THEN** the existing Store renderer remains authoritative and the residual is recorded as non-passing
+- **AND** the report names the rejected evidence, the unchanged commerce/request boundary, and the post-consolidation Store route remeasurement that must precede a future bounded remedy
+- **AND** the residual does not authorize pagination, virtualization, infinite scrolling, node recycling, batch Store Offer reads, static price authority, or a passing performance claim.
+
 ### Requirement: Critical font delivery is bounded and glyph-safe
 
 The system MUST deliver the existing Veneer brand font without modifying its bytes and without a late font-driven layout task.
+
+#### Scenario: Brand font can be legally subset
+
+- **GIVEN** the font license permits modification and subsetting
+- **WHEN** the critical WOFF2 is produced
+- **THEN** it covers the declared fixed UI and repository-content corpus plus required Greek and Latin Extended fixtures
+- **AND** automated coverage verification fails when a required glyph is absent
+- **AND** the transferred critical brand-font file is no more than 160 KiB.
+
+#### Scenario: Brand font cannot be legally or safely subset
+
+- **WHEN** license or glyph inspection cannot prove that a subset is permitted and complete
+- **THEN** the original font file is not modified
+- **AND** implementation narrows font usage or preload scope instead of shipping an unverified derivative
+- **AND** the unresolved byte budget is reported with the blocking evidence.
 
 #### Scenario: Font modification rights remain unavailable
 

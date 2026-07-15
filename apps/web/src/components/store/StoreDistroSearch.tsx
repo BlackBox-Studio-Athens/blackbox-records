@@ -58,7 +58,7 @@ export function reduceDistroCoverflowState(
   return { ...state, activeIndex: (state.activeIndex + event.delta + previewCount) % previewCount };
 }
 
-type DistroSearchProps = {
+type StoreDistroSearchProps = {
   pageKey: string;
 };
 
@@ -462,7 +462,7 @@ export function getDistroSearchResultState(visibleCount: number) {
   };
 }
 
-function DistroSearch({ pageKey }: DistroSearchProps) {
+function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
   const coverflowControllerRef = useRef<DistroCoverflowController | null>(null);
   const domRef = useRef<DistroSearchDom | null>(null);
   const searcherRef = useRef<ReturnType<typeof createExactFirstSearcher<DistroSearchItem>> | null>(null);
@@ -576,4 +576,4 @@ function DistroSearch({ pageKey }: DistroSearchProps) {
   );
 }
 
-export default DistroSearch;
+export default StoreDistroSearch;

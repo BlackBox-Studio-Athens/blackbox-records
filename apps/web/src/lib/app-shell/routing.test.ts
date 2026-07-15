@@ -15,11 +15,25 @@ describe('app shell routing helpers', () => {
   });
 
   it('recognizes top-level shell section routes', () => {
-    expect(parseShellSectionRoute('/blackbox-records/store/')).toEqual({
-      kind: 'store',
-      pathname: '/store/',
-    });
-    expect(parseShellSectionRoute('/blackbox-records/store/disintegration-black-vinyl-lp/')).toBeNull();
+    for (const pathname of ['/store/', '/store/blackbox-releases/', '/store/distro/', '/store/merch/']) {
+      expect(parseShellSectionRoute(`/blackbox-records${pathname}`)).toEqual({
+        kind: 'store',
+        pathname,
+      });
+    }
+  });
+
+  it('does not treat Store items, checkout routes, unknown children, or legacy Distro as shell sections', () => {
+    for (const pathname of [
+      '/store/disintegration-black-vinyl-lp/',
+      '/store/checkout/',
+      '/store/checkout/return/',
+      '/store/disintegration-black-vinyl-lp/checkout/',
+      '/store/unknown/',
+      '/distro/',
+    ]) {
+      expect(parseShellSectionRoute(`/blackbox-records${pathname}`)).toBeNull();
+    }
   });
 
   it('recognizes detail routes that can render as overlays', () => {

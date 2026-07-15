@@ -133,7 +133,7 @@ export function buildHomeFields() {
               label: 'Link URL',
               name: 'link_url',
               widget: 'string',
-              hint: 'Internal section path starting with /. Example: /distro/.',
+              hint: 'Internal section path starting with /. Example: /store/distro/.',
             }),
           ],
         },

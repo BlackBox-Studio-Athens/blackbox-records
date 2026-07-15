@@ -15,7 +15,7 @@ const args = new Map(
 );
 const profile = (args.get('profile') ?? 'desktop-load') as Profile;
 const baseUrl = args.get('base-url') ?? 'http://127.0.0.1:4321/blackbox-records/';
-const routes = (args.get('routes') ?? 'home,store,distro').split(/[,\s]+/);
+const routes = (args.get('routes') ?? 'home,store,store/distro').split(/[,\s]+/);
 const runs = Number(args.get('runs') ?? (profile === 'desktop-load' ? 5 : 3));
 const output = args.get('output') ?? `.codex-artifacts/runtime-performance/${Date.now()}-${profile}.json`;
 const blockThirdPartyAnalytics = args.get('block-third-party-analytics') === 'true';

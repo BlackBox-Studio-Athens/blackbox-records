@@ -248,6 +248,7 @@ Read these first before editing:
 - Artists: `apps/web/src/content/artists/*.md`
 - Releases: `apps/web/src/content/releases/*.md`
 - Distro items: `apps/web/src/content/distro/*.json`
+- Store categories are presentation-only derived views; do not add category fields to Store Item, offer, checkout, stock, Stripe, or D1 authority.
 - News: `apps/web/src/content/news/*.md`
 - Header/footer navigation: `apps/web/src/content/navigation/*.json`
 - Footer social links: `apps/web/src/content/socials/*.json`
@@ -279,7 +280,7 @@ All JSON collection entries include `$schema` links to Astro-generated collectio
 
 ## Routing model
 
-- Top-level section routes (`/`, `/distro/`, `/news/`, `/artists/`, `/releases/`, `/services/`, `/about/`) are same-document shell routes
+- Top-level section routes (`/`, `/news/`, `/artists/`, `/releases/`, `/services/`, `/about/`, `/store/`, `/store/blackbox-releases/`, `/store/distro/`, `/store/merch/`) are same-document shell routes
 - `AppShellRoot` fetches and caches rendered `<main>` content from the real Astro pages, then swaps it in place
 - The shell now owns section-transition UX:
   - scroll reset
@@ -288,7 +289,8 @@ All JSON collection entries include `$schema` links to Astro-generated collectio
   - route loading indicator
 - Internal clicks to release/artist/news detail routes are intercepted and opened as overlays
 - Direct loads to `/releases/[slug]/`, `/artists/[slug]/`, `/news/[slug]/` still render full Astro pages
-- `News` currently remains routed content, but is hidden from the visible homepage/header/footer IA while `Distro` is active
+- `News` remains routed content but is hidden from the visible homepage/header/footer IA; Store is the primary commerce navigation
+- `Releases` remains editorial. Store owns sellable item routes and exposes the exact public categories `All`, `BlackBox Releases`, `Distro`, and `Merch`; `/distro/` is compatibility-only and redirects to `/store/distro/`.
 - Overlay HTML is fetched from `partial = true` routes under `apps/web/src/pages/app-shell-overlay/`
 - Non-shell routes still use normal document navigation
 

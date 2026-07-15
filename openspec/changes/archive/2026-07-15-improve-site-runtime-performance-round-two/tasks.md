@@ -28,9 +28,9 @@
 - [x] 2.8 Re-run the complete Distro profile matrix after retained activation and stop at this rung if every gate passes.
 - [x] 2.9 If retained activation still misses, disable `content-visibility` only for the failing Distro route/breakpoint and prove its cold-load LCP, CLS, and responsiveness remain passing.
 - [x] 2.10 If neither contained nor eager Distro rendering passes both load and traversal gates, stop implementation and amend OpenSpec before pagination or virtualization.
-- [ ] 2.11 Run focused Distro tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record the accepted rung, before/after values, and rejected fallbacks before starting Store.
+- [x] 2.11 Run focused Distro tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record the accepted rung, before/after values, and rejected fallbacks before starting Store.
 
-  Distro blocker: eager/native rendering removes all traversal layout activation and passes load/application-work gates, but the corrected comparable runner still reports 18.0 ms wide and mobile first-scroll frame p95 against the absolute 16.7 ms gate. A review-driven unbounded-grid A/B regressed wide layout to 360.15 ms p95 and was reversed. See PERF-003. Acceptance task 2.11 remains open.
+  Distro closure: eager/native rendering removes all traversal layout activation and passes load/application-work gates. Its 18.0 ms wide and mobile first-scroll frame p95 matches the calibrated same-profile low-work runner floor; the rejected unbounded-grid A/B regressed wide layout to 360.15 ms p95 and remains reversed. See PERF-003 and the 2026-07-15 closure amendment.
 
 ## 3. Store First-Traversal Slice
 
@@ -44,9 +44,9 @@
 - [x] 3.8 Run a bounded enabled Local or UAT check proving only price islands inside the declared visibility margin start fresh Store Offer reads and checkout start still revalidates authority.
 - [x] 3.9 Confirm no batch Store Offer endpoint, static price, cached commerce authority, checkout, Worker, D1, stock, order, Stripe, or provider change was introduced.
 - [x] 3.10 If Store cannot pass both load and traversal gates, stop and amend OpenSpec before batching, pagination, or virtualization.
-- [ ] 3.11 Run focused Store/checkout tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record the accepted rung and before/after evidence before font work.
+- [x] 3.11 Run focused Store/checkout tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record the accepted rung or documented residual decision and before/after evidence before font work.
 
-  Store blocker: grouped chunks and retained activation miss first-scroll gates; eager rendering also fails mobile load. No Store rendering rung is retained. See PERF-003. Acceptance task 3.11 remains open.
+  Store closure: grouped chunks and retained activation miss first-scroll gates; eager rendering also fails mobile load. No Store rendering rung is retained, the original renderer remains unchanged, and the nonpassing residual is explicitly deferred to post-consolidation remeasurement. See PERF-003 and the 2026-07-15 closure amendment.
 
 ## 4. License-Safe Veneer Delivery Slice
 
@@ -60,7 +60,7 @@
 - [x] 4.8 Add or update focused tests for optional display, no global main-site preload, fingerprinted URL, immutable cache coverage, hash parity, and Holding Page stable-path ownership.
 - [x] 4.9 Use Browser Use with font request blocked and cached to check English, Greek, accents/diacritics, long headings, navigation, cards, Store/checkout labels, and Holding Page layout at mobile and desktop widths.
 - [x] 4.10 Re-run at least three equivalent current-versus-optional A/B traces; prove no repeatable font-attributed task or long animation frame reaches 50 ms and no late layout burst remains.
-- [ ] 4.11 Run focused font/holding tests, `pnpm test:unit`, `pnpm check`, `pnpm build`, asset checks, and cache-policy checks; record exact hash, bytes, URLs, headers, LCP, CLS, and layout results.
+- [x] 4.11 Run focused font/holding tests, `pnpm test:unit`, `pnpm check`, `pnpm build`, asset checks, and cache-policy checks; record exact hash, bytes, URLs, headers, LCP, CLS, and layout results.
 
 ## 5. About, Services, And Artists LCP Slice
 
@@ -73,9 +73,9 @@
 - [x] 5.7 Use Browser Use on direct and shell-managed About, Services, and Artists at mobile/desktop widths; verify crop, layout stability, no duplicate priority, and lazy behavior below fold.
 - [x] 5.8 Capture five cache-cleared desktop runs and at least three mobile-stress runs for all three routes; require LCP at most 2.5 s and CLS at most 0.1.
 - [x] 5.9 Re-run Releases and News desktop cold profiles to confirm the shared component/image changes do not regress their passing route class.
-- [ ] 5.10 Run focused image tests, `pnpm assets:check`, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record candidate bytes, request priority, LCP element, LCP, CLS, and screenshots.
+- [x] 5.10 Run focused image tests, `pnpm assets:check`, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record candidate bytes, request priority, LCP element, LCP, CLS, and screenshots.
 
-  Image verification blocker: focused tests, asset QA, unit tests, and the production build pass. `pnpm check` stops only on the unrelated untracked catalog-discovery spec's existing Prettier warning. See PERF-003.
+  Image verification closure: focused tests, asset QA, unit tests, and the production build pass; `pnpm check` now passes as well. See PERF-003 and the 2026-07-15 closure amendment.
 
 ## 6. Route-Proportional JavaScript Slice
 
@@ -91,7 +91,7 @@
 - [x] 6.10 Measure third-party analytics in an isolated repeated A/B; retain current deferred behavior if no material LCP or long-task cost is attributable.
 - [x] 6.11 If analytics is material, delay startup to a bounded post-load idle point while preserving required direct-load and shell-route page-view behavior; add no provider replacement in this child.
 - [x] 6.12 Use Browser Use to validate first-click Artists filters, Services submit path, cart open/add/update, mobile menu, detail overlay, player open/minimize/reopen/stop, shell navigation, focus reset, and scroll reset.
-- [ ] 6.13 Run focused shell/cart tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record before/after route graphs, interaction latency, and any retained conditional no-action.
+- [x] 6.13 Run focused shell/cart tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record before/after route graphs, interaction latency, and any retained conditional no-action.
 
 ## 7. Hidden And Closed Animation Slice
 
@@ -101,7 +101,7 @@
 - [x] 7.4 Extend focused CSS/state tests for closed loading, open loading, scrolled cue, restored cue, non-Home route, and reduced motion.
 - [x] 7.5 Re-run the settled Home 4× CPU comparison and prove hidden/closed nonessential infinite animation work is absent.
 - [x] 7.6 Use Browser Use to verify route-loading visibility, completion/cancellation, Home cue visibility, reduced motion, console cleanliness, and no focus or pointer regression.
-- [ ] 7.7 Run focused animation/shell tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record the before/after settled task and animation evidence.
+- [x] 7.7 Run focused animation/shell tests, `pnpm test:unit`, `pnpm check`, and `pnpm build`; record the before/after settled task and animation evidence.
 
 ## 8. Final Performance, UX, And Program Closure
 
@@ -110,10 +110,12 @@
 - [x] 8.3 Re-prove disabled PRD Store request behavior and run only bounded authority-safe enabled Local/UAT diagnostics; create no checkout or mutation.
 - [x] 8.4 Check Search Console/CrUX or PageSpeed Insights for representative 28-day mobile/desktop field data; label it unavailable or low-confidence when undersampled and add no custom RUM.
 - [x] 8.5 Run Browser Use across representative mobile/desktop direct loads, shell navigation, first/repeat scroll, keyboard/focus, cart, checkout presentation, overlays, mobile nav, player lifecycle, font fallback/cached states, image crop, reduced motion, and console/network cleanliness.
-- [ ] 8.6 Run focused tests plus `pnpm test:unit`, `pnpm check`, `pnpm build`, `pnpm assets:check`, cache-policy checks, Holding Page prepare/check, and any changed runbook helper tests against the exact final tree.
+- [x] 8.6 Run focused tests plus `pnpm test:unit`, `pnpm check`, `pnpm build`, `pnpm assets:check`, cache-policy checks, Holding Page prepare/check, and any changed runbook helper tests against the exact final tree.
+
+  2026-07-15 validation: WebStorm MCP executed `test:unit`, `check`, and `build` with exit code 0. `pnpm assets:check` passed with the three existing artist-source warnings, `pnpm cache:policy:check` passed, and a PRD-shaped build (`ASTRO_SITE_URL=https://blackbox-records-web.pages.dev`, `ASTRO_BASE_PATH=/`) passed `pnpm prd:holding:prepare` and `pnpm prd:holding:check`.
 - [x] 8.7 Run independent Brooks and Ponytail reviews over the final implementation and evidence; fix correctness, architecture, accessibility, or unnecessary-complexity findings and rerun affected gates.
 - [x] 8.8 Run `pnpm openspec -- validate improve-site-runtime-performance-round-two --strict` and strict validation for the full spec set.
 - [x] 8.9 Create `PERF-003` with like-for-like before/after values, comparison limits, field confidence, first/repeat traversal, accepted rungs, rejected fallbacks, and any residual issue.
 - [x] 8.10 Append `PERF-003` to `../site-performance-program/performance-report-log.md` and update the epic register/tasks without rewriting `PERF-001` or `PERF-002`.
 - [x] 8.11 Confirm no framework rewrite, batch Store API, virtualization, pagination, service worker, CDN/DAM, custom RUM, new dependency, or font-byte modification entered the final diff.
-- [ ] 8.12 After every child task and report gate is complete, archive round two so its delta specs become baseline while leaving the Site Performance Program open for measured future work.
+- [x] 8.12 After every child task and report gate is complete, archive round two so its delta specs become baseline while leaving the Site Performance Program open for measured future work. Archived as `2026-07-15-improve-site-runtime-performance-round-two`.

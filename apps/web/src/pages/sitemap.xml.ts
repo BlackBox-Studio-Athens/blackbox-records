@@ -1,12 +1,21 @@
 import { createAbsoluteSiteUrl } from '@/config/site';
 import { getReleaseDetailSlug, listArtistProfiles, listNewsArticles, listReleaseCatalog } from '@/lib/catalog-data';
+import { storeCatalogCategories } from '@/lib/store-categories';
 
 export async function GET() {
   const artists = await listArtistProfiles();
   const releases = await listReleaseCatalog();
   const news = await listNewsArticles();
 
-  const staticPaths = ['/', '/about/', '/artists/', '/distro/', '/releases/', '/news/', '/services/', '/store/'];
+  const staticPaths = [
+    '/',
+    '/about/',
+    '/artists/',
+    '/releases/',
+    '/news/',
+    '/services/',
+    ...storeCatalogCategories.map((category) => category.path),
+  ];
   const artistPaths = artists.map((artist) => `/artists/${artist.data.slug}/`);
   const releasePaths = releases.map((release) => `/releases/${getReleaseDetailSlug(release)}/`);
   const newsPaths = news.map((item) => `/news/${item.id}/`);

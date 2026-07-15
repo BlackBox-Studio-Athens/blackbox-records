@@ -7,13 +7,13 @@ describe('check-image-markup', () => {
     const html = '<img class="distro-card__image" src="/full.webp" loading="eager" sizes="100vw">';
 
     expect(
-      checkImageMarkup(new Map([['distro/index.html', html]]), [
+      checkImageMarkup(new Map([['store/distro/index.html', html]]), [
         {
-          route: 'distro/index.html',
+          route: 'store/distro/index.html',
           images: [{ className: 'distro-card__image', firstEagerCount: 1, requireSrcset: true }],
         },
       ]),
-    ).toEqual([{ route: 'distro/index.html', message: 'distro-card__image #1 lacks srcset/sizes.' }]);
+    ).toEqual([{ route: 'store/distro/index.html', message: 'distro-card__image #1 lacks srcset/sizes.' }]);
   });
 
   it('flags first-viewport media that is still lazy', () => {

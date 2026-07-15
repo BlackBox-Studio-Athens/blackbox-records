@@ -236,7 +236,7 @@ export default function AppShellRoot({
   }, [isPlayerModalOpen, overlayState]);
 
   useEffect(() => {
-    if (activeShellPathname !== '/distro/' || typeof window === 'undefined') return;
+    if (activeShellPathname !== '/store/distro/' || typeof window === 'undefined') return;
 
     const timeoutId = window.setTimeout(() => {
       const groups = [...document.querySelectorAll('[data-distro-coverflow-group]')];
@@ -291,6 +291,11 @@ export default function AppShellRoot({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    if (activeShellPathname !== '/store/distro/') {
+      setDistroSearchContainer(null);
+      return;
+    }
+
     let disconnect: (() => void) | undefined;
     const connect = () => {
       disconnect = connectShellPortalTarget({
@@ -298,7 +303,7 @@ export default function AppShellRoot({
         queryTarget: () => document.querySelector<HTMLElement>('[data-distro-search]'),
         scheduler: window,
         setTarget: setDistroSearchContainer,
-        targetPathname: '/distro/',
+        targetPathname: '/store/distro/',
       });
     };
 

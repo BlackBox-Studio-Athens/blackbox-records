@@ -45,9 +45,9 @@ describe('shell anchor click navigation', () => {
 
   it('allows same-document fragment anchors to use native navigation', () => {
     const options = createOptions({
-      currentHref: 'https://example.test/blackbox-records/distro/',
+      currentHref: 'https://example.test/blackbox-records/store/distro/',
       isNavigableShellSectionAnchor: vi.fn(() => true),
-      resolveInternalUrl: vi.fn(() => new URL('https://example.test/blackbox-records/distro/#distro-group-cds')),
+      resolveInternalUrl: vi.fn(() => new URL('https://example.test/blackbox-records/store/distro/#distro-group-cds')),
     });
 
     expect(routeShellAnchorClickNavigation(options)).toBe('ignored');

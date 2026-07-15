@@ -18,15 +18,25 @@ describe('app shell startup closure', () => {
     expect(source).toContain(
       "setStoreCartHeaderContainer(document.querySelector<HTMLElement>('[data-store-cart-header-root]'))",
     );
+    expect(source).toContain(
+      "if (typeof window === 'undefined') return;\n\n    let disconnect: (() => void) | undefined;",
+    );
+    expect(source).not.toContain(
+      "if (activeShellPathname !== '/store/distro/') {\n      setDistroSearchContainer(null);\n      return;\n    }\n\n    let disconnect: (() => void) | undefined;\n    let cancelled",
+    );
     expect(source).toContain('.catch(() =>');
     expect(portalSource).toContain('storeCartBridgeFailed ?');
     expect(portalSource).toContain('Cart is unavailable.');
 
-    for (const moduleName of ['ArtistsRosterFilters', 'DistroSearch', 'ServicesInquiryForm', 'StoreCartButton']) {
+    for (const moduleName of ['ArtistsRosterFilters', 'StoreDistroSearch', 'ServicesInquiryForm', 'StoreCartButton']) {
       expect(portalSource).toContain(`const ${moduleName} = React.lazy(`);
     }
     expect(source).toContain("document.querySelector<HTMLElement>('[data-distro-search]')");
-    expect(source).toContain("targetPathname: '/distro/'");
+    expect(source).toContain(
+      "if (activeShellPathname !== '/store/distro/') {\n      setDistroSearchContainer(null);\n      return;\n    }\n\n    let disconnect: (() => void) | undefined;\n    const connect = () =>",
+    );
+    expect(source).toContain("activeShellPathname !== '/store/distro/'");
+    expect(source).toContain("targetPathname: '/store/distro/'");
     expect(portalSource).toContain('role="status"');
     expect(portalSource).toContain('role="alert"');
   });

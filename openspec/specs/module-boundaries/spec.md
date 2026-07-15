@@ -46,11 +46,11 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** those route files are owned by the closed `checkout-web` module
 - **AND** item-scoped checkout compatibility pages stay owned by `checkout-web` until removed.
 
-#### Scenario: Route-lazy Distro search crosses the app-shell boundary
+#### Scenario: Route-lazy Store Distro search crosses the app-shell boundary
 
 - **GIVEN** Distro search presentation is owned by `storefront-catalog`
-- **WHEN** the app shell lazily mounts that control on the Distro route
-- **THEN** `apps/web/src/components/distro/DistroSearch.tsx` is a provided `storefront-catalog` entrypoint
+- **WHEN** the app shell lazily mounts that control on `/store/distro/`
+- **THEN** `apps/web/src/components/store/StoreDistroSearch.tsx` is a provided `storefront-catalog` entrypoint
 - **AND** the app shell imports that entrypoint instead of a private storefront implementation.
 
 #### Scenario: StoreCart event contract is shared
@@ -77,13 +77,13 @@ The system SHALL avoid temporary compatibility facades during boundary work unle
 - **WHEN** a caller must be migrated
 - **THEN** the caller moves to the documented root entrypoint or named interface in the same slice.
 
-### Requirement: Storefront catalog provides route-lazy Distro search
+### Requirement: Storefront catalog provides route-lazy Store Distro search
 
 The system MUST keep Distro search presentation inside the closed `storefront-catalog` module while exposing its app-shell integration through a provided entrypoint.
 
-#### Scenario: App shell mounts Distro search
+#### Scenario: App shell mounts Store Distro search
 
 - **WHEN** the app shell imports the route-lazy Distro search control
-- **THEN** `apps/web/src/components/distro/**` is owned by `storefront-catalog`
-- **AND** `apps/web/src/components/distro/DistroSearch.tsx` is listed as a provided entrypoint
+- **THEN** the explicit `/store/distro/` route, Store category components, and `apps/web/src/components/store/StoreDistroSearch.tsx` are owned by `storefront-catalog`
+- **AND** `apps/web/src/components/store/StoreDistroSearch.tsx` is listed as a provided entrypoint
 - **AND** boundary validation passes without an ownership exception or compatibility facade.

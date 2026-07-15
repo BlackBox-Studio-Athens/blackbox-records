@@ -1,0 +1,33 @@
+---
+import { createProjectRelativeUrl } from '@/config/site';
+import { storeCatalogCategories, type StoreCatalogCategoryId } from '@/lib/store-categories';
+
+interface Props {
+  activeCategoryId: StoreCatalogCategoryId;
+}
+
+const { activeCategoryId } = Astro.props;
+---
+
+<nav aria-label="Store categories" class="border-y border-border/70">
+  <ul class="layout-container flex flex-wrap gap-x-6 gap-y-3 py-4 text-[11px] uppercase tracking-[0.18em]">
+    {
+      storeCatalogCategories.map((category) => (
+        <li>
+          <a
+            class:list={[
+              'inline-flex min-h-11 items-center border-b py-1 transition-colors',
+              category.id === activeCategoryId
+                ? 'border-foreground text-foreground'
+                : 'border-transparent text-muted-foreground hover:border-foreground/55 hover:text-foreground',
+            ]}
+            href={createProjectRelativeUrl(category.path)}
+            aria-current={category.id === activeCategoryId ? 'page' : undefined}
+          >
+            {category.label}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>

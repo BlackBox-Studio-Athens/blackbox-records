@@ -10,6 +10,7 @@ import {
   findStoreItemRelationForRelease,
   resolveStoreItemSlugForDistro,
 } from './store-item-ownership';
+import { reservedStoreRouteSegments } from './store-categories';
 
 export { groupDistroEntries } from './distro-data';
 
@@ -128,8 +129,6 @@ export function resolveReleaseArtistDisplayName(
   const artistSlugFallbackName = releaseEntry.data.artist.id || 'Artist';
   return artistProfile?.data.title || artistSlugFallbackName.replace(/-/g, ' ');
 }
-
-const reservedStoreItemSlugs = new Set(['checkout']);
 
 function createStoreItemPath(slug: string) {
   return createProjectRelativeUrl(`/store/${slug}/`);
@@ -274,9 +273,11 @@ export async function listStoreItems(): Promise<StoreItem[]> {
 }
 
 export function mapStoreItemsBySlug(storeItems: StoreItem[]) {
-  const reservedSlug = storeItems.find((storeItem) => reservedStoreItemSlugs.has(storeItem.slug));
+  const reservedSlug = storeItems.find((storeItem) => reservedStoreRouteSegments.has(storeItem.slug));
   if (reservedSlug) {
-    throw new Error(`Reserved Store Item slug detected: ${reservedSlug.slug}`);
+    throw new Error(
+      `Reserved Store Item slug detected for ${reservedSlug.sourceKind}:${reservedSlug.sourceId}: ${reservedSlug.slug}`,
+    );
   }
 
   assertNoSlugCollisions(

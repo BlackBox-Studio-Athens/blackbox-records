@@ -74,12 +74,12 @@ function createSnapshotDocument() {
     '<section>Catalog</section><div data-artists-roster-filters>hydrated filters</div><div data-distro-search><input value="vinyl"></div><a hidden data-distro-search-hidden>Item</a>',
   );
   const canonical = new FakeElement();
-  canonical.href = 'https://example.test/blackbox-records/releases/';
+  canonical.href = 'https://example.test/blackbox-records/store/distro/';
   const description = new FakeElement();
-  description.content = 'Release archive';
+  description.content = 'Distro Store category';
 
   return {
-    title: 'Releases | BlackBox',
+    title: 'Distro | Store | BlackBox',
     querySelector(selector: string) {
       if (selector === 'main[data-app-shell-main]') return main;
       if (selector === 'link[rel="canonical"]') return canonical;
@@ -147,17 +147,17 @@ describe('shell page snapshots', () => {
   it('reads the swappable main payload and route metadata', () => {
     const snapshot = readDocumentShellPageSnapshot(
       createSnapshotDocument(),
-      'https://example.test/blackbox-records/releases/',
+      'https://example.test/blackbox-records/store/distro/',
       'https://example.test/blackbox-records/',
     );
 
     expect(snapshot).toMatchObject({
-      canonicalHref: 'https://example.test/blackbox-records/releases/',
-      href: 'https://example.test/blackbox-records/releases/',
+      canonicalHref: 'https://example.test/blackbox-records/store/distro/',
+      href: 'https://example.test/blackbox-records/store/distro/',
       mainClassName: 'catalog-page',
-      pageDescription: 'Release archive',
-      pathname: '/releases/',
-      title: 'Releases | BlackBox',
+      pageDescription: 'Distro Store category',
+      pathname: '/store/distro/',
+      title: 'Distro | Store | BlackBox',
     });
     expect(snapshot?.mainHtml).toContain('Catalog');
     expect(snapshot?.mainHtml).not.toContain('hydrated filters');

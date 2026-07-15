@@ -41,7 +41,7 @@ const routeChecks: RouteCheck[] = [
     ],
   },
   {
-    route: 'distro/index.html',
+    route: 'store/distro/index.html',
     maxHighPriorityImages: 0,
     images: [
       {

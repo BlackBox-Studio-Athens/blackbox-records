@@ -1,0 +1,165 @@
+---
+import DistroCard from '@/components/cards/DistroCard.astro';
+import { buttonVariants } from '@/components/ui/button';
+import { getDistroPageContent } from '@/lib/site-data';
+import { groupStoreDistroCollectionEntries, type StoreCollectionEntry } from '@/lib/store-collection';
+import { cn } from '@/lib/utils';
+
+interface Props {
+  entries: StoreCollectionEntry[];
+}
+
+const { entries } = Astro.props;
+const distroPageContent = await getDistroPageContent();
+const DISTRO_COVERFLOW_PREVIEW_SIZE = 6;
+const DISTRO_COVERFLOW_INITIAL_POSITIONS = [
+  'active',
+  'right-near',
+  'right-far',
+  'back',
+  'left-far',
+  'left-near',
+] as const;
+const groupedDistroEntries = groupStoreDistroCollectionEntries(entries);
+const groupedDistroChunks = groupedDistroEntries.map((group) => ({
+  ...group,
+  coverflowEligible: group.entries.length > DISTRO_COVERFLOW_PREVIEW_SIZE,
+  headingId: `distro-group-${group.groupName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+  chunks: group.entries.reduce<(typeof group.entries)[]>((chunks, entry, index) => {
+    if (index % DISTRO_COVERFLOW_PREVIEW_SIZE === 0) chunks.push([]);
+    chunks.at(-1)!.push(entry);
+    return chunks;
+  }, []),
+}));
+const eagerDistroStoreItemSlugs = new Set(entries.slice(0, 3).map((entry) => entry.storeItem.slug));
+const itemCountLabel = `${entries.length} ${entries.length === 1 ? 'item' : 'items'}`;
+---
+
+<section id="distro-page-top" class="layout-container distro-page-intro">
+  <div class="distro-page-intro__surface">
+    <p class="distro-page-intro__eyebrow">{distroPageContent.hero.section_label}</p>
+    <h2 class="distro-page-intro__title">{distroPageContent.hero.title}</h2>
+    <p class="distro-page-intro__copy">{distroPageContent.hero.intro}</p>
+    <p class="mt-5 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{itemCountLabel}</p>
+  </div>
+  <div class="distro-page-search" data-distro-search></div>
+</section>
+
+<nav class="distro-format-navigation" aria-labelledby="distro-format-navigation-heading" data-distro-format-navigation>
+  <div class="layout-container distro-format-navigation__inner">
+    <h2 id="distro-format-navigation-heading" class="distro-format-navigation__heading">Browse formats</h2>
+    <div class="distro-format-navigation__links">
+      {
+        groupedDistroChunks.map((group) => (
+          <a
+            href={`#${group.headingId}`}
+            data-scroll-to-target={group.headingId}
+            class={cn(
+              buttonVariants({ variant: 'outline', size: 'sm' }),
+              'distro-format-navigation__link h-auto rounded-none border-[#3a3a3a] bg-transparent px-3 py-2 text-[11px] tracking-[0.14em] uppercase shadow-none hover:border-[#666666] hover:bg-[#1a1a1a]',
+            )}
+          >
+            {group.groupName} <span class="text-muted-foreground">({group.entries.length})</span>
+          </a>
+        ))
+      }
+    </div>
+    <a
+      href="#distro-page-top"
+      data-scroll-to-target="distro-page-top"
+      aria-label="Back to Distro page top"
+      class={cn(
+        buttonVariants({ variant: 'outline', size: 'sm' }),
+        'distro-format-navigation__top h-auto rounded-none border-[#666666] bg-[#f5f5f5] px-3 py-2 text-[11px] tracking-[0.14em] text-[#0d0d0d] uppercase shadow-none hover:border-white hover:bg-white',
+      )}
+    >
+      Top <span aria-hidden="true">↑</span>
+    </a>
+  </div>
+</nav>
+
+<section
+  id="distro-search-results"
+  class="layout-container distro-page-groups"
+  aria-label="Distro"
+  data-distro-search-root
+>
+  {
+    groupedDistroChunks.map((group) => (
+      <section
+        class="distro-group-section"
+        aria-labelledby={group.headingId}
+        data-distro-search-group
+        data-distro-coverflow-group={group.coverflowEligible ? '' : undefined}
+        data-distro-coverflow-mode={group.coverflowEligible ? 'preview' : undefined}
+      >
+        <div class="distro-group-section__header">
+          <h2 class="distro-group-section__title" id={group.headingId}>
+            {group.groupName}
+          </h2>
+          <p class="distro-group-section__copy">{distroPageContent.group_intros[group.introGroupName]}</p>
+        </div>
+        {group.coverflowEligible && (
+          <div class="distro-coverflow-controls" data-distro-coverflow-controls>
+            <p class="distro-coverflow-summary">
+              Selected {DISTRO_COVERFLOW_PREVIEW_SIZE} of {group.entries.length}
+            </p>
+            <div class="distro-coverflow-actions">
+              <button type="button" aria-controls={`${group.headingId}-catalog`} data-distro-coverflow-previous>
+                Previous
+              </button>
+              <button type="button" aria-controls={`${group.headingId}-catalog`} data-distro-coverflow-next>
+                Next
+              </button>
+              <button
+                type="button"
+                aria-controls={`${group.headingId}-catalog`}
+                data-distro-coverflow-toggle
+                data-distro-coverflow-view-all-label={`View all ${group.entries.length}`}
+              >
+                View all {group.entries.length}
+              </button>
+            </div>
+          </div>
+        )}
+        {group.coverflowEligible && (
+          <p
+            class="distro-coverflow-status"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            data-distro-coverflow-status
+            data-distro-coverflow-initial-label={`${group.entries[0]!.storeItem.title} — ${group.entries[0]!.storeItem.subtitle}`}
+          >
+            {group.entries[0]!.storeItem.title} — {group.entries[0]!.storeItem.subtitle}
+          </p>
+        )}
+        <div class="distro-coverflow-shell">
+          {group.coverflowEligible && <span class="distro-coverflow-reveal" aria-hidden="true" />}
+          <div
+            id={group.coverflowEligible ? `${group.headingId}-catalog` : undefined}
+            class="distro-group-chunks"
+            data-distro-coverflow-stage={group.coverflowEligible ? '' : undefined}
+          >
+            {group.chunks.map((chunk, chunkIndex) => (
+              <div class="distro-group-grid distro-group-chunk" data-distro-search-chunk>
+                {chunk.map((entry, itemIndex) => (
+                  <DistroCard
+                    entry={entry}
+                    imageLoading={eagerDistroStoreItemSlugs.has(entry.storeItem.slug) ? 'eager' : 'lazy'}
+                    coverflowPreview={group.coverflowEligible && chunkIndex === 0}
+                    coverflowPosition={
+                      group.coverflowEligible && chunkIndex === 0
+                        ? DISTRO_COVERFLOW_INITIAL_POSITIONS[itemIndex]
+                        : undefined
+                    }
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    ))
+  }
+</section>

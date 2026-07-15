@@ -3,7 +3,10 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-const pageSource = readFileSync(fileURLToPath(new URL('../pages/distro/index.astro', import.meta.url)), 'utf8');
+const pageSource = readFileSync(
+  fileURLToPath(new URL('../components/store/StoreDistroCatalog.astro', import.meta.url)),
+  'utf8',
+);
 const cardSource = readFileSync(
   fileURLToPath(new URL('../components/cards/DistroCard.astro', import.meta.url)),
   'utf8',
@@ -36,7 +39,7 @@ describe('Distro Coverflow progressive enhancement', () => {
   });
 
   it('falls back after failed direct-load or app-shell-entry mounting', () => {
-    expect(appShellSource).toContain("activeShellPathname !== '/distro/'");
+    expect(appShellSource).toContain("activeShellPathname !== '/store/distro/'");
     expect(appShellSource).toContain("!group.hasAttribute('data-distro-coverflow-ready')");
     expect(appShellSource).toContain("removeAttribute('data-distro-coverflow-capable')");
     expect(shellOutletsSource).toContain(
@@ -45,10 +48,9 @@ describe('Distro Coverflow progressive enhancement', () => {
   });
 
   it('keeps artwork links ordinary and statically named in every page mode', () => {
-    expect(cardSource).toContain(
-      'aria-label={isHomeVariant ? undefined : `${item.data.title} — ${item.data.artist_or_label}`}',
-    );
+    expect(cardSource).toContain('aria-label={isHomeVariant ? undefined : `${sourceTitle} — ${sourceSubtitle}`}');
     expect(cardSource).toContain('href={storeItem.storePath}');
+    expect(cardSource).toContain('storeItemSlug={storeItem.slug}');
     expect(cardSource).not.toContain('preventDefault');
   });
 

@@ -3,7 +3,10 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-const source = readFileSync(fileURLToPath(new URL('../pages/distro/index.astro', import.meta.url)), 'utf8');
+const source = readFileSync(
+  fileURLToPath(new URL('../components/store/StoreDistroCatalog.astro', import.meta.url)),
+  'utf8',
+);
 const cssSource = readFileSync(fileURLToPath(new URL('./global.css', import.meta.url)), 'utf8');
 
 describe('Distro format navigation', () => {

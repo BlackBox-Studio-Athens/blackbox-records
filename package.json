@@ -63,6 +63,7 @@
     "performance:bundles": "tsx scripts/check-runtime-bundle-graphs.ts",
     "generate:api": "pnpm --filter @blackbox/backend generate:openapi && pnpm --filter @blackbox/api-client generate",
     "assets:check": "pnpm --filter @blackbox/web assets:check",
+    "store:categories:check": "tsx scripts/check-store-category-output.ts",
     "prd:holding:prepare": "pnpm --filter @blackbox/web prd:holding:prepare",
     "prd:holding:check": "pnpm --filter @blackbox/web prd:holding:check",
     "audit:commerce-boundaries": "tsx scripts/audit-commerce-boundaries.ts",

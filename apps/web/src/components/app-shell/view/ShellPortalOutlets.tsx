@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import type { StoreCartState } from '@/lib/store-cart';
 
 const ArtistsRosterFilters = React.lazy(() => import('@/components/artists/ArtistsRosterFilters'));
-const DistroSearch = React.lazy(() => import('@/components/distro/DistroSearch'));
+const StoreDistroSearch = React.lazy(() => import('@/components/store/StoreDistroSearch'));
 const ServicesInquiryForm = React.lazy(() => import('@/components/services/ServicesInquiryForm'));
 const StoreCartButton = React.lazy(() => import('@/components/store/StoreCartButton'));
 
@@ -80,7 +80,7 @@ export default function ShellPortalOutlets({
               onError={() => document.documentElement.removeAttribute('data-distro-coverflow-capable')}
             >
               <React.Suspense fallback={loadingStatus('distro search')}>
-                <DistroSearch key={activeShellPathname} pageKey={activeShellPathname} />
+                <StoreDistroSearch key={activeShellPathname} pageKey={activeShellPathname} />
               </React.Suspense>
             </PortalErrorBoundary>,
             distroSearchContainer,

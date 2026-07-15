@@ -94,18 +94,18 @@ describe('connectShellPortalTarget', () => {
     const scheduler = createScheduler();
 
     connectShellPortalTarget({
-      activePathname: '/distro/',
+      activePathname: '/store/distro/',
       queryTarget: () => target,
       scheduler,
       setTarget,
-      targetPathname: '/distro/',
+      targetPathname: '/store/distro/',
     });
     connectShellPortalTarget({
       activePathname: '/artists/',
       queryTarget: vi.fn(),
       scheduler,
       setTarget,
-      targetPathname: '/distro/',
+      targetPathname: '/store/distro/',
     });
 
     expect(setTarget).toHaveBeenNthCalledWith(1, target);

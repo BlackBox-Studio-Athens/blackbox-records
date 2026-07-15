@@ -2,31 +2,58 @@
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import { Card, CardContent } from '@/components/ui/card';
+import StoreOfferPriceDisplay from '@/components/store/StoreOfferPriceDisplay';
 import { createStoreItemFromDistroEntry } from '@/lib/catalog-data';
+import type { StoreCollectionEntry } from '@/lib/store-collection';
 import { cn } from '@/lib/utils';
 
 interface Props {
   coverflowPosition?: 'active' | 'back' | 'left-far' | 'left-near' | 'right-far' | 'right-near' | undefined;
   coverflowPreview?: boolean;
-  item: CollectionEntry<'distro'>;
+  entry?: StoreCollectionEntry;
   imageLoading?: 'eager' | 'lazy';
+  item?: CollectionEntry<'distro'>;
   variant?: 'home' | 'page';
 }
 
-const { coverflowPosition, coverflowPreview = false, item, imageLoading = 'lazy', variant = 'page' } = Astro.props;
-const storeItem = createStoreItemFromDistroEntry(item);
+const {
+  coverflowPosition,
+  coverflowPreview = false,
+  entry,
+  imageLoading = 'lazy',
+  item,
+  variant = 'page',
+} = Astro.props;
 const isHomeVariant = variant === 'home';
+
+if (isHomeVariant && !item) {
+  throw new Error('DistroCard home variant requires a Distro content entry.');
+}
+
+if (!isHomeVariant && (!entry || !entry.distro)) {
+  throw new Error('DistroCard page variant requires a classified Store Distro entry.');
+}
+
+const storeItem = isHomeVariant ? createStoreItemFromDistroEntry(item!) : entry!.storeItem;
+const sourceImage = isHomeVariant ? item!.data.image : storeItem.image;
+const sourceImageAlt = isHomeVariant ? item!.data.image_alt : storeItem.imageAlt;
+const sourceTitle = isHomeVariant ? item!.data.title : storeItem.title;
+const sourceSubtitle = isHomeVariant ? item!.data.artist_or_label : storeItem.subtitle;
+const sourceSummary = isHomeVariant ? item!.data.summary : storeItem.summary;
+const metadataItems = isHomeVariant
+  ? [item!.data.eyebrow || null, item!.data.format || item!.data.group].filter(Boolean)
+  : [storeItem.eyebrow || null, entry!.distro!.format || entry!.distro!.group].filter(Boolean);
+const distroSearchText = isHomeVariant
+  ? [item!.data.title, item!.data.artist_or_label, item!.data.group, item!.data.format].filter(Boolean).join(' ')
+  : entry!.distro!.searchText;
 const distroCardImageWidths = [320, 480, 640, 800, 960];
-const metadataItems = [item.data.eyebrow || null, item.data.format || item.data.group].filter(Boolean);
-const distroSearchText = [item.data.title, item.data.artist_or_label, item.data.group, item.data.format]
-  .filter(Boolean)
-  .join(' ');
+const availabilityLabel = entry?.primaryAvailability?.availability.label || 'Unavailable';
 ---
 
 <a
   class:list={['group block h-full distro-card', isHomeVariant ? 'distro-card--home' : 'distro-card--page']}
   href={storeItem.storePath}
-  aria-label={isHomeVariant ? undefined : `${item.data.title} — ${item.data.artist_or_label}`}
+  aria-label={isHomeVariant ? undefined : `${sourceTitle} — ${sourceSubtitle}`}
   data-astro-prefetch
   data-distro-coverflow-card={coverflowPreview ? '' : undefined}
   data-distro-coverflow-initial-position={coverflowPosition}
@@ -37,8 +64,8 @@ const distroSearchText = [item.data.title, item.data.artist_or_label, item.data.
   <Card className="distro-card__surface rounded-none border-[#2b2b2b] bg-[#141414] shadow-none">
     <div class="distro-card__image-frame">
       <Image
-        src={item.data.image}
-        alt={item.data.image_alt}
+        src={sourceImage}
+        alt={sourceImageAlt}
         class="distro-card__image"
         widths={distroCardImageWidths}
         sizes={isHomeVariant
@@ -58,15 +85,26 @@ const distroSearchText = [item.data.title, item.data.artist_or_label, item.data.
             </div>
           )
         }
-        <h3 class="distro-card__title">{item.data.title}</h3>
-        <p class="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">{item.data.artist_or_label}</p>
+        <h3 class="distro-card__title">{sourceTitle}</h3>
+        <p class="text-[12px] uppercase tracking-[0.14em] text-muted-foreground">{sourceSubtitle}</p>
       </div>
-      {!isHomeVariant && <p class="distro-card__summary">{item.data.summary}</p>}
+      {!isHomeVariant && sourceSummary && <p class="distro-card__summary">{sourceSummary}</p>}
       {
         !isHomeVariant && (
-          <span class="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-foreground/88">
-            View in Store <span aria-hidden="true">→</span>
-          </span>
+          <div class="mt-auto flex items-end justify-between gap-4 border-t border-border/50 pt-4">
+            <div class="space-y-1">
+              <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{availabilityLabel}</p>
+              <StoreOfferPriceDisplay
+                client:visible={{ rootMargin: '240px' }}
+                listing
+                storeItemSlug={storeItem.slug}
+                className="block min-h-[1.5rem] text-base leading-6 tracking-[0.08em] uppercase text-foreground"
+              />
+            </div>
+            <span class="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-foreground/88">
+              View in Store <span aria-hidden="true">→</span>
+            </span>
+          </div>
         )
       }
     </CardContent>

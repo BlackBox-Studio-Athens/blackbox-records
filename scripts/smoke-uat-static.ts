@@ -568,8 +568,10 @@ async function checkPublicRoutes(page: Page, options: UatStaticSmokeOptions): Pr
     [`/artists/${representativeArtistSlug}/`, ['Chronoboros']],
     ['/news/', ['News']],
     [`/news/${representativeNewsSlug}/`, ['Chronoboros', 'Caregivers']],
-    ['/distro/', ['Distro']],
     ['/store/', ['Store']],
+    ['/store/blackbox-releases/', ['BlackBox Releases']],
+    ['/store/distro/', ['Distro', 'Browse formats']],
+    ['/store/merch/', ['Merch', 'No merch currently available.']],
     [`/store/${representativeStoreItemSlug}/`, ['Disintegration', 'Add it to the cart']],
     ['/services/', ['Services']],
     ['/about/', ['About']],
@@ -607,6 +609,31 @@ async function checkPublicRoutes(page: Page, options: UatStaticSmokeOptions): Pr
       url,
     });
   }
+
+  const legacyDistroPath = '/distro/';
+  const legacyDistroUrl = createRouteUrl(options.siteUrl, legacyDistroPath);
+  const legacyDistroProbe = await probeSmokeRoute(page, legacyDistroUrl, options.timeoutMs);
+  const legacyDistroIssues = [...legacyDistroProbe.issues];
+  const expectedLegacyDistroUrl = createRouteUrl(options.siteUrl, '/store/distro/');
+
+  if (!legacyDistroProbe.url.startsWith(expectedLegacyDistroUrl)) {
+    legacyDistroIssues.push(
+      `Expected ${legacyDistroPath} to replace to ${expectedLegacyDistroUrl}; received ${legacyDistroProbe.url}.`,
+    );
+  }
+  legacyDistroIssues.push(
+    ...checkReviewSiteMarker(legacyDistroProbe.bodyText, legacyDistroProbe.title, legacyDistroPath),
+  );
+  routeChecks.push({
+    bodyTextSnippet: truncateForConsole(redactSensitiveSmokeText(legacyDistroProbe.bodyText), 450),
+    contentType: null,
+    issues: legacyDistroIssues,
+    kind: 'page',
+    path: legacyDistroPath,
+    status: legacyDistroProbe.status,
+    title: legacyDistroProbe.title,
+    url: legacyDistroProbe.url,
+  });
 
   routeChecks.push(await checkTextAsset(options, '/sitemap.xml', ['<urlset', '</urlset>']));
   routeChecks.push(await checkTextAsset(options, '/robots.txt', ['User-agent:', 'Sitemap:']));

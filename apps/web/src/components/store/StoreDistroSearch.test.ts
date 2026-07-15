@@ -8,7 +8,7 @@ import {
   readDistroSearchDom,
   reduceDistroCoverflowState,
   type DistroSearchDom,
-} from './DistroSearch';
+} from './StoreDistroSearch';
 
 class FakeElement {
   dataset: Record<string, string> = {};

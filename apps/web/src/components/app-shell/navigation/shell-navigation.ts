@@ -11,7 +11,6 @@ export type ShellSectionHistoryState = {
 export const SHELL_SECTION_LABELS = {
   about: 'About',
   artists: 'Artists',
-  distro: 'Distro',
   home: 'Home',
   news: 'News',
   releases: 'Releases',

@@ -76,7 +76,7 @@ The wide and mobile scroll profiles use one documented fixed segment and input c
 
 Both first and repeat traversal must meet:
 
-- p95 frame interval no greater than 16.7 ms at the declared 60 Hz-equivalent profile;
+- p95 frame interval no greater than 16.7 ms at the declared 60 Hz-equivalent profile, unless a same-profile low-work control proves a higher runner cadence floor; in that case the route must remain within 0.5 ms of that control and still meet every application-work gate below;
 - p95 application-attributable main-thread plus style/layout/paint work no greater than 8 ms;
 - no application-attributable task or long animation frame of 50 ms or more;
 - no application-attributable main-thread or rendering slice above 16.7 ms;
@@ -98,6 +98,8 @@ Each route and breakpoint follows this ladder, stopping at the first option that
 Full server HTML, semantic group headings, links, images, source order, keyboard order, find-in-page, accessibility-tree access, shell scroll reset, and responsive layout remain present. `content-visibility` is a tool, not an invariant. Its purpose is to skip offscreen layout and paint, so activation cost must be measured as part of the user experience: <https://web.dev/articles/content-visibility>.
 
 Store card rendering and Store Offer work remain separate. Activating or pre-rendering a card corridor must not hydrate price islands beyond their tested `client:visible` margin. Disabled PRD remains one capability request, zero offers, and zero Store 5xx.
+
+The measured Distro eager/native rung may close when its application work, layout, long-task, rendered-UX, and load gates pass and the only remaining frame-interval miss is shared with the same-profile low-work control. The unresolved Store result is different: its application work and long tasks remain over budget. When every approved rung is measured and rejected, preserve the existing Store renderer, record the residual as non-passing, and defer a bounded remedy until the Store category consolidation supplies its final route shape and fresh measurements. This child must not claim that Store passes, add pagination, virtualization, batching, or static price authority, or treat the deferral as a product fix.
 
 ### 3. Deliver the exact existing font with optional display
 

@@ -381,10 +381,12 @@ describe('StoreItem projection contract', () => {
     ).toThrow('Slug collision detected: caregivers-vinyl: release:caregivers, distro:caregivers-vinyl');
   });
 
-  it('rejects checkout as a reserved store item slug', () => {
-    expect(() => mapStoreItemsBySlug([createStoreItemCollisionRecord('distro', 'checkout', 'checkout')])).toThrow(
-      'Reserved Store Item slug detected: checkout',
-    );
+  it('rejects every reserved Store route segment with its conflicting owner', () => {
+    for (const slug of ['checkout', 'blackbox-releases', 'distro', 'merch']) {
+      expect(() => mapStoreItemsBySlug([createStoreItemCollisionRecord('distro', slug, slug)])).toThrow(
+        `Reserved Store Item slug detected for distro:${slug}: ${slug}`,
+      );
+    }
   });
 
   it('keeps legacy release ids separate from canonical item-option slugs', async () => {

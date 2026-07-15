@@ -100,4 +100,22 @@ describe('canonical Store Item ownership', () => {
       ),
     ).toThrow('Duplicate storeItemSlug same-slug: release:first, release:second');
   });
+
+  it('rejects every reserved Store route segment before static Store paths are created', () => {
+    for (const slug of ['checkout', 'blackbox-releases', 'distro', 'merch']) {
+      expect(() =>
+        createValidatedStoreItemProjection(
+          [
+            {
+              physicalEditionKeys: ['reserved'],
+              sourceId: slug,
+              sourceKind: 'release',
+              storeItemSlug: slug,
+            },
+          ],
+          [],
+        ),
+      ).toThrow(`Reserved Store Item slug detected for release:${slug}: ${slug}.`);
+    }
+  });
 });

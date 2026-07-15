@@ -2,7 +2,7 @@
 
 The independent post-round-one audit found that the first implementation fixed major load and request costs but did not make the first traversal consistently smooth. Distro first scroll still produced a 183.3 ms frame p95 and 26 long tasks, Store first scroll produced a 100 ms frame p95 and 11 long tasks, the unmodified 312,816-byte Veneer font still triggered approximately one second of late layout work, and Artists, Services, and About missed the good LCP threshold.
 
-This second child of `site-performance-program` closes every measured residual issue with first traversal as the critical scroll experience. It preserves round one's successful Store request control, static Astro architecture, brand identity, accessibility, and app-shell/player contracts.
+This second child of `site-performance-program` closes every implementation-ready residual issue with first traversal as the critical scroll experience. It preserves round one's successful Store request control, static Astro architecture, brand identity, accessibility, and app-shell/player contracts, and records any exhausted Store strategy as an explicit non-passing residual for a post-consolidation performance slice.
 
 ## What Changes
 
@@ -14,6 +14,8 @@ This second child of `site-performance-program` closes every measured residual i
 - Stop the hidden hero scroll cue and closed route-loading bar from running infinite animation work while retaining active loading feedback and reduced-motion behavior.
 - Preserve exactly one Store capability read, zero Store Offer reads, and zero Store 5xx responses in disabled PRD while rendering changes prime the first-scroll corridor.
 - Re-profile every changed slice, all primary and secondary route classes, request behavior, accessibility, shell/player continuity, and available field data. Append `PERF-003` to the epic before this child is archived.
+- Calibrate frame-interval acceptance against a same-profile low-work control when the runner cadence itself exceeds the 60 Hz-equivalent budget; application work, long-task, layout, and rendered UX gates remain unchanged.
+- Preserve the existing Store renderer when all approved rungs are measured and rejected, record its non-passing residual without calling it accepted, and defer a bounded remedy until Store category consolidation changes the measured route shape.
 
 ## Capabilities
 

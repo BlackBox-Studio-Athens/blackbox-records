@@ -253,8 +253,8 @@ describe('shell document event routing', () => {
     const routeShellPopStateNavigation = vi.fn(() => 'shell-section' as const);
     const historyState = { __appShellSection: true };
     const options = createOptions({
-      currentHref: vi.fn(() => 'https://example.test/blackbox-records/distro/'),
-      currentPathname: vi.fn(() => '/blackbox-records/distro/'),
+      currentHref: vi.fn(() => 'https://example.test/blackbox-records/store/distro/'),
+      currentPathname: vi.fn(() => '/blackbox-records/store/distro/'),
       dependencies: {
         routeShellPopStateNavigation,
       },
@@ -266,8 +266,8 @@ describe('shell document event routing', () => {
 
     expect(routeShellPopStateNavigation).toHaveBeenCalledWith(
       expect.objectContaining({
-        currentHref: 'https://example.test/blackbox-records/distro/',
-        currentPathname: '/blackbox-records/distro/',
+        currentHref: 'https://example.test/blackbox-records/store/distro/',
+        currentPathname: '/blackbox-records/store/distro/',
         historyState,
       }),
     );

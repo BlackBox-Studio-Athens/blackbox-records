@@ -1,3 +1,6 @@
+import { validateSlug } from './slugs';
+import { reservedStoreRouteSegments } from './store-categories';
+
 export type StoreItemSourceKind = 'distro' | 'release';
 
 export type ReleaseToDistroStoreItemRelation = {
@@ -24,8 +27,6 @@ export const releaseToDistroStoreItemRelations = [
     storeItemSlug: 'caregivers-vinyl',
   },
 ] as const satisfies readonly ReleaseToDistroStoreItemRelation[];
-
-const reservedStoreItemSlugs = new Set(['checkout']);
 
 export function createPhysicalEditionKey(input: { artist: string; itemType: string; title: string }): string {
   return [input.artist, input.title, normalizePhysicalEditionType(input.itemType)].map(normalizeIdentityText).join('|');
@@ -83,8 +84,10 @@ export function createValidatedStoreItemProjection(
         `Invalid Store Item slug for ${createSourceKey(candidate.sourceKind, candidate.sourceId)}: ${storeItemSlug}.`,
       );
     }
-    if (reservedStoreItemSlugs.has(storeItemSlug)) {
-      throw new Error(`Reserved Store Item slug detected: ${storeItemSlug}.`);
+    if (reservedStoreRouteSegments.has(storeItemSlug)) {
+      throw new Error(
+        `Reserved Store Item slug detected for ${createSourceKey(candidate.sourceKind, candidate.sourceId)}: ${storeItemSlug}.`,
+      );
     }
 
     return [
@@ -174,4 +177,3 @@ function normalizeIdentityText(value: string): string {
     .trim()
     .replace(/\s+/g, ' ');
 }
-import { validateSlug } from './slugs';
