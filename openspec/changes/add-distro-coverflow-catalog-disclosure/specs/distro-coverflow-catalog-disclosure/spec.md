@@ -62,7 +62,7 @@ Each eligible Distro group MUST occupy exactly one of `preview`, `catalog`, or `
 
 - **WHEN** the visitor activates `View all {total}` from `preview` mode
 - **THEN** that group enters `catalog` mode and exposes every record exactly once in its existing vertical order and six-item wrappers
-- **AND** the previously active record receives focus, a visible selected outline, and an instant nearest-block scroll that makes it immediately recognizable below the sticky navigation
+- **AND** the previously active record receives focus, a subtle selected border and tonal surface, and an instant nearest-block scroll that makes it immediately recognizable below the sticky navigation
 - **AND** the toggle becomes `Show Coverflow`
 - **AND** a single hard-edged reveal exposes the catalog without a card-by-card stagger
 

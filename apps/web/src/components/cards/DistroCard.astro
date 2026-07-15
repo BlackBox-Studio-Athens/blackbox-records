@@ -4,7 +4,6 @@ import type { CollectionEntry } from 'astro:content';
 import { Card, CardContent } from '@/components/ui/card';
 import { createStoreItemFromDistroEntry } from '@/lib/catalog-data';
 import { cn } from '@/lib/utils';
-import { formatMonthYear } from '@/utils/content';
 
 interface Props {
   coverflowPosition?: 'active' | 'back' | 'left-far' | 'left-near' | 'right-far' | 'right-near' | undefined;
@@ -18,11 +17,7 @@ const { coverflowPosition, coverflowPreview = false, item, imageLoading = 'lazy'
 const storeItem = createStoreItemFromDistroEntry(item);
 const isHomeVariant = variant === 'home';
 const distroCardImageWidths = [320, 480, 640, 800, 960];
-const metadataItems = [
-  item.data.eyebrow || null,
-  item.data.format || item.data.group,
-  item.data.release_date ? formatMonthYear(item.data.release_date) : null,
-].filter(Boolean);
+const metadataItems = [item.data.eyebrow || null, item.data.format || item.data.group].filter(Boolean);
 const distroSearchText = [item.data.title, item.data.artist_or_label, item.data.group, item.data.format]
   .filter(Boolean)
   .join(' ');

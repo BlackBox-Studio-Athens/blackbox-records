@@ -28,7 +28,7 @@
 ## 6. Coverflow interaction and reveal refinement
 
 - [x] 6.1 Add bounded pointer-intent suppression so vertical scrolling cannot activate a card, make a side cover's first pointer click select it, and preserve ordinary keyboard and active-cover link activation.
-- [x] 6.2 Keep the active record selected, focused, and visibly outlined when `View all` opens the catalog; return `Show Coverflow` to that record and keep search clear free of stale selection state.
+- [x] 6.2 Keep the active record selected, focused, and subtly marked when `View all` opens the catalog; return `Show Coverflow` to that record and keep search clear free of stale selection state.
 - [x] 6.3 Server-render the deterministic first-record preview and gate it before paint on platform capability; restore that state in app-shell snapshots while retaining the full no-JavaScript and unsupported-browser catalog.
 - [x] 6.4 Strengthen the active-record caption, document the existing authored `order` as the six-record curation source, remove Firefox's document-snapshot transition path, and replace the plain catalog swap with one reduced-motion-safe component-local hard reveal.
 - [x] 6.5 Extend focused tests, verify direct and shell entry plus interaction at mobile and desktop sizes in the required browser path, rerun performance checks and final gates, and complete Brooks and Ponytail review loops without important findings.

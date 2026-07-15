@@ -3554,9 +3554,14 @@ html[data-distro-coverflow-capable]
   [data-distro-coverflow-mode='catalog']
   [data-distro-coverflow-selected]
   .distro-card__surface {
-  border-color: var(--foreground);
-  outline: 1px solid var(--foreground);
-  outline-offset: 3px;
+  border-color: rgba(245, 245, 245, 0.32);
+}
+
+html[data-distro-coverflow-capable]
+  [data-distro-coverflow-mode='catalog']
+  [data-distro-coverflow-selected]
+  .distro-card__surface {
+  background-color: #161616;
 }
 
 html[data-distro-coverflow-capable] [data-distro-coverflow-mode='catalog'] [data-distro-coverflow-selected] {
