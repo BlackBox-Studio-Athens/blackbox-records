@@ -25,7 +25,7 @@ The system SHALL present the existing featured, selected-upcoming, and remaining
 - **WHEN** all three roles render at a supported wide viewport
 - **THEN** the Feature Wall and Upcoming render as sibling regions in one asymmetric row
 - **AND** the Feature Wall owns the larger main column while Upcoming owns the smaller right-hand rail
-- **AND** Our Releases begins below both highlighted regions
+- **AND** Our Releases begins beneath the Feature Wall in the larger main column while Upcoming may continue through the smaller rail
 
 ### Requirement: Each release tier keeps role-appropriate emphasis
 
@@ -52,6 +52,20 @@ The system SHALL keep the current Feature Wall as the primary release treatment,
 - **WHEN** one or more remaining catalog entries are available
 - **THEN** the `Our Releases` section reuses the existing release-card detail, player-trigger, image, date, title, artist, focus, and overlay behavior
 - **AND** it does not add search, filters, pagination, year grouping, a carousel, or placeholder entries
+
+#### Scenario: Release artwork exposes one interaction language
+
+- **WHEN** a pointer or keyboard user interacts with linked artwork in any release tier
+- **THEN** the Feature Wall, Upcoming panel, and remaining catalog reuse the same restrained artwork scale and timing
+- **AND** the artwork stays clipped to its frame
+- **AND** reduced-motion preference removes the artwork transition and transform
+
+#### Scenario: Tier labels and dividers support the hierarchy
+
+- **WHEN** all three tiers render
+- **THEN** `Latest out now` and `Upcoming` are more prominent than release metadata while remaining subordinate to release titles
+- **AND** `Our Releases` is sized below the page title and proportionately above catalog-card titles
+- **AND** adjacent tier regions do not repeat separator rules that read as disconnected boxes
 
 ### Requirement: Release tiers omit empty structure and reflow cleanly
 

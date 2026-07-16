@@ -2031,12 +2031,12 @@ body {
     gap: 1.25rem;
   }
 
-  .releases-highlight-row {
+  .releases-page-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: clamp(1.5rem, 4vw, 2.5rem);
+    gap: clamp(2rem, 4vw, 3rem);
     margin-top: clamp(1rem, 3vw, 2rem);
-    margin-bottom: clamp(2.25rem, 5vw, 4rem);
+    margin-bottom: clamp(2.5rem, 5vw, 4rem);
   }
 
   .releases-latest-feature {
@@ -2045,14 +2045,16 @@ body {
     gap: 1rem;
     align-items: stretch;
     border-top: 1px solid #2b2b2b;
-    border-bottom: 1px solid #2b2b2b;
-    padding-block: 1rem;
+    padding-top: 1rem;
   }
 
   .releases-latest-feature__artwork-link {
     display: block;
     width: 100%;
     min-width: 0;
+    overflow: hidden;
+    border: 1px solid #2b2b2b;
+    background: #111111;
     color: inherit;
   }
 
@@ -2062,8 +2064,9 @@ body {
     width: 100%;
     height: auto;
     object-fit: cover;
-    border: 1px solid #2b2b2b;
-    background: #111111;
+    transform: scale(1.026);
+    transform-origin: center center;
+    transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .releases-latest-feature__copy {
@@ -2071,12 +2074,23 @@ body {
     min-width: 0;
     flex-direction: column;
     justify-content: center;
-    border-top: 1px solid #2b2b2b;
-    border-bottom: 1px solid #2b2b2b;
-    padding-block: 1rem;
+    padding-block: 0.5rem;
   }
 
-  .releases-latest-feature__label,
+  .releases-latest-feature__label {
+    width: fit-content;
+    margin: 0;
+    background: rgba(245, 245, 245, 0.08);
+    padding: 0.38rem 0.5rem 0.32rem;
+    color: rgba(245, 245, 245, 0.92);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
   .releases-latest-feature__meta,
   .releases-latest-feature__upcoming-meta,
   .releases-latest-feature__upcoming-formats {
@@ -2086,6 +2100,13 @@ body {
     letter-spacing: 0.12em;
     line-height: 1.2;
     text-transform: uppercase;
+  }
+
+  .releases-latest-feature__artwork-link:hover .releases-latest-feature__artwork,
+  .releases-latest-feature__artwork-link:focus-visible .releases-latest-feature__artwork,
+  .releases-latest-feature__upcoming-artwork-link:hover .releases-latest-feature__upcoming-artwork,
+  .releases-latest-feature__upcoming-artwork-link:focus-visible .releases-latest-feature__upcoming-artwork {
+    transform: scale(1.048);
   }
 
   .releases-latest-feature__title {
@@ -2166,13 +2187,15 @@ body {
     gap: 1rem;
     align-items: start;
     border-top: 1px solid #2b2b2b;
-    border-bottom: 1px solid #2b2b2b;
-    padding-block: 1rem;
+    padding-top: 1rem;
   }
 
   .releases-latest-feature__upcoming-artwork-link {
     display: block;
     min-width: 0;
+    overflow: hidden;
+    border: 1px solid #2b2b2b;
+    background: #111111;
     color: inherit;
   }
 
@@ -2182,8 +2205,9 @@ body {
     width: 100%;
     height: auto;
     object-fit: cover;
-    border: 1px solid #2b2b2b;
-    background: #111111;
+    transform: scale(1.026);
+    transform-origin: center center;
+    transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .releases-latest-feature__upcoming-copy {
@@ -2227,10 +2251,10 @@ body {
   }
 
   .releases-catalog-section__heading {
-    margin: 0 0 clamp(1.25rem, 3vw, 2rem);
+    margin: 0 0 clamp(1.1rem, 2.5vw, 1.65rem);
     color: var(--foreground);
     font-family: var(--font-display-brand);
-    font-size: clamp(2.2rem, 7vw, 3.6rem);
+    font-size: clamp(1.9rem, 4vw, 2.65rem);
     line-height: 0.96;
     letter-spacing: 0.035em;
     text-transform: uppercase;
@@ -3810,12 +3834,23 @@ html[data-distro-coverflow-capable] [data-distro-coverflow-mode='catalog'] [data
 
   .music-listen-trigger,
   .release-card-artwork--framed,
+  .releases-latest-feature__artwork,
+  .releases-latest-feature__upcoming-artwork,
   .music-listen-trigger__indicator,
   .music-listen-trigger__indicator::after {
     transition: none;
     animation: none;
     transform: none;
     box-shadow: none;
+  }
+
+  .release-card-link:hover .release-card-artwork--framed,
+  .release-card-link:focus-within .release-card-artwork--framed,
+  .releases-latest-feature__artwork-link:hover .releases-latest-feature__artwork,
+  .releases-latest-feature__artwork-link:focus-visible .releases-latest-feature__artwork,
+  .releases-latest-feature__upcoming-artwork-link:hover .releases-latest-feature__upcoming-artwork,
+  .releases-latest-feature__upcoming-artwork-link:focus-visible .releases-latest-feature__upcoming-artwork {
+    transform: none;
   }
 
   .music-listen-trigger__indicator::after {
@@ -4171,14 +4206,40 @@ html[data-distro-coverflow-capable] [data-distro-coverflow-mode='catalog'] [data
 }
 
 @media (min-width: 64rem) {
-  .releases-highlight-row {
+  .releases-page-layout {
     grid-template-columns: minmax(0, 2fr) minmax(15rem, 0.72fr);
+    column-gap: clamp(1.75rem, 3vw, 2.5rem);
+    row-gap: clamp(2rem, 3vw, 3rem);
     align-items: start;
   }
 
+  .releases-latest-feature {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
   .releases-latest-feature__upcoming {
+    grid-column: 2;
+    grid-row: 1 / span 2;
     grid-template-columns: minmax(0, 1fr);
-    padding-block: 1.25rem;
+    padding-top: 1.25rem;
+  }
+
+  .releases-catalog-section {
+    min-width: 0;
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .releases-page-layout--single-column {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .releases-page-layout--single-column .releases-latest-feature,
+  .releases-page-layout--single-column .releases-latest-feature__upcoming,
+  .releases-page-layout--single-column .releases-catalog-section {
+    grid-column: 1;
+    grid-row: auto;
   }
 
   .services-service-section {
@@ -4248,8 +4309,12 @@ html[data-distro-coverflow-capable] [data-distro-coverflow-mode='catalog'] [data
 }
 
 @media (min-width: 80rem) {
-  .releases-highlight-row {
+  .releases-page-layout {
     grid-template-columns: minmax(0, 2.2fr) minmax(18rem, 0.72fr);
+  }
+
+  .releases-page-layout--single-column {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .store-catalog-chunks {

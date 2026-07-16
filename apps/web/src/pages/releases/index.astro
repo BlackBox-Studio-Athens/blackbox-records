@@ -66,59 +66,67 @@ function formatReleaseFormats(formats: string[] | undefined) {
 <SiteLayout pageTitle="Releases" pageDescription="Releases and label catalog.">
   <InternalPageHero sectionLabel="Releases" title="Releases" />
   {
-    latestReleaseEntry && (
-      <div class="layout-container releases-highlight-row">
-        <article class="releases-latest-feature">
-          <a class="releases-latest-feature__artwork-link" href={latestReleaseDetailPath} data-astro-prefetch>
-            <Image
-              src={latestReleaseEntry.data.cover_image}
-              alt={latestReleaseEntry.data.cover_image_alt || latestReleaseEntry.data.title}
-              class="releases-latest-feature__artwork"
-              priority
-              widths={[720, 1080, 1440, 1800]}
-              sizes="(min-width: 1100px) 42vw, 100vw"
-            />
-          </a>
-          <div class="releases-latest-feature__copy">
-            <p class="releases-latest-feature__label">{latestReleaseLabel}</p>
-            <h2 class="releases-latest-feature__heading">
-              <a class="releases-latest-feature__title" href={latestReleaseDetailPath} data-astro-prefetch>
-                {latestReleaseEntry.data.title}
-              </a>
-            </h2>
-            <p class="releases-latest-feature__meta">
-              {latestReleaseArtistName} / <time datetime={latestReleaseDateMachineValue}>{latestReleaseDate}</time> /{' '}
-              {formatReleaseFormats(latestReleaseEntry.data.formats)}
-            </p>
-            {latestReleaseEntry.data.summary && (
-              <p class="releases-latest-feature__summary">{latestReleaseEntry.data.summary}</p>
-            )}
-            {hasLatestReleaseActions && (
-              <div class="releases-latest-feature__actions">
-                {latestReleasePlayerData && (
-                  <MusicStreamingServiceListenTrigger
-                    embeddedPlayerData={latestReleasePlayerData}
-                    tone="accent"
-                    variant="standalone"
-                  />
-                )}
-                <a class="releases-latest-feature__action-link" href={latestReleaseDetailPath} data-astro-prefetch>
-                  View Release
+    (latestReleaseEntry || upcomingReleaseEntry || remainingReleaseEntries.length > 0) && (
+      <div
+        class:list={[
+          'layout-container',
+          'releases-page-layout',
+          (!latestReleaseEntry || !upcomingReleaseEntry) && 'releases-page-layout--single-column',
+        ]}
+      >
+        {latestReleaseEntry && (
+          <article class="releases-latest-feature">
+            <a class="releases-latest-feature__artwork-link" href={latestReleaseDetailPath} data-astro-prefetch>
+              <Image
+                src={latestReleaseEntry.data.cover_image}
+                alt={latestReleaseEntry.data.cover_image_alt || latestReleaseEntry.data.title}
+                class="releases-latest-feature__artwork"
+                priority
+                widths={[720, 1080, 1440, 1800]}
+                sizes="(min-width: 1100px) 42vw, 100vw"
+              />
+            </a>
+            <div class="releases-latest-feature__copy">
+              <p class="releases-latest-feature__label">{latestReleaseLabel}</p>
+              <h2 class="releases-latest-feature__heading">
+                <a class="releases-latest-feature__title" href={latestReleaseDetailPath} data-astro-prefetch>
+                  {latestReleaseEntry.data.title}
                 </a>
-                {latestReleaseCommerceLink && (
-                  <a
-                    class="releases-latest-feature__action-link"
-                    href={latestReleaseCommerceLink.href}
-                    rel={latestReleaseCommerceLink.rel}
-                    target={latestReleaseCommerceLink.target}
-                  >
-                    {latestReleaseCommerceLink.label}
+              </h2>
+              <p class="releases-latest-feature__meta">
+                {latestReleaseArtistName} / <time datetime={latestReleaseDateMachineValue}>{latestReleaseDate}</time> /{' '}
+                {formatReleaseFormats(latestReleaseEntry.data.formats)}
+              </p>
+              {latestReleaseEntry.data.summary && (
+                <p class="releases-latest-feature__summary">{latestReleaseEntry.data.summary}</p>
+              )}
+              {hasLatestReleaseActions && (
+                <div class="releases-latest-feature__actions">
+                  {latestReleasePlayerData && (
+                    <MusicStreamingServiceListenTrigger
+                      embeddedPlayerData={latestReleasePlayerData}
+                      tone="accent"
+                      variant="standalone"
+                    />
+                  )}
+                  <a class="releases-latest-feature__action-link" href={latestReleaseDetailPath} data-astro-prefetch>
+                    View Release
                   </a>
-                )}
-              </div>
-            )}
-          </div>
-        </article>
+                  {latestReleaseCommerceLink && (
+                    <a
+                      class="releases-latest-feature__action-link"
+                      href={latestReleaseCommerceLink.href}
+                      rel={latestReleaseCommerceLink.rel}
+                      target={latestReleaseCommerceLink.target}
+                    >
+                      {latestReleaseCommerceLink.label}
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          </article>
+        )}
         {upcomingReleaseEntry && (
           <section class="releases-latest-feature__upcoming" aria-labelledby="releases-upcoming-heading">
             <a
@@ -159,29 +167,27 @@ function formatReleaseFormats(formats: string[] | undefined) {
             </div>
           </section>
         )}
+        {remainingReleaseEntries.length > 0 && (
+          <section class="releases-catalog-section" aria-labelledby="releases-catalog-heading">
+            <h2 id="releases-catalog-heading" class="releases-catalog-section__heading">
+              Our Releases
+            </h2>
+            <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {remainingReleaseEntries.map((releaseEntry, index) => {
+                const artistProfile = artistProfileById.get(releaseEntry.data.artist.id);
+                return (
+                  <ReleaseCard
+                    release={releaseEntry}
+                    artist={artistProfile}
+                    imageLoading={index < 3 ? 'eager' : 'lazy'}
+                    variant="framed-artwork"
+                  />
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
-    )
-  }
-  {
-    remainingReleaseEntries.length > 0 && (
-      <section class="layout-container releases-catalog-section" aria-labelledby="releases-catalog-heading">
-        <h2 id="releases-catalog-heading" class="releases-catalog-section__heading">
-          Our Releases
-        </h2>
-        <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {remainingReleaseEntries.map((releaseEntry, index) => {
-            const artistProfile = artistProfileById.get(releaseEntry.data.artist.id);
-            return (
-              <ReleaseCard
-                release={releaseEntry}
-                artist={artistProfile}
-                imageLoading={index < 3 ? 'eager' : 'lazy'}
-                variant="framed-artwork"
-              />
-            );
-          })}
-        </div>
-      </section>
     )
   }
 </SiteLayout>
