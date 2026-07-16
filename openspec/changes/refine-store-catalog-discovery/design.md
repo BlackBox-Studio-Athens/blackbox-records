@@ -18,14 +18,14 @@ The existing `consolidate-distro-into-store` change classifies `Clothes` as Merc
 
 - Do not duplicate the Distro catalog inside All, add Store filters/tabs, or change Distro physical-type grouping.
 - Do not add a merch source kind, D1 field, Stripe metadata, separate inventory, placeholder product, or manual category count.
-- Do not change Store Item detail, cart, checkout, stock, scheduled reconciliation, or provider mutation policy.
+- Do not change Store Item detail, cart, checkout, stock, or provider mutation policy. Scheduled UAT verification may renew only a verified D1 Store Offer snapshot; it must not apply provider or mapping actions.
 - Do not cache presentation data in the browser or CDN beyond the explicit initial `no-store` response policy.
 
 ## Decisions
 
 ### All exposes a Distro handoff, not a second Distro projection
 
-`/store/` will render a compact Distro panel before its ordinary deduplicated All grid. The panel derives the Distro introduction, total, format names, and counts from the same Distro collection/grouping helpers used by `/store/distro/`; each format link is a base-aware ordinary link to the canonical `/store/distro/#distro-group-*` target.
+`/store/` will render one compact Store shelf panel before its ordinary deduplicated All grid. The panel includes a subordinate Distro handoff derived from the same introduction, total, format names, counts, and grouping helpers used by `/store/distro/`; each format link is a base-aware ordinary link to the canonical `/store/distro/#distro-group-*` target.
 
 This avoids rendering the 79 Distro items twice, preserves All's one-card-per-canonical-Store-Item invariant, and keeps no-JavaScript behavior ordinary. It also avoids ambiguous placement for Store Items that belong to both BlackBox Releases and Distro.
 
@@ -36,6 +36,8 @@ Alternative considered: group and filter the All grid in place. Rejected because
 Add one read-only public endpoint for the current listing-price projection. It returns a bounded list of browser-safe records: canonical `storeItemSlug`, a presentation state, and a formatted price only when the current `StoreOfferSnapshot` is fresh and active. Missing, stale, or unusable snapshots return an explicit non-price presentation state. The response must use `Cache-Control: no-store` initially.
 
 The endpoint reads snapshots only. It does not reconcile Stripe, return `canCheckout`, availability, stock, Stripe Price IDs, mapping IDs, provider payloads, or internal errors. Store Item detail still reads the authoritative Store Offer, and checkout still revalidates Worker/D1/Stripe authority before session creation.
+
+Because the projection intentionally cannot reconcile Stripe, scheduled UAT verification may renew a stale D1 Store Offer snapshot after it resolves one unambiguous active Price with valid catalog identity. This exception remains snapshot-only: it must not mutate Stripe Products, Stripe Prices, or D1 mappings, and the run must not be reported as a dry-run when it can write snapshots.
 
 Alternative considered: retain four-at-a-time per-card Store Offer reads. Rejected because a 81-card collection serializes slow Stripe reconciliation into roughly 21 visible batches. Static Astro or Decap prices are also rejected because they would violate price authority and go stale after a provider change.
 

@@ -30,3 +30,4 @@
 - [x] 4.2 Run focused backend/web tests, generated-client validation, `pnpm store:categories:check`, `pnpm test:unit`, `pnpm check`, and `pnpm build`.
 - [x] 4.3 Validate direct and shell-navigated Store routes with Browser Use: All Distro format handoff, BlackBox Releases, Distro, zero-item Merch redirect, visible prices, CTA destinations, and console cleanliness.
 - [x] 4.4 Update affected README/AGENTS/OpenSpec module-boundary and validation documentation, then run `pnpm openspec -- validate refine-store-catalog-discovery --strict`.
+- [x] 4.5 Consolidate the All Store introduction into one framed hierarchy and let scheduled UAT verification renew verified listing-price snapshots without provider or mapping mutation.

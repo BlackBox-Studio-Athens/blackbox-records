@@ -35,6 +35,7 @@ export async function runScheduledCatalogVerification(bindings: AppBindings): Pr
     const result = await catalogReconciler.verifyBuyableCatalog({
       apply: productEnvironmentProfile.catalogVerificationPolicy.applyScheduledChanges,
       expectedProductProjections: createCurrentCatalogExpectedProductProjectionMap(),
+      refreshSnapshots: productEnvironmentProfile.productEnvironment === 'UAT',
     });
 
     if (result.issues.length) {

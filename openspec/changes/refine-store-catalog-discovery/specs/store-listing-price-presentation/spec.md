@@ -23,6 +23,13 @@ The Worker SHALL expose one read-only listing-price projection backed only by cu
 - **THEN** its presentation state is explicitly non-price
 - **AND** it does not return a cached or guessed amount.
 
+#### Scenario: Scheduled UAT verification renews listing snapshots
+
+- **GIVEN** scheduled UAT verification resolves one unambiguous active Price with valid catalog identity for a Store Item
+- **WHEN** its D1 Store Offer snapshot is missing or stale
+- **THEN** verification renews that Store Offer snapshot for listing-price presentation
+- **AND** it does not mutate Stripe Products, Stripe Prices, or D1 Price mappings.
+
 ### Requirement: Store collection prices use one projection read
 
 Store collection cards SHALL obtain displayed listing prices from one listing-price projection read per collection activation, rather than per-card Store Offer reads.

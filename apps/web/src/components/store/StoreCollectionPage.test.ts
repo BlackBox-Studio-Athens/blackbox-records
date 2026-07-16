@@ -35,6 +35,9 @@ describe('Store collection category surfaces', () => {
     expect(collectionPageSource.indexOf('<StoreCategoryNavigation')).toBeLessThan(
       collectionPageSource.indexOf('<slot name="distro"'),
     );
+    expect(collectionPageSource.match(/aria-labelledby="store-(?:distro-discovery|collection)-heading"/g)).toHaveLength(
+      1,
+    );
   });
 
   it('keeps route files thin and selects each of the four category presentations', () => {

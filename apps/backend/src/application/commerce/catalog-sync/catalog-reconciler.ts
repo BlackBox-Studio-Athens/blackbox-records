@@ -51,6 +51,7 @@ export type ReconcileCatalogVariantOptions = {
   expectedPrice?: StripeCatalogExpectedPrice | null;
   now?: Date;
   productProjection?: StripeCatalogProductProjection | null;
+  refreshSnapshots?: boolean;
   requirePriceAuthority?: boolean;
 };
 
@@ -61,6 +62,7 @@ export class CatalogReconciler {
     storeItem: StoreItemOptionRecord,
     options: ReconcileCatalogVariantOptions,
   ): Promise<CatalogSyncVariantResult> {
+    this.assertSnapshotRefreshAllowed(options.refreshSnapshots);
     const now = options.now ?? new Date();
     const requirePriceAuthority = options.requirePriceAuthority ?? true;
     const lookupKey = createStripeCatalogLookupKey(this.dependencies.environment, storeItem);
@@ -371,8 +373,19 @@ export class CatalogReconciler {
       }
     }
 
-    if (options.apply && resolvedPrice && canApplyCatalogActions(issues)) {
-      await this.applyActions(storeItem, lookupKey, resolvedPrice, actions, now, options.productProjection ?? null);
+    const applicableActions = actions.filter(
+      (action) => options.apply || (options.refreshSnapshots && action.kind === 'update_snapshot'),
+    );
+
+    if (applicableActions.length > 0 && resolvedPrice && canApplyCatalogActions(issues)) {
+      await this.applyActions(
+        storeItem,
+        lookupKey,
+        resolvedPrice,
+        applicableActions,
+        now,
+        options.productProjection ?? null,
+      );
     }
 
     return {
@@ -392,7 +405,9 @@ export class CatalogReconciler {
     expectedPrices?: Map<string, StripeCatalogExpectedPrice>;
     expectedProductProjections?: Map<string, StripeCatalogProductProjection>;
     now?: Date;
+    refreshSnapshots?: boolean;
   }): Promise<CatalogSyncRunResult> {
+    this.assertSnapshotRefreshAllowed(input.refreshSnapshots);
     const storeItems = await this.dependencies.storeItems.search(null, MAX_CATALOG_ITEMS);
     const expectedVariantIds = input.expectedPrices
       ? new Set(input.expectedPrices.keys())
@@ -406,11 +421,17 @@ export class CatalogReconciler {
     const issues = [...results.flatMap((result) => result.issues), ...ownedObjectDriftIssues];
 
     return {
-      dryRun: !apply,
+      dryRun: !apply && !input.refreshSnapshots,
       environment: this.dependencies.environment,
       issues,
       results,
     };
+  }
+
+  private assertSnapshotRefreshAllowed(refreshSnapshots: boolean | undefined): void {
+    if (refreshSnapshots && this.dependencies.environment !== 'uat') {
+      throw new Error('Store Offer snapshot refresh is allowed only in UAT.');
+    }
   }
 
   private async verifyCatalogSequentially(
@@ -420,6 +441,7 @@ export class CatalogReconciler {
       expectedPrices?: Map<string, StripeCatalogExpectedPrice>;
       expectedProductProjections?: Map<string, StripeCatalogProductProjection>;
       now?: Date;
+      refreshSnapshots?: boolean;
     },
   ): Promise<CatalogSyncVariantResult[]> {
     const results: CatalogSyncVariantResult[] = [];
@@ -439,6 +461,7 @@ export class CatalogReconciler {
       expectedPrices?: Map<string, StripeCatalogExpectedPrice>;
       expectedProductProjections?: Map<string, StripeCatalogProductProjection>;
       now?: Date;
+      refreshSnapshots?: boolean;
     },
   ): Promise<CatalogSyncVariantResult> {
     const expectedPrice = input.expectedPrices?.get(storeItem.variantId) ?? null;
@@ -448,6 +471,7 @@ export class CatalogReconciler {
       apply: input.apply,
       expectedPrice,
       productProjection: input.expectedProductProjections?.get(storeItem.variantId) ?? null,
+      refreshSnapshots: input.refreshSnapshots,
       requirePriceAuthority,
       now: input.now,
     });

@@ -68,12 +68,13 @@ describe('runScheduledCatalogVerification', () => {
     vi.restoreAllMocks();
   });
 
-  it('runs UAT scheduled catalog reconciliation as report-only and disconnects Prisma', async () => {
+  it('keeps UAT provider actions report-only while allowing snapshot refresh and disconnects Prisma', async () => {
     await runScheduledCatalogVerification(createBindings('UAT'));
 
     expect(scheduledMocks.verifyBuyableCatalog).toHaveBeenCalledWith({
       apply: false,
       expectedProductProjections: expect.any(Map),
+      refreshSnapshots: true,
     });
     expect(
       scheduledMocks.verifyBuyableCatalog.mock.calls[0]?.[0].expectedProductProjections.get(
@@ -91,6 +92,7 @@ describe('runScheduledCatalogVerification', () => {
     expect(scheduledMocks.verifyBuyableCatalog).toHaveBeenCalledWith({
       apply: false,
       expectedProductProjections: expect.any(Map),
+      refreshSnapshots: false,
     });
     expect(scheduledMocks.disconnect).toHaveBeenCalledOnce();
   });

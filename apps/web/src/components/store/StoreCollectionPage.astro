@@ -36,44 +36,6 @@ const distroPageContent = category.id === 'all' && distroGroups.length > 0 ? awa
       <slot name="distro" />
     ) : (
       <>
-        {distroPageContent && (
-          <section class="layout-container pb-2 pt-8" aria-labelledby="store-distro-discovery-heading">
-            <div class="grid gap-6 border border-border/70 bg-card/35 p-6 md:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)] md:p-8">
-              <div class="space-y-4">
-                <p class="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
-                  {distroPageContent.hero.section_label}
-                </p>
-                <h2 class="brand-section-title text-foreground" id="store-distro-discovery-heading">
-                  {distroPageContent.hero.title}
-                </h2>
-                <p class="text-sm leading-relaxed text-muted-foreground">{distroPageContent.hero.intro}</p>
-                <p class="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                  {distroEntries.length} items
-                </p>
-              </div>
-              <nav
-                aria-label="Browse Distro formats"
-                class="border-t border-border/60 pt-4 md:border-t-0 md:border-l md:pl-6 md:pt-0"
-              >
-                <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Browse formats</p>
-                <ul class="mt-3 space-y-2">
-                  {distroGroups.map((group) => (
-                    <li>
-                      <a
-                        class="inline-flex min-h-11 items-center text-sm text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground"
-                        href={createProjectRelativeUrl(
-                          `/store/distro/#${createStoreDistroGroupHeadingId(group.groupName)}`,
-                        )}
-                      >
-                        {group.groupName} ({group.entries.length})
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
-            </div>
-          </section>
-        )}
         <section class="layout-container pb-6 pt-8" aria-labelledby="store-collection-heading">
           <div class="grid gap-6 border border-border/70 bg-card/35 p-6 md:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)] md:p-8">
             <div class="space-y-5">
@@ -87,6 +49,34 @@ const distroPageContent = category.id === 'all' && distroGroups.length > 0 ? awa
             <div class="border-t border-border/60 pt-4 md:border-t-0 md:border-l md:pl-6 md:pt-0">
               <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Collection</p>
               <p class="mt-3 text-sm leading-relaxed text-muted-foreground">{itemCountLabel}</p>
+              {distroPageContent && (
+                <div class="mt-6 border-t border-border/60 pt-5">
+                  <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                    {distroPageContent.hero.section_label}
+                  </p>
+                  <p class="mt-3 text-sm leading-relaxed text-muted-foreground">{distroPageContent.hero.intro}</p>
+                  <p class="mt-3 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                    {distroEntries.length} items
+                  </p>
+                  <nav aria-label="Browse Distro formats" class="mt-5">
+                    <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Browse formats</p>
+                    <ul class="mt-2 flex flex-wrap gap-x-5 gap-y-1">
+                      {distroGroups.map((group) => (
+                        <li>
+                          <a
+                            class="inline-flex min-h-11 items-center text-sm text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground"
+                            href={createProjectRelativeUrl(
+                              `/store/distro/#${createStoreDistroGroupHeadingId(group.groupName)}`,
+                            )}
+                          >
+                            {group.groupName} ({group.entries.length})
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </nav>
+                </div>
+              )}
             </div>
           </div>
         </section>

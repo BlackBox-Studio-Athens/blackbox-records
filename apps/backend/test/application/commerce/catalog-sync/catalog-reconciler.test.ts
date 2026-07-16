@@ -485,7 +485,7 @@ describe('CatalogReconciler', () => {
     });
   });
 
-  it('reports stale snapshots in dry-run without mutating D1', async () => {
+  it('keeps stale snapshots unchanged in dry-run and renews them only in UAT refresh mode', async () => {
     const price = createCatalogPrice({ priceId: 'price_test_disintegration_2800' });
     const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
     stripeCatalog.prices.set(price.priceId, price);
@@ -518,6 +518,35 @@ describe('CatalogReconciler', () => {
     ]);
     expect(result.actions).toEqual([{ kind: 'update_snapshot' }]);
     expect(snapshots.records.get(storeItem.variantId)?.freshUntil.toISOString()).toBe('2026-05-22T10:00:00.000Z');
+
+    const refreshResult = await reconciler.verifyBuyableCatalog({
+      apply: false,
+      now: new Date('2026-05-23T10:00:00.000Z'),
+      refreshSnapshots: true,
+    });
+
+    expect(refreshResult.dryRun).toBe(false);
+    expect(snapshots.records.get(storeItem.variantId)).toMatchObject({
+      freshUntil: new Date('2026-05-24T10:00:00.000Z'),
+      syncedAt: new Date('2026-05-23T10:00:00.000Z'),
+    });
+    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(price.priceId);
+    expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
+    expect(stripeCatalog.updatePriceLookupKey).not.toHaveBeenCalled();
+    expect(stripeCatalog.updatePriceMetadata).not.toHaveBeenCalled();
+  });
+
+  it('rejects snapshot refresh outside UAT before reading provider state', async () => {
+    const { reconciler, stripeCatalog } = createReconciler({ environment: 'prd' });
+    const listOwnedPrices = vi.spyOn(stripeCatalog, 'listOwnedPrices');
+
+    await expect(
+      reconciler.verifyBuyableCatalog({
+        apply: false,
+        refreshSnapshots: true,
+      }),
+    ).rejects.toThrow('Store Offer snapshot refresh is allowed only in UAT.');
+    expect(listOwnedPrices).not.toHaveBeenCalled();
   });
 
   it('accepts a Dashboard replacement Price as day-to-day Price Authority without Desired Price repair', async () => {
@@ -711,7 +740,14 @@ describe('CatalogReconciler', () => {
     });
 
     expect(result.issues).toEqual([expect.objectContaining({ code: 'wrong_currency' })]);
-    expect(result.actions).toEqual(expect.arrayContaining([{ kind: 'update_mapping', stripePriceId: price.priceId }]));
+    expect(result.actions).toEqual(
+      expect.arrayContaining([
+        {
+          kind: 'update_mapping',
+          stripePriceId: price.priceId,
+        },
+      ]),
+    );
     expect(snapshots.records.get(storeItem.variantId)).toBeUndefined();
   });
 
@@ -912,7 +948,10 @@ describe('CatalogReconciler', () => {
     );
     expect(result.actions).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ kind: 'archive_price', idempotencyKey: expect.stringContaining('archive_price') }),
+        expect.objectContaining({
+          kind: 'archive_price',
+          idempotencyKey: expect.stringContaining('archive_price'),
+        }),
         expect.objectContaining({
           kind: 'create_catalog_price',
           idempotencyKey: expect.stringContaining('create_catalog_price'),
