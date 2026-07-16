@@ -67,7 +67,7 @@ function formatReleaseFormats(formats: string[] | undefined) {
   <InternalPageHero sectionLabel="Releases" title="Releases" />
   {
     latestReleaseEntry && (
-      <section class="layout-container releases-latest-feature-section">
+      <div class="layout-container releases-highlight-row">
         <article class="releases-latest-feature">
           <a class="releases-latest-feature__artwork-link" href={latestReleaseDetailPath} data-astro-prefetch>
             <Image
@@ -81,9 +81,11 @@ function formatReleaseFormats(formats: string[] | undefined) {
           </a>
           <div class="releases-latest-feature__copy">
             <p class="releases-latest-feature__label">{latestReleaseLabel}</p>
-            <a class="releases-latest-feature__title" href={latestReleaseDetailPath} data-astro-prefetch>
-              {latestReleaseEntry.data.title}
-            </a>
+            <h2 class="releases-latest-feature__heading">
+              <a class="releases-latest-feature__title" href={latestReleaseDetailPath} data-astro-prefetch>
+                {latestReleaseEntry.data.title}
+              </a>
+            </h2>
             <p class="releases-latest-feature__meta">
               {latestReleaseArtistName} / <time datetime={latestReleaseDateMachineValue}>{latestReleaseDate}</time> /{' '}
               {formatReleaseFormats(latestReleaseEntry.data.formats)}
@@ -116,54 +118,66 @@ function formatReleaseFormats(formats: string[] | undefined) {
               </div>
             )}
           </div>
-          {upcomingReleaseEntry && (
-            <aside class="releases-latest-feature__upcoming" aria-label="Upcoming release">
-              <a
-                class="releases-latest-feature__upcoming-artwork-link"
-                href={upcomingReleaseDetailPath}
-                data-astro-prefetch
-              >
-                <Image
-                  src={upcomingReleaseEntry.data.cover_image}
-                  alt={upcomingReleaseEntry.data.cover_image_alt || upcomingReleaseEntry.data.title}
-                  class="releases-latest-feature__upcoming-artwork"
-                  loading="lazy"
-                  widths={[240, 360, 480, 640]}
-                  sizes="(min-width: 640px) 10rem, 8.5rem"
-                />
-              </a>
-              <div class="releases-latest-feature__upcoming-copy">
-                <p class="releases-latest-feature__label">Upcoming</p>
+        </article>
+        {upcomingReleaseEntry && (
+          <section class="releases-latest-feature__upcoming" aria-labelledby="releases-upcoming-heading">
+            <a
+              class="releases-latest-feature__upcoming-artwork-link"
+              href={upcomingReleaseDetailPath}
+              data-astro-prefetch
+            >
+              <Image
+                src={upcomingReleaseEntry.data.cover_image}
+                alt={upcomingReleaseEntry.data.cover_image_alt || upcomingReleaseEntry.data.title}
+                class="releases-latest-feature__upcoming-artwork"
+                loading="lazy"
+                widths={[240, 360, 480, 640]}
+                sizes="(min-width: 1024px) 22vw, (min-width: 640px) 10rem, 8.5rem"
+              />
+            </a>
+            <div class="releases-latest-feature__upcoming-copy">
+              <h2 id="releases-upcoming-heading" class="releases-latest-feature__label">
+                Upcoming
+              </h2>
+              <h3 class="releases-latest-feature__upcoming-heading">
                 <a class="releases-latest-feature__upcoming-title" href={upcomingReleaseDetailPath} data-astro-prefetch>
                   {upcomingReleaseEntry.data.title}
                 </a>
-                <p class="releases-latest-feature__upcoming-meta">
-                  {upcomingReleaseArtistName} /{' '}
-                  <time datetime={upcomingReleaseDateMachineValue}>{upcomingReleaseDate}</time>
+              </h3>
+              <p class="releases-latest-feature__upcoming-meta">
+                {upcomingReleaseArtistName} /{' '}
+                <time datetime={upcomingReleaseDateMachineValue}>{upcomingReleaseDate}</time>
+              </p>
+              {upcomingReleaseEntry.data.summary && (
+                <p class="releases-latest-feature__upcoming-summary">{upcomingReleaseEntry.data.summary}</p>
+              )}
+              {upcomingReleaseEntry.data.formats?.length && (
+                <p class="releases-latest-feature__upcoming-formats">
+                  {formatReleaseFormats(upcomingReleaseEntry.data.formats)}
                 </p>
-                {upcomingReleaseEntry.data.summary && (
-                  <p class="releases-latest-feature__upcoming-summary">{upcomingReleaseEntry.data.summary}</p>
-                )}
-                {upcomingReleaseEntry.data.formats?.length && (
-                  <p class="releases-latest-feature__upcoming-formats">
-                    {formatReleaseFormats(upcomingReleaseEntry.data.formats)}
-                  </p>
-                )}
-              </div>
-            </aside>
-          )}
-        </article>
-      </section>
+              )}
+            </div>
+          </section>
+        )}
+      </div>
     )
   }
   {
     remainingReleaseEntries.length > 0 && (
-      <section class="layout-container">
+      <section class="layout-container releases-catalog-section" aria-labelledby="releases-catalog-heading">
+        <h2 id="releases-catalog-heading" class="releases-catalog-section__heading">
+          Our Releases
+        </h2>
         <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {remainingReleaseEntries.map((releaseEntry, index) => {
             const artistProfile = artistProfileById.get(releaseEntry.data.artist.id);
             return (
-              <ReleaseCard release={releaseEntry} artist={artistProfile} imageLoading={index < 3 ? 'eager' : 'lazy'} />
+              <ReleaseCard
+                release={releaseEntry}
+                artist={artistProfile}
+                imageLoading={index < 3 ? 'eager' : 'lazy'}
+                variant="framed-artwork"
+              />
             );
           })}
         </div>
