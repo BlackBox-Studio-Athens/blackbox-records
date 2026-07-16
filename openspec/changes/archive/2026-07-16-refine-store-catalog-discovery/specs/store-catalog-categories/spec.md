@@ -4,6 +4,13 @@
 
 The Store SHALL expose `All`, `BlackBox Releases`, and `Distro` as its always-discoverable category navigation in that exact order, and SHALL append `Merch` only when the classified Merch collection is populated.
 
+#### Scenario: Store category navigation renders
+
+- **WHEN** any always-discoverable Store collection route renders
+- **THEN** its navigation landmark named `Store categories` contains `All`, `BlackBox Releases`, and `Distro` links in that exact order
+- **AND** it appends `Merch` only when one or more canonical Store Items are classified as `Merch`
+- **AND** the current route's link exposes `aria-current="page"`.
+
 #### Scenario: Store category navigation renders without merch
 
 - **GIVEN** no canonical Store Item is classified as `Merch`
@@ -56,7 +63,7 @@ Each discoverable Store category route SHALL render only its classified canonica
 - **AND** related BlackBox Release membership or exact `Clothes` Merch membership does not remove it from Distro
 - **AND** existing Distro search, format navigation, Coverflow disclosure, and no-JavaScript catalog access remain available under the Store category.
 
-#### Scenario: Empty Merch URL redirects to Store
+#### Scenario: Merch category is empty
 
 - **GIVEN** no canonical Store Item is currently classified as `Merch`
 - **WHEN** a visitor directly opens `/store/merch/`

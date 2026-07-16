@@ -52,8 +52,34 @@ async function run() {
       );
     }
 
-    if (expectation.path === '/store/distro/' && !source.includes('id="distro-page-top"')) {
-      throw new Error('Expected the Store Distro category to retain the legacy Distro fragment target.');
+    if (expectation.path === '/store/') {
+      if (countOccurrences(source, 'data-store-orientation="all"') !== 1) {
+        throw new Error('Expected All Store to render one compact shelf ledger.');
+      }
+      if (!source.includes(`${renderedCount} items total`)) {
+        throw new Error(`Expected All Store shelf total to follow its ${renderedCount} rendered cards.`);
+      }
+    }
+
+    if (expectation.path === '/store/blackbox-releases/') {
+      if (countOccurrences(source, 'data-store-orientation="blackbox-releases"') !== 1) {
+        throw new Error('Expected BlackBox Releases to render one purpose-specific orientation panel.');
+      }
+      if (!source.includes('Collection total') || !source.includes(`${renderedCount} items`)) {
+        throw new Error('Expected BlackBox Releases to render one source-derived collection total.');
+      }
+    }
+
+    if (expectation.path === '/store/distro/') {
+      if (!source.includes('id="distro-page-top"')) {
+        throw new Error('Expected the Store Distro category to retain the legacy Distro fragment target.');
+      }
+      if (countOccurrences(source, 'data-store-orientation="distro"') !== 1) {
+        throw new Error('Expected Distro to render one purpose-specific orientation panel.');
+      }
+      if (!source.includes('Collection total') || countOccurrences(source, `${renderedCount} items`) !== 1) {
+        throw new Error('Expected Distro to render one source-derived collection total without idle duplication.');
+      }
     }
   }
 
@@ -63,6 +89,12 @@ async function run() {
   }
   if (!allStoreSource.includes('/store/distro/#distro-group-')) {
     throw new Error('Expected All Store Distro discovery to target canonical Distro fragments.');
+  }
+  const formatTargets = [...allStoreSource.matchAll(/href="[^"]*\/store\/distro\/#(distro-group-[^"]+)"/g)].map(
+    (match) => match[1],
+  );
+  if (formatTargets.length === 0 || new Set(formatTargets).size !== formatTargets.length) {
+    throw new Error('Expected All Store Distro format targets to render once each.');
   }
 
   const merchSource = await readFile(outputFileFor('/store/merch/'), 'utf8');

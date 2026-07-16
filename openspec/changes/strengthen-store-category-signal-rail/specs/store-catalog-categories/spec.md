@@ -40,7 +40,7 @@ The Store SHALL present its discoverable category links as one square-edged Sign
 
 ### Requirement: Store orientation panels serve each collection without repeated information
 
-The Store SHALL present source-derived, purpose-specific orientation panels for All and BlackBox Releases while retaining one safe generic presentation for other non-Distro categories.
+The Store SHALL present source-derived, purpose-specific orientation panels for All, BlackBox Releases, and Distro while retaining one safe generic presentation for other non-Distro categories.
 
 #### Scenario: All presents one concise shelf ledger
 
@@ -56,6 +56,16 @@ The Store SHALL present source-derived, purpose-specific orientation panels for 
 - **THEN** the panel presents `Store shelf`, the `BlackBox Releases` category label, its existing category description, and one source-derived collection total
 - **AND** it uses a compact purpose-specific composition without changing category metadata, membership, or Store Item order.
 
+#### Scenario: Distro presents its browse tools as one compact orientation panel
+
+- **WHEN** `/store/distro/` renders a populated collection
+- **THEN** the panel presents `Store shelf`, the existing Distro title and description, and one source-derived collection total
+- **AND** the existing search slot belongs to the same square-edged composition without changing search matching, result membership, or query ownership
+- **AND** an idle search does not repeat the complete total or visible-item count
+- **AND WHEN** a search query is active
+- **THEN** the visible-result count and Clear search action remain available
+- **AND** the separate Browse formats navigation retains its source-derived links, counts, sticky behavior, and Top action.
+
 #### Scenario: Another non-Distro category renders
 
 - **WHEN** a populated non-Distro category other than All or BlackBox Releases renders
@@ -64,7 +74,7 @@ The Store SHALL present source-derived, purpose-specific orientation panels for 
 
 #### Scenario: Orientation panels reflow
 
-- **WHEN** either purpose-specific panel renders at 320 CSS pixels, 200% text size, or the 400% zoom equivalent
+- **WHEN** any purpose-specific panel renders at 320 CSS pixels, 200% text size, or the 400% zoom equivalent
 - **THEN** its content follows document order with content-driven height and no clipped or truncated text
 - **AND** every format destination remains an ordinary link with a target at least 44 CSS pixels high
 - **AND** the page does not require two-dimensional scrolling.
@@ -72,5 +82,5 @@ The Store SHALL present source-derived, purpose-specific orientation panels for 
 #### Scenario: Orientation remains server-rendered
 
 - **WHEN** JavaScript is unavailable
-- **THEN** the same panel labels, source-derived totals, format links, and category descriptions remain available in the complete static document
+- **THEN** the same panel labels, source-derived totals, format links, and category descriptions remain available in the complete static document where applicable
 - **AND** the panels add no client state, runtime request, content field, or commerce authority.

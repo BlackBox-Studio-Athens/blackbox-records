@@ -18,9 +18,16 @@ type ShellPageSnapshotCache = {
 export function sanitizeDistroCoverflowSnapshot(root: ParentNode) {
   root.querySelectorAll<HTMLElement>('[data-distro-coverflow-group]').forEach((groupElement) => {
     groupElement.dataset.distroCoverflowMode = 'preview';
+    const initialPositionRatio = groupElement.dataset.distroCoverflowInitialPositionRatio;
+    if (initialPositionRatio) {
+      groupElement.style.setProperty('--distro-coverflow-position-ratio', initialPositionRatio);
+    } else {
+      groupElement.style.removeProperty('--distro-coverflow-position-ratio');
+    }
     groupElement.removeAttribute('data-distro-coverflow-ready');
     groupElement.removeAttribute('data-distro-coverflow-reveal');
     groupElement.removeAttribute('data-distro-coverflow-transitioning');
+    groupElement.removeAttribute('data-distro-coverflow-visited');
   });
   root.querySelectorAll<HTMLElement>('[data-distro-coverflow-card]').forEach((cardElement) => {
     const initialPosition = cardElement.dataset.distroCoverflowInitialPosition;
@@ -44,6 +51,12 @@ export function sanitizeDistroCoverflowSnapshot(root: ParentNode) {
   root.querySelectorAll<HTMLElement>('[data-distro-coverflow-status]').forEach((statusElement) => {
     statusElement.textContent = statusElement.dataset.distroCoverflowInitialLabel || '';
     statusElement.hidden = false;
+  });
+  root.querySelectorAll<HTMLElement>('[data-distro-coverflow-initial-value]').forEach((valueElement) => {
+    valueElement.textContent = valueElement.dataset.distroCoverflowInitialValue || '';
+  });
+  root.querySelectorAll<HTMLElement>('[data-distro-coverflow-summary]').forEach((summaryElement) => {
+    summaryElement.textContent = summaryElement.dataset.distroCoverflowInitialLabel || '';
   });
 }
 

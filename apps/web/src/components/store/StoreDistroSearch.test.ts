@@ -15,6 +15,12 @@ class FakeElement {
   focus = vi.fn();
   hidden = false;
   scrollIntoView = vi.fn();
+  private readonly styles = new Map<string, string>();
+  style = {
+    getPropertyValue: (name: string) => this.styles.get(name) || '',
+    removeProperty: (name: string) => this.styles.delete(name),
+    setProperty: (name: string, value: string) => this.styles.set(name, value),
+  };
   textContent = '';
   private readonly attributes = new Map<string, string>();
   private animations: Array<{ cancel: () => void; finished: Promise<unknown> }> = [];
@@ -123,15 +129,23 @@ function createDom() {
   return { cards, chunks, dom, groups, navigation };
 }
 
-function createCoverflowHarness(finished: Promise<unknown> = Promise.resolve()) {
+function createCoverflowHarness(
+  disclosureFinished: Promise<unknown> = Promise.resolve(),
+  revealFinished: Promise<unknown> = Promise.resolve(),
+  cardCount = 6,
+) {
   const section = new FakeElement();
   const controls = new FakeElement();
+  const disclosureRail = new FakeElement();
   const previousButton = new FakeElement();
   const nextButton = new FakeElement();
   const reveal = new FakeElement();
   const toggleButton = new FakeElement();
   const status = new FakeElement();
-  const cards = Array.from({ length: 6 }, (_, index) => {
+  const currentValue = new FakeElement();
+  const remainingValue = new FakeElement();
+  const summary = new FakeElement();
+  const cards = Array.from({ length: cardCount }, (_, index) => {
     const card = new FakeElement();
     card.addClosestSelector('[data-distro-coverflow-card]');
     card.setAttribute('aria-label', `Record ${index + 1} — Artist`);
@@ -140,11 +154,12 @@ function createCoverflowHarness(finished: Promise<unknown> = Promise.resolve()) 
   previousButton.addClosestSelector('[data-distro-coverflow-previous]');
   nextButton.addClosestSelector('[data-distro-coverflow-next]');
   toggleButton.addClosestSelector('[data-distro-coverflow-toggle]');
-  toggleButton.dataset.distroCoverflowViewAllLabel = 'View all 53';
+  toggleButton.dataset.distroCoverflowViewAllLabel = `View all ${cardCount}`;
   status.dataset.distroCoverflowInitialLabel = 'Record 1 — Artist';
 
   const cancelAnimation = vi.fn();
-  reveal.setAnimations([{ cancel: cancelAnimation, finished }]);
+  disclosureRail.setAnimations([{ cancel: cancelAnimation, finished: disclosureFinished }]);
+  reveal.setAnimations([{ cancel: cancelAnimation, finished: revealFinished }]);
   const documentElement = new FakeElement();
   documentElement.toggleAttribute('data-distro-coverflow-capable', true);
   vi.stubGlobal('Element', FakeElement);
@@ -153,12 +168,16 @@ function createCoverflowHarness(finished: Promise<unknown> = Promise.resolve()) 
   const group = {
     cards: cards as unknown as HTMLElement[],
     controls: controls as unknown as HTMLElement,
+    currentValue: currentValue as unknown as HTMLElement,
+    disclosureRail: disclosureRail as unknown as HTMLElement,
     element: section as unknown as HTMLElement,
     nextButton: nextButton as unknown as HTMLButtonElement,
     previousButton: previousButton as unknown as HTMLButtonElement,
+    remainingValue: remainingValue as unknown as HTMLElement,
     reveal: reveal as unknown as HTMLElement,
     state: { mode: 'preview', activeIndex: 0 } as const,
     status: status as unknown as HTMLElement,
+    summary: summary as unknown as HTMLElement,
     toggleButton: toggleButton as unknown as HTMLButtonElement,
   };
   const controller = createDistroCoverflowController({
@@ -174,11 +193,15 @@ function createCoverflowHarness(finished: Promise<unknown> = Promise.resolve()) 
     cancelAnimation,
     controller: controller!,
     controls,
+    currentValue,
+    disclosureRail,
     group,
     nextButton,
     previousButton,
+    remainingValue,
     section,
     status,
+    summary,
     toggleButton,
   };
 }
@@ -259,6 +282,32 @@ describe('Distro Coverflow state', () => {
       mode: 'preview',
       activeIndex: 4,
     });
+    expect(reduceDistroCoverflowState({ mode: 'preview', activeIndex: 0 }, { type: 'move', delta: -1 }, 53)).toEqual({
+      mode: 'preview',
+      activeIndex: 52,
+    });
+    expect(reduceDistroCoverflowState({ mode: 'preview', activeIndex: 52 }, { type: 'move', delta: 1 }, 53)).toEqual({
+      mode: 'preview',
+      activeIndex: 0,
+    });
+  });
+
+  it('traverses all 53 records and updates position copy and rail ratio', () => {
+    const { cards, controller, currentValue, nextButton, remainingValue, section, summary } = createCoverflowHarness(
+      Promise.resolve(),
+      Promise.resolve(),
+      53,
+    );
+
+    for (let index = 1; index < 34; index += 1) section.dispatch('click', nextButton);
+
+    expect(cards[33]!.dataset.distroCoverflowPosition).toBe('active');
+    expect(cards.filter((card) => card.dataset.distroCoverflowPosition)).toHaveLength(6);
+    expect(currentValue.textContent).toBe('34');
+    expect(remainingValue.textContent).toBe('19');
+    expect(summary.textContent).toBe("You're viewing 34 of 53.");
+    expect(section.style.getPropertyValue('--distro-coverflow-position-ratio')).toBe(String(34 / 53));
+    controller.cleanup();
   });
 
   it('mounts, navigates, focuses, and toggles the catalog through the real controller', async () => {
@@ -281,6 +330,7 @@ describe('Distro Coverflow state', () => {
 
     section.dispatch('click', toggleButton);
     await Promise.resolve();
+    await Promise.resolve();
     expect(section.dataset.distroCoverflowMode).toBe('catalog');
     expect(toggleButton.textContent).toBe('Show Coverflow');
     expect(status.hidden).toBe(true);
@@ -292,11 +342,33 @@ describe('Distro Coverflow state', () => {
       inline: 'nearest',
     });
 
-    await Promise.resolve();
+    await vi.waitFor(() => expect(toggleButton.getAttribute('aria-disabled')).toBe('false'));
     section.dispatch('click', toggleButton);
     await Promise.resolve();
     expect(section.dataset.distroCoverflowMode).toBe('preview');
     expect(cards[3]!.dataset.distroCoverflowPosition).toBe('active');
+    controller.cleanup();
+  });
+
+  it('fills the disclosure rail before revealing the catalog', async () => {
+    let finishDisclosure!: () => void;
+    const disclosureFinished = new Promise<void>((resolve) => {
+      finishDisclosure = resolve;
+    });
+    const { controller, controls, section, status, toggleButton } = createCoverflowHarness(disclosureFinished);
+
+    section.dispatch('click', toggleButton);
+    expect(section.dataset.distroCoverflowMode).toBe('preview');
+    expect(section.dataset.distroCoverflowReveal).toBe('catalog-pending');
+    expect(section.hasAttribute('data-distro-coverflow-visited')).toBe(true);
+    expect(controls.hidden).toBe(false);
+    expect(status.hidden).toBe(false);
+
+    finishDisclosure();
+    await disclosureFinished;
+    await Promise.resolve();
+    expect(section.dataset.distroCoverflowMode).toBe('catalog');
+    expect(section.dataset.distroCoverflowReveal).toBe('catalog');
     controller.cleanup();
   });
 
@@ -389,6 +461,15 @@ describe('Distro Coverflow state', () => {
       'right-near',
       'right-far',
       'back',
+    ]);
+    expect(Array.from({ length: 53 }, (_, index) => getDistroCoverflowPosition(index, 0, 53))).toEqual([
+      'active',
+      'right-near',
+      'right-far',
+      'back',
+      ...Array.from({ length: 47 }, () => undefined),
+      'left-far',
+      'left-near',
     ]);
   });
 });

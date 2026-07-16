@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Storefront catalog provides shell-mounted listing-price presentation
 

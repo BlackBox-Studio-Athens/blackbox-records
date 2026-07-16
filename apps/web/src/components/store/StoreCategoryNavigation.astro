@@ -15,18 +15,18 @@ const discoverableCategories = getDiscoverableStoreCatalogCategories([
 ]);
 ---
 
-<nav aria-label="Store categories" class="border-y border-border/70">
-  <ul class="layout-container flex flex-wrap gap-x-6 gap-y-3 py-4 text-[11px] uppercase tracking-[0.18em]">
+<nav aria-label="Store categories" class="store-category-signal">
+  <ul
+    class="layout-container store-category-signal__list"
+    style={`--store-category-count: ${discoverableCategories.length}`}
+  >
     {
       discoverableCategories.map((category) => (
-        <li>
+        <li class="store-category-signal__item">
           <a
-            class:list={[
-              'inline-flex min-h-11 items-center border-b py-1 transition-colors',
-              category.id === activeCategoryId
-                ? 'border-foreground text-foreground'
-                : 'border-transparent text-muted-foreground hover:border-foreground/55 hover:text-foreground',
-            ]}
+            class="store-category-signal__link"
+            data-store-category-link
+            data-store-category-active={category.id === activeCategoryId ? '' : undefined}
             href={createProjectRelativeUrl(category.path)}
             aria-current={category.id === activeCategoryId ? 'page' : undefined}
           >

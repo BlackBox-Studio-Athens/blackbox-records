@@ -20,17 +20,29 @@ export type DistroCoverflowEvent =
 type DistroCoverflowGroup = {
   cards: HTMLElement[];
   controls: HTMLElement;
+  currentValue: HTMLElement;
+  disclosureRail: HTMLElement;
   element: HTMLElement;
   nextButton: HTMLButtonElement;
   previousButton: HTMLButtonElement;
+  remainingValue: HTMLElement;
   reveal: HTMLElement;
   state: DistroCoverflowState;
   status: HTMLElement;
+  summary: HTMLElement;
   toggleButton: HTMLButtonElement;
 };
 
-export function getDistroCoverflowPosition(cardIndex: number, activeIndex: number) {
-  return COVERFLOW_POSITIONS[(cardIndex - activeIndex + COVERFLOW_POSITIONS.length) % COVERFLOW_POSITIONS.length]!;
+export function getDistroCoverflowPosition(
+  cardIndex: number,
+  activeIndex: number,
+  totalCount: number = COVERFLOW_POSITIONS.length,
+) {
+  const relativeIndex = (cardIndex - activeIndex + totalCount) % totalCount;
+  if (relativeIndex <= 3) return COVERFLOW_POSITIONS[relativeIndex];
+  if (relativeIndex === totalCount - 2) return 'left-far';
+  if (relativeIndex === totalCount - 1) return 'left-near';
+  return undefined;
 }
 
 export function reduceDistroCoverflowState(
@@ -107,25 +119,47 @@ export function readDistroSearchDom(
   const coverflowGroups = [...root.querySelectorAll<HTMLElement>('[data-distro-coverflow-group]')]
     .map((element): DistroCoverflowGroup | null => {
       const controls = element.querySelector<HTMLElement>('[data-distro-coverflow-controls]');
+      const currentValue = element.querySelector<HTMLElement>('[data-distro-coverflow-current-value]');
       const previousButton = element.querySelector<HTMLButtonElement>('[data-distro-coverflow-previous]');
       const nextButton = element.querySelector<HTMLButtonElement>('[data-distro-coverflow-next]');
       const toggleButton = element.querySelector<HTMLButtonElement>('[data-distro-coverflow-toggle]');
+      const disclosureRail = element.querySelector<HTMLElement>('[data-distro-coverflow-disclosure-rail]');
+      const remainingValue = element.querySelector<HTMLElement>('[data-distro-coverflow-remaining-value]');
       const status = element.querySelector<HTMLElement>('[data-distro-coverflow-status]');
+      const summary = element.querySelector<HTMLElement>('[data-distro-coverflow-summary]');
       const reveal = element.querySelector<HTMLElement>('.distro-coverflow-reveal');
       const cards = [...element.querySelectorAll<HTMLElement>('[data-distro-coverflow-card]')];
-      if (!controls || !previousButton || !nextButton || !toggleButton || !status || !reveal || cards.length !== 6) {
+      const totalCount = Number(element.dataset.distroCoverflowTotal);
+      if (
+        !controls ||
+        !currentValue ||
+        !previousButton ||
+        !nextButton ||
+        !toggleButton ||
+        !disclosureRail ||
+        !remainingValue ||
+        !status ||
+        !summary ||
+        !reveal ||
+        !Number.isInteger(totalCount) ||
+        cards.length !== totalCount
+      ) {
         return null;
       }
 
       return {
         cards,
         controls,
+        currentValue,
+        disclosureRail,
         element,
         nextButton,
         previousButton,
+        remainingValue,
         reveal,
         state: { mode: 'preview', activeIndex: 0 },
         status,
+        summary,
         toggleButton,
       };
     })
@@ -155,6 +189,7 @@ export function createDistroCoverflowController(dom: DistroSearchDom): DistroCov
 
   const renderGroup = (group: DistroCoverflowGroup) => {
     group.element.toggleAttribute('data-distro-coverflow-ready', true);
+    group.element.setAttribute('aria-roledescription', 'carousel');
     group.element.dataset.distroCoverflowMode = group.state.mode;
     group.cards.forEach((card, index) => {
       card.toggleAttribute(
@@ -162,7 +197,9 @@ export function createDistroCoverflowController(dom: DistroSearchDom): DistroCov
         group.state.mode === 'catalog' && group.state.selectedIndex === index,
       );
       if (group.state.mode === 'preview') {
-        card.dataset.distroCoverflowPosition = getDistroCoverflowPosition(index, group.state.activeIndex);
+        const position = getDistroCoverflowPosition(index, group.state.activeIndex, group.cards.length);
+        if (position) card.dataset.distroCoverflowPosition = position;
+        else card.removeAttribute('data-distro-coverflow-position');
       } else {
         card.removeAttribute('data-distro-coverflow-position');
       }
@@ -177,6 +214,14 @@ export function createDistroCoverflowController(dom: DistroSearchDom): DistroCov
       if (!group.element.hasAttribute('data-distro-coverflow-transitioning')) {
         setAriaDisabled(group.toggleButton, false);
       }
+      const currentPosition = group.state.activeIndex + 1;
+      group.currentValue.textContent = String(currentPosition);
+      group.remainingValue.textContent = String(group.cards.length - currentPosition);
+      group.summary.textContent = `You're viewing ${currentPosition} of ${group.cards.length}.`;
+      group.element.style.setProperty(
+        '--distro-coverflow-position-ratio',
+        String(currentPosition / group.cards.length),
+      );
       group.status.textContent = group.cards[group.state.activeIndex]!.getAttribute('aria-label') || '';
       return;
     }
@@ -232,9 +277,18 @@ export function createDistroCoverflowController(dom: DistroSearchDom): DistroCov
     inFlight = [];
 
     try {
-      if (targetState.mode === 'catalog') group.element.dataset.distroCoverflowReveal = 'catalog';
+      if (targetState.mode === 'catalog') {
+        group.element.dataset.distroCoverflowReveal = 'catalog-pending';
+        group.element.toggleAttribute('data-distro-coverflow-visited', true);
+        const railAnimations = group.disclosureRail.getAnimations?.() ?? [];
+        inFlight = railAnimations;
+        await Promise.allSettled(railAnimations.map((animation) => animation.finished));
+        if (revision !== token) return;
+      }
+
       setGroupState(group, targetState);
       if (targetState.mode === 'catalog' && activeCard) {
+        group.element.dataset.distroCoverflowReveal = 'catalog';
         activeCard.focus({ preventScroll: true });
         activeCard.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'nearest', inline: 'nearest' });
       }
@@ -387,6 +441,8 @@ export function createDistroCoverflowController(dom: DistroSearchDom): DistroCov
           group.state = { mode: 'preview', activeIndex: 0 };
           renderGroup(group);
           group.element.removeAttribute('data-distro-coverflow-ready');
+          group.element.removeAttribute('data-distro-coverflow-visited');
+          group.element.removeAttribute('aria-roledescription');
         },
       );
     },
@@ -469,7 +525,6 @@ function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
   const [isReady, setIsReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
   const resultState = useMemo(() => getDistroSearchResultState(visibleCount), [visibleCount]);
   const hasActiveSearch = searchQuery.trim().length > 0;
 
@@ -483,7 +538,6 @@ function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
     domRef.current = dom;
     coverflowControllerRef.current = createDistroCoverflowController(dom);
     searcherRef.current = createExactFirstSearcher(dom.items, (item) => item.searchText);
-    setTotalCount(dom.items.length);
     setVisibleCount(dom.items.filter((item) => !item.element.hidden).length);
     setIsReady(true);
 
@@ -521,7 +575,7 @@ function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
   if (!isReady) return null;
 
   return (
-    <div className="artists-roster-filters-panel distro-search-panel space-y-4">
+    <div className="artists-roster-filters-panel distro-search-panel space-y-3">
       <div className="relative">
         <Search
           className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -534,22 +588,22 @@ function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
           placeholder="Search distro"
           className="artists-roster-filters-panel__input h-11 rounded-none border-[#2b2b2b] bg-[#111111] pr-3 pl-10 text-[0.95rem]"
           aria-controls="distro-search-results"
-          aria-describedby="distro-search-result-count"
+          aria-describedby={hasActiveSearch ? 'distro-search-result-count' : undefined}
           aria-label="Search distro"
         />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p
-          id="distro-search-result-count"
-          className="text-xs tracking-[0.18em] uppercase text-muted-foreground"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {resultState.visibleLabel}
-        </p>
-        {hasActiveSearch ? (
+      {hasActiveSearch ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p
+            id="distro-search-result-count"
+            className="text-xs tracking-[0.18em] uppercase text-muted-foreground"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {resultState.visibleLabel}
+          </p>
           <Button
             type="button"
             variant="ghost"
@@ -559,10 +613,8 @@ function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
           >
             Clear search
           </Button>
-        ) : (
-          <p className="text-xs tracking-[0.14em] uppercase text-[#8f8f8f]">{totalCount} total</p>
-        )}
-      </div>
+        </div>
+      ) : null}
 
       {resultState.isEmpty ? (
         <div

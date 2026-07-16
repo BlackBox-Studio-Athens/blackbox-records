@@ -11,7 +11,7 @@ The system SHALL present Store Item detail prices from Worker Store Offers that 
 - **THEN** it reads the Worker Store Offer for that Store Item
 - **AND** it does not use Astro content, Decap content, static JSON, browser cart state, or listing-price presentation as checkout authority.
 
-#### Scenario: Store collection card renders price
+#### Scenario: Store item card renders price
 
 - **GIVEN** a canonical Store Item appears in a Store collection
 - **WHEN** the browser needs its visible listing price
@@ -25,7 +25,7 @@ The system SHALL present Store Item detail prices from Worker Store Offers that 
 - **THEN** the Store Item detail price follows the current Worker Store Offer
 - **AND** the listing price follows the refreshed presentation snapshot without an Astro rebuild.
 
-#### Scenario: Price cannot be confirmed
+#### Scenario: Store Offer cannot confirm price
 
 - **GIVEN** the Worker cannot resolve one unambiguous active Stripe Price for the Store Item variant or a current presentation snapshot
 - **WHEN** the storefront asks for price or readiness

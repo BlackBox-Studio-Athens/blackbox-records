@@ -25,28 +25,48 @@ const DISTRO_COVERFLOW_INITIAL_POSITIONS = [
   'left-near',
 ] as const;
 const groupedDistroEntries = groupStoreDistroCollectionEntries(entries);
-const groupedDistroChunks = groupedDistroEntries.map((group) => ({
-  ...group,
-  coverflowEligible: group.entries.length > DISTRO_COVERFLOW_PREVIEW_SIZE,
-  headingId: createStoreDistroGroupHeadingId(group.groupName),
-  chunks: group.entries.reduce<(typeof group.entries)[]>((chunks, entry, index) => {
-    if (index % DISTRO_COVERFLOW_PREVIEW_SIZE === 0) chunks.push([]);
-    chunks.at(-1)!.push(entry);
-    return chunks;
-  }, []),
-}));
+const groupedDistroChunks = groupedDistroEntries.map((group) => {
+  const totalCount = group.entries.length;
+  const positionedCount = Math.min(DISTRO_COVERFLOW_PREVIEW_SIZE, totalCount);
+  const initialCurrentPosition = 1;
+  const initialRemainingCount = totalCount - initialCurrentPosition;
+  const initialPositionRatio = initialCurrentPosition / totalCount;
+
+  return {
+    ...group,
+    totalCount,
+    positionedCount,
+    initialCurrentPosition,
+    initialRemainingCount,
+    initialPositionRatio,
+    coverflowEligible: totalCount > DISTRO_COVERFLOW_PREVIEW_SIZE,
+    headingId: createStoreDistroGroupHeadingId(group.groupName),
+    chunks: group.entries.reduce<(typeof group.entries)[]>((chunks, entry, index) => {
+      if (index % DISTRO_COVERFLOW_PREVIEW_SIZE === 0) chunks.push([]);
+      chunks.at(-1)!.push(entry);
+      return chunks;
+    }, []),
+  };
+});
 const eagerDistroStoreItemSlugs = new Set(entries.slice(0, 3).map((entry) => entry.storeItem.slug));
 const itemCountLabel = `${entries.length} ${entries.length === 1 ? 'item' : 'items'}`;
 ---
 
-<section id="distro-page-top" class="layout-container distro-page-intro">
-  <div class="distro-page-intro__surface">
-    <p class="distro-page-intro__eyebrow">{distroPageContent.hero.section_label}</p>
-    <h2 class="distro-page-intro__title">{distroPageContent.hero.title}</h2>
-    <p class="distro-page-intro__copy">{distroPageContent.hero.intro}</p>
-    <p class="mt-5 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{itemCountLabel}</p>
+<section id="distro-page-top" class="layout-container distro-page-intro" aria-labelledby="distro-collection-heading">
+  <div class="store-orientation-panel store-orientation-panel--distro" data-store-orientation="distro">
+    <div class="store-orientation-panel__primary">
+      <p class="store-orientation-panel__eyebrow">Store shelf</p>
+      <h2 class="store-orientation-panel__title" id="distro-collection-heading">{distroPageContent.hero.title}</h2>
+      <p class="store-orientation-panel__copy">{distroPageContent.hero.intro}</p>
+    </div>
+    <div class="store-orientation-panel__distro-tools">
+      <div class="store-orientation-panel__distro-count">
+        <p class="store-orientation-panel__eyebrow">Collection total</p>
+        <p class="store-orientation-panel__count-value">{itemCountLabel}</p>
+      </div>
+      <div class="distro-page-search" data-distro-search></div>
+    </div>
   </div>
-  <div class="distro-page-search" data-distro-search></div>
 </section>
 
 <nav class="distro-format-navigation" aria-labelledby="distro-format-navigation-heading" data-distro-format-navigation>
@@ -91,41 +111,85 @@ const itemCountLabel = `${entries.length} ${entries.length === 1 ? 'item' : 'ite
   {
     groupedDistroChunks.map((group) => (
       <section
-        class="distro-group-section"
+        class:list={['distro-group-section', group.coverflowEligible && 'distro-group-section--coverflow']}
         aria-labelledby={group.headingId}
         data-distro-search-group
         data-distro-coverflow-group={group.coverflowEligible ? '' : undefined}
         data-distro-coverflow-mode={group.coverflowEligible ? 'preview' : undefined}
+        data-distro-coverflow-total={group.coverflowEligible ? group.totalCount : undefined}
+        data-distro-coverflow-preview-count={group.coverflowEligible ? group.positionedCount : undefined}
+        data-distro-coverflow-remaining-count={group.coverflowEligible ? group.initialRemainingCount : undefined}
+        data-distro-coverflow-initial-position-ratio={group.coverflowEligible ? group.initialPositionRatio : undefined}
+        style={group.coverflowEligible ? `--distro-coverflow-position-ratio: ${group.initialPositionRatio}` : undefined}
       >
-        <div class="distro-group-section__header">
-          <h2 class="distro-group-section__title" id={group.headingId}>
-            {group.groupName}
-          </h2>
-          <p class="distro-group-section__copy">{distroPageContent.group_intros[group.introGroupName]}</p>
-        </div>
-        {group.coverflowEligible && (
-          <div class="distro-coverflow-controls" data-distro-coverflow-controls>
-            <p class="distro-coverflow-summary">
-              Selected {DISTRO_COVERFLOW_PREVIEW_SIZE} of {group.entries.length}
-            </p>
-            <div class="distro-coverflow-actions">
-              <button type="button" aria-controls={`${group.headingId}-catalog`} data-distro-coverflow-previous>
-                Previous
-              </button>
-              <button type="button" aria-controls={`${group.headingId}-catalog`} data-distro-coverflow-next>
-                Next
-              </button>
-              <button
-                type="button"
-                aria-controls={`${group.headingId}-catalog`}
-                data-distro-coverflow-toggle
-                data-distro-coverflow-view-all-label={`View all ${group.entries.length}`}
-              >
-                View all {group.entries.length}
-              </button>
-            </div>
+        <div
+          class:list={[
+            'distro-group-section__overview',
+            group.coverflowEligible && 'distro-group-section__overview--coverflow',
+          ]}
+        >
+          <div class="distro-group-section__header">
+            <h2 class="distro-group-section__title" id={group.headingId}>
+              {group.groupName}
+            </h2>
+            <p class="distro-group-section__copy">{distroPageContent.group_intros[group.introGroupName]}</p>
           </div>
-        )}
+          {group.coverflowEligible && (
+            <div class="distro-coverflow-controls" data-distro-coverflow-controls>
+              <div class="distro-coverflow-depth">
+                <dl class="distro-coverflow-stats">
+                  <div class="distro-coverflow-stat">
+                    <dt>In this format</dt>
+                    <dd>{group.totalCount}</dd>
+                  </div>
+                  <div class="distro-coverflow-stat" data-distro-coverflow-current>
+                    <dt>Now viewing</dt>
+                    <dd data-distro-coverflow-current-value data-distro-coverflow-initial-value="1">
+                      {group.initialCurrentPosition}
+                    </dd>
+                  </div>
+                  <div class="distro-coverflow-stat" data-distro-coverflow-remaining>
+                    <dt>More</dt>
+                    <dd
+                      data-distro-coverflow-remaining-value
+                      data-distro-coverflow-initial-value={group.initialRemainingCount}
+                    >
+                      {group.initialRemainingCount}
+                    </dd>
+                  </div>
+                </dl>
+                <div class="distro-coverflow-rail" aria-hidden="true">
+                  <span class="distro-coverflow-rail__track" />
+                  <span class="distro-coverflow-rail__fill" data-distro-coverflow-disclosure-rail />
+                </div>
+                <p
+                  class="distro-coverflow-summary"
+                  data-distro-coverflow-summary
+                  data-distro-coverflow-initial-label={`You're viewing ${group.initialCurrentPosition} of ${group.totalCount}.`}
+                >
+                  You're viewing {group.initialCurrentPosition} of {group.totalCount}.
+                </p>
+              </div>
+              <div class="distro-coverflow-actions">
+                <button type="button" aria-controls={`${group.headingId}-catalog`} data-distro-coverflow-previous>
+                  Previous
+                </button>
+                <button type="button" aria-controls={`${group.headingId}-catalog`} data-distro-coverflow-next>
+                  Next
+                </button>
+                <button
+                  class="distro-coverflow-actions__toggle"
+                  type="button"
+                  aria-controls={`${group.headingId}-catalog`}
+                  data-distro-coverflow-toggle
+                  data-distro-coverflow-view-all-label={`View all ${group.totalCount}`}
+                >
+                  View all {group.totalCount}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
         {group.coverflowEligible && (
           <p
             class="distro-coverflow-status"
@@ -151,10 +215,10 @@ const itemCountLabel = `${entries.length} ${entries.length === 1 ? 'item' : 'ite
                   <DistroCard
                     entry={entry}
                     imageLoading={eagerDistroStoreItemSlugs.has(entry.storeItem.slug) ? 'eager' : 'lazy'}
-                    coverflowPreview={group.coverflowEligible && chunkIndex === 0}
+                    coverflowPreview={group.coverflowEligible}
                     coverflowPosition={
-                      group.coverflowEligible && chunkIndex === 0
-                        ? DISTRO_COVERFLOW_INITIAL_POSITIONS[itemIndex]
+                      group.coverflowEligible
+                        ? DISTRO_COVERFLOW_INITIAL_POSITIONS[chunkIndex * DISTRO_COVERFLOW_PREVIEW_SIZE + itemIndex]
                         : undefined
                     }
                   />

@@ -30,18 +30,32 @@ The site SHALL expose `Artists`, `Releases`, `Store`, `Services`, and `About` as
 
 ### Requirement: Store categories have exact labels, order, and routes
 
-The Store SHALL expose one category navigation in the exact order `All · BlackBox Releases · Distro · Merch` through static collection routes.
+The Store SHALL expose `All`, `BlackBox Releases`, and `Distro` as its always-discoverable category navigation in that exact order, and SHALL append `Merch` only when the classified Merch collection is populated.
 
 #### Scenario: Store category navigation renders
 
-- **WHEN** any Store collection route renders
-- **THEN** one navigation landmark named `Store categories` contains ordinary links to `/store/`, `/store/blackbox-releases/`, `/store/distro/`, and `/store/merch/` in that order
-- **AND** the visible link labels are exactly `All`, `BlackBox Releases`, `Distro`, and `Merch`
+- **WHEN** any always-discoverable Store collection route renders
+- **THEN** its navigation landmark named `Store categories` contains `All`, `BlackBox Releases`, and `Distro` links in that exact order
+- **AND** it appends `Merch` only when one or more canonical Store Items are classified as `Merch`
+- **AND** the current route's link exposes `aria-current="page"`.
+
+#### Scenario: Store category navigation renders without merch
+
+- **GIVEN** no canonical Store Item is classified as `Merch`
+- **WHEN** an always-discoverable Store collection route renders
+- **THEN** its navigation landmark named `Store categories` contains ordinary links to `/store/`, `/store/blackbox-releases/`, and `/store/distro/` in that order
+- **AND** it does not render a `Merch` link, zero count, or empty-shelf promise.
+
+#### Scenario: Store category navigation renders with merch
+
+- **GIVEN** one or more canonical Store Items are classified as `Merch`
+- **WHEN** a Store collection route renders
+- **THEN** its navigation landmark named `Store categories` contains `All`, `BlackBox Releases`, `Distro`, and `Merch` links in that order
 - **AND** the current route's link exposes `aria-current="page"`.
 
 #### Scenario: JavaScript is unavailable
 
-- **WHEN** a visitor loads or follows a Store category link without client JavaScript
+- **WHEN** a visitor loads or follows a discoverable Store category link without client JavaScript
 - **THEN** the destination is a complete static document for that category
 - **AND** category access does not depend on tab state, query filtering, hash filtering, or a client-side list reconstruction.
 
@@ -49,7 +63,8 @@ The Store SHALL expose one category navigation in the exact order `All · BlackB
 
 - **WHEN** a Store category document is built
 - **THEN** it has category-specific title, description, heading, item count, and self-canonical URL
-- **AND** `/store/` plus the three category routes are eligible for the static sitemap.
+- **AND** `/store/`, `/store/blackbox-releases/`, and `/store/distro/` are eligible for the static sitemap
+- **AND** `/store/merch/` is eligible only while its classified collection is populated.
 
 ### Requirement: Store category membership is faceted and presentation-only
 
@@ -96,7 +111,7 @@ The system MUST derive deterministic `Store Category` memberships for each canon
 
 ### Requirement: Store category pages render honest collection states
 
-Each Store category route SHALL render only its classified canonical Store Items and SHALL preserve ordinary Store Item navigation.
+Each discoverable Store category route SHALL render only its classified canonical Store Items and SHALL preserve ordinary Store Item navigation.
 
 #### Scenario: All or BlackBox Releases renders items
 
@@ -122,16 +137,15 @@ Each Store category route SHALL render only its classified canonical Store Items
 #### Scenario: Merch category is empty
 
 - **GIVEN** no canonical Store Item is currently classified as `Merch`
-- **WHEN** `/store/merch/` renders
-- **THEN** the page shows a visible accessible empty state stating that no merch is currently available
-- **AND** Store category navigation remains present and usable
-- **AND** the system does not create placeholder products or speculative commerce records.
+- **WHEN** a visitor directly opens `/store/merch/`
+- **THEN** the static response replaces the location with the base-aware `/store/` URL and provides a meta-refresh fallback and ordinary Store link
+- **AND** it does not render an empty Merch shelf or create a placeholder commerce record.
 
 #### Scenario: Merch becomes populated
 
 - **WHEN** accepted source content later causes one or more canonical Store Items to classify as `Merch`
-- **THEN** the route derives and renders those items without an authored navigation or count change
-- **AND** the empty state is absent.
+- **THEN** the route, Store category navigation, and sitemap derive and render those items without an authored navigation or count change
+- **AND** the empty-route redirect is absent.
 
 ### Requirement: Legacy Distro URL resolves to the Store category
 

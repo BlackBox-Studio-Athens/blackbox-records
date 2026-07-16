@@ -114,9 +114,20 @@ function createSnapshotDocument() {
 describe('shell page snapshots', () => {
   it('restores the server-authored Coverflow state before caching a document snapshot', () => {
     const removed = new Set<string>();
+    const styleProperties = new Map([['--distro-coverflow-position-ratio', String(34 / 53)]]);
     const group = {
-      dataset: { distroCoverflowMode: 'catalog' },
+      dataset: {
+        distroCoverflowInitialPositionRatio: String(1 / 53),
+        distroCoverflowMode: 'catalog',
+        distroCoverflowPreviewCount: '6',
+        distroCoverflowRemainingCount: '52',
+        distroCoverflowTotal: '53',
+      },
       removeAttribute: (name: string) => removed.add(name),
+      style: {
+        removeProperty: (name: string) => styleProperties.delete(name),
+        setProperty: (name: string, value: string) => styleProperties.set(name, value),
+      },
     };
     const card = {
       dataset: { distroCoverflowInitialPosition: 'active', distroCoverflowPosition: 'right-near' },
@@ -135,6 +146,18 @@ describe('shell page snapshots', () => {
       hidden: true,
       textContent: '',
     };
+    const currentValue = {
+      dataset: { distroCoverflowInitialValue: '1' },
+      textContent: '34',
+    };
+    const remainingValue = {
+      dataset: { distroCoverflowInitialValue: '52' },
+      textContent: '19',
+    };
+    const summary = {
+      dataset: { distroCoverflowInitialLabel: "You're viewing 1 of 53." },
+      textContent: "You're viewing 34 of 53.",
+    };
     const root = {
       querySelectorAll(selector: string) {
         if (selector === '[data-distro-coverflow-group]') return [group];
@@ -143,6 +166,8 @@ describe('shell page snapshots', () => {
         if (selector.includes('[data-distro-coverflow-next]')) return [previousButton, nextButton, toggle];
         if (selector === '[data-distro-coverflow-toggle]') return [toggle];
         if (selector === '[data-distro-coverflow-status]') return [status];
+        if (selector === '[data-distro-coverflow-initial-value]') return [currentValue, remainingValue];
+        if (selector === '[data-distro-coverflow-summary]') return [summary];
         return [];
       },
     } as unknown as ParentNode;
@@ -154,16 +179,26 @@ describe('shell page snapshots', () => {
         'data-distro-coverflow-ready',
         'data-distro-coverflow-reveal',
         'data-distro-coverflow-transitioning',
+        'data-distro-coverflow-visited',
         'data-distro-coverflow-selected',
         'aria-disabled',
       ]),
     );
     expect(group.dataset.distroCoverflowMode).toBe('preview');
+    expect(group.dataset).toMatchObject({
+      distroCoverflowPreviewCount: '6',
+      distroCoverflowRemainingCount: '52',
+      distroCoverflowTotal: '53',
+    });
+    expect(styleProperties.get('--distro-coverflow-position-ratio')).toBe(String(1 / 53));
     expect(card.dataset.distroCoverflowPosition).toBe('active');
     expect(controls.hidden).toBe(false);
     expect(toggle.textContent).toBe('View all 53');
     expect(status.textContent).toBe('Barren Point — Bonebrokk');
     expect(status.hidden).toBe(false);
+    expect(currentValue.textContent).toBe('1');
+    expect(remainingValue.textContent).toBe('52');
+    expect(summary.textContent).toBe("You're viewing 1 of 53.");
   });
 
   it('reads the swappable main payload and route metadata', () => {

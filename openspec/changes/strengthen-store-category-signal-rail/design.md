@@ -6,7 +6,11 @@
 
 The prerequisite `refine-store-catalog-discovery` change adds an All-to-Distro format-discovery requirement that includes Distro intro copy and a standalone Distro subtotal. This change deliberately modifies that post-prerequisite contract: the server-derived groups, order, counts, links, canonical targets, and no-JavaScript behavior remain, while the approved compact ledger removes only the repeated intro and subtotal.
 
-`StoreDistroCatalog.astro` already renders one complete canonical catalog, enhances groups larger than six into a six-card Coverflow, and exposes Previous, Next, `View all {total}`, and active-record status. `StoreDistroSearch.tsx` owns the existing `preview`, `catalog`, and `search-results` transitions, focus restoration, pointer intent, and cleanup. The stronger disclosure can derive total, remainder, and progress from server data without another request, catalog, or interaction mode.
+`StoreDistroCatalog.astro` already renders one complete canonical catalog, enhances groups larger than six into a Coverflow limited to the first six records, and exposes Previous, Next, `View all {total}`, and active-record status. `StoreDistroSearch.tsx` owns the existing `preview`, `catalog`, and `search-results` transitions, focus restoration, pointer intent, and cleanup. The stronger disclosure can enroll every existing canonical card in that controller, limit presentation to six positions, and derive active progress without another request, catalog, or interaction mode.
+
+The Distro intro currently sits outside the purpose-specific panel system and repeats its total before an idle search panel repeats the same count twice. Its Coverflow controller already provides 3D selection, native links, search handoff, disclosure, focus, and reduced-motion fallback; the remaining gaps are composition, scale, and full-group traversal, not another carousel implementation.
+
+Configured registries include `@shadcn`, `@21st`, `@magicui`, `@aceternity`, `@blocks`, and `@hextaui`. The official shadcn and Hexta carousels depend on `embla-carousel-react`; Aceternity's carousel adds Tabler icons, while its Apple Cards variant adds Motion. These generic or theatrical slider systems are useful control references, but none supplies the existing bounded 3D shelf, search handoff, no-JavaScript full catalog, and shell restoration. Installing one would duplicate state, DOM, or motion without improving this task.
 
 The approved visual references are `docs/ui-mockups/store-category-signal-rail-poc.png` and `docs/ui-mockups/store-orientation-approved-poc.png`. Their displayed counts are examples of current content, not constants.
 
@@ -16,19 +20,19 @@ The approved visual references are `docs/ui-mockups/store-category-signal-rail-p
 
 **Goals:**
 
-- Match the approved Signal rail, compact Shelf Ledger panels, and compact Coverflow disclosure band using existing BlackBox tokens and typography.
-- Give All, BlackBox Releases, and eligible Coverflow groups distinct information hierarchies suited to their tasks.
+- Match the approved Signal rail, compact Shelf Ledger panels, Distro orientation panel, and compact Coverflow band using existing BlackBox tokens and typography.
+- Give All, BlackBox Releases, Distro, and eligible Coverflow groups distinct information hierarchies suited to their tasks.
 - Remove repeated All-panel information before reducing type, then use content-driven responsive sizing rather than fixed-height clipping.
-- Keep every displayed total, format count, remainder, link, and progress ratio source-derived.
+- Keep every displayed total, format count, active position, remainder, link, and progress ratio source-derived.
 - Preserve category derivation, routes, metadata, Store Item identity, search ownership, Coverflow modes, focus behavior, no-JavaScript access, reduced motion, and performance budgets.
 - Use existing server-rendered components, CSS, and the minimum extension of current controller hooks.
 
 **Non-Goals:**
 
-- No category, membership, canonical route, sitemap, listing-card, Coverflow-card geometry, cart, checkout, stock, or commerce-authority change.
+- No category, membership, canonical route, sitemap, listing-card content, cart, checkout, stock, or commerce-authority change.
 - No new content schema, panel copy field, API, runtime request, client state model, catalog copy, carousel dependency, animation library, image, texture, icon, or runtime asset.
-- No autoplay, looping ambient motion, drag physics, pagination dots, thumbnails, alternate product order, or second catalog.
-- No redesign of the Distro search, Store Item detail, checkout, or product-listing cards.
+- No autoplay, looping ambient motion, drag physics, pagination dots, thumbnails, alternate product order, virtualized duplicate list, or second catalog.
+- No Distro search ranking, result membership, query behavior, Store Item detail, checkout, or product-listing card redesign.
 
 ## Decisions
 
@@ -76,34 +80,51 @@ The BlackBox Releases panel presents `Store shelf`, the category label, the exis
 
 Alternative: reuse the All panel unchanged or use an oversized `03` poster treatment. Rejected because the first leaves dead space and the second competes with the three product listings it introduces.
 
-### Derive Coverflow depth once on the server
+### Make Distro one compact orientation panel without duplicating search state
+
+The Distro panel presents `Store shelf`, the existing Distro title and description, and one source-derived collection total. Desktop uses a two-column square-edged frame: identity and purpose on the left, total and the existing search slot on the right. Narrow and enlarged-text layouts stack in document order with content-driven height.
+
+The idle search surface renders only its labelled input because the orientation panel already exposes the complete total. Once a query is active, the search surface renders the visible-result count and Clear search action. The separate Browse formats navigation remains the canonical sticky jump rail and retains its current links, counts, and Top action.
+
+Alternative: keep the intro, total, and search panel as three stacked surfaces. Rejected because the repeated count and loose hierarchy make Distro feel unrelated to the approved All and BlackBox panels.
+
+### Reuse the current Coverflow core and enroll the complete canonical group
+
+Keep the existing native links, controller reducer, pointer intent, live record status, disclosure sequence, search ownership, and no-JavaScript/reduced-motion fallbacks. Every canonical card in an eligible group becomes a controller member, but preview mode assigns only six relative positions: active, two records ahead, one rear record, and two records behind. All other cards and their wrapper gaps leave presentation, focus order, and the accessibility tree until they receive a position or the visitor opens the catalog.
+
+Previous and Next traverse the complete group and wrap at its actual bounds. The disclosure toggle retains native button semantics and aligns its sizing, focus, outline, and primary/secondary hierarchy with the installed shadcn button primitive. Do not install the registry Carousel or Embla: the existing controller already supports arbitrary counts and replacing it would add dependency and state duplication.
+
+Alternative: install the official shadcn Carousel or duplicate a six-card window. Rejected because either adds a second interaction or DOM engine while losing the current canonical catalog and progressive fallback contracts.
+
+### Derive initial Coverflow position once on the server and update it in the controller
 
 For each eligible group, `StoreDistroCatalog.astro` derives:
 
 - `total = group.entries.length`;
-- `preview = DISTRO_COVERFLOW_PREVIEW_SIZE` (currently six);
-- `remaining = total - preview`; and
-- `previewRatio = preview / total`.
+- `visible = DISTRO_COVERFLOW_PREVIEW_SIZE` (currently six);
+- `current = 1`;
+- `remaining = total - current`; and
+- `positionRatio = current / total`.
 
-Preview mode renders compact `total / in this format`, `preview / now showing`, and `remaining / more` fields, plus the sentence `You're viewing {preview} of {total} · {remaining} more to explore.` The geometric rail is `aria-hidden`; the sentence carries its meaning in text. Existing active-record status remains the only polite live region so aggregate counts are not repeatedly announced.
+Preview mode renders aligned `total / in this format`, `current / now viewing`, and `remaining / more` fields, plus the sentence `You're viewing {current} of {total}.` The controller updates current, remaining, summary, and ratio whenever the active index changes. The geometric rail is `aria-hidden`; the sentence carries its meaning in text. Existing active-record status remains the only polite live region so aggregate counts are not repeatedly announced.
 
-Previous and Next stay secondary outline controls. `View all {total}` remains the existing disclosure toggle and becomes the visually primary Store-accent control. Existing data hooks, toggle labels, focus transfer, item links, modes, and shell snapshot cleanup remain stable. No per-item dots are added for large catalogs.
+Previous and Next stay secondary outline controls. `View all {total}` remains the existing disclosure toggle and the visually primary Store-accent control. Existing toggle labels, focus transfer, item links, modes, and shell snapshot cleanup remain stable; the snapshot sanitizer also restores source-authored position values and the initial ratio. No per-item dots are added for large catalogs.
 
-Alternative: add a second carousel index, thumbnails, or pagination. Rejected because the full catalog is already rendered and one explicit remainder plus disclosure action solves discoverability with less interaction.
+Alternative: keep `6 / now showing` and `total - 6 / more` while only the sentence changes. Rejected because those fixed preview statistics would conflict with the requested full-group traversal and active progress.
 
-### Use one-shot CSS motion driven by existing state
+### Use transform-only position motion driven by existing state
 
-Server markup exposes the preview ratio as a scoped CSS custom property. When enhancement activates preview mode, the Store-accent segment draws from zero to the source-derived ratio over about 360ms using transform-only motion; the remaining label fades and rises no more than 4px over about 180ms after a short delay. The sequence runs once per fresh or shell-restored preview and never loops.
+Server markup exposes the initial position ratio as a scoped CSS custom property. When enhancement activates preview mode, the Store-accent segment draws once from zero to `1 / total`. Each Previous, Next, or side-cover selection then glides the segment to `current / total` with the same restrained ease-out curve as the covers. The sequence is event-driven and never loops.
 
-When `View all {total}` activates, disclosure uses two explicit phases within the existing 480ms budget. During the first 180ms, the preview band and rail remain visible, the catalog remains concealed, and the rail extends to 100%. Only after that fill completes does the hard-edged catalog reveal begin; the preview-only band then leaves presentation and the catalog reaches its final state by 480ms. Existing mode/transition attributes drive CSS; no animation frame, autoplay timer, document View Transition, or new controller state is added. Catalog and search-results modes otherwise remove preview-only statistics and rail presentation as they already remove Coverflow controls.
+When `View all {total}` activates, disclosure keeps its existing two phases within the 480ms budget. During the first 180ms, the preview band and rail remain visible, the catalog remains concealed, and the rail extends from the active ratio to 100%. Only after that fill completes does the hard-edged catalog reveal begin; the preview-only band then leaves presentation and the catalog reaches its final state by 480ms. Existing mode/transition attributes drive CSS; no animation frame, autoplay timer, document View Transition, or new controller mode is added. Catalog and search-results modes otherwise remove preview-only statistics and rail presentation as before.
 
-Under `prefers-reduced-motion: reduce`, preview information appears immediately at its static source-derived ratio and all mode changes reach the same final state without transform or opacity animation.
+Under `prefers-reduced-motion: reduce`, position information and the six visible cards update immediately at their static source-derived state, and all mode changes reach the same final state without transform or opacity animation.
 
-Alternative: perpetual pulsing or a new animation library. Rejected because looping motion distracts from browsing and existing CSS/state hooks cover the approved sequence.
+Alternative: animate every number or add perpetual pulsing. Rejected because the moving covers and one progress rail provide sufficient feedback without distracting repeated motion.
 
 ### Preserve responsive, accessibility, and performance contracts
 
-At desktop widths the All ledger, compact BlackBox band, and Coverflow title/stats/actions align to the established page rules. At the existing narrow boundary, content reflows rather than scales below readable sizes: Coverflow statistics remain labelled, controls wrap with 44px targets, and the primary full-catalog action stays distinct. At 320px, 200% text size, and 400% zoom equivalents, no label truncates or causes two-dimensional page scrolling.
+At desktop widths the All ledger, compact BlackBox band, Distro panel, and Coverflow title/stats/actions align to the established page rules. At the existing narrow boundary, content reflows rather than scales below readable sizes: Distro tools stack, Coverflow statistics remain labelled, controls wrap with 44px targets, and the primary full-catalog action stays distinct. At 320px, 200% text size, and 400% zoom equivalents, no label truncates or causes two-dimensional page scrolling.
 
 The change reuses current server nodes and CSS, adds no request or dependency, and preserves existing LCP, CLS, INP, and long-task budgets.
 
@@ -116,7 +137,10 @@ The implementation decision uses dataset patterns `LAY-01`, `HIER-02`, `HIER-04`
 - [All total and Distro format totals differ] → Label the right ledger `Browse Distro formats`; do not imply that its rows partition the complete All total.
 - [Removing the Distro intro reduces context] → Keep the shelf-purpose headline here and the full description on the canonical Distro page.
 - [BlackBox compactness clips at zoom] → Use compact desktop spacing with content-driven height and a stacked narrow layout, never a fixed block height.
-- [Coverflow statistics crowd narrow screens] → Reflow title, three labelled values, rail, and controls in document order; do not shrink utility text below the existing readable floor.
+- [Distro search repeats or loses result context] → Keep one server-derived total in the panel; show the live visible count and Clear search only while a query is active.
+- [Coverflow statistics crowd narrow screens] → Reflow title, three aligned labelled values, rail, and controls in document order; do not shrink utility text below the existing readable floor.
+- [Full-group traversal creates invisible focus targets] → Assign positions to at most six canonical cards and use `display: none` for every offstage card only after enhancement is ready; never hide focusable cards with opacity, translation, or `aria-hidden`.
+- [Smaller Coverflow hides side records] → Tune lateral shifts with the smaller cover token and verify all six positioned cards remain perceivable and reachable at desktop and narrow widths.
 - [Motion distracts or delays disclosure] → Run it once, use transform/opacity only, keep disclosure within the existing budget, and remove it entirely for reduced motion.
 - [New markup breaks search or shell restoration] → Preserve existing mode, toggle, status, and snapshot data hooks; extend focused server/controller/snapshot tests before visual work.
 - [Raster counts become implementation constants] → Derive every value and ratio from current entries; treat displayed PoC values as illustrative only.
@@ -127,9 +151,11 @@ The implementation decision uses dataset patterns `LAY-01`, `HIER-02`, `HIER-04`
 1. Accept and archive `refine-store-catalog-discovery`; confirm its conditional Merch and Distro format contracts are baseline.
 2. Implement and test the Signal rail without changing category derivation or routing.
 3. Refine `StoreCollectionPage.astro` into All, BlackBox Releases, and generic non-Distro presentation branches; update static output checks.
-4. Add the source-derived Coverflow depth summary, continuation rail, compact layout, and state-driven CSS motion while preserving existing controller and shell hooks.
-5. Run focused unit coverage, then Browser Use comparisons at narrow and desktop viewports for direct and shell-managed navigation, reduced motion, focus, zoom, and console cleanliness.
-6. Run `pnpm test:unit`, `pnpm check`, and `pnpm build`, then strict OpenSpec validation. Rollback is limited to the three Store components, scoped CSS/controller presentation hooks, and focused tests.
+4. Enroll every eligible group card in the existing controller, assign at most six visible positions, and add source-derived active/remaining position state plus the gliding rail while preserving catalog and shell hooks.
+5. Recompose the Distro intro, total, and search slot as one purpose-specific panel; remove only idle count duplication.
+6. Restyle the existing Coverflow overview, status, and stage as one smaller hard-edged rack without replacing its controller.
+7. Run focused unit coverage, then Browser Use comparisons at narrow and desktop viewports for direct and shell-managed navigation, reduced motion, focus, zoom, and console cleanliness.
+8. Run `pnpm test:unit`, `pnpm check`, and `pnpm build`, then strict OpenSpec validation. Rollback is limited to the Store components, scoped CSS/controller presentation hooks, and focused tests.
 
 ## Open Questions
 
