@@ -93,7 +93,7 @@ describe('release commerce link resolution', () => {
     await expect(getReleaseCommerceLink(expectReleaseEntry(nativeRelease))).resolves.toEqual({
       href: '/blackbox-records/store/disintegration-black-vinyl-lp/',
       isNativeStoreLink: true,
-      label: 'View In Store',
+      label: 'Shop release',
     });
   });
 
@@ -103,7 +103,7 @@ describe('release commerce link resolution', () => {
     await expect(getReleaseCommerceLink(expectReleaseEntry(externalRelease))).resolves.toEqual({
       href: '/blackbox-records/store/caregivers-vinyl/',
       isNativeStoreLink: true,
-      label: 'View In Store',
+      label: 'Shop release',
     });
   });
 });

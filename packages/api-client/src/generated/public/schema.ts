@@ -304,6 +304,41 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/store/listing-prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Browser-safe current Store listing-price presentation. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PublicStoreListingPrice"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 };
 export type webhooks = Record<string, never>;
 export type components = {
@@ -340,6 +375,16 @@ export type components = {
         NewsletterRegistrationResponse: {
             /** @enum {string} */
             status: "registered";
+        };
+        PublicStoreListingPrice: {
+            displayPrice: string;
+            /** @enum {string} */
+            presentationState: "ready";
+            storeItemSlug: string;
+        } | {
+            /** @enum {string} */
+            presentationState: "unavailable";
+            storeItemSlug: string;
         };
         PublicStoreOffer: {
             availability: {

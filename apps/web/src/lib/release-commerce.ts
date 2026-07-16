@@ -6,7 +6,7 @@ import { getStoreItemForRelease } from './catalog-data';
 export type ReleaseCommerceLink = {
   href: string;
   isNativeStoreLink: boolean;
-  label: 'Buy merch' | 'View In Store';
+  label: 'Buy merch' | 'Shop release';
   rel?: string;
   target?: '_blank';
 };
@@ -20,7 +20,7 @@ export async function getReleaseCommerceLink(
     return {
       href: nativeStoreItem.storePath,
       isNativeStoreLink: true,
-      label: 'View In Store',
+      label: 'Shop release',
     };
   }
 

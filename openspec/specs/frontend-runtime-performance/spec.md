@@ -12,7 +12,7 @@ The system SHALL evaluate frontend runtime performance with route-specific, envi
 
 #### Scenario: Baseline is captured
 
-- **WHEN** a maintainer records a performance baseline for Home, Store, or Distro
+- **WHEN** a maintainer records a performance baseline for Home, Store All, or Store Distro
 - **THEN** the evidence identifies the commit, URL, Product Environment, build mode, viewport, device-pixel ratio, CPU and network settings, cache state, browser version, run count, and measurement method
 - **AND** cold-load evidence reports at least five cache-cleared runs using median and p75
 - **AND** settled-scroll evidence reports at least three equivalent traces using median, p95, maximum, and long-task count.
@@ -21,7 +21,7 @@ The system SHALL evaluate frontend runtime performance with route-specific, envi
 
 - **WHEN** a performance slice is evaluated
 - **THEN** its before and after measurements use the same declared profile
-- **AND** evidence from different routes, cache states, devices, or Product Environments is not combined into one improvement claim.
+- **AND** evidence from different routes, Store Categories, cache states, devices, or Product Environments is not combined into one improvement claim.
 
 ### Requirement: Field Core Web Vitals use good thresholds
 
@@ -45,13 +45,13 @@ The system SHALL use the standard good Core Web Vitals thresholds when represent
 
 ### Requirement: Representative routes meet load and scroll budgets
 
-The system MUST keep primary and secondary public route classes within declared load, first-traversal, and repeat-traversal budgets.
+The system MUST keep primary and secondary public route classes within declared load, first-traversal, and repeat-traversal budgets after standalone Distro moves to the Store Distro category.
 
 #### Scenario: Fixed-profile route loads are measured
 
 - **WHEN** the declared cold-load profile runs
 - **THEN** Home LCP is no more than 2.0 seconds
-- **AND** Store and Distro LCP are each no more than 2.5 seconds
+- **AND** Store All and Store Distro LCP are each no more than 2.5 seconds
 - **AND** CLS is no more than 0.1 on every representative route.
 
 #### Scenario: Narrow CPU-stressed scrolling is measured
@@ -66,14 +66,14 @@ The system MUST keep primary and secondary public route classes within declared 
 
 - **WHEN** the declared 1440×900 DPR-1 cache-cleared production profile runs at least five times
 - **THEN** Home LCP is no more than 2.0 seconds
-- **AND** Store, Distro, Artists, Services, About, Releases, and News LCP are each no more than 2.5 seconds
+- **AND** Store All, Store Distro, Artists, Services, About, Releases, and News LCP are each no more than 2.5 seconds
 - **AND** CLS is no more than 0.1 on every measured route
 - **AND** median and p75 values are reported without discarding a valid slow run.
 
 #### Scenario: Mobile stress route loads are measured
 
 - **GIVEN** the declared 390×844 DPR-2 profile uses 4× CPU, 150 ms round-trip latency, 1.6 Mbps download, and a cleared cache
-- **WHEN** Home, Store, Distro, Artists, Services, and About run at least three times
+- **WHEN** Home, Store All, Store Distro, Artists, Services, and About run at least three times
 - **THEN** each route's LCP is no more than 2.5 seconds
 - **AND** CLS is no more than 0.1
 - **AND** font, image, JavaScript, request, and long-task outliers remain represented in the report.
@@ -91,7 +91,7 @@ The system MUST keep primary and secondary public route classes within declared 
 #### Scenario: The runner cadence is slower than the declared frame budget
 
 - **GIVEN** a same-profile low-work control has sub-8-millisecond application-work p95, no application-attributable task or long animation frame of 50 milliseconds or more, and a frame-interval p95 above 16.7 milliseconds
-- **WHEN** a route is evaluated with the same browser, viewport, CPU setting, network state, cadence, and trace aggregation
+- **WHEN** a Store All or Store Distro route is evaluated with the same browser, viewport, CPU setting, network state, cadence, and trace aggregation
 - **THEN** the route may use the control p95 plus 0.5 milliseconds as its frame-interval ceiling
 - **AND** that calibration does not relax the application-work, rendering-slice, long-task, load, CLS, or rendered-UX gates
 - **AND** the report retains both the control and route values rather than describing the route as an unconditional 60 Hz pass.
@@ -104,23 +104,23 @@ The system MUST keep primary and secondary public route classes within declared 
 
 ### Requirement: Long catalog pages skip offscreen rendering
 
-The system SHALL balance initial rendering and first traversal on Store and Distro without requiring one containment strategy for every route or breakpoint.
+The system SHALL balance initial rendering and first traversal on Store All and Store Distro without requiring one containment strategy for every category route or breakpoint.
 
 #### Scenario: Shopper scrolls through contained content
 
-- **WHEN** a skipped Store or Distro group approaches the viewport
+- **WHEN** a skipped Store All or Store Distro group approaches the viewport
 - **THEN** its content renders without a visible scrollbar jump, overlapping content, broken responsive image loading, or horizontal overflow
 - **AND** keyboard order, find-in-page, accessibility-tree access, and shell scroll reset remain correct.
 
 #### Scenario: Native containment meets the route budget
 
-- **WHEN** Store and Distro pass the declared scroll gate with native containment
+- **WHEN** Store All and Store Distro pass the declared scroll gate with native containment
 - **THEN** list virtualization, pagination, and infinite scrolling are not added for performance reasons.
 
 #### Scenario: Long catalog initially renders
 
-- **WHEN** Store or Distro contains content beyond the viewport
-- **THEN** the complete server-rendered catalog remains present in source order
+- **WHEN** `/store/` or `/store/distro/` contains content beyond the viewport
+- **THEN** the complete selected server-rendered Store collection remains present in source order
 - **AND** any offscreen-rendering boundary uses measured semantic groups or bounded chunks rather than mandatory strict containment on every card
 - **AND** intrinsic-size estimates, when used, are measured for the owning route and breakpoint
 - **AND** client-side virtualization is not introduced by default.
@@ -136,7 +136,7 @@ The system SHALL balance initial rendering and first traversal on Store and Dist
 #### Scenario: Grouped or retained activation misses the route budget
 
 - **WHEN** measured grouped containment or retained ahead-of-viewport activation still misses first or repeat traversal
-- **THEN** `content-visibility` is disabled for the failing route and breakpoint when the declared load and interaction budgets remain passing
+- **THEN** `content-visibility` is disabled for the failing Store route and breakpoint when the declared load and interaction budgets remain passing
 - **AND** first-scroll quality is not sacrificed solely to preserve an initial-layout optimization.
 
 #### Scenario: Native and eager strategies both miss
@@ -147,10 +147,10 @@ The system SHALL balance initial rendering and first traversal on Store and Dist
 
 #### Scenario: Approved Store rendering rungs are exhausted
 
-- **GIVEN** grouped containment, retained activation, and eager rendering have been measured against the same Store route
+- **GIVEN** grouped containment, retained activation, and eager rendering have been measured against the same Store All or Store Distro route
 - **WHEN** no rung passes both load and application-attributable traversal gates
 - **THEN** the existing Store renderer remains authoritative and the residual is recorded as non-passing
-- **AND** the report names the rejected evidence, the unchanged commerce/request boundary, and the post-consolidation Store route remeasurement that must precede a future bounded remedy
+- **AND** the report names the rejected evidence, the unchanged commerce/request boundary, and this post-consolidation Store route remeasurement before any future bounded remedy
 - **AND** the residual does not authorize pagination, virtualization, infinite scrolling, node recycling, batch Store Offer reads, static price authority, or a passing performance claim.
 
 ### Requirement: Critical font delivery is bounded and glyph-safe

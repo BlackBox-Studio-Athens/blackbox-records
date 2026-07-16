@@ -23,6 +23,8 @@ export type { StockRecord, StockRepository, StockState } from './stock-repositor
 export type { RecordStockChangeInput, StockChangeRecord, StockChangeRepository } from './stock-change-repository';
 export type { RecordStockCountInput, StockCountRecord, StockCountRepository } from './stock-count-repository';
 export type {
+  StoreOfferListingPriceSnapshotRecord,
+  StoreOfferListingPriceSnapshotRepository,
   StoreOfferSnapshotRecord,
   StoreOfferSnapshotRepository,
   StoreOfferSnapshotState,

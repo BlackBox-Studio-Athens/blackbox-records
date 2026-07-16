@@ -288,6 +288,53 @@
           "error"
         ]
       },
+      "PublicStoreListingPrice": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "displayPrice": {
+                "type": "string",
+                "minLength": 1
+              },
+              "presentationState": {
+                "type": "string",
+                "enum": [
+                  "ready"
+                ]
+              },
+              "storeItemSlug": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "displayPrice",
+              "presentationState",
+              "storeItemSlug"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "presentationState": {
+                "type": "string",
+                "enum": [
+                  "unavailable"
+                ]
+              },
+              "storeItemSlug": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "presentationState",
+              "storeItemSlug"
+            ]
+          }
+        ]
+      },
       "StartCheckoutResponse": {
         "type": "object",
         "properties": {
@@ -531,6 +578,28 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/store/listing-prices": {
+      "get": {
+        "tags": [
+          "Store"
+        ],
+        "responses": {
+          "200": {
+            "description": "Browser-safe current Store listing-price presentation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicStoreListingPrice"
+                  }
                 }
               }
             }

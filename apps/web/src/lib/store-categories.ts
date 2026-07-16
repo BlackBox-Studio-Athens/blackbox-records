@@ -60,3 +60,8 @@ export function getStoreCatalogCategory(categoryId: StoreCatalogCategoryId): Sto
 
   return category;
 }
+
+export function getDiscoverableStoreCatalogCategories(categoryIds: Iterable<StoreCatalogCategoryId>) {
+  const populatedCategoryIds = new Set(categoryIds);
+  return storeCatalogCategories.filter((category) => category.id !== 'merch' || populatedCategoryIds.has('merch'));
+}

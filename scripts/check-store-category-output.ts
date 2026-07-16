@@ -12,7 +12,6 @@ const expectations: CategoryOutputExpectation[] = [
   { cardClass: 'store-item-card--listing', count: 81, path: '/store/', title: 'Store' },
   { cardClass: 'store-item-card--listing', count: 3, path: '/store/blackbox-releases/', title: 'BlackBox Releases' },
   { cardClass: 'distro-card--page', count: 79, path: '/store/distro/', title: 'Distro' },
-  { cardClass: null, count: 0, path: '/store/merch/', title: 'Merch' },
 ];
 
 const outputRoot = resolve(process.cwd(), 'apps/web/dist');
@@ -53,12 +52,26 @@ async function run() {
       );
     }
 
-    if (expectation.path === '/store/merch/' && !source.includes('No merch currently available.')) {
-      throw new Error('Expected the Merch category to render its accessible empty state.');
-    }
     if (expectation.path === '/store/distro/' && !source.includes('id="distro-page-top"')) {
       throw new Error('Expected the Store Distro category to retain the legacy Distro fragment target.');
     }
+  }
+
+  const allStoreSource = await readFile(outputFileFor('/store/'), 'utf8');
+  if (!allStoreSource.includes('aria-label="Browse Distro formats"')) {
+    throw new Error('Expected All Store to expose Distro format discovery.');
+  }
+  if (!allStoreSource.includes('/store/distro/#distro-group-')) {
+    throw new Error('Expected All Store Distro discovery to target canonical Distro fragments.');
+  }
+
+  const merchSource = await readFile(outputFileFor('/store/merch/'), 'utf8');
+  const merchCanonical = readCanonicalHref(merchSource);
+  if (!merchCanonical.endsWith('/store/')) {
+    throw new Error(`Expected empty Merch to redirect to Store, received ${merchCanonical || 'none'}.`);
+  }
+  if (!merchSource.includes('window.location.replace') || !merchSource.includes('Browse Store')) {
+    throw new Error('Expected empty Merch to retain script and visible fallback redirects to Store.');
   }
 
   const legacyDistroSource = await readFile(outputFileFor('/distro/'), 'utf8');
@@ -75,7 +88,9 @@ async function run() {
     throw new Error('Expected the legacy Distro redirect to retain a visible no-JavaScript fallback link.');
   }
 
-  console.log('Store category static output checks passed: All 81, BlackBox Releases 3, Distro 79, Merch 0.');
+  console.log(
+    'Store category static output checks passed: All 81, BlackBox Releases 3, Distro 79, empty Merch redirect.',
+  );
 }
 
 void run().catch((error: unknown) => {

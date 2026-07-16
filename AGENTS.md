@@ -290,7 +290,8 @@ All JSON collection entries include `$schema` links to Astro-generated collectio
 - Internal clicks to release/artist/news detail routes are intercepted and opened as overlays
 - Direct loads to `/releases/[slug]/`, `/artists/[slug]/`, `/news/[slug]/` still render full Astro pages
 - `News` remains routed content but is hidden from the visible homepage/header/footer IA; Store is the primary commerce navigation
-- `Releases` remains editorial. Store owns sellable item routes and exposes the exact public categories `All`, `BlackBox Releases`, `Distro`, and `Merch`; `/distro/` is compatibility-only and redirects to `/store/distro/`.
+- `Releases` remains editorial. Store always exposes `All`, `BlackBox Releases`, and `Distro`; `Merch` is derived from `Clothes`, appears only when populated, and redirects to Store while empty. `/distro/` is compatibility-only and redirects to `/store/distro/`.
+- Store collection cards use one shell-mounted `/api/store/listing-prices` snapshot projection per activation. Keep per-item authoritative Store Offer reads on Store Item detail and checkout paths only.
 - Overlay HTML is fetched from `partial = true` routes under `apps/web/src/pages/app-shell-overlay/`
 - Non-shell routes still use normal document navigation
 

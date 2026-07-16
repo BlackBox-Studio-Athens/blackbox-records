@@ -93,6 +93,10 @@ export function groupStoreDistroCollectionEntries(
   }));
 }
 
+export function createStoreDistroGroupHeadingId(groupName: string): string {
+  return `distro-group-${groupName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+}
+
 export async function listStoreCollectionEntries(
   categoryId: StoreCatalogCategoryId = 'all',
 ): Promise<StoreCollectionEntry[]> {

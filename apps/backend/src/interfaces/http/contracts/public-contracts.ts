@@ -71,6 +71,20 @@ const storeCapabilitiesSchema = z
   })
   .openapi('StoreCapabilities');
 
+const storeListingPriceSchema = z
+  .discriminatedUnion('presentationState', [
+    z.object({
+      displayPrice: z.string().trim().min(1),
+      presentationState: z.literal('ready'),
+      storeItemSlug: z.string().trim().min(1),
+    }),
+    z.object({
+      presentationState: z.literal('unavailable'),
+      storeItemSlug: z.string().trim().min(1),
+    }),
+  ])
+  .openapi('PublicStoreListingPrice');
+
 const checkoutStateShippingLockerSchema = z
   .object({
     country_code: z.enum(['GR']),
@@ -167,6 +181,22 @@ export const getStoreCapabilitiesRoute = createRoute({
         },
       },
       description: 'Browser-safe public store capability state.',
+    },
+  },
+  tags: ['Store'],
+});
+
+export const getStoreListingPricesRoute = createRoute({
+  method: 'get',
+  path: '/api/store/listing-prices',
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: z.array(storeListingPriceSchema),
+        },
+      },
+      description: 'Browser-safe current Store listing-price presentation.',
     },
   },
   tags: ['Store'],
@@ -326,6 +356,7 @@ export const postNewsletterRegistrationRoute = createRoute({
 
 const publicContractModules = [
   getStoreCapabilitiesRoute,
+  getStoreListingPricesRoute,
   getStoreItemRoute,
   getStoreItemVariantsRoute,
   postCheckoutSessionRoute,

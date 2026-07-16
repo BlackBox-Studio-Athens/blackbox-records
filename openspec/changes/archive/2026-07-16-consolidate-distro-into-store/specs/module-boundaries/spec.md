@@ -38,7 +38,7 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** their route files, shared category page, category classifier, Distro grouping, and listing cards are owned by the closed `storefront-catalog` module
 - **AND** the `/distro/` redirect route remains in the documented static storefront route root.
 
-#### Scenario: Route-lazy Distro search crosses the app-shell boundary
+#### Scenario: Route-lazy Store Distro search crosses the app-shell boundary
 
 - **GIVEN** Store Distro search presentation is owned by `storefront-catalog`
 - **WHEN** the app shell lazily mounts that control on `/store/distro/`
@@ -59,11 +59,11 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** the helper is listed as a provided `platform-shared` entrypoint in `module-boundaries.manifest.json`
 - **AND** feature modules import that entrypoint directly instead of deep-importing HTTP route internals.
 
-### Requirement: Storefront catalog provides route-lazy Distro search
+### Requirement: Storefront catalog provides route-lazy Store Distro search
 
 The system MUST keep Store Distro search presentation inside the closed `storefront-catalog` module while exposing its app-shell integration through a provided entrypoint.
 
-#### Scenario: App shell mounts Distro search
+#### Scenario: App shell mounts Store Distro search
 
 - **WHEN** the app shell imports the route-lazy control for `/store/distro/`
 - **THEN** `apps/web/src/components/store/StoreDistroSearch.tsx` is owned by `storefront-catalog` and listed as a provided entrypoint

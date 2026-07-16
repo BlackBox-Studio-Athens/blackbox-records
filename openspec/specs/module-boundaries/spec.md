@@ -46,9 +46,16 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** those route files are owned by the closed `checkout-web` module
 - **AND** item-scoped checkout compatibility pages stay owned by `checkout-web` until removed.
 
+#### Scenario: Store category routes are added
+
+- **GIVEN** Store collection pages exist at `/store/`, `/store/blackbox-releases/`, `/store/distro/`, and `/store/merch/`
+- **WHEN** boundary validation runs
+- **THEN** their route files, shared category page, category classifier, Distro grouping, and listing cards are owned by the closed `storefront-catalog` module
+- **AND** the `/distro/` redirect route remains in the documented static storefront route root.
+
 #### Scenario: Route-lazy Store Distro search crosses the app-shell boundary
 
-- **GIVEN** Distro search presentation is owned by `storefront-catalog`
+- **GIVEN** Store Distro search presentation is owned by `storefront-catalog`
 - **WHEN** the app shell lazily mounts that control on `/store/distro/`
 - **THEN** `apps/web/src/components/store/StoreDistroSearch.tsx` is a provided `storefront-catalog` entrypoint
 - **AND** the app shell imports that entrypoint instead of a private storefront implementation.
@@ -64,7 +71,7 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 
 - **GIVEN** backend modules need shared Worker-safe logging, tracing, or HTTP response helpers
 - **WHEN** the helper is added
-- **THEN** it is listed as a provided `platform-shared` entrypoint in `module-boundaries.manifest.json`
+- **THEN** the helper is listed as a provided `platform-shared` entrypoint in `module-boundaries.manifest.json`
 - **AND** feature modules import that entrypoint directly instead of deep-importing HTTP route internals.
 
 ### Requirement: Compatibility facades are disallowed
@@ -79,11 +86,31 @@ The system SHALL avoid temporary compatibility facades during boundary work unle
 
 ### Requirement: Storefront catalog provides route-lazy Store Distro search
 
-The system MUST keep Distro search presentation inside the closed `storefront-catalog` module while exposing its app-shell integration through a provided entrypoint.
+The system MUST keep Store Distro search presentation inside the closed `storefront-catalog` module while exposing its app-shell integration through a provided entrypoint.
 
 #### Scenario: App shell mounts Store Distro search
 
-- **WHEN** the app shell imports the route-lazy Distro search control
-- **THEN** the explicit `/store/distro/` route, Store category components, and `apps/web/src/components/store/StoreDistroSearch.tsx` are owned by `storefront-catalog`
-- **AND** `apps/web/src/components/store/StoreDistroSearch.tsx` is listed as a provided entrypoint
-- **AND** boundary validation passes without an ownership exception or compatibility facade.
+- **WHEN** the app shell imports the route-lazy control for `/store/distro/`
+- **THEN** `apps/web/src/components/store/StoreDistroSearch.tsx` is owned by `storefront-catalog` and listed as a provided entrypoint
+- **AND** legacy `apps/web/src/components/distro/DistroSearch.tsx` is not retained as a compatibility facade
+- **AND** boundary validation passes without an ownership exception.
+
+### Requirement: Storefront catalog provides shell-mounted listing-price presentation
+
+The system MUST keep Store listing-price presentation inside the closed `storefront-catalog` module while exposing its persistent app-shell integration through one provided entrypoint.
+
+#### Scenario: App shell activates a Store collection
+
+- **WHEN** the persistent app shell renders or replaces a Store collection document
+- **THEN** it imports `apps/web/src/components/store/StoreListingPricePresentation.ts` as a documented `storefront-catalog` entrypoint
+- **AND** it does not duplicate listing-price projection or placeholder logic inside the app-shell module.
+
+### Requirement: Public commerce HTTP uses the commerce reader entrypoint
+
+The system MUST expose application-owned Store readers through the documented commerce reader entrypoint rather than private reader files.
+
+#### Scenario: Public HTTP composes Store listing prices
+
+- **WHEN** public commerce HTTP wires the Store listing-price reader
+- **THEN** it imports `apps/backend/src/application/commerce/readers/index.ts` as a provided `checkout-core` entrypoint
+- **AND** boundary validation passes without an ownership exception.

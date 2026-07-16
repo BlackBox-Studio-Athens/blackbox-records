@@ -48,7 +48,7 @@ The system SHALL derive a stable browse sequence for Store Items classified as `
 - **THEN** ascending Distro content `order` is the primary key and title is the deterministic tie-breaker
 - **AND** duplicate or gapped `order` values do not require catalog-wide renumbering.
 
-#### Scenario: Distro category JavaScript is unavailable
+#### Scenario: Distro JavaScript is unavailable
 
 - **WHEN** `/store/distro/` is rendered without client JavaScript
 - **THEN** every canonical distro-sourced Store Item remains present under its derived browse heading

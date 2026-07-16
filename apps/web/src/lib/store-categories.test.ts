@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { reservedStoreRouteSegments, storeCatalogCategories } from './store-categories';
+import {
+  getDiscoverableStoreCatalogCategories,
+  reservedStoreRouteSegments,
+  storeCatalogCategories,
+} from './store-categories';
 
 describe('Store category registry', () => {
   it('defines the exact public category order, labels, and paths', () => {
@@ -15,5 +19,19 @@ describe('Store category registry', () => {
   it('reserves the collection segments without treating All as item membership', () => {
     expect([...reservedStoreRouteSegments]).toEqual(['checkout', 'blackbox-releases', 'distro', 'merch']);
     expect(reservedStoreRouteSegments.has('all')).toBe(false);
+  });
+
+  it('discovers Merch only when classified content populates it', () => {
+    expect(getDiscoverableStoreCatalogCategories(['all', 'blackbox-releases', 'distro']).map(({ id }) => id)).toEqual([
+      'all',
+      'blackbox-releases',
+      'distro',
+    ]);
+    expect(getDiscoverableStoreCatalogCategories(['all', 'merch']).map(({ id }) => id)).toEqual([
+      'all',
+      'blackbox-releases',
+      'distro',
+      'merch',
+    ]);
   });
 });

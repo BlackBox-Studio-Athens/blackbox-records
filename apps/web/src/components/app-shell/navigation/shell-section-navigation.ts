@@ -37,6 +37,7 @@ export type OpenShellSectionNavigationOptions = {
   navigateDocumentTo: (href: string) => void;
   pushShellSectionHistoryState?: ((pathname: string, href: string) => void) | undefined;
   replaceShellSectionHistoryState?: ((pathname: string, href: string) => void) | undefined;
+  scrollShellViewportToTarget: (targetId: string, sourceElement?: HTMLElement | null) => boolean;
   scrollShellViewportToTop: (options?: { sourceElement?: HTMLElement | null | undefined }) => Promise<void>;
   setIsRouteLoading: (isRouteLoading: boolean) => void;
   shellPageLoader: ShellPageSnapshotLoader;
@@ -62,6 +63,7 @@ export async function openShellSectionNavigation({
   navigateDocumentTo,
   pushShellSectionHistoryState = pushBrowserShellSectionHistoryState,
   replaceShellSectionHistoryState = markCurrentHistoryEntryForShellSection,
+  scrollShellViewportToTarget,
   scrollShellViewportToTop,
   setIsRouteLoading,
   shellPageLoader,
@@ -77,6 +79,13 @@ export async function openShellSectionNavigation({
   const route = parseShellSectionRoute(resolvedUrl.pathname);
   if (!route) return false;
 
+  const scrollToDestination = async () => {
+    const targetId = decodeURIComponent(resolvedUrl.hash.slice(1));
+    if (targetId && scrollShellViewportToTarget(targetId, sourceElement)) return;
+
+    await scrollShellViewportToTop({ sourceElement });
+  };
+
   if (hasOverlayState()) {
     collapseOverlayHistoryToBackground();
   }
@@ -85,7 +94,7 @@ export async function openShellSectionNavigation({
   const activePathname = currentSnapshot?.pathname || normalizeAppPathname(currentPathname);
   if (route.pathname === activePathname) {
     syncShellNavigationState(activePathname);
-    await scrollShellViewportToTop({ sourceElement });
+    await scrollToDestination();
     if (historyMode === 'replace') {
       replaceShellSectionHistoryState(route.pathname, resolvedUrl.toString());
     }
@@ -124,7 +133,7 @@ export async function openShellSectionNavigation({
       replaceShellSectionHistoryState(route.pathname, resolvedUrl.toString());
     }
 
-    await scrollShellViewportToTop({ sourceElement });
+    await scrollToDestination();
     triggerShellPageEnterTransition();
     await shellSectionTransition.finish(sectionTransitionToken);
 

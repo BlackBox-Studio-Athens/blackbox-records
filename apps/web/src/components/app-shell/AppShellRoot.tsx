@@ -28,6 +28,8 @@ import {
 } from '@/components/app-shell/navigation/shell-transition';
 import { createProjectRelativeUrl } from '@/config/site';
 import { normalizeAppPathname } from '@/lib/app-shell/routing';
+import { parseShellSectionRoute } from '@/lib/app-shell/routing';
+import { connectStoreListingPricePresentation } from '@/components/store/StoreListingPricePresentation';
 import type { SiteNavigationItem } from '@/lib/site-data';
 import type { StoreCartState } from '@/lib/store-cart';
 import { createOverlayFragmentLoader } from './overlay/overlay-fragment-loader';
@@ -279,6 +281,13 @@ export default function AppShellRoot({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    if (parseShellSectionRoute(activeShellPathname)?.kind !== 'store') return;
+    return connectStoreListingPricePresentation({ root: document });
+  }, [activeShellPathname]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     return connectShellPortalTarget({
       activePathname: activeShellPathname,
       queryTarget: () => document.querySelector<HTMLElement>('[data-artists-roster-filters]'),
@@ -413,6 +422,7 @@ export default function AppShellRoot({
       navigateDocumentTo: (nextHref) => {
         window.location.assign(nextHref);
       },
+      scrollShellViewportToTarget: scrollToTargetId,
       scrollShellViewportToTop: (scrollOptions) =>
         scrollShellViewportToTop({
           getMainElement: getCurrentMainElement,

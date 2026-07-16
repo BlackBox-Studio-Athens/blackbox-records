@@ -20,7 +20,7 @@ Record commit, URL, Product Environment, production build command, browser/versi
 | Mobile scroll     | Store, Distro                                                 | 390×844, DPR 2  | 4×  | warm after load           | first and repeat         | 3+3  | same as wide scroll                                                                 |
 | Legacy regression | Store, Distro                                                 | 390×844, DPR 1  | 4×  | warm after load           | 48 px/rAF for 240 frames | 3    | p95, maximum, and long-task count                                                   |
 
-Store runs also record hydrated price islands, capability reads, Store Offer reads/statuses, and request-settle time. Disabled Store acceptance is one capability read, zero offers, and zero Store 5xx. Enabled Store acceptance is visible-margin offer reads only.
+Store collection runs also record listing-price projection reads, terminal placeholder states, Store Offer reads, and request-settle time. Acceptance is one `/api/store/listing-prices` read per collection activation, zero per-card `/api/store/items/:slug` reads, and no Store 5xx. Store Item detail runs retain one authoritative Store Offer read.
 
 For wide scroll, disable CSS smooth scrolling, start at `scrollY = 0`, and advance 24 CSS pixels per animation frame for 360 frames. Mobile scroll uses 24 CSS pixels per animation frame for 300 frames. Reset directly to the top, wait 500 ms, then repeat the same segment. Never discard the first traversal as warm-up. Legacy regression retains 48 CSS pixels per animation frame for 240 frames.
 

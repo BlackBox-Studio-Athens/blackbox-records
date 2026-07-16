@@ -33,6 +33,7 @@ function createOptions(overrides: Partial<OpenShellSectionNavigationOptions> = {
     navigateDocumentTo: vi.fn(),
     pushShellSectionHistoryState: vi.fn(),
     replaceShellSectionHistoryState: vi.fn(),
+    scrollShellViewportToTarget: vi.fn(() => false),
     scrollShellViewportToTop: vi.fn(async () => undefined),
     setIsRouteLoading: vi.fn(),
     shellPageLoader: {
@@ -111,6 +112,21 @@ describe('shell section navigation', () => {
     expect(options.shellSectionTransition.finish).toHaveBeenCalledWith(7);
     expect(options.stopRouteLoadingSoon).toHaveBeenCalledTimes(1);
     expect(options.activeAbortControllerRef.current).toBeNull();
+  });
+
+  it('scrolls a cross-section hash target after applying the destination snapshot', async () => {
+    const sourceElement = {} as HTMLElement;
+    const options = createOptions({
+      historyMode: 'push',
+      href: 'https://example.test/blackbox-records/artists/#featured-artists',
+      scrollShellViewportToTarget: vi.fn(() => true),
+      sourceElement,
+    });
+
+    await expect(openShellSectionNavigation(options)).resolves.toBe(true);
+
+    expect(options.scrollShellViewportToTarget).toHaveBeenCalledWith('featured-artists', sourceElement);
+    expect(options.scrollShellViewportToTop).not.toHaveBeenCalled();
   });
 
   it('uses cached snapshots without starting the route loading state', async () => {

@@ -49,13 +49,13 @@ The system MUST filter Store Distro content without reordering, recreating, pagi
 
 The Store Distro search control MUST exist only while `/store/distro/` owns the active portal placeholder.
 
-#### Scenario: Store Distro category becomes active
+#### Scenario: Distro route becomes active
 
 - **WHEN** the shell finds the Store Distro search placeholder on `/store/distro/`
 - **THEN** it lazily loads and mounts the Store-owned Distro search control
 - **AND** unrelated Store categories and routes do not load or run that control.
 
-#### Scenario: Store Distro category exits or is cached
+#### Scenario: Distro route exits or is cached
 
 - **WHEN** the shell leaves `/store/distro/` or captures its page snapshot
 - **THEN** the control disconnects and the cached placeholder is empty

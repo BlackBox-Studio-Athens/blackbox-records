@@ -2,7 +2,11 @@
 import DistroCard from '@/components/cards/DistroCard.astro';
 import { buttonVariants } from '@/components/ui/button';
 import { getDistroPageContent } from '@/lib/site-data';
-import { groupStoreDistroCollectionEntries, type StoreCollectionEntry } from '@/lib/store-collection';
+import {
+  createStoreDistroGroupHeadingId,
+  groupStoreDistroCollectionEntries,
+  type StoreCollectionEntry,
+} from '@/lib/store-collection';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -24,7 +28,7 @@ const groupedDistroEntries = groupStoreDistroCollectionEntries(entries);
 const groupedDistroChunks = groupedDistroEntries.map((group) => ({
   ...group,
   coverflowEligible: group.entries.length > DISTRO_COVERFLOW_PREVIEW_SIZE,
-  headingId: `distro-group-${group.groupName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+  headingId: createStoreDistroGroupHeadingId(group.groupName),
   chunks: group.entries.reduce<(typeof group.entries)[]>((chunks, entry, index) => {
     if (index % DISTRO_COVERFLOW_PREVIEW_SIZE === 0) chunks.push([]);
     chunks.at(-1)!.push(entry);

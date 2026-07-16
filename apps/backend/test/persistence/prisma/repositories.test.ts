@@ -8,6 +8,7 @@ import {
   PrismaStockCountRepository,
   PrismaStockRepository,
   PrismaStoreItemOptionRepository,
+  PrismaStoreOfferSnapshotRepository,
   PrismaStripeCatalogWebhookEventRepository,
   PrismaVariantStripeMappingRepository,
   createPrismaClient,
@@ -152,5 +153,25 @@ describe('Prisma repository seams', () => {
       processingStatus: 'succeeded',
     });
     expect(succeededDuplicate.status).toBe('duplicate_succeeded');
+  });
+
+  it('reads only compact Store Offer snapshot fields for listing-price presentation', async () => {
+    const findMany = vi.fn(async () => []);
+    const storeOfferSnapshots = new PrismaStoreOfferSnapshotRepository({
+      storeOfferSnapshot: { findMany },
+    } as never);
+
+    await expect(storeOfferSnapshots.listForListingPricePresentation()).resolves.toEqual([]);
+    expect(findMany).toHaveBeenCalledWith({
+      orderBy: { storeItemSlug: 'asc' },
+      select: {
+        amountMinor: true,
+        currencyCode: true,
+        freshUntil: true,
+        priceActive: true,
+        productActive: true,
+        storeItemSlug: true,
+      },
+    });
   });
 });

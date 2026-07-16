@@ -14,6 +14,7 @@ const mockDisconnect = vi.fn(async () => {});
 const mockReadStoreOffer = vi.fn();
 const mockListVariantOffersForStoreItem = vi.fn();
 const mockReadStoreCapabilities = vi.fn();
+const mockReadStoreListingPrices = vi.fn();
 const mockStartCheckout = vi.fn();
 const mockReadCheckoutState = vi.fn();
 const mockRegisterNewsletterSignup = vi.fn();
@@ -32,6 +33,7 @@ vi.mock('../../src/interfaces/http/routes/public-commerce-services', () => ({
     listVariantOffersForStoreItem: mockListVariantOffersForStoreItem,
     readCheckoutState: mockReadCheckoutState,
     readStoreCapabilities: mockReadStoreCapabilities,
+    readStoreListingPrices: mockReadStoreListingPrices,
     readStoreOffer: mockReadStoreOffer,
     startCheckout: mockStartCheckout,
   }),
@@ -122,6 +124,43 @@ describe('public commerce routes', () => {
         unavailableReason: 'Native checkout is temporarily unavailable.',
       },
     });
+  });
+
+  it('returns one browser-safe no-store listing-price projection without Store Offer reads', async () => {
+    mockReadStoreListingPrices.mockResolvedValueOnce([
+      {
+        displayPrice: '€28.00',
+        presentationState: 'ready',
+        storeItemSlug: 'disintegration-black-vinyl-lp',
+      },
+      {
+        presentationState: 'unavailable',
+        storeItemSlug: 'afterglow-tape',
+      },
+    ]);
+
+    const app = createHttpApp();
+    const response = await app.request('http://backend.test/api/store/listing-prices', {}, testBindings);
+
+    expect(mockReadStoreListingPrices).toHaveBeenCalledOnce();
+    expect(mockReadStoreOffer).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    const body = await response.json();
+    expect(body).toEqual([
+      {
+        displayPrice: '€28.00',
+        presentationState: 'ready',
+        storeItemSlug: 'disintegration-black-vinyl-lp',
+      },
+      {
+        presentationState: 'unavailable',
+        storeItemSlug: 'afterglow-tape',
+      },
+    ]);
+    expect(JSON.stringify(body)).not.toMatch(
+      /variantId|canCheckout|stripe|stock|availability|amountMinor|currencyCode/,
+    );
   });
 
   it('returns variant offers as an array-shaped contract', async () => {

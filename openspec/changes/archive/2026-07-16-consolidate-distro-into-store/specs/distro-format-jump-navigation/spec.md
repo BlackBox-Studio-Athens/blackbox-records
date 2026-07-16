@@ -27,7 +27,7 @@ The Store Distro category SHALL render one server-derived format navigation whos
 - **AND** its format links remain horizontally reachable at narrow widths without causing page-level horizontal overflow
 - **AND** the `Top` link remains available without an active-section observer, scroll listener, or duplicate navigation.
 
-#### Scenario: Visitor returns to the category top
+#### Scenario: Visitor returns to the page top
 
 - **WHEN** the visitor activates `Top`
 - **THEN** its fragment and app-shell target identify the Store Distro intro

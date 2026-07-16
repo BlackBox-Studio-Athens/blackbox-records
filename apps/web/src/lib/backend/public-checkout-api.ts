@@ -3,6 +3,7 @@ import { createPublicApiFetcher, type PublicApiComponents } from '@blackbox/api-
 import { getPublicBackendBaseUrl } from './public-backend-config';
 
 export type PublicStoreOffer = PublicApiComponents['schemas']['PublicStoreOffer'];
+export type PublicStoreListingPrice = PublicApiComponents['schemas']['PublicStoreListingPrice'];
 export type StoreCapabilities = PublicApiComponents['schemas']['StoreCapabilities'];
 export type CheckoutState = PublicApiComponents['schemas']['CheckoutState'];
 export type NewsletterRegistrationBody = PublicApiComponents['schemas']['NewsletterRegistrationBody'];

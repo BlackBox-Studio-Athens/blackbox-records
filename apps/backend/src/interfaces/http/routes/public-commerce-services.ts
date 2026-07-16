@@ -33,6 +33,7 @@ import {
   createCurrentCatalogProductProjectionReader,
 } from '../../../application/commerce/catalog-sync';
 import type { AppLogger } from '../../../observability';
+import { readStoreListingPrices } from '../../../application/commerce/readers';
 
 export function createPublicCommerceServices(bindings: AppBindings, logger?: Pick<AppLogger, 'warn'>) {
   const productEnvironmentProfile = productEnvironmentProfileFromBindings(bindings);
@@ -77,6 +78,7 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
     readCheckoutState: async (checkoutSessionId: string) =>
       readCheckoutState(createStripeCheckoutGateway(bindings), orders, checkoutSessionId),
     readStoreCapabilities: async () => readStoreCapabilities(createFeatureFlagReader(bindings, logger)),
+    readStoreListingPrices: async () => readStoreListingPrices(storeOfferSnapshots),
     readStoreOffer: async (storeItemSlug: string) =>
       readStoreOffer(
         storeItems,

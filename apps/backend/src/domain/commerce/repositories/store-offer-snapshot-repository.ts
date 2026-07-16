@@ -15,6 +15,15 @@ export type StoreOfferSnapshotRecord = {
 
 export type StoreOfferSnapshotState = StoreOfferSnapshotRecord;
 
+export type StoreOfferListingPriceSnapshotRecord = Pick<
+  StoreOfferSnapshotRecord,
+  'amountMinor' | 'currencyCode' | 'freshUntil' | 'priceActive' | 'productActive' | 'storeItemSlug'
+>;
+
+export interface StoreOfferListingPriceSnapshotRepository {
+  listForListingPricePresentation(): Promise<StoreOfferListingPriceSnapshotRecord[]>;
+}
+
 export interface StoreOfferSnapshotRepository {
   findByStoreItemSlug(storeItemSlug: StoreItemSlug): Promise<StoreOfferSnapshotRecord | null>;
   findByVariantId(variantId: VariantId): Promise<StoreOfferSnapshotRecord | null>;

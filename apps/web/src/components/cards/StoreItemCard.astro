@@ -1,7 +1,6 @@
 ---
 import { Image } from 'astro:assets';
 import { Card, CardContent } from '@/components/ui/card';
-import StoreOfferPriceDisplay from '@/components/store/StoreOfferPriceDisplay';
 import type { StoreCollectionEntry } from '@/lib/store-collection';
 
 interface Props {
@@ -59,16 +58,16 @@ const storeItemCardImageWidths = [320, 480, 640, 800, 960];
       <div class="mt-auto flex items-end justify-between gap-4 border-t border-border/50 pt-4">
         <div class="space-y-1">
           <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Price</p>
-          <StoreOfferPriceDisplay
-            client:visible={{ rootMargin: '240px' }}
-            listing
-            storeItemSlug={storeItem.slug}
-            className="block min-h-[1.75rem] font-display text-2xl leading-7 tracking-[0.08em] uppercase text-foreground"
-          />
+          <span
+            aria-busy="true"
+            class="block min-h-[1.75rem] font-display text-2xl leading-7 tracking-[0.08em] uppercase text-muted-foreground"
+            data-store-item-slug={storeItem.slug}
+            data-store-listing-price
+            data-store-listing-price-state="loading"
+          >
+            Checking price
+          </span>
         </div>
-        <span class="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-foreground/88">
-          View Item <span aria-hidden="true">→</span>
-        </span>
       </div>
     </CardContent>
   </Card>

@@ -47,7 +47,7 @@ The Store Distro category SHALL enhance a populated classified group into a resp
 - **AND WHEN** pointer movement exceeds 10px before click activation
 - **THEN** route activation is suppressed without moving the Coverflow, capturing the pointer, or implementing drag physics.
 
-#### Scenario: Preview exposes artwork without losing Store Item identity
+#### Scenario: Preview exposes artwork without losing record identity
 
 - **WHEN** an eligible group is in `preview` mode
 - **THEN** each of the first six cards presents artwork without its catalog copy while retaining one static, server-authored accessible link name `{title} — {artist_or_label}` across all modes
@@ -97,7 +97,7 @@ Each eligible Store Distro group MUST occupy exactly one of `preview`, `catalog`
 - **THEN** responsive CSS adapts the scene without changing `preview`, `catalog`, or `search-results` state
 - **AND** no resize listener or viewport-specific client state is required.
 
-#### Scenario: Store Distro category exits and re-enters
+#### Scenario: Distro route exits and re-enters
 
 - **WHEN** the app shell leaves `/store/distro/`, caches its main content, and later restores or reloads the route
 - **THEN** pre-cache snapshot sanitization restores the server-authored first-record preview mode, initial card positions, control contents, and active label while removing selected and temporary transition state
@@ -113,7 +113,7 @@ The Store Distro Coverflow enhancement MUST preserve full catalog access, ordina
 - **THEN** the complete server-rendered Distro-category catalog remains visible in canonical order
 - **AND** no nonfunctional Coverflow controls or pre-hydration hidden catalog state remain.
 
-#### Scenario: Supported Store Distro route paints its initial state
+#### Scenario: Supported Distro route paints its initial state
 
 - **WHEN** JavaScript and required 3D CSS support are available on `/store/distro/`
 - **THEN** a synchronous capability marker activates the server-authored preview mode before first paint

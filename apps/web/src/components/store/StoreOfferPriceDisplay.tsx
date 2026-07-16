@@ -4,7 +4,6 @@ import {
   createPublicCheckoutApi,
   type PublicCheckoutApi,
   type PublicStoreOffer,
-  type StoreCapabilities,
 } from '@/lib/backend/public-checkout-api';
 import { cn } from '@/lib/utils';
 
@@ -24,7 +23,6 @@ export type StoreOfferPriceDisplayView = {
 type StoreOfferPriceDisplayProps = {
   api?: PublicCheckoutApi;
   className?: string;
-  listing?: boolean;
   storeItemSlug: string;
 };
 
@@ -33,54 +31,6 @@ const loadingView: StoreOfferPriceDisplayView = {
   label: STORE_OFFER_PRICE_DISPLAY_COPY.loading,
   tone: 'loading',
 };
-
-const maxConcurrentStoreOfferPriceReads = 4;
-
-let activeStoreOfferPriceReads = 0;
-
-const pendingStoreOfferPriceReads: Array<() => void> = [];
-let listingCapabilityConsumers = 0;
-let listingCapabilityRead: Promise<StoreCapabilities> | null = null;
-
-export function acquireListingStoreCapabilities(api: PublicCheckoutApi) {
-  listingCapabilityConsumers += 1;
-  listingCapabilityRead ??= api.readStoreCapabilities();
-
-  let released = false;
-  return {
-    read: listingCapabilityRead,
-    release() {
-      if (released) return;
-      released = true;
-      listingCapabilityConsumers -= 1;
-      if (listingCapabilityConsumers === 0) listingCapabilityRead = null;
-    },
-  };
-}
-
-function enqueueStoreOfferPriceRead(
-  task: () => Promise<StoreOfferPriceDisplayView>,
-): Promise<StoreOfferPriceDisplayView> {
-  return new Promise((resolve, reject) => {
-    const runTask = () => {
-      activeStoreOfferPriceReads += 1;
-
-      task()
-        .then(resolve, reject)
-        .finally(() => {
-          activeStoreOfferPriceReads -= 1;
-          pendingStoreOfferPriceReads.shift()?.();
-        });
-    };
-
-    if (activeStoreOfferPriceReads < maxConcurrentStoreOfferPriceReads) {
-      runTask();
-      return;
-    }
-
-    pendingStoreOfferPriceReads.push(runTask);
-  });
-}
 
 export function createStoreOfferPriceDisplayView(
   offer: PublicStoreOffer | null | undefined,
@@ -111,19 +61,7 @@ export async function loadStoreOfferPriceDisplayView(
   }
 }
 
-export function loadDefaultStoreOfferPriceDisplayView(
-  api: PublicCheckoutApi,
-  storeItemSlug: string,
-): Promise<StoreOfferPriceDisplayView> {
-  return enqueueStoreOfferPriceRead(() => loadStoreOfferPriceDisplayView(api, storeItemSlug));
-}
-
-export default function StoreOfferPriceDisplay({
-  api,
-  className,
-  listing = false,
-  storeItemSlug,
-}: StoreOfferPriceDisplayProps) {
+export default function StoreOfferPriceDisplay({ api, className, storeItemSlug }: StoreOfferPriceDisplayProps) {
   const [view, setView] = React.useState<StoreOfferPriceDisplayView>(loadingView);
 
   React.useEffect(() => {
@@ -132,20 +70,7 @@ export default function StoreOfferPriceDisplay({
 
     setView(loadingView);
 
-    const listingCapabilities = listing ? acquireListingStoreCapabilities(checkoutApi) : null;
-    const readStoreOfferPriceDisplayView = listingCapabilities
-      ? listingCapabilities.read
-          .then((capabilities) =>
-            capabilities.nativeCheckout.enabled
-              ? loadDefaultStoreOfferPriceDisplayView(checkoutApi, storeItemSlug)
-              : createStoreOfferPriceDisplayView(null),
-          )
-          .catch(() => createStoreOfferPriceDisplayView(null))
-      : api
-        ? loadStoreOfferPriceDisplayView(checkoutApi, storeItemSlug)
-        : loadDefaultStoreOfferPriceDisplayView(checkoutApi, storeItemSlug);
-
-    void readStoreOfferPriceDisplayView.then((nextView) => {
+    void loadStoreOfferPriceDisplayView(checkoutApi, storeItemSlug).then((nextView) => {
       if (isActive) {
         setView(nextView);
       }
@@ -153,9 +78,8 @@ export default function StoreOfferPriceDisplay({
 
     return () => {
       isActive = false;
-      listingCapabilities?.release();
     };
-  }, [api, listing, storeItemSlug]);
+  }, [api, storeItemSlug]);
 
   return (
     <span

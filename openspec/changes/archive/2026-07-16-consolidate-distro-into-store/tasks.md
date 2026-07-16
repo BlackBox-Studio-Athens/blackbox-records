@@ -93,4 +93,4 @@
 - [x] 10.1 Review the final RTK-filtered and exact bounded git diff for accidental backend/provider changes, duplicated category strings, stale Distro routes, unrelated formatting, or user-owned edits.
 - [x] 10.2 Rerun `pnpm test:unit`, `pnpm check`, and `pnpm build` against the exact final tree immediately before any push or completion claim.
 - [x] 10.3 Record automated and Browser Use evidence, known static-redirect limitations, current derived category totals, and rollback instructions in the change handoff.
-- [ ] 10.4 Mark tasks complete only from evidence; archive `consolidate-distro-into-store` only after implementation, final validation, documentation synchronization, and user acceptance are complete.
+- [x] 10.4 Mark tasks complete only from evidence; archive `consolidate-distro-into-store` only after implementation, final validation, documentation synchronization, and user acceptance are complete.

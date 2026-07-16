@@ -64,6 +64,28 @@ class FakeElement {
         },
       ];
     }
+    if (selector === '[data-store-listing-price]' && this.innerHTML.includes('data-store-listing-price')) {
+      const replaceInnerHtml = (pattern: string | RegExp, replacement: string) => {
+        this.innerHTML = this.innerHTML.replace(pattern, replacement);
+      };
+      return [
+        {
+          dataset: {
+            set storeListingPriceState(value: string) {
+              replaceInnerHtml(/data-store-listing-price-state="[^"]*"/, `data-store-listing-price-state="${value}"`);
+            },
+          },
+          set textContent(value: string) {
+            replaceInnerHtml(/(<span[^>]*data-store-listing-price[^>]*>)[\s\S]*?(<\/span>)/, `$1${value}$2`);
+          },
+          setAttribute(name: string, value: string) {
+            if (name === 'aria-busy') {
+              replaceInnerHtml('<span ', `<span aria-busy="${value}" `);
+            }
+          },
+        },
+      ];
+    }
     return [];
   }
 }
@@ -71,7 +93,7 @@ class FakeElement {
 function createSnapshotDocument() {
   const main = new FakeElement(
     { class: 'catalog-page' },
-    '<section>Catalog</section><div data-artists-roster-filters>hydrated filters</div><div data-distro-search><input value="vinyl"></div><a hidden data-distro-search-hidden>Item</a>',
+    '<section>Catalog</section><div data-artists-roster-filters>hydrated filters</div><div data-distro-search><input value="vinyl"></div><a hidden data-distro-search-hidden>Item</a><span data-store-listing-price data-store-listing-price-state="ready">€28.00</span>',
   );
   const canonical = new FakeElement();
   canonical.href = 'https://example.test/blackbox-records/store/distro/';
@@ -164,6 +186,9 @@ describe('shell page snapshots', () => {
     expect(snapshot?.mainHtml).not.toContain('value="vinyl"');
     expect(snapshot?.mainHtml).not.toContain('data-distro-search-hidden');
     expect(snapshot?.mainHtml).toContain('<a hidden>Item</a>');
+    expect(snapshot?.mainHtml).toContain('data-store-listing-price-state="loading"');
+    expect(snapshot?.mainHtml).toContain('Checking price');
+    expect(snapshot?.mainHtml).not.toContain('€28.00');
   });
 
   it('updates document metadata when a snapshot is applied', () => {

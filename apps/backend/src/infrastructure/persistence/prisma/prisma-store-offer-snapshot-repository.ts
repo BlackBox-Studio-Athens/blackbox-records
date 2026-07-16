@@ -1,4 +1,6 @@
 import type {
+  StoreOfferListingPriceSnapshotRecord,
+  StoreOfferListingPriceSnapshotRepository,
   StoreOfferSnapshotRecord,
   StoreOfferSnapshotRepository,
   StoreOfferSnapshotState,
@@ -32,7 +34,9 @@ function mapStoreOfferSnapshot(record: {
   };
 }
 
-export class PrismaStoreOfferSnapshotRepository implements StoreOfferSnapshotRepository {
+export class PrismaStoreOfferSnapshotRepository
+  implements StoreOfferSnapshotRepository, StoreOfferListingPriceSnapshotRepository
+{
   public constructor(private readonly prisma: PrismaClient) {}
 
   public async findByStoreItemSlug(storeItemSlug: string): Promise<StoreOfferSnapshotRecord | null> {
@@ -49,6 +53,25 @@ export class PrismaStoreOfferSnapshotRepository implements StoreOfferSnapshotRep
     });
 
     return record ? mapStoreOfferSnapshot(record) : null;
+  }
+
+  public async listForListingPricePresentation(): Promise<StoreOfferListingPriceSnapshotRecord[]> {
+    const records = await this.prisma.storeOfferSnapshot.findMany({
+      orderBy: { storeItemSlug: 'asc' },
+      select: {
+        amountMinor: true,
+        currencyCode: true,
+        freshUntil: true,
+        priceActive: true,
+        productActive: true,
+        storeItemSlug: true,
+      },
+    });
+
+    return records.map((record) => ({
+      ...record,
+      storeItemSlug: parseStoreItemSlug(record.storeItemSlug),
+    }));
   }
 
   public async save(snapshot: StoreOfferSnapshotState): Promise<StoreOfferSnapshotRecord> {

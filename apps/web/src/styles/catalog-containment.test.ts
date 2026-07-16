@@ -26,8 +26,8 @@ describe('catalog containment', () => {
 
     expect(css).toMatch(/\.store-item-card--listing\s*{[^}]*content-visibility:\s*auto/s);
     expect(storePage).toContain('entries.map');
-    expect(storeCard).toContain("client:visible={{ rootMargin: '240px' }}");
-    expect(storeCard).not.toMatch(/client:(?:load|idle|only)/);
+    expect(storeCard).toContain('data-store-listing-price');
+    expect(storeCard).not.toMatch(/client:(?:visible|load|idle|only)/);
     expect(storePage).not.toContain('data-store-render-chunk');
   });
 });

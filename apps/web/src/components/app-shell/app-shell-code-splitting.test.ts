@@ -37,6 +37,8 @@ describe('app shell startup closure', () => {
     );
     expect(source).toContain("activeShellPathname !== '/store/distro/'");
     expect(source).toContain("targetPathname: '/store/distro/'");
+    expect(source).toContain("parseShellSectionRoute(activeShellPathname)?.kind !== 'store'");
+    expect(source).toContain('connectStoreListingPricePresentation({ root: document })');
     expect(portalSource).toContain('role="status"');
     expect(portalSource).toContain('role="alert"');
   });

@@ -63,8 +63,9 @@ Backend Worker observability uses source-controlled Workers Logs/Traces config a
 
 ## Navigation model
 
-- Top-level sections (`/`, `/artists/`, `/releases/`, `/services/`, `/about/`, and the four Store categories) are shell-routed in the browser and swapped in-place.
-- `Releases` remains editorial. Purchasable item options live in Store: `All` (`/store/`), `BlackBox Releases` (`/store/blackbox-releases/`), `Distro` (`/store/distro/`), and `Merch` (`/store/merch/`). Category membership is presentation-only and does not change Store Item, offer, checkout, or stock authority.
+- Top-level sections (`/`, `/artists/`, `/releases/`, `/services/`, `/about/`, and discoverable Store categories) are shell-routed in the browser and swapped in-place.
+- `Releases` remains editorial. Purchasable item options live in Store: `All` (`/store/`), `BlackBox Releases` (`/store/blackbox-releases/`), and `Distro` (`/store/distro/`) are always discoverable; `Merch` (`/store/merch/`) appears only when classified `Clothes` content exists and otherwise redirects to Store. All includes a compact Distro format handoff without duplicating cards. Category membership is presentation-only and does not change Store Item, offer, checkout, or stock authority.
+- Store collection cards load browser-safe formatted prices through one snapshot-backed `/api/store/listing-prices` read per shell activation. Store Item detail and checkout keep authoritative Store Offer reads and revalidation.
 - `/distro/` remains a compatibility redirect to `/store/distro/` and preserves a legacy group fragment when JavaScript is available.
 - Release, artist, and news detail routes remain direct-load Astro pages, but in-site clicks open them through the app-shell overlay.
 - The Bandcamp/Tidal player stays mounted in the persistent shell so playback can survive top-level section switches.
@@ -659,8 +660,8 @@ Cloudflare cache policy is explicit and versioned in repo-owned artifacts and ro
 - Static Asset Cache: fingerprinted Astro build assets under `/_astro/*` use the repo-owned `apps/web/public/_headers` artifact with `Cache-Control: public, max-age=31536000, immutable`.
 - Document Revalidation: route HTML, overlay partial HTML, `sitemap.xml`, `robots.txt`, `/store/*`, `/stock/*`, and `/admin/*` stay revalidation-friendly and do not use year-long immutable caching.
 - Route Document Headers: no explicit document revalidation headers were added in this change; Cloudflare Pages defaults remain in effect for route HTML and overlay partials.
-- Worker API Freshness: checkout, Store Offer, stock, order, webhook, operator, and error responses use `Cache-Control: no-store`.
-- TTL Policy: no route class in this change receives a future TTL; the store capabilities and Store Offer routes remain `no-store` because they carry checkout authority.
+- Worker API Freshness: checkout, Store Offer, Store listing-price presentation, stock, order, webhook, operator, and error responses use `Cache-Control: no-store`.
+- TTL Policy: no route class in this change receives a future TTL; store capabilities, Store Offer, and listing-price presentation routes remain `no-store`.
 - Same-Session Shell Cache: app-shell page snapshots and overlay fragments remain in-memory UI caches only; they are not CDN caches and they do not own commerce state.
 - Validation: `pnpm cache:policy:check` inspects the built `apps/web/dist/_headers` artifact, and `pnpm build` runs it through the `apps/web` build script.
 - Hosted audit: `pnpm cache:policy:hosted-audit` performs a bounded read-only PRD header audit against the deployed Pages and Worker URLs. It is diagnostic only and stays out of required CI because deployment propagation timing can make it flaky.

@@ -1,4 +1,5 @@
 import { normalizeAppPathname } from '@/lib/app-shell/routing';
+import { sanitizeStoreListingPricePlaceholders } from '@/components/store/StoreListingPricePresentation';
 
 export type ShellPageSnapshot = {
   canonicalHref: string;
@@ -68,6 +69,7 @@ export function readDocumentShellPageSnapshot(
     hiddenElement.removeAttribute('data-distro-search-hidden');
   });
   sanitizeDistroCoverflowSnapshot(mainElementClone);
+  sanitizeStoreListingPricePlaceholders(mainElementClone);
   mainElementClone.querySelectorAll<HTMLElement>('[data-services-inquiry-form]').forEach((placeholderElement) => {
     placeholderElement.innerHTML = '';
   });

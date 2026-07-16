@@ -3,7 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
-import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
+import { chromium, type Browser, type BrowserContext, type Page, type Request } from 'playwright';
 
 import {
   createRouteUrl,
@@ -571,7 +571,6 @@ async function checkPublicRoutes(page: Page, options: UatStaticSmokeOptions): Pr
     ['/store/', ['Store']],
     ['/store/blackbox-releases/', ['BlackBox Releases']],
     ['/store/distro/', ['Distro', 'Browse formats']],
-    ['/store/merch/', ['Merch', 'No merch currently available.']],
     [`/store/${representativeStoreItemSlug}/`, ['Disintegration', 'Add it to the cart']],
     ['/services/', ['Services']],
     ['/about/', ['About']],
@@ -579,6 +578,9 @@ async function checkPublicRoutes(page: Page, options: UatStaticSmokeOptions): Pr
 
   for (const [routePath, expectedText] of routes) {
     const url = createRouteUrl(options.siteUrl, routePath);
+    const requestedPaths: string[] = [];
+    const onRequest = (request: Request) => requestedPaths.push(new URL(request.url()).pathname);
+    if (routePath === '/store/') page.on('request', onRequest);
     const probe = await probeSmokeRoute(page, url, options.timeoutMs);
     const issues = [...probe.issues];
 
@@ -598,6 +600,42 @@ async function checkPublicRoutes(page: Page, options: UatStaticSmokeOptions): Pr
       issues.push(`${routePath} exposed ${exposure}.`);
     }
 
+    if (routePath === '/store/') {
+      try {
+        await page.locator('[data-store-listing-price]').first().scrollIntoViewIfNeeded({ timeout: options.timeoutMs });
+        await page.waitForFunction(
+          () => {
+            const firstViewportPrices = [
+              ...document.querySelectorAll<HTMLElement>('[data-store-listing-price]'),
+            ].filter((element) => {
+              const bounds = element.getBoundingClientRect();
+              return bounds.bottom > 0 && bounds.top < window.innerHeight;
+            });
+            return (
+              firstViewportPrices.length > 0 &&
+              firstViewportPrices.every((element) =>
+                ['ready', 'unavailable'].includes(element.dataset.storeListingPriceState || ''),
+              )
+            );
+          },
+          undefined,
+          { timeout: options.timeoutMs },
+        );
+      } catch {
+        issues.push('Expected first-viewport Store listing prices to reach ready or unavailable state.');
+      }
+
+      const listingProjectionReads = requestedPaths.filter((path) => path.endsWith('/api/store/listing-prices'));
+      const perCardStoreOfferReads = requestedPaths.filter((path) => /\/api\/store\/items\/[^/]+$/.test(path));
+      if (listingProjectionReads.length !== 1) {
+        issues.push(`Expected one listing-price projection read; received ${listingProjectionReads.length}.`);
+      }
+      if (perCardStoreOfferReads.length > 0) {
+        issues.push(`Expected no per-card Store Offer listing reads; received ${perCardStoreOfferReads.length}.`);
+      }
+      page.off('request', onRequest);
+    }
+
     routeChecks.push({
       bodyTextSnippet: truncateForConsole(redactSensitiveSmokeText(probe.bodyText), 450),
       contentType: null,
@@ -609,6 +647,25 @@ async function checkPublicRoutes(page: Page, options: UatStaticSmokeOptions): Pr
       url,
     });
   }
+
+  const merchPath = '/store/merch/';
+  const merchUrl = createRouteUrl(options.siteUrl, merchPath);
+  const merchProbe = await probeSmokeRoute(page, merchUrl, options.timeoutMs);
+  const merchIssues = [...merchProbe.issues];
+  const expectedMerchRedirectUrl = createRouteUrl(options.siteUrl, '/store/');
+  if (merchProbe.url !== expectedMerchRedirectUrl) {
+    merchIssues.push(`Expected ${merchPath} to replace to ${expectedMerchRedirectUrl}; received ${merchProbe.url}.`);
+  }
+  routeChecks.push({
+    bodyTextSnippet: truncateForConsole(redactSensitiveSmokeText(merchProbe.bodyText), 450),
+    contentType: null,
+    issues: merchIssues,
+    kind: 'page',
+    path: merchPath,
+    status: merchProbe.status,
+    title: merchProbe.title,
+    url: merchProbe.url,
+  });
 
   const legacyDistroPath = '/distro/';
   const legacyDistroUrl = createRouteUrl(options.siteUrl, legacyDistroPath);

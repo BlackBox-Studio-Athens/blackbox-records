@@ -23,7 +23,7 @@ describe('Distro format navigation', () => {
     expect(navigationSource).toContain('id="distro-format-navigation-heading"');
     expect(navigationSource).toContain('Browse formats');
     expect(navigationSource.match(/groupedDistroChunks\.map/g)).toHaveLength(1);
-    expect(source).toContain('headingId: `distro-group-${group.groupName.toLowerCase()');
+    expect(source).toContain('headingId: createStoreDistroGroupHeadingId(group.groupName)');
     expect(navigationSource).toContain('href={`#${group.headingId}`}');
     expect(navigationSource).toContain('data-scroll-to-target={group.headingId}');
     expect(navigationSource).toContain('{group.groupName}');

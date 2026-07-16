@@ -113,15 +113,15 @@ The system SHALL apply image optimization by section and image role instead of u
 
 #### Scenario: Distro images are rendered
 
-- **WHEN** the Distro page renders square product cards
+- **WHEN** the Store Distro category renders square product cards
 - **THEN** each product image uses a square stable frame and responsive card widths
 - **AND** the leading card set uses eager loading while below-fold cards remain lazy-loaded
 - **AND** no product card uses a full-size source derivative when a smaller responsive candidate is enough for the rendered slot.
 
 #### Scenario: Store listing images are rendered
 
-- **WHEN** the Store listing renders card images
-- **THEN** it uses product-card responsive widths
+- **WHEN** Store All, BlackBox Releases, or populated Merch listing cards render
+- **THEN** they use product-card responsive widths
 - **AND** the leading card set uses eager loading
 - **AND** below-fold card images remain lazy-loaded.
 

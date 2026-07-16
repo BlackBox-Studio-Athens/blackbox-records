@@ -151,6 +151,7 @@
         "apps/web/src/components/store/StoreCollectionPage.astro",
         "apps/web/src/components/store/StoreDistroCatalog.astro",
         "apps/web/src/components/store/StoreDistroSearch.tsx",
+        "apps/web/src/components/store/StoreListingPricePresentation.ts",
         "apps/web/src/components/cards/**",
         "apps/web/src/components/detail/**"
       ],
@@ -161,6 +162,7 @@
         "apps/web/src/lib/store-page-data.ts",
         "apps/web/src/components/artists/ArtistsRosterFilters.tsx",
         "apps/web/src/components/store/StoreDistroSearch.tsx",
+        "apps/web/src/components/store/StoreListingPricePresentation.ts",
         "apps/web/src/components/services/ServicesInquiryForm.tsx"
       ],
       "namedInterfaces": {},
@@ -346,11 +348,12 @@
       "roots": [
         "apps/backend/src/application/commerce/checkout/**",
         "apps/backend/src/infrastructure/feature-flags/**",
-        "apps/backend/src/application/commerce/readers/store-offer-reader.ts"
+        "apps/backend/src/application/commerce/readers/**"
       ],
       "providedEntrypoints": [
         "apps/backend/src/application/commerce/checkout/index.ts",
         "apps/backend/src/application/commerce/checkout/reconcile-checkout-session.ts",
+        "apps/backend/src/application/commerce/readers/index.ts",
         "apps/backend/src/infrastructure/feature-flags/index.ts"
       ],
       "namedInterfaces": {

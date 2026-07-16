@@ -83,6 +83,7 @@ vi.mock('astro:config/client', () => ({
 
 import {
   classifyStoreCatalogMembership,
+  createStoreDistroGroupHeadingId,
   groupStoreDistroCollectionEntries,
   listStoreCollectionEntries,
   selectStoreCollectionEntries,
@@ -267,5 +268,13 @@ describe('store collection entries', () => {
     ]);
     expect(groups[1]?.entries.map((entry) => entry.storeItem.title)).toEqual(['Alpha', 'Beta', 'small-vinyl-10']);
     expect(groups.flatMap((group) => group.entries).map((entry) => entry.storeItem.slug)).toHaveLength(entries.length);
+    expect(groups.map((group) => createStoreDistroGroupHeadingId(group.groupName))).toEqual([
+      'distro-group-vinyl-12-inch',
+      'distro-group-7-inch-10-inch-vinyl',
+      'distro-group-cds',
+      'distro-group-tapes',
+      'distro-group-clothes',
+      'distro-group-other',
+    ]);
   });
 });

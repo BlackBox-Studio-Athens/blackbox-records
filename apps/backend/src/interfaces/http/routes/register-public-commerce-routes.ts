@@ -2,6 +2,7 @@ import type { AppOpenApi } from '../../../env';
 import {
   getCheckoutStateRoute,
   getStoreCapabilitiesRoute,
+  getStoreListingPricesRoute,
   getStoreItemRoute,
   getStoreItemVariantsRoute,
   postCheckoutSessionRoute,
@@ -28,6 +29,16 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
       });
 
       return jsonNoStore(context.json(capabilities, 200));
+    } finally {
+      await services.disconnect();
+    }
+  });
+
+  app.openapi(getStoreListingPricesRoute, async (context) => {
+    const services = createPublicCommerceServices(context.env);
+
+    try {
+      return jsonNoStore(context.json(await services.readStoreListingPrices(), 200));
     } finally {
       await services.disconnect();
     }
