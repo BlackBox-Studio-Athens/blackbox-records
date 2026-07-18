@@ -63,7 +63,7 @@ Alternative: add `priceKind` and custom-amount bounds to `StoreOfferSnapshot`. R
 
 ### Existing targeted recovery replaces scheduled full-catalog recovery
 
-Remove `runScheduledCatalogVerification`, the Worker `scheduled` handler, its UAT cron trigger, and schedule-specific tests. Remove the cron-presence assertion and report field from `verify-stripe-webhook-endpoints.ts` and its tests while preserving all webhook endpoint/configuration checks. Keep existing signed webhook reconciliation, Store Offer detail reconciliation, checkout reconciliation, and manual catalog verification.
+Remove `runScheduledCatalogVerification`, the Worker `scheduled` handler, its UAT cron trigger, and schedule-specific tests. Keep an explicit empty UAT `crons` array for one simple reason: Wrangler leaves old deployed triggers unchanged when the key is absent, while `crons: []` deletes them. Remove the cron-presence assertion and report field from `verify-stripe-webhook-endpoints.ts` and its tests while preserving all webhook endpoint/configuration checks. Keep existing signed webhook reconciliation, Store Offer detail reconciliation, checkout reconciliation, and manual catalog verification.
 
 Add `--store-item <storeItemSlug>` to the existing catalog verification command. Targeted dry-run inspects one item; targeted apply repairs only that item's D1 mapping/snapshot and permitted identity metadata. Full read-only verification remains available for deliberate audits, but no runtime cron calls it.
 
@@ -106,7 +106,7 @@ Before source implementation, update the active `automate-cms-catalog-promotion`
 1. Reconcile the overlapping active OpenSpec change and validate both contracts.
 2. Add regression tests, then change listing and reconciler validity rules without a D1 migration.
 3. Add the single-item catalog verifier selector and bootstrap-only promotion behavior.
-4. Remove the scheduled Worker handler/module/test, UAT cron configuration, and cron-presence checks from webhook endpoint verification.
+4. Remove the scheduled Worker handler/module/test and cron-presence checks, then deploy an explicit empty UAT cron list to delete the old trigger.
 5. Make catalog promotion own static deployment for visible Store Item set changes, then add the hosted listing-readiness gate before that deployment.
 6. Run `pnpm test:unit`, `pnpm check`, and `pnpm build`.
 7. Deploy the UAT Worker before the UAT static site, verify all canonical Store Item slugs return ready listing records, and verify `/store/` through Browser Use.

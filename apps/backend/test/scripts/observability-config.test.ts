@@ -19,7 +19,13 @@ type ObservabilityConfig = {
 };
 
 type WranglerConfig = {
-  env?: Record<string, { observability?: ObservabilityConfig }>;
+  env?: Record<
+    string,
+    {
+      observability?: ObservabilityConfig;
+      triggers?: { crons?: string[] };
+    }
+  >;
   observability?: ObservabilityConfig;
 };
 
@@ -45,6 +51,10 @@ const expectedTraceSampling = new Map([
 ]);
 
 describe('Worker observability config', () => {
+  it('deploys an explicit empty UAT cron list so Wrangler removes old triggers', () => {
+    expect(readWranglerConfig().env?.uat?.triggers?.crons).toEqual([]);
+  });
+
   it('keeps logs and traces explicit for all runtime targets', () => {
     const config = readWranglerConfig();
     const observabilitySchema = readWranglerSchema().definitions?.Observability?.properties ?? {};
