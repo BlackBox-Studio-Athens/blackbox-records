@@ -16,7 +16,7 @@
 
 ## 4. Implement the Evolved Split Showcase
 
-- [x] 4.1 Update release-scoped rules in `apps/web/src/styles/global.css` so viewports at or above 64rem use a 12-track grid with an 8-track latest feature, 4-track Upcoming rail, and full-width Our Releases row.
+- [x] 4.1 Update release-scoped rules in `apps/web/src/styles/global.css` so viewports at or above 64rem use a 12-track grid with a 9-track latest feature, 3-track Upcoming rail, and full-width Our Releases row.
 - [x] 4.2 Implement one continuous separator system and absence-aware placement so missing tiers leave no empty columns, rows, headings, rules, or placeholders.
 - [x] 4.3 Keep a single remaining release left aligned at normal catalog-card width, while multiple remaining releases retain the existing responsive two/three-column grid and catalog order.
 - [x] 4.4 Implement intrinsic narrow reflow at 390px and 320px with `min-width: 0`, wrapping content/actions, no fixed-height clipping, no showcase-caused horizontal scrolling, visible focus, current target sizes, and existing reduced-motion behavior.

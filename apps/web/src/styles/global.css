@@ -2111,6 +2111,11 @@ body {
     gap: 1.25rem;
   }
 
+  .releases-page-intro,
+  .releases-page-showcase-container {
+    max-width: 87rem;
+  }
+
   .releases-page-intro {
     padding-top: clamp(2.25rem, 5vw, 4.5rem);
     padding-bottom: clamp(1.25rem, 3vw, 2rem);
@@ -4684,13 +4689,13 @@ html[data-distro-coverflow-capable] [data-distro-coverflow-mode='catalog'] [data
   }
 
   .releases-latest-feature {
-    grid-column: 1 / span 8;
+    grid-column: 1 / span 9;
     grid-row: 1;
     border-right: 1px solid #2b2b2b;
   }
 
   .releases-latest-feature__upcoming {
-    grid-column: 9 / span 4;
+    grid-column: 10 / span 3;
     grid-row: 1;
     grid-template-columns: minmax(0, 1fr);
     border-top: 0;

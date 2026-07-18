@@ -29,13 +29,16 @@ describe('Releases page layout', () => {
   });
 
   it('uses the twelve-track wide showcase and full-width catalog row', () => {
+    const page = readFileSync(releasesPagePath, 'utf8');
     const css = readFileSync(globalCssPath, 'utf8');
 
+    expect(page).toContain('<div class="layout-container releases-page-showcase-container">');
+    expect(css).toMatch(/\.releases-page-intro,\s*\.releases-page-showcase-container\s*{[^}]*max-width:\s*87rem/s);
     expect(css).toMatch(
       /@media \(min-width: 64rem\)[\s\S]*?\.releases-page-layout\s*{[^}]*grid-template-columns:\s*repeat\(12, minmax\(0, 1fr\)\)/,
     );
-    expect(css).toMatch(/\.releases-latest-feature\s*{[^}]*grid-column:\s*1 \/ span 8/s);
-    expect(css).toMatch(/\.releases-latest-feature__upcoming\s*{[^}]*grid-column:\s*9 \/ span 4/s);
+    expect(css).toMatch(/\.releases-latest-feature\s*{[^}]*grid-column:\s*1 \/ span 9/s);
+    expect(css).toMatch(/\.releases-latest-feature__upcoming\s*{[^}]*grid-column:\s*10 \/ span 3/s);
     expect(css).toMatch(/\.releases-catalog-section\s*{[^}]*grid-column:\s*1 \/ -1/s);
   });
 

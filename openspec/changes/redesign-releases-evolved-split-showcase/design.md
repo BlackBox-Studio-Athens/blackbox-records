@@ -45,7 +45,7 @@ Implementation starts after `clarify-releases-page-hierarchy` is archived and it
 
 ### 3. Preserve DOM order with a twelve-track CSS Grid
 
-Source order remains latest feature, Upcoming, then Our Releases. At `64rem` and above, `.releases-page-layout` uses `repeat(12, minmax(0, 1fr))`: latest occupies tracks 1–8, Upcoming 9–12, and Our Releases all twelve tracks on the next row. Below `64rem`, roles stack in source order.
+Source order remains latest feature, Upcoming, then Our Releases. The route-local intro and showcase use an `87rem` canvas so the live desktop composition matches the selected PoC scale. At `64rem` and above, `.releases-page-layout` uses `repeat(12, minmax(0, 1fr))`: latest occupies tracks 1–9, Upcoming 10–12, and Our Releases all twelve tracks on the next row. Below `64rem`, roles stack in source order.
 
 The showcase owns a continuous rule system. Outer and internal separators define the split and lower row without doubled borders. Grid children use `min-width: 0`; CSS `order` is forbidden.
 
