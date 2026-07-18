@@ -37,7 +37,7 @@
 
 - [x] 6.1 Run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the final tree.
 - [x] 6.2 Run OpenSpec validation for `stabilize-store-listing-prices` and the reconciled `automate-cms-catalog-promotion` change.
-- [ ] 6.3 Deploy the UAT Worker before the UAT static site and verify every canonical published Store Item slug has one ready hosted listing record, including `Pay what you want` records.
-- [ ] 6.4 Use Browser Use to verify `/store/` has no false `Price unavailable` state and keeps genuine invalid/missing offers non-price.
+- [x] 6.3 Deploy the UAT Worker before the UAT static site and verify every canonical published Store Item slug has one ready hosted listing record, including `Pay what you want` records.
+- [x] 6.4 Use Browser Use to verify `/store/` has no false `Price unavailable` state and keeps genuine invalid/missing offers non-price.
 - [ ] 6.5 Prove one Stripe Dashboard replacement Price updates only its target variant, then prove one new-item promotion leaves an existing variant's Stripe Price identity unchanged; record redacted evidence.
 - [ ] 6.6 Confirm the deployed UAT Worker has no catalog cron trigger and Cloudflare no longer records the former 50-subrequest scheduled failure after the old schedule window passes.
