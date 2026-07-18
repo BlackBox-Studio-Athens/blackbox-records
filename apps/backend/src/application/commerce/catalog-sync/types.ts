@@ -224,7 +224,6 @@ export type CatalogSyncIssueCode =
   | 'placeholder_price_mapping'
   | 'product_projection_mismatch'
   | 'snapshot_mismatch'
-  | 'snapshot_stale'
   | 'wrong_amount'
   | 'wrong_custom_amount'
   | 'wrong_currency'

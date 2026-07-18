@@ -39,6 +39,13 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** the helper is listed under the owning `public-commerce-http` roots in `module-boundaries.manifest.json`
 - **AND** it is not listed as a provided entrypoint unless another module is allowed to import it.
 
+#### Scenario: Scheduled catalog verification is retired
+
+- **GIVEN** Store Listing Price recovery no longer uses a scheduled Worker handler
+- **WHEN** boundary validation runs
+- **THEN** `public-commerce-http` does not own a scheduled interface root
+- **AND** the retired catalog verification handler is not a provided entrypoint.
+
 #### Scenario: Cart-scoped checkout route is added
 
 - **GIVEN** cart-scoped checkout pages are added under `apps/web/src/pages/store/checkout/`

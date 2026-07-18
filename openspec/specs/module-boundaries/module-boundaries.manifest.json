@@ -252,14 +252,12 @@
         "apps/backend/src/interfaces/http/routes/stripe-webhook-acknowledgement.ts",
         "apps/backend/src/interfaces/http/routes/d1-paid-checkout-finalization-repository.ts",
         "apps/backend/src/interfaces/http/routes/stripe-webhook-services.ts",
-        "apps/backend/src/interfaces/http/contracts/public-contracts.ts",
-        "apps/backend/src/interfaces/scheduled/**"
+        "apps/backend/src/interfaces/http/contracts/public-contracts.ts"
       ],
       "providedEntrypoints": [
         "apps/backend/src/interfaces/http/contracts/public-contracts.ts",
         "apps/backend/src/interfaces/http/routes/register-public-routes.ts",
-        "apps/backend/src/interfaces/http/routes/register-internal-routes.ts",
-        "apps/backend/src/interfaces/scheduled/catalog-verification.ts"
+        "apps/backend/src/interfaces/http/routes/register-internal-routes.ts"
       ],
       "namedInterfaces": {
         "public-contracts": "apps/backend/src/interfaces/http/contracts/public-contracts.ts"

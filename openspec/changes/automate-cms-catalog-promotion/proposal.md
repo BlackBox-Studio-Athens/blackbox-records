@@ -9,6 +9,7 @@ Maintainers can already create release and distro content through Decap, but mak
 - Replace the current sandbox-only catalog apply policy with an environment-scoped apply policy that supports production after production-specific guards, idempotency, evidence capture, rollback, and failure isolation are implemented.
 - Keep Decap editorial-only; generated sandbox catalog policy uses current Store Item content, format-derived sandbox prices, and runtime/operator controls instead of CMS-authored commerce intent.
 - Keep checkout runtime authority intact: the browser never receives Stripe IDs or secrets, Stripe active Prices remain the payment authority at checkout time, and D1/Worker state remains the source for Store Offer readiness.
+- Use generated Desired Price only to create initial Price Authority when a variant has none; normal promotion preserves one valid existing Stripe Price even when generated price data differs.
 - Add workflow and script tasks for bot-generated artifact commits, provider mutation reports, production-safe redaction, GitHub Actions concurrency, environment protection, and actionable failure reporting back to maintainers.
 - Require production smoke evidence for a newly promoted item before the pipeline can mark the catalog promotion successful.
 

@@ -23,6 +23,7 @@ on:
         type: boolean
 
 permissions:
+  actions: write
   contents: read
   deployments: write
 
@@ -128,6 +129,14 @@ jobs:
       - name: Deploy UAT Worker
         run: pnpm deploy:backend:uat
 
+      - name: Verify hosted UAT listing readiness
+        run: pnpm store:listing-readiness:verify -- --env uat --url "${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}/api/store/listing-prices"
+
+      - name: Dispatch UAT static deployment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run pages.yml --ref main -f artifact_commit_sha=${{ inputs.artifact_commit_sha }} -f target=uat
+
       - name: Upload UAT Promotion Evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v5.0.0
@@ -224,9 +233,15 @@ jobs:
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
         run: pnpm deploy:backend:prd
 
-      - name: Confirm static frontend artifact commit
+      - name: Verify hosted PRD listing readiness
         if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
-        run: test "$(git rev-parse HEAD)" = "${{ inputs.artifact_commit_sha }}"
+        run: pnpm store:listing-readiness:verify -- --env prd --url "${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}/api/store/listing-prices"
+
+      - name: Dispatch PRD static deployment
+        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run pages.yml --ref main -f artifact_commit_sha=${{ inputs.artifact_commit_sha }} -f target=prd
 
       - name: Upload PRD readiness or Promotion Evidence
         if: ${{ always() }}

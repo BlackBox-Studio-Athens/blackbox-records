@@ -54,11 +54,11 @@ Alternative considered: keep CMS-authored commerce fields. Rejected for the curr
 
 Alternative considered: infer production prices from format labels. Rejected because format-based prices are acceptable sandbox defaults but too implicit for live commerce.
 
-### Desired Price is not checkout authority
+### Desired Price bootstraps missing Price Authority
 
-Desired Price is the repo/provider-policy instruction for provisioning the provider catalog. Stripe active Price remains the authority used by checkout after apply.
+Desired Price is repo/provider-policy input for creating initial Price Authority when a variant has none. Stripe active Price remains the authority used by checkout after apply.
 
-Promotion can create a new Stripe Price or move the app-owned lookup key/metadata to a replacement Price when Desired Price changes. It must not edit an immutable historical Stripe Price amount. After apply, D1 `VariantStripeMapping` and `StoreOfferSnapshot` follow the resolved active Stripe Price. Store Offer reads and checkout start still revalidate against Stripe/D1 and fail closed on ambiguity.
+Promotion can create a new Stripe Price for first publication or after the separate explicit UAT reset removes current provider state. When one valid active Stripe Price already exists, normal promotion preserves it even if Desired Price differs. Dashboard replacement plus targeted webhook reconciliation owns later price changes. After apply, D1 `VariantStripeMapping` and `StoreOfferSnapshot` follow the resolved active Stripe Price. Store Offer reads and checkout start still revalidate against Stripe/D1 and fail closed on ambiguity.
 
 This preserves the existing runtime rule while allowing generated artifact automation:
 
@@ -136,9 +136,9 @@ Alternative considered: generate artifacts only inside CI without committing the
 Production apply must use the same reconciler concepts as sandbox apply, with stricter mutation policy:
 
 - update app-owned Stripe Product fields from Product Projection
-- create a new active Price when Desired Price revision changes
+- create a new active Price only when no valid active Price Authority exists
 - transfer or assign app-owned lookup key/metadata only when identity is unambiguous
-- archive or deactivate stale app-owned Prices only after the replacement active Price is verified
+- preserve one valid active Price even when Desired Price differs
 - never hard-delete production Products or Prices
 - never touch Stripe objects that do not carry the expected BlackBox environment metadata or lookup key
 - update D1 `VariantStripeMapping` and `StoreOfferSnapshot` only after provider state is resolved
@@ -222,5 +222,5 @@ Rollback strategy:
 
 - Production-targeted changes require an explicit PRD-open provider policy; production promotion never skips UAT proof for the same artifact commit.
 - Production live paid smoke is optional and requires an explicit live smoke payment policy; live pre-payment Checkout surface proof is the required normal production smoke.
-- Large Desired Price changes do not require a manual approval gate in this change; later policy can add thresholds without changing the default maintainer-only automation path.
+- Desired Price changes do not replace valid Price Authority; authorized Dashboard replacement plus webhook reconciliation owns later price updates.
 - Retired items remain editorially visible and become non-buyable through D1 availability and Store Offer readiness.

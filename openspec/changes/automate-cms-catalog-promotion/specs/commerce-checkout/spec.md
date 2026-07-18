@@ -25,23 +25,25 @@ The system MUST expose CMS-promoted buyable items to shoppers only after Worker,
 - **THEN** the Worker fails closed for that variant
 - **AND** the failure is reported as catalog drift rather than falling back to static Desired Price.
 
-### Requirement: Desired Price provisions Stripe Price but does not bypass checkout authority
+### Requirement: Desired Price bootstraps missing Price Authority but does not bypass checkout authority
 
-The system SHALL use Desired Price to provision provider catalog state while preserving Stripe active Price as the runtime payment authority.
+The system SHALL use Desired Price to create initial provider Price Authority only when none exists, while preserving Stripe active Price as the runtime payment authority.
 
-#### Scenario: Desired Price matches active Stripe Price
+#### Scenario: Variant has no valid Price Authority
 
 - **GIVEN** Desired Catalog State includes a price amount and currency for a promoted variant
-- **WHEN** production apply resolves an active Stripe Price with the same app identity and Desired Price
-- **THEN** D1 mapping and Store Offer snapshot point to that Stripe Price
+- **AND** no unambiguous valid active Stripe Price exists for that variant
+- **WHEN** production apply runs
+- **THEN** it may create the initial Stripe Price and point D1 mapping and Store Offer snapshot to it
 - **AND** checkout uses the Stripe Price resolved from D1/Stripe authority.
 
 #### Scenario: Desired Price differs from active Stripe Price
 
 - **GIVEN** Desired Catalog State changes amount or currency for a promoted variant
+- **AND** one unambiguous valid active Stripe Price already exists
 - **WHEN** production apply runs
-- **THEN** a replacement Stripe Price is created or resolved according to provider rules
-- **AND** checkout does not use the new amount until provider state and D1 mapping are verified.
+- **THEN** that Stripe Price remains Price Authority
+- **AND** normal promotion does not replace it because Desired Price differs.
 
 #### Scenario: Browser submits stale cart state
 

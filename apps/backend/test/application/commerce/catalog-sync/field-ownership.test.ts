@@ -48,6 +48,5 @@ describe('Catalog Field Ownership', () => {
   it('classifies existing diagnostics by ownership boundary', () => {
     expect(classifyCatalogSyncIssue('inactive_product')).toBe('product_projection');
     expect(classifyCatalogSyncIssue('wrong_amount')).toBe('price_authority');
-    expect(classifyCatalogSyncIssue('snapshot_stale')).toBe('store_offer_snapshot');
   });
 });

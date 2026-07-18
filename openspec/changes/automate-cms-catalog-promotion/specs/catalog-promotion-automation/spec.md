@@ -83,15 +83,15 @@ The system MUST support automated production catalog apply from Desired Catalog 
 
 - **GIVEN** a CMS item targets UAT-plus-production and UAT proof has passed for the same Desired Catalog State
 - **WHEN** production catalog apply runs
-- **THEN** it creates or updates app-owned Stripe Product fields, creates or resolves the active Stripe Price for the Desired Price, updates production D1 mapping and Store Offer snapshot, and records redacted actions
+- **THEN** it creates or updates app-owned Stripe Product fields, creates an initial active Stripe Price only when valid Price Authority is missing, updates production D1 mapping and Store Offer snapshot, and records redacted actions
 - **AND** the maintainer does not need to manually create Stripe Products, Stripe Prices, D1 rows, or Worker deployment state.
 
-#### Scenario: Production Desired Price changes
+#### Scenario: Production Desired Price differs from valid Price Authority
 
 - **GIVEN** a production item has an existing active Stripe Price
 - **WHEN** Desired Price amount, currency, or price revision changes
-- **THEN** production apply creates or resolves a replacement active Stripe Price rather than mutating the historical Price amount
-- **AND** D1 mapping and Store Offer snapshot move only after the replacement Price is verified.
+- **THEN** production apply preserves that valid active Stripe Price
+- **AND** it does not archive, create, reactivate, replace, or move lookup identity because Desired Price differs.
 
 #### Scenario: Production apply is rerun
 
@@ -118,11 +118,11 @@ The system SHALL mutate only app-owned production provider state and SHALL prese
 - **THEN** the object is not mutated, archived, reused, or reported as safe to own
 - **AND** the Promotion Run fails if no unambiguous app-owned object can be resolved.
 
-#### Scenario: Stale production Price is replaced
+#### Scenario: Dashboard replacement Price is reconciled
 
-- **GIVEN** a replacement active Price has been created and verified for a Store Item variant
-- **WHEN** production apply retires the stale app-owned active Price from checkout use
-- **THEN** it archives or deactivates only the stale app-owned Price
+- **GIVEN** an authorized operator has created a valid replacement Price and archived the stale Price in Stripe Dashboard
+- **WHEN** webhook or targeted verification reconciles that Store Item variant
+- **THEN** D1 mapping and Store Offer snapshot follow the verified replacement Price
 - **AND** it does not delete the Product, delete the Price, alter paid order history, or erase Promotion Evidence.
 
 #### Scenario: Item is retired from checkout

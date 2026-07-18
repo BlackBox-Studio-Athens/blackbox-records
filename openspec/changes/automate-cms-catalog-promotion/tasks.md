@@ -82,14 +82,14 @@
 - [x] 6.7 Extend expected Desired Price maps to read environment-targeted Desired Price entries.
 - [x] 6.8 Reuse the same `CatalogReconciler` planning path for sandbox and production.
 - [x] 6.9 Add mutation policy that permits production Product Projection updates only for app-owned Product objects.
-- [x] 6.10 Add mutation policy that creates or resolves production replacement Prices from Desired Price revisions.
-- [x] 6.11 Add mutation policy that archives or deactivates only stale app-owned active production Prices after replacement verification.
+- [x] 6.10 Add mutation policy that creates initial production Price Authority only when a variant has none.
+- [x] 6.11 Preserve one valid active production Price during normal promotion; keep later replacement and retirement Stripe Dashboard-owned.
 - [x] 6.12 Reject any production mutation involving Stripe objects without expected app metadata or lookup keys.
 - [x] 6.13 Reject ambiguous active Price matches before D1 mapping changes.
 - [x] 6.14 Add idempotency keys based on environment, variant ID, operation, and Desired Catalog State revision.
 - [x] 6.15 Ensure post-apply verification rereads current Stripe/D1 state rather than trusting planned actions.
 - [x] 6.16 Keep full provider IDs, secrets, webhook secrets, and raw API payloads redacted in dry-run and apply reports.
-- [x] 6.17 Add unit tests for production dry-run immutability, production apply guard context, idempotency, ambiguous active Prices, replacement Prices, stale Price retirement, and redaction.
+- [x] 6.17 Add unit tests for production dry-run immutability, production apply guard context, idempotency, ambiguous active Prices, missing-price bootstrap, valid-price preservation, Dashboard replacement reconciliation, and redaction.
 
 ## 7. D1 Readiness and Stock Policy
 

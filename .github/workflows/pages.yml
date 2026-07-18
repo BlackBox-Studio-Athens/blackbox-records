@@ -6,9 +6,34 @@ on:
     paths-ignore:
       - 'docs/**'
       - 'openspec/**'
+      - 'apps/web/src/content/distro/**'
+      - 'apps/web/src/content/releases/**'
+      - 'apps/web/src/content/uploads/**'
+      - 'apps/web/src/lib/admin/**'
+      - 'apps/web/src/content.config.ts'
+      - 'scripts/stripe-catalog-contract.ts'
+      - 'scripts/generate-stripe-uat-catalog-artifacts.ts'
+      - 'apps/backend/src/application/commerce/catalog-sync/catalog-product-projections.ts'
+      - 'apps/backend/src/application/commerce/catalog-sync/desired-catalog-state.ts'
+      - 'apps/backend/prisma/seeds/uat-commerce-state.sql'
+      - 'apps/backend/prisma/seeds/prd-commerce-readiness.sql'
       - '*.md'
       - 'LICENSE'
   workflow_dispatch:
+    inputs:
+      artifact_commit_sha:
+        description: Commit to deploy after catalog promotion; defaults to current main.
+        required: false
+        type: string
+      target:
+        description: Static Product Environment target.
+        required: false
+        default: all
+        type: choice
+        options:
+          - all
+          - uat
+          - prd
 
 permissions:
   contents: read
@@ -24,6 +49,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.1
+        with:
+          ref: ${{ inputs.artifact_commit_sha || github.sha }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.8
@@ -49,6 +76,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.1
+        with:
+          ref: ${{ inputs.artifact_commit_sha || github.sha }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.8
@@ -72,6 +101,7 @@ jobs:
         run: pnpm audit:unused
 
   build-uat-static:
+    if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'uat' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -85,6 +115,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.1
+        with:
+          ref: ${{ inputs.artifact_commit_sha || github.sha }}
 
       - name: Configure GitHub Pages UAT
         uses: actions/configure-pages@v6.0.0
@@ -119,6 +151,7 @@ jobs:
           retention-days: 1
 
   build-prd-static:
+    if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'prd' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -132,6 +165,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.1
+        with:
+          ref: ${{ inputs.artifact_commit_sha || github.sha }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.8
@@ -158,12 +193,13 @@ jobs:
       - name: Upload PRD static artifact
         uses: actions/upload-artifact@v5.0.0
         with:
-          name: prd-static-site-${{ github.sha }}
+          name: prd-static-site-${{ inputs.artifact_commit_sha || github.sha }}
           path: apps/web/dist
           if-no-files-found: error
           retention-days: 1
 
   deploy-uat:
+    if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'uat' }}
     needs:
       - unit-tests
       - workspace-checks
@@ -188,6 +224,7 @@ jobs:
         uses: actions/deploy-pages@v5.0.0
 
   deploy-prd:
+    if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'prd' }}
     needs:
       - unit-tests
       - workspace-checks
@@ -201,7 +238,7 @@ jobs:
       - name: Download PRD static artifact
         uses: actions/download-artifact@v5.0.0
         with:
-          name: prd-static-site-${{ github.sha }}
+          name: prd-static-site-${{ inputs.artifact_commit_sha || github.sha }}
           path: apps/web/dist
 
       - name: Deploy disabled PRD static frontend to Cloudflare Pages

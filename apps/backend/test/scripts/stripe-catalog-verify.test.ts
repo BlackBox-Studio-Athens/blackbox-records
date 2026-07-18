@@ -45,6 +45,7 @@ describe('stripe catalog verify script helpers', () => {
       environment: 'uat',
       planApply: false,
       promotionContext: null,
+      storeItemSlug: null,
     });
     expect(parseStripeCatalogVerifyArgs(['--env', 'sandbox'])).toMatchObject({
       environment: 'uat',
@@ -54,6 +55,7 @@ describe('stripe catalog verify script helpers', () => {
       environment: 'uat',
       planApply: false,
       promotionContext: null,
+      storeItemSlug: null,
     });
     expect(parseStripeCatalogVerifyArgs(['--env', 'uat', '--promotion-run-id', 'run-123'])).toEqual({
       apply: false,
@@ -64,6 +66,7 @@ describe('stripe catalog verify script helpers', () => {
         ci: false,
         runId: 'run-123',
       },
+      storeItemSlug: null,
     });
     expect(() => parseStripeCatalogVerifyArgs(['--env', 'prd', '--apply'])).toThrow(
       'PRD Stripe catalog apply requires promotion context.',
@@ -86,6 +89,7 @@ describe('stripe catalog verify script helpers', () => {
         ci: true,
         runId: 'run-456',
       },
+      storeItemSlug: null,
     });
     expect(parseStripeCatalogVerifyArgs(['--env', 'uat', '--plan-apply'])).toMatchObject({
       apply: false,
@@ -102,16 +106,34 @@ describe('stripe catalog verify script helpers', () => {
       environment: 'prd',
       planApply: false,
       promotionContext: null,
+      storeItemSlug: null,
     });
     expect(parseStripeCatalogVerifyArgs(['--env', 'prd'])).toEqual({
       apply: false,
       environment: 'prd',
       planApply: false,
       promotionContext: null,
+      storeItemSlug: null,
     });
     expect(() => parseStripeCatalogVerifyArgs(['--env', 'prd', '--apply', '--artifact-commit-sha', 'abc123'])).toThrow(
       'Run from CI with --ci-promotion, --artifact-commit-sha <sha>, and --promotion-run-id <id>.',
     );
+  });
+
+  it('parses one Store Item selector and rejects malformed or unknown slugs before provider access', async () => {
+    expect(parseStripeCatalogVerifyArgs(['--env', 'uat', '--store-item', storeItem.storeItemSlug])).toMatchObject({
+      storeItemSlug: storeItem.storeItemSlug,
+    });
+    expect(() => parseStripeCatalogVerifyArgs(['--env', 'uat', '--store-item', 'Bad Slug'])).toThrow();
+
+    createStripeCatalogGatewayMock.mockClear();
+    spawnSyncMock.mockClear();
+
+    await expect(
+      verifyStripeCatalog(parseStripeCatalogVerifyArgs(['--env', 'uat', '--store-item', 'unknown-store-item'])),
+    ).rejects.toThrow('Unknown Store Item slug: unknown-store-item.');
+    expect(createStripeCatalogGatewayMock).not.toHaveBeenCalled();
+    expect(spawnSyncMock).not.toHaveBeenCalled();
   });
 
   it('blocks PRD apply while the open gate is absent', async () => {
@@ -211,6 +233,7 @@ describe('stripe catalog verify script helpers', () => {
         apply: false,
         environment: 'uat',
         promotionContext: null,
+        storeItemSlug: storeItem.storeItemSlug,
       });
 
       expect(result.dryRun).toBe(true);
@@ -222,16 +245,21 @@ describe('stripe catalog verify script helpers', () => {
       expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
       expect(stripeCatalog.updatePriceMetadata).not.toHaveBeenCalled();
       expect(stripeCatalog.updateProductProjection).not.toHaveBeenCalled();
+      expect(stripeCatalog.listOwnedPrices).not.toHaveBeenCalled();
+      expect(stripeCatalog.listOwnedProducts).not.toHaveBeenCalled();
 
       const applyPlan = await verifyStripeCatalog({
         apply: false,
         environment: 'uat',
         planApply: true,
         promotionContext: null,
+        storeItemSlug: storeItem.storeItemSlug,
       });
 
-      expect(applyPlan.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'wrong_amount' })]));
-      expect(applyPlan.results[0]?.actions).toEqual(
+      expect(applyPlan.issues).toEqual(
+        expect.arrayContaining([expect.objectContaining({ code: 'product_projection_mismatch' })]),
+      );
+      expect(applyPlan.results[0]?.actions).not.toEqual(
         expect.arrayContaining([
           expect.objectContaining({ kind: 'archive_price' }),
           expect.objectContaining({ kind: 'create_catalog_price' }),
@@ -350,8 +378,10 @@ describe('stripe catalog verify script helpers', () => {
 
     expect(isCatalogApplyPlanReady(result)).toBe(false);
     result.results[0]!.actions.push({ kind: 'create_catalog_price' });
-    expect(isCatalogApplyPlanReady(result)).toBe(true);
-    expect(formatStripeCatalogVerifyReport(result, { planApply: true })).toContain('Stripe catalog apply plan ready.');
+    expect(isCatalogApplyPlanReady(result)).toBe(false);
+    expect(formatStripeCatalogVerifyReport(result, { planApply: true })).toContain(
+      'Stripe catalog apply plan blocked.',
+    );
     expect(formatStripeCatalogVerifyReport(result, { planApply: true })).toContain('Mode: apply-plan');
   });
 

@@ -51,7 +51,6 @@ export type ReconcileCatalogVariantOptions = {
   expectedPrice?: StripeCatalogExpectedPrice | null;
   now?: Date;
   productProjection?: StripeCatalogProductProjection | null;
-  refreshSnapshots?: boolean;
   requirePriceAuthority?: boolean;
 };
 
@@ -62,7 +61,6 @@ export class CatalogReconciler {
     storeItem: StoreItemOptionRecord,
     options: ReconcileCatalogVariantOptions,
   ): Promise<CatalogSyncVariantResult> {
-    this.assertSnapshotRefreshAllowed(options.refreshSnapshots);
     const now = options.now ?? new Date();
     const requirePriceAuthority = options.requirePriceAuthority ?? true;
     const lookupKey = createStripeCatalogLookupKey(this.dependencies.environment, storeItem);
@@ -171,31 +169,6 @@ export class CatalogReconciler {
 
     let resolvedPrice = activeMatches.length === 1 ? activeMatches[0]! : null;
 
-    if (resolvedPrice && expectedPrice && issues.length === 0 && !matchesExpectedPrice(resolvedPrice, expectedPrice)) {
-      actions.push(createArchivePriceAction(this.dependencies.environment, storeItem.variantId, resolvedPrice.priceId));
-      const priceInput = createCatalogPriceInput(
-        storeItem,
-        lookupKey,
-        metadata,
-        expectedPrice,
-        options.productProjection,
-      );
-      const createContext = createMutationContext(
-        this.dependencies.environment,
-        storeItem.variantId,
-        'create_catalog_price',
-        createCatalogPriceMutationIdentity(expectedPrice, options.productProjection ?? null),
-        priceInput,
-        this.dependencies.creationMutationScope,
-      );
-      if (options.apply) {
-        resolvedPrice = await this.dependencies.stripeCatalog.createCatalogPrice(priceInput, createContext);
-        actions.push({ kind: 'create_catalog_price', ...createMutationEvidence(createContext, resolvedPrice) });
-      } else {
-        actions.push({ kind: 'create_catalog_price', ...createMutationEvidence(createContext) });
-      }
-    }
-
     if (!resolvedPrice && expectedPrice && issues.length === 0) {
       const repairIdentity =
         activeMatches.length === 0 ? createPriceRepairMutationIdentity(mappedPrice, mapping, snapshot) : null;
@@ -251,7 +224,7 @@ export class CatalogReconciler {
         issues.push(createIssue(storeItem, 'wrong_variant_identity', 'Resolved Stripe Price metadata is wrong.'));
       }
 
-      if (!expectedPrice && resolvedPrice.currencyCode?.toUpperCase() !== PRICE_AUTHORITY_CURRENCY_CODE) {
+      if (resolvedPrice.currencyCode?.toUpperCase() !== PRICE_AUTHORITY_CURRENCY_CODE) {
         issues.push(
           createIssue(
             storeItem,
@@ -259,12 +232,6 @@ export class CatalogReconciler {
             `Expected ${PRICE_AUTHORITY_CURRENCY_CODE}; Stripe has ${resolvedPrice.currencyCode ?? 'unknown'}.`,
           ),
         );
-      }
-
-      if (expectedPrice) {
-        for (const priceIssue of findExpectedPriceIssues(resolvedPrice, expectedPrice)) {
-          issues.push(createIssue(storeItem, priceIssue.code, priceIssue.detail));
-        }
       }
 
       if (resolvedPrice.lookupKey === null) {
@@ -352,14 +319,9 @@ export class CatalogReconciler {
           snapshot.amountMinor !== snapshotAmountMinor ||
           snapshot.currencyCode.toUpperCase() !== resolvedPrice.currencyCode?.toUpperCase() ||
           snapshot.stripePriceId !== resolvedPrice.priceId ||
-          snapshot.stripeLookupKey !== lookupKey ||
-          snapshot.freshUntil.getTime() <= now.getTime())
+          snapshot.stripeLookupKey !== lookupKey)
       ) {
         actions.push({ kind: 'update_snapshot' });
-      }
-
-      if (snapshot && snapshot.freshUntil.getTime() <= now.getTime()) {
-        issues.push(createIssue(storeItem, 'snapshot_stale', 'Store Offer snapshot is stale.'));
       }
 
       if (
@@ -373,9 +335,7 @@ export class CatalogReconciler {
       }
     }
 
-    const applicableActions = actions.filter(
-      (action) => options.apply || (options.refreshSnapshots && action.kind === 'update_snapshot'),
-    );
+    const applicableActions = options.apply ? actions : [];
 
     if (applicableActions.length > 0 && resolvedPrice && canApplyCatalogActions(issues)) {
       await this.applyActions(
@@ -402,17 +362,17 @@ export class CatalogReconciler {
 
   public async verifyBuyableCatalog(input: {
     apply: boolean;
+    auditOwnedObjects?: boolean;
     expectedPrices?: Map<string, StripeCatalogExpectedPrice>;
     expectedProductProjections?: Map<string, StripeCatalogProductProjection>;
     now?: Date;
-    refreshSnapshots?: boolean;
   }): Promise<CatalogSyncRunResult> {
-    this.assertSnapshotRefreshAllowed(input.refreshSnapshots);
     const storeItems = await this.dependencies.storeItems.search(null, MAX_CATALOG_ITEMS);
     const expectedVariantIds = input.expectedPrices
       ? new Set(input.expectedPrices.keys())
       : new Set(storeItems.map((item) => item.variantId));
-    const ownedObjectDriftIssues = await this.findOwnedObjectDriftIssues(expectedVariantIds);
+    const ownedObjectDriftIssues =
+      input.auditOwnedObjects === false ? [] : await this.findOwnedObjectDriftIssues(expectedVariantIds);
     const apply = input.apply && !hasBlockingCatalogIssue(ownedObjectDriftIssues);
     const results = await this.verifyCatalogSequentially(storeItems, {
       ...input,
@@ -421,27 +381,21 @@ export class CatalogReconciler {
     const issues = [...results.flatMap((result) => result.issues), ...ownedObjectDriftIssues];
 
     return {
-      dryRun: !apply && !input.refreshSnapshots,
+      dryRun: !apply,
       environment: this.dependencies.environment,
       issues,
       results,
     };
   }
 
-  private assertSnapshotRefreshAllowed(refreshSnapshots: boolean | undefined): void {
-    if (refreshSnapshots && this.dependencies.environment !== 'uat') {
-      throw new Error('Store Offer snapshot refresh is allowed only in UAT.');
-    }
-  }
-
   private async verifyCatalogSequentially(
     storeItems: StoreItemOptionRecord[],
     input: {
       apply: boolean;
+      auditOwnedObjects?: boolean;
       expectedPrices?: Map<string, StripeCatalogExpectedPrice>;
       expectedProductProjections?: Map<string, StripeCatalogProductProjection>;
       now?: Date;
-      refreshSnapshots?: boolean;
     },
   ): Promise<CatalogSyncVariantResult[]> {
     const results: CatalogSyncVariantResult[] = [];
@@ -458,10 +412,10 @@ export class CatalogReconciler {
     storeItem: StoreItemOptionRecord,
     input: {
       apply: boolean;
+      auditOwnedObjects?: boolean;
       expectedPrices?: Map<string, StripeCatalogExpectedPrice>;
       expectedProductProjections?: Map<string, StripeCatalogProductProjection>;
       now?: Date;
-      refreshSnapshots?: boolean;
     },
   ): Promise<CatalogSyncVariantResult> {
     const expectedPrice = input.expectedPrices?.get(storeItem.variantId) ?? null;
@@ -471,7 +425,6 @@ export class CatalogReconciler {
       apply: input.apply,
       expectedPrice,
       productProjection: input.expectedProductProjections?.get(storeItem.variantId) ?? null,
-      refreshSnapshots: input.refreshSnapshots,
       requirePriceAuthority,
       now: input.now,
     });
@@ -692,10 +645,6 @@ function describePriceCandidates(
   return `Stripe returned ${candidates.length} candidate Price(s): ${summaries.join(' | ')}${suffix}.`;
 }
 
-function matchesExpectedPrice(price: StripeCatalogPrice, expectedPrice: StripeCatalogExpectedPrice): boolean {
-  return findExpectedPriceIssues(price, expectedPrice).length === 0;
-}
-
 function normalizeExpectedPrice(expectedPrice: StripeCatalogExpectedPrice): StripeCatalogExpectedPrice {
   if ((expectedPrice as { kind?: string }).kind) {
     return expectedPrice;
@@ -705,52 +654,6 @@ function normalizeExpectedPrice(expectedPrice: StripeCatalogExpectedPrice): Stri
     ...expectedPrice,
     kind: 'fixed',
   } as StripeCatalogExpectedPrice;
-}
-
-function findExpectedPriceIssues(
-  price: StripeCatalogPrice,
-  expectedPrice: StripeCatalogExpectedPrice,
-): Array<{ code: CatalogSyncIssue['code']; detail: string }> {
-  const issues: Array<{ code: CatalogSyncIssue['code']; detail: string }> = [];
-
-  if (price.priceKind !== expectedPrice.kind) {
-    issues.push({
-      code: 'wrong_price_kind',
-      detail: `Expected ${describeExpectedPriceKind(expectedPrice)}; Stripe has ${price.priceKind}.`,
-    });
-  }
-
-  if (price.currencyCode?.toUpperCase() !== expectedPrice.currencyCode.toUpperCase()) {
-    issues.push({
-      code: 'wrong_currency',
-      detail: `Expected ${expectedPrice.currencyCode}; Stripe has ${price.currencyCode ?? 'unknown'}.`,
-    });
-  }
-
-  if (expectedPrice.kind === 'fixed') {
-    if (price.amountMinor !== expectedPrice.amountMinor) {
-      issues.push({
-        code: 'wrong_amount',
-        detail: `Expected ${expectedPrice.amountMinor}; Stripe has ${price.amountMinor ?? 'unknown'}.`,
-      });
-    }
-    return issues;
-  }
-
-  if (
-    price.customUnitAmount?.minimumAmountMinor !== expectedPrice.minimumAmountMinor ||
-    price.customUnitAmount?.presetAmountMinor !== expectedPrice.presetAmountMinor ||
-    price.customUnitAmount?.maximumAmountMinor !== expectedPrice.maximumAmountMinor
-  ) {
-    issues.push({
-      code: 'wrong_custom_amount',
-      detail: `Expected ${describeExpectedCustomAmount(expectedPrice)}; Stripe has ${describeCustomUnitAmount(
-        price.customUnitAmount,
-      )}.`,
-    });
-  }
-
-  return issues;
 }
 
 function getStoreOfferSnapshotAmountMinor(price: StripeCatalogPrice): number | null | undefined {
@@ -793,7 +696,7 @@ export function classifyCatalogSyncIssue(code: CatalogSyncIssue['code']): Catalo
     return 'd1_readiness';
   }
 
-  if (code === 'snapshot_mismatch' || code === 'snapshot_stale') {
+  if (code === 'snapshot_mismatch') {
     return 'store_offer_snapshot';
   }
 
@@ -901,23 +804,6 @@ function createMutationContext(
   });
 }
 
-function createArchivePriceAction(
-  environment: StripeCatalogEnvironment,
-  variantId: string,
-  stripePriceId: StripeCatalogPrice['priceId'],
-): Extract<CatalogSyncAction, { kind: 'archive_price' }> {
-  const context = createMutationContext(environment, variantId, 'archive_price', stripePriceId, {
-    active: false,
-    stripePriceId,
-  });
-
-  return {
-    kind: 'archive_price',
-    stripePriceId,
-    ...createMutationEvidence(context),
-  };
-}
-
 function mutationContextFromAction(
   action: Extract<
     CatalogSyncAction,
@@ -976,16 +862,6 @@ function createCatalogPriceMutationIdentity(
       });
 
   return repairIdentity ? `${baseIdentity}:${repairIdentity}` : baseIdentity;
-}
-
-function describeExpectedPriceKind(price: StripeCatalogExpectedPrice): string {
-  return price.kind === 'fixed' ? 'fixed' : 'pay_what_you_want';
-}
-
-function describeExpectedCustomAmount(
-  price: Extract<StripeCatalogExpectedPrice, { kind: 'pay_what_you_want' }>,
-): string {
-  return `min=${price.minimumAmountMinor},preset=${price.presetAmountMinor},max=${price.maximumAmountMinor}`;
 }
 
 function describeCustomUnitAmount(amount: StripeCatalogPrice['customUnitAmount']): string {

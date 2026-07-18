@@ -72,8 +72,6 @@ describe('Stripe webhook endpoint verifier', () => {
           }),
         ],
       ]),
-      committedCron: { status: 'present' },
-      deployedCron: { status: 'present' },
       workerSecret: { status: 'present' },
     });
     const report = formatStripeWebhookEndpointVerificationReport(result);
@@ -87,7 +85,7 @@ describe('Stripe webhook endpoint verifier', () => {
     expect(report).not.toContain('we_1234567890abcdef');
   });
 
-  it('passes one enabled live-mode production account endpoint without requiring sandbox cron proof', async () => {
+  it('passes one enabled live-mode production account endpoint', async () => {
     const result = await verifyStripeWebhookEndpointConfiguration({
       client: fakeClient([
         [
@@ -97,8 +95,6 @@ describe('Stripe webhook endpoint verifier', () => {
           }),
         ],
       ]),
-      committedCron: { status: 'unverified', detail: 'not configured' },
-      deployedCron: { status: 'unverified', detail: 'not configured' },
       environment: 'prd',
       workerSecret: { status: 'present' },
     });
@@ -112,8 +108,6 @@ describe('Stripe webhook endpoint verifier', () => {
   it('follows Stripe pagination while listing endpoints', async () => {
     const result = await verifyStripeWebhookEndpointConfiguration({
       client: fakeClient([[endpoint({ id: 'we_page_one' })], [endpoint({ id: 'we_page_two' })]]),
-      committedCron: { status: 'present' },
-      deployedCron: { status: 'present' },
       workerSecret: { status: 'present' },
     });
 
@@ -191,14 +185,10 @@ describe('Stripe webhook endpoint verifier', () => {
   it('keeps missing or unverified Worker secret presence out of accepted readiness', async () => {
     const missingResult = await verifyStripeWebhookEndpointConfiguration({
       client: fakeClient([[endpoint()]]),
-      committedCron: { status: 'present' },
-      deployedCron: { status: 'present' },
       workerSecret: { status: 'missing' },
     });
     const unverifiedResult = await verifyStripeWebhookEndpointConfiguration({
       client: fakeClient([[endpoint()]]),
-      committedCron: { status: 'present' },
-      deployedCron: { status: 'unverified', detail: 'no token' },
       workerSecret: { status: 'unverified', detail: 'wrangler failed with whsec_should_not_print' },
     });
 
@@ -207,9 +197,6 @@ describe('Stripe webhook endpoint verifier', () => {
     );
     expect(unverifiedResult.issues).toContain(
       'UAT Worker secret STRIPE_WEBHOOK_SECRET presence is unverified. (wrangler failed with [redacted_stripe_webhook_secret])',
-    );
-    expect(formatStripeWebhookEndpointVerificationReport(unverifiedResult)).toContain(
-      'Deployed cron presence is unverified. (no token)',
     );
   });
 

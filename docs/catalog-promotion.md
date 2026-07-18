@@ -16,7 +16,7 @@ Release and distro entries carry editorial Store Item content only:
 - releases: title, artist, release date, cover image, summary, formats, embeds, credits, and optional direct merch URL.
 - distro: title, group, artist or label, image, summary, eyebrow, format, release date, and order.
 - generated catalog policy: every current visible Store Item generates a UAT Desired Catalog Entry by default.
-- Generated Desired Price derives from format or option labels for promotion/apply mode: cassette/tape `1200 EUR`, T-shirt/tee `2000 EUR`, and other physical goods `2800 EUR`. Day-to-day UAT price checks treat one valid active Stripe Dashboard replacement Price as Price Authority.
+- Generated Desired Price derives from format or option labels only to create a new item's initial Price Authority: cassette/tape `1200 EUR`, T-shirt/tee `2000 EUR`, and other physical goods `2800 EUR`. Normal promotion never replaces one valid active Stripe Price because this generated value differs.
 - default Stripe Tax code for generated physical goods remains `txcd_99999999`.
 - smoke selection uses the first published entry for the target environment.
 
@@ -40,11 +40,15 @@ Release and distro entries carry editorial Store Item content only:
 2. `Catalog artifact regeneration` generates Desired Catalog State, Product Projection, UAT readiness SQL, and PRD readiness SQL.
 3. If generated artifacts drift, the workflow commits only those artifacts as `chore(catalog): regenerate promotion artifacts`.
 4. `Catalog promotion` runs from the artifact commit, not the original content-only commit.
-5. UAT runs repository gates, config verification, D1 readiness, Stripe dry-run/apply/post-verify, and Worker deploy. GitHub Pages UAT validation then happens in a separate `workflow_run` smoke workflow that runs `pnpm smoke:stripe-uat -- --scenario happy_path_paid --screenshots on-failure` against the deployed site and `pnpm smoke:resend-uat` against the deployed UAT Worker. The workflow keeps Resend receipt verification omitted and operator-started.
+5. UAT runs repository gates, config verification, D1 readiness, Stripe dry-run/apply/post-verify, and Worker deploy. It verifies every generated Store Item has one ready hosted listing-price record, then dispatches the UAT static deployment for the same artifact commit. GitHub Pages UAT validation then happens in the separate `workflow_run` smoke workflow.
 6. PRD starts only after UAT proof for the same artifact commit on the normal `all` target. Until `PRD_OPEN_GATE=open` exists in the `catalog-promotion-prd` credential scope, the job records `not_configured` readiness evidence and skips live provider mutation.
 7. PRD smoke is no longer part of catalog promotion. The `pnpm smoke:stripe-promotion -- --env prd --scenario all` script remains available for manual operator runs or a later dedicated workflow.
 
 Pushing the repo is not the buyable-status source of truth. Promotion Evidence from the catalog promotion workflow is the source for UAT buyable status and, after the PRD-open gate exists, PRD buyable status.
+
+## Price Changes and Repair
+
+Change an existing item's price in Stripe Dashboard by creating the replacement Price under the identified Product and archiving the old Price. The signed Stripe webhook updates only that Store Item's D1 mapping and listing snapshot. If webhook delivery needs repair, run `pnpm stripe:catalog:verify --env uat --store-item <storeItemSlug>` first, then rerun with `--apply`; unrelated Store Items are not inspected or mutated. Full-catalog verification remains a deliberate read-only audit when `--store-item` and `--apply` are omitted.
 
 ## Provider Setup
 

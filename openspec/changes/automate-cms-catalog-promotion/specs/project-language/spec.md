@@ -34,14 +34,14 @@ The system SHALL use consistent terms for generated provider publication across 
 
 ### Requirement: Desired Price language preserves runtime authority boundaries
 
-The system MUST describe repo/provider-policy price data as desired provider provisioning input, not as checkout authority.
+The system MUST describe repo/provider-policy price data as first-publication bootstrap input for missing Price Authority, not as checkout authority or permission to replace valid existing Price Authority.
 
 #### Scenario: Referring to Desired Price input
 
 - **GIVEN** code, specs, or docs describe the amount/currency from repo/provider policy
-- **WHEN** the price is used to create or resolve Stripe Prices during promotion
+- **WHEN** the price is used to create initial Stripe Price Authority during promotion
 - **THEN** they use `Desired Price`
-- **AND** they do not call it the charged price until Provider Catalog State confirms the active Stripe Price.
+- **AND** they do not call it the charged price or use it to replace valid existing Price Authority.
 
 #### Scenario: Referring to checkout amount
 

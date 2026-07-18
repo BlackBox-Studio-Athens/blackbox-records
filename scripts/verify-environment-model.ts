@@ -27,7 +27,6 @@ const productPolicyFiles = [
   'apps/backend/src/application/email/routing.ts',
   'apps/backend/src/application/email/idempotency.ts',
   'apps/backend/src/infrastructure/feature-flags/cloudflare-feature-flag-reader.ts',
-  'apps/backend/src/interfaces/scheduled/catalog-verification.ts',
   'apps/backend/src/interfaces/http/routes/public-commerce-services.ts',
   'apps/backend/src/interfaces/http/routes/stripe-webhook-services.ts',
   'scripts/verify-runtime-config.ts',
@@ -62,7 +61,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
   return [
     {
       detail:
-        'Shared static deployment workflow skips only audited repository documentation and preserves manual dispatch.',
+        'Shared static deployment workflow skips audited documentation and catalog-promotion-owned inputs while preserving manual dispatch.',
       ok: verifyStaticDeployTriggerSources(staticDeployWorkflow),
     },
     {
@@ -194,7 +193,23 @@ export function verifyStaticDeployTriggerSources(staticDeployWorkflow: string): 
       ?.groups?.paths?.split(/\r?\n/)
       .filter(Boolean)
       .map((line) => /^\s*-\s+'([^']+)'$/.exec(line)?.[1] ?? '') ?? [];
-  const expectedIgnoredPaths = ['docs/**', 'openspec/**', '*.md', 'LICENSE'];
+  const expectedIgnoredPaths = [
+    'docs/**',
+    'openspec/**',
+    'apps/web/src/content/distro/**',
+    'apps/web/src/content/releases/**',
+    'apps/web/src/content/uploads/**',
+    'apps/web/src/lib/admin/**',
+    'apps/web/src/content.config.ts',
+    'scripts/stripe-catalog-contract.ts',
+    'scripts/generate-stripe-uat-catalog-artifacts.ts',
+    'apps/backend/src/application/commerce/catalog-sync/catalog-product-projections.ts',
+    'apps/backend/src/application/commerce/catalog-sync/desired-catalog-state.ts',
+    'apps/backend/prisma/seeds/uat-commerce-state.sql',
+    'apps/backend/prisma/seeds/prd-commerce-readiness.sql',
+    '*.md',
+    'LICENSE',
+  ];
 
   return (
     /^\x20{2}push:\r?$/m.test(triggerEvents) &&

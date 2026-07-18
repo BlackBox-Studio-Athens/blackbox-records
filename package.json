@@ -25,6 +25,7 @@
     "dev:stack:uat-connected": "tsx scripts/start-local-stack.ts uat-connected",
     "checkout:preflight:stripe-test": "tsx scripts/check-stripe-test-checkout.ts",
     "stripe:catalog:verify": "tsx scripts/stripe-catalog-verify.ts",
+    "store:listing-readiness:verify": "tsx scripts/verify-store-listing-readiness.ts",
     "stripe:catalog:reset-uat": "pnpm --filter @blackbox/backend exec tsx scripts/stripe-catalog-reset-sandbox.ts",
     "stripe:catalog:reset-sandbox": "pnpm stripe:catalog:reset-uat",
     "stripe:catalog:artifacts:generate": "tsx scripts/generate-stripe-uat-catalog-artifacts.ts --write",

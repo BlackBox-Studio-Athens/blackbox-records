@@ -15,16 +15,13 @@ export type StoreListingPricePresentation =
 
 export async function readStoreListingPrices(
   snapshots: StoreOfferListingPriceSnapshotRepository,
-  now = new Date(),
 ): Promise<StoreListingPricePresentation[]> {
   return (await snapshots.listForListingPricePresentation()).map((snapshot) => {
     if (
-      snapshot.amountMinor === null ||
-      snapshot.amountMinor < 0 ||
       snapshot.currencyCode.trim().length !== 3 ||
-      snapshot.freshUntil <= now ||
       !snapshot.priceActive ||
-      !snapshot.productActive
+      !snapshot.productActive ||
+      (snapshot.amountMinor !== null && snapshot.amountMinor < 0)
     ) {
       return {
         presentationState: 'unavailable',
@@ -33,11 +30,14 @@ export async function readStoreListingPrices(
     }
 
     return {
-      displayPrice: createStoreOfferPrice({
-        amountMinor: snapshot.amountMinor,
-        currencyCode: snapshot.currencyCode,
-        kind: 'fixed',
-      }).display,
+      displayPrice:
+        snapshot.amountMinor === null
+          ? 'Pay what you want'
+          : createStoreOfferPrice({
+              amountMinor: snapshot.amountMinor,
+              currencyCode: snapshot.currencyCode,
+              kind: 'fixed',
+            }).display,
       presentationState: 'ready',
       storeItemSlug: snapshot.storeItemSlug,
     };

@@ -13,7 +13,12 @@ import {
   type CatalogSyncRunResult,
   type StripeCatalogEnvironment,
 } from '../apps/backend/src/application/commerce/catalog-sync';
-import { parseStoreItemSlug, parseStripePriceId, parseVariantId } from '../apps/backend/src/domain/commerce';
+import {
+  parseStoreItemSlug,
+  parseStripePriceId,
+  parseVariantId,
+  type StoreItemSlug,
+} from '../apps/backend/src/domain/commerce';
 import {
   isCatalogMutationEnabledForWorkerRuntimeTarget,
   parseProductEnvironmentCliTarget,
@@ -40,6 +45,7 @@ type CatalogVerifyOptions = {
   environment: StripeCatalogEnvironment;
   planApply?: boolean;
   promotionContext: CatalogPromotionContext | null;
+  storeItemSlug?: StoreItemSlug | null;
 };
 
 type CatalogPromotionContext = {
@@ -72,6 +78,7 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
     environment: 'uat',
     planApply: false,
     promotionContext: null,
+    storeItemSlug: null,
   };
 
   for (let index = 0; index < args.length; index += 1) {
@@ -88,6 +95,19 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 
     if (arg === '--plan-apply') {
       options.planApply = true;
+      continue;
+    }
+
+    if (arg === '--store-item') {
+      options.storeItemSlug = parseStoreItemSlug(parseRequiredOptionValue('--store-item', args[index + 1]));
+      index += 1;
+      continue;
+    }
+
+    if (arg?.startsWith('--store-item=')) {
+      options.storeItemSlug = parseStoreItemSlug(
+        parseRequiredOptionValue('--store-item', arg.slice('--store-item='.length)),
+      );
       continue;
     }
 
@@ -152,7 +172,7 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 
     if (arg === '--help' || arg === '-h') {
       console.log(
-        'Usage: pnpm stripe:catalog:verify --env local|uat|prd [--apply|--plan-apply] [--artifact-commit-sha <sha> --promotion-run-id <id> --ci-promotion] (legacy platform aliases accepted: sandbox, production)',
+        'Usage: pnpm stripe:catalog:verify --env local|uat|prd [--store-item <storeItemSlug>] [--apply|--plan-apply] [--artifact-commit-sha <sha> --promotion-run-id <id> --ci-promotion] (legacy platform aliases accepted: sandbox, production)',
       );
       process.exit(0);
     }
@@ -183,15 +203,15 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
     throw new Error('PRD Stripe catalog apply is disabled until PRD_OPEN_GATE=open.');
   }
 
+  const allContracts = await loadStripeCatalogStoreItemContracts({
+    productEnvironment: productEnvironmentProfile.productEnvironment === 'PRD' ? 'PRD' : 'UAT',
+  });
+  const contracts = selectStripeCatalogContracts(allContracts, options.storeItemSlug ?? null);
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
 
   if (!stripeSecretKey) {
     throw new Error('Missing STRIPE_SECRET_KEY for Stripe catalog verification.');
   }
-
-  const contracts = await loadStripeCatalogStoreItemContracts({
-    productEnvironment: productEnvironmentProfile.productEnvironment === 'PRD' ? 'PRD' : 'UAT',
-  });
   const desiredPrices = createExpectedPriceMap(contracts, options.environment);
   const expectedPrices = options.apply || options.planApply ? desiredPrices : undefined;
   const expectedProductProjections = createExpectedProductProjectionMap(contracts, options.environment);
@@ -216,6 +236,7 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
 
   const result = await reconciler.verifyBuyableCatalog({
     apply: options.apply,
+    auditOwnedObjects: options.storeItemSlug === null,
     expectedPrices,
     expectedProductProjections,
   });
@@ -238,6 +259,7 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
   if (options.apply && appliedActions.length > 0) {
     const postApplyResult = await createReconciler().verifyBuyableCatalog({
       apply: false,
+      auditOwnedObjects: options.storeItemSlug === null,
       expectedPrices: desiredPrices,
       expectedProductProjections,
     });
@@ -250,6 +272,23 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
   }
 
   return result;
+}
+
+export function selectStripeCatalogContracts(
+  contracts: StripeCatalogStoreItemContract[],
+  storeItemSlug: StoreItemSlug | null,
+): StripeCatalogStoreItemContract[] {
+  if (storeItemSlug === null) {
+    return contracts;
+  }
+
+  const selected = contracts.filter((contract) => contract.storeItemSlug === storeItemSlug);
+
+  if (selected.length !== 1) {
+    throw new Error(`Unknown Store Item slug: ${storeItemSlug}.`);
+  }
+
+  return selected;
 }
 
 function assertPrdApplyPromotionContext(context: CatalogPromotionContext | null): void {
@@ -365,20 +404,11 @@ function requiredPlanActions(issue: CatalogSyncIssue): CatalogSyncAction['kind']
     return ['create_catalog_price'];
   }
 
-  if (
-    issue.code === 'wrong_amount' ||
-    issue.code === 'wrong_currency' ||
-    issue.code === 'wrong_custom_amount' ||
-    issue.code === 'wrong_price_kind'
-  ) {
-    return ['archive_price', 'create_catalog_price'];
-  }
-
   if (issue.code === 'product_projection_mismatch') {
     return ['update_product_projection'];
   }
 
-  if (issue.code === 'snapshot_mismatch' || issue.code === 'snapshot_stale') {
+  if (issue.code === 'snapshot_mismatch') {
     return ['update_snapshot'];
   }
 

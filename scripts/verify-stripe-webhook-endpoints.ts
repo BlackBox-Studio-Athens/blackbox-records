@@ -1,5 +1,4 @@
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
@@ -48,8 +47,6 @@ export type StripeWebhookEndpointAnalysis = {
 };
 
 export type StripeWebhookEndpointVerificationResult = {
-  committedCron: VerificationPresence;
-  deployedCron: VerificationPresence;
   endpointAnalysis: StripeWebhookEndpointAnalysis;
   environment: StripeWebhookVerifyEnvironment;
   issues: string[];
@@ -59,14 +56,11 @@ export type StripeWebhookEndpointVerificationResult = {
 
 const rootDir = process.cwd();
 const backendDir = path.join(rootDir, 'apps', 'backend');
-const wranglerConfigPath = path.join(backendDir, 'wrangler.jsonc');
 
 export const UAT_WORKER_URL = 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev';
 export const UAT_WEBHOOK_URL = `${UAT_WORKER_URL}/api/stripe/webhooks`;
-export const UAT_WORKER_NAME = 'blackbox-records-backend-uat';
 export const PRD_WORKER_URL = 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev';
 export const PRD_WEBHOOK_URL = `${PRD_WORKER_URL}/api/stripe/webhooks`;
-export const EXPECTED_UAT_CRON = '17 */6 * * *';
 
 const requiredCatalogEvents = [...STRIPE_CATALOG_WEBHOOK_EVENT_TYPES];
 const requiredCatalogEventSet = new Set<string>(requiredCatalogEvents);
@@ -122,8 +116,6 @@ export function parseStripeWebhookVerifyArgs(args: string[]): StripeWebhookVerif
 
 export async function verifyStripeWebhookEndpointConfiguration(input: {
   client: StripeWebhookEndpointListClient;
-  committedCron?: VerificationPresence;
-  deployedCron?: VerificationPresence;
   environment?: StripeWebhookVerifyEnvironment;
   workerSecret?: VerificationPresence;
 }): Promise<StripeWebhookEndpointVerificationResult> {
@@ -131,8 +123,6 @@ export async function verifyStripeWebhookEndpointConfiguration(input: {
   const endpoints = await listAllStripeWebhookEndpoints(input.client);
   const endpointAnalysis = analyzeStripeWebhookEndpoints(endpoints, environment);
   const workerSecret = input.workerSecret ?? readWorkerSecretPresence(environment);
-  const committedCron = input.committedCron ?? readCommittedCronPresence(environment);
-  const deployedCron = input.deployedCron ?? (await readDeployedCronPresence(environment));
   const issues = [...endpointAnalysis.issues];
 
   if (workerSecret.status === 'missing') {
@@ -145,17 +135,7 @@ export async function verifyStripeWebhookEndpointConfiguration(input: {
     );
   }
 
-  if (environment === 'uat' && committedCron.status !== 'present') {
-    issues.push(`Committed UAT cron ${EXPECTED_UAT_CRON} is ${committedCron.status}.`);
-  }
-
-  if (environment === 'uat' && deployedCron.status === 'missing') {
-    issues.push(`Deployed UAT cron ${EXPECTED_UAT_CRON} is missing.`);
-  }
-
   return {
-    committedCron,
-    deployedCron,
     endpointAnalysis,
     environment,
     issues,
@@ -349,104 +329,6 @@ export function readWorkerSecretPresence(environment: StripeWebhookVerifyEnviron
   }
 }
 
-export function readCommittedUatCronPresence(configPath = wranglerConfigPath): VerificationPresence {
-  return readCommittedCronPresence('uat', configPath);
-}
-
-export function readCommittedCronPresence(
-  environment: StripeWebhookVerifyEnvironment,
-  configPath = wranglerConfigPath,
-): VerificationPresence {
-  if (environment === 'prd') {
-    return {
-      detail: 'PRD catalog cron is not configured in wrangler.jsonc.',
-      status: 'unverified',
-    };
-  }
-
-  try {
-    const configText = readFileSync(configPath, 'utf8');
-    const hasExpectedCron = new RegExp(`"crons"\\s*:\\s*\\[\\s*"${escapeRegExp(EXPECTED_UAT_CRON)}"\\s*\\]`).test(
-      configText,
-    );
-
-    return {
-      status: hasExpectedCron ? 'present' : 'missing',
-    };
-  } catch (error) {
-    return {
-      detail: error instanceof Error ? error.message : String(error),
-      status: 'unverified',
-    };
-  }
-}
-
-export async function readDeployedUatCronPresence(env: NodeJS.ProcessEnv = process.env): Promise<VerificationPresence> {
-  return readDeployedCronPresence('uat', env);
-}
-
-export async function readDeployedCronPresence(
-  environment: StripeWebhookVerifyEnvironment,
-  env: NodeJS.ProcessEnv = process.env,
-): Promise<VerificationPresence> {
-  if (environment === 'prd') {
-    return {
-      detail: 'PRD catalog cron is not configured as a promotion prerequisite.',
-      status: 'unverified',
-    };
-  }
-
-  const accountId = normalizeOptionalValue(env.CLOUDFLARE_ACCOUNT_ID);
-  const apiToken = normalizeOptionalValue(env.CLOUDFLARE_API_TOKEN);
-
-  if (!accountId || !apiToken) {
-    return {
-      detail: 'Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN to verify deployed cron triggers.',
-      status: 'unverified',
-    };
-  }
-
-  const response = await fetch(
-    `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(
-      accountId,
-    )}/workers/scripts/${encodeURIComponent(getWorkerName(environment))}/schedules`,
-    {
-      headers: {
-        Authorization: `Bearer ${apiToken}`,
-      },
-    },
-  );
-  const responseText = await response.text();
-
-  if (!response.ok) {
-    return {
-      detail: `Cloudflare schedules API failed (${response.status}): ${redactSensitiveValues(responseText)}`,
-      status: 'unverified',
-    };
-  }
-
-  const payload = JSON.parse(responseText) as {
-    result?: {
-      schedules?: Array<{ cron?: unknown }>;
-    };
-    success?: boolean;
-  };
-  const crons = payload.result?.schedules?.flatMap((schedule) =>
-    typeof schedule.cron === 'string' ? [schedule.cron] : [],
-  );
-
-  if (!payload.success || !crons) {
-    return {
-      detail: 'Cloudflare schedules API did not return a successful schedule list.',
-      status: 'unverified',
-    };
-  }
-
-  return {
-    status: crons.includes(EXPECTED_UAT_CRON) ? 'present' : 'missing',
-  };
-}
-
 export function formatStripeWebhookEndpointVerificationReport(result: StripeWebhookEndpointVerificationResult): string {
   const endpoint = result.endpointAnalysis.endpoint;
   const environmentLabel = formatEnvironmentLabel(result.environment);
@@ -465,8 +347,6 @@ export function formatStripeWebhookEndpointVerificationReport(result: StripeWebh
     `Matching endpoint count: ${result.endpointAnalysis.matchingEndpointCount}`,
     `Worker STRIPE_WEBHOOK_SECRET presence: ${formatPresence(result.workerSecret)}`,
     'Signing-secret match proof: not_proven_by_api',
-    `Committed UAT cron ${EXPECTED_UAT_CRON}: ${formatPresence(result.committedCron)}`,
-    `Deployed UAT cron ${EXPECTED_UAT_CRON}: ${formatPresence(result.deployedCron)}`,
   ];
 
   if (result.endpointAnalysis.extraEvents.length) {
@@ -479,13 +359,9 @@ export function formatStripeWebhookEndpointVerificationReport(result: StripeWebh
     '- Stripe list/retrieve APIs do not return an existing endpoint signing secret. Prove a match by immediately writing a newly revealed/rotated endpoint secret to the UAT Worker, or by recording redacted persistent delivery evidence.',
   );
 
-  if (result.endpointAnalysis.warnings.length || result.deployedCron.status === 'unverified') {
+  if (result.endpointAnalysis.warnings.length) {
     lines.push('', 'Warnings:');
     lines.push(...result.endpointAnalysis.warnings.map((warning) => `- ${warning}`));
-
-    if (result.deployedCron.status === 'unverified') {
-      lines.push(`- Deployed cron presence is unverified.${formatOptionalDetail(result.deployedCron.detail)}`);
-    }
   }
 
   if (result.issues.length) {
@@ -593,16 +469,8 @@ function normalizeOptionalValue(value: string | null | undefined): string | null
   return trimmed ? trimmed : null;
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 function getWebhookUrl(environment: StripeWebhookVerifyEnvironment): string {
   return environment === 'prd' ? PRD_WEBHOOK_URL : UAT_WEBHOOK_URL;
-}
-
-function getWorkerName(environment: StripeWebhookVerifyEnvironment): string {
-  return environment === 'prd' ? 'blackbox-records-backend-prd' : UAT_WORKER_NAME;
 }
 
 function formatEnvironmentLabel(environment: StripeWebhookVerifyEnvironment): string {

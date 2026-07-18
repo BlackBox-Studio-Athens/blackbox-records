@@ -113,6 +113,27 @@ describe('catalog promotion workflows', () => {
     expect(prdApplyStep).toContain('set -o pipefail');
   });
 
+  it('keeps catalog commits out of push deploys and dispatches static deployment only after hosted readiness', () => {
+    const pages = readWorkflow('pages.yml');
+    const promotion = readWorkflow('catalog-promotion.yml');
+    const uatWorker = promotion.indexOf('- name: Deploy UAT Worker');
+    const uatReadiness = promotion.indexOf('- name: Verify hosted UAT listing readiness');
+    const uatStatic = promotion.indexOf('- name: Dispatch UAT static deployment');
+
+    expect(pages).toContain("- 'apps/web/src/content/distro/**'");
+    expect(pages).toContain("- 'apps/web/src/content/releases/**'");
+    expect(pages).toContain("- 'apps/backend/src/application/commerce/catalog-sync/desired-catalog-state.ts'");
+    expect(pages).toContain('artifact_commit_sha:');
+    expect(pages).toContain('ref: ${{ inputs.artifact_commit_sha || github.sha }}');
+    expect(pages).toContain("inputs.target == 'uat'");
+    expect(pages).toContain("inputs.target == 'prd'");
+    expect(uatReadiness).toBeGreaterThan(uatWorker);
+    expect(uatStatic).toBeGreaterThan(uatReadiness);
+    expect(promotion).toContain('pnpm store:listing-readiness:verify -- --env uat');
+    expect(promotion).toContain('gh workflow run pages.yml');
+    expect(promotion).toContain('-f artifact_commit_sha=${{ inputs.artifact_commit_sha }} -f target=uat');
+  });
+
   it('defines a manual UAT static smoke workflow with the standard smoke inputs', () => {
     const workflow = readWorkflow('uat-static-smoke.yml');
 
