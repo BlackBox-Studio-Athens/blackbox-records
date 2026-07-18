@@ -6,6 +6,7 @@ import SiteLayout from '@/layouts/SiteLayout.astro';
 import { listArtistProfiles, listReleaseCatalog } from '@/lib/catalog-data';
 import { getAboutContent, getContentSection, getLabelSettings } from '@/lib/site-data';
 import { calculateCountryCount, calculateYearsActive } from '@/utils/content';
+import { Mail } from 'lucide-react';
 
 const artistProfiles = await listArtistProfiles();
 const releaseCatalogEntries = await listReleaseCatalog();
@@ -60,17 +61,28 @@ const aboutStats = getContentSection(aboutContent.sections, 'stats');
 
           {
             aboutContact && (
-              <>
-                <h2>{aboutContact.title.toUpperCase()}</h2>
-                <p>{aboutContact.intro}</p>
-                <ul>
-                  {aboutContact.items.map((item) => (
-                    <li>
-                      <span class="font-semibold text-foreground">{item.label}:</span> {item.value}
+              <section class="about-contact" aria-labelledby="about-contact-title">
+                <h2 id="about-contact-title">{aboutContact.title.toUpperCase()}</h2>
+                <p class="about-contact__intro">{aboutContact.intro}</p>
+                <ul class="about-contact__list">
+                  {aboutContact.items.map((item, itemIndex) => (
+                    <li
+                      class:list={[
+                        'about-contact__item',
+                        itemIndex === 0 ? 'about-contact__item--primary' : 'about-contact__item--secondary',
+                      ]}
+                    >
+                      <a class="about-contact__link" href={`mailto:${item.value}`}>
+                        <span class="about-contact__text">
+                          <span class="about-contact__label">{item.label}</span>
+                          <span class="about-contact__address">{item.value}</span>
+                        </span>
+                        <Mail className="about-contact__icon" aria-hidden="true" size={18} strokeWidth={1.5} />
+                      </a>
                     </li>
                   ))}
                 </ul>
-              </>
+              </section>
             )
           }
         </div>

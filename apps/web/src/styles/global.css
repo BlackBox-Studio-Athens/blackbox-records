@@ -3362,6 +3362,125 @@ body {
     @apply mt-2 block text-sm uppercase tracking-[0.12em] text-muted-foreground;
   }
 
+  .about-contact {
+    padding-top: 2.5rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .rich-text-content .about-contact h2 {
+    margin-top: 0;
+  }
+
+  .rich-text-content .about-contact__intro {
+    margin-top: 0.75rem;
+    color: var(--muted-foreground);
+  }
+
+  .rich-text-content .about-contact__list {
+    display: grid;
+    gap: 0;
+    margin-top: 1.5rem;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--card);
+    list-style: none;
+  }
+
+  .about-contact__item,
+  .about-contact__link {
+    min-width: 0;
+  }
+
+  .rich-text-content .about-contact__item {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .rich-text-content .about-contact__item:last-child {
+    border-bottom: 0;
+  }
+
+  .about-contact__link {
+    display: grid;
+    min-height: 2.75rem;
+    grid-template-columns: minmax(0, 1fr) 1.125rem;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    color: var(--foreground);
+    background: transparent;
+    text-decoration: none;
+    transition:
+      color 160ms ease,
+      background-color 160ms ease;
+  }
+
+  .about-contact__item--primary .about-contact__link {
+    padding-block: 1.25rem;
+  }
+
+  .about-contact__text {
+    display: grid;
+    min-width: 0;
+    gap: 0.35rem;
+  }
+
+  .about-contact__label {
+    color: var(--foreground);
+    font-family: var(--font-display-ui);
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
+  .about-contact__item--primary .about-contact__label {
+    font-size: 1.25rem;
+  }
+
+  .about-contact__address {
+    min-width: 0;
+    color: var(--muted-foreground);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .about-contact__icon {
+    width: 1.125rem;
+    height: 1.125rem;
+    color: var(--muted-foreground);
+  }
+
+  .about-contact__link:hover {
+    background: var(--accent);
+  }
+
+  .about-contact__link:focus-visible {
+    outline: 2px solid var(--foreground);
+    outline-offset: -3px;
+    background: var(--accent);
+  }
+
+  @media (min-width: 48rem) {
+    .about-contact__list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .about-contact__item--primary {
+      grid-column: 1 / -1;
+    }
+
+    .rich-text-content .about-contact__item--secondary {
+      border-bottom: 0;
+    }
+
+    .rich-text-content .about-contact__item--secondary + .about-contact__item--secondary {
+      border-left: 1px solid var(--border);
+    }
+  }
+
   .news-markdown-content > * + * {
     @apply mt-5;
   }
