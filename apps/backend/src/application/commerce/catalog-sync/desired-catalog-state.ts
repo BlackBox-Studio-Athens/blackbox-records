@@ -204,7 +204,8 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       revision: 'anarchotribal-vinyl-2800-eur',
     },
     productProjection: {
-      description: "Ouranopithecus' Anarchotribal joins the BlackBox Records store as a vinyl release.",
+      description:
+        "Ouranopithecus' ten-track album channels the Athens trio's psychedelic and punk influences. Recorded at Atavo and Buduzi Studios, it was produced by the band and Marios Adamopoulos and released with BlackBox Records. Digital availability is confirmed by Bandcamp; Vinyl is the label edition.",
       imageUrls: [
         'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/ouranopithecus-album-cover-distro-mockup.webp',
       ],
@@ -875,7 +876,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     },
     productProjection: {
       description:
-        'The first release of the band is a mix of post rock elements. Engineering, recording, and mixing by Jim Spanos at BlackBox Studio, Athens, Greece. Mastered by Nikos Dimitrakakos and Jim Spanos at Unreal Studio, Athens, Greece.',
+        "Afterwise's six-track debut album blends instrumental post-rock atmosphere with post-metal weight. Written and performed by the Athens band, it was recorded and mixed at BlackBox Studio and released by BlackBox Records. Digital availability is confirmed by Bandcamp; Black Vinyl LP and CD are label editions.",
       imageUrls: [
         'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
       ],
