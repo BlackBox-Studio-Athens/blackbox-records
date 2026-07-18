@@ -10,8 +10,10 @@ Evidence is redacted to app-owned slugs, counts, commit IDs, and public CI run I
 - UAT static deployment started after the Worker deployment: GitHub Actions run `29629608559` succeeded.
 - Browser Use on `https://blackbox-studio-athens.github.io/blackbox-records/store/`: 81 price cards, 7 `Pay what you want`, 0 `Price unavailable`, 0 missing price values, and 0 browser console errors.
 - Genuine inactive, missing, malformed, ambiguous, or unsupported offer state remains fail-closed through the listing-reader and reconciler regression suite; UAT had no genuine invalid listing record to expose to shoppers during this check.
+- Cloudflare's deployed Cron Triggers API returned 0 schedules for the UAT Worker after the former `06:17 UTC` window.
+- Cloudflare invocation analytics for the previous `00:10–00:25 UTC` window recorded the former failure: 1 error, 50 subrequests, and `scriptThrewException`.
+- Cloudflare invocation analytics for the first post-removal `06:10–06:25 UTC` window recorded 0 errors, 0 subrequests, no 50-subrequest row, and no failure status.
 
 ### Remaining operator evidence
 
 - Task 6.5 remains open. A real Stripe Dashboard replacement needs an explicitly chosen UAT Store Item and replacement amount before provider mutation.
-- Task 6.6 remains open until the former `17 */6 * * *` schedule window passes and Cloudflare logs can prove no scheduled invocation or former 50-subrequest failure occurred. The deployed UAT config explicitly uses `crons: []`, and its deployment succeeded.
