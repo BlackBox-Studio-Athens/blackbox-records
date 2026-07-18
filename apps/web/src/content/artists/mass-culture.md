@@ -25,4 +25,4 @@ Formed around 2015 under the name Chew Gravel, the band later evolved into After
 
 They have performed in key venues across Athens’ underground scene, often sharing the stage with like-minded acts, delivering live performances that emphasize intensity, build-up, and immersive atmosphere.
 
-On April 7, 2026, they released their debut single, “SilverFeedsSilence.” Their first full-length album, “Disintegration,” recorded at Blackbox Studio, is set for release in the summer of 2026.
+On April 7, 2026, they released their debut single, “SilverFeedsSilence.” Their first full-length album, “Disintegration,” recorded at BlackBox Studio, followed on June 9, 2026 through BlackBox Records.

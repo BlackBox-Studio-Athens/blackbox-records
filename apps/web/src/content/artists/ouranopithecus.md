@@ -10,7 +10,6 @@ bio: >
   driving rhythm.
 
   Their material is focused on momentum, atmosphere, and a relentless live energy.
-upcoming_release: Upcoming LP (title TBA).
 profile_links:
   - label: Bandcamp
     url: https://ouranopithecus.bandcamp.com/
