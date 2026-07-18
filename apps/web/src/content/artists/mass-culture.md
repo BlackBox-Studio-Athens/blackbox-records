@@ -10,7 +10,7 @@ bio: >-
   post-metal weight, and cinematic live dynamics.
 profile_links:
   - label: Bandcamp
-    url: https://afterwise.bandcamp.com/track/silverfeedssilence
+    url: https://afterwise.bandcamp.com/
   - label: Tidal
     url: https://tidal.com/artist/75705460/u
 videos:

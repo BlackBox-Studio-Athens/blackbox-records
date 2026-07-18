@@ -140,6 +140,7 @@ describe('embedded player data', () => {
   });
 
   it('keeps current release content aligned with the player embed contract', () => {
+    const anarchotribal = readReleaseFrontmatter('anarchotribal');
     const disintegration = readReleaseFrontmatter('disintegration');
     const caregivers = readReleaseFrontmatter('caregivers');
 
@@ -147,22 +148,39 @@ describe('embedded player data', () => {
       releaseId: 'disintegration',
       providers: [
         {
-          embedLayout: 'bandcamp-track',
+          embedLayout: 'bandcamp-album',
           embedUrl:
-            'https://bandcamp.com/EmbeddedPlayer/track=2461449138/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/tracklist=false/transparent=true/',
+            'https://bandcamp.com/EmbeddedPlayer/album=3481803854/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/',
           id: 'bandcamp',
         },
         {
           embedLayout: 'tidal',
-          embedUrl: 'https://embed.tidal.com/albums/505727858?coverInitially=true&disableAnalytics=true',
+          embedUrl: 'https://embed.tidal.com/albums/521945607?coverInitially=true&disableAnalytics=true',
           id: 'tidal',
         },
       ],
     });
-    expect(disintegration.bandcamp_embed_url).toContain('/tracklist=false/');
+    expect(disintegration.bandcamp_embed_url).toContain('/album=3481803854/');
     expect(disintegration.bandcamp_embed_url).toContain('/artwork=big/');
-    expect(disintegration.tidal_url).toBe('https://tidal.com/album/505727858');
+    expect(disintegration.tidal_url).toBe('https://tidal.com/album/521945607');
     expect(disintegration.tidal_url).not.toContain('/artist/');
+
+    expect(buildEmbeddedPlayerData('anarchotribal', anarchotribal, 'Anarchotribal')).toMatchObject({
+      releaseId: 'anarchotribal',
+      providers: [
+        {
+          embedLayout: 'bandcamp-album',
+          embedUrl:
+            'https://bandcamp.com/EmbeddedPlayer/album=2894598366/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/',
+          id: 'bandcamp',
+        },
+        {
+          embedLayout: 'tidal',
+          embedUrl: 'https://embed.tidal.com/albums/526716850?coverInitially=true&disableAnalytics=true',
+          id: 'tidal',
+        },
+      ],
+    });
 
     expect(buildEmbeddedPlayerData('caregivers', caregivers, 'Caregivers')).toMatchObject({
       releaseId: 'caregivers',

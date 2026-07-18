@@ -11,4 +11,9 @@ bio: >
 
   Their material is focused on momentum, atmosphere, and a relentless live energy.
 upcoming_release: Upcoming LP (title TBA).
+profile_links:
+  - label: Bandcamp
+    url: https://ouranopithecus.bandcamp.com/
+  - label: Tidal
+    url: https://tidal.com/artist/79935313
 ---
