@@ -13,7 +13,7 @@ export type StoreCatalogCategory = {
 export const storeCatalogCategories = [
   {
     description: 'BlackBox releases, distro records, and merch in one native storefront.',
-    heading: 'Store',
+    heading: 'All',
     id: 'all',
     label: 'All',
     path: '/store/',

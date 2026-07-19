@@ -65,7 +65,9 @@ function formatReleaseFormats(formats: string[] | undefined) {
 <SiteLayout pageTitle="Releases" pageDescription="Releases and label catalog.">
   <header class="layout-container releases-page-intro">
     <p class="releases-page-intro__eyebrow">Catalog</p>
-    <h1 class="releases-page-intro__title" transition:name="internal-page-hero-title">Releases</h1>
+    <h1 class="releases-page-intro__title internal-page-hero__title" transition:name="internal-page-hero-title">
+      Releases
+    </h1>
   </header>
   {
     (latestReleaseEntry || upcomingReleaseEntry || remainingReleaseEntries.length > 0) && (

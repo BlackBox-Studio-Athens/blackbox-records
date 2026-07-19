@@ -13,7 +13,7 @@ describe('Releases page layout', () => {
     expect(page).toMatch(/<header class="layout-container releases-page-intro">/);
     expect(page).toMatch(/<p class="releases-page-intro__eyebrow">Catalog<\/p>/);
     expect(page).toMatch(
-      /<h1 class="releases-page-intro__title" transition:name="internal-page-hero-title">\s*Releases\s*<\/h1>/s,
+      /<h1 class="releases-page-intro__title internal-page-hero__title" transition:name="internal-page-hero-title">\s*Releases\s*<\/h1>/s,
     );
   });
 

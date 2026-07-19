@@ -16,6 +16,10 @@ describe('Store category registry', () => {
     ]);
   });
 
+  it('uses Store metadata with All as the base category heading', () => {
+    expect(storeCatalogCategories[0]).toMatchObject({ heading: 'All', label: 'All', title: 'Store' });
+  });
+
   it('reserves the collection segments without treating All as item membership', () => {
     expect([...reservedStoreRouteSegments]).toEqual(['checkout', 'blackbox-releases', 'distro', 'merch']);
     expect(reservedStoreRouteSegments.has('all')).toBe(false);

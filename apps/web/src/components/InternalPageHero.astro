@@ -3,6 +3,7 @@ import type { ImageMetadata } from 'astro';
 import { Image } from 'astro:assets';
 import { createProjectRelativeUrl } from '@/config/site';
 import { Badge } from '@/components/ui/badge';
+import { resolveSupportingLabel } from '@/lib/page-identity';
 
 interface Props {
   sectionLabel?: string;
@@ -14,18 +15,19 @@ interface Props {
 }
 
 const { sectionLabel, title, image, imageAlt, imageColor = false, firstViewportPriority = false } = Astro.props;
+const resolvedSectionLabel = resolveSupportingLabel(sectionLabel, title);
 const heroImageClass = `internal-page-hero__image h-[20rem] w-full object-cover sm:h-[24rem]${imageColor ? '' : ' grayscale'}`;
 ---
 
 <section class="mx-auto w-full max-w-6xl px-4 pt-14 pb-8 sm:px-6 lg:px-8">
   <div class="max-w-4xl">
     {
-      sectionLabel && (
+      resolvedSectionLabel && (
         <Badge
           variant="outline"
           className="border-border/80 bg-card/85 px-3 py-1 text-xs tracking-[0.18em] uppercase text-muted-foreground"
         >
-          {sectionLabel}
+          {resolvedSectionLabel}
         </Badge>
       )
     }

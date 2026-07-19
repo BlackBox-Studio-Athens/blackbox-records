@@ -507,10 +507,6 @@ body {
   }
 
   .services-page-intro__title {
-    font-family: var(--font-display-brand);
-    font-size: clamp(2.15rem, 9.5vw, 3.35rem);
-    line-height: 0.98;
-    letter-spacing: 0.035em;
     text-transform: uppercase;
     color: var(--foreground);
   }
@@ -2170,11 +2166,6 @@ body {
   .releases-page-intro__title {
     margin: 0.65rem 0 0;
     color: var(--foreground);
-    font-family: var(--font-display-brand);
-    font-size: clamp(4rem, 13vw, 7.75rem);
-    letter-spacing: 0.025em;
-    line-height: 0.88;
-    overflow-wrap: anywhere;
     text-transform: uppercase;
   }
 
