@@ -1,15 +1,17 @@
 ## Why
 
-The Home hero media and shade disappear abruptly at the existing coarse scroll threshold. A short bounded fade can make that exit and return feel deliberate without restoring per-scroll writes, continuous effects, or hidden animation work.
+The Static Plate keeps the Home hero image present, but once the hero-scoped shade leaves, the full-strength image looks brighter behind later content and provides no visual handoff. The selected Persistent Ghost Crossfade keeps the image in the background while lowering it to a quiet, readable presence through one bounded opacity transition.
 
 ## What Changes
 
-- Fade the existing Home hero media and shade together over 180 milliseconds when the existing scrolled class changes state.
-- Hide the two layers only after the exit fade completes; restore visibility immediately before the return fade.
-- Keep reduced-motion behavior immediate and keep the hidden scroll-cue animation stopped.
-- Preserve the current DOM, coarse threshold, route-scoped scroll helper, and same-side no-mutation behavior.
-- Add no transform, keyframe, JavaScript state, dependency, `will-change`, or scroll-progress property.
-- Sequence implementation after `improve-site-runtime-performance-round-two` archives; an earlier release requires its design and task 7.3 to remove transition-free Home ownership and pass strict validation first.
+- Keep the existing responsive Home hero image fixed and visible for as long as the Home route owns it.
+- Crossfade only the media layer from opacity `1` to `0.18` over 240 milliseconds when the existing coarse scrolled class changes state; never hide or remove it while Home remains active.
+- Reverse the same native opacity transition when the shopper returns above the threshold, including from an interrupted in-flight value.
+- Keep the existing hero shade scoped to the hero viewport and transition-free so the first viewport retains its approved darkness without leaving a second fixed layer behind later content.
+- Tune the static News, Artists, and Newsletter veils to `76%`, `78%`, and `74%` opacity so the quieter ghost remains consistently visible through every Home section while opaque cards and footer keep content stable.
+- Preserve route-scoped cleanup, same-side no-mutation behavior, reduced-motion endpoints, and responsive high-priority image delivery.
+- Accept the ghost only if wide and mobile profiles show no application-work regression, attributable long task, repeated settled hero paint or raster work, or extra image request or decode.
+- Add no markup, per-scroll property, transform, keyframe, parallax, filter, blur, blend mode, `will-change`, dependency, asset, or JavaScript state.
 
 ## Capabilities
 
@@ -19,11 +21,11 @@ None.
 
 ### Modified Capabilities
 
-- `app-shell-and-player`: Replace the transition-free Home hero opacity requirement with one bounded transition per coarse threshold change while retaining the no-churn, reduced-motion, route-scope, and settled-hidden performance contracts.
+- `app-shell-and-player`: Replace the transition-free Home hero opacity requirement with one route-scoped Persistent Ghost Crossfade while preserving bounded render work, coarse scroll state, reduced motion, and no-churn performance contracts.
 
 ## Impact
 
-- Frontend styling: the existing Home hero media and shade rules in `apps/web/src/styles/global.css`.
-- Regression coverage: the existing Home hero CSS and scroll-helper tests.
-- Validation: Browser Use at mobile and desktop widths, the existing Home scroll performance profiles, and standard repository gates.
-- No content, markup, route, player, loading indicator, API, commerce, schema, dependency, or deployment change.
+- Frontend styling: existing Home hero and section-surface rules in `apps/web/src/styles/global.css`.
+- Regression coverage: existing Home hero CSS and scroll-helper tests.
+- Validation: Browser Use at mobile and desktop widths, existing Home settled and first/repeat scroll profiles, and standard repository gates.
+- No content, markup, route, player, loading indicator, API, commerce, schema, dependency, asset, or deployment change.
