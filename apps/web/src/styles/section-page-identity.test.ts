@@ -9,7 +9,7 @@ const releasesPage = source('../pages/releases/index.astro');
 const servicesPage = source('../pages/services/index.astro');
 
 function cssRule(selector: string) {
-  const match = css.match(new RegExp(`\\${selector}\\s*\\{([^}]*)\\}`));
+  const match = new RegExp(`\\${selector}\\s*\\{([^}]*)\\}`).exec(css);
   expect(match, `Missing ${selector} CSS rule`).not.toBeNull();
   return match?.[1] ?? '';
 }
@@ -30,10 +30,10 @@ describe('section page identity', () => {
 
   it('keeps custom headers distinct and on the shared title class', () => {
     expect(releasesPage).toMatch(
-      /<p class="releases-page-intro__eyebrow">Catalog<\/p>[\s\S]*?<h1 class="releases-page-intro__title internal-page-hero__title"[^>]*>Releases<\/h1>/,
+      /<p class="releases-page-intro__eyebrow">Catalog<\/p>[\s\S]*?<h1 class="releases-page-intro__title internal-page-hero__title"[^>]*>\s*Releases\s*<\/h1>/,
     );
     expect(servicesPage).toMatch(
-      /<p class="services-page-intro__eyebrow">What We Do<\/p>[\s\S]*?<h1 class="services-page-intro__title internal-page-hero__title">\{servicesContent\.hero\.title\}<\/h1>/,
+      /<p class="services-page-intro__eyebrow">What We Do<\/p>[\s\S]*?<h1 class="services-page-intro__title internal-page-hero__title">\s*\{servicesContent\.hero\.title\}\s*<\/h1>/,
     );
   });
 
