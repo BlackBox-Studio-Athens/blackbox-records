@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Your Kingdom, my life",
+  "group": "CDs",
+  "artist_or_label": "Three Way plane",
+  "image": "three-way-plane-your-kingdom-my-life-cd.jpg",
+  "image_alt": "Your Kingdom, my life CD front mockup",
+  "summary": "CD edition of Your Kingdom, my life by Three Way plane. Source metadata identifies it as a 9-track release, released April 14, 2017.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 86,
+  "release_date": "2017-04-14"
+}

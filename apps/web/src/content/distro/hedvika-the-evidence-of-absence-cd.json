@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "The evidence of Absence",
+  "group": "CDs",
+  "artist_or_label": "Hedvika",
+  "image": "hedvika-the-evidence-of-absence-cd.jpg",
+  "image_alt": "The evidence of Absence CD front mockup",
+  "summary": "CD edition of The evidence of Absence by Hedvika. Source metadata identifies it as a 7-track release, released January 25, 2013.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 91,
+  "release_date": "2013-01-25"
+}

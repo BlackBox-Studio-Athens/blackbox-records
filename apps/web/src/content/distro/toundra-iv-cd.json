@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "IV",
+  "group": "CDs",
+  "artist_or_label": "Toundra",
+  "image": "toundra-iv-cd.jpg",
+  "image_alt": "IV CD front mockup",
+  "summary": "CD edition of IV by Toundra. Source metadata identifies it as an 8-track release, released January 23, 2015.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 87,
+  "release_date": "2015-01-23"
+}

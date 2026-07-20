@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Amoeba",
+  "group": "CDs",
+  "artist_or_label": "Celuta Red",
+  "image": "celuta-red-amoeba-cd.jpg",
+  "image_alt": "Amoeba CD front mockup",
+  "summary": "CD edition of Amoeba by Celuta Red. Source metadata identifies it as an 8-track release, released February 27, 2015.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 84,
+  "release_date": "2015-02-27"
+}

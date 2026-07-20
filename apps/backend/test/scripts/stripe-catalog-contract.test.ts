@@ -30,7 +30,7 @@ describe('stripe catalog contract projection', () => {
     const rowsById = new Map(source.rows.map((row) => [row.id, row]));
     const rejectedDuplicate = source.rejectedDuplicateRows[0];
 
-    expect(source.rows).toHaveLength(79);
+    expect(source.rows).toHaveLength(102);
     expect(source.rejectedDuplicateRows).toEqual([
       expect.objectContaining({
         duplicateOf: 'living-under-drones-knot-on-knot-vinyl-12-inch',
@@ -192,7 +192,7 @@ describe('stripe catalog contract projection', () => {
     });
     const contractsBySlug = new Map(contracts.map((contract) => [contract.storeItemSlug, contract]));
 
-    expect(contracts).toHaveLength(81);
+    expect(contracts).toHaveLength(104);
     expect(new Set(contracts.map((contract) => contract.alignmentStatus))).toEqual(new Set(['checkout_eligible']));
     expect(contractsBySlug.get('anarchotribal-vinyl')).toMatchObject({
       alignmentStatus: 'checkout_eligible',

@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Death and Love",
+  "group": "CDs",
+  "artist_or_label": "The Curf",
+  "image": "the-curf-death-and-love-cd.jpg",
+  "image_alt": "Death and Love CD front mockup",
+  "summary": "CD edition of Death and Love by The Curf. Source metadata identifies it as a 9-track release, released July 21, 2017.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 98,
+  "release_date": "2017-07-21"
+}

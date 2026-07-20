@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "I",
+  "group": "CDs",
+  "artist_or_label": "The Curf",
+  "image": "the-curf-i-cd.jpg",
+  "image_alt": "I CD front mockup",
+  "summary": "CD edition of I by The Curf. Source metadata identifies it as an 11-track release, released December 17, 2007.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 85,
+  "release_date": "2007-12-17"
+}

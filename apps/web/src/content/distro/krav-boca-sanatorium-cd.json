@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Sanatorium",
+  "group": "CDs",
+  "artist_or_label": "Krav Boca",
+  "image": "krav-boca-sanatorium-cd.jpg",
+  "image_alt": "Sanatorium CD front mockup",
+  "summary": "CD edition of Sanatorium by Krav Boca. Source metadata identifies it as a 10-track release, released May 16, 2015.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 90,
+  "release_date": "2015-05-16"
+}

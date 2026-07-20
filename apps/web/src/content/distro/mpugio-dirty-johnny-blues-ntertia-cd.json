@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Blues & Ντέρτια",
+  "group": "CDs",
+  "artist_or_label": "Μπουγιο & Dirty Johnny",
+  "image": "mpugio-dirty-johnny-blues-ntertia-cd.jpg",
+  "image_alt": "Blues & Ντέρτια CD front mockup",
+  "summary": "CD edition of Blues & Ντέρτια by Μπουγιο & Dirty Johnny, released June 5, 2015.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 89,
+  "release_date": "2015-06-05"
+}

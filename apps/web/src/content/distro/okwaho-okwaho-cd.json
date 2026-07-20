@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Okwaho",
+  "group": "CDs",
+  "artist_or_label": "Okwaho",
+  "image": "okwaho-okwaho-cd.jpg",
+  "image_alt": "Okwaho CD front mockup",
+  "summary": "CD edition of Okwaho by Okwaho. Source metadata identifies it as a 7-track release, released March 15, 2018.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 96,
+  "release_date": "2018-03-15"
+}

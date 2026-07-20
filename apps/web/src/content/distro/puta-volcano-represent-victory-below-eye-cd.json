@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Represent Victory Below Eye",
+  "group": "CDs",
+  "artist_or_label": "Puta Volcano",
+  "image": "puta-volcano-represent-victory-below-eye-cd.jpg",
+  "image_alt": "Represent Victory Below Eye CD front mockup",
+  "summary": "CD edition of Represent Victory Below Eye by Puta Volcano. Source metadata identifies it as a 7-track release, released December 22, 2011.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 94,
+  "release_date": "2011-12-22"
+}

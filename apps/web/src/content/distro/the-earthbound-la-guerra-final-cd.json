@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "La Guerra Final",
+  "group": "CDs",
+  "artist_or_label": "The earthbound",
+  "image": "the-earthbound-la-guerra-final-cd.jpg",
+  "image_alt": "La Guerra Final CD front mockup",
+  "summary": "CD edition of La Guerra Final by The earthbound. Source metadata identifies it as an 11-track release, released May 24, 2016.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 88,
+  "release_date": "2016-05-24"
+}

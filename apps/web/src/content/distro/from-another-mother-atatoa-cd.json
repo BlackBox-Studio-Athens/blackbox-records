@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "ATATOA",
+  "group": "CDs",
+  "artist_or_label": "From Another Mother",
+  "image": "from-another-mother-atatoa-cd.jpg",
+  "image_alt": "ATATOA CD front mockup",
+  "summary": "CD edition of ATATOA by From Another Mother. Source metadata identifies it as a 9-track release, released March 22, 2019.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 92,
+  "release_date": "2019-03-22"
+}

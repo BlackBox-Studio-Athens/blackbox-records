@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "ATATOA",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "From Another Mother",
+  "image": "from-another-mother-atatoa-vinyl.webp",
+  "image_alt": "ATATOA Vinyl front mockup",
+  "summary": "Vinyl edition of ATATOA by From Another Mother. Source metadata identifies it as a 9-track release, released March 22, 2019.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 79,
+  "release_date": "2019-03-22"
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Analekta",
+  "group": "CDs",
+  "artist_or_label": "Agia Monaxia",
+  "image": "agia-monaxia-analekta-cd.jpg",
+  "image_alt": "Analekta CD front mockup",
+  "summary": "CD edition of Analekta by Agia Monaxia. Source metadata identifies it as a 6-track release, released July 19, 2019.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 99,
+  "release_date": "2019-07-19"
+}

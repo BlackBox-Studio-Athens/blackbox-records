@@ -21,6 +21,33 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'CD edition of form follows function by Adolf plays the Jazz. Source metadata identifies it as a 9-track release, released April 17, 2012.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/adolf-plays-the-jazz-form-follows-function-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'adolf-plays-the-jazz-form-follows-function-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'adolf-plays-the-jazz-form-follows-function-cd',
+        variantId: 'variant_adolf-plays-the-jazz-form-follows-function-cd_standard',
+      },
+      name: 'BlackBox Records - form follows function - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'adolf-plays-the-jazz-form-follows-function-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'adolf-plays-the-jazz-form-follows-function-cd',
+    variantId: 'variant_adolf-plays-the-jazz-form-follows-function-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
       amountMinor: 2000,
       currencyCode: 'EUR',
       kind: 'fixed',
@@ -98,6 +125,33 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     sourceKind: 'distro',
     storeItemSlug: 'against-his-story-against-leviathan',
     variantId: 'variant_against-his-story-against-leviathan_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'CD edition of Analekta by Agia Monaxia. Source metadata identifies it as a 6-track release, released July 19, 2019.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/agia-monaxia-analekta-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'agia-monaxia-analekta-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'agia-monaxia-analekta-cd',
+        variantId: 'variant_agia-monaxia-analekta-cd_standard',
+      },
+      name: 'BlackBox Records - Analekta - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'agia-monaxia-analekta-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'agia-monaxia-analekta-cd',
+    variantId: 'variant_agia-monaxia-analekta-cd_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',
@@ -454,6 +508,32 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description: 'CD edition of Synapses by Blame the trees, released November 12, 2013.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/blame-the-trees-synapses-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'blame-the-trees-synapses-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'blame-the-trees-synapses-cd',
+        variantId: 'variant_blame-the-trees-synapses-cd_standard',
+      },
+      name: 'BlackBox Records - Synapses - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'blame-the-trees-synapses-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'blame-the-trees-synapses-cd',
+    variantId: 'variant_blame-the-trees-synapses-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
       amountMinor: 2000,
       currencyCode: 'EUR',
       kind: 'fixed',
@@ -554,6 +634,87 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     sourceKind: 'distro',
     storeItemSlug: 'caregivers-vinyl',
     variantId: 'variant_caregivers-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Escape the Blaze only to find another by Celuta Red, Agia Monaxia. Source metadata identifies it as a 2-track release, released May 11, 2020.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/celuta-red-agia-monaxia-escape-the-blaze-only-to-find-another-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'celuta-red-agia-monaxia-escape-the-blaze-only-to-find-another-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'celuta-red-agia-monaxia-escape-the-blaze-only-to-find-another-vinyl',
+        variantId: 'variant_celuta-red-agia-monaxia-escape-the-blaze-only-to-find-another-vinyl_standard',
+      },
+      name: 'BlackBox Records - Escape the Blaze only to find another - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'celuta-red-agia-monaxia-escape-the-blaze-only-to-find-another-vinyl',
+    sourceKind: 'distro',
+    storeItemSlug: 'celuta-red-agia-monaxia-escape-the-blaze-only-to-find-another-vinyl',
+    variantId: 'variant_celuta-red-agia-monaxia-escape-the-blaze-only-to-find-another-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'CD edition of Amoeba by Celuta Red. Source metadata identifies it as an 8-track release, released February 27, 2015.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/celuta-red-amoeba-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'celuta-red-amoeba-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'celuta-red-amoeba-cd',
+        variantId: 'variant_celuta-red-amoeba-cd_standard',
+      },
+      name: 'BlackBox Records - Amoeba - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'celuta-red-amoeba-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'celuta-red-amoeba-cd',
+    variantId: 'variant_celuta-red-amoeba-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'CD edition of Idle Frenzy by Celuta Red. Source metadata identifies it as a 7-track release, released May 11, 2018.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/celuta-red-idle-frenzy-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'celuta-red-idle-frenzy-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'celuta-red-idle-frenzy-cd',
+        variantId: 'variant_celuta-red-idle-frenzy-cd_standard',
+      },
+      name: 'BlackBox Records - Idle Frenzy - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'celuta-red-idle-frenzy-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'celuta-red-idle-frenzy-cd',
+    variantId: 'variant_celuta-red-idle-frenzy-cd_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',
@@ -691,6 +852,32 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     sourceKind: 'distro',
     storeItemSlug: 'dead-flag-blues-traumatique-cd',
     variantId: 'variant_dead-flag-blues-traumatique-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description: 'CD edition of Time Expires by Deus X Machina, released February 2007.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/deus-x-machina-time-expires-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'deus-x-machina-time-expires-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'deus-x-machina-time-expires-cd',
+        variantId: 'variant_deus-x-machina-time-expires-cd_standard',
+      },
+      name: 'BlackBox Records - Time Expires - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'deus-x-machina-time-expires-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'deus-x-machina-time-expires-cd',
+    variantId: 'variant_deus-x-machina-time-expires-cd_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',
@@ -834,6 +1021,60 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     },
     productProjection: {
       description:
+        'CD edition of ATATOA by From Another Mother. Source metadata identifies it as a 9-track release, released March 22, 2019.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/from-another-mother-atatoa-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'from-another-mother-atatoa-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'from-another-mother-atatoa-cd',
+        variantId: 'variant_from-another-mother-atatoa-cd_standard',
+      },
+      name: 'BlackBox Records - ATATOA - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'from-another-mother-atatoa-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'from-another-mother-atatoa-cd',
+    variantId: 'variant_from-another-mother-atatoa-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of ATATOA by From Another Mother. Source metadata identifies it as a 9-track release, released March 22, 2019.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/from-another-mother-atatoa-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'from-another-mother-atatoa-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'from-another-mother-atatoa-vinyl',
+        variantId: 'variant_from-another-mother-atatoa-vinyl_standard',
+      },
+      name: 'BlackBox Records - ATATOA - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'from-another-mother-atatoa-vinyl',
+    sourceKind: 'distro',
+    storeItemSlug: 'from-another-mother-atatoa-vinyl',
+    variantId: 'variant_from-another-mother-atatoa-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
         'CD edition of Reshaping the symbols by Full Moon Bonzai. Source metadata identifies it as a 8-track release, released December 1, 2017.',
       imageUrls: [
         'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/full-moon-bonzai-reshaping-the-symbols-cd.jpg',
@@ -905,6 +1146,33 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     sourceKind: 'distro',
     storeItemSlug: 'gun-fever-no-easy-way-vinyl',
     variantId: 'variant_gun-fever-no-easy-way-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'CD edition of The evidence of Absence by Hedvika. Source metadata identifies it as a 7-track release, released January 25, 2013.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/hedvika-the-evidence-of-absence-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'hedvika-the-evidence-of-absence-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'hedvika-the-evidence-of-absence-cd',
+        variantId: 'variant_hedvika-the-evidence-of-absence-cd_standard',
+      },
+      name: 'BlackBox Records - The evidence of Absence - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'hedvika-the-evidence-of-absence-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'hedvika-the-evidence-of-absence-cd',
+    variantId: 'variant_hedvika-the-evidence-of-absence-cd_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',
@@ -1015,6 +1283,33 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     sourceKind: 'distro',
     storeItemSlug: 'kokomo-whip-vinyl',
     variantId: 'variant_kokomo-whip-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'CD edition of Sanatorium by Krav Boca. Source metadata identifies it as a 10-track release, released May 16, 2015.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/krav-boca-sanatorium-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'krav-boca-sanatorium-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'krav-boca-sanatorium-cd',
+        variantId: 'variant_krav-boca-sanatorium-cd_standard',
+      },
+      name: 'BlackBox Records - Sanatorium - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'krav-boca-sanatorium-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'krav-boca-sanatorium-cd',
+    variantId: 'variant_krav-boca-sanatorium-cd_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',
@@ -1242,6 +1537,32 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       kind: 'fixed',
     },
     productProjection: {
+      description: 'CD edition of Blues & Ντέρτια by Μπουγιο & Dirty Johnny, released June 5, 2015.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/mpugio-dirty-johnny-blues-ntertia-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'mpugio-dirty-johnny-blues-ntertia-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'mpugio-dirty-johnny-blues-ntertia-cd',
+        variantId: 'variant_mpugio-dirty-johnny-blues-ntertia-cd_standard',
+      },
+      name: 'BlackBox Records - Blues & Ντέρτια - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'mpugio-dirty-johnny-blues-ntertia-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'mpugio-dirty-johnny-blues-ntertia-cd',
+    variantId: 'variant_mpugio-dirty-johnny-blues-ntertia-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
       description: 'CD edition of Slap punkabilly by Nausea Bomb in the BlackBox Records distro catalog.',
       imageUrls: [
         'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/nausea-bomb-slap-punkabilly-cd-front-mockup.jpg',
@@ -1259,6 +1580,33 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     sourceKind: 'distro',
     storeItemSlug: 'nausea-bomb-slap-punkabilly-cd',
     variantId: 'variant_nausea-bomb-slap-punkabilly-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'CD edition of Cosmic Radiation by Noise Raid. Source metadata identifies it as a 15-track release, released September 16, 2022.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/noise-raid-cosmic-radiation-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'noise-raid-cosmic-radiation-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'noise-raid-cosmic-radiation-cd',
+        variantId: 'variant_noise-raid-cosmic-radiation-cd_standard',
+      },
+      name: 'BlackBox Records - Cosmic Radiation - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'noise-raid-cosmic-radiation-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'noise-raid-cosmic-radiation-cd',
+    variantId: 'variant_noise-raid-cosmic-radiation-cd_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',
@@ -1312,6 +1660,85 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     sourceKind: 'distro',
     storeItemSlug: 'nothing-thrives-tales-of-disgrace-vinyl',
     variantId: 'variant_nothing-thrives-tales-of-disgrace-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'CD edition of Navigation by NYOS. Source metadata identifies it as a 6-track release, released September 29, 2017.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/nyos-navigation-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'nyos-navigation-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'nyos-navigation-cd',
+        variantId: 'variant_nyos-navigation-cd_standard',
+      },
+      name: 'BlackBox Records - Navigation - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'nyos-navigation-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'nyos-navigation-cd',
+    variantId: 'variant_nyos-navigation-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'CD edition of Okwaho by Okwaho. Source metadata identifies it as a 7-track release, released March 15, 2018.',
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/okwaho-okwaho-cd.jpg'],
+      metadata: {
+        sourceId: 'okwaho-okwaho-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'okwaho-okwaho-cd',
+        variantId: 'variant_okwaho-okwaho-cd_standard',
+      },
+      name: 'BlackBox Records - Okwaho - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'okwaho-okwaho-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'okwaho-okwaho-cd',
+    variantId: 'variant_okwaho-okwaho-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 2000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'Vinyl edition of Chakra Meditations by Olaf Olafsonn and the Big Bad Trip. Source metadata identifies it as a 3-track release, released March 12, 2015.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/olaf-olafsonn-and-the-big-bad-trip-chakra-meditations-vinyl.webp',
+      ],
+      metadata: {
+        sourceId: 'olaf-olafsonn-and-the-big-bad-trip-chakra-meditations-vinyl',
+        sourceKind: 'distro',
+        storeItemSlug: 'olaf-olafsonn-and-the-big-bad-trip-chakra-meditations-vinyl',
+        variantId: 'variant_olaf-olafsonn-and-the-big-bad-trip-chakra-meditations-vinyl_standard',
+      },
+      name: 'BlackBox Records - Chakra Meditations - Vinyl',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'olaf-olafsonn-and-the-big-bad-trip-chakra-meditations-vinyl',
+    sourceKind: 'distro',
+    storeItemSlug: 'olaf-olafsonn-and-the-big-bad-trip-chakra-meditations-vinyl',
+    variantId: 'variant_olaf-olafsonn-and-the-big-bad-trip-chakra-meditations-vinyl_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',
@@ -1551,6 +1978,33 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     sourceKind: 'distro',
     storeItemSlug: 'primal-ephemeral',
     variantId: 'variant_primal-ephemeral_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'CD edition of Represent Victory Below Eye by Puta Volcano. Source metadata identifies it as a 7-track release, released December 22, 2011.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/puta-volcano-represent-victory-below-eye-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'puta-volcano-represent-victory-below-eye-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'puta-volcano-represent-victory-below-eye-cd',
+        variantId: 'variant_puta-volcano-represent-victory-below-eye-cd_standard',
+      },
+      name: 'BlackBox Records - Represent Victory Below Eye - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'puta-volcano-represent-victory-below-eye-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'puta-volcano-represent-victory-below-eye-cd',
+    variantId: 'variant_puta-volcano-represent-victory-below-eye-cd_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',
@@ -1843,6 +2297,85 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'CD edition of Death and Love by The Curf. Source metadata identifies it as a 9-track release, released July 21, 2017.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/the-curf-death-and-love-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'the-curf-death-and-love-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'the-curf-death-and-love-cd',
+        variantId: 'variant_the-curf-death-and-love-cd_standard',
+      },
+      name: 'BlackBox Records - Death and Love - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'the-curf-death-and-love-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'the-curf-death-and-love-cd',
+    variantId: 'variant_the-curf-death-and-love-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'CD edition of I by The Curf. Source metadata identifies it as an 11-track release, released December 17, 2007.',
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/the-curf-i-cd.jpg'],
+      metadata: {
+        sourceId: 'the-curf-i-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'the-curf-i-cd',
+        variantId: 'variant_the-curf-i-cd_standard',
+      },
+      name: 'BlackBox Records - I - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'the-curf-i-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'the-curf-i-cd',
+    variantId: 'variant_the-curf-i-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'CD edition of La Guerra Final by The earthbound. Source metadata identifies it as an 11-track release, released May 24, 2016.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/the-earthbound-la-guerra-final-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'the-earthbound-la-guerra-final-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'the-earthbound-la-guerra-final-cd',
+        variantId: 'variant_the-earthbound-la-guerra-final-cd_standard',
+      },
+      name: 'BlackBox Records - La Guerra Final - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'the-earthbound-la-guerra-final-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'the-earthbound-la-guerra-final-cd',
+    variantId: 'variant_the-earthbound-la-guerra-final-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
       amountMinor: 3000,
       currencyCode: 'EUR',
       kind: 'fixed',
@@ -1924,6 +2457,33 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
   {
     alignmentStatus: 'checkout_eligible',
     expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'CD edition of Your Kingdom, my life by Three Way plane. Source metadata identifies it as a 9-track release, released April 14, 2017.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/three-way-plane-your-kingdom-my-life-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'three-way-plane-your-kingdom-my-life-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'three-way-plane-your-kingdom-my-life-cd',
+        variantId: 'variant_three-way-plane-your-kingdom-my-life-cd_standard',
+      },
+      name: 'BlackBox Records - Your Kingdom, my life - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'three-way-plane-your-kingdom-my-life-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'three-way-plane-your-kingdom-my-life-cd',
+    variantId: 'variant_three-way-plane-your-kingdom-my-life-cd_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
       amountMinor: 2000,
       currencyCode: 'EUR',
       kind: 'fixed',
@@ -1946,6 +2506,31 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     sourceKind: 'distro',
     storeItemSlug: 'three-way-plane-your-kingdom-my-life-vinyl',
     variantId: 'variant_three-way-plane-your-kingdom-my-life-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'CD edition of IV by Toundra. Source metadata identifies it as an 8-track release, released January 23, 2015.',
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/toundra-iv-cd.jpg'],
+      metadata: {
+        sourceId: 'toundra-iv-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'toundra-iv-cd',
+        variantId: 'variant_toundra-iv-cd_standard',
+      },
+      name: 'BlackBox Records - IV - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'toundra-iv-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'toundra-iv-cd',
+    variantId: 'variant_toundra-iv-cd_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',
@@ -2000,6 +2585,33 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     sourceKind: 'distro',
     storeItemSlug: 'turpentine-valley-veuel-vinyl',
     variantId: 'variant_turpentine-valley-veuel-vinyl_standard',
+  },
+  {
+    alignmentStatus: 'checkout_eligible',
+    expectedSandboxPrice: {
+      amountMinor: 1000,
+      currencyCode: 'EUR',
+      kind: 'fixed',
+    },
+    productProjection: {
+      description:
+        'CD edition of s/t by UKRYTE ZALETY SYSTEMU. Source metadata identifies it as an 8-track release, released February 15, 2015.',
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/ukryte-zalety-systemu-s-t-cd.jpg',
+      ],
+      metadata: {
+        sourceId: 'ukryte-zalety-systemu-s-t-cd',
+        sourceKind: 'distro',
+        storeItemSlug: 'ukryte-zalety-systemu-s-t-cd',
+        variantId: 'variant_ukryte-zalety-systemu-s-t-cd_standard',
+      },
+      name: 'BlackBox Records - s/t - CD',
+      taxCode: 'txcd_99999999',
+    },
+    sourceId: 'ukryte-zalety-systemu-s-t-cd',
+    sourceKind: 'distro',
+    storeItemSlug: 'ukryte-zalety-systemu-s-t-cd',
+    variantId: 'variant_ukryte-zalety-systemu-s-t-cd_standard',
   },
   {
     alignmentStatus: 'checkout_eligible',

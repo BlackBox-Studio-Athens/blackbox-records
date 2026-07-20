@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Chakra Meditations",
+  "group": "Vinyl 12-inch",
+  "artist_or_label": "Olaf Olafsonn and the Big Bad Trip",
+  "image": "olaf-olafsonn-and-the-big-bad-trip-chakra-meditations-vinyl.webp",
+  "image_alt": "Chakra Meditations Vinyl front mockup",
+  "summary": "Vinyl edition of Chakra Meditations by Olaf Olafsonn and the Big Bad Trip. Source metadata identifies it as a 3-track release, released March 12, 2015.",
+  "eyebrow": "Distro",
+  "format": "Vinyl",
+  "order": 78,
+  "release_date": "2015-03-12"
+}

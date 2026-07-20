@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Cosmic Radiation",
+  "group": "CDs",
+  "artist_or_label": "Noise Raid",
+  "image": "noise-raid-cosmic-radiation-cd.jpg",
+  "image_alt": "Cosmic Radiation CD front mockup",
+  "summary": "CD edition of Cosmic Radiation by Noise Raid. Source metadata identifies it as a 15-track release, released September 16, 2022.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 95,
+  "release_date": "2022-09-16"
+}

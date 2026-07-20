@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "Idle Frenzy",
+  "group": "CDs",
+  "artist_or_label": "Celuta Red",
+  "image": "celuta-red-idle-frenzy-cd.jpg",
+  "image_alt": "Idle Frenzy CD front mockup",
+  "summary": "CD edition of Idle Frenzy by Celuta Red. Source metadata identifies it as a 7-track release, released May 11, 2018.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 80,
+  "release_date": "2018-05-11"
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "../../../.astro/collections/distro.schema.json",
+  "title": "form follows function",
+  "group": "CDs",
+  "artist_or_label": "Adolf plays the Jazz",
+  "image": "adolf-plays-the-jazz-form-follows-function-cd.jpg",
+  "image_alt": "form follows function CD front mockup",
+  "summary": "CD edition of form follows function by Adolf plays the Jazz. Source metadata identifies it as a 9-track release, released April 17, 2012.",
+  "eyebrow": "Distro",
+  "format": "CD",
+  "order": 81,
+  "release_date": "2012-04-17"
+}
