@@ -7,6 +7,12 @@ export type TraceEvent = {
   args?: { name?: string };
 };
 
+export type StoreActivationMilestones = {
+  clickToPricesSettledMs: number;
+  clickToStoreContentMs: number;
+  clickToVeilClosedMs: number;
+};
+
 type Interval = { end: number; start: number };
 
 function percentile(values: number[], fraction: number) {
@@ -22,6 +28,64 @@ export function summarize(values: number[]) {
     p95: percentile(values, 0.95),
     maximum: Math.max(0, ...values),
     total: values.reduce((sum, value) => sum + value, 0),
+  };
+}
+
+export function extractStoreActivationMilestones({
+  clickAt,
+  pricesSettledAt,
+  storeContentAt,
+  veilClosedAt,
+}: {
+  clickAt: number;
+  pricesSettledAt: number;
+  storeContentAt: number;
+  veilClosedAt: number;
+}): StoreActivationMilestones {
+  return {
+    clickToPricesSettledMs: pricesSettledAt - clickAt,
+    clickToStoreContentMs: storeContentAt - clickAt,
+    clickToVeilClosedMs: veilClosedAt - clickAt,
+  };
+}
+
+export function summarizeStoreActivationRuns(runs: Array<StoreActivationMilestones & { rejectionReasons: string[] }>) {
+  const accepted = runs.filter((run) => run.rejectionReasons.length === 0);
+  return {
+    acceptedRuns: accepted.length,
+    rejectedRuns: runs.length - accepted.length,
+    clickToPricesSettledMs: summarize(accepted.map((run) => run.clickToPricesSettledMs)),
+    clickToStoreContentMs: summarize(accepted.map((run) => run.clickToStoreContentMs)),
+    clickToVeilClosedMs: summarize(accepted.map((run) => run.clickToVeilClosedMs)),
+  };
+}
+
+export function storeActivationRejectionReasons({
+  cardCount,
+  expectedCardCount,
+  storeHtmlRequestStartMs,
+  visibilityState,
+}: {
+  cardCount: number;
+  expectedCardCount: number;
+  storeHtmlRequestStartMs: number | null;
+  visibilityState: string;
+}) {
+  const reasons: string[] = [];
+  if (visibilityState !== 'visible') reasons.push(`document visibility was ${visibilityState}`);
+  if (storeHtmlRequestStartMs === null) reasons.push('Store HTML request was not observed');
+  else if (storeHtmlRequestStartMs > 500)
+    reasons.push(`Store HTML request started after ${storeHtmlRequestStartMs} ms`);
+  if (cardCount !== expectedCardCount) reasons.push(`expected ${expectedCardCount} Store cards, found ${cardCount}`);
+  return reasons;
+}
+
+export function countStoreActivationRequests(urls: string[]) {
+  const pathnames = urls.map((url) => new URL(url, 'https://example.test').pathname);
+  return {
+    listingProjection: pathnames.filter((pathname) => pathname.endsWith('/api/store/listing-prices')).length,
+    perCardStoreOffer: pathnames.filter((pathname) => /\/api\/store\/items\/[^/]+\/?$/.test(pathname)).length,
+    storeHtml: pathnames.filter((pathname) => pathname.endsWith('/store/')).length,
   };
 }
 

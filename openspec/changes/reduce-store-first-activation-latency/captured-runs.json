@@ -1,0 +1,248 @@
+{
+  "schemaVersion": 1,
+  "measuredAt": "2026-07-20",
+  "productEnvironment": "UAT",
+  "deployedCommit": "2f703122c02bbbd302bb302a45f7fcc479b7ce5d",
+  "deploymentRun": "29722813234",
+  "storeCardCount": 104,
+  "milestoneUnit": "milliseconds",
+  "milestones": ["clickToStoreContent", "clickToVeilClosed", "clickToPricesSettled"],
+  "desktop": {
+    "requestedProfile": {
+      "viewport": "1440x900",
+      "devicePixelRatio": 1,
+      "cpuThrottling": 1,
+      "networkThrottling": "none",
+      "browserCache": "cleared"
+    },
+    "observedInnerWidth": 1441,
+    "pairs": [
+      {
+        "run": 1,
+        "order": "concurrent-baseline",
+        "baseline": {
+          "clickToStoreContent": 158.1,
+          "clickToVeilClosed": 339.9,
+          "clickToPricesSettled": 300.0
+        },
+        "concurrent": {
+          "clickToStoreContent": 157.8,
+          "clickToVeilClosed": 331.9,
+          "clickToPricesSettled": 176.5
+        }
+      },
+      {
+        "run": 2,
+        "order": "baseline-concurrent",
+        "baseline": {
+          "clickToStoreContent": 136.3,
+          "clickToVeilClosed": 353.1,
+          "clickToPricesSettled": 256.6
+        },
+        "concurrent": {
+          "clickToStoreContent": 130.5,
+          "clickToVeilClosed": 330.5,
+          "clickToPricesSettled": 151.8
+        }
+      },
+      {
+        "run": 3,
+        "order": "concurrent-baseline",
+        "baseline": {
+          "clickToStoreContent": 141.5,
+          "clickToVeilClosed": 335.1,
+          "clickToPricesSettled": 265.3
+        },
+        "concurrent": {
+          "clickToStoreContent": 130.0,
+          "clickToVeilClosed": 342.9,
+          "clickToPricesSettled": 148.7
+        }
+      },
+      {
+        "run": 4,
+        "order": "baseline-concurrent",
+        "baseline": {
+          "clickToStoreContent": 152.6,
+          "clickToVeilClosed": 341.0,
+          "clickToPricesSettled": 288.0
+        },
+        "concurrent": {
+          "clickToStoreContent": 168.2,
+          "clickToVeilClosed": 354.2,
+          "clickToPricesSettled": 191.0
+        }
+      },
+      {
+        "run": 5,
+        "order": "concurrent-baseline",
+        "baseline": {
+          "clickToStoreContent": 147.8,
+          "clickToVeilClosed": 331.9,
+          "clickToPricesSettled": 281.3
+        },
+        "concurrent": {
+          "clickToStoreContent": 133.5,
+          "clickToVeilClosed": 350.5,
+          "clickToPricesSettled": 153.6
+        }
+      }
+    ],
+    "aggregate": {
+      "baseline": {
+        "clickToStoreContent": {
+          "median": 147.8,
+          "p75": 152.6
+        },
+        "clickToVeilClosed": {
+          "median": 339.9,
+          "p75": 341.0
+        },
+        "clickToPricesSettled": {
+          "median": 281.3,
+          "p75": 288.0
+        }
+      },
+      "concurrent": {
+        "clickToStoreContent": {
+          "median": 133.5,
+          "p75": 157.8
+        },
+        "clickToVeilClosed": {
+          "median": 342.9,
+          "p75": 350.5
+        },
+        "clickToPricesSettled": {
+          "median": 153.6,
+          "p75": 176.5
+        }
+      },
+      "priceSettlementP75Improvement": {
+        "milliseconds": 111.5,
+        "percent": 38.72
+      },
+      "baselineDecompositionP75": {
+        "storeHtmlNetwork": 65.2,
+        "storeHtmlResponseToContent": 74.9,
+        "projectionStartAfterContent": 16.9,
+        "projectionNetwork": 114.4
+      },
+      "concurrentProjectionStartAfterClickP75": 16.5
+    }
+  },
+  "mobileStress": {
+    "requestedProfile": {
+      "viewport": "390x844",
+      "devicePixelRatio": 2,
+      "cpuThrottling": 4,
+      "roundTripLatencyMilliseconds": 150,
+      "downloadMegabitsPerSecond": 1.6,
+      "browserCache": "cleared"
+    },
+    "observedInnerWidth": 391,
+    "pairs": [
+      {
+        "run": 1,
+        "order": "baseline-concurrent",
+        "baseline": {
+          "clickToStoreContent": 1057.3,
+          "clickToVeilClosed": 1259.0,
+          "clickToPricesSettled": 1713.8
+        },
+        "concurrent": {
+          "clickToStoreContent": 1017.2,
+          "clickToVeilClosed": 1237.5,
+          "clickToPricesSettled": 1072.3
+        }
+      },
+      {
+        "run": 2,
+        "order": "baseline-concurrent",
+        "baseline": {
+          "clickToStoreContent": 1036.5,
+          "clickToVeilClosed": 1238.4,
+          "clickToPricesSettled": 1664.2
+        },
+        "concurrent": {
+          "clickToStoreContent": 1021.6,
+          "clickToVeilClosed": 1228.6,
+          "clickToPricesSettled": 1077.5
+        }
+      },
+      {
+        "run": 3,
+        "order": "baseline-concurrent",
+        "baseline": {
+          "clickToStoreContent": 991.1,
+          "clickToVeilClosed": 1192.0,
+          "clickToPricesSettled": 1631.0
+        },
+        "concurrent": {
+          "clickToStoreContent": 1005.5,
+          "clickToVeilClosed": 1194.4,
+          "clickToPricesSettled": 1032.9
+        }
+      }
+    ],
+    "aggregate": {
+      "baseline": {
+        "clickToStoreContent": {
+          "median": 1036.5,
+          "p75": 1046.9
+        },
+        "clickToVeilClosed": {
+          "median": 1238.4,
+          "p75": 1248.7
+        },
+        "clickToPricesSettled": {
+          "median": 1664.2,
+          "p75": 1689.0
+        }
+      },
+      "concurrent": {
+        "clickToStoreContent": {
+          "median": 1017.2,
+          "p75": 1019.4
+        },
+        "clickToVeilClosed": {
+          "median": 1228.6,
+          "p75": 1233.05
+        },
+        "clickToPricesSettled": {
+          "median": 1072.3,
+          "p75": 1074.9
+        }
+      },
+      "priceSettlementP75Improvement": {
+        "milliseconds": 614.1,
+        "percent": 36.36
+      },
+      "baselineDecompositionP75": {
+        "storeHtmlNetwork": 593.3,
+        "storeHtmlResponseToContent": 441.3,
+        "projectionStartAfterContent": 42.85,
+        "projectionNetwork": 592.3
+      },
+      "concurrentProjectionStartAfterClickP75": 24.25
+    }
+  },
+  "requestInvariants": {
+    "formalActivations": 16,
+    "listingProjectionRequestsPerActivation": 1,
+    "perCardStoreOfferReadsPerActivation": 0,
+    "cardsRenderedPerActivation": 104,
+    "listingRecordsSettledPerActivation": 104,
+    "storeRelatedRequestErrors": 0,
+    "commerceMutations": 0
+  },
+  "excludedDiagnostics": [
+    {
+      "profile": "mobile-stress",
+      "reason": "Hidden-tab requestAnimationFrame throttling delayed click to Store HTML request start by 1.3-2.3 seconds."
+    },
+    {
+      "profile": "desktop-pilot",
+      "reason": "Non-counterbalanced pilot contained a 899.6 ms projection response and a following 710.7 ms content outlier; retained as diagnostic only, not used for the formal comparison."
+    }
+  ]
+}

@@ -31,6 +31,7 @@ function createOptions(overrides: Partial<OpenShellSectionNavigationOptions> = {
     hasOverlayState: vi.fn(() => false),
     href: 'https://example.test/blackbox-records/artists/',
     navigateDocumentTo: vi.fn(),
+    onSectionActivationStart: vi.fn(),
     pushShellSectionHistoryState: vi.fn(),
     replaceShellSectionHistoryState: vi.fn(),
     scrollShellViewportToTarget: vi.fn(() => false),
@@ -63,6 +64,7 @@ describe('shell section navigation', () => {
 
     expect(options.cacheDocumentSnapshot).not.toHaveBeenCalled();
     expect(options.shellPageLoader.fetchSnapshot).not.toHaveBeenCalled();
+    expect(options.onSectionActivationStart).not.toHaveBeenCalled();
     expect(options.navigateDocumentTo).not.toHaveBeenCalled();
   });
 
@@ -81,12 +83,15 @@ describe('shell section navigation', () => {
       'https://example.test/blackbox-records/releases/',
     );
     expect(options.shellPageLoader.fetchSnapshot).not.toHaveBeenCalled();
+    expect(options.onSectionActivationStart).not.toHaveBeenCalled();
   });
 
   it('fetches uncached shell section snapshots through transition, history, and scroll reset', async () => {
     const sourceElement = {} as HTMLElement;
+    const finishSectionActivation = vi.fn();
     const options = createOptions({
       historyMode: 'push',
+      onSectionActivationStart: vi.fn(() => finishSectionActivation),
       source: 'header',
       sourceElement,
     });
@@ -95,6 +100,11 @@ describe('shell section navigation', () => {
 
     expect(options.shellPageLoader.getCachedSnapshot).toHaveBeenCalledWith('/artists/');
     expect(options.setIsRouteLoading).toHaveBeenCalledWith(true);
+    expect(options.onSectionActivationStart).toHaveBeenCalledWith({
+      cached: false,
+      kind: 'artists',
+      pathname: '/artists/',
+    });
     expect(options.shellSectionTransition.begin).toHaveBeenCalledWith('Artists', 'header');
     expect(options.waitForAnimationFrames).toHaveBeenCalledWith(2);
     expect(options.shellPageLoader.fetchSnapshot).toHaveBeenCalledWith(
@@ -111,6 +121,7 @@ describe('shell section navigation', () => {
     expect(options.triggerShellPageEnterTransition).toHaveBeenCalledTimes(1);
     expect(options.shellSectionTransition.finish).toHaveBeenCalledWith(7);
     expect(options.stopRouteLoadingSoon).toHaveBeenCalledTimes(1);
+    expect(finishSectionActivation).toHaveBeenCalledWith('complete');
     expect(options.activeAbortControllerRef.current).toBeNull();
   });
 
@@ -131,7 +142,9 @@ describe('shell section navigation', () => {
 
   it('uses cached snapshots without starting the route loading state', async () => {
     const cachedSnapshot = createSnapshot('/artists/');
+    const finishSectionActivation = vi.fn();
     const options = createOptions({
+      onSectionActivationStart: vi.fn(() => finishSectionActivation),
       shellPageLoader: {
         fetchSnapshot: vi.fn(),
         getCachedSnapshot: vi.fn(() => cachedSnapshot),
@@ -141,20 +154,66 @@ describe('shell section navigation', () => {
     await expect(openShellSectionNavigation(options)).resolves.toBe(true);
 
     expect(options.setIsRouteLoading).not.toHaveBeenCalled();
+    expect(options.onSectionActivationStart).toHaveBeenCalledWith({
+      cached: true,
+      kind: 'artists',
+      pathname: '/artists/',
+    });
     expect(options.shellPageLoader.fetchSnapshot).not.toHaveBeenCalled();
     expect(options.applyShellPageSnapshot).toHaveBeenCalledWith(cachedSnapshot);
+    expect(finishSectionActivation).toHaveBeenCalledWith('complete');
   });
 
   it('falls back to document navigation when applying the snapshot fails', async () => {
+    const finishSectionActivation = vi.fn();
     const options = createOptions({
       applyShellPageSnapshot: vi.fn(() => false),
+      onSectionActivationStart: vi.fn(() => finishSectionActivation),
     });
 
     await expect(openShellSectionNavigation(options)).resolves.toBe(false);
 
     expect(options.shellSectionTransition.reset).toHaveBeenCalledTimes(1);
     expect(options.navigateDocumentTo).toHaveBeenCalledWith('https://example.test/blackbox-records/artists/');
+    expect(finishSectionActivation).toHaveBeenCalledWith('failed');
     expect(options.stopRouteLoadingSoon).toHaveBeenCalledTimes(1);
+  });
+
+  it('aborts and finishes a superseded activation without applying its snapshot', async () => {
+    const previousAbortController = new AbortController();
+    const finishSectionActivation = vi.fn();
+    const options = createOptions({
+      activeAbortControllerRef: { current: previousAbortController },
+      onSectionActivationStart: vi.fn(() => finishSectionActivation),
+      shellPageLoader: {
+        fetchSnapshot: vi.fn(async (_pathname, _href, signal) => {
+          signal?.throwIfAborted();
+          return createSnapshot('/artists/');
+        }),
+        getCachedSnapshot: vi.fn(() => null),
+      },
+    });
+
+    await expect(openShellSectionNavigation(options)).resolves.toBe(true);
+
+    expect(previousAbortController.signal.aborted).toBe(true);
+    expect(finishSectionActivation).toHaveBeenCalledWith('complete');
+  });
+
+  it('reports an activation aborted during the transition and does not apply its snapshot', async () => {
+    const activeAbortControllerRef = { current: null as AbortController | null };
+    const finishSectionActivation = vi.fn();
+    const options = createOptions({
+      activeAbortControllerRef,
+      onSectionActivationStart: vi.fn(() => finishSectionActivation),
+      waitForAnimationFrames: vi.fn(async () => activeAbortControllerRef.current?.abort()),
+    });
+
+    await expect(openShellSectionNavigation(options)).resolves.toBe(true);
+
+    expect(options.applyShellPageSnapshot).not.toHaveBeenCalled();
+    expect(options.navigateDocumentTo).not.toHaveBeenCalled();
+    expect(finishSectionActivation).toHaveBeenCalledWith('aborted');
   });
 
   it('collapses overlay history before section navigation', async () => {

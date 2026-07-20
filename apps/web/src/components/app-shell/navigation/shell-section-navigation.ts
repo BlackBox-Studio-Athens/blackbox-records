@@ -1,4 +1,4 @@
-import { normalizeAppPathname, parseShellSectionRoute } from '@/lib/app-shell/routing';
+import { normalizeAppPathname, parseShellSectionRoute, type ShellSectionRoute } from '@/lib/app-shell/routing';
 
 import {
   markCurrentHistoryEntryForShellSection,
@@ -24,6 +24,14 @@ type ShellSectionTransitionController = {
   reset: () => void;
 };
 
+export type ShellSectionActivationOutcome = 'aborted' | 'complete' | 'failed';
+
+type ShellSectionActivation = {
+  cached: boolean;
+  kind: ShellSectionRoute['kind'];
+  pathname: string;
+};
+
 export type OpenShellSectionNavigationOptions = {
   activeAbortControllerRef: MutableRef<AbortController | null>;
   applyShellPageSnapshot: (pageSnapshot: ShellPageSnapshot) => boolean;
@@ -35,6 +43,9 @@ export type OpenShellSectionNavigationOptions = {
   historyMode?: 'push' | 'replace' | 'none' | undefined;
   href: string;
   navigateDocumentTo: (href: string) => void;
+  onSectionActivationStart?:
+    | ((activation: ShellSectionActivation) => ((outcome: ShellSectionActivationOutcome) => void) | undefined)
+    | undefined;
   pushShellSectionHistoryState?: ((pathname: string, href: string) => void) | undefined;
   replaceShellSectionHistoryState?: ((pathname: string, href: string) => void) | undefined;
   scrollShellViewportToTarget: (targetId: string, sourceElement?: HTMLElement | null) => boolean;
@@ -61,6 +72,7 @@ export async function openShellSectionNavigation({
   historyMode,
   href,
   navigateDocumentTo,
+  onSectionActivationStart,
   pushShellSectionHistoryState = pushBrowserShellSectionHistoryState,
   replaceShellSectionHistoryState = markCurrentHistoryEntryForShellSection,
   scrollShellViewportToTarget,
@@ -106,6 +118,12 @@ export async function openShellSectionNavigation({
   activeAbortControllerRef.current = abortController;
 
   const cachedSnapshot = shellPageLoader.getCachedSnapshot(route.pathname);
+  const finishSectionActivation = onSectionActivationStart?.({
+    cached: Boolean(cachedSnapshot),
+    kind: route.kind,
+    pathname: route.pathname,
+  });
+  let activationOutcome: ShellSectionActivationOutcome = 'aborted';
   if (!cachedSnapshot) {
     setIsRouteLoading(true);
   }
@@ -136,6 +154,7 @@ export async function openShellSectionNavigation({
     await scrollToDestination();
     triggerShellPageEnterTransition();
     await shellSectionTransition.finish(sectionTransitionToken);
+    activationOutcome = 'complete';
 
     return true;
   } catch {
@@ -144,9 +163,11 @@ export async function openShellSectionNavigation({
     }
 
     shellSectionTransition.reset();
+    activationOutcome = 'failed';
     navigateDocumentTo(resolvedUrl.toString());
     return false;
   } finally {
+    finishSectionActivation?.(activationOutcome);
     if (activeAbortControllerRef.current === abortController) {
       activeAbortControllerRef.current = null;
     }

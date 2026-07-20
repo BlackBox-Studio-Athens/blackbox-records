@@ -1,4 +1,5 @@
 export const ROUTE_LOADING_RESET_DELAY_MS = 120;
+export const STORE_LOADING_FEEDBACK_DELAY_MS = 750;
 
 type MutableTimerRef = {
   current: number | null;
@@ -30,6 +31,24 @@ export function scheduleRouteLoadingStop({
   clearRouteLoadingTimer(timerRef, scheduler);
   timerRef.current = scheduler.setTimeout(() => {
     setRouteLoading(false);
+    timerRef.current = null;
+  }, delay);
+}
+
+export function scheduleDelayedRouteLoadingStart({
+  delay = STORE_LOADING_FEEDBACK_DELAY_MS,
+  scheduler,
+  setRouteLoading,
+  timerRef,
+}: {
+  delay?: number;
+  scheduler: RouteLoadingScheduler;
+  setRouteLoading: (loading: boolean) => void;
+  timerRef: MutableTimerRef;
+}) {
+  clearRouteLoadingTimer(timerRef, scheduler);
+  timerRef.current = scheduler.setTimeout(() => {
+    setRouteLoading(true);
     timerRef.current = null;
   }, delay);
 }

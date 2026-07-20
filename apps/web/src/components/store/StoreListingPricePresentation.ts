@@ -49,11 +49,11 @@ export function connectStoreListingPricePresentation({
   return () => abortController.abort();
 }
 
-async function readPublicStoreListingPrices(signal: AbortSignal): Promise<PublicStoreListingPrice[]> {
+export async function readPublicStoreListingPrices(signal?: AbortSignal): Promise<PublicStoreListingPrice[]> {
   const backendBaseUrl = resolvePublicCheckoutApiBaseUrl().replace(/\/$/, '');
   const response = await fetch(`${backendBaseUrl}/api/store/listing-prices`, {
     headers: { accept: 'application/json' },
-    signal,
+    signal: signal ?? null,
   });
 
   if (!response.ok) throw new Error(`Listing-price request failed with HTTP ${response.status}.`);

@@ -24,6 +24,7 @@ function createOptions(overrides: Partial<Parameters<typeof restoreCachedShellPa
   return {
     applyShellPageSnapshot: vi.fn(() => true),
     getCachedSnapshot: vi.fn(() => createSnapshot('/releases/')),
+    onSectionActivationStart: vi.fn(),
     pathname: '/releases/',
     scrollShellViewportToTop: vi.fn(async () => undefined),
     shellSectionTransition: {
@@ -48,26 +49,36 @@ describe('cached shell page restoration', () => {
 
     expect(options.applyShellPageSnapshot).not.toHaveBeenCalled();
     expect(options.shellSectionTransition.begin).not.toHaveBeenCalled();
+    expect(options.onSectionActivationStart).not.toHaveBeenCalled();
     expect(options.stopRouteLoadingSoon).not.toHaveBeenCalled();
   });
 
   it('applies a cached shell section snapshot through the section transition', async () => {
-    const options = createOptions();
+    const finishSectionActivation = vi.fn();
+    const options = createOptions({ onSectionActivationStart: vi.fn(() => finishSectionActivation) });
 
     await expect(restoreCachedShellPageSnapshot(options)).resolves.toBe(true);
 
     expect(options.shellSectionTransition.begin).toHaveBeenCalledWith('Releases', 'history');
     expect(options.waitForAnimationFrames).toHaveBeenCalledWith(2);
+    expect(options.onSectionActivationStart).toHaveBeenCalledWith({
+      cached: true,
+      kind: 'releases',
+      pathname: '/releases/',
+    });
     expect(options.applyShellPageSnapshot).toHaveBeenCalledWith(createSnapshot('/releases/'));
     expect(options.scrollShellViewportToTop).toHaveBeenCalledTimes(1);
     expect(options.triggerShellPageEnterTransition).toHaveBeenCalledTimes(1);
     expect(options.shellSectionTransition.finish).toHaveBeenCalledWith(7);
     expect(options.stopRouteLoadingSoon).toHaveBeenCalledTimes(1);
+    expect(finishSectionActivation).toHaveBeenCalledWith('complete');
   });
 
   it('resets the section transition when the cached snapshot cannot be applied', async () => {
+    const finishSectionActivation = vi.fn();
     const options = createOptions({
       applyShellPageSnapshot: vi.fn(() => false),
+      onSectionActivationStart: vi.fn(() => finishSectionActivation),
     });
 
     await expect(restoreCachedShellPageSnapshot(options)).resolves.toBe(false);
@@ -75,6 +86,7 @@ describe('cached shell page restoration', () => {
     expect(options.shellSectionTransition.reset).toHaveBeenCalledTimes(1);
     expect(options.scrollShellViewportToTop).not.toHaveBeenCalled();
     expect(options.stopRouteLoadingSoon).not.toHaveBeenCalled();
+    expect(finishSectionActivation).toHaveBeenCalledWith('failed');
   });
 
   it('restores non-section cached snapshots without the section transition', async () => {
@@ -86,6 +98,7 @@ describe('cached shell page restoration', () => {
     await expect(restoreCachedShellPageSnapshot(options)).resolves.toBe(true);
 
     expect(options.shellSectionTransition.begin).not.toHaveBeenCalled();
+    expect(options.onSectionActivationStart).not.toHaveBeenCalled();
     expect(options.waitForAnimationFrames).not.toHaveBeenCalled();
     expect(options.applyShellPageSnapshot).toHaveBeenCalledWith(createSnapshot('/legacy-page/'));
     expect(options.shellSectionTransition.finish).not.toHaveBeenCalled();

@@ -27,9 +27,19 @@ import {
   triggerShellPageEnterTransition,
 } from '@/components/app-shell/navigation/shell-transition';
 import { createProjectRelativeUrl } from '@/config/site';
-import { normalizeAppPathname } from '@/lib/app-shell/routing';
+import { normalizeAppPathname, type ShellSectionRoute } from '@/lib/app-shell/routing';
 import { parseShellSectionRoute } from '@/lib/app-shell/routing';
-import { connectStoreListingPricePresentation } from '@/components/store/StoreListingPricePresentation';
+import {
+  connectStoreListingPricePresentation,
+  readPublicStoreListingPrices,
+} from '@/components/store/StoreListingPricePresentation';
+import {
+  clearStoreListingPriceActivation,
+  getPreparedStoreListingPriceReader,
+  prepareStoreListingPriceActivation,
+  type StoreListingPriceActivationState,
+} from './store-listing-price-activation';
+import { Spinner } from '@/components/ui/spinner';
 import type { SiteNavigationItem } from '@/lib/site-data';
 import type { StoreCartState } from '@/lib/store-cart';
 import { createOverlayFragmentLoader } from './overlay/overlay-fragment-loader';
@@ -39,6 +49,7 @@ import {
 } from './overlay/overlay-history';
 import {
   clearRouteLoadingTimer as clearScheduledRouteLoadingTimer,
+  scheduleDelayedRouteLoadingStart,
   scheduleRouteLoadingStop,
 } from './navigation/route-loading-indicator';
 import { syncShellBodyStateClasses } from './dom/shell-body-state';
@@ -49,7 +60,7 @@ import { openShellOverlayNavigation, type ShellOverlayState } from './overlay/sh
 import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './overlay/shell-overlay-focus';
 import { createShellPlayerSessionController } from './player-shell/shell-player-session-controller';
 import { syncShellRenderedNavigationState } from './navigation/shell-rendered-navigation-state';
-import { openShellSectionNavigation } from './navigation/shell-section-navigation';
+import { openShellSectionNavigation, type ShellSectionActivationOutcome } from './navigation/shell-section-navigation';
 import { enableManualShellScrollRestoration } from './navigation/shell-scroll-restoration';
 import { scrollShellTargetIntoView } from './navigation/shell-target-scroll';
 import ShellPortalOutlets from './view/ShellPortalOutlets';
@@ -79,6 +90,7 @@ export default function AppShellRoot({
   const [activeShellPathname, setActiveShellPathname] = useState(() => normalizeAppPathname(initialPathname));
   const [overlayState, setOverlayState] = useState<OverlayState | null>(null);
   const [isRouteLoading, setIsRouteLoading] = useState(false);
+  const [isStoreLoadingFeedbackVisible, setIsStoreLoadingFeedbackVisible] = useState(false);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [isPlayerLoading, setIsPlayerLoading] = useState(false);
   const [playerProviders, setPlayerProviders] = useState<PlayerProvider[]>([]);
@@ -129,6 +141,11 @@ export default function AppShellRoot({
   const providerSelectionByReleaseIdRef = useRef(new Map<string, PlayerProviderId>());
   const warmedOriginsRef = useRef(new Set<string>());
   const routeLoadingTimerRef = useRef<number | null>(null);
+  const storeLoadingFeedbackTimerRef = useRef<number | null>(null);
+  const storeListingPriceActivationStateRef = useRef<StoreListingPriceActivationState>({
+    current: null,
+    generation: 0,
+  });
   const shellPageTransitionFrameRef = useRef<number | null>(null);
   const shellPageTransitionTimerRef = useRef<number | null>(null);
   const shellSectionTransitionTokenRef = useRef(0);
@@ -282,7 +299,12 @@ export default function AppShellRoot({
     if (typeof window === 'undefined') return;
 
     if (parseShellSectionRoute(activeShellPathname)?.kind !== 'store') return;
-    return connectStoreListingPricePresentation({ root: document });
+    return connectStoreListingPricePresentation({
+      readListingPrices:
+        getPreparedStoreListingPriceReader(storeListingPriceActivationStateRef.current, activeShellPathname) ??
+        readPublicStoreListingPrices,
+      root: document,
+    });
   }, [activeShellPathname]);
 
   useEffect(() => {
@@ -359,6 +381,47 @@ export default function AppShellRoot({
     });
   }
 
+  function clearStoreLoadingFeedback() {
+    clearScheduledRouteLoadingTimer(storeLoadingFeedbackTimerRef, window);
+    setIsStoreLoadingFeedbackVisible(false);
+  }
+
+  function startShellSectionActivation({
+    cached,
+    kind,
+    pathname,
+  }: {
+    cached: boolean;
+    kind: ShellSectionRoute['kind'];
+    pathname: string;
+  }) {
+    clearStoreLoadingFeedback();
+    clearStoreListingPriceActivation(storeListingPriceActivationStateRef.current);
+    if (kind !== 'store') return undefined;
+
+    const activation = prepareStoreListingPriceActivation({
+      pathname,
+      readListingPrices: readPublicStoreListingPrices,
+      state: storeListingPriceActivationStateRef.current,
+    });
+    if (!cached) {
+      scheduleDelayedRouteLoadingStart({
+        scheduler: window,
+        setRouteLoading: setIsStoreLoadingFeedbackVisible,
+        timerRef: storeLoadingFeedbackTimerRef,
+      });
+    }
+
+    return (outcome: ShellSectionActivationOutcome) => {
+      if (storeListingPriceActivationStateRef.current.current?.generation === activation.generation) {
+        clearStoreLoadingFeedback();
+      }
+      if (outcome !== 'complete') {
+        clearStoreListingPriceActivation(storeListingPriceActivationStateRef.current, activation.generation);
+      }
+    };
+  }
+
   const {
     applyPlayerProvider,
     closePlayerModal,
@@ -422,6 +485,7 @@ export default function AppShellRoot({
       navigateDocumentTo: (nextHref) => {
         window.location.assign(nextHref);
       },
+      onSectionActivationStart: startShellSectionActivation,
       scrollShellViewportToTarget: scrollToTargetId,
       scrollShellViewportToTop: (scrollOptions) =>
         scrollShellViewportToTop({
@@ -443,6 +507,7 @@ export default function AppShellRoot({
     return restoreCachedShellPageSnapshot({
       applyShellPageSnapshot,
       getCachedSnapshot: shellPageLoader.getCachedSnapshot,
+      onSectionActivationStart: startShellSectionActivation,
       pathname,
       scrollShellViewportToTop: () => scrollShellViewportToTop({ getMainElement: getCurrentMainElement }),
       shellSectionTransition,
@@ -561,6 +626,8 @@ export default function AppShellRoot({
     return () => {
       disconnectShellDocumentListeners();
       clearRouteLoadingTimer();
+      clearScheduledRouteLoadingTimer(storeLoadingFeedbackTimerRef, window);
+      clearStoreListingPriceActivation(storeListingPriceActivationStateRef.current);
       clearShellPageTransition(shellPageTransition);
       shellSectionTransition.reset();
       overlayAbortControllerRef.current?.abort();
@@ -624,12 +691,21 @@ export default function AppShellRoot({
       <div
         className="app-shell-route-loading-indicator"
         data-state={isRouteLoading ? 'open' : 'closed'}
+        data-store-feedback-state={isStoreLoadingFeedbackVisible ? 'open' : 'closed'}
         role="status"
         aria-live="polite"
         aria-atomic="true"
       >
-        <span className="accessibility-visually-hidden-text">{isRouteLoading ? 'Loading section' : ''}</span>
+        <span className="accessibility-visually-hidden-text">
+          {isRouteLoading && !isStoreLoadingFeedbackVisible ? 'Loading section' : ''}
+        </span>
         <span className="app-shell-route-loading-indicator__bar" aria-hidden="true"></span>
+        {isStoreLoadingFeedbackVisible && (
+          <span className="fixed left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 border border-white/20 bg-black/85 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white shadow-lg">
+            <Spinner className="size-4" />
+            <span>Loading Store</span>
+          </span>
+        )}
       </div>
 
       <div

@@ -1,11 +1,26 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
-import { chromium, type BrowserContext, type CDPSession, type Page } from 'playwright';
+import { chromium, type BrowserContext, type CDPSession, type Page, type Request } from 'playwright';
 
-import { summarize, summarizeTrace, type TraceEvent } from './runtime-performance-helpers';
+import {
+  countStoreActivationRequests,
+  extractStoreActivationMilestones,
+  storeActivationRejectionReasons,
+  summarize,
+  summarizeStoreActivationRuns,
+  summarizeTrace,
+  type TraceEvent,
+} from './runtime-performance-helpers';
 
-type Profile = 'desktop-load' | 'mobile-load' | 'wide-scroll' | 'mobile-scroll' | 'legacy-scroll';
+type Profile =
+  | 'desktop-load'
+  | 'desktop-store-activation'
+  | 'legacy-scroll'
+  | 'mobile-load'
+  | 'mobile-scroll'
+  | 'mobile-store-activation'
+  | 'wide-scroll';
 
 const args = new Map(
   process.argv.slice(2).map((argument) => {
@@ -16,12 +31,16 @@ const args = new Map(
 const profile = (args.get('profile') ?? 'desktop-load') as Profile;
 const baseUrl = args.get('base-url') ?? 'http://127.0.0.1:4321/blackbox-records/';
 const routes = (args.get('routes') ?? 'home,store,store/distro').split(/[,\s]+/);
-const runs = Number(args.get('runs') ?? (profile === 'desktop-load' ? 5 : 3));
+const runs = Number(args.get('runs') ?? (profile.startsWith('desktop-') ? 5 : 3));
 const output = args.get('output') ?? `.codex-artifacts/runtime-performance/${Date.now()}-${profile}.json`;
 const blockThirdPartyAnalytics = args.get('block-third-party-analytics') === 'true';
+const expectedStoreCardCount = Number(args.get('store-card-count') ?? 104);
+const productEnvironment = args.get('product-environment') ?? 'Local';
+const STORE_ACTIVATION_TIMEOUT_MS = 120_000;
 
 const profiles = {
   'desktop-load': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 1 },
+  'desktop-store-activation': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 1 },
   'mobile-load': {
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
@@ -30,6 +49,12 @@ const profiles = {
   },
   'wide-scroll': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 4, step: 24, frames: 360 },
   'mobile-scroll': { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, cpu: 4, step: 24, frames: 300 },
+  'mobile-store-activation': {
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    cpu: 4,
+    network: { latency: 150, downloadThroughput: 200_000, uploadThroughput: 93_750 },
+  },
   'legacy-scroll': { viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, cpu: 4, step: 48, frames: 240 },
 } as const;
 
@@ -148,6 +173,161 @@ async function loadRun(page: Page, cdp: CDPSession, url: string) {
   };
 }
 
+type StoreRequestKind = 'listing-projection' | 'per-card-store-offer' | 'store-html';
+
+function classifyStoreRequest(request: Request): StoreRequestKind | null {
+  const pathname = new URL(request.url()).pathname;
+  if (pathname.endsWith('/api/store/listing-prices')) return 'listing-projection';
+  if (/\/api\/store\/items\/[^/]+\/?$/.test(pathname)) return 'per-card-store-offer';
+  if (request.resourceType() === 'fetch' && pathname.endsWith('/store/')) return 'store-html';
+  return null;
+}
+
+async function storeActivationRun(page: Page, cdp: CDPSession, browserVersion: string) {
+  const requests: Array<{
+    cacheControl?: string | null;
+    error?: string | null;
+    kind: StoreRequestKind;
+    responseMs?: number;
+    startMs: number;
+    status?: number;
+    url: string;
+  }> = [];
+  const requestsByObject = new Map<Request, (typeof requests)[number]>();
+  const responseTasks: Promise<void>[] = [];
+  const consoleErrors: string[] = [];
+  let clickAt: number | null = null;
+
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+  page.on('request', (request) => {
+    if (clickAt === null) return;
+    const kind = classifyStoreRequest(request);
+    if (!kind) return;
+    const record = { kind, startMs: performance.now() - clickAt, url: request.url() };
+    requests.push(record);
+    requestsByObject.set(request, record);
+  });
+  page.on('requestfailed', (request) => {
+    const record = requestsByObject.get(request);
+    if (record) record.error = request.failure()?.errorText ?? 'request failed';
+  });
+  page.on('response', (response) => {
+    const record = requestsByObject.get(response.request());
+    if (!record || clickAt === null) return;
+    responseTasks.push(
+      (async () => {
+        record.responseMs = performance.now() - clickAt!;
+        record.status = response.status();
+        record.cacheControl = await response.headerValue('cache-control');
+      })(),
+    );
+  });
+
+  await cdp.send('Network.enable');
+  await cdp.send('Network.clearBrowserCache');
+  await page.goto(routeUrl('home'), { waitUntil: 'load' });
+  await page.waitForFunction(
+    () => document.querySelector('astro-island[component-url*="AppShellRoot"]:not([ssr])') !== null,
+    undefined,
+    { timeout: STORE_ACTIVATION_TIMEOUT_MS },
+  );
+  await page.evaluate(
+    () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+  );
+  const storeLink = page.locator('[data-store-navigation-link="true"]').first();
+  await storeLink.waitFor({ state: 'attached' });
+
+  clickAt = performance.now();
+  const veilClosedAt = page
+    .waitForFunction(
+      () => document.querySelector('.app-shell-section-transition-veil')?.getAttribute('data-state') !== 'closed',
+      undefined,
+      { polling: 'raf', timeout: STORE_ACTIVATION_TIMEOUT_MS },
+    )
+    .then(() =>
+      page.waitForFunction(
+        () => document.querySelector('.app-shell-section-transition-veil')?.getAttribute('data-state') === 'closed',
+        undefined,
+        { polling: 'raf', timeout: STORE_ACTIVATION_TIMEOUT_MS },
+      ),
+    )
+    .then(() => performance.now());
+  const storeContentAt = page
+    .waitForFunction(
+      (expectedCount) =>
+        location.pathname.endsWith('/store/') &&
+        document.querySelectorAll('[data-store-listing-price]').length === expectedCount,
+      expectedStoreCardCount,
+      { polling: 'raf', timeout: STORE_ACTIVATION_TIMEOUT_MS },
+    )
+    .then(() => performance.now());
+  const pricesSettledAt = page
+    .waitForFunction(
+      (expectedCount) => {
+        const prices = [...document.querySelectorAll('[data-store-listing-price]')];
+        return (
+          prices.length === expectedCount &&
+          prices.every((price) => price.getAttribute('data-store-listing-price-state') !== 'loading')
+        );
+      },
+      expectedStoreCardCount,
+      { polling: 'raf', timeout: STORE_ACTIVATION_TIMEOUT_MS },
+    )
+    .then(() => performance.now());
+
+  await storeLink.evaluate((element: HTMLElement) => element.click());
+  const [storeContentTimestamp, veilClosedTimestamp, pricesSettledTimestamp] = await Promise.all([
+    storeContentAt,
+    veilClosedAt,
+    pricesSettledAt,
+  ]);
+  await Promise.all(responseTasks);
+
+  const browserState = await page.evaluate(() => {
+    const prices = [...document.querySelectorAll('[data-store-listing-price]')];
+    return {
+      cardCount: prices.length,
+      documentHasFocus: document.hasFocus(),
+      settledPriceCount: prices.filter((price) => price.getAttribute('data-store-listing-price-state') !== 'loading')
+        .length,
+      visibilityState: document.visibilityState,
+    };
+  });
+  const milestones = extractStoreActivationMilestones({
+    clickAt,
+    pricesSettledAt: pricesSettledTimestamp,
+    storeContentAt: storeContentTimestamp,
+    veilClosedAt: veilClosedTimestamp,
+  });
+  const requestCounts = countStoreActivationRequests(requests.map((request) => request.url));
+  const storeHtmlRequest = requests.find((request) => request.kind === 'store-html');
+  const listingProjectionRequest = requests.find((request) => request.kind === 'listing-projection');
+
+  return {
+    ...milestones,
+    ...browserState,
+    browserVersion,
+    consoleErrors,
+    listingProjectionRequest,
+    rejectionReasons: storeActivationRejectionReasons({
+      cardCount: browserState.cardCount,
+      expectedCardCount: expectedStoreCardCount,
+      storeHtmlRequestStartMs: storeHtmlRequest?.startMs ?? null,
+      visibilityState: browserState.visibilityState,
+    }),
+    requestCounts,
+    requests,
+    responseToStoreContentMs:
+      storeHtmlRequest?.responseMs === undefined
+        ? null
+        : milestones.clickToStoreContentMs - storeHtmlRequest.responseMs,
+    storeHtmlRequest,
+    storeRequestErrors: requests.filter((request) => request.error || (request.status ?? 0) >= 400),
+  };
+}
+
 async function scrollTraversal(page: Page, cdp: CDPSession, label: 'first' | 'repeat') {
   const settings = profiles[profile] as (typeof profiles)['wide-scroll'];
   await page.evaluate(() => {
@@ -187,7 +367,7 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const results = [];
   try {
-    for (const route of routes) {
+    if (profile.endsWith('store-activation')) {
       for (let run = 1; run <= runs; run += 1) {
         const settings = profiles[profile];
         const context = await browser.newContext({
@@ -196,20 +376,34 @@ async function main() {
         });
         const page = await context.newPage();
         const cdp = await configure(context, page);
-        const url = routeUrl(route);
-        if (profile.endsWith('load')) {
-          results.push({ route, run, profile, result: await loadRun(page, cdp, url) });
-        } else {
-          await page.goto(url, { waitUntil: 'networkidle' });
-          await page.addStyleTag({ content: 'html { scroll-behavior: auto !important; }' });
-          await page.evaluate(() => window.scrollTo(0, 0));
-          const first = await scrollTraversal(page, cdp, 'first');
-          await page.evaluate(() => window.scrollTo(0, 0));
-          await page.waitForTimeout(500);
-          const repeat = profile === 'legacy-scroll' ? null : await scrollTraversal(page, cdp, 'repeat');
-          results.push({ route, run, profile, first, repeat });
-        }
+        results.push({ run, profile, result: await storeActivationRun(page, cdp, browser.version()) });
         await context.close();
+      }
+    } else {
+      for (const route of routes) {
+        for (let run = 1; run <= runs; run += 1) {
+          const settings = profiles[profile];
+          const context = await browser.newContext({
+            viewport: settings.viewport,
+            deviceScaleFactor: settings.deviceScaleFactor,
+          });
+          const page = await context.newPage();
+          const cdp = await configure(context, page);
+          const url = routeUrl(route);
+          if (profile.endsWith('load')) {
+            results.push({ route, run, profile, result: await loadRun(page, cdp, url) });
+          } else {
+            await page.goto(url, { waitUntil: 'networkidle' });
+            await page.addStyleTag({ content: 'html { scroll-behavior: auto !important; }' });
+            await page.evaluate(() => window.scrollTo(0, 0));
+            const first = await scrollTraversal(page, cdp, 'first');
+            await page.evaluate(() => window.scrollTo(0, 0));
+            await page.waitForTimeout(500);
+            const repeat = profile === 'legacy-scroll' ? null : await scrollTraversal(page, cdp, 'repeat');
+            results.push({ route, run, profile, first, repeat });
+          }
+          await context.close();
+        }
       }
     }
   } finally {
@@ -219,7 +413,7 @@ async function main() {
   await mkdir(dirname(output), { recursive: true });
   await writeFile(
     output,
-    `${JSON.stringify({ commit: process.env.RUNTIME_PERFORMANCE_COMMIT ?? 'record-with-git-rev-parse', baseUrl, profile, settings: profiles[profile], runs, routes, blockThirdPartyAnalytics, capturedAt: new Date().toISOString(), results }, null, 2)}\n`,
+    `${JSON.stringify({ commit: process.env.RUNTIME_PERFORMANCE_COMMIT ?? 'record-with-git-rev-parse', baseUrl, productEnvironment, profile, settings: profiles[profile], runs, routes, expectedStoreCardCount, blockThirdPartyAnalytics, capturedAt: new Date().toISOString(), method: profile.endsWith('store-activation') ? 'fresh-context same-document Store activation' : 'existing runtime profile', runOrder: results.map((result) => ('run' in result ? result.run : null)), summary: profile.endsWith('store-activation') ? summarizeStoreActivationRuns(results.map((entry) => entry.result)) : undefined, results }, null, 2)}\n`,
   );
   console.log(output);
 }

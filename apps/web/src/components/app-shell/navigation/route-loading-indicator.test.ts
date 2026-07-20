@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   clearRouteLoadingTimer,
   ROUTE_LOADING_RESET_DELAY_MS,
+  scheduleDelayedRouteLoadingStart,
   scheduleRouteLoadingStop,
+  STORE_LOADING_FEEDBACK_DELAY_MS,
 } from './route-loading-indicator';
 
 function createScheduler() {
@@ -71,5 +73,31 @@ describe('route loading indicator timers', () => {
 
     expect(scheduler.clearTimeout).toHaveBeenCalledWith(4);
     expect(timerRef.current).toBe(1);
+  });
+
+  it('shows delayed Store loading feedback only after 750 milliseconds', () => {
+    const scheduler = createScheduler();
+    const setRouteLoading = vi.fn();
+    const timerRef = { current: null };
+
+    scheduleDelayedRouteLoadingStart({ scheduler, setRouteLoading, timerRef });
+
+    expect(scheduler.setTimeout).toHaveBeenCalledWith(expect.any(Function), STORE_LOADING_FEEDBACK_DELAY_MS);
+    expect(setRouteLoading).not.toHaveBeenCalled();
+    scheduler.flush(1);
+    expect(setRouteLoading).toHaveBeenCalledWith(true);
+    expect(timerRef.current).toBeNull();
+  });
+
+  it('cancels delayed Store feedback before it can flash', () => {
+    const scheduler = createScheduler();
+    const setRouteLoading = vi.fn();
+    const timerRef = { current: null };
+
+    scheduleDelayedRouteLoadingStart({ scheduler, setRouteLoading, timerRef });
+    clearRouteLoadingTimer(timerRef, scheduler);
+    scheduler.flush(1);
+
+    expect(setRouteLoading).not.toHaveBeenCalled();
   });
 });

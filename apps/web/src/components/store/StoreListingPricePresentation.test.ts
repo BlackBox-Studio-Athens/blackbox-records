@@ -1,6 +1,10 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { connectStoreListingPricePresentation, STORE_LISTING_PRICE_COPY } from './StoreListingPricePresentation';
+import {
+  connectStoreListingPricePresentation,
+  readPublicStoreListingPrices,
+  STORE_LISTING_PRICE_COPY,
+} from './StoreListingPricePresentation';
 
 function placeholder(storeItemSlug: string) {
   const attributes = new Map([['aria-busy', 'true']]);
@@ -14,6 +18,21 @@ function placeholder(storeItemSlug: string) {
 }
 
 describe('Store listing-price presentation', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('uses the single listing projection endpoint and forwards cancellation', async () => {
+    const records = [{ displayPrice: '€28.00', presentationState: 'ready' as const, storeItemSlug: 'item' }];
+    const fetchRequest = vi.fn(async () => ({ ok: true, json: async () => records }));
+    const abortController = new AbortController();
+    vi.stubGlobal('fetch', fetchRequest);
+
+    await expect(readPublicStoreListingPrices(abortController.signal)).resolves.toEqual(records);
+    expect(fetchRequest).toHaveBeenCalledWith('/api/store/listing-prices', {
+      headers: { accept: 'application/json' },
+      signal: abortController.signal,
+    });
+  });
+
   it('uses one projection read and renders ready, unavailable, and missing records honestly', async () => {
     const ready = placeholder('ready-item');
     const unavailable = placeholder('unavailable-item');
@@ -34,6 +53,22 @@ describe('Store listing-price presentation', () => {
     expect(unavailable.textContent).toBe(STORE_LISTING_PRICE_COPY.unavailable);
     expect(missing.textContent).toBe(STORE_LISTING_PRICE_COPY.unavailable);
     expect(ready.getAttribute('aria-busy')).toBeNull();
+  });
+
+  it('consumes one already-prepared projection without creating a second read', async () => {
+    const item = placeholder('item');
+    const prepareProjection = vi.fn(async () => [
+      { displayPrice: '€24.00', presentationState: 'ready' as const, storeItemSlug: 'item' },
+    ]);
+    const preparedProjection = prepareProjection();
+
+    connectStoreListingPricePresentation({
+      readListingPrices: () => preparedProjection,
+      root: { querySelectorAll: () => [item] } as unknown as ParentNode,
+    });
+
+    await vi.waitFor(() => expect(item.textContent).toBe('€24.00'));
+    expect(prepareProjection).toHaveBeenCalledOnce();
   });
 
   it('aborts the active projection read during cleanup', () => {
