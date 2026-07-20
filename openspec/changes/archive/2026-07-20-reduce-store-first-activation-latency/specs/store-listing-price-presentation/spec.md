@@ -11,7 +11,7 @@ Store collection cards SHALL obtain displayed listing prices from exactly one li
 - **THEN** it makes one fresh listing-price projection read for that collection activation
 - **AND** it does not read `/api/store/items/:storeItemSlug` once per card solely to render listing prices.
 
-#### Scenario: Uncached shell navigation opens a Store collection
+#### Scenario: Shell navigation replaces a Store collection
 
 - **GIVEN** shell-managed navigation must fetch and apply a Store collection snapshot
 - **WHEN** that Store activation starts

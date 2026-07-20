@@ -191,6 +191,6 @@ Browser Use completed the remaining continuity checks:
 - a cart item survived full-document browser Back and later shell navigation;
 - the player opened, accepted provider-frame interaction, minimized, reopened, stopped, and preserved the cart;
 - mobile stress showed the shared polite `Loading Store` status after 750 ms, then cleared it and finished 104/104 with focus and scroll reset;
-- overlay verification found its close button below the fixed header's stacking layer. Raising the existing overlay from z-index 90 to 1100 fixed hit-testing without adding a component or interaction path; a focused regression test and Browser Use local check prove the close control dismisses the overlay.
+- overlay verification found its close button below the fixed header's stacking layer. Raising the existing overlay from z-index 90 to 1100 fixed hit-testing without adding a component or interaction path; a focused regression test and Browser Use local check prove the close control dismisses the overlay. Commit `64e3cbef` deployed through workflow `29736150039`, UAT provider smoke `29736346763` passed, and hosted Browser Use confirmed the close control is the top hit target, dismisses to Releases, and emits no console warning or error.
 
 The change is **accepted** under the amended attributable-evidence rule. Hosted absolute latency remains operational evidence of UAT host and Worker variability, not evidence that the removed serial frontend waterfall returned. The complete 104-card renderer and delayed shared feedback remain unchanged.
