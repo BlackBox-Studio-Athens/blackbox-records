@@ -28,7 +28,11 @@ function readCssBlock(marker: string, css = globalCss, fromEnd = false) {
 describe('Homepage hero CSS', () => {
   it('crossfades one persistent ghost behind static Home surfaces', () => {
     const mediaRule = readCssBlock('.homepage-hero-section__media-layer {');
+    const mediaBlackVeilRule = readCssBlock('.homepage-hero-section__media-layer::after {');
     const scrolledMediaRule = readCssBlock('.homepage-hero-section--scrolled .homepage-hero-section__media-layer {');
+    const scrolledMediaBlackVeilRule = readCssBlock(
+      '.homepage-hero-section--scrolled .homepage-hero-section__media-layer::after {',
+    );
     const shadeRule = readCssBlock('.homepage-hero-section__shade-layer {');
     const scrollIndicatorRule = readCssBlock('.homepage-hero-section__scroll-indicator {');
     const scrolledIndicatorRule = readCssBlock(
@@ -45,12 +49,19 @@ describe('Homepage hero CSS', () => {
     expect(mediaRule).toMatch(/opacity:\s*1/i);
     expect(mediaRule).toMatch(/transition:\s*opacity 240ms cubic-bezier\(0\.22, 1, 0\.36, 1\)/i);
     expect(mediaRule).not.toMatch(/visibility|transform|filter|mix-blend-mode/i);
-    expect(scrolledMediaRule).toMatch(/opacity:\s*0\.18/i);
+    expect(mediaBlackVeilRule).toMatch(/position:\s*absolute/i);
+    expect(mediaBlackVeilRule).toMatch(/background:\s*#050505/i);
+    expect(mediaBlackVeilRule).toMatch(/opacity:\s*0/i);
+    expect(mediaBlackVeilRule).toMatch(/transition:\s*opacity 240ms cubic-bezier\(0\.22, 1, 0\.36, 1\)/i);
+    expect(mediaBlackVeilRule).not.toMatch(/filter|mix-blend-mode/i);
+    expect(scrolledMediaRule).toMatch(/opacity:\s*0\.12/i);
     expect(scrolledMediaRule).not.toMatch(/visibility|transform|filter|mix-blend-mode/i);
+    expect(scrolledMediaBlackVeilRule).toMatch(/opacity:\s*0\.5/i);
     expect(shadeRule).toMatch(/position:\s*absolute/i);
     expect(shadeRule).not.toMatch(/opacity|visibility|transition|transform|filter|mix-blend-mode/i);
     expect(globalCss).not.toContain('.homepage-hero-section--scrolled .homepage-hero-section__shade-layer');
     expect(reducedMotionRule).toMatch(/\.homepage-hero-section__media-layer[\s\S]*?transition:\s*none/i);
+    expect(reducedMotionRule).toMatch(/\.homepage-hero-section__media-layer::after[\s\S]*?transition:\s*none/i);
 
     expect(homeNewsVeilRule).toMatch(/background:\s*rgb\(13 13 13 \/ 76%\)/i);
     expect(artistsSurfaceRule).toMatch(/background-color:\s*rgb\(20 20 20 \/ 78%\)/i);

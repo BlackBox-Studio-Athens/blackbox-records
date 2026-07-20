@@ -9,7 +9,7 @@ TO: Homepage hero ghost crossfade is threshold-bounded
 
 ### Requirement: Homepage hero ghost crossfade is threshold-bounded
 
-The app shell SHALL keep the existing responsive homepage hero image fixed and visible for as long as the Home route owns it. The existing coarse hero scrolled state SHALL crossfade only the media layer between opacity `1` and `0.18` over 240 milliseconds without changing its visibility, while the scroll indicator retains its immediate transition-free state.
+The app shell SHALL keep the existing responsive homepage hero image fixed and visible for as long as the Home route owns it. The existing coarse hero scrolled state SHALL crossfade the media layer between opacity `1` and `0.12` while an internal black veil crossfades between opacity `0` and `0.5` over the same 240 milliseconds without changing media visibility, while the scroll indicator retains its immediate transition-free state.
 
 #### Scenario: Homepage hero renders in the first viewport
 
@@ -23,7 +23,9 @@ The app shell SHALL keep the existing responsive homepage hero image fixed and v
 - **GIVEN** the homepage hero is rendered in the persistent app shell
 - **AND** the browser does not request reduced motion
 - **WHEN** the existing coarse hero state changes to scrolled
-- **THEN** the media layer remains fixed and visible while its opacity transitions from its current value to `0.18` over 240 milliseconds using `cubic-bezier(0.22, 1, 0.36, 1)`
+- **THEN** the media layer remains fixed and visible while its opacity transitions from its current value to `0.12` over 240 milliseconds using `cubic-bezier(0.22, 1, 0.36, 1)`
+- **AND** an absolute `#050505` veil inside that media layer transitions from its current value to opacity `0.5` using the identical duration and curve
+- **AND** no second fixed element, filter, blur, blend mode, or additional image is introduced
 - **AND** the media layer does not become hidden after the transition
 - **AND** the hero shade leaves through normal document scrolling without sharing the crossfade
 - **AND** later content stacks above the ghost on static dark surfaces of `rgb(13 13 13 / 76%)` for News, `rgb(20 20 20 / 78%)` for Artists, and `rgb(13 13 13 / 74%)` for Newsletter
@@ -37,7 +39,7 @@ The app shell SHALL keep the existing responsive homepage hero image fixed and v
 - **GIVEN** the Home media is crossfading or settled at the ghost endpoint
 - **WHEN** the existing coarse hero state changes to not scrolled
 - **THEN** the media remains fixed and visible
-- **AND** the same declared 240-millisecond duration and curve transition its opacity from the current value to `1`
+- **AND** the same declared 240-millisecond duration and curve transition media opacity from the current value to `1` and veil opacity from the current value to `0`
 - **AND** an interrupted native CSS reversal remains bounded without a separate application animation state or timer.
 
 #### Scenario: Scroll events remain on one threshold side
@@ -58,14 +60,15 @@ The app shell SHALL keep the existing responsive homepage hero image fixed and v
 #### Scenario: Reduced motion remains respected
 
 - **WHEN** the browser reports a reduced-motion preference
-- **THEN** the media reaches opacity `0.18` in the scrolled state and opacity `1` in the not-scrolled state without a transition
+- **THEN** the media reaches opacity `0.12` and the black veil reaches opacity `0.5` in the scrolled state without a transition
+- **AND** the media reaches opacity `1` and the black veil reaches opacity `0` in the not-scrolled state without a transition
 - **AND** the media remains fixed and visible at both endpoints
 - **AND** nonessential Home animation remains disabled
 - **AND** visible content and status text remain available.
 
 ### Requirement: Homepage hero render work is bounded
 
-The app shell SHALL preserve the homepage hero composition without continuous full-viewport raster effects. One already-loaded fixed image MAY remain behind later Home content and MAY perform one bounded opacity transition per coarse threshold-side change only while it causes no repeated hero-attributable paint, raster, decode, animation, or application work after the transition settles.
+The app shell SHALL preserve the homepage hero composition without continuous full-viewport raster effects. One already-loaded fixed image MAY remain behind later Home content, and its existing media layer plus one internal solid-color veil MAY each perform one bounded opacity transition per coarse threshold-side change only while they cause no repeated hero-attributable paint, raster, decode, animation, or application work after the transition settles.
 
 #### Scenario: Homepage hero is visible
 
@@ -78,7 +81,7 @@ The app shell SHALL preserve the homepage hero composition without continuous fu
 #### Scenario: Shopper passes the hero threshold
 
 - **WHEN** the existing coarse hero scroll state changes side
-- **THEN** only the media opacity performs one bounded 240-millisecond transition
+- **THEN** only media opacity and the internal black-veil opacity perform one bounded 240-millisecond transition each
 - **AND** media visibility, position, scale, filter, and background position remain unchanged
 - **AND** the hero shade leaves with its containing hero rather than remaining as a second fixed layer
 - **AND** first, repeat, and settled-scroll evidence shows no repeated hero-attributable paint, raster, image-decode, animation, or layer-invalidation work after the transition settles

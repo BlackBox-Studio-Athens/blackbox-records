@@ -3231,6 +3231,16 @@ body {
     transition: opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
+  .homepage-hero-section__media-layer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #050505;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
   .homepage-hero-section__media-image {
     width: 100%;
     height: 100%;
@@ -3311,7 +3321,11 @@ body {
   }
 
   .homepage-hero-section--scrolled .homepage-hero-section__media-layer {
-    opacity: 0.18;
+    opacity: 0.12;
+  }
+
+  .homepage-hero-section--scrolled .homepage-hero-section__media-layer::after {
+    opacity: 0.5;
   }
 
   .homepage-hero-section--scrolled .homepage-hero-section__scroll-indicator-line span {
@@ -4430,6 +4444,7 @@ html[data-distro-coverflow-capable] [data-distro-coverflow-mode='catalog'] [data
   .homepage-hero-section__media-image,
   .homepage-hero-section__content-block,
   .homepage-hero-section__media-layer,
+  .homepage-hero-section__media-layer::after,
   .homepage-hero-section__shade-layer,
   .homepage-hero-section__scroll-indicator {
     animation: none;

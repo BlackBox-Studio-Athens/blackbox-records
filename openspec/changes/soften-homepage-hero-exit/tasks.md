@@ -31,3 +31,18 @@
 - [x] 6.3 Use Browser Use at desktop and mobile widths to verify the image remains quietly visible through every Home section without muddiness, text/control/focus readability remains strong, the footer ends the image cleanly, and route/reduced-motion behavior remains correct.
 - [x] 6.4 Run three first and three repeat production traversals at wide and mobile sizes; reject any regression beyond the existing 8-millisecond p95 work budget, any attributable 50-millisecond task/LoAF, extra image work, or repeated settled paint/raster work.
 - [x] 6.5 Run `pnpm test:unit`, `pnpm check`, `pnpm build`, strict OpenSpec validation, and `git diff --check` against the final tree.
+
+## 7. Subtle Persistent Background Tuning
+
+- [x] 7.1 Update the focused CSS contract and OpenSpec artifacts to require a scrolled opacity of `0.12` while retaining the 76/78/74% section surfaces, then confirm the completed `0.18` implementation fails the new endpoint.
+- [x] 7.2 Change only the existing media endpoint; retain the fixed single image, 240-millisecond curve, immediate reduced-motion endpoint, opaque cards and footer, section surfaces, and unchanged scroll helper.
+- [x] 7.3 Use Browser Use at desktop and mobile widths to verify the image becomes barely perceptible through later Home sections without disappearing, muddiness, readability loss, layout shift, or console errors.
+- [x] 7.4 Run focused tests, `pnpm test:unit`, `pnpm check`, `pnpm build`, strict OpenSpec validation, and `git diff --check` against the final tree.
+
+## 8. Near-Black Ghost Tuning
+
+- [x] 8.1 Update the focused CSS contract and OpenSpec artifacts to retain media opacity `0.12` while an internal `#050505` veil moves from opacity `0` to `0.5` on the same 240-millisecond curve, then confirm the current implementation fails the missing veil contract.
+- [x] 8.2 Add only the absolute veil inside the existing fixed media layer and include it in reduced-motion transition shutdown; add no markup, JavaScript, image, filter, blend mode, or second fixed element.
+- [x] 8.3 Use Browser Use at desktop and mobile widths to verify a simultaneous near-black fade, faint retained image texture, unchanged first viewport, readable sections, opaque footer coverage, reduced motion, and console cleanliness.
+- [x] 8.4 Run the retained wide and mobile production scroll profiles and reject the veil if it exceeds the existing 8-millisecond p95 work budget, introduces an attributable 50-millisecond task or long animation frame, adds image work, or causes repeated settled paint or raster work.
+- [x] 8.5 Run focused tests, `pnpm test:unit`, `pnpm check`, `pnpm build`, strict OpenSpec validation, and `git diff --check` against the final tree.
