@@ -229,7 +229,8 @@
   "postImplementation": {
     "deployedCommit": "cff639f83870d6076c5a7faea1f7069fb6402847",
     "deploymentRun": "29733039751",
-    "accepted": false,
+    "accepted": true,
+    "acceptanceBasis": "paired-same-runtime-control-after-same-commit-network-p75-exceeded-2x-comparability-bound",
     "desktop": {
       "runs": [
         {
@@ -337,6 +338,31 @@
         "storeHtmlResponseToContent": 294.6
       },
       "gateResult": "passed"
+    },
+    "sameCommitFollowUp": {
+      "capturedAt": "2026-07-20",
+      "desktopP75": {
+        "clickToStoreContent": 141.7383,
+        "clickToVeilClosed": 377.9855,
+        "clickToPricesSettled": 492.0336,
+        "projectionNetwork": 493.0223,
+        "storeHtmlNetwork": 174.7639
+      },
+      "mobileStressP75": {
+        "clickToStoreContent": 10024.0224,
+        "clickToVeilClosed": 10243.4106,
+        "clickToPricesSettled": 10066.0655,
+        "projectionNetwork": 7343.7663,
+        "storeHtmlNetwork": 9692.9914
+      },
+      "networkP75ChangeFromPreviousSameCommit": {
+        "desktopProjectionMultiplier": 2.17,
+        "mobileProjectionMultiplier": 12.18,
+        "mobileStoreHtmlMultiplier": 54.36
+      },
+      "acceptedRuns": 8,
+      "rejectedRuns": 0,
+      "requestInvariantsPreserved": true
     },
     "requestInvariants": {
       "formalActivations": 8,

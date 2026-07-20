@@ -1,8 +1,14 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
 import ShellOverlayPanel from './ShellOverlayPanel';
+
+const globalCss = readFileSync(fileURLToPath(new URL('../../../styles/global.css', import.meta.url)), 'utf8');
+const headerSource = readFileSync(fileURLToPath(new URL('../../header/HeaderShell.astro', import.meta.url)), 'utf8');
 
 const refs = {
   closeButtonRef: { current: null },
@@ -10,6 +16,13 @@ const refs = {
 };
 
 describe('ShellOverlayPanel', () => {
+  it('stacks above the fixed site header so its controls remain clickable', () => {
+    const overlayZIndex = Number(/\.app-shell-content-overlay\s*\{[^}]*z-index:\s*(\d+)/s.exec(globalCss)?.[1]);
+    const headerZIndex = Number(/z-\[(\d+)\]/.exec(headerSource)?.[1]);
+
+    expect(overlayZIndex).toBeGreaterThan(headerZIndex);
+  });
+
   it('renders the closed overlay shell without detail content', () => {
     const html = renderToStaticMarkup(
       <ShellOverlayPanel {...refs} overlayState={null} onClose={vi.fn()} onReady={vi.fn()} />,

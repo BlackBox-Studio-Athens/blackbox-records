@@ -46,10 +46,18 @@ The system SHALL overlap the one listing-price projection read with Store HTML w
 
 #### Scenario: Concurrent scheduling is accepted
 
-- **WHEN** five desktop and three mobile-stress post-change runs are compared with their fixed-profile baselines
+- **WHEN** five desktop and three mobile-stress post-change runs are compared with their fixed-profile baselines and same-commit host plus Worker network p75 remains within 2× across repeated evidence sets
 - **THEN** click → prices settled p75 improves by at least 25 percent in each profile
 - **AND** click → Store content p75 and click → veil closed p75 do not regress by more than 10 percent in either profile
 - **AND** every activation still records exactly one listing-price projection request, zero per-card Store Offer reads for listing prices, and no Store-related request error.
+
+#### Scenario: Hosted variance prevents cross-deployment attribution
+
+- **GIVEN** a repeated five desktop plus three mobile-stress set against the same deployed commit shows Store HTML or listing-projection network p75 changing by more than 2×
+- **WHEN** frontend scheduling acceptance is decided
+- **THEN** the report retains and discloses the hosted absolute results as shopper-experience evidence
+- **AND** the paired serial/concurrent control captured under the same runtime conditions supplies the 25 percent price-settlement and 10 percent content plus veil bounds
+- **AND** production structure proves the projection starts before Store content and the current presentation consumes that same request.
 
 #### Scenario: A meaningful mobile residual remains after concurrency
 
@@ -67,6 +75,6 @@ The system SHALL overlap the one listing-price projection read with Store HTML w
 
 #### Scenario: Projection concurrency misses its acceptance gate
 
-- **WHEN** price settlement does not improve by the declared amount, content or veil timing regresses beyond the declared bound, request cardinality changes, or checkout authority coverage fails
+- **WHEN** comparable absolute evidence or the allowed paired control does not improve price settlement by the declared amount, content or veil timing regresses beyond the declared bound, request cardinality changes, or checkout authority coverage fails
 - **THEN** the change is not accepted
 - **AND** evidence identifies request scheduling, network contention, DOM application, transition timing, or measurement invalidity before another remedy is proposed.

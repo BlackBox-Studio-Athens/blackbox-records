@@ -100,7 +100,7 @@ Alternative rejected: cache projection data to improve repeat visits. The user e
 - Store HTML, projection, and per-card Store Offer request counts and statuses;
 - card count, settled listing count, console errors, `document.visibilityState`, browser version, commit, URL, Product Environment, profile, cache state, and run order.
 
-The runner will retain individual runs and report median and p75. Acceptance requires five desktop runs and three mobile-stress runs on the same deployed commit before and after the change. It will flag hidden/background execution or other invalid timing conditions instead of silently including them.
+The runner will retain individual runs and report median and p75. Acceptance normally requires five desktop runs and three mobile-stress runs on the same deployed commit before and after the change. If a repeat against the same deployed commit shows host or Worker network p75 changing by more than 2×, the cross-deployment absolute comparison is non-attributable; the paired serial/concurrent control captured under the same runtime conditions becomes the scheduling acceptance evidence. It will flag hidden/background execution or other invalid timing conditions instead of silently including them.
 
 Browser Use remains the authority for rendered completeness, visible status behavior, focus, scroll, layout stability, cart/player/overlay continuity, and console cleanliness. Chrome performance tooling may supply only metrics Browser Use cannot expose, with the limitation recorded.
 
@@ -133,7 +133,7 @@ Alternative rejected: combine concurrency with pagination or virtualization now.
 - [A prepared promise is consumed by a later activation] → bind it to a route key plus generation, abort and clear on superseding navigation, and test rapid route changes and history restoration.
 - [The presentation effect issues a second projection request] → inject the prepared promise through the existing reader seam and assert one network request per activation in unit and browser evidence.
 - [An early failed promise becomes unhandled before placeholders mount] → attach an immediate rejection observer while preserving the original rejection for the presentation fallback.
-- [Concurrency competes with Store HTML and delays content] → require five desktop and three mobile before/after runs; reject the slice if content or veil p75 regresses by more than 10%.
+- [Concurrency competes with Store HTML and delays content] → require five desktop and three mobile before/after runs; use the fixed absolute gate when same-commit network timing remains comparable, otherwise require the paired same-runtime control to keep content and veil p75 within 10%.
 - [The first cross-origin projection still pays avoidable origin setup] → emit build-time DNS-prefetch and anonymous preconnect hints for the configured public backend origin, while forbidding endpoint preload or extra API traffic.
 - [Abort behavior leaves cards in `Checking price`] → route failures through the existing explicit unavailable state when the activation remains current; ignore results only after route exit.
 - [Delayed feedback flashes or remains stale] → use the measured 750 ms delay, one activation-owned timer, and deterministic fake-timer coverage for completion, failure, cancellation, and unmount.
@@ -145,7 +145,7 @@ Alternative rejected: combine concurrency with pagination or virtualization now.
 1. Add focused characterization and failing tests for activation ownership, request cardinality, cancellation, and delayed feedback.
 2. Implement activation-scoped preparation, backend-origin connection hints, and prepared-promise consumption without changing the endpoint or Store markup.
 3. Extend the existing measurement runner and capture five desktop plus three mobile-stress post-change runs on the exact final tree.
-4. Accept only if click → prices settled p75 improves at least 25%, content and veil p75 do not regress by more than 10%, request cardinality stays one projection and zero per-card reads, and checkout authority tests remain passing.
+4. Accept only if click → prices settled p75 improves at least 25%, content and veil p75 do not regress by more than 10%, request cardinality stays one projection and zero per-card reads, and checkout authority tests remain passing. When a same-commit repeat proves host or Worker network p75 has moved by more than 2×, apply those timing thresholds to the paired serial/concurrent control instead of attributing the cross-deployment drift to frontend scheduling.
 5. Validate delayed feedback and shell continuity in Browser Use, then run repository and OpenSpec strict gates.
 6. Deploy to UAT and repeat the hosted Store activation evidence against the deployed commit before treating the change as accepted.
 

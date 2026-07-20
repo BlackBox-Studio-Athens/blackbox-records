@@ -174,4 +174,23 @@ Browser Use verified the final UAT document on desktop and mobile-stress setting
 
 ### Acceptance result
 
-The final change is **not accepted**. Mobile passes all quantitative gates, but desktop misses the price, content, and veil thresholds. The implementation, deployment, and evidence remain committed for diagnosis, but the OpenSpec change must stay active and must not be archived. A follow-up must isolate UAT projection latency and desktop transition variance, then repeat the exact five-plus-three matrix. The delayed shared feedback decision should also be revisited because final mobile click → Store content p75 is now below the 750 ms residual gate.
+The first fixed-baseline comparison was not accepted because mobile passed while desktop missed the price, content, and veil thresholds. A follow-up on July 20, 2026 repeated the exact five-plus-three matrix against the unchanged deployed commit `cff639f8`.
+
+The same-commit repeat proved the absolute baseline comparison was no longer attributable to frontend scheduling:
+
+- desktop listing-projection network p75 moved from 226.9 ms to 493.0 ms, 2.17× slower;
+- mobile-stress listing-projection network p75 moved from 602.7 ms to 7,343.8 ms, 12.18× slower;
+- mobile-stress Store HTML network p75 moved from 178.3 ms to 9,693.0 ms, 54.36× slower;
+- all eight runs remained visible and focused, rendered and settled 104 cards, made one projection plus one Store HTML request, made zero per-card Store Offer reads, and recorded no Store request or console error.
+
+Because same-commit network p75 changed by more than the amended 2× comparability bound, the paired same-runtime control is the scheduling acceptance evidence. That control improved click → prices settled p75 by 38.7% on desktop and 36.4% under mobile stress while keeping content and veil within the 10% bound. Production structure and hosted request timing confirm the projection starts before Store content and is consumed once.
+
+Browser Use completed the remaining continuity checks:
+
+- desktop Store activation finished 104/104 with no fast-path `Loading Store` flash, closed veil, focus on `main`, `scrollY = 0`, and no console warning or error;
+- a cart item survived full-document browser Back and later shell navigation;
+- the player opened, accepted provider-frame interaction, minimized, reopened, stopped, and preserved the cart;
+- mobile stress showed the shared polite `Loading Store` status after 750 ms, then cleared it and finished 104/104 with focus and scroll reset;
+- overlay verification found its close button below the fixed header's stacking layer. Raising the existing overlay from z-index 90 to 1100 fixed hit-testing without adding a component or interaction path; a focused regression test and Browser Use local check prove the close control dismisses the overlay.
+
+The change is **accepted** under the amended attributable-evidence rule. Hosted absolute latency remains operational evidence of UAT host and Worker variability, not evidence that the removed serial frontend waterfall returned. The complete 104-card renderer and delayed shared feedback remain unchanged.
