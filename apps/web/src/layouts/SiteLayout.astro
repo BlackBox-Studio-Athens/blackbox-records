@@ -53,6 +53,8 @@ const metadataImagePath = typeof metadataImageRaw === 'string' ? metadataImageRa
 const metadataImage = metadataImagePath.includes('://') ? metadataImagePath : createAbsoluteSiteUrl(metadataImagePath);
 const metadataImageAlt = coverImageAlt || imageAlt || siteConfig.socialImageAlt || siteConfig.title;
 const metadataType = layoutType === 'news' ? 'article' : 'website';
+const configuredPublicBackendBaseUrl = import.meta.env.PUBLIC_BACKEND_BASE_URL?.trim();
+const publicBackendOrigin = configuredPublicBackendBaseUrl ? new URL(configuredPublicBackendBaseUrl).origin : null;
 const orgName = labelSettings.label_name || siteConfig.title;
 const orgUrl = labelSettings.url || createAbsoluteSiteUrl('/');
 const orgLogo = labelSettings.logo?.includes('://') ? labelSettings.logo : createAbsoluteSiteUrl(labelSettings.logo);
@@ -140,6 +142,8 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    {publicBackendOrigin && <link rel="dns-prefetch" href={publicBackendOrigin} />}
+    {publicBackendOrigin && <link rel="preconnect" href={publicBackendOrigin} crossorigin="anonymous" />}
     <link
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Geist+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap"
       rel="preload"

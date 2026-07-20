@@ -5,6 +5,7 @@ The July 20, 2026 UAT deployment at commit `2f703122` renders 104 Store cards, b
 ## What Changes
 
 - Start one activation-scoped listing-price projection read when a new Store collection shell navigation starts, in parallel with the Store HTML snapshot request, and reuse that same promise when listing placeholders become active.
+- Warm the configured public backend origin from the static document head with DNS-prefetch and anonymous preconnect hints; do not preload Store data or create an additional API request.
 - Preserve one projection network request per Store collection activation, zero per-card Store Offer reads, `Cache-Control: no-store`, explicit unavailable states, and independent checkout-time availability, stock, and catalog-price revalidation.
 - Cover direct Store loads, uncached shell navigation, prefetched or cached Store snapshots, history restoration, cancellation, and rapid route changes without carrying a listing result into a later activation.
 - Extend the existing runtime-performance runner with a Store activation profile that records click to content, click to veil closed, and click to prices settled across five cache-cleared desktop runs and three mobile-stress runs.
@@ -26,7 +27,7 @@ None.
 
 ## Impact
 
-- Frontend shell and Store presentation code under `apps/web/src/components/app-shell/` and `apps/web/src/components/store/`, plus focused tests and the existing loading-feedback primitives.
+- Frontend shell, static document head, and Store presentation code under `apps/web/src/components/app-shell/`, `apps/web/src/layouts/`, and `apps/web/src/components/store/`, plus focused tests and the existing loading-feedback primitives.
 - Performance tooling under `scripts/measure-runtime-performance.ts` and its focused helper tests; raw evidence remains under `.codex-artifacts/runtime-performance/`.
 - OpenSpec requirements for Store listing presentation, shell navigation feedback, frontend runtime performance, and validation.
 - No Worker endpoint, response schema, D1 query, cache policy, checkout contract, stock/order behavior, Stripe behavior, service worker, state library, virtualization library, or new dependency.

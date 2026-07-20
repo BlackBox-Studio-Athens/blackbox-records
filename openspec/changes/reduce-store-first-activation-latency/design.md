@@ -53,12 +53,15 @@ When the Store placeholders mount, `connectStoreListingPricePresentation` will r
 
 The browser listing reader will remain the one fetch implementation. It may be exported from its current module and accept an optional abort signal; this avoids a second networking abstraction or a new store-specific state container.
 
+The static document head will also emit DNS-prefetch and anonymous preconnect hints for the configured public backend origin. This starts origin setup before Store intent without fetching listing data, creating a projection result, changing `no-store`, or altering the one-request-per-activation boundary. The hint is omitted when no public backend base URL is configured.
+
 Alternatives rejected:
 
 - Keep the current effect timing: preserves the measured 112–614 ms p75 serial penalty.
 - Add a second preload call: violates one projection request per activation.
 - Put the promise in module-global state or a client cache: risks cross-activation stale price reuse and weakens `no-store` semantics.
 - Render prices into static Store HTML: creates browser-visible stale authority and bypasses the Worker projection boundary.
+- Preload or prefetch the listing endpoint from the document head: creates projection traffic without a Store activation and breaks activation request cardinality.
 
 ### 2. Scope preparation to one route activation
 
@@ -78,7 +81,7 @@ Alternative rejected: retain a successfully settled promise for later Store visi
 
 ### 3. Preserve commerce authority and request shape
 
-This change is frontend scheduling only. It will not change the listing endpoint, its browser-safe response, its single D1 projection read, or its `Cache-Control: no-store` response. Collection activation remains exactly one projection request and zero `/api/store/items/:storeItemSlug` reads for listing prices.
+This change is frontend scheduling and connection preparation only. It will not change the listing endpoint, its browser-safe response, its single D1 projection read, or its `Cache-Control: no-store` response. Collection activation remains exactly one projection request and zero `/api/store/items/:storeItemSlug` reads for listing prices. Resource hints may establish the configured backend connection, but they must not fetch Store data.
 
 Checkout continues to ignore listing presentation as authority. The Worker checkout use case must still resolve the submitted Store Item and variant, check current availability and `canBuy`, verify online stock, resolve the current product projection, reconcile catalog state and blocking drift, and then create the hosted Checkout Session.
 
@@ -131,6 +134,7 @@ Alternative rejected: combine concurrency with pagination or virtualization now.
 - [The presentation effect issues a second projection request] → inject the prepared promise through the existing reader seam and assert one network request per activation in unit and browser evidence.
 - [An early failed promise becomes unhandled before placeholders mount] → attach an immediate rejection observer while preserving the original rejection for the presentation fallback.
 - [Concurrency competes with Store HTML and delays content] → require five desktop and three mobile before/after runs; reject the slice if content or veil p75 regresses by more than 10%.
+- [The first cross-origin projection still pays avoidable origin setup] → emit build-time DNS-prefetch and anonymous preconnect hints for the configured public backend origin, while forbidding endpoint preload or extra API traffic.
 - [Abort behavior leaves cards in `Checking price`] → route failures through the existing explicit unavailable state when the activation remains current; ignore results only after route exit.
 - [Delayed feedback flashes or remains stale] → use the measured 750 ms delay, one activation-owned timer, and deterministic fake-timer coverage for completion, failure, cancellation, and unmount.
 - [Browser timing is polluted by background throttling] → record visibility/focus state and request-start timing, reject invalid runs, and keep Browser Use as rendered authority with trace fallback documented.
@@ -139,7 +143,7 @@ Alternative rejected: combine concurrency with pagination or virtualization now.
 ## Migration Plan
 
 1. Add focused characterization and failing tests for activation ownership, request cardinality, cancellation, and delayed feedback.
-2. Implement activation-scoped preparation and prepared-promise consumption without changing the endpoint or Store markup.
+2. Implement activation-scoped preparation, backend-origin connection hints, and prepared-promise consumption without changing the endpoint or Store markup.
 3. Extend the existing measurement runner and capture five desktop plus three mobile-stress post-change runs on the exact final tree.
 4. Accept only if click → prices settled p75 improves at least 25%, content and veil p75 do not regress by more than 10%, request cardinality stays one projection and zero per-card reads, and checkout authority tests remain passing.
 5. Validate delayed feedback and shell continuity in Browser Use, then run repository and OpenSpec strict gates.

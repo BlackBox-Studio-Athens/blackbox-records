@@ -14,6 +14,7 @@
 - [x] 2.4 Supply the prepared promise through `connectStoreListingPricePresentation`'s existing reader seam, while preserving the direct-load fallback of one fresh read.
 - [x] 2.5 Clear and abort activation state on route exit, superseding navigation, failure, and unmount; attach rejection handling so an unconsumed early failure cannot become an unhandled promise rejection.
 - [x] 2.6 Keep the current explicit ready and unavailable card states, exactly one projection request per activation, and zero `/api/store/items/:storeItemSlug` reads for collection prices.
+- [x] 2.7 Add build-time DNS-prefetch and anonymous preconnect hints for the configured public backend origin without preloading Store data or changing request cardinality.
 
 ## 3. Add measured delayed feedback
 

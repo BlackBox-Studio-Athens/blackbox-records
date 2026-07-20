@@ -37,6 +37,13 @@ The system SHALL overlap the one listing-price projection read with Store HTML w
 - **THEN** it also starts the activation's one listing-price projection request before Store content is applied
 - **AND** the existing listing presentation consumes that same result after placeholders mount.
 
+#### Scenario: The configured backend origin is prepared without preloading data
+
+- **GIVEN** the static frontend is built with a public backend base URL
+- **WHEN** a shopper document is parsed before Store activation
+- **THEN** the document head includes DNS-prefetch and anonymous preconnect hints for that backend origin
+- **AND** the hints do not fetch the listing endpoint, create a projection result, change `no-store`, or add an API request.
+
 #### Scenario: Concurrent scheduling is accepted
 
 - **WHEN** five desktop and three mobile-stress post-change runs are compared with their fixed-profile baselines
