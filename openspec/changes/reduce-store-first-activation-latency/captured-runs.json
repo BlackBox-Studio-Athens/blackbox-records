@@ -226,6 +226,130 @@
       "concurrentProjectionStartAfterClickP75": 24.25
     }
   },
+  "postImplementation": {
+    "deployedCommit": "cff639f83870d6076c5a7faea1f7069fb6402847",
+    "deploymentRun": "29733039751",
+    "accepted": false,
+    "desktop": {
+      "runs": [
+        {
+          "run": 1,
+          "clickToStoreContent": 255.5914,
+          "clickToVeilClosed": 472.6196,
+          "clickToPricesSettled": 1194.711,
+          "projectionStart": 21.6,
+          "projectionNetwork": 1164.2,
+          "storeHtmlNetwork": 158.1,
+          "storeHtmlResponseToContent": 52.7
+        },
+        {
+          "run": 2,
+          "clickToStoreContent": 163.0205,
+          "clickToVeilClosed": 399.8101,
+          "clickToPricesSettled": 327.4591,
+          "projectionStart": 25.6,
+          "projectionNetwork": 226.9,
+          "storeHtmlNetwork": 64.6,
+          "storeHtmlResponseToContent": 40.6
+        },
+        {
+          "run": 3,
+          "clickToStoreContent": 169.539,
+          "clickToVeilClosed": 409.0556,
+          "clickToPricesSettled": 265.0187,
+          "projectionStart": 19.4,
+          "projectionNetwork": 214.5,
+          "storeHtmlNetwork": 56.9,
+          "storeHtmlResponseToContent": 67.7
+        },
+        {
+          "run": 4,
+          "clickToStoreContent": 153.6,
+          "clickToVeilClosed": 382.2,
+          "clickToPricesSettled": 245.2,
+          "projectionStart": 25.5,
+          "projectionNetwork": 203.5,
+          "storeHtmlNetwork": 63.7,
+          "storeHtmlResponseToContent": 32.8
+        },
+        {
+          "run": 5,
+          "clickToStoreContent": 134.4,
+          "clickToVeilClosed": 375.1,
+          "clickToPricesSettled": 234.4,
+          "projectionStart": 13.0,
+          "projectionNetwork": 207.4,
+          "storeHtmlNetwork": 52.3,
+          "storeHtmlResponseToContent": 39.9
+        }
+      ],
+      "aggregateP75": {
+        "clickToStoreContent": 169.539,
+        "clickToVeilClosed": 409.0556,
+        "clickToPricesSettled": 327.4591,
+        "projectionStart": 25.5,
+        "projectionNetwork": 226.9,
+        "storeHtmlNetwork": 64.6,
+        "storeHtmlResponseToContent": 52.7
+      },
+      "gateResult": "failed"
+    },
+    "mobileStress": {
+      "runs": [
+        {
+          "run": 1,
+          "clickToStoreContent": 519.9325,
+          "clickToVeilClosed": 737.8997,
+          "clickToPricesSettled": 571.7553,
+          "projectionStart": 44.6,
+          "projectionNetwork": 274.5,
+          "storeHtmlNetwork": 169.2,
+          "storeHtmlResponseToContent": 294.6
+        },
+        {
+          "run": 2,
+          "clickToStoreContent": 507.5315,
+          "clickToVeilClosed": 729.5065,
+          "clickToPricesSettled": 551.8448,
+          "projectionStart": 34.7,
+          "projectionNetwork": 272.4,
+          "storeHtmlNetwork": 178.3,
+          "storeHtmlResponseToContent": 279.8
+        },
+        {
+          "run": 3,
+          "clickToStoreContent": 495.0659,
+          "clickToVeilClosed": 701.1038,
+          "clickToPricesSettled": 700.7482,
+          "projectionStart": 46.4,
+          "projectionNetwork": 602.7,
+          "storeHtmlNetwork": 178.2,
+          "storeHtmlResponseToContent": 259.7
+        }
+      ],
+      "aggregateP75": {
+        "clickToStoreContent": 519.9325,
+        "clickToVeilClosed": 737.8997,
+        "clickToPricesSettled": 700.7482,
+        "projectionStart": 46.4,
+        "projectionNetwork": 602.7,
+        "storeHtmlNetwork": 178.3,
+        "storeHtmlResponseToContent": 294.6
+      },
+      "gateResult": "passed"
+    },
+    "requestInvariants": {
+      "formalActivations": 8,
+      "listingProjectionRequestsPerActivation": 1,
+      "perCardStoreOfferReadsPerActivation": 0,
+      "storeHtmlRequestsPerActivation": 1,
+      "cardsRenderedPerActivation": 104,
+      "listingRecordsSettledPerActivation": 104,
+      "listingCacheControl": "no-store",
+      "storeRelatedRequestErrors": 0,
+      "consoleErrors": 0
+    }
+  },
   "requestInvariants": {
     "formalActivations": 16,
     "listingProjectionRequestsPerActivation": 1,

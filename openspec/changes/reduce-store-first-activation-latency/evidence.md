@@ -108,3 +108,70 @@ Checkout authority remains separate. The Worker checkout use case still resolves
 ## Decision
 
 Implement one activation-scoped concurrent projection promise, consume it through the existing Store presentation seam, preserve `no-store` and checkout revalidation, add delayed shared feedback for the measured mobile residual, and leave the 104-card renderer unchanged. Any pagination, virtualization, infinite-scroll, node-recycling, static-price, API-cache, or per-card-read proposal requires a separate OpenSpec amendment with new evidence.
+
+## Post-implementation hosted evidence
+
+### Deployment and method
+
+- Initial implementation commit: `e1581d0d16a1611a05900c4bf9da05282d10b54f`.
+- Initial deployment run: `29731987909`, successful on July 20, 2026.
+- Final amended commit: `cff639f83870d6076c5a7faea1f7069fb6402847`.
+- Final deployment run: `29733039751`, successful on July 20, 2026.
+- Final raw artifacts: `.codex-artifacts/runtime-performance/cff639f8/desktop.json` and `.codex-artifacts/runtime-performance/cff639f8/mobile.json`.
+- Every run used a fresh browser context, cleared browser cache, visible/focused document, the fixed 104-card count, and the committed same-document activation runner. No run was rejected.
+
+The initial hosted set on `e1581d0d` passed the mobile price gate but missed the desktop price gate: desktop click → prices settled was 247.0 ms p75, a 14.3% improvement against the fixed 288.0 ms baseline. A follow-up diagnostic found current UAT projection responses around 190–240 ms and one 571.8 ms response. The active OpenSpec was amended with DNS-prefetch and anonymous preconnect hints for the configured public backend origin, without fetching Store data or changing request cardinality.
+
+### Final five-run desktop result
+
+All values are milliseconds.
+
+| Run | Content |  Veil | Prices | Projection start | Projection network | Store HTML network | HTML response → content |
+| --: | ------: | ----: | -----: | ---------------: | -----------------: | -----------------: | ----------------------: |
+|   1 |   255.6 | 472.6 | 1194.7 |             21.6 |             1164.2 |              158.1 |                    52.7 |
+|   2 |   163.0 | 399.8 |  327.5 |             25.6 |              226.9 |               64.6 |                    40.6 |
+|   3 |   169.5 | 409.1 |  265.0 |             19.4 |              214.5 |               56.9 |                    67.7 |
+|   4 |   153.6 | 382.2 |  245.2 |             25.5 |              203.5 |               63.7 |                    32.8 |
+|   5 |   134.4 | 375.1 |  234.4 |             13.0 |              207.4 |               52.3 |                    39.9 |
+
+| Desktop milestone      | Fixed baseline p75 | Final p75 | Change | Gate                                       |
+| ---------------------- | -----------------: | --------: | -----: | :----------------------------------------- |
+| click → Store content  |              152.6 |     169.5 | +11.1% | Fail: maximum allowed regression is 10%    |
+| click → veil closed    |              341.0 |     409.1 | +20.0% | Fail: maximum allowed regression is 10%    |
+| click → prices settled |              288.0 |     327.5 | +13.7% | Fail: required improvement is at least 25% |
+
+Desktop projection start remained concurrent at 25.5 ms p75, before Store content. The failure is dominated by current UAT projection latency and valid run variance, including one 1,164.2 ms projection response; the run was visible, focused, correctly timed, and therefore was not excluded.
+
+### Final three-run mobile-stress result
+
+| Run | Content |  Veil | Prices | Projection start | Projection network | Store HTML network | HTML response → content |
+| --: | ------: | ----: | -----: | ---------------: | -----------------: | -----------------: | ----------------------: |
+|   1 |   519.9 | 737.9 |  571.8 |             44.6 |              274.5 |              169.2 |                   294.6 |
+|   2 |   507.5 | 729.5 |  551.8 |             34.7 |              272.4 |              178.3 |                   279.8 |
+|   3 |   495.1 | 701.1 |  700.7 |             46.4 |              602.7 |              178.2 |                   259.7 |
+
+| Mobile-stress milestone | Fixed baseline p75 | Final p75 | Change | Gate |
+| ----------------------- | -----------------: | --------: | -----: | :--- |
+| click → Store content   |             1046.9 |     519.9 | −50.3% | Pass |
+| click → veil closed     |             1248.7 |     737.9 | −40.9% | Pass |
+| click → prices settled  |             1689.0 |     700.7 | −58.5% | Pass |
+
+Mobile response → content remained the largest median structural component and reached 294.6 ms p75 versus 178.3 ms Store HTML network p75. The complete 104-card renderer remains unchanged. This evidence does not authorize pagination, virtualization, infinite scrolling, or node recycling.
+
+### Request, cache, authority, and Browser Use checks
+
+Across the final eight hosted activations:
+
+- every run rendered 104 cards and settled 104 listing records;
+- every run made exactly one listing-price projection request and one Store HTML request;
+- every run made zero per-card Store Offer reads;
+- every Store request succeeded with no Store-related request error or console error;
+- every listing response remained `Cache-Control: no-store`;
+- the static document emitted DNS-prefetch and anonymous preconnect hints, but no extra Store API request;
+- checkout authority tests remained passing in the full 435-test backend suite.
+
+Browser Use verified the final UAT document on desktop and mobile-stress settings. Store finished with 104/104 prices, closed veil, `scrollY = 0`, focus on `main`, stable visible layout, and no hosted console warnings/errors. On the measured sub-750 ms mobile path, `Loading Store` did not flash. Browser Use remained the rendered authority; the committed Playwright runner supplied timing because Browser Use cannot provide repeatable sub-second milestone timestamps and its earlier hidden-tab timing attempts were explicitly rejected.
+
+### Acceptance result
+
+The final change is **not accepted**. Mobile passes all quantitative gates, but desktop misses the price, content, and veil thresholds. The implementation, deployment, and evidence remain committed for diagnosis, but the OpenSpec change must stay active and must not be archived. A follow-up must isolate UAT projection latency and desktop transition variance, then repeat the exact five-plus-three matrix. The delayed shared feedback decision should also be revisited because final mobile click → Store content p75 is now below the 750 ms residual gate.

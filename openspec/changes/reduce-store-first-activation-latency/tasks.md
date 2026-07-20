@@ -33,17 +33,17 @@
 
 ## 5. Measure and accept the exact final tree
 
-- [ ] 5.1 Capture five desktop and three mobile-stress post-change runs against the exact final tree and compare them with the fixed UAT baseline in `evidence.md`.
+- [x] 5.1 Capture five desktop and three mobile-stress post-change runs against the exact final tree and compare them with the fixed UAT baseline in `evidence.md`.
 - [ ] 5.2 Accept concurrency only if click → prices settled p75 improves by at least 25% in both profiles and click → Store content plus click → veil closed p75 regress by no more than 10%.
-- [ ] 5.3 Verify every direct, uncached, cached/prefetched, and history-restored Store activation makes exactly one listing projection request, zero per-card Store Offer reads, and no Store-related request error.
-- [ ] 5.4 Verify the listing response remains `Cache-Control: no-store`, no cross-activation browser cache is introduced, and checkout authority tests remain passing.
+- [x] 5.3 Verify every direct, uncached, cached/prefetched, and history-restored Store activation makes exactly one listing projection request, zero per-card Store Offer reads, and no Store-related request error.
+- [x] 5.4 Verify the listing response remains `Cache-Control: no-store`, no cross-activation browser cache is introduced, and checkout authority tests remain passing.
 - [ ] 5.5 Use Browser Use on desktop and mobile to verify 104-card completeness, delayed-status timing and accessibility, no fast-path flash, focus/scroll reset, visible layout stability, console cleanliness, and cart/player/overlay continuity when app-shell imports change.
-- [ ] 5.6 Record any DevTools timing fallback with its exact Browser Use capability limitation; reject hidden-tab or background-throttled timing runs.
+- [x] 5.6 Record any DevTools timing fallback with its exact Browser Use capability limitation; reject hidden-tab or background-throttled timing runs.
 
 ## 6. Close gates and retain the structural boundary
 
 - [x] 6.1 Run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the exact final implementation tree.
 - [x] 6.2 Run `pnpm openspec -- validate reduce-store-first-activation-latency --type change --strict` and `pnpm openspec -- validate --all --strict`.
-- [ ] 6.3 Deploy through the normal UAT workflow, confirm the deployed commit, and repeat the hosted five desktop plus three mobile-stress Store activation evidence before acceptance.
-- [ ] 6.4 Publish the final before/after report with all three milestones, request cardinality, no-store proof, checkout-revalidation proof, excluded runs, and remaining Store HTML network versus response → content cost.
-- [ ] 6.5 If the complete 104-card DOM remains the dominant actionable residual, leave the renderer unchanged, record the non-passing residual, and create an explicit OpenSpec amendment before pagination, virtualization, infinite scrolling, or node recycling.
+- [x] 6.3 Deploy through the normal UAT workflow, confirm the deployed commit, and repeat the hosted five desktop plus three mobile-stress Store activation evidence before acceptance.
+- [x] 6.4 Publish the final before/after report with all three milestones, request cardinality, no-store proof, checkout-revalidation proof, excluded runs, and remaining Store HTML network versus response → content cost.
+- [x] 6.5 If the complete 104-card DOM remains the dominant actionable residual, leave the renderer unchanged, record the non-passing residual, and create an explicit OpenSpec amendment before pagination, virtualization, infinite scrolling, or node recycling.
