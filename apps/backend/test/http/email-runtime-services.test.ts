@@ -90,4 +90,28 @@ describe('email runtime services', () => {
     expect(response.headers.get('Cache-Control')).toBe('no-store');
     await expect(response.json()).resolves.toEqual({ status: 'registered' });
   });
+
+  it('lets the public Services inquiry route submit locally without real Resend', async () => {
+    const response = await createHttpApp().request(
+      'http://backend.test/api/services/inquiries',
+      {
+        body: JSON.stringify({
+          email: 'visitor@example.com',
+          message: 'Please send more information.',
+          name: 'Test Visitor',
+          service: 'General',
+        }),
+        headers: {
+          'content-type': 'application/json',
+          origin: 'http://127.0.0.1:4321',
+        },
+        method: 'POST',
+      },
+      localBindings,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    await expect(response.json()).resolves.toEqual({ status: 'submitted' });
+  });
 });

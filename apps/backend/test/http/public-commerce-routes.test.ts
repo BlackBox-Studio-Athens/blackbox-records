@@ -18,6 +18,7 @@ const mockReadStoreListingPrices = vi.fn();
 const mockStartCheckout = vi.fn();
 const mockReadCheckoutState = vi.fn();
 const mockRegisterNewsletterSignup = vi.fn();
+const mockSubmitServicesInquiry = vi.fn();
 
 vi.mock('../../src/interfaces/http/routes/public-commerce-services', () => ({
   createPublicCommerceServices: () => ({
@@ -46,6 +47,15 @@ vi.mock('../../src/interfaces/http/routes/public-newsletter-services', () => ({
       ZodError: class ZodError extends Error {},
     },
     registerNewsletterSignup: mockRegisterNewsletterSignup,
+  }),
+}));
+
+vi.mock('../../src/interfaces/http/routes/public-services-inquiry-services', () => ({
+  createPublicServicesInquiryServices: () => ({
+    errors: {
+      EmailConfigurationError: class EmailConfigurationError extends Error {},
+    },
+    submitServicesInquiry: mockSubmitServicesInquiry,
   }),
 }));
 
@@ -386,6 +396,108 @@ describe('public commerce routes', () => {
     await expect(response.json()).resolves.toEqual({
       code: 'newsletter_unavailable',
       error: 'Newsletter signup is temporarily unavailable.',
+      requestId: expect.any(String),
+    });
+  });
+
+  it('submits Services inquiries through the public Worker route', async () => {
+    mockSubmitServicesInquiry.mockResolvedValueOnce({
+      idempotencyKey: 'blackbox:local:services-inquiry:test',
+      retryable: false,
+      status: 'sent',
+    });
+    const inquiry = {
+      bandOrProject: 'BlackBox Test',
+      email: 'visitor@example.com',
+      message: 'Please send more information.',
+      name: 'Test Visitor',
+      service: 'General',
+      serviceDetails: 'Athens',
+    };
+
+    const response = await createHttpApp().request(
+      'http://backend.test/api/services/inquiries',
+      {
+        body: JSON.stringify(inquiry),
+        headers: {
+          'content-type': 'application/json',
+          origin: 'https://blackbox.example',
+        },
+        method: 'POST',
+      },
+      testBindings,
+    );
+
+    expect(mockSubmitServicesInquiry).toHaveBeenCalledWith(inquiry);
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    await expect(response.json()).resolves.toEqual({ status: 'submitted' });
+  });
+
+  it('maps Services inquiry provider failures to a provider-safe response', async () => {
+    mockSubmitServicesInquiry.mockResolvedValueOnce({
+      idempotencyKey: 'blackbox:local:services-inquiry:test',
+      providerSafeReason: 'provider_unavailable',
+      retryable: true,
+      status: 'failed',
+    });
+
+    const response = await createHttpApp().request(
+      'http://backend.test/api/services/inquiries',
+      {
+        body: JSON.stringify({
+          email: 'private@example.com',
+          message: 'Private visitor message',
+          name: 'Private Visitor',
+          service: 'General',
+        }),
+        headers: {
+          'content-type': 'application/json',
+          origin: 'https://blackbox.example',
+        },
+        method: 'POST',
+      },
+      testBindings,
+    );
+
+    expect(response.status).toBe(503);
+    expectNoStoreCacheControl(response);
+    const body = await response.json();
+    expect(body).toEqual({
+      code: 'services_inquiry_unavailable',
+      error: 'Services inquiry submission is temporarily unavailable.',
+      requestId: expect.any(String),
+    });
+    expect(JSON.stringify(body)).not.toContain('Private');
+    expect(JSON.stringify(body)).not.toContain('private@example.com');
+  });
+
+  it.each(['recipient', 'to'])('rejects browser %s overrides before sending', async (field) => {
+    const response = await createHttpApp().request(
+      'http://backend.test/api/services/inquiries',
+      {
+        body: JSON.stringify({
+          email: 'visitor@example.com',
+          message: 'Please send more information.',
+          name: 'Test Visitor',
+          service: 'General',
+          [field]: 'attacker@example.com',
+        }),
+        headers: {
+          'content-type': 'application/json',
+          origin: 'https://blackbox.example',
+        },
+        method: 'POST',
+      },
+      testBindings,
+    );
+
+    expect(mockSubmitServicesInquiry).not.toHaveBeenCalled();
+    expect(response.status).toBe(400);
+    expectNoStoreCacheControl(response);
+    await expect(response.json()).resolves.toEqual({
+      code: 'invalid_request',
+      error: 'Invalid request.',
       requestId: expect.any(String),
     });
   });

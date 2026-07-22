@@ -423,6 +423,7 @@ const publicContractModules = [
   postCheckoutSessionRoute,
   getCheckoutStateRoute,
   postNewsletterRegistrationRoute,
+  postServicesInquiryRoute,
 ] as const;
 
 export const publicContractPaths = publicContractModules.map((route) => route.path);
