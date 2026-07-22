@@ -49,8 +49,18 @@ export function resolveDecapLocalRuntimeConfig(options: {
     return undefined;
   }
 
+  const configuredLocalBackendPort = options.environment.DECAP_LOCAL_PROXY_PORT;
+  const localBackendPort = configuredLocalBackendPort?.trim() ?? defaultLocalBackendPort;
+  const numericLocalBackendPort = Number(localBackendPort);
+
+  if (!/^\d+$/.test(localBackendPort) || numericLocalBackendPort < 1 || numericLocalBackendPort > 65535) {
+    throw new Error(
+      'DECAP_LOCAL_PROXY_PORT must be a base-10 TCP port from 1 through 65535 when set. Leave it unset to use 8082.',
+    );
+  }
+
   return {
-    localBackendPort: options.environment.DECAP_LOCAL_PROXY_PORT?.trim() || defaultLocalBackendPort,
+    localBackendPort,
     mode: 'local',
     useLocalBackend: true,
   };

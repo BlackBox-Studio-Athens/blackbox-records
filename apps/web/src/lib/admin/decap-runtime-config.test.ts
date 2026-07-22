@@ -75,6 +75,9 @@ describe('resolveDecapBackendMode', () => {
 });
 
 describe('resolveDecapLocalRuntimeConfig', () => {
+  const invalidLocalProxyPortMessage =
+    'DECAP_LOCAL_PROXY_PORT must be a base-10 TCP port from 1 through 65535 when set. Leave it unset to use 8082.';
+
   it('resolves the default local proxy without hosted settings', () => {
     expect(resolveDecapLocalRuntimeConfig({ environment: {}, isDevelopment: true })).toEqual({
       localBackendPort: '8082',
@@ -101,6 +104,57 @@ describe('resolveDecapLocalRuntimeConfig', () => {
       mode: 'local',
       useLocalBackend: true,
     });
+  });
+
+  it.each([
+    ['lower boundary', '  1  ', '1'],
+    ['upper boundary', '65535', '65535'],
+  ])('accepts and trims the %s', (_description, configuredValue, expectedPort) => {
+    expect(
+      resolveDecapLocalRuntimeConfig({
+        environment: {
+          DECAP_BACKEND_MODE: 'local',
+          DECAP_LOCAL_PROXY_PORT: configuredValue,
+        },
+        isDevelopment: false,
+      }),
+    ).toMatchObject({ localBackendPort: expectedPort });
+  });
+
+  it.each([
+    ['empty', ''],
+    ['whitespace-only', ' \t\r\n '],
+    ['zero', '0'],
+    ['negative', '-1'],
+    ['signed', '+1'],
+    ['fraction', '1.5'],
+    ['exponent notation', '1e3'],
+    ['hex notation', '0x50'],
+    ['trailing text', '8082abc'],
+    ['NaN', 'NaN'],
+    ['above the upper boundary', '65536'],
+  ])('rejects an explicit %s port without echoing it', (_description, configuredValue) => {
+    expect(() =>
+      resolveDecapLocalRuntimeConfig({
+        environment: {
+          DECAP_BACKEND_MODE: 'local',
+          DECAP_LOCAL_PROXY_PORT: configuredValue,
+        },
+        isDevelopment: false,
+      }),
+    ).toThrow(new RegExp(`^${invalidLocalProxyPortMessage}$`));
+  });
+
+  it.each(['hosted', 'disabled'] as const)('does not validate the local proxy port in %s mode', (mode) => {
+    expect(
+      resolveDecapLocalRuntimeConfig({
+        environment: {
+          DECAP_BACKEND_MODE: mode,
+          DECAP_LOCAL_PROXY_PORT: 'not-a-port',
+        },
+        isDevelopment: false,
+      }),
+    ).toBeUndefined();
   });
 });
 
