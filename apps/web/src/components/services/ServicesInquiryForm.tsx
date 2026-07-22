@@ -16,12 +16,44 @@ type ServicesInquiryFormProps = {
   submitText: string;
 };
 
+export const SERVICES_INQUIRY_DETAIL_PROMPTS = {
+  General: {
+    hint: 'Add any useful context.',
+    label: 'Useful context',
+  },
+  'Tour Booking': {
+    hint: 'Add the date, city, and venue if known.',
+    label: 'Date / City / Venue',
+  },
+  'Merch Printing': {
+    hint: 'Add the item, quantity, and deadline if known.',
+    label: 'Item / Quantity / Deadline',
+  },
+  'Vinyl Printing': {
+    hint: 'Add the format, quantity, and target date if known.',
+    label: 'Format / Quantity / Target Date',
+  },
+} satisfies Record<ServicesInquiryService, { hint: string; label: string }>;
+
+export type ServicesInquiryAdaptiveDetailsState = {
+  service: ServicesInquiryService;
+  serviceDetails: string;
+};
+
+export function selectServicesInquiryService(
+  state: ServicesInquiryAdaptiveDetailsState,
+  service: ServicesInquiryService,
+): ServicesInquiryAdaptiveDetailsState {
+  return { ...state, service };
+}
+
 export type ServicesInquiryFormValues = {
   bandOrProject: string;
   email: string;
   message: string;
   name: string;
   service: ServicesInquiryService;
+  serviceDetails: string;
 };
 
 export type ServicesInquirySubmissionStatus = 'idle' | 'submitting' | 'submitted' | 'error';
@@ -48,12 +80,14 @@ export async function submitServicesInquiryForm({
   pending.current = true;
   onStatusChange('submitting');
 
+  const serviceDetails = values.serviceDetails.trim();
   const body: ServicesInquiryBody = {
     ...(values.bandOrProject ? { bandOrProject: values.bandOrProject } : {}),
     email: values.email,
     message: values.message,
     name: values.name,
     service: values.service,
+    ...(serviceDetails ? { serviceDetails } : {}),
   };
 
   try {
@@ -75,11 +109,16 @@ export default function ServicesInquiryForm({
   const [name, setName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [bandOrProject, setBandOrProject] = useState('');
-  const [service, setService] = useState<ServicesInquiryService>('General');
+  const [adaptiveDetails, setAdaptiveDetails] = useState<ServicesInquiryAdaptiveDetailsState>({
+    service: 'General',
+    serviceDetails: '',
+  });
   const [message, setMessage] = useState('');
   const [submissionStatus, setSubmissionStatus] = useState<ServicesInquirySubmissionStatus>('idle');
   const pendingSubmissionRef = useRef(false);
   const isSubmitting = submissionStatus === 'submitting';
+  const { service, serviceDetails } = adaptiveDetails;
+  const detailPrompt = SERVICES_INQUIRY_DETAIL_PROMPTS[service];
 
   useEffect(() => {
     function handleDocumentClick(event: MouseEvent) {
@@ -91,9 +130,9 @@ export default function ServicesInquiryForm({
 
       const nextService = triggerElement.dataset.servicesInquiryTargetService || 'General';
       if (isKnownService(nextService)) {
-        setService(nextService);
+        setAdaptiveDetails((current) => selectServicesInquiryService(current, nextService));
       } else {
-        setService('General');
+        setAdaptiveDetails((current) => selectServicesInquiryService(current, 'General'));
       }
     }
 
@@ -125,6 +164,7 @@ export default function ServicesInquiryForm({
             message,
             name,
             service,
+            serviceDetails,
           },
         });
       }}
@@ -178,7 +218,9 @@ export default function ServicesInquiryForm({
             value={service}
             onChange={(event) => {
               const nextValue = event.target.value;
-              setService(isKnownService(nextValue) ? nextValue : 'General');
+              setAdaptiveDetails((current) =>
+                selectServicesInquiryService(current, isKnownService(nextValue) ? nextValue : 'General'),
+              );
             }}
           >
             {SERVICES_INQUIRY_SERVICE_OPTIONS.map((serviceOption) => (
@@ -189,6 +231,23 @@ export default function ServicesInquiryForm({
           </select>
         </label>
       </div>
+
+      <label className="services-inquiry-form__field" htmlFor="services-inquiry-details">
+        <span className="services-inquiry-form__label">{detailPrompt.label}</span>
+        <Input
+          aria-describedby="services-inquiry-details-hint"
+          className="services-inquiry-form__input h-11 rounded-none border-[#2b2b2b] bg-[#111111] text-[0.95rem]"
+          disabled={isSubmitting}
+          id="services-inquiry-details"
+          maxLength={300}
+          name="serviceDetails"
+          value={serviceDetails}
+          onChange={(event) => setAdaptiveDetails((current) => ({ ...current, serviceDetails: event.target.value }))}
+        />
+        <span className="text-sm leading-6 text-[#b3b3b3]" id="services-inquiry-details-hint">
+          {detailPrompt.hint}
+        </span>
+      </label>
 
       <label className="services-inquiry-form__field">
         <span className="services-inquiry-form__label">Message</span>
