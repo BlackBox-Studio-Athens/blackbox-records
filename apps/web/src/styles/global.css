@@ -5,7 +5,7 @@
 @font-face {
   font-family: 'Veneer';
   src: url('../assets/fonts/brand/veneer_regular.woff2') format('woff2');
-  font-display: optional;
+  font-display: swap;
   font-style: normal;
   font-weight: 900;
 }

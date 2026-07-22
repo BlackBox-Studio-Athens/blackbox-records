@@ -32,9 +32,9 @@ export function checkBrandFontSources(root = webRoot): void {
   for (const fontPath of [publicFont, bundledFont]) {
     if (sha256(fontPath) !== expectedVeneerSha256) throw new Error(`Veneer byte parity failed for ${fontPath}.`);
   }
-  requireText(publicCss, 'font-display: optional', 'Stable Veneer CSS');
+  requireText(publicCss, 'font-display: swap', 'Stable Veneer CSS');
   requireText(globalCss, "url('../assets/fonts/brand/veneer_regular.woff2')", 'Bundled Veneer CSS');
-  requireText(globalCss, 'font-display: optional', 'Bundled Veneer CSS');
+  requireText(globalCss, 'font-display: swap', 'Bundled Veneer CSS');
   if (siteLayout.includes('/assets/fonts/brand/veneer.css')) {
     throw new Error('The main SiteLayout must not request the stable Holding Page Veneer stylesheet.');
   }
@@ -58,7 +58,7 @@ export function checkBrandFontBuild(root = webRoot): void {
     .map((file) => readFileSync(file, 'utf8'))
     .join('\n');
   requireText(generatedCss, path.basename(generatedFonts[0]!), 'Generated main-site CSS');
-  requireText(generatedCss, 'font-display:optional', 'Generated main-site CSS');
+  requireText(generatedCss, 'font-display:swap', 'Generated main-site CSS');
 
   const normalRouteHtml = listFiles(distRoot).filter(
     (file) =>
