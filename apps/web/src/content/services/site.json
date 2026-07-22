@@ -74,9 +74,9 @@
     {
       "type": "inquiry",
       "title": "Start an Inquiry",
-      "intro": "Send one inquiry and we'll get back to you ASAP. ",
+      "intro": "Send your inquiry through the site. Confirmation appears here, and no receipt is emailed to you. If needed, use the selected address or email-app fallback below.",
       "email": "info@blackboxrecordsathens.com",
-      "submit_text": "Compose Inquiry"
+      "submit_text": "Send Inquiry"
     }
   ]
 }

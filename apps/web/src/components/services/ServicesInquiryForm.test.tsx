@@ -21,11 +21,23 @@ import ServicesInquiryForm, {
 import { buildServicesInquiryDraft } from './services-inquiry';
 
 const componentSource = readFileSync(fileURLToPath(new URL('./ServicesInquiryForm.tsx', import.meta.url)), 'utf8');
+const appShellSource = readFileSync(fileURLToPath(new URL('../app-shell/AppShell.astro', import.meta.url)), 'utf8');
+const shellPortalSource = readFileSync(
+  fileURLToPath(new URL('../app-shell/view/ShellPortalOutlets.tsx', import.meta.url)),
+  'utf8',
+);
+const servicesPageSource = readFileSync(
+  fileURLToPath(new URL('../../pages/services/index.astro', import.meta.url)),
+  'utf8',
+);
+const servicesContent = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../content/services/site.json', import.meta.url)), 'utf8'),
+) as { sections: Array<{ intro?: string; submit_text?: string; type: string }> };
 
 describe('ServicesInquiryForm', () => {
   it('renders native required controls with public-contract length bounds', () => {
     const html = renderToStaticMarkup(
-      <ServicesInquiryForm email="info@blackboxrecordsathens.com" submitText="Compose Inquiry" />,
+      <ServicesInquiryForm email="info@blackboxrecordsathens.com" submitText="Send Inquiry" />,
     );
 
     expect(html).toMatch(/<input(?=[^>]*name="name")(?=[^>]*maxLength="100")(?=[^>]*required="")[^>]*>/);
@@ -45,6 +57,28 @@ describe('ServicesInquiryForm', () => {
     expect(html).toContain('role="status"');
     expect(html).toContain('aria-live="polite"');
     expect(html).not.toContain('role="alert"');
+    expect(html).toContain('Send Inquiry');
+    expect(html).not.toContain('Compose Inquiry');
+  });
+
+  it('uses server-first inquiry copy and a manual no-JavaScript email fallback', () => {
+    const inquiryContent = servicesContent.sections.find((section) => section.type === 'inquiry');
+    const copySources = [appShellSource, componentSource, servicesPageSource, shellPortalSource].join('\n');
+
+    expect(inquiryContent).toEqual(
+      expect.objectContaining({
+        intro:
+          'Send your inquiry through the site. Confirmation appears here, and no receipt is emailed to you. If needed, use the selected address or email-app fallback below.',
+        submit_text: 'Send Inquiry',
+      }),
+    );
+    expect(servicesPageSource).toContain('Without JavaScript, send your inquiry to the matching address below.');
+    expect(servicesPageSource).toContain('Select and copy the address');
+    expect(servicesPageSource).toContain('SERVICES_INQUIRY_RECIPIENT_ALIAS_BY_SERVICE');
+    expect(shellPortalSource).toContain('Use the email link or copy this address:');
+    expect(copySources).not.toContain('Compose Inquiry');
+    expect(copySources).not.toContain('JavaScript is required for the inquiry form.');
+    expect(copySources).not.toContain('This opens your email client');
   });
 
   it('renders distinct accessible field and provider error feedback', () => {
@@ -100,6 +134,8 @@ describe('ServicesInquiryForm', () => {
 
     expect(html).toContain(`href="${draft.mailtoHref.replaceAll('&', '&amp;')}"`);
     expect(html).toContain('Open in email app');
+    expect(html).toContain('If site submission is unavailable');
+    expect(html).toContain('copy the recipient and inquiry summary below');
     expect(html).not.toContain('target=');
     expect(html).toContain('vinyl@blackboxrecordsathens.com');
     expect(html).toContain('Inquiry summary');

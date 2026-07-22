@@ -92,8 +92,8 @@ export default function ShellPortalOutlets({
             <PortalErrorBoundary
               fallback={
                 <p role="alert">
-                  The inquiry form is unavailable.{' '}
-                  <a href={`mailto:${servicesInquiryEmail}`}>Email BlackBox Records.</a>
+                  The inquiry form is unavailable. Use the email link or copy this address:{' '}
+                  <a href={`mailto:${servicesInquiryEmail}`}>{servicesInquiryEmail}</a>
                 </p>
               }
             >

@@ -247,6 +247,10 @@ export function ServicesInquiryEmailFallback({
       <h3 className="services-inquiry-form__label m-0" id="services-inquiry-email-fallback-title">
         Email fallback
       </h3>
+      <p className="m-0 text-sm leading-6 text-[#b3b3b3]">
+        If site submission is unavailable, open the draft in your email app or copy the recipient and inquiry summary
+        below.
+      </p>
       <div className="flex flex-wrap items-center gap-3">
         <a className="services-inline-link inline-flex min-h-11 items-center" href={draft.mailtoHref}>
           Open in email app

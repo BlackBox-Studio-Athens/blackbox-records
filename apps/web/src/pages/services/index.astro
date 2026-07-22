@@ -1,5 +1,6 @@
 ---
 import { Image } from 'astro:assets';
+import { SERVICES_INQUIRY_RECIPIENT_ALIAS_BY_SERVICE } from '@/components/services/services-inquiry';
 import GridPattern from '@/components/ui/grid-pattern.astro';
 import { buttonVariants } from '@/components/ui/button';
 import SiteLayout from '@/layouts/SiteLayout.astro';
@@ -11,6 +12,7 @@ const servicesContent = await getServicesContent();
 const servicesListSection = getContentSection(servicesContent.sections, 'services');
 const processSection = getContentSection(servicesContent.sections, 'process');
 const inquirySection = getContentSection(servicesContent.sections, 'inquiry');
+const noJavaScriptInquiryRecipients = Object.entries(SERVICES_INQUIRY_RECIPIENT_ALIAS_BY_SERVICE);
 ---
 
 <SiteLayout pageTitle="Services" pageDescription="Tour booking, merch printing, and vinyl production support.">
@@ -137,13 +139,25 @@ const inquirySection = getContentSection(servicesContent.sections, 'inquiry');
         </div>
         <div data-services-inquiry-form />
         <noscript>
-          <p class="services-inquiry-section__noscript">
-            JavaScript is required for the inquiry form. Contact us directly at{' '}
-            <a class="services-inline-link" href={`mailto:${inquirySection.email}`}>
-              {inquirySection.email}
-            </a>
-            .
-          </p>
+          <section aria-labelledby="services-inquiry-noscript-title" class="grid max-w-[42rem] gap-3">
+            <h3 class="services-inquiry-form__label m-0" id="services-inquiry-noscript-title">
+              Email fallback
+            </h3>
+            <p class="services-inquiry-section__noscript m-0">
+              Without JavaScript, send your inquiry to the matching address below. Select and copy the address manually,
+              or use its email link.
+            </p>
+            <ul class="m-0 grid list-none gap-2 p-0">
+              {noJavaScriptInquiryRecipients.map(([service, email]) => (
+                <li class="flex flex-wrap gap-x-2">
+                  <span class="services-inquiry-form__label">{service}:</span>
+                  <a class="services-inline-link break-all" href={`mailto:${email}`}>
+                    {email}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
         </noscript>
       </section>
     )
