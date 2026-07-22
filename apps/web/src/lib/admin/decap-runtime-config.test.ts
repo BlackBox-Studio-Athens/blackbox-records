@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   parseDecapBackendMode,
   resolveDecapBackendMode,
+  resolveDecapHostedRuntimeConfig,
   resolveDecapLocalRuntimeConfig,
   resolveDecapSiteRootUrl,
   shouldUseLocalDecapBackend,
@@ -152,6 +153,82 @@ describe('resolveDecapLocalRuntimeConfig', () => {
           DECAP_BACKEND_MODE: mode,
           DECAP_LOCAL_PROXY_PORT: 'not-a-port',
         },
+        isDevelopment: false,
+      }),
+    ).toBeUndefined();
+  });
+});
+
+describe('resolveDecapHostedRuntimeConfig', () => {
+  const hostedEnvironment = {
+    DECAP_BACKEND_MODE: 'hosted',
+    DECAP_REPOSITORY: 'BlackBox-Studio-Athens/blackbox-records',
+    DECAP_SITE_URL: 'https://example.com/blackbox-records/',
+    DECAPBRIDGE_AUTH_ENDPOINT: '/sites/site-id/pkce',
+    DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: '/sites/site-id/token',
+  };
+  const requiredSettingNames = [
+    'DECAP_REPOSITORY',
+    'DECAP_SITE_URL',
+    'DECAPBRIDGE_AUTH_ENDPOINT',
+    'DECAPBRIDGE_AUTH_TOKEN_ENDPOINT',
+  ] as const;
+  const missingSettingMessage = (settingNames: readonly string[]) =>
+    `Hosted Decap configuration is missing required setting(s): ${settingNames.join(', ')}. Set each named setting before building with DECAP_BACKEND_MODE=hosted.`;
+
+  it.each(requiredSettingNames)('rejects missing %s', (settingName) => {
+    const environment: Record<string, string | undefined> = { ...hostedEnvironment };
+    delete environment[settingName];
+
+    expect(() => resolveDecapHostedRuntimeConfig({ environment, isDevelopment: false })).toThrow(
+      missingSettingMessage([settingName]),
+    );
+  });
+
+  it.each(requiredSettingNames)('treats whitespace-only %s as missing', (settingName) => {
+    expect(() =>
+      resolveDecapHostedRuntimeConfig({
+        environment: { ...hostedEnvironment, [settingName]: ' \t\r\n ' },
+        isDevelopment: false,
+      }),
+    ).toThrow(missingSettingMessage([settingName]));
+  });
+
+  it('reports every missing hosted setting without values', () => {
+    expect(() =>
+      resolveDecapHostedRuntimeConfig({
+        environment: {
+          ...hostedEnvironment,
+          DECAP_REPOSITORY: undefined,
+          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: undefined,
+        },
+        isDevelopment: false,
+      }),
+    ).toThrow(missingSettingMessage(['DECAP_REPOSITORY', 'DECAPBRIDGE_AUTH_TOKEN_ENDPOINT']));
+  });
+
+  it('returns a trimmed hosted runtime config when every setting is present', () => {
+    expect(
+      resolveDecapHostedRuntimeConfig({
+        environment: Object.fromEntries(
+          Object.entries(hostedEnvironment).map(([settingName, value]) => [settingName, `  ${value}  `]),
+        ),
+        isDevelopment: false,
+      }),
+    ).toEqual({
+      authEndpoint: '/sites/site-id/pkce',
+      authTokenEndpoint: '/sites/site-id/token',
+      mode: 'hosted',
+      repository: 'BlackBox-Studio-Athens/blackbox-records',
+      siteUrl: 'https://example.com/blackbox-records/',
+      useLocalBackend: false,
+    });
+  });
+
+  it.each(['local', 'disabled'] as const)('does not require hosted settings in %s mode', (mode) => {
+    expect(
+      resolveDecapHostedRuntimeConfig({
+        environment: { DECAP_BACKEND_MODE: mode },
         isDevelopment: false,
       }),
     ).toBeUndefined();

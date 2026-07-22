@@ -6,6 +6,15 @@ export type DecapLocalRuntimeConfig = {
   useLocalBackend: true;
 };
 
+export type DecapHostedRuntimeConfig = {
+  authEndpoint: string;
+  authTokenEndpoint: string;
+  mode: 'hosted';
+  repository: string;
+  siteUrl: string;
+  useLocalBackend: false;
+};
+
 const decapBackendModes: readonly DecapBackendMode[] = ['local', 'hosted', 'disabled'];
 const defaultLocalBackendPort = '8082';
 
@@ -63,6 +72,41 @@ export function resolveDecapLocalRuntimeConfig(options: {
     localBackendPort,
     mode: 'local',
     useLocalBackend: true,
+  };
+}
+
+export function resolveDecapHostedRuntimeConfig(options: {
+  environment: Readonly<Record<string, string | undefined>>;
+  isDevelopment: boolean;
+}): DecapHostedRuntimeConfig | undefined {
+  if (resolveDecapBackendMode(options) !== 'hosted') {
+    return undefined;
+  }
+
+  const repository = options.environment.DECAP_REPOSITORY?.trim();
+  const siteUrl = options.environment.DECAP_SITE_URL?.trim();
+  const authEndpoint = options.environment.DECAPBRIDGE_AUTH_ENDPOINT?.trim();
+  const authTokenEndpoint = options.environment.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT?.trim();
+
+  if (!repository || !siteUrl || !authEndpoint || !authTokenEndpoint) {
+    const missingSettingNames: string[] = [];
+    if (!repository) missingSettingNames.push('DECAP_REPOSITORY');
+    if (!siteUrl) missingSettingNames.push('DECAP_SITE_URL');
+    if (!authEndpoint) missingSettingNames.push('DECAPBRIDGE_AUTH_ENDPOINT');
+    if (!authTokenEndpoint) missingSettingNames.push('DECAPBRIDGE_AUTH_TOKEN_ENDPOINT');
+
+    throw new Error(
+      `Hosted Decap configuration is missing required setting(s): ${missingSettingNames.join(', ')}. Set each named setting before building with DECAP_BACKEND_MODE=hosted.`,
+    );
+  }
+
+  return {
+    authEndpoint,
+    authTokenEndpoint,
+    mode: 'hosted',
+    repository,
+    siteUrl,
+    useLocalBackend: false,
   };
 }
 

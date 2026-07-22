@@ -17,7 +17,7 @@
 - [x] 2.4 Reject unknown or empty explicit `DECAP_BACKEND_MODE` values with an actionable build error.
 - [x] 2.5 Resolve local mode to the proxy backend without requiring DecapBridge endpoints.
 - [x] 2.6 Validate `DECAP_LOCAL_PROXY_PORT` as a valid TCP port before emitting local config.
-- [ ] 2.7 Require the hosted repository, site URL, DecapBridge auth endpoint, and DecapBridge token endpoint before hosted config is generated.
+- [x] 2.7 Require the hosted repository, site URL, DecapBridge auth endpoint, and DecapBridge token endpoint before hosted config is generated.
 - [ ] 2.8 Reject known placeholder values for hosted repository, site, auth, and token settings.
 - [ ] 2.9 Reject loopback hosts, including `localhost` and `127.0.0.1`, from every hosted backend or site URL.
 - [ ] 2.10 Validate hosted endpoint URL syntax and require secure HTTPS endpoints outside an explicitly local mode.
