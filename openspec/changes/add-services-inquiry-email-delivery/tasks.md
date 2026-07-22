@@ -29,8 +29,16 @@
 
 ## 5. Verification and Rollout
 
-- [ ] 5.1 Run focused frontend, backend, HTTP, email-template, API-generation, architecture, and UAT-smoke contract tests.
-- [ ] 5.2 Run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the final implementation tree.
-- [ ] 5.3 Use Browser Use on mobile and desktop to verify required fields, all adaptive prompts, pending/error preservation, inline success, send-another reset, no overflow, no unintended navigation, mail-app fallback, and copy fallback.
+- [x] 5.1 Run focused frontend, backend, HTTP, email-template, API-generation, architecture, and UAT-smoke contract tests.
+- [x] 5.2 Run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the final implementation tree.
+- [x] 5.3 Use Browser Use on mobile and desktop to verify required fields, all adaptive prompts, pending/error preservation, inline success, send-another reset, no overflow, no unintended navigation, mail-app fallback, and copy fallback.
 - [ ] 5.4 Deploy the Worker before the static frontend, run the synthetic UAT inquiry against `uat-sink@ambkime.resend.app`, and record redacted evidence.
 - [ ] 5.5 Before PRD acceptance, manually send one probe to each of `info@`, `booking@`, `merch@`, and `vinyl@blackboxrecordsathens.com` and confirm Cloudflare Email Routing forwards all four to the existing Gmail inbox.
+
+### Local acceptance evidence — 2026-07-22
+
+- Focused acceptance passed: frontend form/fallback/API-wrapper tests (36), backend email/HTTP/OpenAPI tests (83), architecture/UAT-smoke contracts (19), and generated API-client tests (6). `pnpm generate:api` produced no diff.
+- Full acceptance passed: `pnpm test:unit` (web 535, backend 284 + 224, API client 6), `pnpm check`, and `pnpm build` (350 pages).
+- Native Codex Browser Use passed at desktop and mobile widths against the built local site and Local mock Worker. It covered native required/length constraints, all four adaptive prompts and aliases, pending and provider-error value preservation, inline success, reset/focus, accessible status/alert regions, exact CRLF mailto formatting, visible/copyable fallback, unchanged URL/tab count, and no horizontal overflow.
+- Clipboard success was rendered and verified. Clipboard-unavailable and rejection behavior remains covered by focused tests because Browser Use does not expose a safe page-mutation seam for forced Clipboard API failure.
+- Evidence contains no visitor content, provider response, or secret. No deployment, Resend call, or provider mutation occurred.
