@@ -31,6 +31,9 @@ describe('parseDecapBackendMode', () => {
 });
 
 describe('resolveDecapBackendMode', () => {
+  const invalidModeMessage =
+    'DECAP_BACKEND_MODE must be local, hosted, or disabled when set. Leave it unset to use the environment default.';
+
   it('defaults an absent mode to local during Astro development', () => {
     expect(resolveDecapBackendMode({ environment: {}, isDevelopment: true })).toBe('local');
   });
@@ -39,13 +42,34 @@ describe('resolveDecapBackendMode', () => {
     expect(resolveDecapBackendMode({ environment: {}, isDevelopment: false })).toBe('disabled');
   });
 
-  it('does not treat an explicit whitespace-only value as absent', () => {
-    expect(
+  it.each([
+    ['empty', ''],
+    ['whitespace-only', ' \t\r\n '],
+  ])('rejects an explicit %s value', (_description, configuredValue) => {
+    expect(() =>
       resolveDecapBackendMode({
-        environment: { DECAP_BACKEND_MODE: '   ' },
+        environment: { DECAP_BACKEND_MODE: configuredValue },
         isDevelopment: true,
       }),
-    ).toBeUndefined();
+    ).toThrow(invalidModeMessage);
+  });
+
+  it.each(['LOCAL', 'local,hosted', 'staging'])('rejects the unsupported explicit value %s', (configuredValue) => {
+    expect(() =>
+      resolveDecapBackendMode({
+        environment: { DECAP_BACKEND_MODE: configuredValue },
+        isDevelopment: false,
+      }),
+    ).toThrow(invalidModeMessage);
+  });
+
+  it.each(['local', 'hosted', 'disabled'] as const)('accepts the explicit %s value', (mode) => {
+    expect(
+      resolveDecapBackendMode({
+        environment: { DECAP_BACKEND_MODE: `  ${mode}  ` },
+        isDevelopment: false,
+      }),
+    ).toBe(mode);
   });
 });
 

@@ -18,10 +18,20 @@ export function parseDecapBackendMode(environment: Readonly<Record<string, strin
 export function resolveDecapBackendMode(options: {
   environment: Readonly<Record<string, string | undefined>>;
   isDevelopment: boolean;
-}): DecapBackendMode | undefined {
+}): DecapBackendMode {
   const { configuredValue, mode } = parseDecapBackendMode(options.environment);
 
-  return configuredValue === undefined ? (options.isDevelopment ? 'local' : 'disabled') : mode;
+  if (configuredValue === undefined) {
+    return options.isDevelopment ? 'local' : 'disabled';
+  }
+
+  if (!mode) {
+    throw new Error(
+      'DECAP_BACKEND_MODE must be local, hosted, or disabled when set. Leave it unset to use the environment default.',
+    );
+  }
+
+  return mode;
 }
 
 function ensureTrailingSlash(value: string): string {
