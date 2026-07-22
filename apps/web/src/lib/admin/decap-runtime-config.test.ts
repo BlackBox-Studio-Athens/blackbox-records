@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   parseDecapBackendMode,
   resolveDecapBackendMode,
+  resolveDecapLocalRuntimeConfig,
   resolveDecapSiteRootUrl,
   shouldUseLocalDecapBackend,
 } from './decap-runtime-config';
@@ -70,6 +71,36 @@ describe('resolveDecapBackendMode', () => {
         isDevelopment: false,
       }),
     ).toBe(mode);
+  });
+});
+
+describe('resolveDecapLocalRuntimeConfig', () => {
+  it('resolves the default local proxy without hosted settings', () => {
+    expect(resolveDecapLocalRuntimeConfig({ environment: {}, isDevelopment: true })).toEqual({
+      localBackendPort: '8082',
+      mode: 'local',
+      useLocalBackend: true,
+    });
+  });
+
+  it('keeps explicit local mode when legacy hosted settings are present', () => {
+    expect(
+      resolveDecapLocalRuntimeConfig({
+        environment: {
+          DECAP_BACKEND_MODE: 'local',
+          DECAP_LOCAL_PROXY_PORT: '9000',
+          DECAP_REPOSITORY: 'legacy/repository',
+          DECAP_SITE_URL: 'https://legacy.example.com',
+          DECAPBRIDGE_AUTH_ENDPOINT: '/sites/legacy/pkce',
+          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: '/sites/legacy/token',
+        },
+        isDevelopment: false,
+      }),
+    ).toEqual({
+      localBackendPort: '9000',
+      mode: 'local',
+      useLocalBackend: true,
+    });
   });
 });
 

@@ -1,6 +1,13 @@
 export type DecapBackendMode = 'local' | 'hosted' | 'disabled';
 
+export type DecapLocalRuntimeConfig = {
+  localBackendPort: string;
+  mode: 'local';
+  useLocalBackend: true;
+};
+
 const decapBackendModes: readonly DecapBackendMode[] = ['local', 'hosted', 'disabled'];
+const defaultLocalBackendPort = '8082';
 
 export function parseDecapBackendMode(environment: Readonly<Record<string, string | undefined>>): {
   configuredValue: string | undefined;
@@ -32,6 +39,21 @@ export function resolveDecapBackendMode(options: {
   }
 
   return mode;
+}
+
+export function resolveDecapLocalRuntimeConfig(options: {
+  environment: Readonly<Record<string, string | undefined>>;
+  isDevelopment: boolean;
+}): DecapLocalRuntimeConfig | undefined {
+  if (resolveDecapBackendMode(options) !== 'local') {
+    return undefined;
+  }
+
+  return {
+    localBackendPort: options.environment.DECAP_LOCAL_PROXY_PORT?.trim() || defaultLocalBackendPort,
+    mode: 'local',
+    useLocalBackend: true,
+  };
 }
 
 function ensureTrailingSlash(value: string): string {
