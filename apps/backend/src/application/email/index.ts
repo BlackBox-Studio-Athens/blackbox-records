@@ -17,9 +17,10 @@ export {
   SERVICES_INQUIRY_FIELD_LIMITS,
   SERVICES_INQUIRY_RECIPIENT_ALIAS_BY_SERVICE,
   SERVICES_INQUIRY_SERVICES,
+  sendServicesInquiry,
   validateServicesInquiryInput,
 } from './services-inquiry';
-export type { ServicesInquiryInput, ServicesInquiryService } from './services-inquiry';
+export type { ServicesInquiryInput, ServicesInquiryOutcomeLogger, ServicesInquiryService } from './services-inquiry';
 export { sendTransactionalEmail } from './transactional-email';
 export type {
   EmailProviderOperationResult,

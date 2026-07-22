@@ -1,8 +1,10 @@
 import { z } from 'zod';
 
 import { createProviderSafeTag } from './idempotency';
+import { sendTransactionalEmail } from './transactional-email';
 import { createBlackBoxEmailTemplate } from './templates';
-import type { EmailMessageContent, EmailTag } from './types';
+import type { EmailProviderGateway } from './spi';
+import type { EmailMessageContent, EmailOperationResult, EmailRuntimeConfig, EmailTag } from './types';
 
 export const SERVICES_INQUIRY_SERVICES = ['General', 'Tour Booking', 'Merch Printing', 'Vinyl Printing'] as const;
 
@@ -59,6 +61,8 @@ const servicesInquiryInputSchema = z
   .strict();
 
 export type ServicesInquiryInput = z.infer<typeof servicesInquiryInputSchema>;
+
+export type ServicesInquiryOutcomeLogger = Pick<Console, 'info' | 'warn'>;
 
 export function validateServicesInquiryInput(input: unknown): ServicesInquiryInput {
   return servicesInquiryInputSchema.parse(input);
@@ -122,6 +126,41 @@ export function createServicesInquiryEmailTags(service: ServicesInquiryService):
     createProviderSafeTag({ name: 'category', value: SERVICES_INQUIRY_EMAIL_PURPOSE }),
     createProviderSafeTag({ name: 'service', value: servicesInquiryProviderTagByService[service] }),
   ];
+}
+
+export async function sendServicesInquiry(input: {
+  config: EmailRuntimeConfig;
+  inquiry: unknown;
+  logger?: ServicesInquiryOutcomeLogger;
+  provider: EmailProviderGateway;
+}): Promise<EmailOperationResult> {
+  const inquiry = validateServicesInquiryInput(input.inquiry);
+  const result = await sendTransactionalEmail(input.provider, input.config, {
+    content: buildServicesInquiryEmail(inquiry),
+    idempotencyEntityId: crypto.randomUUID(),
+    purpose: SERVICES_INQUIRY_EMAIL_PURPOSE,
+    replyTo: inquiry.email,
+    tags: createServicesInquiryEmailTags(inquiry.service),
+    to: SERVICES_INQUIRY_RECIPIENT_ALIAS_BY_SERVICE[inquiry.service],
+  });
+  const outcome = {
+    event: 'services_inquiry_email_outcome',
+    idempotencyKey: result.idempotencyKey,
+    retryable: result.retryable,
+    safeReason: result.status === 'failed' ? (result.providerSafeReason ?? 'unknown') : undefined,
+    service: servicesInquiryProviderTagByService[inquiry.service],
+    sinkRouted: result.routedRecipient?.isSinkRouted ?? false,
+    status: result.status,
+  };
+  const logger = input.logger ?? console;
+
+  if (result.status === 'sent') {
+    logger.info(outcome);
+  } else {
+    logger.warn(outcome);
+  }
+
+  return result;
 }
 
 function escapeHtml(value: string): string {
