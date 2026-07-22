@@ -9,7 +9,7 @@
 
 - [x] 2.1 Add strict OpenAPI request/response schemas for `POST /api/services/inquiries`, including required fields, service enum, optional fields, exact length limits, `400` validation, and provider-safe `503` failure.
 - [x] 2.2 Add the route-local Services Inquiry service and route registration by reusing `createEmailRuntimeServices`; reject browser recipient overrides and return `status: submitted` only after provider acceptance.
-- [ ] 2.3 Add HTTP tests for valid submission, each service route, invalid/unknown fields, dynamic visitor `Reply-To`, Local mock behavior, UAT sink behavior, and unavailable email runtime/provider responses.
+- [x] 2.3 Add HTTP tests for valid submission, each service route, invalid/unknown fields, dynamic visitor `Reply-To`, Local mock behavior, UAT sink behavior, and unavailable email runtime/provider responses.
 - [ ] 2.4 Regenerate and verify the public OpenAPI documents and `@blackbox/api-client` artifacts.
 
 ## 3. Services Form UX
