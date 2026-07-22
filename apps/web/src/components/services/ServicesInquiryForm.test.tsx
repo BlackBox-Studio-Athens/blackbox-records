@@ -164,6 +164,25 @@ describe('ServicesInquiryForm', () => {
     expect(html).toContain('role="status"');
   });
 
+  it('announces successful clipboard copy while keeping the fallback visible', () => {
+    const draft = buildServicesInquiryDraft({
+      bandOrProject: '',
+      email: 'visitor@example.com',
+      message: 'General question.',
+      name: 'Visitor',
+      service: 'General',
+      serviceDetails: '',
+    });
+    const html = renderToStaticMarkup(
+      <ServicesInquiryEmailFallback copyStatus="copied" draft={draft} onCopy={vi.fn()} />,
+    );
+
+    expect(html).toContain('Inquiry details copied.');
+    expect(html).toContain('info@blackboxrecordsathens.com');
+    expect(html).toContain('General question.');
+    expect(html).toContain('role="status"');
+  });
+
   it('maps every service to the approved adaptive details prompt', () => {
     expect(SERVICES_INQUIRY_DETAIL_PROMPTS).toEqual({
       General: { hint: 'Add any useful context.', label: 'Useful context' },
@@ -180,15 +199,19 @@ describe('ServicesInquiryForm', () => {
   });
 
   it('preserves entered details when the selected service changes', () => {
-    expect(
-      selectServicesInquiryService(
-        { service: 'General', serviceDetails: 'Keep these entered details.' },
-        'Tour Booking',
-      ),
-    ).toEqual({ service: 'Tour Booking', serviceDetails: 'Keep these entered details.' });
+    const serviceDetails = 'x'.repeat(300);
+
+    for (const service of Object.keys(SERVICES_INQUIRY_DETAIL_PROMPTS) as Array<
+      keyof typeof SERVICES_INQUIRY_DETAIL_PROMPTS
+    >) {
+      expect(selectServicesInquiryService({ service: 'General', serviceDetails }, service)).toEqual({
+        service,
+        serviceDetails,
+      });
+    }
   });
 
-  it('preserves values across failures and resets only after the explicit reset action', () => {
+  it('preserves values across failures and resets the submitted form only after the explicit reset action', () => {
     const initialState = createInitialServicesInquiryFormState();
     const enteredState = {
       status: 'idle' as const,
@@ -202,9 +225,11 @@ describe('ServicesInquiryForm', () => {
       },
     };
     const failedState = reduceServicesInquiryFormState(enteredState, { status: 'provider-error', type: 'status' });
+    const submittedState = reduceServicesInquiryFormState(enteredState, { status: 'submitted', type: 'status' });
 
     expect(failedState.values).toEqual(enteredState.values);
-    expect(reduceServicesInquiryFormState(failedState, { type: 'reset' })).toEqual(initialState);
+    expect(submittedState.values).toEqual(enteredState.values);
+    expect(reduceServicesInquiryFormState(submittedState, { type: 'reset' })).toEqual(initialState);
   });
 
   it('classifies 400 responses as field errors and unavailable responses as provider errors', () => {
@@ -285,7 +310,11 @@ describe('ServicesInquiryForm', () => {
     });
   });
 
-  it('preserves every entered value after runtime or provider failure', async () => {
+  it.each([
+    ['400 response', new PublicCheckoutApiError(400, 'Invalid request.'), 'field-error'],
+    ['provider response', new PublicCheckoutApiError(503, 'Unavailable.'), 'provider-error'],
+    ['network failure', new TypeError('Failed to fetch'), 'provider-error'],
+  ] as const)('preserves every entered value after %s', async (_label, error, expectedStatus) => {
     const values: ServicesInquiryFormValues = {
       bandOrProject: 'BlackBox Band',
       email: 'visitor@example.com',
@@ -301,35 +330,12 @@ describe('ServicesInquiryForm', () => {
       submitServicesInquiryForm({
         onStatusChange: (status) => statuses.push(status),
         pending: { current: false },
-        submitInquiry: vi.fn().mockRejectedValue(new Error('Provider unavailable')),
+        submitInquiry: vi.fn().mockRejectedValue(error),
         values,
       }),
     ).resolves.toBe(false);
 
     expect(values).toEqual(originalValues);
-    expect(statuses).toEqual(['submitting', 'provider-error']);
-  });
-
-  it('reports a 400 response as a field error without changing submitted values', async () => {
-    const values: ServicesInquiryFormValues = {
-      bandOrProject: '',
-      email: 'visitor@example.com',
-      message: 'Keep this message.',
-      name: 'Visitor',
-      service: 'General',
-      serviceDetails: '',
-    };
-    const originalValues = { ...values };
-    const statuses: ServicesInquirySubmissionStatus[] = [];
-
-    await submitServicesInquiryForm({
-      onStatusChange: (status) => statuses.push(status),
-      pending: { current: false },
-      submitInquiry: vi.fn().mockRejectedValue(new PublicCheckoutApiError(400, 'Invalid request.')),
-      values,
-    });
-
-    expect(values).toEqual(originalValues);
-    expect(statuses).toEqual(['submitting', 'field-error']);
+    expect(statuses).toEqual(['submitting', expectedStatus]);
   });
 });

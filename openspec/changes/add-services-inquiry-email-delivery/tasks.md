@@ -19,7 +19,7 @@
 - [x] 3.3 Add stable accessible idle, submitting, field-error, provider-error, and inline success states, including `Send another inquiry`, without redirect, reload, or new tab.
 - [x] 3.4 Replace scripted `window.open` handling with a normal selected-alias `mailto:` link using CRLF formatting, plus visible/copyable recipient and inquiry summary fallback with clipboard-failure behavior.
 - [x] 3.5 Update the no-JavaScript fallback and Services inquiry copy from `Compose Inquiry`/mail-client-only wording to the server submission and fallback behavior.
-- [ ] 3.6 Update focused frontend tests for validation, adaptive prompt selection, API success/error handling, form reset, correct alias/CRLF mailto output, and copy fallback.
+- [x] 3.6 Update focused frontend tests for validation, adaptive prompt selection, API success/error handling, form reset, correct alias/CRLF mailto output, and copy fallback.
 
 ## 4. Architecture and Operations
 

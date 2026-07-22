@@ -122,6 +122,49 @@ describe('createPublicCheckoutApi', () => {
     expect(receivedBody).toEqual(body);
   });
 
+  it.each([
+    [400, 'invalid_request', 'Invalid Services inquiry.'],
+    [503, 'email_unavailable', 'Services inquiry is temporarily unavailable.'],
+  ] as const)('surfaces Services inquiry %i responses as public API errors', async (status, code, error) => {
+    const body: ServicesInquiryBody = {
+      email: 'alex@example.com',
+      message: 'General question.',
+      name: 'Alex',
+      service: 'General',
+    };
+    webMswServer.use(
+      http.post<Record<string, never>, ServicesInquiryBody, BackendErrorResponse>('*/api/services/inquiries', () =>
+        HttpResponse.json({ code, error, requestId: 'req_services_inquiry' }, { status }),
+      ),
+    );
+
+    await expect(submitPublicServicesInquiry(body, apiClientMswBaseUrl)).rejects.toMatchObject({
+      body: { code, error, requestId: 'req_services_inquiry' },
+      message: error,
+      name: 'PublicCheckoutApiError',
+      status,
+    } satisfies Partial<PublicCheckoutApiError>);
+  });
+
+  it('surfaces Services inquiry network failures without provider details', async () => {
+    webMswServer.use(http.post('*/api/services/inquiries', () => HttpResponse.error()));
+
+    await expect(
+      submitPublicServicesInquiry(
+        {
+          email: 'alex@example.com',
+          message: 'General question.',
+          name: 'Alex',
+          service: 'General',
+        },
+        apiClientMswBaseUrl,
+      ),
+    ).rejects.toMatchObject({
+      name: 'PublicCheckoutApiError',
+      status: 0,
+    } satisfies Partial<PublicCheckoutApiError>);
+  });
+
   it('surfaces visible API error objects with status and response body', async () => {
     webMswServer.use(
       http.post<Record<string, never>, StartCheckoutBody, BackendErrorResponse>('*/api/checkout/sessions', () =>

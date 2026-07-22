@@ -15,6 +15,20 @@ describe('services inquiry mailto', () => {
       'Merch Printing': 'merch@blackboxrecordsathens.com',
       'Vinyl Printing': 'vinyl@blackboxrecordsathens.com',
     });
+
+    for (const [service, recipientEmail] of Object.entries(SERVICES_INQUIRY_RECIPIENT_ALIAS_BY_SERVICE)) {
+      const draft = buildServicesInquiryDraft({
+        bandOrProject: '',
+        email: 'visitor@example.com',
+        message: 'Inquiry details.',
+        name: 'Visitor',
+        service: service as keyof typeof SERVICES_INQUIRY_RECIPIENT_ALIAS_BY_SERVICE,
+        serviceDetails: '',
+      });
+
+      expect(draft.recipientEmail).toBe(recipientEmail);
+      expect(draft.mailtoHref).toMatch(new RegExp(`^mailto:${recipientEmail}\\?`));
+    }
   });
 
   it('encodes the selected alias, subject, and exact CRLF body', () => {
@@ -84,5 +98,6 @@ describe('services inquiry mailto', () => {
 
     await expect(copyServicesInquiryText(undefined, 'Inquiry details')).resolves.toBe('manual');
     await expect(copyServicesInquiryText({ writeText }, 'Inquiry details')).resolves.toBe('manual');
+    expect(writeText).toHaveBeenCalledOnce();
   });
 });
