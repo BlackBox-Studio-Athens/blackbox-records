@@ -19,6 +19,12 @@ export type DecapHostedRuntimeConfig = {
   useLocalBackend: false;
 };
 
+export type DecapDisabledRuntimeConfig = {
+  mode: 'disabled';
+};
+
+export type DecapRuntimeConfig = DecapLocalRuntimeConfig | DecapHostedRuntimeConfig | DecapDisabledRuntimeConfig;
+
 const decapBackendModes: readonly DecapBackendMode[] = ['local', 'hosted', 'disabled'];
 export const decapPublishingBranch = 'main';
 const defaultDecapBridgeBaseUrl = 'https://auth.decapbridge.com';
@@ -112,6 +118,19 @@ export function resolveDecapPublishingBranch(
   }
 
   return decapPublishingBranch;
+}
+
+export function resolveDecapRuntimeConfig(options: {
+  environment: Readonly<Record<string, string | undefined>>;
+  isDevelopment: boolean;
+}): DecapRuntimeConfig {
+  const mode = resolveDecapBackendMode(options);
+
+  if (mode === 'disabled') {
+    return { mode };
+  }
+
+  return mode === 'local' ? resolveDecapLocalRuntimeConfig(options)! : resolveDecapHostedRuntimeConfig(options)!;
 }
 
 export function resolveDecapLocalRuntimeConfig(options: {

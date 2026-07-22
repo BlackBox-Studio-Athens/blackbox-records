@@ -6,6 +6,7 @@ import {
   resolveDecapHostedRuntimeConfig,
   resolveDecapLocalRuntimeConfig,
   resolveDecapPublishingBranch,
+  resolveDecapRuntimeConfig,
   resolveDecapSiteRootUrl,
   shouldUseLocalDecapBackend,
 } from './decap-runtime-config';
@@ -93,6 +94,70 @@ describe('resolveDecapPublishingBranch', () => {
     expect(() => resolveDecapPublishingBranch({ DECAP_BRANCH: branch })).toThrow(
       new RegExp(`^${invalidBranchMessage}$`),
     );
+  });
+});
+
+describe('resolveDecapRuntimeConfig', () => {
+  it('represents disabled mode without writable backend configuration', () => {
+    const config = resolveDecapRuntimeConfig({
+      environment: {
+        DECAP_BACKEND_MODE: 'disabled',
+        DECAP_BRANCH: 'not-main',
+        DECAP_LOCAL_PROXY_PORT: 'not-a-port',
+        DECAP_REPOSITORY: 'secret/repository',
+        DECAP_SITE_URL: 'http://127.0.0.1:4322/admin',
+        DECAPBRIDGE_AUTH_ENDPOINT: '/secret-auth',
+        DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: '/secret-token',
+      },
+      isDevelopment: false,
+    });
+
+    expect(config).toEqual({ mode: 'disabled' });
+    expect(JSON.stringify(config)).toBe('{"mode":"disabled"}');
+    expect(config).not.toHaveProperty('branch');
+    expect(config).not.toHaveProperty('localBackendPort');
+    expect(config).not.toHaveProperty('repository');
+    expect(config).not.toHaveProperty('authEndpoint');
+    expect(config).not.toHaveProperty('useLocalBackend');
+  });
+
+  it('keeps local runtime configuration writable only through the proxy backend', () => {
+    expect(
+      resolveDecapRuntimeConfig({
+        environment: { DECAP_BACKEND_MODE: 'local', DECAP_LOCAL_PROXY_PORT: '9000' },
+        isDevelopment: false,
+      }),
+    ).toEqual({
+      branch: 'main',
+      localBackendPort: '9000',
+      mode: 'local',
+      useLocalBackend: true,
+    });
+  });
+
+  it('keeps hosted runtime configuration on the validated DecapBridge backend', () => {
+    expect(
+      resolveDecapRuntimeConfig({
+        environment: {
+          DECAP_BACKEND_MODE: 'hosted',
+          DECAP_REPOSITORY: 'BlackBox-Studio-Athens/blackbox-records',
+          DECAP_SITE_URL: 'https://blackbox-studio-athens.github.io/blackbox-records/',
+          DECAPBRIDGE_AUTH_ENDPOINT: '/sites/blackbox-records/pkce',
+          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: '/sites/blackbox-records/token',
+        },
+        isDevelopment: false,
+      }),
+    ).toEqual({
+      authEndpoint: '/sites/blackbox-records/pkce',
+      authTokenEndpoint: '/sites/blackbox-records/token',
+      baseUrl: 'https://auth.decapbridge.com',
+      branch: 'main',
+      gatewayUrl: 'https://gateway.decapbridge.com',
+      mode: 'hosted',
+      repository: 'BlackBox-Studio-Athens/blackbox-records',
+      siteUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/',
+      useLocalBackend: false,
+    });
   });
 });
 
