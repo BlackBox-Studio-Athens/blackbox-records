@@ -1,6 +1,29 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveDecapSiteRootUrl, shouldUseLocalDecapBackend } from './decap-runtime-config';
+import { parseDecapBackendMode, resolveDecapSiteRootUrl, shouldUseLocalDecapBackend } from './decap-runtime-config';
+
+describe('parseDecapBackendMode', () => {
+  it('does not select a mode from legacy backend settings', () => {
+    expect(
+      parseDecapBackendMode({
+        DECAP_LOCAL_PROXY_PORT: '8082',
+        DECAP_REPOSITORY: 'BlackBox-Studio-Athens/blackbox-records',
+        DECAPBRIDGE_AUTH_ENDPOINT: '/sites/site-id/pkce',
+        DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: '/sites/site-id/token',
+      }),
+    ).toEqual({ configuredValue: undefined, mode: undefined });
+  });
+
+  it.each(['local', 'hosted', 'disabled'] as const)('trims the explicit %s mode', (mode) => {
+    expect(
+      parseDecapBackendMode({
+        DECAP_BACKEND_MODE: `  ${mode}  `,
+        DECAP_LOCAL_PROXY_PORT: '8082',
+        DECAP_REPOSITORY: 'ignored/repository',
+      }),
+    ).toEqual({ configuredValue: mode, mode });
+  });
+});
 
 describe('resolveDecapSiteRootUrl', () => {
   it('uses the Astro site URL in production when provided', () => {

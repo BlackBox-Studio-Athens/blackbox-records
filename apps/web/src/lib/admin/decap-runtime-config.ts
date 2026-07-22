@@ -1,5 +1,20 @@
 export type DecapBackendMode = 'local' | 'hosted' | 'disabled';
 
+const decapBackendModes: readonly DecapBackendMode[] = ['local', 'hosted', 'disabled'];
+
+export function parseDecapBackendMode(environment: Readonly<Record<string, string | undefined>>): {
+  configuredValue: string | undefined;
+  mode: DecapBackendMode | undefined;
+} {
+  const configuredValue = environment.DECAP_BACKEND_MODE?.trim();
+
+  // Defaulting and explicit-value rejection belong to later resolution steps.
+  return {
+    configuredValue,
+    mode: decapBackendModes.find((mode) => mode === configuredValue),
+  };
+}
+
 function ensureTrailingSlash(value: string): string {
   return value.endsWith('/') ? value : `${value}/`;
 }
