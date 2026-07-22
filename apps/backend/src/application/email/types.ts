@@ -19,6 +19,7 @@ export type TransactionalEmailCommand = {
   content: EmailMessageContent;
   idempotencyEntityId: string;
   purpose: string;
+  replyTo?: string;
   tags?: EmailTag[];
   to: string;
 };

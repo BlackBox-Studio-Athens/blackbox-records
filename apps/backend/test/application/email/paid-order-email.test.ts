@@ -52,6 +52,7 @@ describe('paid-order email notifications', () => {
       1,
       expect.objectContaining({
         idempotencyKey: 'blackbox:uat:paid-order-shopper:cs_test_123',
+        replyTo: 'support@blackboxrecordsathens.com',
         subject: 'Payment received - BBR-ORDER1',
         tags: expect.arrayContaining([
           { name: 'purpose', value: 'paid-order-shopper' },
@@ -65,6 +66,7 @@ describe('paid-order email notifications', () => {
       2,
       expect.objectContaining({
         idempotencyKey: 'blackbox:uat:paid-order-ops:cs_test_123',
+        replyTo: 'support@blackboxrecordsathens.com',
         subject: 'Fulfill BBR-ORDER1 - paid checkout',
         tags: expect.arrayContaining([
           { name: 'purpose', value: 'paid-order-ops' },

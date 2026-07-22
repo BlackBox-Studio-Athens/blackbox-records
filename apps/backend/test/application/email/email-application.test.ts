@@ -72,7 +72,7 @@ describe('email application module', () => {
     });
   });
 
-  it('sends transactional email with deterministic idempotency and provider-safe tags', async () => {
+  it('uses the configured support reply-to when a transactional command omits an override', async () => {
     const provider: EmailProviderGateway = {
       registerNewsletterContact: vi.fn(),
       sendEmail: vi.fn(async () => ({ ok: true as const })),
@@ -98,6 +98,7 @@ describe('email application module', () => {
     expect(provider.sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         idempotencyKey: 'blackbox:uat:paid-order-shopper:cs_test_123',
+        replyTo: 'support@blackboxrecordsathens.com',
         tags: expect.arrayContaining([
           { name: 'purpose', value: 'paid-order-shopper' },
           { name: 'sink_routed', value: 'true' },
@@ -106,6 +107,53 @@ describe('email application module', () => {
         to: 'uat-sink@ambkime.resend.app',
       }),
     );
+  });
+
+  it('uses a validated transactional command reply-to when provided', async () => {
+    const provider: EmailProviderGateway = {
+      registerNewsletterContact: vi.fn(),
+      sendEmail: vi.fn(async () => ({ ok: true as const })),
+    };
+
+    await sendTransactionalEmail(provider, readEmailRuntimeConfig(sandboxBindings), {
+      content: {
+        html: '<p>Inquiry</p>',
+        subject: 'Services inquiry',
+        text: 'Inquiry',
+      },
+      idempotencyEntityId: 'inquiry_123',
+      purpose: 'services-inquiry',
+      replyTo: ' visitor@example.com ',
+      to: 'info@blackboxrecordsathens.com',
+    });
+
+    expect(provider.sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        replyTo: 'visitor@example.com',
+      }),
+    );
+  });
+
+  it('rejects an invalid transactional command reply-to before provider delivery', async () => {
+    const provider: EmailProviderGateway = {
+      registerNewsletterContact: vi.fn(),
+      sendEmail: vi.fn(async () => ({ ok: true as const })),
+    };
+
+    await expect(
+      sendTransactionalEmail(provider, readEmailRuntimeConfig(sandboxBindings), {
+        content: {
+          html: '<p>Inquiry</p>',
+          subject: 'Services inquiry',
+          text: 'Inquiry',
+        },
+        idempotencyEntityId: 'inquiry_123',
+        purpose: 'services-inquiry',
+        replyTo: 'not-an-email',
+        to: 'info@blackboxrecordsathens.com',
+      }),
+    ).rejects.toThrow();
+    expect(provider.sendEmail).not.toHaveBeenCalled();
   });
 
   it('registers newsletter Contacts through the sink in sandbox while preserving safe consent evidence', async () => {

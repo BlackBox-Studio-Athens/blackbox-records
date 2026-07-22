@@ -13,6 +13,7 @@ export async function sendTransactionalEmail(
   command: TransactionalEmailCommand,
 ): Promise<EmailOperationResult> {
   const intendedRecipient = emailAddress.parse(command.to);
+  const replyTo = command.replyTo === undefined ? config.replyToEmail : emailAddress.parse(command.replyTo);
   const routedRecipient = routeTransactionalEmailRecipient(config, intendedRecipient);
   const idempotencyKey = createEmailIdempotencyKey({
     config,
@@ -23,7 +24,7 @@ export async function sendTransactionalEmail(
     from: config.fromEmail,
     html: command.content.html,
     idempotencyKey,
-    replyTo: config.replyToEmail,
+    replyTo,
     subject: command.content.subject,
     tags: [
       createProviderSafeTag({ name: 'purpose', value: command.purpose }),
