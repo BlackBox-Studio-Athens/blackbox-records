@@ -64,13 +64,15 @@ describe('Store collection category surfaces', () => {
     expect(cssSource).toContain('min-height: 2.75rem');
     expect(cssSource).toMatch(/\.store-catalog-chunks\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\)/s);
     expect(cssSource).toMatch(/\.store-item-card--listing\s*\{[^}]*min-width: 0/s);
-    expect(collectionPageSource).toContain("const allCoverflowEligible = category.id === 'all'");
+    expect(collectionPageSource).toContain("const coverflowEligible = category.id !== 'distro'");
     expect(collectionPageSource).toContain(
-      'data-store-coverflow-total={allCoverflowEligible ? entries.length : undefined}',
+      'data-store-coverflow-total={coverflowEligible ? entries.length : undefined}',
     );
+    expect(collectionPageSource).toContain('const coverflowCatalogId = `${category.id}-store-catalog`');
+    expect(collectionPageSource).toContain('aria-controls={coverflowCatalogId}');
     expect(collectionPageSource.match(/<StoreItemCard/g)).toHaveLength(1);
-    expect(collectionPageSource).toContain('coverflowPreview={allCoverflowEligible}');
-    expect(collectionPageSource).not.toContain("category.id === 'blackbox-releases' && allCoverflowEligible");
+    expect(collectionPageSource).toContain('coverflowPreview={coverflowEligible}');
+    expect(collectionPageSource).not.toContain("category.id === 'blackbox-releases' && coverflowEligible");
   });
 
   it('keeps route files thin and selects each of the four category presentations', () => {
@@ -91,5 +93,7 @@ describe('Store collection category surfaces', () => {
     }
     expect(storeItemCardSource).not.toContain('View Item');
     expect(distroCardSource).not.toContain('View in Store');
+    expect(storeItemCardSource).toContain('data-store-coverflow-availability');
+    expect(distroCardSource).toContain('data-store-coverflow-availability');
   });
 });

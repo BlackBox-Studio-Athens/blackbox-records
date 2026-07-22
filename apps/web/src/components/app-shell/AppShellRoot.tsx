@@ -273,7 +273,9 @@ export default function AppShellRoot({
   }, [activeShellPathname]);
 
   useEffect(() => {
-    if (activeShellPathname !== '/store/' || typeof window === 'undefined') return;
+    const storeRoute = parseShellSectionRoute(activeShellPathname);
+    if (storeRoute?.kind !== 'store' || storeRoute.pathname === '/store/distro/' || typeof window === 'undefined')
+      return;
 
     let cancelled = false;
     let cleanup: (() => void) | undefined;

@@ -31,8 +31,9 @@ const STORE_COVERFLOW_INITIAL_POSITIONS = [
   'left-far',
   'left-near',
 ] as const;
-const allCoverflowEligible = category.id === 'all' && entries.length > STORE_COVERFLOW_PREVIEW_SIZE;
-const allInitialPositionRatio = entries.length > 0 ? 1 / entries.length : 0;
+const coverflowEligible = category.id !== 'distro' && entries.length > STORE_COVERFLOW_PREVIEW_SIZE;
+const initialPositionRatio = entries.length > 0 ? 1 / entries.length : 0;
+const coverflowCatalogId = `${category.id}-store-catalog`;
 ---
 
 <SiteLayout pageTitle={category.title} pageDescription={category.description}>
@@ -111,19 +112,19 @@ const allInitialPositionRatio = entries.length > 0 ? 1 / entries.length : 0;
         </section>
 
         <section
-          class:list={['layout-container pb-14', allCoverflowEligible && 'store-coverflow-section']}
+          class:list={['layout-container pb-14', coverflowEligible && 'store-coverflow-section']}
           aria-label={`${category.label} Store collection`}
-          data-store-coverflow-group={allCoverflowEligible ? '' : undefined}
-          data-store-coverflow-mode={allCoverflowEligible ? 'preview' : undefined}
-          data-store-coverflow-total={allCoverflowEligible ? entries.length : undefined}
-          data-store-coverflow-preview-count={allCoverflowEligible ? STORE_COVERFLOW_PREVIEW_SIZE : undefined}
-          data-store-coverflow-remaining-count={allCoverflowEligible ? entries.length - 1 : undefined}
-          data-store-coverflow-initial-position-ratio={allCoverflowEligible ? allInitialPositionRatio : undefined}
-          style={allCoverflowEligible ? `--store-coverflow-position-ratio: ${allInitialPositionRatio}` : undefined}
+          data-store-coverflow-group={coverflowEligible ? '' : undefined}
+          data-store-coverflow-mode={coverflowEligible ? 'preview' : undefined}
+          data-store-coverflow-total={coverflowEligible ? entries.length : undefined}
+          data-store-coverflow-preview-count={coverflowEligible ? STORE_COVERFLOW_PREVIEW_SIZE : undefined}
+          data-store-coverflow-remaining-count={coverflowEligible ? entries.length - 1 : undefined}
+          data-store-coverflow-initial-position-ratio={coverflowEligible ? initialPositionRatio : undefined}
+          style={coverflowEligible ? `--store-coverflow-position-ratio: ${initialPositionRatio}` : undefined}
         >
           {entries.length > 0 ? (
             <>
-              {allCoverflowEligible && (
+              {coverflowEligible && (
                 <div class="store-coverflow-overview">
                   <div class="store-coverflow-controls" data-store-coverflow-controls>
                     <div class="store-coverflow-depth">
@@ -161,16 +162,16 @@ const allInitialPositionRatio = entries.length > 0 ? 1 / entries.length : 0;
                       </p>
                     </div>
                     <div class="store-coverflow-actions">
-                      <button type="button" aria-controls="all-store-catalog" data-store-coverflow-previous>
+                      <button type="button" aria-controls={coverflowCatalogId} data-store-coverflow-previous>
                         Previous
                       </button>
-                      <button type="button" aria-controls="all-store-catalog" data-store-coverflow-next>
+                      <button type="button" aria-controls={coverflowCatalogId} data-store-coverflow-next>
                         Next
                       </button>
                       <button
                         class="store-coverflow-actions__toggle"
                         type="button"
-                        aria-controls="all-store-catalog"
+                        aria-controls={coverflowCatalogId}
                         aria-expanded="false"
                         data-store-coverflow-toggle
                         data-store-coverflow-view-all-label={`View all ${entries.length}`}
@@ -181,7 +182,7 @@ const allInitialPositionRatio = entries.length > 0 ? 1 / entries.length : 0;
                   </div>
                 </div>
               )}
-              {allCoverflowEligible && (
+              {coverflowEligible && (
                 <p
                   class="store-coverflow-status"
                   role="status"
@@ -194,22 +195,20 @@ const allInitialPositionRatio = entries.length > 0 ? 1 / entries.length : 0;
                 </p>
               )}
               <div class="store-coverflow-shell">
-                {allCoverflowEligible && (
+                {coverflowEligible && (
                   <span class="store-coverflow-reveal" data-store-coverflow-reveal-mask aria-hidden="true" />
                 )}
                 <div
-                  id={allCoverflowEligible ? 'all-store-catalog' : undefined}
+                  id={coverflowEligible ? coverflowCatalogId : undefined}
                   class="store-catalog-chunks"
-                  data-store-coverflow-stage={allCoverflowEligible ? '' : undefined}
+                  data-store-coverflow-stage={coverflowEligible ? '' : undefined}
                 >
                   {entries.map((entry, itemIndex) => (
                     <StoreItemCard
                       entry={entry}
                       imageLoading={itemIndex < 3 ? 'eager' : 'lazy'}
-                      coverflowPreview={allCoverflowEligible}
-                      coverflowPosition={
-                        allCoverflowEligible ? STORE_COVERFLOW_INITIAL_POSITIONS[itemIndex] : undefined
-                      }
+                      coverflowPreview={coverflowEligible}
+                      coverflowPosition={coverflowEligible ? STORE_COVERFLOW_INITIAL_POSITIONS[itemIndex] : undefined}
                     />
                   ))}
                 </div>

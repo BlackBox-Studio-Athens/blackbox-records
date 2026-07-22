@@ -5,6 +5,7 @@ const TOUCH_SWIPE_DISTANCE = 40;
 const TOUCH_HORIZONTAL_DOMINANCE = 1.25;
 const WHEEL_THRESHOLD = 48;
 const WHEEL_GESTURE_GAP_MS = 160;
+const WHEEL_REPEAT_GAP_MS = 120;
 
 export type StoreCoverflowState =
   | { mode: 'preview'; activeIndex: number }
@@ -20,8 +21,8 @@ export type StoreCoverflowEvent =
 export type StoreCoverflowWheelState = {
   accumulatedDelta: number;
   direction: -1 | 0 | 1;
-  lastEventAt: number;
-  moved: boolean;
+  lastEventAt: number | null;
+  lastMoveAt: number | null;
 };
 
 type StoreCoverflowGroup = {
@@ -104,12 +105,7 @@ export function getStoreCoverflowWheelDelta(
   input: Pick<WheelEvent, 'deltaMode' | 'deltaX' | 'deltaY' | 'shiftKey'>,
   stageWidth: number,
 ) {
-  const rawDelta =
-    input.shiftKey && input.deltaY !== 0
-      ? input.deltaY
-      : Math.abs(input.deltaX) > Math.abs(input.deltaY)
-        ? input.deltaX
-        : 0;
+  const rawDelta = Math.abs(input.deltaX) > Math.abs(input.deltaY) ? input.deltaX : input.deltaY;
   if (rawDelta === 0) return null;
   const multiplier = input.deltaMode === 1 ? 16 : input.deltaMode === 2 ? stageWidth : 1;
   return rawDelta * multiplier;
@@ -121,17 +117,20 @@ export function advanceStoreCoverflowWheelGesture(
   eventTime: number,
 ): { move: -1 | 0 | 1; state: StoreCoverflowWheelState } {
   const direction = Math.sign(delta) as -1 | 1;
-  const startsNewGesture = eventTime - state.lastEventAt > WHEEL_GESTURE_GAP_MS || direction !== state.direction;
+  const startsNewGesture =
+    state.lastEventAt === null || eventTime - state.lastEventAt > WHEEL_GESTURE_GAP_MS || direction !== state.direction;
   const nextState = startsNewGesture
-    ? { accumulatedDelta: 0, direction, lastEventAt: eventTime, moved: false }
+    ? { accumulatedDelta: 0, direction, lastEventAt: eventTime, lastMoveAt: null }
     : { ...state, lastEventAt: eventTime };
-
-  if (nextState.moved) return { move: 0, state: nextState };
 
   nextState.accumulatedDelta += delta;
   if (Math.abs(nextState.accumulatedDelta) < WHEEL_THRESHOLD) return { move: 0, state: nextState };
+  if (nextState.lastMoveAt !== null && eventTime - nextState.lastMoveAt < WHEEL_REPEAT_GAP_MS) {
+    return { move: 0, state: nextState };
+  }
 
-  nextState.moved = true;
+  nextState.accumulatedDelta -= direction * WHEEL_THRESHOLD;
+  nextState.lastMoveAt = eventTime;
   return { move: direction, state: nextState };
 }
 
@@ -336,7 +335,12 @@ export function createStoreCoverflowController(
 
   const groupListeners = dom.groups.map((group) => {
     let suppressClick = false;
-    let wheelState: StoreCoverflowWheelState = { accumulatedDelta: 0, direction: 0, lastEventAt: 0, moved: false };
+    let wheelState: StoreCoverflowWheelState = {
+      accumulatedDelta: 0,
+      direction: 0,
+      lastEventAt: null,
+      lastMoveAt: null,
+    };
     const touchPointers = new Set<number>();
     let pointerIntent: {
       card: HTMLElement | null;
@@ -348,6 +352,10 @@ export function createStoreCoverflowController(
       startY: number;
       wasActive: boolean;
     } | null = null;
+
+    const resetWheelState = () => {
+      wheelState = { accumulatedDelta: 0, direction: 0, lastEventAt: null, lastMoveAt: null };
+    };
 
     const onPointerDown = (event: PointerEvent) => {
       if (group.state.mode !== 'preview' || event.button !== 0 || event.isPrimary === false) {
@@ -488,8 +496,26 @@ export function createStoreCoverflowController(
         );
       }
     };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (group.state.mode !== 'preview' || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+        return;
+      }
+      const delta = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0;
+      if (!delta) return;
+
+      const target = event.target instanceof Element ? event.target : null;
+      const focusedCard = target?.closest<HTMLElement>('[data-store-coverflow-card]') ?? null;
+      if (focusedCard && !group.cards.includes(focusedCard)) return;
+
+      event.preventDefault();
+      const nextState = reduceStoreCoverflowState(group.state, { type: 'move', delta }, group.cards.length);
+      setGroupState(group, nextState);
+      if (focusedCard && nextState.mode === 'preview') {
+        group.cards[nextState.activeIndex]?.focus({ preventScroll: true });
+      }
+    };
     const onWheel = (event: WheelEvent) => {
-      if (group.state.mode !== 'preview') return;
+      if (group.state.mode !== 'preview' || event.ctrlKey) return;
       const delta = getStoreCoverflowWheelDelta(event, group.stage.clientWidth);
       if (delta === null) return;
       event.preventDefault();
@@ -506,8 +532,10 @@ export function createStoreCoverflowController(
     group.element.addEventListener('click', onClick);
     group.element.addEventListener('focusin', onFocusIn);
     group.element.addEventListener('focusout', onFocusOut);
+    group.element.addEventListener('keydown', onKeyDown);
     group.stage.addEventListener('pointercancel', onPointerCancel);
     group.stage.addEventListener('pointerdown', onPointerDown);
+    group.stage.addEventListener('pointerleave', resetWheelState);
     group.stage.addEventListener('pointermove', onPointerMove);
     group.stage.addEventListener('pointerup', onPointerUp);
     group.stage.addEventListener('wheel', onWheel, { passive: false });
@@ -517,8 +545,10 @@ export function createStoreCoverflowController(
       onClick,
       onFocusIn,
       onFocusOut,
+      onKeyDown,
       onPointerCancel,
       onPointerDown,
+      onPointerLeave: resetWheelState,
       onPointerMove,
       onPointerUp,
       onWheel,
@@ -543,8 +573,10 @@ export function createStoreCoverflowController(
           onClick,
           onFocusIn,
           onFocusOut,
+          onKeyDown,
           onPointerCancel,
           onPointerDown,
+          onPointerLeave,
           onPointerMove,
           onPointerUp,
           onWheel,
@@ -552,8 +584,10 @@ export function createStoreCoverflowController(
           group.element.removeEventListener('click', onClick);
           group.element.removeEventListener('focusin', onFocusIn);
           group.element.removeEventListener('focusout', onFocusOut);
+          group.element.removeEventListener('keydown', onKeyDown);
           group.stage.removeEventListener('pointercancel', onPointerCancel);
           group.stage.removeEventListener('pointerdown', onPointerDown);
+          group.stage.removeEventListener('pointerleave', onPointerLeave);
           group.stage.removeEventListener('pointermove', onPointerMove);
           group.stage.removeEventListener('pointerup', onPointerUp);
           group.stage.removeEventListener('wheel', onWheel);

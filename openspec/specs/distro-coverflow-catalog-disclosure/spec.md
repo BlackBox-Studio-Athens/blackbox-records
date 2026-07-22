@@ -13,7 +13,7 @@ The Store Distro category SHALL enhance a populated classified group into a resp
 #### Scenario: Large group is eligible
 
 - **WHEN** `/store/distro/` has JavaScript and `transform-style: preserve-3d` support, no search query is active, and a populated group contains more than six classified Store Items
-- **THEN** the group enters `preview` mode with every Store Item available to the existing Coverflow controller in canonical Distro order
+- **THEN** the group enters `preview` mode with every Store Item available to the shared Store Coverflow controller in canonical Distro order
 - **AND** canonical order follows the existing authored Distro catalog `order` rather than random selection or a second featured-item model
 - **AND** at most six Store Items are positioned in the stage at once, with one front-facing cover and neighboring covers using mirrored 3D depth, rotation, scale, and opacity
 - **AND** every other offstage Store Item leaves presentation, focus order, and the accessibility tree until it receives a stage position or the visitor opens the catalog
@@ -36,10 +36,11 @@ The Store Distro category SHALL enhance a populated classified group into a resp
 
 #### Scenario: Visitor navigates the preview
 
-- **WHEN** the visitor activates Previous or Next or focuses a preview card
+- **WHEN** the visitor activates Previous or Next, focuses a preview card, completes a qualifying touch swipe, or supplies qualifying wheel input
 - **THEN** the selected Store Item becomes the front-facing active cover without reordering the group
 - **AND** the visible status exposes its title and artist or label
-- **AND** Previous wraps from the first record to the final record and Next wraps from the final record to the first without reordering the records or disabling either control.
+- **AND** movement wraps from the first record to the final record and from the final record to the first without reordering the records or disabling Previous or Next
+- **AND** touch and wheel behavior follows the shared Store Coverflow interaction contract.
 
 #### Scenario: Visitor activates a preview record
 
@@ -49,10 +50,12 @@ The Store Distro category SHALL enhance a populated classified group into a resp
 
 #### Scenario: Visitor selects a side cover or scrolls through the stage
 
-- **WHEN** the visitor uses a pointer on a side cover that was not active at pointer-down
-- **THEN** the Store Item becomes active without opening its detail route on that first click
-- **AND WHEN** pointer movement exceeds 10px before click activation
-- **THEN** route activation is suppressed without moving the Coverflow, capturing the pointer, or implementing drag physics.
+- **WHEN** the visitor uses a pointer on a side cover that was not active at pointer-down and does not complete a qualifying swipe
+- **THEN** the Store Item becomes active without opening its detail route on that first activation
+- **AND WHEN** the visitor completes a qualifying touch swipe
+- **THEN** route activation is suppressed and the shared Store Coverflow controller moves exactly one item without continuous drag physics
+- **AND WHEN** pointer movement is vertical-dominant, cancelled, or below the swipe threshold
+- **THEN** Coverflow does not move and native page behavior remains available.
 
 #### Scenario: Preview exposes artwork without losing record identity
 
@@ -172,15 +175,16 @@ The enhancement MUST reuse the same server-rendered Store Distro card nodes and 
 - **THEN** motion is event-driven, affects at most the six preview covers and one group reveal surface; cover navigation completes within 300ms and disclosure completes within 480ms of authored animation time
 - **AND** disclosure uses component-local CSS rather than a document View Transition, and `try/finally` cleanup removes in-flight state after completion or interruption
 - **AND** the existing card-image hover or focus zoom does not run inside Coverflow
-- **AND** no autoplay, timer, animation-frame loop, custom drag, scroll listener, or card-by-card catalog stagger runs; pointer observation is limited to the down-to-click distance needed to reject accidental activation.
+- **AND** no autoplay, timer loop, animation-frame loop, continuous drag physics, document-level wheel or scroll listener, or card-by-card catalog stagger runs
+- **AND** group-local pointer observation and qualifying wheel handling remain limited to the shared Store Coverflow interaction contract.
 
 #### Scenario: Initial mount and disclosure performance are measured
 
-- **WHEN** `/store/distro/` runs fresh direct loads, app-shell entries, the fixed mobile-stress profile, and five normal-speed disclosure runs at 320px, 390px, and desktop width
-- **THEN** LCP remains no more than 2.5 seconds, CLS remains no more than 0.1, and Coverflow-control and disclosure INP remain no more than 200ms
-- **AND** the enhancement introduces no task of 50ms or longer
+- **WHEN** `/store/distro/` runs direct loads, app-shell entries, 320px and 390px mobile checks, and the focused 4× CPU interaction sample
+- **THEN** the complete canonical catalog remains available, movement stays bounded to the positioned stage, and the mobile disclosure introduces no horizontal page overflow or visible layout instability
+- **AND** any local development-server or unavailable-API delay is classified separately from Coverflow interaction behavior rather than used as a strict new latency gate
 - **AND** the supported server-authored preview produces no preceding full-catalog frame while unsupported clients retain the full catalog
-- **AND** one diagnostic-only 4x CPU trace records remaining layout or reflow risk without applying the normal-speed thresholds to that trace.
+- **AND** existing project Core Web Vitals budgets remain policy while the archived Store activation evidence remains the scheduling baseline.
 
 ### Requirement: Coverflow preview makes active position and complete catalog depth explicit
 

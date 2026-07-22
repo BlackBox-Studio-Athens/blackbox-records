@@ -61,6 +61,7 @@ describe('Distro Coverflow progressive enhancement', () => {
     expect(pageSource).not.toContain('thumbnail');
     expect(pageSource).not.toMatch(/aria-disabled="true"\s+data-store-coverflow-previous/);
     expect(cardSource).toContain('data-store-coverflow-initial-position={coverflowPosition}');
+    expect(cardSource).toContain('data-store-coverflow-availability');
     expect(pageSource).toContain('coverflowPreview={group.coverflowEligible}');
     expect(pageSource).not.toContain('coverflowPreview={group.coverflowEligible && chunkIndex === 0}');
     expect(pageSource.indexOf('data-store-coverflow-toggle')).toBeLessThan(
@@ -69,7 +70,8 @@ describe('Distro Coverflow progressive enhancement', () => {
   });
 
   it('fails open for the current route and rechecks capability on later route activation', () => {
-    expect(appShellSource).toContain("activeShellPathname !== '/store/'");
+    expect(appShellSource).toContain("storeRoute?.kind !== 'store'");
+    expect(appShellSource).toContain("storeRoute.pathname === '/store/distro/'");
     expect(appShellSource).toContain("import('@/components/store/StoreCoverflowController')");
     expect(appShellSource).toContain('ensureStoreCoverflowCapability()');
     expect(appShellSource).toContain("removeAttribute('data-store-coverflow-capable')");
@@ -134,6 +136,9 @@ describe('Distro Coverflow progressive enhancement', () => {
     expect(cssSource).toContain('background: #0d0d0d');
     expect(cssSource).not.toContain('view-transition-name');
     expect(cssSource).toContain('touch-action: pan-y pinch-zoom');
+    expect(cssSource).toContain('[data-store-coverflow-availability]');
+    expect(cssSource).toContain('[data-store-coverflow-position]:is(:hover, :focus-visible)');
+    expect(cssSource).toContain('.store-item-card__image');
     expect(cssSource).toMatch(/\.distro-group-chunk:not\(:first-child\)[\s\S]*?content-visibility: auto/);
     expect(cssSource).toMatch(/prefers-reduced-motion: reduce[\s\S]*?transform-style: flat/);
     expect(cssSource).toMatch(/prefers-reduced-motion: reduce[\s\S]*?position: static/);
@@ -144,6 +149,9 @@ describe('Distro Coverflow progressive enhancement', () => {
     );
     expect(cssSource).toMatch(
       /prefers-reduced-motion: reduce[\s\S]*?store-coverflow-rail__fill[\s\S]*?transition: none/,
+    );
+    expect(cssSource).toMatch(
+      /prefers-reduced-motion: reduce[\s\S]*?data-store-coverflow-position[\s\S]*?store-item-card__image[\s\S]*?transform: none/,
     );
   });
 });

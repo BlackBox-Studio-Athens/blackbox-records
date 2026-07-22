@@ -201,24 +201,46 @@ describe('Store Coverflow helpers', () => {
     expect(getStoreCoverflowSwipeDelta(50, 45)).toBe(0);
   });
 
-  it('normalizes wheel units and gates momentum to one move per gesture', () => {
+  it('normalizes dominant wheel axes and preserves residual intent across a repeat gate', () => {
     expect(getStoreCoverflowWheelDelta({ deltaMode: 0, deltaX: 50, deltaY: 10, shiftKey: false }, 320)).toBe(50);
     expect(getStoreCoverflowWheelDelta({ deltaMode: 1, deltaX: 3, deltaY: 0, shiftKey: false }, 320)).toBe(48);
     expect(getStoreCoverflowWheelDelta({ deltaMode: 2, deltaX: -1, deltaY: 0, shiftKey: false }, 320)).toBe(-320);
-    expect(getStoreCoverflowWheelDelta({ deltaMode: 0, deltaX: 0, deltaY: 3, shiftKey: false }, 320)).toBeNull();
+    expect(getStoreCoverflowWheelDelta({ deltaMode: 0, deltaX: 0, deltaY: 48, shiftKey: false }, 320)).toBe(48);
     expect(getStoreCoverflowWheelDelta({ deltaMode: 0, deltaX: 0, deltaY: -52, shiftKey: true }, 320)).toBe(-52);
+    expect(getStoreCoverflowWheelDelta({ deltaMode: 0, deltaX: 12, deltaY: 0, shiftKey: false }, 320)).toBe(12);
+    expect(getStoreCoverflowWheelDelta({ deltaMode: 0, deltaX: 0, deltaY: 0, shiftKey: false }, 320)).toBeNull();
 
-    const initial = { accumulatedDelta: 0, direction: 0 as const, lastEventAt: 0, moved: false };
+    const initial = { accumulatedDelta: 0, direction: 0 as const, lastEventAt: null, lastMoveAt: null };
     const first = advanceStoreCoverflowWheelGesture(initial, 30, 10);
     const moved = advanceStoreCoverflowWheelGesture(first.state, 20, 20);
-    const momentum = advanceStoreCoverflowWheelGesture(moved.state, 60, 30);
-    const reversed = advanceStoreCoverflowWheelGesture(momentum.state, -48, 40);
-    const afterGap = advanceStoreCoverflowWheelGesture(momentum.state, 48, 220);
+    const residual = advanceStoreCoverflowWheelGesture(moved.state, 60, 130);
+    const repeated = advanceStoreCoverflowWheelGesture(residual.state, 48, 260);
+    const reversed = advanceStoreCoverflowWheelGesture(repeated.state, -48, 280);
+    const afterGap = advanceStoreCoverflowWheelGesture(repeated.state, 48, 500);
     expect(first.move).toBe(0);
     expect(moved.move).toBe(1);
-    expect(momentum.move).toBe(0);
+    expect(residual.move).toBe(0);
+    expect(repeated.move).toBe(1);
     expect(reversed.move).toBe(-1);
     expect(afterGap.move).toBe(1);
+    expect(moved.state.accumulatedDelta).toBe(2);
+    expect(residual.state.accumulatedDelta).toBe(62);
+  });
+
+  it('allows repeated moves, gates only until 120ms, and resets after a 160ms gap or reversal', () => {
+    const initial = { accumulatedDelta: 0, direction: 0 as const, lastEventAt: null, lastMoveAt: null };
+    const first = advanceStoreCoverflowWheelGesture(initial, 48, 0);
+    const gated = advanceStoreCoverflowWheelGesture(first.state, 48, 100);
+    const afterGate = advanceStoreCoverflowWheelGesture(gated.state, 1, 120);
+    const afterLongGap = advanceStoreCoverflowWheelGesture(afterGate.state, 1, 281);
+    const reversed = advanceStoreCoverflowWheelGesture(afterLongGap.state, -48, 300);
+
+    expect(first.move).toBe(1);
+    expect(gated.move).toBe(0);
+    expect(afterGate.move).toBe(1);
+    expect(afterLongGap.move).toBe(0);
+    expect(reversed.move).toBe(-1);
+    expect(afterLongGap.state.accumulatedDelta).toBe(1);
   });
 
   it('rejects incomplete Coverflow markup', () => {
@@ -273,13 +295,54 @@ describe('Store Coverflow controller', () => {
     expect(sideTap.preventDefault).toHaveBeenCalledOnce();
     expect(cards[2]!.dataset.storeCoverflowPosition).toBe('active');
 
-    const verticalWheel = stage.dispatch('wheel', stage, { deltaY: 80, timeStamp: 200 });
-    expect(verticalWheel.preventDefault).not.toHaveBeenCalled();
+    const verticalWheel = stage.dispatch('wheel', stage, { deltaY: 48, timeStamp: 200 });
+    expect(verticalWheel.preventDefault).toHaveBeenCalledOnce();
+    expect(cards[3]!.dataset.storeCoverflowPosition).toBe('active');
     const horizontalWheel = stage.dispatch('wheel', stage, { deltaX: 48, deltaY: 2, timeStamp: 400 });
     expect(horizontalWheel.preventDefault).toHaveBeenCalledOnce();
-    expect(cards[3]!.dataset.storeCoverflowPosition).toBe('active');
+    expect(cards[4]!.dataset.storeCoverflowPosition).toBe('active');
+    const ctrlWheel = stage.dispatch('wheel', stage, { deltaY: 48, ctrlKey: true, timeStamp: 500 });
+    expect(ctrlWheel.preventDefault).not.toHaveBeenCalled();
+    expect(cards[4]!.dataset.storeCoverflowPosition).toBe('active');
 
     controller.cleanup();
+  });
+
+  it('handles focus-scoped arrow keys, follows card focus, retains control focus, and cleans up', () => {
+    const { cards, controller, element, nextButton } = createHarness();
+
+    const rightArrow = element.dispatch('keydown', cards[0]!, { key: 'ArrowRight' });
+    expect(rightArrow.preventDefault).toHaveBeenCalledOnce();
+    expect(cards[1]!.dataset.storeCoverflowPosition).toBe('active');
+    expect(cards[1]!.focus).toHaveBeenCalledWith({ preventScroll: true });
+
+    const leftArrow = element.dispatch('keydown', cards[1]!, { key: 'ArrowLeft' });
+    expect(leftArrow.preventDefault).toHaveBeenCalledOnce();
+    expect(cards[0]!.dataset.storeCoverflowPosition).toBe('active');
+
+    const wrapped = element.dispatch('keydown', cards[0]!, { key: 'ArrowLeft' });
+    expect(wrapped.preventDefault).toHaveBeenCalledOnce();
+    expect(cards[7]!.dataset.storeCoverflowPosition).toBe('active');
+
+    const modified = element.dispatch('keydown', cards[7]!, { key: 'ArrowRight', shiftKey: true });
+    expect(modified.preventDefault).not.toHaveBeenCalled();
+    expect(cards[7]!.dataset.storeCoverflowPosition).toBe('active');
+
+    const controlArrow = element.dispatch('keydown', nextButton, { key: 'ArrowRight' });
+    expect(controlArrow.preventDefault).toHaveBeenCalledOnce();
+    expect(cards[0]!.dataset.storeCoverflowPosition).toBe('active');
+    expect(nextButton.focus).not.toHaveBeenCalled();
+
+    element.dispatch('click', nextButton);
+    element.dispatch('keydown', nextButton, { key: 'ArrowRight' });
+    expect(element.dataset.storeCoverflowMode).toBe('preview');
+
+    controller.setSearchActive(true);
+    const searchArrow = element.dispatch('keydown', nextButton, { key: 'ArrowRight' });
+    expect(searchArrow.preventDefault).not.toHaveBeenCalled();
+    controller.setSearchActive(false);
+    controller.cleanup();
+    expect(element.listenerCount('keydown')).toBe(0);
   });
 
   it('keeps disclosure and search modes exclusive', async () => {
