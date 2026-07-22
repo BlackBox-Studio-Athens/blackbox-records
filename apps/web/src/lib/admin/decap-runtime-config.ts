@@ -15,6 +15,15 @@ export function parseDecapBackendMode(environment: Readonly<Record<string, strin
   };
 }
 
+export function resolveDecapBackendMode(options: {
+  environment: Readonly<Record<string, string | undefined>>;
+  isDevelopment: boolean;
+}): DecapBackendMode | undefined {
+  const { configuredValue, mode } = parseDecapBackendMode(options.environment);
+
+  return configuredValue === undefined ? (options.isDevelopment ? 'local' : 'disabled') : mode;
+}
+
 function ensureTrailingSlash(value: string): string {
   return value.endsWith('/') ? value : `${value}/`;
 }

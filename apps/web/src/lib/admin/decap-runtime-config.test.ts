@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseDecapBackendMode, resolveDecapSiteRootUrl, shouldUseLocalDecapBackend } from './decap-runtime-config';
+import {
+  parseDecapBackendMode,
+  resolveDecapBackendMode,
+  resolveDecapSiteRootUrl,
+  shouldUseLocalDecapBackend,
+} from './decap-runtime-config';
 
 describe('parseDecapBackendMode', () => {
   it('does not select a mode from legacy backend settings', () => {
@@ -22,6 +27,25 @@ describe('parseDecapBackendMode', () => {
         DECAP_REPOSITORY: 'ignored/repository',
       }),
     ).toEqual({ configuredValue: mode, mode });
+  });
+});
+
+describe('resolveDecapBackendMode', () => {
+  it('defaults an absent mode to local during Astro development', () => {
+    expect(resolveDecapBackendMode({ environment: {}, isDevelopment: true })).toBe('local');
+  });
+
+  it('defaults an absent mode to disabled during a production static build', () => {
+    expect(resolveDecapBackendMode({ environment: {}, isDevelopment: false })).toBe('disabled');
+  });
+
+  it('does not treat an explicit whitespace-only value as absent', () => {
+    expect(
+      resolveDecapBackendMode({
+        environment: { DECAP_BACKEND_MODE: '   ' },
+        isDevelopment: true,
+      }),
+    ).toBeUndefined();
   });
 });
 

@@ -13,7 +13,7 @@
 
 - [x] 2.1 Add a `local | hosted | disabled` Decap backend mode type in `apps/web/src/lib/admin/decap-runtime-config.ts`.
 - [x] 2.2 Parse `DECAP_BACKEND_MODE` as the only mode selector and trim surrounding whitespace.
-- [ ] 2.3 Default Astro development to `local` and production/static builds to `disabled` when `DECAP_BACKEND_MODE` is absent.
+- [x] 2.3 Default Astro development to `local` and production/static builds to `disabled` when `DECAP_BACKEND_MODE` is absent.
 - [ ] 2.4 Reject unknown or empty explicit `DECAP_BACKEND_MODE` values with an actionable build error.
 - [ ] 2.5 Resolve local mode to the proxy backend without requiring DecapBridge endpoints.
 - [ ] 2.6 Validate `DECAP_LOCAL_PROXY_PORT` as a valid TCP port before emitting local config.
