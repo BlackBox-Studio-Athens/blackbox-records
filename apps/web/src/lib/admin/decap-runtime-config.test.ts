@@ -5,6 +5,7 @@ import {
   resolveDecapBackendMode,
   resolveDecapHostedRuntimeConfig,
   resolveDecapLocalRuntimeConfig,
+  resolveDecapPublishingBranch,
   resolveDecapSiteRootUrl,
   shouldUseLocalDecapBackend,
 } from './decap-runtime-config';
@@ -75,12 +76,33 @@ describe('resolveDecapBackendMode', () => {
   });
 });
 
+describe('resolveDecapPublishingBranch', () => {
+  const invalidBranchMessage =
+    'DECAP_BRANCH must be main when set. Leave it unset or set it to main for direct-to-main publishing.';
+
+  it.each([
+    ['absent', undefined],
+    ['empty', ''],
+    ['whitespace-only', ' \t\r\n '],
+    ['trimmed main', '  main  '],
+  ])('resolves %s input to main', (_description, configuredValue) => {
+    expect(resolveDecapPublishingBranch({ DECAP_BRANCH: configuredValue })).toBe('main');
+  });
+
+  it.each(['MAIN', 'develop', 'refs/heads/main'])('rejects contradictory branch %s without echoing it', (branch) => {
+    expect(() => resolveDecapPublishingBranch({ DECAP_BRANCH: branch })).toThrow(
+      new RegExp(`^${invalidBranchMessage}$`),
+    );
+  });
+});
+
 describe('resolveDecapLocalRuntimeConfig', () => {
   const invalidLocalProxyPortMessage =
     'DECAP_LOCAL_PROXY_PORT must be a base-10 TCP port from 1 through 65535 when set. Leave it unset to use 8082.';
 
   it('resolves the default local proxy without hosted settings', () => {
     expect(resolveDecapLocalRuntimeConfig({ environment: {}, isDevelopment: true })).toEqual({
+      branch: 'main',
       localBackendPort: '8082',
       mode: 'local',
       useLocalBackend: true,
@@ -92,6 +114,7 @@ describe('resolveDecapLocalRuntimeConfig', () => {
       resolveDecapLocalRuntimeConfig({
         environment: {
           DECAP_BACKEND_MODE: 'local',
+          DECAP_BRANCH: '  main  ',
           DECAP_LOCAL_PROXY_PORT: '9000',
           DECAP_REPOSITORY: 'legacy/repository',
           DECAP_SITE_URL: 'https://legacy.example.com',
@@ -101,6 +124,7 @@ describe('resolveDecapLocalRuntimeConfig', () => {
         isDevelopment: false,
       }),
     ).toEqual({
+      branch: 'main',
       localBackendPort: '9000',
       mode: 'local',
       useLocalBackend: true,
@@ -163,6 +187,7 @@ describe('resolveDecapHostedRuntimeConfig', () => {
   const placeholderMarker = '__SET_DECAPBRIDGE_SITE_ID__';
   const hostedEnvironment = {
     DECAP_BACKEND_MODE: 'hosted',
+    DECAP_BRANCH: 'main',
     DECAP_REPOSITORY: 'BlackBox-Studio-Athens/blackbox-records',
     DECAP_SITE_URL: 'https://blackbox-studio-athens.github.io/blackbox-records/',
     DECAPBRIDGE_BASE_URL: 'https://auth.decapbridge.com',
@@ -425,6 +450,7 @@ describe('resolveDecapHostedRuntimeConfig', () => {
       authEndpoint: '/sites/blackbox-records/pkce',
       authTokenEndpoint: '/sites/blackbox-records/token',
       baseUrl: 'https://auth.decapbridge.com',
+      branch: 'main',
       gatewayUrl: 'https://gateway.decapbridge.com',
       mode: 'hosted',
       repository: 'BlackBox-Studio-Athens/blackbox-records',
@@ -488,6 +514,16 @@ describe('resolveDecapHostedRuntimeConfig', () => {
         isDevelopment: false,
       }),
     ).toBeUndefined();
+  });
+
+  it('does not validate or expose branch configuration in disabled mode', () => {
+    const options = {
+      environment: { DECAP_BACKEND_MODE: 'disabled', DECAP_BRANCH: 'not-main' },
+      isDevelopment: false,
+    } as const;
+
+    expect(resolveDecapLocalRuntimeConfig(options)).toBeUndefined();
+    expect(resolveDecapHostedRuntimeConfig(options)).toBeUndefined();
   });
 });
 

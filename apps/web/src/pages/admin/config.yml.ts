@@ -8,7 +8,6 @@ import { createProjectRelativeUrl } from '@/config/site';
 export const prerender = true;
 
 const defaultRepository = 'BlackBox-Studio-Athens/blackbox-records';
-const defaultBranch = 'main';
 const defaultDecapBridgeBaseUrl = 'https://auth.decapbridge.com';
 const defaultDecapBridgeAuthEndpoint = '/sites/__SET_DECAPBRIDGE_SITE_ID__/pkce';
 const defaultDecapBridgeAuthTokenEndpoint = '/sites/__SET_DECAPBRIDGE_SITE_ID__/token';
@@ -47,7 +46,6 @@ export const GET: APIRoute = async () => {
     authEndpoint,
     authTokenEndpoint,
     baseUrl: import.meta.env.DECAPBRIDGE_BASE_URL?.trim() || defaultDecapBridgeBaseUrl,
-    branch: import.meta.env.DECAP_BRANCH?.trim() || defaultBranch,
     gatewayUrl: import.meta.env.DECAPBRIDGE_GATEWAY_URL?.trim() || defaultDecapBridgeGatewayUrl,
     useLocalBackend,
     localBackendPort: import.meta.env.DECAP_LOCAL_PROXY_PORT?.trim() || localBackendPort,

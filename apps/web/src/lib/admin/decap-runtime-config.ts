@@ -1,6 +1,7 @@
 export type DecapBackendMode = 'local' | 'hosted' | 'disabled';
 
 export type DecapLocalRuntimeConfig = {
+  branch: 'main';
   localBackendPort: string;
   mode: 'local';
   useLocalBackend: true;
@@ -10,6 +11,7 @@ export type DecapHostedRuntimeConfig = {
   authEndpoint: string;
   authTokenEndpoint: string;
   baseUrl: string;
+  branch: 'main';
   gatewayUrl: string;
   mode: 'hosted';
   repository: string;
@@ -18,6 +20,7 @@ export type DecapHostedRuntimeConfig = {
 };
 
 const decapBackendModes: readonly DecapBackendMode[] = ['local', 'hosted', 'disabled'];
+export const decapPublishingBranch = 'main';
 const defaultDecapBridgeBaseUrl = 'https://auth.decapbridge.com';
 const defaultDecapBridgeGatewayUrl = 'https://gateway.decapbridge.com';
 const defaultLocalBackendPort = '8082';
@@ -97,6 +100,20 @@ export function resolveDecapBackendMode(options: {
   return mode;
 }
 
+export function resolveDecapPublishingBranch(
+  environment: Readonly<Record<string, string | undefined>>,
+): typeof decapPublishingBranch {
+  const configuredBranch = environment.DECAP_BRANCH?.trim();
+
+  if (configuredBranch && configuredBranch !== decapPublishingBranch) {
+    throw new Error(
+      'DECAP_BRANCH must be main when set. Leave it unset or set it to main for direct-to-main publishing.',
+    );
+  }
+
+  return decapPublishingBranch;
+}
+
 export function resolveDecapLocalRuntimeConfig(options: {
   environment: Readonly<Record<string, string | undefined>>;
   isDevelopment: boolean;
@@ -105,6 +122,7 @@ export function resolveDecapLocalRuntimeConfig(options: {
     return undefined;
   }
 
+  const branch = resolveDecapPublishingBranch(options.environment);
   const configuredLocalBackendPort = options.environment.DECAP_LOCAL_PROXY_PORT;
   const localBackendPort = configuredLocalBackendPort?.trim() ?? defaultLocalBackendPort;
   const numericLocalBackendPort = Number(localBackendPort);
@@ -116,6 +134,7 @@ export function resolveDecapLocalRuntimeConfig(options: {
   }
 
   return {
+    branch,
     localBackendPort,
     mode: 'local',
     useLocalBackend: true,
@@ -130,6 +149,7 @@ export function resolveDecapHostedRuntimeConfig(options: {
     return undefined;
   }
 
+  const branch = resolveDecapPublishingBranch(options.environment);
   const repository = options.environment.DECAP_REPOSITORY?.trim();
   const siteUrl = options.environment.DECAP_SITE_URL?.trim();
   const baseUrl = options.environment.DECAPBRIDGE_BASE_URL?.trim() || defaultDecapBridgeBaseUrl;
@@ -200,6 +220,7 @@ export function resolveDecapHostedRuntimeConfig(options: {
     authEndpoint,
     authTokenEndpoint,
     baseUrl,
+    branch,
     gatewayUrl,
     mode: 'hosted',
     repository,

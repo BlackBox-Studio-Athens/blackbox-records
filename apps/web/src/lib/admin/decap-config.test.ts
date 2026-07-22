@@ -9,7 +9,6 @@ describe('buildDecapConfig', () => {
       authEndpoint: '/unused',
       authTokenEndpoint: '/unused-token',
       baseUrl: 'https://auth.decapbridge.com',
-      branch: 'main',
       gatewayUrl: 'https://gateway.decapbridge.com',
       useLocalBackend: true,
       localBackendPort: '8082',
@@ -19,6 +18,7 @@ describe('buildDecapConfig', () => {
     });
 
     expect(yaml).toContain('name: proxy');
+    expect(yaml).toContain('branch: "main"');
     expect(yaml).toContain('http://127.0.0.1:8082/api/v1');
     expect(yaml).toContain('media_folder: apps/web/src/content/uploads');
     expect(yaml).toContain('folder: "apps/web/src/content/releases"');
@@ -40,7 +40,6 @@ describe('buildDecapConfig', () => {
       authEndpoint: '/sites/site-id/pkce',
       authTokenEndpoint: '/sites/site-id/token',
       baseUrl: 'https://auth.decapbridge.com',
-      branch: 'main',
       gatewayUrl: 'https://gateway.decapbridge.com',
       useLocalBackend: false,
       localBackendPort: '8082',
@@ -50,6 +49,7 @@ describe('buildDecapConfig', () => {
     });
 
     expect(yaml).toContain('name: git-gateway');
+    expect(yaml).toContain('branch: "main"');
     expect(yaml).toContain('auth_type: pkce');
     expect(yaml).toContain('media_folder: apps/web/src/content/uploads');
     expect(yaml).toContain('auth_endpoint: "/sites/site-id/pkce"');
@@ -64,7 +64,6 @@ describe('buildDecapConfig', () => {
       authEndpoint: '/unused',
       authTokenEndpoint: '/unused-token',
       baseUrl: 'https://auth.decapbridge.com',
-      branch: 'main',
       gatewayUrl: 'https://gateway.decapbridge.com',
       useLocalBackend: true,
       localBackendPort: '8082',
@@ -88,7 +87,6 @@ describe('buildDecapConfig', () => {
       authEndpoint: '/unused',
       authTokenEndpoint: '/unused-token',
       baseUrl: 'https://auth.decapbridge.com',
-      branch: 'main',
       gatewayUrl: 'https://gateway.decapbridge.com',
       useLocalBackend: true,
       localBackendPort: '8082',

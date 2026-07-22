@@ -21,7 +21,7 @@
 - [x] 2.8 Reject known placeholder values for hosted repository, site, auth, and token settings.
 - [x] 2.9 Reject loopback hosts, including `localhost` and `127.0.0.1`, from every hosted backend or site URL.
 - [x] 2.10 Validate hosted endpoint URL syntax and require secure HTTPS endpoints outside an explicitly local mode.
-- [ ] 2.11 Make `main` the generated Decap branch for both local and hosted modes; remove or reject branch overrides that contradict direct-to-`main` publishing.
+- [x] 2.11 Make `main` the generated Decap branch for both local and hosted modes; remove or reject branch overrides that contradict direct-to-`main` publishing.
 - [ ] 2.12 Represent disabled mode without constructing a writable Decap backend configuration.
 
 ## 3. Generate safe mode-specific admin configuration
