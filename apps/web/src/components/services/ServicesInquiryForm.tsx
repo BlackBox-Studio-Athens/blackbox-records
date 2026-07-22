@@ -1,9 +1,16 @@
-import { useEffect, useReducer, useRef } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { SERVICES_INQUIRY_SERVICE_OPTIONS, type ServicesInquiryService } from '@/components/services/services-inquiry';
+import {
+  buildServicesInquiryDraft,
+  copyServicesInquiryText,
+  SERVICES_INQUIRY_SERVICE_OPTIONS,
+  type ServicesInquiryCopyStatus,
+  type ServicesInquiryDraft,
+  type ServicesInquiryService,
+} from '@/components/services/services-inquiry';
 import {
   PublicCheckoutApiError,
   type ServicesInquiryBody,
@@ -216,6 +223,72 @@ export function ServicesInquirySuccess({
   );
 }
 
+export function ServicesInquiryEmailFallback({
+  copyStatus,
+  draft,
+  onCopy,
+}: {
+  copyStatus: 'idle' | ServicesInquiryCopyStatus;
+  draft: ServicesInquiryDraft;
+  onCopy: () => void;
+}) {
+  const copyMessage =
+    copyStatus === 'copied'
+      ? 'Inquiry details copied.'
+      : copyStatus === 'manual'
+        ? 'Copy unavailable. Select the recipient and inquiry summary below, then copy them manually.'
+        : '';
+
+  return (
+    <section
+      aria-labelledby="services-inquiry-email-fallback-title"
+      className="grid max-w-[42rem] gap-3 border-t border-[#2b2b2b] pt-4"
+    >
+      <h3 className="services-inquiry-form__label m-0" id="services-inquiry-email-fallback-title">
+        Email fallback
+      </h3>
+      <div className="flex flex-wrap items-center gap-3">
+        <a className="services-inline-link inline-flex min-h-11 items-center" href={draft.mailtoHref}>
+          Open in email app
+        </a>
+        <Button
+          className="h-11 rounded-none border-[#2b2b2b] bg-[#111111] px-4 text-[11px] tracking-[0.16em] uppercase text-[#f3f3f3] hover:border-[rgba(199,137,151,0.74)] hover:bg-[#161616]"
+          onClick={onCopy}
+          type="button"
+          variant="outline"
+        >
+          Copy inquiry details
+        </Button>
+      </div>
+      <p className="m-0 text-sm leading-6 text-[#b3b3b3]">
+        Recipient:{' '}
+        <span className="select-text break-all text-[#f3f3f3]" data-services-inquiry-recipient>
+          {draft.recipientEmail}
+        </span>
+      </p>
+      <div className="grid gap-2">
+        <p className="services-inquiry-form__label m-0">Inquiry summary</p>
+        <pre
+          aria-label="Inquiry summary"
+          className="m-0 max-w-full select-text whitespace-pre-wrap break-words border border-[#2b2b2b] bg-[#111111] p-3 font-mono text-xs leading-6 text-[#d8d8d8]"
+          data-services-inquiry-summary
+        >
+          {draft.summary}
+        </pre>
+      </div>
+      <p
+        aria-atomic="true"
+        aria-live="polite"
+        className="services-inquiry-form__meta m-0 min-h-6"
+        id="services-inquiry-copy-status"
+        role="status"
+      >
+        {copyMessage}
+      </p>
+    </section>
+  );
+}
+
 export default function ServicesInquiryForm({
   submitInquiry = submitPublicServicesInquiry,
   submitText,
@@ -225,6 +298,7 @@ export default function ServicesInquiryForm({
     undefined,
     createInitialServicesInquiryFormState,
   );
+  const [copyStatus, setCopyStatus] = useState<'idle' | ServicesInquiryCopyStatus>('idle');
   const pendingSubmissionRef = useRef(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const successRef = useRef<HTMLElement>(null);
@@ -233,10 +307,15 @@ export default function ServicesInquiryForm({
   const fieldErrorDescriptionId = hasFieldError ? 'services-inquiry-field-error' : undefined;
   const { bandOrProject, email: contactEmail, message, name, service, serviceDetails } = state.values;
   const detailPrompt = SERVICES_INQUIRY_DETAIL_PROMPTS[service];
+  const inquiryDraft = buildServicesInquiryDraft(state.values);
 
   useEffect(() => {
     if (state.status === 'submitted') successRef.current?.focus();
   }, [state.status]);
+
+  useEffect(() => {
+    setCopyStatus('idle');
+  }, [inquiryDraft.copyText]);
 
   useEffect(() => {
     function handleDocumentClick(event: MouseEvent) {
@@ -400,6 +479,16 @@ export default function ServicesInquiryForm({
         </Button>
         <ServicesInquirySubmissionFeedback status={state.status} />
       </div>
+      <ServicesInquiryEmailFallback
+        copyStatus={copyStatus}
+        draft={inquiryDraft}
+        onCopy={() => {
+          void copyServicesInquiryText(
+            typeof navigator === 'undefined' ? undefined : navigator.clipboard,
+            inquiryDraft.copyText,
+          ).then(setCopyStatus);
+        }}
+      />
     </form>
   );
 }
