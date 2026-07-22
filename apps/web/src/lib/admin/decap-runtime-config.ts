@@ -25,6 +25,10 @@ export type DecapDisabledRuntimeConfig = {
 
 export type DecapRuntimeConfig = DecapLocalRuntimeConfig | DecapHostedRuntimeConfig | DecapDisabledRuntimeConfig;
 
+export class DecapRuntimeConfigError extends Error {
+  override name = 'DecapRuntimeConfigError';
+}
+
 const decapBackendModes: readonly DecapBackendMode[] = ['local', 'hosted', 'disabled'];
 export const decapPublishingBranch = 'main';
 const defaultDecapBridgeBaseUrl = 'https://auth.decapbridge.com';
@@ -98,7 +102,7 @@ export function resolveDecapBackendMode(options: {
   }
 
   if (!mode) {
-    throw new Error(
+    throw new DecapRuntimeConfigError(
       'DECAP_BACKEND_MODE must be local, hosted, or disabled when set. Leave it unset to use the environment default.',
     );
   }
@@ -112,7 +116,7 @@ export function resolveDecapPublishingBranch(
   const configuredBranch = environment.DECAP_BRANCH?.trim();
 
   if (configuredBranch && configuredBranch !== decapPublishingBranch) {
-    throw new Error(
+    throw new DecapRuntimeConfigError(
       'DECAP_BRANCH must be main when set. Leave it unset or set it to main for direct-to-main publishing.',
     );
   }
@@ -147,7 +151,7 @@ export function resolveDecapLocalRuntimeConfig(options: {
   const numericLocalBackendPort = Number(localBackendPort);
 
   if (!/^\d+$/.test(localBackendPort) || numericLocalBackendPort < 1 || numericLocalBackendPort > 65535) {
-    throw new Error(
+    throw new DecapRuntimeConfigError(
       'DECAP_LOCAL_PROXY_PORT must be a base-10 TCP port from 1 through 65535 when set. Leave it unset to use 8082.',
     );
   }
@@ -183,7 +187,7 @@ export function resolveDecapHostedRuntimeConfig(options: {
     if (!authEndpoint) missingSettingNames.push('DECAPBRIDGE_AUTH_ENDPOINT');
     if (!authTokenEndpoint) missingSettingNames.push('DECAPBRIDGE_AUTH_TOKEN_ENDPOINT');
 
-    throw new Error(
+    throw new DecapRuntimeConfigError(
       `Hosted Decap configuration is missing required setting(s): ${missingSettingNames.join(', ')}. Set each named setting before building with DECAP_BACKEND_MODE=hosted.`,
     );
   }
@@ -198,7 +202,7 @@ export function resolveDecapHostedRuntimeConfig(options: {
     .map(([settingName]) => settingName);
 
   if (placeholderSettingNames.length > 0) {
-    throw new Error(
+    throw new DecapRuntimeConfigError(
       `Hosted Decap configuration contains placeholder value(s) for setting(s): ${placeholderSettingNames.join(', ')}. Replace each named setting with its deployment value before building with DECAP_BACKEND_MODE=hosted.`,
     );
   }
@@ -214,7 +218,7 @@ export function resolveDecapHostedRuntimeConfig(options: {
     .map(([settingName]) => settingName);
 
   if (loopbackSettingNames.length > 0) {
-    throw new Error(
+    throw new DecapRuntimeConfigError(
       `Hosted Decap configuration uses loopback host(s) for setting(s): ${loopbackSettingNames.join(', ')}. Replace each named setting with a hosted deployment URL before building with DECAP_BACKEND_MODE=hosted.`,
     );
   }
@@ -230,7 +234,7 @@ export function resolveDecapHostedRuntimeConfig(options: {
     .map(([settingName]) => settingName);
 
   if (invalidUrlSettingNames.length > 0) {
-    throw new Error(
+    throw new DecapRuntimeConfigError(
       `Hosted Decap configuration has invalid URL setting(s): ${invalidUrlSettingNames.join(', ')}. DECAP_SITE_URL, DECAPBRIDGE_BASE_URL, and DECAPBRIDGE_GATEWAY_URL must be absolute HTTPS URLs. DECAPBRIDGE_AUTH_ENDPOINT and DECAPBRIDGE_AUTH_TOKEN_ENDPOINT must be root-relative endpoint paths. URL settings must not include credentials or fragments.`,
     );
   }

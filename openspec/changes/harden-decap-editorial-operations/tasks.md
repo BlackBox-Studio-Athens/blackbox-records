@@ -26,14 +26,14 @@
 
 ## 3. Generate safe mode-specific admin configuration
 
-- [ ] 3.1 Update `apps/web/src/pages/admin/config.yml.ts` to resolve the explicit backend mode before building YAML.
-- [ ] 3.2 Emit the local proxy backend only when the resolved mode is `local`.
-- [ ] 3.3 Emit the DecapBridge PKCE backend only when the resolved mode is `hosted`.
-- [ ] 3.4 Ensure hosted YAML contains the canonical repository, `main` branch, `publish_mode: simple`, site URL, display URL, auth endpoint, and token endpoint.
-- [ ] 3.5 Ensure disabled mode exposes no usable repository, proxy, auth endpoint, token endpoint, or local backend URL.
-- [ ] 3.6 Return an explicit safe response for direct `/admin/config.yml` requests in disabled mode.
-- [ ] 3.7 Keep configuration errors limited to setting names and remediation; never include secret values or full environment dumps.
-- [ ] 3.8 Add stable mode markers to the admin document or generated response so unit and browser checks do not depend on generated CSS classes.
+- [x] 3.1 Update `apps/web/src/pages/admin/config.yml.ts` to resolve the explicit backend mode before building YAML.
+- [x] 3.2 Emit the local proxy backend only when the resolved mode is `local`.
+- [x] 3.3 Emit the DecapBridge PKCE backend only when the resolved mode is `hosted`.
+- [x] 3.4 Ensure hosted YAML contains the canonical repository, `main` branch, `publish_mode: simple`, site URL, display URL, auth endpoint, and token endpoint.
+- [x] 3.5 Ensure disabled mode exposes no usable repository, proxy, auth endpoint, token endpoint, or local backend URL.
+- [x] 3.6 Return an explicit safe response for direct `/admin/config.yml` requests in disabled mode.
+- [x] 3.7 Keep configuration errors limited to setting names and remediation; never include secret values or full environment dumps.
+- [x] 3.8 Add stable mode markers to the admin document or generated response so unit and browser checks do not depend on generated CSS classes.
 
 ## 4. Add clear admin boot, failure, and disabled states
 

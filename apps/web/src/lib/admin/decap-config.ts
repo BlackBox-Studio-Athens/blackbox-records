@@ -1,5 +1,10 @@
 import { escapeYamlScalar, indentYamlBlock, type DecapSelectOption } from './decap-yaml-builder';
-import { decapPublishingBranch } from './decap-runtime-config';
+import {
+  DecapRuntimeConfigError,
+  type DecapBackendMode,
+  type DecapHostedRuntimeConfig,
+  type DecapLocalRuntimeConfig,
+} from './decap-runtime-config';
 import { buildAboutFields } from './decap-about-fields';
 import { buildArtistCollection } from './decap-artist-collection';
 import { buildDistroCollection } from './decap-distro-collection';
@@ -15,27 +20,72 @@ import { buildSiteChromeCollections } from './decap-site-chrome-collections';
 
 export type DecapArtistOption = DecapSelectOption;
 
+type DecapWritableRuntimeConfig = DecapLocalRuntimeConfig | DecapHostedRuntimeConfig;
+
 export type BuildDecapConfigOptions = {
   artistOptions: DecapArtistOption[];
-  authEndpoint: string;
-  authTokenEndpoint: string;
-  baseUrl: string;
-  gatewayUrl: string;
-  useLocalBackend: boolean;
-  localBackendPort: string;
   logoUrl: string;
-  repository: string;
+  runtimeConfig: DecapWritableRuntimeConfig;
   siteRootUrl: string;
 };
 
-export function buildDecapConfig(options: BuildDecapConfigOptions): string {
-  const backendConfig = options.useLocalBackend
-    ? `backend:\n  name: proxy\n  proxy_url: ${escapeYamlScalar(`http://127.0.0.1:${options.localBackendPort}/api/v1`)}\n  branch: ${escapeYamlScalar(decapPublishingBranch)}`
-    : `backend:\n  name: git-gateway\n  repo: ${escapeYamlScalar(options.repository)}\n  branch: ${escapeYamlScalar(decapPublishingBranch)}\n  auth_type: pkce\n  base_url: ${escapeYamlScalar(options.baseUrl)}\n  auth_endpoint: ${escapeYamlScalar(options.authEndpoint)}\n  auth_token_endpoint: ${escapeYamlScalar(options.authTokenEndpoint)}\n  gateway_url: ${escapeYamlScalar(options.gatewayUrl)}\n\n  commit_messages:\n    create: "Create {{collection}} \\"{{slug}}\\" via Decap CMS"\n    update: "Update {{collection}} \\"{{slug}}\\" via Decap CMS"\n    delete: "Delete {{collection}} \\"{{slug}}\\" via Decap CMS"\n    uploadMedia: "Upload \\"{{path}}\\" via Decap CMS"\n    deleteMedia: "Delete \\"{{path}}\\" via Decap CMS"\n    openAuthoring: "Open authoring for {{collection}} via Decap CMS"`;
+export const decapModeHeaderName = 'X-BlackBox-Decap-Mode';
 
-  const authConfig = options.useLocalBackend
-    ? ''
-    : `\n\nauth:\n  email_claim: email\n  first_name_claim: first_name\n  last_name_claim: last_name\n  avatar_url_claim: avatar_url`;
+const decapConfigContentType = 'text/yaml; charset=utf-8';
+const genericDecapConfigErrorMessage =
+  'Decap configuration could not be generated. Review DECAP_BACKEND_MODE and required Decap settings, then retry.';
+
+function buildModeMarker(mode: DecapBackendMode): string {
+  return `# blackbox-decap-mode: ${mode}`;
+}
+
+export function normalizeDecapConfigError(error: unknown): DecapRuntimeConfigError {
+  return error instanceof DecapRuntimeConfigError ? error : new DecapRuntimeConfigError(genericDecapConfigErrorMessage);
+}
+
+export function createDecapConfigErrorResponse(error: unknown): Response {
+  return new Response(`${normalizeDecapConfigError(error).message}\n`, {
+    status: 500,
+    headers: {
+      'Cache-Control': 'no-store',
+      'Content-Type': 'text/plain; charset=utf-8',
+    },
+  });
+}
+
+export function createDecapConfigResponse(
+  input: { mode: 'disabled' } | { mode: Exclude<DecapBackendMode, 'disabled'>; yaml: string },
+): Response {
+  const headers = {
+    'Cache-Control': 'no-store',
+    'Content-Type': decapConfigContentType,
+    [decapModeHeaderName]: input.mode,
+  };
+
+  if (input.mode === 'disabled') {
+    return new Response(`${buildModeMarker(input.mode)}\n# BlackBox CMS unavailable for this build.\n`, {
+      headers,
+    });
+  }
+
+  return new Response(`${buildModeMarker(input.mode)}\n${input.yaml}`, { headers });
+}
+
+function buildBackendConfig(runtimeConfig: DecapWritableRuntimeConfig): string {
+  switch (runtimeConfig.mode) {
+    case 'local':
+      return `backend:\n  name: proxy\n  proxy_url: ${escapeYamlScalar(`http://127.0.0.1:${runtimeConfig.localBackendPort}/api/v1`)}\n  branch: ${escapeYamlScalar(runtimeConfig.branch)}`;
+    case 'hosted':
+      return `backend:\n  name: git-gateway\n  repo: ${escapeYamlScalar(runtimeConfig.repository)}\n  branch: ${escapeYamlScalar(runtimeConfig.branch)}\n  auth_type: pkce\n  base_url: ${escapeYamlScalar(runtimeConfig.baseUrl)}\n  auth_endpoint: ${escapeYamlScalar(runtimeConfig.authEndpoint)}\n  auth_token_endpoint: ${escapeYamlScalar(runtimeConfig.authTokenEndpoint)}\n  gateway_url: ${escapeYamlScalar(runtimeConfig.gatewayUrl)}\n\n  commit_messages:\n    create: "Create {{collection}} \\"{{slug}}\\" via Decap CMS"\n    update: "Update {{collection}} \\"{{slug}}\\" via Decap CMS"\n    delete: "Delete {{collection}} \\"{{slug}}\\" via Decap CMS"\n    uploadMedia: "Upload \\"{{path}}\\" via Decap CMS"\n    deleteMedia: "Delete \\"{{path}}\\" via Decap CMS"\n    openAuthoring: "Open authoring for {{collection}} via Decap CMS"`;
+  }
+}
+
+export function buildDecapConfig(options: BuildDecapConfigOptions): string {
+  const backendConfig = buildBackendConfig(options.runtimeConfig);
+  const authConfig =
+    options.runtimeConfig.mode === 'hosted'
+      ? `\n\nauth:\n  email_claim: email\n  first_name_claim: first_name\n  last_name_claim: last_name\n  avatar_url_claim: avatar_url`
+      : '';
 
   const homeFields = buildHomeFields();
   const aboutFields = buildAboutFields();

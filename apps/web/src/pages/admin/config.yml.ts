@@ -1,21 +1,47 @@
 import { getCollection } from 'astro:content';
 import type { APIRoute } from 'astro';
 
-import { buildDecapConfig } from '@/lib/admin/decap-config';
-import { resolveDecapSiteRootUrl, shouldUseLocalDecapBackend } from '@/lib/admin/decap-runtime-config';
+import {
+  buildDecapConfig,
+  createDecapConfigErrorResponse,
+  createDecapConfigResponse,
+  normalizeDecapConfigError,
+} from '@/lib/admin/decap-config';
+import { resolveDecapRuntimeConfig, resolveDecapSiteRootUrl } from '@/lib/admin/decap-runtime-config';
 import { createProjectRelativeUrl } from '@/config/site';
 
 export const prerender = true;
 
-const defaultRepository = 'BlackBox-Studio-Athens/blackbox-records';
-const defaultDecapBridgeBaseUrl = 'https://auth.decapbridge.com';
-const defaultDecapBridgeAuthEndpoint = '/sites/__SET_DECAPBRIDGE_SITE_ID__/pkce';
-const defaultDecapBridgeAuthTokenEndpoint = '/sites/__SET_DECAPBRIDGE_SITE_ID__/token';
-const defaultDecapBridgeGatewayUrl = 'https://gateway.decapbridge.com';
-const localBackendPort = '8082';
 const localCmsPort = '4322';
 
 export const GET: APIRoute = async () => {
+  let runtimeConfig;
+
+  try {
+    runtimeConfig = resolveDecapRuntimeConfig({
+      environment: {
+        DECAP_BACKEND_MODE: import.meta.env.DECAP_BACKEND_MODE,
+        DECAP_BRANCH: import.meta.env.DECAP_BRANCH,
+        DECAP_LOCAL_PROXY_PORT: import.meta.env.DECAP_LOCAL_PROXY_PORT,
+        DECAP_REPOSITORY: import.meta.env.DECAP_REPOSITORY,
+        DECAP_SITE_URL: import.meta.env.DECAP_SITE_URL,
+        DECAPBRIDGE_AUTH_ENDPOINT: import.meta.env.DECAPBRIDGE_AUTH_ENDPOINT,
+        DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: import.meta.env.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT,
+        DECAPBRIDGE_BASE_URL: import.meta.env.DECAPBRIDGE_BASE_URL,
+        DECAPBRIDGE_GATEWAY_URL: import.meta.env.DECAPBRIDGE_GATEWAY_URL,
+      },
+      isDevelopment: import.meta.env.DEV,
+    });
+  } catch (error) {
+    const safeError = normalizeDecapConfigError(error);
+    if (import.meta.env.DEV) return createDecapConfigErrorResponse(safeError);
+    throw safeError;
+  }
+
+  if (runtimeConfig.mode === 'disabled') {
+    return createDecapConfigResponse(runtimeConfig);
+  }
+
   const artistEntries = await getCollection('artists');
   const artistOptions = artistEntries
     .map((entry) => ({
@@ -24,40 +50,20 @@ export const GET: APIRoute = async () => {
     }))
     .sort((left, right) => left.label.localeCompare(right.label));
 
-  const authEndpoint = import.meta.env.DECAPBRIDGE_AUTH_ENDPOINT?.trim() || defaultDecapBridgeAuthEndpoint;
-  const authTokenEndpoint =
-    import.meta.env.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT?.trim() || defaultDecapBridgeAuthTokenEndpoint;
-  const useLocalBackend = shouldUseLocalDecapBackend({
-    authEndpoint,
-    authTokenEndpoint,
-    isDevelopment: import.meta.env.DEV,
-  });
   const siteRootUrl = resolveDecapSiteRootUrl({
     baseUrl: import.meta.env.BASE_URL,
-    configuredSiteUrl: import.meta.env.DECAP_SITE_URL,
-    useLocalBackend,
+    ...(runtimeConfig.mode === 'hosted' ? { configuredSiteUrl: runtimeConfig.siteUrl } : {}),
+    useLocalBackend: runtimeConfig.mode === 'local',
     localCmsPort: import.meta.env.CMS_DEV_PORT?.trim() || localCmsPort,
-    site: import.meta.env.SITE,
   });
   const logoUrl = new URL(createProjectRelativeUrl('/assets/images/brand/logo.png'), siteRootUrl).toString();
 
   const yaml = buildDecapConfig({
     artistOptions,
-    authEndpoint,
-    authTokenEndpoint,
-    baseUrl: import.meta.env.DECAPBRIDGE_BASE_URL?.trim() || defaultDecapBridgeBaseUrl,
-    gatewayUrl: import.meta.env.DECAPBRIDGE_GATEWAY_URL?.trim() || defaultDecapBridgeGatewayUrl,
-    useLocalBackend,
-    localBackendPort: import.meta.env.DECAP_LOCAL_PROXY_PORT?.trim() || localBackendPort,
     logoUrl,
-    repository: import.meta.env.DECAP_REPOSITORY?.trim() || defaultRepository,
+    runtimeConfig,
     siteRootUrl,
   });
 
-  return new Response(yaml, {
-    headers: {
-      'Cache-Control': 'no-store',
-      'Content-Type': 'text/yaml; charset=utf-8',
-    },
-  });
+  return createDecapConfigResponse({ mode: runtimeConfig.mode, yaml });
 };
