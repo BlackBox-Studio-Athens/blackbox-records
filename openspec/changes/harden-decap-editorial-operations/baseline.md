@@ -32,13 +32,13 @@ The canonical checkout had no Decap implementation or dependency differences fro
 
 ### Version-bearing operational occurrences
 
-| Classification | Repository occurrence | Embedded value | Meaning |
-| --- | --- | --- | --- |
-| Dependency declaration | `apps/web/package.json:58` | `"decap-server": "^3.7.0"` | Web workspace dev dependency; range is not an exact pin. |
-| Lockfile importer | `pnpm-lock.yaml:203-205` | `specifier: ^3.7.0`; `version: 3.7.0(supports-color@10.2.2)` | Importer preserves the declared range and selects `3.7.0`. |
-| Lockfile package resolution | `pnpm-lock.yaml:3219-3222` | `decap-server@3.7.0` | Resolved package record and integrity metadata. |
-| Lockfile snapshot | `pnpm-lock.yaml:8803-8813` | `decap-server@3.7.0(supports-color@10.2.2)` | Installed dependency snapshot with peer context and runtime dependencies. |
-| Browser runtime source | `apps/web/src/pages/admin/index.astro:49` | `decap-cms@3.10.1` | Exact CDN version loaded by `/admin/`; `decap-cms` is not a package dependency or lockfile entry. |
+| Classification              | Repository occurrence                     | Embedded value                                               | Meaning                                                                                           |
+| --------------------------- | ----------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Dependency declaration      | `apps/web/package.json:58`                | `"decap-server": "^3.7.0"`                                   | Web workspace dev dependency; range is not an exact pin.                                          |
+| Lockfile importer           | `pnpm-lock.yaml:203-205`                  | `specifier: ^3.7.0`; `version: 3.7.0(supports-color@10.2.2)` | Importer preserves the declared range and selects `3.7.0`.                                        |
+| Lockfile package resolution | `pnpm-lock.yaml:3219-3222`                | `decap-server@3.7.0`                                         | Resolved package record and integrity metadata.                                                   |
+| Lockfile snapshot           | `pnpm-lock.yaml:8803-8813`                | `decap-server@3.7.0(supports-color@10.2.2)`                  | Installed dependency snapshot with peer context and runtime dependencies.                         |
+| Browser runtime source      | `apps/web/src/pages/admin/index.astro:49` | `decap-cms@3.10.1`                                           | Exact CDN version loaded by `/admin/`; `decap-cms` is not a package dependency or lockfile entry. |
 
 ### References that do not embed a version
 

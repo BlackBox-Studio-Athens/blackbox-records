@@ -99,11 +99,11 @@ This is a CDN/global-load timing workaround, not a selector against Decap-render
 
 ## Coverage baseline and key gaps
 
-| Coverage class | Count | Records | Current evidence |
-| --- | ---: | --- | --- |
-| Focused regression | 0 | none | No test forces the repaired defect on the pinned Decap runtime. |
-| Partial smoke | 3 | R1, R2, R3 | Singleton healthy/transition routes and hosted auth terminal state only. |
-| Source-presence only | 1 | R6 | UAT fetches `init.js` and checks the session-key token. |
-| No behavioral assertion | 3 | R4, R5, R7 | List action, preview-toggle behavior, and lifecycle wiring are unasserted. |
+| Coverage class          | Count | Records    | Current evidence                                                           |
+| ----------------------- | ----: | ---------- | -------------------------------------------------------------------------- |
+| Focused regression      |     0 | none       | No test forces the repaired defect on the pinned Decap runtime.            |
+| Partial smoke           |     3 | R1, R2, R3 | Singleton healthy/transition routes and hosted auth terminal state only.   |
+| Source-presence only    |     1 | R6         | UAT fetches `init.js` and checks the session-key token.                    |
+| No behavioral assertion |     3 | R4, R5, R7 | List action, preview-toggle behavior, and lifecycle wiring are unasserted. |
 
 Highest-risk gaps are generated list-row classes/button order (R4), preview classes/title/geometry/timing (R5-R6), English editor text/native-control heuristics and untested recovery deletion (R1-R2), and the unbounded child-list observer/timer fan-out (R7). Current `pnpm test:cms-admin` runs only `apps/web/src/lib/admin` builder/config tests (`package.json:87`) and does not execute `public/admin/init.js`.
