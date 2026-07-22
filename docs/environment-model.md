@@ -55,6 +55,16 @@ The disabled PRD readiness probe does not require live Stripe secrets. Resend ru
 - Resend uses verified `blackboxrecordsathens.com` for sending and the managed `ambkime.resend.app` Receiving domain for UAT. UAT maps application email and newsletter Contact writes to `uat-sink@ambkime.resend.app`; Receiving stays disabled on `blackboxrecordsathens.com`, and PRD must not honor the UAT sink override.
 - Paid-order email brand URLs are public Worker runtime config. Local/UAT use the GitHub Pages home and logo URLs; PRD uses the Cloudflare Pages home and logo URLs until an approved custom public site domain replaces them.
 
+## Services Inquiry Email Delivery
+
+`POST /api/services/inquiries` is the public Worker endpoint for Services inquiries. The browser sends validated contact and inquiry fields, never a recipient address or provider configuration.
+
+- Local uses the committed no-network email mock. A successful response proves application acceptance without Resend, Cloudflare alias forwarding, Gmail delivery, UAT effects, or PRD effects.
+- UAT sends through Resend only to the managed `uat-sink@ambkime.resend.app` recipient policy. UAT does not exercise the public service aliases or Gmail forwarding.
+- PRD maps General to `info@blackboxrecordsathens.com`, Tour Booking to `booking@blackboxrecordsathens.com`, Merch Printing to `merch@blackboxrecordsathens.com`, and Vinyl Printing to `vinyl@blackboxrecordsathens.com`. Cloudflare Email Routing forwards all four aliases to the existing Gmail inbox; manually verify each alias before PRD acceptance.
+
+The Worker returns `{"status":"submitted"}` only after provider acceptance. The site confirms inline without redirecting and does not send a visitor receipt. V1 has no CAPTCHA, Turnstile, honeypot, application rate limiting, or D1 inquiry persistence. Strict bounded validation, HTML escaping, pending-submit protection, and content-free logs remain required.
+
 ## Origins And API Targets
 
 | Scope                 | `PUBLIC_BACKEND_BASE_URL`                                                | `CHECKOUT_RETURN_ORIGINS`                                                                               |

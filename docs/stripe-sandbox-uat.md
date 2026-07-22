@@ -247,7 +247,7 @@ Run the Resend UAT smoke after the UAT Worker has `RESEND_API_KEY` and `RESEND_N
 pnpm smoke:resend-uat
 ```
 
-This posts one synthetic consented signup through the public Worker route and expects Resend-backed UAT sink routing to accept it. Evidence is written under `.codex-artifacts/smoke/uat/resend-uat/` and must stay ignored/redacted.
+This posts one synthetic consented signup to `/api/newsletter/registrations` and one synthetic Services inquiry to `/api/services/inquiries`. The UAT Worker must return provider-accepted `registered` and `submitted` statuses under the managed `uat-sink@ambkime.resend.app` routing policy. Evidence is written under `.codex-artifacts/smoke/uat/resend-uat/`; it records only safe response status, route, recipient policy, and issues, never inquiry name, visitor email, message, or service details.
 
 Evidence must stay ignored/redacted. Do not commit or paste Stripe secrets, webhook secrets, full `price_...`, `prod_...`, `we_...` IDs, customer payment details, or raw provider payloads.
 

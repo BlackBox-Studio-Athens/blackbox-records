@@ -39,6 +39,14 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** the helper is listed under the owning `public-commerce-http` roots in `module-boundaries.manifest.json`
 - **AND** it is not listed as a provided entrypoint unless another module is allowed to import it.
 
+#### Scenario: Public Services inquiry HTTP files are added
+
+- **GIVEN** the public Services inquiry route and route-local service are implemented under `apps/backend/src/interfaces/http/routes/`
+- **WHEN** boundary validation runs
+- **THEN** both files are listed under the closed `public-commerce-http` roots
+- **AND** the shared public contract remains exposed through the existing `public-contracts` named interface
+- **AND** the route-local service depends on the provided `email-application` entrypoint rather than provider implementation.
+
 #### Scenario: Scheduled catalog verification is retired
 
 - **GIVEN** Store Listing Price recovery no longer uses a scheduled Worker handler
@@ -66,6 +74,14 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **WHEN** the app shell lazily mounts that control on `/store/distro/`
 - **THEN** `apps/web/src/components/store/StoreDistroSearch.tsx` is a provided `storefront-catalog` entrypoint
 - **AND** the app shell imports that entrypoint instead of a private storefront implementation.
+
+#### Scenario: Services inquiry presentation crosses the app-shell boundary
+
+- **GIVEN** Services inquiry presentation is owned by `storefront-catalog`
+- **WHEN** the app shell lazily mounts the inquiry form
+- **THEN** `apps/web/src/components/services/**` is an owned `storefront-catalog` root
+- **AND** `ServicesInquiryForm.tsx` remains a provided entrypoint
+- **AND** reusable controls are imported through `ui-foundation` entrypoints.
 
 #### Scenario: Shared Store Coverflow controller crosses the app-shell boundary
 

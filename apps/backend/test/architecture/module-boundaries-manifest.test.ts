@@ -15,6 +15,36 @@ describe('Module boundaries manifest', { timeout: 15_000 }, () => {
     expect(validateManifest(manifest)).toEqual([]);
   });
 
+  it('keeps Services inquiry surfaces inside existing closed modules', () => {
+    const manifest = loadModuleBoundariesManifest() as {
+      modules: Record<
+        string,
+        {
+          allowedDependencies: string[];
+          namedInterfaces: Record<string, string>;
+          providedEntrypoints: string[];
+          roots: string[];
+        }
+      >;
+    };
+    const storefrontCatalog = manifest.modules['storefront-catalog']!;
+    const publicCommerceHttp = manifest.modules['public-commerce-http']!;
+
+    expect(storefrontCatalog.roots).toContain('apps/web/src/components/services/**');
+    expect(storefrontCatalog.providedEntrypoints).toContain('apps/web/src/components/services/ServicesInquiryForm.tsx');
+    expect(storefrontCatalog.allowedDependencies).toContain('ui-foundation');
+    expect(publicCommerceHttp.roots).toEqual(
+      expect.arrayContaining([
+        'apps/backend/src/interfaces/http/routes/register-public-services-inquiry-routes.ts',
+        'apps/backend/src/interfaces/http/routes/public-services-inquiry-services.ts',
+      ]),
+    );
+    expect(publicCommerceHttp.namedInterfaces['public-contracts']).toBe(
+      'apps/backend/src/interfaces/http/contracts/public-contracts.ts',
+    );
+    expect(publicCommerceHttp.allowedDependencies).toContain('email-application');
+  });
+
   it('requires hard-closure metadata for open-temporary modules', () => {
     const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
       modules: Record<string, Record<string, unknown>>;

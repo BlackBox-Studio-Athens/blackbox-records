@@ -181,13 +181,13 @@ pnpm smoke:stripe-uat -- \
 
 The command requires the authenticated local Resend CLI profile, performs a quiet Receiving preflight, waits for exactly one shopper and one ops message per paid order at the managed UAT sink, and writes redacted receipt observations. The default receipt deadline is 120 seconds; use `--email-receipt-timeout-ms` only when overriding it. The checked-in post-merge workflow omits this flag and remains credential-free. Resend Free currently includes 3,000 sent-plus-received transactional emails per month, a 100-per-day limit, and 30-day retention; one canonical receipt run consumes eight units. See <https://resend.com/docs/knowledge-base/account-quotas-and-limits> and <https://resend.com/pricing>.
 
-Run the UAT Resend smoke when you need to prove the UAT Worker can register a newsletter Contact through Resend:
+Run the UAT Resend smoke when you need to prove the UAT Worker can register a newsletter Contact and submit a Services inquiry through Resend:
 
 ```sh
 pnpm smoke:resend-uat
 ```
 
-The Resend UAT smoke posts a synthetic consented signup to `/api/newsletter/registrations`, expects the UAT sink routing to return `{"status":"registered"}`, and writes ignored evidence to `.codex-artifacts/smoke/uat/resend-uat/<run-id>/`. It does not print Resend API keys, Topic IDs, Contact IDs, or account diagnostics.
+The Resend UAT smoke posts a synthetic consented signup to `/api/newsletter/registrations` and a synthetic inquiry to `/api/services/inquiries`. It expects `{"status":"registered"}` and `{"status":"submitted"}` only after provider acceptance under the managed UAT sink policy, then writes ignored evidence to `.codex-artifacts/smoke/uat/resend-uat/<run-id>/`. Evidence and console output exclude inquiry name, visitor email, message, service details, Resend API keys, Topic IDs, Contact IDs, and provider diagnostics.
 
 Render local paid-order email previews when you need to inspect the generated shopper and ops HTML:
 

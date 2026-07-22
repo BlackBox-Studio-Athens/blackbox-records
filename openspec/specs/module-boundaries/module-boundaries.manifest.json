@@ -153,6 +153,7 @@
         "apps/web/src/components/store/StoreCoverflowController.ts",
         "apps/web/src/components/store/StoreDistroSearch.tsx",
         "apps/web/src/components/store/StoreListingPricePresentation.ts",
+        "apps/web/src/components/services/**",
         "apps/web/src/components/cards/**",
         "apps/web/src/components/detail/**"
       ],

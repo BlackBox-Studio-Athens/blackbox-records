@@ -21,7 +21,7 @@ export type ResendUatSmokeOptions = {
   workerUrl: string;
 };
 
-export type ResendUatSmokeCheckKind = 'newsletter-registration' | 'worker-health';
+export type ResendUatSmokeCheckKind = 'newsletter-registration' | 'services-inquiry-submission' | 'worker-health';
 
 export type ResendUatSmokeCheck = {
   bodyTextSnippet: string | null;
@@ -29,6 +29,7 @@ export type ResendUatSmokeCheck = {
   issues: string[];
   kind: ResendUatSmokeCheckKind;
   path: string;
+  recipientPolicy: 'managed-uat-sink' | null;
   status: number | null;
   url: string;
 };
@@ -119,6 +120,15 @@ export function createResendUatSmokeEmail(runId: string): string {
   return `uat-resend-smoke+${runId}@blackbox.example`;
 }
 
+export function createResendUatSmokeServicesInquiry(runId: string) {
+  return {
+    email: `uat-services-inquiry-smoke+${runId}@blackbox.example`,
+    message: `Synthetic Services inquiry smoke ${runId}. No reply required.`,
+    name: 'BlackBox UAT Smoke',
+    service: 'General' as const,
+  };
+}
+
 export async function runResendUatSmoke(options: ResendUatSmokeOptions): Promise<ResendUatSmokeEvidence> {
   const runId = createRunId();
   const runArtifactDir = path.join(options.evidenceDir, runId);
@@ -127,6 +137,7 @@ export async function runResendUatSmoke(options: ResendUatSmokeOptions): Promise
   const checks = [
     await checkWorkerHealth(options),
     await checkNewsletterRegistration(options, createResendUatSmokeEmail(runId)),
+    await checkServicesInquirySubmission(options, createResendUatSmokeServicesInquiry(runId)),
   ];
   const status = checks.some((check) => check.issues.length || check.status === null || check.status >= 400)
     ? 'failed'
@@ -203,6 +214,7 @@ async function checkWorkerHealth(options: ResendUatSmokeOptions): Promise<Resend
     issues,
     kind: 'worker-health',
     path: pathName,
+    recipientPolicy: null,
     status: response?.status ?? null,
     url,
   };
@@ -251,6 +263,56 @@ async function checkNewsletterRegistration(
     issues,
     kind: 'newsletter-registration',
     path: pathName,
+    recipientPolicy: null,
+    status: response?.status ?? null,
+    url,
+  };
+}
+
+export async function checkServicesInquirySubmission(
+  options: ResendUatSmokeOptions,
+  inquiry: ReturnType<typeof createResendUatSmokeServicesInquiry>,
+): Promise<ResendUatSmokeCheck> {
+  const pathName = '/api/services/inquiries';
+  const url = `${options.workerUrl}${pathName}`;
+  const issues: string[] = [];
+  const response = await fetchSmokeResponse(url, options.timeoutMs, {
+    body: JSON.stringify(inquiry),
+    headers: {
+      'content-type': 'application/json',
+      origin: uatSiteOrigin,
+    },
+    method: 'POST',
+  }).catch(() => {
+    issues.push('Expected UAT Services inquiry submission to be reachable.');
+    return null;
+  });
+  const bodyText = response ? await response.text() : '';
+  const contentType = response?.headers.get('content-type') ?? null;
+  const cacheControl = response?.headers.get('cache-control') ?? null;
+  const submitted = response?.ok ? isSubmittedServicesInquiryResponse(bodyText) : false;
+
+  if (response && response.status !== 200) {
+    issues.push(`Expected UAT Services inquiry submission to return HTTP 200; received ${response.status}.`);
+  }
+
+  if (response && cacheControl !== 'no-store') {
+    issues.push(
+      `Expected UAT Services inquiry submission to return Cache-Control: no-store; received ${cacheControl}.`,
+    );
+  }
+
+  if (response?.ok && !submitted) {
+    issues.push('Expected UAT Services inquiry submission to return {"status":"submitted"}.');
+  }
+
+  return {
+    bodyTextSnippet: submitted ? '{"status":"submitted"}' : null,
+    contentType,
+    issues,
+    kind: 'services-inquiry-submission',
+    path: pathName,
+    recipientPolicy: 'managed-uat-sink',
     status: response?.status ?? null,
     url,
   };
@@ -275,6 +337,16 @@ function isRegisteredNewsletterResponse(bodyText: string): boolean {
     const body = JSON.parse(bodyText) as { status?: unknown };
 
     return body.status === 'registered';
+  } catch {
+    return false;
+  }
+}
+
+function isSubmittedServicesInquiryResponse(bodyText: string): boolean {
+  try {
+    const body = JSON.parse(bodyText) as { status?: unknown };
+
+    return body.status === 'submitted';
   } catch {
     return false;
   }

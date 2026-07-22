@@ -23,9 +23,9 @@
 
 ## 4. Architecture and Operations
 
-- [ ] 4.1 Update `module-boundaries.manifest.json` and its focused architecture expectations so `apps/web/src/components/services/**` has explicit existing-module ownership and new public HTTP files remain inside `public-commerce-http`.
-- [ ] 4.2 Extend the existing Resend UAT smoke with one synthetic Services Inquiry submission that proves provider acceptance and managed-sink routing without persisting or printing visitor content.
-- [ ] 4.3 Update operator documentation for the endpoint, Local/UAT/PRD behavior, four Cloudflare-forwarded aliases, inline-only confirmation, no visitor receipt, and the explicit absence of CAPTCHA, rate limiting, and D1 persistence.
+- [x] 4.1 Update `module-boundaries.manifest.json` and its focused architecture expectations so `apps/web/src/components/services/**` has explicit existing-module ownership and new public HTTP files remain inside `public-commerce-http`.
+- [x] 4.2 Extend the existing Resend UAT smoke with one synthetic Services Inquiry submission that proves provider acceptance and managed-sink routing without persisting or printing visitor content.
+- [x] 4.3 Update operator documentation for the endpoint, Local/UAT/PRD behavior, four Cloudflare-forwarded aliases, inline-only confirmation, no visitor receipt, and the explicit absence of CAPTCHA, rate limiting, and D1 persistence.
 
 ## 5. Verification and Rollout
 
