@@ -1,6 +1,6 @@
 ## 1. Email Application
 
-- [ ] 1.1 Add the Services Inquiry input/service types, fixed service-to-alias map, bounded validation, and provider-safe purpose/tag values under the existing email application module.
+- [x] 1.1 Add the Services Inquiry input/service types, fixed service-to-alias map, bounded validation, and provider-safe purpose/tag values under the existing email application module.
 - [ ] 1.2 Build the escaped BlackBox HTML and equivalent plain-text Services Inquiry template with the approved subject and field order.
 - [ ] 1.3 Extend `TransactionalEmailCommand` with optional validated `replyTo`, preserve the configured support fallback for existing callers, and add focused regression tests.
 - [ ] 1.4 Implement the stateless Services Inquiry send use case with Worker-owned idempotency, UAT sink routing, content-free outcome logging, and unit coverage for every alias and provider failure.
