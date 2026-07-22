@@ -165,8 +165,10 @@ describe('resolveDecapHostedRuntimeConfig', () => {
     DECAP_BACKEND_MODE: 'hosted',
     DECAP_REPOSITORY: 'BlackBox-Studio-Athens/blackbox-records',
     DECAP_SITE_URL: 'https://blackbox-studio-athens.github.io/blackbox-records/',
+    DECAPBRIDGE_BASE_URL: 'https://auth.decapbridge.com',
     DECAPBRIDGE_AUTH_ENDPOINT: '/sites/blackbox-records/pkce',
     DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: '/sites/blackbox-records/token',
+    DECAPBRIDGE_GATEWAY_URL: 'https://gateway.decapbridge.com',
   };
   const requiredSettingNames = [
     'DECAP_REPOSITORY',
@@ -180,11 +182,16 @@ describe('resolveDecapHostedRuntimeConfig', () => {
     `Hosted Decap configuration contains placeholder value(s) for setting(s): ${settingNames.join(', ')}. Replace each named setting with its deployment value before building with DECAP_BACKEND_MODE=hosted.`;
   const loopbackSettingMessage = (settingNames: readonly string[]) =>
     `Hosted Decap configuration uses loopback host(s) for setting(s): ${settingNames.join(', ')}. Replace each named setting with a hosted deployment URL before building with DECAP_BACKEND_MODE=hosted.`;
+  const invalidUrlSettingMessage = (settingNames: readonly string[]) =>
+    `Hosted Decap configuration has invalid URL setting(s): ${settingNames.join(', ')}. DECAP_SITE_URL, DECAPBRIDGE_BASE_URL, and DECAPBRIDGE_GATEWAY_URL must be absolute HTTPS URLs. DECAPBRIDGE_AUTH_ENDPOINT and DECAPBRIDGE_AUTH_TOKEN_ENDPOINT must be root-relative endpoint paths. URL settings must not include credentials or fragments.`;
   const hostedUrlSettingNames = [
     'DECAP_SITE_URL',
+    'DECAPBRIDGE_BASE_URL',
     'DECAPBRIDGE_AUTH_ENDPOINT',
     'DECAPBRIDGE_AUTH_TOKEN_ENDPOINT',
+    'DECAPBRIDGE_GATEWAY_URL',
   ] as const;
+  const absoluteHostedUrlSettingNames = ['DECAP_SITE_URL', 'DECAPBRIDGE_BASE_URL', 'DECAPBRIDGE_GATEWAY_URL'] as const;
   const loopbackUrls = [
     ['localhost', 'https://localhost/admin'],
     ['case-insensitive localhost with a trailing dot, port, and path', 'https://LOCALHOST.:8443/sites/site-id/pkce'],
@@ -300,29 +307,98 @@ describe('resolveDecapHostedRuntimeConfig', () => {
     ).toBeDefined();
   });
 
-  it.each([
-    ['invalid URL syntax', 'not a URL'],
-    ['hostless URL', 'mailto:localhost@example.com'],
-  ])('defers %s validation', (_description, siteUrl) => {
+  it.each(
+    absoluteHostedUrlSettingNames.flatMap((settingName) =>
+      [
+        ['HTTPS URL', 'https://example.com/admin'],
+        ['HTTPS URL with a port and query', 'https://example.com:8443/admin?source=decap'],
+      ].map(([description, value]) => [settingName, description, value] as const),
+    ),
+  )('accepts %s with a valid %s', (settingName, _description, value) => {
     expect(
       resolveDecapHostedRuntimeConfig({
-        environment: { ...hostedEnvironment, DECAP_SITE_URL: siteUrl },
+        environment: { ...hostedEnvironment, [settingName]: value },
         isDevelopment: false,
       }),
     ).toBeDefined();
   });
 
-  it('accepts hostless relative auth and token endpoints', () => {
+  it('accepts root-relative auth and token endpoint paths with queries', () => {
     expect(
       resolveDecapHostedRuntimeConfig({
         environment: {
           ...hostedEnvironment,
-          DECAPBRIDGE_AUTH_ENDPOINT: '/localhost/127.0.0.1/pkce',
-          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: '/localhost/127.0.0.1/token',
+          DECAPBRIDGE_AUTH_ENDPOINT: '/localhost/127.0.0.1/pkce?provider=github',
+          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: '/localhost/127.0.0.1/token?provider=github',
         },
         isDevelopment: false,
       }),
     ).toBeDefined();
+  });
+
+  it.each(
+    absoluteHostedUrlSettingNames.flatMap((settingName) =>
+      [
+        ['malformed string', 'not a URL'],
+        ['unsupported HTTP protocol', 'http://example.com/admin'],
+        ['unsupported mailto protocol', 'mailto:editor@example.com'],
+        ['relative value', '/admin'],
+        ['hostless value', 'https://?cms=1'],
+        ['credentials', 'https://editor:secret@example.com/admin'],
+        ['fragment', 'https://example.com/admin#cms'],
+      ].map(([description, value]) => [settingName, description, value] as const),
+    ),
+  )('rejects %s with %s without echoing it', (settingName, _description, value) => {
+    expect(() =>
+      resolveDecapHostedRuntimeConfig({
+        environment: { ...hostedEnvironment, [settingName]: value },
+        isDevelopment: false,
+      }),
+    ).toThrow(invalidUrlSettingMessage([settingName]));
+  });
+
+  it.each(['DECAPBRIDGE_AUTH_ENDPOINT', 'DECAPBRIDGE_AUTH_TOKEN_ENDPOINT'] as const)(
+    'rejects malformed, absolute, protocol-relative, and fragment-bearing %s values',
+    (settingName) => {
+      for (const value of [
+        'not a path',
+        'https://auth.example.com/sites/site-id/pkce',
+        'http://auth.example.com/sites/site-id/pkce',
+        '//auth.example.com/sites/site-id/pkce',
+        '/sites/site-id/pkce#callback',
+      ]) {
+        expect(() =>
+          resolveDecapHostedRuntimeConfig({
+            environment: { ...hostedEnvironment, [settingName]: value },
+            isDevelopment: false,
+          }),
+        ).toThrow(invalidUrlSettingMessage([settingName]));
+      }
+    },
+  );
+
+  it('reports every invalid hosted URL setting without values', () => {
+    expect(() =>
+      resolveDecapHostedRuntimeConfig({
+        environment: {
+          ...hostedEnvironment,
+          DECAP_SITE_URL: 'http://example.com/admin',
+          DECAPBRIDGE_BASE_URL: 'mailto:editor@example.com',
+          DECAPBRIDGE_AUTH_ENDPOINT: 'not a path',
+          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: '/sites/site-id/token#secret',
+          DECAPBRIDGE_GATEWAY_URL: '/gateway',
+        },
+        isDevelopment: false,
+      }),
+    ).toThrow(
+      invalidUrlSettingMessage([
+        'DECAP_SITE_URL',
+        'DECAPBRIDGE_BASE_URL',
+        'DECAPBRIDGE_AUTH_ENDPOINT',
+        'DECAPBRIDGE_AUTH_TOKEN_ENDPOINT',
+        'DECAPBRIDGE_GATEWAY_URL',
+      ]),
+    );
   });
 
   it.each(requiredSettingNames)('accepts a case-different near-placeholder in %s', (settingName) => {
@@ -348,10 +424,28 @@ describe('resolveDecapHostedRuntimeConfig', () => {
     ).toEqual({
       authEndpoint: '/sites/blackbox-records/pkce',
       authTokenEndpoint: '/sites/blackbox-records/token',
+      baseUrl: 'https://auth.decapbridge.com',
+      gatewayUrl: 'https://gateway.decapbridge.com',
       mode: 'hosted',
       repository: 'BlackBox-Studio-Athens/blackbox-records',
       siteUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/',
       useLocalBackend: false,
+    });
+  });
+
+  it('uses secure defaults when optional DecapBridge backend URLs are absent or blank', () => {
+    expect(
+      resolveDecapHostedRuntimeConfig({
+        environment: {
+          ...hostedEnvironment,
+          DECAPBRIDGE_BASE_URL: '   ',
+          DECAPBRIDGE_GATEWAY_URL: undefined,
+        },
+        isDevelopment: false,
+      }),
+    ).toMatchObject({
+      baseUrl: 'https://auth.decapbridge.com',
+      gatewayUrl: 'https://gateway.decapbridge.com',
     });
   });
 
@@ -373,6 +467,23 @@ describe('resolveDecapHostedRuntimeConfig', () => {
           DECAP_SITE_URL: 'https://localhost/admin',
           DECAPBRIDGE_AUTH_ENDPOINT: 'https://127.0.0.1/sites/site-id/pkce',
           DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: 'https://[::1]/sites/site-id/token',
+        },
+        isDevelopment: false,
+      }),
+    ).toBeUndefined();
+  });
+
+  it.each(['local', 'disabled'] as const)('does not validate hosted URL syntax in %s mode', (mode) => {
+    expect(
+      resolveDecapHostedRuntimeConfig({
+        environment: {
+          DECAP_BACKEND_MODE: mode,
+          DECAP_REPOSITORY: 'owner/repository',
+          DECAP_SITE_URL: 'http://editor:secret@example.com/admin#cms',
+          DECAPBRIDGE_BASE_URL: 'not a URL',
+          DECAPBRIDGE_AUTH_ENDPOINT: 'not a path',
+          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: 'mailto:editor@example.com',
+          DECAPBRIDGE_GATEWAY_URL: '/gateway',
         },
         isDevelopment: false,
       }),

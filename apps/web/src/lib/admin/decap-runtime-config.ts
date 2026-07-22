@@ -9,6 +9,8 @@ export type DecapLocalRuntimeConfig = {
 export type DecapHostedRuntimeConfig = {
   authEndpoint: string;
   authTokenEndpoint: string;
+  baseUrl: string;
+  gatewayUrl: string;
   mode: 'hosted';
   repository: string;
   siteUrl: string;
@@ -16,8 +18,31 @@ export type DecapHostedRuntimeConfig = {
 };
 
 const decapBackendModes: readonly DecapBackendMode[] = ['local', 'hosted', 'disabled'];
+const defaultDecapBridgeBaseUrl = 'https://auth.decapbridge.com';
+const defaultDecapBridgeGatewayUrl = 'https://gateway.decapbridge.com';
 const defaultLocalBackendPort = '8082';
 const decapBridgeSiteIdPlaceholder = '__SET_DECAPBRIDGE_SITE_ID__';
+const hostedEndpointBaseUrl = 'https://decap.invalid';
+
+function isValidHostedAbsoluteUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && Boolean(url.hostname) && !url.username && !url.password && !url.hash;
+  } catch {
+    return false;
+  }
+}
+
+function isValidHostedEndpointPath(value: string): boolean {
+  if (!value.startsWith('/') || value.startsWith('//')) return false;
+
+  try {
+    const url = new URL(value, hostedEndpointBaseUrl);
+    return url.origin === hostedEndpointBaseUrl && !url.hash;
+  } catch {
+    return false;
+  }
+}
 
 function hasLoopbackUrlHost(value: string | undefined): boolean {
   if (!value) return false;
@@ -107,8 +132,10 @@ export function resolveDecapHostedRuntimeConfig(options: {
 
   const repository = options.environment.DECAP_REPOSITORY?.trim();
   const siteUrl = options.environment.DECAP_SITE_URL?.trim();
+  const baseUrl = options.environment.DECAPBRIDGE_BASE_URL?.trim() || defaultDecapBridgeBaseUrl;
   const authEndpoint = options.environment.DECAPBRIDGE_AUTH_ENDPOINT?.trim();
   const authTokenEndpoint = options.environment.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT?.trim();
+  const gatewayUrl = options.environment.DECAPBRIDGE_GATEWAY_URL?.trim() || defaultDecapBridgeGatewayUrl;
 
   if (!repository || !siteUrl || !authEndpoint || !authTokenEndpoint) {
     const missingSettingNames: string[] = [];
@@ -139,8 +166,10 @@ export function resolveDecapHostedRuntimeConfig(options: {
 
   const loopbackSettingNames = [
     ['DECAP_SITE_URL', siteUrl],
+    ['DECAPBRIDGE_BASE_URL', baseUrl],
     ['DECAPBRIDGE_AUTH_ENDPOINT', authEndpoint],
     ['DECAPBRIDGE_AUTH_TOKEN_ENDPOINT', authTokenEndpoint],
+    ['DECAPBRIDGE_GATEWAY_URL', gatewayUrl],
   ]
     .filter(([, value]) => hasLoopbackUrlHost(value))
     .map(([settingName]) => settingName);
@@ -151,9 +180,27 @@ export function resolveDecapHostedRuntimeConfig(options: {
     );
   }
 
+  const invalidUrlSettingNames = [
+    ['DECAP_SITE_URL', isValidHostedAbsoluteUrl(siteUrl)],
+    ['DECAPBRIDGE_BASE_URL', isValidHostedAbsoluteUrl(baseUrl)],
+    ['DECAPBRIDGE_AUTH_ENDPOINT', isValidHostedEndpointPath(authEndpoint)],
+    ['DECAPBRIDGE_AUTH_TOKEN_ENDPOINT', isValidHostedEndpointPath(authTokenEndpoint)],
+    ['DECAPBRIDGE_GATEWAY_URL', isValidHostedAbsoluteUrl(gatewayUrl)],
+  ]
+    .filter(([, isValid]) => !isValid)
+    .map(([settingName]) => settingName);
+
+  if (invalidUrlSettingNames.length > 0) {
+    throw new Error(
+      `Hosted Decap configuration has invalid URL setting(s): ${invalidUrlSettingNames.join(', ')}. DECAP_SITE_URL, DECAPBRIDGE_BASE_URL, and DECAPBRIDGE_GATEWAY_URL must be absolute HTTPS URLs. DECAPBRIDGE_AUTH_ENDPOINT and DECAPBRIDGE_AUTH_TOKEN_ENDPOINT must be root-relative endpoint paths. URL settings must not include credentials or fragments.`,
+    );
+  }
+
   return {
     authEndpoint,
     authTokenEndpoint,
+    baseUrl,
+    gatewayUrl,
     mode: 'hosted',
     repository,
     siteUrl,
