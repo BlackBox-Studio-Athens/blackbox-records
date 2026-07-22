@@ -160,12 +160,13 @@ describe('resolveDecapLocalRuntimeConfig', () => {
 });
 
 describe('resolveDecapHostedRuntimeConfig', () => {
+  const placeholderMarker = '__SET_DECAPBRIDGE_SITE_ID__';
   const hostedEnvironment = {
     DECAP_BACKEND_MODE: 'hosted',
     DECAP_REPOSITORY: 'BlackBox-Studio-Athens/blackbox-records',
-    DECAP_SITE_URL: 'https://example.com/blackbox-records/',
-    DECAPBRIDGE_AUTH_ENDPOINT: '/sites/site-id/pkce',
-    DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: '/sites/site-id/token',
+    DECAP_SITE_URL: 'https://blackbox-studio-athens.github.io/blackbox-records/',
+    DECAPBRIDGE_AUTH_ENDPOINT: '/sites/blackbox-records/pkce',
+    DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: '/sites/blackbox-records/token',
   };
   const requiredSettingNames = [
     'DECAP_REPOSITORY',
@@ -175,6 +176,14 @@ describe('resolveDecapHostedRuntimeConfig', () => {
   ] as const;
   const missingSettingMessage = (settingNames: readonly string[]) =>
     `Hosted Decap configuration is missing required setting(s): ${settingNames.join(', ')}. Set each named setting before building with DECAP_BACKEND_MODE=hosted.`;
+  const placeholderSettingMessage = (settingNames: readonly string[]) =>
+    `Hosted Decap configuration contains placeholder value(s) for setting(s): ${settingNames.join(', ')}. Replace each named setting with its deployment value before building with DECAP_BACKEND_MODE=hosted.`;
+  const placeholderValues: Record<(typeof requiredSettingNames)[number], string> = {
+    DECAP_REPOSITORY: `owner/${placeholderMarker}`,
+    DECAP_SITE_URL: `https://${placeholderMarker}.invalid/`,
+    DECAPBRIDGE_AUTH_ENDPOINT: `/sites/${placeholderMarker}/pkce`,
+    DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: `/sites/${placeholderMarker}/token`,
+  };
 
   it.each(requiredSettingNames)('rejects missing %s', (settingName) => {
     const environment: Record<string, string | undefined> = { ...hostedEnvironment };
@@ -207,6 +216,40 @@ describe('resolveDecapHostedRuntimeConfig', () => {
     ).toThrow(missingSettingMessage(['DECAP_REPOSITORY', 'DECAPBRIDGE_AUTH_TOKEN_ENDPOINT']));
   });
 
+  it.each(requiredSettingNames)('rejects the known placeholder marker in %s after trimming', (settingName) => {
+    expect(() =>
+      resolveDecapHostedRuntimeConfig({
+        environment: { ...hostedEnvironment, [settingName]: `  ${placeholderValues[settingName]}  ` },
+        isDevelopment: false,
+      }),
+    ).toThrow(placeholderSettingMessage([settingName]));
+  });
+
+  it('reports every hosted placeholder setting without values', () => {
+    expect(() =>
+      resolveDecapHostedRuntimeConfig({
+        environment: {
+          ...hostedEnvironment,
+          DECAP_REPOSITORY: placeholderValues.DECAP_REPOSITORY,
+          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: placeholderValues.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT,
+        },
+        isDevelopment: false,
+      }),
+    ).toThrow(placeholderSettingMessage(['DECAP_REPOSITORY', 'DECAPBRIDGE_AUTH_TOKEN_ENDPOINT']));
+  });
+
+  it.each(requiredSettingNames)('accepts a case-different near-placeholder in %s', (settingName) => {
+    expect(
+      resolveDecapHostedRuntimeConfig({
+        environment: {
+          ...hostedEnvironment,
+          [settingName]: placeholderValues[settingName].replace(placeholderMarker, placeholderMarker.toLowerCase()),
+        },
+        isDevelopment: false,
+      }),
+    ).toBeDefined();
+  });
+
   it('returns a trimmed hosted runtime config when every setting is present', () => {
     expect(
       resolveDecapHostedRuntimeConfig({
@@ -216,19 +259,19 @@ describe('resolveDecapHostedRuntimeConfig', () => {
         isDevelopment: false,
       }),
     ).toEqual({
-      authEndpoint: '/sites/site-id/pkce',
-      authTokenEndpoint: '/sites/site-id/token',
+      authEndpoint: '/sites/blackbox-records/pkce',
+      authTokenEndpoint: '/sites/blackbox-records/token',
       mode: 'hosted',
       repository: 'BlackBox-Studio-Athens/blackbox-records',
-      siteUrl: 'https://example.com/blackbox-records/',
+      siteUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/',
       useLocalBackend: false,
     });
   });
 
-  it.each(['local', 'disabled'] as const)('does not require hosted settings in %s mode', (mode) => {
+  it.each(['local', 'disabled'] as const)('does not validate hosted placeholders in %s mode', (mode) => {
     expect(
       resolveDecapHostedRuntimeConfig({
-        environment: { DECAP_BACKEND_MODE: mode },
+        environment: { DECAP_BACKEND_MODE: mode, ...placeholderValues },
         isDevelopment: false,
       }),
     ).toBeUndefined();

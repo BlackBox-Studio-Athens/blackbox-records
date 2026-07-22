@@ -17,6 +17,7 @@ export type DecapHostedRuntimeConfig = {
 
 const decapBackendModes: readonly DecapBackendMode[] = ['local', 'hosted', 'disabled'];
 const defaultLocalBackendPort = '8082';
+const decapBridgeSiteIdPlaceholder = '__SET_DECAPBRIDGE_SITE_ID__';
 
 export function parseDecapBackendMode(environment: Readonly<Record<string, string | undefined>>): {
   configuredValue: string | undefined;
@@ -100,6 +101,21 @@ export function resolveDecapHostedRuntimeConfig(options: {
     );
   }
 
+  const placeholderSettingNames = [
+    ['DECAP_REPOSITORY', repository],
+    ['DECAP_SITE_URL', siteUrl],
+    ['DECAPBRIDGE_AUTH_ENDPOINT', authEndpoint],
+    ['DECAPBRIDGE_AUTH_TOKEN_ENDPOINT', authTokenEndpoint],
+  ]
+    .filter(([, value]) => value?.includes(decapBridgeSiteIdPlaceholder))
+    .map(([settingName]) => settingName);
+
+  if (placeholderSettingNames.length > 0) {
+    throw new Error(
+      `Hosted Decap configuration contains placeholder value(s) for setting(s): ${placeholderSettingNames.join(', ')}. Replace each named setting with its deployment value before building with DECAP_BACKEND_MODE=hosted.`,
+    );
+  }
+
   return {
     authEndpoint,
     authTokenEndpoint,
@@ -151,6 +167,6 @@ export function shouldUseLocalDecapBackend(options: {
   }
 
   return (
-    authEndpoint.includes('__SET_DECAPBRIDGE_SITE_ID__') || authTokenEndpoint.includes('__SET_DECAPBRIDGE_SITE_ID__')
+    authEndpoint.includes(decapBridgeSiteIdPlaceholder) || authTokenEndpoint.includes(decapBridgeSiteIdPlaceholder)
   );
 }
