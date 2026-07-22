@@ -73,13 +73,13 @@ The Store Distro format navigation MUST remain usable without client JavaScript 
 
 ### Requirement: All Store exposes Distro format discovery
 
-The All Store route SHALL expose a compact Distro discovery panel when the classified Distro collection has populated groups, using the same server-derived Distro group names, counts, and fragment targets as the Store Distro route.
+The All Store route SHALL expose a compact Distro format ledger when the classified Distro collection has populated groups, using the same server-derived Distro group names, counts, and fragment targets as the Store Distro route without repeating its introduction or a standalone Distro subtotal.
 
 #### Scenario: All Store renders Distro discovery
 
 - **GIVEN** `/store/` contains a populated classified Distro collection
 - **WHEN** the All Store document renders
-- **THEN** it shows Distro introduction copy, the Distro item total, and one `Browse formats` navigation landmark before the All card collection
+- **THEN** it shows one `Browse Distro formats` navigation landmark before the All card collection without Distro introduction copy or a standalone Distro item total
 - **AND** each populated Distro group appears once in the same order and with the same current count as `/store/distro/`.
 
 #### Scenario: All Store format link opens canonical Distro group

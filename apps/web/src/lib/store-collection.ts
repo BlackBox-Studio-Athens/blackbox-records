@@ -2,7 +2,6 @@ import { listDistroEntries, listStoreItems, type StoreItem } from './catalog-dat
 import { groupDistroEntries, type DistroGroupName } from './distro-data';
 import { getPrimaryAvailabilityForStoreItem, type ItemAvailability } from './item-availability';
 import { type StoreCatalogCategoryId } from './store-categories';
-import { releaseToDistroStoreItemRelations } from './store-item-ownership';
 
 export type StoreCatalogMembership = Exclude<StoreCatalogCategoryId, 'all'>;
 
@@ -32,8 +31,6 @@ type StoreCatalogMembershipInput = {
   sourceKind: string;
 };
 
-const releaseRelatedDistroIds = new Set<string>(releaseToDistroStoreItemRelations.map((relation) => relation.distroId));
-
 export function classifyStoreCatalogMembership(input: StoreCatalogMembershipInput): StoreCatalogMembership[] {
   if (input.sourceKind === 'release') return ['blackbox-releases'];
 
@@ -45,9 +42,7 @@ export function classifyStoreCatalogMembership(input: StoreCatalogMembershipInpu
     throw new Error(`Distro Store Item ${input.sourceId} is missing its Distro group.`);
   }
 
-  const categoryIds: StoreCatalogMembership[] = [];
-  if (releaseRelatedDistroIds.has(input.sourceId)) categoryIds.push('blackbox-releases');
-  categoryIds.push('distro');
+  const categoryIds: StoreCatalogMembership[] = ['distro'];
   if (input.distroGroup === 'Clothes') categoryIds.push('merch');
 
   return categoryIds;

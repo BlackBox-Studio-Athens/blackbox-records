@@ -14,12 +14,12 @@ The system SHALL render native store pages from repo-owned content and stable St
 - **WHEN** the shopper opens the item route
 - **THEN** the page presents editorial content and option availability through app-owned identifiers and browser-safe data.
 
-#### Scenario: Release and Distro describe one physical edition
+#### Scenario: BlackBox Release describes a physical edition
 
-- **GIVEN** one explicit Release-to-Distro relation identifies a shared physical sellable edition
+- **GIVEN** a BlackBox Release entry identifies a physical sellable edition
 - **WHEN** Store Items are projected
-- **THEN** the Distro record owns exactly one `storeItemSlug` and current standard `variantId`
-- **AND** the Release resolves a commerce link to that same Store Item without projecting another Store Item, availability row, stock bucket, or Store Offer
+- **THEN** the Release owns exactly one `storeItemSlug` and current standard `variantId`
+- **AND** no Distro Store Item, availability row, stock bucket, or Store Offer duplicates that edition
 
 ### Requirement: StoreCart convenience state
 

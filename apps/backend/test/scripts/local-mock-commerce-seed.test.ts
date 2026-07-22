@@ -35,10 +35,10 @@ describe('local mock commerce seed generator', () => {
           variantId: 'variant_disintegration-black-vinyl-lp_standard',
         }),
         expect.objectContaining({
-          mockCheckoutEnabled: false,
+          mockCheckoutEnabled: true,
           taxCategory: 'physical_goods',
-          sourceId: 'chronoboros-caregivers-vinyl',
-          sourceKind: 'distro',
+          sourceId: 'caregivers',
+          sourceKind: 'release',
           storeItemSlug: 'caregivers-vinyl',
           variantId: 'variant_caregivers-vinyl_standard',
         }),
@@ -70,7 +70,7 @@ describe('local mock commerce seed generator', () => {
 
       await expect(readReleaseStoreItems(tempDir)).resolves.toEqual([
         expect.objectContaining({
-          mockCheckoutEnabled: false,
+          mockCheckoutEnabled: true,
           taxCategory: 'physical_goods',
           sourceId: 'caregivers',
           sourceKind: 'release',

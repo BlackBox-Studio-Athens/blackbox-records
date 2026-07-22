@@ -4,11 +4,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { StoreCollectionEntry } from '@/lib/store-collection';
 
 interface Props {
+  coverflowPosition?: 'active' | 'back' | 'left-far' | 'left-near' | 'right-far' | 'right-near' | undefined;
+  coverflowPreview?: boolean;
   entry: StoreCollectionEntry;
   imageLoading?: 'eager' | 'lazy';
 }
 
-const { entry, imageLoading = 'lazy' } = Astro.props;
+const { coverflowPosition, coverflowPreview = false, entry, imageLoading = 'lazy' } = Astro.props;
 const { storeItem, primaryAvailability } = entry;
 const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
 const metadataLabel = storeItem.metadata.join(' · ');
@@ -16,11 +18,21 @@ const collectionLabel = storeItem.eyebrow || (storeItem.sourceKind === 'release'
 const storeItemCardImageWidths = [320, 480, 640, 800, 960];
 ---
 
-<a class="store-item-card--listing group block h-full" href={storeItem.storePath} data-astro-prefetch>
+<a
+  class="store-item-card--listing group block h-full"
+  href={storeItem.storePath}
+  aria-label={`${storeItem.title} — ${storeItem.subtitle}`}
+  data-astro-prefetch
+  data-store-coverflow-card={coverflowPreview ? '' : undefined}
+  data-store-coverflow-initial-position={coverflowPosition}
+  data-store-coverflow-position={coverflowPosition}
+>
   <Card
-    className="flex h-full flex-col overflow-hidden rounded-none border-[#2b2b2b] bg-[#121212] shadow-none transition-colors duration-300 group-hover:border-[#4a4a4a]"
+    className="store-item-card__surface flex h-full flex-col overflow-hidden rounded-none border-[#2b2b2b] bg-[#121212] shadow-none transition-colors duration-300 group-hover:border-[#4a4a4a]"
   >
-    <div class="relative aspect-[4/5] overflow-hidden border-b border-[#2b2b2b] bg-[#0d0d0d]">
+    <div
+      class="store-item-card__image-frame relative aspect-[4/5] overflow-hidden border-b border-[#2b2b2b] bg-[#0d0d0d]"
+    >
       <Image
         src={storeItem.image}
         alt={storeItem.imageAlt}
@@ -46,7 +58,7 @@ const storeItemCardImageWidths = [320, 480, 640, 800, 960];
         </span>
       </div>
     </div>
-    <CardContent className="flex flex-1 flex-col gap-4 p-5">
+    <CardContent className="store-item-card__content flex flex-1 flex-col gap-4 p-5">
       <div class="space-y-2">
         {metadataLabel && <p class="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{metadataLabel}</p>}
         <h2 class="brand-card-title text-foreground">{storeItem.title}</h2>

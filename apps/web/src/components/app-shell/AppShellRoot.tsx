@@ -255,16 +255,48 @@ export default function AppShellRoot({
   }, [isPlayerModalOpen, overlayState]);
 
   useEffect(() => {
-    if (activeShellPathname !== '/store/distro/' || typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return;
+
+    const groups = [...document.querySelectorAll('[data-store-coverflow-group]')];
+    if (groups.length === 0) return;
+    if (typeof CSS !== 'undefined' && CSS.supports('transform-style', 'preserve-3d')) {
+      document.documentElement.setAttribute('data-store-coverflow-capable', '');
+    }
 
     const timeoutId = window.setTimeout(() => {
-      const groups = [...document.querySelectorAll('[data-distro-coverflow-group]')];
-      if (groups.length > 0 && groups.some((group) => !group.hasAttribute('data-distro-coverflow-ready'))) {
-        document.documentElement.removeAttribute('data-distro-coverflow-capable');
+      if (groups.some((group) => !group.hasAttribute('data-store-coverflow-ready'))) {
+        document.documentElement.removeAttribute('data-store-coverflow-capable');
       }
     }, 15000);
 
     return () => window.clearTimeout(timeoutId);
+  }, [activeShellPathname]);
+
+  useEffect(() => {
+    if (activeShellPathname !== '/store/' || typeof window === 'undefined') return;
+
+    let cancelled = false;
+    let cleanup: (() => void) | undefined;
+    void import('@/components/store/StoreCoverflowController')
+      .then(({ createStoreCoverflowController, ensureStoreCoverflowCapability, readStoreCoverflowDom }) => {
+        if (cancelled) return;
+        ensureStoreCoverflowCapability();
+        const dom = readStoreCoverflowDom(document);
+        const controller = dom ? createStoreCoverflowController(dom) : null;
+        if (!controller && document.querySelector('[data-store-coverflow-group]')) {
+          document.documentElement.removeAttribute('data-store-coverflow-capable');
+          return;
+        }
+        cleanup = controller?.cleanup;
+      })
+      .catch(() => {
+        if (!cancelled) document.documentElement.removeAttribute('data-store-coverflow-capable');
+      });
+
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
   }, [activeShellPathname]);
 
   useEffect(() => {

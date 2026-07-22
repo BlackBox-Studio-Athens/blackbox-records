@@ -153,7 +153,7 @@ VALUES
     ('store_item_option_bloed_tranen', 'bloed-tranen', 'distro', 'bloed-tranen', 'variant_bloed-tranen_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_broken_fingers_ego_cassette', 'broken-fingers-ego-cassette', 'distro', 'broken-fingers-ego-cassette', 'variant_broken-fingers-ego-cassette_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_calf_vinyl_10_inch', 'calf-vinyl-10-inch', 'distro', 'calf-vinyl-10-inch', 'variant_calf-vinyl-10-inch_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    ('store_item_option_caregivers_vinyl', 'caregivers-vinyl', 'distro', 'chronoboros-caregivers-vinyl', 'variant_caregivers-vinyl_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('store_item_option_caregivers_vinyl', 'caregivers-vinyl', 'release', 'caregivers', 'variant_caregivers-vinyl_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_celuta_red_agia_monaxia_escape_the_blaze_only_to_find_another_vinyl', 'celuta-red-agia-monaxia-escape-the-blaze-only-to-find-another-vinyl', 'distro', 'celuta-red-agia-monaxia-escape-the-blaze-only-to-find-another-vinyl', 'variant_celuta-red-agia-monaxia-escape-the-blaze-only-to-find-another-vinyl_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_celuta_red_amoeba_cd', 'celuta-red-amoeba-cd', 'distro', 'celuta-red-amoeba-cd', 'variant_celuta-red-amoeba-cd_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('store_item_option_celuta_red_idle_frenzy_cd', 'celuta-red-idle-frenzy-cd', 'distro', 'celuta-red-idle-frenzy-cd', 'variant_celuta-red-idle-frenzy-cd_standard', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),

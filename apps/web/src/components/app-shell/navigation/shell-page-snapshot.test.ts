@@ -9,7 +9,7 @@ import {
   applyDocumentShellPageSnapshot,
   cacheDocumentShellPageSnapshot,
   readDocumentShellPageSnapshot,
-  sanitizeDistroCoverflowSnapshot,
+  sanitizeStoreCoverflowSnapshot,
   updateDocumentMetadata,
 } from './shell-page-snapshot';
 
@@ -114,14 +114,14 @@ function createSnapshotDocument() {
 describe('shell page snapshots', () => {
   it('restores the server-authored Coverflow state before caching a document snapshot', () => {
     const removed = new Set<string>();
-    const styleProperties = new Map([['--distro-coverflow-position-ratio', String(34 / 53)]]);
+    const styleProperties = new Map([['--store-coverflow-position-ratio', String(34 / 53)]]);
     const group = {
       dataset: {
-        distroCoverflowInitialPositionRatio: String(1 / 53),
-        distroCoverflowMode: 'catalog',
-        distroCoverflowPreviewCount: '6',
-        distroCoverflowRemainingCount: '52',
-        distroCoverflowTotal: '53',
+        storeCoverflowInitialPositionRatio: String(1 / 53),
+        storeCoverflowMode: 'catalog',
+        storeCoverflowPreviewCount: '6',
+        storeCoverflowRemainingCount: '52',
+        storeCoverflowTotal: '53',
       },
       removeAttribute: (name: string) => removed.add(name),
       style: {
@@ -130,75 +130,84 @@ describe('shell page snapshots', () => {
       },
     };
     const card = {
-      dataset: { distroCoverflowInitialPosition: 'active', distroCoverflowPosition: 'right-near' },
+      dataset: { storeCoverflowInitialPosition: 'active', storeCoverflowPosition: 'right-near' },
       removeAttribute: (name: string) => removed.add(name),
     };
     const controls = { hidden: false };
     const previousButton = { removeAttribute: (name: string) => removed.add(name) };
     const nextButton = { removeAttribute: (name: string) => removed.add(name) };
+    let toggleAriaExpanded = 'true';
     const toggle = {
-      dataset: { distroCoverflowViewAllLabel: 'View all 53' },
+      dataset: { storeCoverflowViewAllLabel: 'View all 53' },
       removeAttribute: (name: string) => removed.add(name),
+      setAttribute: (name: string, value: string) => {
+        if (name === 'aria-expanded') toggleAriaExpanded = value;
+      },
       textContent: 'Show Coverflow',
     };
     const status = {
-      dataset: { distroCoverflowInitialLabel: 'Barren Point — Bonebrokk' },
+      dataset: { storeCoverflowInitialLabel: 'Barren Point — Bonebrokk' },
       hidden: true,
       textContent: '',
     };
     const currentValue = {
-      dataset: { distroCoverflowInitialValue: '1' },
+      dataset: { storeCoverflowInitialValue: '1' },
       textContent: '34',
     };
     const remainingValue = {
-      dataset: { distroCoverflowInitialValue: '52' },
+      dataset: { storeCoverflowInitialValue: '52' },
       textContent: '19',
     };
     const summary = {
-      dataset: { distroCoverflowInitialLabel: "You're viewing 1 of 53." },
+      dataset: { storeCoverflowInitialLabel: "You're viewing 1 of 53." },
       textContent: "You're viewing 34 of 53.",
     };
+    const formatDisclosure = { open: true };
     const root = {
       querySelectorAll(selector: string) {
-        if (selector === '[data-distro-coverflow-group]') return [group];
-        if (selector === '[data-distro-coverflow-card]') return [card];
-        if (selector === '[data-distro-coverflow-controls]') return [controls];
-        if (selector.includes('[data-distro-coverflow-next]')) return [previousButton, nextButton, toggle];
-        if (selector === '[data-distro-coverflow-toggle]') return [toggle];
-        if (selector === '[data-distro-coverflow-status]') return [status];
-        if (selector === '[data-distro-coverflow-initial-value]') return [currentValue, remainingValue];
-        if (selector === '[data-distro-coverflow-summary]') return [summary];
+        if (selector === '[data-store-coverflow-group]') return [group];
+        if (selector === '[data-store-coverflow-card]') return [card];
+        if (selector === '[data-store-coverflow-controls]') return [controls];
+        if (selector.includes('[data-store-coverflow-next]')) return [previousButton, nextButton, toggle];
+        if (selector === '[data-store-coverflow-toggle]') return [toggle];
+        if (selector === '[data-store-coverflow-status]') return [status];
+        if (selector === '[data-store-coverflow-initial-value]') return [currentValue, remainingValue];
+        if (selector === '[data-store-coverflow-summary]') return [summary];
+        if (selector === '[data-distro-format-disclosure]') return [formatDisclosure];
         return [];
       },
     } as unknown as ParentNode;
 
-    sanitizeDistroCoverflowSnapshot(root);
+    sanitizeStoreCoverflowSnapshot(root);
 
     expect(removed).toEqual(
       new Set([
-        'data-distro-coverflow-ready',
-        'data-distro-coverflow-reveal',
-        'data-distro-coverflow-transitioning',
-        'data-distro-coverflow-visited',
-        'data-distro-coverflow-selected',
+        'data-store-coverflow-ready',
+        'data-store-coverflow-reveal',
+        'data-store-coverflow-transitioning',
+        'data-store-coverflow-visited',
+        'data-store-coverflow-selected',
         'aria-disabled',
+        'aria-roledescription',
       ]),
     );
-    expect(group.dataset.distroCoverflowMode).toBe('preview');
+    expect(group.dataset.storeCoverflowMode).toBe('preview');
     expect(group.dataset).toMatchObject({
-      distroCoverflowPreviewCount: '6',
-      distroCoverflowRemainingCount: '52',
-      distroCoverflowTotal: '53',
+      storeCoverflowPreviewCount: '6',
+      storeCoverflowRemainingCount: '52',
+      storeCoverflowTotal: '53',
     });
-    expect(styleProperties.get('--distro-coverflow-position-ratio')).toBe(String(1 / 53));
-    expect(card.dataset.distroCoverflowPosition).toBe('active');
+    expect(styleProperties.get('--store-coverflow-position-ratio')).toBe(String(1 / 53));
+    expect(card.dataset.storeCoverflowPosition).toBe('active');
     expect(controls.hidden).toBe(false);
     expect(toggle.textContent).toBe('View all 53');
+    expect(toggleAriaExpanded).toBe('false');
     expect(status.textContent).toBe('Barren Point — Bonebrokk');
     expect(status.hidden).toBe(false);
     expect(currentValue.textContent).toBe('1');
     expect(remainingValue.textContent).toBe('52');
     expect(summary.textContent).toBe("You're viewing 1 of 53.");
+    expect(formatDisclosure.open).toBe(false);
   });
 
   it('reads the swappable main payload and route metadata', () => {

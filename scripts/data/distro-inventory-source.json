@@ -81,17 +81,6 @@
       "sourceAliases": []
     },
     {
-      "id": "chronoboros-caregivers-vinyl-12-inch",
-      "sourceArtist": "Chronoboros",
-      "sourceTitle": "Caregivers",
-      "itemType": "Vinyl 12-inch",
-      "sourcePrice": "20",
-      "resolvedPricePolicy": "fixed 2000 EUR",
-      "releaseDate": "2026-03-13",
-      "currentSiteExtra": false,
-      "sourceAliases": []
-    },
-    {
       "id": "last-rizla-noise-without-decay-vinyl-12-inch",
       "sourceArtist": "Last Rizla",
       "sourceTitle": "Noise without decay",

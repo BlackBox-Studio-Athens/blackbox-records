@@ -5,70 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createExactFirstSearcher } from '@/lib/exact-first-search';
 
+import {
+  createStoreCoverflowController,
+  ensureStoreCoverflowCapability,
+  readStoreCoverflowDom,
+  type StoreCoverflowController,
+} from './StoreCoverflowController';
+
 const SEARCH_HIDDEN_ATTRIBUTE = 'data-distro-search-hidden';
-const COVERFLOW_POSITIONS = ['active', 'right-near', 'right-far', 'back', 'left-far', 'left-near'] as const;
-
-export type DistroCoverflowState =
-  | { mode: 'preview'; activeIndex: number }
-  | { mode: 'catalog'; selectedIndex?: number }
-  | { mode: 'search-results' };
-export type DistroCoverflowEvent =
-  | { type: 'focus'; activeIndex: number }
-  | { type: 'move'; delta: -1 | 1 }
-  | { type: 'search'; active: boolean }
-  | { type: 'toggle' };
-type DistroCoverflowGroup = {
-  cards: HTMLElement[];
-  controls: HTMLElement;
-  currentValue: HTMLElement;
-  disclosureRail: HTMLElement;
-  element: HTMLElement;
-  nextButton: HTMLButtonElement;
-  previousButton: HTMLButtonElement;
-  remainingValue: HTMLElement;
-  reveal: HTMLElement;
-  state: DistroCoverflowState;
-  status: HTMLElement;
-  summary: HTMLElement;
-  toggleButton: HTMLButtonElement;
-};
-
-export function getDistroCoverflowPosition(
-  cardIndex: number,
-  activeIndex: number,
-  totalCount: number = COVERFLOW_POSITIONS.length,
-) {
-  const relativeIndex = (cardIndex - activeIndex + totalCount) % totalCount;
-  if (relativeIndex <= 3) return COVERFLOW_POSITIONS[relativeIndex];
-  if (relativeIndex === totalCount - 2) return 'left-far';
-  if (relativeIndex === totalCount - 1) return 'left-near';
-  return undefined;
-}
-
-export function reduceDistroCoverflowState(
-  state: DistroCoverflowState,
-  event: DistroCoverflowEvent,
-  previewCount: number = COVERFLOW_POSITIONS.length,
-): DistroCoverflowState {
-  if (event.type === 'search') {
-    if (event.active) return { mode: 'search-results' };
-    return state.mode === 'search-results' ? { mode: 'catalog' } : state;
-  }
-  if (event.type === 'toggle') {
-    if (state.mode === 'search-results') return state;
-    return state.mode === 'preview'
-      ? { mode: 'catalog', selectedIndex: state.activeIndex }
-      : { mode: 'preview', activeIndex: state.selectedIndex ?? 0 };
-  }
-  if (state.mode !== 'preview') return state;
-  if (event.type === 'focus') {
-    return event.activeIndex >= 0 && event.activeIndex < previewCount
-      ? { ...state, activeIndex: event.activeIndex }
-      : state;
-  }
-
-  return { ...state, activeIndex: (state.activeIndex + event.delta + previewCount) % previewCount };
-}
 
 type StoreDistroSearchProps = {
   pageKey: string;
@@ -85,11 +29,12 @@ type DistroSearchChunk = {
 };
 
 export type DistroSearchDom = {
-  coverflowGroups: DistroCoverflowGroup[];
   chunks: DistroSearchChunk[];
+  formatDisclosure: HTMLDetailsElement | null;
   groups: Array<{ chunks: DistroSearchChunk[]; element: HTMLElement }>;
   items: DistroSearchItem[];
   navigation: HTMLElement | null;
+  root: ParentNode;
 };
 
 export function readDistroSearchDom(
@@ -116,337 +61,18 @@ export function readDistroSearchDom(
       .map((chunkElement) => chunksByElement.get(chunkElement))
       .filter((chunk): chunk is DistroSearchChunk => Boolean(chunk)),
   }));
-  const coverflowGroups = [...root.querySelectorAll<HTMLElement>('[data-distro-coverflow-group]')]
-    .map((element): DistroCoverflowGroup | null => {
-      const controls = element.querySelector<HTMLElement>('[data-distro-coverflow-controls]');
-      const currentValue = element.querySelector<HTMLElement>('[data-distro-coverflow-current-value]');
-      const previousButton = element.querySelector<HTMLButtonElement>('[data-distro-coverflow-previous]');
-      const nextButton = element.querySelector<HTMLButtonElement>('[data-distro-coverflow-next]');
-      const toggleButton = element.querySelector<HTMLButtonElement>('[data-distro-coverflow-toggle]');
-      const disclosureRail = element.querySelector<HTMLElement>('[data-distro-coverflow-disclosure-rail]');
-      const remainingValue = element.querySelector<HTMLElement>('[data-distro-coverflow-remaining-value]');
-      const status = element.querySelector<HTMLElement>('[data-distro-coverflow-status]');
-      const summary = element.querySelector<HTMLElement>('[data-distro-coverflow-summary]');
-      const reveal = element.querySelector<HTMLElement>('.distro-coverflow-reveal');
-      const cards = [...element.querySelectorAll<HTMLElement>('[data-distro-coverflow-card]')];
-      const totalCount = Number(element.dataset.distroCoverflowTotal);
-      if (
-        !controls ||
-        !currentValue ||
-        !previousButton ||
-        !nextButton ||
-        !toggleButton ||
-        !disclosureRail ||
-        !remainingValue ||
-        !status ||
-        !summary ||
-        !reveal ||
-        !Number.isInteger(totalCount) ||
-        cards.length !== totalCount
-      ) {
-        return null;
-      }
-
-      return {
-        cards,
-        controls,
-        currentValue,
-        disclosureRail,
-        element,
-        nextButton,
-        previousButton,
-        remainingValue,
-        reveal,
-        state: { mode: 'preview', activeIndex: 0 },
-        status,
-        summary,
-        toggleButton,
-      };
-    })
-    .filter((group): group is DistroCoverflowGroup => group !== null);
-
-  return { coverflowGroups, chunks, groups, items, navigation };
-}
-
-type DistroCoverflowController = {
-  cleanup: () => void;
-  setSearchActive: (isActive: boolean) => void;
-};
-
-const POINTER_INTENT_DISTANCE = 10;
-
-function setAriaDisabled(element: HTMLElement, isDisabled: boolean) {
-  element.setAttribute('aria-disabled', String(isDisabled));
-}
-
-export function createDistroCoverflowController(dom: DistroSearchDom): DistroCoverflowController | null {
-  if (dom.coverflowGroups.length === 0 || !document.documentElement.hasAttribute('data-distro-coverflow-capable')) {
-    return null;
-  }
-
-  let revision = 0;
-  let inFlight: Animation[] | null = null;
-
-  const renderGroup = (group: DistroCoverflowGroup) => {
-    group.element.toggleAttribute('data-distro-coverflow-ready', true);
-    group.element.setAttribute('aria-roledescription', 'carousel');
-    group.element.dataset.distroCoverflowMode = group.state.mode;
-    group.cards.forEach((card, index) => {
-      card.toggleAttribute(
-        'data-distro-coverflow-selected',
-        group.state.mode === 'catalog' && group.state.selectedIndex === index,
-      );
-      if (group.state.mode === 'preview') {
-        const position = getDistroCoverflowPosition(index, group.state.activeIndex, group.cards.length);
-        if (position) card.dataset.distroCoverflowPosition = position;
-        else card.removeAttribute('data-distro-coverflow-position');
-      } else {
-        card.removeAttribute('data-distro-coverflow-position');
-      }
-    });
-
-    if (group.state.mode === 'preview') {
-      group.controls.hidden = false;
-      group.status.hidden = false;
-      group.previousButton.removeAttribute('aria-disabled');
-      group.nextButton.removeAttribute('aria-disabled');
-      group.toggleButton.textContent = group.toggleButton.dataset.distroCoverflowViewAllLabel || '';
-      if (!group.element.hasAttribute('data-distro-coverflow-transitioning')) {
-        setAriaDisabled(group.toggleButton, false);
-      }
-      const currentPosition = group.state.activeIndex + 1;
-      group.currentValue.textContent = String(currentPosition);
-      group.remainingValue.textContent = String(group.cards.length - currentPosition);
-      group.summary.textContent = `You're viewing ${currentPosition} of ${group.cards.length}.`;
-      group.element.style.setProperty(
-        '--distro-coverflow-position-ratio',
-        String(currentPosition / group.cards.length),
-      );
-      group.status.textContent = group.cards[group.state.activeIndex]!.getAttribute('aria-label') || '';
-      return;
-    }
-
-    group.status.textContent = '';
-    group.status.hidden = true;
-    group.previousButton.removeAttribute('aria-disabled');
-    group.nextButton.removeAttribute('aria-disabled');
-    group.controls.hidden = group.state.mode === 'search-results';
-    group.toggleButton.textContent = 'Show Coverflow';
-    if (!group.element.hasAttribute('data-distro-coverflow-transitioning')) {
-      setAriaDisabled(group.toggleButton, false);
-    }
-  };
-
-  const setGroupState = (group: DistroCoverflowGroup, state: DistroCoverflowState) => {
-    group.state = state;
-    renderGroup(group);
-  };
-
-  const clearTransitionState = () => {
-    dom.coverflowGroups.forEach((group) => {
-      group.element.removeAttribute('data-distro-coverflow-transitioning');
-      group.element.removeAttribute('data-distro-coverflow-reveal');
-      setAriaDisabled(group.toggleButton, false);
-    });
-  };
-
-  const cancelTransition = () => {
-    revision += 1;
-    inFlight?.forEach((animation) => animation.cancel());
-    clearTransitionState();
-    inFlight = null;
-  };
-
-  const runDisclosure = async (group: DistroCoverflowGroup) => {
-    if (inFlight || group.state.mode === 'search-results') return;
-
-    const targetState = reduceDistroCoverflowState(group.state, { type: 'toggle' }, group.cards.length);
-    const token = ++revision;
-    const selectedIndex =
-      group.state.mode === 'preview'
-        ? group.state.activeIndex
-        : group.state.mode === 'catalog'
-          ? (group.state.selectedIndex ?? 0)
-          : 0;
-    const activeCard = group.cards[selectedIndex];
-
-    dom.coverflowGroups.forEach((coverflowGroup) => {
-      coverflowGroup.element.toggleAttribute('data-distro-coverflow-transitioning', true);
-      setAriaDisabled(coverflowGroup.toggleButton, true);
-    });
-    inFlight = [];
-
-    try {
-      if (targetState.mode === 'catalog') {
-        group.element.dataset.distroCoverflowReveal = 'catalog-pending';
-        group.element.toggleAttribute('data-distro-coverflow-visited', true);
-        const railAnimations = group.disclosureRail.getAnimations?.() ?? [];
-        inFlight = railAnimations;
-        await Promise.allSettled(railAnimations.map((animation) => animation.finished));
-        if (revision !== token) return;
-      }
-
-      setGroupState(group, targetState);
-      if (targetState.mode === 'catalog' && activeCard) {
-        group.element.dataset.distroCoverflowReveal = 'catalog';
-        activeCard.focus({ preventScroll: true });
-        activeCard.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'nearest', inline: 'nearest' });
-      }
-
-      const animatedElements = targetState.mode === 'catalog' ? [group.reveal] : group.cards;
-      const animations = animatedElements.flatMap((element) => element.getAnimations?.() ?? []);
-      inFlight = animations;
-      await Promise.allSettled(animations.map((animation) => animation.finished));
-    } finally {
-      if (revision === token) {
-        clearTransitionState();
-        inFlight = null;
-      }
-    }
-  };
-
-  const groupListeners = dom.coverflowGroups.map((group) => {
-    let pointerIntent: {
-      card: HTMLElement;
-      moved: boolean;
-      pointerId: number;
-      startX: number;
-      startY: number;
-      wasActive: boolean;
-    } | null = null;
-
-    const onPointerDown = (event: PointerEvent) => {
-      if (group.state.mode !== 'preview' || event.button !== 0) {
-        pointerIntent = null;
-        return;
-      }
-
-      const target =
-        event.target instanceof Element ? event.target.closest<HTMLElement>('[data-distro-coverflow-card]') : null;
-      const cardIndex = target ? group.cards.indexOf(target) : -1;
-      pointerIntent =
-        target && cardIndex >= 0
-          ? {
-              card: target,
-              moved: false,
-              pointerId: event.pointerId,
-              startX: event.clientX,
-              startY: event.clientY,
-              wasActive: cardIndex === group.state.activeIndex,
-            }
-          : null;
-    };
-    const onPointerMove = (event: PointerEvent) => {
-      if (!pointerIntent || pointerIntent.pointerId !== event.pointerId || pointerIntent.moved) return;
-      const deltaX = event.clientX - pointerIntent.startX;
-      const deltaY = event.clientY - pointerIntent.startY;
-      pointerIntent.moved = deltaX * deltaX + deltaY * deltaY > POINTER_INTENT_DISTANCE * POINTER_INTENT_DISTANCE;
-    };
-    const onPointerCancel = (event: PointerEvent) => {
-      if (pointerIntent?.pointerId === event.pointerId) pointerIntent = null;
-    };
-    const onFocusOut = (event: FocusEvent) => {
-      const target =
-        event.target instanceof Element ? event.target.closest<HTMLElement>('[data-distro-coverflow-card]') : null;
-      if (target && pointerIntent?.card === target) pointerIntent = null;
-    };
-    const onClick = (event: MouseEvent) => {
-      const target = event.target instanceof Element ? event.target : null;
-      if (!target) return;
-
-      if (target.closest('[data-distro-coverflow-previous]')) {
-        if (group.state.mode === 'preview') {
-          setGroupState(
-            group,
-            reduceDistroCoverflowState(group.state, { type: 'move', delta: -1 }, group.cards.length),
-          );
-        }
-        return;
-      }
-      if (target.closest('[data-distro-coverflow-next]')) {
-        if (group.state.mode === 'preview') {
-          setGroupState(group, reduceDistroCoverflowState(group.state, { type: 'move', delta: 1 }, group.cards.length));
-        }
-        return;
-      }
-      if (
-        target.closest('[data-distro-coverflow-toggle]') &&
-        group.toggleButton.getAttribute('aria-disabled') !== 'true'
-      ) {
-        void runDisclosure(group);
-        return;
-      }
-
-      const card = target.closest<HTMLElement>('[data-distro-coverflow-card]');
-      if (group.state.mode !== 'preview' || !card || event.detail === 0 || pointerIntent?.card !== card) return;
-
-      const intent = pointerIntent;
-      pointerIntent = null;
-      if (!intent.moved && intent.wasActive) return;
-
-      event.preventDefault();
-      event.stopPropagation();
-      if (intent.moved) return;
-
-      const activeIndex = group.cards.indexOf(card);
-      if (activeIndex >= 0) {
-        setGroupState(
-          group,
-          reduceDistroCoverflowState(group.state, { type: 'focus', activeIndex }, group.cards.length),
-        );
-        card.focus({ preventScroll: true });
-      }
-    };
-    const onFocusIn = (event: FocusEvent) => {
-      if (group.state.mode !== 'preview') return;
-      const target =
-        event.target instanceof Element ? event.target.closest<HTMLElement>('[data-distro-coverflow-card]') : null;
-      if (target && pointerIntent?.card === target) return;
-      const activeIndex = target ? group.cards.indexOf(target) : -1;
-      if (activeIndex >= 0 && activeIndex !== group.state.activeIndex) {
-        setGroupState(
-          group,
-          reduceDistroCoverflowState(group.state, { type: 'focus', activeIndex }, group.cards.length),
-        );
-      }
-    };
-
-    group.element.addEventListener('click', onClick);
-    group.element.addEventListener('focusin', onFocusIn);
-    group.element.addEventListener('focusout', onFocusOut);
-    group.element.addEventListener('pointercancel', onPointerCancel);
-    group.element.addEventListener('pointerdown', onPointerDown);
-    group.element.addEventListener('pointermove', onPointerMove);
-    renderGroup(group);
-    return { group, onClick, onFocusIn, onFocusOut, onPointerCancel, onPointerDown, onPointerMove };
-  });
-
   return {
-    setSearchActive(isActive) {
-      cancelTransition();
-      dom.coverflowGroups.forEach((group) => {
-        setGroupState(group, reduceDistroCoverflowState(group.state, { type: 'search', active: isActive }));
-      });
-    },
-    cleanup() {
-      cancelTransition();
-      groupListeners.forEach(
-        ({ group, onClick, onFocusIn, onFocusOut, onPointerCancel, onPointerDown, onPointerMove }) => {
-          group.element.removeEventListener('click', onClick);
-          group.element.removeEventListener('focusin', onFocusIn);
-          group.element.removeEventListener('focusout', onFocusOut);
-          group.element.removeEventListener('pointercancel', onPointerCancel);
-          group.element.removeEventListener('pointerdown', onPointerDown);
-          group.element.removeEventListener('pointermove', onPointerMove);
-          group.state = { mode: 'preview', activeIndex: 0 };
-          renderGroup(group);
-          group.element.removeAttribute('data-distro-coverflow-ready');
-          group.element.removeAttribute('data-distro-coverflow-visited');
-          group.element.removeAttribute('aria-roledescription');
-        },
-      );
-    },
+    chunks,
+    formatDisclosure: navigation?.querySelector<HTMLDetailsElement>('[data-distro-format-disclosure]') ?? null,
+    groups,
+    items,
+    navigation,
+    root,
   };
+}
+
+export function closeDistroFormatDisclosure(dom: Pick<DistroSearchDom, 'formatDisclosure'>) {
+  if (dom.formatDisclosure) dom.formatDisclosure.open = false;
 }
 
 function setSearchHidden(element: HTMLElement, shouldHide: boolean) {
@@ -519,7 +145,7 @@ export function getDistroSearchResultState(visibleCount: number) {
 }
 
 function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
-  const coverflowControllerRef = useRef<DistroCoverflowController | null>(null);
+  const coverflowControllerRef = useRef<StoreCoverflowController | null>(null);
   const domRef = useRef<DistroSearchDom | null>(null);
   const searcherRef = useRef<ReturnType<typeof createExactFirstSearcher<DistroSearchItem>> | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -536,12 +162,23 @@ function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
     if (!dom) return;
 
     domRef.current = dom;
-    coverflowControllerRef.current = createDistroCoverflowController(dom);
+    ensureStoreCoverflowCapability();
+    const coverflowDom = readStoreCoverflowDom(dom.root);
+    if (!coverflowDom) document.documentElement.removeAttribute('data-store-coverflow-capable');
+    coverflowControllerRef.current = coverflowDom ? createStoreCoverflowController(coverflowDom) : null;
     searcherRef.current = createExactFirstSearcher(dom.items, (item) => item.searchText);
+    const onNavigationClick = (event: Event) => {
+      if (event.target instanceof Element && event.target.closest('[data-scroll-to-target]')) {
+        closeDistroFormatDisclosure(dom);
+      }
+    };
+    dom.navigation?.addEventListener('click', onNavigationClick);
     setVisibleCount(dom.items.filter((item) => !item.element.hidden).length);
     setIsReady(true);
 
     return () => {
+      dom.navigation?.removeEventListener('click', onNavigationClick);
+      closeDistroFormatDisclosure(dom);
       coverflowControllerRef.current?.cleanup();
       applyDistroSearch(dom, null);
       coverflowControllerRef.current = null;
@@ -554,6 +191,7 @@ function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
     const dom = domRef.current;
     if (!dom || !isReady) return undefined;
     const hasQuery = searchQuery.trim().length > 0;
+    if (hasQuery) closeDistroFormatDisclosure(dom);
     coverflowControllerRef.current?.setSearchActive(hasQuery);
 
     if (!hasQuery) {

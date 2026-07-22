@@ -4,12 +4,7 @@ import { createProjectRelativeUrl } from '../config/site';
 import { assertNoSlugCollisions, createSlugSuggestion } from './slugs';
 import type { StoreItemTaxCategory } from './store-tax-category';
 import { sortDistroEntries } from './distro-data';
-import {
-  createPhysicalEditionKey,
-  createValidatedStoreItemProjection,
-  findStoreItemRelationForRelease,
-  resolveStoreItemSlugForDistro,
-} from './store-item-ownership';
+import { createPhysicalEditionKey, createValidatedStoreItemProjection } from './store-item-ownership';
 import { reservedStoreRouteSegments } from './store-categories';
 
 export { groupDistroEntries } from './distro-data';
@@ -141,6 +136,12 @@ const RELEASE_STORE_ITEM_IMAGE_OVERRIDES: Record<string, StoreItemImageOverride>
     height: 3543,
     format: 'webp',
   },
+  caregivers: {
+    src: createProjectRelativeUrl('/admin/media/releases/chronoboros-album-cover-distro-mockup.webp'),
+    width: 3544,
+    height: 3543,
+    format: 'webp',
+  },
   disintegration: {
     src: createProjectRelativeUrl('/admin/media/releases/afterwise-album-cover-distro-mockup.webp'),
     width: 3544,
@@ -194,7 +195,7 @@ export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEnt
 }
 
 export function createStoreItemFromDistroEntry(distroEntry: DistroCatalogEntry): StoreItem {
-  const slug = resolveStoreItemSlugForDistro(distroEntry.id);
+  const slug = distroEntry.id;
   const releaseDate = distroEntry.data.release_date ? formatMonthYear(distroEntry.data.release_date) : null;
   const metadata = [distroEntry.data.group, releaseDate, distroEntry.data.format].filter(Boolean) as string[];
 
@@ -215,14 +216,7 @@ export function createStoreItemFromDistroEntry(distroEntry: DistroCatalogEntry):
 }
 
 export async function getStoreItemForRelease(releaseEntry: ReleaseCatalogEntry) {
-  const relation = findStoreItemRelationForRelease(releaseEntry.id);
-  if (!relation) return createStoreItemFromRelease(releaseEntry);
-
-  return (
-    (await listStoreItems()).find(
-      (storeItem) => storeItem.sourceKind === 'distro' && storeItem.sourceId === relation.distroId,
-    ) ?? null
-  );
+  return createStoreItemFromRelease(releaseEntry);
 }
 
 export async function listStoreItems(): Promise<StoreItem[]> {

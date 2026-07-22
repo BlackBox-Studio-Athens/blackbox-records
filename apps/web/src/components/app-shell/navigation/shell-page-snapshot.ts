@@ -15,48 +15,53 @@ type ShellPageSnapshotCache = {
   cacheSnapshot: (pageSnapshot: ShellPageSnapshot) => void;
 };
 
-export function sanitizeDistroCoverflowSnapshot(root: ParentNode) {
-  root.querySelectorAll<HTMLElement>('[data-distro-coverflow-group]').forEach((groupElement) => {
-    groupElement.dataset.distroCoverflowMode = 'preview';
-    const initialPositionRatio = groupElement.dataset.distroCoverflowInitialPositionRatio;
+export function sanitizeStoreCoverflowSnapshot(root: ParentNode) {
+  root.querySelectorAll<HTMLElement>('[data-store-coverflow-group]').forEach((groupElement) => {
+    groupElement.dataset.storeCoverflowMode = 'preview';
+    const initialPositionRatio = groupElement.dataset.storeCoverflowInitialPositionRatio;
     if (initialPositionRatio) {
-      groupElement.style.setProperty('--distro-coverflow-position-ratio', initialPositionRatio);
+      groupElement.style.setProperty('--store-coverflow-position-ratio', initialPositionRatio);
     } else {
-      groupElement.style.removeProperty('--distro-coverflow-position-ratio');
+      groupElement.style.removeProperty('--store-coverflow-position-ratio');
     }
-    groupElement.removeAttribute('data-distro-coverflow-ready');
-    groupElement.removeAttribute('data-distro-coverflow-reveal');
-    groupElement.removeAttribute('data-distro-coverflow-transitioning');
-    groupElement.removeAttribute('data-distro-coverflow-visited');
+    groupElement.removeAttribute('data-store-coverflow-ready');
+    groupElement.removeAttribute('data-store-coverflow-reveal');
+    groupElement.removeAttribute('data-store-coverflow-transitioning');
+    groupElement.removeAttribute('data-store-coverflow-visited');
+    groupElement.removeAttribute('aria-roledescription');
   });
-  root.querySelectorAll<HTMLElement>('[data-distro-coverflow-card]').forEach((cardElement) => {
-    const initialPosition = cardElement.dataset.distroCoverflowInitialPosition;
-    if (initialPosition) cardElement.dataset.distroCoverflowPosition = initialPosition;
-    else cardElement.removeAttribute('data-distro-coverflow-position');
-    cardElement.removeAttribute('data-distro-coverflow-selected');
+  root.querySelectorAll<HTMLElement>('[data-store-coverflow-card]').forEach((cardElement) => {
+    const initialPosition = cardElement.dataset.storeCoverflowInitialPosition;
+    if (initialPosition) cardElement.dataset.storeCoverflowPosition = initialPosition;
+    else cardElement.removeAttribute('data-store-coverflow-position');
+    cardElement.removeAttribute('data-store-coverflow-selected');
   });
-  root.querySelectorAll<HTMLElement>('[data-distro-coverflow-controls]').forEach((controlsElement) => {
+  root.querySelectorAll<HTMLElement>('[data-store-coverflow-controls]').forEach((controlsElement) => {
     controlsElement.hidden = false;
   });
   root
     .querySelectorAll<HTMLElement>(
-      '[data-distro-coverflow-previous], [data-distro-coverflow-next], [data-distro-coverflow-toggle]',
+      '[data-store-coverflow-previous], [data-store-coverflow-next], [data-store-coverflow-toggle]',
     )
     .forEach((buttonElement) => {
       buttonElement.removeAttribute('aria-disabled');
     });
-  root.querySelectorAll<HTMLElement>('[data-distro-coverflow-toggle]').forEach((buttonElement) => {
-    buttonElement.textContent = buttonElement.dataset.distroCoverflowViewAllLabel || '';
+  root.querySelectorAll<HTMLElement>('[data-store-coverflow-toggle]').forEach((buttonElement) => {
+    buttonElement.textContent = buttonElement.dataset.storeCoverflowViewAllLabel || '';
+    buttonElement.setAttribute('aria-expanded', 'false');
   });
-  root.querySelectorAll<HTMLElement>('[data-distro-coverflow-status]').forEach((statusElement) => {
-    statusElement.textContent = statusElement.dataset.distroCoverflowInitialLabel || '';
+  root.querySelectorAll<HTMLElement>('[data-store-coverflow-status]').forEach((statusElement) => {
+    statusElement.textContent = statusElement.dataset.storeCoverflowInitialLabel || '';
     statusElement.hidden = false;
   });
-  root.querySelectorAll<HTMLElement>('[data-distro-coverflow-initial-value]').forEach((valueElement) => {
-    valueElement.textContent = valueElement.dataset.distroCoverflowInitialValue || '';
+  root.querySelectorAll<HTMLElement>('[data-store-coverflow-initial-value]').forEach((valueElement) => {
+    valueElement.textContent = valueElement.dataset.storeCoverflowInitialValue || '';
   });
-  root.querySelectorAll<HTMLElement>('[data-distro-coverflow-summary]').forEach((summaryElement) => {
-    summaryElement.textContent = summaryElement.dataset.distroCoverflowInitialLabel || '';
+  root.querySelectorAll<HTMLElement>('[data-store-coverflow-summary]').forEach((summaryElement) => {
+    summaryElement.textContent = summaryElement.dataset.storeCoverflowInitialLabel || '';
+  });
+  root.querySelectorAll<HTMLDetailsElement>('[data-distro-format-disclosure]').forEach((detailsElement) => {
+    detailsElement.open = false;
   });
 }
 
@@ -81,7 +86,7 @@ export function readDocumentShellPageSnapshot(
   mainElementClone.querySelectorAll<HTMLElement>('[data-distro-search-hidden]').forEach((hiddenElement) => {
     hiddenElement.removeAttribute('data-distro-search-hidden');
   });
-  sanitizeDistroCoverflowSnapshot(mainElementClone);
+  sanitizeStoreCoverflowSnapshot(mainElementClone);
   sanitizeStoreListingPricePlaceholders(mainElementClone);
   mainElementClone.querySelectorAll<HTMLElement>('[data-services-inquiry-form]').forEach((placeholderElement) => {
     placeholderElement.innerHTML = '';

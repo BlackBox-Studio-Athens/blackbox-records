@@ -617,21 +617,21 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     },
     productProjection: {
       description:
-        'Vinyl edition of Caregivers by Chronoboros. Source metadata identifies it as a 7-track release, released March 13, 2026.',
+        'released March 13, 2026 All music written and performed by Chronoboros All lyrics written by Nikos Zalimoglou Recorded live at Ignite Music Studio Jun 2025 Recorded, mixed, and mastered by George Christoforidis Artwork and layout by Healitwithsilver',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/chronoboros-caregivers-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/chronoboros-album-cover-distro-mockup.webp',
       ],
       metadata: {
-        sourceId: 'chronoboros-caregivers-vinyl',
-        sourceKind: 'distro',
+        sourceId: 'caregivers',
+        sourceKind: 'release',
         storeItemSlug: 'caregivers-vinyl',
         variantId: 'variant_caregivers-vinyl_standard',
       },
       name: 'BlackBox Records - Caregivers - Vinyl',
       taxCode: 'txcd_99999999',
     },
-    sourceId: 'chronoboros-caregivers-vinyl',
-    sourceKind: 'distro',
+    sourceId: 'caregivers',
+    sourceKind: 'release',
     storeItemSlug: 'caregivers-vinyl',
     variantId: 'variant_caregivers-vinyl_standard',
   },

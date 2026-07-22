@@ -150,6 +150,7 @@
         "apps/web/src/components/store/StoreCategoryNavigation.astro",
         "apps/web/src/components/store/StoreCollectionPage.astro",
         "apps/web/src/components/store/StoreDistroCatalog.astro",
+        "apps/web/src/components/store/StoreCoverflowController.ts",
         "apps/web/src/components/store/StoreDistroSearch.tsx",
         "apps/web/src/components/store/StoreListingPricePresentation.ts",
         "apps/web/src/components/cards/**",
@@ -161,6 +162,7 @@
         "apps/web/src/lib/site-data.ts",
         "apps/web/src/lib/store-page-data.ts",
         "apps/web/src/components/artists/ArtistsRosterFilters.tsx",
+        "apps/web/src/components/store/StoreCoverflowController.ts",
         "apps/web/src/components/store/StoreDistroSearch.tsx",
         "apps/web/src/components/store/StoreListingPricePresentation.ts",
         "apps/web/src/components/services/ServicesInquiryForm.tsx"

@@ -39,7 +39,7 @@ describe('Store collection category surfaces', () => {
     );
     expect(collectionPageSource).toContain('<InternalPageHero sectionLabel="Store" title={category.heading} />');
     expect(collectionPageSource).toContain('const itemCountLabel');
-    expect(collectionPageSource).toContain('<StoreItemCard entry={entry}');
+    expect(collectionPageSource).toContain('<StoreItemCard');
     expect(collectionPageSource).toContain('aria-label="Browse Distro formats"');
     expect(collectionPageSource).toContain('createStoreDistroGroupHeadingId(group.groupName)');
     expect(collectionPageSource).toContain("selectStoreCollectionEntries(entries, 'distro')");
@@ -64,6 +64,13 @@ describe('Store collection category surfaces', () => {
     expect(cssSource).toContain('min-height: 2.75rem');
     expect(cssSource).toMatch(/\.store-catalog-chunks\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\)/s);
     expect(cssSource).toMatch(/\.store-item-card--listing\s*\{[^}]*min-width: 0/s);
+    expect(collectionPageSource).toContain("const allCoverflowEligible = category.id === 'all'");
+    expect(collectionPageSource).toContain(
+      'data-store-coverflow-total={allCoverflowEligible ? entries.length : undefined}',
+    );
+    expect(collectionPageSource.match(/<StoreItemCard/g)).toHaveLength(1);
+    expect(collectionPageSource).toContain('coverflowPreview={allCoverflowEligible}');
+    expect(collectionPageSource).not.toContain("category.id === 'blackbox-releases' && allCoverflowEligible");
   });
 
   it('keeps route files thin and selects each of the four category presentations', () => {

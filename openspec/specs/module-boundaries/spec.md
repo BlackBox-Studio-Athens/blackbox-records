@@ -67,6 +67,13 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** `apps/web/src/components/store/StoreDistroSearch.tsx` is a provided `storefront-catalog` entrypoint
 - **AND** the app shell imports that entrypoint instead of a private storefront implementation.
 
+#### Scenario: Shared Store Coverflow controller crosses the app-shell boundary
+
+- **GIVEN** Store Coverflow interaction behavior is owned by `storefront-catalog`
+- **WHEN** the app shell mounts that behavior after activating `/store/`
+- **THEN** `apps/web/src/components/store/StoreCoverflowController.ts` is a provided `storefront-catalog` entrypoint
+- **AND** Distro and app-shell callers import the same controller instead of duplicating interaction logic or using an ownership exception.
+
 #### Scenario: StoreCart event contract is shared
 
 - **GIVEN** app-shell and checkout-web code coordinate browser-only StoreCart events

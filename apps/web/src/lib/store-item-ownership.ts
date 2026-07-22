@@ -3,12 +3,6 @@ import { reservedStoreRouteSegments } from './store-categories';
 
 export type StoreItemSourceKind = 'distro' | 'release';
 
-export type ReleaseToDistroStoreItemRelation = {
-  distroId: string;
-  releaseId: string;
-  storeItemSlug: string;
-};
-
 export type StoreItemProjectionCandidate = {
   physicalEditionKeys: readonly string[];
   sourceId: string;
@@ -20,21 +14,12 @@ export type CanonicalStoreItemProjection = Omit<StoreItemProjectionCandidate, 'p
   variantId: string;
 };
 
-export const releaseToDistroStoreItemRelations = [
-  {
-    distroId: 'chronoboros-caregivers-vinyl',
-    releaseId: 'caregivers',
-    storeItemSlug: 'caregivers-vinyl',
-  },
-] as const satisfies readonly ReleaseToDistroStoreItemRelation[];
-
 export function createPhysicalEditionKey(input: { artist: string; itemType: string; title: string }): string {
   return [input.artist, input.title, normalizePhysicalEditionType(input.itemType)].map(normalizeIdentityText).join('|');
 }
 
 export function createValidatedStoreItemProjection(
   candidates: readonly StoreItemProjectionCandidate[],
-  relations: readonly ReleaseToDistroStoreItemRelation[] = releaseToDistroStoreItemRelations,
 ): CanonicalStoreItemProjection[] {
   if (candidates.length === 0) return [];
 
@@ -48,36 +33,10 @@ export function createValidatedStoreItemProjection(
     candidatesBySource.set(sourceKey, candidate);
   }
 
-  const releaseRelations = new Map<string, ReleaseToDistroStoreItemRelation>();
-  const distroRelations = new Map<string, ReleaseToDistroStoreItemRelation>();
+  assertNoUnresolvedCrossSourceDuplicates(candidates);
 
-  for (const relation of relations) {
-    if (releaseRelations.has(relation.releaseId)) {
-      throw new Error(`Release Store Item relation endpoint is repeated: ${relation.releaseId}.`);
-    }
-    if (distroRelations.has(relation.distroId)) {
-      throw new Error(`Distro Store Item relation endpoint is repeated: ${relation.distroId}.`);
-    }
-    if (!candidatesBySource.has(createSourceKey('release', relation.releaseId))) {
-      throw new Error(`Release Store Item relation endpoint does not exist: ${relation.releaseId}.`);
-    }
-    if (!candidatesBySource.has(createSourceKey('distro', relation.distroId))) {
-      throw new Error(`Distro Store Item relation endpoint does not exist: ${relation.distroId}.`);
-    }
-
-    releaseRelations.set(relation.releaseId, relation);
-    distroRelations.set(relation.distroId, relation);
-  }
-
-  assertNoUnresolvedCrossSourceDuplicates(candidates, relations);
-
-  const projection = candidates.flatMap((candidate): CanonicalStoreItemProjection[] => {
-    if (candidate.sourceKind === 'release' && releaseRelations.has(candidate.sourceId)) return [];
-
-    const storeItemSlug =
-      candidate.sourceKind === 'distro'
-        ? (distroRelations.get(candidate.sourceId)?.storeItemSlug ?? candidate.storeItemSlug)
-        : candidate.storeItemSlug;
+  const projection = candidates.map((candidate): CanonicalStoreItemProjection => {
+    const storeItemSlug = candidate.storeItemSlug;
 
     if (!validateSlug(storeItemSlug).valid) {
       throw new Error(
@@ -90,14 +49,12 @@ export function createValidatedStoreItemProjection(
       );
     }
 
-    return [
-      {
-        sourceId: candidate.sourceId,
-        sourceKind: candidate.sourceKind,
-        storeItemSlug,
-        variantId: `variant_${storeItemSlug}_standard`,
-      },
-    ];
+    return {
+      sourceId: candidate.sourceId,
+      sourceKind: candidate.sourceKind,
+      storeItemSlug,
+      variantId: `variant_${storeItemSlug}_standard`,
+    };
   });
 
   assertUniqueProjectionField(projection, 'storeItemSlug');
@@ -106,21 +63,7 @@ export function createValidatedStoreItemProjection(
   return projection;
 }
 
-export function findStoreItemRelationForRelease(releaseId: string): ReleaseToDistroStoreItemRelation | undefined {
-  return releaseToDistroStoreItemRelations.find((relation) => relation.releaseId === releaseId);
-}
-
-export function resolveStoreItemSlugForDistro(distroId: string): string {
-  return (
-    releaseToDistroStoreItemRelations.find((relation) => relation.distroId === distroId)?.storeItemSlug ?? distroId
-  );
-}
-
-function assertNoUnresolvedCrossSourceDuplicates(
-  candidates: readonly StoreItemProjectionCandidate[],
-  relations: readonly ReleaseToDistroStoreItemRelation[],
-): void {
-  const relatedPairs = new Set(relations.map((relation) => `${relation.releaseId}:${relation.distroId}`));
+function assertNoUnresolvedCrossSourceDuplicates(candidates: readonly StoreItemProjectionCandidate[]): void {
   const releases = candidates.filter((candidate) => candidate.sourceKind === 'release');
   const distro = candidates.filter((candidate) => candidate.sourceKind === 'distro');
 
@@ -128,7 +71,7 @@ function assertNoUnresolvedCrossSourceDuplicates(
     const releaseKeys = new Set(release.physicalEditionKeys);
     for (const distroItem of distro) {
       const sharedKey = distroItem.physicalEditionKeys.find((key) => releaseKeys.has(key));
-      if (sharedKey && !relatedPairs.has(`${release.sourceId}:${distroItem.sourceId}`)) {
+      if (sharedKey) {
         throw new Error(
           `Unresolved cross-source physical duplicate ${sharedKey}: release:${release.sourceId}, distro:${distroItem.sourceId}.`,
         );

@@ -30,7 +30,7 @@ describe('stripe catalog contract projection', () => {
     const rowsById = new Map(source.rows.map((row) => [row.id, row]));
     const rejectedDuplicate = source.rejectedDuplicateRows[0];
 
-    expect(source.rows).toHaveLength(102);
+    expect(source.rows).toHaveLength(101);
     expect(source.rejectedDuplicateRows).toEqual([
       expect.objectContaining({
         duplicateOf: 'living-under-drones-knot-on-knot-vinyl-12-inch',
@@ -267,11 +267,13 @@ describe('stripe catalog contract projection', () => {
         currencyCode: 'EUR',
       },
       productProjection: {
-        imageUrls: ['https://blackbox-records-web.pages.dev/admin/media/distro/chronoboros-caregivers-vinyl.webp'],
+        imageUrls: [
+          'https://blackbox-records-web.pages.dev/admin/media/releases/chronoboros-album-cover-distro-mockup.webp',
+        ],
         name: 'BlackBox Records - Caregivers - Vinyl',
       },
-      sourceId: 'chronoboros-caregivers-vinyl',
-      sourceKind: 'distro',
+      sourceId: 'caregivers',
+      sourceKind: 'release',
       variantId: 'variant_caregivers-vinyl_standard',
     });
     expect(contractsBySlug.has('chronoboros-caregivers-vinyl')).toBe(false);
@@ -426,9 +428,7 @@ describe('stripe catalog contract projection', () => {
     );
     expect(sql).toContain("'anarchotribal-vinyl', 'release', 'anarchotribal', 'variant_anarchotribal-vinyl_standard'");
     expect(sql).toContain("'barren-point', 'distro', 'barren-point', 'variant_barren-point_standard'");
-    expect(sql).toContain(
-      "'caregivers-vinyl', 'distro', 'chronoboros-caregivers-vinyl', 'variant_caregivers-vinyl_standard'",
-    );
+    expect(sql).toContain("'caregivers-vinyl', 'release', 'caregivers', 'variant_caregivers-vinyl_standard'");
     expect(sql).not.toContain("'chronoboros-caregivers-vinyl', 'distro'");
     expect(sql).not.toContain('variant_chronoboros-caregivers-vinyl_standard');
     expect(sql).toContain('DELETE FROM "StoreItemOption"\nWHERE "storeItemSlug" = \'mass-culture-lp\'');

@@ -17,17 +17,18 @@ describe('Caregivers canonical ownership migration', () => {
     createSchema(database);
     seedDuplicateCaregiversState(database);
 
-    const migration = await readFile(
-      path.resolve(process.cwd(), 'prisma/migrations/0012_canonicalize_caregivers_store_item_ownership.sql'),
-      'utf8',
+    const migrations = await Promise.all(
+      ['0012_canonicalize_caregivers_store_item_ownership.sql', '0013_restore_caregivers_release_ownership.sql'].map(
+        (migration) => readFile(path.resolve(process.cwd(), 'prisma/migrations', migration), 'utf8'),
+      ),
     );
-    database.exec(migration);
-    database.exec(migration);
+    database.exec(migrations.join('\n'));
+    database.exec(migrations.join('\n'));
 
     expect(database.prepare('SELECT * FROM "StoreItemOption" ORDER BY "storeItemSlug"').all()).toEqual([
       expect.objectContaining({
-        sourceId: 'chronoboros-caregivers-vinyl',
-        sourceKind: 'distro',
+        sourceId: 'caregivers',
+        sourceKind: 'release',
         storeItemSlug: 'caregivers-vinyl',
         variantId: 'variant_caregivers-vinyl_standard',
       }),

@@ -76,13 +76,6 @@ The system MUST derive deterministic `Store Category` memberships for each canon
 - **WHEN** Store category membership is derived
 - **THEN** it belongs to `BlackBox Releases`.
 
-#### Scenario: Related canonical Distro Store Item is classified
-
-- **GIVEN** a canonical distro-sourced Store Item is the Distro endpoint of an explicit Release-to-Distro Store Item relation
-- **WHEN** Store category membership is derived
-- **THEN** it belongs to `BlackBox Releases`
-- **AND** it remains in `Distro` because its canonical source is distro-owned.
-
 #### Scenario: Clothes Store Item is classified
 
 - **GIVEN** a distro-sourced Store Item has exact accepted Distro group `Clothes`
@@ -92,7 +85,7 @@ The system MUST derive deterministic `Store Category` memberships for each canon
 
 #### Scenario: Remaining Distro Store Item is classified
 
-- **GIVEN** a distro-sourced Store Item is not grouped as `Clothes` and may or may not be related to a BlackBox Release
+- **GIVEN** a distro-sourced Store Item is not grouped as `Clothes`
 - **WHEN** Store category membership is derived
 - **THEN** it belongs to `Distro`.
 
@@ -121,7 +114,7 @@ Each discoverable Store category route SHALL render only its classified canonica
 
 #### Scenario: One Store Item has multiple category memberships
 
-- **GIVEN** a canonical Store Item belongs to both `BlackBox Releases` and `Distro`
+- **GIVEN** a canonical Store Item belongs to both `Distro` and `Merch`
 - **WHEN** those category routes render
 - **THEN** the same canonical Store Item appears once in each relevant category
 - **AND** it still appears only once in All
@@ -131,7 +124,7 @@ Each discoverable Store category route SHALL render only its classified canonica
 
 - **WHEN** `/store/distro/` renders
 - **THEN** every canonical distro-sourced Store Item appears once in its deterministic format groups
-- **AND** related BlackBox Release membership or exact `Clothes` Merch membership does not remove it from Distro
+- **AND** exact `Clothes` Merch membership does not remove it from Distro
 - **AND** existing Distro search, format navigation, Coverflow disclosure, and no-JavaScript catalog access remain available under the Store category.
 
 #### Scenario: Merch category is empty
@@ -192,3 +185,88 @@ The system MUST reserve Store collection and checkout path segments against cano
 - **WHEN** Astro generates Store category, checkout, and Store Item routes
 - **THEN** each fixed collection or checkout document has one unambiguous output path
 - **AND** `/store/{storeItemSlug}/` remains available for non-reserved Store Item slugs.
+
+### Requirement: Store category navigation presents a clear signal rail
+
+The Store SHALL present its discoverable category links as one square-edged Signal rail that makes the current shelf visually clear without changing the existing category, route, or authority contract.
+
+#### Scenario: Current category is visually and programmatically distinct
+
+- **WHEN** a Store collection route renders
+- **THEN** its current category link exposes `aria-current="page"`
+- **AND** it uses stronger text, a 3px Store-accent rule, and a restrained Store-accent surface tint
+- **AND** colour is not the only cue that distinguishes the current category.
+
+#### Scenario: Category targets remain accessible
+
+- **WHEN** the Signal rail renders in any supported viewport
+- **THEN** every discoverable category is a native link with a clickable area at least 44 CSS pixels high
+- **AND** keyboard focus remains independently visible on current and inactive links
+- **AND** hover or focus does not make an inactive link indistinguishable from the current link.
+
+#### Scenario: Narrow viewport reflows the complete category set
+
+- **WHEN** the Signal rail renders at a 320 CSS-pixel viewport with either three or four discoverable categories
+- **THEN** every complete category label remains visible without truncation or horizontal scrolling
+- **AND** the links reflow into no more than two columns and content-driven rows
+- **AND** an odd final category does not create a visible placeholder destination.
+
+#### Scenario: Desktop viewport keeps one concise rail
+
+- **WHEN** the Signal rail renders at a desktop viewport
+- **THEN** the discoverable category links occupy one equal-width row inside the existing Store navigation band
+- **AND** the rail does not add imagery, counts, icons, search, filters, or commerce utilities.
+
+#### Scenario: Navigation remains static and motion stays incidental
+
+- **WHEN** JavaScript is unavailable or the visitor prefers reduced motion
+- **THEN** every category destination remains reachable as its complete static document
+- **AND** current, hover, and focus states remain perceivable without layout or position animation
+- **AND** the Signal rail adds no client state, runtime request, or new asset.
+
+### Requirement: Store orientation panels serve each collection without repeated information
+
+The Store SHALL present source-derived, purpose-specific orientation panels for All, BlackBox Releases, and Distro while retaining one safe generic presentation for other non-Distro categories.
+
+#### Scenario: All presents one concise shelf ledger
+
+- **WHEN** `/store/` renders a populated All collection
+- **THEN** the panel presents `Store shelf`, the shelf-purpose headline, and the source-derived complete Store Item total exactly once
+- **AND** the active Signal rail identifies `All` without a second All heading inside the panel
+- **AND** the panel exposes `Browse Distro formats` with one ordinary canonical fragment link and source-derived count for each current Distro format
+- **AND** it does not repeat the collection total, Distro intro paragraph, or separate Distro subtotal.
+
+#### Scenario: BlackBox Releases presents direct label context compactly
+
+- **WHEN** `/store/blackbox-releases/` renders a populated collection
+- **THEN** the panel presents `Store shelf`, the `BlackBox Releases` category label, its existing category description, and one source-derived collection total
+- **AND** it uses a compact purpose-specific composition without changing category metadata, membership, or Store Item order.
+
+#### Scenario: Distro presents its browse tools as one compact orientation panel
+
+- **WHEN** `/store/distro/` renders a populated collection
+- **THEN** the panel presents `Store shelf`, the existing Distro title and description, and one source-derived collection total
+- **AND** the existing search slot belongs to the same square-edged composition without changing search matching, result membership, or query ownership
+- **AND** an idle search does not repeat the complete total or visible-item count
+- **AND WHEN** a search query is active
+- **THEN** the visible-result count and Clear search action remain available
+- **AND** the separate Browse formats navigation retains its source-derived links, counts, sticky behavior, and Top action.
+
+#### Scenario: Another non-Distro category renders
+
+- **WHEN** a populated non-Distro category other than All or BlackBox Releases renders
+- **THEN** it receives a complete generic orientation panel using its own label, description, and source-derived total
+- **AND** it does not inherit BlackBox-specific copy or layout assumptions.
+
+#### Scenario: Orientation panels reflow
+
+- **WHEN** any purpose-specific panel renders at 320 CSS pixels, 200% text size, or the 400% zoom equivalent
+- **THEN** its content follows document order with content-driven height and no clipped or truncated text
+- **AND** every format destination remains an ordinary link with a target at least 44 CSS pixels high
+- **AND** the page does not require two-dimensional scrolling.
+
+#### Scenario: Orientation remains server-rendered
+
+- **WHEN** JavaScript is unavailable
+- **THEN** the same panel labels, source-derived totals, format links, and category descriptions remain available in the complete static document where applicable
+- **AND** the panels add no client state, runtime request, content field, or commerce authority.

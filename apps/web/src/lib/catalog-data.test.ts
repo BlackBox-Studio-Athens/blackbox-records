@@ -53,22 +53,6 @@ vi.mock('astro:content', () => ({
             title: 'Afterglow Tape',
           },
         },
-        {
-          collection: 'distro',
-          id: 'chronoboros-caregivers-vinyl',
-          data: {
-            artist_or_label: 'Chronoboros',
-            eyebrow: 'Distro',
-            format: 'Vinyl',
-            group: 'Vinyl 12-inch',
-            image: { src: '/caregivers-distro.webp', width: 100, height: 100, format: 'webp' },
-            image_alt: 'Caregivers vinyl',
-            order: 2,
-            release_date: new Date('2026-03-13T00:00:00.000Z'),
-            summary: 'Caregivers vinyl edition.',
-            title: 'Caregivers',
-          },
-        },
       ];
     }
 
@@ -258,7 +242,7 @@ describe('StoreItem projection contract', () => {
     });
   });
 
-  it('resolves Caregivers release commerce to the Distro-owned store item', async () => {
+  it('uses the Caregivers mockup cover on its release-owned store item', async () => {
     const storeItem = await getStoreItemForRelease(
       createReleaseEntry('caregivers', {
         artist: { collection: 'artists', id: 'chronoboros' },
@@ -273,10 +257,15 @@ describe('StoreItem projection contract', () => {
     );
 
     expect(storeItem).toMatchObject({
-      image: { src: '/caregivers-distro.webp', width: 100, height: 100, format: 'webp' },
+      image: {
+        src: '/blackbox-records/admin/media/releases/chronoboros-album-cover-distro-mockup.webp',
+        width: 3544,
+        height: 3543,
+        format: 'webp',
+      },
       slug: 'caregivers-vinyl',
-      sourceId: 'chronoboros-caregivers-vinyl',
-      sourceKind: 'distro',
+      sourceId: 'caregivers',
+      sourceKind: 'release',
     });
   });
 
@@ -334,8 +323,8 @@ describe('StoreItem projection contract', () => {
     });
     await expect(getStoreItemForRelease(expectReleaseEntry(externalRelease))).resolves.toMatchObject({
       slug: 'caregivers-vinyl',
-      sourceId: 'chronoboros-caregivers-vinyl',
-      sourceKind: 'distro',
+      sourceId: 'caregivers',
+      sourceKind: 'release',
       storePath: '/blackbox-records/store/caregivers-vinyl/',
     });
   });
@@ -345,8 +334,8 @@ describe('StoreItem projection contract', () => {
 
     expect(storeItems.map((storeItem) => [storeItem.slug, storeItem.sourceKind])).toEqual([
       ['disintegration-black-vinyl-lp', 'release'],
+      ['caregivers-vinyl', 'release'],
       ['afterglow-tape', 'distro'],
-      ['caregivers-vinyl', 'distro'],
     ]);
     expect(storeItems.map((storeItem) => storeItem.taxCategory)).toEqual([
       'physical_goods',
@@ -366,8 +355,8 @@ describe('StoreItem projection contract', () => {
     });
     await expect(getStoreItemBySlug('caregivers-vinyl')).resolves.toMatchObject({
       slug: 'caregivers-vinyl',
-      sourceKind: 'distro',
-      sourceId: 'chronoboros-caregivers-vinyl',
+      sourceKind: 'release',
+      sourceId: 'caregivers',
     });
     await expect(getStoreItemBySlug('caregivers')).resolves.toBeNull();
   });
@@ -394,7 +383,7 @@ describe('StoreItem projection contract', () => {
 
     await expect(getStoreItemForRelease(expectReleaseEntry(externalRelease))).resolves.toMatchObject({
       slug: 'caregivers-vinyl',
-      sourceKind: 'distro',
+      sourceKind: 'release',
     });
     await expect(getStoreItemBySlug('caregivers')).resolves.toBeNull();
   });
@@ -410,8 +399,8 @@ describe('StoreItem projection contract', () => {
 
     await expect(getStoreItemForRelease(expectReleaseEntry(externalRelease))).resolves.toMatchObject({
       slug: 'caregivers-vinyl',
-      sourceId: 'chronoboros-caregivers-vinyl',
-      sourceKind: 'distro',
+      sourceId: 'caregivers',
+      sourceKind: 'release',
       storePath: '/blackbox-records/store/caregivers-vinyl/',
     });
   });

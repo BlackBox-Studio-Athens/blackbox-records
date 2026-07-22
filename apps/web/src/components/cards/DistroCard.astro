@@ -54,9 +54,9 @@ const availabilityLabel = entry?.primaryAvailability?.availability.label || 'Una
   href={storeItem.storePath}
   aria-label={isHomeVariant ? undefined : `${sourceTitle} — ${sourceSubtitle}`}
   data-astro-prefetch
-  data-distro-coverflow-card={coverflowPreview ? '' : undefined}
-  data-distro-coverflow-initial-position={coverflowPosition}
-  data-distro-coverflow-position={coverflowPosition}
+  data-store-coverflow-card={coverflowPreview ? '' : undefined}
+  data-store-coverflow-initial-position={coverflowPosition}
+  data-store-coverflow-position={coverflowPosition}
   data-distro-search-item={isHomeVariant ? undefined : ''}
   data-distro-search-text={isHomeVariant ? undefined : distroSearchText}
 >

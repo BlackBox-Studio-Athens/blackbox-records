@@ -22,7 +22,9 @@ describe('Distro format navigation', () => {
     expect(navigationSource).toContain('aria-labelledby="distro-format-navigation-heading"');
     expect(navigationSource).toContain('id="distro-format-navigation-heading"');
     expect(navigationSource).toContain('Browse formats');
-    expect(navigationSource.match(/groupedDistroChunks\.map/g)).toHaveLength(1);
+    expect(navigationSource.match(/groupedDistroChunks\.map/g)).toHaveLength(2);
+    expect(navigationSource).toContain('data-distro-format-disclosure');
+    expect(navigationSource).toContain('{groupedDistroChunks.length}');
     expect(source).toContain('headingId: createStoreDistroGroupHeadingId(group.groupName)');
     expect(navigationSource).toContain('href={`#${group.headingId}`}');
     expect(navigationSource).toContain('data-scroll-to-target={group.headingId}');
@@ -39,7 +41,12 @@ describe('Distro format navigation', () => {
     expect(source).toContain('aria-label="Back to Distro page top"');
     expect(cssSource).toMatch(/\.distro-format-navigation\s*{[\s\S]*?position: sticky/);
     expect(cssSource).toContain('top: var(--header-height)');
-    expect(cssSource).toMatch(/\.distro-format-navigation__links\s*{[\s\S]*?overflow-x: auto/);
+    expect(cssSource).toMatch(/\.distro-format-navigation__panel\s*{[\s\S]*?grid-template-columns:/);
+    expect(cssSource).toContain('.distro-format-navigation__mobile[open]');
+    expect(cssSource).toMatch(
+      /@media \(min-width: 48rem\)[\s\S]*?\.distro-format-navigation__mobile[\s\S]*?display: none/,
+    );
+    expect(cssSource).not.toContain('scrollbar-width: none');
     expect(cssSource).toMatch(/\.distro-format-navigation__link,[\s\S]*?min-height: 2\.75rem/);
     expect(cssSource).toMatch(/\.distro-group-section__title\s*{[\s\S]*?scroll-margin-top:/);
   });

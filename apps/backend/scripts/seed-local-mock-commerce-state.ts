@@ -22,9 +22,14 @@ export type LocalMockStoreItem = {
 const backendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const nonPhysicalReleaseFormats = new Set(['digital']);
-const mockCheckoutStoreItemSlugs = new Set(['anarchotribal-vinyl', 'disintegration-black-vinyl-lp']);
+const mockCheckoutStoreItemSlugs = new Set([
+  'anarchotribal-vinyl',
+  'caregivers-vinyl',
+  'disintegration-black-vinyl-lp',
+]);
 const mockStoreOfferPricesBySlug = new Map([
   ['anarchotribal-vinyl', { amountMinor: 2800, currencyCode: 'EUR' }],
+  ['caregivers-vinyl', { amountMinor: 2000, currencyCode: 'EUR' }],
   ['disintegration-black-vinyl-lp', { amountMinor: 2800, currencyCode: 'EUR' }],
 ]);
 

@@ -103,15 +103,15 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
 
     <script is:inline>
       if (typeof CSS !== 'undefined' && CSS.supports('transform-style', 'preserve-3d')) {
-        document.documentElement.setAttribute('data-distro-coverflow-capable', '');
+        document.documentElement.setAttribute('data-store-coverflow-capable', '');
 
         window.addEventListener(
           'load',
           () => {
             window.setTimeout(() => {
-              const groups = [...document.querySelectorAll('[data-distro-coverflow-group]')];
-              if (groups.length > 0 && groups.some((group) => !group.hasAttribute('data-distro-coverflow-ready'))) {
-                document.documentElement.removeAttribute('data-distro-coverflow-capable');
+              const groups = [...document.querySelectorAll('[data-store-coverflow-group]')];
+              if (groups.length > 0 && groups.some((group) => !group.hasAttribute('data-store-coverflow-ready'))) {
+                document.documentElement.removeAttribute('data-store-coverflow-capable');
               }
             }, 15000);
           },

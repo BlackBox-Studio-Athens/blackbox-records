@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: Eligible Distro groups provide a bounded six-position 3D Coverflow across the complete group
+### Requirement: Eligible Distro groups provide a bounded 3D Coverflow preview
 
 The Store Distro category SHALL enhance a populated classified group into a responsive BlackBox 3D Coverflow when the group contains more than six Store Items and the required client platform support is available.
 

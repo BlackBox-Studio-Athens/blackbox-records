@@ -49,20 +49,6 @@ vi.mock('astro:content', () => ({
             title: 'Afterglow Tape',
           },
         },
-        {
-          id: 'chronoboros-caregivers-vinyl',
-          data: {
-            artist_or_label: 'Chronoboros',
-            eyebrow: 'Distro',
-            format: 'Vinyl',
-            group: 'Vinyl 12-inch',
-            image: { src: '/caregivers-distro.webp' },
-            image_alt: 'Caregivers vinyl',
-            order: 2,
-            summary: 'Caregivers vinyl edition.',
-            title: 'Caregivers',
-          },
-        },
       ];
     }
 
@@ -96,8 +82,8 @@ describe('store collection entries', () => {
 
     expect(collectionEntries.map((entry) => [entry.storeItem.slug, entry.storeItem.sourceKind])).toEqual([
       ['disintegration-black-vinyl-lp', 'release'],
+      ['caregivers-vinyl', 'release'],
       ['afterglow-tape', 'distro'],
-      ['caregivers-vinyl', 'distro'],
     ]);
 
     expect(collectionEntries[0]?.primaryAvailability).toMatchObject({
@@ -107,14 +93,14 @@ describe('store collection entries', () => {
     });
 
     expect(collectionEntries[1]?.primaryAvailability).toMatchObject({
-      storeItemSlug: 'afterglow-tape',
+      storeItemSlug: 'caregivers-vinyl',
       price: { display: 'Worker-confirmed at checkout' },
       availability: { status: 'available', label: 'Available' },
       canBuy: true,
     });
 
     expect(collectionEntries[2]?.primaryAvailability).toMatchObject({
-      storeItemSlug: 'caregivers-vinyl',
+      storeItemSlug: 'afterglow-tape',
       price: { display: 'Worker-confirmed at checkout' },
       availability: { status: 'available', label: 'Available' },
       canBuy: true,
@@ -122,11 +108,11 @@ describe('store collection entries', () => {
 
     expect(collectionEntries.map((entry) => [entry.storeItem.slug, entry.categoryIds])).toEqual([
       ['disintegration-black-vinyl-lp', ['blackbox-releases']],
+      ['caregivers-vinyl', ['blackbox-releases']],
       ['afterglow-tape', ['distro']],
-      ['caregivers-vinyl', ['blackbox-releases', 'distro']],
     ]);
 
-    expect(collectionEntries[1]?.distro).toEqual({
+    expect(collectionEntries[2]?.distro).toEqual({
       format: 'Cassette',
       group: 'Tapes',
       order: 1,
@@ -144,11 +130,10 @@ describe('store collection entries', () => {
 
     expect(
       classifyStoreCatalogMembership({
-        distroGroup: 'Vinyl 12-inch',
-        sourceId: 'chronoboros-caregivers-vinyl',
-        sourceKind: 'distro',
+        sourceId: 'caregivers',
+        sourceKind: 'release',
       }),
-    ).toEqual(['blackbox-releases', 'distro']);
+    ).toEqual(['blackbox-releases']);
 
     expect(
       classifyStoreCatalogMembership({
@@ -186,8 +171,8 @@ describe('store collection entries', () => {
 
     expect(selectStoreCollectionEntries(entries, 'all').map((entry) => entry.storeItem.slug)).toEqual([
       'disintegration-black-vinyl-lp',
-      'afterglow-tape',
       'caregivers-vinyl',
+      'afterglow-tape',
     ]);
     expect(selectStoreCollectionEntries(entries, 'blackbox-releases').map((entry) => entry.storeItem.slug)).toEqual([
       'disintegration-black-vinyl-lp',
@@ -195,7 +180,6 @@ describe('store collection entries', () => {
     ]);
     expect(selectStoreCollectionEntries(entries, 'distro').map((entry) => entry.storeItem.slug)).toEqual([
       'afterglow-tape',
-      'caregivers-vinyl',
     ]);
     expect(selectStoreCollectionEntries(entries, 'merch')).toEqual([]);
     expect(() => selectStoreCollectionEntries([...entries, entries[0]!], 'all')).toThrow(
@@ -207,11 +191,6 @@ describe('store collection entries', () => {
     const entries = await listStoreCollectionEntries('distro');
 
     expect(groupStoreDistroCollectionEntries(entries)).toEqual([
-      {
-        groupName: 'Vinyl 12-inch',
-        introGroupName: 'Vinyl 12-inch',
-        entries: [expect.objectContaining({ storeItem: expect.objectContaining({ slug: 'caregivers-vinyl' }) })],
-      },
       {
         groupName: 'Tapes',
         introGroupName: 'Tapes',

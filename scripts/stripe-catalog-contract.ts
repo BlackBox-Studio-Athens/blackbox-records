@@ -79,7 +79,15 @@ const prdSiteUrl = 'https://blackbox-records-web.pages.dev';
 const prdBasePath = '/';
 const CATALOG_RELEASE_IMAGE_OVERRIDES: Record<string, string> = {
   anarchotribal: 'ouranopithecus-album-cover-distro-mockup.webp',
+  caregivers: 'chronoboros-album-cover-distro-mockup.webp',
   disintegration: 'afterwise-album-cover-distro-mockup.webp',
+};
+const CATALOG_RELEASE_PRICE_OVERRIDES: Record<string, StripeCatalogExpectedPrice> = {
+  caregivers: {
+    amountMinor: 2000,
+    currencyCode: 'EUR',
+    kind: 'fixed',
+  },
 };
 export const STRIPE_PHYSICAL_GOODS_TAX_CODE = 'txcd_99999999';
 
@@ -195,7 +203,7 @@ async function readReleaseContracts(
         const storeItemSlug = createReleaseStoreItemSlug(content);
         const coverImage = resolveCatalogCoverImagePathForRelease(sourceId, content.cover_image);
         const titleParts = ['BlackBox Records', content.title, optionLabel].filter(Boolean);
-        const expectedPrice = createExpectedSandboxPrice(optionLabel);
+        const expectedPrice = CATALOG_RELEASE_PRICE_OVERRIDES[sourceId] ?? createExpectedSandboxPrice(optionLabel);
 
         return {
           artistId: content.artist,

@@ -22,6 +22,17 @@ const { category, entries } = Astro.props;
 const itemCountLabel = `${entries.length} ${entries.length === 1 ? 'item' : 'items'}`;
 const distroEntries = category.id === 'all' ? selectStoreCollectionEntries(entries, 'distro') : [];
 const distroGroups = groupStoreDistroCollectionEntries(distroEntries);
+const STORE_COVERFLOW_PREVIEW_SIZE = 6;
+const STORE_COVERFLOW_INITIAL_POSITIONS = [
+  'active',
+  'right-near',
+  'right-far',
+  'back',
+  'left-far',
+  'left-near',
+] as const;
+const allCoverflowEligible = category.id === 'all' && entries.length > STORE_COVERFLOW_PREVIEW_SIZE;
+const allInitialPositionRatio = entries.length > 0 ? 1 / entries.length : 0;
 ---
 
 <SiteLayout pageTitle={category.title} pageDescription={category.description}>
@@ -99,13 +110,111 @@ const distroGroups = groupStoreDistroCollectionEntries(distroEntries);
           )}
         </section>
 
-        <section class="layout-container pb-14" aria-label={`${category.label} Store collection`}>
+        <section
+          class:list={['layout-container pb-14', allCoverflowEligible && 'store-coverflow-section']}
+          aria-label={`${category.label} Store collection`}
+          data-store-coverflow-group={allCoverflowEligible ? '' : undefined}
+          data-store-coverflow-mode={allCoverflowEligible ? 'preview' : undefined}
+          data-store-coverflow-total={allCoverflowEligible ? entries.length : undefined}
+          data-store-coverflow-preview-count={allCoverflowEligible ? STORE_COVERFLOW_PREVIEW_SIZE : undefined}
+          data-store-coverflow-remaining-count={allCoverflowEligible ? entries.length - 1 : undefined}
+          data-store-coverflow-initial-position-ratio={allCoverflowEligible ? allInitialPositionRatio : undefined}
+          style={allCoverflowEligible ? `--store-coverflow-position-ratio: ${allInitialPositionRatio}` : undefined}
+        >
           {entries.length > 0 ? (
-            <div class="store-catalog-chunks">
-              {entries.map((entry, itemIndex) => (
-                <StoreItemCard entry={entry} imageLoading={itemIndex < 3 ? 'eager' : 'lazy'} />
-              ))}
-            </div>
+            <>
+              {allCoverflowEligible && (
+                <div class="store-coverflow-overview">
+                  <div class="store-coverflow-controls" data-store-coverflow-controls>
+                    <div class="store-coverflow-depth">
+                      <dl class="store-coverflow-stats">
+                        <div class="store-coverflow-stat">
+                          <dt>On this shelf</dt>
+                          <dd>{entries.length}</dd>
+                        </div>
+                        <div class="store-coverflow-stat" data-store-coverflow-current>
+                          <dt>Now viewing</dt>
+                          <dd data-store-coverflow-current-value data-store-coverflow-initial-value="1">
+                            1
+                          </dd>
+                        </div>
+                        <div class="store-coverflow-stat" data-store-coverflow-remaining>
+                          <dt>More</dt>
+                          <dd
+                            data-store-coverflow-remaining-value
+                            data-store-coverflow-initial-value={entries.length - 1}
+                          >
+                            {entries.length - 1}
+                          </dd>
+                        </div>
+                      </dl>
+                      <div class="store-coverflow-rail" aria-hidden="true">
+                        <span class="store-coverflow-rail__track" />
+                        <span class="store-coverflow-rail__fill" data-store-coverflow-disclosure-rail />
+                      </div>
+                      <p
+                        class="store-coverflow-summary"
+                        data-store-coverflow-summary
+                        data-store-coverflow-initial-label={`You're viewing 1 of ${entries.length}.`}
+                      >
+                        You're viewing 1 of {entries.length}.
+                      </p>
+                    </div>
+                    <div class="store-coverflow-actions">
+                      <button type="button" aria-controls="all-store-catalog" data-store-coverflow-previous>
+                        Previous
+                      </button>
+                      <button type="button" aria-controls="all-store-catalog" data-store-coverflow-next>
+                        Next
+                      </button>
+                      <button
+                        class="store-coverflow-actions__toggle"
+                        type="button"
+                        aria-controls="all-store-catalog"
+                        aria-expanded="false"
+                        data-store-coverflow-toggle
+                        data-store-coverflow-view-all-label={`View all ${entries.length}`}
+                      >
+                        View all {entries.length}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {allCoverflowEligible && (
+                <p
+                  class="store-coverflow-status"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  data-store-coverflow-status
+                  data-store-coverflow-initial-label={`${entries[0]!.storeItem.title} — ${entries[0]!.storeItem.subtitle}`}
+                >
+                  {entries[0]!.storeItem.title} — {entries[0]!.storeItem.subtitle}
+                </p>
+              )}
+              <div class="store-coverflow-shell">
+                {allCoverflowEligible && (
+                  <span class="store-coverflow-reveal" data-store-coverflow-reveal-mask aria-hidden="true" />
+                )}
+                <div
+                  id={allCoverflowEligible ? 'all-store-catalog' : undefined}
+                  class="store-catalog-chunks"
+                  data-store-coverflow-stage={allCoverflowEligible ? '' : undefined}
+                >
+                  {entries.map((entry, itemIndex) => (
+                    <StoreItemCard
+                      entry={entry}
+                      imageLoading={itemIndex < 3 ? 'eager' : 'lazy'}
+                      coverflowPreview={allCoverflowEligible}
+                      coverflowPosition={
+                        allCoverflowEligible ? STORE_COVERFLOW_INITIAL_POSITIONS[itemIndex] : undefined
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            </>
           ) : (
             <p class="border border-border/70 px-6 py-8 text-sm text-muted-foreground" role="status">
               No merch currently available.
