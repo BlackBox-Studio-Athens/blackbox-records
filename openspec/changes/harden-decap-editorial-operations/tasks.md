@@ -5,7 +5,7 @@
 - [x] 1.3 Run `pnpm smoke:cms-local -- --screenshots never` and record the pre-change Local CMS Smoke result.
 - [x] 1.4 Record the installed `decap-server` version, the browser `decap-cms` pin, and every source/test that embeds either version.
 - [x] 1.5 Build a collection-by-collection matrix linking each Decap field to its Astro schema, committed content shape, and current public consumer.
-- [ ] 1.6 Inventory every configured collection media root, the `/admin/media` route allowlist, and every file under `apps/web/src/content/uploads/`.
+- [x] 1.6 Inventory every configured collection media root, the `/admin/media` route allowlist, and every file under `apps/web/src/content/uploads/`.
 - [ ] 1.7 Inventory each DOM- or class-dependent repair in `apps/web/public/admin/init.js`, including the defect it repairs and its current test coverage.
 - [ ] 1.8 Inventory missing key-image alt text, dormant Home section values, and CMS fields with no current schema or public consumer.
 
