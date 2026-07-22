@@ -1,5 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
 
+import { SERVICES_INQUIRY_FIELD_LIMITS, SERVICES_INQUIRY_SERVICES } from '../../../application/email';
 import { backendErrorResponseSchema } from '../responses';
 
 const storeItemParamsSchema = z
@@ -142,6 +143,25 @@ const newsletterRegistrationResponseSchema = z
     status: z.literal('registered'),
   })
   .openapi('NewsletterRegistrationResponse');
+
+export const servicesInquiryBodySchema = z
+  .object({
+    bandOrProject: z.string().trim().max(SERVICES_INQUIRY_FIELD_LIMITS.bandOrProject).optional(),
+    email: z.string().trim().max(SERVICES_INQUIRY_FIELD_LIMITS.email).email(),
+    message: z.string().trim().min(1).max(SERVICES_INQUIRY_FIELD_LIMITS.message),
+    name: z.string().trim().min(1).max(SERVICES_INQUIRY_FIELD_LIMITS.name),
+    service: z.enum(SERVICES_INQUIRY_SERVICES),
+    serviceDetails: z.string().trim().max(SERVICES_INQUIRY_FIELD_LIMITS.serviceDetails).optional(),
+  })
+  .strict()
+  .openapi('ServicesInquiryBody');
+
+export const servicesInquiryResponseSchema = z
+  .object({
+    status: z.literal('submitted'),
+  })
+  .strict()
+  .openapi('ServicesInquiryResponse');
 
 export const getStoreItemRoute = createRoute({
   method: 'get',
@@ -352,6 +372,47 @@ export const postNewsletterRegistrationRoute = createRoute({
     },
   },
   tags: ['Newsletter'],
+});
+
+export const postServicesInquiryRoute = createRoute({
+  method: 'post',
+  path: '/api/services/inquiries',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: servicesInquiryBodySchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: servicesInquiryResponseSchema,
+        },
+      },
+      description: 'Submitted a Services inquiry for provider delivery.',
+    },
+    400: {
+      content: {
+        'application/json': {
+          schema: backendErrorResponseSchema,
+        },
+      },
+      description: 'Invalid Services inquiry request.',
+    },
+    503: {
+      content: {
+        'application/json': {
+          schema: backendErrorResponseSchema,
+        },
+      },
+      description: 'Services inquiry submission is temporarily unavailable.',
+    },
+  },
+  tags: ['Services'],
 });
 
 const publicContractModules = [
