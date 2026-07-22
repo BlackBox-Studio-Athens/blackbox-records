@@ -177,6 +177,63 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/services/inquiries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["ServicesInquiryBody"];
+                };
+            };
+            responses: {
+                /** @description Submitted a Services inquiry for provider delivery. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ServicesInquiryResponse"];
+                    };
+                };
+                /** @description Invalid Services inquiry request. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
+                /** @description Services inquiry submission is temporarily unavailable. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/store/capabilities": {
         parameters: {
             query?: never;
@@ -440,6 +497,20 @@ export type components = {
             maximumAmountMinor: number;
             minimumAmountMinor: number;
             presetAmountMinor: number;
+        };
+        ServicesInquiryBody: {
+            bandOrProject?: string;
+            /** Format: email */
+            email: string;
+            message: string;
+            name: string;
+            /** @enum {string} */
+            service: "General" | "Tour Booking" | "Merch Printing" | "Vinyl Printing";
+            serviceDetails?: string;
+        };
+        ServicesInquiryResponse: {
+            /** @enum {string} */
+            status: "submitted";
         };
         StartCheckoutBody: {
             lines?: components["schemas"]["StartCheckoutLine"][];

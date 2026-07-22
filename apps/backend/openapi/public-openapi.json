@@ -36,6 +36,53 @@
           "nativeCheckout"
         ]
       },
+      "PublicStoreListingPrice": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "displayPrice": {
+                "type": "string",
+                "minLength": 1
+              },
+              "presentationState": {
+                "type": "string",
+                "enum": [
+                  "ready"
+                ]
+              },
+              "storeItemSlug": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "displayPrice",
+              "presentationState",
+              "storeItemSlug"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "presentationState": {
+                "type": "string",
+                "enum": [
+                  "unavailable"
+                ]
+              },
+              "storeItemSlug": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "presentationState",
+              "storeItemSlug"
+            ]
+          }
+        ]
+      },
       "PublicStoreOffer": {
         "oneOf": [
           {
@@ -288,53 +335,6 @@
           "error"
         ]
       },
-      "PublicStoreListingPrice": {
-        "oneOf": [
-          {
-            "type": "object",
-            "properties": {
-              "displayPrice": {
-                "type": "string",
-                "minLength": 1
-              },
-              "presentationState": {
-                "type": "string",
-                "enum": [
-                  "ready"
-                ]
-              },
-              "storeItemSlug": {
-                "type": "string",
-                "minLength": 1
-              }
-            },
-            "required": [
-              "displayPrice",
-              "presentationState",
-              "storeItemSlug"
-            ]
-          },
-          {
-            "type": "object",
-            "properties": {
-              "presentationState": {
-                "type": "string",
-                "enum": [
-                  "unavailable"
-                ]
-              },
-              "storeItemSlug": {
-                "type": "string",
-                "minLength": 1
-              }
-            },
-            "required": [
-              "presentationState",
-              "storeItemSlug"
-            ]
-          }
-        ]
-      },
       "StartCheckoutResponse": {
         "type": "object",
         "properties": {
@@ -521,6 +521,65 @@
           "email"
         ],
         "additionalProperties": false
+      },
+      "ServicesInquiryResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "submitted"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "ServicesInquiryBody": {
+        "type": "object",
+        "properties": {
+          "bandOrProject": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "service": {
+            "type": "string",
+            "enum": [
+              "General",
+              "Tour Booking",
+              "Merch Printing",
+              "Vinyl Printing"
+            ]
+          },
+          "serviceDetails": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "email",
+          "message",
+          "name",
+          "service"
+        ],
+        "additionalProperties": false
       }
     },
     "parameters": {}
@@ -538,6 +597,28 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StoreCapabilities"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/store/listing-prices": {
+      "get": {
+        "tags": [
+          "Store"
+        ],
+        "responses": {
+          "200": {
+            "description": "Browser-safe current Store listing-price presentation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicStoreListingPrice"
+                  }
                 }
               }
             }
@@ -578,28 +659,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/store/listing-prices": {
-      "get": {
-        "tags": [
-          "Store"
-        ],
-        "responses": {
-          "200": {
-            "description": "Browser-safe current Store listing-price presentation.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PublicStoreListingPrice"
-                  }
                 }
               }
             }
@@ -795,6 +854,54 @@
           },
           "503": {
             "description": "Newsletter signup is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/services/inquiries": {
+      "post": {
+        "tags": [
+          "Services"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServicesInquiryBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Submitted a Services inquiry for provider delivery.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServicesInquiryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid Services inquiry request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Services inquiry submission is temporarily unavailable.",
             "content": {
               "application/json": {
                 "schema": {
