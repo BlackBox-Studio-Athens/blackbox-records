@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildServicesInquiryEmail,
   createServicesInquiryEmailTags,
   SERVICES_INQUIRY_EMAIL_PURPOSE,
   SERVICES_INQUIRY_FIELD_LIMITS,
@@ -97,3 +98,103 @@ describe('services inquiry email application input', () => {
     ]);
   });
 });
+
+describe('services inquiry email template', () => {
+  it('uses the approved subject and field order', () => {
+    const content = buildServicesInquiryEmail({
+      ...validInquiry,
+      bandOrProject: 'Night Shift',
+      service: 'Tour Booking',
+      serviceDetails: 'October / Athens / Temple',
+    });
+
+    expect(content.subject).toBe('Services Inquiry — Tour Booking — Night Shift');
+    expectInOrder(content.html, [
+      '>Service</th>',
+      '>Tour Booking</td>',
+      '>Name</th>',
+      '>Visitor Name</td>',
+      '>Email</th>',
+      '>visitor@example.com</td>',
+      '>Band / Project</th>',
+      '>Night Shift</td>',
+      '>Date / City / Venue</th>',
+      '>October / Athens / Temple</td>',
+      '>Message</div>',
+      '>We need help with an upcoming release.</div>',
+    ]);
+    expectInOrder(content.text, [
+      'Service: Tour Booking',
+      'Name: Visitor Name',
+      'Email: visitor@example.com',
+      'Band / Project: Night Shift',
+      'Date / City / Venue: October / Athens / Temple',
+      'Message:\nWe need help with an upcoming release.',
+    ]);
+  });
+
+  it('escapes every visitor value in HTML and shows the email once', () => {
+    const content = buildServicesInquiryEmail({
+      bandOrProject: '"Band" & Friends',
+      email: 'visitor+tag@example.com',
+      message: '<script>alert("message")</script> & goodbye',
+      name: '<Visitor & Co>',
+      service: 'Merch Printing',
+      serviceDetails: '100 < shirts & "fast"',
+    });
+
+    expect(content.html).toContain('&lt;Visitor &amp; Co&gt;');
+    expect(content.html).toContain('&quot;Band&quot; &amp; Friends');
+    expect(content.html).toContain('100 &lt; shirts &amp; &quot;fast&quot;');
+    expect(content.html).toContain('&lt;script&gt;alert(&quot;message&quot;)&lt;/script&gt; &amp; goodbye');
+    expect(content.html).not.toContain('<script>alert("message")</script>');
+    expect(content.html.match(/visitor\+tag@example\.com/g)).toHaveLength(1);
+  });
+
+  it('omits optional fields and falls back to the visitor name in the subject', () => {
+    const content = buildServicesInquiryEmail(validateServicesInquiryInput(validInquiry));
+
+    expect(content.subject).toBe('Services Inquiry — General — Visitor Name');
+    expect(content.html).not.toContain('Band / Project');
+    expect(content.html).not.toContain('Useful context');
+    expect(content.text).not.toContain('Band / Project');
+    expect(content.text).not.toContain('Useful context');
+  });
+
+  it('keeps HTML and plain text operationally equivalent', () => {
+    const input = {
+      ...validInquiry,
+      bandOrProject: 'Night Shift',
+      service: 'Vinyl Printing' as const,
+      serviceDetails: '12 inch / 300 / November',
+    };
+    const content = buildServicesInquiryEmail(input);
+    const fields = [
+      ['Service', input.service],
+      ['Name', input.name],
+      ['Email', input.email],
+      ['Band / Project', input.bandOrProject],
+      ['Format / Quantity / Target Date', input.serviceDetails],
+    ];
+
+    for (const [label, value] of fields) {
+      expect(content.html).toContain(`>${label}</th>`);
+      expect(content.html).toContain(`>${value}</td>`);
+      expect(content.text).toContain(`${label}: ${value}`);
+    }
+    expect(content.html).toContain(`>${input.message}</div>`);
+    expect(content.text).toContain(`Message:\n${input.message}`);
+    expect(content.html).toContain('Reply to this email to contact the visitor.');
+    expect(content.text).toContain('Reply to this email to contact the visitor.');
+  });
+});
+
+function expectInOrder(value: string, expectedParts: string[]): void {
+  let previousIndex = -1;
+
+  for (const part of expectedParts) {
+    const index = value.indexOf(part, previousIndex + 1);
+    expect(index, `Expected ${JSON.stringify(part)} after index ${previousIndex}`).toBeGreaterThan(previousIndex);
+    previousIndex = index;
+  }
+}

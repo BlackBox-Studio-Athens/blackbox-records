@@ -11,6 +11,7 @@ export {
 } from './newsletter-registration';
 export { routeTransactionalEmailRecipient } from './routing';
 export {
+  buildServicesInquiryEmail,
   createServicesInquiryEmailTags,
   SERVICES_INQUIRY_EMAIL_PURPOSE,
   SERVICES_INQUIRY_FIELD_LIMITS,
