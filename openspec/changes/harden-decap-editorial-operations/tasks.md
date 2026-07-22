@@ -1,7 +1,7 @@
 ## 1. Establish the implementation baseline
 
 - [x] 1.1 Run `pnpm openspec:guard` from the main worktree on `main` before implementation starts.
-- [ ] 1.2 Run `pnpm test:cms-admin` and record any pre-existing failures before changing Decap code.
+- [x] 1.2 Run `pnpm test:cms-admin` and record any pre-existing failures before changing Decap code.
 - [ ] 1.3 Run `pnpm smoke:cms-local -- --screenshots never` and record the pre-change Local CMS Smoke result.
 - [ ] 1.4 Record the installed `decap-server` version, the browser `decap-cms` pin, and every source/test that embeds either version.
 - [ ] 1.5 Build a collection-by-collection matrix linking each Decap field to its Astro schema, committed content shape, and current public consumer.
