@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useReducer, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { SERVICES_INQUIRY_SERVICE_OPTIONS, type ServicesInquiryService } from '@/components/services/services-inquiry';
 import {
+  PublicCheckoutApiError,
   type ServicesInquiryBody,
   type ServicesInquiryResponse,
   submitPublicServicesInquiry,
@@ -56,7 +57,56 @@ export type ServicesInquiryFormValues = {
   serviceDetails: string;
 };
 
-export type ServicesInquirySubmissionStatus = 'idle' | 'submitting' | 'submitted' | 'error';
+export type ServicesInquirySubmissionStatus = 'idle' | 'submitting' | 'field-error' | 'provider-error' | 'submitted';
+
+export type ServicesInquiryFormState = {
+  status: ServicesInquirySubmissionStatus;
+  values: ServicesInquiryFormValues;
+};
+
+type ServicesInquiryFormAction =
+  | {
+      field: Exclude<keyof ServicesInquiryFormValues, 'service'>;
+      type: 'change';
+      value: string;
+    }
+  | { service: ServicesInquiryService; type: 'select-service' }
+  | { status: ServicesInquirySubmissionStatus; type: 'status' }
+  | { type: 'reset' };
+
+export function createInitialServicesInquiryFormState(): ServicesInquiryFormState {
+  return {
+    status: 'idle',
+    values: {
+      bandOrProject: '',
+      email: '',
+      message: '',
+      name: '',
+      service: 'General',
+      serviceDetails: '',
+    },
+  };
+}
+
+export function reduceServicesInquiryFormState(
+  state: ServicesInquiryFormState,
+  action: ServicesInquiryFormAction,
+): ServicesInquiryFormState {
+  if (action.type === 'reset') return createInitialServicesInquiryFormState();
+  if (action.type === 'status') return { ...state, status: action.status };
+
+  const status = state.status === 'field-error' || state.status === 'provider-error' ? 'idle' : state.status;
+
+  if (action.type === 'select-service') {
+    const adaptiveDetails = selectServicesInquiryService(
+      { service: state.values.service, serviceDetails: state.values.serviceDetails },
+      action.service,
+    );
+    return { status, values: { ...state.values, ...adaptiveDetails } };
+  }
+
+  return { status, values: { ...state.values, [action.field]: action.value } };
+}
 
 type ServicesInquirySubmissionOptions = {
   onStatusChange: (status: ServicesInquirySubmissionStatus) => void;
@@ -67,6 +117,10 @@ type ServicesInquirySubmissionOptions = {
 
 function isKnownService(value: string): value is ServicesInquiryService {
   return SERVICES_INQUIRY_SERVICE_OPTIONS.includes(value as ServicesInquiryService);
+}
+
+export function classifyServicesInquirySubmissionError(error: unknown): 'field-error' | 'provider-error' {
+  return error instanceof PublicCheckoutApiError && error.status === 400 ? 'field-error' : 'provider-error';
 }
 
 export async function submitServicesInquiryForm({
@@ -94,31 +148,95 @@ export async function submitServicesInquiryForm({
     await submitInquiry(body);
     onStatusChange('submitted');
     return true;
-  } catch {
-    onStatusChange('error');
+  } catch (error) {
+    onStatusChange(classifyServicesInquirySubmissionError(error));
     return false;
   } finally {
     pending.current = false;
   }
 }
 
+export function ServicesInquirySubmissionFeedback({ status }: { status: ServicesInquirySubmissionStatus }) {
+  const errorMessage =
+    status === 'field-error'
+      ? 'Check the highlighted fields and try again. Your details are still here.'
+      : status === 'provider-error'
+        ? "We couldn't submit your inquiry right now. Your details are still here; try again."
+        : '';
+
+  return (
+    <div className="services-inquiry-form__feedback">
+      <p className="services-inquiry-form__meta" role="status" aria-live="polite" aria-atomic="true">
+        {status === 'submitting' ? 'Sending inquiry.' : ''}
+      </p>
+      {errorMessage ? (
+        <p
+          className="services-inquiry-form__error"
+          id={status === 'field-error' ? 'services-inquiry-field-error' : undefined}
+          role="alert"
+        >
+          {errorMessage}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+export function ServicesInquirySuccess({
+  onSendAnother,
+  successRef,
+}: {
+  onSendAnother: () => void;
+  successRef?: React.Ref<HTMLElement>;
+}) {
+  return (
+    <section
+      className="services-inquiry-form__success"
+      aria-labelledby="services-inquiry-success-title"
+      aria-live="polite"
+      ref={successRef}
+      role="status"
+      tabIndex={-1}
+    >
+      <h3 className="services-inquiry-form__success-title" id="services-inquiry-success-title">
+        Inquiry submitted
+      </h3>
+      <p className="services-inquiry-form__success-copy">
+        Your inquiry was submitted. We'll follow up at the email address you provided.
+      </p>
+      <Button
+        className="services-inquiry-form__submit h-12 rounded-none border border-[rgba(199,137,151,0.52)] bg-[rgba(138,73,90,0.14)] px-5 text-[11px] tracking-[0.2em] uppercase text-[#f4e7ea] hover:border-[rgba(199,137,151,0.74)] hover:bg-[rgba(138,73,90,0.22)] hover:text-[#fff5f7]"
+        onClick={onSendAnother}
+        type="button"
+        variant="outline"
+      >
+        Send another inquiry
+      </Button>
+    </section>
+  );
+}
+
 export default function ServicesInquiryForm({
   submitInquiry = submitPublicServicesInquiry,
   submitText,
 }: ServicesInquiryFormProps) {
-  const [name, setName] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
-  const [bandOrProject, setBandOrProject] = useState('');
-  const [adaptiveDetails, setAdaptiveDetails] = useState<ServicesInquiryAdaptiveDetailsState>({
-    service: 'General',
-    serviceDetails: '',
-  });
-  const [message, setMessage] = useState('');
-  const [submissionStatus, setSubmissionStatus] = useState<ServicesInquirySubmissionStatus>('idle');
+  const [state, dispatch] = useReducer(
+    reduceServicesInquiryFormState,
+    undefined,
+    createInitialServicesInquiryFormState,
+  );
   const pendingSubmissionRef = useRef(false);
-  const isSubmitting = submissionStatus === 'submitting';
-  const { service, serviceDetails } = adaptiveDetails;
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const successRef = useRef<HTMLElement>(null);
+  const isSubmitting = state.status === 'submitting';
+  const hasFieldError = state.status === 'field-error';
+  const fieldErrorDescriptionId = hasFieldError ? 'services-inquiry-field-error' : undefined;
+  const { bandOrProject, email: contactEmail, message, name, service, serviceDetails } = state.values;
   const detailPrompt = SERVICES_INQUIRY_DETAIL_PROMPTS[service];
+
+  useEffect(() => {
+    if (state.status === 'submitted') successRef.current?.focus();
+  }, [state.status]);
 
   useEffect(() => {
     function handleDocumentClick(event: MouseEvent) {
@@ -130,9 +248,9 @@ export default function ServicesInquiryForm({
 
       const nextService = triggerElement.dataset.servicesInquiryTargetService || 'General';
       if (isKnownService(nextService)) {
-        setAdaptiveDetails((current) => selectServicesInquiryService(current, nextService));
+        dispatch({ service: nextService, type: 'select-service' });
       } else {
-        setAdaptiveDetails((current) => selectServicesInquiryService(current, 'General'));
+        dispatch({ service: 'General', type: 'select-service' });
       }
     }
 
@@ -140,32 +258,30 @@ export default function ServicesInquiryForm({
     return () => document.removeEventListener('click', handleDocumentClick);
   }, []);
 
-  const statusMessage =
-    submissionStatus === 'submitting'
-      ? 'Sending inquiry.'
-      : submissionStatus === 'submitted'
-        ? 'Inquiry submitted.'
-        : submissionStatus === 'error'
-          ? 'Could not send inquiry. Your details are still here; try again.'
-          : '';
+  if (state.status === 'submitted') {
+    return (
+      <ServicesInquirySuccess
+        onSendAnother={() => {
+          dispatch({ type: 'reset' });
+          window.requestAnimationFrame(() => nameInputRef.current?.focus());
+        }}
+        successRef={successRef}
+      />
+    );
+  }
 
   return (
     <form
+      aria-busy={isSubmitting || undefined}
       className="services-inquiry-form"
+      onInvalid={() => dispatch({ status: 'field-error', type: 'status' })}
       onSubmit={(event) => {
         event.preventDefault();
         void submitServicesInquiryForm({
-          onStatusChange: setSubmissionStatus,
+          onStatusChange: (status) => dispatch({ status, type: 'status' }),
           pending: pendingSubmissionRef,
           submitInquiry,
-          values: {
-            bandOrProject,
-            email: contactEmail,
-            message,
-            name,
-            service,
-            serviceDetails,
-          },
+          values: state.values,
         });
       }}
     >
@@ -173,19 +289,24 @@ export default function ServicesInquiryForm({
         <label className="services-inquiry-form__field">
           <span className="services-inquiry-form__label">Name</span>
           <Input
+            aria-describedby={fieldErrorDescriptionId}
+            aria-invalid={hasFieldError || undefined}
             autoComplete="name"
             className="services-inquiry-form__input h-11 rounded-none border-[#2b2b2b] bg-[#111111] text-[0.95rem]"
             disabled={isSubmitting}
             maxLength={100}
             name="name"
+            ref={nameInputRef}
             required
             value={name}
-            onChange={(event) => setName(event.target.value)}
+            onChange={(event) => dispatch({ field: 'name', type: 'change', value: event.target.value })}
           />
         </label>
         <label className="services-inquiry-form__field">
           <span className="services-inquiry-form__label">Email</span>
           <Input
+            aria-describedby={fieldErrorDescriptionId}
+            aria-invalid={hasFieldError || undefined}
             autoComplete="email"
             className="services-inquiry-form__input h-11 rounded-none border-[#2b2b2b] bg-[#111111] text-[0.95rem]"
             disabled={isSubmitting}
@@ -194,7 +315,7 @@ export default function ServicesInquiryForm({
             required
             type="email"
             value={contactEmail}
-            onChange={(event) => setContactEmail(event.target.value)}
+            onChange={(event) => dispatch({ field: 'email', type: 'change', value: event.target.value })}
           />
         </label>
         <label className="services-inquiry-form__field">
@@ -205,12 +326,14 @@ export default function ServicesInquiryForm({
             maxLength={160}
             name="band-or-project"
             value={bandOrProject}
-            onChange={(event) => setBandOrProject(event.target.value)}
+            onChange={(event) => dispatch({ field: 'bandOrProject', type: 'change', value: event.target.value })}
           />
         </label>
         <label className="services-inquiry-form__field">
           <span className="services-inquiry-form__label">Service</span>
           <select
+            aria-describedby={fieldErrorDescriptionId}
+            aria-invalid={hasFieldError || undefined}
             className="services-inquiry-form__select h-11 w-full rounded-none border border-[#2b2b2b] bg-[#111111] px-3 text-[0.95rem] text-foreground outline-none"
             disabled={isSubmitting}
             name="service"
@@ -218,9 +341,10 @@ export default function ServicesInquiryForm({
             value={service}
             onChange={(event) => {
               const nextValue = event.target.value;
-              setAdaptiveDetails((current) =>
-                selectServicesInquiryService(current, isKnownService(nextValue) ? nextValue : 'General'),
-              );
+              dispatch({
+                service: isKnownService(nextValue) ? nextValue : 'General',
+                type: 'select-service',
+              });
             }}
           >
             {SERVICES_INQUIRY_SERVICE_OPTIONS.map((serviceOption) => (
@@ -242,7 +366,7 @@ export default function ServicesInquiryForm({
           maxLength={300}
           name="serviceDetails"
           value={serviceDetails}
-          onChange={(event) => setAdaptiveDetails((current) => ({ ...current, serviceDetails: event.target.value }))}
+          onChange={(event) => dispatch({ field: 'serviceDetails', type: 'change', value: event.target.value })}
         />
         <span className="text-sm leading-6 text-[#b3b3b3]" id="services-inquiry-details-hint">
           {detailPrompt.hint}
@@ -252,13 +376,15 @@ export default function ServicesInquiryForm({
       <label className="services-inquiry-form__field">
         <span className="services-inquiry-form__label">Message</span>
         <Textarea
+          aria-describedby={fieldErrorDescriptionId}
+          aria-invalid={hasFieldError || undefined}
           className="services-inquiry-form__textarea rounded-none border-[#2b2b2b] bg-[#111111] text-[0.95rem]"
           disabled={isSubmitting}
           maxLength={2000}
           name="message"
           required
           value={message}
-          onChange={(event) => setMessage(event.target.value)}
+          onChange={(event) => dispatch({ field: 'message', type: 'change', value: event.target.value })}
         />
       </label>
 
@@ -266,15 +392,13 @@ export default function ServicesInquiryForm({
         <Button
           className="services-inquiry-form__submit h-12 rounded-none border border-[rgba(199,137,151,0.52)] bg-[rgba(138,73,90,0.14)] px-5 text-[11px] tracking-[0.2em] uppercase text-[#f4e7ea] hover:border-[rgba(199,137,151,0.74)] hover:bg-[rgba(138,73,90,0.22)] hover:text-[#fff5f7]"
           aria-busy={isSubmitting ? 'true' : undefined}
-          disabled={isSubmitting || submissionStatus === 'submitted'}
+          disabled={isSubmitting}
           type="submit"
           variant="outline"
         >
-          {submitText}
+          {isSubmitting ? 'Sending inquiry…' : submitText}
         </Button>
-        <p className="services-inquiry-form__meta" role="status" aria-live="polite" aria-atomic="true">
-          {statusMessage}
-        </p>
+        <ServicesInquirySubmissionFeedback status={state.status} />
       </div>
     </form>
   );

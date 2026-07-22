@@ -1,14 +1,24 @@
 import * as React from 'react';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
+import { PublicCheckoutApiError } from '@/lib/backend/public-checkout-api';
 import ServicesInquiryForm, {
   SERVICES_INQUIRY_DETAIL_PROMPTS,
+  ServicesInquirySubmissionFeedback,
+  ServicesInquirySuccess,
+  classifyServicesInquirySubmissionError,
+  createInitialServicesInquiryFormState,
+  reduceServicesInquiryFormState,
   selectServicesInquiryService,
   submitServicesInquiryForm,
   type ServicesInquiryFormValues,
   type ServicesInquirySubmissionStatus,
 } from './ServicesInquiryForm';
+
+const componentSource = readFileSync(fileURLToPath(new URL('./ServicesInquiryForm.tsx', import.meta.url)), 'utf8');
 
 describe('ServicesInquiryForm', () => {
   it('renders native required controls with public-contract length bounds', () => {
@@ -31,6 +41,46 @@ describe('ServicesInquiryForm', () => {
     expect(html).toContain('Useful context');
     expect(html).toContain('Add any useful context.');
     expect(html).toContain('role="status"');
+    expect(html).toContain('aria-live="polite"');
+    expect(html).not.toContain('role="alert"');
+  });
+
+  it('renders distinct accessible field and provider error feedback', () => {
+    const fieldErrorHtml = renderToStaticMarkup(<ServicesInquirySubmissionFeedback status="field-error" />);
+    const providerErrorHtml = renderToStaticMarkup(<ServicesInquirySubmissionFeedback status="provider-error" />);
+
+    expect(fieldErrorHtml).toContain('id="services-inquiry-field-error"');
+    expect(fieldErrorHtml).toContain('role="alert"');
+    expect(fieldErrorHtml).toContain('Check the highlighted fields');
+    expect(providerErrorHtml).toContain('role="alert"');
+    expect(providerErrorHtml).not.toContain('services-inquiry-field-error');
+    expect(providerErrorHtml).toContain('We couldn&#x27;t submit your inquiry right now.');
+    expect(componentSource.match(/aria-invalid=\{hasFieldError \|\| undefined\}/g)).toHaveLength(4);
+    expect(componentSource.match(/aria-describedby=\{fieldErrorDescriptionId\}/g)).toHaveLength(4);
+    expect(componentSource).toContain("onInvalid={() => dispatch({ status: 'field-error', type: 'status' })}");
+  });
+
+  it('keeps submitting feedback polite and protects the pending action', () => {
+    const html = renderToStaticMarkup(<ServicesInquirySubmissionFeedback status="submitting" />);
+
+    expect(html).toContain('role="status"');
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toContain('Sending inquiry.');
+    expect(componentSource).toContain('aria-busy={isSubmitting || undefined}');
+    expect(componentSource).toContain('disabled={isSubmitting}');
+    expect(componentSource).toContain("{isSubmitting ? 'Sending inquiry…' : submitText}");
+  });
+
+  it('renders inline success with an explicit reset action and no navigation affordance', () => {
+    const html = renderToStaticMarkup(<ServicesInquirySuccess onSendAnother={vi.fn()} />);
+
+    expect(html).toContain('role="status"');
+    expect(html).toContain('tabindex="-1"');
+    expect(html).toContain('Inquiry submitted');
+    expect(html).toContain('Send another inquiry');
+    expect(html).toContain('type="button"');
+    expect(html).not.toMatch(/href=|target=|<form/);
+    expect(componentSource).not.toMatch(/window\.(?:open|location)|location\.(?:assign|replace)|target=["']_blank/);
   });
 
   it('maps every service to the approved adaptive details prompt', () => {
@@ -55,6 +105,35 @@ describe('ServicesInquiryForm', () => {
         'Tour Booking',
       ),
     ).toEqual({ service: 'Tour Booking', serviceDetails: 'Keep these entered details.' });
+  });
+
+  it('preserves values across failures and resets only after the explicit reset action', () => {
+    const initialState = createInitialServicesInquiryFormState();
+    const enteredState = {
+      status: 'idle' as const,
+      values: {
+        bandOrProject: 'BlackBox Band',
+        email: 'visitor@example.com',
+        message: 'Keep this message after failure.',
+        name: 'Visitor',
+        service: 'Tour Booking' as const,
+        serviceDetails: 'October / Athens / Temple',
+      },
+    };
+    const failedState = reduceServicesInquiryFormState(enteredState, { status: 'provider-error', type: 'status' });
+
+    expect(failedState.values).toEqual(enteredState.values);
+    expect(reduceServicesInquiryFormState(failedState, { type: 'reset' })).toEqual(initialState);
+  });
+
+  it('classifies 400 responses as field errors and unavailable responses as provider errors', () => {
+    expect(classifyServicesInquirySubmissionError(new PublicCheckoutApiError(400, 'Invalid request.'))).toBe(
+      'field-error',
+    );
+    expect(classifyServicesInquirySubmissionError(new PublicCheckoutApiError(503, 'Unavailable.'))).toBe(
+      'provider-error',
+    );
+    expect(classifyServicesInquirySubmissionError(new Error('Network failed.'))).toBe('provider-error');
   });
 
   it('submits once while pending with the entered public API fields', async () => {
@@ -147,6 +226,29 @@ describe('ServicesInquiryForm', () => {
     ).resolves.toBe(false);
 
     expect(values).toEqual(originalValues);
-    expect(statuses).toEqual(['submitting', 'error']);
+    expect(statuses).toEqual(['submitting', 'provider-error']);
+  });
+
+  it('reports a 400 response as a field error without changing submitted values', async () => {
+    const values: ServicesInquiryFormValues = {
+      bandOrProject: '',
+      email: 'visitor@example.com',
+      message: 'Keep this message.',
+      name: 'Visitor',
+      service: 'General',
+      serviceDetails: '',
+    };
+    const originalValues = { ...values };
+    const statuses: ServicesInquirySubmissionStatus[] = [];
+
+    await submitServicesInquiryForm({
+      onStatusChange: (status) => statuses.push(status),
+      pending: { current: false },
+      submitInquiry: vi.fn().mockRejectedValue(new PublicCheckoutApiError(400, 'Invalid request.')),
+      values,
+    });
+
+    expect(values).toEqual(originalValues);
+    expect(statuses).toEqual(['submitting', 'field-error']);
   });
 });

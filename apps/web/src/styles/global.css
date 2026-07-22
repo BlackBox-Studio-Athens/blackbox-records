@@ -740,6 +740,71 @@ body {
     align-items: start;
   }
 
+  .services-inquiry-form__submit {
+    min-width: 12.5rem;
+    justify-self: start;
+  }
+
+  .services-inquiry-form__submit:disabled {
+    cursor: wait;
+    opacity: 0.68;
+  }
+
+  .services-inquiry-form__feedback {
+    display: grid;
+    min-height: 3.2rem;
+    align-content: start;
+  }
+
+  .services-inquiry-form__meta,
+  .services-inquiry-form__error {
+    margin: 0;
+  }
+
+  .services-inquiry-form__error {
+    max-width: 42rem;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: #e6ccd3;
+  }
+
+  .services-inquiry-form__input[aria-invalid='true'],
+  .services-inquiry-form__textarea[aria-invalid='true'],
+  .services-inquiry-form__select[aria-invalid='true'] {
+    border-color: rgba(199, 137, 151, 0.9);
+  }
+
+  .services-inquiry-form__success {
+    display: grid;
+    gap: 0.85rem;
+    max-width: 42rem;
+    padding: 1.25rem;
+    border: 1px solid rgba(199, 137, 151, 0.34);
+    background: rgba(138, 73, 90, 0.08);
+    outline: none;
+  }
+
+  .services-inquiry-form__success:focus-visible {
+    border-color: rgba(199, 137, 151, 0.74);
+    box-shadow: 0 0 0 3px rgba(138, 73, 90, 0.18);
+  }
+
+  .services-inquiry-form__success-title {
+    font-family: var(--font-display-brand);
+    font-size: clamp(1.55rem, 4.6vw, 2.05rem);
+    line-height: 0.98;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+  }
+
+  .services-inquiry-form__success-copy {
+    max-width: 38rem;
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: #d2d2d2;
+  }
+
   .catalog-nav-button {
     @apply rounded-md px-4 uppercase tracking-[0.12em];
   }
