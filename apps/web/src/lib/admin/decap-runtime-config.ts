@@ -1,3 +1,5 @@
+export type DecapBackendMode = 'local' | 'hosted' | 'disabled';
+
 function ensureTrailingSlash(value: string): string {
   return value.endsWith('/') ? value : `${value}/`;
 }
