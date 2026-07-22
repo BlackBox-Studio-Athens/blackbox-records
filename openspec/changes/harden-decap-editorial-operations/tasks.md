@@ -19,7 +19,7 @@
 - [x] 2.6 Validate `DECAP_LOCAL_PROXY_PORT` as a valid TCP port before emitting local config.
 - [x] 2.7 Require the hosted repository, site URL, DecapBridge auth endpoint, and DecapBridge token endpoint before hosted config is generated.
 - [x] 2.8 Reject known placeholder values for hosted repository, site, auth, and token settings.
-- [ ] 2.9 Reject loopback hosts, including `localhost` and `127.0.0.1`, from every hosted backend or site URL.
+- [x] 2.9 Reject loopback hosts, including `localhost` and `127.0.0.1`, from every hosted backend or site URL.
 - [ ] 2.10 Validate hosted endpoint URL syntax and require secure HTTPS endpoints outside an explicitly local mode.
 - [ ] 2.11 Make `main` the generated Decap branch for both local and hosted modes; remove or reject branch overrides that contradict direct-to-`main` publishing.
 - [ ] 2.12 Represent disabled mode without constructing a writable Decap backend configuration.

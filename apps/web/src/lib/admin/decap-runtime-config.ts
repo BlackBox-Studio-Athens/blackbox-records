@@ -19,6 +19,27 @@ const decapBackendModes: readonly DecapBackendMode[] = ['local', 'hosted', 'disa
 const defaultLocalBackendPort = '8082';
 const decapBridgeSiteIdPlaceholder = '__SET_DECAPBRIDGE_SITE_ID__';
 
+function hasLoopbackUrlHost(value: string | undefined): boolean {
+  if (!value) return false;
+
+  let hostname: string;
+
+  try {
+    hostname = new URL(value).hostname.toLowerCase().replace(/\.$/, '');
+  } catch {
+    return false;
+  }
+
+  const unbracketedHostname = hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname;
+
+  return (
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    /^127(?:\.\d{1,3}){3}$/.test(hostname) ||
+    unbracketedHostname === '::1'
+  );
+}
+
 export function parseDecapBackendMode(environment: Readonly<Record<string, string | undefined>>): {
   configuredValue: string | undefined;
   mode: DecapBackendMode | undefined;
@@ -113,6 +134,20 @@ export function resolveDecapHostedRuntimeConfig(options: {
   if (placeholderSettingNames.length > 0) {
     throw new Error(
       `Hosted Decap configuration contains placeholder value(s) for setting(s): ${placeholderSettingNames.join(', ')}. Replace each named setting with its deployment value before building with DECAP_BACKEND_MODE=hosted.`,
+    );
+  }
+
+  const loopbackSettingNames = [
+    ['DECAP_SITE_URL', siteUrl],
+    ['DECAPBRIDGE_AUTH_ENDPOINT', authEndpoint],
+    ['DECAPBRIDGE_AUTH_TOKEN_ENDPOINT', authTokenEndpoint],
+  ]
+    .filter(([, value]) => hasLoopbackUrlHost(value))
+    .map(([settingName]) => settingName);
+
+  if (loopbackSettingNames.length > 0) {
+    throw new Error(
+      `Hosted Decap configuration uses loopback host(s) for setting(s): ${loopbackSettingNames.join(', ')}. Replace each named setting with a hosted deployment URL before building with DECAP_BACKEND_MODE=hosted.`,
     );
   }
 

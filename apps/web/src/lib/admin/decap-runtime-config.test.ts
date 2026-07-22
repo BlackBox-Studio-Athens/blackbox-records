@@ -178,6 +178,23 @@ describe('resolveDecapHostedRuntimeConfig', () => {
     `Hosted Decap configuration is missing required setting(s): ${settingNames.join(', ')}. Set each named setting before building with DECAP_BACKEND_MODE=hosted.`;
   const placeholderSettingMessage = (settingNames: readonly string[]) =>
     `Hosted Decap configuration contains placeholder value(s) for setting(s): ${settingNames.join(', ')}. Replace each named setting with its deployment value before building with DECAP_BACKEND_MODE=hosted.`;
+  const loopbackSettingMessage = (settingNames: readonly string[]) =>
+    `Hosted Decap configuration uses loopback host(s) for setting(s): ${settingNames.join(', ')}. Replace each named setting with a hosted deployment URL before building with DECAP_BACKEND_MODE=hosted.`;
+  const hostedUrlSettingNames = [
+    'DECAP_SITE_URL',
+    'DECAPBRIDGE_AUTH_ENDPOINT',
+    'DECAPBRIDGE_AUTH_TOKEN_ENDPOINT',
+  ] as const;
+  const loopbackUrls = [
+    ['localhost', 'https://localhost/admin'],
+    ['case-insensitive localhost with a trailing dot, port, and path', 'https://LOCALHOST.:8443/sites/site-id/pkce'],
+    ['localhost subdomain', 'https://cms.localhost/sites/site-id/token'],
+    ['IPv4 loopback', 'https://127.0.0.1:8443/admin'],
+    ['IPv4 loopback range', 'https://127.255.255.254/sites/site-id/pkce'],
+    ['normalized short IPv4 loopback', 'https://127.1/sites/site-id/token'],
+    ['bracketed IPv6 loopback', 'https://[::1]:8443/admin'],
+    ['expanded IPv6 loopback', 'https://[0:0:0:0:0:0:0:1]/sites/site-id/pkce'],
+  ] as const;
   const placeholderValues: Record<(typeof requiredSettingNames)[number], string> = {
     DECAP_REPOSITORY: `owner/${placeholderMarker}`,
     DECAP_SITE_URL: `https://${placeholderMarker}.invalid/`,
@@ -238,6 +255,76 @@ describe('resolveDecapHostedRuntimeConfig', () => {
     ).toThrow(placeholderSettingMessage(['DECAP_REPOSITORY', 'DECAPBRIDGE_AUTH_TOKEN_ENDPOINT']));
   });
 
+  it.each(
+    hostedUrlSettingNames.flatMap((settingName) =>
+      loopbackUrls.map(([description, value]) => [settingName, description, value] as const),
+    ),
+  )('rejects %s when it uses %s', (settingName, _description, value) => {
+    expect(() =>
+      resolveDecapHostedRuntimeConfig({
+        environment: { ...hostedEnvironment, [settingName]: value },
+        isDevelopment: false,
+      }),
+    ).toThrow(loopbackSettingMessage([settingName]));
+  });
+
+  it('reports every hosted loopback setting without values', () => {
+    expect(() =>
+      resolveDecapHostedRuntimeConfig({
+        environment: {
+          ...hostedEnvironment,
+          DECAP_SITE_URL: 'https://localhost/admin',
+          DECAPBRIDGE_AUTH_ENDPOINT: 'https://127.0.0.1/sites/site-id/pkce',
+          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: 'https://[::1]/sites/site-id/token',
+        },
+        isDevelopment: false,
+      }),
+    ).toThrow(
+      loopbackSettingMessage(['DECAP_SITE_URL', 'DECAPBRIDGE_AUTH_ENDPOINT', 'DECAPBRIDGE_AUTH_TOKEN_ENDPOINT']),
+    );
+  });
+
+  it.each([
+    ['localhost lookalike', 'https://localhost.example.com/admin'],
+    ['localhost text prefix', 'https://notlocalhost/admin'],
+    ['IPv4-looking domain', 'https://127.example.com/admin'],
+    ['non-loopback IPv4', 'https://128.0.0.1/admin'],
+    ['non-loopback IPv6', 'https://[::2]/admin'],
+    ['loopback text in a path', 'https://example.com/localhost/127.0.0.1'],
+  ])('accepts a hosted %s', (_description, siteUrl) => {
+    expect(
+      resolveDecapHostedRuntimeConfig({
+        environment: { ...hostedEnvironment, DECAP_SITE_URL: siteUrl },
+        isDevelopment: false,
+      }),
+    ).toBeDefined();
+  });
+
+  it.each([
+    ['invalid URL syntax', 'not a URL'],
+    ['hostless URL', 'mailto:localhost@example.com'],
+  ])('defers %s validation', (_description, siteUrl) => {
+    expect(
+      resolveDecapHostedRuntimeConfig({
+        environment: { ...hostedEnvironment, DECAP_SITE_URL: siteUrl },
+        isDevelopment: false,
+      }),
+    ).toBeDefined();
+  });
+
+  it('accepts hostless relative auth and token endpoints', () => {
+    expect(
+      resolveDecapHostedRuntimeConfig({
+        environment: {
+          ...hostedEnvironment,
+          DECAPBRIDGE_AUTH_ENDPOINT: '/localhost/127.0.0.1/pkce',
+          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: '/localhost/127.0.0.1/token',
+        },
+        isDevelopment: false,
+      }),
+    ).toBeDefined();
+  });
+
   it.each(requiredSettingNames)('accepts a case-different near-placeholder in %s', (settingName) => {
     expect(
       resolveDecapHostedRuntimeConfig({
@@ -272,6 +359,21 @@ describe('resolveDecapHostedRuntimeConfig', () => {
     expect(
       resolveDecapHostedRuntimeConfig({
         environment: { DECAP_BACKEND_MODE: mode, ...placeholderValues },
+        isDevelopment: false,
+      }),
+    ).toBeUndefined();
+  });
+
+  it.each(['local', 'disabled'] as const)('does not validate hosted loopback URLs in %s mode', (mode) => {
+    expect(
+      resolveDecapHostedRuntimeConfig({
+        environment: {
+          DECAP_BACKEND_MODE: mode,
+          DECAP_REPOSITORY: 'owner/repository',
+          DECAP_SITE_URL: 'https://localhost/admin',
+          DECAPBRIDGE_AUTH_ENDPOINT: 'https://127.0.0.1/sites/site-id/pkce',
+          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: 'https://[::1]/sites/site-id/token',
+        },
         isDevelopment: false,
       }),
     ).toBeUndefined();
