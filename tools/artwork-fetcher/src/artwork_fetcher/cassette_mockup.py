@@ -107,7 +107,7 @@ def render_manifest(
         if discover_bandcamp_references and is_bandcamp_url(clean_text(row.get("source_page_url", ""))):
             download_bandcamp_cassette_references(clean_text(row.get("source_page_url", "")), reference_dir, cache)
         j_card = prepare_j_card_source(cover, row, reference_dir, overrides)
-        out = out_dir / f"{cover.stem}-{SUFFIX}"
+        out = manifest_output_path(row, cover, out_dir)
         render_cassette_front_mockup(j_card, out, cache, psd_path, background_path, layer_paths)
         outputs.append(out)
     return outputs
@@ -161,7 +161,21 @@ def load_overrides(path: Path | None) -> dict[str, dict]:
     if not path or not path.exists():
         return {}
     data = json.loads(path.read_text(encoding="utf-8"))
-    return {key: value for key, value in data.items() if isinstance(value, dict)} if isinstance(data, dict) else {}
+    overrides = {key: value.copy() for key, value in data.items() if isinstance(value, dict)} if isinstance(data, dict) else {}
+    for override in overrides.values():
+        jcard_path = clean_text(str(override.get("jcard_path", "")))
+        if jcard_path and not Path(jcard_path).is_absolute():
+            override["jcard_path"] = str(path.parent / jcard_path)
+    return overrides
+
+
+def manifest_output_path(row: dict[str, str], cover: Path, out_dir: Path) -> Path:
+    output_name = clean_text(row.get("output_name", ""))
+    if not output_name:
+        return out_dir / f"{cover.stem}-{SUFFIX}"
+    if Path(output_name).name != output_name or Path(output_name).suffix.lower() not in SAFE_SUFFIXES:
+        raise ValueError(f"Invalid manifest output_name: {output_name}")
+    return out_dir / output_name
 
 
 def resolve_manifest_path(path_text: str, manifest_path: Path) -> Path:

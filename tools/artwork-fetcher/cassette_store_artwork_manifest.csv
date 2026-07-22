@@ -1,0 +1,3 @@
+row_number,normalized_artist,normalized_title,normalized_format,status,local_path,source_page_url,output_name
+001,Band in the pit,2016,Tape,downloaded,source-assets/cassettes/band-in-the-pit-2016-bandcamp-product.jpg,https://bandinthepit.bandcamp.com/album/2016,band-in-the-pit-2016-cassette.jpg
+002,Broken Fingers,Ego,Tape,downloaded,source-assets/cassettes/broken-fingers-ego-bandcamp-product.jpg,https://broken-fingers.bandcamp.com/album/ego,broken-fingers-ego-cassette.jpg

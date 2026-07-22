@@ -67,22 +67,23 @@ class CassetteMockupTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             cover = root / "001 - Artist - Album [Tape] - cover.jpg"
-            reference = root / "reference.jpg"
+            reference = root / "assets" / "reference.jpg"
             manifest = root / "manifest.csv"
             out_dir = root / "mockups"
             background = root / "background.jpg"
             overrides = root / "overrides.json"
             Image.new("RGB", (500, 500), (10, 120, 220)).save(cover)
+            reference.parent.mkdir()
             Image.new("RGB", (600, 400), (220, 20, 20)).save(reference)
             Image.new("RGB", (400, 400), (80, 80, 76)).save(background)
             overrides.write_text(
-                json.dumps({"Artist\tAlbum": {"jcard_path": str(reference), "jcard_crop_xywh": [10, 20, 200, 300]}}),
+                json.dumps({"Artist\tAlbum": {"jcard_path": "assets/reference.jpg", "jcard_crop_xywh": [10, 20, 200, 300]}}),
                 encoding="utf-8",
             )
             manifest.write_text(
-                "row_number,normalized_artist,normalized_title,normalized_format,status,local_path,source_page_url\n"
-                f"001,Artist,Album,Tape,downloaded,{cover},https://artist.bandcamp.com/album/album\n"
-                f"002,Artist,CD,CD,downloaded,{cover},\n",
+                "row_number,normalized_artist,normalized_title,normalized_format,status,local_path,source_page_url,output_name\n"
+                f"001,Artist,Album,Tape,downloaded,{cover},https://artist.bandcamp.com/album/album,artist-album-cassette.jpg\n"
+                f"002,Artist,CD,CD,downloaded,{cover},,\n",
                 encoding="utf-8",
             )
 
@@ -94,8 +95,23 @@ class CassetteMockupTests(unittest.TestCase):
                 layer_paths=make_layers(root),
             )
 
-            self.assertEqual([path.name for path in outputs], ["001 - Artist - Album [Tape] - cover-cassette-front-mockup.jpg"])
+            self.assertEqual([path.name for path in outputs], ["artist-album-cassette.jpg"])
             self.assertTrue((root / "cassette-reference" / "artist-album" / "artist-album-jcard-crop.jpg").exists())
+
+    def test_render_manifest_rejects_output_path_traversal(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cover = root / "cover.jpg"
+            manifest = root / "manifest.csv"
+            Image.new("RGB", (500, 500), (10, 120, 220)).save(cover)
+            manifest.write_text(
+                "normalized_artist,normalized_title,normalized_format,status,local_path,output_name\n"
+                f"Artist,Album,Tape,downloaded,{cover},../outside.jpg\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "Invalid manifest output_name"):
+                render_manifest(manifest, root / "mockups", overrides_path=None)
 
     def test_bandcamp_reference_download_uses_shared_http_cache(self):
         class FakeHttp:

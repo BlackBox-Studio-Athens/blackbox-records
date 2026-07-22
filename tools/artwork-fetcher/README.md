@@ -124,6 +124,13 @@ python -m artwork_fetcher.cassette_mockup --manifest ./artwork_run_20260628/mani
 The cassette renderer uses the Pixpine cassette tape PSD, keeps only the clear case / front J-card layers, hides the cassette shell and Pixpine promo banner, and composites the result over ambientCG `Asphalt023S`. It is intentionally neutral: cassette shell and label printing are not shown.
 The J-card insertion preserves the full source artwork. If the source is square or landscape rather than cassette-front proportions, the renderer uses a neutral matte instead of cropping the artwork into a fake cassette layout.
 Manifest mode renders downloaded `Tape` rows only. `--discover-bandcamp-references` reads Bandcamp JSON-LD cassette product images into `<run>/cassette-reference/`; per-release J-card crops live in `cassette_mockup_overrides.json`.
+Relative `jcard_path` values resolve from the overrides file. An optional manifest `output_name` writes an exact safe image filename, allowing the committed store cassette manifest to regenerate selected distro images directly:
+
+```powershell
+$env:PYTHONPATH = "src"
+python -m artwork_fetcher.cassette_mockup --manifest ./cassette_store_artwork_manifest.csv --out-dir ../../apps/web/src/content/distro --cache-dir ../../.codex-artifacts/cassette-mockup-cache --mockup-psd "D:\Downloads\free-cassette-tape-mockup\Free Cassette Tap Mockup.psd"
+```
+
 Source mockup: `https://pixpine.com/product/free-cassette-tape-mockup/`.
 Disclosure used for generated tape distro entries: `Cassette case artwork mockup. Actual cassette shell and labels may vary.`
 
