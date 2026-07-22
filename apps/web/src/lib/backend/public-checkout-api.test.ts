@@ -10,6 +10,9 @@ import {
   type NewsletterRegistrationBody,
   type NewsletterRegistrationResponse,
   resolvePublicCheckoutApiBaseUrl,
+  type ServicesInquiryBody,
+  type ServicesInquiryResponse,
+  submitPublicServicesInquiry,
   type StartCheckoutBody,
   type StartCheckoutResponse,
 } from './public-checkout-api';
@@ -91,6 +94,32 @@ describe('createPublicCheckoutApi', () => {
 
     expect(result).toEqual(publicCheckoutFixtures.newsletterRegistrationResponse);
     expect(receivedBody).toEqual(publicCheckoutFixtures.newsletterRegistrationBody);
+  });
+
+  it('posts Services inquiry fields through the generated public client', async () => {
+    const body: ServicesInquiryBody = {
+      bandOrProject: 'Mass Culture',
+      email: 'alex@example.com',
+      message: 'We need vinyl help.',
+      name: 'Alex',
+      service: 'Vinyl Printing',
+    };
+    let receivedBody: ServicesInquiryBody | null = null;
+    webMswServer.use(
+      http.post<Record<string, never>, ServicesInquiryBody, ServicesInquiryResponse>(
+        '*/api/services/inquiries',
+        async ({ request }) => {
+          receivedBody = (await request.json()) as ServicesInquiryBody;
+
+          return HttpResponse.json({ status: 'submitted' });
+        },
+      ),
+    );
+
+    const result = await submitPublicServicesInquiry(body, apiClientMswBaseUrl);
+
+    expect(result).toEqual({ status: 'submitted' });
+    expect(receivedBody).toEqual(body);
   });
 
   it('surfaces visible API error objects with status and response body', async () => {

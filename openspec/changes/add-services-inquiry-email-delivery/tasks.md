@@ -14,7 +14,7 @@
 
 ## 3. Services Form UX
 
-- [ ] 3.1 Replace primary mailto submission with the generated public API client, native required/email controls, bounded values, pending protection, and preserved values after failure.
+- [x] 3.1 Replace primary mailto submission with the generated public API client, native required/email controls, bounded values, pending protection, and preserved values after failure.
 - [ ] 3.2 Add the single optional adaptive details control for General, Tour Booking, Merch Printing, and Vinyl Printing with the approved labels and concise hints.
 - [ ] 3.3 Add stable accessible idle, submitting, field-error, provider-error, and inline success states, including `Send another inquiry`, without redirect, reload, or new tab.
 - [ ] 3.4 Replace scripted `window.open` handling with a normal selected-alias `mailto:` link using CRLF formatting, plus visible/copyable recipient and inquiry summary fallback with clipboard-failure behavior.

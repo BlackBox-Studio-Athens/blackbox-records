@@ -8,6 +8,8 @@ export type StoreCapabilities = PublicApiComponents['schemas']['StoreCapabilitie
 export type CheckoutState = PublicApiComponents['schemas']['CheckoutState'];
 export type NewsletterRegistrationBody = PublicApiComponents['schemas']['NewsletterRegistrationBody'];
 export type NewsletterRegistrationResponse = PublicApiComponents['schemas']['NewsletterRegistrationResponse'];
+export type ServicesInquiryBody = PublicApiComponents['schemas']['ServicesInquiryBody'];
+export type ServicesInquiryResponse = PublicApiComponents['schemas']['ServicesInquiryResponse'];
 export type StartCheckoutBody = PublicApiComponents['schemas']['StartCheckoutBody'];
 export type StartCheckoutResponse = PublicApiComponents['schemas']['StartCheckoutResponse'];
 export type BackendErrorResponse = PublicApiComponents['schemas']['BackendErrorResponse'];
@@ -96,6 +98,16 @@ export function createPublicCheckoutApi(
       );
     },
   };
+}
+
+export async function submitPublicServicesInquiry(
+  body: ServicesInquiryBody,
+  configuredBackendBaseUrl = import.meta.env.PUBLIC_BACKEND_BASE_URL,
+): Promise<ServicesInquiryResponse> {
+  const fetcher = createPublicApiFetcher(resolvePublicCheckoutApiBaseUrl(configuredBackendBaseUrl));
+  const request = fetcher.path('/api/services/inquiries').method('post').create();
+
+  return readPublicCheckoutResponse(() => request(body), 'Services inquiry is temporarily unavailable.');
 }
 
 async function readPublicCheckoutResponse<TResponse>(
