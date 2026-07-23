@@ -1,9 +1,11 @@
 import { buildField, buildFolderCollection, buildSchemaField } from './decap-yaml-builder';
+import { decapCollectionDescriptions } from './decap-editorial-copy';
 
 export function buildDistroCollection() {
   return buildFolderCollection({
     name: 'distro',
-    label: 'Distro',
+    label: 'Store Items — Distro & Merch',
+    description: decapCollectionDescriptions.distro,
     folder: 'apps/web/src/content/distro',
     create: true,
     delete: true,

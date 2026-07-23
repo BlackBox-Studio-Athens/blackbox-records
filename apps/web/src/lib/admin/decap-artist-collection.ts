@@ -1,5 +1,6 @@
 import { buildField, buildFieldMapping, buildFolderCollection } from './decap-yaml-builder';
 import { createSlugSuggestion, slugPatternSource } from '../slugs';
+import { decapCollectionDescriptions } from './decap-editorial-copy';
 
 export function createArtistSlugSuggestion(artistName: string): string {
   return createSlugSuggestion(artistName);
@@ -9,6 +10,7 @@ export function buildArtistCollection() {
   return buildFolderCollection({
     name: 'artists',
     label: 'Artists',
+    description: decapCollectionDescriptions.artists,
     folder: 'apps/web/src/content/artists',
     create: true,
     delete: true,

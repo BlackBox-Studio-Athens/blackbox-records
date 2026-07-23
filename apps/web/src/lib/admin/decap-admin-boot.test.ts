@@ -426,7 +426,37 @@ describe('Decap admin boot markup and styles', () => {
     const registerPreviewStyle = vi.fn();
     const registerPreviewTemplate = vi.fn();
     const documentElement = { dataset: {} as Record<string, string> };
-    const documentBody = { innerText: '' };
+    const stockLink = { setAttribute: vi.fn() };
+    type TestCreatedElement = {
+      className: string;
+      dataset: Record<string, string>;
+      innerHTML: string;
+      querySelector: (selector: string) => typeof stockLink | null;
+      remove: ReturnType<typeof vi.fn>;
+      setAttribute: ReturnType<typeof vi.fn>;
+    };
+    let scopePanel: TestCreatedElement | null = null;
+    const documentBody = {
+      append: vi.fn((element: TestCreatedElement) => {
+        if (element.dataset.blackboxCmsScopePanel === 'true') scopePanel = element;
+      }),
+      innerText: '',
+    };
+    const createElement = vi.fn(() => {
+      const element: TestCreatedElement = {
+        className: '',
+        dataset: {},
+        innerHTML: '',
+        querySelector: vi.fn((selector: string) =>
+          selector === '[data-blackbox-cms-stock-link="true"]' ? stockLink : null,
+        ),
+        remove: vi.fn(() => {
+          if (scopePanel === element) scopePanel = null;
+        }),
+        setAttribute: vi.fn(),
+      };
+      return element;
+    });
     const adminContext: {
       bootAttemptId?: number;
       cleanupAttempt?: () => void;
@@ -494,8 +524,10 @@ describe('Decap admin boot markup and styles', () => {
       document: {
         body: documentBody,
         documentElement,
-        createElement: vi.fn(() => ({ className: '', dataset: {}, innerHTML: '' })),
-        querySelector: vi.fn(() => null),
+        createElement,
+        querySelector: vi.fn((selector: string) =>
+          selector === '[data-blackbox-cms-scope-panel="true"]' ? scopePanel : null,
+        ),
         querySelectorAll: vi.fn((selector: string) => (selector === 'button' && loginButton ? [loginButton] : [])),
       },
       window: targetWindow,
@@ -508,6 +540,7 @@ describe('Decap admin boot markup and styles', () => {
       disconnect,
       dispatchEvent,
       flushAnimationFrame: () => animationFrameCallback?.(0),
+      getScopePanel: () => scopePanel,
       initCMS,
       initializationHandlers,
       observe,
@@ -515,6 +548,7 @@ describe('Decap admin boot markup and styles', () => {
       registerPreviewTemplate,
       removeEventListener,
       requestAnimationFrame,
+      stockLink,
       targetWindow,
     };
   }
@@ -575,6 +609,43 @@ describe('Decap admin boot markup and styles', () => {
     expect(loginButton.setAttribute).toHaveBeenCalledWith('title', 'Sign in with DecapBridge');
     expect(loginButton.parentElement.insertBefore).toHaveBeenCalledOnce();
     expect(harness.targetWindow.__BLACKBOX_ADMIN_AUTH_READY__).toBe(true);
+  });
+
+  it('shows authenticated editors direct-publish and commerce ownership guidance with a base-path-safe stock link', () => {
+    const harness = runInitHarness({ mode: 'local' });
+
+    harness.flushAnimationFrame();
+
+    const panel = harness.getScopePanel();
+    expect(panel?.dataset.blackboxCmsScopePanel).toBe('true');
+    expect(panel?.innerHTML).toContain('Publish writes to main');
+    expect(panel?.innerHTML).toContain('Publishing commits immediately to main');
+    expect(panel?.innerHTML).toContain('Titles, copy, images, grouping, format, order, and public page content.');
+    expect(panel?.innerHTML).toContain('replacement Price under the existing Product');
+    expect(panel?.innerHTML).toContain('Do not delete editorial content.');
+    expect(panel?.innerHTML).toContain('Worker/Stripe paid-order state');
+    expect(harness.stockLink.setAttribute).toHaveBeenCalledWith('href', '/blackbox-records/stock/');
+    expect(panel?.innerHTML).not.toMatch(
+      /price_[A-Za-z0-9]|D1 ID|lookup key|€|\$\d|feature[- ]flag key|BOX NOW credential|provider payload/i,
+    );
+
+    harness.adminContext.cleanupAttempt?.();
+    expect(harness.getScopePanel()).toBeNull();
+  });
+
+  it('keeps the scope panel hidden on the hosted sign-in surface', () => {
+    const loginButton = {
+      dataset: {} as Record<string, string>,
+      getAttribute: vi.fn(() => null),
+      parentElement: { insertBefore: vi.fn() },
+      setAttribute: vi.fn(),
+      textContent: 'Login',
+    };
+    const harness = runInitHarness({ loginButton, mode: 'hosted' });
+
+    harness.flushAnimationFrame();
+
+    expect(harness.getScopePanel()).toBeNull();
   });
 
   it('turns synchronous preview setup exceptions into the stable failure event', () => {

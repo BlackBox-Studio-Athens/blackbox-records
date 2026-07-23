@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 
 import {
   buildField,
@@ -56,6 +57,58 @@ describe('Decap YAML builder', () => {
     expect(yaml).toContain('      widget: object');
     expect(yaml).toContain('      summary: "{{fields.text}}"');
     expect(yaml).toContain('          widget: text');
+  });
+
+  it('serializes native list, validation, and relation options as parsed YAML values', () => {
+    const [field] = parse(
+      buildField({
+        label: 'Related entries: "Artists"',
+        name: 'artists',
+        widget: 'list',
+        hint: 'Choose one or more artists.',
+        required: false,
+        collapsed: false,
+        labelSingular: 'Artist',
+        allowAdd: true,
+        allowRemove: false,
+        allowReorder: false,
+        min: 1,
+        max: 4,
+        pattern: { value: '^[a-z0-9]+(?:-[a-z0-9]+)*$', message: 'Use lowercase kebab-case.' },
+        field: buildFieldMapping({
+          label: 'Artist',
+          name: 'artist',
+          widget: 'relation',
+          relation: {
+            collection: 'artists',
+            searchFields: ['title', 'slug'],
+            valueField: '{{slug}}',
+            displayFields: ['title', 'slug'],
+            optionsLength: 25,
+          },
+        }),
+      }),
+    ) as Record<string, unknown>[];
+
+    expect(field).toMatchObject({
+      label: 'Related entries: "Artists"',
+      required: false,
+      collapsed: false,
+      label_singular: 'Artist',
+      allow_add: true,
+      allow_remove: false,
+      allow_reorder: false,
+      min: 1,
+      max: 4,
+      pattern: ['^[a-z0-9]+(?:-[a-z0-9]+)*$', 'Use lowercase kebab-case.'],
+      field: {
+        collection: 'artists',
+        search_fields: ['title', 'slug'],
+        value_field: '{{slug}}',
+        display_fields: ['title', 'slug'],
+        options_length: 25,
+      },
+    });
   });
 
   it('keeps bare child field mappings as YAML list items', () => {
@@ -131,6 +184,43 @@ describe('Decap YAML builder', () => {
         fields: [titleField],
       }),
     ).toContain('  slug: "{{slug}}"\n  summary: "{{title}}"');
+  });
+
+  it('serializes editor-facing collection metadata, sort controls, views, previews, and deletion policy', () => {
+    const [collection] = parse(
+      buildFolderCollection({
+        name: 'distro',
+        label: 'Store Items — Distro & Merch',
+        labelSingular: 'Store Item',
+        description: 'Editorial Store Item content. Price and stock live elsewhere.',
+        folder: 'src/content/distro',
+        create: true,
+        delete: false,
+        extension: 'json',
+        format: 'json',
+        identifierField: 'title',
+        summary: '{{title}} — {{group}}',
+        sortableFields: ['title', 'group', 'order'],
+        viewGroups: [{ label: 'Group', field: 'group' }],
+        previewPath: 'store/{{slug}}',
+        editorPreview: true,
+        fields: [buildField({ label: 'Order', name: 'order', widget: 'number', valueType: 'int', min: 0 })],
+      }),
+    ) as Record<string, unknown>[];
+
+    expect(collection).toMatchObject({
+      name: 'distro',
+      label: 'Store Items — Distro & Merch',
+      label_singular: 'Store Item',
+      description: 'Editorial Store Item content. Price and stock live elsewhere.',
+      create: true,
+      delete: false,
+      sortable_fields: ['title', 'group', 'order'],
+      view_groups: [{ label: 'Group', field: 'group' }],
+      preview_path: 'store/{{slug}}',
+      editor: { preview: true },
+      fields: [{ value_type: 'int', min: 0 }],
+    });
   });
 
   it('indents complete YAML blocks for parent sections', () => {

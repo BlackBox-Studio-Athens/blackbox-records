@@ -54,6 +54,13 @@
     return `${window.location.origin}${adminRootPath}media/`;
   };
 
+  const getStockOperationsUrl = () => {
+    const pathname = window.location.pathname;
+    const adminIndex = pathname.indexOf('/admin/');
+    const siteBasePath = adminIndex >= 0 ? pathname.slice(0, adminIndex) : '';
+    return `${siteBasePath}/stock/`;
+  };
+
   const hasAutoCollapsedPreview = () => {
     try {
       return window.sessionStorage.getItem(previewAutoCollapseKey) === 'true';
@@ -359,6 +366,45 @@
     window.__BLACKBOX_ADMIN_AUTH_READY__ = true;
   };
 
+  const removeEditorScopePanel = () => {
+    document.querySelector('[data-blackbox-cms-scope-panel="true"]')?.remove();
+  };
+
+  const syncEditorScopePanel = () => {
+    const loginButton = getLoginButton();
+    if (loginButton) {
+      removeEditorScopePanel();
+      return;
+    }
+
+    if (!document.body || document.querySelector('[data-blackbox-cms-scope-panel="true"]')) {
+      return;
+    }
+
+    const panel = document.createElement('aside');
+    panel.className = 'blackbox-cms-scope-panel';
+    panel.dataset.blackboxCmsScopePanel = 'true';
+    panel.setAttribute('aria-label', 'CMS publishing and ownership guidance');
+    panel.innerHTML = [
+      '<details class="blackbox-cms-scope-panel__details">',
+      '<summary class="blackbox-cms-scope-panel__summary"><span>Publish writes to main</span><span>Editing scope</span></summary>',
+      '<div class="blackbox-cms-scope-panel__content">',
+      '<p class="blackbox-cms-scope-panel__notice">Publishing commits immediately to main and starts the normal site deployment.</p>',
+      '<dl class="blackbox-cms-scope-panel__list">',
+      '<div><dt>Edit in Decap</dt><dd>Titles, copy, images, grouping, format, order, and public page content.</dd></div>',
+      '<div><dt>Price</dt><dd>In Stripe Dashboard, create a replacement Price under the existing Product, then run the existing catalog verification flow.</dd></div>',
+      '<div><dt>Stock</dt><dd>Use the <a data-blackbox-cms-stock-link="true">protected stock operations surface</a>.</dd></div>',
+      '<div><dt>Stop selling or checkout availability</dt><dd>Use online stock or commerce-operator checkout controls. Do not delete editorial content.</dd></div>',
+      '<div><dt>Orders and fulfillment</dt><dd>Use Worker/Stripe paid-order state and the existing manual fulfillment process. These are outside Decap.</dd></div>',
+      '</dl>',
+      '</div>',
+      '</details>',
+    ].join('');
+
+    panel.querySelector('[data-blackbox-cms-stock-link="true"]')?.setAttribute('href', getStockOperationsUrl());
+    document.body.append(panel);
+  };
+
   const getPreviewToggleButton = () =>
     document.querySelector('button[data-blackbox-preview-toggle="true"]') ||
     Array.from(document.querySelectorAll('button')).find(
@@ -555,6 +601,7 @@
         }
 
         syncAuthLoginSurface();
+        syncEditorScopePanel();
         syncPreviewToggleButtonState();
         enhanceListItemActionButtons();
         syncSingletonContentGuard();
@@ -586,6 +633,7 @@
         animationFrameId = 0;
       }
       removeSingletonContentGuard();
+      removeEditorScopePanel();
       previewCollapseInFlight = false;
     };
   };

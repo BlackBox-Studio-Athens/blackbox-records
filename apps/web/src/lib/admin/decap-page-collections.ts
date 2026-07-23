@@ -1,4 +1,5 @@
 import { buildFileCollection } from './decap-yaml-builder';
+import { decapCollectionDescriptions } from './decap-editorial-copy';
 
 type BuildPageFileCollectionsOptions = {
   homeFields: string[];
@@ -17,10 +18,11 @@ export function buildPageFileCollections({
   settingsFields,
   newsletterFields,
 }: BuildPageFileCollectionsOptions) {
-  return [
-    buildFileCollection({
+  return {
+    home: buildFileCollection({
       name: 'home',
       label: 'Home',
+      description: decapCollectionDescriptions.home,
       create: false,
       delete: false,
       extension: 'json',
@@ -36,9 +38,10 @@ export function buildPageFileCollections({
         },
       ],
     }),
-    buildFileCollection({
+    about: buildFileCollection({
       name: 'about',
       label: 'About',
+      description: decapCollectionDescriptions.about,
       create: false,
       delete: false,
       extension: 'json',
@@ -54,9 +57,10 @@ export function buildPageFileCollections({
         },
       ],
     }),
-    buildFileCollection({
+    distroPage: buildFileCollection({
       name: 'distro-page',
-      label: 'Distro Page',
+      label: 'Store — Distro Page Copy',
+      description: decapCollectionDescriptions.distroPage,
       create: false,
       delete: false,
       extension: 'json',
@@ -70,9 +74,10 @@ export function buildPageFileCollections({
         },
       ],
     }),
-    buildFileCollection({
+    services: buildFileCollection({
       name: 'services',
       label: 'Services',
+      description: decapCollectionDescriptions.services,
       create: false,
       delete: false,
       extension: 'json',
@@ -88,9 +93,10 @@ export function buildPageFileCollections({
         },
       ],
     }),
-    buildFileCollection({
+    newsletter: buildFileCollection({
       name: 'newsletter',
       label: 'Newsletter',
+      description: decapCollectionDescriptions.newsletter,
       create: false,
       delete: false,
       extension: 'json',
@@ -104,9 +110,10 @@ export function buildPageFileCollections({
         },
       ],
     }),
-    buildFileCollection({
+    settings: buildFileCollection({
       name: 'settings',
-      label: 'Settings',
+      label: 'Advanced — Site Settings',
+      description: decapCollectionDescriptions.settings,
       create: false,
       delete: false,
       extension: 'json',
@@ -120,5 +127,5 @@ export function buildPageFileCollections({
         },
       ],
     }),
-  ];
+  };
 }

@@ -1,9 +1,11 @@
 import { buildField, buildFolderCollection } from './decap-yaml-builder';
+import { decapCollectionDescriptions } from './decap-editorial-copy';
 
 export function buildNewsCollection() {
   return buildFolderCollection({
     name: 'news',
     label: 'News',
+    description: decapCollectionDescriptions.news,
     folder: 'apps/web/src/content/news',
     create: true,
     delete: true,

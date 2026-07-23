@@ -69,33 +69,33 @@
 
 ## 7. Extend the YAML builders only where needed
 
-- [ ] 7.1 Extend collection builder types for editor-facing descriptions and `label_singular`.
-- [ ] 7.2 Extend collection builder types for explicit deletion policy.
-- [ ] 7.3 Extend collection builder types for `sortable_fields` and the supported Decap sort defaults used by this change.
-- [ ] 7.4 Extend collection builder types for Distro view groups or filters without introducing a generic query abstraction.
-- [ ] 7.5 Extend collection builder types for `preview_path` and per-collection preview settings used by the current admin.
-- [ ] 7.6 Extend list field types for `allow_add`, `allow_remove`, `allow_reorder`, `min`, `max`, `label_singular`, and collapsed summaries.
-- [ ] 7.7 Extend field types for the native relation widget properties required by Release-to-Artist references.
-- [ ] 7.8 Extend field types for native patterns, value ranges, and concise editor hints used by existing Astro constraints.
-- [ ] 7.9 Add serializer tests for every new collection and field option, including YAML quoting and boolean handling.
-- [ ] 7.10 Add or reuse a YAML parser in focused tests so assertions operate on parsed structures rather than line fragments.
+- [x] 7.1 Extend collection builder types for editor-facing descriptions and `label_singular`.
+- [x] 7.2 Extend collection builder types for explicit deletion policy.
+- [x] 7.3 Extend collection builder types for `sortable_fields` and the supported Decap sort defaults used by this change.
+- [x] 7.4 Extend collection builder types for Distro view groups or filters without introducing a generic query abstraction.
+- [x] 7.5 Extend collection builder types for `preview_path` and per-collection preview settings used by the current admin.
+- [x] 7.6 Extend list field types for `allow_add`, `allow_remove`, `allow_reorder`, `min`, `max`, `label_singular`, and collapsed summaries.
+- [x] 7.7 Extend field types for the native relation widget properties required by Release-to-Artist references.
+- [x] 7.8 Extend field types for native patterns, value ranges, and concise editor hints used by existing Astro constraints.
+- [x] 7.9 Add serializer tests for every new collection and field option, including YAML quoting and boolean handling.
+- [x] 7.10 Add or reuse a YAML parser in focused tests so assertions operate on parsed structures rather than line fragments.
 
 ## 8. Reorganize the editor and explain ownership
 
-- [ ] 8.1 Reorder generated collections to Home, Artists, Releases, Distro, News, About, Services, Newsletter, Distro Page, Navigation, Socials, and Settings.
-- [ ] 8.2 Apply the visible labels `Store Items — Distro & Merch` and `Store — Distro Page Copy` while retaining the existing internal collection names.
-- [ ] 8.3 Add concise collection descriptions for routine editorial collections that identify the public surface each collection changes.
-- [ ] 8.4 Prefix Navigation, Social Links, and Site Settings labels with `Advanced —`.
-- [ ] 8.5 Add advanced collection descriptions warning that publication changes site-wide navigation, identity, or metadata directly on `main`.
-- [ ] 8.6 Add a compact authenticated-editor notice that Publish commits immediately to `main` and starts normal deployment.
-- [ ] 8.7 Add an in-CMS scope panel stating which titles, copy, images, grouping, format, order, and public page content belong in Decap.
-- [ ] 8.8 Add price guidance that points to replacement Prices under the existing Product in Stripe Dashboard and the existing verification flow.
-- [ ] 8.9 Add stock guidance that points to the protected `/stock/` operations surface.
-- [ ] 8.10 Add stop-selling guidance that points to online-stock or commerce-operator checkout controls and says not to delete editorial content.
-- [ ] 8.11 Add order and fulfillment guidance that identifies Worker/Stripe paid-order state and the existing manual fulfillment process as outside Decap.
-- [ ] 8.12 Make the `/stock/` link base-path-safe and avoid links to unstable provider dashboards or internal diagnostics.
-- [ ] 8.13 Verify the guidance contains no Stripe IDs, D1 IDs, lookup keys, amounts, secrets, feature-flag keys, BOX NOW credentials, or provider payloads.
-- [ ] 8.14 Add focused assertions for collection order, labels, descriptions, direct-publish notice, and commerce ownership copy.
+- [x] 8.1 Reorder generated collections to Home, Artists, Releases, Distro, News, About, Services, Newsletter, Distro Page, Navigation, Socials, and Settings.
+- [x] 8.2 Apply the visible labels `Store Items — Distro & Merch` and `Store — Distro Page Copy` while retaining the existing internal collection names.
+- [x] 8.3 Add concise collection descriptions for routine editorial collections that identify the public surface each collection changes.
+- [x] 8.4 Prefix Navigation, Social Links, and Site Settings labels with `Advanced —`.
+- [x] 8.5 Add advanced collection descriptions warning that publication changes site-wide navigation, identity, or metadata directly on `main`.
+- [x] 8.6 Add a compact authenticated-editor notice that Publish commits immediately to `main` and starts normal deployment.
+- [x] 8.7 Add an in-CMS scope panel stating which titles, copy, images, grouping, format, order, and public page content belong in Decap.
+- [x] 8.8 Add price guidance that points to replacement Prices under the existing Product in Stripe Dashboard and the existing verification flow.
+- [x] 8.9 Add stock guidance that points to the protected `/stock/` operations surface.
+- [x] 8.10 Add stop-selling guidance that points to online-stock or commerce-operator checkout controls and says not to delete editorial content.
+- [x] 8.11 Add order and fulfillment guidance that identifies Worker/Stripe paid-order state and the existing manual fulfillment process as outside Decap.
+- [x] 8.12 Make the `/stock/` link base-path-safe and avoid links to unstable provider dashboards or internal diagnostics.
+- [x] 8.13 Verify the guidance contains no Stripe IDs, D1 IDs, lookup keys, amounts, secrets, feature-flag keys, BOX NOW credentials, or provider payloads.
+- [x] 8.14 Add focused assertions for collection order, labels, descriptions, direct-publish notice, and commerce ownership copy.
 
 ## 9. Align Home, About, and Services with fixed public layouts
 

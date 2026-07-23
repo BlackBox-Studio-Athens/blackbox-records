@@ -4,14 +4,15 @@ import { buildPageFileCollections } from './decap-page-collections';
 
 describe('Decap page file collections', () => {
   it('builds the singleton content collections with caller-provided fields', () => {
-    const yaml = buildPageFileCollections({
+    const collections = buildPageFileCollections({
       homeFields: ['home-field'],
       aboutFields: ['about-field'],
       distroPageFields: ['distro-page-field'],
       servicesFields: ['services-field'],
       settingsFields: ['settings-field'],
       newsletterFields: ['newsletter-field'],
-    }).join('\n');
+    });
+    const yaml = Object.values(collections).join('\n');
 
     expect(yaml).toContain('name: "home"');
     expect(yaml).toContain('extension: json');
@@ -36,7 +37,7 @@ describe('Decap page file collections', () => {
   });
 
   it('marks every singleton page collection with explicit JSON extension and format', () => {
-    const yaml = buildPageFileCollections({
+    const collections = buildPageFileCollections({
       homeFields: ['home-field'],
       aboutFields: ['about-field'],
       distroPageFields: ['distro-page-field'],
@@ -45,6 +46,7 @@ describe('Decap page file collections', () => {
       newsletterFields: ['newsletter-field'],
     });
 
+    const yaml = Object.values(collections);
     expect(yaml).toHaveLength(6);
     for (const collectionYaml of yaml) {
       expect(collectionYaml).toContain('extension: json');
@@ -57,5 +59,21 @@ describe('Decap page file collections', () => {
     expect(yaml.join('\n')).toContain('file: "apps/web/src/content/services/site.json"');
     expect(yaml.join('\n')).toContain('file: "apps/web/src/content/newsletter/site.json"');
     expect(yaml.join('\n')).toContain('file: "apps/web/src/content/settings/site.json"');
+  });
+
+  it('uses editor-facing labels and descriptions for routine and advanced singleton collections', () => {
+    const collections = buildPageFileCollections({
+      homeFields: ['home-field'],
+      aboutFields: ['about-field'],
+      distroPageFields: ['distro-page-field'],
+      servicesFields: ['services-field'],
+      settingsFields: ['settings-field'],
+      newsletterFields: ['newsletter-field'],
+    });
+
+    expect(collections.home).toContain('description: "Homepage hero, News, and Artists content.');
+    expect(collections.distroPage).toContain('label: "Store — Distro Page Copy"');
+    expect(collections.settings).toContain('label: "Advanced — Site Settings"');
+    expect(collections.settings).toContain('description: "Advanced: site-wide label identity');
   });
 });

@@ -1,10 +1,12 @@
 import { buildField, buildFolderCollection, buildSchemaField } from './decap-yaml-builder';
+import { decapCollectionDescriptions } from './decap-editorial-copy';
 
 export function buildSiteChromeCollections() {
-  return [
-    buildFolderCollection({
+  return {
+    navigation: buildFolderCollection({
       name: 'navigation',
-      label: 'Navigation',
+      label: 'Advanced — Navigation',
+      description: decapCollectionDescriptions.navigation,
       folder: 'apps/web/src/content/navigation',
       create: false,
       delete: false,
@@ -46,9 +48,10 @@ export function buildSiteChromeCollections() {
         }),
       ],
     }),
-    buildFolderCollection({
+    socials: buildFolderCollection({
       name: 'socials',
-      label: 'Socials',
+      label: 'Advanced — Social Links',
+      description: decapCollectionDescriptions.socials,
       folder: 'apps/web/src/content/socials',
       create: true,
       delete: true,
@@ -69,5 +72,5 @@ export function buildSiteChromeCollections() {
         }),
       ],
     }),
-  ];
+  };
 }

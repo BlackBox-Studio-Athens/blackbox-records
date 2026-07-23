@@ -94,20 +94,28 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
   const settingsFields = buildSettingsFields();
   const newsletterFields = buildNewsletterFields();
 
+  const pageCollections = buildPageFileCollections({
+    homeFields,
+    aboutFields,
+    distroPageFields,
+    servicesFields,
+    settingsFields,
+    newsletterFields,
+  });
+  const siteChromeCollections = buildSiteChromeCollections();
   const collections = [
-    ...buildPageFileCollections({
-      homeFields,
-      aboutFields,
-      distroPageFields,
-      servicesFields,
-      settingsFields,
-      newsletterFields,
-    }),
-    ...buildSiteChromeCollections(),
+    pageCollections.home,
     buildArtistCollection(),
     buildReleaseCollection(options.artistOptions),
     buildDistroCollection(),
     buildNewsCollection(),
+    pageCollections.about,
+    pageCollections.services,
+    pageCollections.newsletter,
+    pageCollections.distroPage,
+    siteChromeCollections.navigation,
+    siteChromeCollections.socials,
+    pageCollections.settings,
   ];
 
   return `${backendConfig}\n\npublish_mode: simple\nmedia_folder: apps/web/src/content/uploads\n${authConfig}\n\nsite_url: ${escapeYamlScalar(options.siteRootUrl)}\ndisplay_url: ${escapeYamlScalar(options.siteRootUrl)}\nlogo_url: ${escapeYamlScalar(options.logoUrl)}\neditor:\n  preview: true\n\ncollections:\n${indentYamlBlock(collections.join('\n\n'), 2)}\n`;

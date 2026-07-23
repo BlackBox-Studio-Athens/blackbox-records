@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 
 import {
   buildDecapConfig,
@@ -109,6 +110,52 @@ editor:
     expect(readCollections(buildConfig())).toBe(readCollections(buildConfig(hostedRuntimeConfig)));
   });
 
+  it('orders routine and advanced collections with editor-facing labels, descriptions, and direct-publish copy', () => {
+    const config = parse(buildConfig()) as {
+      collections: Array<{ description?: string; label: string; name: string }>;
+    };
+
+    expect(config.collections.map(({ name }) => name)).toEqual([
+      'home',
+      'artists',
+      'releases',
+      'distro',
+      'news',
+      'about',
+      'services',
+      'newsletter',
+      'distro-page',
+      'navigation',
+      'socials',
+      'settings',
+    ]);
+    expect(config.collections.map(({ label }) => label)).toEqual([
+      'Home',
+      'Artists',
+      'Releases',
+      'Store Items — Distro & Merch',
+      'News',
+      'About',
+      'Services',
+      'Newsletter',
+      'Store — Distro Page Copy',
+      'Advanced — Navigation',
+      'Advanced — Social Links',
+      'Advanced — Site Settings',
+    ]);
+
+    for (const collection of config.collections) {
+      expect(collection.description).toContain('main');
+    }
+    expect(config.collections.find(({ name }) => name === 'navigation')?.description).toContain('site-wide navigation');
+    expect(config.collections.find(({ name }) => name === 'socials')?.description).toContain(
+      'site-wide social identity',
+    );
+    expect(config.collections.find(({ name }) => name === 'settings')?.description).toContain(
+      'site-wide label identity',
+    );
+  });
+
   it('keeps existing collection paths, fields, and editor hints', () => {
     const yaml = buildConfig();
 
@@ -140,7 +187,7 @@ editor:
   it('exposes distro page copy and distro item fields without commerce authority', () => {
     const yaml = buildConfig();
 
-    expect(yaml).toContain('label: "Distro Page"');
+    expect(yaml).toContain('label: "Store — Distro Page Copy"');
     expect(yaml).toContain('name: "group_intros"');
     expect(yaml).toContain('label: "Vinyl 12-inch"');
     expect(yaml).toContain('label: "Vinyl 10-inch"');

@@ -728,6 +728,101 @@ button[data-blackbox-cms-auth-button='true'] {
   font-weight: 700 !important;
 }
 
+.blackbox-cms-scope-panel {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1000;
+  width: min(25rem, calc(100vw - 2rem));
+  color: var(--bb-admin-text);
+  font-family: var(--bb-admin-font-sans);
+}
+
+.blackbox-cms-scope-panel__details {
+  overflow: hidden;
+  border: 1px solid rgba(67, 50, 42, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 250, 246, 0.98);
+  box-shadow: var(--bb-admin-shadow-soft);
+}
+
+.blackbox-cms-scope-panel__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 2.75rem;
+  padding: 0.7rem 0.85rem;
+  cursor: pointer;
+  color: var(--bb-admin-text);
+  font-family: var(--bb-admin-font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  list-style: none;
+  text-transform: uppercase;
+}
+
+.blackbox-cms-scope-panel__summary::-webkit-details-marker {
+  display: none;
+}
+
+.blackbox-cms-scope-panel__summary:focus-visible {
+  outline: 2px solid var(--bb-admin-accent);
+  outline-offset: -3px;
+}
+
+.blackbox-cms-scope-panel__summary span:last-child {
+  color: var(--bb-admin-accent);
+}
+
+.blackbox-cms-scope-panel__content {
+  max-height: min(31rem, 70vh);
+  overflow: auto;
+  padding: 0 0.9rem 0.95rem;
+  border-top: 1px solid rgba(67, 50, 42, 0.12);
+}
+
+.blackbox-cms-scope-panel__notice {
+  margin: 0;
+  padding: 0.85rem 0;
+  color: var(--bb-admin-text);
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.blackbox-cms-scope-panel__list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.blackbox-cms-scope-panel__list div {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.blackbox-cms-scope-panel__list dt {
+  color: var(--bb-admin-text);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.blackbox-cms-scope-panel__list dd {
+  margin: 0;
+  color: var(--bb-admin-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.blackbox-cms-scope-panel__list a {
+  color: var(--bb-admin-accent);
+  font-weight: 700;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.16em;
+}
+
 @media (max-width: 960px) {
   .blackbox-cms-boot {
     padding: 1rem;
@@ -755,5 +850,11 @@ button[data-blackbox-cms-auth-button='true'] {
 
   [data-blackbox-preview-status='true'] {
     font-size: 0.55rem !important;
+  }
+
+  .blackbox-cms-scope-panel {
+    right: 0.75rem;
+    bottom: 0.75rem;
+    width: calc(100vw - 1.5rem);
   }
 }

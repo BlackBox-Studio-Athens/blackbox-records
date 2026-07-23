@@ -1,9 +1,11 @@
 import { buildField, buildFieldMapping, buildFolderCollection, type DecapSelectOption } from './decap-yaml-builder';
+import { decapCollectionDescriptions } from './decap-editorial-copy';
 
 export function buildReleaseCollection(artistOptions: DecapSelectOption[]) {
   return buildFolderCollection({
     name: 'releases',
     label: 'Releases',
+    description: decapCollectionDescriptions.releases,
     folder: 'apps/web/src/content/releases',
     create: true,
     delete: true,
