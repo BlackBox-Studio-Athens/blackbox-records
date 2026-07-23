@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { checkImageMarkup, getSrcsetCandidateUrl } from '../../scripts/check-image-markup';
+import { checkImageMarkup, getArtistRosterImageTag, getSrcsetCandidateUrl } from '../../scripts/check-image-markup';
 
 describe('check-image-markup', () => {
   it('flags missing responsive candidates on card images', () => {
@@ -85,5 +85,17 @@ describe('check-image-markup', () => {
     const tag = '<img srcset="/portrait-480.webp 480w, /portrait-720.webp 720w">';
 
     expect(getSrcsetCandidateUrl(tag, 480)).toBe('/portrait-480.webp');
+  });
+
+  it('locates an artist image by the stable roster hook instead of mutable alt copy', () => {
+    const html = [
+      '<div data-artist-roster-item data-artist-title="Afterwise"><img class="artist-roster-card__image" alt="Afterwise"></div>',
+      '<div data-artist-roster-item data-artist-title="Ouranopithecus"><img class="artist-roster-card__image" alt="Three members of Ouranopithecus standing among trees" srcset="/ouranopithecus-480.webp 480w, /ouranopithecus-720.webp 720w"></div>',
+    ].join('');
+
+    const tag = getArtistRosterImageTag(html, 'Ouranopithecus');
+    expect(tag).toContain('alt="Three members of Ouranopithecus standing among trees"');
+    expect(getSrcsetCandidateUrl(tag, 480)).toBe('/ouranopithecus-480.webp');
+    expect(getArtistRosterImageTag(html, 'Missing artist')).toBe('');
   });
 });

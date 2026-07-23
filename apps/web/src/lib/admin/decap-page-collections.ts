@@ -1,5 +1,6 @@
 import { buildFileCollection } from './decap-yaml-builder';
 import { decapCollectionDescriptions } from './decap-editorial-copy';
+import { decapCollectionMedia } from './decap-media';
 
 type BuildPageFileCollectionsOptions = {
   homeFields: string[];
@@ -32,8 +33,8 @@ export function buildPageFileCollections({
           name: 'home-site',
           label: 'Home Content',
           file: 'apps/web/src/content/home/site.json',
-          mediaFolder: '.',
-          publicFolder: './',
+          mediaFolder: decapCollectionMedia.home.mediaFolder,
+          publicFolder: decapCollectionMedia.home.publicFolder,
           fields: homeFields,
         },
       ],
@@ -51,8 +52,8 @@ export function buildPageFileCollections({
           name: 'about-site',
           label: 'About Content',
           file: 'apps/web/src/content/about/site.json',
-          mediaFolder: '.',
-          publicFolder: './',
+          mediaFolder: decapCollectionMedia.about.mediaFolder,
+          publicFolder: decapCollectionMedia.about.publicFolder,
           fields: aboutFields,
         },
       ],
@@ -87,8 +88,8 @@ export function buildPageFileCollections({
           name: 'services-site',
           label: 'Services Content',
           file: 'apps/web/src/content/services/site.json',
-          mediaFolder: '.',
-          publicFolder: './',
+          mediaFolder: decapCollectionMedia.services.mediaFolder,
+          publicFolder: decapCollectionMedia.services.publicFolder,
           fields: servicesFields,
         },
       ],

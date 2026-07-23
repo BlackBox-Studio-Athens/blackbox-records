@@ -392,9 +392,16 @@ describe('Decap admin boot markup and styles', () => {
   const css = readFileSync(fileURLToPath(new URL('../../../public/admin/admin.css', import.meta.url)), 'utf8');
 
   function runInitHarness({
+    bodyInnerText = '',
+    documentQuerySelector,
+    documentQuerySelectorAll,
     loginButton,
+    locationHash = '',
     mode = 'hosted',
   }: {
+    bodyInnerText?: string;
+    documentQuerySelector?: (selector: string) => unknown;
+    documentQuerySelectorAll?: (selector: string) => unknown[];
     loginButton?: {
       dataset: Record<string, string>;
       getAttribute: (name: string) => string | null;
@@ -402,6 +409,7 @@ describe('Decap admin boot markup and styles', () => {
       setAttribute: ReturnType<typeof vi.fn>;
       textContent: string;
     };
+    locationHash?: string;
     mode?: 'local' | 'hosted';
   } = {}) {
     const dispatchEvent = vi.fn();
@@ -411,6 +419,10 @@ describe('Decap admin boot markup and styles', () => {
     const disconnect = vi.fn();
     const cancelAnimationFrame = vi.fn();
     let animationFrameCallback: FrameRequestCallback | undefined;
+    let mutationObserverCallback:
+      | ((mutations: Array<{ addedNodes: unknown[]; removedNodes: unknown[] }>) => void)
+      | undefined;
+    const timeoutCallbacks: Array<() => void> = [];
     const requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
       animationFrameCallback = callback;
       return 41;
@@ -440,7 +452,7 @@ describe('Decap admin boot markup and styles', () => {
       append: vi.fn((element: TestCreatedElement) => {
         if (element.dataset.blackboxCmsScopePanel === 'true') scopePanel = element;
       }),
-      innerText: '',
+      innerText: bodyInnerText,
     };
     const createElement = vi.fn(() => {
       const element: TestCreatedElement = {
@@ -460,10 +472,14 @@ describe('Decap admin boot markup and styles', () => {
     const adminContext: {
       bootAttemptId?: number;
       cleanupAttempt?: () => void;
+      exposeTestHooks?: boolean;
+      mediaCollections?: string[];
       mode?: 'local' | 'hosted' | 'disabled';
       previewStyleUrl?: string;
     } = {
       bootAttemptId: 9,
+      exposeTestHooks: true,
+      mediaCollections: ['about', 'artists', 'distro', 'home', 'news', 'releases', 'services'],
       mode,
       previewStyleUrl: '/admin/preview.css',
     };
@@ -473,6 +489,8 @@ describe('Decap admin boot markup and styles', () => {
       __BLACKBOX_ADMIN_AUTH_READY__: undefined as boolean | undefined,
       __BLACKBOX_ADMIN_PREVIEW_COLLECTIONS__: undefined as string[] | undefined,
       __BLACKBOX_ADMIN_READY__: undefined as boolean | undefined,
+      __BLACKBOX_ADMIN_REPAIRS__: undefined as string[] | undefined,
+      __BLACKBOX_ADMIN_TEST_HOOKS__: undefined as Record<string, (...args: never[]) => unknown> | undefined,
       addEventListener,
       cancelAnimationFrame,
       clearTimeout: vi.fn(),
@@ -481,7 +499,7 @@ describe('Decap admin boot markup and styles', () => {
       h: vi.fn(),
       initCMS,
       location: {
-        hash: '',
+        hash: locationHash,
         origin: 'http://127.0.0.1:4322',
         pathname: '/blackbox-records/admin/',
         reload: vi.fn(),
@@ -493,7 +511,10 @@ describe('Decap admin boot markup and styles', () => {
         removeItem: vi.fn(),
         setItem: vi.fn(),
       },
-      setTimeout: vi.fn(),
+      setTimeout: vi.fn((callback: () => void) => {
+        timeoutCallbacks.push(callback);
+        return timeoutCallbacks.length;
+      }),
     };
 
     class TestCustomEvent {
@@ -507,7 +528,9 @@ describe('Decap admin boot markup and styles', () => {
     }
 
     class TestMutationObserver {
-      constructor(_callback: () => void) {}
+      constructor(callback: (mutations: Array<{ addedNodes: unknown[]; removedNodes: unknown[] }>) => void) {
+        mutationObserverCallback = callback;
+      }
 
       disconnect() {
         disconnect();
@@ -525,10 +548,16 @@ describe('Decap admin boot markup and styles', () => {
         body: documentBody,
         documentElement,
         createElement,
-        querySelector: vi.fn((selector: string) =>
-          selector === '[data-blackbox-cms-scope-panel="true"]' ? scopePanel : null,
-        ),
-        querySelectorAll: vi.fn((selector: string) => (selector === 'button' && loginButton ? [loginButton] : [])),
+        querySelector: vi.fn((selector: string) => {
+          const provided = documentQuerySelector?.(selector);
+          if (provided !== undefined) return provided;
+          return selector === '[data-blackbox-cms-scope-panel="true"]' ? scopePanel : null;
+        }),
+        querySelectorAll: vi.fn((selector: string) => {
+          const provided = documentQuerySelectorAll?.(selector);
+          if (provided !== undefined) return provided;
+          return selector === 'button' && loginButton ? [loginButton] : [];
+        }),
       },
       window: targetWindow,
     });
@@ -539,7 +568,12 @@ describe('Decap admin boot markup and styles', () => {
       cancelAnimationFrame,
       disconnect,
       dispatchEvent,
+      documentBody,
       flushAnimationFrame: () => animationFrameCallback?.(0),
+      flushTimeouts: () => {
+        const pendingCallbacks = timeoutCallbacks.splice(0, timeoutCallbacks.length);
+        pendingCallbacks.forEach((callback) => callback());
+      },
       getScopePanel: () => scopePanel,
       initCMS,
       initializationHandlers,
@@ -550,6 +584,13 @@ describe('Decap admin boot markup and styles', () => {
       requestAnimationFrame,
       stockLink,
       targetWindow,
+      triggerMutation: (hasChanges = true) =>
+        mutationObserverCallback?.([
+          {
+            addedNodes: hasChanges ? [{}] : [],
+            removedNodes: [],
+          },
+        ]),
     };
   }
 
@@ -558,7 +599,8 @@ describe('Decap admin boot markup and styles', () => {
     expect(page).toContain('data-admin-boot-status');
     expect(page).toContain('data-admin-boot-retry');
     expect(page).toContain("adminMode !== 'disabled'");
-    expect(page).toContain('{ mode: adminMode, previewStyleUrl }');
+    expect(page).toContain("adminMode !== 'disabled' && <script is:inline src={previewAssetsUrl} />");
+    expect(page).toContain('{ mode: adminMode, previewStyleUrl, mediaCollections: decapCollectionMediaKeys }');
     expect(page).not.toContain(`<script src="${decapBrowserRuntimeUrl}"></script>`);
   });
 
@@ -584,6 +626,20 @@ describe('Decap admin boot markup and styles', () => {
     expect(css).not.toContain('blackbox-preview__journey');
   });
 
+  it('keeps key collection previews aligned with current public editorial concepts', () => {
+    expect(init).toContain('const metaItems = [data.genre, data.country].filter(Boolean)');
+    expect(init).toContain('data.upcoming_release');
+    expect(init).toContain('[titleCase(data.artist), releaseDate].filter(Boolean)');
+    expect(init).toContain('data.summary ?');
+    expect(init).toContain('credits.length');
+    expect(init).toContain("toText(data.group || 'Distro')");
+    expect(init).toContain('toText(data.artist_or_label)');
+    expect(init).toContain("[data.eyebrow, data.format, data.order !== undefined ? `Order ${data.order}` : '']");
+    expect(init).toContain('To stop selling, use protected stock or commerce-operator controls.');
+    expect(init).toContain("toText(data.section_label || 'News')");
+    expect(init).toContain('body ? body.slice(0, 600)');
+  });
+
   it('locks outer fixed-layout section actions without disabling nested repeatable lists', () => {
     expect(init).toContain("'#/collections/home/entries/home-site'");
     expect(init).toContain("'#/collections/about/entries/about-site'");
@@ -591,6 +647,182 @@ describe('Decap admin boot markup and styles', () => {
     expect(init).toContain("firstElementChild?.textContent?.trim() !== 'Sections'");
     expect(init).toContain("topBar.dataset.blackboxFixedSectionActions = 'locked'");
     expect(init).toContain('button.hidden = true');
+  });
+
+  it('documents every retained pinned-version repair and removes the obsolete generic remove-button patch', () => {
+    const harness = runInitHarness();
+
+    expect(harness.targetWindow.__BLACKBOX_ADMIN_REPAIRS__).toEqual([
+      'bounded-rerender-observer',
+      'decapbridge-login-surface',
+      'editor-scope-panel',
+      'empty-singleton-guard',
+      'fixed-layout-section-actions',
+      'preview-auto-collapse',
+      'preview-toggle-copy',
+      'saved-singleton-route-reload',
+      'top-level-media-hidden',
+    ]);
+    expect(init.match(/Decap CMS 3\.14\.1/g)).toHaveLength(9);
+    expect(init).not.toContain('enhanceListItemActionButtons');
+    expect(init).not.toContain('blackboxSectionRowAction');
+    expect(css).not.toContain('data-blackbox-section-row-action');
+  });
+
+  it('hides the unsupported top-level Media action without affecting collection image widgets', () => {
+    const mediaButton = {
+      dataset: {} as Record<string, string>,
+      hidden: false,
+      setAttribute: vi.fn(),
+      textContent: 'Media',
+    };
+    const harness = runInitHarness({
+      documentQuerySelectorAll: (selector) => (selector === 'nav button' ? [mediaButton] : undefined) as unknown[],
+    });
+
+    harness.flushAnimationFrame();
+
+    expect(mediaButton.dataset.blackboxTopLevelMedia).toBe('hidden');
+    expect(mediaButton.hidden).toBe(true);
+    expect(mediaButton.setAttribute).toHaveBeenCalledWith('aria-hidden', 'true');
+    expect(mediaButton.setAttribute).toHaveBeenCalledWith('tabindex', '-1');
+  });
+
+  it('locks only the fixed outer Sections rows on the pinned Decap markup', () => {
+    const actions = Array.from({ length: 3 }, () => ({ hidden: false, setAttribute: vi.fn() }));
+    const topBar = {
+      closest: vi.fn((selector: string) => {
+        if (selector.includes('SortableListItem')) return {};
+        if (selector.includes('ControlContainer')) return { firstElementChild: { textContent: 'Sections' } };
+        return null;
+      }),
+      dataset: {} as Record<string, string>,
+      querySelectorAll: vi.fn(() => actions),
+    };
+    const harness = runInitHarness({
+      documentQuerySelectorAll: (selector) => (selector.includes('ListItemTopBar') ? [topBar] : undefined) as unknown[],
+      locationHash: '#/collections/home/entries/home-site',
+    });
+
+    harness.flushAnimationFrame();
+
+    expect(topBar.dataset.blackboxFixedSectionActions).toBe('locked');
+    for (const action of actions) {
+      expect(action.hidden).toBe(true);
+      expect(action.setAttribute).toHaveBeenCalledWith('aria-hidden', 'true');
+      expect(action.setAttribute).toHaveBeenCalledWith('tabindex', '-1');
+    }
+  });
+
+  it('bounds observer rerender work to one queued animation frame and ignores empty mutation records', () => {
+    const harness = runInitHarness();
+
+    expect(harness.requestAnimationFrame).toHaveBeenCalledOnce();
+    harness.triggerMutation();
+    harness.triggerMutation();
+    expect(harness.requestAnimationFrame).toHaveBeenCalledOnce();
+
+    harness.flushAnimationFrame();
+    harness.triggerMutation(false);
+    expect(harness.requestAnimationFrame).toHaveBeenCalledOnce();
+
+    harness.triggerMutation();
+    harness.triggerMutation();
+    expect(harness.requestAnimationFrame).toHaveBeenCalledTimes(2);
+  });
+
+  it('reloads a saved singleton-to-singleton transition but no-ops on unsupported routes', () => {
+    const harness = runInitHarness({ locationHash: '#/collections/home/entries/home-site' });
+    const hooks = harness.targetWindow.__BLACKBOX_ADMIN_TEST_HOOKS__ as {
+      reloadOnSavedSingletonRouteChange: () => boolean;
+    };
+
+    expect(hooks.reloadOnSavedSingletonRouteChange()).toBe(false);
+    harness.targetWindow.location.hash = '#/collections/about/entries/about-site';
+    harness.documentBody.innerText = 'CHANGES SAVED';
+    expect(hooks.reloadOnSavedSingletonRouteChange()).toBe(true);
+    expect(harness.targetWindow.location.reload).toHaveBeenCalledOnce();
+
+    harness.targetWindow.location.hash = '#/collections/news/entries/article';
+    expect(hooks.reloadOnSavedSingletonRouteChange()).toBe(false);
+  });
+
+  it('detects a populated versus empty singleton state without touching absent targets', () => {
+    const harness = runInitHarness({ locationHash: '#/collections/services/entries/services-site' });
+    const hooks = harness.targetWindow.__BLACKBOX_ADMIN_TEST_HOOKS__ as {
+      getActiveSingletonEditor: () => unknown;
+      isSingletonEditorEmptyLoad: (
+        activeEditor: unknown,
+        snapshot: { formValues: string[]; hasLoadedEditorChrome: boolean; sectionCounts: number[] },
+      ) => boolean;
+      syncTopLevelMediaSurface: () => void;
+    };
+    const activeEditor = hooks.getActiveSingletonEditor();
+
+    expect(
+      hooks.isSingletonEditorEmptyLoad(activeEditor, {
+        formValues: ['Tour Booking'],
+        hasLoadedEditorChrome: true,
+        sectionCounts: [3],
+      }),
+    ).toBe(false);
+    expect(
+      hooks.isSingletonEditorEmptyLoad(activeEditor, {
+        formValues: [],
+        hasLoadedEditorChrome: true,
+        sectionCounts: [0],
+      }),
+    ).toBe(true);
+
+    expect(() => hooks.syncTopLevelMediaSurface()).not.toThrow();
+  });
+
+  it('keeps one keyboard control synchronized with visible preview state and focus', () => {
+    const previewLabel = { textContent: '' };
+    const previewStatus = { textContent: '' };
+    const previewCopy = { append: vi.fn() };
+    let clickListener: ((event: { isTrusted: boolean }) => void) | undefined;
+    const previewToggle = {
+      addEventListener: vi.fn((_type: string, listener: (event: { isTrusted: boolean }) => void) => {
+        clickListener = listener;
+      }),
+      append: vi.fn(),
+      dataset: {} as Record<string, string>,
+      focus: vi.fn(),
+      hasAttribute: vi.fn(() => false),
+      querySelector: vi.fn((selector: string) => {
+        if (selector.includes('preview-copy')) return previewCopy;
+        if (selector.includes('preview-label')) return previewLabel;
+        if (selector.includes('preview-status')) return previewStatus;
+        return null;
+      }),
+      removeAttribute: vi.fn(),
+      setAttribute: vi.fn(),
+    };
+    const previewPane = {
+      getBoundingClientRect: () => ({ width: 360 }),
+      id: '',
+    };
+    const harness = runInitHarness({
+      documentQuerySelector: (selector) => {
+        if (selector === 'button[data-blackbox-preview-toggle="true"]') return previewToggle;
+        if (selector.includes('PreviewPaneFrame')) return previewPane;
+        return undefined;
+      },
+    });
+
+    harness.flushAnimationFrame();
+
+    expect(previewToggle.dataset.previewState).toBe('open');
+    expect(previewLabel.textContent).toBe('Hide preview');
+    expect(previewStatus.textContent).toBe('Visible');
+    expect(previewToggle.setAttribute).toHaveBeenCalledWith('aria-label', 'Hide preview. Preview visible.');
+    expect(previewToggle.setAttribute).toHaveBeenCalledWith('aria-expanded', 'true');
+    expect(previewToggle.setAttribute).toHaveBeenCalledWith('aria-controls', 'blackbox-cms-preview-pane');
+
+    clickListener?.({ isTrusted: true });
+    harness.flushTimeouts();
+    expect(previewToggle.focus).toHaveBeenCalledWith({ preventScroll: true });
   });
 
   it('keeps local login copy unchanged while exposing the stable auth hook', () => {

@@ -465,6 +465,10 @@ button[data-blackbox-preview-toggle='true'][data-preview-state='open']:focus-vis
   border-color: var(--bb-admin-preview-outline) !important;
 }
 
+button[data-blackbox-top-level-media='hidden'] {
+  display: none !important;
+}
+
 input,
 textarea,
 select {
@@ -580,59 +584,6 @@ label {
 [class*='EditorContainer'] [class*='ListItemTopBar'] [role='button']:focus-visible {
   background: #ffffff !important;
   color: var(--bb-admin-text) !important;
-}
-
-[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-section-row-action='remove'],
-[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-section-row-action='remove'] {
-  width: auto !important;
-  height: auto !important;
-  min-width: 10rem !important;
-  min-height: 2rem !important;
-  flex: 0 0 auto !important;
-  padding: 0.33rem 0.75rem !important;
-  gap: 0.4rem !important;
-  border-color: rgba(141, 61, 74, 0.18) !important;
-  background: rgba(141, 61, 74, 0.08) !important;
-  color: var(--bb-admin-accent-strong) !important;
-  font-weight: 700 !important;
-  white-space: nowrap !important;
-  line-height: 1 !important;
-}
-
-[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-section-row-action='remove']:hover,
-[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-section-row-action='remove']:focus-visible,
-[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-section-row-action='remove']:hover,
-[class*='EditorContainer']
-  [class*='ListItemTopBar']
-  [role='button'][data-blackbox-section-row-action='remove']:focus-visible {
-  background: rgba(141, 61, 74, 0.14) !important;
-  border-color: rgba(141, 61, 74, 0.28) !important;
-  color: var(--bb-admin-accent) !important;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-[class*='EditorContainer'] [class*='ListItemTopBar'] button[data-blackbox-section-row-action='remove'] svg,
-[class*='EditorContainer'] [class*='ListItemTopBar'] [role='button'][data-blackbox-section-row-action='remove'] svg {
-  width: 0.72rem !important;
-  height: 0.72rem !important;
-  flex: 0 0 auto;
-}
-
-[class*='EditorContainer']
-  [class*='ListItemTopBar']
-  button[data-blackbox-section-row-action='remove']
-  [data-blackbox-section-row-action-label='true'],
-[class*='EditorContainer']
-  [class*='ListItemTopBar']
-  [role='button'][data-blackbox-section-row-action='remove']
-  [data-blackbox-section-row-action-label='true'] {
-  display: inline-flex;
-  align-items: center;
-  white-space: nowrap;
-  font-size: 0.72rem;
-  line-height: 1;
-  letter-spacing: 0.01em;
 }
 
 [class*='ControlTopbar'],

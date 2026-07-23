@@ -23,10 +23,14 @@ type DecapAdminWindow = Window & {
   __BLACKBOX_ADMIN__?: {
     bootAttemptId?: number;
     cleanupAttempt?: () => void;
+    exposeTestHooks?: boolean;
+    mediaCollections?: string[];
     mode?: DecapBackendMode;
     previewStyleUrl?: string;
   };
   __BLACKBOX_ADMIN_PREVIEW_COLLECTIONS__?: string[];
+  __BLACKBOX_ADMIN_REPAIRS__?: string[];
+  __BLACKBOX_ADMIN_TEST_HOOKS__?: Record<string, (...args: never[]) => unknown>;
   __BLACKBOX_ADMIN_READY__?: boolean;
 };
 

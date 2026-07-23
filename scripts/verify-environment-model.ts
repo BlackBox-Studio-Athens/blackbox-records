@@ -198,7 +198,6 @@ export function verifyStaticDeployTriggerSources(staticDeployWorkflow: string): 
     'openspec/**',
     'apps/web/src/content/distro/**',
     'apps/web/src/content/releases/**',
-    'apps/web/src/content/uploads/**',
     'apps/web/src/lib/admin/**',
     'apps/web/src/content.config.ts',
     'scripts/stripe-catalog-contract.ts',

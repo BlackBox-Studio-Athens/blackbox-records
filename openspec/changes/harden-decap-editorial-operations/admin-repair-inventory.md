@@ -107,3 +107,13 @@ This is a CDN/global-load timing workaround, not a selector against Decap-render
 | No behavioral assertion |     3 | R4, R5, R7 | List action, preview-toggle behavior, and lifecycle wiring are unasserted. |
 
 Highest-risk gaps are generated list-row classes/button order (R4), preview classes/title/geometry/timing (R5-R6), English editor text/native-control heuristics and untested recovery deletion (R1-R2), and the unbounded child-list observer/timer fan-out (R7). Current `pnpm test:cms-admin` runs only `apps/web/src/lib/admin` builder/config tests (`package.json:87`) and does not execute `public/admin/init.js`.
+
+## Section 15 final reconciliation
+
+Final decision recorded July 23, 2026:
+
+- The obsolete generic sortable-row remove-button mutation (R4) and its generated-class CSS were removed. Native fixed-list settings remain the primary contract; the retained `fixed-layout-section-actions` repair is limited to the exact Home, About, and Services outer `sections` fields.
+- `init.js` now publishes an exact retained-repair registry for Decap CMS 3.14.1: bounded rerender observer, DecapBridge login surface, editor scope panel, empty singleton guard, fixed-layout section actions, preview auto-collapse, preview toggle copy, saved singleton route reload, and top-level Media hiding.
+- Focused runtime tests force each retained defect surface, assert the registry and pinned version, verify safe no-op behavior for absent targets, and reject the removed generic list-action patch.
+- Preview collapse owns one bounded timer schedule. Mutation handling ignores empty records and permits at most one queued animation frame, preventing timer fan-out and unbounded observer loops.
+- The retained preview control remains Decap's single button, with visible Open/Hide copy, `aria-expanded`, `aria-pressed`, a controlled pane relationship, and focus restoration after activation.

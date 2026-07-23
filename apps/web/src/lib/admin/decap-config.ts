@@ -10,6 +10,7 @@ import { buildArtistCollection } from './decap-artist-collection';
 import { buildDistroCollection } from './decap-distro-collection';
 import { buildDistroPageFields } from './decap-distro-page-fields';
 import { buildHomeFields } from './decap-home-fields';
+import { decapGlobalMedia } from './decap-media';
 import { buildNewsCollection } from './decap-news-collection';
 import { buildNewsletterFields } from './decap-newsletter-fields';
 import { buildPageFileCollections } from './decap-page-collections';
@@ -115,5 +116,5 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
     pageCollections.settings,
   ];
 
-  return `${backendConfig}\n\npublish_mode: simple\nslug:\n  encoding: ascii\n  clean_accents: true\n  sanitize_replacement: "-"\nmedia_folder: apps/web/src/content/uploads\n${authConfig}\n\nsite_url: ${escapeYamlScalar(options.siteRootUrl)}\ndisplay_url: ${escapeYamlScalar(options.siteRootUrl)}\nlogo_url: ${escapeYamlScalar(options.logoUrl)}\neditor:\n  preview: true\n\ncollections:\n${indentYamlBlock(collections.join('\n\n'), 2)}\n`;
+  return `${backendConfig}\n\npublish_mode: simple\nslug:\n  encoding: ascii\n  clean_accents: true\n  sanitize_replacement: "-"\nmedia_folder: ${escapeYamlScalar(decapGlobalMedia.mediaFolder)}\npublic_folder: ${escapeYamlScalar(decapGlobalMedia.publicFolder)}\n${authConfig}\n\nsite_url: ${escapeYamlScalar(options.siteRootUrl)}\ndisplay_url: ${escapeYamlScalar(options.siteRootUrl)}\nlogo_url: ${escapeYamlScalar(options.logoUrl)}\neditor:\n  preview: true\n\ncollections:\n${indentYamlBlock(collections.join('\n\n'), 2)}\n`;
 }

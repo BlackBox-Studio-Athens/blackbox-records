@@ -90,3 +90,14 @@ No upload filename or full upload path has a repository text reference. Every ro
 6. Upload filename prefixes imply owners (`home-`, `artists-`, and similar), but no config or schema enforces that ownership or maps a selected global asset back to a collection-relative path.
 7. Two News entries reference `../releases/...` images outside the configured News root. Astro accepts those paths, but the one-segment `/admin/media/news/<asset>` contract and preview fallback for `./` paths do not express that cross-collection ownership directly.
 8. Route hardening, mirror deletion, and top-level Media behavior remain intentionally deferred to tasks 14.1-14.14.
+
+## Section 14 final reconciliation
+
+Final decision recorded July 23, 2026:
+
+1. A second SHA-256 and repository-reference pass confirmed all 17 upload files remained unreferenced mirrors with byte-identical counterparts in committed collection or public asset roots.
+2. All 17 mirrors were deleted. No global uploads directory is retained or admitted to the media route allowlist.
+3. `decap-media.ts` is the typed source of truth for the seven collection-owned roots: Home, About, Services, Artists, Releases, Distro, and News. Config builders and `/admin/media` consume that contract.
+4. Every image-owning collection keeps `media_folder: "."` and `public_folder: "./"`. Decap's mandatory global media settings point at Home as a non-exposed fallback; the top-level Media action is hidden because global selection cannot preserve collection ownership.
+5. The preview route decodes one segment once, rejects separators, dot segments, residual encoding, unsupported extensions, and containment failures, returns exact image MIME types, uses mutable revalidation caching, and emits one bounded path-free 404 response.
+6. The isolated preview resolver covers existing collection paths, newly selected blob/data assets, Decap asset objects, and the accepted News-to-Release image reference without broadening filesystem access.

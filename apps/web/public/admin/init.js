@@ -2,9 +2,34 @@
   const adminContext = window.__BLACKBOX_ADMIN__ || {};
   const bootAttemptId = adminContext.bootAttemptId;
   const previewStyleUrl = adminContext.previewStyleUrl;
+  const mediaCollections = Array.isArray(adminContext.mediaCollections) ? adminContext.mediaCollections : [];
+  const previewAssetResolver = window.__BLACKBOX_PREVIEW_ASSETS__?.resolvePreviewAssetUrl;
   const previewAutoCollapseKey = 'blackbox-cms-preview-auto-collapsed';
   const previewToggleClickBoundAttribute = 'data-preview-toggle-click-bound';
+  const retainedPinnedVersionRepairs = Object.freeze({
+    'bounded-rerender-observer':
+      'Decap CMS 3.14.1 mounts and replaces editor chrome asynchronously; one queued animation-frame sync covers late child-list changes.',
+    'decapbridge-login-surface':
+      'Decap CMS 3.14.1 renders a generic Login action for the hosted PKCE backend; branded copy identifies DecapBridge sign-in.',
+    'editor-scope-panel':
+      'Decap CMS 3.14.1 has no supported authenticated-editor slot for direct-publish and ownership guidance.',
+    'empty-singleton-guard':
+      'Decap CMS 3.14.1 can present an empty singleton form after a failed remote load; the guard prevents accidental blank publication.',
+    'fixed-layout-section-actions':
+      'Decap CMS 3.14.1 still renders outer remove and reorder controls when allow_remove and allow_reorder are false.',
+    'preview-auto-collapse':
+      'Decap CMS 3.14.1 has no supported initial collapsed-preview setting for existing entry editors.',
+    'preview-toggle-copy':
+      'Decap CMS 3.14.1 exposes an icon-only Toggle Preview action; the repair adds accurate visible and accessible state.',
+    'saved-singleton-route-reload':
+      'Decap CMS 3.14.1 can retain stale singleton form state during saved singleton-to-singleton navigation.',
+    'top-level-media-hidden':
+      'Decap CMS 3.14.1 has no config switch for hiding the global Media action when all image widgets use collection-owned roots.',
+  });
   let previewCollapseInFlight = false;
+  let previewCollapseScheduleActive = false;
+  const previewCollapseTimerIds = new Set();
+  window.__BLACKBOX_ADMIN_REPAIRS__ = Object.keys(retainedPinnedVersionRepairs);
   const isCurrentBootAttempt = () => window.__BLACKBOX_ADMIN__?.bootAttemptId === bootAttemptId;
 
   const toArray = (value) => {
@@ -437,42 +462,27 @@
     return true;
   };
 
-  const enhanceListItemActionButtons = () => {
+  const syncFixedLayoutSectionActions = () => {
+    if (!fixedLayoutSectionEntryHashes.has(window.location.hash.split('?')[0])) {
+      return;
+    }
+
     const topBars = Array.from(document.querySelectorAll('[class*="ListItemTopBar"]'));
     topBars.forEach((topBar) => {
-      if (!topBar.closest('[class*="SortableListItem"]') || lockFixedLayoutSectionActions(topBar)) {
-        return;
-      }
-
-      if (topBar.querySelector('[data-blackbox-section-row-action="remove"]')) {
-        return;
-      }
-
-      const topBarButtons = Array.from(topBar.querySelectorAll('button')).filter((button) =>
-        button.className.includes('TopBarButton'),
-      );
-      if (topBarButtons.length < 2) {
-        return;
-      }
-
-      const targetButton = topBarButtons[topBarButtons.length - 1];
-      const targetLabel =
-        `${targetButton.getAttribute('aria-label') || ''} ${targetButton.getAttribute('title') || ''} ${targetButton.textContent || ''}`.trim();
-      if (targetLabel) {
-        return;
-      }
-
-      targetButton.dataset.blackboxSectionRowAction = 'remove';
-      targetButton.setAttribute('aria-label', 'Remove section');
-      targetButton.setAttribute('title', 'Remove section');
-
-      if (!targetButton.querySelector('[data-blackbox-section-row-action-label="true"]')) {
-        const visibleLabel = document.createElement('span');
-        visibleLabel.dataset.blackboxSectionRowActionLabel = 'true';
-        visibleLabel.textContent = 'Remove';
-        targetButton.append(visibleLabel);
-      }
+      if (topBar.closest('[class*="SortableListItem"]')) lockFixedLayoutSectionActions(topBar);
     });
+  };
+
+  const syncTopLevelMediaSurface = () => {
+    const mediaButton = Array.from(document.querySelectorAll('nav button')).find(
+      (button) => (button.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase() === 'media',
+    );
+    if (!mediaButton) return;
+
+    mediaButton.dataset.blackboxTopLevelMedia = 'hidden';
+    mediaButton.hidden = true;
+    mediaButton.setAttribute('aria-hidden', 'true');
+    mediaButton.setAttribute('tabindex', '-1');
   };
 
   const ensurePreviewToggleContent = (previewToggleButton) => {
@@ -483,15 +493,19 @@
     if (!previewCopy) {
       previewCopy = document.createElement('span');
       previewCopy.dataset.blackboxPreviewCopy = 'true';
+      previewToggleButton.append(previewCopy);
+    }
 
+    if (!previewLabel) {
       previewLabel = document.createElement('span');
       previewLabel.dataset.blackboxPreviewLabel = 'true';
+      previewCopy.append(previewLabel);
+    }
 
+    if (!previewStatus) {
       previewStatus = document.createElement('span');
       previewStatus.dataset.blackboxPreviewStatus = 'true';
-
-      previewCopy.append(previewLabel, previewStatus);
-      previewToggleButton.append(previewCopy);
+      previewCopy.append(previewStatus);
     }
 
     return {
@@ -506,7 +520,8 @@
       return;
     }
 
-    const previewIsVisible = isPreviewPaneVisible();
+    const previewPane = getPreviewPane();
+    const previewIsVisible = isPreviewPaneVisible(previewPane);
     const nextActionLabel = previewIsVisible ? 'Hide preview' : 'Open preview';
     const previewStatusLabel = previewIsVisible ? 'Preview visible' : 'Preview hidden';
     const previewStatusChipLabel = previewIsVisible ? 'Visible' : 'Hidden';
@@ -517,20 +532,28 @@
     previewToggleButton.dataset.previewLabel = nextActionLabel;
     previewToggleButton.dataset.previewStatus = previewStatusChipLabel;
     previewToggleButton.setAttribute('aria-label', `${nextActionLabel}. ${previewStatusLabel}.`);
+    previewToggleButton.setAttribute('aria-expanded', String(previewIsVisible));
     previewToggleButton.setAttribute('aria-pressed', String(previewIsVisible));
     previewToggleButton.setAttribute('title', nextActionLabel);
+    if (previewPane) {
+      previewPane.id ||= 'blackbox-cms-preview-pane';
+      previewToggleButton.setAttribute('aria-controls', previewPane.id);
+    } else {
+      previewToggleButton.removeAttribute('aria-controls');
+    }
     previewLabel.textContent = nextActionLabel;
     previewStatus.textContent = previewStatusChipLabel;
 
     if (!previewToggleButton.hasAttribute(previewToggleClickBoundAttribute)) {
       previewToggleButton.setAttribute(previewToggleClickBoundAttribute, 'true');
-      previewToggleButton.addEventListener('click', () => {
+      previewToggleButton.addEventListener('click', (event) => {
         window.setTimeout(() => {
           if (!isCurrentBootAttempt()) {
             return;
           }
 
           syncPreviewToggleButtonState();
+          if (event.isTrusted) previewToggleButton.focus({ preventScroll: true });
         }, 60);
       });
     }
@@ -538,16 +561,22 @@
     document.documentElement.dataset.blackboxCmsPreview = previewIsVisible ? 'open' : 'collapsed';
   };
 
-  const isPreviewPaneVisible = () => {
-    const previewPane =
-      document.querySelector('[class*="PreviewPaneFrame"]') ||
-      document.querySelector('[class*="PreviewPaneContainer"]:not([class*="ControlPaneContainer"])');
+  const getPreviewPane = () =>
+    document.querySelector('[class*="PreviewPaneFrame"]') ||
+    document.querySelector('[class*="PreviewPaneContainer"]:not([class*="ControlPaneContainer"])');
 
+  const isPreviewPaneVisible = (previewPane = getPreviewPane()) => {
     if (!previewPane) {
       return false;
     }
 
     return previewPane.getBoundingClientRect().width > 120;
+  };
+
+  const clearPreviewCollapseSchedule = () => {
+    previewCollapseTimerIds.forEach((timerId) => window.clearTimeout(timerId));
+    previewCollapseTimerIds.clear();
+    previewCollapseScheduleActive = false;
   };
 
   const schedulePreviewCollapse = () => {
@@ -557,26 +586,32 @@
 
     syncPreviewToggleButtonState();
 
-    if (!isEntryEditorRoute() || hasAutoCollapsedPreview()) {
+    if (!isEntryEditorRoute() || hasAutoCollapsedPreview() || previewCollapseScheduleActive) {
       return;
     }
 
     const delays = [0, 50, 140, 280, 450, 700];
-    delays.forEach((delay) => {
-      window.setTimeout(() => {
+    previewCollapseScheduleActive = true;
+    delays.forEach((delay, index) => {
+      const timerId = window.setTimeout(() => {
+        previewCollapseTimerIds.delete(timerId);
         if (!isCurrentBootAttempt()) {
+          clearPreviewCollapseSchedule();
           return;
         }
 
         if (!isEntryEditorRoute() || hasAutoCollapsedPreview() || !isPreviewPaneVisible() || previewCollapseInFlight) {
+          if (index === delays.length - 1) previewCollapseScheduleActive = false;
           return;
         }
 
         const previewToggleButton = getPreviewToggleButton();
         if (!previewToggleButton) {
+          if (index === delays.length - 1) previewCollapseScheduleActive = false;
           return;
         }
 
+        clearPreviewCollapseSchedule();
         previewCollapseInFlight = true;
         previewToggleButton.click();
         markPreviewAsAutoCollapsed();
@@ -601,6 +636,7 @@
           previewCollapseInFlight = false;
         }, 90);
       }, delay);
+      previewCollapseTimerIds.add(timerId);
     });
   };
 
@@ -616,9 +652,7 @@
         return;
       }
 
-      if (animationFrameId) {
-        window.cancelAnimationFrame(animationFrameId);
-      }
+      if (animationFrameId) return;
 
       animationFrameId = window.requestAnimationFrame(() => {
         animationFrameId = 0;
@@ -628,8 +662,9 @@
 
         syncAuthLoginSurface();
         syncEditorScopePanel();
+        syncTopLevelMediaSurface();
         syncPreviewToggleButtonState();
-        enhanceListItemActionButtons();
+        syncFixedLayoutSectionActions();
         syncSingletonContentGuard();
         schedulePreviewCollapse();
       });
@@ -637,8 +672,10 @@
 
     window.addEventListener('hashchange', triggerPreviewCollapse);
 
-    const observer = new MutationObserver(() => {
-      triggerPreviewCollapse();
+    const observer = new MutationObserver((mutations) => {
+      if (mutations.some((mutation) => mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0)) {
+        triggerPreviewCollapse();
+      }
     });
 
     if (document.body) {
@@ -660,74 +697,40 @@
       }
       removeSingletonContentGuard();
       removeEditorScopePanel();
+      clearPreviewCollapseSchedule();
       previewCollapseInFlight = false;
     };
   };
 
   const resolveAssetUrl = (value, getAsset, collectionKey) => {
-    const rawValue = toText(value).trim();
-    if (!rawValue) {
+    if (typeof previewAssetResolver !== 'function') return '';
+
+    try {
+      return previewAssetResolver({
+        value,
+        getAsset,
+        collectionKey,
+        adminMediaBaseUrl: getAdminMediaBaseUrl(),
+        allowedCollections: mediaCollections,
+      });
+    } catch {
       return '';
     }
-
-    const fallbackCollectionAssetUrl =
-      rawValue.startsWith('./') && collectionKey
-        ? `${getAdminMediaBaseUrl()}${collectionKey}/${rawValue.slice(2)}`
-        : rawValue;
-
-    if (typeof getAsset !== 'function') {
-      return fallbackCollectionAssetUrl;
-    }
-
-    const resolvedAsset = getAsset(value);
-    if (resolvedAsset && typeof resolvedAsset === 'string') {
-      if (/^(blob:|data:|https?:\/\/)/i.test(resolvedAsset)) {
-        return resolvedAsset;
-      }
-
-      if (resolvedAsset.startsWith('/') && (!collectionKey || resolvedAsset.includes('/admin/media/'))) {
-        return resolvedAsset;
-      }
-    }
-
-    if (resolvedAsset && typeof resolvedAsset.url === 'string') {
-      if (collectionKey && resolvedAsset.url.includes('/admin/') && !resolvedAsset.url.includes('/admin/media/')) {
-        return fallbackCollectionAssetUrl;
-      }
-
-      return resolvedAsset.url;
-    }
-
-    if (resolvedAsset && typeof resolvedAsset.path === 'string') {
-      if (collectionKey && resolvedAsset.path.includes('/admin/') && !resolvedAsset.path.includes('/admin/media/')) {
-        return fallbackCollectionAssetUrl;
-      }
-
-      return resolvedAsset.path;
-    }
-
-    if (resolvedAsset && typeof resolvedAsset.toString === 'function') {
-      const serializedValue = resolvedAsset.toString();
-      if (
-        serializedValue &&
-        serializedValue !== '[object Object]' &&
-        /^(blob:|data:|https?:\/\/)/i.test(serializedValue)
-      ) {
-        return serializedValue;
-      }
-
-      if (
-        serializedValue &&
-        serializedValue !== '[object Object]' &&
-        serializedValue.startsWith('/') &&
-        (!collectionKey || serializedValue.includes('/admin/media/'))
-      ) {
-        return serializedValue;
-      }
-    }
-
-    return fallbackCollectionAssetUrl;
   };
+
+  if (adminContext.exposeTestHooks) {
+    window.__BLACKBOX_ADMIN_TEST_HOOKS__ = {
+      getActiveSingletonEditor,
+      isSingletonEditorEmptyLoad,
+      reloadOnSavedSingletonRouteChange,
+      schedulePreviewCollapse,
+      syncAuthLoginSurface,
+      syncEditorScopePanel,
+      syncFixedLayoutSectionActions,
+      syncPreviewToggleButtonState,
+      syncTopLevelMediaSurface,
+    };
+  }
 
   const createElementFactory = (h) => {
     const renderImage = (url, alt, className, fallbackLabel) =>
@@ -737,7 +740,15 @@
             src: url,
             alt: alt || '',
           })
-        : h('div', { className: `${className} blackbox-preview__media-fallback` }, fallbackLabel);
+        : h(
+            'div',
+            {
+              className: `${className} blackbox-preview__media-fallback`,
+              role: 'img',
+              'aria-label': `${toText(fallbackLabel).slice(0, 120) || 'Preview image'} unavailable`,
+            },
+            `${toText(fallbackLabel).slice(0, 120) || 'Preview image'} unavailable`,
+          );
 
     const renderBulletList = (items) =>
       h(

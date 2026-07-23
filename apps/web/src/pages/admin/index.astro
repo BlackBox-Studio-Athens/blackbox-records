@@ -1,10 +1,12 @@
 ---
 import { createProjectRelativeUrl, siteBrandAssets } from '@/config/site';
 import { getDecapAdminBootView } from '@/lib/admin/decap-admin-boot';
+import { decapCollectionMediaKeys } from '@/lib/admin/decap-media';
 import { resolveDecapBackendMode } from '@/lib/admin/decap-runtime-config';
 
 const adminConfigUrl = createProjectRelativeUrl('/admin/config.yml');
 const adminInitUrl = createProjectRelativeUrl('/admin/init.js');
+const previewAssetsUrl = createProjectRelativeUrl('/admin/preview-assets.js');
 const adminStyleUrl = createProjectRelativeUrl('/admin/admin.css');
 const previewStyleUrl = createProjectRelativeUrl('/admin/preview.css');
 const faviconSvgUrl = createProjectRelativeUrl(siteBrandAssets.faviconSvg);
@@ -67,9 +69,10 @@ const fontStylesheetUrl =
         </button>
       </section>
     </main>
-    <script is:inline define:vars={{ adminMode, previewStyleUrl }}>
+    {adminMode !== 'disabled' && <script is:inline src={previewAssetsUrl} />}
+    <script is:inline define:vars={{ adminMode, previewStyleUrl, decapCollectionMediaKeys }}>
       window.CMS_MANUAL_INIT = true;
-      window.__BLACKBOX_ADMIN__ = { mode: adminMode, previewStyleUrl };
+      window.__BLACKBOX_ADMIN__ = { mode: adminMode, previewStyleUrl, mediaCollections: decapCollectionMediaKeys };
     </script>
     <script>
       import { startDecapAdminBoot } from '@/lib/admin/decap-admin-boot';

@@ -700,7 +700,7 @@ BlackBox now ships with an Astro-hosted Decap CMS at `/admin/`.
 - Preview styling/runtime: `apps/web/public/admin/preview.css`, `apps/web/public/admin/init.js`
 - Local Decap proxy: `apps/web/scripts/start-decap-proxy.mjs`
 - Combined local CMS dev server: `apps/web/scripts/start-cms-dev.mjs`
-- Global Decap media browser root: `apps/web/src/content/uploads/`
+- Collection media contract: `apps/web/src/lib/admin/decap-media.ts`
 
 ### Local CMS development
 
@@ -790,10 +790,10 @@ Notes:
 
 ### Media assets behavior
 
-- The Decap `Media assets` drawer is rooted at `apps/web/src/content/uploads/`.
-- That folder acts as a mirrored library of the images currently in use across the site, including the brand assets that otherwise live in `public/assets/images/brand/`.
-- Decap’s global media drawer does not aggregate collection-local image folders into one repo-wide browser, so the mirrored uploads folder exists specifically to make those current assets appear in the drawer.
-- Collection image fields still keep their per-collection `media_folder` / `public_folder` overrides, so editing existing content continues to save files beside the relevant entries and remains compatible with Astro `image()` fields.
+- Home, About, Services, Artists, Releases, Distro, and News own their image files beside their content entries through `media_folder: "."` and `public_folder: "./"`.
+- The top-level Decap Media action is hidden because a global selection cannot preserve those collection-relative paths. Decap still requires a global media setting, so config uses the Home directory only as a non-exposed fallback.
+- `/admin/media/<collection>/<asset>` serves previews only from the seven typed collection roots, supported image extensions, and direct child filenames.
+- News preview resolution supports the existing `../releases/<asset>` references without broadening the media route or allowing arbitrary traversal.
 
 ### Collection coverage
 

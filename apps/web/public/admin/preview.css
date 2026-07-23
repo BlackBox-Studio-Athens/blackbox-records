@@ -267,10 +267,15 @@ body {
 .blackbox-preview__media-fallback {
   display: grid;
   place-items: center;
+  min-height: 12rem;
+  padding: 1rem;
+  border: 1px dashed var(--bb-preview-line-strong);
   color: var(--bb-preview-text-muted);
   font-family: 'Geist Mono', 'Courier New', monospace;
   font-size: 0.72rem;
   letter-spacing: 0.16em;
+  line-height: 1.5;
+  text-align: center;
   text-transform: uppercase;
 }
 

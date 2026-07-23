@@ -1,5 +1,6 @@
 import { buildField, buildFolderCollection, buildSchemaField } from './decap-yaml-builder';
 import { decapCollectionDescriptions } from './decap-editorial-copy';
+import { decapCollectionMedia } from './decap-media';
 import { DISTRO_GROUP_VALUES } from '../distro-data';
 
 export function buildDistroCollection() {
@@ -18,8 +19,8 @@ export function buildDistroCollection() {
     format: 'json',
     identifierField: 'title',
     slug: '{{slug}}',
-    mediaFolder: '.',
-    publicFolder: './',
+    mediaFolder: decapCollectionMedia.distro.mediaFolder,
+    publicFolder: decapCollectionMedia.distro.publicFolder,
     summary: '{{title}} — {{group}} — order {{order}}',
     fields: [
       buildSchemaField('../../../.astro/collections/distro.schema.json'),

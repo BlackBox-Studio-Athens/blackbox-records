@@ -5,6 +5,7 @@ import {
 } from '../editorial-validation';
 import { buildField, buildFieldMapping, buildFolderCollection } from './decap-yaml-builder';
 import { decapCollectionDescriptions } from './decap-editorial-copy';
+import { decapCollectionMedia } from './decap-media';
 
 export function buildReleaseCollection() {
   return buildFolderCollection({
@@ -21,8 +22,8 @@ export function buildReleaseCollection() {
     format: 'frontmatter',
     identifierField: 'title',
     slug: '{{slug}}',
-    mediaFolder: '.',
-    publicFolder: './',
+    mediaFolder: decapCollectionMedia.releases.mediaFolder,
+    publicFolder: decapCollectionMedia.releases.publicFolder,
     summary: '{{release_date}} — {{title}} — {{artist}}',
     fields: [
       buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Release title.' }),

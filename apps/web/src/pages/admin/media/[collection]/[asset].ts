@@ -1,30 +1,27 @@
 import { existsSync } from 'node:fs';
 import { readFile, readdir } from 'node:fs/promises';
-import { extname, resolve } from 'node:path';
+import { resolve } from 'node:path';
 
 import type { APIRoute, GetStaticPaths } from 'astro';
 
+import {
+  decapCollectionMedia,
+  decapCollectionMediaKeys,
+  decapMediaCacheControl,
+  getDecapMediaContentType,
+  resolveDecapMediaAsset,
+} from '@/lib/admin/decap-media';
+
 export const prerender = true;
 
-const collectionDirectories = {
-  about: 'src/content/about',
-  artists: 'src/content/artists',
-  distro: 'src/content/distro',
-  home: 'src/content/home',
-  news: 'src/content/news',
-  releases: 'src/content/releases',
-  services: 'src/content/services',
-} as const;
-
-const imageExtensions = new Set(['.avif', '.gif', '.jpeg', '.jpg', '.png', '.webp']);
-const contentTypes = {
-  '.avif': 'image/avif',
-  '.gif': 'image/gif',
-  '.jpeg': 'image/jpeg',
-  '.jpg': 'image/jpeg',
-  '.png': 'image/png',
-  '.webp': 'image/webp',
-} as const;
+const notFoundResponse = () =>
+  new Response('Media asset not found.\n', {
+    status: 404,
+    headers: {
+      'Cache-Control': 'no-store',
+      'Content-Type': 'text/plain; charset=utf-8',
+    },
+  });
 
 function resolveAppRoot(): string {
   const currentWorkingDirectory = process.cwd();
@@ -41,11 +38,44 @@ function resolveAppRoot(): string {
 
 const appRoot = resolveAppRoot();
 
+type ReadDecapMediaAsset = (absolutePath: string) => Promise<Uint8Array>;
+
+export async function createDecapMediaResponse(input: {
+  appRoot: string;
+  asset: string | undefined;
+  collection: string | undefined;
+  readAsset?: ReadDecapMediaAsset;
+}): Promise<Response> {
+  const resolvedAsset = resolveDecapMediaAsset({
+    appRoot: input.appRoot,
+    asset: input.asset,
+    collection: input.collection,
+  });
+  if (!resolvedAsset) return notFoundResponse();
+
+  let fileBuffer: Uint8Array;
+  try {
+    fileBuffer = await (input.readAsset ?? readFile)(resolvedAsset.absolutePath);
+  } catch {
+    return notFoundResponse();
+  }
+
+  const responseBody = new Uint8Array(fileBuffer.byteLength);
+  responseBody.set(fileBuffer);
+
+  return new Response(responseBody.buffer, {
+    headers: {
+      'Cache-Control': decapMediaCacheControl,
+      'Content-Type': resolvedAsset.contentType,
+    },
+  });
+}
+
 export const getStaticPaths: GetStaticPaths = async () => {
   const paths = [];
 
-  for (const [collection, directory] of Object.entries(collectionDirectories)) {
-    const absoluteDirectory = resolve(appRoot, directory);
+  for (const collection of decapCollectionMediaKeys) {
+    const absoluteDirectory = resolve(appRoot, decapCollectionMedia[collection].appDirectory);
     const entries = await readdir(absoluteDirectory, { withFileTypes: true });
 
     for (const entry of entries) {
@@ -53,8 +83,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
         continue;
       }
 
-      const extension = extname(entry.name).toLowerCase();
-      if (!imageExtensions.has(extension)) {
+      if (!getDecapMediaContentType(entry.name)) {
         continue;
       }
 
@@ -70,27 +99,9 @@ export const getStaticPaths: GetStaticPaths = async () => {
   return paths;
 };
 
-export const GET: APIRoute = async ({ params }) => {
-  const collection = params.collection as keyof typeof collectionDirectories | undefined;
-  const asset = params.asset;
-
-  if (!collection || !asset) {
-    return new Response(null, { status: 404 });
-  }
-
-  const directory = collectionDirectories[collection];
-  if (!directory) {
-    return new Response(null, { status: 404 });
-  }
-
-  const absoluteFilePath = resolve(appRoot, directory, asset);
-  const extension = extname(asset).toLowerCase() as keyof typeof contentTypes;
-  const fileBuffer = await readFile(absoluteFilePath);
-
-  return new Response(new Uint8Array(fileBuffer), {
-    headers: {
-      'Cache-Control': 'public, max-age=31536000, immutable',
-      'Content-Type': contentTypes[extension] || 'application/octet-stream',
-    },
+export const GET: APIRoute = ({ params }) =>
+  createDecapMediaResponse({
+    appRoot,
+    asset: params.asset,
+    collection: params.collection,
   });
-};

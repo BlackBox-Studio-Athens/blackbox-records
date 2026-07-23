@@ -233,6 +233,20 @@ export function getSrcsetCandidateUrl(tag: string, width: number): string {
   return candidate?.[0] || '';
 }
 
+export function getArtistRosterImageTag(html: string, artistTitle: string): string {
+  const itemOpenTags = [...html.matchAll(/<div\b[^>]*\bdata-artist-roster-item\b[^>]*>/g)];
+
+  for (const [index, match] of itemOpenTags.entries()) {
+    if (readAttribute(match[0], 'data-artist-title') !== artistTitle) continue;
+
+    const itemStart = match.index;
+    const itemEnd = itemOpenTags[index + 1]?.index ?? html.length;
+    return getImageTags(html.slice(itemStart, itemEnd), 'artist-roster-card__image')[0] || '';
+  }
+
+  return '';
+}
+
 export function checkImageMarkup(routeHtmlByPath: Map<string, string>, checks: RouteCheck[]): ImageMarkupDiagnostic[] {
   const diagnostics: ImageMarkupDiagnostic[] = [];
 
@@ -313,9 +327,7 @@ function run() {
 
   const diagnostics = checkImageMarkup(routeHtmlByPath, routeChecks);
   const artistsHtml = routeHtmlByPath.get('artists/index.html') || '';
-  const ouranopithecusTag = getImageTags(artistsHtml, 'artist-roster-card__image').find((tag) =>
-    tag.includes('alt="Ouranopithecus"'),
-  );
+  const ouranopithecusTag = getArtistRosterImageTag(artistsHtml, 'Ouranopithecus');
   const candidateUrl = ouranopithecusTag ? getSrcsetCandidateUrl(ouranopithecusTag, 480) : '';
   const candidatePath = candidateUrl ? join(distRoot, candidateUrl.replace(/^.*?\/_astro\//, '_astro/')) : '';
   if (!candidatePath || !existsSync(candidatePath)) {

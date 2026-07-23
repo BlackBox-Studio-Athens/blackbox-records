@@ -2,6 +2,7 @@ import { buildField, buildFieldMapping, buildFolderCollection } from './decap-ya
 import { httpsUrlPatternSource, youtubeVideoIdPatternSource } from '../editorial-validation';
 import { createSlugSuggestion, slugPatternSource } from '../slugs';
 import { decapCollectionDescriptions } from './decap-editorial-copy';
+import { decapCollectionMedia } from './decap-media';
 
 export function createArtistSlugSuggestion(artistName: string): string {
   return createSlugSuggestion(artistName);
@@ -22,8 +23,8 @@ export function buildArtistCollection() {
     format: 'frontmatter',
     identifierField: 'title',
     slug: '{{fields.slug}}',
-    mediaFolder: '.',
-    publicFolder: './',
+    mediaFolder: decapCollectionMedia.artists.mediaFolder,
+    publicFolder: decapCollectionMedia.artists.publicFolder,
     summary: '{{title}} — {{genre}} — {{slug}}',
     fields: [
       buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Artist or band name.' }),

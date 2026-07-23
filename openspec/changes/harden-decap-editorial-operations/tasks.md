@@ -168,48 +168,48 @@
 
 ## 14. Reconcile media ownership and the admin media route
 
-- [ ] 14.1 Create one typed allowlist describing every collection-owned media directory supported by Decap previews.
-- [ ] 14.2 Include Home, About, Services, Artists, Releases, Distro, and News media roots in that allowlist.
-- [ ] 14.3 Include global uploads in the allowlist only if the final inventory proves the retained top-level media surface can save valid paths.
-- [ ] 14.4 Make `apps/web/src/pages/admin/media/[collection]/[asset].ts` consume the shared allowlist rather than maintaining a second collection list.
-- [ ] 14.5 Normalize and decode route parameters once, then reject separators, dot segments, encoded traversal, and paths outside the allowlisted directory.
-- [ ] 14.6 Restrict served files to the image extensions supported by current Astro content and Decap fields.
-- [ ] 14.7 Return an explicit correct content type for every supported image extension.
-- [ ] 14.8 Replace the current unconditional immutable cache policy with a cache policy suitable for content assets that may be replaced during editing.
-- [ ] 14.9 Return bounded 404 responses for unknown collections, unsupported extensions, and missing assets without exposing filesystem paths.
-- [ ] 14.10 Compare every mirrored file under `apps/web/src/content/uploads/` with committed collection assets and all repository references.
-- [ ] 14.11 Delete only proven unreferenced mirrors; otherwise hide or limit the top-level Media surface so it cannot produce invalid collection paths.
-- [ ] 14.12 Align global `media_folder`/`public_folder`, collection `media_folder` values, and the preview route with the accepted media inventory.
-- [ ] 14.13 Verify existing collection images and newly selected blob/data assets resolve in every retained key preview.
-- [ ] 14.14 Add route tests for every allowlisted root, extension, MIME type, cache header, unknown collection, missing asset, and traversal form.
+- [x] 14.1 Create one typed allowlist describing every collection-owned media directory supported by Decap previews.
+- [x] 14.2 Include Home, About, Services, Artists, Releases, Distro, and News media roots in that allowlist.
+- [x] 14.3 Include global uploads in the allowlist only if the final inventory proves the retained top-level media surface can save valid paths.
+- [x] 14.4 Make `apps/web/src/pages/admin/media/[collection]/[asset].ts` consume the shared allowlist rather than maintaining a second collection list.
+- [x] 14.5 Normalize and decode route parameters once, then reject separators, dot segments, encoded traversal, and paths outside the allowlisted directory.
+- [x] 14.6 Restrict served files to the image extensions supported by current Astro content and Decap fields.
+- [x] 14.7 Return an explicit correct content type for every supported image extension.
+- [x] 14.8 Replace the current unconditional immutable cache policy with a cache policy suitable for content assets that may be replaced during editing.
+- [x] 14.9 Return bounded 404 responses for unknown collections, unsupported extensions, and missing assets without exposing filesystem paths.
+- [x] 14.10 Compare every mirrored file under `apps/web/src/content/uploads/` with committed collection assets and all repository references.
+- [x] 14.11 Delete only proven unreferenced mirrors; otherwise hide or limit the top-level Media surface so it cannot produce invalid collection paths.
+- [x] 14.12 Align global `media_folder`/`public_folder`, collection `media_folder` values, and the preview route with the accepted media inventory.
+- [x] 14.13 Verify existing collection images and newly selected blob/data assets resolve in every retained key preview.
+- [x] 14.14 Add route tests for every allowlisted root, extension, MIME type, cache header, unknown collection, missing asset, and traversal form.
 
 ## 15. Realign previews and reduce brittle admin patches
 
-- [ ] 15.1 Keep preview registration for Home, Artists, Releases, Distro, and News as the required acceptance subset.
-- [ ] 15.2 Keep the existing About and Services previews while those public collections remain in scope.
-- [ ] 15.3 Remove obsolete Home Distro/Journey preview rendering and represent the current Hero, News, and Artists hierarchy.
-- [ ] 15.4 Align Artist, Release, Distro, and News preview labels, metadata, imagery, and optional sections with current public concepts.
-- [ ] 15.5 Isolate preview asset resolution so existing paths, blob URLs, data URLs, strings, and Decap asset objects can be tested deterministically.
-- [ ] 15.6 Render a bounded visible fallback when optional media or preview data cannot be resolved instead of throwing or producing broken `/admin/` URLs.
-- [ ] 15.7 Keep previews initially collapsed to preserve editing width.
-- [ ] 15.8 Provide one keyboard-accessible Open/Hide Preview control with accurate label, state, and focus behavior.
-- [ ] 15.9 Remove the list-remove-button DOM patch where native fixed-list controls now provide the required protection.
-- [ ] 15.10 For each remaining DOM-dependent patch, document the pinned-version defect it repairs and add a focused regression assertion.
-- [ ] 15.11 Make retained patches no-op safely when their target is absent and avoid unbounded mutation loops or broad generated-class selectors.
-- [ ] 15.12 Update `apps/web/public/admin/preview.css`, `admin.css`, and runtime tests for the final preview and scope-panel behavior.
+- [x] 15.1 Keep preview registration for Home, Artists, Releases, Distro, and News as the required acceptance subset.
+- [x] 15.2 Keep the existing About and Services previews while those public collections remain in scope.
+- [x] 15.3 Remove obsolete Home Distro/Journey preview rendering and represent the current Hero, News, and Artists hierarchy.
+- [x] 15.4 Align Artist, Release, Distro, and News preview labels, metadata, imagery, and optional sections with current public concepts.
+- [x] 15.5 Isolate preview asset resolution so existing paths, blob URLs, data URLs, strings, and Decap asset objects can be tested deterministically.
+- [x] 15.6 Render a bounded visible fallback when optional media or preview data cannot be resolved instead of throwing or producing broken `/admin/` URLs.
+- [x] 15.7 Keep previews initially collapsed to preserve editing width.
+- [x] 15.8 Provide one keyboard-accessible Open/Hide Preview control with accurate label, state, and focus behavior.
+- [x] 15.9 Remove the list-remove-button DOM patch where native fixed-list controls now provide the required protection.
+- [x] 15.10 For each remaining DOM-dependent patch, document the pinned-version defect it repairs and add a focused regression assertion.
+- [x] 15.11 Make retained patches no-op safely when their target is absent and avoid unbounded mutation loops or broad generated-class selectors.
+- [x] 15.12 Update `apps/web/public/admin/preview.css`, `admin.css`, and runtime tests for the final preview and scope-panel behavior.
 
 ## 16. Add deterministic configuration and parity tests
 
-- [ ] 16.1 Parse and assert the complete generated local YAML structure in `decap-config.test.ts`.
-- [ ] 16.2 Parse and assert the complete generated hosted YAML structure, including DecapBridge PKCE values and `main`/`simple` publication.
-- [ ] 16.3 Assert disabled mode produces no usable CMS backend and the admin document does not load Decap.
-- [ ] 16.4 Add negative tests for blank hosted values, placeholders, loopback hosts, invalid URLs, invalid ports, invalid modes, and non-`main` branch attempts.
-- [ ] 16.5 Assert the exact collection order, visible labels, descriptions, advanced warnings, and direct-publish copy.
-- [ ] 16.6 Assert exact field names, widgets, requiredness, patterns, relation settings, summaries, sort fields, view groups, and preview paths per collection.
-- [ ] 16.7 Assert shared Distro groups, slug constraints, and other reused closed values remain aligned with Astro schemas.
-- [ ] 16.8 Assert Home, About, and Services fixed lists disable add/remove/reorder while supported nested lists retain them.
-- [ ] 16.9 Assert Artist, Release, and Distro deletion is disabled; News and Social deletion remains confirmed; singleton files and Navigation remain non-deletable.
-- [ ] 16.10 Assert package metadata, lockfile expectations, browser runtime pin, preview registrations, and media allowlist use the accepted exact baseline.
+- [x] 16.1 Parse and assert the complete generated local YAML structure in `decap-config.test.ts`.
+- [x] 16.2 Parse and assert the complete generated hosted YAML structure, including DecapBridge PKCE values and `main`/`simple` publication.
+- [x] 16.3 Assert disabled mode produces no usable CMS backend and the admin document does not load Decap.
+- [x] 16.4 Add negative tests for blank hosted values, placeholders, loopback hosts, invalid URLs, invalid ports, invalid modes, and non-`main` branch attempts.
+- [x] 16.5 Assert the exact collection order, visible labels, descriptions, advanced warnings, and direct-publish copy.
+- [x] 16.6 Assert exact field names, widgets, requiredness, patterns, relation settings, summaries, sort fields, view groups, and preview paths per collection.
+- [x] 16.7 Assert shared Distro groups, slug constraints, and other reused closed values remain aligned with Astro schemas.
+- [x] 16.8 Assert Home, About, and Services fixed lists disable add/remove/reorder while supported nested lists retain them.
+- [x] 16.9 Assert Artist, Release, and Distro deletion is disabled; News and Social deletion remains confirmed; singleton files and Navigation remain non-deletable.
+- [x] 16.10 Assert package metadata, lockfile expectations, browser runtime pin, preview registrations, and media allowlist use the accepted exact baseline.
 
 ## 17. Harden local CMS process management and smoke coverage
 
