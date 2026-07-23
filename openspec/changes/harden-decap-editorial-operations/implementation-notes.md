@@ -6,7 +6,7 @@
 - Focused lifecycle and UAT Static Smoke tests: passed, 2 files and 17 tests.
 - `pnpm smoke:cms-local -- --screenshots never`: passed five representative editor checks with zero console errors and zero page errors.
 - Local smoke cleanup left no matching Astro, Decap proxy, browser, or parent smoke process running.
-- `pnpm test:unit`: passed — web 807 tests, backend Worker 213 tests, backend Node 228 tests, and API client 6 tests.
+- `pnpm test:unit`: passed — web 829 tests, backend Worker 284 tests, backend Node 234 tests, and API client 6 tests.
 - `pnpm check`: passed with zero errors and the pre-existing `ZodIssueCode` deprecation hint only.
 - `pnpm build`: passed with 350 pages; disabled CMS mode, cache policy, brand font, and generated image markup checks passed.
 - `git diff --check`: passed.
