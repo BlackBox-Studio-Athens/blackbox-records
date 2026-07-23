@@ -247,5 +247,5 @@
 - [x] 19.6 Run `pnpm test:cms-admin` and `pnpm smoke:cms-local -- --screenshots never` against the exact final tree.
 - [x] 19.7 Run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the exact final tree.
 - [x] 19.8 Inspect the ordinary secret-free build artifact and confirm `/admin/` is disabled and no generated admin asset references localhost or placeholders.
-- [ ] 19.9 Run `pnpm openspec -- validate harden-decap-editorial-operations --type change --strict` after implementation notes and task state are updated.
+- [x] 19.9 Run `pnpm openspec -- validate harden-decap-editorial-operations --type change --strict` after implementation notes and task state are updated.
 - [ ] 19.10 Deploy the implementation commit to UAT, run `cms_admin` and `cms_assets`, and record the passing UAT Static Smoke evidence for that exact commit.

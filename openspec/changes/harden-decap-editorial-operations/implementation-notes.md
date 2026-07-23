@@ -10,10 +10,10 @@
 - `pnpm check`: passed with zero errors and the pre-existing `ZodIssueCode` deprecation hint only.
 - `pnpm build`: passed with 350 pages; disabled CMS mode, cache policy, brand font, and generated image markup checks passed.
 - `git diff --check`: passed.
+- `pnpm openspec -- validate harden-decap-editorial-operations --type change --strict`: passed on canonical `main`.
 
 The ordinary secret-free build renders `/admin/` in disabled mode, does not advertise a writable CMS config, and rejects localhost or placeholder values in generated admin assets.
 
 ## Remaining acceptance
 
-- Task 19.9 remains open because guarded OpenSpec validation must run from the canonical `main` worktree after integration.
 - Task 19.10 remains open because the exact implementation commit has not been pushed to an authorized remote ref or deployed to UAT. No UAT evidence is claimed.
