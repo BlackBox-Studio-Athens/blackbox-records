@@ -59,13 +59,13 @@
 
 ## 6. Upgrade and pin the Decap compatibility baseline
 
-- [ ] 6.1 Change `apps/web/package.json` to pin `decap-server` exactly to `3.9.1`.
-- [ ] 6.2 Regenerate `pnpm-lock.yaml` and confirm no unintended package upgrades are included.
-- [ ] 6.3 Change the browser runtime URL in `apps/web/src/pages/admin/index.astro` to exact `decap-cms@3.14.1`.
-- [ ] 6.4 Centralize or expose the browser runtime version so the route and focused tests compare one declared value.
-- [ ] 6.5 Search the repository for stale `3.10.1`, `3.7.0`, caret-ranged Decap packages, or unversioned Decap CDN URLs and remove them.
-- [ ] 6.6 Run the focused admin unit suite immediately after the version change, before modifying custom DOM behavior.
-- [ ] 6.7 Run Local CMS Smoke against the upgraded pair and capture any compatibility regression before further editor changes.
+- [x] 6.1 Change `apps/web/package.json` to pin `decap-server` exactly to `3.9.1`.
+- [x] 6.2 Regenerate `pnpm-lock.yaml` and confirm no unintended package upgrades are included.
+- [x] 6.3 Change the browser runtime URL in `apps/web/src/pages/admin/index.astro` to exact `decap-cms@3.14.1`.
+- [x] 6.4 Centralize or expose the browser runtime version so the route and focused tests compare one declared value.
+- [x] 6.5 Search the repository for stale `3.10.1`, `3.7.0`, caret-ranged Decap packages, or unversioned Decap CDN URLs and remove them.
+- [x] 6.6 Run the focused admin unit suite immediately after the version change, before modifying custom DOM behavior.
+- [x] 6.7 Run Local CMS Smoke against the upgraded pair and capture any compatibility regression before further editor changes.
 
 ## 7. Extend the YAML builders only where needed
 

@@ -6,7 +6,8 @@ export type DecapAdminBootFailure = 'download' | 'initialization' | 'timeout';
 export const decapAdminReadyEventName = 'blackbox:decap-ready';
 export const decapAdminFailedEventName = 'blackbox:decap-failed';
 export const decapAdminBootTimeoutMs = 20_000;
-export const decapBrowserRuntimeUrl = 'https://unpkg.com/decap-cms@3.10.1/dist/decap-cms.js';
+export const decapBrowserRuntimeVersion = '3.14.1';
+export const decapBrowserRuntimeUrl = `https://unpkg.com/decap-cms@${decapBrowserRuntimeVersion}/dist/decap-cms.js`;
 
 type DecapAdminBootView = {
   ariaBusy: 'false' | 'true';

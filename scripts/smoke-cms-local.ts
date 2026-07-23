@@ -271,7 +271,7 @@ export async function runCmsLocalSmoke(options: CmsLocalSmokeOptions): Promise<C
 }
 
 function startCmsProcesses(options: CmsLocalSmokeOptions): ManagedProcess[] {
-  const proxyExecutable = resolveWebBin('decap-server');
+  const proxyExecutable = process.env.DECAP_SERVER_EXECUTABLE?.trim() || resolveWebBin('decap-server');
   const astroExecutable = resolveWebBin('astro');
   const sharedEnv = {
     ...process.env,

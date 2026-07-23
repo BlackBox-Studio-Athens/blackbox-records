@@ -4,12 +4,9 @@ import { fileURLToPath } from 'node:url';
 
 const webRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(webRoot, '..', '..');
-const decapServerExecutable = resolve(
-  webRoot,
-  'node_modules',
-  '.bin',
-  process.platform === 'win32' ? 'decap-server.cmd' : 'decap-server',
-);
+const decapServerExecutable =
+  process.env.DECAP_SERVER_EXECUTABLE?.trim() ||
+  resolve(webRoot, 'node_modules', '.bin', process.platform === 'win32' ? 'decap-server.cmd' : 'decap-server');
 
 const child = spawn(decapServerExecutable, {
   cwd: repoRoot,

@@ -10,6 +10,7 @@ import {
   decapAdminFailedEventName,
   decapAdminReadyEventName,
   decapBrowserRuntimeUrl,
+  decapBrowserRuntimeVersion,
   getDecapAdminBootView,
 } from './decap-admin-boot';
 
@@ -199,6 +200,11 @@ describe('Decap admin boot views', () => {
 });
 
 describe('Decap admin boot runtime', () => {
+  it('pins the accepted browser runtime baseline exactly', () => {
+    expect(decapBrowserRuntimeVersion).toBe('3.14.1');
+    expect(decapBrowserRuntimeUrl).toBe('https://unpkg.com/decap-cms@3.14.1/dist/decap-cms.js');
+  });
+
   it('renders disabled mode without requesting runtime or config scripts', () => {
     const harness = createHarness('disabled');
 
@@ -385,14 +391,30 @@ describe('Decap admin boot markup and styles', () => {
   const init = readFileSync(fileURLToPath(new URL('../../../public/admin/init.js', import.meta.url)), 'utf8');
   const css = readFileSync(fileURLToPath(new URL('../../../public/admin/admin.css', import.meta.url)), 'utf8');
 
-  function runInitHarness() {
+  function runInitHarness({
+    loginButton,
+    mode = 'hosted',
+  }: {
+    loginButton?: {
+      dataset: Record<string, string>;
+      getAttribute: (name: string) => string | null;
+      parentElement: { insertBefore: ReturnType<typeof vi.fn> };
+      setAttribute: ReturnType<typeof vi.fn>;
+      textContent: string;
+    };
+    mode?: 'local' | 'hosted';
+  } = {}) {
     const dispatchEvent = vi.fn();
     const addEventListener = vi.fn();
     const removeEventListener = vi.fn();
     const observe = vi.fn();
     const disconnect = vi.fn();
     const cancelAnimationFrame = vi.fn();
-    const requestAnimationFrame = vi.fn(() => 41);
+    let animationFrameCallback: FrameRequestCallback | undefined;
+    const requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
+      animationFrameCallback = callback;
+      return 41;
+    });
     const initializationHandlers: { reject?: () => void; resolve?: () => void } = {};
     const initialization = {
       then: vi.fn((resolve: () => void, reject: () => void) => {
@@ -412,12 +434,13 @@ describe('Decap admin boot markup and styles', () => {
       previewStyleUrl?: string;
     } = {
       bootAttemptId: 9,
-      mode: 'hosted',
+      mode,
       previewStyleUrl: '/admin/preview.css',
     };
     const targetWindow = {
       CMS: { registerPreviewStyle, registerPreviewTemplate },
       __BLACKBOX_ADMIN__: adminContext,
+      __BLACKBOX_ADMIN_AUTH_READY__: undefined as boolean | undefined,
       __BLACKBOX_ADMIN_PREVIEW_COLLECTIONS__: undefined as string[] | undefined,
       __BLACKBOX_ADMIN_READY__: undefined as boolean | undefined,
       addEventListener,
@@ -471,8 +494,9 @@ describe('Decap admin boot markup and styles', () => {
       document: {
         body: documentBody,
         documentElement,
+        createElement: vi.fn(() => ({ className: '', dataset: {}, innerHTML: '' })),
         querySelector: vi.fn(() => null),
-        querySelectorAll: vi.fn(() => []),
+        querySelectorAll: vi.fn((selector: string) => (selector === 'button' && loginButton ? [loginButton] : [])),
       },
       window: targetWindow,
     });
@@ -483,6 +507,7 @@ describe('Decap admin boot markup and styles', () => {
       cancelAnimationFrame,
       disconnect,
       dispatchEvent,
+      flushAnimationFrame: () => animationFrameCallback?.(0),
       initCMS,
       initializationHandlers,
       observe,
@@ -511,6 +536,45 @@ describe('Decap admin boot markup and styles', () => {
     expect(init).toContain("window.removeEventListener('hashchange'");
     expect(init).toContain('observer.disconnect()');
     expect(init).toContain("if (adminContext.mode !== 'hosted')");
+  });
+
+  it('keeps local login copy unchanged while exposing the stable auth hook', () => {
+    const loginButton = {
+      dataset: {} as Record<string, string>,
+      getAttribute: vi.fn(() => null),
+      parentElement: { insertBefore: vi.fn() },
+      setAttribute: vi.fn(),
+      textContent: 'Login',
+    };
+    const harness = runInitHarness({ loginButton, mode: 'local' });
+
+    harness.flushAnimationFrame();
+
+    expect(loginButton.textContent).toBe('Login');
+    expect(loginButton.dataset.blackboxCmsAuthButton).toBe('true');
+    expect(loginButton.setAttribute).not.toHaveBeenCalled();
+    expect(loginButton.parentElement.insertBefore).not.toHaveBeenCalled();
+    expect(harness.targetWindow.__BLACKBOX_ADMIN_AUTH_READY__).toBe(true);
+  });
+
+  it('labels hosted login and inserts the DecapBridge helper', () => {
+    const loginButton = {
+      dataset: {} as Record<string, string>,
+      getAttribute: vi.fn(() => null),
+      parentElement: { insertBefore: vi.fn() },
+      setAttribute: vi.fn(),
+      textContent: 'Login',
+    };
+    const harness = runInitHarness({ loginButton, mode: 'hosted' });
+
+    harness.flushAnimationFrame();
+
+    expect(loginButton.textContent).toBe('Sign in with DecapBridge');
+    expect(loginButton.dataset.blackboxCmsAuthButton).toBe('true');
+    expect(loginButton.setAttribute).toHaveBeenCalledWith('aria-label', 'Sign in with DecapBridge');
+    expect(loginButton.setAttribute).toHaveBeenCalledWith('title', 'Sign in with DecapBridge');
+    expect(loginButton.parentElement.insertBefore).toHaveBeenCalledOnce();
+    expect(harness.targetWindow.__BLACKBOX_ADMIN_AUTH_READY__).toBe(true);
   });
 
   it('turns synchronous preview setup exceptions into the stable failure event', () => {
