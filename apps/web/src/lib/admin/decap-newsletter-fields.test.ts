@@ -1,17 +1,34 @@
 import { describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 
+import { emailAddressPatternSource } from '../editorial-validation';
 import { buildNewsletterFields } from './decap-newsletter-fields';
 
 describe('Decap newsletter fields', () => {
-  it('builds the shared newsletter copy fields', () => {
-    const yaml = buildNewsletterFields().join('\n');
+  it('matches the visible signup copy and email-shaped placeholder contract', () => {
+    const fields = parse(buildNewsletterFields().join('\n')) as Array<{
+      hint?: string;
+      name: string;
+      pattern?: [string, string];
+      widget: string;
+    }>;
+    const field = (name: string) => fields.find((candidate) => candidate.name === name);
 
-    expect(yaml).toContain('default: "../../../.astro/collections/newsletter.schema.json"');
-    expect(yaml).toContain('name: "section_label"');
-    expect(yaml).toContain('name: "title"');
-    expect(yaml).toContain('name: "description"\n  widget: text');
-    expect(yaml).toContain('name: "placeholder"');
-    expect(yaml).toContain('name: "button_label"');
-    expect(yaml).toContain('name: "note"\n  widget: text');
+    expect(fields.map(({ name }) => name)).toEqual([
+      '$schema',
+      'section_label',
+      'title',
+      'description',
+      'placeholder',
+      'button_label',
+      'note',
+    ]);
+    expect(field('section_label')?.hint).toContain('Visible eyebrow');
+    expect(field('description')).toMatchObject({ widget: 'text' });
+    expect(field('placeholder')).toMatchObject({
+      hint: expect.stringContaining('your@email.com'),
+      pattern: [emailAddressPatternSource, expect.stringContaining('email-shaped placeholder')],
+    });
+    expect(field('note')).toMatchObject({ widget: 'text' });
   });
 });

@@ -1,4 +1,6 @@
 import { buildField, buildFieldMapping, buildSchemaField } from './decap-yaml-builder';
+import { emailAddressPatternSource, httpsUrlPatternSource } from '../editorial-validation';
+import { slugPatternSource } from '../slugs';
 
 export function buildServicesFields() {
   return [
@@ -25,8 +27,11 @@ export function buildServicesFields() {
       label: 'Sections',
       name: 'sections',
       widget: 'list',
-      hint: 'Add, remove, or reorder whole Services page sections.',
+      hint: 'Fixed Services-page layout. Edit the service list, process, and inquiry content inside each named section.',
       collapsed: true,
+      allowAdd: false,
+      allowRemove: false,
+      allowReorder: false,
       types: [
         {
           label: 'Services list',
@@ -37,28 +42,37 @@ export function buildServicesFields() {
               label: 'Items',
               name: 'items',
               widget: 'list',
+              labelSingular: 'Service',
               hint: 'Editorial service entries shown on the page and used by the inquiry flow.',
               collapsed: true,
               summary: '{{fields.title}}',
+              allowAdd: true,
+              allowRemove: true,
+              allowReorder: true,
               fields: [
                 buildField({
                   label: 'ID',
                   name: 'id',
                   widget: 'string',
                   hint: 'Stable ID used for inquiry preselection. Use lowercase kebab-case, for example "vinyl-printing".',
+                  pattern: {
+                    value: slugPatternSource,
+                    message: 'Use lowercase kebab-case, for example vinyl-printing.',
+                  },
                 }),
                 buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Visible service heading.' }),
                 buildField({
                   label: 'Image',
                   name: 'image',
                   widget: 'image',
-                  hint: 'Representative image for the service section. Choose a crop that works in both stacked and side-by-side layouts.',
+                  hint: 'Representative service image. Keep the subject clear in both stacked mobile and side-by-side desktop crops.',
                 }),
                 buildField({
                   label: 'Image alt',
                   name: 'image_alt',
                   widget: 'string',
-                  hint: 'Describe the service image for screen readers.',
+                  required: true,
+                  hint: 'Required. Describe the visible work, people, or equipment without repeating the service title.',
                 }),
                 buildField({
                   label: 'Summary',
@@ -70,9 +84,14 @@ export function buildServicesFields() {
                   label: 'Bullets',
                   name: 'bullets',
                   widget: 'list',
+                  labelSingular: 'Capability',
                   hint: 'Capability bullets shown under the summary.',
                   collapsed: true,
                   summary: '{{fields.value}}',
+                  allowAdd: true,
+                  allowRemove: true,
+                  allowReorder: true,
+                  min: 2,
                   field: buildFieldMapping({
                     label: 'Bullet',
                     name: 'value',
@@ -98,7 +117,8 @@ export function buildServicesFields() {
                   name: 'partner_url',
                   widget: 'string',
                   required: false,
-                  hint: 'Optional partner URL. Include https://.',
+                  hint: 'Optional partner URL. Example: https://www.dunkpressing.com/.',
+                  pattern: { value: httpsUrlPatternSource, message: 'Use a full HTTPS partner URL.' },
                 }),
               ],
             }),
@@ -120,8 +140,13 @@ export function buildServicesFields() {
               label: 'Steps',
               name: 'steps',
               widget: 'list',
+              labelSingular: 'Process step',
               collapsed: true,
               summary: '{{fields.title}}',
+              allowAdd: true,
+              allowRemove: true,
+              allowReorder: true,
+              min: 3,
               fields: [
                 buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Step heading.' }),
                 buildField({
@@ -146,6 +171,7 @@ export function buildServicesFields() {
               name: 'email',
               widget: 'string',
               hint: 'Mailbox that receives inquiries. Example: hello@blackboxrecords.com.',
+              pattern: { value: emailAddressPatternSource, message: 'Use a valid email address.' },
             }),
             buildField({
               label: 'Submit text',

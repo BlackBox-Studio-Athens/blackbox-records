@@ -1,28 +1,43 @@
-import { buildField, buildFieldMapping, buildFolderCollection, type DecapSelectOption } from './decap-yaml-builder';
+import {
+  bandcampEmbedUrlPatternSource,
+  internalOrHttpsUrlPatternSource,
+  tidalContentUrlPatternSource,
+} from '../editorial-validation';
+import { buildField, buildFieldMapping, buildFolderCollection } from './decap-yaml-builder';
 import { decapCollectionDescriptions } from './decap-editorial-copy';
 
-export function buildReleaseCollection(artistOptions: DecapSelectOption[]) {
+export function buildReleaseCollection() {
   return buildFolderCollection({
     name: 'releases',
     label: 'Releases',
     description: decapCollectionDescriptions.releases,
+    labelSingular: 'Release',
+    previewPath: 'releases/{{slug}}/',
+    sortableFields: ['release_date', 'title', 'artist', 'commit_date'],
     folder: 'apps/web/src/content/releases',
     create: true,
-    delete: true,
+    delete: false,
     extension: 'md',
     format: 'frontmatter',
     identifierField: 'title',
+    slug: '{{slug}}',
     mediaFolder: '.',
     publicFolder: './',
-    summary: '{{title}} - {{artist}}',
+    summary: '{{release_date}} — {{title}} — {{artist}}',
     fields: [
       buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Release title.' }),
       buildField({
         label: 'Artist',
         name: 'artist',
-        widget: 'select',
-        hint: 'Pick the matching artist entry so Astro references stay valid.',
-        options: artistOptions,
+        widget: 'relation',
+        hint: 'Search the current Artists collection. The saved value is the Artist slug used by Astro references.',
+        relation: {
+          collection: 'artists',
+          searchFields: ['title', 'slug'],
+          valueField: 'slug',
+          displayFields: ['title', 'slug'],
+          optionsLength: 50,
+        },
       }),
       buildField({
         label: 'Release date',
@@ -35,21 +50,25 @@ export function buildReleaseCollection(artistOptions: DecapSelectOption[]) {
         label: 'Cover image',
         name: 'cover_image',
         widget: 'image',
-        hint: 'Primary release artwork used in cards and the release detail view.',
+        hint: 'Primary square cover artwork used in release cards, detail views, and Store Item projection.',
       }),
       buildField({
         label: 'Cover image alt',
         name: 'cover_image_alt',
         widget: 'string',
-        required: false,
-        hint: 'Describe the artwork for screen readers.',
+        required: true,
+        hint: 'Required. Describe the visible artwork, colors, and central subject rather than repeating only the release title.',
       }),
       buildField({
         label: 'Merch URL',
         name: 'merch_url',
         widget: 'string',
         required: false,
-        hint: 'Optional direct merch or product URL. Include https://.',
+        hint: 'Optional internal Store path or full HTTPS product URL. Example: /store/ or https://example.com/product.',
+        pattern: {
+          value: internalOrHttpsUrlPatternSource,
+          message: 'Use an internal path beginning with / or a full HTTPS URL.',
+        },
       }),
       buildField({
         label: 'Bandcamp embed URL',
@@ -57,6 +76,10 @@ export function buildReleaseCollection(artistOptions: DecapSelectOption[]) {
         widget: 'string',
         required: false,
         hint: 'Paste the iframe src from Bandcamp Share/Embed, not the public album or track page URL.',
+        pattern: {
+          value: bandcampEmbedUrlPatternSource,
+          message: 'Use the official Bandcamp album or track iframe src.',
+        },
       }),
       buildField({
         label: 'Tidal URL',
@@ -64,6 +87,10 @@ export function buildReleaseCollection(artistOptions: DecapSelectOption[]) {
         widget: 'string',
         required: false,
         hint: 'Full Tidal album, track, playlist, or video URL including https://. Artist profile URLs are not embedded players.',
+        pattern: {
+          value: tidalContentUrlPatternSource,
+          message: 'Use a Tidal album, track, playlist, or video URL.',
+        },
       }),
       buildField({
         label: 'Summary',
@@ -77,9 +104,13 @@ export function buildReleaseCollection(artistOptions: DecapSelectOption[]) {
         name: 'formats',
         widget: 'list',
         required: false,
+        labelSingular: 'Format',
         hint: 'Physical or digital formats shown in the release detail UI.',
         collapsed: true,
         summary: '{{fields.value}}',
+        allowAdd: true,
+        allowRemove: true,
+        allowReorder: true,
         field: buildFieldMapping({
           label: 'Format',
           name: 'value',
@@ -92,9 +123,13 @@ export function buildReleaseCollection(artistOptions: DecapSelectOption[]) {
         name: 'credits',
         widget: 'list',
         required: false,
+        labelSingular: 'Credit',
         hint: 'Role/name credit pairs shown in the release detail.',
         collapsed: true,
-        summary: '{{fields.role}}',
+        summary: '{{fields.role}} — {{fields.name}}',
+        allowAdd: true,
+        allowRemove: true,
+        allowReorder: true,
         fields: [
           buildField({ label: 'Role', name: 'role', widget: 'string', hint: 'Example: "Mastering" or "Artwork".' }),
           buildField({ label: 'Name', name: 'name', widget: 'string', hint: 'Person or studio name.' }),

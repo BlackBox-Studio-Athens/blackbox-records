@@ -4,7 +4,7 @@ slug: afterwise
 genre: Post Rock
 country: Greece
 image: 481665433_641184112172905_3870068485311478607_n.jpg
-image_alt: Afterwise
+image_alt: Afterwise performing live on a black-and-white stage
 bio: >-
   Athens-based instrumental post-rock shaped by atmospheric build-ups,
   post-metal weight, and cinematic live dynamics.

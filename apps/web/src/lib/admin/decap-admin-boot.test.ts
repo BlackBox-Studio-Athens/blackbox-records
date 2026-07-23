@@ -572,6 +572,27 @@ describe('Decap admin boot markup and styles', () => {
     expect(init).toContain("if (adminContext.mode !== 'hosted')");
   });
 
+  it('keeps the Home preview aligned with the current Hero, News, and Artists hierarchy', () => {
+    expect(init).toContain("const news = findSection(sections, 'news')");
+    expect(init).toContain("const artists = findSection(sections, 'artists')");
+    expect(init).toContain("className: 'blackbox-preview__grid blackbox-preview__grid--two'");
+    expect(init).not.toContain("findSection(sections, 'distro')");
+    expect(init).not.toContain("section?.type === 'journey'");
+    expect(init).not.toContain('news?.section_label');
+    expect(init).not.toContain('artists?.section_label');
+    expect(init).not.toContain('blackbox-preview__journey');
+    expect(css).not.toContain('blackbox-preview__journey');
+  });
+
+  it('locks outer fixed-layout section actions without disabling nested repeatable lists', () => {
+    expect(init).toContain("'#/collections/home/entries/home-site'");
+    expect(init).toContain("'#/collections/about/entries/about-site'");
+    expect(init).toContain("'#/collections/services/entries/services-site'");
+    expect(init).toContain("firstElementChild?.textContent?.trim() !== 'Sections'");
+    expect(init).toContain("topBar.dataset.blackboxFixedSectionActions = 'locked'");
+    expect(init).toContain('button.hidden = true');
+  });
+
   it('keeps local login copy unchanged while exposing the stable auth hook', () => {
     const loginButton = {
       dataset: {} as Record<string, string>,

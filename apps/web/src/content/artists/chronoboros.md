@@ -4,7 +4,7 @@ slug: chronoboros
 genre: Hardcore
 country: Greece
 image: ./Chronoboros-band-logo.jpg
-image_alt: Chronoboros
+image_alt: Black-and-white samurai mask illustration used for Chronoboros
 bio: |
   Chronoboros is a Greek hardcore project leaning into slow-burn intensity,
   cavernous tone, and a stark sense of space.

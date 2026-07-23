@@ -1,4 +1,5 @@
-import { buildField, buildFieldMapping, buildSchemaField } from './decap-yaml-builder';
+import { buildField, buildSchemaField } from './decap-yaml-builder';
+import { internalSitePathPatternSource } from '../editorial-validation';
 
 export function buildHomeFields() {
   return [
@@ -21,13 +22,14 @@ export function buildHomeFields() {
           label: 'Hero image',
           name: 'image',
           widget: 'image',
-          hint: 'Upload the hero still used behind the landing section. Keep the subject centered for narrow mobile crops.',
+          hint: 'Full-bleed opening image. Keep the subject centered with breathing room for narrow mobile crops.',
         }),
         buildField({
           label: 'Hero image alt',
           name: 'image_alt',
           widget: 'string',
-          hint: 'Describe the visible scene for screen readers.',
+          required: true,
+          hint: 'Required. Describe the visible scene and action for people who cannot see the image.',
         }),
         buildField({
           label: 'Scroll indicator text',
@@ -41,20 +43,17 @@ export function buildHomeFields() {
       label: 'Sections',
       name: 'sections',
       widget: 'list',
-      hint: 'Add, remove, or reorder whole homepage sections.',
+      hint: 'Fixed homepage layout. Edit the News and Artists content inside each named section.',
       collapsed: true,
+      allowAdd: false,
+      allowRemove: false,
+      allowReorder: false,
       types: [
         {
           label: 'News',
           name: 'news',
           summary: '{{fields.title}}',
           fields: [
-            buildField({
-              label: 'Section label',
-              name: 'section_label',
-              widget: 'string',
-              hint: 'Small label above the section title.',
-            }),
             buildField({
               label: 'Title',
               name: 'title',
@@ -72,6 +71,7 @@ export function buildHomeFields() {
               name: 'link_url',
               widget: 'string',
               hint: 'Internal section path starting with /. Example: /news/.',
+              pattern: { value: internalSitePathPatternSource, message: 'Use a safe internal path beginning with /.' },
             }),
           ],
         },
@@ -80,12 +80,6 @@ export function buildHomeFields() {
           name: 'artists',
           summary: '{{fields.title}}',
           fields: [
-            buildField({
-              label: 'Section label',
-              name: 'section_label',
-              widget: 'string',
-              hint: 'Small label above the section title.',
-            }),
             buildField({
               label: 'Title',
               name: 'title',
@@ -103,99 +97,7 @@ export function buildHomeFields() {
               name: 'button_link',
               widget: 'string',
               hint: 'Internal section path starting with /. Example: /artists/.',
-            }),
-          ],
-        },
-        {
-          label: 'Distro',
-          name: 'distro',
-          summary: '{{fields.title}}',
-          fields: [
-            buildField({
-              label: 'Section label',
-              name: 'section_label',
-              widget: 'string',
-              hint: 'Small label above the section title.',
-            }),
-            buildField({
-              label: 'Title',
-              name: 'title',
-              widget: 'string',
-              hint: 'Main heading for the homepage distro shelf.',
-            }),
-            buildField({
-              label: 'Link text',
-              name: 'link_text',
-              widget: 'string',
-              hint: 'CTA label. Example: "View all distro".',
-            }),
-            buildField({
-              label: 'Link URL',
-              name: 'link_url',
-              widget: 'string',
-              hint: 'Internal section path starting with /. Example: /store/distro/.',
-            }),
-          ],
-        },
-        {
-          label: 'Journey',
-          name: 'journey',
-          summary: '{{fields.title}}',
-          fields: [
-            buildField({
-              label: 'Section label',
-              name: 'section_label',
-              widget: 'string',
-              hint: 'Small label above the section title.',
-            }),
-            buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Main heading for the story block.' }),
-            buildField({
-              label: 'Image',
-              name: 'image',
-              widget: 'image',
-              hint: 'Supporting image for the journey section. Use a crop that survives both desktop and mobile framing.',
-            }),
-            buildField({
-              label: 'Image alt',
-              name: 'image_alt',
-              widget: 'string',
-              hint: 'Describe the journey image for screen readers.',
-            }),
-            buildField({
-              label: 'Paragraphs',
-              name: 'paragraphs',
-              widget: 'list',
-              hint: 'Short editorial paragraphs shown in order.',
-              collapsed: true,
-              summary: '{{fields.value}}',
-              field: buildFieldMapping({
-                label: 'Paragraph',
-                name: 'value',
-                widget: 'text',
-                hint: 'Keep paragraphs concise so the section remains readable on mobile.',
-              }),
-            }),
-            buildField({
-              label: 'Stats',
-              name: 'stats',
-              widget: 'list',
-              hint: 'Small label/value pairs shown beside the journey copy.',
-              collapsed: true,
-              summary: '{{fields.label}}',
-              fields: [
-                buildField({
-                  label: 'Key',
-                  name: 'key',
-                  widget: 'string',
-                  hint: 'Short value or number. Example: "12" or "EST. 2026".',
-                }),
-                buildField({
-                  label: 'Label',
-                  name: 'label',
-                  widget: 'string',
-                  hint: 'Descriptor shown under or beside the key.',
-                }),
-              ],
+              pattern: { value: internalSitePathPatternSource, message: 'Use a safe internal path beginning with /.' },
             }),
           ],
         },

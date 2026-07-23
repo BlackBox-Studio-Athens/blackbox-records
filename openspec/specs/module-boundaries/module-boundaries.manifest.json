@@ -159,6 +159,7 @@
       ],
       "providedEntrypoints": [
         "apps/web/src/lib/catalog-data.ts",
+        "apps/web/src/lib/distro-data.ts",
         "apps/web/src/lib/slugs.ts",
         "apps/web/src/lib/site-data.ts",
         "apps/web/src/lib/store-page-data.ts",
@@ -445,6 +446,7 @@
       "status": "closed",
       "roots": [
         "apps/web/src/config/site.ts",
+        "apps/web/src/lib/editorial-validation.ts",
         "apps/web/src/utils/urls.ts",
         "apps/web/src/lib/backend/api-client.ts",
         "apps/web/src/lib/backend/public-backend-config.ts",
@@ -456,6 +458,7 @@
       ],
       "providedEntrypoints": [
         "apps/web/src/config/site.ts",
+        "apps/web/src/lib/editorial-validation.ts",
         "apps/web/src/lib/backend/api-client.ts",
         "apps/web/src/lib/backend/public-backend-config.ts",
         "apps/web/src/utils/urls.ts",

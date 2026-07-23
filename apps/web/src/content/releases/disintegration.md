@@ -3,7 +3,7 @@ title: Disintegration
 artist: afterwise
 release_date: 2026-06-09
 cover_image: 656856327_18427527979186423_8617747121554203403_n.jpg
-cover_image_alt: Disintegration by Afterwise
+cover_image_alt: Red, orange, and black distressed abstract artwork for Disintegration
 merch_url: /store/
 bandcamp_embed_url: https://bandcamp.com/EmbeddedPlayer/album=3481803854/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/
 tidal_url: https://tidal.com/album/521945607

@@ -412,13 +412,39 @@
     ) ||
     null;
 
+  const fixedLayoutSectionEntryHashes = new Set([
+    '#/collections/home/entries/home-site',
+    '#/collections/about/entries/about-site',
+    '#/collections/services/entries/services-site',
+  ]);
+
+  const lockFixedLayoutSectionActions = (topBar) => {
+    if (!fixedLayoutSectionEntryHashes.has(window.location.hash.split('?')[0])) {
+      return false;
+    }
+
+    const controlContainer = topBar.closest('[class*="ControlContainer"]');
+    if (controlContainer?.firstElementChild?.textContent?.trim() !== 'Sections') {
+      return false;
+    }
+
+    topBar.dataset.blackboxFixedSectionActions = 'locked';
+    topBar.querySelectorAll('button, [role="button"]').forEach((button) => {
+      button.hidden = true;
+      button.setAttribute('aria-hidden', 'true');
+      button.setAttribute('tabindex', '-1');
+    });
+    return true;
+  };
+
   const enhanceListItemActionButtons = () => {
     const topBars = Array.from(document.querySelectorAll('[class*="ListItemTopBar"]'));
     topBars.forEach((topBar) => {
-      if (
-        !topBar.closest('[class*="SortableListItem"]') ||
-        topBar.querySelector('[data-blackbox-section-row-action="remove"]')
-      ) {
+      if (!topBar.closest('[class*="SortableListItem"]') || lockFixedLayoutSectionActions(topBar)) {
+        return;
+      }
+
+      if (topBar.querySelector('[data-blackbox-section-row-action="remove"]')) {
         return;
       }
 
@@ -813,14 +839,7 @@
         const sections = toArray(data.sections);
         const news = findSection(sections, 'news');
         const artists = findSection(sections, 'artists');
-        const distro = findSection(sections, 'distro');
-        const journeyIndex = sections.findIndex((section) => section?.type === 'journey');
-        const journey = journeyIndex >= 0 ? toObject(sections[journeyIndex]) : null;
         const heroImageUrl = resolveAssetUrl(entry.getIn(['data', 'hero', 'image']), this.props.getAsset, 'home');
-        const journeyImageUrl =
-          journeyIndex >= 0
-            ? resolveAssetUrl(entry.getIn(['data', 'sections', journeyIndex, 'image']), this.props.getAsset, 'home')
-            : null;
 
         return h('div', { className: 'blackbox-preview blackbox-preview--home' }, [
           h('div', { className: 'blackbox-preview__shell' }, [
@@ -835,11 +854,7 @@
                     hero.tagline || 'Heavy music on record.',
                   ),
                   renderPills(
-                    [
-                      toText(news?.title || 'News'),
-                      toText(artists?.title || 'Artists'),
-                      toText(distro?.title || 'Distro'),
-                    ].filter(Boolean),
+                    [toText(news?.title || 'News'), toText(artists?.title || 'Artists')].filter(Boolean),
                     'blackbox-preview__pill blackbox-preview__pill--muted',
                   ),
                 ]),
@@ -848,59 +863,16 @@
                 ]),
               ]),
             ]),
-            h('section', { className: 'blackbox-preview__grid blackbox-preview__grid--three' }, [
+            h('section', { className: 'blackbox-preview__grid blackbox-preview__grid--two' }, [
               h('article', { className: 'blackbox-preview__card' }, [
-                h('p', { className: 'blackbox-preview__meta' }, toText(news?.section_label || 'News')),
                 h('h2', { className: 'blackbox-preview__card-title' }, toText(news?.title || 'News')),
                 renderButton(toText(news?.link_text || 'Read News'), true),
               ]),
               h('article', { className: 'blackbox-preview__card' }, [
-                h('p', { className: 'blackbox-preview__meta' }, toText(artists?.section_label || 'Artists')),
                 h('h2', { className: 'blackbox-preview__card-title' }, toText(artists?.title || 'Artists')),
                 renderButton(toText(artists?.button_text || 'View Full Roster'), true),
               ]),
-              h('article', { className: 'blackbox-preview__card' }, [
-                h('p', { className: 'blackbox-preview__meta' }, toText(distro?.section_label || 'Distro')),
-                h('h2', { className: 'blackbox-preview__card-title' }, toText(distro?.title || 'Distro')),
-                renderButton(toText(distro?.link_text || 'View All Distro'), true),
-              ]),
             ]),
-            journey && journeyImageUrl
-              ? h('section', { className: 'blackbox-preview__journey-surface' }, [
-                  h('div', { className: 'blackbox-preview__journey-grid' }, [
-                    h('div', { className: 'blackbox-preview__journey-copy' }, [
-                      h('p', { className: 'blackbox-preview__eyebrow' }, toText(journey.section_label || 'About')),
-                      h(
-                        'h2',
-                        { className: 'blackbox-preview__title blackbox-preview__title--section' },
-                        toText(journey.title || 'The Journey'),
-                      ),
-                      h(
-                        'div',
-                        { className: 'blackbox-preview__copy-stack' },
-                        toArray(journey.paragraphs)
-                          .slice(0, 2)
-                          .map((paragraph, index) =>
-                            h('p', { key: `journey-${index}`, className: 'blackbox-preview__copy' }, paragraph),
-                          ),
-                      ),
-                      renderPills(
-                        toArray(journey.stats)
-                          .map((item) => titleCase(item.label || item.key))
-                          .filter(Boolean),
-                      ),
-                    ]),
-                    h('div', { className: 'blackbox-preview__journey-media' }, [
-                      renderImage(
-                        journeyImageUrl,
-                        journey.image_alt,
-                        'blackbox-preview__media blackbox-preview__media--muted',
-                        'Journey image',
-                      ),
-                    ]),
-                  ]),
-                ])
-              : null,
           ]),
         ]);
       },
@@ -1139,6 +1111,8 @@
         const data = toObject(entry.get('data'));
         const imageUrl = resolveAssetUrl(entry.getIn(['data', 'image']), this.props.getAsset, 'artists');
         const metaItems = [data.genre, data.country].filter(Boolean);
+        const profileLinks = toArray(data.profile_links);
+        const videos = toArray(data.videos);
 
         return h('div', { className: 'blackbox-preview blackbox-preview--artist' }, [
           h('div', { className: 'blackbox-preview__shell blackbox-preview__shell--narrow' }, [
@@ -1151,6 +1125,17 @@
                 h('h1', { className: 'blackbox-preview__title' }, toText(data.title || 'Artist title')),
                 metaItems.length ? renderPills(metaItems) : null,
                 h('p', { className: 'blackbox-preview__copy' }, toText(data.bio)),
+                profileLinks.length || videos.length
+                  ? renderPills(
+                      [
+                        profileLinks.length
+                          ? `${profileLinks.length} profile ${profileLinks.length === 1 ? 'link' : 'links'}`
+                          : '',
+                        videos.length ? `${videos.length} ${videos.length === 1 ? 'video' : 'videos'}` : '',
+                      ].filter(Boolean),
+                      'blackbox-preview__pill blackbox-preview__pill--outline',
+                    )
+                  : null,
                 data.upcoming_release
                   ? h(
                       'p',
@@ -1195,6 +1180,11 @@
                 toArray(data.formats).length
                   ? renderPills(toArray(data.formats), 'blackbox-preview__pill blackbox-preview__pill--outline')
                   : null,
+                h(
+                  'p',
+                  { className: 'blackbox-preview__meta blackbox-preview__meta--note' },
+                  'Editorial preview only. Price, stock, checkout availability, orders, and fulfillment are managed outside Decap.',
+                ),
                 credits.length
                   ? h(
                       'div',
@@ -1232,8 +1222,13 @@
                 h('p', { className: 'blackbox-preview__meta' }, toText(data.artist_or_label)),
                 data.summary ? h('p', { className: 'blackbox-preview__copy' }, toText(data.summary)) : null,
                 renderPills(
-                  [data.eyebrow, data.format].filter(Boolean),
+                  [data.eyebrow, data.format, data.order !== undefined ? `Order ${data.order}` : ''].filter(Boolean),
                   'blackbox-preview__pill blackbox-preview__pill--outline',
+                ),
+                h(
+                  'p',
+                  { className: 'blackbox-preview__meta blackbox-preview__meta--note' },
+                  'To stop selling, use protected stock or commerce-operator controls. Keep this editorial entry.',
                 ),
                 renderButton('View in Store', true),
               ]),
@@ -1249,6 +1244,7 @@
         const data = toObject(entry.get('data'));
         const imageUrl = resolveAssetUrl(entry.getIn(['data', 'image']), this.props.getAsset, 'news');
         const date = toText(data.date).slice(0, 10);
+        const body = toText(data.body).trim();
 
         return h('div', { className: 'blackbox-preview blackbox-preview--news' }, [
           h('div', { className: 'blackbox-preview__shell blackbox-preview__shell--narrow' }, [
@@ -1265,6 +1261,14 @@
                 ),
                 renderPills([date].filter(Boolean), 'blackbox-preview__pill blackbox-preview__pill--muted'),
                 h('p', { className: 'blackbox-preview__copy' }, toText(data.summary)),
+                h('div', { className: 'blackbox-preview__stack' }, [
+                  h('p', { className: 'blackbox-preview__meta' }, 'Article body'),
+                  h(
+                    'p',
+                    { className: 'blackbox-preview__copy' },
+                    body ? body.slice(0, 600) : 'Add article body copy before publishing.',
+                  ),
+                ]),
               ]),
             ]),
           ]),

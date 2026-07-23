@@ -1,4 +1,3 @@
-import { getCollection } from 'astro:content';
 import type { APIRoute } from 'astro';
 
 import {
@@ -42,14 +41,6 @@ export const GET: APIRoute = async () => {
     return createDecapConfigResponse(runtimeConfig);
   }
 
-  const artistEntries = await getCollection('artists');
-  const artistOptions = artistEntries
-    .map((entry) => ({
-      label: entry.data.title,
-      value: entry.id,
-    }))
-    .sort((left, right) => left.label.localeCompare(right.label));
-
   const siteRootUrl = resolveDecapSiteRootUrl({
     baseUrl: import.meta.env.BASE_URL,
     ...(runtimeConfig.mode === 'hosted' ? { configuredSiteUrl: runtimeConfig.siteUrl } : {}),
@@ -59,7 +50,6 @@ export const GET: APIRoute = async () => {
   const logoUrl = new URL(createProjectRelativeUrl('/assets/images/brand/logo.png'), siteRootUrl).toString();
 
   const yaml = buildDecapConfig({
-    artistOptions,
     logoUrl,
     runtimeConfig,
     siteRootUrl,

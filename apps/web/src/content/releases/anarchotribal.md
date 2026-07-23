@@ -3,7 +3,7 @@ title: Anarchotribal
 artist: ouranopithecus
 release_date: 2026-06-06
 cover_image: anarchotribal-cover.webp
-cover_image_alt: Anarchotribal by Ouranopithecus
+cover_image_alt: Monochrome rider on horseback beneath magenta Anarchotribal title lettering
 merch_url: /store/
 bandcamp_embed_url: https://bandcamp.com/EmbeddedPlayer/album=2894598366/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/
 tidal_url: https://tidal.com/album/526716850

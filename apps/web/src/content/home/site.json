@@ -9,14 +9,12 @@
   "sections": [
     {
       "type": "news",
-      "section_label": "News",
       "title": "News",
       "link_text": "Read News",
       "link_url": "/news/"
     },
     {
       "type": "artists",
-      "section_label": "Artists",
       "title": "Artists",
       "button_text": "View Full Roster",
       "button_link": "/artists/"

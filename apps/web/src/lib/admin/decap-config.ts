@@ -1,4 +1,4 @@
-import { escapeYamlScalar, indentYamlBlock, type DecapSelectOption } from './decap-yaml-builder';
+import { escapeYamlScalar, indentYamlBlock } from './decap-yaml-builder';
 import {
   DecapRuntimeConfigError,
   type DecapBackendMode,
@@ -18,12 +18,9 @@ import { buildSettingsFields } from './decap-settings-fields';
 import { buildServicesFields } from './decap-services-fields';
 import { buildSiteChromeCollections } from './decap-site-chrome-collections';
 
-export type DecapArtistOption = DecapSelectOption;
-
 type DecapWritableRuntimeConfig = DecapLocalRuntimeConfig | DecapHostedRuntimeConfig;
 
 export type BuildDecapConfigOptions = {
-  artistOptions: DecapArtistOption[];
   logoUrl: string;
   runtimeConfig: DecapWritableRuntimeConfig;
   siteRootUrl: string;
@@ -106,7 +103,7 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
   const collections = [
     pageCollections.home,
     buildArtistCollection(),
-    buildReleaseCollection(options.artistOptions),
+    buildReleaseCollection(),
     buildDistroCollection(),
     buildNewsCollection(),
     pageCollections.about,
@@ -118,5 +115,5 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
     pageCollections.settings,
   ];
 
-  return `${backendConfig}\n\npublish_mode: simple\nmedia_folder: apps/web/src/content/uploads\n${authConfig}\n\nsite_url: ${escapeYamlScalar(options.siteRootUrl)}\ndisplay_url: ${escapeYamlScalar(options.siteRootUrl)}\nlogo_url: ${escapeYamlScalar(options.logoUrl)}\neditor:\n  preview: true\n\ncollections:\n${indentYamlBlock(collections.join('\n\n'), 2)}\n`;
+  return `${backendConfig}\n\npublish_mode: simple\nslug:\n  encoding: ascii\n  clean_accents: true\n  sanitize_replacement: "-"\nmedia_folder: apps/web/src/content/uploads\n${authConfig}\n\nsite_url: ${escapeYamlScalar(options.siteRootUrl)}\ndisplay_url: ${escapeYamlScalar(options.siteRootUrl)}\nlogo_url: ${escapeYamlScalar(options.logoUrl)}\neditor:\n  preview: true\n\ncollections:\n${indentYamlBlock(collections.join('\n\n'), 2)}\n`;
 }

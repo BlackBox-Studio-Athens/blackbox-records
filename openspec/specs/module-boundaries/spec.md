@@ -68,6 +68,20 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** their route files, shared category page, category classifier, Distro grouping, and listing cards are owned by the closed `storefront-catalog` module
 - **AND** the `/distro/` redirect route remains in the documented static storefront route root.
 
+#### Scenario: Shared Distro groups cross the CMS boundary
+
+- **GIVEN** Astro content validation and Decap collection builders require the same Distro group values
+- **WHEN** CMS configuration imports those closed values
+- **THEN** `apps/web/src/lib/distro-data.ts` is a provided `storefront-catalog` entrypoint
+- **AND** CMS code imports that entrypoint instead of duplicating the group list.
+
+#### Scenario: Shared editorial validation crosses the CMS boundary
+
+- **GIVEN** Astro content schemas and Decap fields require the same path, URL, email, image, and provider constraints
+- **WHEN** CMS configuration imports those validation primitives
+- **THEN** `apps/web/src/lib/editorial-validation.ts` is a provided `platform-shared` entrypoint
+- **AND** CMS code imports that entrypoint instead of duplicating validation patterns.
+
 #### Scenario: Route-lazy Store Distro search crosses the app-shell boundary
 
 - **GIVEN** Store Distro search presentation is owned by `storefront-catalog`

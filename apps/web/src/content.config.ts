@@ -3,6 +3,25 @@ import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
 import { buildBandcampEmbedUrl, buildTidalEmbedUrl } from './utils/music';
+import { DISTRO_GROUP_VALUES } from './lib/distro-data';
+import {
+  isHttpsUrl,
+  isInternalOrHttpsUrl,
+  isInternalSitePath,
+  isPublicImagePath,
+  isSocialProfileUrl,
+  youtubeVideoIdPatternSource,
+} from './lib/editorial-validation';
+import { slugPatternSource } from './lib/slugs';
+
+const requiredAltText = z.string().trim().min(1, 'Describe the visible image for people who cannot see it.');
+const httpsUrl = z.string().refine(isHttpsUrl, { message: 'Use a full HTTPS URL.' });
+const internalSitePath = z
+  .string()
+  .refine(isInternalSitePath, { message: 'Use a safe internal path beginning with /.' });
+const internalOrHttpsUrl = z.string().refine(isInternalOrHttpsUrl, {
+  message: 'Use a safe internal path beginning with / or a full HTTPS URL.',
+});
 
 const bandcampEmbedUrl = z.string().refine((value) => buildBandcampEmbedUrl(value) === value, {
   message: 'Use the official Bandcamp iframe src from Share/Embed. Public album or track URLs are not valid embeds.',
@@ -17,17 +36,17 @@ const artists = defineCollection({
   schema: ({ image }) =>
     z.object({
       title: z.string(),
-      slug: z.string(),
+      slug: z.string().regex(new RegExp(slugPatternSource), 'Use lowercase kebab-case.'),
       genre: z.string(),
       country: z.string().optional(),
       image: image(),
-      image_alt: z.string().optional(),
+      image_alt: requiredAltText,
       bio: z.string(),
       profile_links: z
         .array(
           z.object({
             label: z.string(),
-            url: z.url(),
+            url: httpsUrl,
           }),
         )
         .optional(),
@@ -35,13 +54,12 @@ const artists = defineCollection({
         .array(
           z.object({
             title: z.string(),
-            youtube_video_id: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
+            youtube_video_id: z.string().regex(new RegExp(youtubeVideoIdPatternSource)),
             description: z.string().optional(),
           }),
         )
         .optional(),
       upcoming_release: z.string().optional(),
-      section_label: z.string().optional(),
     }),
 });
 
@@ -53,8 +71,8 @@ const releases = defineCollection({
       artist: reference('artists'),
       release_date: z.coerce.date(),
       cover_image: image(),
-      cover_image_alt: z.string().optional(),
-      merch_url: z.string().optional(),
+      cover_image_alt: requiredAltText,
+      merch_url: internalOrHttpsUrl.optional(),
       bandcamp_embed_url: bandcampEmbedUrl.optional(),
       tidal_url: tidalUrl.optional(),
       summary: z.string().optional(),
@@ -78,30 +96,20 @@ const news = defineCollection({
       date: z.coerce.date(),
       summary: z.string(),
       image: image(),
-      image_alt: z.string().optional(),
+      image_alt: requiredAltText,
       section_label: z.string().optional(),
     }),
 });
-
-const distroGroupValues = [
-  'Vinyl 12-inch',
-  'Vinyl 10-inch',
-  'Vinyl 7-inch',
-  'CDs',
-  'Clothes',
-  'Tapes',
-  'Other',
-] as const;
 
 const distro = defineCollection({
   loader: glob({ pattern: '**/*.json', base: './src/content/distro' }),
   schema: ({ image }) =>
     z.object({
       title: z.string(),
-      group: z.enum(distroGroupValues),
+      group: z.enum(DISTRO_GROUP_VALUES),
       artist_or_label: z.string(),
       image: image(),
-      image_alt: z.string(),
+      image_alt: requiredAltText,
       summary: z.string(),
       eyebrow: z.string().optional(),
       format: z.string().optional(),
@@ -113,14 +121,11 @@ const distro = defineCollection({
 const distroPage = defineCollection({
   loader: glob({ pattern: '**/*.json', base: './src/content/distro-page' }),
   schema: z.object({
-    page_title: z.string(),
-    page_description: z.string(),
     hero: z.object({
-      section_label: z.string(),
       title: z.string(),
       intro: z.string(),
     }),
-    group_intros: z.record(z.enum(distroGroupValues), z.string()),
+    group_intros: z.record(z.enum(DISTRO_GROUP_VALUES), z.string()),
   }),
 });
 
@@ -128,7 +133,7 @@ const navigation = defineCollection({
   loader: glob({ pattern: '**/*.json', base: './src/content/navigation' }),
   schema: z.object({
     title: z.string(),
-    url: z.string(),
+    url: internalSitePath,
     order: z.number().int().nonnegative(),
     show_in_header: z.boolean(),
     show_in_footer: z.boolean(),
@@ -139,7 +144,7 @@ const socials = defineCollection({
   loader: glob({ pattern: '**/*.json', base: './src/content/socials' }),
   schema: z.object({
     title: z.string(),
-    url: z.string(),
+    url: z.string().refine(isSocialProfileUrl, { message: 'Use a full HTTPS profile URL or # to hide the link.' }),
     order: z.number().int().nonnegative(),
   }),
 });
@@ -148,9 +153,9 @@ const settings = defineCollection({
   loader: glob({ pattern: '**/*.json', base: './src/content/settings' }),
   schema: z.object({
     label_name: z.string(),
-    established_year: z.number().int().positive(),
-    url: z.url(),
-    logo: z.string(),
+    established_year: z.number().int().min(1900).max(2100),
+    url: httpsUrl,
+    logo: z.string().refine(isPublicImagePath, { message: 'Use an image path below /assets/.' }),
     location: z.object({
       locality: z.string(),
       country: z.string(),
@@ -164,7 +169,7 @@ const newsletter = defineCollection({
     section_label: z.string(),
     title: z.string(),
     description: z.string(),
-    placeholder: z.string(),
+    placeholder: z.email(),
     button_label: z.string(),
     note: z.string(),
   }),
@@ -177,45 +182,22 @@ const home = defineCollection({
       hero: z.object({
         tagline: z.string(),
         image: image(),
-        image_alt: z.string(),
+        image_alt: requiredAltText,
         scroll_indicator_text: z.string(),
       }),
       sections: z.array(
         z.discriminatedUnion('type', [
           z.object({
             type: z.literal('news'),
-            section_label: z.string(),
             title: z.string(),
             link_text: z.string(),
-            link_url: z.string(),
+            link_url: internalSitePath,
           }),
           z.object({
             type: z.literal('artists'),
-            section_label: z.string(),
             title: z.string(),
             button_text: z.string(),
-            button_link: z.string(),
-          }),
-          z.object({
-            type: z.literal('distro'),
-            section_label: z.string(),
-            title: z.string(),
-            link_text: z.string(),
-            link_url: z.string(),
-          }),
-          z.object({
-            type: z.literal('journey'),
-            section_label: z.string(),
-            title: z.string(),
-            image: image(),
-            image_alt: z.string(),
-            paragraphs: z.array(z.string()),
-            stats: z.array(
-              z.object({
-                key: z.string(),
-                label: z.string(),
-              }),
-            ),
+            button_link: internalSitePath,
           }),
         ]),
       ),
@@ -230,7 +212,7 @@ const about = defineCollection({
         section_label: z.string(),
         title: z.string(),
         image: image(),
-        image_alt: z.string(),
+        image_alt: requiredAltText,
       }),
       sections: z.array(
         z.discriminatedUnion('type', [
@@ -288,15 +270,15 @@ const services = defineCollection({
             type: z.literal('services'),
             items: z.array(
               z.object({
-                id: z.string(),
+                id: z.string().regex(new RegExp(slugPatternSource), 'Use lowercase kebab-case.'),
                 title: z.string(),
                 image: image(),
-                image_alt: z.string(),
+                image_alt: requiredAltText,
                 summary: z.string(),
                 bullets: z.array(z.string()).min(2),
                 contact_note: z.string(),
                 partner_name: z.string().optional(),
-                partner_url: z.url().optional(),
+                partner_url: httpsUrl.optional(),
               }),
             ),
           }),

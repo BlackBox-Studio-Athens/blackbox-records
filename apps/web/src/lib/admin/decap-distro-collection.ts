@@ -1,20 +1,26 @@
 import { buildField, buildFolderCollection, buildSchemaField } from './decap-yaml-builder';
 import { decapCollectionDescriptions } from './decap-editorial-copy';
+import { DISTRO_GROUP_VALUES } from '../distro-data';
 
 export function buildDistroCollection() {
   return buildFolderCollection({
     name: 'distro',
     label: 'Store Items — Distro & Merch',
     description: decapCollectionDescriptions.distro,
+    labelSingular: 'Store Item',
+    previewPath: 'store/{{slug}}/',
+    sortableFields: ['title', 'group', 'order', 'commit_date'],
+    viewGroups: [{ label: 'Group', field: 'group' }],
     folder: 'apps/web/src/content/distro',
     create: true,
-    delete: true,
+    delete: false,
     extension: 'json',
     format: 'json',
     identifierField: 'title',
+    slug: '{{slug}}',
     mediaFolder: '.',
     publicFolder: './',
-    summary: '{{title}} - {{group}}',
+    summary: '{{title}} — {{group}} — order {{order}}',
     fields: [
       buildSchemaField('../../../.astro/collections/distro.schema.json'),
       buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Item name shown in distro cards.' }),
@@ -23,15 +29,7 @@ export function buildDistroCollection() {
         name: 'group',
         widget: 'select',
         hint: 'Choose the shelf this item appears under.',
-        options: [
-          { label: 'Vinyl 12-inch', value: 'Vinyl 12-inch' },
-          { label: 'Vinyl 10-inch', value: 'Vinyl 10-inch' },
-          { label: 'Vinyl 7-inch', value: 'Vinyl 7-inch' },
-          { label: 'CDs', value: 'CDs' },
-          { label: 'Clothes', value: 'Clothes' },
-          { label: 'Tapes', value: 'Tapes' },
-          { label: 'Other', value: 'Other' },
-        ],
+        options: DISTRO_GROUP_VALUES.map((group) => ({ label: group, value: group })),
       }),
       buildField({
         label: 'Artist or label',
@@ -43,13 +41,14 @@ export function buildDistroCollection() {
         label: 'Image',
         name: 'image',
         widget: 'image',
-        hint: 'Product image used in distro cards. Choose a clean, readable crop.',
+        hint: 'Product artwork or front-view image used in Store cards and detail pages. Keep the item readable at small sizes.',
       }),
       buildField({
         label: 'Image alt',
         name: 'image_alt',
         widget: 'string',
-        hint: 'Describe the product image for screen readers.',
+        required: true,
+        hint: 'Required. Describe the visible item, format, and artwork or front view without repeating only the title.',
       }),
       buildField({
         label: 'Summary',
@@ -84,7 +83,8 @@ export function buildDistroCollection() {
         name: 'order',
         widget: 'number',
         hint: 'Lower numbers appear first within the group.',
-        extras: ['value_type: int', 'min: 0'],
+        valueType: 'int',
+        min: 0,
       }),
     ],
   });

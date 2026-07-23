@@ -1,4 +1,5 @@
 import { buildField, buildSchemaField } from './decap-yaml-builder';
+import { emailAddressPatternSource } from '../editorial-validation';
 
 export function buildNewsletterFields() {
   return [
@@ -7,37 +8,38 @@ export function buildNewsletterFields() {
       label: 'Section label',
       name: 'section_label',
       widget: 'string',
-      hint: 'Small label shown above the newsletter title.',
+      hint: 'Visible eyebrow above the newsletter signup title. Example: "Newsletter".',
     }),
     buildField({
       label: 'Title',
       name: 'title',
       widget: 'string',
-      hint: 'Main heading for the shared newsletter signup block.',
+      hint: 'Visible heading for the shared signup block. Keep the current invitation tone.',
     }),
     buildField({
       label: 'Description',
       name: 'description',
       widget: 'text',
-      hint: 'Short paragraph shown above the email field.',
+      hint: 'Visible signup promise shown above the email field. Describe what subscribers receive.',
     }),
     buildField({
       label: 'Email placeholder',
       name: 'placeholder',
       widget: 'string',
-      hint: 'Placeholder text inside the email field.',
+      hint: 'Email-shaped example shown inside the field. Example: your@email.com.',
+      pattern: { value: emailAddressPatternSource, message: 'Use an email-shaped placeholder such as your@email.com.' },
     }),
     buildField({
       label: 'Button label',
       name: 'button_label',
       widget: 'string',
-      hint: 'Submit button text.',
+      hint: 'Visible submit button text. Keep it short and action-oriented.',
     }),
     buildField({
       label: 'Note',
       name: 'note',
       widget: 'text',
-      hint: 'Small note shown below the form.',
+      hint: 'Visible reassurance below the form, such as unsubscribe or spam expectations.',
     }),
   ];
 }

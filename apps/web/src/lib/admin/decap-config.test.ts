@@ -13,7 +13,6 @@ import {
   type DecapLocalRuntimeConfig,
 } from './decap-runtime-config';
 
-const artistOptions = [{ label: 'Mass Culture', value: 'mass-culture' }];
 const logoUrl = 'https://example.com/logo.png';
 const localSiteRootUrl = 'http://127.0.0.1:4322/blackbox-records/';
 const hostedSiteRootUrl = 'https://blackbox-studio-athens.github.io/blackbox-records/';
@@ -39,7 +38,7 @@ function buildConfig(
   runtimeConfig: DecapLocalRuntimeConfig | DecapHostedRuntimeConfig = localRuntimeConfig,
   siteRootUrl = runtimeConfig.mode === 'local' ? localSiteRootUrl : hostedSiteRootUrl,
 ): string {
-  return buildDecapConfig({ artistOptions, logoUrl, runtimeConfig, siteRootUrl });
+  return buildDecapConfig({ logoUrl, runtimeConfig, siteRootUrl });
 }
 
 function readConfigPreamble(yaml: string): string {
@@ -58,6 +57,10 @@ describe('buildDecapConfig', () => {
   branch: "main"
 
 publish_mode: simple
+slug:
+  encoding: ascii
+  clean_accents: true
+  sanitize_replacement: "-"
 media_folder: apps/web/src/content/uploads
 
 
@@ -89,6 +92,10 @@ editor:
     openAuthoring: "Open authoring for {{collection}} via Decap CMS"
 
 publish_mode: simple
+slug:
+  encoding: ascii
+  clean_accents: true
+  sanitize_replacement: "-"
 media_folder: apps/web/src/content/uploads
 
 
@@ -158,9 +165,35 @@ editor:
 
   it('keeps existing collection paths, fields, and editor hints', () => {
     const yaml = buildConfig();
+    const config = parse(yaml) as {
+      collections: Array<{
+        fields?: Array<{
+          collection?: string;
+          display_fields?: string[];
+          name: string;
+          options_length?: number;
+          search_fields?: string[];
+          value_field?: string;
+          widget: string;
+        }>;
+        name: string;
+      }>;
+      slug: { clean_accents: boolean; encoding: string; sanitize_replacement: string };
+    };
+    const releaseArtist = config.collections
+      .find(({ name }) => name === 'releases')
+      ?.fields?.find(({ name }) => name === 'artist');
 
     expect(yaml).toContain('folder: "apps/web/src/content/releases"');
-    expect(yaml).toContain('value: "mass-culture"');
+    expect(config.slug).toEqual({ clean_accents: true, encoding: 'ascii', sanitize_replacement: '-' });
+    expect(releaseArtist).toMatchObject({
+      collection: 'artists',
+      display_fields: ['title', 'slug'],
+      options_length: 50,
+      search_fields: ['title', 'slug'],
+      value_field: 'slug',
+      widget: 'relation',
+    });
     expect(yaml).toContain('summary: "{{fields.tagline}}"');
     expect(yaml).toContain('file: "apps/web/src/content/newsletter/site.json"');
     expect(yaml).toContain('file: "apps/web/src/content/distro-page/site.json"');
@@ -168,20 +201,39 @@ editor:
     expect(yaml).toContain('default: "../../../.astro/collections/newsletter.schema.json"');
     expect(yaml).toContain('default: "../../../.astro/collections/distroPage.schema.json"');
     expect(yaml).toContain('hint: "Short line over the hero still. Example: \\"Heavy music on record.\\""');
-    expect(yaml).toContain('hint: "Pick the matching artist entry so Astro references stay valid."');
+    expect(yaml).toContain(
+      'hint: "Search the current Artists collection. The saved value is the Artist slug used by Astro references."',
+    );
     expect(yaml).toContain('summary: "{{fields.title}}"');
   });
 
-  it('emits block lists for page sections that editors can remove', () => {
-    const yaml = buildConfig();
+  it('emits locked block lists for the fixed Home, About, and Services layouts', () => {
+    type ConfigField = {
+      allow_add?: boolean;
+      allow_remove?: boolean;
+      allow_reorder?: boolean;
+      fields?: ConfigField[];
+      name: string;
+      types?: Array<{ fields: ConfigField[]; name: string }>;
+    };
+    const config = parse(buildConfig()) as {
+      collections: Array<{ files?: Array<{ fields: ConfigField[] }>; name: string }>;
+    };
 
-    expect(yaml).toContain(
-      'label: "Sections"\n            name: "sections"\n            widget: list\n            hint: "Add, remove, or reorder whole homepage sections."\n            collapsed: true\n            typeKey: "type"\n            types:',
-    );
-    expect(yaml).toContain('label: "News"');
-    expect(yaml).toContain('label: "Quote"');
-    expect(yaml).toContain('label: "Services list"');
-    expect(yaml).toContain('summary: "{{fields.locality}}, {{fields.country}}"');
+    for (const collectionName of ['home', 'about', 'services']) {
+      const collection = config.collections.find(({ name }) => name === collectionName);
+      const sections = collection?.files?.[0]?.fields.find(({ name }) => name === 'sections');
+      expect(sections).toMatchObject({
+        allow_add: false,
+        allow_remove: false,
+        allow_reorder: false,
+      });
+    }
+
+    const home = config.collections.find(({ name }) => name === 'home');
+    const homeSections = home?.files?.[0]?.fields.find(({ name }) => name === 'sections');
+    expect(homeSections?.types?.map(({ name }) => name)).toEqual(['news', 'artists']);
+    expect(homeSections?.types?.flatMap(({ fields }) => fields.map(({ name }) => name))).not.toContain('section_label');
   });
 
   it('exposes distro page copy and distro item fields without commerce authority', () => {

@@ -41,7 +41,6 @@ body {
 }
 
 .blackbox-preview__hero-surface,
-.blackbox-preview__journey-surface,
 .blackbox-preview__header-strip,
 .blackbox-preview__process-surface,
 .blackbox-preview__inquiry-surface,
@@ -58,7 +57,6 @@ body {
 }
 
 .blackbox-preview__hero-surface,
-.blackbox-preview__journey-surface,
 .blackbox-preview__header-strip,
 .blackbox-preview__process-surface,
 .blackbox-preview__inquiry-surface {
@@ -68,13 +66,11 @@ body {
 .blackbox-preview__hero-surface + .blackbox-preview__grid,
 .blackbox-preview__header-strip + .blackbox-preview__stack--large,
 .blackbox-preview__stack--large + .blackbox-preview__process-surface,
-.blackbox-preview__process-surface + .blackbox-preview__inquiry-surface,
-.blackbox-preview__grid + .blackbox-preview__journey-surface {
+.blackbox-preview__process-surface + .blackbox-preview__inquiry-surface {
   margin-top: 1rem;
 }
 
 .blackbox-preview__hero-grid,
-.blackbox-preview__journey-grid,
 .blackbox-preview__artist-card,
 .blackbox-preview__release-card,
 .blackbox-preview__catalog-card,
@@ -327,7 +323,6 @@ body {
   }
 
   .blackbox-preview__hero-grid,
-  .blackbox-preview__journey-grid,
   .blackbox-preview__artist-card,
   .blackbox-preview__release-card,
   .blackbox-preview__catalog-card,

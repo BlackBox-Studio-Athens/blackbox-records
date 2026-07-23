@@ -1,57 +1,38 @@
 import { buildField, buildSchemaField } from './decap-yaml-builder';
-
-const distroGroupOptions = ['Vinyl 12-inch', 'Vinyl 10-inch', 'Vinyl 7-inch', 'CDs', 'Clothes', 'Tapes', 'Other'];
+import { DISTRO_GROUP_VALUES } from '../distro-data';
 
 export function buildDistroPageFields() {
   return [
     buildSchemaField('../../../.astro/collections/distroPage.schema.json'),
     buildField({
-      label: 'Page title',
-      name: 'page_title',
-      widget: 'string',
-      hint: 'Browser title for the distro page.',
-    }),
-    buildField({
-      label: 'Page description',
-      name: 'page_description',
-      widget: 'text',
-      hint: 'Meta description used by search engines and social previews.',
-    }),
-    buildField({
-      label: 'Hero',
+      label: 'Page introduction',
       name: 'hero',
       widget: 'object',
-      hint: 'Controls the intro block above the distro shelves.',
+      hint: 'Visible heading and introduction above the Store/Distro shelves.',
       collapsed: true,
       summary: '{{fields.title}}',
       fields: [
         buildField({
-          label: 'Section label',
-          name: 'section_label',
-          widget: 'string',
-          hint: 'Small label above the distro title.',
-        }),
-        buildField({
           label: 'Title',
           name: 'title',
           widget: 'string',
-          hint: 'Main heading for the distro page.',
+          hint: 'Visible Store/Distro heading. Example: "Distro".',
         }),
         buildField({
           label: 'Intro',
           name: 'intro',
           widget: 'text',
-          hint: 'Short paragraph under the distro title.',
+          hint: 'Visible paragraph directly under the heading.',
         }),
       ],
     }),
     buildField({
-      label: 'Group intros',
+      label: 'Shelf introductions',
       name: 'group_intros',
       widget: 'object',
-      hint: 'Intro text shown beside each distro shelf heading.',
+      hint: 'Visible copy shown with each Store/Distro format shelf.',
       collapsed: true,
-      fields: distroGroupOptions.map((group) =>
+      fields: DISTRO_GROUP_VALUES.map((group) =>
         buildField({
           label: group,
           name: group,

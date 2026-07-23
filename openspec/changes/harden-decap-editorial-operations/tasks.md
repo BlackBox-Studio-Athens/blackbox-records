@@ -99,72 +99,72 @@
 
 ## 9. Align Home, About, and Services with fixed public layouts
 
-- [ ] 9.1 Confirm committed Home content contains only the currently rendered Hero, News, and Artists structures before removing dormant options.
-- [ ] 9.2 Remove dormant Home `distro` and `journey` section variants from `apps/web/src/content.config.ts`.
-- [ ] 9.3 Remove dormant Home `distro` and `journey` fields from `decap-home-fields.ts` and generated YAML.
-- [ ] 9.4 Remove dormant Home `distro` and `journey` preview branches, styles, fixtures, and assertions.
-- [ ] 9.5 Disable add, remove, and reorder controls on the fixed Home section list while preserving editing inside each named section.
-- [ ] 9.6 Add clear singular labels and collapsed summaries to genuinely repeatable Home child lists.
-- [ ] 9.7 Backfill missing Home image alt text, make key Home alt fields required, and add crop/role hints matching the current public layout.
-- [ ] 9.8 Disable add, remove, and reorder controls on the fixed About section list.
-- [ ] 9.9 Preserve add, remove, reorder, singular labels, and summaries for About paragraphs, links, contact rows, stats, and other rendered repeatable content.
-- [ ] 9.10 Backfill required About image alt text and align its preview with the current public hierarchy.
-- [ ] 9.11 Disable add, remove, and reorder controls on the fixed Services section list.
-- [ ] 9.12 Preserve add, remove, reorder, singular labels, and summaries for service items, process steps, bullets, contacts, and other rendered repeatable content.
-- [ ] 9.13 Backfill required Services image alt text and align its preview with the current public hierarchy.
-- [ ] 9.14 Add focused tests proving fixed outer lists are locked while supported nested lists remain editable and ordered.
+- [x] 9.1 Confirm committed Home content contains only the currently rendered Hero, News, and Artists structures before removing dormant options.
+- [x] 9.2 Remove dormant Home `distro` and `journey` section variants from `apps/web/src/content.config.ts`.
+- [x] 9.3 Remove dormant Home `distro` and `journey` fields from `decap-home-fields.ts` and generated YAML.
+- [x] 9.4 Remove dormant Home `distro` and `journey` preview branches, styles, fixtures, and assertions.
+- [x] 9.5 Disable add, remove, and reorder controls on the fixed Home section list while preserving editing inside each named section.
+- [x] 9.6 Add clear singular labels and collapsed summaries to genuinely repeatable Home child lists.
+- [x] 9.7 Backfill missing Home image alt text, make key Home alt fields required, and add crop/role hints matching the current public layout.
+- [x] 9.8 Disable add, remove, and reorder controls on the fixed About section list.
+- [x] 9.9 Preserve add, remove, reorder, singular labels, and summaries for About paragraphs, links, contact rows, stats, and other rendered repeatable content.
+- [x] 9.10 Backfill required About image alt text and align its preview with the current public hierarchy.
+- [x] 9.11 Disable add, remove, and reorder controls on the fixed Services section list.
+- [x] 9.12 Preserve add, remove, reorder, singular labels, and summaries for service items, process steps, bullets, contacts, and other rendered repeatable content.
+- [x] 9.13 Backfill required Services image alt text and align its preview with the current public hierarchy.
+- [x] 9.14 Add focused tests proving fixed outer lists are locked while supported nested lists remain editable and ordered.
 
 ## 10. Improve the Artists collection
 
-- [ ] 10.1 Add an editor-facing Artists description that identifies the roster and artist detail pages it controls.
-- [ ] 10.2 Add a singular label, useful list summary, public preview path, and stable sort fields for Artists.
-- [ ] 10.3 Disable Decap deletion for Artist entries and explain that structural removal requires maintainer review because routes and Release references depend on them.
-- [ ] 10.4 Apply the shared slug constraint and a concise valid-slug example to Artist entries.
-- [ ] 10.5 Backfill missing Artist image alt text, require it in Decap and Astro, and retain the current 3:4 crop guidance.
-- [ ] 10.6 Align Artist URL, email, YouTube ID, and provider URL fields with the native validation supported by their Astro schema.
-- [ ] 10.7 Add singular labels and collapsed summaries to Artist links, videos, members, credits, or other rendered repeatable lists.
-- [ ] 10.8 Update Artist preview and focused tests for required imagery, validation, deletion policy, list metadata, sort fields, and preview path.
+- [x] 10.1 Add an editor-facing Artists description that identifies the roster and artist detail pages it controls.
+- [x] 10.2 Add a singular label, useful list summary, public preview path, and stable sort fields for Artists.
+- [x] 10.3 Disable Decap deletion for Artist entries and explain that structural removal requires maintainer review because routes and Release references depend on them.
+- [x] 10.4 Apply the shared slug constraint and a concise valid-slug example to Artist entries.
+- [x] 10.5 Backfill missing Artist image alt text, require it in Decap and Astro, and retain the current 3:4 crop guidance.
+- [x] 10.6 Align Artist URL, email, YouTube ID, and provider URL fields with the native validation supported by their Astro schema.
+- [x] 10.7 Add singular labels and collapsed summaries to Artist links, videos, members, credits, or other rendered repeatable lists.
+- [x] 10.8 Update Artist preview and focused tests for required imagery, validation, deletion policy, list metadata, sort fields, and preview path.
 
 ## 11. Improve the Releases collection
 
-- [ ] 11.1 Add an editor-facing Releases description that distinguishes editorial release content from price, stock, and checkout authority.
-- [ ] 11.2 Replace the build-time Artist select options with a native relation widget targeting the Artists collection.
-- [ ] 11.3 Configure relation search, display, and stored value fields so the widget saves the canonical Artist entry identity expected by Astro `reference('artists')`.
-- [ ] 11.4 Disable Decap deletion for Release entries and explain the stable route, reference, and Store Item consequences.
-- [ ] 11.5 Apply shared slug validation plus native date and integer-order constraints to Release fields.
-- [ ] 11.6 Align external URL, Bandcamp, Tidal, YouTube, and other provider fields with their current Astro constraints and valid examples.
-- [ ] 11.7 Backfill missing Release cover alt text, require it in Decap and Astro, and clarify cover-art expectations.
-- [ ] 11.8 Add singular labels and collapsed summaries to Release formats, tracks, credits, links, videos, and other rendered lists.
-- [ ] 11.9 Add a public preview path and update the Release preview to show current metadata, artwork, artist relation, and commerce-boundary warning.
-- [ ] 11.10 Remove any Release CMS field that lacks a current schema or supported public consumer, then update committed content only when required by that removal.
+- [x] 11.1 Add an editor-facing Releases description that distinguishes editorial release content from price, stock, and checkout authority.
+- [x] 11.2 Replace the build-time Artist select options with a native relation widget targeting the Artists collection.
+- [x] 11.3 Configure relation search, display, and stored value fields so the widget saves the canonical Artist entry identity expected by Astro `reference('artists')`.
+- [x] 11.4 Disable Decap deletion for Release entries and explain the stable route, reference, and Store Item consequences.
+- [x] 11.5 Apply shared slug validation plus native date and integer-order constraints to Release fields.
+- [x] 11.6 Align external URL, Bandcamp, Tidal, YouTube, and other provider fields with their current Astro constraints and valid examples.
+- [x] 11.7 Backfill missing Release cover alt text, require it in Decap and Astro, and clarify cover-art expectations.
+- [x] 11.8 Add singular labels and collapsed summaries to Release formats, tracks, credits, links, videos, and other rendered lists.
+- [x] 11.9 Add a public preview path and update the Release preview to show current metadata, artwork, artist relation, and commerce-boundary warning.
+- [x] 11.10 Remove any Release CMS field that lacks a current schema or supported public consumer, then update committed content only when required by that removal.
 
 ## 12. Improve the Distro Store Items collection
 
-- [ ] 12.1 Apply the visible label `Store Items — Distro & Merch` while retaining the `distro` collection identity.
-- [ ] 12.2 Add a collection description that lists editorial fields and separates price, stock, checkout availability, orders, and fulfillment.
-- [ ] 12.3 Disable Decap deletion for Distro entries and direct stop-selling work to the protected operational controls.
-- [ ] 12.4 Move Distro group values to one shared source consumed by both Astro validation and Decap options.
-- [ ] 12.5 Add a Distro group view or filter using the existing presentation groups, without adding commerce category authority.
-- [ ] 12.6 Add useful list summaries, singular labels, public preview paths, and stable title/group/order sort fields.
-- [ ] 12.7 Apply shared slug validation and integer-order constraints with concise examples.
-- [ ] 12.8 Backfill missing Distro image alt text, require it in Decap and Astro, and clarify product-artwork expectations.
-- [ ] 12.9 Align optional links, format, grouping, and other editor fields with current schema constraints while keeping price and stock fields absent.
-- [ ] 12.10 Remove any Distro CMS field with no current schema or supported public consumer and add focused parity tests.
+- [x] 12.1 Apply the visible label `Store Items — Distro & Merch` while retaining the `distro` collection identity.
+- [x] 12.2 Add a collection description that lists editorial fields and separates price, stock, checkout availability, orders, and fulfillment.
+- [x] 12.3 Disable Decap deletion for Distro entries and direct stop-selling work to the protected operational controls.
+- [x] 12.4 Move Distro group values to one shared source consumed by both Astro validation and Decap options.
+- [x] 12.5 Add a Distro group view or filter using the existing presentation groups, without adding commerce category authority.
+- [x] 12.6 Add useful list summaries, singular labels, public preview paths, and stable title/group/order sort fields.
+- [x] 12.7 Apply shared slug validation and integer-order constraints with concise examples.
+- [x] 12.8 Backfill missing Distro image alt text, require it in Decap and Astro, and clarify product-artwork expectations.
+- [x] 12.9 Align optional links, format, grouping, and other editor fields with current schema constraints while keeping price and stock fields absent.
+- [x] 12.10 Remove any Distro CMS field with no current schema or supported public consumer and add focused parity tests.
 
 ## 13. Improve News, secondary pages, and advanced collections
 
-- [ ] 13.1 Add a News description, singular label, current list summary, public preview path, and date-oriented sort fields.
-- [ ] 13.2 Keep confirmed News deletion available and verify the delete guard does not accidentally disable it.
-- [ ] 13.3 Apply slug/date validation, backfill key News image alt text, and require alt text for new or changed lead imagery.
-- [ ] 13.4 Align the News preview with current article metadata, body hierarchy, imagery, and bounded optional-media fallbacks.
-- [ ] 13.5 Improve Newsletter labels and hints around visible signup copy without changing its existing behavior or language.
-- [ ] 13.6 Align Newsletter URL, email, and other constrained fields with the current schema and mark fixed file content non-deletable.
-- [ ] 13.7 Improve Distro Page labels and hints around public Store/Distro copy while keeping the fixed file non-deletable.
-- [ ] 13.8 Label Navigation as advanced, add a site-wide risk warning, validate internal paths, and keep its fixed entries non-deletable.
-- [ ] 13.9 Label Social Links as advanced, add a site-wide identity warning, validate provider URLs, and retain confirmed deletion for disposable social entries.
-- [ ] 13.10 Label Site Settings as advanced, add metadata/identity warnings, and align URL, email, image, and organization fields with current schema constraints.
-- [ ] 13.11 Verify all fixed file collections remain singletons and cannot create, duplicate, or delete their canonical file.
-- [ ] 13.12 Add focused tests for every secondary and advanced collection label, description, validation, ordering, and deletion policy.
+- [x] 13.1 Add a News description, singular label, current list summary, public preview path, and date-oriented sort fields.
+- [x] 13.2 Keep confirmed News deletion available and verify the delete guard does not accidentally disable it.
+- [x] 13.3 Apply slug/date validation, backfill key News image alt text, and require alt text for new or changed lead imagery.
+- [x] 13.4 Align the News preview with current article metadata, body hierarchy, imagery, and bounded optional-media fallbacks.
+- [x] 13.5 Improve Newsletter labels and hints around visible signup copy without changing its existing behavior or language.
+- [x] 13.6 Align Newsletter URL, email, and other constrained fields with the current schema and mark fixed file content non-deletable.
+- [x] 13.7 Improve Distro Page labels and hints around public Store/Distro copy while keeping the fixed file non-deletable.
+- [x] 13.8 Label Navigation as advanced, add a site-wide risk warning, validate internal paths, and keep its fixed entries non-deletable.
+- [x] 13.9 Label Social Links as advanced, add a site-wide identity warning, validate provider URLs, and retain confirmed deletion for disposable social entries.
+- [x] 13.10 Label Site Settings as advanced, add metadata/identity warnings, and align URL, email, image, and organization fields with current schema constraints.
+- [x] 13.11 Verify all fixed file collections remain singletons and cannot create, duplicate, or delete their canonical file.
+- [x] 13.12 Add focused tests for every secondary and advanced collection label, description, validation, ordering, and deletion policy.
 
 ## 14. Reconcile media ownership and the admin media route
 

@@ -1,9 +1,6 @@
 {
   "$schema": "../../../.astro/collections/distroPage.schema.json",
-  "page_title": "Distro",
-  "page_description": "A curated distro of records, clothes, and tapes carried through the BlackBox store.",
   "hero": {
-    "section_label": "Distro",
     "title": "Distro",
     "intro": "A small curated layer around the store: records, clothes, and tapes that fit naturally beside the releases BlackBox is already putting into the world."
   },

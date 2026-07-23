@@ -1,4 +1,5 @@
 import { buildField, buildFieldMapping, buildFolderCollection } from './decap-yaml-builder';
+import { httpsUrlPatternSource, youtubeVideoIdPatternSource } from '../editorial-validation';
 import { createSlugSuggestion, slugPatternSource } from '../slugs';
 import { decapCollectionDescriptions } from './decap-editorial-copy';
 
@@ -11,16 +12,19 @@ export function buildArtistCollection() {
     name: 'artists',
     label: 'Artists',
     description: decapCollectionDescriptions.artists,
+    labelSingular: 'Artist',
+    previewPath: 'artists/{{fields.slug}}/',
+    sortableFields: ['title', 'slug', 'genre', 'country', 'commit_date'],
     folder: 'apps/web/src/content/artists',
     create: true,
-    delete: true,
+    delete: false,
     extension: 'md',
     format: 'frontmatter',
     identifierField: 'title',
     slug: '{{fields.slug}}',
     mediaFolder: '.',
     publicFolder: './',
-    summary: '{{title}} - {{slug}}',
+    summary: '{{title}} — {{genre}} — {{slug}}',
     fields: [
       buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Artist or band name.' }),
       buildField({
@@ -28,7 +32,10 @@ export function buildArtistCollection() {
         name: 'slug',
         widget: 'string',
         hint: `Used for the artist page filename. Use lowercase kebab-case, for example "${createArtistSlugSuggestion('Mass Culture')}".`,
-        extras: [`pattern: ["${slugPatternSource}", "Use lowercase kebab-case, for example mass-culture."]`],
+        pattern: {
+          value: slugPatternSource,
+          message: 'Use lowercase kebab-case, for example mass-culture.',
+        },
       }),
       buildField({
         label: 'Genre',
@@ -53,8 +60,8 @@ export function buildArtistCollection() {
         label: 'Image alt',
         name: 'image_alt',
         widget: 'string',
-        required: false,
-        hint: 'Describe the band or artist image for screen readers.',
+        required: true,
+        hint: 'Required. Describe the visible people, artwork, or scene without repeating only the artist name.',
       }),
       buildField({
         label: 'Bio',
@@ -67,8 +74,12 @@ export function buildArtistCollection() {
         name: 'profile_links',
         widget: 'list',
         required: false,
+        labelSingular: 'Profile link',
         collapsed: true,
-        summary: '{{fields.label}}',
+        summary: '{{fields.label}} — {{fields.url}}',
+        allowAdd: true,
+        allowRemove: true,
+        allowReorder: true,
         hint: 'Optional quiet profile links shown near the artist story.',
         fields: [
           buildFieldMapping({ label: 'Label', name: 'label', widget: 'string', hint: 'Example: "Bandcamp".' }),
@@ -76,7 +87,8 @@ export function buildArtistCollection() {
             label: 'URL',
             name: 'url',
             widget: 'string',
-            hint: 'Full public profile URL including https://.',
+            hint: 'Full public profile URL. Example: https://artist.bandcamp.com/.',
+            pattern: { value: httpsUrlPatternSource, message: 'Use a full HTTPS profile URL.' },
           }),
         ],
       }),
@@ -85,8 +97,12 @@ export function buildArtistCollection() {
         name: 'videos',
         widget: 'list',
         required: false,
+        labelSingular: 'Video',
         collapsed: true,
         summary: '{{fields.title}}',
+        allowAdd: true,
+        allowRemove: true,
+        allowReorder: true,
         hint: 'Optional YouTube videos for the artist page. Use the 11-character YouTube video ID, not iframe HTML.',
         fields: [
           buildFieldMapping({
@@ -100,6 +116,7 @@ export function buildArtistCollection() {
             name: 'youtube_video_id',
             widget: 'string',
             hint: 'The 11-character ID from a YouTube URL, for example dQw4w9WgXcQ.',
+            pattern: { value: youtubeVideoIdPatternSource, message: 'Use the 11-character YouTube video ID.' },
           }),
           buildFieldMapping({
             label: 'Description',
@@ -116,13 +133,6 @@ export function buildArtistCollection() {
         widget: 'string',
         required: false,
         hint: 'Optional note shown when an artist has a release on the way.',
-      }),
-      buildField({
-        label: 'Section label',
-        name: 'section_label',
-        widget: 'string',
-        required: false,
-        hint: 'Optional small label used in selected UI contexts.',
       }),
       buildField({
         label: 'Body',

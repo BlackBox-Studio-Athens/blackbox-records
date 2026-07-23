@@ -1,36 +1,86 @@
 import { describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 
 import { buildReleaseCollection } from './decap-release-collection';
 
-describe('Decap release collection', () => {
-  it('builds the release folder collection with artist options and media fields', () => {
-    const yaml = buildReleaseCollection([{ label: 'Mass Culture', value: 'mass-culture' }]);
+type ParsedField = {
+  allow_add?: boolean;
+  allow_remove?: boolean;
+  allow_reorder?: boolean;
+  collapsed?: boolean;
+  collection?: string;
+  display_fields?: string[];
+  fields?: ParsedField[];
+  label_singular?: string;
+  name: string;
+  options_length?: number;
+  pattern?: [string, string];
+  required?: boolean;
+  search_fields?: string[];
+  summary?: string;
+  value_field?: string;
+  widget: string;
+};
 
-    expect(yaml).toContain('name: "releases"');
-    expect(yaml).toContain('folder: "apps/web/src/content/releases"');
-    expect(yaml).toContain('extension: md');
-    expect(yaml).toContain('format: frontmatter');
-    expect(yaml).toContain('summary: "{{title}} - {{artist}}"');
-    expect(yaml).toContain('name: "artist"');
-    expect(yaml).toContain('widget: select');
-    expect(yaml).toContain('label: "Mass Culture"');
-    expect(yaml).toContain('value: "mass-culture"');
-    expect(yaml).toContain('name: "release_date"');
-    expect(yaml).toContain(
-      'hint: "Official release date used by the public site for display and release ordering/latest behavior. Time is ignored. Example: 2026-09-18."',
-    );
-    expect(yaml).toContain('date_format: YYYY-MM-DD');
-    expect(yaml).toContain('name: "bandcamp_embed_url"');
-    expect(yaml).toContain('name: "tidal_url"');
-    expect(yaml).toContain('name: "formats"');
-    expect(yaml).toContain('field:');
-    expect(yaml).toContain('summary: "{{fields.value}}"');
-    expect(yaml).toContain('name: "credits"');
-    expect(yaml).toContain('summary: "{{fields.role}}"');
-    expect(yaml).not.toContain('name: "commerce"');
-    expect(yaml).not.toContain('name: "publish_target"');
-    expect(yaml).not.toContain('name: "smoke_candidate"');
-    expect(yaml).not.toContain('name: "retired"');
-    expect(yaml).not.toContain('name: "shop_collection_handle"');
+type ParsedCollection = {
+  delete: boolean;
+  description: string;
+  fields: ParsedField[];
+  label_singular: string;
+  preview_path: string;
+  slug: string;
+  sortable_fields: string[];
+  summary: string;
+};
+
+describe('Decap release collection', () => {
+  it('builds the protected release collection with a live Artist relation and editorial-only fields', () => {
+    const [collection] = parse(buildReleaseCollection()) as [ParsedCollection];
+    const field = (name: string) => collection.fields.find((candidate) => candidate.name === name);
+
+    expect(collection).toMatchObject({
+      delete: false,
+      label_singular: 'Release',
+      preview_path: 'releases/{{slug}}/',
+      slug: '{{slug}}',
+      sortable_fields: ['release_date', 'title', 'artist', 'commit_date'],
+      summary: '{{release_date}} — {{title}} — {{artist}}',
+    });
+    expect(collection.description).toContain('Price, stock, and checkout');
+    expect(collection.description).toContain('maintainer');
+    expect(field('artist')).toMatchObject({
+      collection: 'artists',
+      display_fields: ['title', 'slug'],
+      options_length: 50,
+      search_fields: ['title', 'slug'],
+      value_field: 'slug',
+      widget: 'relation',
+    });
+    expect(field('release_date')).toMatchObject({ widget: 'datetime' });
+    expect(field('cover_image_alt')).toMatchObject({ required: true, widget: 'string' });
+    expect(field('merch_url')?.pattern?.[0]).toContain('https://');
+    expect(field('bandcamp_embed_url')?.pattern?.[0]).toContain('bandcamp');
+    expect(field('tidal_url')?.pattern?.[0]).toContain('tidal');
+
+    expect(field('formats')).toMatchObject({
+      allow_add: true,
+      allow_remove: true,
+      allow_reorder: true,
+      collapsed: true,
+      label_singular: 'Format',
+      summary: '{{fields.value}}',
+    });
+    expect(field('credits')).toMatchObject({
+      allow_add: true,
+      allow_remove: true,
+      allow_reorder: true,
+      collapsed: true,
+      label_singular: 'Credit',
+      summary: '{{fields.role}} — {{fields.name}}',
+    });
+
+    for (const unsupported of ['commerce', 'publish_target', 'smoke_candidate', 'retired', 'shop_collection_handle']) {
+      expect(collection.fields.some(({ name }) => name === unsupported)).toBe(false);
+    }
   });
 });

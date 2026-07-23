@@ -4,7 +4,7 @@ slug: ouranopithecus
 genre: Experimental Weird Rock
 country: Greece
 image: ./Ouranopithecus-band-photo.jpg
-image_alt: Ouranopithecus
+image_alt: Three members of Ouranopithecus standing among trees
 bio: >
   Ouranopithecus channels a raw, heavy sound that blends stark tension with
   driving rhythm.

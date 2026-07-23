@@ -145,8 +145,8 @@ function buildArtistOptionsYaml(options: DecapSelectOption[], indentSpaces = 4):
 }
 
 function appendBaseFieldOptions(lines: string[], config: BaseFieldConfig, indent = ''): void {
-  if (config.required === false) {
-    lines.push(`${indent}required: false`);
+  if (config.required !== undefined) {
+    lines.push(`${indent}required: ${config.required}`);
   }
 
   if (config.hint) {

@@ -1,11 +1,14 @@
-export type DistroGroupName =
-  | 'Vinyl 12-inch'
-  | 'Vinyl 10-inch'
-  | 'Vinyl 7-inch'
-  | 'CDs'
-  | 'Clothes'
-  | 'Tapes'
-  | 'Other';
+export const DISTRO_GROUP_VALUES = [
+  'Vinyl 12-inch',
+  'Vinyl 10-inch',
+  'Vinyl 7-inch',
+  'CDs',
+  'Clothes',
+  'Tapes',
+  'Other',
+] as const;
+
+export type DistroGroupName = (typeof DISTRO_GROUP_VALUES)[number];
 
 const DISTRO_BROWSE_GROUPS = [
   { groupName: 'Vinyl 12-inch', introGroupName: 'Vinyl 12-inch', sourceGroups: ['Vinyl 12-inch'] },
