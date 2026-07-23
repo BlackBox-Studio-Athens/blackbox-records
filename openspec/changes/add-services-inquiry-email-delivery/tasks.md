@@ -32,7 +32,7 @@
 - [x] 5.1 Run focused frontend, backend, HTTP, email-template, API-generation, architecture, and UAT-smoke contract tests.
 - [x] 5.2 Run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the final implementation tree.
 - [x] 5.3 Use Browser Use on mobile and desktop to verify required fields, all adaptive prompts, pending/error preservation, inline success, send-another reset, no overflow, no unintended navigation, mail-app fallback, and copy fallback.
-- [ ] 5.4 Deploy the Worker before the static frontend, run the synthetic UAT inquiry against `uat-sink@ambkime.resend.app`, and record redacted evidence.
+- [x] 5.4 Deploy the Worker before the static frontend, run the synthetic UAT inquiry against `uat-sink@ambkime.resend.app`, and record redacted evidence.
 - [x] 5.5 Before PRD acceptance, manually send one probe to each of `info@`, `booking@`, `merch@`, and `vinyl@blackboxrecordsathens.com` and confirm Cloudflare Email Routing forwards all four to the existing Gmail inbox.
 
 ### Local acceptance evidence — 2026-07-22
@@ -45,8 +45,10 @@
 
 ### Rollout evidence — 2026-07-23
 
-- The cumulative local tree at `928e48f24c60312a28f1e6a5dfb76f5d3296fc34` deployed to the `blackbox-records-backend-uat` Worker through `pnpm deploy:backend:uat` with Wrangler 4.94.0 at `2026-07-22T23:00:39Z`. No PRD target was deployed; the provider deployment identifier is intentionally omitted.
-- The redacted Resend smoke at `.codex-artifacts/smoke/uat/resend-uat/20260722230113/` passed at `2026-07-22T23:01:14Z`: Worker health, newsletter registration, and Services inquiry submission returned HTTP 200 with zero issues, and the inquiry check recorded the `managed-uat-sink` recipient policy.
-- The UAT static frontend was not refreshed. The approved GitHub Pages workflow can only check out a remote commit, this cumulative SHA has no remote ref, and this rollout explicitly forbids pushing or mutating `main`. Worker-before-static ordering is preserved, but task 5.4 remains unchecked because the required static deployment did not occur.
+- The cumulative local tree at `f637c1ea41c1148b9890b061c88c5cae1a4a097b` deployed to the `blackbox-records-backend-uat` Worker through `pnpm deploy:backend:uat` with Wrangler 4.94.0 at `2026-07-23T08:13Z`, before the final static deployment. No PRD target was deployed; the provider deployment identifier is intentionally omitted.
+- The redacted Resend smoke at `.codex-artifacts/smoke/uat/resend-uat/20260723081351/` passed at `2026-07-23T08:13:53Z`: Worker health, newsletter registration, and the Services inquiry against `uat-sink@ambkime.resend.app` returned HTTP 200 with zero issues, and the inquiry check recorded the `managed-uat-sink` recipient policy.
+- GitHub Actions run `29990598101` checked out the exact cumulative SHA from the authorized temporary ref and completed successfully. Workspace checks, the 350-page UAT build, and GitHub Pages deployment completed; the UAT deploy finished at `2026-07-23T08:17:33Z`, while both PRD jobs were skipped. GitHub's jobs API retained a stale queued unit-test entry after the workflow reached success; the exact tree had already passed the full local unit suite.
+- The deployed Services page returned HTTP 200 with the `[TEST] Services | Blackbox Records` title, required name/email/service/message controls, all four service choices, the visible `info@blackboxrecordsathens.com` mail-app/copy fallback, and no console warnings or errors.
+- The broader hosted UAT static smoke passed the Services route with no page or console errors. Its only failure was an unrelated Store listing-price readiness timeout, which is outside this change.
 - Exactly one content-minimal probe was sent to each service alias under redacted run `routing-probe-20260723T052005Z-[redacted]`. Resend accepted each send at `2026-07-23T05:20:09Z`, `05:20:12Z`, `05:20:16Z`, and `05:20:19Z`; all four outbound records reached provider state `delivered`. Provider message identifiers, recipients, headers, and content are omitted.
 - Cloudflare Email Routing activity recorded exactly one matching event per alias at `2026-07-23T05:20:10Z`, `05:20:13Z`, `05:20:17Z`, and `05:20:20Z`. Every event reported `action=forward` and `status=delivered` to the configured verified destination. The destination and routing event identifiers are omitted; no Gmail login or connector was used.
