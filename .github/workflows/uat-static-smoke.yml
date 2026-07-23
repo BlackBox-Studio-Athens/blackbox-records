@@ -43,16 +43,33 @@ on:
         required: true
         default: false
         type: boolean
+  workflow_run:
+    workflows: ['Deploy UAT and PRD static sites']
+    branches: ['main']
+    types: [completed]
 
 permissions:
   contents: read
 
+concurrency:
+  group: 'uat-static-smoke-${{ github.event.workflow_run.head_branch || github.ref }}'
+  cancel-in-progress: true
+
 jobs:
   smoke:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    env:
+      UAT_STATIC_EVIDENCE_DIR: ${{ inputs.evidence_dir || '.codex-artifacts/smoke/uat/uat-static' }}
+      UAT_STATIC_SCREENSHOTS: ${{ inputs.screenshots || 'on-failure' }}
+      UAT_STATIC_SITE_URL: ${{ inputs.site_url || 'https://blackbox-studio-athens.github.io/blackbox-records' }}
+      UAT_STATIC_SMOKE_SCENARIO: ${{ inputs.scenario || 'all' }}
+      UAT_STATIC_TIMEOUT_MS: ${{ inputs.timeout_ms || '60000' }}
     steps:
-      - name: Checkout repository
+      - name: Checkout deployed commit
         uses: actions/checkout@v5.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.8
@@ -74,14 +91,14 @@ jobs:
       - name: Run UAT static smoke
         run: |
           args=(
-            --site-url "${{ inputs.site_url }}"
-            --scenario "${{ inputs.scenario }}"
-            --timeout-ms "${{ inputs.timeout_ms }}"
-            --evidence-dir "${{ inputs.evidence_dir }}"
-            --screenshots "${{ inputs.screenshots }}"
+            --site-url "${UAT_STATIC_SITE_URL}"
+            --scenario "${UAT_STATIC_SMOKE_SCENARIO}"
+            --timeout-ms "${UAT_STATIC_TIMEOUT_MS}"
+            --evidence-dir "${UAT_STATIC_EVIDENCE_DIR}"
+            --screenshots "${UAT_STATIC_SCREENSHOTS}"
           )
 
-          if [ "${{ inputs.headed }}" = "true" ]; then
+          if [ "${{ inputs.headed || false }}" = "true" ]; then
             args+=(--headed)
           fi
 
@@ -91,8 +108,8 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v5.0.0
         with:
-          name: uat-static-smoke-${{ github.run_id }}
+          name: uat-static-smoke-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             .codex-artifacts/smoke/uat/uat-static/**
-            ${{ inputs.evidence_dir }}/**
+            ${{ inputs.evidence_dir || '.codex-artifacts/smoke/uat/uat-static' }}/**
           if-no-files-found: warn

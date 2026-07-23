@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { assertDecapBuildArtifacts } from './decap-build-validation';
+import { assertDecapBuildArtifacts, assertDisabledAdminAssetTexts } from './decap-build-validation';
 
 function buildIndex(mode: 'local' | 'hosted' | 'disabled'): string {
   const initAttribute = mode === 'disabled' ? '' : ' data-admin-boot-init-url="/blackbox-records/admin/init.js"';
@@ -75,5 +75,18 @@ describe('assertDecapBuildArtifacts', () => {
         indexHtml: buildIndex('hosted'),
       }),
     ).toThrow('Generated Decap admin page mode does not match the selected build mode.');
+  });
+
+  it('inspects every generated disabled admin text asset for loopback and placeholder data', () => {
+    expect(() =>
+      assertDisabledAdminAssetTexts({
+        'config.yml': disabledConfig,
+        'index.html': buildIndex('disabled'),
+        'init.js': 'window.__BLACKBOX_ADMIN__ = Object.freeze({ mode: "disabled" });',
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assertDisabledAdminAssetTexts({ 'nested/runtime.js': 'const endpoint = "http://localhost/CHANGE_ME";' }),
+    ).toThrow('Disabled Decap admin asset nested/runtime.js must not contain localhost or placeholder data.');
   });
 });

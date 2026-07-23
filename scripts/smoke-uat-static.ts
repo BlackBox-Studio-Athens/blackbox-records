@@ -4,6 +4,7 @@ import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
 import { chromium, type Browser, type BrowserContext, type Page, type Request } from 'playwright';
+import { parse } from 'yaml';
 
 import {
   createRouteUrl,
@@ -49,11 +50,13 @@ type UatStaticSmokeCheck = {
 };
 
 export type UatStaticSmokeEvidence = {
+  authenticated: false;
   checks: UatStaticSmokeCheck[];
   consoleErrors: string[];
   environment: 'uat';
   generatedAt: string;
   pageErrors: string[];
+  readOnly: true;
   scenario: UatStaticSmokeScenarioName;
   screenshotPath: string | null;
   siteUrl: string;
@@ -84,8 +87,11 @@ export type CmsAdminRenderedState = {
   hasCollectionUi: boolean;
   hasConfigLink: boolean;
   hasCmsRoot: boolean;
+  hasExactPinnedRuntime: boolean;
+  hasRuntimeApi: boolean;
   isAdminReady: boolean;
   isAuthReady: boolean;
+  runtimeScriptUrls: string[];
 };
 
 export type UatStaticSmokeEvidenceInput = {
@@ -314,7 +320,10 @@ async function runUatStaticSmokeScenario(input: {
 
     const checks =
       input.scenario.name === 'cms_admin'
-        ? [await checkCmsAdminPage(page, input.options)]
+        ? [
+            await checkCmsAdminPage(page, input.options),
+            await checkTextAsset(input.options, '/admin/config.yml', ['# blackbox-decap-mode: hosted', 'collections:']),
+          ]
         : input.scenario.name === 'cms_assets'
           ? await checkCmsAssets(input.options)
           : input.scenario.name === 'checkout_shell'
@@ -471,6 +480,9 @@ async function readCmsAdminRenderedState(page: Page, timeoutMs: number): Promise
       __BLACKBOX_ADMIN_READY__?: boolean;
     };
     const bodyText = document.body?.innerText || '';
+    const runtimeScriptUrls = Array.from(document.scripts)
+      .map((script) => script.src)
+      .filter(Boolean);
     const hasCollectionUi = Boolean(
       document.querySelector('a[href*="#/collections/"]') ||
       document.querySelector('[class*="Collection"]') ||
@@ -482,12 +494,17 @@ async function readCmsAdminRenderedState(page: Page, timeoutMs: number): Promise
       hasCollectionUi,
       hasConfigLink: Boolean(document.querySelector('link[rel="cms-config-url"][href*="/admin/config.yml"]')),
       hasCmsRoot: Boolean(document.getElementById('nc-root')),
+      hasExactPinnedRuntime: runtimeScriptUrls.some(
+        (url) => url === 'https://unpkg.com/decap-cms@3.14.1/dist/decap-cms.js',
+      ),
+      hasRuntimeApi: Boolean((window as typeof window & { CMS?: unknown }).CMS),
       isAdminReady: Boolean(globalState.__BLACKBOX_ADMIN_READY__),
       isAuthReady: Boolean(
         globalState.__BLACKBOX_ADMIN_AUTH_READY__ ||
         document.querySelector('[data-blackbox-cms-auth-button="true"]') ||
         bodyText.includes('Sign in with DecapBridge'),
       ),
+      runtimeScriptUrls,
     };
   });
 }
@@ -548,12 +565,23 @@ async function checkCmsAssets(options: UatStaticSmokeOptions): Promise<UatStatic
     await checkTextAsset(options, '/admin/init.js', [
       'window.__BLACKBOX_ADMIN__',
       'blackbox-cms-preview-auto-collapsed',
+      "mediaButton.dataset.blackboxTopLevelMedia = 'hidden'",
     ]),
   );
+  checks.push(await checkTextAsset(options, '/admin/preview-assets.js', ['resolvePreviewAssetUrl']));
   checks.push(await checkTextAsset(options, '/admin/admin.css', ['blackbox-cms']));
   checks.push(await checkTextAsset(options, '/admin/preview.css', ['body']));
-  checks.push(await checkBinaryAsset(options, '/assets/images/brand/logo.png', 'image/'));
-  checks.push(await checkBinaryAsset(options, '/favicon.svg', 'image/svg+xml'));
+  checks.push(await checkBinaryAsset(options, '/admin/media/home/hero-live-band.jpg', 'image/'));
+  checks.push(await checkBinaryAsset(options, '/admin/media/artists/Chronoboros-band-logo.jpg', 'image/'));
+  checks.push(
+    await checkBinaryAsset(
+      options,
+      '/admin/media/releases/651165517_1798070461631923_2184094727995022471_n.jpg',
+      'image/',
+    ),
+  );
+  checks.push(await checkBinaryAsset(options, '/admin/media/distro/mass-culture-barren-point.jpg', 'image/'));
+  checks.push(await checkBinaryAsset(options, '/admin/media/news/img_0697.jpg', 'image/'));
 
   return checks;
 }
@@ -732,6 +760,7 @@ async function checkTextAsset(
   if (routePath === '/admin/config.yml') {
     issues.push(...checkCmsConfigPlaceholders(text));
     issues.push(...checkCmsSingletonJsonDeclarations(text));
+    issues.push(...checkCmsHostedConfigDeclarations(text));
   }
 
   for (const exposure of scanHighRiskSmokeExposure(text)) {
@@ -796,7 +825,7 @@ async function fetchSmokeResponse(url: string, timeoutMs: number): Promise<Respo
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    return await fetch(url, { signal: controller.signal });
+    return await fetch(url, { method: 'GET', signal: controller.signal });
   } finally {
     clearTimeout(timeout);
   }
@@ -852,11 +881,13 @@ export function buildUatStaticSmokeEvidence(input: UatStaticSmokeEvidenceInput):
   );
 
   return {
+    authenticated: false,
     checks: input.checks,
     consoleErrors: input.consoleErrors,
     environment: 'uat',
     generatedAt: new Date().toISOString(),
     pageErrors: input.pageErrors,
+    readOnly: true,
     scenario: input.scenario.name,
     screenshotPath: input.screenshotPath,
     siteUrl: input.siteUrl,
@@ -875,6 +906,81 @@ export function checkCmsConfigPlaceholders(text: string): string[] {
 
   if (/https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?/i.test(text)) {
     issues.push('CMS config still points at a local backend or loopback URL.');
+  }
+
+  if (/(?:CHANGE_ME|REPLACE_ME|example\.com|\.invalid\b|\bTODO\b)/i.test(text)) {
+    issues.push('CMS config still contains an unsafe hosted placeholder.');
+  }
+
+  return issues;
+}
+
+export function checkCmsHostedConfigDeclarations(text: string): string[] {
+  const issues: string[] = [];
+  let config: Record<string, unknown>;
+
+  try {
+    const parsed = parse(text) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('root is not a mapping');
+    config = parsed as Record<string, unknown>;
+  } catch (error) {
+    return [`CMS config is not valid YAML: ${redactSensitiveSmokeText(String(error))}.`];
+  }
+
+  const backend =
+    config.backend && typeof config.backend === 'object' && !Array.isArray(config.backend)
+      ? (config.backend as Record<string, unknown>)
+      : {};
+  const expectedBackendValues: Record<string, string> = {
+    auth_type: 'pkce',
+    branch: 'main',
+    name: 'git-gateway',
+  };
+
+  for (const [field, expected] of Object.entries(expectedBackendValues)) {
+    if (backend[field] !== expected) issues.push(`CMS hosted backend.${field} must equal "${expected}".`);
+  }
+
+  for (const field of ['repo', 'auth_endpoint', 'auth_token_endpoint', 'base_url', 'gateway_url']) {
+    if (typeof backend[field] !== 'string' || !backend[field].trim()) {
+      issues.push(`CMS hosted backend.${field} must be a non-empty string.`);
+    }
+  }
+
+  for (const field of ['base_url', 'gateway_url']) {
+    if (typeof backend[field] === 'string' && !backend[field].startsWith('https://')) {
+      issues.push(`CMS hosted backend.${field} must use HTTPS.`);
+    }
+  }
+
+  if ('proxy_url' in backend || config.local_backend === true) {
+    issues.push('CMS hosted config must not expose local proxy settings.');
+  }
+  if (config.publish_mode !== 'simple') issues.push('CMS hosted publish_mode must equal "simple".');
+  if (config.media_folder !== 'apps/web/src/content/home' || config.public_folder !== './') {
+    issues.push('CMS hosted global media fallback must stay aligned to the non-exposed Home media root.');
+  }
+
+  const siteUrl = typeof config.site_url === 'string' ? config.site_url : '';
+  const displayUrl = typeof config.display_url === 'string' ? config.display_url : '';
+  if (!siteUrl.startsWith('https://') || displayUrl !== siteUrl) {
+    issues.push('CMS hosted site_url and display_url must match one HTTPS UAT site root.');
+  }
+
+  const collections = Array.isArray(config.collections) ? config.collections : [];
+  const collectionNames = collections.flatMap((collection) => {
+    if (!collection || typeof collection !== 'object' || Array.isArray(collection)) return [];
+    const name = (collection as Record<string, unknown>).name;
+    return typeof name === 'string' ? [name] : [];
+  });
+  for (const collectionName of ['home', 'artists', 'releases', 'distro', 'news']) {
+    if (!collectionNames.includes(collectionName)) {
+      issues.push(`CMS hosted config is missing the ${collectionName} collection.`);
+    }
+  }
+
+  if (/apps\/web\/src\/content\/uploads|\/admin\/media\/uploads/i.test(text)) {
+    issues.push('CMS hosted config must not advertise an unowned global uploads inventory.');
   }
 
   return issues;
@@ -948,6 +1054,14 @@ export function checkCmsAdminRenderedState(state: CmsAdminRenderedState): string
     issues.push('Expected Decap CMS to mount #nc-root.');
   }
 
+  if (!state.hasExactPinnedRuntime) {
+    issues.push('Expected /admin/#/ to load exactly decap-cms@3.14.1 from the pinned runtime URL.');
+  }
+
+  if (!state.hasRuntimeApi) {
+    issues.push('Expected the pinned Decap runtime to expose the CMS registration API.');
+  }
+
   if (!bodyText) {
     issues.push('Expected /admin/#/ to render visible Decap CMS text.');
     return issues;
@@ -964,6 +1078,18 @@ export function checkCmsAdminRenderedState(state: CmsAdminRenderedState): string
 
   if (!state.isAuthReady && !state.hasCollectionUi) {
     issues.push('Expected /admin/#/ to render a usable DecapBridge auth surface or authenticated collection UI.');
+  }
+
+  if (state.isAuthReady && !state.hasCollectionUi) {
+    for (const expectedText of ['BlackBox CMS', 'Sign in to edit content', 'Sign in with DecapBridge']) {
+      if (!containsTextIgnoreCase(bodyText, expectedText)) {
+        issues.push(`Expected hosted Decap auth copy to include "${expectedText}".`);
+      }
+    }
+  }
+
+  if (/\b(?:username|password)\b|email\s*\/\s*password/i.test(bodyText)) {
+    issues.push('Expected hosted Decap auth to omit classic username/password copy.');
   }
 
   return issues;

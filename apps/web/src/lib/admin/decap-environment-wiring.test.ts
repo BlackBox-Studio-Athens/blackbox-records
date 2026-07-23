@@ -44,7 +44,10 @@ describe('Decap environment wiring', () => {
   it('keeps UAT static smoke public and secret-free', () => {
     const workflow = readRepositoryFile('.github/workflows/uat-static-smoke.yml');
 
-    expect(workflow).toContain('--site-url "${{ inputs.site_url }}"');
+    expect(workflow).toContain("workflows: ['Deploy UAT and PRD static sites']");
+    expect(workflow).toContain('ref: ${{ github.event.workflow_run.head_sha || github.sha }}');
+    expect(workflow).toContain('--site-url "${UAT_STATIC_SITE_URL}"');
+    expect(workflow).toContain("UAT_STATIC_SMOKE_SCENARIO: ${{ inputs.scenario || 'all' }}");
     expect(workflow).not.toContain('${{ secrets.');
     expect(workflow).not.toMatch(/DECAP(?:BRIDGE)?_[A-Z_]+/);
   });
@@ -67,7 +70,21 @@ describe('Decap environment wiring', () => {
     expect(readme).toContain('`DECAP_BACKEND_MODE`');
     expect(readme).toContain('Ordinary secret-free production builds default to `disabled`');
     expect(readme).toContain('Local CMS commands force `local` mode');
+    expect(readme).toMatch(/^\|\s*`local`\s*\|\s*`pnpm cms:dev` and Local CMS Smoke\s*\|/m);
+    expect(readme).toMatch(/^\|\s*`hosted`\s*\|\s*GitHub Pages UAT and the full Cloudflare Pages PRD build\s*\|/m);
+    expect(readme).toMatch(/^\|\s*`disabled`\s*\|\s*Ordinary secret-free builds, PRD Holding Page/m);
+    expect(readme).toContain('Do not enable Decap editorial workflow in this iteration.');
     expect(readme).not.toContain('unless you explicitly provide real DecapBridge values in your local environment');
     expect(readme).not.toContain('generated config stays on the local `proxy` backend');
+  });
+
+  it('keeps the committed environment example non-secret and preflight-explicit', () => {
+    const example = readRepositoryFile('apps/web/.env.example');
+    expect(example).toContain('DECAP_BACKEND_MODE=disabled');
+    expect(example).toContain('DECAP_REPOSITORY=BlackBox-Studio-Athens/blackbox-records');
+    expect(example).toContain('DECAPBRIDGE_AUTH_ENDPOINT=/sites/__SET_DECAPBRIDGE_SITE_ID__/pkce');
+    expect(example).toContain('DECAPBRIDGE_AUTH_TOKEN_ENDPOINT=/sites/__SET_DECAPBRIDGE_SITE_ID__/token');
+    expect(example).toContain('pnpm cms:hosted:preflight');
+    expect(example).not.toMatch(/(?:ghp_|github_pat_|sk_live_|whsec_)[A-Za-z0-9_]+/);
   });
 });

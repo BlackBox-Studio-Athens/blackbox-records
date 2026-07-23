@@ -213,39 +213,39 @@
 
 ## 17. Harden local CMS process management and smoke coverage
 
-- [ ] 17.1 Refactor the existing managed-process helper only as needed to track Astro, `decap-server`, and browser lifecycle consistently.
-- [ ] 17.2 Handle child-process spawn errors with a clear component name and non-zero smoke exit.
-- [ ] 17.3 Treat an unexpected early Astro or proxy exit as an immediate smoke failure.
-- [ ] 17.4 Terminate every spawned child on success, assertion failure, timeout, Ctrl+C, and parent-process exit.
-- [ ] 17.5 Extend Local CMS Smoke to open the canonical Home singleton editor and verify current values and fixed-list controls.
-- [ ] 17.6 Extend Local CMS Smoke to open one representative Artist editor.
-- [ ] 17.7 Extend Local CMS Smoke to open one representative Release editor and verify the Artist relation control initializes.
-- [ ] 17.8 Extend Local CMS Smoke to open one representative Distro editor and verify the group browsing affordance.
-- [ ] 17.9 Extend Local CMS Smoke to open one representative News editor.
-- [ ] 17.10 Verify the direct-to-`main` notice, editorial scope panel, key preview registrations, and accessible preview toggle during the smoke.
-- [ ] 17.11 Verify representative existing images resolve and no unexpected console error, page error, or indefinite boot state occurs.
-- [ ] 17.12 Prove the smoke never selects Publish, changes content file hashes, creates Git commits, or leaves Astro/proxy/browser processes running.
+- [x] 17.1 Refactor the existing managed-process helper only as needed to track Astro, `decap-server`, and browser lifecycle consistently.
+- [x] 17.2 Handle child-process spawn errors with a clear component name and non-zero smoke exit.
+- [x] 17.3 Treat an unexpected early Astro or proxy exit as an immediate smoke failure.
+- [x] 17.4 Terminate every spawned child on success, assertion failure, timeout, Ctrl+C, and parent-process exit.
+- [x] 17.5 Extend Local CMS Smoke to open the canonical Home singleton editor and verify current values and fixed-list controls.
+- [x] 17.6 Extend Local CMS Smoke to open one representative Artist editor.
+- [x] 17.7 Extend Local CMS Smoke to open one representative Release editor and verify the Artist relation control initializes.
+- [x] 17.8 Extend Local CMS Smoke to open one representative Distro editor and verify the group browsing affordance.
+- [x] 17.9 Extend Local CMS Smoke to open one representative News editor.
+- [x] 17.10 Verify the direct-to-`main` notice, editorial scope panel, key preview registrations, and accessible preview toggle during the smoke.
+- [x] 17.11 Verify representative existing images resolve and no unexpected console error, page error, or indefinite boot state occurs.
+- [x] 17.12 Prove the smoke never selects Publish, changes content file hashes, creates Git commits, or leaves Astro/proxy/browser processes running.
 
 ## 18. Add read-only UAT Static Smoke coverage
 
-- [ ] 18.1 Extend the `cms_admin` scenario in `scripts/smoke-uat-static.ts` to fetch and parse hosted `/admin/config.yml`.
-- [ ] 18.2 Verify the branded boot/login surface initializes through DecapBridge/social sign-in without authenticating.
-- [ ] 18.3 Verify the exact pinned `decap-cms@3.14.1` runtime initializes before the scenario succeeds.
-- [ ] 18.4 Fail on proxy backend output, localhost, placeholders, non-`main` branch, password-form copy, exposed secrets, or an indefinite loading state.
-- [ ] 18.5 Extend the `cms_assets` scenario to request representative Home, Artist, Release, Distro, and News assets through supported admin URLs.
-- [ ] 18.6 If a top-level uploads library remains, verify one retained valid asset; otherwise assert the misleading surface is absent or limited.
-- [ ] 18.7 Keep both scenarios read-only, unauthenticated, separately evidenced, and outside Provider Smoke or Promotion Evidence.
-- [ ] 18.8 Update `.github/workflows/uat-static-smoke.yml` so the new CMS scenarios run for the deployed UAT commit.
+- [x] 18.1 Extend the `cms_admin` scenario in `scripts/smoke-uat-static.ts` to fetch and parse hosted `/admin/config.yml`.
+- [x] 18.2 Verify the branded boot/login surface initializes through DecapBridge/social sign-in without authenticating.
+- [x] 18.3 Verify the exact pinned `decap-cms@3.14.1` runtime initializes before the scenario succeeds.
+- [x] 18.4 Fail on proxy backend output, localhost, placeholders, non-`main` branch, password-form copy, exposed secrets, or an indefinite loading state.
+- [x] 18.5 Extend the `cms_assets` scenario to request representative Home, Artist, Release, Distro, and News assets through supported admin URLs.
+- [x] 18.6 If a top-level uploads library remains, verify one retained valid asset; otherwise assert the misleading surface is absent or limited.
+- [x] 18.7 Keep both scenarios read-only, unauthenticated, separately evidenced, and outside Provider Smoke or Promotion Evidence.
+- [x] 18.8 Update `.github/workflows/uat-static-smoke.yml` so the new CMS scenarios run for the deployed UAT commit.
 
 ## 19. Update maintainer documentation and complete acceptance
 
-- [ ] 19.1 Update repository maintainer documentation with the three `DECAP_BACKEND_MODE` values and their Local, UAT, full PRD, and disabled/holding uses.
-- [ ] 19.2 Document that Decap uses DecapBridge/social login, publishes directly to `main`, and must not be configured as an editorial workflow in this iteration.
-- [ ] 19.3 Update environment examples with non-secret variable names, safe placeholders, and the hosted preflight contract.
-- [ ] 19.4 Remove the contradictory claim that local proxy development can switch to real DecapBridge endpoints without changing mode.
-- [ ] 19.5 Keep documentation limited to maintainer setup and in-product ownership copy; do not add an editor handbook, recovery handbook, or manual usability acceptance gate.
-- [ ] 19.6 Run `pnpm test:cms-admin` and `pnpm smoke:cms-local -- --screenshots never` against the exact final tree.
-- [ ] 19.7 Run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the exact final tree.
-- [ ] 19.8 Inspect the ordinary secret-free build artifact and confirm `/admin/` is disabled and no generated admin asset references localhost or placeholders.
+- [x] 19.1 Update repository maintainer documentation with the three `DECAP_BACKEND_MODE` values and their Local, UAT, full PRD, and disabled/holding uses.
+- [x] 19.2 Document that Decap uses DecapBridge/social login, publishes directly to `main`, and must not be configured as an editorial workflow in this iteration.
+- [x] 19.3 Update environment examples with non-secret variable names, safe placeholders, and the hosted preflight contract.
+- [x] 19.4 Remove the contradictory claim that local proxy development can switch to real DecapBridge endpoints without changing mode.
+- [x] 19.5 Keep documentation limited to maintainer setup and in-product ownership copy; do not add an editor handbook, recovery handbook, or manual usability acceptance gate.
+- [x] 19.6 Run `pnpm test:cms-admin` and `pnpm smoke:cms-local -- --screenshots never` against the exact final tree.
+- [x] 19.7 Run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the exact final tree.
+- [x] 19.8 Inspect the ordinary secret-free build artifact and confirm `/admin/` is disabled and no generated admin asset references localhost or placeholders.
 - [ ] 19.9 Run `pnpm openspec -- validate harden-decap-editorial-operations --type change --strict` after implementation notes and task state are updated.
 - [ ] 19.10 Deploy the implementation commit to UAT, run `cms_admin` and `cms_assets`, and record the passing UAT Static Smoke evidence for that exact commit.

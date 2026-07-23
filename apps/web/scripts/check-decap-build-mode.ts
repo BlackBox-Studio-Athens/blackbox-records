@@ -1,8 +1,12 @@
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { assertDecapBuildArtifacts, DecapBuildArtifactError } from '../src/lib/admin/decap-build-validation';
+import {
+  assertDecapBuildArtifacts,
+  assertDisabledAdminAssetTexts,
+  DecapBuildArtifactError,
+} from '../src/lib/admin/decap-build-validation';
 import { DecapRuntimeConfigError, resolveDecapBackendMode } from '../src/lib/admin/decap-runtime-config';
 
 const webRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -15,7 +19,27 @@ async function main(): Promise<void> {
   ]);
 
   assertDecapBuildArtifacts({ configYaml, expectedMode, indexHtml });
+  if (expectedMode === 'disabled') {
+    assertDisabledAdminAssetTexts(await readAdminTextAssets(resolve(webRoot, 'dist', 'admin')));
+  }
   console.log(`Decap build mode verified: ${expectedMode}.`);
+}
+
+async function readAdminTextAssets(directory: string, relativeRoot = ''): Promise<Record<string, string>> {
+  const assets: Record<string, string> = {};
+  const entries = await readdir(directory, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const relativePath = relativeRoot ? `${relativeRoot}/${entry.name}` : entry.name;
+    const absolutePath = resolve(directory, entry.name);
+    if (entry.isDirectory()) {
+      Object.assign(assets, await readAdminTextAssets(absolutePath, relativePath));
+    } else if (/\.(?:css|html|js|json|svg|txt|ya?ml)$/i.test(entry.name)) {
+      assets[relativePath] = await readFile(absolutePath, 'utf8');
+    }
+  }
+
+  return assets;
 }
 
 main().catch((error: unknown) => {

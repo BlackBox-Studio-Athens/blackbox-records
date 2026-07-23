@@ -56,6 +56,20 @@ describe('preview asset resolution', () => {
     expect(resolve('../releases/anarchotribal-cover.webp', 'news')).toBe(
       `${adminMediaBaseUrl}releases/anarchotribal-cover.webp`,
     );
+    expect(
+      resolve(
+        '../releases/anarchotribal-cover.webp',
+        'news',
+        () => '/blackbox-records/admin/media/news/anarchotribal-cover.webp',
+      ),
+    ).toBe(`${adminMediaBaseUrl}releases/anarchotribal-cover.webp`);
+    expect(
+      resolve(
+        { toString: () => '../releases/anarchotribal-cover.webp' },
+        'news',
+        () => '/blackbox-records/admin/media/news/anarchotribal-cover.webp',
+      ),
+    ).toBe(`${adminMediaBaseUrl}releases/anarchotribal-cover.webp`);
   });
 
   it.each(decapCollectionMediaKeys)('preserves newly selected blob and image data assets for %s', (collection) => {

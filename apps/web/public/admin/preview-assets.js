@@ -149,6 +149,24 @@
   }) => {
     const allowedCollectionSet = new Set(allowedCollections);
     const candidates = [];
+    const rawCandidates = (() => {
+      try {
+        return collectCandidateStrings(value);
+      } catch {
+        return [];
+      }
+    })();
+
+    for (const rawCandidate of rawCandidates) {
+      if (!/^\.\.\/[^/]+\/[^/]+$/.test(rawCandidate.trim())) continue;
+      const crossCollectionAsset = resolveCandidate({
+        value: rawCandidate,
+        collectionKey,
+        adminMediaBaseUrl,
+        allowedCollections: allowedCollectionSet,
+      });
+      if (crossCollectionAsset) return crossCollectionAsset;
+    }
 
     if (typeof getAsset === 'function') {
       try {
@@ -157,11 +175,7 @@
         // Decap asset resolution can reject unsaved values; raw value remains the bounded fallback candidate.
       }
     }
-    try {
-      candidates.push(...collectCandidateStrings(value));
-    } catch {
-      // A malformed Decap asset object must degrade to the visible preview fallback.
-    }
+    candidates.push(...rawCandidates);
 
     for (const candidate of candidates) {
       const resolved = resolveCandidate({

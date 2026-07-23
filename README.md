@@ -723,6 +723,16 @@ Default local ports:
 
 ### Decap environment variables
 
+Maintainer build-mode matrix:
+
+| `DECAP_BACKEND_MODE` | Intended use                                                                      | Result                                                                     |
+| -------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `local`              | `pnpm cms:dev` and Local CMS Smoke                                                | Foreground Astro plus `decap-server`; no hosted authentication.            |
+| `hosted`             | GitHub Pages UAT and the full Cloudflare Pages PRD build                          | DecapBridge PKCE/social sign-in with a generated `git-gateway` config.     |
+| `disabled`           | Ordinary secret-free builds, PRD Holding Page, and catalog-verification artifacts | Branded unavailable `/admin/`; no writable backend or runtime initializer. |
+
+The committed example is [`apps/web/.env.example`](apps/web/.env.example). It defaults to `disabled`, names every local and hosted variable, and uses rejected placeholders for the two DecapBridge endpoint secrets. Hosted builds must replace those placeholders through the authoritative GitHub Actions variables/secrets and pass `pnpm cms:hosted:preflight` before Astro builds.
+
 - `DECAP_BACKEND_MODE`
   - Selects `local`, `hosted`, or `disabled` behavior.
   - Astro development defaults to `local`; production/static builds default to `disabled` unless a workflow explicitly selects `hosted`.
@@ -781,6 +791,8 @@ Notes:
 - Secret-free production builds render a branded unavailable `/admin/` surface and emit no writable backend or localhost configuration.
 - The published `/admin/` is intended to be Google-only through DecapBridge social login. The repo does not emit Decap `classic` username/password auth.
 - The local `pnpm cms:dev` flow is intentionally different from production and continues using the unauthenticated proxy backend for editing convenience.
+- Decap publishes directly to `main` with `publish_mode: simple`. Do not enable Decap editorial workflow in this iteration.
+- `cms_admin` and `cms_assets` are unauthenticated, read-only UAT Static Smoke scenarios for the deployed UAT commit. Their separate evidence is not Provider Smoke, Promotion Evidence, or authorization to deploy.
 
 ### Hosted login troubleshooting
 

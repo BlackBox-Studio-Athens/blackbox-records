@@ -11,7 +11,8 @@ export type DecapBuildArtifacts = {
 };
 
 const decapModeMarkerPattern = /^# blackbox-decap-mode: (local|hosted|disabled)$/m;
-const unsafeHostedValuePattern = /(?:__SET_DECAPBRIDGE_SITE_ID__|localhost|127(?:\.\d{1,3}){3}|\[?::1\]?)/i;
+const unsafeHostedValuePattern =
+  /(?:__SET_DECAPBRIDGE_SITE_ID__|CHANGE_ME|REPLACE_ME|example\.com|\.invalid\b|localhost|127(?:\.\d{1,3}){3}|\[?::1\]?)/i;
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -126,5 +127,14 @@ export function assertDecapBuildArtifacts({ configYaml, expectedMode, indexHtml 
     case 'hosted':
       assertHostedBuild(indexHtml, configYaml);
       break;
+  }
+}
+
+export function assertDisabledAdminAssetTexts(assets: Readonly<Record<string, string>>): void {
+  for (const [assetPath, text] of Object.entries(assets)) {
+    assertCondition(
+      !unsafeHostedValuePattern.test(text),
+      `Disabled Decap admin asset ${assetPath} must not contain localhost or placeholder data.`,
+    );
   }
 }

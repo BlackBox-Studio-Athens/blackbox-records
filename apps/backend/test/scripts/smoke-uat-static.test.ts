@@ -5,6 +5,7 @@ import {
   checkReviewSiteMarker,
   checkCmsAdminRenderedState,
   checkCmsConfigPlaceholders,
+  checkCmsHostedConfigDeclarations,
   checkCmsSingletonJsonDeclarations,
   parseUatStaticSmokeArgs,
   resolveSelectedUatStaticSmokeScenarios,
@@ -149,8 +150,11 @@ describe('UAT static smoke runner', () => {
         hasCollectionUi: false,
         hasConfigLink: true,
         hasCmsRoot: true,
+        hasExactPinnedRuntime: true,
+        hasRuntimeApi: true,
         isAdminReady: false,
         isAuthReady: false,
+        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.14.1/dist/decap-cms.js'],
       }),
     ).toContain('Expected /admin/#/ to render visible Decap CMS text.');
 
@@ -160,8 +164,11 @@ describe('UAT static smoke runner', () => {
         hasCollectionUi: false,
         hasConfigLink: true,
         hasCmsRoot: true,
+        hasExactPinnedRuntime: true,
+        hasRuntimeApi: true,
         isAdminReady: false,
         isAuthReady: false,
+        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.14.1/dist/decap-cms.js'],
       }),
     ).toContain('Expected /admin/#/ to finish Decap bootstrap instead of staying on loading copy.');
 
@@ -171,8 +178,11 @@ describe('UAT static smoke runner', () => {
         hasCollectionUi: false,
         hasConfigLink: true,
         hasCmsRoot: true,
+        hasExactPinnedRuntime: true,
+        hasRuntimeApi: true,
         isAdminReady: true,
         isAuthReady: false,
+        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.14.1/dist/decap-cms.js'],
       }),
     ).toContain('Expected /admin/#/ to render a usable DecapBridge auth surface or authenticated collection UI.');
   });
@@ -180,12 +190,15 @@ describe('UAT static smoke runner', () => {
   it('accepts the enhanced DecapBridge auth surface or authenticated collection UI', () => {
     expect(
       checkCmsAdminRenderedState({
-        bodyText: 'Sign in to edit content\nSign in with DecapBridge',
+        bodyText: 'BlackBox CMS\nSign in to edit content\nSign in with DecapBridge',
         hasCollectionUi: false,
         hasConfigLink: true,
         hasCmsRoot: true,
+        hasExactPinnedRuntime: true,
+        hasRuntimeApi: true,
         isAdminReady: true,
         isAuthReady: true,
+        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.14.1/dist/decap-cms.js'],
       }),
     ).toEqual([]);
 
@@ -195,8 +208,11 @@ describe('UAT static smoke runner', () => {
         hasCollectionUi: true,
         hasConfigLink: true,
         hasCmsRoot: true,
+        hasExactPinnedRuntime: true,
+        hasRuntimeApi: true,
         isAdminReady: true,
         isAuthReady: false,
+        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.14.1/dist/decap-cms.js'],
       }),
     ).toEqual([]);
   });
@@ -227,7 +243,9 @@ describe('UAT static smoke runner', () => {
     });
 
     expect(evidence).toMatchObject({
+      authenticated: false,
       environment: 'uat',
+      readOnly: true,
       screenshotPath: null,
       scenario: 'cms_admin',
       siteUrl: 'https://blackbox-studio-athens.github.io/blackbox-records',
@@ -239,5 +257,69 @@ describe('UAT static smoke runner', () => {
     );
     expect(evidence.summary).toContain('Status: PASSED (0 issue(s))');
     expect(evidence.checks).toHaveLength(1);
+  });
+
+  it('parses and enforces the hosted config contract', () => {
+    const hostedConfig = `# blackbox-decap-mode: hosted
+backend:
+  name: git-gateway
+  repo: BlackBox-Studio-Athens/blackbox-records
+  branch: main
+  auth_type: pkce
+  base_url: https://auth.decapbridge.com
+  auth_endpoint: /sites/site-id/pkce
+  auth_token_endpoint: /sites/site-id/token
+  gateway_url: https://gateway.decapbridge.com
+publish_mode: simple
+media_folder: apps/web/src/content/home
+public_folder: ./
+site_url: https://blackbox-studio-athens.github.io/blackbox-records/
+display_url: https://blackbox-studio-athens.github.io/blackbox-records/
+collections:
+  - name: home
+  - name: artists
+  - name: releases
+  - name: distro
+  - name: news
+`;
+    expect(checkCmsHostedConfigDeclarations(hostedConfig)).toEqual([]);
+    expect(
+      checkCmsHostedConfigDeclarations(
+        hostedConfig
+          .replace('name: git-gateway', 'name: proxy\n  proxy_url: http://localhost:8082/api/v1')
+          .replace('branch: main', 'branch: preview')
+          .replace('apps/web/src/content/home', 'apps/web/src/content/uploads'),
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        'CMS hosted backend.branch must equal "main".',
+        'CMS hosted backend.name must equal "git-gateway".',
+        'CMS hosted config must not expose local proxy settings.',
+        'CMS hosted global media fallback must stay aligned to the non-exposed Home media root.',
+        'CMS hosted config must not advertise an unowned global uploads inventory.',
+      ]),
+    );
+  });
+
+  it('rejects an unpinned runtime and password-form copy', () => {
+    expect(
+      checkCmsAdminRenderedState({
+        bodyText: 'BlackBox CMS Username Password Sign in with DecapBridge',
+        hasCollectionUi: false,
+        hasConfigLink: true,
+        hasCmsRoot: true,
+        hasExactPinnedRuntime: false,
+        hasRuntimeApi: false,
+        isAdminReady: true,
+        isAuthReady: true,
+        runtimeScriptUrls: ['https://unpkg.com/decap-cms@latest/dist/decap-cms.js'],
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'Expected /admin/#/ to load exactly decap-cms@3.14.1 from the pinned runtime URL.',
+        'Expected the pinned Decap runtime to expose the CMS registration API.',
+        'Expected hosted Decap auth to omit classic username/password copy.',
+      ]),
+    );
   });
 });
