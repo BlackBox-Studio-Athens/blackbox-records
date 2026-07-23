@@ -50,7 +50,7 @@ describe('UAT static smoke runner', () => {
         [
           'backend:',
           '  auth_endpoint: /sites/__SET_DECAPBRIDGE_SITE_ID__/pkce',
-          '  proxy_url: http://127.0.0.1:8082/api/v1',
+          '  base_url: http://127.0.0.1:8082/api/v1',
         ].join('\n'),
       ),
     ).toEqual([
@@ -59,6 +59,36 @@ describe('UAT static smoke runner', () => {
     ]);
 
     expect(checkCmsConfigPlaceholders(['backend:', '  auth_endpoint: /sites/blackbox/pkce'].join('\n'))).toEqual([]);
+  });
+
+  it('checks hosted connection values without rejecting editorial placeholder-domain examples', () => {
+    expect(
+      checkCmsConfigPlaceholders(
+        [
+          'backend:',
+          '  repo: CHANGE_ME/blackbox-records',
+          'collections:',
+          '  - name: releases',
+          '    fields:',
+          '      - name: merch_url',
+          '        hint: "Example: https://example.com/product."',
+        ].join('\n'),
+      ),
+    ).toEqual(['CMS config still contains an unsafe hosted placeholder.']);
+
+    expect(
+      checkCmsConfigPlaceholders(
+        [
+          'backend:',
+          '  repo: BlackBox-Studio-Athens/blackbox-records',
+          'collections:',
+          '  - name: releases',
+          '    fields:',
+          '      - name: merch_url',
+          '        hint: "Example: https://example.com/product."',
+        ].join('\n'),
+      ),
+    ).toEqual([]);
   });
 
   it('requires the Review Site Marker on every public route', () => {

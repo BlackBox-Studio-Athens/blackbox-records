@@ -899,16 +899,40 @@ export function buildUatStaticSmokeEvidence(input: UatStaticSmokeEvidenceInput):
 
 export function checkCmsConfigPlaceholders(text: string): string[] {
   const issues: string[] = [];
+  let config: Record<string, unknown>;
 
-  if (text.includes('__SET_DECAPBRIDGE_SITE_ID__')) {
+  try {
+    const parsed = parse(text) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return issues;
+    config = parsed as Record<string, unknown>;
+  } catch {
+    return issues;
+  }
+
+  const backend =
+    config.backend && typeof config.backend === 'object' && !Array.isArray(config.backend)
+      ? (config.backend as Record<string, unknown>)
+      : {};
+  const connectionValues = [
+    backend.repo,
+    backend.base_url,
+    backend.auth_endpoint,
+    backend.auth_token_endpoint,
+    backend.gateway_url,
+    config.site_url,
+    config.display_url,
+    config.logo_url,
+  ].filter((value): value is string => typeof value === 'string');
+
+  if (connectionValues.some((value) => value.includes('__SET_DECAPBRIDGE_SITE_ID__'))) {
     issues.push('CMS config still contains the __SET_DECAPBRIDGE_SITE_ID__ placeholder.');
   }
 
-  if (/https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?/i.test(text)) {
+  if (connectionValues.some((value) => /https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?/i.test(value))) {
     issues.push('CMS config still points at a local backend or loopback URL.');
   }
 
-  if (/(?:CHANGE_ME|REPLACE_ME|example\.com|\.invalid\b|\bTODO\b)/i.test(text)) {
+  if (connectionValues.some((value) => /(?:CHANGE_ME|REPLACE_ME|example\.com|\.invalid\b|\bTODO\b)/i.test(value))) {
     issues.push('CMS config still contains an unsafe hosted placeholder.');
   }
 
