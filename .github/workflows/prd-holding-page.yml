@@ -53,6 +53,7 @@ jobs:
         env:
           ASTRO_SITE_URL: https://blackbox-records-web.pages.dev
           ASTRO_BASE_PATH: /
+          DECAP_BACKEND_MODE: disabled
           PUBLIC_BACKEND_BASE_URL: ${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}
 
       - name: Prepare and check PRD Holding Page artifact

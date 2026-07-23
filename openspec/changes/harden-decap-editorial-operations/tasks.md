@@ -37,25 +37,25 @@
 
 ## 4. Add clear admin boot, failure, and disabled states
 
-- [ ] 4.1 Make `apps/web/src/pages/admin/index.astro` render a branded loading state for local and hosted modes.
-- [ ] 4.2 Make disabled mode render a branded “CMS unavailable for this build” surface without loading the Decap runtime.
-- [ ] 4.3 Add an explicit error handler for failure to download the pinned Decap browser script.
-- [ ] 4.4 Add a bounded initialization timeout for the case where the script downloads but Decap never becomes ready.
-- [ ] 4.5 Add a retry action that restarts the browser runtime load without requiring editor knowledge of the console or repository.
-- [ ] 4.6 Give loading, disabled, and failed states accessible headings, status semantics, keyboard focus, and readable contrast.
-- [ ] 4.7 Keep hosted authentication copy centered on DecapBridge/social sign-in and remove any password-form or GitHub-knowledge implication.
-- [ ] 4.8 Add stable `data-*` hooks and focused CSS for browser smoke assertions without coupling tests to Decap-generated classes.
+- [x] 4.1 Make `apps/web/src/pages/admin/index.astro` render a branded loading state for local and hosted modes.
+- [x] 4.2 Make disabled mode render a branded “CMS unavailable for this build” surface without loading the Decap runtime.
+- [x] 4.3 Add an explicit error handler for failure to download the pinned Decap browser script.
+- [x] 4.4 Add a bounded initialization timeout for the case where the script downloads but Decap never becomes ready.
+- [x] 4.5 Add a retry action that restarts the browser runtime load without requiring editor knowledge of the console or repository.
+- [x] 4.6 Give loading, disabled, and failed states accessible headings, status semantics, keyboard focus, and readable contrast.
+- [x] 4.7 Keep hosted authentication copy centered on DecapBridge/social sign-in and remove any password-form or GitHub-knowledge implication.
+- [x] 4.8 Add stable `data-*` hooks and focused CSS for browser smoke assertions without coupling tests to Decap-generated classes.
 
 ## 5. Wire each environment to the intended mode
 
-- [ ] 5.1 Set `DECAP_BACKEND_MODE=local` inside `apps/web/scripts/start-cms-dev.mjs` before Astro and `decap-server` start.
-- [ ] 5.2 Remove any local-development path that claims to use hosted DecapBridge values while the implementation always selects the proxy backend.
-- [ ] 5.3 Set `DECAP_BACKEND_MODE=local` explicitly in `scripts/smoke-cms-local.ts`.
-- [ ] 5.4 Add a deterministic check proving an ordinary secret-free `pnpm build` produces disabled, not localhost-backed, admin behavior.
-- [ ] 5.5 Set the GitHub Pages UAT build in `.github/workflows/pages.yml` to `DECAP_BACKEND_MODE=hosted`.
-- [ ] 5.6 Set full PRD CMS builds to `hosted` and secret-free or PRD-holding builds to `disabled` at their existing workflow seams.
-- [ ] 5.7 Add a workflow preflight that names missing hosted Decap variable names and stops before building, without printing values.
-- [ ] 5.8 Ensure `.github/workflows/uat-static-smoke.yml` receives only the public site target and never requires repository or provider secrets for read-only CMS checks.
+- [x] 5.1 Set `DECAP_BACKEND_MODE=local` inside `apps/web/scripts/start-cms-dev.mjs` before Astro and `decap-server` start.
+- [x] 5.2 Remove any local-development path that claims to use hosted DecapBridge values while the implementation always selects the proxy backend.
+- [x] 5.3 Set `DECAP_BACKEND_MODE=local` explicitly in `scripts/smoke-cms-local.ts`.
+- [x] 5.4 Add a deterministic check proving an ordinary secret-free `pnpm build` produces disabled, not localhost-backed, admin behavior.
+- [x] 5.5 Set the GitHub Pages UAT build in `.github/workflows/pages.yml` to `DECAP_BACKEND_MODE=hosted`.
+- [x] 5.6 Set full PRD CMS builds to `hosted` and secret-free or PRD-holding builds to `disabled` at their existing workflow seams.
+- [x] 5.7 Add a workflow preflight that names missing hosted Decap variable names and stops before building, without printing values.
+- [x] 5.8 Ensure `.github/workflows/uat-static-smoke.yml` receives only the public site target and never requires repository or provider secrets for read-only CMS checks.
 
 ## 6. Upgrade and pin the Decap compatibility baseline
 

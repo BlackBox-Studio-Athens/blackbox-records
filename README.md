@@ -723,8 +723,11 @@ Default local ports:
 
 ### Decap environment variables
 
+- `DECAP_BACKEND_MODE`
+  - Selects `local`, `hosted`, or `disabled` behavior.
+  - Astro development defaults to `local`; production/static builds default to `disabled` unless a workflow explicitly selects `hosted`.
 - `DECAP_SITE_URL`
-  - Optional production override for the published site root used by Decap.
+  - Published site root used by hosted Decap.
 - `DECAP_REPOSITORY`
   - GitHub repository slug used by DecapBridge in production.
 - `DECAP_BRANCH`
@@ -744,13 +747,11 @@ Default local ports:
 
 ### DecapBridge hosted setup
 
-Hosted `/admin/config.yml` is generated during the static frontend build, so the DecapBridge values must be present in the deploy workflow environment that is intended to serve PRD admin access. The values below are already wired for the GitHub Pages UAT workflow; mirror them into the Cloudflare Pages build path in a focused CMS/deploy task before treating hosted Decap admin as validated on Cloudflare Pages.
+Hosted `/admin/config.yml` is generated during the static frontend build. GitHub Pages UAT and full Cloudflare Pages PRD jobs explicitly select `DECAP_BACKEND_MODE=hosted`, set their public site URL, and run `pnpm cms:hosted:preflight` before building. The preflight reports only missing or invalid setting names; it never prints values.
 
 Add these in GitHub:
 
 - Repository `Settings -> Secrets and variables -> Actions -> Variables`
-  - `DECAP_SITE_URL`
-    - `https://blackbox-studio-athens.github.io/blackbox-records/`
   - `DECAP_REPOSITORY`
     - `BlackBox-Studio-Athens/blackbox-records`
   - `DECAP_BRANCH`
@@ -768,15 +769,16 @@ Add these in GitHub:
 Notes:
 
 - Keep the endpoint values in GitHub `Secrets`, not `Variables`.
-- The workflow now injects these values during the Pages build, so the published `/admin/config.yml` can emit the real `git-gateway` PKCE config.
-- Local `pnpm cms:dev` remains on the proxy backend unless you explicitly provide real DecapBridge values in your local environment.
+- The UAT and full PRD jobs inject these values during their hosted builds, so published `/admin/config.yml` emits the real `git-gateway` PKCE config.
+- Local CMS commands force `local` mode and discard hosted-only DecapBridge settings before starting Astro and `decap-server`.
+- Ordinary secret-free production builds default to `disabled`; PRD Holding Page and catalog-verification builds also select `disabled` explicitly.
 - For hosted production access, keep the DecapBridge site on `pkce` and leave only Google enabled as a login provider.
 
 ### Production auth model
 
 - Local development uses `decap-server` with the `proxy` backend. No DecapBridge login is required.
-- When the DecapBridge PKCE endpoints are not configured yet, the generated config stays on the local `proxy` backend instead of emitting broken placeholder login URLs.
-- Production `/admin/` only builds a DecapBridge PKCE config once the DecapBridge environment values above are set correctly.
+- Hosted builds fail before Astro starts when required DecapBridge settings are missing, blank, placeholders, invalid, or loopback URLs.
+- Secret-free production builds render a branded unavailable `/admin/` surface and emit no writable backend or localhost configuration.
 - The published `/admin/` is intended to be Google-only through DecapBridge social login. The repo does not emit Decap `classic` username/password auth.
 - The local `pnpm cms:dev` flow is intentionally different from production and continues using the unauthenticated proxy backend for editing convenience.
 

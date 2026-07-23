@@ -53,66 +53,76 @@ body {
   display: grid;
   place-items: center;
   min-height: 100vh;
-  padding: 1.5rem;
+  box-sizing: border-box;
+  padding: 2rem;
+  color: #f5f5f5;
+  background: #0d0d0d;
 }
 
-.blackbox-cms-boot__card {
-  width: min(100%, 27rem);
+.blackbox-cms-boot__surface {
+  width: min(100%, 31rem);
   display: grid;
-  justify-items: start;
-  gap: 0.7rem;
-  border: 1px solid var(--bb-admin-line);
-  border-radius: 1.35rem;
-  padding: 1.4rem;
-  background: var(--bb-admin-surface);
-  box-shadow: var(--bb-admin-shadow);
+  gap: 1rem;
+  border-block: 1px solid #2b2b2b;
+  padding: 2rem 0;
+  outline: none;
 }
 
 .blackbox-cms-boot__logo {
-  width: 4.5rem;
-  height: 4.5rem;
-  border-radius: 1rem;
+  width: 4rem;
+  height: 4rem;
+  border: 1px solid #2b2b2b;
   object-fit: cover;
-  box-shadow: var(--bb-admin-shadow-soft);
-}
-
-.blackbox-cms-boot__eyebrow {
-  margin: 0.2rem 0 0;
-  color: var(--bb-admin-accent);
-  font-family: var(--bb-admin-font-mono);
-  font-size: 0.74rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .blackbox-cms-boot__title {
   margin: 0;
-  font-size: clamp(1.7rem, 1.35rem + 1vw, 2.35rem);
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1.02;
+  max-width: 18ch;
+  color: #f5f5f5;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .blackbox-cms-boot__copy {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
   margin: 0;
-  max-width: 24rem;
-  color: var(--bb-admin-text-muted);
+  max-width: 34rem;
+  color: #b3b3b3;
   font-size: 0.95rem;
   line-height: 1.6;
 }
 
 .blackbox-cms-boot__spinner {
-  width: 0.9rem;
-  height: 0.9rem;
-  flex: 0 0 auto;
-  border: 1px solid rgba(36, 31, 29, 0.2);
-  border-top-color: var(--bb-admin-accent);
-  border-radius: 999px;
-  animation: blackbox-cms-loading-motion 1.15s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 1px solid #4a4a4a;
+  border-top-color: #f5f5f5;
+  animation: blackbox-cms-loading-motion 0.9s linear infinite;
+}
+
+.blackbox-cms-boot__retry {
+  width: fit-content;
+  min-height: 2.75rem;
+  border: 1px solid #f5f5f5;
+  border-radius: 0;
+  padding: 0.7rem 1rem;
+  color: #0d0d0d;
+  background: #f5f5f5;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.blackbox-cms-boot__retry:hover {
+  color: #f5f5f5;
+  background: #0d0d0d;
+}
+
+.blackbox-cms-boot__retry:focus-visible,
+.blackbox-cms-boot__surface:focus-visible {
+  outline: 2px solid #f5f5f5;
+  outline-offset: 4px;
 }
 
 .blackbox-cms-empty-guard {
@@ -723,8 +733,8 @@ button[data-blackbox-cms-auth-button='true'] {
     padding: 1rem;
   }
 
-  .blackbox-cms-boot__card {
-    padding: 1.2rem;
+  .blackbox-cms-boot__surface {
+    padding: 1.5rem 0;
   }
 
   [class*='PaneContainer'] {

@@ -1,9 +1,11 @@
 (() => {
   const adminContext = window.__BLACKBOX_ADMIN__ || {};
+  const bootAttemptId = adminContext.bootAttemptId;
   const previewStyleUrl = adminContext.previewStyleUrl;
   const previewAutoCollapseKey = 'blackbox-cms-preview-auto-collapsed';
   const previewToggleClickBoundAttribute = 'data-preview-toggle-click-bound';
   let previewCollapseInFlight = false;
+  const isCurrentBootAttempt = () => window.__BLACKBOX_ADMIN__?.bootAttemptId === bootAttemptId;
 
   const toArray = (value) => {
     if (!value) {
@@ -306,6 +308,10 @@
 
     singletonContentGuardTimer = window.setTimeout(() => {
       singletonContentGuardTimer = 0;
+      if (!isCurrentBootAttempt()) {
+        return;
+      }
+
       const latestActiveEditor = getActiveSingletonEditor();
       if (isSingletonEditorEmptyLoad(latestActiveEditor, readSingletonEditorState())) {
         ensureSingletonContentGuard(latestActiveEditor);
@@ -326,6 +332,13 @@
     }
 
     loginButton.dataset.blackboxCmsAuthButton = 'true';
+
+    if (adminContext.mode !== 'hosted') {
+      document.documentElement.dataset.blackboxCmsAuth = 'ready';
+      window.__BLACKBOX_ADMIN_AUTH_READY__ = true;
+      return;
+    }
+
     loginButton.textContent = 'Sign in with DecapBridge';
     loginButton.setAttribute('aria-label', 'Sign in with DecapBridge');
     loginButton.setAttribute('title', 'Sign in with DecapBridge');
@@ -441,6 +454,10 @@
       previewToggleButton.setAttribute(previewToggleClickBoundAttribute, 'true');
       previewToggleButton.addEventListener('click', () => {
         window.setTimeout(() => {
+          if (!isCurrentBootAttempt()) {
+            return;
+          }
+
           syncPreviewToggleButtonState();
         }, 60);
       });
@@ -462,6 +479,10 @@
   };
 
   const schedulePreviewCollapse = () => {
+    if (!isCurrentBootAttempt()) {
+      return;
+    }
+
     syncPreviewToggleButtonState();
 
     if (!isEntryEditorRoute() || hasAutoCollapsedPreview()) {
@@ -471,6 +492,10 @@
     const delays = [0, 50, 140, 280, 450, 700];
     delays.forEach((delay) => {
       window.setTimeout(() => {
+        if (!isCurrentBootAttempt()) {
+          return;
+        }
+
         if (!isEntryEditorRoute() || hasAutoCollapsedPreview() || !isPreviewPaneVisible() || previewCollapseInFlight) {
           return;
         }
@@ -485,6 +510,10 @@
         markPreviewAsAutoCollapsed();
 
         window.setTimeout(() => {
+          if (!isCurrentBootAttempt()) {
+            return;
+          }
+
           syncPreviewToggleButtonState();
 
           if (!isPreviewPaneVisible()) {
@@ -504,12 +533,27 @@
   };
 
   const startEntryEditorPreviewController = () => {
+    let stopped = false;
+    let animationFrameId = 0;
     const triggerPreviewCollapse = () => {
+      if (stopped || !isCurrentBootAttempt()) {
+        return;
+      }
+
       if (reloadOnSavedSingletonRouteChange()) {
         return;
       }
 
-      window.requestAnimationFrame(() => {
+      if (animationFrameId) {
+        window.cancelAnimationFrame(animationFrameId);
+      }
+
+      animationFrameId = window.requestAnimationFrame(() => {
+        animationFrameId = 0;
+        if (stopped || !isCurrentBootAttempt()) {
+          return;
+        }
+
         syncAuthLoginSurface();
         syncPreviewToggleButtonState();
         enhanceListItemActionButtons();
@@ -532,6 +576,18 @@
     }
 
     triggerPreviewCollapse();
+
+    return () => {
+      stopped = true;
+      window.removeEventListener('hashchange', triggerPreviewCollapse);
+      observer.disconnect();
+      if (animationFrameId) {
+        window.cancelAnimationFrame(animationFrameId);
+        animationFrameId = 0;
+      }
+      removeSingletonContentGuard();
+      previewCollapseInFlight = false;
+    };
   };
 
   const resolveAssetUrl = (value, getAsset, collectionKey) => {
@@ -649,9 +705,45 @@
     };
   };
 
+  const registeredPreviewCollections = [
+    'home-site',
+    'about-site',
+    'services-site',
+    'artists',
+    'releases',
+    'distro',
+    'news',
+  ];
+  const markReady = () => {
+    if (!isCurrentBootAttempt()) {
+      return;
+    }
+
+    window.__BLACKBOX_ADMIN_READY__ = true;
+    window.__BLACKBOX_ADMIN_PREVIEW_COLLECTIONS__ = registeredPreviewCollections;
+    window.dispatchEvent(new CustomEvent('blackbox:decap-ready', { detail: { attemptId: bootAttemptId } }));
+  };
+  const markFailed = () => {
+    if (isCurrentBootAttempt()) {
+      window.dispatchEvent(new CustomEvent('blackbox:decap-failed', { detail: { attemptId: bootAttemptId } }));
+    }
+  };
+
+  function runRegisterWhenReady() {
+    try {
+      registerWhenReady();
+    } catch {
+      markFailed();
+    }
+  }
+
   const registerWhenReady = () => {
+    if (!isCurrentBootAttempt()) {
+      return;
+    }
+
     if (!window.CMS || !window.createClass || !window.h || !window.initCMS) {
-      window.setTimeout(registerWhenReady, 30);
+      window.setTimeout(runRegisterWhenReady, 30);
       return;
     }
 
@@ -664,8 +756,6 @@
     if (previewStyleUrl) {
       CMS.registerPreviewStyle(previewStyleUrl);
     }
-
-    document.querySelector('.blackbox-cms-boot')?.remove();
 
     const HomePreview = createClass({
       render() {
@@ -1134,16 +1224,6 @@
       },
     });
 
-    const registeredPreviewCollections = [
-      'home-site',
-      'about-site',
-      'services-site',
-      'artists',
-      'releases',
-      'distro',
-      'news',
-    ];
-
     CMS.registerPreviewTemplate('home', HomePreview);
     CMS.registerPreviewTemplate('home-site', HomePreview);
     CMS.registerPreviewTemplate('about', AboutPreview);
@@ -1155,12 +1235,27 @@
     CMS.registerPreviewTemplate('distro', DistroPreview);
     CMS.registerPreviewTemplate('news', NewsPreview);
 
-    window.__BLACKBOX_ADMIN_READY__ = true;
-    window.__BLACKBOX_ADMIN_PREVIEW_COLLECTIONS__ = registeredPreviewCollections;
+    try {
+      const initialization = window.initCMS();
+      adminContext.cleanupAttempt?.();
+      const cleanupPreviewController = startEntryEditorPreviewController();
+      const cleanupAttempt = () => {
+        cleanupPreviewController();
+        if (adminContext.cleanupAttempt === cleanupAttempt) {
+          delete adminContext.cleanupAttempt;
+        }
+      };
+      adminContext.cleanupAttempt = cleanupAttempt;
 
-    window.initCMS();
-    startEntryEditorPreviewController();
+      if (initialization && typeof initialization.then === 'function') {
+        initialization.then(markReady, markFailed);
+      } else {
+        markReady();
+      }
+    } catch {
+      markFailed();
+    }
   };
 
-  registerWhenReady();
+  runRegisterWhenReady();
 })();

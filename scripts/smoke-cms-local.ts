@@ -275,12 +275,25 @@ function startCmsProcesses(options: CmsLocalSmokeOptions): ManagedProcess[] {
   const astroExecutable = resolveWebBin('astro');
   const sharedEnv = {
     ...process.env,
+    ASTRO_DEV_BACKGROUND: '0',
     ASTRO_BASE_PATH: '/blackbox-records/',
     ASTRO_SITE_URL: `http://127.0.0.1:${options.cmsPort}`,
     CMS_DEV_PORT: String(options.cmsPort),
+    DECAP_BACKEND_MODE: 'local',
     DECAP_BRANCH: 'main',
     DECAP_LOCAL_PROXY_PORT: String(options.proxyPort),
   };
+
+  for (const hostedSettingName of [
+    'DECAP_REPOSITORY',
+    'DECAP_SITE_URL',
+    'DECAPBRIDGE_AUTH_ENDPOINT',
+    'DECAPBRIDGE_AUTH_TOKEN_ENDPOINT',
+    'DECAPBRIDGE_BASE_URL',
+    'DECAPBRIDGE_GATEWAY_URL',
+  ]) {
+    delete sharedEnv[hostedSettingName];
+  }
 
   return [
     spawnManagedProcess('decap-server', proxyExecutable, [], {
@@ -634,19 +647,26 @@ async function checkSingletonEditorRouteTransition(input: {
 }
 
 async function clickLocalDecapLogin(page: Page): Promise<void> {
-  const loginButton = page
-    .locator('[data-blackbox-cms-auth-button="true"], button', {
-      hasText: /^(Sign in with DecapBridge|Login)$/i,
-    })
-    .first();
-
-  if ((await loginButton.count()) === 0) {
+  const bodyText = await page
+    .locator('body')
+    .innerText()
+    .catch(() => '');
+  if (/\bWriting in\b.+\bcollection\b/i.test(bodyText)) {
     return;
   }
 
-  await loginButton.click({ timeout: 5_000 }).catch(() => {
-    // Auth may already have advanced between the count and click.
-  });
+  const loginButton = page
+    .locator('[data-blackbox-cms-auth-button="true"], button', { hasText: /^(Login|Open local editor)$/i })
+    .first();
+
+  const loginReady = await loginButton
+    .waitFor({ state: 'visible', timeout: 15_000 })
+    .then(() => true)
+    .catch(() => false);
+
+  if (loginReady) {
+    await loginButton.click({ timeout: 5_000 });
+  }
 }
 
 async function readCmsEditorSnapshot(page: Page): Promise<CmsEditorSnapshot> {

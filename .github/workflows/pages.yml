@@ -105,7 +105,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      DECAP_SITE_URL: ${{ vars.DECAP_SITE_URL }}
+      DECAP_BACKEND_MODE: hosted
+      DECAP_SITE_URL: https://blackbox-studio-athens.github.io/blackbox-records/
       DECAP_REPOSITORY: ${{ vars.DECAP_REPOSITORY }}
       DECAP_BRANCH: ${{ vars.DECAP_BRANCH }}
       DECAPBRIDGE_BASE_URL: ${{ vars.DECAPBRIDGE_BASE_URL }}
@@ -136,7 +137,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build UAT static frontend
+      - name: Validate hosted Decap settings
+        run: pnpm cms:hosted:preflight
+
+      - name: Build hosted UAT static frontend
         env:
           ASTRO_SITE_URL: https://blackbox-studio-athens.github.io
           ASTRO_BASE_PATH: /blackbox-records/
@@ -155,7 +159,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      DECAP_SITE_URL: ${{ vars.DECAP_SITE_URL }}
+      DECAP_BACKEND_MODE: hosted
+      DECAP_SITE_URL: https://blackbox-records-web.pages.dev
       DECAP_REPOSITORY: ${{ vars.DECAP_REPOSITORY }}
       DECAP_BRANCH: ${{ vars.DECAP_BRANCH }}
       DECAPBRIDGE_BASE_URL: ${{ vars.DECAPBRIDGE_BASE_URL }}
@@ -183,7 +188,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build disabled PRD static frontend
+      - name: Validate hosted Decap settings
+        run: pnpm cms:hosted:preflight
+
+      - name: Build hosted PRD static frontend
         env:
           ASTRO_SITE_URL: https://blackbox-records-web.pages.dev
           ASTRO_BASE_PATH: /

@@ -18,7 +18,7 @@ const validSources = {
   siteLayout:
     "const showReviewSiteMarker = import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'; const htmlTitle = `[TEST] ${baseHtmlTitle}`;",
   staticDeployWorkflow: [
-    '- name: Build UAT static frontend',
+    '- name: Build hosted UAT static frontend',
     '  env:',
     "    SHOW_REVIEW_SITE_MARKER: 'true'",
     '  run: pnpm build:web',

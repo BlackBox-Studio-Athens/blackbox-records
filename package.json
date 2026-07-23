@@ -13,6 +13,7 @@
     "site:dev:stop": "pnpm --filter @blackbox/web dev:stop",
     "dev:clean": "pnpm --filter @blackbox/web dev:clean",
     "cms:dev": "pnpm --filter @blackbox/web cms:dev",
+    "cms:hosted:preflight": "pnpm --filter @blackbox/web cms:hosted:preflight",
     "cms:proxy": "pnpm --filter @blackbox/web cms:proxy",
     "dev:backend": "pnpm --filter @blackbox/backend dev",
     "dev:backend:mock": "pnpm --filter @blackbox/backend dev:mock",

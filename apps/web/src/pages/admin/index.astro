@@ -1,5 +1,7 @@
 ---
 import { createProjectRelativeUrl, siteBrandAssets } from '@/config/site';
+import { getDecapAdminBootView } from '@/lib/admin/decap-admin-boot';
+import { resolveDecapBackendMode } from '@/lib/admin/decap-runtime-config';
 
 const adminConfigUrl = createProjectRelativeUrl('/admin/config.yml');
 const adminInitUrl = createProjectRelativeUrl('/admin/init.js');
@@ -9,6 +11,12 @@ const faviconSvgUrl = createProjectRelativeUrl(siteBrandAssets.faviconSvg);
 const faviconPngUrl = createProjectRelativeUrl(siteBrandAssets.faviconPng96);
 const faviconIcoUrl = createProjectRelativeUrl(siteBrandAssets.faviconIco);
 const logoUrl = createProjectRelativeUrl(siteBrandAssets.badgeLogo);
+const adminMode = resolveDecapBackendMode({
+  environment: { DECAP_BACKEND_MODE: import.meta.env.DECAP_BACKEND_MODE },
+  isDevelopment: import.meta.env.DEV,
+});
+const initialState = adminMode === 'disabled' ? 'disabled' : 'loading';
+const initialView = getDecapAdminBootView(adminMode, initialState);
 const fontStylesheetUrl =
   'https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Geist+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap';
 ---
@@ -19,7 +27,7 @@ const fontStylesheetUrl =
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex" />
-    <meta name="theme-color" content="#f3ece4" />
+    <meta name="theme-color" content="#0d0d0d" />
     <title>BlackBox CMS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
@@ -28,29 +36,45 @@ const fontStylesheetUrl =
     <link rel="icon" href={faviconSvgUrl} type="image/svg+xml" sizes="any" />
     <link rel="icon" href={faviconPngUrl} type="image/png" sizes="96x96" />
     <link rel="icon" href={faviconIcoUrl} sizes="any" />
-    <link rel="cms-config-url" type="text/yaml" href={adminConfigUrl} />
+    {adminMode !== 'disabled' && <link rel="cms-config-url" type="text/yaml" href={adminConfigUrl} />}
   </head>
   <body>
-    <div class="blackbox-cms-boot" role="status" aria-busy="true" aria-live="polite">
-      <div class="blackbox-cms-boot__card">
+    <main
+      class="blackbox-cms-boot"
+      data-admin-boot-root
+      data-admin-boot-mode={adminMode}
+      data-admin-boot-state={initialState}
+      data-admin-boot-init-url={adminMode === 'disabled' ? undefined : adminInitUrl}
+    >
+      <section
+        class="blackbox-cms-boot__surface"
+        data-admin-boot-status
+        role={initialView.role}
+        aria-busy={initialView.ariaBusy}
+        aria-live={initialView.ariaLive}
+        tabindex="-1"
+      >
         <img class="blackbox-cms-boot__logo" src={logoUrl} alt="BlackBox Records logo" width="80" height="80" />
-        <p class="blackbox-cms-boot__eyebrow">BlackBox CMS</p>
-        <h1 class="blackbox-cms-boot__title">Preparing the editor</h1>
-        <p class="blackbox-cms-boot__copy">
-          <span class="blackbox-cms-boot__spinner" aria-hidden="true"></span>
-          Loading content collections, previews, and media tools.
-        </p>
-      </div>
-    </div>
-    <script is:inline define:vars={{ previewStyleUrl }}>
+        <h1 class="blackbox-cms-boot__title" data-admin-boot-heading>{initialView.title}</h1>
+        <p class="blackbox-cms-boot__copy" data-admin-boot-copy>{initialView.copy}</p>
+        <span
+          class="blackbox-cms-boot__spinner"
+          data-admin-boot-spinner
+          hidden={!initialView.showSpinner}
+          aria-hidden="true"></span>
+        <button class="blackbox-cms-boot__retry" data-admin-boot-retry type="button" hidden={!initialView.showRetry}>
+          Try again
+        </button>
+      </section>
+    </main>
+    <script is:inline define:vars={{ adminMode, previewStyleUrl }}>
       window.CMS_MANUAL_INIT = true;
-      window.__BLACKBOX_ADMIN__ = { previewStyleUrl };
+      window.__BLACKBOX_ADMIN__ = { mode: adminMode, previewStyleUrl };
     </script>
-    <script src="https://unpkg.com/decap-cms@3.10.1/dist/decap-cms.js"></script>
-    <script is:inline define:vars={{ adminInitUrl }}>
-      const initScript = document.createElement('script');
-      initScript.src = adminInitUrl;
-      document.body.appendChild(initScript);
+    <script>
+      import { startDecapAdminBoot } from '@/lib/admin/decap-admin-boot';
+
+      startDecapAdminBoot();
     </script>
   </body>
 </html>

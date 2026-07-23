@@ -6,6 +6,8 @@
   "scripts": {
     "clean:dev-cache": "node -e \"const fs=require('node:fs');for (const p of ['.astro','node_modules/.astro','node_modules/.vite']) fs.rmSync(p,{recursive:true,force:true});\"",
     "cms:dev": "node scripts/start-cms-dev.mjs",
+    "cms:hosted:preflight": "tsx scripts/check-decap-hosted-env.ts",
+    "cms:build-mode:check": "tsx scripts/check-decap-build-mode.ts",
     "cms:proxy": "node scripts/start-decap-proxy.mjs",
     "dev": "astro dev --root .",
     "dev:static": "node scripts/start-static-site-dev.mjs",
@@ -21,7 +23,7 @@
     "image-markup:check": "tsx scripts/check-image-markup.ts",
     "prd:holding:prepare": "tsx scripts/prepare-prd-holding.ts",
     "prd:holding:check": "tsx scripts/check-prd-holding.ts",
-    "build": "astro build --root . && pnpm cache:policy:check && pnpm brand-font:check && pnpm image-markup:check",
+    "build": "astro build --root . && pnpm cms:build-mode:check && pnpm cache:policy:check && pnpm brand-font:check && pnpm image-markup:check",
     "preview": "astro preview --root .",
     "check": "astro check --root .",
     "test": "vitest run",
