@@ -13,6 +13,15 @@ export type DecapBuildArtifacts = {
 const decapModeMarkerPattern = /^# blackbox-decap-mode: (local|hosted|disabled)$/m;
 const unsafeHostedValuePattern =
   /(?:__SET_DECAPBRIDGE_SITE_ID__|CHANGE_ME|REPLACE_ME|example\.com|\.invalid\b|localhost|127(?:\.\d{1,3}){3}|\[?::1\]?)/i;
+const hostedConnectionValuePattern =
+  /^\s*(?:repo|base_url|auth_endpoint|auth_token_endpoint|gateway_url|site_url|display_url|logo_url):\s*(.+?)\s*$/;
+
+function hasUnsafeHostedConnectionValue(configYaml: string): boolean {
+  return configYaml.split('\n').some((line) => {
+    const configuredValue = hostedConnectionValuePattern.exec(line)?.[1];
+    return configuredValue !== undefined && unsafeHostedValuePattern.test(configuredValue);
+  });
+}
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -100,7 +109,7 @@ function assertHostedBuild(indexHtml: string, configYaml: string): void {
   );
   assertCondition(!/^\s*name:\s*proxy\s*$/m.test(configYaml), 'Hosted Decap config must not use the proxy backend.');
   assertCondition(!/^\s*proxy_url:/m.test(configYaml), 'Hosted Decap config must not contain a proxy URL.');
-  assertCondition(!unsafeHostedValuePattern.test(configYaml), 'Hosted Decap config contains unsafe fallback data.');
+  assertCondition(!hasUnsafeHostedConnectionValue(configYaml), 'Hosted Decap config contains unsafe fallback data.');
 }
 
 export function assertDecapBuildArtifacts({ configYaml, expectedMode, indexHtml }: DecapBuildArtifacts): void {

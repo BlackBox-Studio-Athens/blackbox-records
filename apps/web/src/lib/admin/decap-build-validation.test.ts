@@ -67,6 +67,24 @@ describe('assertDecapBuildArtifacts', () => {
     }
   });
 
+  it('allows placeholder-domain examples in editorial help text', () => {
+    const configWithEditorialExample = `${hostedConfig}
+collections:
+  - name: "releases"
+    fields:
+      - name: "merch_url"
+        hint: "Example: https://example.com/product."
+`;
+
+    expect(() =>
+      assertDecapBuildArtifacts({
+        configYaml: configWithEditorialExample,
+        expectedMode: 'hosted',
+        indexHtml: buildIndex('hosted'),
+      }),
+    ).not.toThrow();
+  });
+
   it('rejects a page/config mode mismatch', () => {
     expect(() =>
       assertDecapBuildArtifacts({
