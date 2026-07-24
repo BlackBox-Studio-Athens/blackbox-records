@@ -4,32 +4,6 @@
   const previewStyleUrl = adminContext.previewStyleUrl;
   const mediaCollections = Array.isArray(adminContext.mediaCollections) ? adminContext.mediaCollections : [];
   const previewAssetResolver = window.__BLACKBOX_PREVIEW_ASSETS__?.resolvePreviewAssetUrl;
-  const previewAutoCollapseKey = 'blackbox-cms-preview-auto-collapsed';
-  const previewToggleClickBoundAttribute = 'data-preview-toggle-click-bound';
-  const retainedPinnedVersionRepairs = Object.freeze({
-    'bounded-rerender-observer':
-      'Decap CMS 3.14.1 mounts and replaces editor chrome asynchronously; one queued animation-frame sync covers late child-list changes.',
-    'decapbridge-login-surface':
-      'Decap CMS 3.14.1 renders a generic Login action for the hosted PKCE backend; branded copy identifies DecapBridge sign-in.',
-    'editor-scope-panel':
-      'Decap CMS 3.14.1 has no supported authenticated-editor slot for direct-publish and ownership guidance.',
-    'empty-singleton-guard':
-      'Decap CMS 3.14.1 can present an empty singleton form after a failed remote load; the guard prevents accidental blank publication.',
-    'fixed-layout-section-actions':
-      'Decap CMS 3.14.1 still renders outer remove and reorder controls when allow_remove and allow_reorder are false.',
-    'preview-auto-collapse':
-      'Decap CMS 3.14.1 has no supported initial collapsed-preview setting for existing entry editors.',
-    'preview-toggle-copy':
-      'Decap CMS 3.14.1 exposes an icon-only Toggle Preview action; the repair adds accurate visible and accessible state.',
-    'saved-singleton-route-reload':
-      'Decap CMS 3.14.1 can retain stale singleton form state during saved singleton-to-singleton navigation.',
-    'top-level-media-hidden':
-      'Decap CMS 3.14.1 has no config switch for hiding the global Media action when all image widgets use collection-owned roots.',
-  });
-  let previewCollapseInFlight = false;
-  let previewCollapseScheduleActive = false;
-  const previewCollapseTimerIds = new Set();
-  window.__BLACKBOX_ADMIN_REPAIRS__ = Object.keys(retainedPinnedVersionRepairs);
   const isCurrentBootAttempt = () => window.__BLACKBOX_ADMIN__?.bootAttemptId === bootAttemptId;
 
   const toArray = (value) => {
@@ -79,61 +53,20 @@
     return `${window.location.origin}${adminRootPath}media/`;
   };
 
-  const getStockOperationsUrl = () => {
-    const pathname = window.location.pathname;
-    const adminIndex = pathname.indexOf('/admin/');
-    const siteBasePath = adminIndex >= 0 ? pathname.slice(0, adminIndex) : '';
-    return `${siteBasePath}/stock/`;
-  };
-
-  const hasAutoCollapsedPreview = () => {
-    try {
-      return window.sessionStorage.getItem(previewAutoCollapseKey) === 'true';
-    } catch {
-      return false;
-    }
-  };
-
-  const markPreviewAsAutoCollapsed = () => {
-    try {
-      window.sessionStorage.setItem(previewAutoCollapseKey, 'true');
-    } catch {
-      // Ignore browsers that block sessionStorage in private contexts.
-    }
-  };
-
-  const isEntryEditorRoute = () => /^#\/collections\/[^/]+\/entries\/[^/]+/.test(window.location.hash);
-
   const singletonEditorExpectations = {
-    about: {
-      entry: 'about-site',
-      label: 'About',
-      minimumSectionCount: 1,
-      values: ['The Label'],
+    'site-pages': {
+      entries: {
+        'home-site': { label: 'Home', values: ['Fine music on record.'] },
+        'about-site': { label: 'About', values: ['The Label'] },
+        'services-site': { label: 'Services', values: ['Tour Booking'] },
+        'newsletter-site': { label: 'Newsletter', values: ['Join the Collective'] },
+        'distro-page-site': { label: 'Distro Page', values: ['Distro'] },
+      },
     },
-    home: {
-      entry: 'home-site',
-      label: 'Home',
-      minimumSectionCount: 1,
-      values: ['Fine music on record.'],
-    },
-    newsletter: {
-      entry: 'newsletter-site',
-      label: 'Newsletter',
-      minimumSectionCount: 0,
-      values: ['Join the Collective'],
-    },
-    services: {
-      entry: 'services-site',
-      label: 'Services',
-      minimumSectionCount: 1,
-      values: ['Tour Booking'],
-    },
-    settings: {
-      entry: 'settings-site',
-      label: 'Settings',
-      minimumSectionCount: 0,
-      values: ['Blackbox Records'],
+    'settings-site': {
+      entries: {
+        'settings-site': { label: 'Settings', values: ['Blackbox Records'] },
+      },
     },
   };
 
@@ -147,8 +80,8 @@
     }
 
     const [, collection, entry] = match;
-    const expectation = singletonEditorExpectations[collection];
-    if (!expectation || expectation.entry !== entry) {
+    const expectation = singletonEditorExpectations[collection]?.entries?.[entry];
+    if (!expectation) {
       return null;
     }
 
@@ -197,13 +130,10 @@
         return '';
       })
       .filter(Boolean);
-    const sectionCounts = Array.from(bodyText.matchAll(/\b(\d+)\s+sections\b/gi)).map((match) => Number(match[1]));
-
     return {
       bodyText,
       formValues,
       hasLoadedEditorChrome: /\bWriting in\b.+\bcollection\b/i.test(bodyText),
-      sectionCounts,
     };
   };
 
@@ -216,9 +146,7 @@
     const missingExpectedValues = expectation.values.filter(
       (value) => !state.formValues.some((formValue) => formValue.includes(value)),
     );
-    const maxSectionCount = Math.max(0, ...state.sectionCounts);
-
-    return missingExpectedValues.length > 0 || maxSectionCount < expectation.minimumSectionCount;
+    return missingExpectedValues.length > 0;
   };
 
   const removeSingletonContentGuard = () => {
@@ -282,7 +210,7 @@
       'decap',
       'localforage',
       'netlify',
-      ...Object.values(singletonEditorExpectations).map((expectation) => expectation.entry),
+      ...Object.values(singletonEditorExpectations).flatMap((expectation) => Object.keys(expectation.entries)),
     ];
 
     try {
@@ -325,7 +253,6 @@
     window.__BLACKBOX_DECAP_SINGLETON_STATE__ = {
       activeEditor,
       formValues: state.formValues,
-      sectionCounts: state.sectionCounts,
     };
 
     if (!isSingletonEditorEmptyLoad(activeEditor, state)) {
@@ -382,95 +309,13 @@
       authHelper.innerHTML = [
         '<p class="blackbox-cms-auth-helper__eyebrow">BlackBox CMS</p>',
         '<h1 class="blackbox-cms-auth-helper__title">Sign in to edit content</h1>',
-        '<p class="blackbox-cms-auth-helper__copy">Continue through DecapBridge, then choose Google or Microsoft.</p>',
+        '<p class="blackbox-cms-auth-helper__copy">Use the shared label Google account through DecapBridge.</p>',
       ].join('');
       loginButton.parentElement?.insertBefore(authHelper, loginButton);
     }
 
     document.documentElement.dataset.blackboxCmsAuth = 'ready';
     window.__BLACKBOX_ADMIN_AUTH_READY__ = true;
-  };
-
-  const removeEditorScopePanel = () => {
-    document.querySelector('[data-blackbox-cms-scope-panel="true"]')?.remove();
-  };
-
-  const syncEditorScopePanel = () => {
-    const loginButton = getLoginButton();
-    if (loginButton) {
-      removeEditorScopePanel();
-      return;
-    }
-
-    if (!document.body || document.querySelector('[data-blackbox-cms-scope-panel="true"]')) {
-      return;
-    }
-
-    const panel = document.createElement('aside');
-    panel.className = 'blackbox-cms-scope-panel';
-    panel.dataset.blackboxCmsScopePanel = 'true';
-    panel.setAttribute('aria-label', 'CMS publishing and ownership guidance');
-    panel.innerHTML = [
-      '<details class="blackbox-cms-scope-panel__details">',
-      '<summary class="blackbox-cms-scope-panel__summary"><span>Publish writes to main</span><span>Editing scope</span></summary>',
-      '<div class="blackbox-cms-scope-panel__content">',
-      '<p class="blackbox-cms-scope-panel__notice">Publishing commits immediately to main and starts the normal site deployment.</p>',
-      '<dl class="blackbox-cms-scope-panel__list">',
-      '<div><dt>Edit in Decap</dt><dd>Titles, copy, images, grouping, format, order, and public page content.</dd></div>',
-      '<div><dt>Price</dt><dd>In Stripe Dashboard, create a replacement Price under the existing Product, then run the existing catalog verification flow.</dd></div>',
-      '<div><dt>Stock</dt><dd>Use the <a data-blackbox-cms-stock-link="true">protected stock operations surface</a>.</dd></div>',
-      '<div><dt>Stop selling or checkout availability</dt><dd>Use online stock or commerce-operator checkout controls. Do not delete editorial content.</dd></div>',
-      '<div><dt>Orders and fulfillment</dt><dd>Use Worker/Stripe paid-order state and the existing manual fulfillment process. These are outside Decap.</dd></div>',
-      '</dl>',
-      '</div>',
-      '</details>',
-    ].join('');
-
-    panel.querySelector('[data-blackbox-cms-stock-link="true"]')?.setAttribute('href', getStockOperationsUrl());
-    document.body.append(panel);
-  };
-
-  const getPreviewToggleButton = () =>
-    document.querySelector('button[data-blackbox-preview-toggle="true"]') ||
-    Array.from(document.querySelectorAll('button')).find(
-      (button) => (button.getAttribute('title') || '').trim().toLowerCase() === 'toggle preview',
-    ) ||
-    null;
-
-  const fixedLayoutSectionEntryHashes = new Set([
-    '#/collections/home/entries/home-site',
-    '#/collections/about/entries/about-site',
-    '#/collections/services/entries/services-site',
-  ]);
-
-  const lockFixedLayoutSectionActions = (topBar) => {
-    if (!fixedLayoutSectionEntryHashes.has(window.location.hash.split('?')[0])) {
-      return false;
-    }
-
-    const controlContainer = topBar.closest('[class*="ControlContainer"]');
-    if (controlContainer?.firstElementChild?.textContent?.trim() !== 'Sections') {
-      return false;
-    }
-
-    topBar.dataset.blackboxFixedSectionActions = 'locked';
-    topBar.querySelectorAll('button, [role="button"]').forEach((button) => {
-      button.hidden = true;
-      button.setAttribute('aria-hidden', 'true');
-      button.setAttribute('tabindex', '-1');
-    });
-    return true;
-  };
-
-  const syncFixedLayoutSectionActions = () => {
-    if (!fixedLayoutSectionEntryHashes.has(window.location.hash.split('?')[0])) {
-      return;
-    }
-
-    const topBars = Array.from(document.querySelectorAll('[class*="ListItemTopBar"]'));
-    topBars.forEach((topBar) => {
-      if (topBar.closest('[class*="SortableListItem"]')) lockFixedLayoutSectionActions(topBar);
-    });
   };
 
   const syncTopLevelMediaSurface = () => {
@@ -485,165 +330,10 @@
     mediaButton.setAttribute('tabindex', '-1');
   };
 
-  const ensurePreviewToggleContent = (previewToggleButton) => {
-    let previewCopy = previewToggleButton.querySelector('[data-blackbox-preview-copy="true"]');
-    let previewLabel = previewToggleButton.querySelector('[data-blackbox-preview-label="true"]');
-    let previewStatus = previewToggleButton.querySelector('[data-blackbox-preview-status="true"]');
-
-    if (!previewCopy) {
-      previewCopy = document.createElement('span');
-      previewCopy.dataset.blackboxPreviewCopy = 'true';
-      previewToggleButton.append(previewCopy);
-    }
-
-    if (!previewLabel) {
-      previewLabel = document.createElement('span');
-      previewLabel.dataset.blackboxPreviewLabel = 'true';
-      previewCopy.append(previewLabel);
-    }
-
-    if (!previewStatus) {
-      previewStatus = document.createElement('span');
-      previewStatus.dataset.blackboxPreviewStatus = 'true';
-      previewCopy.append(previewStatus);
-    }
-
-    return {
-      previewLabel,
-      previewStatus,
-    };
-  };
-
-  const syncPreviewToggleButtonState = () => {
-    const previewToggleButton = getPreviewToggleButton();
-    if (!previewToggleButton) {
-      return;
-    }
-
-    const previewPane = getPreviewPane();
-    const previewIsVisible = isPreviewPaneVisible(previewPane);
-    const nextActionLabel = previewIsVisible ? 'Hide preview' : 'Open preview';
-    const previewStatusLabel = previewIsVisible ? 'Preview visible' : 'Preview hidden';
-    const previewStatusChipLabel = previewIsVisible ? 'Visible' : 'Hidden';
-    const { previewLabel, previewStatus } = ensurePreviewToggleContent(previewToggleButton);
-
-    previewToggleButton.dataset.blackboxPreviewToggle = 'true';
-    previewToggleButton.dataset.previewState = previewIsVisible ? 'open' : 'closed';
-    previewToggleButton.dataset.previewLabel = nextActionLabel;
-    previewToggleButton.dataset.previewStatus = previewStatusChipLabel;
-    previewToggleButton.setAttribute('aria-label', `${nextActionLabel}. ${previewStatusLabel}.`);
-    previewToggleButton.setAttribute('aria-expanded', String(previewIsVisible));
-    previewToggleButton.setAttribute('aria-pressed', String(previewIsVisible));
-    previewToggleButton.setAttribute('title', nextActionLabel);
-    if (previewPane) {
-      previewPane.id ||= 'blackbox-cms-preview-pane';
-      previewToggleButton.setAttribute('aria-controls', previewPane.id);
-    } else {
-      previewToggleButton.removeAttribute('aria-controls');
-    }
-    previewLabel.textContent = nextActionLabel;
-    previewStatus.textContent = previewStatusChipLabel;
-
-    if (!previewToggleButton.hasAttribute(previewToggleClickBoundAttribute)) {
-      previewToggleButton.setAttribute(previewToggleClickBoundAttribute, 'true');
-      previewToggleButton.addEventListener('click', (event) => {
-        window.setTimeout(() => {
-          if (!isCurrentBootAttempt()) {
-            return;
-          }
-
-          syncPreviewToggleButtonState();
-          if (event.isTrusted) previewToggleButton.focus({ preventScroll: true });
-        }, 60);
-      });
-    }
-
-    document.documentElement.dataset.blackboxCmsPreview = previewIsVisible ? 'open' : 'collapsed';
-  };
-
-  const getPreviewPane = () =>
-    document.querySelector('[class*="PreviewPaneFrame"]') ||
-    document.querySelector('[class*="PreviewPaneContainer"]:not([class*="ControlPaneContainer"])');
-
-  const isPreviewPaneVisible = (previewPane = getPreviewPane()) => {
-    if (!previewPane) {
-      return false;
-    }
-
-    return previewPane.getBoundingClientRect().width > 120;
-  };
-
-  const clearPreviewCollapseSchedule = () => {
-    previewCollapseTimerIds.forEach((timerId) => window.clearTimeout(timerId));
-    previewCollapseTimerIds.clear();
-    previewCollapseScheduleActive = false;
-  };
-
-  const schedulePreviewCollapse = () => {
-    if (!isCurrentBootAttempt()) {
-      return;
-    }
-
-    syncPreviewToggleButtonState();
-
-    if (!isEntryEditorRoute() || hasAutoCollapsedPreview() || previewCollapseScheduleActive) {
-      return;
-    }
-
-    const delays = [0, 50, 140, 280, 450, 700];
-    previewCollapseScheduleActive = true;
-    delays.forEach((delay, index) => {
-      const timerId = window.setTimeout(() => {
-        previewCollapseTimerIds.delete(timerId);
-        if (!isCurrentBootAttempt()) {
-          clearPreviewCollapseSchedule();
-          return;
-        }
-
-        if (!isEntryEditorRoute() || hasAutoCollapsedPreview() || !isPreviewPaneVisible() || previewCollapseInFlight) {
-          if (index === delays.length - 1) previewCollapseScheduleActive = false;
-          return;
-        }
-
-        const previewToggleButton = getPreviewToggleButton();
-        if (!previewToggleButton) {
-          if (index === delays.length - 1) previewCollapseScheduleActive = false;
-          return;
-        }
-
-        clearPreviewCollapseSchedule();
-        previewCollapseInFlight = true;
-        previewToggleButton.click();
-        markPreviewAsAutoCollapsed();
-
-        window.setTimeout(() => {
-          if (!isCurrentBootAttempt()) {
-            return;
-          }
-
-          syncPreviewToggleButtonState();
-
-          if (!isPreviewPaneVisible()) {
-            document.documentElement.dataset.blackboxCmsPreview = 'collapsed';
-          } else {
-            try {
-              window.sessionStorage.removeItem(previewAutoCollapseKey);
-            } catch {
-              // Ignore browsers that block sessionStorage in private contexts.
-            }
-          }
-
-          previewCollapseInFlight = false;
-        }, 90);
-      }, delay);
-      previewCollapseTimerIds.add(timerId);
-    });
-  };
-
   const startEntryEditorPreviewController = () => {
     let stopped = false;
-    let animationFrameId = 0;
-    const triggerPreviewCollapse = () => {
+    let editorObserver;
+    const syncEditorSurface = () => {
       if (stopped || !isCurrentBootAttempt()) {
         return;
       }
@@ -652,53 +342,25 @@
         return;
       }
 
-      if (animationFrameId) return;
-
-      animationFrameId = window.requestAnimationFrame(() => {
-        animationFrameId = 0;
-        if (stopped || !isCurrentBootAttempt()) {
-          return;
-        }
-
-        syncAuthLoginSurface();
-        syncEditorScopePanel();
-        syncTopLevelMediaSurface();
-        syncPreviewToggleButtonState();
-        syncFixedLayoutSectionActions();
-        syncSingletonContentGuard();
-        schedulePreviewCollapse();
-      });
+      syncAuthLoginSurface();
+      syncTopLevelMediaSurface();
+      syncSingletonContentGuard();
     };
 
-    window.addEventListener('hashchange', triggerPreviewCollapse);
-
-    const observer = new MutationObserver((mutations) => {
-      if (mutations.some((mutation) => mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0)) {
-        triggerPreviewCollapse();
-      }
-    });
-
-    if (document.body) {
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-      });
+    window.addEventListener('hashchange', syncEditorSurface);
+    const editorRoot = document.querySelector('#nc-root');
+    if (editorRoot && typeof MutationObserver === 'function') {
+      editorObserver = new MutationObserver(syncEditorSurface);
+      editorObserver.observe(editorRoot, { childList: true, subtree: true });
     }
 
-    triggerPreviewCollapse();
+    syncEditorSurface();
 
     return () => {
       stopped = true;
-      window.removeEventListener('hashchange', triggerPreviewCollapse);
-      observer.disconnect();
-      if (animationFrameId) {
-        window.cancelAnimationFrame(animationFrameId);
-        animationFrameId = 0;
-      }
+      window.removeEventListener('hashchange', syncEditorSurface);
+      editorObserver?.disconnect();
       removeSingletonContentGuard();
-      removeEditorScopePanel();
-      clearPreviewCollapseSchedule();
-      previewCollapseInFlight = false;
     };
   };
 
@@ -723,11 +385,7 @@
       getActiveSingletonEditor,
       isSingletonEditorEmptyLoad,
       reloadOnSavedSingletonRouteChange,
-      schedulePreviewCollapse,
       syncAuthLoginSurface,
-      syncEditorScopePanel,
-      syncFixedLayoutSectionActions,
-      syncPreviewToggleButtonState,
       syncTopLevelMediaSurface,
     };
   }
@@ -804,7 +462,6 @@
       return;
     }
 
-    window.__BLACKBOX_ADMIN_READY__ = true;
     window.__BLACKBOX_ADMIN_PREVIEW_COLLECTIONS__ = registeredPreviewCollections;
     window.dispatchEvent(new CustomEvent('blackbox:decap-ready', { detail: { attemptId: bootAttemptId } }));
   };
@@ -836,7 +493,6 @@
     const createClass = window.createClass;
     const h = window.h;
     const { renderButton, renderBulletList, renderImage, renderPills } = createElementFactory(h);
-    const findSection = (sections, type) => toArray(sections).find((section) => section?.type === type);
 
     if (previewStyleUrl) {
       CMS.registerPreviewStyle(previewStyleUrl);
@@ -847,9 +503,8 @@
         const entry = this.props.entry;
         const data = toObject(entry.get('data'));
         const hero = toObject(data.hero);
-        const sections = toArray(data.sections);
-        const news = findSection(sections, 'news');
-        const artists = findSection(sections, 'artists');
+        const news = toObject(data.news);
+        const artists = toObject(data.artists);
         const heroImageUrl = resolveAssetUrl(entry.getIn(['data', 'hero', 'image']), this.props.getAsset, 'home');
 
         return h('div', { className: 'blackbox-preview blackbox-preview--home' }, [
@@ -894,12 +549,15 @@
         const entry = this.props.entry;
         const data = toObject(entry.get('data'));
         const hero = toObject(data.hero);
-        const sections = toArray(data.sections);
-        const lead = findSection(sections, 'lead');
-        const story = findSection(sections, 'story');
-        const quote = findSection(sections, 'quote');
-        const contact = findSection(sections, 'contact');
-        const stats = findSection(sections, 'stats');
+        const lead = toObject(data.lead);
+        const story = toObject(data.story);
+        const quote = toObject(data.quote);
+        const contact = toObject(data.contact);
+        const stats = toObject(data.stats);
+        const hasStory = Object.keys(story).length > 0;
+        const hasQuote = Object.keys(quote).length > 0;
+        const hasContact = Object.keys(contact).length > 0;
+        const hasStats = Object.keys(stats).length > 0;
         const heroImageUrl = resolveAssetUrl(entry.getIn(['data', 'hero', 'image']), this.props.getAsset, 'about');
 
         return h('div', { className: 'blackbox-preview blackbox-preview--about' }, [
@@ -925,9 +583,9 @@
                 ]),
               ]),
             ]),
-            story || quote || contact
+            hasStory || hasQuote || hasContact
               ? h('section', { className: 'blackbox-preview__grid blackbox-preview__grid--two' }, [
-                  story
+                  hasStory
                     ? h('article', { className: 'blackbox-preview__card', key: 'story' }, [
                         h('h2', { className: 'blackbox-preview__card-title' }, toText(story.title || 'Story')),
                         ...toArray(story.paragraphs)
@@ -944,7 +602,7 @@
                           ),
                       ])
                     : null,
-                  quote
+                  hasQuote
                     ? h(
                         'article',
                         { className: 'blackbox-preview__card blackbox-preview__card--quote', key: 'quote' },
@@ -955,7 +613,7 @@
                         ],
                       )
                     : null,
-                  contact
+                  hasContact
                     ? h('article', { className: 'blackbox-preview__card', key: 'contact' }, [
                         h('p', { className: 'blackbox-preview__eyebrow' }, toText(contact.title || 'Contact')),
                         h('p', { className: 'blackbox-preview__copy' }, toText(contact.intro)),
@@ -973,7 +631,7 @@
                     : null,
                 ])
               : null,
-            stats
+            hasStats
               ? h('section', { className: 'blackbox-preview__grid blackbox-preview__grid--four' }, [
                   h('article', { className: 'blackbox-preview__card blackbox-preview__card--stats' }, [
                     h('p', { className: 'blackbox-preview__eyebrow' }, 'Stats'),
@@ -1004,11 +662,12 @@
         const entry = this.props.entry;
         const data = toObject(entry.get('data'));
         const hero = toObject(data.hero);
-        const sections = toArray(data.sections);
-        const servicesSection = findSection(sections, 'services');
-        const process = findSection(sections, 'process');
-        const inquiry = findSection(sections, 'inquiry');
-        const servicesSectionIndex = sections.findIndex((section) => section?.type === 'services');
+        const servicesSection = toObject(data.services);
+        const process = toObject(data.process);
+        const inquiry = toObject(data.inquiry);
+        const hasServices = Object.keys(servicesSection).length > 0;
+        const hasProcess = Object.keys(process).length > 0;
+        const hasInquiry = Object.keys(inquiry).length > 0;
 
         return h('div', { className: 'blackbox-preview blackbox-preview--services' }, [
           h('div', { className: 'blackbox-preview__shell' }, [
@@ -1018,19 +677,16 @@
               h('p', { className: 'blackbox-preview__copy blackbox-preview__copy--lead' }, toText(hero.intro)),
               renderButton(toText(hero.cta_text || 'Start an Inquiry'), true),
             ]),
-            servicesSection
+            hasServices
               ? h(
                   'section',
                   { className: 'blackbox-preview__stack blackbox-preview__stack--large' },
                   toArray(servicesSection.items).map((service, index) => {
-                    const imageUrl =
-                      servicesSectionIndex >= 0
-                        ? resolveAssetUrl(
-                            entry.getIn(['data', 'sections', servicesSectionIndex, 'items', index, 'image']),
-                            this.props.getAsset,
-                            'services',
-                          )
-                        : null;
+                    const imageUrl = resolveAssetUrl(
+                      entry.getIn(['data', 'services', 'items', index, 'image']),
+                      this.props.getAsset,
+                      'services',
+                    );
                     return h('article', { className: 'blackbox-preview__service-card', key: service.id || index }, [
                       h('div', { className: 'blackbox-preview__service-media' }, [
                         renderImage(
@@ -1065,7 +721,7 @@
                   }),
                 )
               : null,
-            process
+            hasProcess
               ? h('section', { className: 'blackbox-preview__process-surface' }, [
                   h('p', { className: 'blackbox-preview__eyebrow' }, 'How We Work'),
                   h(
@@ -1095,7 +751,7 @@
                   ),
                 ])
               : null,
-            inquiry
+            hasInquiry
               ? h('section', { className: 'blackbox-preview__inquiry-surface' }, [
                   h('p', { className: 'blackbox-preview__eyebrow' }, 'Inquiry'),
                   h(
@@ -1287,11 +943,8 @@
       },
     });
 
-    CMS.registerPreviewTemplate('home', HomePreview);
     CMS.registerPreviewTemplate('home-site', HomePreview);
-    CMS.registerPreviewTemplate('about', AboutPreview);
     CMS.registerPreviewTemplate('about-site', AboutPreview);
-    CMS.registerPreviewTemplate('services', ServicesPreview);
     CMS.registerPreviewTemplate('services-site', ServicesPreview);
     CMS.registerPreviewTemplate('artists', ArtistPreview);
     CMS.registerPreviewTemplate('releases', ReleasePreview);
@@ -1310,10 +963,9 @@
       };
       adminContext.cleanupAttempt = cleanupAttempt;
 
+      markReady();
       if (initialization && typeof initialization.then === 'function') {
-        initialization.then(markReady, markFailed);
-      } else {
-        markReady();
+        initialization.then(undefined, markFailed);
       }
     } catch {
       markFailed();

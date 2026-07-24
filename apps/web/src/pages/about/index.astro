@@ -4,7 +4,7 @@ import NewsletterSignup from '@/components/NewsletterSignup.astro';
 import { Card, CardContent } from '@/components/ui/card';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { listArtistProfiles, listReleaseCatalog } from '@/lib/catalog-data';
-import { getAboutContent, getContentSection, getLabelSettings } from '@/lib/site-data';
+import { getAboutContent, getLabelSettings } from '@/lib/site-data';
 import { calculateCountryCount, calculateYearsActive } from '@/utils/content';
 import { Mail } from 'lucide-react';
 
@@ -13,11 +13,13 @@ const releaseCatalogEntries = await listReleaseCatalog();
 const [aboutContent, labelSettings] = await Promise.all([getAboutContent(), getLabelSettings()]);
 const yearsActive = calculateYearsActive(labelSettings.established_year);
 const countryCount = calculateCountryCount(artistProfiles.map((artistProfile) => artistProfile.data.country || ''));
-const aboutLead = getContentSection(aboutContent.sections, 'lead');
-const aboutStory = getContentSection(aboutContent.sections, 'story');
-const aboutQuote = getContentSection(aboutContent.sections, 'quote');
-const aboutContact = getContentSection(aboutContent.sections, 'contact');
-const aboutStats = getContentSection(aboutContent.sections, 'stats');
+const {
+  lead: aboutLead,
+  story: aboutStory,
+  quote: aboutQuote,
+  contact: aboutContact,
+  stats: aboutStats,
+} = aboutContent;
 ---
 
 <SiteLayout pageTitle="About" pageDescription="About the label.">

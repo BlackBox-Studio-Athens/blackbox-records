@@ -12,16 +12,13 @@ export function buildHomeFields() {
       collapsed: true,
       summary: '{{fields.tagline}}',
       fields: [
-        buildField({
-          label: 'Tagline',
-          name: 'tagline',
-          widget: 'string',
-          hint: 'Short line over the hero still. Example: "Heavy music on record."',
-        }),
+        buildField({ label: 'Tagline', name: 'tagline', widget: 'string', hint: 'Short line over the hero still.' }),
         buildField({
           label: 'Hero image',
           name: 'image',
           widget: 'image',
+          chooseUrl: false,
+          allowMultiple: false,
           hint: 'Full-bleed opening image. Keep the subject centered with breathing room for narrow mobile crops.',
         }),
         buildField({
@@ -40,67 +37,61 @@ export function buildHomeFields() {
       ],
     }),
     buildField({
-      label: 'Sections',
-      name: 'sections',
-      widget: 'list',
-      hint: 'Fixed homepage layout. Edit the News and Artists content inside each named section.',
+      label: 'News',
+      name: 'news',
+      widget: 'object',
+      hint: 'Fixed homepage News section. Edit its content, not the page structure.',
       collapsed: true,
-      allowAdd: false,
-      allowRemove: false,
-      allowReorder: false,
-      types: [
-        {
-          label: 'News',
-          name: 'news',
-          summary: '{{fields.title}}',
-          fields: [
-            buildField({
-              label: 'Title',
-              name: 'title',
-              widget: 'string',
-              hint: 'Main heading for the homepage news section.',
-            }),
-            buildField({
-              label: 'Link text',
-              name: 'link_text',
-              widget: 'string',
-              hint: 'CTA label. Example: "Read News".',
-            }),
-            buildField({
-              label: 'Link URL',
-              name: 'link_url',
-              widget: 'string',
-              hint: 'Internal section path starting with /. Example: /news/.',
-              pattern: { value: internalSitePathPatternSource, message: 'Use a safe internal path beginning with /.' },
-            }),
-          ],
-        },
-        {
-          label: 'Artists',
-          name: 'artists',
-          summary: '{{fields.title}}',
-          fields: [
-            buildField({
-              label: 'Title',
-              name: 'title',
-              widget: 'string',
-              hint: 'Main heading for the homepage artists section.',
-            }),
-            buildField({
-              label: 'Button text',
-              name: 'button_text',
-              widget: 'string',
-              hint: 'CTA label. Example: "View full roster".',
-            }),
-            buildField({
-              label: 'Button link',
-              name: 'button_link',
-              widget: 'string',
-              hint: 'Internal section path starting with /. Example: /artists/.',
-              pattern: { value: internalSitePathPatternSource, message: 'Use a safe internal path beginning with /.' },
-            }),
-          ],
-        },
+      summary: '{{fields.title}}',
+      fields: [
+        buildField({
+          label: 'Title',
+          name: 'title',
+          widget: 'string',
+          hint: 'Main heading for the homepage News section.',
+        }),
+        buildField({
+          label: 'Link text',
+          name: 'link_text',
+          widget: 'string',
+          hint: 'CTA label. Example: "Read News".',
+        }),
+        buildField({
+          label: 'Link URL',
+          name: 'link_url',
+          widget: 'string',
+          hint: 'Internal section path starting with /. Example: /news/.',
+          pattern: { value: internalSitePathPatternSource, message: 'Use a safe internal path beginning with /.' },
+        }),
+      ],
+    }),
+    buildField({
+      label: 'Artists',
+      name: 'artists',
+      widget: 'object',
+      hint: 'Fixed homepage Artists section. Edit its content, not the page structure.',
+      collapsed: true,
+      summary: '{{fields.title}}',
+      fields: [
+        buildField({
+          label: 'Title',
+          name: 'title',
+          widget: 'string',
+          hint: 'Main heading for the homepage Artists section.',
+        }),
+        buildField({
+          label: 'Button text',
+          name: 'button_text',
+          widget: 'string',
+          hint: 'CTA label. Example: "View full roster".',
+        }),
+        buildField({
+          label: 'Button link',
+          name: 'button_link',
+          widget: 'string',
+          hint: 'Internal section path starting with /. Example: /artists/.',
+          pattern: { value: internalSitePathPatternSource, message: 'Use a safe internal path beginning with /.' },
+        }),
       ],
     }),
   ];

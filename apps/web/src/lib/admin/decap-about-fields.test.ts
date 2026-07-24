@@ -4,9 +4,6 @@ import { parse } from 'yaml';
 import { buildAboutFields } from './decap-about-fields';
 
 type ParsedField = {
-  allow_add?: boolean;
-  allow_remove?: boolean;
-  allow_reorder?: boolean;
   fields?: ParsedField[];
   hint?: string;
   label_singular?: string;
@@ -22,29 +19,16 @@ function findField(fields: ParsedField[], name: string): ParsedField {
   return field;
 }
 
-function findType(sections: ParsedField, name: string) {
-  const type = sections.types?.find((candidate) => candidate.name === name);
-  if (!type) throw new Error(`Missing section type: ${name}`);
-  return type;
-}
-
 describe('Decap about fields', () => {
-  it('locks the outer layout while keeping rendered child lists editable and ordered', () => {
+  it('models named page objects while keeping nested lists editable and ordered', () => {
     const fields = parse(buildAboutFields().join('\n')) as ParsedField[];
     const hero = findField(fields, 'hero');
-    const sections = findField(fields, 'sections');
-
-    expect(sections).toMatchObject({
-      allow_add: false,
-      allow_remove: false,
-      allow_reorder: false,
-    });
-    expect(sections.types?.map(({ name }) => name)).toEqual(['lead', 'story', 'quote', 'contact', 'stats']);
+    expect(fields.map(({ name }) => name)).toEqual(['$schema', 'hero', 'lead', 'story', 'quote', 'contact', 'stats']);
 
     const repeatableLists = [
-      findField(findType(sections, 'story').fields, 'paragraphs'),
-      findField(findType(sections, 'contact').fields, 'items'),
-      findField(findType(sections, 'stats').fields, 'items'),
+      findField(findField(fields, 'story').fields ?? [], 'paragraphs'),
+      findField(findField(fields, 'contact').fields ?? [], 'items'),
+      findField(findField(fields, 'stats').fields ?? [], 'items'),
     ];
     expect(repeatableLists).toEqual([
       expect.objectContaining({

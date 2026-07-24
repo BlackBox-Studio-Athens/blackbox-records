@@ -105,11 +105,15 @@ describe('UAT static smoke runner', () => {
   it('flags singleton CMS config entries that are not explicit JSON files', () => {
     const validConfig = [
       'collections:',
-      '  - name: "home"',
+      '  - name: "site-pages"',
       '    extension: json',
       '    format: json',
       '    files:',
       '      - file: "apps/web/src/content/home/site.json"',
+      '      - file: "apps/web/src/content/about/site.json"',
+      '      - file: "apps/web/src/content/services/site.json"',
+      '      - file: "apps/web/src/content/newsletter/site.json"',
+      '      - file: "apps/web/src/content/distro-page/site.json"',
       '  - name: "artists"',
       '    folder: "apps/web/src/content/artists"',
       '  - name: "releases"',
@@ -122,21 +126,6 @@ describe('UAT static smoke runner', () => {
       '    folder: "apps/web/src/content/navigation"',
       '  - name: "socials"',
       '    folder: "apps/web/src/content/socials"',
-      '  - name: "about"',
-      '    extension: json',
-      '    format: json',
-      '    files:',
-      '      - file: "apps/web/src/content/about/site.json"',
-      '  - name: "services"',
-      '    extension: json',
-      '    format: json',
-      '    files:',
-      '      - file: "apps/web/src/content/services/site.json"',
-      '  - name: "newsletter"',
-      '    extension: json',
-      '    format: json',
-      '    files:',
-      '      - file: "apps/web/src/content/newsletter/site.json"',
       '  - name: "settings"',
       '    extension: json',
       '    format: json',
@@ -160,6 +149,7 @@ describe('UAT static smoke runner', () => {
       'CMS config does not include singleton file path "apps/web/src/content/about/site.json".',
       'CMS config does not include singleton file path "apps/web/src/content/services/site.json".',
       'CMS config does not include singleton file path "apps/web/src/content/newsletter/site.json".',
+      'CMS config does not include singleton file path "apps/web/src/content/distro-page/site.json".',
       'CMS config does not include singleton file path "apps/web/src/content/settings/site.json".',
       'CMS config does not include collection folder path "apps/web/src/content/artists".',
       'CMS config does not include collection folder path "apps/web/src/content/releases".',
@@ -168,8 +158,8 @@ describe('UAT static smoke runner', () => {
       'CMS config does not include collection folder path "apps/web/src/content/navigation".',
       'CMS config does not include collection folder path "apps/web/src/content/socials".',
       'CMS config still uses app-root src/content paths; DecapBridge needs repo-root apps/web paths.',
-      'CMS config includes 0 JSON extension declarations; expected at least 5.',
-      'CMS config includes 1 JSON format declarations; expected at least 5.',
+      'CMS config includes 0 JSON extension declarations; expected at least 2.',
+      'CMS config includes 1 JSON format declarations; expected at least 2.',
     ]);
   });
 
@@ -184,7 +174,7 @@ describe('UAT static smoke runner', () => {
         hasRuntimeApi: true,
         isAdminReady: false,
         isAuthReady: false,
-        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.14.1/dist/decap-cms.js'],
+        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js'],
       }),
     ).toContain('Expected /admin/#/ to render visible Decap CMS text.');
 
@@ -198,7 +188,7 @@ describe('UAT static smoke runner', () => {
         hasRuntimeApi: true,
         isAdminReady: false,
         isAuthReady: false,
-        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.14.1/dist/decap-cms.js'],
+        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js'],
       }),
     ).toContain('Expected /admin/#/ to finish Decap bootstrap instead of staying on loading copy.');
 
@@ -212,7 +202,7 @@ describe('UAT static smoke runner', () => {
         hasRuntimeApi: true,
         isAdminReady: true,
         isAuthReady: false,
-        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.14.1/dist/decap-cms.js'],
+        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js'],
       }),
     ).toContain('Expected /admin/#/ to render a usable DecapBridge auth surface or authenticated collection UI.');
   });
@@ -228,7 +218,7 @@ describe('UAT static smoke runner', () => {
         hasRuntimeApi: true,
         isAdminReady: true,
         isAuthReady: true,
-        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.14.1/dist/decap-cms.js'],
+        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js'],
       }),
     ).toEqual([]);
 
@@ -242,7 +232,7 @@ describe('UAT static smoke runner', () => {
         hasRuntimeApi: true,
         isAdminReady: true,
         isAuthReady: false,
-        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.14.1/dist/decap-cms.js'],
+        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js'],
       }),
     ).toEqual([]);
   });
@@ -311,6 +301,7 @@ collections:
   - name: releases
   - name: distro
   - name: news
+  - name: site-pages
 `;
     expect(checkCmsHostedConfigDeclarations(hostedConfig)).toEqual([]);
     expect(
@@ -346,7 +337,7 @@ collections:
       }),
     ).toEqual(
       expect.arrayContaining([
-        'Expected /admin/#/ to load exactly decap-cms@3.14.1 from the pinned runtime URL.',
+        'Expected /admin/#/ to load exactly decap-cms@3.15.1 from the pinned runtime URL.',
         'Expected the pinned Decap runtime to expose the CMS registration API.',
         'Expected hosted Decap auth to omit classic username/password copy.',
       ]),

@@ -6,57 +6,51 @@
     "image": "36585142_187676541905905_5704427450599997440_n.jpg",
     "image_alt": "Illuminated BlackBox Records sign on a dark studio wall"
   },
-  "sections": [
-    {
-      "type": "lead",
-      "text": "Blackbox Records was created based on the idea of community. We want to help bands release their music, tour & print merch under the umbrella of a collective environment."
-    },
-    {
-      "type": "story",
-      "title": "Philosophy",
-      "paragraphs": [
-        "We don't use contracts, and we don't force bands to stay with the label. We want this to be a place of freedom and collaboration. Do not expect us to treat you like clients. We are all human beings and this is your music. Not our product. Our goal is to make this label self-financed through the services we are offering. If you want to help us achieve this, send us your demo so we can give it a listen."
-      ]
-    },
-    {
-      "type": "contact",
-      "title": "Contact",
-      "intro": "Don't be strangers.",
-      "items": [
-        {
-          "label": "General",
-          "value": "info@blackboxrecords.com"
-        },
-        {
-          "label": "Demo Submissions",
-          "value": "demos@blackboxrecords.com"
-        },
-        {
-          "label": "Press",
-          "value": "press@blackboxrecords.com"
-        }
-      ]
-    },
-    {
-      "type": "stats",
-      "items": [
-        {
-          "key": "artists",
-          "label": "Artists"
-        },
-        {
-          "key": "releases",
-          "label": "Releases"
-        },
-        {
-          "key": "countries",
-          "label": "Countries"
-        },
-        {
-          "key": "year",
-          "label": "Year"
-        }
-      ]
-    }
-  ]
+  "lead": {
+    "text": "Blackbox Records was created based on the idea of community. We want to help bands release their music, tour & print merch under the umbrella of a collective environment."
+  },
+  "story": {
+    "title": "Philosophy",
+    "paragraphs": [
+      "We don't use contracts, and we don't force bands to stay with the label. We want this to be a place of freedom and collaboration. Do not expect us to treat you like clients. We are all human beings and this is your music. Not our product. Our goal is to make this label self-financed through the services we are offering. If you want to help us achieve this, send us your demo so we can give it a listen."
+    ]
+  },
+  "contact": {
+    "title": "Contact",
+    "intro": "Don't be strangers.",
+    "items": [
+      {
+        "label": "General",
+        "value": "info@blackboxrecords.com"
+      },
+      {
+        "label": "Demo Submissions",
+        "value": "demos@blackboxrecords.com"
+      },
+      {
+        "label": "Press",
+        "value": "press@blackboxrecords.com"
+      }
+    ]
+  },
+  "stats": {
+    "items": [
+      {
+        "key": "artists",
+        "label": "Artists"
+      },
+      {
+        "key": "releases",
+        "label": "Releases"
+      },
+      {
+        "key": "countries",
+        "label": "Countries"
+      },
+      {
+        "key": "year",
+        "label": "Year"
+      }
+    ]
+  }
 }

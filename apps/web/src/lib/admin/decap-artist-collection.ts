@@ -55,6 +55,8 @@ export function buildArtistCollection() {
         label: 'Image',
         name: 'image',
         widget: 'image',
+        chooseUrl: false,
+        allowMultiple: false,
         hint: 'Portrait-oriented artist image. Keep the subject centered for the 3:4 crop.',
       }),
       buildField({
@@ -138,7 +140,7 @@ export function buildArtistCollection() {
       buildField({
         label: 'Body',
         name: 'body',
-        widget: 'markdown',
+        widget: 'richtext',
         required: false,
         hint: 'Rich artist profile body in Markdown. Keep frontmatter Bio short.',
       }),

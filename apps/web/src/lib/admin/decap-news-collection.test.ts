@@ -40,6 +40,6 @@ describe('Decap news collection', () => {
     expect(field('image_alt')).toMatchObject({ required: true, widget: 'string' });
     expect(field('summary')?.widget).toBe('text');
     expect(field('section_label')?.widget).toBe('string');
-    expect(field('body')?.widget).toBe('markdown');
+    expect(field('body')?.widget).toBe('richtext');
   });
 });

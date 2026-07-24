@@ -32,7 +32,9 @@ const servicesPageSource = readFileSync(
 );
 const servicesContent = JSON.parse(
   readFileSync(fileURLToPath(new URL('../../content/services/site.json', import.meta.url)), 'utf8'),
-) as { sections: Array<{ intro?: string; submit_text?: string; type: string }> };
+) as {
+  inquiry: { intro?: string; submit_text?: string };
+};
 
 describe('ServicesInquiryForm', () => {
   it('renders native required controls with public-contract length bounds', () => {
@@ -62,7 +64,7 @@ describe('ServicesInquiryForm', () => {
   });
 
   it('uses server-first inquiry copy and a manual no-JavaScript email fallback', () => {
-    const inquiryContent = servicesContent.sections.find((section) => section.type === 'inquiry');
+    const inquiryContent = servicesContent.inquiry;
     const copySources = [appShellSource, componentSource, servicesPageSource, shellPortalSource].join('\n');
 
     expect(inquiryContent).toEqual(

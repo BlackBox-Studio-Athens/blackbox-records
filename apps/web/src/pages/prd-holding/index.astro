@@ -1,7 +1,7 @@
 ---
 import { createProjectRelativeUrl, siteBrandAssets } from '@/config/site';
 import InstagramIcon from '@/components/icons/InstagramIcon.astro';
-import { getContentSection, getServicesContent, getSocialItems } from '@/lib/site-data';
+import { getServicesContent, getSocialItems } from '@/lib/site-data';
 import { Mail } from 'lucide-react';
 
 const pageTitle = 'BlackBox Records | Site Coming Online';
@@ -13,7 +13,7 @@ const veneerCssUrl = createProjectRelativeUrl('/assets/fonts/brand/veneer.css');
 const veneerFontUrl = createProjectRelativeUrl('/assets/fonts/brand/veneer_regular.woff2');
 
 const [servicesContent, socialItems] = await Promise.all([getServicesContent(), getSocialItems()]);
-const inquiryEmail = getContentSection(servicesContent.sections, 'inquiry')?.email.trim();
+const inquiryEmail = servicesContent.inquiry.email.trim();
 const instagramUrl = socialItems.find((item) => {
   if (item.id !== 'instagram' || !item.url || item.url === '#') return false;
 

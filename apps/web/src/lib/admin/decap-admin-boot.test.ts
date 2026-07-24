@@ -29,6 +29,10 @@ class FakeElement {
   src = '';
   textContent: string | null = '';
 
+  get firstElementChild(): FakeElement | null {
+    return this.children[0] ?? null;
+  }
+
   constructor(readonly selectorMap: Record<string, FakeElement> = {}) {}
 
   addEventListener(type: string, listener: EventListener) {
@@ -84,7 +88,7 @@ class FakeElement {
 
 function createHarness(
   mode: 'local' | 'hosted' | 'disabled' = 'local',
-  options: { editorRoot?: FakeElement; useDefaultFocus?: boolean } = {},
+  options: { editorRoot?: FakeElement; editorMounted?: boolean; useDefaultFocus?: boolean } = {},
 ) {
   const heading = new FakeElement();
   const copy = new FakeElement();
@@ -99,12 +103,20 @@ function createHarness(
     '[data-admin-boot-status]': status,
   });
   const body = new FakeElement();
+  const editorRoot =
+    options.editorRoot ??
+    (() => {
+      const root = new FakeElement();
+      root.append(new FakeElement());
+      return root;
+    })();
+  if (options.editorMounted && !editorRoot.firstElementChild) editorRoot.append(new FakeElement());
   const documentElement = new FakeElement();
   const targetDocument = {
     body,
     createElement: () => new FakeElement(),
     documentElement,
-    querySelector: (selector: string) => (selector === '#nc-root' ? options.editorRoot : undefined) ?? null,
+    querySelector: (selector: string) => (selector === '#nc-root' ? editorRoot : undefined) ?? null,
   } as unknown as Document;
   const targetWindow = new EventTarget() as Window & {
     __BLACKBOX_ADMIN__?: {
@@ -124,6 +136,21 @@ function createHarness(
   const clearTimeout = vi.fn();
   const focusEditor = vi.fn();
   const reload = vi.fn();
+  let mutationObserverCallback: (() => void) | undefined;
+  const mutationObserverDisconnect = vi.fn();
+  class FakeMutationObserver {
+    constructor(callback: () => void) {
+      mutationObserverCallback = callback;
+    }
+
+    disconnect() {
+      mutationObserverDisconnect();
+    }
+
+    observe() {
+      // The controller owns the bounded mount observer.
+    }
+  }
   const controller = createDecapAdminBootController({
     clearTimeout: clearTimeout as unknown as typeof window.clearTimeout,
     initUrl: '/admin/init.js',
@@ -133,6 +160,7 @@ function createHarness(
     setTimeout: setTimeout as unknown as typeof window.setTimeout,
     targetDocument,
     targetWindow,
+    mutationObserver: FakeMutationObserver as unknown as typeof MutationObserver,
     ...(options.useDefaultFocus ? {} : { focusEditor }),
   });
 
@@ -153,6 +181,11 @@ function createHarness(
     spinner,
     status,
     targetWindow,
+    triggerMount: () => {
+      editorRoot.append(new FakeElement());
+      mutationObserverCallback?.();
+    },
+    mutationObserverDisconnect,
   };
 }
 
@@ -190,19 +223,19 @@ describe('Decap admin boot views', () => {
     });
   });
 
-  it('keeps hosted authentication copy on DecapBridge social sign-in', () => {
+  it('keeps hosted authentication copy on the shared label Google account', () => {
     const copy = getDecapAdminBootView('hosted', 'loading').copy;
 
-    expect(copy).toContain('approved social account');
+    expect(copy).toContain('shared label Google account');
     expect(copy).toContain('DecapBridge');
-    expect(copy).not.toMatch(/password|github|repository/i);
+    expect(copy).not.toMatch(/password|microsoft|provider exclusivity|github|repository/i);
   });
 });
 
 describe('Decap admin boot runtime', () => {
   it('pins the accepted browser runtime baseline exactly', () => {
-    expect(decapBrowserRuntimeVersion).toBe('3.14.1');
-    expect(decapBrowserRuntimeUrl).toBe('https://unpkg.com/decap-cms@3.14.1/dist/decap-cms.js');
+    expect(decapBrowserRuntimeVersion).toBe('3.15.1');
+    expect(decapBrowserRuntimeUrl).toBe('https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js');
   });
 
   it('renders disabled mode without requesting runtime or config scripts', () => {
@@ -322,9 +355,46 @@ describe('Decap admin boot runtime', () => {
     expect(harness.clearTimeout).toHaveBeenCalled();
   });
 
+  it('waits for the first CMS mount child instead of treating CMS.init as readiness', () => {
+    const editorRoot = new FakeElement();
+    const harness = createHarness('local', { editorRoot });
+
+    harness.controller.start();
+    harness.body.children[0]?.onload?.call(
+      harness.body.children[0] as unknown as GlobalEventHandlers,
+      new Event('load'),
+    );
+    dispatchBootEvent(harness.targetWindow, decapAdminReadyEventName, 1);
+
+    expect(harness.root.dataset.adminBootState).toBe('loading');
+    expect(harness.focusEditor).not.toHaveBeenCalled();
+
+    harness.triggerMount();
+
+    expect(harness.root.dataset.adminBootState).toBe('ready');
+    expect(harness.focusEditor).toHaveBeenCalledOnce();
+    expect(harness.mutationObserverDisconnect).toHaveBeenCalledOnce();
+  });
+
+  it('disconnects the mount observer when a pending attempt times out', () => {
+    const editorRoot = new FakeElement();
+    const harness = createHarness('local', { editorRoot });
+
+    harness.controller.start();
+    harness.body.children[0]?.onload?.call(
+      harness.body.children[0] as unknown as GlobalEventHandlers,
+      new Event('load'),
+    );
+    dispatchBootEvent(harness.targetWindow, decapAdminReadyEventName, 1);
+    harness.scheduled[0]?.();
+
+    expect(harness.root.dataset.adminBootState).toBe('failed');
+    expect(harness.mutationObserverDisconnect).toHaveBeenCalledOnce();
+  });
+
   it('uses the Decap root for default ready focus when it exists', () => {
     const editorRoot = new FakeElement();
-    const harness = createHarness('local', { editorRoot, useDefaultFocus: true });
+    const harness = createHarness('local', { editorRoot, editorMounted: true, useDefaultFocus: true });
 
     harness.controller.start();
     harness.body.children[0]?.onload?.call(
@@ -338,8 +408,9 @@ describe('Decap admin boot runtime', () => {
     expect(harness.body.focusCount).toBe(0);
   });
 
-  it('falls back to the document body for default ready focus', () => {
-    const harness = createHarness('local', { useDefaultFocus: true });
+  it('uses the app-owned Decap root as the default ready focus target', () => {
+    const editorRoot = new FakeElement();
+    const harness = createHarness('local', { editorRoot, editorMounted: true, useDefaultFocus: true });
 
     harness.controller.start();
     harness.body.children[0]?.onload?.call(
@@ -348,8 +419,9 @@ describe('Decap admin boot runtime', () => {
     );
     dispatchBootEvent(harness.targetWindow, decapAdminReadyEventName, 1);
 
-    expect(harness.body.getAttribute('tabindex')).toBe('-1');
-    expect(harness.body.focusCount).toBe(1);
+    expect(editorRoot.getAttribute('tabindex')).toBe('-1');
+    expect(editorRoot.focusCount).toBe(1);
+    expect(harness.body.focusCount).toBe(0);
   });
 
   it('shows initialization failure and cleans active work on dispose', () => {
@@ -448,6 +520,7 @@ describe('Decap admin boot markup and styles', () => {
       setAttribute: ReturnType<typeof vi.fn>;
     };
     let scopePanel: TestCreatedElement | null = null;
+    const editorRoot = {};
     const documentBody = {
       append: vi.fn((element: TestCreatedElement) => {
         if (element.dataset.blackboxCmsScopePanel === 'true') scopePanel = element;
@@ -551,6 +624,7 @@ describe('Decap admin boot markup and styles', () => {
         querySelector: vi.fn((selector: string) => {
           const provided = documentQuerySelector?.(selector);
           if (provided !== undefined) return provided;
+          if (selector === '#nc-root') return editorRoot;
           return selector === '[data-blackbox-cms-scope-panel="true"]' ? scopePanel : null;
         }),
         querySelectorAll: vi.fn((selector: string) => {
@@ -610,13 +684,13 @@ describe('Decap admin boot markup and styles', () => {
     expect(init).toContain('bootAttemptId');
     expect(init).toContain('cleanupAttempt');
     expect(init).toContain("window.removeEventListener('hashchange'");
-    expect(init).toContain('observer.disconnect()');
+    expect(init).toContain('editorObserver?.disconnect()');
     expect(init).toContain("if (adminContext.mode !== 'hosted')");
   });
 
   it('keeps the Home preview aligned with the current Hero, News, and Artists hierarchy', () => {
-    expect(init).toContain("const news = findSection(sections, 'news')");
-    expect(init).toContain("const artists = findSection(sections, 'artists')");
+    expect(init).toContain('const news = toObject(data.news)');
+    expect(init).toContain('const artists = toObject(data.artists)');
     expect(init).toContain("className: 'blackbox-preview__grid blackbox-preview__grid--two'");
     expect(init).not.toContain("findSection(sections, 'distro')");
     expect(init).not.toContain("section?.type === 'journey'");
@@ -640,30 +714,20 @@ describe('Decap admin boot markup and styles', () => {
     expect(init).toContain('body ? body.slice(0, 600)');
   });
 
-  it('locks outer fixed-layout section actions without disabling nested repeatable lists', () => {
-    expect(init).toContain("'#/collections/home/entries/home-site'");
-    expect(init).toContain("'#/collections/about/entries/about-site'");
-    expect(init).toContain("'#/collections/services/entries/services-site'");
-    expect(init).toContain("firstElementChild?.textContent?.trim() !== 'Sections'");
-    expect(init).toContain("topBar.dataset.blackboxFixedSectionActions = 'locked'");
-    expect(init).toContain('button.hidden = true');
+  it('uses named fixed-page objects instead of structural section repairs', () => {
+    expect(init).toContain('const lead = toObject(data.lead)');
+    expect(init).toContain('const story = toObject(data.story)');
+    expect(init).toContain('const servicesSection = toObject(data.services)');
+    expect(init).not.toContain('findSection');
+    expect(init).not.toContain('fixedLayoutSectionEntryHashes');
   });
 
-  it('documents every retained pinned-version repair and removes the obsolete generic remove-button patch', () => {
-    const harness = runInitHarness();
-
-    expect(harness.targetWindow.__BLACKBOX_ADMIN_REPAIRS__).toEqual([
-      'bounded-rerender-observer',
-      'decapbridge-login-surface',
-      'editor-scope-panel',
-      'empty-singleton-guard',
-      'fixed-layout-section-actions',
-      'preview-auto-collapse',
-      'preview-toggle-copy',
-      'saved-singleton-route-reload',
-      'top-level-media-hidden',
-    ]);
-    expect(init.match(/Decap CMS 3\.14\.1/g)).toHaveLength(9);
+  it('removes superseded 3.14.1 repair contracts', () => {
+    expect(init).not.toContain('__BLACKBOX_ADMIN_REPAIRS__');
+    expect(init).not.toMatch(/Decap CMS 3\.14\.1/);
+    expect(init).not.toContain('blackbox-cms-scope-panel');
+    expect(init).not.toContain('previewCollapse');
+    expect(init).not.toContain('requestAnimationFrame');
     expect(init).not.toContain('enhanceListItemActionButtons');
     expect(init).not.toContain('blackboxSectionRowAction');
     expect(css).not.toContain('data-blackbox-section-row-action');
@@ -688,57 +752,23 @@ describe('Decap admin boot markup and styles', () => {
     expect(mediaButton.setAttribute).toHaveBeenCalledWith('tabindex', '-1');
   });
 
-  it('locks only the fixed outer Sections rows on the pinned Decap markup', () => {
-    const actions = Array.from({ length: 3 }, () => ({ hidden: false, setAttribute: vi.fn() }));
-    const topBar = {
-      closest: vi.fn((selector: string) => {
-        if (selector.includes('SortableListItem')) return {};
-        if (selector.includes('ControlContainer')) return { firstElementChild: { textContent: 'Sections' } };
-        return null;
-      }),
-      dataset: {} as Record<string, string>,
-      querySelectorAll: vi.fn(() => actions),
-    };
-    const harness = runInitHarness({
-      documentQuerySelectorAll: (selector) => (selector.includes('ListItemTopBar') ? [topBar] : undefined) as unknown[],
-      locationHash: '#/collections/home/entries/home-site',
-    });
-
-    harness.flushAnimationFrame();
-
-    expect(topBar.dataset.blackboxFixedSectionActions).toBe('locked');
-    for (const action of actions) {
-      expect(action.hidden).toBe(true);
-      expect(action.setAttribute).toHaveBeenCalledWith('aria-hidden', 'true');
-      expect(action.setAttribute).toHaveBeenCalledWith('tabindex', '-1');
-    }
-  });
-
-  it('bounds observer rerender work to one queued animation frame and ignores empty mutation records', () => {
+  it('scopes runtime observation to the app-owned CMS mount', () => {
     const harness = runInitHarness();
 
-    expect(harness.requestAnimationFrame).toHaveBeenCalledOnce();
+    expect(harness.observe).toHaveBeenCalledWith(expect.anything(), { childList: true, subtree: true });
     harness.triggerMutation();
     harness.triggerMutation();
-    expect(harness.requestAnimationFrame).toHaveBeenCalledOnce();
-
-    harness.flushAnimationFrame();
-    harness.triggerMutation(false);
-    expect(harness.requestAnimationFrame).toHaveBeenCalledOnce();
-
-    harness.triggerMutation();
-    harness.triggerMutation();
-    expect(harness.requestAnimationFrame).toHaveBeenCalledTimes(2);
+    expect(harness.requestAnimationFrame).not.toHaveBeenCalled();
   });
 
   it('reloads a saved singleton-to-singleton transition but no-ops on unsupported routes', () => {
-    const harness = runInitHarness({ locationHash: '#/collections/home/entries/home-site' });
+    const harness = runInitHarness({ locationHash: '#/collections/site-pages/entries/home-site' });
     const hooks = harness.targetWindow.__BLACKBOX_ADMIN_TEST_HOOKS__ as {
       reloadOnSavedSingletonRouteChange: () => boolean;
     };
 
     expect(hooks.reloadOnSavedSingletonRouteChange()).toBe(false);
-    harness.targetWindow.location.hash = '#/collections/about/entries/about-site';
+    harness.targetWindow.location.hash = '#/collections/site-pages/entries/about-site';
     harness.documentBody.innerText = 'CHANGES SAVED';
     expect(hooks.reloadOnSavedSingletonRouteChange()).toBe(true);
     expect(harness.targetWindow.location.reload).toHaveBeenCalledOnce();
@@ -748,7 +778,7 @@ describe('Decap admin boot markup and styles', () => {
   });
 
   it('detects a populated versus empty singleton state without touching absent targets', () => {
-    const harness = runInitHarness({ locationHash: '#/collections/services/entries/services-site' });
+    const harness = runInitHarness({ locationHash: '#/collections/site-pages/entries/services-site' });
     const hooks = harness.targetWindow.__BLACKBOX_ADMIN_TEST_HOOKS__ as {
       getActiveSingletonEditor: () => unknown;
       isSingletonEditorEmptyLoad: (
@@ -777,52 +807,10 @@ describe('Decap admin boot markup and styles', () => {
     expect(() => hooks.syncTopLevelMediaSurface()).not.toThrow();
   });
 
-  it('keeps one keyboard control synchronized with visible preview state and focus', () => {
-    const previewLabel = { textContent: '' };
-    const previewStatus = { textContent: '' };
-    const previewCopy = { append: vi.fn() };
-    let clickListener: ((event: { isTrusted: boolean }) => void) | undefined;
-    const previewToggle = {
-      addEventListener: vi.fn((_type: string, listener: (event: { isTrusted: boolean }) => void) => {
-        clickListener = listener;
-      }),
-      append: vi.fn(),
-      dataset: {} as Record<string, string>,
-      focus: vi.fn(),
-      hasAttribute: vi.fn(() => false),
-      querySelector: vi.fn((selector: string) => {
-        if (selector.includes('preview-copy')) return previewCopy;
-        if (selector.includes('preview-label')) return previewLabel;
-        if (selector.includes('preview-status')) return previewStatus;
-        return null;
-      }),
-      removeAttribute: vi.fn(),
-      setAttribute: vi.fn(),
-    };
-    const previewPane = {
-      getBoundingClientRect: () => ({ width: 360 }),
-      id: '',
-    };
-    const harness = runInitHarness({
-      documentQuerySelector: (selector) => {
-        if (selector === 'button[data-blackbox-preview-toggle="true"]') return previewToggle;
-        if (selector.includes('PreviewPaneFrame')) return previewPane;
-        return undefined;
-      },
-    });
-
-    harness.flushAnimationFrame();
-
-    expect(previewToggle.dataset.previewState).toBe('open');
-    expect(previewLabel.textContent).toBe('Hide preview');
-    expect(previewStatus.textContent).toBe('Visible');
-    expect(previewToggle.setAttribute).toHaveBeenCalledWith('aria-label', 'Hide preview. Preview visible.');
-    expect(previewToggle.setAttribute).toHaveBeenCalledWith('aria-expanded', 'true');
-    expect(previewToggle.setAttribute).toHaveBeenCalledWith('aria-controls', 'blackbox-cms-preview-pane');
-
-    clickListener?.({ isTrusted: true });
-    harness.flushTimeouts();
-    expect(previewToggle.focus).toHaveBeenCalledWith({ preventScroll: true });
+  it('leaves preview accessibility and state to the native Decap control', () => {
+    expect(init).not.toContain('data-blackbox-preview-toggle');
+    expect(init).not.toContain('aria-pressed');
+    expect(init).not.toContain('previewToggleButton.click()');
   });
 
   it('keeps local login copy unchanged while exposing the stable auth hook', () => {
@@ -864,41 +852,8 @@ describe('Decap admin boot markup and styles', () => {
     expect(harness.targetWindow.__BLACKBOX_ADMIN_AUTH_READY__).toBe(true);
   });
 
-  it('shows authenticated editors direct-publish and commerce ownership guidance with a base-path-safe stock link', () => {
-    const harness = runInitHarness({ mode: 'local' });
-
-    harness.flushAnimationFrame();
-
-    const panel = harness.getScopePanel();
-    expect(panel?.dataset.blackboxCmsScopePanel).toBe('true');
-    expect(panel?.innerHTML).toContain('Publish writes to main');
-    expect(panel?.innerHTML).toContain('Publishing commits immediately to main');
-    expect(panel?.innerHTML).toContain('Titles, copy, images, grouping, format, order, and public page content.');
-    expect(panel?.innerHTML).toContain('replacement Price under the existing Product');
-    expect(panel?.innerHTML).toContain('Do not delete editorial content.');
-    expect(panel?.innerHTML).toContain('Worker/Stripe paid-order state');
-    expect(harness.stockLink.setAttribute).toHaveBeenCalledWith('href', '/blackbox-records/stock/');
-    expect(panel?.innerHTML).not.toMatch(
-      /price_[A-Za-z0-9]|D1 ID|lookup key|€|\$\d|feature[- ]flag key|BOX NOW credential|provider payload/i,
-    );
-
-    harness.adminContext.cleanupAttempt?.();
-    expect(harness.getScopePanel()).toBeNull();
-  });
-
-  it('keeps the scope panel hidden on the hosted sign-in surface', () => {
-    const loginButton = {
-      dataset: {} as Record<string, string>,
-      getAttribute: vi.fn(() => null),
-      parentElement: { insertBefore: vi.fn() },
-      setAttribute: vi.fn(),
-      textContent: 'Login',
-    };
-    const harness = runInitHarness({ loginButton, mode: 'hosted' });
-
-    harness.flushAnimationFrame();
-
-    expect(harness.getScopePanel()).toBeNull();
+  it('keeps direct-publish and commerce guidance in generated collection copy', () => {
+    expect(init).not.toContain('blackbox-cms-scope-panel');
   });
 
   it('turns synchronous preview setup exceptions into the stable failure event', () => {
@@ -945,15 +900,13 @@ describe('Decap admin boot markup and styles', () => {
 
     expect(harness.initCMS).toHaveBeenCalledOnce();
     expect(harness.registerPreviewStyle).toHaveBeenCalledWith('/admin/preview.css');
-    expect(harness.registerPreviewTemplate).toHaveBeenCalledTimes(10);
+    expect(harness.registerPreviewTemplate).toHaveBeenCalledTimes(7);
     expect(harness.addEventListener).toHaveBeenCalledWith('hashchange', expect.any(Function));
     expect(harness.observe).toHaveBeenCalledWith(expect.anything(), { childList: true, subtree: true });
-    expect(harness.requestAnimationFrame).toHaveBeenCalledOnce();
+    expect(harness.requestAnimationFrame).not.toHaveBeenCalled();
     expect(harness.adminContext.cleanupAttempt).toEqual(expect.any(Function));
 
-    harness.initializationHandlers.resolve?.();
-
-    expect(harness.targetWindow.__BLACKBOX_ADMIN_READY__).toBe(true);
+    expect(harness.targetWindow.__BLACKBOX_ADMIN_READY__).not.toBe(true);
     expect(harness.targetWindow.__BLACKBOX_ADMIN_PREVIEW_COLLECTIONS__).toEqual([
       'home-site',
       'about-site',
@@ -971,7 +924,7 @@ describe('Decap admin boot markup and styles', () => {
 
     expect(harness.removeEventListener).toHaveBeenCalledWith('hashchange', expect.any(Function));
     expect(harness.disconnect).toHaveBeenCalledOnce();
-    expect(harness.cancelAnimationFrame).toHaveBeenCalledWith(41);
+    expect(harness.cancelAnimationFrame).not.toHaveBeenCalled();
     expect(harness.adminContext.cleanupAttempt).toBeUndefined();
   });
 
@@ -995,7 +948,9 @@ describe('Decap admin boot markup and styles', () => {
 
     expect(harness.disconnect).toHaveBeenCalledOnce();
     expect(harness.removeEventListener).toHaveBeenCalledWith('hashchange', expect.any(Function));
-    expect(harness.dispatchEvent).not.toHaveBeenCalledWith(expect.objectContaining({ type: decapAdminReadyEventName }));
+    expect(harness.dispatchEvent.mock.calls.filter(([event]) => event.type === decapAdminReadyEventName)).toHaveLength(
+      1,
+    );
     expect(harness.targetWindow.__BLACKBOX_ADMIN_READY__).not.toBe(true);
   });
 

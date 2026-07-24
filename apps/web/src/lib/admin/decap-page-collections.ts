@@ -1,5 +1,5 @@
 import { buildFileCollection } from './decap-yaml-builder';
-import { decapCollectionDescriptions } from './decap-editorial-copy';
+import { decapCollectionDescriptions, decapSitePageDescriptions } from './decap-editorial-copy';
 import { decapCollectionMedia } from './decap-media';
 
 type BuildPageFileCollectionsOptions = {
@@ -20,10 +20,10 @@ export function buildPageFileCollections({
   newsletterFields,
 }: BuildPageFileCollectionsOptions) {
   return {
-    home: buildFileCollection({
-      name: 'home',
-      label: 'Home',
-      description: decapCollectionDescriptions.home,
+    sitePages: buildFileCollection({
+      name: 'site-pages',
+      label: 'Site Pages',
+      description: decapCollectionDescriptions.sitePages,
       create: false,
       delete: false,
       extension: 'json',
@@ -32,82 +32,43 @@ export function buildPageFileCollections({
         {
           name: 'home-site',
           label: 'Home Content',
+          description: decapSitePageDescriptions.home,
           file: 'apps/web/src/content/home/site.json',
           mediaFolder: decapCollectionMedia.home.mediaFolder,
           publicFolder: decapCollectionMedia.home.publicFolder,
           fields: homeFields,
         },
-      ],
-    }),
-    about: buildFileCollection({
-      name: 'about',
-      label: 'About',
-      description: decapCollectionDescriptions.about,
-      create: false,
-      delete: false,
-      extension: 'json',
-      format: 'json',
-      files: [
         {
           name: 'about-site',
           label: 'About Content',
+          description: decapSitePageDescriptions.about,
           file: 'apps/web/src/content/about/site.json',
           mediaFolder: decapCollectionMedia.about.mediaFolder,
           publicFolder: decapCollectionMedia.about.publicFolder,
           fields: aboutFields,
         },
-      ],
-    }),
-    distroPage: buildFileCollection({
-      name: 'distro-page',
-      label: 'Store — Distro Page Copy',
-      description: decapCollectionDescriptions.distroPage,
-      create: false,
-      delete: false,
-      extension: 'json',
-      format: 'json',
-      files: [
-        {
-          name: 'distro-page-site',
-          label: 'Distro Page Content',
-          file: 'apps/web/src/content/distro-page/site.json',
-          fields: distroPageFields,
-        },
-      ],
-    }),
-    services: buildFileCollection({
-      name: 'services',
-      label: 'Services',
-      description: decapCollectionDescriptions.services,
-      create: false,
-      delete: false,
-      extension: 'json',
-      format: 'json',
-      files: [
         {
           name: 'services-site',
           label: 'Services Content',
+          description: decapSitePageDescriptions.services,
           file: 'apps/web/src/content/services/site.json',
           mediaFolder: decapCollectionMedia.services.mediaFolder,
           publicFolder: decapCollectionMedia.services.publicFolder,
           fields: servicesFields,
         },
-      ],
-    }),
-    newsletter: buildFileCollection({
-      name: 'newsletter',
-      label: 'Newsletter',
-      description: decapCollectionDescriptions.newsletter,
-      create: false,
-      delete: false,
-      extension: 'json',
-      format: 'json',
-      files: [
         {
           name: 'newsletter-site',
           label: 'Newsletter Content',
+          description: decapSitePageDescriptions.newsletter,
           file: 'apps/web/src/content/newsletter/site.json',
           fields: newsletterFields,
+        },
+        {
+          name: 'distro-page-site',
+          label: 'Distro Page Content',
+          description: decapSitePageDescriptions.distroPage,
+          file: 'apps/web/src/content/distro-page/site.json',
+          fields: distroPageFields,
         },
       ],
     }),

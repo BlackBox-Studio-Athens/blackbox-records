@@ -39,14 +39,13 @@ export type CmsLocalSmokeOptions = {
   timeoutMs: number;
 };
 
-type CmsCollectionName = 'artists' | 'distro' | 'home' | 'news' | 'releases';
+type CmsCollectionName = 'artists' | 'distro' | 'news' | 'releases' | 'site-pages';
 
 type CmsEditorCheck = {
   collection: CmsCollectionName;
   entry: string;
   expectedFormValues: string[];
   issues: string[];
-  minimumSectionCount: number;
   path: string;
   screenshotPath: string | null;
   snapshot: CmsEditorSnapshot | null;
@@ -57,18 +56,13 @@ type CmsEditorCheck = {
 type CmsEditorSnapshot = {
   bodyTextSnippet: string;
   formValues: string[];
-  hasDirectPublishNotice: boolean;
   hasEmptyContentGuard: boolean;
   hasGroupBrowseAffordance: boolean;
   hasHiddenTopLevelMedia: boolean;
   hasLoadedEditorChrome: boolean;
-  hasLockedFixedSections: boolean;
-  hasScopePanel: boolean;
   hash: string;
-  hiddenFixedSectionActionCount: number;
   preview: CmsPreviewSnapshot;
   publishClickCount: number;
-  sectionCounts: number[];
   title: string;
 };
 
@@ -119,11 +113,9 @@ type CmsEditorDefinition = {
   entry: string;
   expectedFormValues: string[];
   expectedImageAlt: string;
-  minimumSectionCount: number;
   previewClassName: string;
   requiredBodyText: string[];
   verifyGroupBrowse?: boolean;
-  verifyLockedSections?: boolean;
 };
 
 const defaultOptions: CmsLocalSmokeOptions = {
@@ -140,21 +132,18 @@ const webRoot = path.join(repoRoot, 'apps', 'web');
 const contentRoot = path.join(webRoot, 'src', 'content');
 const editorDefinitions: readonly CmsEditorDefinition[] = [
   {
-    collection: 'home',
+    collection: 'site-pages',
     entry: 'home-site',
     expectedFormValues: ['Fine music on record.'],
     expectedImageAlt: 'Black and white live band performing on stage',
-    minimumSectionCount: 2,
     previewClassName: 'blackbox-preview--home',
-    requiredBodyText: ['Publish writes to main'],
-    verifyLockedSections: true,
+    requiredBodyText: ['News', 'Artists'],
   },
   {
     collection: 'artists',
     entry: 'chronoboros',
     expectedFormValues: ['Chronoboros', 'Hardcore'],
     expectedImageAlt: 'Black-and-white samurai mask illustration used for Chronoboros',
-    minimumSectionCount: 0,
     previewClassName: 'blackbox-preview--artist',
     requiredBodyText: ['Image'],
   },
@@ -163,7 +152,6 @@ const editorDefinitions: readonly CmsEditorDefinition[] = [
     entry: 'caregivers',
     expectedFormValues: ['Caregivers'],
     expectedImageAlt: 'Cropped black samurai mask illustration on the pale Caregivers cover',
-    minimumSectionCount: 0,
     previewClassName: 'blackbox-preview--release',
     requiredBodyText: ['Artist', 'Chronoboros'],
   },
@@ -172,7 +160,6 @@ const editorDefinitions: readonly CmsEditorDefinition[] = [
     entry: 'barren-point',
     expectedFormValues: ['Barren Point'],
     expectedImageAlt: 'Stack of vinyl records',
-    minimumSectionCount: 0,
     previewClassName: 'blackbox-preview--distro',
     requiredBodyText: ['Group', 'Vinyl 12-inch'],
     verifyGroupBrowse: true,
@@ -182,7 +169,6 @@ const editorDefinitions: readonly CmsEditorDefinition[] = [
     entry: 'lorem-ipsum',
     expectedFormValues: ['New Release: Caregivers, by Chronoboros'],
     expectedImageAlt: 'Caregivers record sleeve photographed among dry leaves',
-    minimumSectionCount: 0,
     previewClassName: 'blackbox-preview--news',
     requiredBodyText: ['Image'],
   },
@@ -489,6 +475,7 @@ async function waitForLocalCmsReady(input: {
     'format: json',
     'media_folder: "apps/web/src/content/home"',
     'public_folder: "./"',
+    'name: "site-pages"',
     'file: "apps/web/src/content/home/site.json"',
     'folder: "apps/web/src/content/releases"',
     expectedProxyUrl,
@@ -608,25 +595,22 @@ async function checkEditor(input: {
 
   await input.page
     .waitForFunction(
-      ({ expectedFormValues, minimumSectionCount }) => {
+      ({ expectedFormValues }) => {
         const bodyText = document.body?.innerText || '';
         const formValues = Array.from(document.querySelectorAll('input, textarea'))
           .map((element) =>
             element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement ? element.value.trim() : '',
           )
           .filter(Boolean);
-        const sectionCounts = Array.from(bodyText.matchAll(/\b(\d+)\s+sections\b/gi)).map((match) => Number(match[1]));
         const hasLoadedEditorChrome = /\bWriting in\b.+\bcollection\b/i.test(bodyText);
         const hasExpectedValues = expectedFormValues.every((value) =>
           formValues.some((formValue) => formValue.includes(value)),
         );
-        const maxSectionCount = Math.max(0, ...sectionCounts);
 
-        return hasLoadedEditorChrome && hasExpectedValues && maxSectionCount >= minimumSectionCount;
+        return hasLoadedEditorChrome && hasExpectedValues;
       },
       {
         expectedFormValues: definition.expectedFormValues,
-        minimumSectionCount: definition.minimumSectionCount,
       },
       { timeout: Math.min(input.options.timeoutMs, 25_000) },
     )
@@ -636,32 +620,11 @@ async function checkEditor(input: {
       );
     });
 
-  if (definition.verifyLockedSections) {
-    await input.page
-      .waitForFunction(
-        () => {
-          const bars = Array.from(
-            document.querySelectorAll<HTMLElement>('[data-blackbox-fixed-section-actions="locked"]'),
-          );
-          return (
-            bars.length > 0 &&
-            bars.some((bar) => bar.querySelectorAll('[hidden][aria-hidden="true"][tabindex="-1"]').length > 0)
-          );
-        },
-        undefined,
-        { timeout: Math.min(input.options.timeoutMs, 5_000) },
-      )
-      .catch((error: unknown) => {
-        issues.push(`Expected Home fixed-list controls to settle: ${redactSensitiveSmokeText(String(error))}.`);
-      });
-  }
-
   const snapshot = await readCmsEditorSnapshot(input.page, hasGroupBrowseAffordance);
   snapshot.preview = await checkCmsPreview(input.page, definition, input.options.timeoutMs);
   const missingFormValues = definition.expectedFormValues.filter(
     (value) => !snapshot.formValues.some((formValue) => formValue.includes(value)),
   );
-  const maxSectionCount = Math.max(0, ...snapshot.sectionCounts);
 
   if (!snapshot.hasLoadedEditorChrome) {
     issues.push(`Expected ${definition.collection} editor to show the loaded Decap editor chrome.`);
@@ -677,47 +640,16 @@ async function checkEditor(input: {
     }
   }
 
-  if (maxSectionCount < definition.minimumSectionCount) {
-    issues.push(
-      `Expected ${definition.collection} sections count to be at least ${definition.minimumSectionCount}; received ${maxSectionCount}.`,
-    );
-  }
-
-  if (/\b0\s+sections\b/i.test(snapshot.bodyTextSnippet) && definition.minimumSectionCount > 0) {
-    issues.push(`Expected ${definition.collection} editor not to render the empty "0 sections" state.`);
-  }
-
   if (snapshot.hasEmptyContentGuard) {
     issues.push(`Expected ${definition.collection} editor not to show the singleton empty-content recovery guard.`);
-  }
-
-  if (!snapshot.hasScopePanel || !snapshot.hasDirectPublishNotice) {
-    issues.push(`Expected ${definition.collection} editor to show direct-to-main publishing and scope guidance.`);
   }
 
   if (!snapshot.hasHiddenTopLevelMedia) {
     issues.push(`Expected ${definition.collection} editor to keep the misleading top-level Media action hidden.`);
   }
 
-  if (
-    definition.verifyLockedSections &&
-    (!snapshot.hasLockedFixedSections || !snapshot.hiddenFixedSectionActionCount)
-  ) {
-    issues.push('Expected Home fixed-layout section controls to stay locked and hidden.');
-  }
-
   if (definition.verifyGroupBrowse && !snapshot.hasGroupBrowseAffordance) {
     issues.push('Expected Distro group browsing evidence to remain present in the editor snapshot.');
-  }
-
-  if (snapshot.preview.initialState !== 'closed') {
-    issues.push(`Expected ${definition.collection} preview to start collapsed.`);
-  }
-
-  if (snapshot.preview.ariaExpanded !== 'false' || !snapshot.preview.ariaLabel?.startsWith('Open preview')) {
-    issues.push(
-      `Expected ${definition.collection} collapsed preview toggle to expose accessible state and action copy.`,
-    );
   }
 
   if (!snapshot.preview.focusedAfterOpen) {
@@ -749,7 +681,6 @@ async function checkEditor(input: {
     entry: definition.entry,
     expectedFormValues: definition.expectedFormValues,
     issues,
-    minimumSectionCount: definition.minimumSectionCount,
     path: pathName,
     screenshotPath,
     snapshot,
@@ -818,32 +749,19 @@ async function readCmsEditorSnapshot(page: Page, hasGroupBrowseAffordance: boole
         element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement ? element.value.trim() : '',
       )
       .filter(Boolean);
-    const sectionCounts = Array.from(bodyText.matchAll(/\b(\d+)\s+sections\b/gi)).map((match) => Number(match[1]));
-    const fixedSectionBars = Array.from(
-      document.querySelectorAll<HTMLElement>('[data-blackbox-fixed-section-actions="locked"]'),
-    );
     const navMediaButton = Array.from(document.querySelectorAll<HTMLElement>('nav button')).find(
       (button) => button.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() === 'media',
     );
     const mediaButton = document.querySelector<HTMLElement>('[data-blackbox-top-level-media="hidden"]');
-    const scopePanel = document.querySelector<HTMLElement>('[data-blackbox-cms-scope-panel="true"]');
-
     return {
       bodyTextSnippet: bodyText.replace(/\s+/g, ' ').trim().slice(0, 5_000),
       formValues,
-      hasDirectPublishNotice: Boolean(scopePanel?.textContent?.includes('Publishing commits immediately to main')),
       hasEmptyContentGuard: Boolean(document.querySelector('[data-blackbox-cms-empty-guard="true"]')),
       hasGroupBrowseAffordance: groupBrowseEvidence,
       hasHiddenTopLevelMedia:
         !navMediaButton || Boolean(mediaButton?.hidden && mediaButton.getAttribute('aria-hidden') === 'true'),
       hasLoadedEditorChrome: /\bWriting in\b.+\bcollection\b/i.test(bodyText),
-      hasLockedFixedSections: fixedSectionBars.length > 0,
-      hasScopePanel: Boolean(scopePanel),
       hash: window.location.hash,
-      hiddenFixedSectionActionCount: fixedSectionBars.reduce(
-        (count, bar) => count + bar.querySelectorAll('[hidden][aria-hidden="true"][tabindex="-1"]').length,
-        0,
-      ),
       preview: {
         ariaExpanded: null,
         ariaLabel: null,
@@ -855,7 +773,6 @@ async function readCmsEditorSnapshot(page: Page, hasGroupBrowseAffordance: boole
         templateFound: false,
       },
       publishClickCount: window.__BLACKBOX_CMS_SMOKE_PUBLISH_CLICKS__ || 0,
-      sectionCounts,
       title: document.title,
     };
   }, hasGroupBrowseAffordance);
@@ -866,7 +783,23 @@ async function checkCmsPreview(
   definition: CmsEditorDefinition,
   timeoutMs: number,
 ): Promise<CmsPreviewSnapshot> {
-  const toggle = page.locator('button[data-blackbox-preview-toggle="true"]').first();
+  const toggle = page.getByRole('button', { name: 'Toggle preview', exact: true });
+  const template = page.frameLocator('iframe').locator(`.${definition.previewClassName}`);
+  const toggleCount = await toggle.count();
+  if (toggleCount !== 1) {
+    return {
+      ariaExpanded: null,
+      ariaLabel: null,
+      focusedAfterOpen: false,
+      imageAlt: null,
+      imageLoaded: false,
+      imageSrc: null,
+      initialState: null,
+      templateFound: false,
+    };
+  }
+
+  const initiallyOpen = (await template.count()) === 1;
   const isVisible = await toggle
     .waitFor({ state: 'visible', timeout: Math.min(timeoutMs, 20_000) })
     .then(() => true)
@@ -885,56 +818,21 @@ async function checkCmsPreview(
     };
   }
 
-  const initialState = await toggle.getAttribute('data-preview-state');
+  const initialAriaExpanded = await toggle.getAttribute('aria-expanded');
   const ariaExpanded = await toggle.getAttribute('aria-expanded');
   const ariaLabel = await toggle.getAttribute('aria-label');
 
-  await page
-    .waitForFunction(
-      () => {
-        const previewToggle = document.querySelector<HTMLButtonElement>('button[data-blackbox-preview-toggle="true"]');
-        return (
-          previewToggle?.dataset.previewState === 'closed' &&
-          window.sessionStorage.getItem('blackbox-cms-preview-auto-collapsed') === 'true'
-        );
-      },
-      undefined,
-      { timeout: Math.min(timeoutMs, 5_000) },
-    )
-    .catch(() => undefined);
-
-  const settledInitialState = await toggle.getAttribute('data-preview-state');
-  const settledAriaExpanded = await toggle.getAttribute('aria-expanded');
-  const settledAriaLabel = await toggle.getAttribute('aria-label');
-
-  if (settledInitialState === 'open') {
+  if (!initiallyOpen) {
     await toggle.click();
-    await toggle
-      .waitFor({ state: 'visible', timeout: Math.min(timeoutMs, 5_000) })
-      .then(() =>
-        page.waitForFunction(
-          () =>
-            document.querySelector<HTMLButtonElement>('button[data-blackbox-preview-toggle="true"]')?.dataset
-              .previewState === 'closed',
-          undefined,
-          { timeout: Math.min(timeoutMs, 5_000) },
-        ),
-      )
+    await page
+      .waitForFunction(() => document.activeElement?.getAttribute('aria-expanded') === 'true', undefined, {
+        timeout: Math.min(timeoutMs, 5_000),
+      })
       .catch(() => undefined);
   }
-
-  await toggle.click();
-  await page
-    .waitForFunction(
-      () => {
-        const previewToggle = document.querySelector<HTMLButtonElement>('button[data-blackbox-preview-toggle="true"]');
-        return previewToggle?.dataset.previewState === 'open' && previewToggle.ariaExpanded === 'true';
-      },
-      undefined,
-      { timeout: Math.min(timeoutMs, 5_000) },
-    )
-    .catch(() => undefined);
-  const focusedAfterOpen = await toggle.evaluate((element) => document.activeElement === element);
+  const focusedAfterOpen = initiallyOpen || (await toggle.evaluate((element) => document.activeElement === element));
+  const settledAriaExpanded = await toggle.getAttribute('aria-expanded');
+  const settledAriaLabel = await toggle.getAttribute('aria-label');
   const preview = await waitForPreviewTemplate(page, definition, timeoutMs);
 
   return {
@@ -944,7 +842,7 @@ async function checkCmsPreview(
     imageAlt: preview.imageAlt,
     imageLoaded: preview.imageLoaded,
     imageSrc: preview.imageSrc,
-    initialState: settledInitialState ?? initialState,
+    initialState: initiallyOpen || initialAriaExpanded === 'true' ? 'open' : 'closed',
     templateFound: preview.templateFound,
   };
 }

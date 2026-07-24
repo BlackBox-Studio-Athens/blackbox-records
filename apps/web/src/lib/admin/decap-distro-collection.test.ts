@@ -23,6 +23,7 @@ type ParsedCollection = {
   slug: string;
   sortable_fields: string[];
   summary: string;
+  view_filters: Array<{ field: string; label: string; pattern: string }>;
   view_groups: Array<{ field: string; label: string }>;
 };
 
@@ -39,6 +40,7 @@ describe('Decap distro collection', () => {
       slug: '{{slug}}',
       sortable_fields: ['title', 'group', 'order', 'commit_date'],
       summary: '{{title}} — {{group}} — order {{order}}',
+      view_filters: DISTRO_GROUP_VALUES.map((group) => ({ field: 'group', label: group, pattern: group })),
       view_groups: [{ field: 'group', label: 'Group' }],
     });
     expect(collection.description).toContain('Price, stock, checkout availability, orders, and fulfillment');

@@ -34,6 +34,8 @@ export function buildNewsCollection() {
         label: 'Image',
         name: 'image',
         widget: 'image',
+        chooseUrl: false,
+        allowMultiple: false,
         hint: 'Lead editorial image used in the News card, article header, and social metadata.',
       }),
       buildField({
@@ -50,7 +52,7 @@ export function buildNewsCollection() {
         required: false,
         hint: 'Optional small label shown above the article title.',
       }),
-      buildField({ label: 'Body', name: 'body', widget: 'markdown', hint: 'Main article body in Markdown.' }),
+      buildField({ label: 'Body', name: 'body', widget: 'richtext', hint: 'Main article body in Markdown.' }),
     ],
   });
 }

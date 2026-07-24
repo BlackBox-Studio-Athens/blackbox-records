@@ -14,7 +14,7 @@ const decapModeMarkerPattern = /^# blackbox-decap-mode: (local|hosted|disabled)$
 const unsafeHostedValuePattern =
   /(?:__SET_DECAPBRIDGE_SITE_ID__|CHANGE_ME|REPLACE_ME|example\.com|\.invalid\b|localhost|127(?:\.\d{1,3}){3}|\[?::1\]?)/i;
 const hostedConnectionValuePattern =
-  /^\s*(?:repo|base_url|auth_endpoint|auth_token_endpoint|gateway_url|site_url|display_url|logo_url):\s*(.+?)\s*$/;
+  /^\s*(?:repo|base_url|auth_endpoint|auth_token_endpoint|gateway_url|site_url|display_url|src):\s*(.+?)\s*$/;
 
 function hasUnsafeHostedConnectionValue(configYaml: string): boolean {
   return configYaml.split('\n').some((line) => {

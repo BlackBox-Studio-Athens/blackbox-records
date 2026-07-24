@@ -23,30 +23,27 @@ const lockfile = parse(readFileSync(new URL('../../../../../pnpm-lock.yaml', imp
 const adminRuntime = readFileSync(new URL('../../../public/admin/init.js', import.meta.url), 'utf8');
 
 describe('accepted Decap compatibility baseline', () => {
-  it('pins package metadata and both lockfile records to decap-server 3.9.1', () => {
-    expect(webPackage.devDependencies['decap-server']).toBe('3.9.1');
+  it('pins package metadata and both lockfile records to decap-server 3.10.0', () => {
+    expect(webPackage.devDependencies['decap-server']).toBe('3.10.0');
     expect(lockfile.lockfileVersion).toBe('9.0');
     expect(lockfile.importers['apps/web']?.devDependencies?.['decap-server']).toEqual({
-      specifier: '3.9.1',
-      version: '3.9.1(supports-color@10.2.2)',
+      specifier: '3.10.0',
+      version: '3.10.0',
     });
     expect(Object.keys(lockfile.packages).filter((key) => key.startsWith('decap-server@'))).toEqual([
-      'decap-server@3.9.1',
+      'decap-server@3.10.0',
     ]);
     expect(Object.keys(lockfile.snapshots).filter((key) => key.startsWith('decap-server@'))).toEqual([
-      'decap-server@3.9.1(supports-color@10.2.2)',
+      'decap-server@3.10.0',
     ]);
   });
 
   it('pins the browser runtime and exact preview registration surface', () => {
-    expect(decapBrowserRuntimeVersion).toBe('3.14.1');
-    expect(decapBrowserRuntimeUrl).toBe('https://unpkg.com/decap-cms@3.14.1/dist/decap-cms.js');
+    expect(decapBrowserRuntimeVersion).toBe('3.15.1');
+    expect(decapBrowserRuntimeUrl).toBe('https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js');
     expect([...adminRuntime.matchAll(/CMS\.registerPreviewTemplate\('([^']+)'/g)].map((match) => match[1])).toEqual([
-      'home',
       'home-site',
-      'about',
       'about-site',
-      'services',
       'services-site',
       'artists',
       'releases',

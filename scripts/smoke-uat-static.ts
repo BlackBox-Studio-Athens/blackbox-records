@@ -460,8 +460,7 @@ async function waitForCmsAdminTerminalState(page: Page, timeoutMs: number): Prom
       );
       const hasCollectionUi = Boolean(
         document.querySelector('a[href*="#/collections/"]') ||
-        document.querySelector('[class*="Collection"]') ||
-        /\bCollections\b|\bHome Content\b|\bReleases\b|\bDistro\b/.test(bodyText),
+        /\bCollections\b|\bSite Pages\b|\bReleases\b|\bStore Items\b/.test(bodyText),
       );
 
       return hasEnhancedAuth || hasCollectionUi || (Boolean(globalState.__BLACKBOX_ADMIN_READY__) && !hasLoadingText);
@@ -485,8 +484,7 @@ async function readCmsAdminRenderedState(page: Page, timeoutMs: number): Promise
       .filter(Boolean);
     const hasCollectionUi = Boolean(
       document.querySelector('a[href*="#/collections/"]') ||
-      document.querySelector('[class*="Collection"]') ||
-      /\bCollections\b|\bHome Content\b|\bReleases\b|\bDistro\b/.test(bodyText),
+      /\bCollections\b|\bSite Pages\b|\bReleases\b|\bStore Items\b/.test(bodyText),
     );
 
     return {
@@ -495,7 +493,7 @@ async function readCmsAdminRenderedState(page: Page, timeoutMs: number): Promise
       hasConfigLink: Boolean(document.querySelector('link[rel="cms-config-url"][href*="/admin/config.yml"]')),
       hasCmsRoot: Boolean(document.getElementById('nc-root')),
       hasExactPinnedRuntime: runtimeScriptUrls.some(
-        (url) => url === 'https://unpkg.com/decap-cms@3.14.1/dist/decap-cms.js',
+        (url) => url === 'https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js',
       ),
       hasRuntimeApi: Boolean((window as typeof window & { CMS?: unknown }).CMS),
       isAdminReady: Boolean(globalState.__BLACKBOX_ADMIN_READY__),
@@ -564,7 +562,9 @@ async function checkCmsAssets(options: UatStaticSmokeOptions): Promise<UatStatic
   checks.push(
     await checkTextAsset(options, '/admin/init.js', [
       'window.__BLACKBOX_ADMIN__',
-      'blackbox-cms-preview-auto-collapsed',
+      'data-admin-boot-root',
+      'blackbox-cms-boot[hidden]',
+      'site-pages',
       "mediaButton.dataset.blackboxTopLevelMedia = 'hidden'",
     ]),
   );
@@ -921,7 +921,9 @@ export function checkCmsConfigPlaceholders(text: string): string[] {
     backend.gateway_url,
     config.site_url,
     config.display_url,
-    config.logo_url,
+    typeof config.logo === 'object' && config.logo !== null && !Array.isArray(config.logo)
+      ? (config.logo as Record<string, unknown>).src
+      : undefined,
   ].filter((value): value is string => typeof value === 'string');
 
   if (connectionValues.some((value) => value.includes('__SET_DECAPBRIDGE_SITE_ID__'))) {
@@ -997,7 +999,7 @@ export function checkCmsHostedConfigDeclarations(text: string): string[] {
     const name = (collection as Record<string, unknown>).name;
     return typeof name === 'string' ? [name] : [];
   });
-  for (const collectionName of ['home', 'artists', 'releases', 'distro', 'news']) {
+  for (const collectionName of ['distro', 'releases', 'artists', 'news', 'site-pages']) {
     if (!collectionNames.includes(collectionName)) {
       issues.push(`CMS hosted config is missing the ${collectionName} collection.`);
     }
@@ -1017,6 +1019,7 @@ export function checkCmsSingletonJsonDeclarations(text: string): string[] {
     'apps/web/src/content/about/site.json',
     'apps/web/src/content/services/site.json',
     'apps/web/src/content/newsletter/site.json',
+    'apps/web/src/content/distro-page/site.json',
     'apps/web/src/content/settings/site.json',
   ];
   const folderPaths = [
@@ -1046,16 +1049,12 @@ export function checkCmsSingletonJsonDeclarations(text: string): string[] {
     issues.push('CMS config still uses app-root src/content paths; DecapBridge needs repo-root apps/web paths.');
   }
 
-  if (jsonExtensionCount < singletonPaths.length) {
-    issues.push(
-      `CMS config includes ${jsonExtensionCount} JSON extension declarations; expected at least ${singletonPaths.length}.`,
-    );
+  if (jsonExtensionCount < 2) {
+    issues.push(`CMS config includes ${jsonExtensionCount} JSON extension declarations; expected at least 2.`);
   }
 
-  if (jsonFormatCount < singletonPaths.length) {
-    issues.push(
-      `CMS config includes ${jsonFormatCount} JSON format declarations; expected at least ${singletonPaths.length}.`,
-    );
+  if (jsonFormatCount < 2) {
+    issues.push(`CMS config includes ${jsonFormatCount} JSON format declarations; expected at least 2.`);
   }
 
   return issues;
@@ -1079,7 +1078,7 @@ export function checkCmsAdminRenderedState(state: CmsAdminRenderedState): string
   }
 
   if (!state.hasExactPinnedRuntime) {
-    issues.push('Expected /admin/#/ to load exactly decap-cms@3.14.1 from the pinned runtime URL.');
+    issues.push('Expected /admin/#/ to load exactly decap-cms@3.15.1 from the pinned runtime URL.');
   }
 
   if (!state.hasRuntimeApi) {

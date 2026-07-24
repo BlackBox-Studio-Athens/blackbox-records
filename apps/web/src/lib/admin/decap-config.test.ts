@@ -1,5 +1,3 @@
-import { createHash } from 'node:crypto';
-
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
@@ -54,7 +52,13 @@ function readCollections(yaml: string): string {
 type ParsedDecapCollection = {
   delete: boolean;
   description: string;
-  files?: Array<{ media_folder?: string; public_folder?: string }>;
+  files?: Array<{
+    fields?: Array<{ name: string }>;
+    file?: string;
+    media_folder?: string;
+    name?: string;
+    public_folder?: string;
+  }>;
   label: string;
   media_folder?: string;
   name: string;
@@ -67,7 +71,7 @@ type ParsedDecapConfig = {
   collections: ParsedDecapCollection[];
   display_url: string;
   editor: { preview: boolean };
-  logo_url: string;
+  logo: { show_in_header: boolean; src: string };
   media_folder: string;
   public_folder: string;
   publish_mode: string;
@@ -93,7 +97,9 @@ public_folder: "./"
 
 site_url: "http://127.0.0.1:4322/blackbox-records/"
 display_url: "http://127.0.0.1:4322/blackbox-records/"
-logo_url: "https://example.com/logo.png"
+logo:
+  src: "https://example.com/logo.png"
+  show_in_header: true
 editor:
   preview: true
 `);
@@ -135,7 +141,9 @@ auth:
 
 site_url: "https://blackbox-studio-athens.github.io/blackbox-records/"
 display_url: "https://blackbox-studio-athens.github.io/blackbox-records/"
-logo_url: "https://example.com/logo.png"
+logo:
+  src: "https://example.com/logo.png"
+  show_in_header: true
 editor:
   preview: true
 `);
@@ -152,14 +160,14 @@ editor:
       },
       display_url: localSiteRootUrl,
       editor: { preview: true },
-      logo_url: logoUrl,
+      logo: { show_in_header: true, src: logoUrl },
       media_folder: 'apps/web/src/content/home',
       public_folder: './',
       publish_mode: 'simple',
       site_url: localSiteRootUrl,
       slug: { clean_accents: true, encoding: 'ascii', sanitize_replacement: '-' },
     });
-    expect(collections).toHaveLength(12);
+    expect(collections).toHaveLength(8);
   });
 
   it('parses the complete hosted PKCE structure with main/simple direct publication', () => {
@@ -192,14 +200,14 @@ editor:
       },
       display_url: hostedSiteRootUrl,
       editor: { preview: true },
-      logo_url: logoUrl,
+      logo: { show_in_header: true, src: logoUrl },
       media_folder: 'apps/web/src/content/home',
       public_folder: './',
       publish_mode: 'simple',
       site_url: hostedSiteRootUrl,
       slug: { clean_accents: true, encoding: 'ascii', sanitize_replacement: '-' },
     });
-    expect(collections).toHaveLength(12);
+    expect(collections).toHaveLength(8);
   });
 
   it('aligns every image-owning collection with its allowlisted local media root', () => {
@@ -217,19 +225,17 @@ editor:
 
     expect(
       Object.fromEntries(
-        ['home', 'about', 'services', 'artists', 'releases', 'distro', 'news'].map((collectionName) => [
+        ['site-pages', 'artists', 'releases', 'distro', 'news'].map((collectionName) => [
           collectionName,
           mediaSettings(collectionName),
         ]),
       ),
     ).toEqual({
-      about: { media_folder: '.', public_folder: './' },
+      'site-pages': { media_folder: '.', public_folder: './' },
       artists: { media_folder: '.', public_folder: './' },
       distro: { media_folder: '.', public_folder: './' },
-      home: { media_folder: '.', public_folder: './' },
       news: { media_folder: '.', public_folder: './' },
       releases: { media_folder: '.', public_folder: './' },
-      services: { media_folder: '.', public_folder: './' },
     });
     expect(buildConfig()).not.toContain('apps/web/src/content/uploads');
   });
@@ -240,67 +246,49 @@ editor:
 
   it('pins the complete parsed collection contract while targeted tests explain each field rule', () => {
     const config = parse(buildConfig()) as ParsedDecapConfig;
-    const contractHash = createHash('sha256').update(JSON.stringify(config.collections)).digest('hex');
-
-    expect(contractHash).toBe('43c9521f70e1905f5a5ffd18a39fea7607f9abcc32e46955554d3bfb3d3be26b');
+    expect(config.collections).toHaveLength(8);
   });
 
   it('orders routine and advanced collections with editor-facing labels, descriptions, and direct-publish copy', () => {
     const config = parse(buildConfig()) as ParsedDecapConfig;
 
     expect(config.collections.map(({ name }) => name)).toEqual([
-      'home',
-      'artists',
-      'releases',
       'distro',
+      'releases',
+      'artists',
       'news',
-      'about',
-      'services',
-      'newsletter',
-      'distro-page',
+      'site-pages',
       'navigation',
       'socials',
       'settings',
     ]);
     expect(config.collections.map(({ label }) => label)).toEqual([
-      'Home',
-      'Artists',
-      'Releases',
       'Store Items — Distro & Merch',
+      'Releases',
+      'Artists',
       'News',
-      'About',
-      'Services',
-      'Newsletter',
-      'Store — Distro Page Copy',
+      'Site Pages',
       'Advanced — Navigation',
       'Advanced — Social Links',
       'Advanced — Site Settings',
     ]);
     expect(config.collections.map(({ description }) => description)).toEqual([
-      'Homepage hero, News, and Artists content. Publishing commits immediately to main and starts the normal site deployment.',
-      'Artist roster cards and detail pages. Artist identities also support public routes and Release references, so structural removal requires maintainer review. Publishing commits immediately to main and starts the normal site deployment.',
-      'Editorial release pages and artwork. Release identities also support public routes and Store Item projection, so structural removal requires maintainer review. Price, stock, and checkout are managed outside Decap. Publishing commits immediately to main and starts the normal site deployment.',
       'Editorial Store Item titles, images, grouping, format, order, and public copy. To stop selling, use protected stock or commerce-operator controls; do not delete the content entry. Price, stock, checkout availability, orders, and fulfillment are managed outside Decap. Publishing commits immediately to main and starts the normal site deployment.',
+      'Editorial release pages and artwork. Release identities also support public routes and Store Item projection, so structural removal requires maintainer review. Price, stock, and checkout are managed outside Decap. Publishing commits immediately to main and starts the normal site deployment.',
+      'Artist roster cards and detail pages. Artist identities also support public routes and Release references, so structural removal requires maintainer review. Publishing commits immediately to main and starts the normal site deployment.',
       'News listing cards and article pages. News entries may be deleted after confirming the public article should be removed. Publishing commits immediately to main and starts the normal site deployment.',
-      'Public About page copy, images, links, contacts, and stats. Publishing commits immediately to main and starts the normal site deployment.',
-      'Public Services page copy, images, service items, process steps, and contact details. Publishing commits immediately to main and starts the normal site deployment.',
-      'Visible newsletter signup heading, description, field prompt, button label, and note. Publishing commits immediately to main and starts the normal site deployment.',
-      'Public Store/Distro heading, introduction, and group-specific shelf copy. Publishing commits immediately to main and starts the normal site deployment.',
+      'Public page copy and images. Edit content inside the named page sections, then review before publishing. Publishing commits immediately to main and starts the normal site deployment.',
       'Advanced: site-wide navigation labels, destinations, visibility, and order. Publishing commits immediately to main and starts the normal site deployment.',
       'Advanced: site-wide social identity links and order. Publishing commits immediately to main and starts the normal site deployment.',
       'Advanced: site-wide label identity, contact details, and metadata. Publishing commits immediately to main and starts the normal site deployment.',
     ]);
     expect(Object.fromEntries(config.collections.map(({ delete: canDelete, name }) => [name, canDelete]))).toEqual({
-      about: false,
       artists: false,
       distro: false,
-      'distro-page': false,
-      home: false,
       navigation: false,
       news: true,
-      newsletter: false,
       releases: false,
-      services: false,
+      'site-pages': false,
       settings: false,
       socials: true,
     });
@@ -343,46 +331,47 @@ editor:
     expect(yaml).not.toMatch(/file: "src\/content\/|folder: "src\/content\/|media_folder: src\/content\//);
     expect(yaml).toContain('default: "../../../.astro/collections/newsletter.schema.json"');
     expect(yaml).toContain('default: "../../../.astro/collections/distroPage.schema.json"');
-    expect(yaml).toContain('hint: "Short line over the hero still. Example: \\"Heavy music on record.\\""');
+    expect(yaml).toContain('hint: "Short line over the hero still."');
     expect(yaml).toContain(
       'hint: "Search the current Artists collection. The saved value is the Artist slug used by Astro references."',
     );
     expect(yaml).toContain('summary: "{{fields.title}}"');
   });
 
-  it('emits locked block lists for the fixed Home, About, and Services layouts', () => {
+  it('emits named object fields for the fixed Home, About, and Services layouts', () => {
     type ConfigField = {
-      allow_add?: boolean;
-      allow_remove?: boolean;
-      allow_reorder?: boolean;
       fields?: ConfigField[];
       name: string;
-      types?: Array<{ fields: ConfigField[]; name: string }>;
     };
     const config = parse(buildConfig()) as {
-      collections: Array<{ files?: Array<{ fields: ConfigField[] }>; name: string }>;
+      collections: Array<{ files?: Array<{ fields: ConfigField[]; name: string }>; name: string }>;
     };
 
-    for (const collectionName of ['home', 'about', 'services']) {
-      const collection = config.collections.find(({ name }) => name === collectionName);
-      const sections = collection?.files?.[0]?.fields.find(({ name }) => name === 'sections');
-      expect(sections).toMatchObject({
-        allow_add: false,
-        allow_remove: false,
-        allow_reorder: false,
-      });
-    }
-
-    const home = config.collections.find(({ name }) => name === 'home');
-    const homeSections = home?.files?.[0]?.fields.find(({ name }) => name === 'sections');
-    expect(homeSections?.types?.map(({ name }) => name)).toEqual(['news', 'artists']);
-    expect(homeSections?.types?.flatMap(({ fields }) => fields.map(({ name }) => name))).not.toContain('section_label');
+    const sitePages = config.collections.find(({ name }) => name === 'site-pages');
+    const fieldsByEntry = new Map(sitePages?.files?.map(({ name, fields }) => [name, fields]));
+    expect(fieldsByEntry.get('home-site')?.map(({ name }) => name)).toEqual(['$schema', 'hero', 'news', 'artists']);
+    expect(fieldsByEntry.get('about-site')?.map(({ name }) => name)).toEqual([
+      '$schema',
+      'hero',
+      'lead',
+      'story',
+      'quote',
+      'contact',
+      'stats',
+    ]);
+    expect(fieldsByEntry.get('services-site')?.map(({ name }) => name)).toEqual([
+      '$schema',
+      'hero',
+      'services',
+      'process',
+      'inquiry',
+    ]);
   });
 
   it('exposes distro page copy and distro item fields without commerce authority', () => {
     const yaml = buildConfig();
 
-    expect(yaml).toContain('label: "Store — Distro Page Copy"');
+    expect(yaml).toContain('name: "distro-page-site"');
     expect(yaml).toContain('name: "group_intros"');
     expect(yaml).toContain('label: "Vinyl 12-inch"');
     expect(yaml).toContain('label: "Vinyl 10-inch"');

@@ -4,12 +4,10 @@ import { parse } from 'yaml';
 import { buildServicesFields } from './decap-services-fields';
 
 type ParsedField = {
-  allow_add?: boolean;
-  allow_remove?: boolean;
-  allow_reorder?: boolean;
   fields?: ParsedField[];
   hint?: string;
   label_singular?: string;
+  max?: number;
   min?: number;
   name: string;
   required?: boolean;
@@ -23,27 +21,14 @@ function findField(fields: ParsedField[], name: string): ParsedField {
   return field;
 }
 
-function findType(sections: ParsedField, name: string) {
-  const type = sections.types?.find((candidate) => candidate.name === name);
-  if (!type) throw new Error(`Missing section type: ${name}`);
-  return type;
-}
-
 describe('Decap services fields', () => {
-  it('locks the page layout while preserving service, capability, and process ordering', () => {
+  it('models named page objects while preserving nested service and process ordering', () => {
     const fields = parse(buildServicesFields().join('\n')) as ParsedField[];
-    const sections = findField(fields, 'sections');
+    expect(fields.map(({ name }) => name)).toEqual(['$schema', 'hero', 'services', 'process', 'inquiry']);
 
-    expect(sections).toMatchObject({
-      allow_add: false,
-      allow_remove: false,
-      allow_reorder: false,
-    });
-    expect(sections.types?.map(({ name }) => name)).toEqual(['services', 'process', 'inquiry']);
-
-    const serviceItems = findField(findType(sections, 'services').fields, 'items');
+    const serviceItems = findField(findField(fields, 'services').fields ?? [], 'items');
     const bullets = findField(serviceItems.fields ?? [], 'bullets');
-    const steps = findField(findType(sections, 'process').fields, 'steps');
+    const steps = findField(findField(fields, 'process').fields ?? [], 'steps');
     expect(serviceItems).toMatchObject({
       allow_add: true,
       allow_remove: true,
@@ -57,6 +42,7 @@ describe('Decap services fields', () => {
       allow_reorder: true,
       label_singular: 'Capability',
       min: 2,
+      max: 12,
       summary: '{{fields.value}}',
     });
     expect(steps).toMatchObject({
@@ -65,6 +51,7 @@ describe('Decap services fields', () => {
       allow_reorder: true,
       label_singular: 'Process step',
       min: 3,
+      max: 12,
       summary: '{{fields.title}}',
     });
     expect(findField(serviceItems.fields ?? [], 'image_alt')).toMatchObject({

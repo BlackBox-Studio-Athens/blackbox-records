@@ -11,6 +11,7 @@ export function buildDistroCollection() {
     labelSingular: 'Store Item',
     previewPath: 'store/{{slug}}/',
     sortableFields: ['title', 'group', 'order', 'commit_date'],
+    viewFilters: DISTRO_GROUP_VALUES.map((group) => ({ label: group, field: 'group', pattern: group })),
     viewGroups: [{ label: 'Group', field: 'group' }],
     folder: 'apps/web/src/content/distro',
     create: true,
@@ -42,6 +43,8 @@ export function buildDistroCollection() {
         label: 'Image',
         name: 'image',
         widget: 'image',
+        chooseUrl: false,
+        allowMultiple: false,
         hint: 'Product artwork or front-view image used in Store cards and detail pages. Keep the item readable at small sizes.',
       }),
       buildField({

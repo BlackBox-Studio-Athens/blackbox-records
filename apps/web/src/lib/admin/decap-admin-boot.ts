@@ -6,7 +6,7 @@ export type DecapAdminBootFailure = 'download' | 'initialization' | 'timeout';
 export const decapAdminReadyEventName = 'blackbox:decap-ready';
 export const decapAdminFailedEventName = 'blackbox:decap-failed';
 export const decapAdminBootTimeoutMs = 20_000;
-export const decapBrowserRuntimeVersion = '3.14.1';
+export const decapBrowserRuntimeVersion = '3.15.1';
 export const decapBrowserRuntimeUrl = `https://unpkg.com/decap-cms@${decapBrowserRuntimeVersion}/dist/decap-cms.js`;
 
 type DecapAdminBootView = {
@@ -29,9 +29,9 @@ type DecapAdminWindow = Window & {
     previewStyleUrl?: string;
   };
   __BLACKBOX_ADMIN_PREVIEW_COLLECTIONS__?: string[];
-  __BLACKBOX_ADMIN_REPAIRS__?: string[];
   __BLACKBOX_ADMIN_TEST_HOOKS__?: Record<string, (...args: never[]) => unknown>;
   __BLACKBOX_ADMIN_READY__?: boolean;
+  MutationObserver?: typeof MutationObserver;
 };
 
 type BootEventDetail = {
@@ -90,7 +90,7 @@ export function getDecapAdminBootView(
     ariaLive: 'polite',
     copy:
       mode === 'hosted'
-        ? 'Use your approved social account through DecapBridge when sign-in appears.'
+        ? 'Use the shared label Google account through DecapBridge when sign-in appears.'
         : 'Loading BlackBox content and preview tools.',
     role: 'status',
     showRetry: false,
@@ -110,6 +110,7 @@ export function createDecapAdminBootController(options: {
   setTimeout?: typeof window.setTimeout;
   targetDocument?: Document;
   targetWindow?: DecapAdminWindow;
+  mutationObserver?: typeof MutationObserver;
   timeoutMs?: number;
 }) {
   const targetDocument = options.targetDocument ?? document;
@@ -140,6 +141,7 @@ export function createDecapAdminBootController(options: {
   let timeoutId: number | undefined;
   let runtimeScript: HTMLScriptElement | undefined;
   let initScript: HTMLScriptElement | undefined;
+  let mountObserver: MutationObserver | undefined;
   let disposed = false;
 
   const render = (state: DecapAdminBootState, failure?: DecapAdminBootFailure) => {
@@ -166,6 +168,8 @@ export function createDecapAdminBootController(options: {
     }
     targetWindow.removeEventListener(decapAdminReadyEventName, onReady);
     targetWindow.removeEventListener(decapAdminFailedEventName, onFailed);
+    mountObserver?.disconnect();
+    mountObserver = undefined;
 
     for (const script of [runtimeScript, initScript]) {
       if (!script) continue;
@@ -214,14 +218,45 @@ export function createDecapAdminBootController(options: {
   };
 
   function onReady(event: Event) {
-    if (!isCurrentAttempt(event)) return;
-    clearAttempt(false);
-    render('ready');
-    try {
-      focusEditor();
-    } catch {
-      // Ready state remains valid if the third-party editor root cannot accept focus.
+    if (!isCurrentAttempt(event) || activeAttemptId === undefined) return;
+
+    const currentAttemptId = activeAttemptId;
+    const editorRoot = targetDocument.querySelector<HTMLElement>('#nc-root');
+    if (!editorRoot) {
+      fail('initialization', currentAttemptId);
+      return;
     }
+
+    const markMounted = () => {
+      if (disposed || currentAttemptId !== activeAttemptId) return;
+      clearAttempt(false);
+      targetWindow.__BLACKBOX_ADMIN_READY__ = true;
+      render('ready');
+      try {
+        focusEditor();
+      } catch {
+        // Ready state remains valid if the third-party editor root cannot accept focus.
+      }
+    };
+
+    if (editorRoot.firstElementChild || editorRoot.children.length > 0) {
+      markMounted();
+      return;
+    }
+
+    const MountObserver =
+      options.mutationObserver ??
+      targetWindow.MutationObserver ??
+      (typeof MutationObserver === 'function' ? MutationObserver : undefined);
+    if (!MountObserver) {
+      fail('initialization', currentAttemptId);
+      return;
+    }
+
+    mountObserver = new MountObserver(() => {
+      if (editorRoot.firstElementChild || editorRoot.children.length > 0) markMounted();
+    });
+    mountObserver.observe(editorRoot, { childList: true });
   }
 
   function onFailed(event: Event) {

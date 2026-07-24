@@ -6,7 +6,7 @@ import { buildDistroPageFields } from './decap-distro-page-fields';
 import { buildPageFileCollections } from './decap-page-collections';
 
 describe('Decap page file collections', () => {
-  it('builds the singleton content collections with caller-provided fields', () => {
+  it('builds one ordered Site Pages collection with caller-provided fields', () => {
     const collections = buildPageFileCollections({
       homeFields: ['home-field'],
       aboutFields: ['about-field'],
@@ -15,28 +15,34 @@ describe('Decap page file collections', () => {
       settingsFields: ['settings-field'],
       newsletterFields: ['newsletter-field'],
     });
-    const yaml = Object.values(collections).join('\n');
+    const parsed = parse(collections.sitePages) as Array<{
+      files: Array<{ fields: string[]; file: string; name: string }>;
+      name: string;
+    }>;
+    const [sitePages] = parsed;
 
-    expect(yaml).toContain('name: "home"');
-    expect(yaml).toContain('extension: json');
-    expect(yaml).toContain('format: json');
-    expect(yaml).toContain('file: "apps/web/src/content/home/site.json"');
-    expect(yaml).toContain('home-field');
-    expect(yaml).toContain('name: "about"');
-    expect(yaml).toContain('file: "apps/web/src/content/about/site.json"');
-    expect(yaml).toContain('about-field');
-    expect(yaml).toContain('name: "distro-page"');
-    expect(yaml).toContain('file: "apps/web/src/content/distro-page/site.json"');
-    expect(yaml).toContain('distro-page-field');
-    expect(yaml).toContain('name: "services"');
-    expect(yaml).toContain('file: "apps/web/src/content/services/site.json"');
-    expect(yaml).toContain('services-field');
-    expect(yaml).toContain('name: "settings"');
-    expect(yaml).toContain('file: "apps/web/src/content/settings/site.json"');
-    expect(yaml).toContain('settings-field');
-    expect(yaml).toContain('name: "newsletter"');
-    expect(yaml).toContain('file: "apps/web/src/content/newsletter/site.json"');
-    expect(yaml).toContain('newsletter-field');
+    expect(sitePages?.name).toBe('site-pages');
+    expect(sitePages?.files.map(({ name }) => name)).toEqual([
+      'home-site',
+      'about-site',
+      'services-site',
+      'newsletter-site',
+      'distro-page-site',
+    ]);
+    expect(sitePages?.files.map(({ file }) => file)).toEqual([
+      'apps/web/src/content/home/site.json',
+      'apps/web/src/content/about/site.json',
+      'apps/web/src/content/services/site.json',
+      'apps/web/src/content/newsletter/site.json',
+      'apps/web/src/content/distro-page/site.json',
+    ]);
+    expect(sitePages?.files.map(({ fields }) => fields[0])).toEqual([
+      'home-field',
+      'about-field',
+      'services-field',
+      'newsletter-field',
+      'distro-page-field',
+    ]);
   });
 
   it('marks every singleton page collection with explicit JSON extension and format', () => {
@@ -62,20 +68,12 @@ describe('Decap page file collections', () => {
       if (!collection) throw new Error('Missing parsed singleton collection.');
       return collection;
     });
-    expect(parsedCollections).toHaveLength(6);
+    expect(parsedCollections).toHaveLength(2);
     for (const collection of parsedCollections) {
       expect(collection).toMatchObject({ create: false, delete: false, extension: 'json', format: 'json' });
-      expect(collection.files).toHaveLength(1);
     }
-
-    expect(parsedCollections.map(({ files }) => files[0]?.file)).toEqual([
-      'apps/web/src/content/home/site.json',
-      'apps/web/src/content/about/site.json',
-      'apps/web/src/content/distro-page/site.json',
-      'apps/web/src/content/services/site.json',
-      'apps/web/src/content/newsletter/site.json',
-      'apps/web/src/content/settings/site.json',
-    ]);
+    expect(parsedCollections.find(({ name }) => name === 'site-pages')?.files).toHaveLength(5);
+    expect(parsedCollections.find(({ name }) => name === 'settings')?.files).toHaveLength(1);
   });
 
   it('uses editor-facing labels and descriptions for routine and advanced singleton collections', () => {
@@ -88,8 +86,10 @@ describe('Decap page file collections', () => {
       newsletterFields: ['newsletter-field'],
     });
 
-    expect(collections.home).toContain('description: "Homepage hero, News, and Artists content.');
-    expect(collections.distroPage).toContain('label: "Store — Distro Page Copy"');
+    expect(collections.sitePages).toContain('label: "Site Pages"');
+    expect(collections.sitePages).toContain('name: "home-site"');
+    expect(collections.sitePages).toContain('description: "Homepage hero, News, and Artists content.');
+    expect(collections.sitePages).toContain('name: "distro-page-site"');
     expect(collections.settings).toContain('label: "Advanced — Site Settings"');
     expect(collections.settings).toContain('description: "Advanced: site-wide label identity');
   });

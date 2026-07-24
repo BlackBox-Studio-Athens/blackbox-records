@@ -1,6 +1,7 @@
 export const decapDirectPublishNotice = 'Publishing commits immediately to main and starts the normal site deployment.';
 
 export const decapCollectionDescriptions = {
+  sitePages: `Public page copy and images. Edit content inside the named page sections, then review before publishing. ${decapDirectPublishNotice}`,
   home: `Homepage hero, News, and Artists content. ${decapDirectPublishNotice}`,
   artists: `Artist roster cards and detail pages. Artist identities also support public routes and Release references, so structural removal requires maintainer review. ${decapDirectPublishNotice}`,
   releases: `Editorial release pages and artwork. Release identities also support public routes and Store Item projection, so structural removal requires maintainer review. Price, stock, and checkout are managed outside Decap. ${decapDirectPublishNotice}`,
@@ -13,4 +14,12 @@ export const decapCollectionDescriptions = {
   navigation: `Advanced: site-wide navigation labels, destinations, visibility, and order. ${decapDirectPublishNotice}`,
   socials: `Advanced: site-wide social identity links and order. ${decapDirectPublishNotice}`,
   settings: `Advanced: site-wide label identity, contact details, and metadata. ${decapDirectPublishNotice}`,
+} as const;
+
+export const decapSitePageDescriptions = {
+  home: 'Homepage hero, News, and Artists content.',
+  about: 'About page story, contact details, images, and stats.',
+  services: 'Services, process, inquiry copy, and service images.',
+  newsletter: 'Newsletter signup heading, copy, labels, and note.',
+  distroPage: 'Store/Distro heading, introduction, and shelf copy.',
 } as const;

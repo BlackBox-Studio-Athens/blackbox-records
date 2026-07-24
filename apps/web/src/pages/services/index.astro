@@ -5,13 +5,11 @@ import GridPattern from '@/components/ui/grid-pattern.astro';
 import { buttonVariants } from '@/components/ui/button';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { resolveLinkAttributes } from '@/config/site';
-import { getContentSection, getServicesContent } from '@/lib/site-data';
+import { getServicesContent } from '@/lib/site-data';
 import { cn } from '@/lib/utils';
 
 const servicesContent = await getServicesContent();
-const servicesListSection = getContentSection(servicesContent.sections, 'services');
-const processSection = getContentSection(servicesContent.sections, 'process');
-const inquirySection = getContentSection(servicesContent.sections, 'inquiry');
+const { services: servicesListSection, process: processSection, inquiry: inquirySection } = servicesContent;
 const noJavaScriptInquiryRecipients = Object.entries(SERVICES_INQUIRY_RECIPIENT_ALIAS_BY_SERVICE);
 ---
 

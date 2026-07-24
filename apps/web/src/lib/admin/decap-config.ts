@@ -102,19 +102,15 @@ export function buildDecapConfig(options: BuildDecapConfigOptions): string {
   });
   const siteChromeCollections = buildSiteChromeCollections();
   const collections = [
-    pageCollections.home,
-    buildArtistCollection(),
-    buildReleaseCollection(),
     buildDistroCollection(),
+    buildReleaseCollection(),
+    buildArtistCollection(),
     buildNewsCollection(),
-    pageCollections.about,
-    pageCollections.services,
-    pageCollections.newsletter,
-    pageCollections.distroPage,
+    pageCollections.sitePages,
     siteChromeCollections.navigation,
     siteChromeCollections.socials,
     pageCollections.settings,
   ];
 
-  return `${backendConfig}\n\npublish_mode: simple\nslug:\n  encoding: ascii\n  clean_accents: true\n  sanitize_replacement: "-"\nmedia_folder: ${escapeYamlScalar(decapGlobalMedia.mediaFolder)}\npublic_folder: ${escapeYamlScalar(decapGlobalMedia.publicFolder)}\n${authConfig}\n\nsite_url: ${escapeYamlScalar(options.siteRootUrl)}\ndisplay_url: ${escapeYamlScalar(options.siteRootUrl)}\nlogo_url: ${escapeYamlScalar(options.logoUrl)}\neditor:\n  preview: true\n\ncollections:\n${indentYamlBlock(collections.join('\n\n'), 2)}\n`;
+  return `${backendConfig}\n\npublish_mode: simple\nslug:\n  encoding: ascii\n  clean_accents: true\n  sanitize_replacement: "-"\nmedia_folder: ${escapeYamlScalar(decapGlobalMedia.mediaFolder)}\npublic_folder: ${escapeYamlScalar(decapGlobalMedia.publicFolder)}\n${authConfig}\n\nsite_url: ${escapeYamlScalar(options.siteRootUrl)}\ndisplay_url: ${escapeYamlScalar(options.siteRootUrl)}\nlogo:\n  src: ${escapeYamlScalar(options.logoUrl)}\n  show_in_header: true\neditor:\n  preview: true\n\ncollections:\n${indentYamlBlock(collections.join('\n\n'), 2)}\n`;
 }

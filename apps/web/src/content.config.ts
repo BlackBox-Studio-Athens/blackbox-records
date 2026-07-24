@@ -185,22 +185,16 @@ const home = defineCollection({
         image_alt: requiredAltText,
         scroll_indicator_text: z.string(),
       }),
-      sections: z.array(
-        z.discriminatedUnion('type', [
-          z.object({
-            type: z.literal('news'),
-            title: z.string(),
-            link_text: z.string(),
-            link_url: internalSitePath,
-          }),
-          z.object({
-            type: z.literal('artists'),
-            title: z.string(),
-            button_text: z.string(),
-            button_link: internalSitePath,
-          }),
-        ]),
-      ),
+      news: z.object({
+        title: z.string(),
+        link_text: z.string(),
+        link_url: internalSitePath,
+      }),
+      artists: z.object({
+        title: z.string(),
+        button_text: z.string(),
+        button_link: internalSitePath,
+      }),
     }),
 });
 
@@ -214,44 +208,35 @@ const about = defineCollection({
         image: image(),
         image_alt: requiredAltText,
       }),
-      sections: z.array(
-        z.discriminatedUnion('type', [
+      lead: z.object({ text: z.string() }),
+      story: z.object({
+        title: z.string(),
+        paragraphs: z.array(z.string()),
+      }),
+      quote: z
+        .object({
+          text: z.string(),
+          cite: z.string(),
+        })
+        .optional(),
+      contact: z.object({
+        title: z.string(),
+        intro: z.string(),
+        items: z.array(
           z.object({
-            type: z.literal('lead'),
-            text: z.string(),
+            label: z.string(),
+            value: z.string(),
           }),
+        ),
+      }),
+      stats: z.object({
+        items: z.array(
           z.object({
-            type: z.literal('story'),
-            title: z.string(),
-            paragraphs: z.array(z.string()),
+            key: z.string(),
+            label: z.string(),
           }),
-          z.object({
-            type: z.literal('quote'),
-            text: z.string(),
-            cite: z.string(),
-          }),
-          z.object({
-            type: z.literal('contact'),
-            title: z.string(),
-            intro: z.string(),
-            items: z.array(
-              z.object({
-                label: z.string(),
-                value: z.string(),
-              }),
-            ),
-          }),
-          z.object({
-            type: z.literal('stats'),
-            items: z.array(
-              z.object({
-                key: z.string(),
-                label: z.string(),
-              }),
-            ),
-          }),
-        ]),
-      ),
+        ),
+      }),
     }),
 });
 
@@ -264,46 +249,40 @@ const services = defineCollection({
         intro: z.string(),
         cta_text: z.string(),
       }),
-      sections: z.array(
-        z.discriminatedUnion('type', [
+      services: z.object({
+        items: z.array(
           z.object({
-            type: z.literal('services'),
-            items: z.array(
-              z.object({
-                id: z.string().regex(new RegExp(slugPatternSource), 'Use lowercase kebab-case.'),
-                title: z.string(),
-                image: image(),
-                image_alt: requiredAltText,
-                summary: z.string(),
-                bullets: z.array(z.string()).min(2),
-                contact_note: z.string(),
-                partner_name: z.string().optional(),
-                partner_url: httpsUrl.optional(),
-              }),
-            ),
-          }),
-          z.object({
-            type: z.literal('process'),
+            id: z.string().regex(new RegExp(slugPatternSource), 'Use lowercase kebab-case.'),
             title: z.string(),
-            intro: z.string(),
-            steps: z
-              .array(
-                z.object({
-                  title: z.string(),
-                  body: z.string(),
-                }),
-              )
-              .min(3),
+            image: image(),
+            image_alt: requiredAltText,
+            summary: z.string(),
+            bullets: z.array(z.string()).min(2).max(12),
+            contact_note: z.string(),
+            partner_name: z.string().optional(),
+            partner_url: httpsUrl.optional(),
           }),
-          z.object({
-            type: z.literal('inquiry'),
-            title: z.string(),
-            intro: z.string(),
-            email: z.email(),
-            submit_text: z.string(),
-          }),
-        ]),
-      ),
+        ),
+      }),
+      process: z.object({
+        title: z.string(),
+        intro: z.string(),
+        steps: z
+          .array(
+            z.object({
+              title: z.string(),
+              body: z.string(),
+            }),
+          )
+          .min(3)
+          .max(12),
+      }),
+      inquiry: z.object({
+        title: z.string(),
+        intro: z.string(),
+        email: z.email(),
+        submit_text: z.string(),
+      }),
     }),
 });
 

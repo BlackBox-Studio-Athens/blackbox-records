@@ -6,18 +6,14 @@
     "image_alt": "Black and white live band performing on stage",
     "scroll_indicator_text": "Scroll"
   },
-  "sections": [
-    {
-      "type": "news",
-      "title": "News",
-      "link_text": "Read News",
-      "link_url": "/news/"
-    },
-    {
-      "type": "artists",
-      "title": "Artists",
-      "button_text": "View Full Roster",
-      "button_link": "/artists/"
-    }
-  ]
+  "news": {
+    "title": "News",
+    "link_text": "Read News",
+    "link_url": "/news/"
+  },
+  "artists": {
+    "title": "Artists",
+    "button_text": "View Full Roster",
+    "button_link": "/artists/"
+  }
 }

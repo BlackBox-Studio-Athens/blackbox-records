@@ -7,7 +7,7 @@ import SiteLayout from '@/layouts/SiteLayout.astro';
 import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl } from '@/config/site';
 import { listArtistProfiles, listNewsArticles } from '@/lib/catalog-data';
-import { getContentSection, getHomeContent } from '@/lib/site-data';
+import { getHomeContent } from '@/lib/site-data';
 import { cn } from '@/lib/utils';
 
 const artistProfiles = await listArtistProfiles();
@@ -15,8 +15,8 @@ const newsArticles = await listNewsArticles();
 const latestNewsArticles = newsArticles.slice(0, 3);
 const featuredArtistProfiles = artistProfiles.slice(0, 3);
 const homeContent = await getHomeContent();
-const homeNews = getContentSection(homeContent.sections, 'news');
-const homeArtists = getContentSection(homeContent.sections, 'artists');
+const homeNews = homeContent.news;
+const homeArtists = homeContent.artists;
 ---
 
 <SiteLayout pageTitle="Home" pageDescription="BlackBox Records home." mainClass="!pt-0">

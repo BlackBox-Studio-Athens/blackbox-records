@@ -3,7 +3,9 @@
 ## Purpose
 
 TBD - created by archiving change implement-stripe-catalog-field-ownership. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Catalog fields have explicit owners
 
 The system MUST define a field-level ownership contract for catalog fields that cross repo content, D1, Stripe Products, Stripe Prices, Worker Store Offers, browser state, and order reconciliation.

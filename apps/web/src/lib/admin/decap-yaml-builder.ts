@@ -21,6 +21,12 @@ export type DecapViewGroup = {
   label: string;
 };
 
+export type DecapViewFilter = {
+  field: string;
+  label: string;
+  pattern: boolean | string;
+};
+
 export type BaseFieldConfig = {
   label: string;
   name: string;
@@ -29,6 +35,8 @@ export type BaseFieldConfig = {
   required?: boolean;
   defaultValue?: boolean | number | string;
   labelSingular?: string;
+  allowMultiple?: boolean;
+  chooseUrl?: boolean;
   max?: number;
   min?: number;
   pattern?: DecapPattern;
@@ -64,6 +72,7 @@ type CollectionPresentationConfig = {
   labelSingular?: string;
   previewPath?: string;
   sortableFields?: string[];
+  viewFilters?: DecapViewFilter[];
   viewGroups?: DecapViewGroup[];
 };
 
@@ -73,6 +82,7 @@ type FileEntryConfig = {
   file: string;
   mediaFolder?: string;
   publicFolder?: string;
+  description?: string;
   fields: string[];
 };
 
@@ -157,6 +167,14 @@ function appendBaseFieldOptions(lines: string[], config: BaseFieldConfig, indent
     lines.push(`${indent}label_singular: ${escapeYamlScalar(config.labelSingular)}`);
   }
 
+  if (config.allowMultiple !== undefined) {
+    lines.push(`${indent}allow_multiple: ${config.allowMultiple}`);
+  }
+
+  if (config.chooseUrl !== undefined) {
+    lines.push(`${indent}choose_url: ${config.chooseUrl}`);
+  }
+
   if (config.defaultValue !== undefined) {
     lines.push(`${indent}default: ${serializeYamlValue(config.defaultValue)}`);
   }
@@ -205,6 +223,15 @@ function appendCollectionPresentation(lines: string[], config: CollectionPresent
 
   if (config.sortableFields?.length) {
     lines.push(`${indent}sortable_fields: ${serializeYamlList(config.sortableFields)}`);
+  }
+
+  if (config.viewFilters?.length) {
+    lines.push(`${indent}view_filters:`);
+    for (const viewFilter of config.viewFilters) {
+      lines.push(`${indent}  - label: ${escapeYamlScalar(viewFilter.label)}`);
+      lines.push(`${indent}    field: ${escapeYamlScalar(viewFilter.field)}`);
+      lines.push(`${indent}    pattern: ${serializeYamlValue(viewFilter.pattern)}`);
+    }
   }
 
   if (config.viewGroups?.length) {
@@ -326,6 +353,10 @@ function buildFileEntry(config: FileEntryConfig): string {
     `  label: ${escapeYamlScalar(config.label)}`,
     `  file: ${escapeYamlScalar(config.file)}`,
   ];
+
+  if (config.description) {
+    lines.push(`  description: ${escapeYamlScalar(config.description)}`);
+  }
 
   if (config.mediaFolder) {
     lines.push(`  media_folder: ${escapeYamlScalar(config.mediaFolder)}`);

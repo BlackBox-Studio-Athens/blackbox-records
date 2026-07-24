@@ -127,7 +127,7 @@ describe('local CMS smoke contract', () => {
   it('covers the five representative editor and preview contracts', () => {
     const source = readFileSync(path.join(repositoryRoot, 'scripts', 'smoke-cms-local.ts'), 'utf8');
     for (const contract of [
-      "collection: 'home'",
+      "collection: 'site-pages'",
       "collection: 'artists'",
       "collection: 'releases'",
       "collection: 'distro'",
@@ -136,11 +136,14 @@ describe('local CMS smoke contract', () => {
       "entry: 'caregivers'",
       "entry: 'barren-point'",
       "entry: 'lorem-ipsum'",
-      'data-blackbox-preview-toggle',
-      'data-blackbox-fixed-section-actions',
-      'data-blackbox-cms-scope-panel',
+      "getByRole('button', { name: 'Toggle preview', exact: true })",
+      'name: "site-pages"',
+      'file: "apps/web/src/content/home/site.json"',
     ]) {
       expect(source).toContain(contract);
     }
+    expect(source).not.toContain('blackbox-cms-preview-auto-collapsed');
+    expect(source).not.toContain('data-blackbox-cms-scope-panel');
+    expect(source).not.toContain('data-blackbox-fixed-section-actions');
   });
 });

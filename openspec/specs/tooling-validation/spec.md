@@ -1,7 +1,9 @@
 ## Purpose
 
 Specify repository validation gates, local tooling, dependency-audit posture, and OpenSpec workflow ownership.
+
 ## Requirements
+
 ### Requirement: Standard repository gates
 
 The system SHALL run the standard repository gates after behavior-changing implementation.

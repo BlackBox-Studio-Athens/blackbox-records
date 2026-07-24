@@ -73,7 +73,7 @@ describe('Decap artist collection', () => {
       summary: '{{fields.title}}',
     });
     expect(videos?.fields?.find(({ name }) => name === 'youtube_video_id')?.pattern?.[0]).toBe('^[A-Za-z0-9_-]{11}$');
-    expect(field('body')).toMatchObject({ name: 'body', required: false, widget: 'markdown' });
+    expect(field('body')).toMatchObject({ name: 'body', required: false, widget: 'richtext' });
     expect(collection.fields.some(({ name }) => name === 'shop_collection_handle')).toBe(false);
   });
 
