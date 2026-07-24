@@ -12,6 +12,7 @@ const child = spawn(decapServerExecutable, {
   cwd: repoRoot,
   env: {
     ...process.env,
+    BIND_HOST: process.env.DECAP_LOCAL_PROXY_HOST ?? '127.0.0.1',
     PORT: process.env.DECAP_LOCAL_PROXY_PORT ?? '8082',
   },
   shell: process.platform === 'win32',

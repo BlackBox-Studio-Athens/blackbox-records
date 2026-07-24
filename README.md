@@ -142,12 +142,18 @@ Run the default full local commerce stack:
 pnpm dev:stack:stripe-mock
 ```
 
-This is what `BlackBox Local Stack` runs in WebStorm. It prepares local D1, starts official `stripe-mock` through local Go tooling, starts the Worker with the Stripe SDK pointed at the local mock API proxy, and starts the static Astro site with a mock checkout panel. Local newsletter signup uses the committed fake `re_mock_*` Resend config through a no-network provider mock. It does not require Docker, real Stripe keys, real Resend keys, or `apps/backend/.dev.vars`.
+This is what `BlackBox Local Stack` runs in WebStorm. It prepares local D1, starts official `stripe-mock` through local Go tooling, starts the Worker with the Stripe SDK pointed at the local mock API proxy, starts the local Decap file proxy, and starts the static Astro site with a mock checkout panel. The same `4321` site serves the local Decap editor at `/admin/`, backed by the repo content files through the proxy on `8082`. Local newsletter signup uses the committed fake `re_mock_*` Resend config through a no-network provider mock. It does not require Docker, real Stripe keys, real Resend keys, or `apps/backend/.dev.vars`.
 
 Local mock checkout smoke path:
 
 ```text
 http://127.0.0.1:4321/blackbox-records/store/checkout/
+```
+
+Local Decap editor:
+
+```text
+http://127.0.0.1:4321/blackbox-records/admin/
 ```
 
 That canonical path remains the fastest cart checkout smoke path. `/store/barren-point/` is the separate Barren Point distro item and is not a Disintegration alias. In stripe-mock mode, the local seed generator now creates fake development `Stock`, `ItemAvailability`, and `price_mock_*` mappings for every current store item so each item can exercise the local no-network checkout path. Those values are not real inventory counts or Stripe test evidence.
@@ -704,7 +710,7 @@ BlackBox now ships with an Astro-hosted Decap CMS at `/admin/`.
 
 ### Local CMS development
 
-Start Astro on a dedicated CMS port and the local Decap proxy together:
+For the full local commerce stack, `BlackBox Local Stack` already starts the local Decap proxy and serves `/admin/` from the canonical `4321` site. Use this standalone command when you only need the editor:
 
 ```sh
 pnpm cms:dev
@@ -720,6 +726,8 @@ Default local ports:
 
 - Astro CMS dev server: `4322`
 - Decap proxy: `8082`
+
+Do not run standalone `pnpm cms:dev` while `BlackBox Local Stack` is running in the same workspace; Astro permits one dev server per workspace. Stop the stack first, or use the stack's `4321/admin/` URL.
 
 ### Decap environment variables
 
