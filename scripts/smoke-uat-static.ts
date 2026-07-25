@@ -471,38 +471,41 @@ async function waitForCmsAdminTerminalState(page: Page, timeoutMs: number): Prom
 }
 
 export async function readCmsAdminRenderedState(page: Page, timeoutMs: number): Promise<CmsAdminRenderedState> {
-  return page.locator('body').evaluate(() => {
-    const globalState = window as typeof window & {
-      __BLACKBOX_ADMIN_AUTH_READY__?: boolean;
-      __BLACKBOX_ADMIN_READY__?: boolean;
-    };
-    const bodyText = document.body?.innerText || '';
-    const runtimeScriptUrls = Array.from(document.scripts)
-      .map((script) => script.src)
-      .filter(Boolean);
-    const hasCollectionUi = Boolean(
-      document.querySelector('a[href*="#/collections/"]') ||
-      /\bCollections\b|\bSite Pages\b|\bReleases\b|\bStore Items\b/.test(bodyText),
-    );
+  return page.locator('body').evaluate(
+    () => {
+      const globalState = window as typeof window & {
+        __BLACKBOX_ADMIN_AUTH_READY__?: boolean;
+        __BLACKBOX_ADMIN_READY__?: boolean;
+      };
+      const bodyText = document.body?.innerText || '';
+      const runtimeScriptUrls = Array.from(document.scripts)
+        .map((script) => script.src)
+        .filter(Boolean);
+      const hasCollectionUi = Boolean(
+        document.querySelector('a[href*="#/collections/"]') ||
+        /\bCollections\b|\bSite Pages\b|\bReleases\b|\bStore Items\b/.test(bodyText),
+      );
 
-    return {
-      bodyText,
-      hasCollectionUi,
-      hasConfigLink: Boolean(document.querySelector('link[rel="cms-config-url"][href*="/admin/config.yml"]')),
-      hasCmsRoot: Boolean(document.getElementById('nc-root')),
-      hasExactPinnedRuntime: runtimeScriptUrls.some(
-        (url) => url === 'https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js',
-      ),
-      hasRuntimeApi: Boolean((window as typeof window & { CMS?: unknown }).CMS),
-      isAdminReady: Boolean(globalState.__BLACKBOX_ADMIN_READY__),
-      isAuthReady: Boolean(
-        globalState.__BLACKBOX_ADMIN_AUTH_READY__ ||
-        document.querySelector('[data-blackbox-cms-auth-button="true"]') ||
-        bodyText.includes('Sign in with DecapBridge'),
-      ),
-      runtimeScriptUrls,
-    };
-  }, { timeout: Math.min(timeoutMs, 20_000) });
+      return {
+        bodyText,
+        hasCollectionUi,
+        hasConfigLink: Boolean(document.querySelector('link[rel="cms-config-url"][href*="/admin/config.yml"]')),
+        hasCmsRoot: Boolean(document.getElementById('nc-root')),
+        hasExactPinnedRuntime: runtimeScriptUrls.some(
+          (url) => url === 'https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js',
+        ),
+        hasRuntimeApi: Boolean((window as typeof window & { CMS?: unknown }).CMS),
+        isAdminReady: Boolean(globalState.__BLACKBOX_ADMIN_READY__),
+        isAuthReady: Boolean(
+          globalState.__BLACKBOX_ADMIN_AUTH_READY__ ||
+          document.querySelector('[data-blackbox-cms-auth-button="true"]') ||
+          bodyText.includes('Sign in with DecapBridge'),
+        ),
+        runtimeScriptUrls,
+      };
+    },
+    { timeout: Math.min(timeoutMs, 20_000) },
+  );
 }
 
 async function checkCheckoutShellPage(page: Page, options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck> {
