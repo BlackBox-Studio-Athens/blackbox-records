@@ -470,10 +470,8 @@ async function waitForCmsAdminTerminalState(page: Page, timeoutMs: number): Prom
   );
 }
 
-async function readCmsAdminRenderedState(page: Page, timeoutMs: number): Promise<CmsAdminRenderedState> {
-  void timeoutMs;
-
-  return page.evaluate(() => {
+export async function readCmsAdminRenderedState(page: Page, timeoutMs: number): Promise<CmsAdminRenderedState> {
+  return page.locator('body').evaluate(() => {
     const globalState = window as typeof window & {
       __BLACKBOX_ADMIN_AUTH_READY__?: boolean;
       __BLACKBOX_ADMIN_READY__?: boolean;
@@ -504,7 +502,7 @@ async function readCmsAdminRenderedState(page: Page, timeoutMs: number): Promise
       ),
       runtimeScriptUrls,
     };
-  });
+  }, { timeout: Math.min(timeoutMs, 20_000) });
 }
 
 async function checkCheckoutShellPage(page: Page, options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck> {

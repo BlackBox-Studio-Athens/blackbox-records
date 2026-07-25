@@ -144,6 +144,7 @@ describe('catalog promotion workflows', () => {
     expect(workflow).toContain('evidence_dir');
     expect(workflow).toContain('screenshots');
     expect(workflow).toContain('headed');
+    expect(workflow).toContain('timeout-minutes: 10');
     expect(workflow).toContain('pnpm smoke:uat-static --');
     expect(workflow).toContain('.codex-artifacts/smoke/uat/uat-static/**');
   });

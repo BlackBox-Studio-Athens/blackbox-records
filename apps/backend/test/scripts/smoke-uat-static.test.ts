@@ -8,8 +8,10 @@ import {
   checkCmsHostedConfigDeclarations,
   checkCmsSingletonJsonDeclarations,
   parseUatStaticSmokeArgs,
+  readCmsAdminRenderedState,
   resolveSelectedUatStaticSmokeScenarios,
 } from '../../../../scripts/smoke-uat-static';
+import type { Page } from 'playwright';
 
 describe('UAT static smoke runner', () => {
   it('parses the supported CLI arguments and scenario selection', () => {
@@ -235,6 +237,22 @@ describe('UAT static smoke runner', () => {
         runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js'],
       }),
     ).toEqual([]);
+  });
+
+  it('bounds the CMS rendered-state read', async () => {
+    let timeout: number | undefined;
+    const page = {
+      locator: () => ({
+        evaluate: (_callback: unknown, options?: { timeout?: number }) => {
+          timeout = options?.timeout;
+          return Promise.resolve({});
+        },
+      }),
+    } as unknown as Page;
+
+    await readCmsAdminRenderedState(page, 60_000);
+
+    expect(timeout).toBe(20_000);
   });
 
   it('builds redacted evidence with the standard smoke contract', () => {

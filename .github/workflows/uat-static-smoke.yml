@@ -59,6 +59,7 @@ jobs:
   smoke:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       UAT_STATIC_EVIDENCE_DIR: ${{ inputs.evidence_dir || '.codex-artifacts/smoke/uat/uat-static' }}
       UAT_STATIC_SCREENSHOTS: ${{ inputs.screenshots || 'on-failure' }}

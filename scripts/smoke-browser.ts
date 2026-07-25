@@ -86,7 +86,7 @@ export async function probeSmokeRoute(page: Page, routeUrl: string, timeoutMs: n
     issues.push(redactSensitiveSmokeText(truncateForConsole(String(error))));
   }
 
-  const title = await page.title().catch(() => null);
+  const title = await page.locator('title').textContent({ timeout: timeoutMs }).catch(() => null);
   let bodyText = '';
 
   try {
