@@ -7,7 +7,7 @@ import {
   normalizeDecapConfigError,
 } from '@/lib/admin/decap-config';
 import { resolveDecapRuntimeConfig, resolveDecapSiteRootUrl } from '@/lib/admin/decap-runtime-config';
-import { createProjectRelativeUrl } from '@/config/site';
+import { createProjectRelativeUrl, siteBrandAssets } from '@/config/site';
 
 export const prerender = true;
 
@@ -47,7 +47,7 @@ export const GET: APIRoute = async () => {
     useLocalBackend: runtimeConfig.mode === 'local',
     localCmsPort: import.meta.env.CMS_DEV_PORT?.trim() || localCmsPort,
   });
-  const logoUrl = new URL(createProjectRelativeUrl('/assets/images/brand/logo.png'), siteRootUrl).toString();
+  const logoUrl = new URL(createProjectRelativeUrl(siteBrandAssets.wordmarkLogo), siteRootUrl).toString();
 
   const yaml = buildDecapConfig({
     logoUrl,

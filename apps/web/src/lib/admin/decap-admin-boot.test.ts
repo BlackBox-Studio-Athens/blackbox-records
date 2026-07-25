@@ -507,6 +507,7 @@ describe('Decap admin boot markup and styles', () => {
       }),
     };
     const initCMS = vi.fn(() => initialization);
+    const registerEventListener = vi.fn();
     const registerPreviewStyle = vi.fn();
     const registerPreviewTemplate = vi.fn();
     const documentElement = { dataset: {} as Record<string, string> };
@@ -549,15 +550,17 @@ describe('Decap admin boot markup and styles', () => {
       mediaCollections?: string[];
       mode?: 'local' | 'hosted' | 'disabled';
       previewStyleUrl?: string;
+      resolveArtistSlugForSave?: (slug: string, title: string) => string;
     } = {
       bootAttemptId: 9,
       exposeTestHooks: true,
       mediaCollections: ['about', 'artists', 'distro', 'home', 'news', 'releases', 'services'],
       mode,
       previewStyleUrl: '/admin/preview.css',
+      resolveArtistSlugForSave: (slug, title) => slug || `${title.toLowerCase().replace(/\s+/g, '-')}`,
     };
     const targetWindow = {
-      CMS: { registerPreviewStyle, registerPreviewTemplate },
+      CMS: { registerEventListener, registerPreviewStyle, registerPreviewTemplate },
       __BLACKBOX_ADMIN__: adminContext,
       __BLACKBOX_ADMIN_AUTH_READY__: undefined as boolean | undefined,
       __BLACKBOX_ADMIN_PREVIEW_COLLECTIONS__: undefined as string[] | undefined,
@@ -654,6 +657,7 @@ describe('Decap admin boot markup and styles', () => {
       observe,
       registerPreviewStyle,
       registerPreviewTemplate,
+      registerEventListener,
       removeEventListener,
       requestAnimationFrame,
       stockLink,
@@ -686,6 +690,43 @@ describe('Decap admin boot markup and styles', () => {
     expect(init).toContain("window.removeEventListener('hashchange'");
     expect(init).toContain('editorObserver?.disconnect()');
     expect(init).toContain("if (adminContext.mode !== 'hosted')");
+  });
+
+  it('registers one Artist-only pre-save slug generator before initialization', () => {
+    const harness = runInitHarness();
+    const registration = harness.registerEventListener.mock.calls[0]?.[0] as {
+      handler: (input: { entry: { get: (key: string) => unknown } }) => { get: (key: string) => string; set: unknown };
+      name: string;
+    };
+    const emptyData = {
+      get: (key: string) => (key === 'title' ? 'Mass Culture' : ''),
+      set: vi.fn((key: string, value: string) => ({ get: () => (key === 'slug' ? value : '') })),
+    };
+    const existingData = {
+      get: (key: string) => (key === 'title' ? 'Renamed Artist' : 'stable-artist'),
+      set: vi.fn(),
+    };
+
+    expect(registration.name).toBe('preSave');
+    expect(registration.handler({ entry: { get: (key) => (key === 'collection' ? 'artists' : emptyData) } })).toEqual(
+      expect.objectContaining({ get: expect.any(Function) }),
+    );
+    expect(emptyData.set).toHaveBeenCalledWith('slug', 'mass-culture');
+    expect(registration.handler({ entry: { get: (key) => (key === 'collection' ? 'artists' : existingData) } })).toBe(
+      existingData,
+    );
+    expect(existingData.set).not.toHaveBeenCalled();
+  });
+
+  it('keeps admin CSS scoped around native composite controls and semantic header hooks', () => {
+    expect(css).toMatch(/#nc-root\s+input:not\(\[type='checkbox'\]\)/);
+    expect(css).toContain("#nc-root input[role='combobox']");
+    expect(css).not.toContain('#nc-root a,\n#nc-root button');
+    expect(css).toContain("#nc-root header img[src$='logo-horizontal.png']");
+    expect(css).toContain("#nc-root a[href='#/'] svg");
+    expect(css).toContain('min-width: 44px');
+    expect(css).toContain('min-height: 44px');
+    expect(css).toContain("#nc-root a[href$='/new']");
   });
 
   it('keeps the Home preview aligned with the current Hero, News, and Artists hierarchy', () => {

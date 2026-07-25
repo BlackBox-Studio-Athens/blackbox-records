@@ -1,6 +1,6 @@
 import { buildField, buildFieldMapping, buildFolderCollection } from './decap-yaml-builder';
 import { httpsUrlPatternSource, youtubeVideoIdPatternSource } from '../editorial-validation';
-import { createSlugSuggestion, slugPatternSource } from '../slugs';
+import { createSlugSuggestion } from '../slugs';
 import { decapCollectionDescriptions } from './decap-editorial-copy';
 import { decapCollectionMedia } from './decap-media';
 
@@ -22,7 +22,7 @@ export function buildArtistCollection() {
     extension: 'md',
     format: 'frontmatter',
     identifierField: 'title',
-    slug: '{{fields.slug}}',
+    slug: '{{slug}}',
     mediaFolder: decapCollectionMedia.artists.mediaFolder,
     publicFolder: decapCollectionMedia.artists.publicFolder,
     summary: '{{title}} — {{genre}} — {{slug}}',
@@ -31,12 +31,8 @@ export function buildArtistCollection() {
       buildField({
         label: 'Slug',
         name: 'slug',
-        widget: 'string',
-        hint: `Used for the artist page filename. Use lowercase kebab-case, for example "${createArtistSlugSuggestion('Mass Culture')}".`,
-        pattern: {
-          value: slugPatternSource,
-          message: 'Use lowercase kebab-case, for example mass-culture.',
-        },
+        widget: 'hidden',
+        required: false,
       }),
       buildField({
         label: 'Genre',

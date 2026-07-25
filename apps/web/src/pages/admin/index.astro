@@ -76,6 +76,9 @@ const fontStylesheetUrl =
       window.__BLACKBOX_ADMIN__ = { mode: adminMode, previewStyleUrl, mediaCollections: decapCollectionMediaKeys };
     </script>
     <script>
+      import '@/scripts/admin-artist-slug';
+    </script>
+    <script>
       import { startDecapAdminBoot } from '@/lib/admin/decap-admin-boot';
 
       startDecapAdminBoot();

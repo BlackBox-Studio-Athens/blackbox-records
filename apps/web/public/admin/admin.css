@@ -279,6 +279,8 @@ h3 {
 
 #nc-root button,
 #nc-root [role='button'] {
+  min-width: 44px;
+  min-height: 44px;
   font-family: var(--bb-admin-font-sans) !important;
   font-size: 0.92rem !important;
   font-weight: 600 !important;
@@ -286,9 +288,15 @@ h3 {
   text-transform: none !important;
 }
 
+#nc-root a[href$='/new'] {
+  display: inline-flex;
+  align-items: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+
 #nc-root button:not([aria-disabled='true']),
 #nc-root [role='button']:not([aria-disabled='true']) {
-  min-height: 2.85rem;
   border-radius: 0.9rem !important;
   box-shadow: none !important;
 }
@@ -307,18 +315,14 @@ h3 {
   font-size: clamp(1.15rem, 1.02rem + 0.3vw, 1.45rem) !important;
 }
 
-#nc-root a,
-#nc-root button {
-  color: var(--bb-admin-text) !important;
-}
-
 button[data-blackbox-top-level-media='hidden'] {
   display: none !important;
 }
 
-input,
-textarea,
-select {
+#nc-root
+  input:not([type='checkbox']):not([type='file']):not([type='hidden']):not([type='radio']):not([role='combobox']),
+#nc-root textarea,
+#nc-root select {
   min-height: 3rem;
   border: 1px solid var(--bb-admin-line-strong) !important;
   background: var(--bb-admin-input) !important;
@@ -328,26 +332,26 @@ select {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
-textarea {
+#nc-root textarea {
   min-height: 12rem;
   line-height: 1.6;
 }
 
-select {
+#nc-root select {
   padding-right: 2.4rem !important;
 }
 
-input::placeholder,
-textarea::placeholder {
+#nc-root input::placeholder,
+#nc-root textarea::placeholder {
   color: var(--bb-admin-text-soft) !important;
 }
 
-input:focus,
-textarea:focus,
-select:focus,
+#nc-root input:focus,
+#nc-root textarea:focus,
+#nc-root select:focus,
 #nc-root [role='textbox']:focus-within,
-button:focus-visible,
-a:focus-visible {
+#nc-root button:focus-visible,
+#nc-root a:focus-visible {
   outline: none !important;
   border-color: rgba(141, 61, 74, 0.52) !important;
   box-shadow: var(--bb-admin-focus) !important;
@@ -383,12 +387,13 @@ a:focus-visible {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
 }
 
-#nc-root button:hover,
-#nc-root button:focus-visible,
-#nc-root [role='button']:hover,
-#nc-root [role='button']:focus-visible {
-  background: #ffffff !important;
-  color: var(--bb-admin-text) !important;
+#nc-root input[role='combobox'] {
+  min-height: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 #nc-root [role='group'] {
@@ -458,6 +463,16 @@ button[data-blackbox-cms-auth-button='true'] {
   font-weight: 700 !important;
 }
 
+#nc-root header img[src$='logo-horizontal.png'] {
+  width: min(12rem, 38vw) !important;
+  height: auto !important;
+  filter: brightness(0);
+}
+
+#nc-root a[href='#/'] svg {
+  display: none !important;
+}
+
 @media (max-width: 960px) {
   .blackbox-cms-boot {
     padding: 1rem;
@@ -476,7 +491,7 @@ button[data-blackbox-cms-auth-button='true'] {
 @media (max-width: 40rem) {
   html,
   body {
-    min-width: 320px;
+    min-width: 0;
     overflow-x: hidden;
   }
 
@@ -496,9 +511,16 @@ button[data-blackbox-cms-auth-button='true'] {
     max-width: 100vw !important;
   }
 
-  button,
-  [role='button'] {
+  #nc-root button,
+  #nc-root [role='button'] {
     min-width: 44px;
     min-height: 44px;
+  }
+}
+
+@media (max-width: 360px) {
+  #nc-root main > div > ul {
+    width: 100% !important;
+    margin-left: 0 !important;
   }
 }

@@ -23,6 +23,12 @@ describe('Decap environment wiring', () => {
     expect(source).toContain('delete ');
   });
 
+  it('keeps standalone CMS Astro on the generated loopback origin', () => {
+    const source = readRepositoryFile('apps/web/scripts/start-cms-dev.mjs');
+
+    expect(source).toContain("['dev', '--host', '127.0.0.1', '--port', cmsPort]");
+  });
+
   it('sets UAT and full PRD builds to hosted mode with safe preflight', () => {
     const workflow = readRepositoryFile('.github/workflows/pages.yml');
 

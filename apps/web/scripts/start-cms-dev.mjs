@@ -36,7 +36,7 @@ const children = [
     shell: process.platform === 'win32',
     stdio: 'inherit',
   }),
-  spawn(astroExecutable, ['dev', '--port', cmsPort], {
+  spawn(astroExecutable, ['dev', '--host', '127.0.0.1', '--port', cmsPort], {
     cwd: webRoot,
     env: localCmsEnv,
     shell: process.platform === 'win32',

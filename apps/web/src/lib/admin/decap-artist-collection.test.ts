@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
 import { buildArtistCollection, createArtistSlugSuggestion } from './decap-artist-collection';
+import { resolveArtistSlugForSave } from './decap-artist-slug';
 
 type ParsedField = {
   allow_add?: boolean;
@@ -42,13 +43,15 @@ describe('Decap artist collection', () => {
       folder: 'apps/web/src/content/artists',
       label_singular: 'Artist',
       preview_path: 'artists/{{fields.slug}}/',
-      slug: '{{fields.slug}}',
+      slug: '{{slug}}',
       sortable_fields: ['title', 'slug', 'genre', 'country', 'commit_date'],
       summary: '{{title}} — {{genre}} — {{slug}}',
     });
     expect(collection.description).toContain('roster');
     expect(collection.description).toContain('maintainer');
-    expect(field('slug')?.pattern?.[0]).toBe('^[a-z0-9]+(?:-[a-z0-9]+)*$');
+    expect(field('slug')).toMatchObject({ name: 'slug', required: false, widget: 'hidden' });
+    expect(field('slug')?.hint).toBeUndefined();
+    expect(field('slug')?.pattern).toBeUndefined();
     expect(field('image')?.hint).toContain('3:4 crop');
     expect(field('image_alt')).toMatchObject({ required: true, widget: 'string' });
 
@@ -79,5 +82,10 @@ describe('Decap artist collection', () => {
 
   it('routes artist slug suggestions through the shared slug wrapper', () => {
     expect(createArtistSlugSuggestion('Μass Culture / Live')).toBe('mass-culture-live');
+  });
+
+  it('generates blank Artist slugs through the shared slug library and preserves explicit values', () => {
+    expect(resolveArtistSlugForSave('', 'Μass Culture / Live')).toBe('mass-culture-live');
+    expect(resolveArtistSlugForSave('existing-artist', 'Renamed Artist')).toBe('existing-artist');
   });
 });

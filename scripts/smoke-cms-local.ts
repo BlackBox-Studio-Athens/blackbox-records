@@ -331,6 +331,16 @@ export async function runCmsLocalSmoke(options: CmsLocalSmokeOptions): Promise<C
             }),
           );
         }
+        results.push(
+          await checkNewArtistEditorInFreshPage({
+            consoleErrors,
+            context: context!,
+            options,
+            pageErrors,
+            runArtifactDir,
+            siteUrl,
+          }),
+        );
         return results;
       })(),
     );
@@ -710,6 +720,79 @@ async function checkEditorInFreshPage(input: {
       runArtifactDir: input.runArtifactDir,
       siteUrl: input.siteUrl,
     });
+  } finally {
+    input.consoleErrors.push(...diagnostics.consoleErrors);
+    input.pageErrors.push(...diagnostics.pageErrors);
+    diagnostics.dispose();
+    await page.close();
+  }
+}
+
+async function checkNewArtistEditorInFreshPage(input: {
+  consoleErrors: string[];
+  context: BrowserContext;
+  options: CmsLocalSmokeOptions;
+  pageErrors: string[];
+  runArtifactDir: string;
+  siteUrl: string;
+}): Promise<CmsEditorCheck> {
+  const page = await input.context.newPage();
+  const diagnostics = attachSmokePageDiagnostics(page);
+  page.setDefaultTimeout(input.options.timeoutMs);
+  const collection: CmsCollectionName = 'artists';
+  const entry = 'new';
+  const pathName = `/admin/#/collections/${collection}/new`;
+  const url = createRouteUrl(input.siteUrl, pathName);
+  const scenarioArtifactDir = createSmokeScenarioArtifactDir(input.runArtifactDir, 'artists-new');
+  const issues: string[] = [];
+
+  mkdirSync(scenarioArtifactDir, { recursive: true });
+
+  try {
+    await page.goto(url, {
+      timeout: Math.min(input.options.timeoutMs, 30_000),
+      waitUntil: 'domcontentloaded',
+    });
+    await clickLocalDecapLogin(page);
+
+    const titleField = page.getByLabel('Title', { exact: true });
+    await titleField
+      .waitFor({ state: 'visible', timeout: Math.min(input.options.timeoutMs, 25_000) })
+      .catch((error: unknown) => {
+        issues.push(`Expected the new Artist editor title field: ${redactSensitiveSmokeText(String(error))}.`);
+      });
+
+    if ((await page.getByLabel('Slug', { exact: true }).count()) !== 0) {
+      issues.push('Expected the new Artist editor to omit the Slug field.');
+    }
+
+    const snapshot = await readCmsEditorSnapshot(page, false);
+    if (!snapshot.hasLoadedEditorChrome) {
+      issues.push('Expected the new Artist editor to show the loaded Decap editor chrome.');
+    }
+    if (snapshot.publishClickCount !== 0) {
+      issues.push('Expected the new Artist editor smoke check never to select Publish.');
+    }
+
+    const status = issues.length ? 'failed' : 'passed';
+    const screenshotPath = await maybeCaptureCmsScreenshot(
+      page,
+      scenarioArtifactDir,
+      status === 'failed',
+      input.options.screenshots,
+    );
+
+    return {
+      collection,
+      entry,
+      expectedFormValues: [],
+      issues,
+      path: pathName,
+      screenshotPath,
+      snapshot,
+      status,
+      url,
+    };
   } finally {
     input.consoleErrors.push(...diagnostics.consoleErrors);
     input.pageErrors.push(...diagnostics.pageErrors);

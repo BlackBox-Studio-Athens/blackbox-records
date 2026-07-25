@@ -380,8 +380,25 @@
     }
   };
 
+  const createArtistPreSaveHandler =
+    (resolveSlug) =>
+    ({ entry }) => {
+      const data = entry?.get?.('data');
+      if (!data || entry.get('collection') !== 'artists') {
+        return data;
+      }
+
+      const existingSlug = toText(data.get('slug'));
+      if (existingSlug.trim()) {
+        return data;
+      }
+
+      return data.set('slug', resolveSlug(existingSlug, toText(data.get('title'))));
+    };
+
   if (adminContext.exposeTestHooks) {
     window.__BLACKBOX_ADMIN_TEST_HOOKS__ = {
+      createArtistPreSaveHandler,
       getActiveSingletonEditor,
       isSingletonEditorEmptyLoad,
       reloadOnSavedSingletonRouteChange,
@@ -497,6 +514,16 @@
     if (previewStyleUrl) {
       CMS.registerPreviewStyle(previewStyleUrl);
     }
+
+    if (typeof adminContext.resolveArtistSlugForSave !== 'function') {
+      markFailed();
+      return;
+    }
+
+    CMS.registerEventListener({
+      name: 'preSave',
+      handler: createArtistPreSaveHandler(adminContext.resolveArtistSlugForSave),
+    });
 
     const HomePreview = createClass({
       render() {
