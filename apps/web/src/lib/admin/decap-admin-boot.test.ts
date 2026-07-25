@@ -893,6 +893,30 @@ describe('Decap admin boot markup and styles', () => {
     expect(harness.targetWindow.__BLACKBOX_ADMIN_AUTH_READY__).toBe(true);
   });
 
+  it('does not rewrite hosted login copy for every editor mutation', () => {
+    let loginText = 'Login';
+    const replaceLoginText = vi.fn((value: string) => {
+      loginText = value;
+    });
+    const loginButton = {
+      dataset: {} as Record<string, string>,
+      getAttribute: vi.fn(() => null),
+      parentElement: { insertBefore: vi.fn() },
+      setAttribute: vi.fn(),
+      get textContent() {
+        return loginText;
+      },
+      set textContent(value: string) {
+        replaceLoginText(value);
+      },
+    };
+    const harness = runInitHarness({ loginButton, mode: 'hosted' });
+
+    harness.triggerMutation();
+
+    expect(replaceLoginText).toHaveBeenCalledOnce();
+  });
+
   it('keeps direct-publish and commerce guidance in generated collection copy', () => {
     expect(init).not.toContain('blackbox-cms-scope-panel');
   });

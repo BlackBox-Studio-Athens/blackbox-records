@@ -298,7 +298,9 @@
       return;
     }
 
-    loginButton.textContent = 'Sign in with DecapBridge';
+    if (loginButton.textContent !== 'Sign in with DecapBridge') {
+      loginButton.textContent = 'Sign in with DecapBridge';
+    }
     loginButton.setAttribute('aria-label', 'Sign in with DecapBridge');
     loginButton.setAttribute('title', 'Sign in with DecapBridge');
 
