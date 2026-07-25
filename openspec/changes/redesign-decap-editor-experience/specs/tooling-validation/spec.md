@@ -16,6 +16,12 @@ The system MUST validate the redesigned editor through rendered task flows in th
 - **THEN** `document.documentElement.scrollWidth` does not exceed `clientWidth`, and collection navigation, forms, image controls, validation, preview controls, and action bars have no horizontally clipped required action
 - **AND** primary workflow actions and standalone icon controls have at least 44 by 44 CSS-pixel targets, accessible names, visible keyboard focus, and no dependency on hover, desktop width, or interaction with the boot surface.
 
+#### Scenario: Admin chrome and controls are inspected
+
+- **WHEN** the authenticated Local CMS is inspected at desktop, 390-pixel, and 320-pixel viewports
+- **THEN** the horizontal BlackBox wordmark has nonzero rendered dimensions, the Contents document icon is absent, composite selects retain aligned native internals, and configured assets load from the active origin
+- **AND** actionable text meets WCAG 2.2 AA contrast across default, hover, focus, and active states, disabled actions remain legible and distinct, and no unexpected console or page errors occur.
+
 #### Scenario: Owner accepts the UAT editor
 
 - **WHEN** the exact implementation commit is deployed to UAT
@@ -32,7 +38,7 @@ The system MUST parse and validate generated Decap YAML for every supported back
 
 - **WHEN** `pnpm test:cms-admin` or the web unit suite runs
 - **THEN** tests parse the generated YAML for `local`, `hosted`, and `disabled` behavior
-- **AND** they verify backend type, repository, branch, publish mode, shared-Google guidance without provider-exclusivity claims, site/display URL, collection-owned media settings, exact collection order, canonical `site-pages` identity and routes, file-entry order and descriptions, summaries, sorts, groups, filters, native image options, current branding options, and exact runtime version inputs.
+- **AND** they verify backend type, repository, branch, publish mode, shared-Google guidance without provider-exclusivity claims, site/display URL, collection-owned media settings, exact collection order, canonical `site-pages` identity and routes, file-entry order and descriptions, summaries, sorts, groups, filters, native image options, hidden Artist slug storage, native Artist filename generation, the horizontal wordmark, current branding options, and exact runtime version inputs.
 
 #### Scenario: Boot lifecycle tests run
 
@@ -73,6 +79,12 @@ The system MUST test the editor structure that can create direct-to-main content
 - **WHEN** Store Item groups, slug constraints, or another shared closed value changes
 - **THEN** tests prove Astro schema acceptance and Decap options remain aligned
 - **AND** current committed content still passes `pnpm check`.
+
+#### Scenario: Artist slug generation tests run
+
+- **WHEN** Artist collection and admin event tests execute
+- **THEN** a blank new Artist slug is generated from the current title through the shared slug library, while an existing or explicit slug is preserved across title edits and Decap round trips
+- **AND** tests prove no editor-visible Slug field exists and invalid or colliding source overrides fail repository validation.
 
 #### Scenario: Fixed-layout page contracts change
 
@@ -127,8 +139,8 @@ The system SHALL keep Local CMS Smoke read-only and SHALL cover the highest-freq
 #### Scenario: Local CMS Smoke runs
 
 - **WHEN** `pnpm smoke:cms-local -- --screenshots never` runs
-- **THEN** it starts explicit local mode, verifies automatic boot dismissal, and loads representative Home, Artist, Release, Store Item, and News editors
-- **AND** it opens new Store Item and Release forms through semantic role/name queries, selects an existing collection image without saving or publishing, verifies current values, canonical Site Pages routes, preview registrations, direct-to-main notice, mobile layout, and zero unexpected console or page errors.
+- **THEN** it starts explicit local mode on `127.0.0.1`, verifies automatic boot dismissal, same-origin configured assets, and representative Home, Artist, Release, Store Item, and News editors
+- **AND** it opens new Artist, Store Item, and Release forms through semantic role/name queries, verifies the Artist form has no Slug control, selects an existing collection image without saving or publishing, and checks the header wordmark, text-only Contents route, composite Group selector, action contrast, current values, canonical Site Pages routes, preview registrations, direct-to-main notice, mobile layout, and zero unexpected console or page errors.
 
 #### Scenario: Local CMS Smoke completes
 
@@ -159,7 +171,7 @@ The system MUST validate the exact final Decap tree with focused, rendered, and 
 #### Scenario: Decap implementation is ready for UAT
 
 - **WHEN** implementation tasks are complete
-- **THEN** `pnpm test:cms-admin`, `pnpm smoke:cms-local -- --screenshots never`, `pnpm test:unit`, `pnpm check`, and `pnpm build` pass against the exact final tree
+- **THEN** Artist slug, scoped-style, branding, host-origin, and existing CMS focused tests pass, followed by `pnpm test:cms-admin`, `pnpm smoke:cms-local -- --screenshots never`, `pnpm test:unit`, `pnpm check`, and `pnpm build` against the exact final tree
 - **AND** Browser Use validates the desktop and mobile task walkthroughs while the generated secret-free local build presents disabled rather than localhost-backed CMS behavior.
 
 #### Scenario: Hosted Decap is accepted

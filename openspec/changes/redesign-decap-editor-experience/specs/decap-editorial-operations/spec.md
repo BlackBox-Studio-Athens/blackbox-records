@@ -50,6 +50,56 @@ The system SHALL make creating a Store Item, adding or replacing its image, and 
 - **THEN** title, Artist relation, cover image, alt text, release date, formats, and public copy follow the editor's task order
 - **AND** optional or repeatable details use clear labels and summaries without obscuring required fields.
 
+### Requirement: Artist slugs are generated without editor input
+
+The system MUST generate a new Artist's public slug through the shared repository slug library, MUST preserve existing Artist slugs, and MUST NOT expose Artist slug editing in Decap.
+
+#### Scenario: Editor creates an Artist
+
+- **WHEN** an editor creates an Artist with a title and no stored slug
+- **THEN** Decap shows no Slug field or override action, uses its native title identifier for the new entry filename, and generates the stored public slug through the shared slug library before save
+- **AND** the generated slug satisfies the runtime slug format without requiring editor input.
+
+#### Scenario: Editor changes an existing Artist title
+
+- **WHEN** an existing Artist has a nonblank stored slug and an editor changes its title or other content
+- **THEN** the stored public slug and existing entry filename remain unchanged
+- **AND** the published Artist URL does not change as a side effect of routine editorial work.
+
+#### Scenario: Maintainer supplies an explicit Artist slug
+
+- **WHEN** a maintainer sets an explicit Artist slug directly in repository source
+- **THEN** Decap round-trips that hidden value without replacing or exposing it
+- **AND** repository validation rejects an invalid or colliding override before the content is accepted.
+
+### Requirement: Admin branding and controls remain legible
+
+The system MUST scope BlackBox admin styles so Decap composite controls retain their native structure, required actions remain readable, and the authenticated header presents clear BlackBox branding.
+
+#### Scenario: Authenticated header renders
+
+- **WHEN** the Decap content view is authenticated and ready
+- **THEN** the existing horizontal BlackBox wordmark is visibly dark on the light header and the Contents route remains readable as text
+- **AND** the native document icon is absent without a generated-class selector or document-wide observer.
+
+#### Scenario: Composite selection control renders
+
+- **WHEN** a select, relation, group, or filter control renders an internal combobox input
+- **THEN** the internal input does not receive the outer text-field height, border, radius, padding, or shadow
+- **AND** the trigger, selected value, dropdown indicator, and focus state remain aligned and readable.
+
+#### Scenario: Required action renders
+
+- **WHEN** a create, publish, quick-add, navigation, retry, or other required action is shown
+- **THEN** actionable foreground and background meet WCAG 2.2 AA text contrast in default, hover, focus, and active states, while disabled states remain legible and visibly distinct
+- **AND** no blanket link or button foreground override replaces the action's semantic color.
+
+#### Scenario: Standalone Local CMS loads assets
+
+- **WHEN** the standalone Local CMS launcher serves the admin route
+- **THEN** the page, display link, logo, and other configured admin assets use the active CMS origin on `127.0.0.1`, while the local proxy uses the same hostname on its configured proxy port
+- **AND** the local header logo loads successfully without changing hosted URLs.
+
 ### Requirement: Decap supports mobile editorial work
 
 The system MUST keep routine collection discovery, entry editing, image handling, validation, preview control, and publication actions usable at mobile widths.
@@ -202,7 +252,7 @@ The system SHALL use native Decap widgets and constraints to reject predictable 
 
 #### Scenario: Editor enters a constrained value
 
-- **WHEN** an editor enters a slug, internal path, external URL, email address, YouTube ID, provider URL, integer order, or date
+- **WHEN** an editor enters an editor-visible slug, internal path, external URL, email address, YouTube ID, provider URL, integer order, or date
 - **THEN** Decap applies the same practical format constraint as the runtime schema
 - **AND** the field hint includes a concise valid example where the format is not obvious.
 

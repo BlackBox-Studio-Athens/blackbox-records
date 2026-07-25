@@ -4,6 +4,8 @@ The current Decap editor already has the right authority boundary: it edits repo
 
 The redesign must stay inside Decap, support mobile editing, direct all editors to the shared label Google account through hosted DecapBridge PKCE, and retain direct-to-`main` publishing. Hosted DecapBridge owns its provider-selection page, so repository-owned copy and tests must not claim that Microsoft or password choices are suppressed. The implementation may change any repository-owned CMS, content, schema, preview, test, or documentation surface. Simplicity and native Decap behavior take precedence over preserving the current customization layer.
 
+Acceptance review of the implemented editor exposed four root causes that remain in this change: Artist creation duplicates the shared slug library with a required manual field; broad CSS applies outer input geometry to Decap's internal combobox; a blanket link/button foreground makes dark actions unreadable; and the configured light logo plus native document icon weakens the light header. The standalone CMS launcher also serves on `localhost` while generated local CMS asset URLs use `127.0.0.1`, so the configured logo can fail to load even though the admin page rendered.
+
 ## Goals / Non-Goals
 
 **Goals:**
@@ -13,6 +15,9 @@ The redesign must stay inside Decap, support mobile editing, direct all editors 
 - Make Store Item creation, Store Item image work, and Release creation the shortest and clearest editor paths.
 - Replace fixed-layout section lists with content shapes that cannot expose invalid structural controls.
 - Use supported Decap configuration and extension APIs before custom DOM or CSS behavior.
+- Generate stable Artist public slugs without asking editors to understand or enter them.
+- Preserve Decap composite-control structure, readable action contrast, and clear BlackBox header branding.
+- Keep standalone and canonical local CMS URLs on one loopback origin.
 - Make the authenticated collection and entry views usable on mobile and desktop.
 - Keep generated configuration and rendered behavior covered by deterministic tests and Browser Use checks.
 
@@ -23,6 +28,8 @@ The redesign must stay inside Decap, support mobile editing, direct all editors 
 - Redesigning the public BlackBox site.
 - Adding a compatibility facade for the old fixed-section content shapes.
 - Building a general admin design system or a new media library.
+- Exposing an Artist slug override in Decap or automatically changing an existing Artist URL when its title changes.
+- Replacing Decap's header or navigation shell with an app-owned equivalent.
 
 ## Decisions
 
@@ -101,6 +108,14 @@ Release creation will place title, Artist relation, cover image, alt text, relea
 
 No Store Item or Release field will expose commerce authority.
 
+### Generate Artist slugs once and keep overrides outside Decap
+
+Artist entries have two related identities: the Decap entry filename used by Astro references and the public route slug stored in frontmatter. Existing content already permits those values to differ, so the redesign will preserve that separation rather than rename files or collapse identities.
+
+For a new Artist, Decap will create the filename from the native `{{slug}}` template and the `title` identifier. Before `CMS.init()`, the admin runtime will register one supported `preSave` listener scoped to collection `artists`. When the stored `slug` is missing or blank, the listener will generate it from the current title through the existing shared `createSlugSuggestion` or `resolveExplicitOrSuggestedSlug` path. A nonblank stored slug is returned unchanged, so later title edits do not change the public URL.
+
+The Artist collection will retain `slug` only as a hidden, non-required Decap serialization field so a new draft can reach `preSave`; the saved Astro content contract remains required. Editors will see no slug input, hint, or override action. A maintainer may set an explicit slug directly in source when a deliberate public URL exception is required; existing format validation, collision checks, and content acceptance remain authoritative. Decap round-trip coverage must prove hidden existing values survive edits. No new slug dependency, custom widget, or parallel normalization algorithm will be added.
+
 ### Keep image work collection-owned and native
 
 Collection image fields will use Decap's native image widget with one image per field and URL entry disabled. Editors can upload, select, replace, preview, and validate an image without understanding repository paths. Assets continue to save beside their owning content entries, and alt text remains a separate required field where the public schema requires it.
@@ -111,17 +126,25 @@ The global Media surface will be absent unless every asset it exposes can produc
 
 The configuration will use the current `logo` object instead of `logo_url`. Markdown-backed body fields will use Decap's current rich-text widget while preserving Markdown storage. Every committed Artist and News Markdown body present when the change is implemented must round-trip without destructive semantic changes before the deprecated widget is removed. Tests may accept harmless serializer normalization but must preserve headings, paragraphs, lists, links, emphasis, code, and other semantics present in each fixture. Native list `min` and `max` will only be used as a pair; ineffective limits will be removed or completed according to the public schema.
 
+### Scope admin styles and keep the native header legible
+
+BlackBox styling will keep typography and page-level color tokens, but it will stop applying outer control geometry to every `input`, `textarea`, and `select`. Visual field styling will target real text controls and native selects; internal composite inputs such as `input[role='combobox']` will retain or explicitly reset to Decap's inner-control geometry. This fixes the malformed Group selector once for every select and relation widget instead of patching one field.
+
+BlackBox CSS will not force one foreground color onto every `#nc-root` link and button. Decap-owned action surfaces retain their native foreground unless a stable semantic selector owns both foreground and background. Actionable text must meet WCAG 2.2 AA contrast; default, hover, focus, and active states must remain readable, while disabled states remain legible and visibly distinct. Existing 44-pixel target and visible-focus requirements still apply.
+
+The authenticated header will stay light and use the existing horizontal BlackBox wordmark with a scoped dark presentation. The native Contents route remains text-only; its document SVG will be hidden with the stable `a[href='#/']` route selector rather than a generated class or runtime observer. The standalone `cms:dev` launcher will bind Astro to `127.0.0.1`, matching generated local `site_url`, `display_url`, logo URLs, smoke expectations, and the canonical local stack. Hosted URLs and authentication behavior remain unchanged.
+
 ### Make mobile a supported editing surface
 
-The implementation will start with Decap 3.15.1 responsive behavior, then add only scoped CSS needed for BlackBox branding and demonstrated defects. At 320 CSS pixels and wider, `document.documentElement.scrollWidth` must not exceed `clientWidth`; required navigation, fields, validation, image controls, preview controls, and publication actions must not be horizontally clipped. Primary workflow actions and standalone icon controls must have at least a 44 by 44 CSS-pixel target, an accessible name, and visible keyboard focus.
+The implementation will start with Decap 3.15.1 responsive behavior, then add only scoped CSS needed for BlackBox branding and demonstrated defects. At 320 CSS pixels and wider, `document.documentElement.scrollWidth` must not exceed `clientWidth`; required navigation, fields, validation, image controls, preview controls, and publication actions must not be horizontally clipped. Primary workflow actions and standalone icon controls must have at least a 44 by 44 CSS-pixel target, an accessible name, visible keyboard focus, and readable foreground/background contrast. Composite widget internals must not receive the outer text-field box model.
 
 The native preview toggle remains the control surface. Store Item and Release editing width takes priority on narrow screens; preview may begin closed when the runtime supports that behavior without brittle automation.
 
 ### Validate contracts and real tasks
 
-Generated YAML tests will cover exact versions, current options, canonical `site-pages` identity and file descriptions, collection order, filters, summaries, widgets, and absence of deprecated configuration. Content contract tests will cover the named fixed-page objects, all committed Markdown round trips, native list constraints, and every repair disposition. Boot tests will prove `CMS.init()` alone does not mark ready, the first `#nc-root` child does, and every observer/timer is cleaned up.
+Generated YAML tests will cover exact versions, current options, canonical `site-pages` identity and file descriptions, collection order, filters, summaries, widgets, hidden Artist slug storage, native Artist filename generation, the horizontal wordmark, and absence of deprecated configuration. Content contract tests will cover the named fixed-page objects, all committed Markdown round trips, Artist slug generation and override preservation, native list constraints, scoped style boundaries, and every repair disposition. Boot tests will prove `CMS.init()` alone does not mark ready, the first `#nc-root` child does, and every observer/timer is cleaned up.
 
-Local Browser Use checks will open the new Store Item and Release flows by semantic role/name, exercise selection of an existing collection image without saving or publishing, and verify the same routes at desktop and mobile widths. Local smoke records content-file hashes and `git status --porcelain` before and after the run and fails on mutation. UAT checks remain signed-out and read-only, validating shared-Google guidance on the BlackBox-owned admin surface, transition to hosted DecapBridge, boot dismissal, hosted configuration, and safe assets. Owner acceptance uses the shared Google account and remains no-publish.
+Local Browser Use checks will open the new Artist, Store Item, and Release flows by semantic role/name, verify the Artist form exposes no slug field, exercise selection of an existing collection image without saving or publishing, and verify the header, Group selector, action contrast, and same-origin assets at desktop and mobile widths. Local smoke records content-file hashes and `git status --porcelain` before and after the run and fails on mutation. UAT checks remain signed-out and read-only, validating shared-Google guidance on the BlackBox-owned admin surface, transition to hosted DecapBridge, boot dismissal, hosted configuration, and safe assets. Owner acceptance uses the shared Google account and remains no-publish.
 
 ## Risks / Trade-offs
 
@@ -130,6 +153,8 @@ Local Browser Use checks will open the new Store Item and Release flows by seman
 - **Hosted DecapBridge may show alternate provider methods.** The repository cannot enforce an exclusive Google provider UI on the hosted service. BlackBox guidance and owner acceptance require the shared Google account; self-hosting remains out of scope.
 - **A shared Google account has no per-editor identity or role separation.** This is an accepted operating constraint. The UI will not claim individual attribution or permissions it cannot provide.
 - **Direct publication leaves little recovery time.** Native validation, concise `main` warnings, protected deletion, and task-focused forms reduce mistakes; Git history remains the recovery mechanism.
+- **A hidden slug hook could silently fail or overwrite identity.** Register one collection-scoped supported `preSave` listener before initialization, preserve every nonblank slug, and gate the behavior with focused generation, title-edit, override, and round-trip tests.
+- **Scoped CSS still depends on stable semantic attributes.** Use only native roles, route hrefs, element types, and app-owned asset URLs; rendered regression checks fail if Decap changes those contracts.
 - **Mobile Decap has upstream layout limits.** The plan requires functional mobile workflows, not a custom replacement shell. Scoped CSS is acceptable only for demonstrated defects.
 - **Rich-text editing can rewrite Markdown.** Fixture round-trip checks gate the widget change.
 
@@ -138,10 +163,10 @@ Local Browser Use checks will open the new Store Item and Release flows by seman
 1. Pin the new Decap runtime and proxy versions and update exact-version assertions.
 2. Add the stable `#nc-root`, fix truthful boot readiness, and update shared-Google authentication guidance without provider-exclusivity claims.
 3. Convert Home, About, and Services content and consumers to named object fields in one commit-sized slice.
-4. Rebuild generated collection configuration for the new information architecture, task-first fields, native image options, filters, summaries, and current configuration keys.
-5. Apply the repair-disposition table, removing the broad body observer and retaining only proven bounded semantic exceptions.
+4. Rebuild generated collection configuration for the new information architecture, task-first fields, native image options, filters, summaries, hidden Artist slug storage, and current configuration keys.
+5. Register Artist slug generation, scope admin styles, correct header branding, align the local CMS host, and apply the repair-disposition table.
 6. Update deterministic tests and no-write smoke checks, run Local Browser Use at desktop/mobile widths, then run repository gates.
-7. Deploy the exact commit to UAT and run signed-out UAT smoke plus a shared-Google, no-publish owner walkthrough of the three top tasks.
+7. Deploy the exact commit to UAT and run signed-out UAT smoke plus a shared-Google, no-publish owner walkthrough of Artist, Store Item, image, and Release tasks.
 
 Rollback is a Git revert of the implementation slice. There is no database or provider migration.
 
