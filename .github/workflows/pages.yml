@@ -148,7 +148,7 @@ jobs:
         run: pnpm build:web
 
       - name: Upload UAT Pages artifact
-        uses: actions/upload-pages-artifact@v5.0.0
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: apps/web/dist
           retention-days: 1
@@ -198,7 +198,7 @@ jobs:
         run: pnpm build
 
       - name: Upload PRD static artifact
-        uses: actions/upload-artifact@v5.0.0
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: prd-static-site-${{ inputs.artifact_commit_sha || github.sha }}
           path: apps/web/dist
@@ -243,13 +243,13 @@ jobs:
       deployments: write
     steps:
       - name: Download PRD static artifact
-        uses: actions/download-artifact@v5.0.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: prd-static-site-${{ inputs.artifact_commit_sha || github.sha }}
           path: apps/web/dist
 
       - name: Deploy disabled PRD static frontend to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v4.0.0
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}

@@ -60,7 +60,7 @@ jobs:
         run: pnpm prd:holding:prepare && pnpm prd:holding:check
 
       - name: Upload PRD Holding Page artifact
-        uses: actions/upload-artifact@v5.0.0
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: prd-holding-page-${{ github.sha }}
           path: apps/web/dist-holding
@@ -79,13 +79,13 @@ jobs:
       name: prd-holding
     steps:
       - name: Download PRD Holding Page artifact
-        uses: actions/download-artifact@v5.0.0
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: prd-holding-page-${{ github.sha }}
           path: apps/web/dist-holding
 
       - name: Deploy PRD Holding Page branch
-        uses: cloudflare/wrangler-action@v4.0.0
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
