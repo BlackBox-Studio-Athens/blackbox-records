@@ -1119,6 +1119,7 @@ body {
   .distro-group-section__copy {
     max-width: 46rem;
     color: var(--muted-foreground);
+    font-family: var(--font-mono);
     font-size: 0.95rem;
     line-height: 1.7;
   }
@@ -2423,6 +2424,7 @@ body {
     max-width: 58ch;
     margin: 1rem 0 0;
     color: rgba(214, 214, 214, 0.86);
+    font-family: var(--font-mono);
     font-size: 1rem;
     line-height: 1.65;
   }
@@ -2528,6 +2530,7 @@ body {
   .releases-latest-feature__upcoming-summary {
     margin: 0.75rem 0 0;
     color: rgba(214, 214, 214, 0.82);
+    font-family: var(--font-mono);
     font-size: 0.9rem;
     line-height: 1.55;
   }
