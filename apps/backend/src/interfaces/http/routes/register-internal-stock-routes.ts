@@ -3,8 +3,7 @@ import { createRoute, z } from '@hono/zod-openapi';
 import type { AppBindings, AppOpenApi } from '../../../env';
 import type { AppLogger } from '../../../observability';
 import { requestLogger, runWithTraceSpan, traceContextFromHono } from '../../../observability';
-import { readOperatorIdentityFromAccessHeaders } from '../auth';
-import { backendErrorResponseSchema, jsonError, jsonNoStore } from '../responses';
+import { backendErrorResponseSchema, jsonError, jsonNoStore, operatorAccessErrorResponses } from '../responses';
 import { createInternalStockServices } from './internal-stock-services';
 
 type InternalStockServices = ReturnType<typeof createInternalStockServices>;
@@ -13,9 +12,6 @@ type InternalStockRouteError = {
   message: string;
   status: 400 | 404;
 };
-
-const readOperatorEmail = (headers: Headers): string | null =>
-  readOperatorIdentityFromAccessHeaders(headers)?.email ?? null;
 
 function logStockOutcome(
   logger: Pick<AppLogger, 'error' | 'info' | 'warn'>,
@@ -188,14 +184,7 @@ const searchVariantsRoute = createRoute({
       },
       description: 'Search variants for internal stock operations.',
     },
-    401: {
-      content: {
-        'application/json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
-      description: 'Missing operator identity.',
-    },
+    ...operatorAccessErrorResponses,
   },
   tags: ['Internal Stock'],
 });
@@ -215,14 +204,7 @@ const getVariantStockRoute = createRoute({
       },
       description: 'Current stock for a variant.',
     },
-    401: {
-      content: {
-        'application/json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
-      description: 'Missing operator identity.',
-    },
+    ...operatorAccessErrorResponses,
     400: {
       content: {
         'application/json': {
@@ -259,14 +241,7 @@ const getVariantStockHistoryRoute = createRoute({
       },
       description: 'Recent stock history for a variant.',
     },
-    401: {
-      content: {
-        'application/json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
-      description: 'Missing operator identity.',
-    },
+    ...operatorAccessErrorResponses,
     400: {
       content: {
         'application/json': {
@@ -317,14 +292,7 @@ const postStockChangeRoute = createRoute({
       },
       description: 'Invalid stock change.',
     },
-    401: {
-      content: {
-        'application/json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
-      description: 'Missing operator identity.',
-    },
+    ...operatorAccessErrorResponses,
     404: {
       content: {
         'application/json': {
@@ -367,14 +335,7 @@ const postStockCountRoute = createRoute({
       },
       description: 'Invalid stock count.',
     },
-    401: {
-      content: {
-        'application/json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
-      description: 'Missing operator identity.',
-    },
+    ...operatorAccessErrorResponses,
     404: {
       content: {
         'application/json': {
@@ -390,21 +351,6 @@ const postStockCountRoute = createRoute({
 export function registerInternalStockRoutes(app: AppOpenApi): void {
   app.openapi(searchVariantsRoute, async (context) => {
     const logger = requestLogger(context);
-    const operatorEmail = readOperatorEmail(context.req.raw.headers);
-
-    if (!operatorEmail) {
-      logStockOutcome(logger, 'warn', {
-        operation: 'search',
-        outcome: 'unauthorized',
-        safeReason: 'missing_operator_identity',
-      });
-
-      return jsonError(context, {
-        code: 'missing_operator_identity',
-        message: 'Missing operator identity.',
-        status: 401,
-      });
-    }
 
     return withInternalStockServices(context.env, async (services) => {
       const query = context.req.valid('query');
@@ -421,21 +367,6 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
 
   app.openapi(getVariantStockRoute, async (context) => {
     const logger = requestLogger(context);
-    const operatorEmail = readOperatorEmail(context.req.raw.headers);
-
-    if (!operatorEmail) {
-      logStockOutcome(logger, 'warn', {
-        operation: 'read',
-        outcome: 'unauthorized',
-        safeReason: 'missing_operator_identity',
-      });
-
-      return jsonError(context, {
-        code: 'missing_operator_identity',
-        message: 'Missing operator identity.',
-        status: 401,
-      });
-    }
 
     return withInternalStockServices(context.env, async (services) => {
       try {
@@ -475,21 +406,6 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
 
   app.openapi(getVariantStockHistoryRoute, async (context) => {
     const logger = requestLogger(context);
-    const operatorEmail = readOperatorEmail(context.req.raw.headers);
-
-    if (!operatorEmail) {
-      logStockOutcome(logger, 'warn', {
-        operation: 'history',
-        outcome: 'unauthorized',
-        safeReason: 'missing_operator_identity',
-      });
-
-      return jsonError(context, {
-        code: 'missing_operator_identity',
-        message: 'Missing operator identity.',
-        status: 401,
-      });
-    }
 
     return withInternalStockServices(context.env, async (services) => {
       try {
@@ -530,21 +446,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
 
   app.openapi(postStockChangeRoute, async (context) => {
     const logger = requestLogger(context);
-    const operatorEmail = readOperatorEmail(context.req.raw.headers);
-
-    if (!operatorEmail) {
-      logStockOutcome(logger, 'warn', {
-        operation: 'change',
-        outcome: 'unauthorized',
-        safeReason: 'missing_operator_identity',
-      });
-
-      return jsonError(context, {
-        code: 'missing_operator_identity',
-        message: 'Missing operator identity.',
-        status: 401,
-      });
-    }
+    const operatorEmail = context.get('operatorIdentity').email;
 
     return withInternalStockServices(context.env, async (services) => {
       try {
@@ -611,21 +513,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
 
   app.openapi(postStockCountRoute, async (context) => {
     const logger = requestLogger(context);
-    const operatorEmail = readOperatorEmail(context.req.raw.headers);
-
-    if (!operatorEmail) {
-      logStockOutcome(logger, 'warn', {
-        operation: 'count',
-        outcome: 'unauthorized',
-        safeReason: 'missing_operator_identity',
-      });
-
-      return jsonError(context, {
-        code: 'missing_operator_identity',
-        message: 'Missing operator identity.',
-        status: 401,
-      });
-    }
+    const operatorEmail = context.get('operatorIdentity').email;
 
     return withInternalStockServices(context.env, async (services) => {
       try {

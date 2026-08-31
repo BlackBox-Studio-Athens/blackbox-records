@@ -453,7 +453,17 @@
             }
           },
           "401": {
-            "description": "Missing operator identity.",
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication is temporarily unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -493,7 +503,7 @@
             }
           },
           "401": {
-            "description": "Missing operator identity.",
+            "description": "Operator authentication failed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -504,6 +514,16 @@
           },
           "404": {
             "description": "Checkout order not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication is temporarily unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -556,7 +576,17 @@
             }
           },
           "401": {
-            "description": "Missing operator identity.",
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication is temporarily unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -606,7 +636,7 @@
             }
           },
           "401": {
-            "description": "Missing operator identity.",
+            "description": "Operator authentication failed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -617,6 +647,16 @@
           },
           "404": {
             "description": "Variant not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication is temporarily unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -676,7 +716,7 @@
             }
           },
           "401": {
-            "description": "Missing operator identity.",
+            "description": "Operator authentication failed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -687,6 +727,16 @@
           },
           "404": {
             "description": "Variant not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication is temporarily unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -745,7 +795,7 @@
             }
           },
           "401": {
-            "description": "Missing operator identity.",
+            "description": "Operator authentication failed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -756,6 +806,16 @@
           },
           "404": {
             "description": "Variant not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication is temporarily unavailable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -814,7 +874,7 @@
             }
           },
           "401": {
-            "description": "Missing operator identity.",
+            "description": "Operator authentication failed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -825,6 +885,16 @@
           },
           "404": {
             "description": "Variant not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication is temporarily unavailable.",
             "content": {
               "application/json": {
                 "schema": {

@@ -50,6 +50,7 @@
     "@prisma/adapter-d1": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "hono": "4.13.5",
+    "jose": "6.2.3",
     "resend": "^6.25.0",
     "stripe": "^22.6.0",
     "unique-names-generator": "^4.7.1",

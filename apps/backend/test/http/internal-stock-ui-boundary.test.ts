@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER } from '../../src/interfaces/http/auth';
 import { createHttpApp } from '../../src/interfaces/http/app';
 
 describe('internal stock UI boundary', () => {
@@ -8,11 +7,7 @@ describe('internal stock UI boundary', () => {
     const app = createHttpApp();
 
     for (const path of ['/stock/', '/stock/variant_disintegration-black-vinyl-lp_standard/']) {
-      const response = await app.request(`http://backend.test${path}`, {
-        headers: {
-          [CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER]: 'operator@blackboxrecords.example',
-        },
-      });
+      const response = await app.request(`http://backend.test${path}`);
 
       expect(response.status).toBe(404);
       await expect(response.json()).resolves.toEqual({

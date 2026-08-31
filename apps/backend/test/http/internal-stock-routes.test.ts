@@ -3,6 +3,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER } from '../../src/interfaces/http/auth';
 import { createHttpApp } from '../../src/interfaces/http/app';
 
+const LOCAL_ENV = {
+  PRODUCT_ENVIRONMENT: 'LOCAL' as const,
+  COMMERCE_DB: {} as D1Database,
+  LOCAL_OPERATOR_EMAIL: 'operator@blackboxrecords.example',
+};
+const HOSTED_ENV = {
+  PRODUCT_ENVIRONMENT: 'UAT' as const,
+  COMMERCE_DB: {} as D1Database,
+  CF_ACCESS_POLICY_AUD: 'operator-audience',
+  CF_ACCESS_TEAM_DOMAIN: 'https://blackbox.cloudflareaccess.com',
+};
+
 const mockDisconnect = vi.fn(async () => {});
 const mockSearchVariants = vi.fn();
 const mockReadVariantStock = vi.fn();
@@ -36,18 +48,19 @@ describe('internal stock routes', () => {
     vi.clearAllMocks();
   });
 
-  it('requires an Access-authenticated operator identity header', async () => {
+  it('rejects a hosted request without an Access assertion before service construction', async () => {
     const app = createHttpApp();
 
-    const response = await app.request('http://backend.test/api/internal/variants');
+    const response = await app.request('https://ops.example/api/internal/variants', undefined, HOSTED_ENV);
 
     expect(response.status).toBe(401);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
-      code: 'missing_operator_identity',
-      error: 'Missing operator identity.',
+      code: 'unauthorized',
+      error: 'Unauthorized.',
       requestId: expect.any(String),
     });
+    expect(mockSearchVariants).not.toHaveBeenCalled();
   });
 
   it('lists variants for operators on the protected internal surface', async () => {
@@ -62,16 +75,9 @@ describe('internal stock routes', () => {
 
     const app = createHttpApp();
     const response = await app.request(
-      'http://backend.test/api/internal/variants?q=barren&limit=10',
-      {
-        headers: {
-          [CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER]: 'operator@blackboxrecords.example',
-        },
-      },
-      {
-        PRODUCT_ENVIRONMENT: 'LOCAL',
-        COMMERCE_DB: {} as D1Database,
-      },
+      'http://127.0.0.1/api/internal/variants?q=barren&limit=10',
+      undefined,
+      LOCAL_ENV,
     );
 
     expect(mockSearchVariants).toHaveBeenCalledWith('barren', 10);
@@ -102,16 +108,9 @@ describe('internal stock routes', () => {
 
     const app = createHttpApp();
     const response = await app.request(
-      'http://backend.test/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock',
-      {
-        headers: {
-          [CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER]: 'operator@blackboxrecords.example',
-        },
-      },
-      {
-        PRODUCT_ENVIRONMENT: 'LOCAL',
-        COMMERCE_DB: {} as D1Database,
-      },
+      'http://127.0.0.1/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock',
+      undefined,
+      LOCAL_ENV,
     );
 
     expect(response.status).toBe(200);
@@ -151,7 +150,7 @@ describe('internal stock routes', () => {
 
     const app = createHttpApp();
     const response = await app.request(
-      'http://backend.test/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock/changes',
+      'http://127.0.0.1/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock/changes',
       {
         body: JSON.stringify({
           delta: -1,
@@ -159,15 +158,12 @@ describe('internal stock routes', () => {
           reason: 'sale',
         }),
         headers: {
-          [CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER]: 'operator@blackboxrecords.example',
+          [CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER]: 'attacker@blackboxrecords.example',
           'content-type': 'application/json',
         },
         method: 'POST',
       },
-      {
-        PRODUCT_ENVIRONMENT: 'LOCAL',
-        COMMERCE_DB: {} as D1Database,
-      },
+      LOCAL_ENV,
     );
 
     expect(mockRecordStockChange).toHaveBeenCalledWith({
@@ -206,22 +202,18 @@ describe('internal stock routes', () => {
 
     const app = createHttpApp();
     const response = await app.request(
-      'http://backend.test/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock/counts',
+      'http://127.0.0.1/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock/counts',
       {
         body: JSON.stringify({
           countedQuantity: 1,
           onlineQuantity: 2,
         }),
         headers: {
-          [CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER]: 'operator@blackboxrecords.example',
           'content-type': 'application/json',
         },
         method: 'POST',
       },
-      {
-        PRODUCT_ENVIRONMENT: 'LOCAL',
-        COMMERCE_DB: {} as D1Database,
-      },
+      LOCAL_ENV,
     );
 
     expect(response.status).toBe(400);
@@ -238,16 +230,9 @@ describe('internal stock routes', () => {
 
     const app = createHttpApp();
     const response = await app.request(
-      'http://backend.test/api/internal/variants/variant_missing/stock',
-      {
-        headers: {
-          [CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER]: 'operator@blackboxrecords.example',
-        },
-      },
-      {
-        PRODUCT_ENVIRONMENT: 'LOCAL',
-        COMMERCE_DB: {} as D1Database,
-      },
+      'http://127.0.0.1/api/internal/variants/variant_missing/stock',
+      undefined,
+      LOCAL_ENV,
     );
 
     expect(response.status).toBe(404);

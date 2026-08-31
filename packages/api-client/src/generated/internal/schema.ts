@@ -27,8 +27,17 @@ export type paths = {
                         "application/json": components["schemas"]["InternalCheckoutOrder"][];
                     };
                 };
-                /** @description Missing operator identity. */
+                /** @description Operator authentication failed. */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
+                /** @description Operator authentication is temporarily unavailable. */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -73,7 +82,7 @@ export type paths = {
                         "application/json": components["schemas"]["InternalCheckoutOrder"];
                     };
                 };
-                /** @description Missing operator identity. */
+                /** @description Operator authentication failed. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -84,6 +93,15 @@ export type paths = {
                 };
                 /** @description Checkout order not found. */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
+                /** @description Operator authentication is temporarily unavailable. */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -129,8 +147,17 @@ export type paths = {
                         "application/json": components["schemas"]["InternalVariantSummary"][];
                     };
                 };
-                /** @description Missing operator identity. */
+                /** @description Operator authentication failed. */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
+                /** @description Operator authentication is temporarily unavailable. */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -184,7 +211,7 @@ export type paths = {
                         "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
-                /** @description Missing operator identity. */
+                /** @description Operator authentication failed. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -195,6 +222,15 @@ export type paths = {
                 };
                 /** @description Variant not found. */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
+                /** @description Operator authentication is temporarily unavailable. */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -254,7 +290,7 @@ export type paths = {
                         "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
-                /** @description Missing operator identity. */
+                /** @description Operator authentication failed. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -265,6 +301,15 @@ export type paths = {
                 };
                 /** @description Variant not found. */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
+                /** @description Operator authentication is temporarily unavailable. */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -322,7 +367,7 @@ export type paths = {
                         "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
-                /** @description Missing operator identity. */
+                /** @description Operator authentication failed. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -333,6 +378,15 @@ export type paths = {
                 };
                 /** @description Variant not found. */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
+                /** @description Operator authentication is temporarily unavailable. */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -386,7 +440,7 @@ export type paths = {
                         "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
-                /** @description Missing operator identity. */
+                /** @description Operator authentication failed. */
                 401: {
                     headers: {
                         [name: string]: unknown;
@@ -397,6 +451,15 @@ export type paths = {
                 };
                 /** @description Variant not found. */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
+                /** @description Operator authentication is temporarily unavailable. */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };

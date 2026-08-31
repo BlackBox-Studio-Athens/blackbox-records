@@ -145,7 +145,9 @@ Read these first before editing:
 - The protected stock operations UI is served by the static Astro app from `apps/web/src/pages/stock/index.astro` and calls same-origin `/api/internal/*` on the protected operator hostname.
 - For local split-port development, set `PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787` so the static UI can call `pnpm dev:backend`; the Worker must allow that browser origin through `CHECKOUT_RETURN_ORIGINS`.
 - Cloudflare Access + Google protects that hostname through an explicit email allowlist; do not add shopper login or reuse Decap auth for runtime stock operations.
-- Worker-side operator attribution comes from the Access-authenticated request header `cf-access-authenticated-user-email`, which the stock-write routes persist as `actor_email`.
+- Hosted `/api/internal/*` requests require a verified `Cf-Access-Jwt-Assertion`; UAT and PRD must configure exact `CF_ACCESS_TEAM_DOMAIN` issuer and `CF_ACCESS_POLICY_AUD` audience bindings.
+- Ignore `cf-access-authenticated-user-email`. Stock-write `actor_email` comes only from the verified JWT email claim supplied through typed middleware context.
+- JWT-free identity is Local and loopback-only, using `LOCAL_OPERATOR_EMAIL`; hosted environments ignore that binding.
 - The D1 stock ledger now uses `Stock`, `StockChange`, and `StockCount`, with `onlineQuantity` tracked on `Stock`.
 - D1 is the stock source of truth. Spreadsheets are temporary capture/reporting only; operators reconcile offline movement through `/stock/` using `StockChange` for known deltas and `StockCount` for recounts.
 - `OnlineStock` is the conservative checkout-facing quantity and may be lower than physical `Stock`.

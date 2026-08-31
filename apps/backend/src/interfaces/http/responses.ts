@@ -14,6 +14,25 @@ export const backendErrorResponseSchema = z
 
 export type BackendErrorResponse = z.infer<typeof backendErrorResponseSchema>;
 
+export const operatorAccessErrorResponses = {
+  401: {
+    content: {
+      'application/json': {
+        schema: backendErrorResponseSchema,
+      },
+    },
+    description: 'Operator authentication failed.',
+  },
+  503: {
+    content: {
+      'application/json': {
+        schema: backendErrorResponseSchema,
+      },
+    },
+    description: 'Operator authentication is temporarily unavailable.',
+  },
+} as const;
+
 export type BackendErrorResponseInput<TStatus extends ContentfulStatusCode = ContentfulStatusCode> = {
   code: string;
   message: string;

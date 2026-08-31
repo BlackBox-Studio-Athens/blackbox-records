@@ -118,6 +118,13 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** the helper is listed as a provided `platform-shared` entrypoint in `module-boundaries.manifest.json`
 - **AND** feature modules import that entrypoint directly instead of deep-importing HTTP route internals.
 
+#### Scenario: Internal routes use the operator authentication boundary
+
+- **GIVEN** the complete `/api/internal/*` router requires one shared authentication middleware
+- **WHEN** public HTTP composition mounts the operator-auth entrypoint
+- **THEN** `public-commerce-http` declares `operator-auth` as an allowed dependency
+- **AND** `operator-auth` may use only provided `platform-shared` environment, observability, and response entrypoints.
+
 ### Requirement: Compatibility facades are disallowed
 
 The system SHALL avoid temporary compatibility facades during boundary work unless a new OpenSpec change explicitly approves an exception.

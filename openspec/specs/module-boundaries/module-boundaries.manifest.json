@@ -279,6 +279,7 @@
         "commerce-persistence",
         "stripe-integration",
         "resend-integration",
+        "operator-auth",
         "platform-shared"
       ],
       "allowedWorkspaceInterfaces": {},
@@ -296,7 +297,7 @@
       "namedInterfaces": {
         "repository-spi": "apps/backend/src/domain/commerce/repositories/spi.ts"
       },
-      "allowedDependencies": [],
+      "allowedDependencies": ["platform-shared"],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
@@ -407,7 +408,7 @@
       "roots": ["apps/backend/src/interfaces/http/auth/**"],
       "providedEntrypoints": ["apps/backend/src/interfaces/http/auth/index.ts"],
       "namedInterfaces": {},
-      "allowedDependencies": [],
+      "allowedDependencies": ["platform-shared"],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },

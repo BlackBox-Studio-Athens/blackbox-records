@@ -1,7 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER } from '../../src/interfaces/http/auth';
 import { createHttpApp } from '../../src/interfaces/http/app';
+
+const LOCAL_ENV = {
+  PRODUCT_ENVIRONMENT: 'LOCAL' as const,
+  COMMERCE_DB: {} as D1Database,
+  LOCAL_OPERATOR_EMAIL: 'operator@blackboxrecords.example',
+};
+const HOSTED_ENV = {
+  PRODUCT_ENVIRONMENT: 'UAT' as const,
+  COMMERCE_DB: {} as D1Database,
+  CF_ACCESS_POLICY_AUD: 'operator-audience',
+  CF_ACCESS_TEAM_DOMAIN: 'https://blackbox.cloudflareaccess.com',
+};
 
 const mockDisconnect = vi.fn(async () => {});
 const mockReadCheckoutOrder = vi.fn();
@@ -24,16 +35,16 @@ describe('internal order routes', () => {
     vi.clearAllMocks();
   });
 
-  it('requires an Access-authenticated operator identity header', async () => {
+  it('rejects a hosted request without an Access assertion before service construction', async () => {
     const app = createHttpApp();
 
-    const response = await app.request('http://backend.test/api/internal/orders');
+    const response = await app.request('https://ops.example/api/internal/orders', undefined, HOSTED_ENV);
 
     expect(response.status).toBe(401);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
-      code: 'missing_operator_identity',
-      error: 'Missing operator identity.',
+      code: 'unauthorized',
+      error: 'Unauthorized.',
       requestId: expect.any(String),
     });
     expect(mockReadRecentCheckoutOrders).not.toHaveBeenCalled();
@@ -64,16 +75,9 @@ describe('internal order routes', () => {
 
     const app = createHttpApp();
     const response = await app.request(
-      'http://backend.test/api/internal/orders?status=paid&limit=10',
-      {
-        headers: {
-          [CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER]: 'operator@blackboxrecords.example',
-        },
-      },
-      {
-        PRODUCT_ENVIRONMENT: 'LOCAL',
-        COMMERCE_DB: {} as D1Database,
-      },
+      'http://127.0.0.1/api/internal/orders?status=paid&limit=10',
+      undefined,
+      LOCAL_ENV,
     );
 
     expect(mockReadRecentCheckoutOrders).toHaveBeenCalledWith({
@@ -123,16 +127,9 @@ describe('internal order routes', () => {
 
     const app = createHttpApp();
     const response = await app.request(
-      'http://backend.test/api/internal/orders/checkout-sessions/cs_test_review',
-      {
-        headers: {
-          [CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER]: 'operator@blackboxrecords.example',
-        },
-      },
-      {
-        PRODUCT_ENVIRONMENT: 'LOCAL',
-        COMMERCE_DB: {} as D1Database,
-      },
+      'http://127.0.0.1/api/internal/orders/checkout-sessions/cs_test_review',
+      undefined,
+      LOCAL_ENV,
     );
 
     expect(mockReadCheckoutOrder).toHaveBeenCalledWith('cs_test_review');
@@ -159,16 +156,9 @@ describe('internal order routes', () => {
 
     const app = createHttpApp();
     const response = await app.request(
-      'http://backend.test/api/internal/orders/checkout-sessions/cs_missing',
-      {
-        headers: {
-          [CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER]: 'operator@blackboxrecords.example',
-        },
-      },
-      {
-        PRODUCT_ENVIRONMENT: 'LOCAL',
-        COMMERCE_DB: {} as D1Database,
-      },
+      'http://127.0.0.1/api/internal/orders/checkout-sessions/cs_missing',
+      undefined,
+      LOCAL_ENV,
     );
 
     expect(response.status).toBe(404);

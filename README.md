@@ -459,7 +459,10 @@ pnpm audit:commerce-boundaries
   - Worker API: `/api/internal/*`
 - The protected surface is not a public-path subtree on the shopper hostname.
 - Cloudflare Access uses Google as the identity provider for this hostname, and operator entry is controlled by an explicit email allowlist that stays out of the repo.
-- Worker-side operator attribution comes from the Access-authenticated request header `cf-access-authenticated-user-email`, which the internal stock-write routes now persist as `actor_email`.
+- Hosted UAT and PRD internal requests require a valid `Cf-Access-Jwt-Assertion`. The Worker verifies its RS256 signature, exact `CF_ACCESS_TEAM_DOMAIN` issuer, `CF_ACCESS_POLICY_AUD` audience, lifetime, and email claim before any route service or D1 work.
+- The forwarded `cf-access-authenticated-user-email` header is ignored. Stock-write `actor_email` comes only from the verified assertion claim.
+- JWT-free operator identity exists only for Product Environment Local on `localhost` or `127.0.0.1`, using the committed local-only `LOCAL_OPERATOR_EMAIL` binding.
+- Decap login remains a separate editorial authentication boundary; its token, cookie, callbacks, and helpers never enter the Worker operator runtime.
 - The internal Worker API now exposes operator-only stock lookup and stock-write routes under `/api/internal/variants/*`.
 - The internal Worker API now exposes read-only checkout order inspection under `/api/internal/orders*` for low-volume reconciliation. It is Access-protected, not a shopper API, and does not mutate order or stock state.
 - The protected stock operations UI is built by the static Astro app at `/stock/`; it calls same-origin `/api/internal/*` on the protected operator hostname.

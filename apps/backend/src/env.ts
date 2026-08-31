@@ -19,6 +19,10 @@ export type ProductEnvironment = z.infer<typeof productEnvironmentSchema>;
 export type WorkerRuntimeTarget = z.infer<typeof workerRuntimeTargetSchema>;
 export type AppEnvironment = ProductEnvironment;
 
+export type OperatorIdentity = {
+  email: string;
+};
+
 export const productEnvironmentProfileSchema = z.object({
   catalogVerificationPolicy: z.object({
     applyScheduledChanges: z.boolean(),
@@ -166,9 +170,12 @@ export function isCatalogMutationEnabledFromBindings(
 export type AppBindings = {
   PRODUCT_ENVIRONMENT: ProductEnvironment;
   COMMERCE_DB: D1Database;
+  CF_ACCESS_POLICY_AUD?: string;
+  CF_ACCESS_TEAM_DOMAIN?: string;
   CHECKOUT_RETURN_ORIGINS?: string;
   FLAGS?: FlagshipBinding;
   NATIVE_CHECKOUT_ENABLED?: string;
+  LOCAL_OPERATOR_EMAIL?: string;
   PRD_OPEN_GATE?: string;
   EMAIL_BRAND_HOME_URL?: string;
   EMAIL_BRAND_LOGO_URL?: string;
@@ -187,7 +194,9 @@ export type AppBindings = {
 
 export type AppEnv = {
   Bindings: AppBindings;
-  Variables: RequestIdVariables;
+  Variables: RequestIdVariables & {
+    operatorIdentity: OperatorIdentity;
+  };
 };
 
 export type AppOpenApi = OpenAPIHono<AppEnv>;

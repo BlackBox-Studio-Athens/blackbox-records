@@ -2,8 +2,7 @@ import { createRoute, z } from '@hono/zod-openapi';
 
 import type { CheckoutOrderRecord, OrderStatus } from '../../../domain/commerce/repositories/spi';
 import type { AppOpenApi } from '../../../env';
-import { readOperatorIdentityFromAccessHeaders } from '../auth';
-import { backendErrorResponseSchema, jsonError, jsonNoStore } from '../responses';
+import { backendErrorResponseSchema, jsonError, jsonNoStore, operatorAccessErrorResponses } from '../responses';
 import { createInternalOrderServices } from './internal-order-services';
 
 const orderStatusSchema = z
@@ -61,14 +60,7 @@ const listOrdersRoute = createRoute({
       },
       description: 'Recent checkout orders for protected operator reconciliation.',
     },
-    401: {
-      content: {
-        'application/json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
-      description: 'Missing operator identity.',
-    },
+    ...operatorAccessErrorResponses,
   },
   tags: ['Internal Orders'],
 });
@@ -88,14 +80,7 @@ const getOrderByCheckoutSessionRoute = createRoute({
       },
       description: 'Checkout order state for one checkout session.',
     },
-    401: {
-      content: {
-        'application/json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
-      description: 'Missing operator identity.',
-    },
+    ...operatorAccessErrorResponses,
     404: {
       content: {
         'application/json': {
@@ -110,16 +95,6 @@ const getOrderByCheckoutSessionRoute = createRoute({
 
 export function registerInternalOrderRoutes(app: AppOpenApi): void {
   app.openapi(listOrdersRoute, async (context) => {
-    const operatorIdentity = readOperatorIdentityFromAccessHeaders(context.req.raw.headers);
-
-    if (!operatorIdentity) {
-      return jsonError(context, {
-        code: 'missing_operator_identity',
-        message: 'Missing operator identity.',
-        status: 401,
-      });
-    }
-
     const services = createInternalOrderServices(context.env);
 
     try {
@@ -136,16 +111,6 @@ export function registerInternalOrderRoutes(app: AppOpenApi): void {
   });
 
   app.openapi(getOrderByCheckoutSessionRoute, async (context) => {
-    const operatorIdentity = readOperatorIdentityFromAccessHeaders(context.req.raw.headers);
-
-    if (!operatorIdentity) {
-      return jsonError(context, {
-        code: 'missing_operator_identity',
-        message: 'Missing operator identity.',
-        status: 401,
-      });
-    }
-
     const services = createInternalOrderServices(context.env);
 
     try {
