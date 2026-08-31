@@ -26,5 +26,5 @@ Paid reconciliation currently commits the order and stock before email and newsl
 ## Impact
 
 - D1 and Prisma schema, paid reconciliation, order-line creation, Resend/newsletter gateways, scheduled Worker entrypoint, protected order reads, and focused tests.
-- Implement after add-checkout-stock-reservations, or rebase onto that change's final CheckoutOrder transaction.
-- No new hosted service; operator authentication is owned by verify-operator-access-jwt, not this change.
+- Sequence: implement only after both `add-checkout-stock-reservations` and `verify-operator-access-jwt` are complete and archived, rebasing onto the accepted CheckoutOrder transaction and verified operator identity boundary.
+- No new hosted service; this change consumes the operator-auth boundary and does not redefine it.

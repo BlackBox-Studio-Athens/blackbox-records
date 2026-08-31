@@ -26,6 +26,7 @@ Checkout validates stock before creating Stripe Checkout but decrements it only 
 
 ## Impact
 
+- Sequence: implement only after `stabilize-store-listing-prices` is complete and archived so checkout holds start from the settled Store Offer and Price Authority contract.
 - CheckoutOrder and CheckoutOrderLine schema, checkout-start ordering, availability reads, Stripe metadata and expiry, webhook reconciliation, paid stock transaction, local D1 tests, and UAT smoke.
 - No new runtime dependency or infrastructure product.
 - add-paid-order-delivery-outbox must build on the final transaction from this change.

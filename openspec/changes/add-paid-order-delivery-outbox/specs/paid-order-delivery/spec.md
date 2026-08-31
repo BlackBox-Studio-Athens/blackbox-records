@@ -89,4 +89,5 @@ The system SHALL use one compare-and-set lease path for immediate and scheduled 
 
 - **WHEN** the 15-minute Worker Cron fires
 - **THEN** it processes at most five due rows sequentially
-- **AND** exits without provider work when none are due.
+- **AND** exits without provider work when none are due
+- **AND** processes only `PaidOrderDelivery` work without invoking catalog verification or a generic job registry.

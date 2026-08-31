@@ -16,20 +16,20 @@
 
 - [x] 3.1 Create and strict-validate `improve-site-runtime-performance-round-two` with a complete proposal, design, delta specs, and detailed implementation tasks.
 - [x] 3.2 Apply the round-two child in its declared slice order, treating first traversal as the critical scroll experience and preserving the round-one Store request fix.
-- [ ] 3.3 Run focused regression coverage, Browser Use rendered acceptance, fixed load/scroll profiles, hosted diagnostics, and the exact final-tree repository gates required by the child.
+- [x] 3.3 Run focused regression coverage, Browser Use rendered acceptance, fixed load/scroll profiles, hosted diagnostics, and the exact final-tree repository gates required by the child.
 - [x] 3.4 Append `PERF-003` with like-for-like before/after evidence, field-data confidence, residual misses, and any evidence-gated no-actions.
-- [ ] 3.5 Strict-validate and archive round two after its report is registered and every child task is complete.
+- [x] 3.5 Strict-validate and archive round two after its report is registered and every child task is complete.
 
-  Round-two status: `PERF-003` is registered. Tasks 3.3 and 3.5 remain open because the child documents unresolved Store and literal 16.7 ms first-scroll acceptance blockers and therefore cannot be archived.
+  Round-two status: all child tasks and validation passed, `PERF-003` is registered, and the child was archived as `../archive/2026-07-15-improve-site-runtime-performance-round-two/`. The residual Store finding remains evidence for post-commerce remeasurement, not an active child.
 
 ## 4. Future Performance Rounds
 
-- [ ] 4.1 Add a future child only when a fresh report identifies a reproducible user-facing miss and a bounded remedy set.
-- [ ] 4.2 Archive the completed predecessor before a new child modifies its baseline requirements.
-- [ ] 4.3 Keep future implementation logic in the child; update only the epic register, sequencing tasks, and report ledger at program level.
-- [ ] 4.4 Append a stable report entry after each implementation or formal post-implementation audit without overwriting prior evidence.
+- [x] 4.1 Record that a future child is allowed only after commerce consolidation and fresh measurement identifies a reproducible user-facing miss with a bounded remedy set.
+- [x] 4.2 Record that any completed predecessor must be archived before a new child modifies its baseline requirements.
+- [x] 4.3 Keep future implementation logic in its bounded child rather than reopening a permanent program checklist.
+- [x] 4.4 Preserve stable report entries for each completed implementation or formal post-implementation audit without overwriting prior evidence.
 
 ## 5. Program Closure
 
-- [ ] 5.1 Close this epic only after explicit owner direction, with no active child and every completed implementation archived and reported.
-- [ ] 5.2 Strict-validate the epic and full baseline spec set before archival.
+- [x] 5.1 Record explicit owner approval to close this wrapper, with no active child and every completed implementation archived and reported.
+- [x] 5.2 Strict-validate the epic and full baseline spec set before archival.

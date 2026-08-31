@@ -1,4 +1,10 @@
-## ADDED Requirements
+# performance-program Specification
+
+## Purpose
+
+Defines how measured site-performance changes are sequenced, evidenced, closed, and reopened only when reproducible user-facing misses justify bounded work.
+
+## Requirements
 
 ### Requirement: Performance work is organized as an ordered OpenSpec portfolio
 
@@ -93,16 +99,16 @@ The program SHALL create future performance children only from reproducible user
 
 ### Requirement: The performance program has an explicit closure condition
 
-The program SHALL remain active while additional rounds are expected and SHALL close only by explicit owner decision.
+The program SHALL close by explicit owner decision when no child remains active and every completed child is archived and reported. Later work SHALL begin as a fresh bounded child only after post-commerce measurement proves a reproducible user-facing miss.
 
-#### Scenario: One child completes while future work is expected
+#### Scenario: Current program closes
 
-- **WHEN** the current performance child is reported and archived
-- **THEN** the epic remains open
-- **AND** no speculative next child is created without fresh evidence.
+- **WHEN** the owner closes the program after every registered child is reported and archived
+- **THEN** the program wrapper is strict-validated and archived
+- **AND** no speculative next child remains active.
 
-#### Scenario: The program is closed
+#### Scenario: Performance is remeasured after commerce consolidation
 
-- **WHEN** the owner declares the performance program finished
-- **THEN** no registered child remains active
-- **AND** every completed implementation is archived and represented in the report ledger.
+- **WHEN** the consolidated Store route is measured against the current performance gates
+- **THEN** a new bounded child is created only for a reproducible user-facing miss
+- **AND** no action is recorded when the measured gates pass.

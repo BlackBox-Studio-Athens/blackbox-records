@@ -55,6 +55,5 @@
 ## 8. Record the Launch Handoff
 
 - [ ] 8.1 Update `production-go-live-readiness` with redacted proof for domain ownership, holding-page TLS/routing, and the remaining full-site custom-domain cutover; do not mark Stripe, Worker, D1, catalog, webhook, or go/no-go gates complete from holding-page evidence.
-- [ ] 8.2 Keep the apex on the PRD Holding Page while any live Stripe Products/Prices, Payment Method Configuration, production webhook, Worker/D1, catalog/stock, rollback, exact-origin, or named go/no-go task remains open; do not soft-launch the full site because its static artifact is ready.
-- [ ] 8.3 After `production-go-live-readiness` is complete and its named reviewers record a go decision, update all full-site custom-domain origins together, deploy and verify the full PRD artifact, repoint the apex to the production `main` target, retain the holding branch as rollback, then remove holding code only after stability.
-- [ ] 8.4 Re-run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the exact final documented tree and record final OpenSpec status.
+- [ ] 8.2 Re-run `pnpm test:unit`, `pnpm check`, and `pnpm build` plus hosted apex/`www` Browser Use and bounded DNS/HTTP checks against the exact handoff tree; verify the apex still serves only the PRD Holding Page.
+- [ ] 8.3 Run `pnpm openspec -- validate publish-prd-holding-page --strict`, archive this change, and leave full-site cutover, holding rollback/retirement, and post-launch cleanup exclusively to `production-go-live-readiness`.

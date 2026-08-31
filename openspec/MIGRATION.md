@@ -16,14 +16,13 @@ Migration date: 2026-05-23
 - `openspec/specs/app-shell-and-player/spec.md`: shell routing, overlays, player lifecycle, and UI validation expectations.
 - `openspec/specs/commerce-checkout/spec.md`: storefront, StoreCart, Worker checkout, Stripe Checkout, feature gates, and secret boundaries.
 - `openspec/specs/orders-stock-operator/spec.md`: D1 order lifecycle, stock ledger, webhook authority, and operator stock access.
-- `openspec/specs/shipping-fulfillment/spec.md`: Greece-only manual BOX NOW fulfillment and deferred shipping automation boundaries.
+- `openspec/specs/shipping-fulfillment/spec.md`: permanent Greece-only fulfillment and the separate gate for future Greek BOX NOW automation.
 - `openspec/specs/module-boundaries/spec.md`: TypeScript-native modulith rules and manifest ownership.
 - `openspec/specs/tooling-validation/spec.md`: repository validation, asset QA, slug tooling, Zod policy, Knip audit, and OpenSpec workflow.
 
 ## Active Change Map
 
 - `openspec/changes/production-go-live-readiness/`: production/native commerce launch gates that remain after sandbox evidence.
-- `openspec/changes/add-shiplemon-non-greece-shipping/`: post-MVP Shiplemon non-Greece shipping path, stale until explicitly reactivated.
 - `openspec/changes/adopt-cloudflare-vitest-pool-workers/`: planned Worker-runtime test adoption.
 - `openspec/changes/adopt-msw-http-mocking/`: planned frontend/API-client HTTP mocking adoption.
 - `openspec/changes/adopt-t3-env-core-contracts/`: planned scoped env contract helper adoption.

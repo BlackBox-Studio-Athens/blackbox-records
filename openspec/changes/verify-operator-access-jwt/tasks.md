@@ -1,6 +1,6 @@
 ## 1. Dependency and Trust Configuration
 
-- [ ] 1.1 Run pnpm openspec:guard, add jose 6.2.3 as a direct backend dependency, and verify the lockfile still has one compatible jose resolution.
+- [ ] 1.1 Run `pnpm openspec:guard`, verify `align-cloudflare-environment-names` is complete and archived, then add jose 6.2.3 as a direct backend dependency; verify the lockfile has one compatible jose resolution and trust config uses only Local/UAT/PRD names.
 - [ ] 1.2 Add validated CF_ACCESS_TEAM_DOMAIN, CF_ACCESS_POLICY_AUD, and Local-only LOCAL_OPERATOR_EMAIL bindings; verify hosted profiles cannot select the Local branch.
 - [ ] 1.3 Confirm the operator Access application uses Google and the approved allowlist independently from Decap; verify no Decap credential or callback enters backend runtime config.
 
@@ -21,4 +21,4 @@
 
 - [ ] 4.1 Configure UAT trust values, then use Browser Use to prove an allowlisted operator can read and perform one audited mutation through the protected hostname.
 - [ ] 4.2 Probe workers.dev and every reachable UAT hostname without a valid assertion and with a forged forwarded email; verify denial before D1 access.
-- [ ] 4.3 Run pnpm generate:api if contracts changed, pnpm test:unit, pnpm check, pnpm build, and pnpm openspec -- validate verify-operator-access-jwt --strict.
+- [ ] 4.3 Run `pnpm generate:api` if contracts changed, `pnpm test:unit`, `pnpm check`, `pnpm build`, and `pnpm openspec -- validate verify-operator-access-jwt --strict`; archive the change only after the exact UAT proof tree passes.

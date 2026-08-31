@@ -1,6 +1,6 @@
 ## Purpose
 
-Specify Greece-only manual BOX NOW fulfillment, shipping data minimization, and deferred shipping automation boundaries.
+Specify permanent Greece-only fulfillment, shipping data minimization, and a separate gate for any future Greek BOX NOW automation.
 
 ## Requirements
 
@@ -25,13 +25,24 @@ The system MUST avoid persisting raw BOX NOW widget, API, credential, voucher, l
 - **WHEN** operators create a BOX NOW shipment manually
 - **THEN** the repo stores only Worker-owned order/payment and approved minimal shipping-mode data needed for handoff.
 
-### Requirement: Shipping automation reopen gate
+### Requirement: Shipping country scope is closed
 
-The system SHALL require an explicit future decision before implementing BOX NOW automation or non-Greece shipping.
+The system MUST reject non-Greece delivery and MUST NOT add a non-Greece provider, quote, or checkout path.
+
+#### Scenario: Non-Greece delivery is submitted
+
+- **GIVEN** a checkout or paid-order delivery address has a country other than `GR`
+- **WHEN** the system validates it for payment or fulfillment
+- **THEN** the request is rejected before it can become payable or ready for fulfillment
+- **AND** no provider fallback broadens the supported country set.
+
+### Requirement: BOX NOW automation reopen gate
+
+The system SHALL require an explicit future decision before implementing BOX NOW automation, and any approved automation MUST remain Greece-only.
 
 #### Scenario: Future shipping automation is requested
 
-- **GIVEN** a task proposes BOX NOW API automation or non-Greece shipping
+- **GIVEN** a task proposes BOX NOW API automation for Greek fulfillment
 - **WHEN** work is planned
 - **THEN** it must be represented as an active OpenSpec change
 - **AND** provider credentials remain Worker-only or out-of-band operator credentials.

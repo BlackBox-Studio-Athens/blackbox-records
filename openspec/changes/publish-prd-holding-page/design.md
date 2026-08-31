@@ -13,7 +13,7 @@ This is a plain availability notice, not a campaign landing page. A visitor open
 - Put a deliberate, original BlackBox presence on the correct HTTPS apex without changing the UAT review site.
 - Preserve the full `pages.dev` PRD readiness deployment for catalog assets and future launch checks.
 - Use one static page, the existing logo, existing typography, and no landing image or client runtime.
-- Make domain activation, retirement, go-live cutover, and rollback explicit and reversible.
+- Make holding-domain activation and rollback explicit, then hand full-site cutover and retirement to `production-go-live-readiness`.
 - Give non-technical visitors only useful public information: the label is active, the site is being prepared, and real contact paths work.
 - Keep the public apex on the PRD Holding Page until the existing production-go-live change proves live Stripe and every dependent PRD gate, followed by named go/no-go approval.
 
@@ -131,9 +131,9 @@ Implementation verification includes:
 3. Treat the owner's 2026-07-11 request to use `blackboxrecordsathens.com` as explicit domain-change approval and snapshot current DNS/rules before Pages custom-domain association.
 4. Associate `blackboxrecordsathens.com` with the existing Pages project and immediately replace the Pages-created apex target with the holding branch alias. Wait for Active TLS, confirm the target, and restore the recorded parking state if the branch target cannot be applied or the full site appears.
 5. Create a proxied `www` CNAME to the apex, verify `www` DNS/TLS, then configure exact-host `308` rules for HTTP apex and `www` canonicalization with path/query preservation. Immediately verify public desktop/mobile behavior, headers, redirects, 404 behavior, target identity, and absence of registrar parking.
-6. For launch, complete and approve the existing `production-go-live-readiness` change first: verify live Stripe Products/Prices, Payment Method Configuration, production webhook, Worker/D1 and catalog/stock readiness, rollback, exact origins, and every other live gate as one reviewed cutover. Do not soft-launch the full site because its static artifact is ready.
-7. Deploy and verify the full PRD artifact, then repoint the apex from the holding branch alias to the production `main` Pages target. Keep the holding branch available as the immediate static rollback.
-8. After the launched site is stable, remove the holding deployment job, source route, artifact script, temporary branch deployment, and obsolete redirect rules in one cleanup change.
+6. Hand redacted domain ownership, TLS/routing, exact redirect, target-identity, and rollback evidence to `production-go-live-readiness`; rerun the repository and hosted holding checks on that exact handoff tree, then archive this change.
+
+`production-go-live-readiness` exclusively owns the later full-site origin updates, artifact deployment, apex repoint, holding rollback decision, retirement, and post-launch cleanup. This change performs none of those launch actions.
 
 Rollback during activation: restore the recorded parking DNS/redirect rules and prior `www` state if Pages activation never succeeded, and leave the custom domain detached if it never reached Active TLS. Rollback after launch: repoint the apex to the already-verified holding branch alias while retaining the verified `www` CNAME and exact-host HTTPS/`www` rules; do not detach the domain or improvise a new project during an incident.
 

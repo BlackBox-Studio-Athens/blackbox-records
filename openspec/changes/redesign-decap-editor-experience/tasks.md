@@ -14,4 +14,4 @@
 
 - [ ] 3.1 Run focused CMS tests, Local CMS Smoke, pnpm test:unit, pnpm check, and pnpm build against the exact final tree.
 - [ ] 3.2 Deploy the exact accepted commit, record its SHA, and pass cms_admin and cms_assets on UAT.
-- [ ] 3.3 Complete the owner's shared-Google no-publish walkthrough for Artist, Store Item, image, and Release work, then run pnpm openspec -- validate redesign-decap-editor-experience --strict.
+- [ ] 3.3 Complete the owner's shared-Google no-publish walkthrough for Artist, Store Item, image, and Release work, run `pnpm openspec -- validate redesign-decap-editor-experience --strict`, and archive the accepted change before its commit can become launch-catalog evidence.

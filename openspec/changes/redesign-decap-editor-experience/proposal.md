@@ -28,3 +28,4 @@ The Decap redesign is implemented and locally accepted, but its plan still descr
 
 - Decap package/runtime version assertions, admin smoke ownership, UAT workflow evidence, and current CMS documentation.
 - No shopper commerce, D1, Stripe, stock, order, fulfillment, or operator-auth authority moves into Decap.
+- Sequence: complete and archive this change before `production-go-live-readiness` selects a launch catalog commit; CMS acceptance does not itself authorize launch.

@@ -70,6 +70,8 @@ Immediate processing and scheduled processing use the same compare-and-set claim
 
 Email retries reuse the existing stable Resend idempotency key derived from order and kind. Newsletter registration reuses its existing idempotent contact identity. One hosted Worker Cron runs every 15 minutes and processes at most five due rows sequentially. Local tests invoke the same scheduled handler directly.
 
+The Cron is a paid-delivery adapter, not a revived catalog scheduler or generic job framework. Delivery processing remains in the existing closed `orders` module behind one provided entrypoint; the Worker composition invokes that entrypoint from the scheduled handler. Implementation updates the module-boundary spec and manifest with the exact owned root, provided entrypoint, and allowed dependencies. `public-commerce-http` continues to own no scheduled interface root, and the retired catalog verification handler remains absent.
+
 ### Keep ownership narrow
 
 Protected order reads may expose validated fulfillment fields and delivery summaries with Cache-Control: no-store. Public checkout responses expose none of them. This change does not redefine Product Environments, operator authentication, catalog promotion, or Stripe webhook endpoint ownership.
@@ -83,7 +85,7 @@ Protected order reads may expose validated fulfillment fields and delivery summa
 
 ## Migration Plan
 
-1. Preflight existing paid rows without printing shopper data.
+1. Confirm both prerequisite changes are archived, then preflight existing paid rows without printing shopper data.
 2. Add direct order/line columns, the delivery table, constraints, and indexes in one additive migration; regenerate Prisma.
 3. Write line snapshots at checkout creation and validate paid-order records as a discriminated repository result.
 4. Extend first paid reconciliation and replace direct webhook sends with the shared delivery processor.

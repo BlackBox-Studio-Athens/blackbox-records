@@ -1,15 +1,17 @@
 ## Context
 
-The repository now has one completed performance implementation and one fresh post-implementation audit. The completed change, `improve-site-runtime-performance`, is archived at `../archive/2026-07-12-improve-site-runtime-performance/`; its deltas are now part of the baseline specs. The audit found that the first round fixed several large costs but that realistic first traversal, font relayout, secondary-route LCP, route-independent JavaScript, and dormant animation work remain.
+The repository has two completed performance rounds. Round one is archived at `../archive/2026-07-12-improve-site-runtime-performance/`; round two is archived at `../archive/2026-07-15-improve-site-runtime-performance-round-two/`. Their reports preserve the measured gains, comparison limits, and the residual Store finding that must be remeasured only after commerce consolidation.
 
 OpenSpec 1.6 has no parent-child or change-dependency primitive. A custom schema would add maintenance without creating those relationships. The native model is one normal `spec-driven` umbrella change whose proposal, design, spec, and tasks register independent child changes by stable ID. Each child keeps its own complete artifact graph and archive lifecycle.
 
 Current program register:
 
-| Round | Change ID                                    | State                 | Evidence                           |
-| ----- | -------------------------------------------- | --------------------- | ---------------------------------- |
-| 1     | `improve-site-runtime-performance`           | Implemented, archived | `PERF-001`, `PERF-002`             |
-| 2     | `improve-site-runtime-performance-round-two` | Planned               | Implementation report remains open |
+| Round | Change ID                                    | State                 | Evidence               |
+| ----- | -------------------------------------------- | --------------------- | ---------------------- |
+| 1     | `improve-site-runtime-performance`           | Implemented, archived | `PERF-001`, `PERF-002` |
+| 2     | `improve-site-runtime-performance-round-two` | Implemented, archived | `PERF-003`             |
+
+No performance child is active.
 
 ## Goals / Non-Goals
 
@@ -19,7 +21,7 @@ Current program register:
 - Preserve every child proposal, design, delta spec, task plan, result, and archive as an independent review unit.
 - Keep an append-only ledger of implementation and formal verification reports.
 - Make cross-round comparisons method-honest and explicit about field-data confidence.
-- Let future performance rounds be added without redesigning the planning structure.
+- Leave a small baseline intake rule for any measured post-commerce performance miss.
 
 **Non-Goals:**
 
@@ -33,7 +35,7 @@ Current program register:
 
 ### Use a portfolio change with independent children
 
-`site-performance-program` remains the durable portfolio. Its task list records child order, prerequisite state, reporting, and closure. Every implementation round is a separate `spec-driven` change and remains independently applicable, reviewable, revertible, and archivable.
+`site-performance-program` is a temporary portfolio wrapper. Its task list records child order, prerequisite state, reporting, and closure. Every implementation round is a separate `spec-driven` change and remains independently applicable, reviewable, revertible, and archivable.
 
 This uses OpenSpec's native artifact graph for the work that benefits from it while avoiding a custom imitation of unsupported parent-child metadata.
 
@@ -53,7 +55,7 @@ Each child names its predecessor and epic in its design. The epic tasks enforce 
 4. Verify and append its report before the child is archived.
 5. Start another child only from new measured evidence.
 
-Round one has completed step 1. Round two may now modify the baseline `frontend-runtime-performance` requirements without competing active deltas.
+Both rounds completed this sequence and are archived. No new child is registered. The residual Store finding waits for fresh measurement after the active commerce work changes the route shape.
 
 ### Keep one append-only report ledger
 
@@ -71,11 +73,11 @@ Alternatives considered:
 
 Reports distinguish field Core Web Vitals, controlled cold load, controlled first and repeat scroll, rendered interaction/accessibility checks, and bounded diagnostics. Field status remains unavailable without a representative privacy-approved sample. Lab results cannot become a field pass. First traversal is separate from repeat traversal because warmed layout can hide the experience a user first encounters.
 
-### Close children, keep the program open
+### Close children, then close the wrapper
 
 A child is complete only when its tasks, focused regression coverage, repository gates, rendered acceptance, before/after evidence, report entry, and strict OpenSpec validation are complete. The child is then archived and its deltas become baseline.
 
-The epic remains open while more rounds are expected. It closes only when the owner declares the program finished, no child remains active, all completed children are archived, and every implementation has a report entry.
+The owner approved closing this wrapper because no child remains active, both completed children are archived, and every implementation has a report entry. A later performance miss creates a fresh bounded child from the synchronized baseline only after post-commerce measurement; it does not keep this wrapper open indefinitely.
 
 ## Risks / Trade-offs
 
@@ -90,10 +92,10 @@ The epic remains open while more rounds are expected. It closes only when the ow
 1. Archive round one with spec synchronization. Completed on 2026-07-12.
 2. Register `PERF-001`, the round-one implementation report.
 3. Store and register `PERF-002`, the fresh post-round-one audit.
-4. Create and strict-validate `improve-site-runtime-performance-round-two` against the synchronized baseline.
-5. Apply round two one measured slice at a time, with first traversal as the critical scroll gate.
-6. Append the round-two implementation report and update the epic register before archiving the child.
-7. Repeat the same intake and closure sequence only when later evidence justifies another child.
+4. Create and strict-validate `improve-site-runtime-performance-round-two` against the synchronized baseline. Completed.
+5. Apply round two one measured slice at a time, with first traversal as the critical scroll gate. Completed.
+6. Append the round-two implementation report and update the epic register before archiving the child. Completed on 2026-07-15.
+7. Strict-validate and archive this wrapper. Any later child starts only after post-commerce measurement justifies one.
 
 Rollback is documentation-only: remove an unimplemented child registration and its proposed artifacts. Historical report entries and archived completed children are never rolled back or erased.
 

@@ -1,6 +1,6 @@
 ## 1. Schema and Types
 
-- [ ] 1.1 Run pnpm openspec:guard and preflight hosted pending orders/sessions with redacted output; verify no unrecoverable payable legacy session exists.
+- [ ] 1.1 Run `pnpm openspec:guard`, verify `stabilize-store-listing-prices` is complete and archived, and preflight hosted pending orders/sessions with redacted output; verify the settled Store Offer/Price Authority contract is present and no unrecoverable payable legacy session exists.
 - [ ] 1.2 Make checkoutSessionId nullable and unique, add checkoutExpiresAt, and constrain CheckoutOrderLine to positive quantity and unique order-variant identity; verify the additive migration and regenerated Prisma client.
 - [ ] 1.3 Add discriminated repository types and transition-specific methods for sessionless pending, session-bound pending, paid, not-paid, and needs-review orders; verify impossible field/status combinations cannot be constructed by application callers.
 
@@ -26,4 +26,4 @@
 
 - [ ] 5.1 Run local migration, D1 rollback/concurrency tests, stripe-mock readiness, signed webhook simulation, commerce-boundary audit, pnpm test:unit, pnpm check, and pnpm build.
 - [ ] 5.2 Prove UAT creation, binding, paid settlement, expiry release, and replay safety while PRD checkout remains closed.
-- [ ] 5.3 Run pnpm openspec -- validate add-checkout-stock-reservations --strict; then hand the final paid transaction to add-paid-order-delivery-outbox.
+- [ ] 5.3 Run `pnpm openspec -- validate add-checkout-stock-reservations --strict`, archive the change, then hand its final paid transaction and exact accepted commit to `add-paid-order-delivery-outbox`.

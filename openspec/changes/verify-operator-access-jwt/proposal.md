@@ -26,5 +26,6 @@ Internal routes currently trust a forwarded email header without proving Cloudfl
 
 ## Impact
 
+- Sequence: implement only after `align-cloudflare-environment-names` is complete and archived, using only the final Local/UAT/PRD configuration vocabulary.
 - Backend dependency declaration, Worker bindings, shared Hono middleware/context, internal stock and order handlers, actor attribution, OpenAPI error responses, deployment preflight, and focused tests.
 - Public shopper, Stripe webhook, Decap, newsletter, and services routes remain outside this boundary.

@@ -2,14 +2,28 @@
 
 ### Requirement: Production launch gates
 
-The system MUST block PRD native-commerce launch until live payment, domain, webhook, Worker, D1, emergency-disable, and approval evidence exists.
+The system MUST block PRD native-commerce launch until every prerequisite change is closed and live payment, domain, webhook, Worker, D1, emergency-disable, rollback, and approval evidence exists on one accepted launch tree.
 
 #### Scenario: Launch is requested
 
 - **GIVEN** UAT/test-mode evidence exists
 - **WHEN** PRD launch is considered
-- **THEN** live Stripe credentials, live Products/Prices, final domain, production webhook endpoint, production Worker/D1 configuration, and final approval are verified first
+- **THEN** live Stripe credentials, live Products/Prices, final domain, production webhook endpoint, production Worker/D1 configuration, paid-delivery schedule, and final approval are verified first
 - **AND** the PRD-open gate remains absent until that evidence exists.
+
+#### Scenario: Prerequisite implementation evidence is reviewed
+
+- **WHEN** the final launch checklist is assembled
+- **THEN** environment alignment, listing-price stabilization, Decap acceptance, holding-page handoff, operator JWT verification, checkout stock reservations, and paid-order delivery are complete and archived in the declared order
+- **AND** evidence includes Access allow/deny proof, one-unit checkout concurrency and replay safety, immediate and scheduled delivery recovery, and the verified holding rollback target
+- **AND** no prerequisite implementation or performance child remains active.
+
+#### Scenario: Shipping scope is reviewed
+
+- **WHEN** checkout and fulfillment configuration are evaluated for launch
+- **THEN** `GR` is the complete supported delivery-country set
+- **AND** non-Greece delivery is rejected before payment or normal fulfillment
+- **AND** no non-Greece provider, quote, or fallback path is configured.
 
 ### Requirement: Launch evidence safety
 
@@ -42,4 +56,5 @@ The system MUST have documented rollback and emergency-disable behavior before n
 
 - **GIVEN** reviewers identify a launch blocker
 - **WHEN** native checkout must be disabled or rolled back
-- **THEN** the approved rollback or disable path is available without exposing runtime secrets to the frontend.
+- **THEN** the approved rollback or disable path is available without exposing runtime secrets to the frontend
+- **AND** the public apex can return to the already-verified PRD Holding Page while the issue is resolved.
