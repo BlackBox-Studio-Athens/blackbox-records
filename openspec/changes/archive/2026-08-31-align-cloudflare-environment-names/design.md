@@ -5,8 +5,8 @@ As of August 31, 2026:
 - Local/UAT/PRD names are implemented across the repo.
 - renamed UAT and PRD Workers/D1 resources exist.
 - UAT webhook/payment verification passed GitHub Actions run 30166382129 on July 25, 2026.
-- repository variable PUBLIC_BACKEND_BASE_URL still points at the old sandbox Worker but is unused.
-- GitHub environment catalog-promotion-production still exists with CLOUDFLARE_ACCOUNT_ID but is unused.
+- repository variable PUBLIC_BACKEND_BASE_URL was deleted on August 31, 2026 after current workflows were reconfirmed to use only UAT_PUBLIC_BACKEND_BASE_URL and PRD_PUBLIC_BACKEND_BASE_URL.
+- GitHub environment catalog-promotion-production and its unused CLOUDFLARE_ACCOUNT_ID variable were deleted on August 31, 2026 after current workflows were reconfirmed to use catalog-promotion-uat or catalog-promotion-prd.
 - PRD live Stripe secrets are absent by design while the PRD-open gate is closed.
 
 ## Goals / Non-Goals
@@ -45,12 +45,12 @@ UAT renamed resources, runtime configuration, webhook, and payment configuration
 
 ### Close only the two unused GitHub settings
 
-The remaining work is external and non-code:
+The external non-code cleanup completed on August 31, 2026:
 
-1. delete repository variable PUBLIC_BACKEND_BASE_URL;
-2. delete GitHub environment catalog-promotion-production.
+1. deleted repository variable PUBLIC_BACKEND_BASE_URL;
+2. deleted GitHub environment catalog-promotion-production.
 
-Before deletion, confirm current workflows still have no references. Neither deletion changes deployed traffic or provider state.
+Before deletion, current workflows were confirmed to have no references. Neither deletion changed deployed traffic or provider state.
 
 ## Risks / Trade-offs
 
@@ -60,4 +60,4 @@ Before deletion, confirm current workflows still have no references. Neither del
 
 ## Migration Plan
 
-Repository and provider cutover are complete. After explicit GitHub-setting cleanup, rerun scoped searches and strict validation, then archive this change. Do not delete old Cloudflare resources or configure PRD live commerce during closeout.
+Repository and provider cutover are complete. GitHub-setting cleanup completed on August 31, 2026. Rerun scoped searches and strict validation, then archive this change. Do not delete old Cloudflare resources or configure PRD live commerce during closeout.

@@ -61,6 +61,7 @@ The system SHALL provide validation that detects drift from the canonical Local,
 - **WHEN** environment validation runs
 - **THEN** it verifies GitHub Pages is the UAT static deployment path
 - **AND** Cloudflare Pages is the PRD static deployment path
+- **AND** Cloudflare Worker runtime targets are named `local`, `uat`, or `prd`
 - **AND** no workflow introduces an additional shopper-facing static environment
 - **AND** any branch, preview, or diagnostic deployment is reported as non-product and excluded from UAT/PRD evidence.
 
@@ -87,7 +88,7 @@ The system SHALL provide validation that detects drift from the canonical Local,
 #### Scenario: Baseline OpenSpec wording is checked
 
 - **WHEN** environment validation or closeout review runs
-- **THEN** affected baseline OpenSpec specs do not retain stale Purpose, requirement, or scenario wording that describes GitHub Pages as rollback/legacy production or Cloudflare Pages as canonical production without PRD-disabled state
+- **THEN** affected baseline OpenSpec specs do not retain stale Purpose, requirement, or scenario wording that describes GitHub Pages as rollback/legacy production, Cloudflare Pages as canonical production without PRD-disabled state, or Cloudflare/Wrangler `sandbox` / `production` targets
 - **AND** archive readiness is blocked until baseline source-of-truth prose matches the Local/UAT/PRD model.
 
 #### Scenario: Raw platform aliases are checked
@@ -109,14 +110,14 @@ The system SHALL keep smoke runners on the shared `.codex-artifacts/smoke/<envir
 
 ### Requirement: Post-merge UAT provider smoke workflow
 
-The system SHALL validate the deployed GitHub Pages UAT site with Stripe test-mode smoke after the shared static deployment workflow completes successfully on `main`.
+The system SHALL validate the deployed GitHub Pages UAT site with UAT provider smoke after the shared static deployment workflow completes successfully on `main`.
 
 #### Scenario: Shared static deployment completes successfully
 
 - **GIVEN** the `Deploy UAT and PRD static sites` workflow completes successfully on `main`
 - **WHEN** the downstream `workflow_run` smoke workflow starts
 - **THEN** it runs `pnpm smoke:stripe-uat -- --scenario happy_path_paid --screenshots on-failure` against the deployed GitHub Pages UAT site
-- **AND** it uses the `catalog-promotion-uat` GitHub Actions environment for the same UAT Cloudflare and sandbox Stripe credentials already used by UAT promotion
+- **AND** it uses the `catalog-promotion-uat` GitHub Actions environment for the same UAT Cloudflare and Stripe test-mode credentials already used by UAT promotion
 - **AND** it uploads the standard smoke summary and evidence artifacts
 - **AND** the catalog promotion workflow does not run smoke steps itself.
 

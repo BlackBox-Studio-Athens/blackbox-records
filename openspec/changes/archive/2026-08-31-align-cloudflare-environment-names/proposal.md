@@ -10,7 +10,7 @@ The repository and deployed UAT/PRD Workers now use the canonical Local, UAT, an
 - Keep old Cloudflare Worker and D1 resources undeleted for rollback/history.
 - Record UAT cutover and persistent webhook/payment verification as complete.
 - Move PRD live secrets, webhook activation, provider mutation, and launch proof to production-go-live-readiness.
-- Remove the stale repository variable PUBLIC_BACKEND_BASE_URL and unused GitHub environment catalog-promotion-production when external GitHub settings are explicitly changed.
+- Record the August 31, 2026 deletion of the stale repository variable PUBLIC_BACKEND_BASE_URL and unused GitHub environment catalog-promotion-production.
 
 ## Capabilities
 
@@ -26,5 +26,5 @@ The repository and deployed UAT/PRD Workers now use the canonical Local, UAT, an
 ## Impact
 
 - Repository implementation and hosted UAT cutover are complete.
-- Two external GitHub settings remain; neither is referenced by current workflows.
+- The two unused external GitHub settings were deleted on August 31, 2026 after current workflow references were reconfirmed absent.
 - No PRD-open work and no deletion of old Cloudflare resources.

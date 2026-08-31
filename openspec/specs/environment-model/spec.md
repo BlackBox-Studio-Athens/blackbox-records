@@ -12,12 +12,15 @@ The system SHALL expose exactly three product environments in operator-facing do
 
 - **WHEN** a maintainer reads setup, deployment, promotion, or validation docs
 - **THEN** the docs identify Local, UAT, and PRD as the product environments
-- **AND** any platform-specific names are shown only as mapped implementation details.
+- **AND** Cloudflare/Wrangler Worker runtime targets use `local`, `uat`, or `prd`
+- **AND** app-owned Stripe target values use `local`, `uat`, or `prd`
+- **AND** provider-specific names are shown only as mapped implementation details.
 
 #### Scenario: New environment wording is introduced
 
 - **WHEN** a future change introduces `sandbox`, `production`, `test`, `live`, `GitHub Actions environment`, `Wrangler environment`, or `Stripe mode` wording
-- **THEN** the change MUST classify that wording under the product environment mapping instead of treating it as a fourth product environment.
+- **THEN** the change MUST classify that wording under the product environment mapping instead of treating it as a fourth product environment
+- **AND** it MUST NOT use `sandbox` or `production` as Cloudflare/Wrangler environment names.
 
 #### Scenario: Preview or branch deployment is introduced
 
@@ -28,23 +31,23 @@ The system SHALL expose exactly three product environments in operator-facing do
 
 #### Scenario: Application code needs environment policy
 
-- **WHEN** code outside a boundary adapter needs environment-specific product policy
-- **THEN** it uses Product Environment or Product Environment Profile
-- **AND** it does not branch on raw platform/provider strings such as `sandbox`, `production`, `test`, or `live`.
+- **WHEN** code, Worker bindings, tests, generated evidence, or validation reports need environment-specific product policy
+- **THEN** they use Product Environment or Product Environment Profile with canonical values `LOCAL`, `UAT`, or `PRD`
+- **AND** any `sandbox`, `production`, `test`, `live`, or provider-specific value remains a mapped boundary trait rather than app-wide product policy.
 
 ### Requirement: Product environment mapping
 
-The system SHALL maintain a single mapping from product environments to static hosts, Worker runtime targets, D1 data stores, Stripe/provider modes, secret stores, validation gates, and environment-derived runtime policies.
+The system SHALL maintain a single mapping from product environments to static hosts, Worker runtime targets, D1 data stores, app-owned Stripe target values, Stripe provider modes, secret stores, validation gates, and environment-derived runtime policies.
 
 #### Scenario: UAT mapping is evaluated
 
 - **WHEN** UAT is described or validated
-- **THEN** it maps to GitHub Pages static hosting, the sandbox Worker runtime target, sandbox D1, Stripe test mode, UAT-scoped GitHub Actions credentials, UAT sink-routing policy, and UAT Promotion Evidence.
+- **THEN** it maps to GitHub Pages static hosting, the `uat` Worker runtime target, UAT D1, app-owned Stripe target `uat`, Stripe test mode, UAT-scoped GitHub Actions credentials, UAT sink-routing policy, and UAT Promotion Evidence.
 
 #### Scenario: PRD mapping is evaluated
 
 - **WHEN** PRD is described or validated
-- **THEN** it maps to Cloudflare Pages static hosting, the production Worker runtime target, production D1, Stripe live mode, direct production routing policy, and PRD-scoped GitHub Actions credentials
+- **THEN** it maps to Cloudflare Pages static hosting, the `prd` Worker runtime target, PRD D1, app-owned Stripe target `prd`, Stripe live mode, direct production routing policy, and PRD-scoped GitHub Actions credentials
 - **AND** it records that PRD checkout and live provider mutation are disabled until an explicit production-readiness gate opens them.
 - **AND** it treats pre-go-live PRD evidence as readiness, disabled, or `not_configured` evidence rather than successful PRD Promotion Evidence.
 
@@ -63,8 +66,8 @@ The system SHALL maintain a single mapping from product environments to static h
 
 #### Scenario: Runtime profile is resolved
 
-- **WHEN** backend request composition, scripts, smoke runners, or validation code need environment-derived values
-- **THEN** they resolve Product Environment through the single mapping
+- **WHEN** backend requests, scripts, smoke runners, or validation code need environment-derived values
+- **THEN** they resolve Product Environment through the single Local/UAT/PRD mapping
 - **AND** they pass Product Environment or Product Environment Profile downstream instead of repeating raw alias checks.
 
 ### Requirement: PRD Holding Page is a temporary PRD deployment surface
@@ -112,9 +115,9 @@ The system MUST distinguish Product Environment from Platform Environment, Worke
 
 #### Scenario: Wrangler environment is referenced
 
-- **WHEN** a script or workflow references a Wrangler environment such as `sandbox` or `production`
-- **THEN** it is described as a Worker runtime target mapped to UAT or PRD
-- **AND** operator-facing commands SHOULD prefer product targets such as `uat` and `prd` once wrappers exist.
+- **WHEN** a script or workflow references a Wrangler environment
+- **THEN** the environment uses `local`, `uat`, or `prd`
+- **AND** operator-facing commands prefer product targets such as `uat` and `prd`.
 
 #### Scenario: Stripe mode is referenced
 
@@ -124,9 +127,9 @@ The system MUST distinguish Product Environment from Platform Environment, Worke
 
 #### Scenario: Raw platform name is needed by a provider boundary
 
-- **WHEN** code must pass `sandbox`, `production`, `test`, `live`, or a provider-specific environment value to a platform API, CLI, workflow, or config file
-- **THEN** the raw name is produced from or mapped back to Product Environment
-- **AND** the raw name is not used as the app-wide policy identity.
+- **WHEN** a platform API, CLI, workflow, or config file requires a legacy alias or provider-specific environment value
+- **THEN** the boundary maps it from Local, UAT, or PRD
+- **AND** the raw value is not representable as app-wide product policy.
 
 ### Requirement: Secret-store boundaries
 
