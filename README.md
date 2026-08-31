@@ -78,7 +78,7 @@ Decap remains editorial-only. Content publication and buyable status are separat
 
 ## Prerequisites
 
-- Node.js 24 LTS
+- Node.js 24.20.0, pinned by `.node-version` and the root package engine
 - pnpm 12.0.0, via the repo `packageManager` field
 - Go, only for the local official `stripe-mock` launcher
 
@@ -90,8 +90,8 @@ pnpm install
 
 ## Toolchain policy
 
-- Keep local and CI Node on the current 24.x LTS line; do not move this repo to Node Current for routine dependency updates.
-- Keep TypeScript on `5.9.3` until `@astrojs/check` and `openapi-typescript` publish compatible TypeScript 6 peer ranges.
+- Keep local and CI Node on `24.20.0`; update `.node-version`, the root package engine, and every workflow together.
+- Keep TypeScript on `5.9.3` until `openapi-typescript` publishes a compatible TypeScript 6 peer range.
 - Keep Prisma on the latest compatible v7 line, currently `7.10.0`; datasource URL configuration lives in `apps/backend/prisma.config.ts`.
 - Keep repo Wrangler on the workspace dependency, currently `wrangler@4.127.1`; if a global Wrangler is installed, keep it aligned for ad hoc terminal use.
 - Keep GitHub CLI and Serena MCP updated locally, but do not commit machine-local tool shims, caches, credentials, or MCP memories.

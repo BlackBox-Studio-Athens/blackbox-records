@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "packageManager": "pnpm@12.0.0",
+  "engines": {
+    "node": "24.20.0"
+  },
   "scripts": {
     "dev": "pnpm dev:web",
     "dev:web": "pnpm --filter @blackbox/web dev",
@@ -71,7 +74,7 @@
     "audit:commerce-boundaries": "tsx scripts/audit-commerce-boundaries.ts",
     "audit:module-boundaries": "tsx scripts/audit-module-boundaries.ts",
     "audit:unused": "knip --config knip.jsonc --no-exit-code --no-config-hints",
-    "renovate:validate": "pnpm dlx --package renovate renovate-config-validator --strict",
+    "renovate:validate": "pnpm dlx --allow-build=core-js-pure --allow-build=dtrace-provider --allow-build=protobufjs --allow-build=re2 --package renovate@44.52.0 renovate-config-validator --strict",
     "preview": "pnpm --filter @blackbox/web preview",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
