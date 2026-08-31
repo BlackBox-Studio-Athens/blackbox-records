@@ -1,6 +1,6 @@
 ## 1. Schema and Types
 
-- [ ] 1.1 Run `pnpm openspec:guard`, verify `stabilize-store-listing-prices` is complete and archived, and preflight hosted pending orders/sessions with redacted output; verify the settled Store Offer/Price Authority contract is present and no unrecoverable payable legacy session exists.
+- [ ] 1.1 Run `pnpm openspec:guard` and verify the settled Store Offer/Price Authority code contract is present; record the redacted hosted pending-order/session preflight as a UAT rollout gate rather than a repo-local implementation blocker.
 - [ ] 1.2 Make checkoutSessionId nullable and unique, add checkoutExpiresAt, and constrain CheckoutOrderLine to positive quantity and unique order-variant identity; verify the additive migration and regenerated Prisma client.
 - [ ] 1.3 Add discriminated repository types and transition-specific methods for sessionless pending, session-bound pending, paid, not-paid, and needs-review orders; verify impossible field/status combinations cannot be constructed by application callers.
 

@@ -90,11 +90,12 @@ Normal reads do not contact Stripe. When a checkout would fail solely because ex
 
 ## Migration Plan
 
-1. Confirm no hosted payable legacy session lacks a recoverable CheckoutOrder.
+1. Confirm the settled Store Offer and Price Authority code contract is present.
 2. Make checkoutSessionId nullable, add checkoutExpiresAt and line constraints/indexes, and regenerate Prisma.
 3. Add discriminated order types, effective-availability query, and D1 concurrency tests.
 4. Reorder checkout creation and add provider expiry compensation and metadata recovery.
 5. Update webhook reconciliation and the existing paid transaction.
-6. Deploy migration and code with checkout disabled, prove Local then UAT, and leave PRD opening to production-go-live-readiness.
+6. Before UAT deployment, confirm with redacted evidence that no hosted payable legacy session lacks a recoverable CheckoutOrder.
+7. Deploy migration and code with checkout disabled, prove Local then UAT, and leave PRD opening to production-go-live-readiness.
 
 Rollback disables checkout and reverts application behavior while retaining additive data. It never rewrites migration history or releases a possibly payable session.
