@@ -14,6 +14,8 @@ const wranglerConfigText = `
       "d1_databases": [{ "binding": "COMMERCE_DB" }],
       "vars": {
         "PRODUCT_ENVIRONMENT": "PRD",
+        "CF_ACCESS_TEAM_DOMAIN": "https://blackbox-records.cloudflareaccess.com",
+        "CF_ACCESS_POLICY_AUD": "operator-audience",
         "CHECKOUT_RETURN_ORIGINS": "https://blackbox-records-web.pages.dev",
         "EMAIL_BRAND_HOME_URL": "https://blackbox-records-web.pages.dev/",
         "EMAIL_BRAND_LOGO_URL": "https://blackbox-records-web.pages.dev/assets/images/brand/logo-horizontal.png",
@@ -71,6 +73,9 @@ describe('runtime config verification', () => {
         expect.objectContaining({ name: 'STRIPE_PAYMENT_METHOD_CONFIGURATION_ID', status: 'present' }),
         expect.objectContaining({ name: 'STRIPE_SECRET_KEY', status: 'present' }),
         expect.objectContaining({ name: 'STRIPE_WEBHOOK_SECRET', status: 'present' }),
+        expect.objectContaining({ name: 'CF_ACCESS_TEAM_DOMAIN', status: 'present' }),
+        expect.objectContaining({ name: 'CF_ACCESS_POLICY_AUD', status: 'present' }),
+        expect.objectContaining({ name: 'LOCAL_OPERATOR_EMAIL', status: 'not_applicable' }),
         expect.objectContaining({ name: 'CHECKOUT_RETURN_ORIGINS', status: 'present' }),
         expect.objectContaining({ name: 'WORKER_ORIGIN_SCOPE', status: 'present' }),
         expect.objectContaining({ name: 'COMMERCE_DB', status: 'present' }),
@@ -103,6 +108,8 @@ describe('runtime config verification', () => {
       expect.arrayContaining([
         'STRIPE_PAYMENT_METHOD_CONFIGURATION_ID is missing.',
         'STRIPE_WEBHOOK_SECRET is missing.',
+        'CF_ACCESS_TEAM_DOMAIN is missing.',
+        'CF_ACCESS_POLICY_AUD is missing.',
         'CHECKOUT_RETURN_ORIGINS is missing.',
         'WORKER_ORIGIN_SCOPE is missing (PRD Worker must not allow Local, UAT, or preview origins.).',
         'COMMERCE_DB is missing.',
@@ -159,6 +166,8 @@ describe('runtime config verification', () => {
           "d1_databases": [{ "binding": "COMMERCE_DB" }],
           "vars": {
             "PRODUCT_ENVIRONMENT": "UAT",
+            "CF_ACCESS_TEAM_DOMAIN": "https://blackbox-records.cloudflareaccess.com",
+            "CF_ACCESS_POLICY_AUD": "operator-audience",
             "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,https://blackbox-studio-athens.github.io/blackbox-records",
             "EMAIL_BRAND_HOME_URL": "https://blackbox-studio-athens.github.io/blackbox-records/",
             "EMAIL_BRAND_LOGO_URL": "https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png",
@@ -193,6 +202,22 @@ describe('runtime config verification', () => {
     expect(sandboxResult.issues).toEqual([]);
     expect(productionResult.issues).toContain(
       'RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL is missing (PRD must not honor the UAT sink recipient override.).',
+    );
+  });
+
+  it('requires only the loopback operator identity in Local', () => {
+    const result = verifyRuntimeConfig({
+      environment: 'LOCAL',
+      secretNames: null,
+      wranglerConfigText: '{"vars":{"PRODUCT_ENVIRONMENT":"LOCAL","LOCAL_OPERATOR_EMAIL":"operator@example.com"}}',
+    });
+
+    expect(result.categories).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'CF_ACCESS_TEAM_DOMAIN', status: 'not_applicable' }),
+        expect.objectContaining({ name: 'CF_ACCESS_POLICY_AUD', status: 'not_applicable' }),
+        expect.objectContaining({ name: 'LOCAL_OPERATOR_EMAIL', status: 'present' }),
+      ]),
     );
   });
 });

@@ -297,7 +297,7 @@
       "namedInterfaces": {
         "repository-spi": "apps/backend/src/domain/commerce/repositories/spi.ts"
       },
-      "allowedDependencies": ["platform-shared"],
+      "allowedDependencies": [],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
@@ -383,14 +383,7 @@
       "namedInterfaces": {
         "internal-order-routes": "apps/backend/src/interfaces/http/routes/register-internal-order-routes.ts"
       },
-      "allowedDependencies": [
-        "commerce-domain",
-        "checkout-core",
-        "stock",
-        "operator-auth",
-        "commerce-persistence",
-        "platform-shared"
-      ],
+      "allowedDependencies": ["commerce-domain", "checkout-core", "stock", "commerce-persistence", "platform-shared"],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
@@ -430,14 +423,7 @@
       "namedInterfaces": {
         "internal-contracts": "apps/backend/src/interfaces/http/contracts/internal-contracts.ts"
       },
-      "allowedDependencies": [
-        "stock",
-        "orders",
-        "operator-auth",
-        "commerce-persistence",
-        "ui-foundation",
-        "platform-shared"
-      ],
+      "allowedDependencies": ["stock", "orders", "commerce-persistence", "ui-foundation", "platform-shared"],
       "allowedWorkspaceInterfaces": {
         "@blackbox/api-client": ["./internal"]
       },

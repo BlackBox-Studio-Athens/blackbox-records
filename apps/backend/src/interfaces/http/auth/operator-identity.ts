@@ -67,6 +67,7 @@ export async function verifyOperatorAccess(
       algorithms: ['RS256'],
       audience: trust.audience,
       issuer: trust.issuer,
+      requiredClaims: ['exp'],
     });
     const email = emailSchema.safeParse(payload.email);
 
@@ -79,12 +80,16 @@ export async function verifyOperatorAccess(
       error instanceof errors.JWKSInvalid ||
       error instanceof errors.JWKInvalid ||
       error?.constructor === errors.JOSEError ||
-      !(error instanceof errors.JOSEError)
+      error instanceof TypeError
     ) {
       return { status: 'unavailable', reason: 'jwks_unavailable' };
     }
 
-    return { status: 'unauthorized', reason: 'invalid_token' };
+    if (error instanceof errors.JOSEError) {
+      return { status: 'unauthorized', reason: 'invalid_token' };
+    }
+
+    throw error;
   }
 }
 

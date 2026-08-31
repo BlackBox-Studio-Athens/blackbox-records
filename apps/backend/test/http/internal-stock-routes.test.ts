@@ -1,6 +1,10 @@
+import { exportJWK, generateKeyPair, SignJWT } from 'jose';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER } from '../../src/interfaces/http/auth';
+import {
+  CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER,
+  CF_ACCESS_JWT_ASSERTION_HEADER,
+} from '../../src/interfaces/http/auth';
 import { createHttpApp } from '../../src/interfaces/http/app';
 
 const LOCAL_ENV = {
@@ -23,24 +27,29 @@ const mockRecordStockChange = vi.fn();
 const mockRecordStockCount = vi.fn();
 const VariantNotFoundError = class VariantNotFoundError extends Error {};
 const InvalidStockOperationError = class InvalidStockOperationError extends Error {};
+const mockCreateInternalStockServices = vi.fn();
 
 function expectNoStoreCacheControl(response: Response): void {
   expect(response.headers.get('Cache-Control')).toBe('no-store');
 }
 
 vi.mock('../../src/interfaces/http/routes/internal-stock-services', () => ({
-  createInternalStockServices: () => ({
-    disconnect: mockDisconnect,
-    errors: {
-      InvalidStockOperationError,
-      VariantNotFoundError,
-    },
-    readVariantStock: mockReadVariantStock,
-    readVariantStockHistory: mockReadVariantStockHistory,
-    recordStockChange: mockRecordStockChange,
-    recordStockCount: mockRecordStockCount,
-    searchVariants: mockSearchVariants,
-  }),
+  createInternalStockServices: (...args: unknown[]) => {
+    mockCreateInternalStockServices(...args);
+
+    return {
+      disconnect: mockDisconnect,
+      errors: {
+        InvalidStockOperationError,
+        VariantNotFoundError,
+      },
+      readVariantStock: mockReadVariantStock,
+      readVariantStockHistory: mockReadVariantStockHistory,
+      recordStockChange: mockRecordStockChange,
+      recordStockCount: mockRecordStockCount,
+      searchVariants: mockSearchVariants,
+    };
+  },
 }));
 
 describe('internal stock routes', () => {
@@ -60,6 +69,7 @@ describe('internal stock routes', () => {
       error: 'Unauthorized.',
       requestId: expect.any(String),
     });
+    expect(mockCreateInternalStockServices).not.toHaveBeenCalled();
     expect(mockSearchVariants).not.toHaveBeenCalled();
   });
 
@@ -193,6 +203,62 @@ describe('internal stock routes', () => {
       },
       variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
+  });
+
+  it('attributes hosted stock changes to the signed Access identity', async () => {
+    const issuer = 'https://blackbox-stock-test.cloudflareaccess.com';
+    const { privateKey, publicKey } = await generateKeyPair('RS256');
+    const jwk = await exportJWK(publicKey);
+    Object.assign(jwk, { alg: 'RS256', kid: 'stock-test', use: 'sig' });
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ keys: [jwk] }));
+    const token = await new SignJWT({ email: 'verified@blackboxrecords.example' })
+      .setProtectedHeader({ alg: 'RS256', kid: 'stock-test' })
+      .setIssuer(issuer)
+      .setAudience(HOSTED_ENV.CF_ACCESS_POLICY_AUD)
+      .setIssuedAt()
+      .setExpirationTime('5m')
+      .sign(privateKey);
+    mockRecordStockChange.mockResolvedValueOnce({
+      entry: {
+        actorEmail: 'verified@blackboxrecords.example',
+        id: 'change_hosted',
+        notes: null,
+        quantityDelta: -1,
+        reason: 'sale',
+        recordedAt: new Date('2026-04-24T12:05:00.000Z'),
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      },
+      stock: {
+        createdAt: new Date('2026-04-24T10:00:00.000Z'),
+        onlineQuantity: 1,
+        quantity: 2,
+        updatedAt: new Date('2026-04-24T12:05:00.000Z'),
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      },
+    });
+
+    try {
+      const response = await createHttpApp().request(
+        'https://ops.example/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock/changes',
+        {
+          body: JSON.stringify({ delta: -1, reason: 'sale' }),
+          headers: {
+            [CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER]: 'attacker@blackboxrecords.example',
+            [CF_ACCESS_JWT_ASSERTION_HEADER]: token,
+            'content-type': 'application/json',
+          },
+          method: 'POST',
+        },
+        { ...HOSTED_ENV, CF_ACCESS_TEAM_DOMAIN: issuer },
+      );
+
+      expect(response.status).toBe(200);
+      expect(mockRecordStockChange).toHaveBeenCalledWith(
+        expect.objectContaining({ actorEmail: 'verified@blackboxrecords.example' }),
+      );
+    } finally {
+      fetchMock.mockRestore();
+    }
   });
 
   it('returns 400 for invalid stock operations from the application layer', async () => {

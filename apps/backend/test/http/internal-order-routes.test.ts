@@ -17,17 +17,22 @@ const HOSTED_ENV = {
 const mockDisconnect = vi.fn(async () => {});
 const mockReadCheckoutOrder = vi.fn();
 const mockReadRecentCheckoutOrders = vi.fn();
+const mockCreateInternalOrderServices = vi.fn();
 
 function expectNoStoreCacheControl(response: Response): void {
   expect(response.headers.get('Cache-Control')).toBe('no-store');
 }
 
 vi.mock('../../src/interfaces/http/routes/internal-order-services', () => ({
-  createInternalOrderServices: () => ({
-    disconnect: mockDisconnect,
-    readCheckoutOrder: mockReadCheckoutOrder,
-    readRecentCheckoutOrders: mockReadRecentCheckoutOrders,
-  }),
+  createInternalOrderServices: (...args: unknown[]) => {
+    mockCreateInternalOrderServices(...args);
+
+    return {
+      disconnect: mockDisconnect,
+      readCheckoutOrder: mockReadCheckoutOrder,
+      readRecentCheckoutOrders: mockReadRecentCheckoutOrders,
+    };
+  },
 }));
 
 describe('internal order routes', () => {
@@ -47,6 +52,7 @@ describe('internal order routes', () => {
       error: 'Unauthorized.',
       requestId: expect.any(String),
     });
+    expect(mockCreateInternalOrderServices).not.toHaveBeenCalled();
     expect(mockReadRecentCheckoutOrders).not.toHaveBeenCalled();
   });
 

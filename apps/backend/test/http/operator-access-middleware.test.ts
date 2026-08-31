@@ -51,6 +51,21 @@ describe('operator access middleware', () => {
     });
   });
 
+  it('returns generic 503 when the Product Environment binding is invalid', async () => {
+    const response = await createHttpApp().request('https://ops.example/api/internal/orders', undefined, {
+      PRODUCT_ENVIRONMENT: 'INVALID' as never,
+      COMMERCE_DB: {} as D1Database,
+    });
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    await expect(response.json()).resolves.toEqual({
+      code: 'operator_access_unavailable',
+      error: 'Operator access temporarily unavailable.',
+      requestId: expect.any(String),
+    });
+  });
+
   it('does not expose assertion, forwarded identity, or trust values in logs or responses', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const assertion = 'malformed.secret.assertion';

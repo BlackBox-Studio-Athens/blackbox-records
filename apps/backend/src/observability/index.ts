@@ -1,7 +1,8 @@
 import type { Context, MiddlewareHandler } from 'hono';
 
 import {
-  productEnvironmentProfileFromBindings,
+  getProductEnvironmentProfile,
+  productEnvironmentSchema,
   type AppBindings,
   type AppEnv,
   type ProductEnvironment,
@@ -69,16 +70,16 @@ export function createBindingLogger(
   bindings: Pick<AppBindings, 'PRODUCT_ENVIRONMENT'> | undefined,
   extra: Partial<StructuredLogRecord> = {},
 ): AppLogger {
-  const profile = bindings
-    ? productEnvironmentProfileFromBindings(bindings)
-    : {
-        productEnvironment: 'LOCAL' as const,
-        workerDeploymentTarget: 'local' as const,
-      };
+  const environment = productEnvironmentSchema.safeParse(bindings?.PRODUCT_ENVIRONMENT ?? 'LOCAL');
+  const profile = environment.success ? getProductEnvironmentProfile(environment.data) : null;
 
   return createWorkerLogger({
-    productEnvironment: profile.productEnvironment,
-    workerDeploymentTarget: profile.workerDeploymentTarget,
+    ...(profile
+      ? {
+          productEnvironment: profile.productEnvironment,
+          workerDeploymentTarget: profile.workerDeploymentTarget,
+        }
+      : {}),
     ...extra,
   });
 }

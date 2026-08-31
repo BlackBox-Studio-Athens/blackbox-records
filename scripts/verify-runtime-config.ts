@@ -21,8 +21,11 @@ export type RuntimeConfigCategory = {
   detail?: string;
   name:
     | 'CHECKOUT_RETURN_ORIGINS'
+    | 'CF_ACCESS_POLICY_AUD'
+    | 'CF_ACCESS_TEAM_DOMAIN'
     | 'COMMERCE_DB'
     | 'FLAGS'
+    | 'LOCAL_OPERATOR_EMAIL'
     | 'EMAIL_BRAND_HOME_URL'
     | 'EMAIL_BRAND_LOGO_URL'
     | 'PRD_OPEN_GATE'
@@ -124,6 +127,7 @@ export function verifyRuntimeConfig(input: {
     productEnvironmentProfile.requiresDeployedSecretsByDefault || input.requireLiveSecrets === true;
   const categories: RuntimeConfigCategory[] = [
     classifyProductEnvironmentMapping(productEnvironmentProfile),
+    ...classifyOperatorAccessTrust(productEnvironmentProfile, environmentBlock, input.secretNames),
     ...(!requireDeployedSecrets
       ? []
       : [
@@ -153,6 +157,38 @@ export function verifyRuntimeConfig(input: {
     requireLiveSecrets: requireDeployedSecrets,
     workerDeploymentTarget: productEnvironmentProfile.workerDeploymentTarget,
   };
+}
+
+function classifyOperatorAccessTrust(
+  productEnvironmentProfile: ProductEnvironmentProfile,
+  environmentBlock: string,
+  secretNames: readonly string[] | null,
+): RuntimeConfigCategory[] {
+  if (productEnvironmentProfile.productEnvironment === 'LOCAL') {
+    return [
+      {
+        detail: 'Cloudflare Access trust applies only to hosted Product Environments.',
+        name: 'CF_ACCESS_TEAM_DOMAIN',
+        status: 'not_applicable',
+      },
+      {
+        detail: 'Cloudflare Access trust applies only to hosted Product Environments.',
+        name: 'CF_ACCESS_POLICY_AUD',
+        status: 'not_applicable',
+      },
+      classifyWranglerTextPresence('LOCAL_OPERATOR_EMAIL', environmentBlock),
+    ];
+  }
+
+  return [
+    classifyWorkerConfigPresence('CF_ACCESS_TEAM_DOMAIN', environmentBlock, secretNames),
+    classifyWorkerConfigPresence('CF_ACCESS_POLICY_AUD', environmentBlock, secretNames),
+    {
+      detail: 'Hosted Product Environments cannot use the Local operator identity bypass.',
+      name: 'LOCAL_OPERATOR_EMAIL',
+      status: 'not_applicable',
+    },
+  ];
 }
 
 export function formatRuntimeConfigVerificationReport(result: RuntimeConfigVerificationResult): string {

@@ -101,6 +101,7 @@ describe('verifyOperatorAccess', () => {
     ['wrong issuer', { issuer: 'https://other.cloudflareaccess.com' }],
     ['wrong audience', { audience: 'other-audience' }],
     ['expired', { expirationTime: Math.floor(Date.now() / 1000) - 60 }],
+    ['missing expiration', { expirationTime: null }],
     ['not yet valid', { notBefore: Math.floor(Date.now() / 1000) + 300 }],
     ['missing email', { email: undefined }],
     ['invalid email', { email: 'invalid' }],
@@ -126,6 +127,16 @@ describe('verifyOperatorAccess', () => {
       reason: 'jwks_unavailable',
       status: 'unavailable',
     });
+  });
+
+  it('rethrows unexpected verifier failures', async () => {
+    const signer = await createSigner('key-1');
+    const failure = new Error('programming failure');
+    const failingResolver: JWTVerifyGetKey = async () => {
+      throw failure;
+    };
+
+    await expect(verifyHosted(await signer.sign({}), failingResolver)).rejects.toBe(failure);
   });
 
   it('returns unavailable when the remote JWKS endpoint is unusable', async () => {
@@ -185,7 +196,7 @@ async function createSigner(kid: string) {
     async sign(overrides: {
       audience?: string;
       email?: string;
-      expirationTime?: number;
+      expirationTime?: number | null;
       issuer?: string;
       notBefore?: number;
       signingKey?: string;
@@ -200,8 +211,11 @@ async function createSigner(kid: string) {
         .setProtectedHeader({ alg: 'RS256', kid })
         .setIssuer(overrides.issuer ?? ISSUER)
         .setAudience(overrides.audience ?? AUDIENCE)
-        .setIssuedAt()
-        .setExpirationTime(overrides.expirationTime ?? '5m');
+        .setIssuedAt();
+
+      if (overrides.expirationTime !== null) {
+        jwt.setExpirationTime(overrides.expirationTime ?? '5m');
+      }
 
       if (overrides.notBefore) {
         jwt.setNotBefore(overrides.notBefore);
