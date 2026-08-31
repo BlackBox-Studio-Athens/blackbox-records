@@ -43,6 +43,7 @@ if (!lockfile) {
   throw new Error('Primary pnpm lockfile document is missing');
 }
 const adminRuntime = readFileSync(new URL('../../../public/admin/init.js', import.meta.url), 'utf8');
+const readme = readFileSync(new URL('../../../../../README.md', import.meta.url), 'utf8');
 
 describe('accepted Decap compatibility baseline', () => {
   it('pins package metadata and both lockfile records to decap-server 3.11.0', () => {
@@ -71,6 +72,10 @@ describe('accepted Decap compatibility baseline', () => {
       'distro',
       'news',
     ]);
+  });
+
+  it('documents the exact supported Decap baseline', () => {
+    expect(readme).toContain('Supported Decap baseline: `decap-cms@3.16.0` with `decap-server@3.11.0`.');
   });
 
   it('owns exactly the accepted collection media roots and hides the global library surface', () => {

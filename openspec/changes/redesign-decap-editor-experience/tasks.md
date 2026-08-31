@@ -6,9 +6,9 @@
 
 ## 2. Current Baseline and Smoke Ownership
 
-- [ ] 2.1 Align every live Decap literal and assertion to decap-cms 3.16.0 and decap-server 3.11.0; verify package, lockfile, runtime URL, tests, and docs agree.
-- [ ] 2.2 Fix UAT cms_assets so admin HTML owns data-admin-boot-root, admin CSS owns the hidden boot rule, and init.js owns runtime transitions; verify a regression test rejects future cross-file assertions.
-- [ ] 2.3 Keep Local CMS Smoke functional/read-only and Browser Use visual/responsive; verify the two checklists have no duplicate mobile layout assertions.
+- [x] 2.1 Align every live Decap literal and assertion to decap-cms 3.16.0 and decap-server 3.11.0; verify package, lockfile, runtime URL, tests, and docs agree.
+- [x] 2.2 Fix UAT cms_assets so admin HTML owns data-admin-boot-root, admin CSS owns the hidden boot rule, and init.js owns runtime transitions; verify a regression test rejects future cross-file assertions.
+- [x] 2.3 Keep Local CMS Smoke functional/read-only and Browser Use visual/responsive; verify the two checklists have no duplicate mobile layout assertions.
 
 ## 3. UAT Acceptance
 

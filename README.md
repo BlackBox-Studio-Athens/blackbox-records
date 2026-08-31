@@ -731,6 +731,11 @@ Do not run standalone `pnpm cms:dev` while `BlackBox Local Stack` is running in 
 
 ### Decap environment variables
 
+Supported Decap baseline: `decap-cms@3.16.0` with `decap-server@3.11.0`.
+
+- Local CMS Smoke owns functional, read-only editor checks at its desktop viewport.
+- Browser Use owns desktop, 390-pixel, and 320-pixel visual, responsive, focus, target-size, overflow, clipping, and console acceptance.
+
 Maintainer build-mode matrix:
 
 | `DECAP_BACKEND_MODE` | Intended use                                                                      | Result                                                                     |

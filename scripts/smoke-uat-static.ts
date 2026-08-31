@@ -70,6 +70,27 @@ type UatStaticSmokeScenarioDefinition = {
   name: UatStaticSmokeScenarioName;
 };
 
+export const CMS_BOOT_ASSET_CONTRACTS = {
+  css: {
+    path: '/admin/admin.css',
+    snippets: ['blackbox-cms', '.blackbox-cms-boot[hidden]'],
+  },
+  html: {
+    path: '/admin/index.html',
+    snippets: ['data-admin-boot-root'],
+  },
+  runtime: {
+    path: '/admin/init.js',
+    snippets: [
+      'window.__BLACKBOX_ADMIN__',
+      'blackbox:decap-ready',
+      'blackbox:decap-failed',
+      'site-pages',
+      "mediaButton.dataset.blackboxTopLevelMedia = 'hidden'",
+    ],
+  },
+} as const;
+
 type UatStaticSmokeSummary = {
   environment: 'uat';
   failedScenarioCount: number;
@@ -560,17 +581,10 @@ async function checkCmsAssets(options: UatStaticSmokeOptions): Promise<UatStatic
       'format: json',
     ]),
   );
-  checks.push(
-    await checkTextAsset(options, '/admin/init.js', [
-      'window.__BLACKBOX_ADMIN__',
-      'data-admin-boot-root',
-      'blackbox-cms-boot[hidden]',
-      'site-pages',
-      "mediaButton.dataset.blackboxTopLevelMedia = 'hidden'",
-    ]),
-  );
+  for (const contract of Object.values(CMS_BOOT_ASSET_CONTRACTS)) {
+    checks.push(await checkTextAsset(options, contract.path, contract.snippets));
+  }
   checks.push(await checkTextAsset(options, '/admin/preview-assets.js', ['resolvePreviewAssetUrl']));
-  checks.push(await checkTextAsset(options, '/admin/admin.css', ['blackbox-cms']));
   checks.push(await checkTextAsset(options, '/admin/preview.css', ['body']));
   checks.push(await checkBinaryAsset(options, '/admin/media/home/hero-live-band.jpg', 'image/'));
   checks.push(await checkBinaryAsset(options, '/admin/media/artists/Chronoboros-band-logo.jpg', 'image/'));

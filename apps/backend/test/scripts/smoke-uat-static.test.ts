@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildUatStaticSmokeEvidence,
+  CMS_BOOT_ASSET_CONTRACTS,
   checkReviewSiteMarker,
   checkCmsAdminRenderedState,
   checkCmsConfigPlaceholders,
@@ -14,6 +15,31 @@ import {
 import type { Page } from 'playwright';
 
 describe('UAT static smoke runner', () => {
+  it('keeps CMS boot assertions with their owning static asset', () => {
+    expect(CMS_BOOT_ASSET_CONTRACTS).toEqual({
+      css: {
+        path: '/admin/admin.css',
+        snippets: ['blackbox-cms', '.blackbox-cms-boot[hidden]'],
+      },
+      html: {
+        path: '/admin/index.html',
+        snippets: ['data-admin-boot-root'],
+      },
+      runtime: {
+        path: '/admin/init.js',
+        snippets: [
+          'window.__BLACKBOX_ADMIN__',
+          'blackbox:decap-ready',
+          'blackbox:decap-failed',
+          'site-pages',
+          "mediaButton.dataset.blackboxTopLevelMedia = 'hidden'",
+        ],
+      },
+    });
+    expect(CMS_BOOT_ASSET_CONTRACTS.runtime.snippets).not.toContain('data-admin-boot-root');
+    expect(CMS_BOOT_ASSET_CONTRACTS.runtime.snippets).not.toContain('.blackbox-cms-boot[hidden]');
+  });
+
   it('parses the supported CLI arguments and scenario selection', () => {
     expect(
       parseUatStaticSmokeArgs([
