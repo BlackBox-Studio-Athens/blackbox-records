@@ -29,7 +29,7 @@ export default defineConfig({
           STRIPE_WEBHOOK_SECRET: 'whsec_workers_pool',
           TEST_MIGRATIONS: migrations,
         },
-        compatibilityDate: '2026-04-20',
+        compatibilityDate: '2026-08-31',
         compatibilityFlags: ['nodejs_compat'],
         d1Databases: {
           COMMERCE_DB: 'blackbox-records-workers-pool-test',

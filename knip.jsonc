@@ -23,8 +23,8 @@
         "scripts/**/*.{mjs,ts}",
       ],
       "project": ["astro.config.mjs", "src/**/*.{astro,ts,tsx,js,mjs}", "scripts/**/*.{mjs,ts}", "vitest.config.ts"],
-      // CSS imports and local dev binary launching are intentional but not visible to Knip's TS graph.
-      "ignoreDependencies": ["tailwindcss", "tw-animate-css", "decap-server", "shadcn"],
+      // CSS imports, Astro's Vite SSR cookie edge, and local dev binary launching are intentional but not visible to Knip's TS graph.
+      "ignoreDependencies": ["cookie", "tailwindcss", "tw-animate-css", "decap-server", "shadcn"],
     },
     "apps/backend": {
       "entry": ["src/index.ts", "wrangler.jsonc", "prisma.config.ts", "scripts/**/*.{mjs,ts}", "test/**/*.test.ts"],

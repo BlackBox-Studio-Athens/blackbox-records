@@ -79,7 +79,7 @@ Decap remains editorial-only. Content publication and buyable status are separat
 ## Prerequisites
 
 - Node.js 24 LTS
-- pnpm 10.33.4, via the repo `packageManager` field
+- pnpm 12.0.0, via the repo `packageManager` field
 - Go, only for the local official `stripe-mock` launcher
 
 ## Setup
@@ -92,8 +92,8 @@ pnpm install
 
 - Keep local and CI Node on the current 24.x LTS line; do not move this repo to Node Current for routine dependency updates.
 - Keep TypeScript on `5.9.3` until `@astrojs/check` and `openapi-typescript` publish compatible TypeScript 6 peer ranges.
-- Keep Prisma on the latest compatible v7 line, currently `7.8.0`; datasource URL configuration lives in `apps/backend/prisma.config.ts`.
-- Keep repo Wrangler on the workspace dependency, currently `wrangler@4.94.0`; if a global Wrangler is installed, keep it aligned for ad hoc terminal use.
+- Keep Prisma on the latest compatible v7 line, currently `7.10.0`; datasource URL configuration lives in `apps/backend/prisma.config.ts`.
+- Keep repo Wrangler on the workspace dependency, currently `wrangler@4.127.1`; if a global Wrangler is installed, keep it aligned for ad hoc terminal use.
 - Keep GitHub CLI and Serena MCP updated locally, but do not commit machine-local tool shims, caches, credentials, or MCP memories.
 
 ## shadcn MCP registries
@@ -636,7 +636,7 @@ CI/deploy credentials and public build variables:
 
 - UAT deployment is handled by `.github/workflows/pages.yml`.
 - Deploy-relevant pushes to `main` run the shared UAT and PRD static deployment; pushes changing only `docs/**`, `openspec/**`, root `*.md`, or root `LICENSE` are skipped. `workflow_dispatch` remains available for a forced deployment.
-- The shared static workflow uses Node 24, pnpm 10.33.4, explicit pnpm setup/install steps, and only deploys UAT if all of these succeed:
+- The shared static workflow uses Node 24.20.0, pnpm 12.0.0, explicit pnpm setup/install steps, and only deploys UAT if all of these succeed:
   - `pnpm test:unit`
   - `pnpm check`
   - `pnpm audit:unused`

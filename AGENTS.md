@@ -200,7 +200,7 @@ Read these first before editing:
   - `pnpm check`
   - target-specific static build (`pnpm build:web` for UAT, `pnpm build` for PRD)
 - `pnpm check` is intentionally editor-independent; do not rely on WebStorm formatting or inspections as the only style gate.
-- The workflow uses explicit pnpm setup/install steps with Node 24, pnpm 10.33.4, and setup-node pnpm-store caching
+- The workflow uses explicit pnpm setup/install steps with Node 24.20.0, pnpm 12.0.0, and setup-node pnpm-store caching
 - Configured in `apps/web/astro.config.mjs`
   - default `site: https://blackbox-studio-athens.github.io`
   - default `base: /blackbox-records/`

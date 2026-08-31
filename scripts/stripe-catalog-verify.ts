@@ -517,19 +517,18 @@ function createExpectedProductProjectionMap(
 function createD1CatalogRepositories(environment: StripeCatalogEnvironment, rows: D1CatalogRow[]) {
   const storeItemRecords = rows.map(toStoreItemOptionRecord);
   const mappingRecords = new Map(
-    rows.flatMap(
-      (row): Array<[string, VariantStripeMappingRecord]> =>
-        row.mappingStripePriceId
-          ? [
-              [
-                row.variantId,
-                {
-                  stripePriceId: parseStripePriceId(row.mappingStripePriceId),
-                  variantId: parseVariantId(row.variantId),
-                },
-              ],
-            ]
-          : [],
+    rows.flatMap((row): Array<[string, VariantStripeMappingRecord]> =>
+      row.mappingStripePriceId
+        ? [
+            [
+              row.variantId,
+              {
+                stripePriceId: parseStripePriceId(row.mappingStripePriceId),
+                variantId: parseVariantId(row.variantId),
+              },
+            ],
+          ]
+        : [],
     ),
   );
   const snapshotRecords = new Map(

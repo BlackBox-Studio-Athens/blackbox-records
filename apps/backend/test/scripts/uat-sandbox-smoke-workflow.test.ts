@@ -41,7 +41,7 @@ describe('UAT provider smoke workflow', () => {
     expect(workflow).not.toContain('inbox receipt');
     expect(workflow).toContain('.codex-artifacts/smoke/uat/stripe-sandbox/**');
     expect(workflow).toContain('uat-smoke-${{ github.run_id }}-${{ github.run_attempt }}');
-    expect(workflow).toContain('actions/upload-artifact@v5.0.0');
+    expect(workflow).toContain('actions/upload-artifact@v7.0.1');
     expect(workflow.indexOf('pnpm stripe:webhooks:verify --env uat')).toBeLessThan(
       workflow.indexOf('pnpm deploy:backend:uat'),
     );

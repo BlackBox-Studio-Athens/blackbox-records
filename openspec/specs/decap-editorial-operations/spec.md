@@ -254,8 +254,8 @@ The system MUST pin the Decap browser runtime and local proxy package to one tes
 
 #### Scenario: Dependency baseline is installed
 
-- **WHEN** this change is implemented against the July 22, 2026 baseline
-- **THEN** the browser runtime is pinned to `decap-cms@3.15.1` and local proxy tooling to `decap-server@3.10.0`
+- **WHEN** this change is implemented against the August 31, 2026 alignment baseline
+- **THEN** the browser runtime is pinned to `decap-cms@3.16.0` and local proxy tooling to `decap-server@3.11.0`
 - **AND** package metadata, lockfile, admin script URL, and tests agree on those exact versions.
 
 #### Scenario: Decap runtime cannot load

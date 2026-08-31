@@ -22,17 +22,17 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v5.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.8
+        uses: pnpm/action-setup@v6.0.10
         with:
-          version: 10.33.4
+          version: 12.0.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6.4.0
+        uses: actions/setup-node@v7.0.0
         with:
-          node-version: 24
+          node-version: 24.20.0
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -60,7 +60,7 @@ jobs:
         run: pnpm prd:holding:prepare && pnpm prd:holding:check
 
       - name: Upload PRD Holding Page artifact
-        uses: actions/upload-artifact@v5.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: prd-holding-page-${{ github.sha }}
           path: apps/web/dist-holding
@@ -79,7 +79,7 @@ jobs:
       name: prd-holding
     steps:
       - name: Download PRD Holding Page artifact
-        uses: actions/download-artifact@v5.0.0
+        uses: actions/download-artifact@v8.0.1
         with:
           name: prd-holding-page-${{ github.sha }}
           path: apps/web/dist-holding
@@ -91,4 +91,4 @@ jobs:
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy apps/web/dist-holding --project-name=blackbox-records-web --branch=holding
           packageManager: npm
-          wranglerVersion: 4.94.0
+          wranglerVersion: 4.127.1

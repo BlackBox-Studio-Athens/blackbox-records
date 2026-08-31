@@ -6,7 +6,7 @@ export type DecapAdminBootFailure = 'download' | 'initialization' | 'timeout';
 export const decapAdminReadyEventName = 'blackbox:decap-ready';
 export const decapAdminFailedEventName = 'blackbox:decap-failed';
 export const decapAdminBootTimeoutMs = 20_000;
-export const decapBrowserRuntimeVersion = '3.15.1';
+export const decapBrowserRuntimeVersion = '3.16.0';
 export const decapBrowserRuntimeUrl = `https://unpkg.com/decap-cms@${decapBrowserRuntimeVersion}/dist/decap-cms.js`;
 
 type DecapAdminBootView = {

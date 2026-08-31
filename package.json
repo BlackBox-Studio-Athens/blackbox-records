@@ -2,7 +2,7 @@
   "name": "blackbox-records",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@10.33.4",
+  "packageManager": "pnpm@12.0.0",
   "scripts": {
     "dev": "pnpm dev:web",
     "dev:web": "pnpm --filter @blackbox/web dev",
@@ -92,24 +92,24 @@
     "depcruise:boundaries": "depcruise --config .dependency-cruiser.cjs apps/web/src apps/backend/src packages/api-client/src"
   },
   "devDependencies": {
-    "@astrojs/check": "0.9.9",
+    "@astrojs/check": "0.9.10",
     "@eslint/js": "^10.0.1",
     "@t3-oss/env-core": "^0.13.11",
-    "dependency-cruiser": "^17.4.0",
-    "eslint": "^10.4.0",
+    "dependency-cruiser": "^18.2.0",
+    "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-import-resolver-typescript": "^4.4.4",
-    "eslint-plugin-astro": "^2.1.1",
-    "eslint-plugin-boundaries": "^6.0.2",
-    "execa": "9.6.1",
-    "knip": "^6.14.2",
-    "playwright": "1.60.0",
-    "prettier": "^3.8.3",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-astro": "^3.1.0",
+    "eslint-plugin-boundaries": "^7.2.0",
+    "execa": "10.0.1",
+    "knip": "^6.33.0",
+    "playwright": "1.62.1",
+    "prettier": "^3.9.6",
     "prettier-plugin-astro": "0.14.1",
-    "tsx": "4.22.3",
+    "tsx": "4.23.13",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.62.0",
+    "typescript-eslint": "^8.68.0",
     "yaml": "2.9.0",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   }
 }

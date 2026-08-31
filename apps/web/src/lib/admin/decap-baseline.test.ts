@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
-import { parse } from 'yaml';
+import { parseAllDocuments } from 'yaml';
 
 import { decapBrowserRuntimeUrl, decapBrowserRuntimeVersion } from './decap-admin-boot';
 import { decapCollectionMedia, decapCollectionMediaKeys, decapGlobalMedia } from './decap-media';
@@ -9,38 +9,59 @@ import { decapCollectionMedia, decapCollectionMediaKeys, decapGlobalMedia } from
 const webPackage = JSON.parse(readFileSync(new URL('../../../package.json', import.meta.url), 'utf8')) as {
   devDependencies: Record<string, string>;
 };
-const lockfile = parse(readFileSync(new URL('../../../../../pnpm-lock.yaml', import.meta.url), 'utf8')) as {
-  importers: Record<
-    string,
-    {
-      devDependencies?: Record<string, { specifier: string; version: string }>;
-    }
-  >;
-  lockfileVersion: string;
-  packages: Record<string, unknown>;
-  snapshots: Record<string, unknown>;
-};
+const lockfileDocuments = parseAllDocuments(
+  readFileSync(new URL('../../../../../pnpm-lock.yaml', import.meta.url), 'utf8'),
+).map((document) => document.toJS() as unknown);
+const lockfileCandidates = lockfileDocuments.filter(
+  (
+    document,
+  ): document is {
+    importers: Record<
+      string,
+      {
+        devDependencies?: Record<string, { specifier: string; version: string }>;
+      }
+    >;
+    lockfileVersion: string;
+    settings: Record<string, unknown>;
+    packages: Record<string, unknown>;
+    snapshots: Record<string, unknown>;
+  } =>
+    typeof document === 'object' &&
+    document !== null &&
+    'importers' in document &&
+    'lockfileVersion' in document &&
+    'settings' in document &&
+    'packages' in document &&
+    'snapshots' in document,
+);
+if (lockfileCandidates.length !== 1) {
+  throw new Error(`Expected one full pnpm lockfile document, found ${lockfileCandidates.length}`);
+}
+const [lockfile] = lockfileCandidates;
+if (!lockfile) {
+  throw new Error('Primary pnpm lockfile document is missing');
+}
 const adminRuntime = readFileSync(new URL('../../../public/admin/init.js', import.meta.url), 'utf8');
 
 describe('accepted Decap compatibility baseline', () => {
-  it('pins package metadata and both lockfile records to decap-server 3.10.0', () => {
-    expect(webPackage.devDependencies['decap-server']).toBe('3.10.0');
+  it('pins package metadata and both lockfile records to decap-server 3.11.0', () => {
+    expect(webPackage.devDependencies['decap-server']).toBe('3.11.0');
     expect(lockfile.lockfileVersion).toBe('9.0');
-    expect(lockfile.importers['apps/web']?.devDependencies?.['decap-server']).toEqual({
-      specifier: '3.10.0',
-      version: '3.10.0',
-    });
+    const lockfileDecapServer = lockfile.importers['apps/web']?.devDependencies?.['decap-server'];
+    expect(lockfileDecapServer?.specifier).toBe('3.11.0');
+    expect(lockfileDecapServer?.version).toMatch(/^3\.11\.0(?:\(|$)/);
     expect(Object.keys(lockfile.packages).filter((key) => key.startsWith('decap-server@'))).toEqual([
-      'decap-server@3.10.0',
+      'decap-server@3.11.0',
     ]);
     expect(Object.keys(lockfile.snapshots).filter((key) => key.startsWith('decap-server@'))).toEqual([
-      'decap-server@3.10.0',
+      'decap-server@3.11.0(supports-color@10.2.2)',
     ]);
   });
 
   it('pins the browser runtime and exact preview registration surface', () => {
-    expect(decapBrowserRuntimeVersion).toBe('3.15.1');
-    expect(decapBrowserRuntimeUrl).toBe('https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js');
+    expect(decapBrowserRuntimeVersion).toBe('3.16.0');
+    expect(decapBrowserRuntimeUrl).toBe('https://unpkg.com/decap-cms@3.16.0/dist/decap-cms.js');
     expect([...adminRuntime.matchAll(/CMS\.registerPreviewTemplate\('([^']+)'/g)].map((match) => match[1])).toEqual([
       'home-site',
       'about-site',

@@ -133,8 +133,7 @@ describe('connectHomepageHeroScrollProgress', () => {
 
     scheduler.flushAnimationFrame();
     const scrollListener = scheduler.addEventListener.mock.calls.find(([type]) => type === 'scroll')?.[1] as
-      | (() => void)
-      | undefined;
+      (() => void) | undefined;
     scrollListener?.();
     scheduler.flushAnimationFrame();
 
@@ -154,8 +153,7 @@ describe('connectHomepageHeroScrollProgress', () => {
     scheduler.flushAnimationFrame();
     heroElement.setTop(-210);
     const scrollListener = scheduler.addEventListener.mock.calls.find(([type]) => type === 'scroll')?.[1] as
-      | (() => void)
-      | undefined;
+      (() => void) | undefined;
     scrollListener?.();
     scheduler.flushAnimationFrame();
 

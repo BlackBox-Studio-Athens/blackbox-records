@@ -1,5 +1,7 @@
 import { execa, type Options, type Result, type ResultPromise } from 'execa';
 
+type TextExecaOptions = Extract<Options, { encoding?: 'utf8' | 'utf16le' }>;
+
 export type LocalProcessCommand = {
   args: string[];
   command: string;
@@ -13,7 +15,7 @@ export type LocalProcessLogger = (message: string) => void;
 export type LocalProcessOptions = {
   cwd?: string;
   logger?: LocalProcessLogger;
-  stdio?: Options['stdio'];
+  stdio?: TextExecaOptions['stdio'];
 };
 
 export type RunningLocalProcess = {
@@ -145,10 +147,11 @@ class LongRunningProcessGroup {
   }
 }
 
-function createExecaOptions(command: LocalProcessCommand, options: LocalProcessOptions): Options {
+function createExecaOptions(command: LocalProcessCommand, options: LocalProcessOptions): TextExecaOptions {
   return {
     cwd: command.cwd ?? options.cwd,
     env: command.env,
+    encoding: 'utf8',
     stdio: options.stdio ?? 'inherit',
   };
 }

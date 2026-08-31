@@ -169,6 +169,7 @@ describe('local mock commerce seed generator', () => {
     expect(sql.match(/ON CONFLICT/g)).toHaveLength(5);
     expect(sql).toContain("'caregivers-vinyl'");
     expect(sql).toContain("'variant_caregivers-vinyl_standard'");
+    expect(sql).toContain('"variantId" = excluded."variantId"');
     expect(sql).toContain("'available'");
     expect(sql).toContain("'sold_out'");
     expect(sql).toContain('TRUE');

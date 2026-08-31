@@ -492,7 +492,7 @@ export async function readCmsAdminRenderedState(page: Page, timeoutMs: number): 
         hasConfigLink: Boolean(document.querySelector('link[rel="cms-config-url"][href*="/admin/config.yml"]')),
         hasCmsRoot: Boolean(document.getElementById('nc-root')),
         hasExactPinnedRuntime: runtimeScriptUrls.some(
-          (url) => url === 'https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js',
+          (url) => url === 'https://unpkg.com/decap-cms@3.16.0/dist/decap-cms.js',
         ),
         hasRuntimeApi: Boolean((window as typeof window & { CMS?: unknown }).CMS),
         isAdminReady: Boolean(globalState.__BLACKBOX_ADMIN_READY__),
@@ -1079,7 +1079,7 @@ export function checkCmsAdminRenderedState(state: CmsAdminRenderedState): string
   }
 
   if (!state.hasExactPinnedRuntime) {
-    issues.push('Expected /admin/#/ to load exactly decap-cms@3.15.1 from the pinned runtime URL.');
+    issues.push('Expected /admin/#/ to load exactly decap-cms@3.16.0 from the pinned runtime URL.');
   }
 
   if (!state.hasRuntimeApi) {

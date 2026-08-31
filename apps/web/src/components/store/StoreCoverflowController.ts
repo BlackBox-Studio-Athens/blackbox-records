@@ -8,9 +8,7 @@ const WHEEL_GESTURE_GAP_MS = 160;
 const WHEEL_REPEAT_GAP_MS = 120;
 
 export type StoreCoverflowState =
-  | { mode: 'preview'; activeIndex: number }
-  | { mode: 'catalog'; selectedIndex?: number }
-  | { mode: 'search-results' };
+  { mode: 'preview'; activeIndex: number } | { mode: 'catalog'; selectedIndex?: number } | { mode: 'search-results' };
 
 export type StoreCoverflowEvent =
   | { type: 'focus'; activeIndex: number }

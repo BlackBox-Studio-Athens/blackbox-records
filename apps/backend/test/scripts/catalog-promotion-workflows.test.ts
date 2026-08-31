@@ -53,7 +53,7 @@ describe('catalog promotion workflows', () => {
     expect(workflow).toContain('--artifact-commit-sha "${{ inputs.artifact_commit_sha }}"');
     expect(workflow).toContain('CATALOG_MUTATION_SCOPE: ${{ github.run_id }}');
     expect(workflow).toContain('--promotion-run-id "$CATALOG_MUTATION_SCOPE"');
-    expect(workflow).toContain('actions/upload-artifact@v5.0.0');
+    expect(workflow).toContain('actions/upload-artifact@v7.0.1');
     expect(workflow).not.toContain('pnpm smoke:stripe-sandbox');
     expect(workflow).not.toContain('pnpm smoke:uat-static');
     expect(workflow).not.toContain('pnpm smoke:stripe-promotion');

@@ -359,6 +359,7 @@ function createStoreOfferSnapshotSql(storeItems: LocalMockStoreItem[]): string {
       .join(',\n'),
     'ON CONFLICT DO UPDATE SET',
     '    "storeItemSlug" = excluded."storeItemSlug",',
+    '    "variantId" = excluded."variantId",',
     '    "stripePriceId" = excluded."stripePriceId",',
     '    "stripeLookupKey" = excluded."stripeLookupKey",',
     '    "amountMinor" = excluded."amountMinor",',

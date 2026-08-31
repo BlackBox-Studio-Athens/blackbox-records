@@ -31,10 +31,10 @@ export function patchStripeMockResponse(input: {
   const requestParams = new URLSearchParams(input.requestBody);
   const variantId = requestParams.get('metadata[variantId]') ?? 'local';
 
-  if (!responseJson.url) {
-    const sessionId = typeof responseJson.id === 'string' ? responseJson.id : null;
-    const fragment = sessionId ? toSafeStripeMockFragment(sessionId) : toSafeStripeMockFragment(variantId);
+  const sessionId = typeof responseJson.id === 'string' ? responseJson.id : null;
+  const fragment = sessionId ? toSafeStripeMockFragment(sessionId) : toSafeStripeMockFragment(variantId);
 
+  if (!responseJson.url || isStripeHostedCheckoutUrl(responseJson.url)) {
     responseJson.url = `https://checkout.stripe.test/session/${fragment}`;
   }
 
@@ -165,6 +165,10 @@ async function waitForStripeMock() {
 
 function isCheckoutSessionCreate(input: { method?: string; url?: string }) {
   return input.method === 'POST' && input.url?.startsWith('/v1/checkout/sessions');
+}
+
+function isStripeHostedCheckoutUrl(value: unknown): value is string {
+  return typeof value === 'string' && value.startsWith('https://checkout.stripe.com/');
 }
 
 function readJsonObject(value: string): Record<string, unknown> | null {

@@ -234,8 +234,8 @@ describe('Decap admin boot views', () => {
 
 describe('Decap admin boot runtime', () => {
   it('pins the accepted browser runtime baseline exactly', () => {
-    expect(decapBrowserRuntimeVersion).toBe('3.15.1');
-    expect(decapBrowserRuntimeUrl).toBe('https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js');
+    expect(decapBrowserRuntimeVersion).toBe('3.16.0');
+    expect(decapBrowserRuntimeUrl).toBe('https://unpkg.com/decap-cms@3.16.0/dist/decap-cms.js');
   });
 
   it('renders disabled mode without requesting runtime or config scripts', () => {
@@ -492,8 +492,7 @@ describe('Decap admin boot markup and styles', () => {
     const cancelAnimationFrame = vi.fn();
     let animationFrameCallback: FrameRequestCallback | undefined;
     let mutationObserverCallback:
-      | ((mutations: Array<{ addedNodes: unknown[]; removedNodes: unknown[] }>) => void)
-      | undefined;
+      ((mutations: Array<{ addedNodes: unknown[]; removedNodes: unknown[] }>) => void) | undefined;
     const timeoutCallbacks: Array<() => void> = [];
     const requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
       animationFrameCallback = callback;

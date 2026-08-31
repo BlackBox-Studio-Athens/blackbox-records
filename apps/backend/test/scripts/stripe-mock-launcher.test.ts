@@ -50,4 +50,26 @@ describe('stripe-mock local launcher proxy', () => {
       }),
     );
   });
+
+  it('rewrites stripe-mock hosted Checkout URLs to the local-only test origin', () => {
+    const patched = patchStripeMockResponse({
+      body: JSON.stringify({
+        id: 'cs_test_fixture',
+        object: 'checkout.session',
+        url: 'https://checkout.stripe.com/pay/c/cs_test_fixture',
+      }),
+      method: 'POST',
+      requestBody: new URLSearchParams({
+        'metadata[variantId]': 'variant_disintegration-black-vinyl-lp_standard',
+      }).toString(),
+      url: '/v1/checkout/sessions',
+    });
+
+    expect(JSON.parse(patched) as unknown).toEqual(
+      expect.objectContaining({
+        id: 'cs_test_fixture',
+        url: 'https://checkout.stripe.test/session/cs_test_fixture',
+      }),
+    );
+  });
 });

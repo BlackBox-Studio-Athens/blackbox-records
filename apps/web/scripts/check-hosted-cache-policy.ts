@@ -18,11 +18,7 @@ export type HostedCacheAuditOptions = {
 };
 
 export type HostedCacheAuditTargetKind =
-  | 'hashed-asset'
-  | 'route-document'
-  | 'overlay-partial'
-  | 'store-capabilities'
-  | 'store-offer';
+  'hashed-asset' | 'route-document' | 'overlay-partial' | 'store-capabilities' | 'store-offer';
 
 export type HostedCacheAuditTarget = {
   canTouchD1: boolean;

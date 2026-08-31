@@ -176,7 +176,7 @@ describe('UAT static smoke runner', () => {
         hasRuntimeApi: true,
         isAdminReady: false,
         isAuthReady: false,
-        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js'],
+        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.16.0/dist/decap-cms.js'],
       }),
     ).toContain('Expected /admin/#/ to render visible Decap CMS text.');
 
@@ -190,7 +190,7 @@ describe('UAT static smoke runner', () => {
         hasRuntimeApi: true,
         isAdminReady: false,
         isAuthReady: false,
-        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js'],
+        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.16.0/dist/decap-cms.js'],
       }),
     ).toContain('Expected /admin/#/ to finish Decap bootstrap instead of staying on loading copy.');
 
@@ -204,7 +204,7 @@ describe('UAT static smoke runner', () => {
         hasRuntimeApi: true,
         isAdminReady: true,
         isAuthReady: false,
-        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js'],
+        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.16.0/dist/decap-cms.js'],
       }),
     ).toContain('Expected /admin/#/ to render a usable DecapBridge auth surface or authenticated collection UI.');
   });
@@ -220,7 +220,7 @@ describe('UAT static smoke runner', () => {
         hasRuntimeApi: true,
         isAdminReady: true,
         isAuthReady: true,
-        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js'],
+        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.16.0/dist/decap-cms.js'],
       }),
     ).toEqual([]);
 
@@ -234,7 +234,7 @@ describe('UAT static smoke runner', () => {
         hasRuntimeApi: true,
         isAdminReady: true,
         isAuthReady: false,
-        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.15.1/dist/decap-cms.js'],
+        runtimeScriptUrls: ['https://unpkg.com/decap-cms@3.16.0/dist/decap-cms.js'],
       }),
     ).toEqual([]);
   });
@@ -355,7 +355,7 @@ collections:
       }),
     ).toEqual(
       expect.arrayContaining([
-        'Expected /admin/#/ to load exactly decap-cms@3.15.1 from the pinned runtime URL.',
+        'Expected /admin/#/ to load exactly decap-cms@3.16.0 from the pinned runtime URL.',
         'Expected the pinned Decap runtime to expose the CMS registration API.',
         'Expected hosted Decap auth to omit classic username/password copy.',
       ]),

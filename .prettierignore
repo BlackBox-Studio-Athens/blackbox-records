@@ -19,3 +19,5 @@ apps/backend/src/generated/
 packages/api-client/src/generated/
 
 openspec/changes/archive/
+
+.agents/**/SKILL.md

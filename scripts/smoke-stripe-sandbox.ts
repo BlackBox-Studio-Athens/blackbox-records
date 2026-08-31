@@ -100,9 +100,7 @@ export type StripeSandboxSmokeScenarioName =
   | 'three_d_secure';
 
 export type StripeSandboxSmokeScenarioSelection =
-  | StripeSandboxSmokeScenarioName
-  | readonly StripeSandboxSmokeScenarioName[]
-  | 'all';
+  StripeSandboxSmokeScenarioName | readonly StripeSandboxSmokeScenarioName[] | 'all';
 export type StripeSandboxScreenshotMode = 'always' | 'never' | 'on-failure';
 
 export type StripeSandboxSmokeScenario = {
@@ -324,7 +322,15 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(scriptDir, '..');
 const backendDir = path.join(rootDir, 'apps', 'backend');
 const nodeRequire = createRequire(import.meta.url);
-const wranglerBin = nodeRequire.resolve('wrangler/bin/wrangler.js', { paths: [backendDir] });
+const wranglerPackageJson = nodeRequire.resolve('wrangler/package.json', { paths: [backendDir] });
+const wranglerPackage = JSON.parse(readFileSync(wranglerPackageJson, 'utf8')) as {
+  bin?: string | { wrangler?: string };
+};
+const wranglerBinEntry = typeof wranglerPackage.bin === 'string' ? wranglerPackage.bin : wranglerPackage.bin?.wrangler;
+if (!wranglerBinEntry) {
+  throw new Error('Wrangler package does not declare a wrangler CLI entry');
+}
+const wranglerBin = path.resolve(path.dirname(wranglerPackageJson), wranglerBinEntry);
 const stripeApiBaseUrl = 'https://api.stripe.com/v1';
 const stripeCheckoutWebhookEventTypes = [
   'checkout.session.completed',

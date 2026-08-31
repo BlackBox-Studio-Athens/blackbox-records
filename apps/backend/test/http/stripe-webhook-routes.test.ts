@@ -106,6 +106,8 @@ vi.mock('../../src/interfaces/http/routes/stripe-webhook-services', () => ({
 }));
 
 const webhookSecret = 'whsec_fixture_secret';
+const stripeApiVersion = '2026-08-26.dahlia';
+const legacyStripeApiVersion = '2026-04-25.basil';
 
 const testBindings = {
   PRODUCT_ENVIRONMENT: 'LOCAL' as const,
@@ -121,7 +123,7 @@ function expectNoStoreCacheControl(response: Response): void {
 
 function createStripeEventPayload(type: string): string {
   return JSON.stringify({
-    api_version: '2026-04-25.basil',
+    api_version: stripeApiVersion,
     created: 1777132800,
     data: {
       object: {
@@ -142,7 +144,7 @@ function createStripeEventPayload(type: string): string {
 
 function createStripeCatalogPriceEventPayload(type: 'price.created' | 'price.updated'): string {
   return JSON.stringify({
-    api_version: '2026-04-25.basil',
+    api_version: stripeApiVersion,
     created: 1777132800,
     data: {
       object: {
@@ -235,7 +237,7 @@ describe('Stripe webhook routes', () => {
 
   it('acknowledges allowed checkout-session events through shared reconciliation without exposing recommendations', async () => {
     const payload = JSON.stringify({
-      api_version: '2026-04-25.basil',
+      api_version: legacyStripeApiVersion,
       created: 1777132800,
       data: {
         object: {
@@ -283,7 +285,7 @@ describe('Stripe webhook routes', () => {
 
   it('acknowledges expired checkout-session events through non-paid reconciliation', async () => {
     const payload = JSON.stringify({
-      api_version: '2026-04-25.basil',
+      api_version: stripeApiVersion,
       created: 1777132800,
       data: {
         object: {
@@ -330,7 +332,7 @@ describe('Stripe webhook routes', () => {
 
   it('acknowledges open checkout-session events without lifecycle mutation', async () => {
     const payload = JSON.stringify({
-      api_version: '2026-04-25.basil',
+      api_version: stripeApiVersion,
       created: 1777132800,
       data: {
         object: {

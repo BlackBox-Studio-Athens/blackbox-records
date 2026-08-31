@@ -34,7 +34,7 @@ export function createStripeWebhookFixturePayload({
   type,
 }: StripeWebhookFixtureOptions): string {
   return JSON.stringify({
-    api_version: '2026-04-22.dahlia',
+    api_version: '2026-08-26.dahlia',
     created,
     data: {
       object: {

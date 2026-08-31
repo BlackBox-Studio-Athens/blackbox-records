@@ -179,7 +179,7 @@ function buildWindowsShellCommand(command: string, args: string[]): string {
 }
 
 function appendProcessOutput(processInfo: CmsSmokeProcess, chunk: Buffer): void {
-  const text = redactSensitiveSmokeText(chunk.toString('utf8'));
+  const text = redactSensitiveSmokeText(chunk.toString());
   processInfo.output.push(...text.split(/\r?\n/).filter(Boolean));
   processInfo.output = processInfo.output.slice(-80);
 }
