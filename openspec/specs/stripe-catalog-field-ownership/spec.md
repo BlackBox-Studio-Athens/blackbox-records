@@ -55,7 +55,7 @@ The system MUST treat Stripe Price amount, currency, active status, Price ID, an
 #### Scenario: Price changes in Stripe
 
 - **GIVEN** an operator creates or activates a replacement Stripe Price that identifies an existing Store Item variant through metadata or lookup key
-- **WHEN** catalog reconciliation runs from webhook, Store Offer read, checkout start, scheduled verification, or manual verification
+- **WHEN** catalog reconciliation runs from webhook, Store Offer read, checkout start, targeted manual verification, or a deliberate read-only audit
 - **THEN** D1 `VariantStripeMapping` and `StoreOfferSnapshot` are updated to the resolved active Stripe Price
 - **AND** browser-visible Store Offer price reflects the Stripe Price without requiring an Astro deploy.
 
@@ -171,7 +171,7 @@ The system MUST prevent UAT, PRD, and Local catalog identities from being accept
 
 ### Requirement: Price Authority edits happen only through Stripe-owned paths
 
-The system MUST keep buyable amount, currency, active Price identity, lookup key, and Stripe Price active status under Stripe Price Authority.
+The system MUST keep buyable amount, currency, active Price identity, lookup key, and Stripe Price active status under Stripe Price Authority, while using generated Desired Price only to bootstrap missing Price Authority during first publication or explicit UAT reset.
 
 #### Scenario: Operator changes price in Stripe Dashboard
 
@@ -191,18 +191,35 @@ The system MUST keep buyable amount, currency, active Price identity, lookup key
 
 #### Scenario: Generated DesiredPrice exists
 
-- **GIVEN** generated Desired Catalog State contains Desired Price data for environment-scoped promotion
-- **WHEN** day-to-day price operations happen in Stripe Dashboard
-- **THEN** Desired Price remains promotion input or verification context
-- **AND** Worker checkout, Store Offer display, webhook reconciliation, and day-to-day verification continue to use resolved Stripe Price Authority.
+- **GIVEN** generated Desired Catalog State contains a Desired Price for a new Store Item variant
+- **AND** no unambiguous valid active Stripe Price exists for that variant in the target Product Environment
+- **WHEN** normal catalog promotion runs with explicit apply
+- **THEN** the Desired Price may create the variant's initial Stripe Price and corresponding D1 mapping/snapshot
+- **AND** the creation remains idempotent, environment-scoped, and subject to current identity and readiness validation.
+
+#### Scenario: Existing Store Item has valid Price Authority
+
+- **GIVEN** one unambiguous valid active Stripe Price already exists for a Store Item variant
+- **AND** generated Desired Price differs or another Store Item is added
+- **WHEN** normal catalog promotion or verification runs
+- **THEN** the existing Stripe Price remains Price Authority
+- **AND** promotion does not archive, create, reactivate, replace, or move lookup identity for that Price because of the Desired Price difference
+- **AND** unrelated item publication does not mutate that Price.
 
 #### Scenario: Dashboard price intentionally differs from Desired Price
 
 - **GIVEN** an authorized Stripe Dashboard operator creates a valid replacement Price for a Store Item variant
 - **AND** generated Desired Price data still contains the previous amount or currency
-- **WHEN** day-to-day webhook reconciliation, Store Offer reads, checkout start, or UAT catalog verification runs
+- **WHEN** webhook reconciliation, Store Offer reads, checkout start, normal catalog verification, or normal catalog promotion runs
 - **THEN** the valid Stripe replacement Price is accepted as Price Authority
-- **AND** generated Desired Price drift does not trigger automatic repair back to the old amount unless an explicit promotion/apply mode is selected.
+- **AND** generated Desired Price drift does not repair the Price back to the previous amount.
+
+#### Scenario: Explicit UAT whole-catalog reset is requested
+
+- **GIVEN** an operator explicitly runs the separate UAT-only whole-catalog reset
+- **WHEN** reset leaves a Store Item variant without valid Price Authority and catalog bootstrap runs
+- **THEN** generated Desired Price may recreate the missing UAT Price
+- **AND** this reset behavior is not available to normal promotion or PRD.
 
 ### Requirement: Product Projection remains separate from Price Authority
 

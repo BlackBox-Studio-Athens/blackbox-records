@@ -26,15 +26,16 @@ The system MUST NOT use Astro content or browser state as the authority for buya
 
 #### Scenario: Store Offer snapshot is stale
 
-- **GIVEN** the D1 Store Offer snapshot is missing or stale
-- **WHEN** the storefront asks the Worker for a buyable Store Offer
+- **GIVEN** the D1 Store Offer snapshot is missing or its Price identity, amount, currency, or active state differs from current Stripe Price Authority
+- **WHEN** the storefront asks the Worker for an authoritative Store Offer or starts checkout
 - **THEN** the Worker reconciles the active Stripe Price before returning browser-safe price and checkout readiness
-- **AND** returns a non-buyable catalog-drift state if reconciliation cannot confirm the Stripe-backed offer.
+- **AND** returns a non-buyable catalog-drift state if reconciliation cannot confirm the Stripe-backed offer
+- **AND** snapshot age alone does not create catalog drift.
 
 #### Scenario: Store Offer cannot be confirmed
 
 - **GIVEN** the Worker cannot verify a current Stripe-backed Store Offer for a buyable variant
-- **WHEN** the storefront renders or checkout start is requested
+- **WHEN** the storefront renders an authoritative Store Offer or checkout start is requested
 - **THEN** checkout is disabled or rejected with an actionable catalog-drift error
 - **AND** the storefront does not present an Astro fixture price as authoritative.
 
@@ -85,19 +86,21 @@ The system SHALL make Stripe catalog synchronization dry-run by default and expl
 
 ### Requirement: Stripe catalog reconciliation survives Dashboard changes
 
-The system MUST reconcile Stripe Product and Price changes made outside the repo without requiring Astro content edits or a static-site deployment.
+The system MUST reconcile Stripe Product and Price changes made outside the repo without requiring Astro content edits, a static-site deployment, or a full-catalog scheduled Worker scan.
 
 #### Scenario: Stripe catalog webhook event is received
 
 - **GIVEN** Stripe sends a Product or Price catalog event for the configured environment
 - **WHEN** the event identifies a known `storeItemSlug` and `variantId` through metadata or lookup key
-- **THEN** the Worker reconciles the related D1 mapping and browser-safe Store Offer snapshot.
+- **THEN** the Worker reconciles only the related D1 mapping and browser-safe Store Offer snapshot
+- **AND** unrelated Store Item variants are not reconciled by that event.
 
 #### Scenario: Stripe catalog webhook event is missed
 
 - **GIVEN** Stripe catalog state has changed since the last D1 snapshot
-- **WHEN** scheduled catalog verification runs
-- **THEN** the Worker detects and reports drift for the affected Store Item variants without creating or reactivating Stripe catalog objects.
+- **WHEN** an authoritative Store Offer read, checkout start, or targeted manual verification runs for the affected Store Item
+- **THEN** the Worker or verifier detects current Price Authority and repairs or reports drift for that variant
+- **AND** recovery does not require a runtime full-catalog scan.
 
 ### Requirement: Stripe catalog forensics are traceable
 
@@ -206,12 +209,12 @@ The system MUST use deterministic Stripe idempotency keys for mutating Product a
 - **THEN** the report captures safe request correlation such as request ID, action kind, replay status, Product Environment, and variant identity when available
 - **AND** it does not use replay status as proof that the resulting catalog state is still current.
 
-#### Scenario: Scheduled verification runs
+#### Scenario: Read-only full-catalog audit runs
 
-- **GIVEN** scheduled catalog verification runs for UAT
+- **GIVEN** an operator or CI audit inspects the full UAT catalog
 - **WHEN** drift is detected
-- **THEN** scheduled verification reports drift without relying on idempotency keys to prevent provider mutation
-- **AND** no Stripe Product or Price is created, reactivated, or archived by the scheduled job.
+- **THEN** the audit reports drift without relying on idempotency keys to prevent provider mutation
+- **AND** no Stripe Product or Price is created, reactivated, or archived by the read-only audit.
 
 #### Scenario: Independent apply runs overlap
 
@@ -334,7 +337,7 @@ The system SHALL process Stripe Product and Price webhook events as change notif
 - **GIVEN** Stripe sends a `price.deleted` or `product.deleted` event that does not include Store Item identity metadata
 - **WHEN** the Worker cannot identify a variant from the event payload
 - **THEN** the Worker records or logs the ignored catalog event without mutating D1
-- **AND** scheduled or manual catalog verification remains responsible for detecting any resulting drift.
+- **AND** authoritative reads, checkout, or targeted manual verification remain responsible for detecting any resulting drift.
 
 ### Requirement: Catalog webhook handling is replay-safe
 
@@ -375,7 +378,7 @@ The system MUST refuse to choose a buyable Price when Stripe Dashboard state has
 #### Scenario: Two active Prices match one variant
 
 - **GIVEN** two or more active Stripe Prices match the same Product Environment, `storeItemSlug`, and `variantId`
-- **WHEN** catalog reconciliation runs from webhook, Store Offer read, checkout start, scheduled verification, or manual verification
+- **WHEN** catalog reconciliation runs from webhook, Store Offer read, checkout start, targeted manual verification, or a deliberate read-only audit
 - **THEN** the result reports `ambiguous_active_price`
 - **AND** no D1 Store Offer snapshot is promoted as checkout-ready for that variant.
 
@@ -388,28 +391,28 @@ The system MUST refuse to choose a buyable Price when Stripe Dashboard state has
 
 ### Requirement: Store Offer snapshots recover from missed webhooks
 
-The system SHALL keep Store Offer reads, checkout start, scheduled verification, and manual catalog verification as backstops when webhook propagation is delayed or missed.
+The system SHALL keep authoritative Store Offer reads, checkout start, and targeted manual catalog verification as backstops when webhook propagation is delayed or missed.
 
 #### Scenario: Webhook was missed
 
-- **GIVEN** Stripe Price state changed but D1 `StoreOfferSnapshot` still contains the old Price
-- **WHEN** a shopper-facing Store Offer read runs
+- **GIVEN** Stripe Price state changed but D1 `StoreOfferSnapshot` still contains the previous Price
+- **WHEN** a shopper-facing authoritative Store Offer read runs
 - **THEN** the Worker reconciles current Stripe state before returning price/readiness
 - **AND** the response returns the current replacement Price or a fail-closed catalog-drift state.
 
 #### Scenario: Manual verification runs after price change
 
 - **GIVEN** an operator changes a Price in Stripe Dashboard
-- **WHEN** `pnpm stripe:catalog:verify --env uat` runs
-- **THEN** the report classifies Product Projection, Price Authority, D1 mapping, and Store Offer snapshot status for the changed variant
-- **AND** it does not print Stripe secrets or full account-private object IDs.
+- **WHEN** `pnpm stripe:catalog:verify --env uat --store-item <storeItemSlug>` runs, with explicit apply when repair is required
+- **THEN** the report classifies Product Projection, Price Authority, D1 mapping, and Store Offer snapshot status for only the identified Store Item variant
+- **AND** apply mode does not reconcile or mutate unrelated variants
+- **AND** output does not print Stripe secrets or full account-private object IDs.
 
-#### Scenario: Scheduled verification catches stale state
+#### Scenario: Runtime catalog cron is absent
 
-- **GIVEN** webhook delivery failed for a Stripe Dashboard price change
-- **WHEN** scheduled catalog verification runs in the configured Product Environment
-- **THEN** it detects stale or mismatched Store Offer snapshot state
-- **AND** applies or reports recovery according to that environment's mutation policy.
+- **WHEN** UAT Worker triggers and handlers are inspected
+- **THEN** no scheduled full-catalog Stripe verification or time-only snapshot renewal is registered
+- **AND** deliberate full-catalog verification remains an operator or CI audit path rather than a runtime cron.
 
 ### Requirement: Catalog generation requires canonical app identity
 
@@ -428,3 +431,60 @@ The system MUST validate one canonical app-owned source, Store Item slug, and va
 - **WHEN** catalog generation runs
 - **THEN** validation fails with the conflicting app identities
 - **AND** no provider, availability, stock, or Store Offer artifact is written
+
+### Requirement: The distro manifest is the sole emitted inventory source
+
+The system SHALL generate current distro catalog entries only from the validated repository-owned Distro Inventory Source manifest.
+
+#### Scenario: Catalog artifacts are generated
+
+- **WHEN** distro Product Projection or Desired Catalog State is built
+- **THEN** every emitted item maps to exactly one manifest row
+- **AND** Astro content contributes only matched editorial projection data.
+
+#### Scenario: Current content is absent from the manifest
+
+- **WHEN** a distro content entry has no canonical manifest row
+- **THEN** it is not emitted into current catalog artifacts or checkout eligibility.
+
+#### Scenario: Approved historical extra is emitted
+
+- **WHEN** Spinners or Wreckquiem is generated
+- **THEN** its manifest row remains the authority
+- **AND** currentSiteExtra records provenance only.
+
+#### Scenario: Rejected duplicate is evaluated
+
+- **WHEN** the Knot On Knot? source row is read
+- **THEN** duplicateOf resolves to the canonical Knot On Knot row
+- **AND** no second Store Item is emitted.
+
+### Requirement: Distro desired prices form a closed EUR policy
+
+The system SHALL project each emitted distro row to exactly one valid fixed or pay-what-you-want desired price.
+
+#### Scenario: Numeric source price is projected
+
+- **WHEN** sourcePrice is numeric
+- **THEN** the fixed EUR amount equals that value in minor units.
+
+#### Scenario: ΕΣ source price is projected
+
+- **WHEN** sourcePrice is ΕΣ
+- **THEN** the custom EUR price uses minimum 100, preset 500, and maximum 10000 minor units.
+
+#### Scenario: Blank source price is projected
+
+- **WHEN** sourcePrice is blank
+- **THEN** the closed item-type default is used
+- **AND** an unknown item type fails validation.
+
+### Requirement: Stripe sync preserves fixed and custom price identity
+
+The system SHALL map fixed desired prices to Stripe unit_amount and pay-what-you-want desired prices to custom_unit_amount.
+
+#### Scenario: Price is created or reconciled
+
+- **WHEN** catalog sync handles a valid distro desired price
+- **THEN** it accepts only the matching price kind, EUR currency, and configured amount shape
+- **AND** ambiguous or mismatched provider state fails closed.

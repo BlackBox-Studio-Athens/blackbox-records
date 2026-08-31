@@ -16,4 +16,4 @@ Evidence is redacted to app-owned slugs, counts, commit IDs, and public CI run I
 
 ### Remaining operator evidence
 
-- Task 6.5 remains open. A real Stripe Dashboard replacement needs an explicitly chosen UAT Store Item and replacement amount before provider mutation.
+- One real Stripe Dashboard replacement remains. It needs an explicitly chosen UAT Store Item and replacement amount, and must prove only that target mapping/snapshot changes. The deterministic two-item regression already proves new-item promotion preserves existing Price Authority.

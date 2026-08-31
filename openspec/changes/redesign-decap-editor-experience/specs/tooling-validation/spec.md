@@ -86,7 +86,7 @@ The system MUST test the editor structure that can create direct-to-main content
 - **THEN** a blank new Artist slug is generated from the current title through the shared slug library, while an existing or explicit slug is preserved across title edits and Decap round trips
 - **AND** tests prove no editor-visible Slug field exists and invalid or colliding source overrides fail repository validation.
 
-#### Scenario: Fixed-layout page contracts change
+#### Scenario: Fixed-layout section controls change
 
 - **WHEN** Home, About, or Services builders or schemas change
 - **THEN** tests prove the exact named object keys are present and the old fixed-section arrays and type discriminators are absent
@@ -100,7 +100,7 @@ The system MUST test the editor structure that can create direct-to-main content
 
 #### Scenario: Repair disposition tests run
 
-- **WHEN** the admin runtime is simplified for 3.15.1
+- **WHEN** the admin runtime is simplified for 3.16.0
 - **THEN** focused tests cover every repair named in the design disposition table and prove each deleted behavior has a native or structural replacement where required
 - **AND** retained exceptions are individually named, bounded to an app-owned mount or matching route, safe when targets are absent, and free of generated-class and timed-click contracts.
 
@@ -140,7 +140,7 @@ The system SHALL keep Local CMS Smoke read-only and SHALL cover the highest-freq
 
 - **WHEN** `pnpm smoke:cms-local -- --screenshots never` runs
 - **THEN** it starts explicit local mode on `127.0.0.1`, verifies automatic boot dismissal, same-origin configured assets, and representative Home, Artist, Release, Store Item, and News editors
-- **AND** it opens new Artist, Store Item, and Release forms through semantic role/name queries, verifies the Artist form has no Slug control, selects an existing collection image without saving or publishing, and checks the header wordmark, text-only Contents route, composite Group selector, action contrast, current values, canonical Site Pages routes, preview registrations, direct-to-main notice, mobile layout, and zero unexpected console or page errors.
+- **AND** it opens new Artist, Store Item, and Release forms through semantic role/name queries, verifies the Artist form has no Slug control, selects an existing collection image without saving or publishing, and checks current values, canonical Site Pages routes, preview registrations, direct-to-main notice, functional console errors, and read-only completion.
 
 #### Scenario: Local CMS Smoke completes
 
@@ -162,6 +162,7 @@ The system SHALL verify deployed hosted-mode Decap without authenticating or pub
 
 - **WHEN** `pnpm smoke:uat-static -- --scenario cms_assets` targets the GitHub Pages UAT site
 - **THEN** it verifies representative Home, Artist, Release, Store Item, News, and supported collection-media assets through their admin URLs
+- **AND** it verifies boot markup in the admin HTML and the hidden boot rule in admin CSS without requiring either contract to appear in `init.js`
 - **AND** it remains read-only and separate from Provider Smoke or Promotion Evidence.
 
 ### Requirement: Decap upgrades pass repository gates

@@ -1,46 +1,63 @@
 ## Context
 
-The product environment model is Local, UAT, and PRD, but Cloudflare-facing handles still use `sandbox` and `production`. The mismatch affects Wrangler env keys, Worker script names, workers.dev URLs, D1 names, generated catalog targets, workflow names, docs, validation output, and log instructions.
+As of August 31, 2026:
 
-Cloudflare Worker secrets cannot be read back and D1 has no simple in-place rename command in Wrangler. Full alignment therefore needs repo changes plus provider-side create/copy/cutover steps. Old Workers and old D1 databases stay available until the new UAT/PRD targets are proven.
+- Local/UAT/PRD names are implemented across the repo.
+- renamed UAT and PRD Workers/D1 resources exist.
+- UAT webhook/payment verification passed GitHub Actions run 30166382129 on July 25, 2026.
+- repository variable PUBLIC_BACKEND_BASE_URL still points at the old sandbox Worker but is unused.
+- GitHub environment catalog-promotion-production still exists with CLOUDFLARE_ACCOUNT_ID but is unused.
+- PRD live Stripe secrets are absent by design while the PRD-open gate is closed.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Make repo-owned Cloudflare/Wrangler names use `local`, `uat`, and `prd`.
-- Keep `PRODUCT_ENVIRONMENT` values as `LOCAL`, `UAT`, and `PRD`.
-- Align app-owned `stripeMode` profile values to `local` / `uat` / `prd`; keep Stripe test/live vocabulary only where code is checking Stripe's provider `livemode` behavior.
-- Retain cheap legacy package-script aliases that point to new UAT/PRD targets.
-- Document the external Cloudflare, GitHub Actions, and Stripe cutover steps without committing secrets or exported D1 data.
+- Keep one closed product-environment type: Local, UAT, PRD.
+- Remove the final unused external naming artifacts.
+- Preserve deliberate low-cost command compatibility.
 
 **Non-Goals:**
 
-- Delete old Workers, old D1 databases, or old webhook endpoints.
-- Retrieve, print, commit, or automatically copy Worker secrets.
-- Change checkout policy, PRD-open behavior, stock logic, or Stripe payment semantics.
+- Deleting old Cloudflare Workers/D1 databases.
+- Configuring PRD live secrets or webhook endpoints.
+- Adding another environment alias or translation layer.
 
 ## Decisions
 
-- Use lowercase `uat` and `prd` for Wrangler env keys, Worker runtime targets, desired catalog target values, CLI output, and workflow labels.
-- Use lowercase `local`, `uat`, and `prd` for the app-owned backend `stripeModeSchema`; do not rename Stripe API `livemode` checks or test/live provider docs that describe Stripe itself.
-- Rename Worker script names to `blackbox-records-backend-uat` and `blackbox-records-backend-prd`; use `blackbox-records-backend-local` for the base local/dev target.
-- Create new D1 resources named `blackbox-records-commerce-uat` and `blackbox-records-commerce-prd`, then bind by their new IDs. Do not reuse old D1 IDs under new labels.
-- Keep package aliases such as `deploy:backend:sandbox`, `deploy:backend:production`, D1 `:sandbox`, and D1 `:production`, but make them call `uat` / `prd` commands.
-- Accept old `sandbox` / `production` CLI values only in compatibility parsers where already public; parse them to UAT/PRD and label them legacy.
+### Keep product and provider axes separate
+
+Application code and generated contracts use only Local, UAT, and PRD. Wrangler keys and app-owned CLI values use local, uat, and prd. Stripe's provider axis remains test/live only where Stripe livemode is evaluated.
+
+Boundary parsers may accept the already committed sandbox/production command aliases and immediately normalize them to UAT/PRD. Internal types cannot represent those legacy values.
+
+### Retain only existing cheap aliases
+
+Existing package scripts that are likely in operator history may remain as direct aliases. They contain no independent logic and call the canonical command. No new alias is added, and docs show only canonical commands.
+
+### Keep old Cloudflare resources
+
+Old Worker and D1 resources are not active product environments and remain undeleted. Their presence is historical rollback capacity, not naming acceptance.
+
+### Separate completed UAT from future PRD launch
+
+UAT renamed resources, runtime configuration, webhook, and payment configuration are proven. PRD live secrets, endpoint activation, provider mutation, and smoke depend on the PRD-open gate and remain in production-go-live-readiness.
+
+### Close only the two unused GitHub settings
+
+The remaining work is external and non-code:
+
+1. delete repository variable PUBLIC_BACKEND_BASE_URL;
+2. delete GitHub environment catalog-promotion-production.
+
+Before deletion, confirm current workflows still have no references. Neither deletion changes deployed traffic or provider state.
 
 ## Risks / Trade-offs
 
-- D1 copy drift during cutover -> export/import during a quiet window and verify row/readiness checks before switching frontend variables.
-- Missing Worker secrets on new script names -> deploy new Workers before traffic cutover, then enter secrets with `wrangler secret put --env uat|prd` and verify runtime config.
-- Stripe webhook endpoint mismatch -> update endpoint URLs after new Workers exist, then write the new signing secrets to matching Workers.
-- Existing docs/scripts may still mention sandbox as provider shorthand -> validation must distinguish allowed provider terms from disallowed Cloudflare environment names.
+- [Legacy setting is still consumed out of band] → Search current workflows and document the deletion timestamp before removal.
+- [Old Cloudflare resources look active] → Keep docs explicit that only renamed UAT/PRD resources are product targets.
+- [PRD missing secrets is misclassified] → Treat it as expected closed-gate state, not an environment-name defect.
 
 ## Migration Plan
 
-1. Update repo config, scripts, generated artifacts, workflows, docs, tests, and validation to use `uat` / `prd`.
-2. Create new D1 databases and copy data from old D1 resources into ignored local SQL exports.
-3. Update `wrangler.jsonc` with the new D1 IDs and deploy renamed Workers.
-4. Re-enter Worker secrets for the new script names, update GitHub Actions backend URL variables, and update Stripe webhook endpoints.
-5. Run UAT smoke, PRD readiness, and Wrangler tail checks against the new targets.
-6. Keep old Cloudflare resources until a later cleanup change explicitly removes them.
+Repository and provider cutover are complete. After explicit GitHub-setting cleanup, rerun scoped searches and strict validation, then archive this change. Do not delete old Cloudflare resources or configure PRD live commerce during closeout.

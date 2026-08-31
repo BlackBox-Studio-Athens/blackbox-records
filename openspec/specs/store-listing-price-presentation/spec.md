@@ -8,14 +8,22 @@ TBD - created by archiving change refine-store-catalog-discovery. Update Purpose
 
 ### Requirement: Listing-price projection is browser-safe and bounded
 
-The Worker SHALL expose one read-only listing-price projection backed only by current Store Offer snapshots, with at most one presentation record per canonical Store Item snapshot.
+The Worker SHALL expose one read-only listing-price projection backed only by Store Offer snapshots, with at most one presentation record per canonical Store Item snapshot.
 
 #### Scenario: Browser reads a usable listing price
 
-- **GIVEN** a Store Offer snapshot is fresh and has an active Product and Price with a resolved formatted amount
+- **GIVEN** a Store Offer snapshot has active Product and Price state, a valid currency, and a non-negative fixed amount
 - **WHEN** the browser reads the listing-price projection
-- **THEN** the matching record contains only its canonical `storeItemSlug`, a presentation state, and formatted display price
+- **THEN** the matching record contains only its canonical `storeItemSlug`, ready presentation state, and formatted display price
+- **AND** snapshot age and `freshUntil` do not change that presentation state
 - **AND** the response uses `Cache-Control: no-store`.
+
+#### Scenario: Browser reads a usable pay-what-you-want listing price
+
+- **GIVEN** an active Store Offer snapshot was produced from a valid reconciled pay-what-you-want Stripe Price and therefore has `amountMinor = null`
+- **WHEN** the browser reads the listing-price projection
+- **THEN** the matching record has ready presentation state and display price `Pay what you want`
+- **AND** it is not classified as unavailable because it lacks a fixed amount.
 
 #### Scenario: Browser inspects the listing-price response
 
@@ -24,17 +32,17 @@ The Worker SHALL expose one read-only listing-price projection backed only by cu
 
 #### Scenario: Snapshot cannot present a current price
 
-- **GIVEN** a Store Offer snapshot is missing, stale, inactive, or lacks a resolved amount
+- **GIVEN** a Store Offer snapshot is missing, inactive, malformed, or was not produced from one unambiguous valid Price Authority
 - **WHEN** the listing-price projection is prepared
-- **THEN** its presentation state is explicitly non-price
-- **AND** it does not return a cached or guessed amount.
+- **THEN** its presentation state is explicitly non-price or no matching record is returned
+- **AND** it does not return a guessed amount
+- **AND** elapsed time alone is not a reason for the non-price state.
 
-#### Scenario: Scheduled UAT verification renews listing snapshots
+#### Scenario: Runtime snapshot renewal is absent
 
-- **GIVEN** scheduled UAT verification resolves one unambiguous active Price with valid catalog identity for a Store Item
-- **WHEN** its D1 Store Offer snapshot is missing or stale
-- **THEN** verification renews that Store Offer snapshot for listing-price presentation
-- **AND** it does not mutate Stripe Products, Stripe Prices, or D1 Price mappings.
+- **WHEN** the legacy scheduled-renewal contract is evaluated
+- **THEN** no UAT catalog Cron or time-only snapshot renewal is registered
+- **AND** valid snapshots remain presentable without scheduled renewal.
 
 ### Requirement: Store collection prices use one projection read
 

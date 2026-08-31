@@ -459,7 +459,7 @@ The system SHALL present Store Item detail prices from Worker Store Offers that 
 #### Scenario: Stripe price changed after static deploy
 
 - **GIVEN** a Stripe Dashboard operator changes a Store Item variant's Price after the current static site artifact was deployed
-- **WHEN** scheduled, webhook, or read-time reconciliation resolves the replacement Price
+- **WHEN** webhook, read-time, checkout-time, or targeted manual reconciliation resolves the replacement Price
 - **THEN** the Store Item detail price follows the current Worker Store Offer
 - **AND** the listing price follows the refreshed presentation snapshot without an Astro rebuild.
 
@@ -652,3 +652,30 @@ The system MUST represent public Store Offers as states discriminated by the exi
 - **WHEN** the Worker returns a Store Offer
 - **THEN** `catalogStatus` is `catalog_drift`
 - **AND** checkout is unavailable, `canCheckout` is `false`, and price is null
+
+### Requirement: Hosted Checkout supports authoritative pay-what-you-want Prices
+
+The system SHALL let a ready pay-what-you-want Store Offer reach Stripe-hosted amount entry without moving price authority into the browser.
+
+#### Scenario: Store Offer is displayed
+
+- **WHEN** the authoritative offer uses a valid custom Stripe Price
+- **THEN** browser-safe output presents Pay what you want
+- **AND** exposes no Stripe Price ID or custom amount internals.
+
+#### Scenario: Shopper starts checkout
+
+- **WHEN** stock, availability, mapping, and the custom Price are ready
+- **THEN** the Worker creates Checkout with the authoritative Stripe Price ID
+- **AND** Stripe collects the shopper amount.
+
+#### Scenario: Payment completes
+
+- **WHEN** the paid event is reconciled
+- **THEN** the paid amount comes from verified Stripe data
+- **AND** no StoreCart display value is treated as payment authority.
+
+#### Scenario: Fixed-price item starts checkout
+
+- **WHEN** the offer uses a fixed Stripe Price
+- **THEN** existing fixed-price checkout behavior remains unchanged.

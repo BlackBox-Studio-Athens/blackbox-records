@@ -1241,3 +1241,117 @@ The system MUST validate the exact final Decap tree with focused and repository-
 - **WHEN** the implementation commit deploys to UAT
 - **THEN** `cms_admin` and `cms_assets` UAT Static Smoke scenarios pass for that deployed commit
 - **AND** no manual editor handbook, recovery handbook, or label-member usability test is required by this change.
+
+### Requirement: Catalog promotion validation is deterministic and fail-closed
+
+The system SHALL validate generated artifacts and every UAT promotion boundary before later mutation or deployment.
+
+#### Scenario: Artifact commit is evaluated
+
+- **WHEN** promotion starts
+- **THEN** artifact drift check, unit tests, repository check, and build pass before provider work.
+
+#### Scenario: UAT apply is evaluated
+
+- **WHEN** dry-run reports ambiguity, missing configuration, or an unsafe mutation
+- **THEN** apply does not run
+- **AND** failure output remains redacted.
+
+#### Scenario: Hosted readiness is evaluated
+
+- **WHEN** Worker/catalog preparation completes
+- **THEN** every canonical published Store Item has exactly one ready hosted listing record before static deployment.
+
+### Requirement: Promotion evidence and smoke remain environment-safe
+
+The system SHALL verify UAT behavior and record PRD closure without inventing live proof.
+
+#### Scenario: UAT smoke runs
+
+- **WHEN** the same artifact commit is deployed
+- **THEN** configured UAT checkout-surface and paid-path checks run
+- **AND** their evidence contains no provider secrets, full IDs, or payment/customer details.
+
+#### Scenario: PRD live policy is absent
+
+- **WHEN** the PRD-open gate or required live configuration is absent
+- **THEN** validation reports not_configured
+- **AND** does not claim live provider, deploy, or Checkout proof.
+
+### Requirement: Distro source and projections are validated together
+
+The system SHALL fail deterministic checks when the manifest, content projection, pricing, artwork, or generated catalog disagree.
+
+#### Scenario: Manifest validation runs
+
+- **WHEN** catalog artifacts are checked
+- **THEN** emitted IDs and normalized identities are unique, aliases are unambiguous, rejected duplicates reference emitted rows, exactly the approved extras carry provenance, and every item type/price policy is valid.
+
+#### Scenario: Content projection validation runs
+
+- **WHEN** distro content is checked
+- **THEN** every current emitted content item maps to one manifest row
+- **AND** unapproved content, missing canonical content, or an emitted rejected row fails.
+
+#### Scenario: Artwork validation runs
+
+- **WHEN** an item lacks matched repository artwork
+- **THEN** artwork-fetcher evidence or explicit known-missing fallback evidence is required.
+
+### Requirement: Distro catalog acceptance includes UAT provider proof
+
+The system SHALL verify both fixed and pay-what-you-want paths before treating the manifest rollout as complete.
+
+#### Scenario: UAT proof runs
+
+- **WHEN** generated artifacts are applied to UAT
+- **THEN** catalog post-verification, static deployment, fixed-price paid smoke, and pay-what-you-want paid smoke pass
+- **AND** evidence excludes secrets, raw provider payloads, and full provider IDs.
+
+### Requirement: UAT persistent webhook configuration is verified read-only
+
+The system SHALL provide a read-only command that validates the persistent UAT Stripe test-mode webhook endpoint without exposing or mutating secrets.
+
+#### Scenario: Valid endpoint is verified
+
+- **WHEN** pnpm stripe:webhooks:verify --env uat runs with authorized credentials
+- **THEN** exactly one enabled non-Connect test-mode account endpoint matches the exact UAT Worker webhook URL
+- **AND** output includes only redacted endpoint identity.
+
+#### Scenario: Required events are verified
+
+- **WHEN** the matching endpoint is inspected
+- **THEN** product.created, product.updated, product.deleted, price.created, price.updated, and price.deleted are all enabled
+- **AND** extra checkout events do not fail verification.
+
+#### Scenario: Endpoint state is unsafe
+
+- **WHEN** the endpoint is missing, disabled, duplicated, wrong-mode, Connect-only, misrouted, or missing a required event
+- **THEN** verification fails with a redacted repair summary
+- **AND** changes no Stripe or Cloudflare state.
+
+#### Scenario: Worker secret binding is inspected
+
+- **WHEN** Cloudflare configuration can expose binding names
+- **THEN** the verifier reports STRIPE_WEBHOOK_SECRET as present or missing
+- **AND** never claims value equality from name presence.
+
+### Requirement: Persistent secret equality uses delivery evidence
+
+The system SHALL prove the installed UAT webhook secret through successful signed event processing rather than secret retrieval.
+
+#### Scenario: Signed delivery succeeds
+
+- **WHEN** Stripe sends an event from the persistent endpoint and the Worker performs the expected catalog or paid-order reconciliation
+- **THEN** UAT evidence may record signing-secret match as proven
+- **AND** excludes the secret, raw event payload, full endpoint ID, and customer/payment data.
+
+### Requirement: Temporary listener state is not readiness evidence
+
+The system MUST keep stripe listen secrets and forwarding separate from the deployed UAT persistent endpoint.
+
+#### Scenario: Temporary listener starts
+
+- **WHEN** local or investigative tooling runs stripe listen
+- **THEN** it does not overwrite the deployed UAT STRIPE_WEBHOOK_SECRET
+- **AND** listener delivery is not accepted as persistent endpoint proof.

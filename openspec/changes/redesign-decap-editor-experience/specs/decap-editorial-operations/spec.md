@@ -296,7 +296,7 @@ The system MUST preserve collection-owned images and MUST make every visible Dec
 - **THEN** `/admin/media/<collection>/<asset>` serves the allowlisted source with the correct content type and cache policy
 - **AND** it rejects unknown collections, unsupported file types, missing files, and path traversal.
 
-#### Scenario: Top-level media surface is evaluated
+#### Scenario: Top-level media surface is available
 
 - **WHEN** Decap would expose the top-level Media surface or global uploads folder
 - **THEN** the surface is absent unless every presented asset can be selected into a valid collection-owned image field
@@ -343,7 +343,7 @@ The system MUST pin the Decap browser runtime and local proxy package to one tes
 #### Scenario: Dependency baseline is installed
 
 - **WHEN** this change is implemented against the July 24, 2026 baseline
-- **THEN** the browser runtime is pinned to `decap-cms@3.15.1` and local proxy tooling to `decap-server@3.10.0`
+- **THEN** the browser runtime is pinned to `decap-cms@3.16.0` and local proxy tooling to `decap-server@3.11.0`
 - **AND** package metadata, lockfile, admin script URL, tests, and compatibility notes agree on those exact versions.
 
 #### Scenario: Decap runtime cannot load
@@ -354,11 +354,11 @@ The system MUST pin the Decap browser runtime and local proxy package to one tes
 
 #### Scenario: Existing repair inventory is reconciled
 
-- **WHEN** the 3.15.1 redesign evaluates the current admin repair registry
+- **WHEN** the 3.16.0 redesign evaluates the current admin repair registry
 - **THEN** every repair has the design's explicit disposition: native replacement, deletion, characterization-gated deletion or retention, or named no-native exception
 - **AND** direct-to-`main` guidance, singleton blank-publication protection, preview accessibility, saved singleton navigation, and Media suppression are not silently lost.
 
-#### Scenario: Custom admin adjustment is retained
+#### Scenario: Custom admin repair is retained
 
 - **WHEN** implementation retains behavior outside generated configuration and supported Decap registration APIs
 - **THEN** a focused regression check demonstrates the required user-visible behavior on the pinned Decap version and the adjustment fails safely when its semantic target is absent
@@ -366,6 +366,6 @@ The system MUST pin the Decap browser runtime and local proxy package to one tes
 
 #### Scenario: Superseded repair registry is removed
 
-- **WHEN** the 3.15.1 redesign is complete
-- **THEN** the body-wide observer, fixed-list repair, timed preview collapse, editor scope panel, aggregate registry, and other superseded 3.14.1 behavior are deleted
+- **WHEN** the 3.16.0 redesign is complete
+- **THEN** the body-wide observer, fixed-list repair, timed preview collapse, editor scope panel, aggregate registry, and other superseded legacy behavior are deleted
 - **AND** the singleton guard, Media suppression, or any characterization-proven exception that remains is individually named, route- or mount-scoped, justified by a missing native option, and covered by its focused test.

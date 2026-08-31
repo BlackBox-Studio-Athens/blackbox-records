@@ -18,7 +18,7 @@ The system MUST NOT use Astro content or browser state as the authority for buya
 - **THEN** catalog sync updates the browser-safe Store Offer snapshot without requiring an Astro content change
 - **AND** checkout start uses the resolved active Stripe Price rather than a stale static price.
 
-#### Scenario: Store Offer snapshot differs from current Stripe state
+#### Scenario: Store Offer snapshot is stale
 
 - **GIVEN** the D1 Store Offer snapshot is missing or its Price identity, amount, currency, or active state differs from current Stripe Price Authority
 - **WHEN** the storefront asks the Worker for an authoritative Store Offer or starts checkout
@@ -62,7 +62,7 @@ The system SHALL keep authoritative Store Offer reads, checkout start, and targe
 - **THEN** the Worker reconciles current Stripe state before returning price/readiness
 - **AND** the response returns the current replacement Price or a fail-closed catalog-drift state.
 
-#### Scenario: Targeted manual verification runs after price change
+#### Scenario: Manual verification runs after price change
 
 - **GIVEN** an operator changes a Price in Stripe Dashboard
 - **WHEN** `pnpm stripe:catalog:verify --env uat --store-item <storeItemSlug>` runs, with explicit apply when repair is required
@@ -70,7 +70,7 @@ The system SHALL keep authoritative Store Offer reads, checkout start, and targe
 - **AND** apply mode does not reconcile or mutate unrelated variants
 - **AND** output does not print Stripe secrets or full account-private object IDs.
 
-#### Scenario: UAT Worker is deployed
+#### Scenario: Runtime catalog cron is absent
 
 - **WHEN** UAT Worker triggers and handlers are inspected
 - **THEN** no scheduled full-catalog Stripe verification or time-only snapshot renewal is registered

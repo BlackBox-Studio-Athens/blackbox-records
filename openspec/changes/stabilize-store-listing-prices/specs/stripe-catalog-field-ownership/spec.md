@@ -20,7 +20,7 @@ The system MUST keep buyable amount, currency, active Price identity, lookup key
 - **THEN** Decap can change editorial fields such as title, summary, image, group, format, order, and page copy
 - **AND** Decap does not expose or commit Stripe Price IDs, buyable amounts, currency, active Price state, D1 identifiers, or provider mutation controls.
 
-#### Scenario: New Store Item has no Price Authority
+#### Scenario: Generated DesiredPrice exists
 
 - **GIVEN** generated Desired Catalog State contains a Desired Price for a new Store Item variant
 - **AND** no unambiguous valid active Stripe Price exists for that variant in the target Product Environment

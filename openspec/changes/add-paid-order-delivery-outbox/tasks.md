@@ -1,0 +1,23 @@
+## 1. Schema and Purchase Invariants
+
+- [ ] 1.1 Rebase onto the final add-checkout-stock-reservations transaction and verify pnpm openspec:guard passes.
+- [ ] 1.2 Add direct paid-order and immutable line-snapshot columns plus PaidOrderDelivery; verify migration checks permit only the three kinds, three statuses, positive money/quantity values, EUR/GR scope, unique order-kind rows, and valid terminal timestamps.
+- [ ] 1.3 Regenerate Prisma and expose discriminated repository results so incomplete rows cannot be consumed as current paid fulfillment; verify repository tests reject every incomplete paid shape.
+
+## 2. Atomic Paid Reconciliation
+
+- [ ] 2.1 Write immutable line snapshots from validated Store Offers and verify duplicate CartLines still produce one order line per variant.
+- [ ] 2.2 Extend first paid reconciliation to commit paid fields, stock effects, and applicable delivery rows in one transaction; verify any failed statement rolls back the complete batch.
+- [ ] 2.3 Preserve the original order facts and unique delivery rows on webhook replay; verify stock and delivery enqueue occur at most once.
+
+## 3. Delivery Processing
+
+- [ ] 3.1 Implement one compare-and-set lease path for due pending rows and verify concurrent or unexpired claims issue one provider request.
+- [ ] 3.2 Route the three fixed kinds through existing Resend/newsletter gateways, reusing stable idempotency identities; verify shopper, ops, and newsletter outcomes remain independent.
+- [ ] 3.3 Implement immediate processing plus a five-row 15-minute scheduled drain; verify transient failures remain pending, five attempts/24 hours end in needs review, and an empty drain is a no-op.
+
+## 4. Safe Reads and Evidence
+
+- [ ] 4.1 Expose validated fulfillment and delivery summaries only through protected no-store order reads; verify public responses and logs exclude contact, address, tokens, raw provider responses, and raw Stripe data.
+- [ ] 4.2 Run local migration, D1 atomicity/replay/lease tests, signed webhook simulation, scheduled-handler checks, pnpm test:unit, pnpm check, and pnpm build.
+- [ ] 4.3 Prove UAT immediate success and one controlled retry with approved test recipients, then run pnpm openspec -- validate add-paid-order-delivery-outbox --strict.

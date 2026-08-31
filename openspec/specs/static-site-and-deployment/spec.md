@@ -390,3 +390,45 @@ The system SHALL report static deployment speed in separate build-verification a
 - **WHEN** GitHub Pages deploy latency has high p75 or p90 duration
 - **THEN** the workflow report identifies it separately from repository verification and Astro build time
 - **AND** repository build/check optimization is not credited with fixing provider deploy latency unless post-change data proves it.
+
+### Requirement: Catalog-affecting deployment follows the verified artifact commit
+
+The system SHALL deploy UAT catalog changes only from the artifact commit whose backend/provider state passed hosted readiness.
+
+#### Scenario: Visible Store Item set changes
+
+- **WHEN** UAT promotion prepares and verifies the catalog
+- **THEN** Worker deployment and hosted listing readiness precede static deployment dispatch
+- **AND** the independent push path does not publish that catalog-set commit first.
+
+#### Scenario: Editorial content does not affect the catalog set
+
+- **WHEN** a normal non-catalog static change passes repository gates
+- **THEN** the standard static deployment path remains available.
+
+#### Scenario: PRD launch gate is closed
+
+- **WHEN** catalog automation evaluates PRD
+- **THEN** it does not deploy a live catalog Worker or static launch surface
+- **AND** production-go-live-readiness remains the owner of later PRD launch sequencing.
+
+### Requirement: UAT Worker readiness includes persistent webhook proof
+
+The system SHALL include persistent Stripe endpoint configuration and delivery evidence in UAT Worker readiness.
+
+#### Scenario: UAT readiness is evaluated
+
+- **WHEN** the deployed UAT Worker is accepted
+- **THEN** evidence shows the exact persistent endpoint, required event coverage, and STRIPE_WEBHOOK_SECRET binding-name presence
+- **AND** contains no signing secret or full provider identifier.
+
+#### Scenario: Secret match is accepted
+
+- **WHEN** persistent signed delivery produces the expected reconciliation
+- **THEN** readiness may record the endpoint/Worker secret pair as operational.
+
+#### Scenario: PRD readiness is evaluated
+
+- **WHEN** live PRD webhook setup is requested
+- **THEN** production-go-live-readiness owns the endpoint, secret, events, and delivery proof
+- **AND** this UAT change performs no live provider mutation.

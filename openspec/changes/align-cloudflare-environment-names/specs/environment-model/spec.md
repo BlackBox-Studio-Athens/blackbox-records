@@ -12,7 +12,7 @@ The system SHALL expose exactly three product environments in operator-facing do
 - **AND** app-owned Stripe target values use `local`, `uat`, or `prd`.
 - **AND** provider-specific names are shown only as mapped implementation details.
 
-#### Scenario: Runtime config names a product environment
+#### Scenario: Application code needs environment policy
 
 - **WHEN** code, Worker bindings, tests, generated evidence, or validation reports name a Product Environment value
 - **THEN** the canonical values are `LOCAL`, `UAT`, and `PRD`
@@ -59,6 +59,12 @@ The system SHALL maintain a single mapping from product environments to static h
 - **THEN** that change MUST be reconciled with the PRD-disabled model
 - **AND** it MUST identify whether the work is readiness-only, blocked by the PRD-open gate, or the owner of the PRD-open gate.
 
+#### Scenario: Runtime profile is resolved
+
+- **WHEN** backend requests, scripts, smoke runners, or validation code need environment-derived values
+- **THEN** they resolve Product Environment through the single Local/UAT/PRD mapping
+- **AND** pass Product Environment or Product Environment Profile downstream instead of repeating raw alias checks.
+
 ### Requirement: Platform names are scoped
 
 The system MUST distinguish Product Environment from Platform Environment, Worker Runtime Target, Provider Mode, and Secret Store.
@@ -80,3 +86,9 @@ The system MUST distinguish Product Environment from Platform Environment, Worke
 - **WHEN** Stripe test mode, Stripe live mode, or stripe-mock is referenced
 - **THEN** it is described as a provider mode mapped to Local, UAT, or PRD
 - **AND** it is not used as the product environment name.
+
+#### Scenario: Raw platform name is needed by a provider boundary
+
+- **WHEN** a platform API, CLI, workflow, or config file requires a legacy alias or provider-specific environment value
+- **THEN** the boundary maps it from Local, UAT, or PRD
+- **AND** the raw value is not representable as app-wide product policy.
