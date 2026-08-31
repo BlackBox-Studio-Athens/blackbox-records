@@ -20,6 +20,24 @@ https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev
 - Orders, stock changes, and webhook evidence are UAT-only and backed by UAT D1 plus Stripe test mode.
 - Report buyer-facing UI issues, confusing wording, broken flows, and anything that feels unsafe or unclear.
 
+## Stripe Account Cutover
+
+Treat a Stripe account switch as one account-scoped cutover. Changing only `STRIPE_SECRET_KEY` leaves invalid Payment Method Configuration, webhook, Product, Price, D1 mapping, and acceptance-evidence state.
+
+Complete repo work first. Then perform this manual/provider sequence from the exact pushed commit that passed all required gates:
+
+1. Preserve the old account and historical D1 order/event rows. Do not rewrite stored Checkout Session, Payment Intent, Price, Product, or event identities; they remain historical references to the account that created them.
+2. In the new Stripe test account, create/select the UAT Payment Method Configuration, persistent webhook endpoint, Products, and Prices. Reuse repo-owned lookup keys and metadata identities, not old account object IDs.
+3. Rotate all account-scoped UAT configuration together:
+   - UAT Worker secrets: `STRIPE_SECRET_KEY`, `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`, `STRIPE_WEBHOOK_SECRET`
+   - GitHub environment `catalog-promotion-uat`: `STRIPE_SECRET_KEY` and `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`
+   - ignored local `apps/backend/.dev.vars` and `apps/backend/prisma/seeds/local-stripe-test-state.sql` when local real-test checkout is required
+4. Reset/reseed/reconcile the UAT catalog so every current variant receives a new-account Price mapping and Store Offer snapshot. Never carry old account `price_...` IDs into the new account.
+5. Run `pnpm runtime:config:verify --env uat`, `pnpm stripe:payment-methods:verify`, `pnpm stripe:webhooks:verify --env uat`, catalog verification/apply, Worker deploy, and fresh paid UAT smoke. Existing evidence is historical and cannot prove the new account.
+6. Keep PRD closed. Repeat the equivalent live-account setup and evidence only through `production-go-live-readiness`; do not copy UAT test IDs or treat UAT proof as PRD approval.
+
+The committed mock Stripe configuration, Prisma migration history, tracked UAT/PRD seed templates, and static frontend configuration do not change solely because the Stripe account changes.
+
 ## Operator Webhook Readiness
 
 UAT paid-order and catalog webhook evidence must use the persistent Stripe Dashboard/Workbench test-mode webhook endpoint:
@@ -106,7 +124,7 @@ Catalog-owner verification:
 
 Decap remains editorial-only. Editors can change item information and page copy, but must not edit checkout price, Stripe IDs, D1 IDs, stock, provider mutation controls, or any runtime secret.
 
-For this UAT exercise, the colleague uses the same existing Stripe business account and isolated UAT Stripe Sandbox as the owner. No separate restricted-role or live-access-isolation proof is required. An owner-supervised authenticated session or an existing team login is sufficient; do not create another Stripe account for this exercise. Confirm the Sandbox banner and test mode before editing, keep two-step authentication enabled, and never put passwords, recovery codes, API keys, or webhook secrets in evidence. See Stripe's [sandbox access guidance](https://docs.stripe.com/sandboxes/dashboard/manage-access).
+For this UAT exercise, the colleague uses the currently selected Stripe business account and its isolated UAT Stripe Sandbox. After an account cutover, use only the new account and regenerate all UAT evidence. No separate restricted-role proof is required for this exercise; an owner-supervised authenticated session or existing team login is sufficient. Confirm the Sandbox banner and test mode before editing, keep two-step authentication enabled, and never put passwords, recovery codes, API keys, or webhook secrets in evidence. See Stripe's [sandbox access guidance](https://docs.stripe.com/sandboxes/dashboard/manage-access).
 
 Troubleshooting:
 
