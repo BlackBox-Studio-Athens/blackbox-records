@@ -24,11 +24,15 @@ export type {
   CheckoutOrderRecord,
   CheckoutOrderTransitionInput,
   CreatePendingCheckoutOrderInput,
+  CurrentPaidCheckoutOrder,
+  CurrentPaidCheckoutOrderLine,
   ListRecentCheckoutOrdersInput,
   OrderStateRepository,
   OrderStatus,
+  PaidCheckoutFulfillmentReadResult,
   ShippingLockerSnapshot,
 } from './order-state-repository';
+export { EMPTY_PAID_CHECKOUT_ORDER_FIELDS, readPaidCheckoutFulfillment } from './order-state-repository';
 export type { StockRecord, StockRepository, StockState } from './stock-repository';
 export type { RecordStockChangeInput, StockChangeRecord, StockChangeRepository } from './stock-change-repository';
 export type { RecordStockCountInput, StockCountRecord, StockCountRepository } from './stock-count-repository';

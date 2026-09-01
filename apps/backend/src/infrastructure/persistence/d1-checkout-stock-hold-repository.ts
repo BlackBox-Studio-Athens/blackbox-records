@@ -14,6 +14,7 @@ import type {
   SessionlessNotPaidCheckoutOrder,
   SessionlessPendingCheckoutOrder,
 } from '../../domain/commerce/repositories/spi';
+import { EMPTY_PAID_CHECKOUT_ORDER_FIELDS } from '../../domain/commerce/repositories/spi';
 
 type EffectiveAvailabilityRow = {
   effectiveQuantity: number;
@@ -101,6 +102,7 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
 
     return {
       hold: {
+        ...EMPTY_PAID_CHECKOUT_ORDER_FIELDS,
         checkoutExpiresAt: input.checkoutExpiresAt,
         checkoutSessionId: null,
         createdAt: input.createdAt,

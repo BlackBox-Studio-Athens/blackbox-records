@@ -5,6 +5,7 @@ import type {
   StockChangeRecord,
   StockRecord,
   OrderStateRepository,
+  PaidCheckoutFulfillmentReadResult,
 } from '../../../domain/commerce/repositories/spi';
 import {
   createCartQuantity,
@@ -49,6 +50,7 @@ export type ApplyPaidCheckoutReconciliationResult =
   | {
       kind: 'replay';
       order: CheckoutOrderRecord;
+      paidFulfillment: PaidCheckoutFulfillmentReadResult;
     }
   | {
       kind: 'stock_unavailable';
@@ -123,6 +125,7 @@ export async function applyPaidCheckoutReconciliation(
       return {
         kind: 'replay',
         order: finalizationResult.order,
+        paidFulfillment: finalizationResult.paidFulfillment,
       };
     }
 

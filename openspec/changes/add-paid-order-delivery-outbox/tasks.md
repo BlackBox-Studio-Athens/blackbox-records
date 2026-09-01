@@ -2,7 +2,7 @@
 
 - [x] 1.1 Run `pnpm openspec:guard`, verify the accepted repo-local CheckoutOrder transaction and operator identity contracts are present, and record the prerequisites' hosted proof and archival as rollout gates before UAT delivery execution.
 - [x] 1.2 Add direct paid-order and immutable line-snapshot columns plus PaidOrderDelivery; verify migration checks permit only the three kinds, three statuses, positive money/quantity values, EUR/GR scope, unique order-kind rows, and valid terminal timestamps.
-- [ ] 1.3 Regenerate Prisma and expose discriminated repository results so incomplete rows cannot be consumed as current paid fulfillment; verify repository tests reject every incomplete paid shape.
+- [x] 1.3 Regenerate Prisma and expose discriminated repository results so incomplete rows cannot be consumed as current paid fulfillment; verify repository tests reject every incomplete paid shape.
 
 ## 2. Atomic Paid Reconciliation
 

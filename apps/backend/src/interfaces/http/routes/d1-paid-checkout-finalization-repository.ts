@@ -25,17 +25,32 @@ import type {
   StockChangeRecord,
   StockRecord,
 } from '../../../domain/commerce/repositories/spi';
+import { readPaidCheckoutFulfillment } from '../../../domain/commerce/repositories/spi';
 
 type D1Value = null | number | string;
 
 type CheckoutOrderRow = {
+  amountTotalMinor: null | number;
   checkoutSessionId: null | string;
   checkoutExpiresAt: string;
   createdAt: string;
+  currencyCode: null | string;
   id: string;
   needsReviewAt: null | string;
+  newsletterConsentAt: null | string;
+  newsletterConsentCopyVersion: null | string;
+  newsletterOptIn: boolean | null;
   notPaidAt: null | string;
   paidAt: null | string;
+  recipientName: null | string;
+  shopperEmail: null | string;
+  shopperPhone: null | string;
+  shippingAddressCity: null | string;
+  shippingAddressCountryCode: null | string;
+  shippingAddressLine1: null | string;
+  shippingAddressLine2: null | string;
+  shippingAddressPostalCode: null | string;
+  shippingAddressState: null | string;
   shippingLockerCountryCode: null | string;
   shippingLockerId: null | string;
   shippingLockerNameOrLabel: null | string;
@@ -93,6 +108,20 @@ const checkoutOrderSelectSql = [
   '  "checkoutSessionId",',
   '  "checkoutExpiresAt",',
   '  "stripePaymentIntentId",',
+  '  "amountTotalMinor",',
+  '  "currencyCode",',
+  '  "recipientName",',
+  '  "shopperEmail",',
+  '  "shopperPhone",',
+  '  "shippingAddressLine1",',
+  '  "shippingAddressLine2",',
+  '  "shippingAddressCity",',
+  '  "shippingAddressPostalCode",',
+  '  "shippingAddressState",',
+  '  "shippingAddressCountryCode",',
+  '  "newsletterOptIn",',
+  '  "newsletterConsentAt",',
+  '  "newsletterConsentCopyVersion",',
   '  "shippingLockerId",',
   '  "shippingLockerCountryCode",',
   '  "shippingLockerNameOrLabel",',
@@ -151,6 +180,7 @@ export class D1PaidCheckoutFinalizationRepository implements PaidCheckoutFinaliz
       return {
         kind: 'replay',
         order: currentOrder,
+        paidFulfillment: readPaidCheckoutFulfillment(currentOrder),
       };
     }
 
@@ -179,6 +209,7 @@ export class D1PaidCheckoutFinalizationRepository implements PaidCheckoutFinaliz
         return {
           kind: 'replay',
           order: latestOrder,
+          paidFulfillment: readPaidCheckoutFulfillment(latestOrder),
         };
       }
 
@@ -407,13 +438,27 @@ function createPaidCheckoutStockChangeId(checkoutSessionId: CheckoutSessionId, v
 
 function mapCheckoutOrder(row: CheckoutOrderRow, lines: CheckoutOrderLineRecord[]): CheckoutOrderRecord {
   return {
+    amountTotalMinor: row.amountTotalMinor,
     checkoutSessionId: row.checkoutSessionId ? parseCheckoutSessionId(row.checkoutSessionId) : null,
     checkoutExpiresAt: new Date(row.checkoutExpiresAt),
     createdAt: new Date(row.createdAt),
+    currencyCode: row.currencyCode,
     id: row.id,
     needsReviewAt: row.needsReviewAt ? new Date(row.needsReviewAt) : null,
+    newsletterConsentAt: row.newsletterConsentAt ? new Date(row.newsletterConsentAt) : null,
+    newsletterConsentCopyVersion: row.newsletterConsentCopyVersion,
+    newsletterOptIn: row.newsletterOptIn,
     notPaidAt: row.notPaidAt ? new Date(row.notPaidAt) : null,
     paidAt: row.paidAt ? new Date(row.paidAt) : null,
+    recipientName: row.recipientName,
+    shopperEmail: row.shopperEmail,
+    shopperPhone: row.shopperPhone,
+    shippingAddressCity: row.shippingAddressCity,
+    shippingAddressCountryCode: row.shippingAddressCountryCode,
+    shippingAddressLine1: row.shippingAddressLine1,
+    shippingAddressLine2: row.shippingAddressLine2,
+    shippingAddressPostalCode: row.shippingAddressPostalCode,
+    shippingAddressState: row.shippingAddressState,
     shippingLocker:
       row.shippingLockerId && row.shippingLockerCountryCode === 'GR' && row.shippingLockerNameOrLabel
         ? {

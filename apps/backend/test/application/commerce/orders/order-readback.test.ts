@@ -8,6 +8,7 @@ import type {
   OrderStateRepository,
   OrderStatus,
 } from '../../../../src/domain/commerce/repositories/spi';
+import { EMPTY_PAID_CHECKOUT_ORDER_FIELDS } from '../../../../src/domain/commerce/repositories/spi';
 import { checkoutSessionId, paymentIntentId, storeItemSlug, variantId } from '../../../support/commerce-value-objects';
 
 class InMemoryOrderStateRepository implements OrderStateRepository {
@@ -16,6 +17,7 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
   public async createPending(input: CreatePendingCheckoutOrderInput): Promise<CheckoutOrderRecord> {
     const createdAt = input.createdAt ?? new Date('2026-04-25T10:00:00.000Z');
     const record: CheckoutOrderRecord = {
+      ...EMPTY_PAID_CHECKOUT_ORDER_FIELDS,
       checkoutSessionId: input.checkoutSessionId,
       checkoutExpiresAt: input.checkoutExpiresAt ?? new Date(createdAt.getTime() + 30 * 60 * 1000),
       createdAt,

@@ -96,6 +96,11 @@ describe('Stripe webhook acknowledgement checkout events', () => {
     vi.mocked(services.applyPaidCheckoutReconciliation).mockResolvedValueOnce({
       kind: 'replay',
       order: {} as never,
+      paidFulfillment: {
+        kind: 'incomplete',
+        order: {} as never,
+        reason: 'incomplete_paid_fulfillment',
+      },
     });
 
     await expect(acknowledgeVerifiedStripeWebhookEvent(createPaidCheckoutEvent(), services)).resolves.toEqual({

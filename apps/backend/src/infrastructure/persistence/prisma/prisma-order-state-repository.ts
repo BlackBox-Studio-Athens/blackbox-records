@@ -20,13 +20,27 @@ import type { PrismaClient } from '../../../generated/prisma/client';
 type PrismaOrderStateClient = Pick<PrismaClient, 'checkoutOrder' | '$executeRawUnsafe' | '$queryRawUnsafe'>;
 
 function mapCheckoutOrder(record: {
+  amountTotalMinor: number | null;
   checkoutSessionId: string | null;
   checkoutExpiresAt: Date;
   createdAt: Date;
+  currencyCode: string | null;
   id: string;
   needsReviewAt: Date | null;
+  newsletterConsentAt: Date | null;
+  newsletterConsentCopyVersion: string | null;
+  newsletterOptIn: boolean | null;
   notPaidAt: Date | null;
   paidAt: Date | null;
+  recipientName: string | null;
+  shopperEmail: string | null;
+  shopperPhone: string | null;
+  shippingAddressCity: string | null;
+  shippingAddressCountryCode: string | null;
+  shippingAddressLine1: string | null;
+  shippingAddressLine2: string | null;
+  shippingAddressPostalCode: string | null;
+  shippingAddressState: string | null;
   shippingLockerCountryCode: string | null;
   shippingLockerId: string | null;
   shippingLockerNameOrLabel: string | null;
@@ -39,13 +53,27 @@ function mapCheckoutOrder(record: {
   lines?: CheckoutOrderLineRecord[];
 }): CheckoutOrderRecord {
   return {
+    amountTotalMinor: record.amountTotalMinor,
     checkoutSessionId: record.checkoutSessionId ? parseCheckoutSessionId(record.checkoutSessionId) : null,
     checkoutExpiresAt: record.checkoutExpiresAt,
     createdAt: record.createdAt,
+    currencyCode: record.currencyCode,
     id: record.id,
     needsReviewAt: record.needsReviewAt,
+    newsletterConsentAt: record.newsletterConsentAt,
+    newsletterConsentCopyVersion: record.newsletterConsentCopyVersion,
+    newsletterOptIn: record.newsletterOptIn,
     notPaidAt: record.notPaidAt,
     paidAt: record.paidAt,
+    recipientName: record.recipientName,
+    shopperEmail: record.shopperEmail,
+    shopperPhone: record.shopperPhone,
+    shippingAddressCity: record.shippingAddressCity,
+    shippingAddressCountryCode: record.shippingAddressCountryCode,
+    shippingAddressLine1: record.shippingAddressLine1,
+    shippingAddressLine2: record.shippingAddressLine2,
+    shippingAddressPostalCode: record.shippingAddressPostalCode,
+    shippingAddressState: record.shippingAddressState,
     shippingLocker:
       record.shippingLockerId && record.shippingLockerCountryCode === 'GR' && record.shippingLockerNameOrLabel
         ? {

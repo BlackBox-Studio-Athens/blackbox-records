@@ -1,11 +1,13 @@
 import type {
   CheckoutOrderRecord,
   OrderStateRepository,
+  PaidCheckoutFulfillmentReadResult,
   StockChangeRecord,
   StockChangeRepository,
   StockRecord,
   StockRepository,
 } from '../../../domain/commerce/repositories/spi';
+import { readPaidCheckoutFulfillment } from '../../../domain/commerce/repositories/spi';
 import {
   createStockChangeDelta,
   createStockQuantity,
@@ -33,6 +35,7 @@ export type PaidCheckoutFinalizationResult =
   | {
       kind: 'replay';
       order: CheckoutOrderRecord;
+      paidFulfillment: PaidCheckoutFulfillmentReadResult;
     }
   | {
       kind: 'stock_unavailable';
@@ -75,6 +78,7 @@ export async function finalizePaidCheckoutWithRepositories(
     return {
       kind: 'replay',
       order: currentOrder,
+      paidFulfillment: readPaidCheckoutFulfillment(currentOrder),
     };
   }
 
