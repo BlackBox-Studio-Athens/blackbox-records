@@ -492,6 +492,75 @@ export type components = {
             checkoutSessionId: string | null;
             /** Format: date-time */
             createdAt: string;
+            deliveries: {
+                attemptCount: number;
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                deliveredAt: string | null;
+                /** @enum {string} */
+                kind: "shopper_confirmation" | "ops_fulfillment" | "newsletter_registration";
+                /** Format: date-time */
+                needsReviewAt: string | null;
+                /** Format: date-time */
+                nextAttemptAt: string | null;
+                safeReason: string | null;
+                /** @enum {string} */
+                status: "pending" | "delivered" | "needs_review";
+                /** Format: date-time */
+                updatedAt: string;
+            }[];
+            fulfillment: {
+                /** @enum {string} */
+                kind: "unavailable";
+            } | {
+                /** @enum {string} */
+                kind: "incomplete";
+                /** @enum {string} */
+                reason: "incomplete_paid_fulfillment";
+            } | {
+                amountTotalMinor: number;
+                /** @enum {string} */
+                currencyCode: "EUR";
+                /** @enum {string} */
+                kind: "current";
+                lines: {
+                    displayName: string;
+                    lineAmountMinor: number;
+                    optionLabel: string | null;
+                    quantity: number;
+                    storeItemSlug: string;
+                    unitAmountMinor: number;
+                    variantId: string;
+                }[];
+                newsletterConsent: {
+                    /** @enum {boolean} */
+                    optedIn: false;
+                } | {
+                    /** Format: date-time */
+                    consentedAt: string;
+                    copyVersion: string;
+                    /** @enum {boolean} */
+                    optedIn: true;
+                };
+                /** Format: date-time */
+                paidAt: string;
+                recipientName: string;
+                shippingAddress: {
+                    city: string;
+                    /** @enum {string} */
+                    country: "GR";
+                    line1: string;
+                    line2: string | null;
+                    postalCode: string;
+                    state: string | null;
+                };
+                shopperContact: {
+                    /** Format: email */
+                    email: string;
+                    phone: string | null;
+                };
+            };
             /** Format: date-time */
             needsReviewAt: string | null;
             /** Format: date-time */

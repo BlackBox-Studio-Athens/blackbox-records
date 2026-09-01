@@ -23,6 +23,311 @@
             "type": "string",
             "format": "date-time"
           },
+          "deliveries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "attemptCount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 5
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "deliveredAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "shopper_confirmation",
+                    "ops_fulfillment",
+                    "newsletter_registration"
+                  ]
+                },
+                "needsReviewAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "nextAttemptAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "safeReason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "delivered",
+                    "needs_review"
+                  ]
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "attemptCount",
+                "createdAt",
+                "deliveredAt",
+                "kind",
+                "needsReviewAt",
+                "nextAttemptAt",
+                "safeReason",
+                "status",
+                "updatedAt"
+              ]
+            }
+          },
+          "fulfillment": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "unavailable"
+                    ]
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "incomplete"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "enum": [
+                      "incomplete_paid_fulfillment"
+                    ]
+                  }
+                },
+                "required": [
+                  "kind",
+                  "reason"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "amountTotalMinor": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "currencyCode": {
+                    "type": "string",
+                    "enum": [
+                      "EUR"
+                    ]
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "current"
+                    ]
+                  },
+                  "lines": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "displayName": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "lineAmountMinor": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        },
+                        "optionLabel": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        },
+                        "storeItemSlug": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "unitAmountMinor": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0
+                        },
+                        "variantId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "displayName",
+                        "lineAmountMinor",
+                        "optionLabel",
+                        "quantity",
+                        "storeItemSlug",
+                        "unitAmountMinor",
+                        "variantId"
+                      ]
+                    }
+                  },
+                  "newsletterConsent": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "optedIn": {
+                            "type": "boolean",
+                            "enum": [
+                              false
+                            ]
+                          }
+                        },
+                        "required": [
+                          "optedIn"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "consentedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "copyVersion": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "optedIn": {
+                            "type": "boolean",
+                            "enum": [
+                              true
+                            ]
+                          }
+                        },
+                        "required": [
+                          "consentedAt",
+                          "copyVersion",
+                          "optedIn"
+                        ]
+                      }
+                    ]
+                  },
+                  "paidAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "recipientName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "shippingAddress": {
+                    "type": "object",
+                    "properties": {
+                      "city": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "country": {
+                        "type": "string",
+                        "enum": [
+                          "GR"
+                        ]
+                      },
+                      "line1": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "line2": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "postalCode": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "state": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "city",
+                      "country",
+                      "line1",
+                      "line2",
+                      "postalCode",
+                      "state"
+                    ]
+                  },
+                  "shopperContact": {
+                    "type": "object",
+                    "properties": {
+                      "email": {
+                        "type": "string",
+                        "format": "email"
+                      },
+                      "phone": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "email",
+                      "phone"
+                    ]
+                  }
+                },
+                "required": [
+                  "amountTotalMinor",
+                  "currencyCode",
+                  "kind",
+                  "lines",
+                  "newsletterConsent",
+                  "paidAt",
+                  "recipientName",
+                  "shippingAddress",
+                  "shopperContact"
+                ]
+              }
+            ]
+          },
           "needsReviewAt": {
             "type": [
               "string",
@@ -97,6 +402,8 @@
           "checkoutExpiresAt",
           "checkoutSessionId",
           "createdAt",
+          "deliveries",
+          "fulfillment",
           "needsReviewAt",
           "notPaidAt",
           "paidAt",
