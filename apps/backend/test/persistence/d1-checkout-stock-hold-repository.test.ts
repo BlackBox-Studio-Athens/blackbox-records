@@ -8,7 +8,7 @@ import {
   parseStripePriceId,
   parseVariantId,
 } from '../../src/domain/commerce';
-import { D1CheckoutStockHoldRepository } from '../../src/interfaces/http/routes/d1-checkout-stock-hold-repository';
+import { D1CheckoutStockHoldRepository } from '../../src/infrastructure/persistence/d1-checkout-stock-hold-repository';
 
 describe('D1CheckoutStockHoldRepository', () => {
   it('lets exactly one concurrent checkout hold win the final unit', async () => {

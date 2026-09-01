@@ -40,7 +40,7 @@ import {
   PrismaStripeCatalogWebhookEventRepository,
 } from '../../../infrastructure/persistence/prisma';
 import { D1PaidCheckoutFinalizationRepository } from './d1-paid-checkout-finalization-repository';
-import { D1CheckoutStockHoldRepository } from './d1-checkout-stock-hold-repository';
+import { D1CheckoutStockHoldRepository } from '../../../infrastructure/persistence/d1-checkout-stock-hold-repository';
 import { createEmailRuntimeServices } from './email-runtime-services';
 
 type TraceContext = Parameters<typeof runWithTraceSpan>[0];

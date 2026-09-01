@@ -3,7 +3,7 @@ import {
   parseCheckoutSessionId,
   type CheckoutSessionId,
   type VariantId,
-} from '../../../domain/commerce';
+} from '../../domain/commerce';
 import type {
   CheckoutOrderLineRecord,
   CheckoutStockHoldRepository,
@@ -13,7 +13,7 @@ import type {
   SessionBoundPendingCheckoutOrder,
   SessionlessNotPaidCheckoutOrder,
   SessionlessPendingCheckoutOrder,
-} from '../../../domain/commerce/repositories/spi';
+} from '../../domain/commerce/repositories/spi';
 
 type EffectiveAvailabilityRow = {
   effectiveQuantity: number;

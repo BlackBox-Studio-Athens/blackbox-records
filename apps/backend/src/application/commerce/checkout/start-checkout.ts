@@ -186,7 +186,6 @@ export async function startCheckout(
     });
   }
 
-  const primaryLine = validatedLines[0]!;
   const createdAt = options.now ?? new Date();
   const checkoutExpiresAt = new Date(createdAt.getTime() + CHECKOUT_HOLD_DURATION_MS);
   const [firstLine, ...remainingLines] = validatedLines;

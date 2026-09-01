@@ -171,3 +171,9 @@ The system MUST expose application-owned Store readers through the documented co
 - **WHEN** public commerce HTTP wires the Store listing-price reader
 - **THEN** it imports the documented commerce reader entrypoint provided by `checkout-core`
 - **AND** boundary validation passes without an ownership exception.
+
+#### Scenario: Public HTTP composes atomic checkout holds
+
+- **WHEN** public commerce and Stripe webhook composition require the native D1 checkout-hold adapter
+- **THEN** they import `apps/backend/src/infrastructure/persistence/d1-checkout-stock-hold-repository.ts` as a provided `commerce-persistence` entrypoint
+- **AND** HTTP route modules do not own or deep-import that persistence implementation.

@@ -303,8 +303,14 @@
     },
     "commerce-persistence": {
       "status": "closed",
-      "roots": ["apps/backend/src/infrastructure/persistence/prisma/**"],
-      "providedEntrypoints": ["apps/backend/src/infrastructure/persistence/prisma/index.ts"],
+      "roots": [
+        "apps/backend/src/infrastructure/persistence/d1-checkout-stock-hold-repository.ts",
+        "apps/backend/src/infrastructure/persistence/prisma/**"
+      ],
+      "providedEntrypoints": [
+        "apps/backend/src/infrastructure/persistence/d1-checkout-stock-hold-repository.ts",
+        "apps/backend/src/infrastructure/persistence/prisma/index.ts"
+      ],
       "namedInterfaces": {},
       "allowedDependencies": ["commerce-domain", "platform-shared"],
       "allowedWorkspaceInterfaces": {},

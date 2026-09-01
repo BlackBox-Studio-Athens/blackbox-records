@@ -35,7 +35,7 @@ import {
 import type { AppLogger } from '../../../observability';
 import { readStoreListingPrices } from '../../../application/commerce/readers';
 import type { VariantId } from '../../../domain/commerce';
-import { D1CheckoutStockHoldRepository } from './d1-checkout-stock-hold-repository';
+import { D1CheckoutStockHoldRepository } from '../../../infrastructure/persistence/d1-checkout-stock-hold-repository';
 
 export function createPublicCommerceServices(bindings: AppBindings, logger?: Pick<AppLogger, 'warn'>) {
   const productEnvironmentProfile = productEnvironmentProfileFromBindings(bindings);
