@@ -25,6 +25,12 @@ export type {
   PaidCheckoutFinalizationRepository,
   PaidCheckoutFinalizationResult,
 } from './paid-checkout-finalization';
+export type {
+  ClaimedPaidOrderDelivery,
+  ClaimDuePaidOrderDeliveryResult,
+  PaidOrderDeliveryKind,
+  PaidOrderDeliveryRepository,
+} from './paid-order-delivery';
 export type { OrderTransitionDecision, OrderTransitionOrigin } from './order-state';
 export type { ReadRecentCheckoutOrdersQuery } from './read-recent-checkout-orders';
 export type { TransitionCheckoutOrderCommand, TransitionCheckoutOrderResult } from './transition-checkout-order';
