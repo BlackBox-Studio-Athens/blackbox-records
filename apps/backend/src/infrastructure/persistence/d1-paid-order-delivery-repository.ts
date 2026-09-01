@@ -3,7 +3,7 @@ import type {
   PaidOrderDeliveryKind,
   PaidOrderDeliveryRepository,
   PaidOrderDeliverySummary,
-} from '../../application/commerce/orders';
+} from '../../domain/commerce/repositories/spi';
 
 type PaidOrderDeliveryRow = {
   attemptCount: number;

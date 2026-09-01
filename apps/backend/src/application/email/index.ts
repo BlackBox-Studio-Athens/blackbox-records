@@ -4,11 +4,7 @@ export type { EmailRuntimeBindingValues, EmailRuntimeConfig } from './config';
 export { buildPaidOrderEmailPreviews } from './paid-order-email-previews';
 export type { PaidOrderEmailPreview, PaidOrderEmailPreviewName } from './paid-order-email-previews';
 export { sendPaidOrderEmailNotifications, sendPaidOrderOpsEmail, sendPaidOrderShopperEmail } from './paid-order-email';
-export {
-  logNewsletterRegistrationOutcome,
-  NEWSLETTER_CONSENT_COPY_VERSION,
-  registerNewsletterContact,
-} from './newsletter-registration';
+export { logNewsletterRegistrationOutcome, registerNewsletterContact } from './newsletter-registration';
 export { routeTransactionalEmailRecipient } from './routing';
 export {
   buildServicesInquiryEmail,

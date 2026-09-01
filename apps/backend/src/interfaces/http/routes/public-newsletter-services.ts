@@ -2,11 +2,11 @@ import { z } from 'zod';
 
 import {
   EmailConfigurationError,
-  NEWSLETTER_CONSENT_COPY_VERSION,
   logNewsletterRegistrationOutcome,
   registerNewsletterContact,
   type NewsletterRegistrationResult,
 } from '../../../application/email';
+import { NEWSLETTER_CONSENT_COPY_VERSION } from '../../../application/commerce/checkout';
 import type { AppBindings } from '../../../env';
 import type { AppLogger } from '../../../observability';
 import { createEmailRuntimeServices } from '../../../infrastructure/resend';

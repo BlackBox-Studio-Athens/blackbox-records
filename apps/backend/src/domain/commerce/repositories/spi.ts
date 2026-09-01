@@ -33,6 +33,15 @@ export type {
   ShippingLockerSnapshot,
 } from './order-state-repository';
 export { EMPTY_PAID_CHECKOUT_ORDER_FIELDS, readPaidCheckoutFulfillment } from './order-state-repository';
+export type {
+  ClaimedPaidOrderDelivery,
+  ClaimDuePaidOrderDeliveryResult,
+  PaidOrderDeliveryKind,
+  PaidOrderDeliveryRepository,
+  PaidOrderDeliverySafeReason,
+  PaidOrderDeliveryStatus,
+  PaidOrderDeliverySummary,
+} from './paid-order-delivery-repository';
 export type { StockRecord, StockRepository, StockState } from './stock-repository';
 export type { RecordStockChangeInput, StockChangeRecord, StockChangeRepository } from './stock-change-repository';
 export type { RecordStockCountInput, StockCountRecord, StockCountRepository } from './stock-count-repository';

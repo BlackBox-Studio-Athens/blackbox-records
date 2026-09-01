@@ -5,69 +5,27 @@ import {
   sendPaidOrderShopperEmail,
   type EmailOperationResult,
   type EmailProviderGateway,
-  type EmailProviderSafeReason,
   type EmailRuntimeConfig,
   type NewsletterRegistrationResult,
   type PaidOrderEmailInput,
 } from '../../email';
-import type { CurrentPaidCheckoutOrder } from '../../../domain/commerce/repositories/spi';
+import type {
+  ClaimedPaidOrderDelivery,
+  CurrentPaidCheckoutOrder,
+  PaidOrderDeliveryKind,
+  PaidOrderDeliverySafeReason,
+} from '../../../domain/commerce/repositories/spi';
 import { createCheckoutOrderReferenceToken } from './order-reference-token';
 
-export type PaidOrderDeliveryKind = 'newsletter_registration' | 'ops_fulfillment' | 'shopper_confirmation';
-export type PaidOrderDeliveryStatus = 'delivered' | 'needs_review' | 'pending';
-
-export type PaidOrderDeliverySummary = {
-  attemptCount: number;
-  createdAt: Date;
-  deliveredAt: Date | null;
-  id: string;
-  kind: PaidOrderDeliveryKind;
-  needsReviewAt: Date | null;
-  nextAttemptAt: Date | null;
-  orderId: string;
-  safeReason: string | null;
-  status: PaidOrderDeliveryStatus;
-  updatedAt: Date;
-};
-
-export type ClaimedPaidOrderDelivery = {
-  attemptCount: number;
-  createdAt: Date;
-  id: string;
-  kind: PaidOrderDeliveryKind;
-  leaseUntil: Date;
-  nextAttemptAt: Date;
-  orderId: string;
-  status: 'pending';
-  updatedAt: Date;
-};
-
-export type ClaimDuePaidOrderDeliveryResult =
-  { delivery: ClaimedPaidOrderDelivery; kind: 'claimed' } | { kind: 'not_claimed' };
-
-export interface PaidOrderDeliveryRepository {
-  claimDue(input: { claimedAt: Date; deliveryId: string | null }): Promise<ClaimDuePaidOrderDeliveryResult>;
-  listSummaries(orderIds: string[]): Promise<PaidOrderDeliverySummary[]>;
-  markDelivered(input: {
-    deliveredAt: Date;
-    delivery: ClaimedPaidOrderDelivery;
-    providerMessageId: string | null;
-  }): Promise<boolean>;
-  markNeedsReview(input: {
-    delivery: ClaimedPaidOrderDelivery;
-    needsReviewAt: Date;
-    safeReason: PaidOrderDeliverySafeReason;
-  }): Promise<boolean>;
-  reschedule(input: {
-    delivery: ClaimedPaidOrderDelivery;
-    nextAttemptAt: Date;
-    safeReason: PaidOrderDeliverySafeReason;
-    updatedAt: Date;
-  }): Promise<boolean>;
-}
-
-export type PaidOrderDeliverySafeReason =
-  EmailProviderSafeReason | 'delivery_window_expired' | 'incomplete_paid_fulfillment' | 'provider_outcome_unknown';
+export type {
+  ClaimedPaidOrderDelivery,
+  ClaimDuePaidOrderDeliveryResult,
+  PaidOrderDeliveryKind,
+  PaidOrderDeliveryRepository,
+  PaidOrderDeliverySafeReason,
+  PaidOrderDeliveryStatus,
+  PaidOrderDeliverySummary,
+} from '../../../domain/commerce/repositories/spi';
 
 export type PaidOrderDeliveryAttemptResult =
   | { kind: 'delivered'; providerMessageId: string | null }
