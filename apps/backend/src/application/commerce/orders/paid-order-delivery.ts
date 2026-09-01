@@ -19,11 +19,9 @@ import { createCheckoutOrderReferenceToken } from './order-reference-token';
 
 export type {
   ClaimedPaidOrderDelivery,
-  ClaimDuePaidOrderDeliveryResult,
   PaidOrderDeliveryKind,
   PaidOrderDeliveryRepository,
   PaidOrderDeliverySafeReason,
-  PaidOrderDeliveryStatus,
   PaidOrderDeliverySummary,
 } from '../../../domain/commerce/repositories/spi';
 

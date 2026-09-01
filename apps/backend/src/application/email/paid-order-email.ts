@@ -14,7 +14,7 @@ import type {
   PaidOrderEmailNotificationResult,
 } from './types';
 
-export type EmailOutcomeLogger = Pick<Console, 'info' | 'warn'>;
+type EmailOutcomeLogger = Pick<Console, 'info' | 'warn'>;
 
 type PaidOrderEmailSendInput = {
   config: EmailRuntimeConfig;

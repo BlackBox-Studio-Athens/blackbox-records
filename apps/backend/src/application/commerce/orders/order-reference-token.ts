@@ -54,7 +54,7 @@ export function createCheckoutOrderReferenceToken(input: {
   return formatCheckoutOrderReferenceToken(`${dateSegment}${labelSegment}`);
 }
 
-export function formatCheckoutOrderReferenceToken(segment: string): CheckoutOrderReferenceToken {
+function formatCheckoutOrderReferenceToken(segment: string): CheckoutOrderReferenceToken {
   return `${CHECKOUT_ORDER_REFERENCE_PREFIX}-${segment}` as CheckoutOrderReferenceToken;
 }
 

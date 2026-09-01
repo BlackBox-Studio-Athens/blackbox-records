@@ -27,12 +27,10 @@ export type {
 } from './paid-checkout-finalization';
 export type {
   ClaimedPaidOrderDelivery,
-  ClaimDuePaidOrderDeliveryResult,
   PaidOrderDeliveryAttemptResult,
   PaidOrderDeliveryKind,
   PaidOrderDeliveryRepository,
   PaidOrderDeliverySafeReason,
-  PaidOrderDeliveryStatus,
   PaidOrderDeliverySummary,
 } from './paid-order-delivery';
 export { attemptPaidOrderDelivery, createPaidOrderDeliveryId } from './paid-order-delivery';
