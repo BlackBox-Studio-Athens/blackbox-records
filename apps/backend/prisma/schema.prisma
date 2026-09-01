@@ -26,6 +26,18 @@ enum OrderStatus {
   needs_review
 }
 
+enum PaidOrderDeliveryKind {
+  shopper_confirmation
+  ops_fulfillment
+  newsletter_registration
+}
+
+enum PaidOrderDeliveryStatus {
+  pending
+  delivered
+  needs_review
+}
+
 model StoreItemOption {
   id            String              @id @default(cuid())
   storeItemSlug String              @unique
@@ -124,40 +136,79 @@ model StockCount {
 }
 
 model CheckoutOrder {
-  id                        String              @id @default(cuid())
-  storeItemSlug             String
-  variantId                 String
-  checkoutSessionId         String?             @unique
-  checkoutExpiresAt         DateTime
-  stripePaymentIntentId     String?
-  shippingLockerId          String?
-  shippingLockerCountryCode String?
-  shippingLockerNameOrLabel String?
-  status                    OrderStatus
-  statusUpdatedAt           DateTime
-  paidAt                    DateTime?
-  notPaidAt                 DateTime?
-  needsReviewAt             DateTime?
-  createdAt                 DateTime            @default(now())
-  updatedAt                 DateTime            @updatedAt
-  lines                     CheckoutOrderLine[]
+  id                           String              @id @default(cuid())
+  storeItemSlug                String
+  variantId                    String
+  checkoutSessionId            String?             @unique
+  checkoutExpiresAt            DateTime
+  stripePaymentIntentId        String?
+  amountTotalMinor             Int?
+  currencyCode                 String?
+  recipientName                String?
+  shopperEmail                 String?
+  shopperPhone                 String?
+  shippingAddressLine1         String?
+  shippingAddressLine2         String?
+  shippingAddressCity          String?
+  shippingAddressPostalCode    String?
+  shippingAddressState         String?
+  shippingAddressCountryCode   String?
+  newsletterOptIn              Boolean?
+  newsletterConsentAt          DateTime?
+  newsletterConsentCopyVersion String?
+  shippingLockerId             String?
+  shippingLockerCountryCode    String?
+  shippingLockerNameOrLabel    String?
+  status                       OrderStatus
+  statusUpdatedAt              DateTime
+  paidAt                       DateTime?
+  notPaidAt                    DateTime?
+  needsReviewAt                DateTime?
+  createdAt                    DateTime            @default(now())
+  updatedAt                    DateTime            @updatedAt
+  lines                        CheckoutOrderLine[]
+  deliveries                   PaidOrderDelivery[]
 
   @@index([variantId, status])
   @@index([status, createdAt])
 }
 
 model CheckoutOrderLine {
-  id            String        @id @default(cuid())
-  orderId       String
-  storeItemSlug String
-  variantId     String
-  stripePriceId String?
-  quantity      Int
-  createdAt     DateTime      @default(now())
-  order         CheckoutOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id              String        @id @default(cuid())
+  orderId         String
+  storeItemSlug   String
+  variantId       String
+  stripePriceId   String?
+  quantity        Int
+  displayName     String?
+  optionLabel     String?
+  unitAmountMinor Int?
+  lineAmountMinor Int?
+  createdAt       DateTime      @default(now())
+  order           CheckoutOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@unique([orderId, variantId])
   @@index([orderId])
   @@index([stripePriceId])
   @@index([variantId])
+}
+
+model PaidOrderDelivery {
+  id                String                  @id @default(cuid())
+  orderId           String
+  kind              PaidOrderDeliveryKind
+  status            PaidOrderDeliveryStatus
+  attemptCount      Int                     @default(0)
+  nextAttemptAt     DateTime?
+  leaseUntil        DateTime?
+  providerMessageId String?
+  safeReason        String?
+  deliveredAt       DateTime?
+  needsReviewAt     DateTime?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  order             CheckoutOrder           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, kind])
+  @@index([status, nextAttemptAt, createdAt])
 }
