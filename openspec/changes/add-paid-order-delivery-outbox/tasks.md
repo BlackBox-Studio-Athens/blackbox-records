@@ -20,5 +20,5 @@
 ## 4. Safe Reads and Evidence
 
 - [x] 4.1 Expose validated fulfillment and delivery summaries only through protected no-store order reads; verify public responses and logs exclude contact, address, tokens, raw provider responses, and raw Stripe data.
-- [ ] 4.2 Run local migration, D1 atomicity/replay/lease tests, signed webhook simulation, scheduled-handler checks, pnpm test:unit, pnpm check, and pnpm build.
-- [ ] 4.3 Prove UAT immediate success and one controlled retry with approved test recipients, run `pnpm openspec -- validate add-paid-order-delivery-outbox --strict`, and archive the change only after the exact proof tree passes.
+- [x] 4.2 Run local migration, D1 atomicity/replay/lease tests, signed webhook simulation, scheduled-handler checks, pnpm test:unit, pnpm check, and pnpm build.
+- [ ] 4.3 Prove UAT immediate success and one controlled retry with approved test recipients. Strict validation already passes locally; rerun `pnpm openspec -- validate add-paid-order-delivery-outbox --strict` and archive only after the exact UAT proof tree passes.
