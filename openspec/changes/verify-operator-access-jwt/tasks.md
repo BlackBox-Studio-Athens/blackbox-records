@@ -22,4 +22,4 @@
 
 - [ ] 4.1 Configure UAT trust values, then use Browser Use to prove an allowlisted operator can read and perform one audited mutation through the protected hostname.
 - [ ] 4.2 Probe workers.dev and every reachable UAT hostname without a valid assertion and with a forged forwarded email; verify denial before D1 access.
-- [ ] 4.3 Run `pnpm generate:api` if contracts changed, `pnpm test:unit`, `pnpm check`, `pnpm build`, and `pnpm openspec -- validate verify-operator-access-jwt --strict`; archive the change only after the exact UAT proof tree passes.
+- [ ] 4.3 Repository gates and strict validation already pass locally. After 4.1 and 4.2, rerun generation only if contracts changed, then rerun `pnpm test:unit`, `pnpm check`, `pnpm build`, and `pnpm openspec -- validate verify-operator-access-jwt --strict`; archive only after the exact UAT proof tree passes.

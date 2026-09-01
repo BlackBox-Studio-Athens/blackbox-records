@@ -26,4 +26,4 @@
 
 - [x] 5.1 Run local migration, D1 rollback/concurrency tests, stripe-mock readiness, signed webhook simulation, commerce-boundary audit, pnpm test:unit, pnpm check, and pnpm build.
 - [ ] 5.2 Prove UAT creation, binding, paid settlement, expiry release, and replay safety while PRD checkout remains closed.
-- [ ] 5.3 Run `pnpm openspec -- validate add-checkout-stock-reservations --strict`, archive the change, then hand its final paid transaction and exact accepted commit to `add-paid-order-delivery-outbox`.
+- [ ] 5.3 Strict validation already passes locally. After 5.2, rerun `pnpm openspec -- validate add-checkout-stock-reservations --strict`, archive the change, and record the exact accepted UAT commit as prerequisite evidence for `add-paid-order-delivery-outbox`.

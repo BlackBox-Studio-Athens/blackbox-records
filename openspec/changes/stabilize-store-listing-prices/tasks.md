@@ -9,4 +9,4 @@
 ## 2. Remaining UAT Proof
 
 - [ ] 2.1 Replace one explicitly chosen UAT Price in Stripe Dashboard and verify the signed event updates only the target variant's D1 mapping and listing snapshot while every unrelated mapping/snapshot remains byte-for-byte or value-for-value unchanged.
-- [ ] 2.2 Record redacted evidence, rerun pnpm openspec -- validate stabilize-store-listing-prices --strict, and archive the change. Do not repeat live new-item promotion proof; the deterministic two-item regression owns that invariant.
+- [ ] 2.2 Strict validation already passes locally. After 2.1, record redacted evidence, rerun `pnpm openspec -- validate stabilize-store-listing-prices --strict`, and archive the change. Do not repeat live new-item promotion proof; the deterministic two-item regression owns that invariant.
