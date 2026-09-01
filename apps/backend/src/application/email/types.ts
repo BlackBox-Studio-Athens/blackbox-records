@@ -62,6 +62,8 @@ export type NewsletterRegistrationResult = {
 };
 
 export type PaidOrderEmailLineItem = {
+  displayName: string;
+  optionLabel: string | null;
   productImage?: {
     altText: string;
     url: string;

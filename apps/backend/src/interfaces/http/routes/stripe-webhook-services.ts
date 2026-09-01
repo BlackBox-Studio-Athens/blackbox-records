@@ -231,6 +231,8 @@ export function toPaidOrderEmailInput(event: CheckoutOrderPaid): PaidOrderEmailI
     currencyCode: event.currencyCode,
     customerName: event.customerName,
     lineItems: event.lineItems.map((lineItem) => ({
+      displayName: lineItem.displayName ?? humanizeSlug(lineItem.storeItemSlug),
+      optionLabel: lineItem.optionLabel,
       productImage: createPaidOrderEmailProductImage(lineItem),
       quantity: lineItem.quantity,
       storeItemSlug: lineItem.storeItemSlug,

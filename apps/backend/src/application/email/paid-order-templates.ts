@@ -97,11 +97,11 @@ export function buildPaidOrderOpsEmail(input: {
   brand: PaidOrderEmailBrand;
   order: PaidOrderEmailInput;
   recipient: PaidOrderTemplateRecipientContext;
-  shopperNotification: ShopperNotificationStatus;
+  shopperNotification?: ShopperNotificationStatus;
 }): EmailMessageContent {
   const subject = createPaidOrderOpsSubject(input.order.orderReference);
   const preheader = `Paid order ${input.order.orderReference} is ready for manual fulfillment.`;
-  const warnings = collectOpsWarnings(input.shopperNotification);
+  const warnings = input.shopperNotification ? collectOpsWarnings(input.shopperNotification) : [];
 
   return createBlackBoxEmailTemplate({
     bodyHtml: renderEmailFrame({
@@ -268,10 +268,14 @@ function renderLineItemRow(
   lineItem: PaidOrderEmailInput['lineItems'][number],
   options: { includeVariant: boolean },
 ): string {
-  const itemName = humanizeSlug(lineItem.storeItemSlug);
-  const itemMeta = options.includeVariant
-    ? `Quantity: ${lineItem.quantity} | Variant: ${lineItem.variantId}`
-    : `Quantity: ${lineItem.quantity}`;
+  const itemName = lineItem.displayName;
+  const itemMeta = [
+    lineItem.optionLabel,
+    `Quantity: ${lineItem.quantity}`,
+    options.includeVariant ? `Variant: ${lineItem.variantId}` : null,
+  ]
+    .filter(Boolean)
+    .join(' | ');
   const productImageStyle = [
     'display:block',
     'width:72px',
@@ -342,12 +346,12 @@ function renderSupportCta(replyToEmail: string): string {
 }
 
 function formatShopperLineItems(order: PaidOrderEmailInput): string {
-  return order.lineItems.map((lineItem) => `${lineItem.quantity} x ${humanizeSlug(lineItem.storeItemSlug)}`).join('; ');
+  return order.lineItems.map((lineItem) => `${lineItem.quantity} x ${lineItem.displayName}`).join('; ');
 }
 
 function formatOpsLineItems(order: PaidOrderEmailInput): string {
   return order.lineItems
-    .map((lineItem) => `${lineItem.quantity} x ${humanizeSlug(lineItem.storeItemSlug)} (${lineItem.variantId})`)
+    .map((lineItem) => `${lineItem.quantity} x ${lineItem.displayName} (${lineItem.variantId})`)
     .join('; ');
 }
 
@@ -392,14 +396,6 @@ function collectOpsWarnings(shopperNotification: ShopperNotificationStatus): str
   }
 
   return warnings;
-}
-
-function humanizeSlug(value: string): string {
-  return value
-    .replace(/[-_]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
 function escapeHtml(value: string): string {

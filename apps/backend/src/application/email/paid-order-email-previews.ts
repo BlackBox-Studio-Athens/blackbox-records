@@ -21,6 +21,8 @@ export function buildPaidOrderEmailPreviews(): PaidOrderEmailPreview[] {
     customerName: 'Preview Buyer With A Long Fulfillment Contact Name',
     lineItems: [
       {
+        displayName: 'Disintegration Black Vinyl Lp With Extra Long Preview Title',
+        optionLabel: null,
         productImage: {
           altText: 'Disintegration Black Vinyl Lp With Extra Long Preview Title product image',
           url: 'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',

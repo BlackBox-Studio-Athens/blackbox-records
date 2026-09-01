@@ -28,9 +28,11 @@ export type {
 export type {
   ClaimedPaidOrderDelivery,
   ClaimDuePaidOrderDeliveryResult,
+  PaidOrderDeliveryAttemptResult,
   PaidOrderDeliveryKind,
   PaidOrderDeliveryRepository,
 } from './paid-order-delivery';
+export { attemptPaidOrderDelivery } from './paid-order-delivery';
 export type { OrderTransitionDecision, OrderTransitionOrigin } from './order-state';
 export type { ReadRecentCheckoutOrdersQuery } from './read-recent-checkout-orders';
 export type { TransitionCheckoutOrderCommand, TransitionCheckoutOrderResult } from './transition-checkout-order';

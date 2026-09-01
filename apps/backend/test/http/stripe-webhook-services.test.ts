@@ -8,6 +8,8 @@ describe('stripe webhook email handoff', () => {
     const input = toPaidOrderEmailInput(checkoutOrderPaidEvent());
 
     expect(input.lineItems[0]).toEqual({
+      displayName: 'Disintegration Black Vinyl LP',
+      optionLabel: null,
       productImage: {
         altText: 'Disintegration Black Vinyl Lp product image',
         url: 'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
@@ -49,6 +51,8 @@ describe('stripe webhook email handoff', () => {
     );
 
     expect(input.lineItems[0]).toEqual({
+      displayName: 'Unknown item',
+      optionLabel: null,
       productImage: null,
       quantity: 1,
       storeItemSlug: 'unknown-item',

@@ -3,7 +3,7 @@ export { readEmailRuntimeConfig, UAT_RESEND_RECEIVING_SINK_EMAIL } from './confi
 export type { EmailRuntimeBindingValues, EmailRuntimeConfig } from './config';
 export { buildPaidOrderEmailPreviews } from './paid-order-email-previews';
 export type { PaidOrderEmailPreview, PaidOrderEmailPreviewName } from './paid-order-email-previews';
-export { sendPaidOrderEmailNotifications } from './paid-order-email';
+export { sendPaidOrderEmailNotifications, sendPaidOrderOpsEmail, sendPaidOrderShopperEmail } from './paid-order-email';
 export {
   logNewsletterRegistrationOutcome,
   NEWSLETTER_CONSENT_COPY_VERSION,

@@ -232,6 +232,8 @@ function paidOrder(overrides: Partial<PaidOrderEmailInput> = {}): PaidOrderEmail
     customerName: 'Buyer Name',
     lineItems: [
       {
+        displayName: 'Disintegration Black Vinyl LP',
+        optionLabel: null,
         productImage: {
           altText: 'Disintegration Black Vinyl Lp product image',
           url: 'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',

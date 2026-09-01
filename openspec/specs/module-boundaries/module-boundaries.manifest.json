@@ -389,7 +389,14 @@
       "namedInterfaces": {
         "internal-order-routes": "apps/backend/src/interfaces/http/routes/register-internal-order-routes.ts"
       },
-      "allowedDependencies": ["commerce-domain", "checkout-core", "stock", "commerce-persistence", "platform-shared"],
+      "allowedDependencies": [
+        "commerce-domain",
+        "checkout-core",
+        "stock",
+        "commerce-persistence",
+        "email-application",
+        "platform-shared"
+      ],
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },

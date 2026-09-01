@@ -16,35 +16,24 @@ import type {
 
 export type EmailOutcomeLogger = Pick<Console, 'info' | 'warn'>;
 
-const PAID_ORDER_SHOPPER_PURPOSE = 'paid-order-shopper';
-const PAID_ORDER_OPS_PURPOSE = 'paid-order-ops';
-
-export async function sendPaidOrderEmailNotifications(input: {
+type PaidOrderEmailSendInput = {
   config: EmailRuntimeConfig;
   logger?: EmailOutcomeLogger;
   order: PaidOrderEmailInput;
   provider: EmailProviderGateway;
-}): Promise<PaidOrderEmailNotificationResult> {
-  const logger = input.logger ?? console;
-  const shopper = await sendShopperEmail(input);
-  logPaidOrderEmailOutcome(logger, input.order, PAID_ORDER_SHOPPER_PURPOSE, shopper);
+};
 
-  const ops = await sendTransactionalEmail(input.provider, input.config, {
-    content: buildPaidOrderOpsEmail({
-      brand: {
-        homeUrl: input.config.emailBrandHomeUrl,
-        logoUrl: input.config.emailBrandLogoUrl,
-      },
-      order: input.order,
-      recipient: routeTransactionalEmailRecipient(input.config, input.config.opsToEmail),
-      shopperNotification: toShopperNotificationStatus(shopper),
-    }),
-    idempotencyEntityId: input.order.checkoutSessionId,
-    purpose: PAID_ORDER_OPS_PURPOSE,
-    tags: createPaidOrderTags(input.order, 'ops'),
-    to: input.config.opsToEmail,
+const PAID_ORDER_SHOPPER_PURPOSE = 'paid-order-shopper';
+const PAID_ORDER_OPS_PURPOSE = 'paid-order-ops';
+
+export async function sendPaidOrderEmailNotifications(
+  input: PaidOrderEmailSendInput,
+): Promise<PaidOrderEmailNotificationResult> {
+  const shopper = await sendPaidOrderShopperEmail(input);
+  const ops = await sendPaidOrderOpsEmail({
+    ...input,
+    shopperNotification: toShopperNotificationStatus(shopper),
   });
-  logPaidOrderEmailOutcome(logger, input.order, PAID_ORDER_OPS_PURPOSE, ops);
 
   return {
     ops,
@@ -52,12 +41,31 @@ export async function sendPaidOrderEmailNotifications(input: {
   };
 }
 
-async function sendShopperEmail(input: {
-  config: EmailRuntimeConfig;
-  order: PaidOrderEmailInput;
-  provider: EmailProviderGateway;
-}): Promise<EmailOperationResult> {
-  return sendTransactionalEmail(input.provider, input.config, {
+export async function sendPaidOrderOpsEmail(
+  input: PaidOrderEmailSendInput & { shopperNotification?: ShopperNotificationStatus },
+): Promise<EmailOperationResult> {
+  const result = await sendTransactionalEmail(input.provider, input.config, {
+    content: buildPaidOrderOpsEmail({
+      brand: {
+        homeUrl: input.config.emailBrandHomeUrl,
+        logoUrl: input.config.emailBrandLogoUrl,
+      },
+      order: input.order,
+      recipient: routeTransactionalEmailRecipient(input.config, input.config.opsToEmail),
+      shopperNotification: input.shopperNotification,
+    }),
+    idempotencyEntityId: input.order.checkoutSessionId,
+    purpose: PAID_ORDER_OPS_PURPOSE,
+    tags: createPaidOrderTags(input.order, 'ops'),
+    to: input.config.opsToEmail,
+  });
+  logPaidOrderEmailOutcome(input.logger ?? console, input.order, PAID_ORDER_OPS_PURPOSE, result);
+
+  return result;
+}
+
+export async function sendPaidOrderShopperEmail(input: PaidOrderEmailSendInput): Promise<EmailOperationResult> {
+  const result = await sendTransactionalEmail(input.provider, input.config, {
     content: buildPaidOrderShopperEmail({
       brand: {
         homeUrl: input.config.emailBrandHomeUrl,
@@ -72,6 +80,9 @@ async function sendShopperEmail(input: {
     tags: createPaidOrderTags(input.order, 'shopper'),
     to: input.order.shopperContact.email,
   });
+  logPaidOrderEmailOutcome(input.logger ?? console, input.order, PAID_ORDER_SHOPPER_PURPOSE, result);
+
+  return result;
 }
 
 function createPaidOrderTags(order: PaidOrderEmailInput, audience: 'ops' | 'shopper') {
