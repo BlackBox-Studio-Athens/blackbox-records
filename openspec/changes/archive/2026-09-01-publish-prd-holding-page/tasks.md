@@ -56,4 +56,4 @@
 
 - [x] 8.1 Update `production-go-live-readiness` with redacted proof for domain ownership, holding-page TLS/routing, and the remaining full-site custom-domain cutover; do not mark Stripe, Worker, D1, catalog, webhook, or go/no-go gates complete from holding-page evidence.
 - [x] 8.2 Re-run `pnpm test:unit`, `pnpm check`, and `pnpm build` plus hosted apex/`www` Browser Use and bounded DNS/HTTP checks against the exact handoff tree; verify the apex still serves only the PRD Holding Page.
-- [ ] 8.3 Run `pnpm openspec -- validate publish-prd-holding-page --strict`, archive this change, and leave full-site cutover, holding rollback/retirement, and post-launch cleanup exclusively to `production-go-live-readiness`.
+- [x] 8.3 Run `pnpm openspec -- validate publish-prd-holding-page --strict`, archive this change, and leave full-site cutover, holding rollback/retirement, and post-launch cleanup exclusively to `production-go-live-readiness`.

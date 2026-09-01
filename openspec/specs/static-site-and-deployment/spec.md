@@ -6,7 +6,7 @@ Specify the static Astro frontend, GitHub Pages UAT deployment, disabled Cloudfl
 
 ### Requirement: Static frontend hosting
 
-The system SHALL serve the Astro frontend as a prebuilt static artifact with GitHub Pages as the only UAT static host and Cloudflare Pages as the only PRD static host.
+The system SHALL serve Astro frontend artifacts with GitHub Pages as the only UAT static host and Cloudflare Pages as the only PRD static host.
 
 #### Scenario: Shared workflow deploys the UAT frontend to GitHub Pages
 
@@ -21,7 +21,7 @@ The system SHALL serve the Astro frontend as a prebuilt static artifact with Git
 - **GIVEN** the shared static frontend workflow runs the PRD target
 - **WHEN** CI builds the site
 - **THEN** it runs `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and `pnpm build`
-- **AND** it uploads only the prebuilt `apps/web/dist` artifact with browser-safe PRD build variables
+- **AND** it uploads only the full prebuilt `apps/web/dist` artifact with browser-safe PRD build variables for the Pages production `main` target
 - **AND** the static PRD storefront may deploy as a readiness surface
 - **AND** PRD checkout and live provider mutation remain disabled until an explicit production-readiness gate opens them.
 
@@ -71,7 +71,7 @@ The system SHALL keep frontend site/base URL behavior explicit and stable across
 #### Scenario: PRD deploy disabled-state is checked
 
 - **WHEN** Cloudflare Pages deploys PRD before go-live
-- **THEN** the deployed static frontend is treated as a disabled PRD readiness surface
+- **THEN** the deployed full static frontend is treated as a disabled PRD readiness surface
 - **AND** disabling live commerce is enforced through checkout capability and provider mutation gates rather than by relying only on the workflow being paused.
 
 #### Scenario: Cloudflare Pages preview deploy is present
@@ -257,9 +257,10 @@ The system SHALL hand static build output from build jobs to deploy jobs through
 #### Scenario: PRD build artifact is handed to deploy
 
 - **WHEN** the Cloudflare Pages PRD workflow builds the static frontend
-- **THEN** it uploads only the deployable `apps/web/dist` artifact needed by Cloudflare Pages
+- **THEN** it uploads only the deployable `apps/web/dist` artifact needed by the production `main` deploy job
 - **AND** the deploy job consumes that artifact for the same commit
-- **AND** Cloudflare credentials are available only to the deploy job.
+- **AND** artifact retention is bounded to the shortest practical period for deployment diagnostics
+- **AND** Cloudflare credentials are available only to deploy jobs.
 
 #### Scenario: Holding build artifact is handed to deploy
 
@@ -314,20 +315,20 @@ The system MUST prepare the holding deployment from an explicit file allowlist r
 
 The system SHALL activate `blackboxrecordsathens.com` through the existing Pages project with working TLS before replacing registrar parking.
 
-#### Scenario: Custom-domain association is guarded
+#### Scenario: Custom-domain association is staged
 
 - **WHEN** the verified branch alias is ready and domain activation is approved
-- **THEN** an exact-host temporary Cloudflare Single Redirect sends apex requests to the verified HTTPS holding branch alias with status `302`, preserving path and query
-- **AND** that guard is active before the custom domain is associated with the Pages project
-- **AND** the guard remains active while the Pages-created apex target is changed from production `main` to the `holding` branch alias.
+- **THEN** the existing parking DNS and redirect state is recorded before the custom domain is associated with the Pages project
+- **AND** no redirect rule blocks Pages domain validation
+- **AND** the Pages-created apex target is changed from production `main` to the verified `holding` branch alias as part of the same staged operation.
 
 #### Scenario: Apex activation is prepared
 
-- **WHEN** the guarded custom domain is associated with `blackbox-records-web`
-- **THEN** its proxied apex target is changed to the verified holding branch alias before the temporary guard is removed
+- **WHEN** the custom domain is associated with `blackbox-records-web`
+- **THEN** its proxied apex target is changed to the verified holding branch alias before activation is accepted
 - **AND** activation waits for a valid Cloudflare certificate
-- **AND** removing the guard is followed immediately by bounded apex checks
-- **AND** any full-site response, certificate failure, or unexpected target re-enables the guard and stops activation.
+- **AND** the target change is followed immediately by bounded apex checks
+- **AND** any full-site response, certificate failure, or unexpected target restores the recorded parking state and stops activation.
 
 #### Scenario: Visitor uses a non-canonical origin
 
