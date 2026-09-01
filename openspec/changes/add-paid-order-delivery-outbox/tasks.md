@@ -8,7 +8,7 @@
 
 - [x] 2.1 Write immutable line snapshots from validated Store Offers and verify duplicate CartLines still produce one order line per variant.
 - [x] 2.2 Extend first paid reconciliation to commit paid fields, stock effects, and applicable delivery rows in one transaction; verify any failed statement rolls back the complete batch.
-- [ ] 2.3 Preserve the original order facts and unique delivery rows on webhook replay; verify stock and delivery enqueue occur at most once.
+- [x] 2.3 Preserve the original order facts and unique delivery rows on webhook replay; verify stock and delivery enqueue occur at most once.
 
 ## 3. Delivery Processing
 

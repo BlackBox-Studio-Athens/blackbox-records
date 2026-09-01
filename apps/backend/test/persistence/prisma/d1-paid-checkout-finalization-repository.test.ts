@@ -66,6 +66,49 @@ describe('D1PaidCheckoutFinalizationRepository', () => {
     await expect(readDeliveryKinds(seeded.orderId)).resolves.toEqual(['ops_fulfillment', 'shopper_confirmation']);
   });
 
+  it('preserves original paid facts and unique effects on replay', async () => {
+    const seeded = await seedPendingCheckout();
+    const repository = new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB);
+    const firstResult = await repository.finalizePaidCheckout(finalizationCommand(seeded));
+
+    const replayResult = await repository.finalizePaidCheckout(
+      finalizationCommand(seeded, {
+        amountTotalMinor: 9900,
+        lineItems: [
+          {
+            lineAmountMinor: 9900,
+            quantity: createCartQuantity(1),
+            unitAmountMinor: 9900,
+            variantId: seeded.variantId,
+          },
+        ],
+        recipientName: 'Changed Name',
+        shippingAddressLine1: 'Changed Street 99',
+      }),
+    );
+
+    expect(firstResult.kind).toBe('transitioned');
+    expect(replayResult).toMatchObject({
+      kind: 'replay',
+      order: {
+        amountTotalMinor: 3700,
+        recipientName: 'Buyer Name',
+        shippingAddressLine1: 'Long Street 1',
+      },
+      paidFulfillment: {
+        kind: 'current',
+      },
+    });
+    await expect(readLineAmount(seeded.orderId)).resolves.toBe(3700);
+    await expect(readDeliveryKinds(seeded.orderId)).resolves.toEqual([
+      'newsletter_registration',
+      'ops_fulfillment',
+      'shopper_confirmation',
+    ]);
+    await expect(readStock(seeded.variantId)).resolves.toMatchObject({ onlineQuantity: 4, quantity: 4 });
+    await expect(readStockChangeCount(seeded.checkoutSessionId)).resolves.toBe(1);
+  });
+
   it('returns stock_unavailable without mutating paid state', async () => {
     const seeded = await seedPendingCheckout({ stockQuantity: 0 });
     const repository = new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB);
