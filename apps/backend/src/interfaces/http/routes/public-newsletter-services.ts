@@ -9,7 +9,7 @@ import {
 } from '../../../application/email';
 import type { AppBindings } from '../../../env';
 import type { AppLogger } from '../../../observability';
-import { createEmailRuntimeServices } from './email-runtime-services';
+import { createEmailRuntimeServices } from '../../../infrastructure/resend';
 
 const publicNewsletterEmail = z.string().trim().email();
 

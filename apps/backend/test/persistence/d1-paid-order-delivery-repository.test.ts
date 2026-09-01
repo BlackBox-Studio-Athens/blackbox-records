@@ -63,7 +63,101 @@ describe('D1PaidOrderDeliveryRepository', () => {
       kind: 'claimed',
     });
   });
+
+  it('lets only the active lease reschedule and terminalize a delivery', async () => {
+    const deliveryId = await seedPendingDelivery();
+    const repository = new D1PaidOrderDeliveryRepository(env.COMMERCE_DB);
+    const firstClaim = await repository.claimDue({
+      claimedAt: new Date('2026-09-01T10:00:00.000Z'),
+      deliveryId,
+    });
+
+    expect(firstClaim.kind).toBe('claimed');
+    if (firstClaim.kind !== 'claimed') return;
+
+    await expect(
+      repository.markDelivered({
+        deliveredAt: new Date('2026-09-01T10:01:00.000Z'),
+        delivery: { ...firstClaim.delivery, leaseUntil: new Date('2026-09-01T10:10:00.001Z') },
+        providerMessageId: null,
+      }),
+    ).resolves.toBe(false);
+    await expect(
+      repository.reschedule({
+        delivery: firstClaim.delivery,
+        nextAttemptAt: new Date('2026-09-01T10:15:00.000Z'),
+        safeReason: 'rate_limited',
+        updatedAt: new Date('2026-09-01T10:01:00.000Z'),
+      }),
+    ).resolves.toBe(true);
+    await expect(readDelivery(deliveryId)).resolves.toMatchObject({
+      leaseUntil: null,
+      nextAttemptAt: '2026-09-01T10:15:00.000Z',
+      safeReason: 'rate_limited',
+      status: 'pending',
+    });
+
+    const secondClaim = await repository.claimDue({
+      claimedAt: new Date('2026-09-01T10:15:00.000Z'),
+      deliveryId,
+    });
+    expect(secondClaim.kind).toBe('claimed');
+    if (secondClaim.kind !== 'claimed') return;
+
+    await expect(
+      repository.markNeedsReview({
+        delivery: secondClaim.delivery,
+        needsReviewAt: new Date('2026-09-01T10:16:00.000Z'),
+        safeReason: 'provider_unavailable',
+      }),
+    ).resolves.toBe(true);
+    await expect(readDelivery(deliveryId)).resolves.toMatchObject({
+      leaseUntil: null,
+      needsReviewAt: '2026-09-01T10:16:00.000Z',
+      nextAttemptAt: null,
+      safeReason: 'provider_unavailable',
+      status: 'needs_review',
+    });
+  });
+
+  it('marks a claimed delivery delivered once', async () => {
+    const deliveryId = await seedPendingDelivery();
+    const repository = new D1PaidOrderDeliveryRepository(env.COMMERCE_DB);
+    const claim = await repository.claimDue({ claimedAt: new Date('2026-09-01T10:00:00.000Z'), deliveryId });
+
+    expect(claim.kind).toBe('claimed');
+    if (claim.kind !== 'claimed') return;
+
+    await expect(
+      repository.markDelivered({
+        deliveredAt: new Date('2026-09-01T10:01:00.000Z'),
+        delivery: claim.delivery,
+        providerMessageId: null,
+      }),
+    ).resolves.toBe(true);
+    await expect(
+      repository.markDelivered({
+        deliveredAt: new Date('2026-09-01T10:02:00.000Z'),
+        delivery: claim.delivery,
+        providerMessageId: null,
+      }),
+    ).resolves.toBe(false);
+    await expect(readDelivery(deliveryId)).resolves.toMatchObject({
+      deliveredAt: '2026-09-01T10:01:00.000Z',
+      leaseUntil: null,
+      nextAttemptAt: null,
+      status: 'delivered',
+    });
+  });
 });
+
+async function readDelivery(deliveryId: string) {
+  return env.COMMERCE_DB.prepare(
+    'SELECT "status", "nextAttemptAt", "leaseUntil", "safeReason", "deliveredAt", "needsReviewAt" FROM "PaidOrderDelivery" WHERE "id" = ?',
+  )
+    .bind(deliveryId)
+    .first();
+}
 
 async function seedPendingDelivery(input: { nextAttemptAt?: string } = {}): Promise<string> {
   const suffix = crypto.randomUUID();

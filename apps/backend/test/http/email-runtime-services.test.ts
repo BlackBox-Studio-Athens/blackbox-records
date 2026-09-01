@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createHttpApp } from '../../src/interfaces/http/app';
-import { createEmailRuntimeServices } from '../../src/interfaces/http/routes/email-runtime-services';
+import { createEmailRuntimeServices } from '../../src/infrastructure/resend';
 import { ResendEmailGateway } from '../../src/infrastructure/resend';
 
 const localBindings = {

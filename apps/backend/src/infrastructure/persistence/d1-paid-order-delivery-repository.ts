@@ -74,7 +74,97 @@ export class D1PaidOrderDeliveryRepository implements PaidOrderDeliveryRepositor
 
     return { delivery: mapClaimedDelivery(claimed), kind: 'claimed' } as const;
   }
+
+  public async markDelivered(input: {
+    deliveredAt: Date;
+    delivery: ClaimedPaidOrderDelivery;
+    providerMessageId: string | null;
+  }): Promise<boolean> {
+    const deliveredAt = input.deliveredAt.toISOString();
+    const result = await this.db
+      .prepare(
+        [
+          'UPDATE "PaidOrderDelivery"',
+          'SET "status" = ?, "nextAttemptAt" = NULL, "leaseUntil" = NULL, "providerMessageId" = ?,',
+          '    "safeReason" = NULL, "deliveredAt" = ?, "needsReviewAt" = NULL, "updatedAt" = ?',
+          claimedLeaseWhereSql,
+        ].join('\n'),
+      )
+      .bind(
+        'delivered',
+        input.providerMessageId,
+        deliveredAt,
+        deliveredAt,
+        input.delivery.id,
+        'pending',
+        input.delivery.attemptCount,
+        input.delivery.leaseUntil.toISOString(),
+      )
+      .run();
+
+    return Number(result.meta.changes ?? 0) === 1;
+  }
+
+  public async markNeedsReview(input: {
+    delivery: ClaimedPaidOrderDelivery;
+    needsReviewAt: Date;
+    safeReason: string;
+  }): Promise<boolean> {
+    const needsReviewAt = input.needsReviewAt.toISOString();
+    const result = await this.db
+      .prepare(
+        [
+          'UPDATE "PaidOrderDelivery"',
+          'SET "status" = ?, "nextAttemptAt" = NULL, "leaseUntil" = NULL, "safeReason" = ?,',
+          '    "deliveredAt" = NULL, "needsReviewAt" = ?, "updatedAt" = ?',
+          claimedLeaseWhereSql,
+        ].join('\n'),
+      )
+      .bind(
+        'needs_review',
+        input.safeReason,
+        needsReviewAt,
+        needsReviewAt,
+        input.delivery.id,
+        'pending',
+        input.delivery.attemptCount,
+        input.delivery.leaseUntil.toISOString(),
+      )
+      .run();
+
+    return Number(result.meta.changes ?? 0) === 1;
+  }
+
+  public async reschedule(input: {
+    delivery: ClaimedPaidOrderDelivery;
+    nextAttemptAt: Date;
+    safeReason: string;
+    updatedAt: Date;
+  }): Promise<boolean> {
+    const result = await this.db
+      .prepare(
+        [
+          'UPDATE "PaidOrderDelivery"',
+          'SET "nextAttemptAt" = ?, "leaseUntil" = NULL, "safeReason" = ?, "updatedAt" = ?',
+          claimedLeaseWhereSql,
+        ].join('\n'),
+      )
+      .bind(
+        input.nextAttemptAt.toISOString(),
+        input.safeReason,
+        input.updatedAt.toISOString(),
+        input.delivery.id,
+        'pending',
+        input.delivery.attemptCount,
+        input.delivery.leaseUntil.toISOString(),
+      )
+      .run();
+
+    return Number(result.meta.changes ?? 0) === 1;
+  }
 }
+
+const claimedLeaseWhereSql = 'WHERE "id" = ? AND "status" = ? AND "attemptCount" = ? AND "leaseUntil" = ?';
 
 function mapClaimedDelivery(row: PaidOrderDeliveryRow): ClaimedPaidOrderDelivery {
   return {

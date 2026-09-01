@@ -51,8 +51,9 @@ const expectedTraceSampling = new Map([
 ]);
 
 describe('Worker observability config', () => {
-  it('deploys an explicit empty UAT cron list so Wrangler removes old triggers', () => {
-    expect(readWranglerConfig().env?.uat?.triggers?.crons).toEqual([]);
+  it('deploys only the bounded paid-delivery UAT schedule', () => {
+    expect(readWranglerConfig().env?.uat?.triggers?.crons).toEqual(['*/15 * * * *']);
+    expect(readWranglerConfig().env?.prd?.triggers).toBeUndefined();
   });
 
   it('keeps logs and traces explicit for all runtime targets', () => {

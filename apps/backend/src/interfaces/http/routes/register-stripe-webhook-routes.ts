@@ -14,7 +14,7 @@ export function registerStripeWebhookRoutes(app: AppOpenApi): void {
   app.post('/api/stripe/webhooks', async (context) => {
     const logger = requestLogger(context);
     const traceContext = traceContextFromHono(context);
-    const services = createStripeWebhookServices(context.env, logger, traceContext);
+    const services = createStripeWebhookServices(context.env, logger);
 
     try {
       const rawBody = await context.req.text();

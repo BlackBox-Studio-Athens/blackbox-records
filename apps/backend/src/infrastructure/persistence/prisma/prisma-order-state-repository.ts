@@ -172,6 +172,14 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
     return mapCheckoutOrder({ ...record, lines: await this.readCheckoutOrderLines(record.id) });
   }
 
+  public async findById(orderId: string): Promise<CheckoutOrderRecord | null> {
+    const record = await this.prisma.checkoutOrder.findUnique({ where: { id: orderId } });
+
+    if (!record) return null;
+
+    return mapCheckoutOrder({ ...record, lines: await this.readCheckoutOrderLines(record.id) });
+  }
+
   public async listRecent(input: ListRecentCheckoutOrdersInput): Promise<CheckoutOrderRecord[]> {
     const records = await this.prisma.checkoutOrder.findMany({
       orderBy: {

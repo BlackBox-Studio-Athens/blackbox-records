@@ -31,8 +31,15 @@ export type {
   PaidOrderDeliveryAttemptResult,
   PaidOrderDeliveryKind,
   PaidOrderDeliveryRepository,
+  PaidOrderDeliverySafeReason,
 } from './paid-order-delivery';
-export { attemptPaidOrderDelivery } from './paid-order-delivery';
+export { attemptPaidOrderDelivery, createPaidOrderDeliveryId } from './paid-order-delivery';
+export {
+  drainDuePaidOrderDeliveries,
+  processPaidOrderDeliveriesForOrder,
+  processPaidOrderDelivery,
+} from './paid-order-delivery-processing';
+export type { ProcessPaidOrderDeliveryResult } from './paid-order-delivery-processing';
 export type { OrderTransitionDecision, OrderTransitionOrigin } from './order-state';
 export type { ReadRecentCheckoutOrdersQuery } from './read-recent-checkout-orders';
 export type { TransitionCheckoutOrderCommand, TransitionCheckoutOrderResult } from './transition-checkout-order';

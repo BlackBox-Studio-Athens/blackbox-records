@@ -131,7 +131,7 @@
         },
       },
       "triggers": {
-        "crons": [],
+        "crons": ["*/15 * * * *"],
       },
       "d1_databases": [
         {

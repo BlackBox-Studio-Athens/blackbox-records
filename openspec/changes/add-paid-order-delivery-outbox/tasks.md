@@ -14,8 +14,8 @@
 
 - [x] 3.1 Implement one compare-and-set lease path for due pending rows and verify concurrent or unexpired claims issue one provider request.
 - [x] 3.2 Route the three fixed kinds through existing Resend/newsletter gateways, reusing stable idempotency identities; verify shopper, ops, and newsletter outcomes remain independent.
-- [ ] 3.3 Implement immediate processing plus a five-row 15-minute scheduled drain; verify transient failures remain pending, five attempts/24 hours end in needs review, and an empty drain is a no-op.
-- [ ] 3.4 Keep processing in the existing `orders` module behind one provided scheduled-delivery entrypoint, update the module-boundary spec and manifest, and verify `public-commerce-http` still owns no scheduled root and no retired catalog scheduler returns.
+- [x] 3.3 Implement immediate processing plus a five-row 15-minute scheduled drain; verify transient failures remain pending, five attempts/24 hours end in needs review, and an empty drain is a no-op.
+- [x] 3.4 Keep processing in the existing `orders` module behind one provided scheduled-delivery entrypoint, update the module-boundary spec and manifest, and verify `public-commerce-http` still owns no scheduled root and no retired catalog scheduler returns.
 
 ## 4. Safe Reads and Evidence
 

@@ -32,10 +32,34 @@ export type ClaimDuePaidOrderDeliveryResult =
 
 export interface PaidOrderDeliveryRepository {
   claimDue(input: { claimedAt: Date; deliveryId: string | null }): Promise<ClaimDuePaidOrderDeliveryResult>;
+  markDelivered(input: {
+    deliveredAt: Date;
+    delivery: ClaimedPaidOrderDelivery;
+    providerMessageId: string | null;
+  }): Promise<boolean>;
+  markNeedsReview(input: {
+    delivery: ClaimedPaidOrderDelivery;
+    needsReviewAt: Date;
+    safeReason: PaidOrderDeliverySafeReason;
+  }): Promise<boolean>;
+  reschedule(input: {
+    delivery: ClaimedPaidOrderDelivery;
+    nextAttemptAt: Date;
+    safeReason: PaidOrderDeliverySafeReason;
+    updatedAt: Date;
+  }): Promise<boolean>;
 }
 
+export type PaidOrderDeliverySafeReason =
+  EmailProviderSafeReason | 'delivery_window_expired' | 'incomplete_paid_fulfillment' | 'provider_outcome_unknown';
+
 export type PaidOrderDeliveryAttemptResult =
-  { kind: 'delivered' } | { kind: 'not_delivered'; retryable: boolean; safeReason: EmailProviderSafeReason };
+  | { kind: 'delivered'; providerMessageId: string | null }
+  | { kind: 'not_delivered'; retryable: boolean; safeReason: PaidOrderDeliverySafeReason };
+
+export function createPaidOrderDeliveryId(orderId: string, kind: PaidOrderDeliveryKind): string {
+  return `paid_delivery:${orderId}:${kind}`;
+}
 
 export async function attemptPaidOrderDelivery(input: {
   config: EmailRuntimeConfig;
@@ -124,7 +148,7 @@ function toPaidOrderEmailInput(order: CurrentPaidCheckoutOrder): PaidOrderEmailI
 
 function emailAttemptResult(result: EmailOperationResult): PaidOrderDeliveryAttemptResult {
   return result.status === 'sent'
-    ? { kind: 'delivered' }
+    ? { kind: 'delivered', providerMessageId: null }
     : {
         kind: 'not_delivered',
         retryable: result.retryable,
@@ -134,7 +158,7 @@ function emailAttemptResult(result: EmailOperationResult): PaidOrderDeliveryAtte
 
 function newsletterAttemptResult(result: NewsletterRegistrationResult): PaidOrderDeliveryAttemptResult {
   return result.status === 'registered'
-    ? { kind: 'delivered' }
+    ? { kind: 'delivered', providerMessageId: null }
     : {
         kind: 'not_delivered',
         retryable: result.retryable,

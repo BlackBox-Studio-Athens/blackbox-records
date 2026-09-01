@@ -1,7 +1,7 @@
 import { EmailConfigurationError, sendServicesInquiry, type EmailOperationResult } from '../../../application/email';
 import type { AppBindings } from '../../../env';
 import type { AppLogger } from '../../../observability';
-import { createEmailRuntimeServices } from './email-runtime-services';
+import { createEmailRuntimeServices } from '../../../infrastructure/resend';
 
 export function createPublicServicesInquiryServices(bindings: AppBindings, logger: Pick<AppLogger, 'info' | 'warn'>) {
   return {

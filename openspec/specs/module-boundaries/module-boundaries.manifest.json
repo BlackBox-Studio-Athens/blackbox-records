@@ -254,7 +254,6 @@
         "apps/backend/src/interfaces/http/routes/public-commerce-services.ts",
         "apps/backend/src/interfaces/http/routes/public-newsletter-services.ts",
         "apps/backend/src/interfaces/http/routes/public-services-inquiry-services.ts",
-        "apps/backend/src/interfaces/http/routes/email-runtime-services.ts",
         "apps/backend/src/interfaces/http/routes/stripe-webhook-acknowledgement.ts",
         "apps/backend/src/interfaces/http/routes/d1-paid-checkout-finalization-repository.ts",
         "apps/backend/src/interfaces/http/routes/stripe-webhook-services.ts",
@@ -305,10 +304,12 @@
       "status": "closed",
       "roots": [
         "apps/backend/src/infrastructure/persistence/d1-checkout-stock-hold-repository.ts",
+        "apps/backend/src/infrastructure/persistence/d1-paid-order-delivery-repository.ts",
         "apps/backend/src/infrastructure/persistence/prisma/**"
       ],
       "providedEntrypoints": [
         "apps/backend/src/infrastructure/persistence/d1-checkout-stock-hold-repository.ts",
+        "apps/backend/src/infrastructure/persistence/d1-paid-order-delivery-repository.ts",
         "apps/backend/src/infrastructure/persistence/prisma/index.ts"
       ],
       "namedInterfaces": {},
@@ -379,15 +380,18 @@
       "roots": [
         "apps/backend/src/application/commerce/orders/**",
         "apps/backend/src/interfaces/http/routes/register-internal-order-routes.ts",
-        "apps/backend/src/interfaces/http/routes/internal-order-services.ts"
+        "apps/backend/src/interfaces/http/routes/internal-order-services.ts",
+        "apps/backend/src/interfaces/scheduled/run-paid-order-delivery-schedule.ts"
       ],
       "providedEntrypoints": [
         "apps/backend/src/application/commerce/orders/create-pending-checkout-order.ts",
         "apps/backend/src/application/commerce/orders/index.ts",
-        "apps/backend/src/interfaces/http/routes/register-internal-order-routes.ts"
+        "apps/backend/src/interfaces/http/routes/register-internal-order-routes.ts",
+        "apps/backend/src/interfaces/scheduled/run-paid-order-delivery-schedule.ts"
       ],
       "namedInterfaces": {
-        "internal-order-routes": "apps/backend/src/interfaces/http/routes/register-internal-order-routes.ts"
+        "internal-order-routes": "apps/backend/src/interfaces/http/routes/register-internal-order-routes.ts",
+        "scheduled-paid-order-delivery": "apps/backend/src/interfaces/scheduled/run-paid-order-delivery-schedule.ts"
       },
       "allowedDependencies": [
         "commerce-domain",
@@ -395,6 +399,7 @@
         "stock",
         "commerce-persistence",
         "email-application",
+        "resend-integration",
         "platform-shared"
       ],
       "allowedWorkspaceInterfaces": {},

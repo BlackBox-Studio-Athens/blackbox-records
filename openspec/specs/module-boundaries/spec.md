@@ -54,6 +54,14 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** `public-commerce-http` does not own a scheduled interface root
 - **AND** the retired catalog verification handler is not a provided entrypoint.
 
+#### Scenario: Paid-order deliveries run on one owned schedule
+
+- **GIVEN** pending PaidOrderDelivery rows require bounded retry processing
+- **WHEN** the Worker scheduled handler is composed
+- **THEN** the `orders` module owns and provides `apps/backend/src/interfaces/scheduled/run-paid-order-delivery-schedule.ts`
+- **AND** that entrypoint drains only paid-order deliveries through the existing email application and Resend integration
+- **AND** `public-commerce-http` owns no scheduled root or scheduled entrypoint.
+
 #### Scenario: Cart-scoped checkout route is added
 
 - **GIVEN** cart-scoped checkout pages are added under `apps/web/src/pages/store/checkout/`

@@ -1,5 +1,6 @@
 import {
   CheckoutOrderNotFoundError,
+  createPaidOrderDeliveryId,
   InvalidOrderTransitionError,
   type FinalizePaidCheckoutCommand,
   type PaidCheckoutFinalizationLineItem,
@@ -566,13 +567,6 @@ function groupLineItems(
     unitAmountMinor: unitAmountByVariantId.get(variantId)!,
     variantId,
   }));
-}
-
-function createPaidOrderDeliveryId(
-  orderId: string,
-  kind: 'newsletter_registration' | 'ops_fulfillment' | 'shopper_confirmation',
-): string {
-  return `paid_delivery:${orderId}:${kind}`;
 }
 
 function createPaidCheckoutStockChangeId(checkoutSessionId: CheckoutSessionId, variantId: VariantId): string {

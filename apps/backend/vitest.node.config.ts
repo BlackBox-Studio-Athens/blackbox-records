@@ -11,7 +11,6 @@ export default defineConfig({
       'test/http/internal-order-routes.test.ts',
       'test/http/internal-stock-routes.test.ts',
       'test/http/public-commerce-routes.test.ts',
-      'test/http/stripe-webhook-services.test.ts',
       'test/http/stripe-webhook-routes.test.ts',
       'test/scripts/**/*.test.ts',
     ],
