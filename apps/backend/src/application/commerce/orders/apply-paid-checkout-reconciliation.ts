@@ -112,11 +112,44 @@ export async function applyPaidCheckoutReconciliation(
   }
 
   const paidFulfillmentDetails = readStripeCollectedPaidOrderFulfillmentDetails(reconciliation);
+  const amountTotalMinor = reconciliation.source.amountTotalMinor;
+  const currencyCode = reconciliation.source.currencyCode;
+
+  if (!Number.isInteger(amountTotalMinor) || !amountTotalMinor || amountTotalMinor < 1 || currencyCode !== 'EUR') {
+    throw new Error('Paid checkout payment details are incomplete.');
+  }
+
+  const newsletterConsentCopyVersion = reconciliation.source.newsletterOptIn
+    ? (reconciliation.source.newsletterConsentCopyVersion?.trim() ?? null)
+    : null;
+
+  if (reconciliation.source.newsletterOptIn && !newsletterConsentCopyVersion) {
+    throw new Error('Paid checkout newsletter consent details are incomplete.');
+  }
 
   try {
     const finalizationResult = await paidCheckoutFinalizer.finalizePaidCheckout({
+      amountTotalMinor,
       checkoutSessionId,
-      lineItems: reconciledOrderLines,
+      currencyCode,
+      lineItems: reconciledOrderLines.map((line) => ({
+        lineAmountMinor: line.lineAmountMinor!,
+        quantity: line.quantity,
+        unitAmountMinor: line.unitAmountMinor!,
+        variantId: line.variantId,
+      })),
+      newsletterConsentAt: reconciliation.source.newsletterOptIn ? appliedAt : null,
+      newsletterConsentCopyVersion,
+      newsletterOptIn: reconciliation.source.newsletterOptIn,
+      recipientName: paidFulfillmentDetails.recipientName,
+      shippingAddressCity: paidFulfillmentDetails.shippingAddress.city,
+      shippingAddressCountryCode: paidFulfillmentDetails.shippingAddress.country,
+      shippingAddressLine1: paidFulfillmentDetails.shippingAddress.line1,
+      shippingAddressLine2: paidFulfillmentDetails.shippingAddress.line2,
+      shippingAddressPostalCode: paidFulfillmentDetails.shippingAddress.postalCode,
+      shippingAddressState: paidFulfillmentDetails.shippingAddress.state,
+      shopperEmail: paidFulfillmentDetails.shopperContact.email,
+      shopperPhone: paidFulfillmentDetails.shopperContact.phone,
       stripePaymentIntentId: reconciliation.source.stripePaymentIntentId,
       transitionedAt: appliedAt,
     });
@@ -159,6 +192,7 @@ export async function applyPaidCheckoutReconciliation(
 }
 
 export type FinalizedPaidCheckoutLineItem = {
+  lineAmountMinor: number | null;
   quantity: CartQuantity;
   stripePriceId: StripePriceId;
 };
@@ -187,36 +221,55 @@ function reconcileFinalizedLineItems(
   orderLines: CheckoutOrderLineRecord[],
   finalizedLineItems: FinalizedPaidCheckoutLineItem[],
 ): CheckoutOrderLineRecord[] | null {
-  if (finalizedLineItems.length === 0) return orderLines;
+  if (finalizedLineItems.length === 0) {
+    return orderLines.every((line) => line.displayName && line.lineAmountMinor && line.unitAmountMinor)
+      ? orderLines
+      : null;
+  }
 
-  const finalizedQuantityByStripePriceId = new Map<string, number>();
+  const finalizedByStripePriceId = new Map<string, { lineAmountMinor: number; quantity: number }>();
 
   for (const providerFinalizedLineItem of finalizedLineItems) {
-    if (!Number.isInteger(providerFinalizedLineItem.quantity) || providerFinalizedLineItem.quantity < 1) return null;
+    if (
+      !Number.isInteger(providerFinalizedLineItem.quantity) ||
+      providerFinalizedLineItem.quantity < 1 ||
+      !Number.isInteger(providerFinalizedLineItem.lineAmountMinor) ||
+      !providerFinalizedLineItem.lineAmountMinor ||
+      providerFinalizedLineItem.lineAmountMinor < 1
+    ) {
+      return null;
+    }
 
-    finalizedQuantityByStripePriceId.set(
-      providerFinalizedLineItem.stripePriceId,
-      (finalizedQuantityByStripePriceId.get(providerFinalizedLineItem.stripePriceId) ?? 0) +
-        providerFinalizedLineItem.quantity,
-    );
+    const current = finalizedByStripePriceId.get(providerFinalizedLineItem.stripePriceId);
+    finalizedByStripePriceId.set(providerFinalizedLineItem.stripePriceId, {
+      lineAmountMinor: (current?.lineAmountMinor ?? 0) + providerFinalizedLineItem.lineAmountMinor,
+      quantity: (current?.quantity ?? 0) + providerFinalizedLineItem.quantity,
+    });
   }
 
   const reconciledLines: CheckoutOrderLineRecord[] = [];
 
   for (const line of orderLines) {
-    if (!line.stripePriceId || !finalizedQuantityByStripePriceId.has(line.stripePriceId)) {
+    if (!line.stripePriceId) {
       return null;
     }
 
+    const finalized = finalizedByStripePriceId.get(line.stripePriceId);
+    if (!finalized || finalized.lineAmountMinor % finalized.quantity !== 0) return null;
+
     reconciledLines.push({
       ...line,
-      quantity: createCartQuantity(finalizedQuantityByStripePriceId.get(line.stripePriceId)!),
+      lineAmountMinor: finalized.lineAmountMinor,
+      quantity: createCartQuantity(finalized.quantity),
+      unitAmountMinor: finalized.lineAmountMinor / finalized.quantity,
     });
   }
 
-  if (reconciledLines.length !== finalizedQuantityByStripePriceId.size) {
+  if (reconciledLines.length !== finalizedByStripePriceId.size) {
     return null;
   }
+
+  if (reconciledLines.some((line) => !line.displayName || !line.lineAmountMinor || !line.unitAmountMinor)) return null;
 
   return reconciledLines;
 }

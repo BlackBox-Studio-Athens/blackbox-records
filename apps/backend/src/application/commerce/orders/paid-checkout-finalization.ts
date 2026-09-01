@@ -20,13 +20,29 @@ import { CheckoutOrderNotFoundError, InvalidOrderTransitionError } from './error
 import { evaluateOrderTransition } from './order-state';
 
 export type PaidCheckoutFinalizationLineItem = {
+  lineAmountMinor: number;
   quantity: CartQuantity;
+  unitAmountMinor: number;
   variantId: VariantId;
 };
 
 export type FinalizePaidCheckoutCommand = {
+  amountTotalMinor: number;
   checkoutSessionId: CheckoutSessionId;
+  currencyCode: 'EUR';
   lineItems: PaidCheckoutFinalizationLineItem[];
+  newsletterConsentAt: Date | null;
+  newsletterConsentCopyVersion: string | null;
+  newsletterOptIn: boolean;
+  recipientName: string;
+  shippingAddressCity: string;
+  shippingAddressCountryCode: 'GR';
+  shippingAddressLine1: string;
+  shippingAddressLine2: string | null;
+  shippingAddressPostalCode: string;
+  shippingAddressState: string | null;
+  shopperEmail: string;
+  shopperPhone: string | null;
   stripePaymentIntentId: PaymentIntentId | null;
   transitionedAt: Date;
 };

@@ -8,6 +8,7 @@ import type {
 } from '../../application/commerce/checkout/spi';
 import {
   CheckoutConfigurationError,
+  NEWSLETTER_CONSENT_COPY_VERSION,
   createCartQuantity,
   parseCheckoutSessionId,
   parseStripePriceId,
@@ -51,6 +52,7 @@ export class StripeCheckoutGateway implements CheckoutGateway {
       metadata: metadataLineItem
         ? {
             ...(request.newsletterOptIn ? { newsletterOptIn: 'true' } : {}),
+            ...(request.newsletterOptIn ? { newsletterConsentCopyVersion: NEWSLETTER_CONSENT_COPY_VERSION } : {}),
             orderId: request.orderId,
             storeItemSlug: metadataLineItem.storeItemSlug,
             variantId: metadataLineItem.variantId,
@@ -100,6 +102,8 @@ export class StripeCheckoutGateway implements CheckoutGateway {
 
       return [
         {
+          lineAmountMinor:
+            Number.isInteger(lineItem.amount_total) && lineItem.amount_total > 0 ? lineItem.amount_total : null,
           quantity: createCartQuantity(lineItem.quantity),
           stripePriceId: parseStripePriceId(lineItem.price.id),
         },

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { NEWSLETTER_CONSENT_COPY_VERSION } from '../commerce/checkout';
 import { routeNewsletterContact } from './routing';
 import type { EmailProviderGateway } from './spi';
 import type {
@@ -13,7 +14,7 @@ const emailAddress = z.string().trim().email();
 
 export type NewsletterOutcomeLogger = Pick<Console, 'info' | 'warn'>;
 
-export const NEWSLETTER_CONSENT_COPY_VERSION = 'blackbox-newsletter-v1';
+export { NEWSLETTER_CONSENT_COPY_VERSION };
 
 export async function registerNewsletterContact(
   provider: EmailProviderGateway,

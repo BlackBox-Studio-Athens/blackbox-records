@@ -195,6 +195,7 @@ function reconciliation(status: StripeCheckoutSessionStatus, paymentStatus: Stri
       name: null,
       phone: null,
     },
+    newsletterConsentCopyVersion: null,
     newsletterOptIn: false,
     paymentStatus,
     shippingAddress: null,

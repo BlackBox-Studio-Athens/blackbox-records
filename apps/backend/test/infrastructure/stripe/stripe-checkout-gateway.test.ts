@@ -7,7 +7,13 @@ import {
   createStripeClientOptions,
   StripeCheckoutGateway,
 } from '../../../src/infrastructure/stripe/stripe-checkout-gateway';
-import { cartQuantity, storeItemSlug, stripePriceId, variantId } from '../../support/commerce-value-objects';
+import {
+  cartQuantity,
+  checkoutSessionId,
+  storeItemSlug,
+  stripePriceId,
+  variantId,
+} from '../../support/commerce-value-objects';
 
 describe('createStripeClientOptions', () => {
   it('uses real Stripe API defaults when no API base URL is configured', () => {
@@ -84,6 +90,7 @@ describe('StripeCheckoutGateway', () => {
         expires_at: 1777026600,
         locale: 'en',
         metadata: {
+          newsletterConsentCopyVersion: 'blackbox-newsletter-v1',
           newsletterOptIn: 'true',
           orderId: 'order_test_123',
           storeItemSlug: 'disintegration-black-vinyl-lp',
@@ -120,5 +127,38 @@ describe('StripeCheckoutGateway', () => {
     expect(() => createStripeCheckoutGateway(bindings)).toThrow(
       'Stripe Payment Method Configuration ID is not configured.',
     );
+  });
+
+  it('reads provider-finalized line amounts for fixed and pay-what-you-want snapshots', async () => {
+    const listLineItems = vi.fn(async () => ({
+      data: [
+        {
+          amount_total: 3700,
+          price: { id: 'price_test_pay_what_you_want' },
+          quantity: 1,
+        },
+      ],
+    }));
+    const gateway = new StripeCheckoutGateway(
+      {
+        checkout: {
+          sessions: {
+            create: vi.fn(),
+            expire: vi.fn(),
+            listLineItems,
+            retrieve: vi.fn(),
+          },
+        },
+      } as never,
+      'pmc_test_blackbox_checkout',
+    );
+
+    await expect(gateway.readCheckoutSessionLineItems(checkoutSessionId('cs_test_123'))).resolves.toEqual([
+      {
+        lineAmountMinor: 3700,
+        quantity: 1,
+        stripePriceId: 'price_test_pay_what_you_want',
+      },
+    ]);
   });
 });

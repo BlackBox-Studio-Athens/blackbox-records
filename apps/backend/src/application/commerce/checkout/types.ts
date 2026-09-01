@@ -12,6 +12,8 @@ import type { StoreOfferPrice } from '../catalog-sync';
 
 export type StoreOfferCatalogStatus = 'catalog_drift' | 'ready' | 'sold_out';
 
+export const NEWSLETTER_CONSENT_COPY_VERSION = 'blackbox-newsletter-v1';
+
 type StoreOfferIdentity = {
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
@@ -65,6 +67,7 @@ export type CheckoutSessionLineItem = {
 };
 
 export type FinalizedCheckoutSessionLineItem = {
+  lineAmountMinor: number | null;
   quantity: CartQuantity;
   stripePriceId: StripePriceId;
 };
@@ -98,6 +101,7 @@ export type StripeCheckoutSessionState = {
   checkoutSessionId: CheckoutSessionId;
   currencyCode: string | null;
   customer: StripeCheckoutCustomerSnapshot;
+  newsletterConsentCopyVersion: string | null;
   newsletterOptIn: boolean;
   orderId?: string | null;
   paymentStatus: StripeCheckoutPaymentStatus;

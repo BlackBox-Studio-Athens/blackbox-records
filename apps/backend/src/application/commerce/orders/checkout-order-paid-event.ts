@@ -24,10 +24,11 @@ export type CheckoutOrderPaidShippingAddress = {
 
 export type CheckoutOrderPaidShopperContact = {
   email: string;
-  phone: string;
+  phone: string | null;
 };
 
 export type CheckoutOrderPaidFulfillmentDetails = {
+  recipientName: string;
   shippingAddress: CheckoutOrderPaidShippingAddress;
   shopperContact: CheckoutOrderPaidShopperContact;
 };
@@ -99,20 +100,34 @@ export function createCheckoutOrderPaidEvent(input: {
 export function readStripeCollectedPaidOrderFulfillmentDetails(
   reconciliation: CheckoutReconciliation,
 ): CheckoutOrderPaidFulfillmentDetails {
-  const shippingAddress = reconciliation.source.shippingAddress!;
+  const shippingAddress = reconciliation.source.shippingAddress;
+  const recipientName = reconciliation.source.customer.name?.trim();
+  const shopperEmail = reconciliation.source.customer.email?.trim();
+
+  if (
+    !shippingAddress?.city?.trim() ||
+    shippingAddress.country !== 'GR' ||
+    !shippingAddress.line1?.trim() ||
+    !shippingAddress.postalCode?.trim() ||
+    !recipientName ||
+    !shopperEmail
+  ) {
+    throw new Error('Paid checkout fulfillment details are incomplete.');
+  }
 
   return {
+    recipientName,
     shippingAddress: {
-      city: shippingAddress.city!,
-      country: shippingAddress.country as 'GR',
-      line1: shippingAddress.line1!,
+      city: shippingAddress.city.trim(),
+      country: 'GR',
+      line1: shippingAddress.line1.trim(),
       line2: shippingAddress.line2,
-      postalCode: shippingAddress.postalCode!,
+      postalCode: shippingAddress.postalCode.trim(),
       state: shippingAddress.state,
     },
     shopperContact: {
-      email: reconciliation.source.customer.email!,
-      phone: reconciliation.source.customer.phone!,
+      email: shopperEmail,
+      phone: reconciliation.source.customer.phone,
     },
   };
 }

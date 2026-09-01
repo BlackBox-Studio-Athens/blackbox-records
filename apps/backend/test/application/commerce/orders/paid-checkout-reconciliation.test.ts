@@ -298,6 +298,7 @@ describe('paid checkout reconciliation', () => {
             name: null,
             phone: null,
           },
+          newsletterConsentCopyVersion: null,
           newsletterOptIn: false,
           paymentStatus: 'unpaid',
           shippingAddress: null,
@@ -356,6 +357,7 @@ describe('paid checkout reconciliation', () => {
       appliedAt,
       [
         {
+          lineAmountMinor: 5000,
           quantity: cartQuantity(2),
           stripePriceId: primaryStripePriceId,
         },
@@ -384,6 +386,7 @@ describe('paid checkout reconciliation', () => {
       appliedAt,
       [
         {
+          lineAmountMinor: 3700,
           quantity: cartQuantity(1),
           stripePriceId: primaryStripePriceId,
         },
@@ -409,6 +412,7 @@ describe('paid checkout reconciliation', () => {
     await expect(
       applyPaidCheckoutReconciliation(orders, paidCheckoutFinalizer, paidReconciliation(), appliedAt, [
         {
+          lineAmountMinor: 5000,
           quantity: cartQuantity(2),
           stripePriceId: stripePriceId('price_unmapped'),
         },
@@ -435,6 +439,7 @@ function paidReconciliation(overrides: Partial<Parameters<typeof reconcileChecko
       name: 'Buyer Name',
       phone: '+302100000000',
     },
+    newsletterConsentCopyVersion: 'blackbox-newsletter-v1',
     newsletterOptIn: true,
     paymentStatus: 'paid',
     shippingAddress: {

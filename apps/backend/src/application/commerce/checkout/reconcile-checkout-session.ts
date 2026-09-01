@@ -12,6 +12,7 @@ export type CheckoutReconciliation = {
     checkoutSessionId: CheckoutSessionId;
     currencyCode: string | null;
     customer: StripeCheckoutSessionState['customer'];
+    newsletterConsentCopyVersion: string | null;
     newsletterOptIn: boolean;
     orderId: string | null;
     shippingAddress: StripeCheckoutSessionState['shippingAddress'];
@@ -39,6 +40,7 @@ export function reconcileCheckoutSession(
       checkoutSessionId: session.checkoutSessionId,
       currencyCode: session.currencyCode,
       customer: session.customer,
+      newsletterConsentCopyVersion: session.newsletterConsentCopyVersion,
       newsletterOptIn: session.newsletterOptIn,
       orderId: session.orderId ?? null,
       shippingAddress: session.shippingAddress,

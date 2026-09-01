@@ -11,6 +11,7 @@ export { listVariantOffersForStoreItem, readStoreOffer } from './read-store-offe
 export { readCheckoutState } from './read-checkout-state';
 export { reconcileCheckoutSession } from './reconcile-checkout-session';
 export { createStartCheckoutLineCommand, startCheckout } from './start-checkout';
+export { NEWSLETTER_CONSENT_COPY_VERSION } from './types';
 export {
   createCartQuantity,
   parseCheckoutSessionId,

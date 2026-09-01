@@ -1,422 +1,248 @@
+import { env } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
 
+import type { FinalizePaidCheckoutCommand } from '../../../src/application/commerce/orders';
 import {
   createCartQuantity,
   parseCheckoutSessionId,
   parsePaymentIntentId,
+  parseStoreItemSlug,
+  parseStripePriceId,
   parseVariantId,
 } from '../../../src/domain/commerce';
+import { readPaidCheckoutFulfillment } from '../../../src/domain/commerce/repositories/spi';
 import { D1PaidCheckoutFinalizationRepository } from '../../../src/interfaces/http/routes/d1-paid-checkout-finalization-repository';
 
-type FakeCheckoutOrderRow = {
-  checkoutExpiresAt: string;
-  checkoutSessionId: string;
-  createdAt: string;
-  id: string;
-  needsReviewAt: null | string;
-  notPaidAt: null | string;
-  paidAt: null | string;
-  shippingLockerCountryCode: null | string;
-  shippingLockerId: null | string;
-  shippingLockerNameOrLabel: null | string;
-  status: 'needs_review' | 'not_paid' | 'paid' | 'pending_payment';
-  statusUpdatedAt: string;
-  storeItemSlug: string;
-  stripePaymentIntentId: null | string;
-  updatedAt: string;
-  variantId: string;
-};
-
-type FakeCheckoutOrderLineRow = {
-  createdAt: string;
-  id: string;
-  orderId: string;
-  quantity: number;
-  storeItemSlug: string;
-  stripePriceId: null | string;
-  variantId: string;
-};
-
-type FakeStockRow = {
-  createdAt: string;
-  onlineQuantity: number;
-  quantity: number;
-  updatedAt: string;
-  variantId: string;
-};
-
-type FakeStockChangeRow = {
-  actorEmail: string;
-  id: string;
-  notes: null | string;
-  quantityDelta: number;
-  reason: string;
-  recordedAt: string;
-  variantId: string;
-};
-
-type FakeD1State = {
-  batchCalls: number;
-  lines: FakeCheckoutOrderLineRow[];
-  orders: Map<string, FakeCheckoutOrderRow>;
-  stockChanges: Map<string, FakeStockChangeRow>;
-  stocks: Map<string, FakeStockRow>;
-};
-
 describe('D1PaidCheckoutFinalizationRepository', () => {
-  it('finalizes a paid checkout through D1 batch without an interactive transaction', async () => {
-    const state = createState();
-    const repository = new D1PaidCheckoutFinalizationRepository(createFakeD1Database(state));
+  it('atomically commits paid facts, line snapshots, stock, and all consented deliveries', async () => {
+    const seeded = await seedPendingCheckout();
+    const repository = new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB);
 
-    const result = await repository.finalizePaidCheckout({
-      checkoutSessionId: parseCheckoutSessionId('cs_test_paid'),
-      lineItems: [
-        {
-          quantity: createCartQuantity(1),
-          variantId: parseVariantId('variant_test_standard'),
-        },
-      ],
-      stripePaymentIntentId: parsePaymentIntentId('pi_test_paid'),
-      transitionedAt: new Date('2026-06-20T15:00:00.000Z'),
-    });
+    const result = await repository.finalizePaidCheckout(finalizationCommand(seeded));
 
     expect(result.kind).toBe('transitioned');
-    expect(state.batchCalls).toBe(1);
-    expect(state.orders.get('cs_test_paid')).toMatchObject({
-      paidAt: '2026-06-20T15:00:00.000Z',
+    if (result.kind !== 'transitioned') return;
+
+    expect(readPaidCheckoutFulfillment(result.order).kind).toBe('current');
+    expect(result.order).toMatchObject({
+      amountTotalMinor: 3700,
+      currencyCode: 'EUR',
+      newsletterConsentCopyVersion: 'blackbox-newsletter-v1',
+      newsletterOptIn: true,
+      recipientName: 'Buyer Name',
+      shippingAddressCountryCode: 'GR',
+      shopperEmail: 'buyer@example.com',
       status: 'paid',
-      stripePaymentIntentId: 'pi_test_paid',
     });
-    expect(state.stocks.get('variant_test_standard')).toMatchObject({
-      onlineQuantity: 4,
-      quantity: 4,
-    });
-    expect([...state.stockChanges.values()]).toEqual([
+    expect(result.order.lines).toEqual([
       expect.objectContaining({
-        actorEmail: 'stripe-webhook',
-        quantityDelta: -1,
-        reason: 'checkout_paid',
-        variantId: 'variant_test_standard',
+        displayName: 'Disintegration Black Vinyl LP',
+        lineAmountMinor: 3700,
+        quantity: 1,
+        unitAmountMinor: 3700,
       }),
     ]);
+    await expect(readDeliveryKinds(seeded.orderId)).resolves.toEqual([
+      'newsletter_registration',
+      'ops_fulfillment',
+      'shopper_confirmation',
+    ]);
+    await expect(readStock(seeded.variantId)).resolves.toMatchObject({ onlineQuantity: 4, quantity: 4 });
+    await expect(readStockChangeCount(seeded.checkoutSessionId)).resolves.toBe(1);
   });
 
-  it('treats an already-paid checkout as replay without decrementing stock again', async () => {
-    const state = createState({
-      order: {
-        paidAt: '2026-06-20T15:00:00.000Z',
-        status: 'paid',
-        stripePaymentIntentId: 'pi_test_paid',
-      },
-      stock: {
-        onlineQuantity: 4,
-        quantity: 4,
-      },
-    });
-    const repository = new D1PaidCheckoutFinalizationRepository(createFakeD1Database(state));
+  it('creates only shopper and ops deliveries without newsletter consent', async () => {
+    const seeded = await seedPendingCheckout();
+    const repository = new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB);
 
-    const result = await repository.finalizePaidCheckout({
-      checkoutSessionId: parseCheckoutSessionId('cs_test_paid'),
-      lineItems: [
-        {
-          quantity: createCartQuantity(1),
-          variantId: parseVariantId('variant_test_standard'),
-        },
-      ],
-      stripePaymentIntentId: parsePaymentIntentId('pi_test_paid'),
-      transitionedAt: new Date('2026-06-20T15:05:00.000Z'),
-    });
+    await repository.finalizePaidCheckout(
+      finalizationCommand(seeded, {
+        newsletterConsentAt: null,
+        newsletterConsentCopyVersion: null,
+        newsletterOptIn: false,
+      }),
+    );
 
-    expect(result.kind).toBe('replay');
-    expect(state.batchCalls).toBe(0);
-    expect(state.stocks.get('variant_test_standard')).toMatchObject({
-      onlineQuantity: 4,
-      quantity: 4,
-    });
-    expect(state.stockChanges.size).toBe(0);
+    await expect(readDeliveryKinds(seeded.orderId)).resolves.toEqual(['ops_fulfillment', 'shopper_confirmation']);
   });
 
-  it('returns stock_unavailable without mutating stock or order state', async () => {
-    const state = createState({
-      stock: {
-        onlineQuantity: 0,
-        quantity: 0,
-      },
-    });
-    const repository = new D1PaidCheckoutFinalizationRepository(createFakeD1Database(state));
+  it('returns stock_unavailable without mutating paid state', async () => {
+    const seeded = await seedPendingCheckout({ stockQuantity: 0 });
+    const repository = new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB);
 
-    const result = await repository.finalizePaidCheckout({
-      checkoutSessionId: parseCheckoutSessionId('cs_test_paid'),
-      lineItems: [
-        {
-          quantity: createCartQuantity(1),
-          variantId: parseVariantId('variant_test_standard'),
-        },
-      ],
-      stripePaymentIntentId: parsePaymentIntentId('pi_test_paid'),
-      transitionedAt: new Date('2026-06-20T15:00:00.000Z'),
-    });
-
-    expect(result).toMatchObject({
+    await expect(repository.finalizePaidCheckout(finalizationCommand(seeded))).resolves.toMatchObject({
       kind: 'stock_unavailable',
       reason: 'Paid checkout cannot decrement unavailable stock.',
     });
-    expect(state.batchCalls).toBe(0);
-    expect(state.orders.get('cs_test_paid')).toMatchObject({
-      paidAt: null,
-      status: 'pending_payment',
-      stripePaymentIntentId: null,
-    });
-    expect(state.stocks.get('variant_test_standard')).toMatchObject({
-      onlineQuantity: 0,
-      quantity: 0,
-    });
-    expect(state.stockChanges.size).toBe(0);
+    await expect(readOrderStatus(seeded.checkoutSessionId)).resolves.toBe('pending_payment');
+    await expect(readDeliveryKinds(seeded.orderId)).resolves.toEqual([]);
+    await expect(readStockChangeCount(seeded.checkoutSessionId)).resolves.toBe(0);
+  });
+
+  it('rolls back every earlier statement when the paid-order update violates a constraint', async () => {
+    const seeded = await seedPendingCheckout();
+    const repository = new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB);
+    const invalidCommand = {
+      ...finalizationCommand(seeded),
+      lineItems: [
+        {
+          lineAmountMinor: 4100,
+          quantity: createCartQuantity(1),
+          unitAmountMinor: 4100,
+          variantId: seeded.variantId,
+        },
+      ],
+      shippingAddressCountryCode: 'US',
+    } as unknown as FinalizePaidCheckoutCommand;
+
+    await expect(repository.finalizePaidCheckout(invalidCommand)).rejects.toThrow();
+
+    await expect(readOrderStatus(seeded.checkoutSessionId)).resolves.toBe('pending_payment');
+    await expect(readLineAmount(seeded.orderId)).resolves.toBe(2500);
+    await expect(readDeliveryKinds(seeded.orderId)).resolves.toEqual([]);
+    await expect(readStock(seeded.variantId)).resolves.toMatchObject({ onlineQuantity: 5, quantity: 5 });
+    await expect(readStockChangeCount(seeded.checkoutSessionId)).resolves.toBe(0);
   });
 });
 
-function createState(
-  input: {
-    order?: Partial<FakeCheckoutOrderRow>;
-    stock?: Partial<FakeStockRow>;
-  } = {},
-): FakeD1State {
-  const order = {
-    checkoutExpiresAt: '2026-06-20T15:29:00.000Z',
-    checkoutSessionId: 'cs_test_paid',
-    createdAt: '2026-06-20T14:59:00.000Z',
-    id: 'order_test_paid',
-    needsReviewAt: null,
-    notPaidAt: null,
-    paidAt: null,
-    shippingLockerCountryCode: null,
-    shippingLockerId: null,
-    shippingLockerNameOrLabel: null,
-    status: 'pending_payment',
-    statusUpdatedAt: '2026-06-20T14:59:00.000Z',
-    storeItemSlug: 'disintegration-black-vinyl-lp',
-    stripePaymentIntentId: null,
-    updatedAt: '2026-06-20T14:59:00.000Z',
-    variantId: 'variant_test_standard',
-    ...input.order,
-  } satisfies FakeCheckoutOrderRow;
+type SeededCheckout = {
+  checkoutSessionId: ReturnType<typeof parseCheckoutSessionId>;
+  orderId: string;
+  variantId: ReturnType<typeof parseVariantId>;
+};
 
-  const stock = {
-    createdAt: '2026-06-20T14:00:00.000Z',
-    onlineQuantity: 5,
-    quantity: 5,
-    updatedAt: '2026-06-20T14:00:00.000Z',
-    variantId: 'variant_test_standard',
-    ...input.stock,
-  } satisfies FakeStockRow;
+async function seedPendingCheckout(input: { stockQuantity?: number } = {}): Promise<SeededCheckout> {
+  const suffix = crypto.randomUUID();
+  const checkoutSessionId = parseCheckoutSessionId(`cs_test_paid_${suffix}`);
+  const orderId = `order_paid_${suffix}`;
+  const variantId = parseVariantId(`variant_paid_${suffix}`);
+  const createdAt = '2026-09-01T08:00:00.000Z';
+  const stockQuantity = input.stockQuantity ?? 5;
+
+  await env.COMMERCE_DB.batch([
+    env.COMMERCE_DB.prepare(
+      [
+        'INSERT INTO "CheckoutOrder"',
+        '  ("id", "storeItemSlug", "variantId", "checkoutSessionId", "checkoutExpiresAt", "status",',
+        '   "statusUpdatedAt", "createdAt", "updatedAt")',
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      ].join('\n'),
+    ).bind(
+      orderId,
+      parseStoreItemSlug(`paid-item-${suffix}`),
+      variantId,
+      checkoutSessionId,
+      '2026-09-01T08:30:00.000Z',
+      'pending_payment',
+      createdAt,
+      createdAt,
+      createdAt,
+    ),
+    env.COMMERCE_DB.prepare(
+      [
+        'INSERT INTO "CheckoutOrderLine"',
+        '  ("id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "quantity", "displayName",',
+        '   "optionLabel", "unitAmountMinor", "lineAmountMinor", "createdAt")',
+        'VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)',
+      ].join('\n'),
+    ).bind(
+      `line_paid_${suffix}`,
+      orderId,
+      parseStoreItemSlug(`paid-item-${suffix}`),
+      variantId,
+      parseStripePriceId(`price_paid_${suffix}`),
+      1,
+      'Disintegration Black Vinyl LP',
+      2500,
+      2500,
+      createdAt,
+    ),
+    env.COMMERCE_DB.prepare(
+      'INSERT INTO "Stock" ("id", "variantId", "quantity", "onlineQuantity", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, ?)',
+    ).bind(`stock_paid_${suffix}`, variantId, stockQuantity, stockQuantity, createdAt, createdAt),
+  ]);
+
+  return { checkoutSessionId, orderId, variantId };
+}
+
+function finalizationCommand(
+  seeded: SeededCheckout,
+  overrides: Partial<FinalizePaidCheckoutCommand> = {},
+): FinalizePaidCheckoutCommand {
+  const transitionedAt = new Date('2026-09-01T09:00:00.000Z');
 
   return {
-    batchCalls: 0,
-    lines: [
+    amountTotalMinor: 3700,
+    checkoutSessionId: seeded.checkoutSessionId,
+    currencyCode: 'EUR',
+    lineItems: [
       {
-        createdAt: '2026-06-20T14:59:00.000Z',
-        id: 'line_test_paid',
-        orderId: 'order_test_paid',
-        quantity: 1,
-        storeItemSlug: 'disintegration-black-vinyl-lp',
-        stripePriceId: 'price_test_standard',
-        variantId: 'variant_test_standard',
+        lineAmountMinor: 3700,
+        quantity: createCartQuantity(1),
+        unitAmountMinor: 3700,
+        variantId: seeded.variantId,
       },
     ],
-    orders: new Map([[order.checkoutSessionId, order]]),
-    stockChanges: new Map(),
-    stocks: new Map([[stock.variantId, stock]]),
+    newsletterConsentAt: transitionedAt,
+    newsletterConsentCopyVersion: 'blackbox-newsletter-v1',
+    newsletterOptIn: true,
+    recipientName: 'Buyer Name',
+    shippingAddressCity: 'Athens',
+    shippingAddressCountryCode: 'GR',
+    shippingAddressLine1: 'Long Street 1',
+    shippingAddressLine2: null,
+    shippingAddressPostalCode: '10558',
+    shippingAddressState: null,
+    shopperEmail: 'buyer@example.com',
+    shopperPhone: null,
+    stripePaymentIntentId: parsePaymentIntentId(`pi_paid_${seeded.orderId}`),
+    transitionedAt,
+    ...overrides,
   };
 }
 
-function createFakeD1Database(state: FakeD1State): D1Database {
-  return {
-    batch: async (statements: D1PreparedStatement[]) => {
-      state.batchCalls += 1;
+async function readDeliveryKinds(orderId: string): Promise<string[]> {
+  const result = await env.COMMERCE_DB.prepare(
+    'SELECT "kind" FROM "PaidOrderDelivery" WHERE "orderId" = ? ORDER BY "kind" ASC',
+  )
+    .bind(orderId)
+    .all<{ kind: string }>();
 
-      return statements.map((statement) => (statement as unknown as FakeD1Statement).executeBatch());
-    },
-    prepare: (sql: string) => new FakeD1Statement(state, sql) as unknown as D1PreparedStatement,
-  } as D1Database;
+  return result.results.map((row) => row.kind);
 }
 
-class FakeD1Statement {
-  private params: unknown[] = [];
-
-  public constructor(
-    private readonly state: FakeD1State,
-    private readonly sql: string,
-  ) {}
-
-  public all<T>(): Promise<D1Result<T>> {
-    if (this.sql.includes('FROM "CheckoutOrderLine"')) {
-      const [orderId] = this.params;
-
-      return Promise.resolve({
-        results: this.state.lines.filter((line) => line.orderId === orderId) as T[],
-        success: true,
-      } as D1Result<T>);
-    }
-
-    throw new Error(`Unhandled fake D1 all SQL: ${this.sql}`);
-  }
-
-  public bind(...params: unknown[]): this {
-    this.params = params;
-
-    return this;
-  }
-
-  public executeBatch(): D1Result {
-    if (this.sql.startsWith('INSERT OR IGNORE INTO "StockChange"')) {
-      return createD1Result(this.insertStockChange());
-    }
-
-    if (this.sql.startsWith('UPDATE "Stock"')) {
-      return createD1Result(this.updateStock());
-    }
-
-    if (this.sql.startsWith('UPDATE "CheckoutOrder"')) {
-      return createD1Result(this.updateCheckoutOrder());
-    }
-
-    throw new Error(`Unhandled fake D1 batch SQL: ${this.sql}`);
-  }
-
-  public first<T>(): Promise<T | null> {
-    if (this.sql.includes('FROM "CheckoutOrder"')) {
-      const [checkoutSessionId] = this.params;
-
-      return Promise.resolve((this.state.orders.get(String(checkoutSessionId)) as T | undefined) ?? null);
-    }
-
-    if (this.sql.includes('FROM "StockChange"')) {
-      const [id] = this.params;
-
-      return Promise.resolve((this.state.stockChanges.get(String(id)) as T | undefined) ?? null);
-    }
-
-    if (this.sql.includes('FROM "Stock"')) {
-      const [variantId] = this.params;
-
-      return Promise.resolve((this.state.stocks.get(String(variantId)) as T | undefined) ?? null);
-    }
-
-    throw new Error(`Unhandled fake D1 first SQL: ${this.sql}`);
-  }
-
-  private allStockChangesExist(params: unknown[]): boolean {
-    return params.every((stockChangeId) => this.state.stockChanges.has(String(stockChangeId)));
-  }
-
-  private allStockIsAvailable(params: unknown[]): boolean {
-    for (let index = 0; index < params.length; index += 3) {
-      const variantId = String(params[index]);
-      const quantity = Number(params[index + 1]);
-      const stock = this.state.stocks.get(variantId);
-
-      if (!stock || stock.quantity < quantity || stock.onlineQuantity < quantity) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  private insertStockChange(): number {
-    const [
-      id,
-      variantId,
-      quantityDelta,
-      reason,
-      notes,
-      actorEmail,
-      recordedAt,
-      checkoutSessionId,
-      expectedStatus,
-      ...availabilityParams
-    ] = this.params;
-    const order = this.state.orders.get(String(checkoutSessionId));
-
-    if (
-      !order ||
-      order.status !== expectedStatus ||
-      this.state.stockChanges.has(String(id)) ||
-      !this.allStockIsAvailable(availabilityParams)
-    ) {
-      return 0;
-    }
-
-    this.state.stockChanges.set(String(id), {
-      actorEmail: String(actorEmail),
-      id: String(id),
-      notes: notes === null ? null : String(notes),
-      quantityDelta: Number(quantityDelta),
-      reason: String(reason),
-      recordedAt: String(recordedAt),
-      variantId: String(variantId),
-    });
-
-    return 1;
-  }
-
-  private updateCheckoutOrder(): number {
-    const [
-      status,
-      statusUpdatedAt,
-      paidAt,
-      paymentIntentId,
-      updatedAt,
-      checkoutSessionId,
-      expectedStatus,
-      ...stockChangeIds
-    ] = this.params;
-    const order = this.state.orders.get(String(checkoutSessionId));
-
-    if (!order || order.status !== expectedStatus || !this.allStockChangesExist(stockChangeIds)) {
-      return 0;
-    }
-
-    order.status = status as FakeCheckoutOrderRow['status'];
-    order.statusUpdatedAt = String(statusUpdatedAt);
-    order.paidAt = String(paidAt);
-    order.stripePaymentIntentId = paymentIntentId === null ? order.stripePaymentIntentId : String(paymentIntentId);
-    order.updatedAt = String(updatedAt);
-
-    return 1;
-  }
-
-  private updateStock(): number {
-    const [quantity, onlineQuantity, updatedAt, variantId, checkoutSessionId, expectedStatus, ...stockChangeIds] =
-      this.params;
-    const order = this.state.orders.get(String(checkoutSessionId));
-    const stock = this.state.stocks.get(String(variantId));
-
-    if (!order || order.status !== expectedStatus || !stock || !this.allStockChangesExist(stockChangeIds)) {
-      return 0;
-    }
-
-    stock.quantity -= Number(quantity);
-    stock.onlineQuantity -= Number(onlineQuantity);
-    stock.updatedAt = String(updatedAt);
-
-    return 1;
-  }
+async function readLineAmount(orderId: string): Promise<number | null> {
+  return (
+    (
+      await env.COMMERCE_DB.prepare('SELECT "lineAmountMinor" FROM "CheckoutOrderLine" WHERE "orderId" = ? LIMIT 1')
+        .bind(orderId)
+        .first<{ lineAmountMinor: number | null }>()
+    )?.lineAmountMinor ?? null
+  );
 }
 
-function createD1Result(changes: number): D1Result {
-  return {
-    meta: {
-      changed_db: changes > 0,
-      changes,
-      duration: 0,
-      last_row_id: 0,
-      rows_read: 0,
-      rows_written: changes,
-      served_by: 'fake-d1',
-      size_after: 0,
-    },
-    results: [],
-    success: true,
-  } as D1Result;
+async function readOrderStatus(checkoutSessionId: string): Promise<string | null> {
+  return (
+    (
+      await env.COMMERCE_DB.prepare('SELECT "status" FROM "CheckoutOrder" WHERE "checkoutSessionId" = ?')
+        .bind(checkoutSessionId)
+        .first<{ status: string }>()
+    )?.status ?? null
+  );
+}
+
+async function readStock(variantId: string): Promise<{ onlineQuantity: number; quantity: number } | null> {
+  return env.COMMERCE_DB.prepare('SELECT "quantity", "onlineQuantity" FROM "Stock" WHERE "variantId" = ?')
+    .bind(variantId)
+    .first();
+}
+
+async function readStockChangeCount(checkoutSessionId: string): Promise<number> {
+  return (
+    (
+      await env.COMMERCE_DB.prepare('SELECT COUNT(*) AS "count" FROM "StockChange" WHERE "notes" = ?')
+        .bind(`Checkout session ${checkoutSessionId}`)
+        .first<{ count: number }>()
+    )?.count ?? 0
+  );
 }

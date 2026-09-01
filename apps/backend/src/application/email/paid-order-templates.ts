@@ -123,7 +123,7 @@ export function buildPaidOrderOpsEmail(input: {
         renderDetailSection('Shopper', [
           ['Name', [input.order.customerName ?? 'Not provided']],
           ['Email', [input.order.shopperContact.email]],
-          ['Phone', [input.order.shopperContact.phone]],
+          ['Phone', [input.order.shopperContact.phone ?? 'Not provided']],
         ]),
         renderDetailSection('Shipping address', formatShippingAddressRows(input.order.shippingAddress)),
       ].join(''),
@@ -149,7 +149,7 @@ export function buildPaidOrderOpsEmail(input: {
       'Shopper:',
       `Name: ${input.order.customerName ?? 'Not provided'}`,
       `Email: ${input.order.shopperContact.email}`,
-      `Phone: ${input.order.shopperContact.phone}`,
+      `Phone: ${input.order.shopperContact.phone ?? 'Not provided'}`,
       '',
       'Shipping address:',
       ...formatShippingAddressTextLines(input.order.shippingAddress),

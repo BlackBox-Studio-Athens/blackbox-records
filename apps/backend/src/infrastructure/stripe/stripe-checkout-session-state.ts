@@ -24,6 +24,7 @@ export function toStripeCheckoutSessionState(session: Stripe.Checkout.Session): 
       name: readOptionalString(session.customer_details?.name),
       phone: readOptionalString(session.customer_details?.phone),
     },
+    newsletterConsentCopyVersion: readOptionalString(session.metadata?.newsletterConsentCopyVersion),
     newsletterOptIn: session.metadata?.newsletterOptIn === 'true',
     orderId: readOptionalString(session.metadata?.orderId),
     paymentStatus: session.payment_status as StripeCheckoutPaymentStatus,

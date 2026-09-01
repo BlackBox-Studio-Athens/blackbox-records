@@ -82,7 +82,7 @@ export type PaidOrderEmailAddress = {
 
 export type PaidOrderEmailShopperContact = {
   email: string;
-  phone: string;
+  phone: string | null;
 };
 
 export type PaidOrderEmailInput = {
