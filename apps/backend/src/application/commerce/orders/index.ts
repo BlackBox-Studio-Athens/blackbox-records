@@ -32,6 +32,8 @@ export type {
   PaidOrderDeliveryKind,
   PaidOrderDeliveryRepository,
   PaidOrderDeliverySafeReason,
+  PaidOrderDeliveryStatus,
+  PaidOrderDeliverySummary,
 } from './paid-order-delivery';
 export { attemptPaidOrderDelivery, createPaidOrderDeliveryId } from './paid-order-delivery';
 export {

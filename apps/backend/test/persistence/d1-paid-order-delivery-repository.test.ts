@@ -148,6 +148,19 @@ describe('D1PaidOrderDeliveryRepository', () => {
       nextAttemptAt: null,
       status: 'delivered',
     });
+
+    const summaries = await repository.listSummaries([await readDeliveryOrderId(deliveryId)]);
+    expect(summaries).toEqual([
+      expect.objectContaining({
+        attemptCount: 1,
+        deliveredAt: new Date('2026-09-01T10:01:00.000Z'),
+        id: deliveryId,
+        kind: 'shopper_confirmation',
+        status: 'delivered',
+      }),
+    ]);
+    expect(summaries[0]).not.toHaveProperty('leaseUntil');
+    expect(summaries[0]).not.toHaveProperty('providerMessageId');
   });
 });
 
@@ -157,6 +170,14 @@ async function readDelivery(deliveryId: string) {
   )
     .bind(deliveryId)
     .first();
+}
+
+async function readDeliveryOrderId(deliveryId: string): Promise<string> {
+  const row = await env.COMMERCE_DB.prepare('SELECT "orderId" FROM "PaidOrderDelivery" WHERE "id" = ?')
+    .bind(deliveryId)
+    .first<{ orderId: string }>();
+
+  return row!.orderId;
 }
 
 async function seedPendingDelivery(input: { nextAttemptAt?: string } = {}): Promise<string> {

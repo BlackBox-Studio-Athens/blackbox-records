@@ -14,6 +14,21 @@ import type { CurrentPaidCheckoutOrder } from '../../../domain/commerce/reposito
 import { createCheckoutOrderReferenceToken } from './order-reference-token';
 
 export type PaidOrderDeliveryKind = 'newsletter_registration' | 'ops_fulfillment' | 'shopper_confirmation';
+export type PaidOrderDeliveryStatus = 'delivered' | 'needs_review' | 'pending';
+
+export type PaidOrderDeliverySummary = {
+  attemptCount: number;
+  createdAt: Date;
+  deliveredAt: Date | null;
+  id: string;
+  kind: PaidOrderDeliveryKind;
+  needsReviewAt: Date | null;
+  nextAttemptAt: Date | null;
+  orderId: string;
+  safeReason: string | null;
+  status: PaidOrderDeliveryStatus;
+  updatedAt: Date;
+};
 
 export type ClaimedPaidOrderDelivery = {
   attemptCount: number;
@@ -32,6 +47,7 @@ export type ClaimDuePaidOrderDeliveryResult =
 
 export interface PaidOrderDeliveryRepository {
   claimDue(input: { claimedAt: Date; deliveryId: string | null }): Promise<ClaimDuePaidOrderDeliveryResult>;
+  listSummaries(orderIds: string[]): Promise<PaidOrderDeliverySummary[]>;
   markDelivered(input: {
     deliveredAt: Date;
     delivery: ClaimedPaidOrderDelivery;

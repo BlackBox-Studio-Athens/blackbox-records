@@ -665,7 +665,8 @@ describe('public commerce routes', () => {
 
     expect(response.status).toBe(200);
     expectNoStoreCacheControl(response);
-    await expect(response.json()).resolves.toEqual({
+    const body = await response.json();
+    expect(body).toEqual({
       checkoutSessionId: 'cs_test_123',
       orderStatus: 'paid',
       paymentStatus: 'paid',
@@ -673,5 +674,9 @@ describe('public commerce routes', () => {
       state: 'paid',
       status: 'complete',
     });
+    expect(JSON.stringify(body)).not.toContain('fulfillment');
+    expect(JSON.stringify(body)).not.toContain('deliveries');
+    expect(JSON.stringify(body)).not.toContain('shopperEmail');
+    expect(JSON.stringify(body)).not.toContain('shippingAddress');
   });
 });

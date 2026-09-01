@@ -142,6 +142,10 @@ class InMemoryPaidOrderDeliveryRepository implements PaidOrderDeliveryRepository
     return { delivery: this.deliveries.splice(index, 1)[0]!, kind: 'claimed' } as const;
   }
 
+  public async listSummaries() {
+    return [];
+  }
+
   public async markDelivered(input: { delivery: ClaimedPaidOrderDelivery }): Promise<boolean> {
     this.delivered.push(input.delivery);
     return true;

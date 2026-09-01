@@ -2,16 +2,20 @@ import type {
   ClaimedPaidOrderDelivery,
   PaidOrderDeliveryKind,
   PaidOrderDeliveryRepository,
+  PaidOrderDeliverySummary,
 } from '../../application/commerce/orders';
 
 type PaidOrderDeliveryRow = {
   attemptCount: number;
   createdAt: string;
+  deliveredAt?: string | null;
   id: string;
   kind: PaidOrderDeliveryKind;
   leaseUntil: string | null;
+  needsReviewAt?: string | null;
   nextAttemptAt: string | null;
   orderId: string;
+  safeReason?: string | null;
   status: 'delivered' | 'needs_review' | 'pending';
   updatedAt: string;
 };
@@ -73,6 +77,26 @@ export class D1PaidOrderDeliveryRepository implements PaidOrderDeliveryRepositor
     }
 
     return { delivery: mapClaimedDelivery(claimed), kind: 'claimed' } as const;
+  }
+
+  public async listSummaries(orderIds: string[]): Promise<PaidOrderDeliverySummary[]> {
+    if (orderIds.length === 0) return [];
+
+    const placeholders = orderIds.map(() => '?').join(', ');
+    const result = await this.db
+      .prepare(
+        [
+          'SELECT "id", "orderId", "kind", "status", "attemptCount", "nextAttemptAt", "safeReason",',
+          '       "deliveredAt", "needsReviewAt", "createdAt", "updatedAt"',
+          'FROM "PaidOrderDelivery"',
+          `WHERE "orderId" IN (${placeholders})`,
+          'ORDER BY "createdAt" ASC, "id" ASC',
+        ].join('\n'),
+      )
+      .bind(...orderIds)
+      .all<PaidOrderDeliveryRow>();
+
+    return result.results.map(mapDeliverySummary);
   }
 
   public async markDelivered(input: {
@@ -176,6 +200,22 @@ function mapClaimedDelivery(row: PaidOrderDeliveryRow): ClaimedPaidOrderDelivery
     nextAttemptAt: new Date(row.nextAttemptAt!),
     orderId: row.orderId,
     status: 'pending',
+    updatedAt: new Date(row.updatedAt),
+  };
+}
+
+function mapDeliverySummary(row: PaidOrderDeliveryRow): PaidOrderDeliverySummary {
+  return {
+    attemptCount: row.attemptCount,
+    createdAt: new Date(row.createdAt),
+    deliveredAt: row.deliveredAt ? new Date(row.deliveredAt) : null,
+    id: row.id,
+    kind: row.kind,
+    needsReviewAt: row.needsReviewAt ? new Date(row.needsReviewAt) : null,
+    nextAttemptAt: row.nextAttemptAt ? new Date(row.nextAttemptAt) : null,
+    orderId: row.orderId,
+    safeReason: row.safeReason ?? null,
+    status: row.status,
     updatedAt: new Date(row.updatedAt),
   };
 }

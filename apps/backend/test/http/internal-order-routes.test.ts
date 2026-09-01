@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createHttpApp } from '../../src/interfaces/http/app';
+import { currentPaidCheckoutOrder } from '../fixtures/current-paid-checkout-order';
 
 const LOCAL_ENV = {
   PRODUCT_ENVIRONMENT: 'LOCAL' as const,
@@ -57,26 +58,26 @@ describe('internal order routes', () => {
   });
 
   it('lists recent checkout orders for operators on the protected internal surface', async () => {
+    const paidOrder = currentPaidCheckoutOrder();
     mockReadRecentCheckoutOrders.mockResolvedValueOnce([
       {
-        checkoutExpiresAt: new Date('2026-04-25T10:30:00.000Z'),
-        checkoutSessionId: 'cs_test_paid',
-        createdAt: new Date('2026-04-25T10:00:00.000Z'),
-        id: 'order_1',
-        needsReviewAt: null,
-        notPaidAt: null,
-        paidAt: new Date('2026-04-25T10:05:00.000Z'),
-        shippingLocker: {
-          country_code: 'GR',
-          locker_id: '4',
-          locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
-        },
-        status: 'paid',
-        statusUpdatedAt: new Date('2026-04-25T10:05:00.000Z'),
-        storeItemSlug: 'disintegration-black-vinyl-lp',
-        stripePaymentIntentId: 'pi_test_paid',
-        updatedAt: new Date('2026-04-25T10:05:00.000Z'),
-        variantId: 'variant_disintegration-black-vinyl-lp_standard',
+        deliveries: [
+          {
+            attemptCount: 1,
+            createdAt: new Date('2026-08-31T10:00:00.000Z'),
+            deliveredAt: new Date('2026-08-31T10:01:00.000Z'),
+            id: 'delivery_internal_only',
+            kind: 'shopper_confirmation',
+            needsReviewAt: null,
+            nextAttemptAt: null,
+            orderId: paidOrder.id,
+            providerMessageId: 'provider_internal_only',
+            safeReason: null,
+            status: 'delivered',
+            updatedAt: new Date('2026-08-31T10:01:00.000Z'),
+          },
+        ],
+        order: paidOrder,
       },
     ]);
 
@@ -93,45 +94,80 @@ describe('internal order routes', () => {
     });
     expect(response.status).toBe(200);
     expectNoStoreCacheControl(response);
-    await expect(response.json()).resolves.toEqual([
-      {
-        checkoutExpiresAt: '2026-04-25T10:30:00.000Z',
-        checkoutSessionId: 'cs_test_paid',
-        createdAt: '2026-04-25T10:00:00.000Z',
-        needsReviewAt: null,
-        notPaidAt: null,
-        paidAt: '2026-04-25T10:05:00.000Z',
-        shippingLocker: {
-          country_code: 'GR',
-          locker_id: '4',
-          locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
+    const body = await response.json();
+    expect(body).toEqual([
+      expect.objectContaining({
+        deliveries: [
+          {
+            attemptCount: 1,
+            createdAt: '2026-08-31T10:00:00.000Z',
+            deliveredAt: '2026-08-31T10:01:00.000Z',
+            kind: 'shopper_confirmation',
+            needsReviewAt: null,
+            nextAttemptAt: null,
+            safeReason: null,
+            status: 'delivered',
+            updatedAt: '2026-08-31T10:01:00.000Z',
+          },
+        ],
+        fulfillment: {
+          amountTotalMinor: 2500,
+          currencyCode: 'EUR',
+          kind: 'current',
+          lines: [
+            expect.objectContaining({
+              displayName: 'Disintegration Black Vinyl LP',
+              lineAmountMinor: 2500,
+              unitAmountMinor: 2500,
+            }),
+          ],
+          newsletterConsent: {
+            consentedAt: '2026-08-31T10:00:00.000Z',
+            copyVersion: 'blackbox-newsletter-v1',
+            optedIn: true,
+          },
+          paidAt: '2026-08-31T10:00:00.000Z',
+          recipientName: 'Buyer Name',
+          shippingAddress: {
+            city: 'Athens',
+            country: 'GR',
+            line1: 'Long Street 1',
+            line2: null,
+            postalCode: '10558',
+            state: null,
+          },
+          shopperContact: {
+            email: 'buyer@example.com',
+            phone: '+302100000000',
+          },
         },
         status: 'paid',
-        statusUpdatedAt: '2026-04-25T10:05:00.000Z',
-        storeItemSlug: 'disintegration-black-vinyl-lp',
-        stripePaymentIntentId: 'pi_test_paid',
-        updatedAt: '2026-04-25T10:05:00.000Z',
-        variantId: 'variant_disintegration-black-vinyl-lp_standard',
-      },
+      }),
     ]);
+    expect(JSON.stringify(body)).not.toContain('provider_internal_only');
+    expect(JSON.stringify(body)).not.toContain('delivery_internal_only');
+    expect(JSON.stringify(body)).not.toContain('leaseUntil');
   });
 
   it('returns checkout order detail by checkout session id', async () => {
     mockReadCheckoutOrder.mockResolvedValueOnce({
-      checkoutExpiresAt: new Date('2026-04-25T11:30:00.000Z'),
-      checkoutSessionId: 'cs_test_review',
-      createdAt: new Date('2026-04-25T11:00:00.000Z'),
-      id: 'order_2',
-      needsReviewAt: new Date('2026-04-25T11:05:00.000Z'),
-      notPaidAt: null,
-      paidAt: null,
-      shippingLocker: null,
-      status: 'needs_review',
-      statusUpdatedAt: new Date('2026-04-25T11:05:00.000Z'),
-      storeItemSlug: 'caregivers-vinyl',
-      stripePaymentIntentId: null,
-      updatedAt: new Date('2026-04-25T11:05:00.000Z'),
-      variantId: 'variant_caregivers-vinyl_standard',
+      deliveries: [],
+      order: {
+        checkoutExpiresAt: new Date('2026-04-25T11:30:00.000Z'),
+        checkoutSessionId: 'cs_test_review',
+        createdAt: new Date('2026-04-25T11:00:00.000Z'),
+        id: 'order_2',
+        needsReviewAt: new Date('2026-04-25T11:05:00.000Z'),
+        notPaidAt: null,
+        paidAt: null,
+        shippingLocker: null,
+        status: 'needs_review',
+        statusUpdatedAt: new Date('2026-04-25T11:05:00.000Z'),
+        storeItemSlug: 'caregivers-vinyl',
+        stripePaymentIntentId: null,
+        updatedAt: new Date('2026-04-25T11:05:00.000Z'),
+        variantId: 'variant_caregivers-vinyl_standard',
+      },
     });
 
     const app = createHttpApp();
@@ -148,6 +184,8 @@ describe('internal order routes', () => {
       checkoutExpiresAt: '2026-04-25T11:30:00.000Z',
       checkoutSessionId: 'cs_test_review',
       createdAt: '2026-04-25T11:00:00.000Z',
+      deliveries: [],
+      fulfillment: { kind: 'unavailable' },
       needsReviewAt: '2026-04-25T11:05:00.000Z',
       notPaidAt: null,
       paidAt: null,
@@ -159,6 +197,33 @@ describe('internal order routes', () => {
       updatedAt: '2026-04-25T11:05:00.000Z',
       variantId: 'variant_caregivers-vinyl_standard',
     });
+  });
+
+  it('does not expose partial fulfillment fields from an incomplete paid row', async () => {
+    mockReadCheckoutOrder.mockResolvedValueOnce({
+      deliveries: [],
+      order: {
+        ...currentPaidCheckoutOrder(),
+        recipientName: null,
+        shopperEmail: 'must-not-leak@example.com',
+        shippingAddressLine1: 'Must Not Leak 1',
+      },
+    });
+
+    const response = await createHttpApp().request(
+      'http://127.0.0.1/api/internal/orders/checkout-sessions/cs_test_paid',
+      undefined,
+      LOCAL_ENV,
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    expect(body).toEqual(
+      expect.objectContaining({ fulfillment: { kind: 'incomplete', reason: 'incomplete_paid_fulfillment' } }),
+    );
+    expect(JSON.stringify(body)).not.toContain('must-not-leak@example.com');
+    expect(JSON.stringify(body)).not.toContain('Must Not Leak 1');
   });
 
   it('returns 404 when an order cannot be found by checkout session id', async () => {
