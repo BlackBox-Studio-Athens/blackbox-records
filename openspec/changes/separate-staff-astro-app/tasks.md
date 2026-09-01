@@ -14,10 +14,10 @@
 
 - [x] 3.1 Update root `test:unit`, `check`, and `build` orchestration to include `@blackbox/staff` while preserving focused `build:web` and adding `build:staff`; verify all commands select the intended packages and no API generation runs.
 - [x] 3.2 Extend `.github/workflows/pages.yml` so the gated PRD build hands off separate public and staff artifacts and a staff deploy job uploads only `apps/staff/dist` to `blackbox-records-staff`; verify manual targets and job dependencies cannot swap the two artifacts.
-- [ ] 3.3 Create the `blackbox-records-staff` Pages project if absent and run one initial artifact deployment without attaching the custom domain, Worker route, or Access policy; verify the recorded deployment belongs to the expected project and commit.
+- [x] 3.3 Create the `blackbox-records-staff` Pages project if absent and run one initial artifact deployment without attaching the custom domain, Worker route, or Access policy; verify the recorded deployment belongs to the expected project and commit.
 
 ## 4. Acceptance and Handoff
 
 - [x] 4.1 Use Browser Use against the Local staff app to verify `/` redirects to `/stock/`, a direct stock detail URL loads, and read/mutation behavior still uses the configured Worker boundary without public app-shell or `/admin/` content.
 - [x] 4.2 Run `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, `pnpm build`, and `pnpm openspec -- validate separate-staff-astro-app --strict`; verify both frontend artifacts pass their route-isolation checks.
-- [ ] 4.3 Record the completed app/project handoff in `verify-operator-access-jwt`, leaving custom-domain attachment, same-origin Worker routing, Access setup, PRD secrets, and hosted JWT proof to that change.
+- [x] 4.3 Record the completed app/project handoff in `verify-operator-access-jwt`, leaving custom-domain attachment, same-origin Worker routing, Access setup, PRD secrets, and hosted JWT proof to that change.

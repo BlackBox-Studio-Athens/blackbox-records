@@ -3,7 +3,7 @@
 - [x] 1.1 Run `pnpm openspec:guard`, verify `align-cloudflare-environment-names` is complete and archived, then add jose 6.2.3 as a direct backend dependency; verify the lockfile has one compatible jose resolution and trust config uses only Local/UAT/PRD names.
 - [x] 1.2 Add validated CF_ACCESS_TEAM_DOMAIN, CF_ACCESS_POLICY_AUD, and Local-only LOCAL_OPERATOR_EMAIL bindings; verify hosted profiles cannot select the Local branch.
 - [x] 1.3 Confirm the operator Access application uses Google and the approved allowlist independently from Decap; verify no Decap credential or callback enters backend runtime config.
-- [x] 1.4 Extend runtime config verification so Local requires its loopback operator identity and UAT/PRD require both Access trust values before hosted proof can begin.
+- [ ] 1.4 Revise runtime config verification so Local requires its loopback operator identity, UAT without an operator surface does not require Access trust values but remains fail-closed for internal requests, and PRD requires both trust values before hosted proof can begin.
 
 ## 2. One Verified Identity Boundary
 
@@ -20,6 +20,6 @@
 
 ## 4. Hosted Proof and Completion
 
-- [ ] 4.1 Configure UAT trust values, then use Browser Use to prove an allowlisted operator can read and perform one audited mutation through the protected hostname.
-- [ ] 4.2 Probe workers.dev and every reachable UAT hostname without a valid assertion and with a forged forwarded email; verify denial before D1 access.
-- [ ] 4.3 Repository gates and strict validation already pass locally. After 4.1 and 4.2, rerun generation only if contracts changed, then rerun `pnpm test:unit`, `pnpm check`, `pnpm build`, and `pnpm openspec -- validate verify-operator-access-jwt --strict`; archive only after the exact UAT proof tree passes.
+- [ ] 4.1 With `apps/staff` deployed to `blackbox-records-staff`, attach `staff.blackboxrecordsathens.com`, configure its same-origin PRD Worker route, Access application, and PRD trust values, then use Browser Use to prove the allowlisted shared Google identity can read and perform one no-net audited mutation.
+- [ ] 4.2 Probe PRD workers.dev, `staff.blackboxrecordsathens.com`, and every other reachable PRD Worker hostname without a valid assertion and with a forged forwarded email; verify denial before D1 access.
+- [ ] 4.3 After 1.4, 4.1, and 4.2, rerun generation only if contracts changed, then rerun `pnpm test:unit`, `pnpm check`, `pnpm build`, and `pnpm openspec -- validate verify-operator-access-jwt --strict`; archive only after the exact PRD proof tree passes.
