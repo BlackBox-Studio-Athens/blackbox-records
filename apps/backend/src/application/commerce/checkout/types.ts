@@ -54,9 +54,13 @@ export type HostedCheckoutSessionRequest = {
 };
 
 export type CheckoutSessionLineItem = {
+  displayName: string;
+  lineAmountMinor: number | null;
+  optionLabel: string | null;
   quantity: CartQuantity;
   storeItemSlug: StoreItemSlug;
   stripePriceId: StripePriceId;
+  unitAmountMinor: number | null;
   variantId: VariantId;
 };
 

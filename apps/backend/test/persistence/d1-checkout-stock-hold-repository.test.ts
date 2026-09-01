@@ -23,9 +23,13 @@ describe('D1CheckoutStockHoldRepository', () => {
         createdAt,
         lines: [
           {
+            displayName: 'Hold race item',
+            lineAmountMinor: 2500,
+            optionLabel: null,
             quantity: createCartQuantity(1),
             storeItemSlug: parseStoreItemSlug('hold-race-item'),
             stripePriceId: parseStripePriceId('price_test_hold_race'),
+            unitAmountMinor: 2500,
             variantId,
           },
         ],
@@ -36,6 +40,18 @@ describe('D1CheckoutStockHoldRepository', () => {
 
     expect(results.map((result) => result.kind).sort()).toEqual(['created', 'unavailable']);
     expect(await repository.findEffectiveAvailability(variantId)).toBe(0);
+    await expect(
+      env.COMMERCE_DB.prepare(
+        'SELECT "displayName", "optionLabel", "unitAmountMinor", "lineAmountMinor" FROM "CheckoutOrderLine" WHERE "variantId" = ?',
+      )
+        .bind(variantId)
+        .first(),
+    ).resolves.toEqual({
+      displayName: 'Hold race item',
+      lineAmountMinor: 2500,
+      optionLabel: null,
+      unitAmountMinor: 2500,
+    });
   });
 
   it('commits no order or line when one cart line is unavailable', async () => {
@@ -52,15 +68,23 @@ describe('D1CheckoutStockHoldRepository', () => {
         createdAt: new Date('2026-08-31T21:00:00.000Z'),
         lines: [
           {
+            displayName: 'Available item',
+            lineAmountMinor: 2500,
+            optionLabel: null,
             quantity: createCartQuantity(1),
             storeItemSlug: parseStoreItemSlug('hold-available-item'),
             stripePriceId: parseStripePriceId('price_test_hold_available'),
+            unitAmountMinor: 2500,
             variantId: availableVariantId,
           },
           {
+            displayName: 'Unavailable item',
+            lineAmountMinor: 2500,
+            optionLabel: null,
             quantity: createCartQuantity(1),
             storeItemSlug: parseStoreItemSlug('hold-unavailable-item'),
             stripePriceId: parseStripePriceId('price_test_hold_unavailable'),
+            unitAmountMinor: 2500,
             variantId: unavailableVariantId,
           },
         ],
@@ -89,9 +113,13 @@ describe('D1CheckoutStockHoldRepository', () => {
       createdAt: new Date('2026-08-31T22:00:00.000Z'),
       lines: [
         {
+          displayName: 'Binding item',
+          lineAmountMinor: 2500,
+          optionLabel: null,
           quantity: createCartQuantity(1),
           storeItemSlug: parseStoreItemSlug('hold-binding-item'),
           stripePriceId: parseStripePriceId('price_test_hold_binding'),
+          unitAmountMinor: 2500,
           variantId,
         },
       ],
@@ -127,9 +155,13 @@ describe('D1CheckoutStockHoldRepository', () => {
         createdAt,
         lines: [
           {
+            displayName: 'Cleanup item',
+            lineAmountMinor: 2500,
+            optionLabel: null,
             quantity: createCartQuantity(1),
             storeItemSlug: parseStoreItemSlug('hold-cleanup-item'),
             stripePriceId: parseStripePriceId(`price_test_hold_cleanup_${index}`),
+            unitAmountMinor: 2500,
             variantId,
           },
         ],

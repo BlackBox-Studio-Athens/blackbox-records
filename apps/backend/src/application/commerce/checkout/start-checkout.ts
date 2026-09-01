@@ -169,19 +169,22 @@ export async function startCheckout(
       productProjection,
     });
     const resolvedPrice = catalogResult.resolvedPrice;
+    const offerPrice = resolvedPrice ? createStoreOfferPriceFromCatalogPrice(resolvedPrice) : null;
 
-    if (
-      !resolvedPrice ||
-      !createStoreOfferPriceFromCatalogPrice(resolvedPrice) ||
-      hasBlockingCatalogIssue(catalogResult.issues)
-    ) {
+    if (!resolvedPrice || !offerPrice || hasBlockingCatalogIssue(catalogResult.issues)) {
       throw new CatalogDriftError();
     }
 
+    const unitAmountMinor = offerPrice.kind === 'fixed' ? offerPrice.amountMinor : null;
+
     validatedLines.push({
+      displayName: productProjection.name,
+      lineAmountMinor: unitAmountMinor === null ? null : unitAmountMinor * quantity,
+      optionLabel: null,
       quantity,
       storeItemSlug: line.storeItemSlug,
       stripePriceId: resolvedPrice.priceId,
+      unitAmountMinor,
       variantId: line.variantId,
     });
   }

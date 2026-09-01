@@ -49,11 +49,15 @@ type CheckoutOrderRow = {
 
 type CheckoutOrderLineRow = {
   createdAt: string;
+  displayName: null | string;
   id: string;
+  lineAmountMinor: null | number;
+  optionLabel: null | string;
   orderId: string;
   quantity: number;
   storeItemSlug: string;
   stripePriceId: null | string;
+  unitAmountMinor: null | number;
   variantId: string;
 };
 
@@ -110,7 +114,11 @@ const checkoutOrderLinesSql = [
   '  "storeItemSlug",',
   '  "variantId",',
   '  "stripePriceId",',
+  '  "displayName",',
+  '  "optionLabel",',
   '  "quantity",',
+  '  "unitAmountMinor",',
+  '  "lineAmountMinor",',
   '  "createdAt"',
   'FROM "CheckoutOrderLine"',
   'WHERE "orderId" = ?',
@@ -427,11 +435,15 @@ function mapCheckoutOrder(row: CheckoutOrderRow, lines: CheckoutOrderLineRecord[
 function mapCheckoutOrderLine(row: CheckoutOrderLineRow): CheckoutOrderLineRecord {
   return {
     createdAt: new Date(row.createdAt),
+    displayName: row.displayName,
     id: row.id,
+    lineAmountMinor: row.lineAmountMinor,
+    optionLabel: row.optionLabel,
     orderId: row.orderId,
     quantity: createCartQuantity(row.quantity),
     stripePriceId: row.stripePriceId ? parseStripePriceId(row.stripePriceId) : null,
     storeItemSlug: parseStoreItemSlug(row.storeItemSlug),
+    unitAmountMinor: row.unitAmountMinor,
     variantId: parseVariantId(row.variantId),
   };
 }

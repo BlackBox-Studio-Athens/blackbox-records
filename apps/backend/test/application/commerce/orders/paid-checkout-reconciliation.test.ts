@@ -54,19 +54,27 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
       lines: (
         input.lines ?? [
           {
+            displayName: null,
+            lineAmountMinor: null,
+            optionLabel: null,
             quantity: cartQuantity(1),
             storeItemSlug: input.storeItemSlug,
             stripePriceId: null,
+            unitAmountMinor: null,
             variantId: input.variantId,
           },
         ]
       ).map((line, index) => ({
         createdAt,
+        displayName: line.displayName,
         id: `order_line_${index + 1}`,
+        lineAmountMinor: line.lineAmountMinor,
+        optionLabel: line.optionLabel,
         orderId: `order_${this.records.size + 1}`,
         quantity: line.quantity,
         stripePriceId: line.stripePriceId ?? null,
         storeItemSlug: line.storeItemSlug,
+        unitAmountMinor: line.unitAmountMinor,
         variantId: line.variantId,
       })),
     };
@@ -190,9 +198,13 @@ describe('paid checkout reconciliation', () => {
       checkoutSessionId: primaryCheckoutSessionId,
       lines: [
         {
+          displayName: 'Disintegration Black Vinyl LP',
+          lineAmountMinor: 2500,
+          optionLabel: null,
           quantity: cartQuantity(1),
           stripePriceId: primaryStripePriceId,
           storeItemSlug: primaryStoreItemSlug,
+          unitAmountMinor: 2500,
           variantId,
         },
       ],

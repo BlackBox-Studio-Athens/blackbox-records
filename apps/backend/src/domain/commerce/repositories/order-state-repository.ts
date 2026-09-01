@@ -28,12 +28,16 @@ export type CheckoutOrderRecord = {
 };
 
 export type CheckoutOrderLineRecord = {
+  displayName: string | null;
   id: string;
+  lineAmountMinor: number | null;
+  optionLabel: string | null;
   orderId: string;
   stripePriceId: StripePriceId | null;
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
   quantity: CartQuantity;
+  unitAmountMinor: number | null;
   createdAt: Date;
 };
 
@@ -49,9 +53,13 @@ export type CreatePendingCheckoutOrderInput = {
 };
 
 export type CreatePendingCheckoutOrderLineInput = {
+  displayName: string | null;
+  lineAmountMinor: number | null;
+  optionLabel: string | null;
   quantity: CartQuantity;
   stripePriceId?: StripePriceId | null;
   storeItemSlug: StoreItemSlug;
+  unitAmountMinor: number | null;
   variantId: VariantId;
 };
 

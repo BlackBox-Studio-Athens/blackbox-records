@@ -52,9 +52,13 @@ describe('StripeCheckoutGateway', () => {
         checkoutExpiresAt: new Date('2026-04-24T10:30:00.000Z'),
         lineItems: [
           {
+            displayName: 'Disintegration Black Vinyl LP',
+            lineAmountMinor: 5000,
+            optionLabel: null,
             quantity: cartQuantity(2),
             storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
             stripePriceId: stripePriceId('price_test_barren_point'),
+            unitAmountMinor: 2500,
             variantId: variantId('variant_disintegration-black-vinyl-lp_standard'),
           },
         ],

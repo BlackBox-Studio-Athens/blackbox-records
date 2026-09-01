@@ -23,9 +23,13 @@ export type CreatePendingCheckoutOrderCommand = {
 };
 
 export type CreatePendingCheckoutOrderLineCommand = {
+  displayName: string | null;
+  lineAmountMinor: number | null;
+  optionLabel: string | null;
   quantity: CartQuantity;
   stripePriceId?: StripePriceId | null;
   storeItemSlug: StoreItemSlug;
+  unitAmountMinor: number | null;
   variantId: VariantId;
 };
 

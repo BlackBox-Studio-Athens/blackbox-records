@@ -166,11 +166,15 @@ function readCheckoutOrderLines(order: CheckoutOrderRecord): CheckoutOrderLineRe
     : [
         {
           createdAt: order.createdAt,
+          displayName: null,
           id: order.id,
+          lineAmountMinor: null,
+          optionLabel: null,
           orderId: order.id,
           quantity: createCartQuantity(1),
           storeItemSlug: order.storeItemSlug,
           stripePriceId: null,
+          unitAmountMinor: null,
           variantId: order.variantId,
         },
       ];

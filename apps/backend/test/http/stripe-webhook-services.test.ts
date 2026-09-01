@@ -35,9 +35,13 @@ describe('stripe webhook email handoff', () => {
       checkoutOrderPaidEvent({
         lineItems: [
           {
+            displayName: 'Unknown item',
+            lineAmountMinor: 2500,
+            optionLabel: null,
             quantity: 1,
             storeItemSlug: 'unknown-item',
             stripePriceId: null,
+            unitAmountMinor: 2500,
             variantId: 'variant_unknown-item_standard',
           },
         ],
@@ -63,9 +67,13 @@ function checkoutOrderPaidEvent(overrides: Partial<CheckoutOrderPaid> = {}): Che
     customerName: 'Buyer Name',
     lineItems: [
       {
+        displayName: 'Disintegration Black Vinyl LP',
+        lineAmountMinor: 2500,
+        optionLabel: null,
         quantity: 1,
         storeItemSlug: 'disintegration-black-vinyl-lp',
         stripePriceId: 'price_test_123',
+        unitAmountMinor: 2500,
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
     ],

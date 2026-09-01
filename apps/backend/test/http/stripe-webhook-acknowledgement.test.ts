@@ -529,9 +529,13 @@ function createCheckoutOrderPaidFixture(): CheckoutOrderPaid {
     customerName: 'Buyer Name',
     lineItems: [
       {
+        displayName: 'Disintegration Black Vinyl LP',
+        lineAmountMinor: 2500,
+        optionLabel: null,
         quantity: 1,
         storeItemSlug: 'disintegration-black-vinyl-lp',
         stripePriceId: 'price_test_123',
+        unitAmountMinor: 2500,
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
     ],

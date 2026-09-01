@@ -3,9 +3,13 @@ import type { CartQuantity, StockQuantity } from '../quantities';
 import type { CheckoutOrderLineRecord, CheckoutOrderRecord } from './order-state-repository';
 
 export type CheckoutStockHoldLineInput = {
+  displayName: string;
+  lineAmountMinor: number | null;
+  optionLabel: string | null;
   quantity: CartQuantity;
   storeItemSlug: StoreItemSlug;
   stripePriceId: StripePriceId;
+  unitAmountMinor: number | null;
   variantId: VariantId;
 };
 

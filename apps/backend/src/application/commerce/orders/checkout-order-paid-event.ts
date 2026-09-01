@@ -3,9 +3,13 @@ import type { CheckoutOrderLineRecord, CheckoutOrderRecord } from '../../../doma
 import { type CheckoutOrderReferenceToken, createCheckoutOrderReferenceToken } from './order-reference-token';
 
 export type CheckoutOrderPaidLineItem = {
+  displayName: string | null;
+  lineAmountMinor: number | null;
+  optionLabel: string | null;
   quantity: number;
   storeItemSlug: string;
   stripePriceId: string | null;
+  unitAmountMinor: number | null;
   variantId: string;
 };
 
@@ -58,9 +62,13 @@ export function createCheckoutOrderPaidEvent(input: {
     currencyCode: input.reconciliation.source.currencyCode,
     customerName: input.reconciliation.source.customer.name,
     lineItems: input.lineItems.map((lineItem) => ({
+      displayName: lineItem.displayName,
+      lineAmountMinor: lineItem.lineAmountMinor,
+      optionLabel: lineItem.optionLabel,
       quantity: lineItem.quantity,
       storeItemSlug: lineItem.storeItemSlug,
       stripePriceId: lineItem.stripePriceId,
+      unitAmountMinor: lineItem.unitAmountMinor,
       variantId: lineItem.variantId,
     })),
     newsletterOptIn: input.reconciliation.source.newsletterOptIn,

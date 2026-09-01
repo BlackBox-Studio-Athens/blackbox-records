@@ -65,23 +65,31 @@ function mapCheckoutOrder(record: {
 }
 
 type CheckoutOrderLineRow = {
+  displayName: string | null;
   id: string;
+  lineAmountMinor: number | null;
+  optionLabel: string | null;
   orderId: string;
   stripePriceId: string | null;
   storeItemSlug: string;
   variantId: string;
   quantity: number;
+  unitAmountMinor: number | null;
   createdAt: Date | string;
 };
 
 function mapCheckoutOrderLine(row: CheckoutOrderLineRow): CheckoutOrderLineRecord {
   return {
     createdAt: row.createdAt instanceof Date ? row.createdAt : new Date(row.createdAt),
+    displayName: row.displayName,
     id: row.id,
+    lineAmountMinor: row.lineAmountMinor,
+    optionLabel: row.optionLabel,
     orderId: row.orderId,
     quantity: createCartQuantity(row.quantity),
     stripePriceId: row.stripePriceId ? parseStripePriceId(row.stripePriceId) : null,
     storeItemSlug: parseStoreItemSlug(row.storeItemSlug),
+    unitAmountMinor: row.unitAmountMinor,
     variantId: parseVariantId(row.variantId),
   };
 }
@@ -110,7 +118,15 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
     const lines = await this.createCheckoutOrderLines(
       record.id,
       input.lines ?? [
-        { quantity: createCartQuantity(1), storeItemSlug: input.storeItemSlug, variantId: input.variantId },
+        {
+          displayName: null,
+          lineAmountMinor: null,
+          optionLabel: null,
+          quantity: createCartQuantity(1),
+          storeItemSlug: input.storeItemSlug,
+          unitAmountMinor: null,
+          variantId: input.variantId,
+        },
       ],
       createdAt,
     );
@@ -186,23 +202,31 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
       const id = crypto.randomUUID();
 
       await this.prisma.$executeRawUnsafe(
-        'INSERT INTO "CheckoutOrderLine" ("id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "quantity", "createdAt") VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO "CheckoutOrderLine" ("id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "displayName", "optionLabel", "quantity", "unitAmountMinor", "lineAmountMinor", "createdAt") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         id,
         orderId,
         line.storeItemSlug,
         line.variantId,
         line.stripePriceId ?? null,
+        line.displayName,
+        line.optionLabel,
         line.quantity,
+        line.unitAmountMinor,
+        line.lineAmountMinor,
         createdAt,
       );
 
       createdLines.push({
         createdAt,
+        displayName: line.displayName,
         id,
+        lineAmountMinor: line.lineAmountMinor,
+        optionLabel: line.optionLabel,
         orderId,
         quantity: line.quantity,
         stripePriceId: line.stripePriceId ?? null,
         storeItemSlug: line.storeItemSlug,
+        unitAmountMinor: line.unitAmountMinor,
         variantId: line.variantId,
       });
     }
@@ -212,7 +236,7 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
 
   private async readCheckoutOrderLines(orderId: string): Promise<CheckoutOrderLineRecord[]> {
     const rows = await this.prisma.$queryRawUnsafe<CheckoutOrderLineRow[]>(
-      'SELECT "id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "quantity", "createdAt" FROM "CheckoutOrderLine" WHERE "orderId" = ? ORDER BY "createdAt" ASC, "id" ASC',
+      'SELECT "id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "displayName", "optionLabel", "quantity", "unitAmountMinor", "lineAmountMinor", "createdAt" FROM "CheckoutOrderLine" WHERE "orderId" = ? ORDER BY "createdAt" ASC, "id" ASC',
       orderId,
     );
 

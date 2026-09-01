@@ -32,11 +32,15 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
     const [primaryLine] = input.lines;
     const lineRecords: CheckoutOrderLineRecord[] = input.lines.map((line) => ({
       createdAt: input.createdAt,
+      displayName: line.displayName,
       id: crypto.randomUUID(),
+      lineAmountMinor: line.lineAmountMinor,
+      optionLabel: line.optionLabel,
       orderId: input.orderId,
       quantity: line.quantity,
       storeItemSlug: line.storeItemSlug,
       stripePriceId: line.stripePriceId,
+      unitAmountMinor: line.unitAmountMinor,
       variantId: line.variantId,
     }));
     const availability = createAllAvailabilityClause(input.lines);
@@ -67,8 +71,9 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
         .prepare(
           [
             'INSERT INTO "CheckoutOrderLine"',
-            '  ("id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "quantity", "createdAt")',
-            'SELECT ?, ?, ?, ?, ?, ?, ?',
+            '  ("id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "displayName", "optionLabel",',
+            '   "quantity", "unitAmountMinor", "lineAmountMinor", "createdAt")',
+            'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?',
             'WHERE EXISTS (SELECT 1 FROM "CheckoutOrder" WHERE "id" = ? AND "status" = ?)',
           ].join('\n'),
         )
@@ -78,7 +83,11 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
           line.storeItemSlug,
           line.variantId,
           line.stripePriceId,
+          line.displayName,
+          line.optionLabel,
           line.quantity,
+          line.unitAmountMinor,
+          line.lineAmountMinor,
           line.createdAt.toISOString(),
           input.orderId,
           'pending_payment',

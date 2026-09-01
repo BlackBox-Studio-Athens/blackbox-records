@@ -925,9 +925,13 @@ describe('checkout use cases', () => {
       expect.objectContaining({
         lineItems: [
           {
+            displayName: 'BlackBox Records - Disintegration - Black Vinyl LP',
+            lineAmountMinor: 2800,
+            optionLabel: null,
             quantity: 1,
             storeItemSlug: 'disintegration-black-vinyl-lp',
             stripePriceId: 'price_test_barren_point',
+            unitAmountMinor: 2800,
             variantId: 'variant_disintegration-black-vinyl-lp_standard',
           },
         ],
@@ -996,9 +1000,13 @@ describe('checkout use cases', () => {
         createdAt,
         lines: [
           {
+            displayName: 'Stale item',
+            lineAmountMinor: 2500,
+            optionLabel: null,
             quantity: cartQuantity(1),
             storeItemSlug: storeItem.storeItemSlug,
             stripePriceId: stripePriceId(`price_test_stale_${index}`),
+            unitAmountMinor: 2500,
             variantId: storeItem.variantId,
           },
         ],
@@ -1060,9 +1068,13 @@ describe('checkout use cases', () => {
       createdAt: new Date(now.getTime() - 31 * 60 * 1000),
       lines: [
         {
+          displayName: 'Stale item',
+          lineAmountMinor: 2500,
+          optionLabel: null,
           quantity: cartQuantity(1),
           storeItemSlug: storeItem.storeItemSlug,
           stripePriceId: stripePriceId('price_test_stale_open'),
+          unitAmountMinor: 2500,
           variantId: storeItem.variantId,
         },
       ],
@@ -1115,9 +1127,13 @@ describe('checkout use cases', () => {
       createdAt: new Date(now.getTime() - 31 * 60 * 1000),
       lines: [
         {
+          displayName: 'Stale item',
+          lineAmountMinor: 2500,
+          optionLabel: null,
           quantity: cartQuantity(1),
           storeItemSlug: storeItem.storeItemSlug,
           stripePriceId: stripePriceId('price_test_stale_error'),
+          unitAmountMinor: 2500,
           variantId: storeItem.variantId,
         },
       ],
@@ -1326,9 +1342,13 @@ describe('checkout use cases', () => {
       expect.objectContaining({
         lineItems: [
           {
+            displayName: 'BlackBox Records - Disintegration - Black Vinyl LP',
+            lineAmountMinor: null,
+            optionLabel: null,
             quantity: 1,
             storeItemSlug: 'disintegration-black-vinyl-lp',
             stripePriceId: 'price_test_pay_what_you_want',
+            unitAmountMinor: null,
             variantId: 'variant_disintegration-black-vinyl-lp_standard',
           },
         ],
@@ -1339,7 +1359,7 @@ describe('checkout use cases', () => {
     );
   });
 
-  it('starts hosted Checkout with requested CartQuantity and fixed Stripe quantity', async () => {
+  it('merges duplicate CartLines into one immutable order-line snapshot per variant', async () => {
     await expect(
       startCheckout(
         storeItems,
@@ -1352,7 +1372,12 @@ describe('checkout use cases', () => {
         {
           lines: [
             {
-              quantity: cartQuantity(2),
+              quantity: cartQuantity(1),
+              storeItemSlug: storeItem.storeItemSlug,
+              variantId: storeItem.variantId,
+            },
+            {
+              quantity: cartQuantity(1),
               storeItemSlug: storeItem.storeItemSlug,
               variantId: storeItem.variantId,
             },
@@ -1370,9 +1395,13 @@ describe('checkout use cases', () => {
       expect.objectContaining({
         lineItems: [
           {
+            displayName: 'BlackBox Records - Disintegration - Black Vinyl LP',
+            lineAmountMinor: 5600,
+            optionLabel: null,
             quantity: 2,
             storeItemSlug: 'disintegration-black-vinyl-lp',
             stripePriceId: 'price_test_barren_point',
+            unitAmountMinor: 2800,
             variantId: 'variant_disintegration-black-vinyl-lp_standard',
           },
         ],
@@ -1381,6 +1410,16 @@ describe('checkout use cases', () => {
         successUrl: 'https://example.com/return',
       }),
     );
+    expect(orders.records.get('cs_test_123')?.lines).toEqual([
+      expect.objectContaining({
+        displayName: 'BlackBox Records - Disintegration - Black Vinyl LP',
+        lineAmountMinor: 5600,
+        optionLabel: null,
+        quantity: 2,
+        unitAmountMinor: 2800,
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      }),
+    ]);
   });
 
   it('passes checkout newsletter opt-in to the hosted Checkout Session request', async () => {
