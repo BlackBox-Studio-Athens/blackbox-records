@@ -44,6 +44,7 @@ Read these first before editing:
 
 - Install deps: `pnpm install`
 - Frontend dev server: `pnpm dev` or `pnpm dev:web`
+- Staff frontend dev server: `pnpm dev:staff`
 - Frontend-only static-site launcher: `pnpm site:dev`
 - Codex/browser-smoke background site launcher: `pnpm site:dev:bg`
 - Background site controls: `pnpm site:dev:status`, `pnpm site:dev:logs`, `pnpm site:dev:stop`
@@ -54,6 +55,7 @@ Read these first before editing:
 - Backend sandbox deploy: `pnpm deploy:backend:sandbox`
 - Backend production deploy: `pnpm deploy:backend:production`
 - Static frontend deploy workflow: `.github/workflows/pages.yml`
+- Staff static build: `pnpm build:staff`
 - Catalog artifact regeneration workflow: `.github/workflows/catalog-artifacts.yml`
 - Catalog promotion workflow: `.github/workflows/catalog-promotion.yml`
 - Full local stack with real Stripe test mode: `pnpm dev:stack:stripe-test`
@@ -142,7 +144,7 @@ Read these first before editing:
   - static Astro detail state: `/stock/?variantId=<variantId>`
   - Worker API: `/api/internal/*`
 - The internal Worker API now exposes operator-only stock routes under `/api/internal/variants/*`.
-- The protected stock operations UI is served by the static Astro app from `apps/web/src/pages/stock/index.astro` and calls same-origin `/api/internal/*` on the protected operator hostname.
+- The protected stock operations UI is served by `apps/staff/src/pages/stock/index.astro` and calls same-origin `/api/internal/*` on the protected operator hostname.
 - For local split-port development, set `PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787` so the static UI can call `pnpm dev:backend`; the Worker must allow that browser origin through `CHECKOUT_RETURN_ORIGINS`.
 - Cloudflare Access + Google protects that hostname through an explicit email allowlist; do not add shopper login or reuse Decap auth for runtime stock operations.
 - Hosted `/api/internal/*` requests require a verified `Cf-Access-Jwt-Assertion`; UAT and PRD must configure exact `CF_ACCESS_TEAM_DOMAIN` issuer and `CF_ACCESS_POLICY_AUD` audience bindings.
@@ -209,6 +211,7 @@ Read these first before editing:
 - Cloudflare Pages PRD builds override those defaults through non-secret `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/` so the artifact serves from the Pages domain root.
 - Do not change `site` or `base` behavior unless the task explicitly requires deployment URL changes.
 - Cloudflare Pages hosting must keep the PRD frontend static and deploy only the prebuilt `apps/web/dist` artifact.
+- The independent staff frontend builds to `apps/staff/dist` and deploys only to the `blackbox-records-staff` Pages project.
 - The static frontend workflow must run `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and PRD `pnpm build` before Direct Upload to the `blackbox-records-web` Pages project.
 - The PRD static build job may pass only non-secret PRD build-target env plus browser-safe public Astro env into the build: `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, and `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`; keep `PUBLIC_CHECKOUT_CLIENT_MODE` unset.
 - Cloudflare Pages PRD deploys must run through `.github/workflows/pages.yml`. Manual local `wrangler pages deploy` is diagnostic only and is not acceptance evidence.
@@ -238,6 +241,10 @@ Read these first before editing:
   - `apps/web/src/styles/global.css`
 - Static brand assets:
   - `apps/web/public/assets/`
+- Staff stock frontend:
+  - `apps/staff/src/pages/stock/index.astro`
+  - `apps/staff/src/components/stock/StockOperationsApp.tsx`
+  - `apps/staff/src/lib/backend/internal-stock-api.ts`
 - Worker backend:
   - `apps/backend/src/index.ts`
   - `apps/backend/wrangler.jsonc`

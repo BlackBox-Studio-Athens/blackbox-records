@@ -311,7 +311,7 @@ function buildDependencyCruiserConfig(manifest = loadModuleBoundariesManifest())
       enhancedResolveOptions: {
         extensions: ['.ts', '.tsx', '.mts', '.cts', '.js', '.mjs', '.cjs'],
       },
-      includeOnly: '^(?:apps/web/src|apps/backend/src|packages/api-client/src)/.*\\.(?:ts|tsx)$',
+      includeOnly: '^(?:apps/web/src|apps/staff/src|apps/backend/src|packages/api-client/src)/.*\\.(?:ts|tsx)$',
       exclude: '^(?:apps/backend/src/generated|packages/api-client/src/generated)/',
     },
   };

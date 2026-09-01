@@ -33,6 +33,7 @@ on:
           - all
           - uat
           - prd
+          - staff
 
 permissions:
   contents: read
@@ -154,18 +155,9 @@ jobs:
           retention-days: 1
 
   build-prd-static:
-    if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'prd' }}
+    if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'prd' || inputs.target == 'staff' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      DECAP_BACKEND_MODE: hosted
-      DECAP_SITE_URL: https://blackbox-records-web.pages.dev
-      DECAP_REPOSITORY: ${{ vars.DECAP_REPOSITORY }}
-      DECAP_BRANCH: ${{ vars.DECAP_BRANCH }}
-      DECAPBRIDGE_BASE_URL: ${{ vars.DECAPBRIDGE_BASE_URL }}
-      DECAPBRIDGE_AUTH_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_ENDPOINT }}
-      DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT }}
-      DECAPBRIDGE_GATEWAY_URL: ${{ vars.DECAPBRIDGE_GATEWAY_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -188,20 +180,53 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Validate hosted Decap settings
+        if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'prd' }}
+        env:
+          DECAP_BACKEND_MODE: hosted
+          DECAP_SITE_URL: https://blackbox-records-web.pages.dev
+          DECAP_REPOSITORY: ${{ vars.DECAP_REPOSITORY }}
+          DECAP_BRANCH: ${{ vars.DECAP_BRANCH }}
+          DECAPBRIDGE_BASE_URL: ${{ vars.DECAPBRIDGE_BASE_URL }}
+          DECAPBRIDGE_AUTH_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_ENDPOINT }}
+          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT }}
+          DECAPBRIDGE_GATEWAY_URL: ${{ vars.DECAPBRIDGE_GATEWAY_URL }}
         run: pnpm cms:hosted:preflight
 
       - name: Build hosted PRD static frontend
+        if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'prd' }}
         env:
+          DECAP_BACKEND_MODE: hosted
+          DECAP_SITE_URL: https://blackbox-records-web.pages.dev
+          DECAP_REPOSITORY: ${{ vars.DECAP_REPOSITORY }}
+          DECAP_BRANCH: ${{ vars.DECAP_BRANCH }}
+          DECAPBRIDGE_BASE_URL: ${{ vars.DECAPBRIDGE_BASE_URL }}
+          DECAPBRIDGE_AUTH_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_ENDPOINT }}
+          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT }}
+          DECAPBRIDGE_GATEWAY_URL: ${{ vars.DECAPBRIDGE_GATEWAY_URL }}
           ASTRO_SITE_URL: https://blackbox-records-web.pages.dev
           ASTRO_BASE_PATH: /
           PUBLIC_BACKEND_BASE_URL: ${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}
-        run: pnpm build
+        run: pnpm build:web
 
-      - name: Upload PRD static artifact
+      - name: Build hosted staff frontend
+        if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'staff' }}
+        run: pnpm build:staff
+
+      - name: Upload PRD public static artifact
+        if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'prd' }}
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: prd-static-site-${{ inputs.artifact_commit_sha || github.sha }}
+          name: prd-public-static-site-${{ inputs.artifact_commit_sha || github.sha }}
           path: apps/web/dist
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload PRD staff static artifact
+        if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'staff' }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: prd-staff-static-site-${{ inputs.artifact_commit_sha || github.sha }}
+          path: apps/staff/dist
           if-no-files-found: error
           retention-days: 1
 
@@ -245,7 +270,7 @@ jobs:
       - name: Download PRD static artifact
         uses: actions/download-artifact@v8.0.1
         with:
-          name: prd-static-site-${{ inputs.artifact_commit_sha || github.sha }}
+          name: prd-public-static-site-${{ inputs.artifact_commit_sha || github.sha }}
           path: apps/web/dist
 
       - name: Deploy disabled PRD static frontend to Cloudflare Pages
@@ -254,5 +279,32 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy apps/web/dist --project-name=blackbox-records-web --branch=main
+          packageManager: npm
+          wranglerVersion: 4.127.1
+
+  deploy-staff:
+    if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'staff' }}
+    needs:
+      - unit-tests
+      - workspace-checks
+      - build-prd-static
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: Download PRD staff static artifact
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: prd-staff-static-site-${{ inputs.artifact_commit_sha || github.sha }}
+          path: apps/staff/dist
+
+      - name: Deploy staff frontend to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v4.0.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/staff/dist --project-name=blackbox-records-staff --branch=main
           packageManager: npm
           wranglerVersion: 4.127.1

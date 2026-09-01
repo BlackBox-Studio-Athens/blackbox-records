@@ -34,6 +34,14 @@ The PRD build job in the shared static workflow sets these non-secret build-time
 - `ASTRO_BASE_PATH`: `/`
 - `PUBLIC_BACKEND_BASE_URL`: from `PRD_PUBLIC_BACKEND_BASE_URL`
 
+The protected staff frontend is a separate static Astro app:
+
+- package: `@blackbox/staff`
+- source: `apps/staff`
+- artifact: `apps/staff/dist`
+- Pages project: `blackbox-records-staff`
+- hosted API target: same-origin `/api/internal/*`
+
 GitHub Pages UAT keeps the repo defaults in `apps/web/astro.config.mjs`:
 
 - `site`: `https://blackbox-studio-athens.github.io`
@@ -265,6 +273,12 @@ Run the Astro frontend explicitly:
 pnpm dev:web
 ```
 
+Run the staff stock frontend on the same local port after stopping the public frontend:
+
+```sh
+PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787 pnpm dev:staff
+```
+
 Run the frontend-only static-site launcher used inside local stack scripts:
 
 ```sh
@@ -352,7 +366,7 @@ Current Worker scope:
 - backend-local seed data now exists under `apps/backend/prisma/seeds/`
 - a backend-only StoreOffer reader can now resolve mapped availability from D1
 - protected internal stock routes now exist under `/api/internal/variants/*`
-- the static Astro app now exposes the protected stock operations UI at `/stock/`
+- the independent staff Astro app exposes the protected stock operations UI at `/stock/`
 - D1-backed `Stock`, `StockChange`, and `StockCount` now back the operator stock ledger contract
 - public store-offer and checkout API routes now exist under `/api/store/*` and `/api/checkout/*`
 - checkout creation is Worker-owned and uses hosted Stripe Checkout Sessions through a backend gateway seam
@@ -465,9 +479,9 @@ pnpm audit:commerce-boundaries
 - Decap login remains a separate editorial authentication boundary; its token, cookie, callbacks, and helpers never enter the Worker operator runtime.
 - The internal Worker API now exposes operator-only stock lookup and stock-write routes under `/api/internal/variants/*`.
 - The internal Worker API now exposes read-only checkout order inspection under `/api/internal/orders*` for low-volume reconciliation. It is Access-protected, not a shopper API, and does not mutate order or stock state.
-- The protected stock operations UI is built by the static Astro app at `/stock/`; it calls same-origin `/api/internal/*` on the protected operator hostname.
+- The protected stock operations UI is built from `apps/staff` at `/stock/`; it calls same-origin `/api/internal/*` on the protected operator hostname.
 - For local split-port development, set `PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787` so the static UI can call the local Worker; the Worker allows browser API calls only from origins listed in `CHECKOUT_RETURN_ORIGINS`.
-- The stock UI is intentionally absent from public navigation. If served directly from public Cloudflare Pages or GitHub Pages UAT before the protected ops hostname is provisioned, it is not a PRD-safe stock operations surface.
+- Public web builds reject any `/stock/` artifact; staff builds reject shopper, admin, and other undeclared routes.
 - D1 is the stock source of truth. Spreadsheets are temporary capture/reporting only; operators reconcile offline movement through `/stock/` using `StockChange` for known deltas and `StockCount` for recounts.
 - `OnlineStock` is the conservative checkout-facing quantity and may be lower than physical `Stock`.
 - This contract does not introduce shopper login; public storefront, public checkout, and sandbox shopper browsing remain unauthenticated.
@@ -653,8 +667,9 @@ CI/deploy credentials and public build variables:
 
 - Cloudflare Pages is the PRD static frontend host and remains a disabled commerce readiness surface until the PRD-open gate exists.
 - The deploy artifact remains the prebuilt Astro output at `apps/web/dist`.
+- The staff artifact is built separately at `apps/staff/dist` and deploys only to `blackbox-records-staff`.
 - Cloudflare Pages Direct Upload acceptance is handled by `.github/workflows/pages.yml`, not by local manual `wrangler pages deploy`.
-- The shared static workflow runs `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and the PRD `pnpm build` before uploading `apps/web/dist` to the `blackbox-records-web` Pages project.
+- The shared static workflow runs `pnpm test:unit`, `pnpm check`, and `pnpm audit:unused` before separate `pnpm build:web` and `pnpm build:staff` steps.
 - The workflow sets Cloudflare-root static build values with `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/`.
 - The workflow passes only browser-safe public Astro variables into the frontend runtime: `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`.
 - The Worker remains separate and owns `/api/*`, Stripe secrets, webhooks, D1, stock operations, order state, and future BOX NOW work.
@@ -667,7 +682,7 @@ CI/deploy credentials and public build variables:
 Cloudflare cache policy is explicit and versioned in repo-owned artifacts and route headers.
 
 - Static Asset Cache: fingerprinted Astro build assets under `/_astro/*` use the repo-owned `apps/web/public/_headers` artifact with `Cache-Control: public, max-age=31536000, immutable`.
-- Document Revalidation: route HTML, overlay partial HTML, `sitemap.xml`, `robots.txt`, `/store/*`, `/stock/*`, and `/admin/*` stay revalidation-friendly and do not use year-long immutable caching.
+- Document Revalidation: public route HTML, overlay partial HTML, `sitemap.xml`, `robots.txt`, `/store/*`, and `/admin/*` stay revalidation-friendly; the separate staff artifact applies `no-store` to `/stock/*`.
 - Route Document Headers: no explicit document revalidation headers were added in this change; Cloudflare Pages defaults remain in effect for route HTML and overlay partials.
 - Worker API Freshness: checkout, Store Offer, Store listing-price presentation, stock, order, webhook, operator, and error responses use `Cache-Control: no-store`.
 - TTL Policy: no route class in this change receives a future TTL; store capabilities, Store Offer, and listing-price presentation routes remain `no-store`.

@@ -2,19 +2,19 @@ import { ArrowRight, RefreshCcw, Search, ShieldCheck } from 'lucide-react';
 import * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { LoadingButtonContent, LoadingInline, LoadingStateBlock } from '@/components/ui/loading-feedback';
-import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Input } from '../ui/input';
+import { LoadingButtonContent, LoadingInline, LoadingStateBlock } from '../ui/loading-feedback';
+import { Textarea } from '../ui/textarea';
 import {
   createInternalStockApi,
   type InternalStockDetail,
   type InternalStockHistoryResponse,
   type InternalVariantSummary,
-} from '@/lib/backend/internal-stock-api';
-import { cn } from '@/lib/utils';
+} from '../../lib/backend/internal-stock-api';
+import { cn } from '../../lib/utils';
 
 interface StockOperationsAppProps {
   backendBaseUrl: string;

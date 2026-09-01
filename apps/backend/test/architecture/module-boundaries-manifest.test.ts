@@ -45,6 +45,28 @@ describe('Module boundaries manifest', { timeout: 15_000 }, () => {
     expect(publicCommerceHttp.allowedDependencies).toContain('email-application');
   });
 
+  it('keeps the staff frontend isolated from public web ownership', () => {
+    const manifest = loadModuleBoundariesManifest() as {
+      modules: Record<
+        string,
+        {
+          allowedWorkspaceInterfaces: Record<string, string[]>;
+          roots: string[];
+        }
+      >;
+      workspaceBoundaries: Record<string, { packageRoot: string }>;
+    };
+    const staffFrontend = manifest.modules['staff-frontend']!;
+    const operatorStock = manifest.modules['operator-stock']!;
+
+    expect(manifest.workspaceBoundaries['@blackbox/staff']?.packageRoot).toBe('apps/staff');
+    expect(staffFrontend.roots).toEqual(['apps/staff/src/**']);
+    expect(staffFrontend.allowedWorkspaceInterfaces).toEqual({
+      '@blackbox/api-client': ['./internal'],
+    });
+    expect(operatorStock.roots).not.toEqual(expect.arrayContaining([expect.stringContaining('apps/web/')]));
+  });
+
   it('requires hard-closure metadata for open-temporary modules', () => {
     const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
       modules: Record<string, Record<string, unknown>>;

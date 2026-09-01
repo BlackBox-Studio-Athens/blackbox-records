@@ -45,6 +45,11 @@
       "packageRoot": "apps/web",
       "packageJson": "apps/web/package.json"
     },
+    "@blackbox/staff": {
+      "level": "workspace-package",
+      "packageRoot": "apps/staff",
+      "packageJson": "apps/staff/package.json"
+    },
     "@blackbox/backend": {
       "level": "workspace-package",
       "packageRoot": "apps/backend",
@@ -423,28 +428,33 @@
       "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
+    "staff-frontend": {
+      "status": "closed",
+      "roots": ["apps/staff/src/**"],
+      "providedEntrypoints": [],
+      "namedInterfaces": {},
+      "allowedDependencies": [],
+      "allowedWorkspaceInterfaces": {
+        "@blackbox/api-client": ["./internal"]
+      },
+      "ownershipExceptions": []
+    },
     "operator-stock": {
       "status": "closed",
       "roots": [
-        "apps/web/src/pages/stock/**",
-        "apps/web/src/components/stock/**",
-        "apps/web/src/lib/backend/internal-stock-api.ts",
         "apps/backend/src/interfaces/http/contracts/internal-contracts.ts",
         "apps/backend/src/interfaces/http/routes/register-internal-stock-routes.ts",
         "apps/backend/src/interfaces/http/routes/internal-stock-services.ts"
       ],
       "providedEntrypoints": [
-        "apps/web/src/lib/backend/internal-stock-api.ts",
         "apps/backend/src/interfaces/http/contracts/internal-contracts.ts",
         "apps/backend/src/interfaces/http/routes/register-internal-stock-routes.ts"
       ],
       "namedInterfaces": {
         "internal-contracts": "apps/backend/src/interfaces/http/contracts/internal-contracts.ts"
       },
-      "allowedDependencies": ["stock", "orders", "commerce-persistence", "ui-foundation", "platform-shared"],
-      "allowedWorkspaceInterfaces": {
-        "@blackbox/api-client": ["./internal"]
-      },
+      "allowedDependencies": ["stock", "orders", "commerce-persistence", "platform-shared"],
+      "allowedWorkspaceInterfaces": {},
       "ownershipExceptions": []
     },
     "platform-shared": {

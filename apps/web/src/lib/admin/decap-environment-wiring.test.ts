@@ -31,11 +31,16 @@ describe('Decap environment wiring', () => {
 
   it('sets UAT and full PRD builds to hosted mode with safe preflight', () => {
     const workflow = readRepositoryFile('.github/workflows/pages.yml');
+    const staffBuildStep = workflow.slice(
+      workflow.indexOf('      - name: Build hosted staff frontend'),
+      workflow.indexOf('      - name: Upload PRD public static artifact'),
+    );
 
-    expect(workflow.match(/DECAP_BACKEND_MODE: hosted/g)).toHaveLength(2);
+    expect(workflow.match(/DECAP_BACKEND_MODE: hosted/g)).toHaveLength(3);
     expect(workflow.match(/run: pnpm cms:hosted:preflight/g)).toHaveLength(2);
     expect(workflow).toContain('name: Build hosted UAT static frontend');
     expect(workflow).toContain('name: Build hosted PRD static frontend');
+    expect(staffBuildStep).not.toMatch(/DECAP_|ASTRO_|PUBLIC_BACKEND_BASE_URL/);
   });
 
   it('keeps secret-free artifact and holding builds disabled', () => {

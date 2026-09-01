@@ -1,5 +1,4 @@
 import type { InternalApiComponents } from '@blackbox/api-client/internal';
-import { getPublicBackendBaseUrl } from './public-backend-config';
 
 export type InternalVariantSummary = InternalApiComponents['schemas']['InternalVariantSummary'];
 export type InternalStockDetail = InternalApiComponents['schemas']['InternalStockDetail'];
@@ -28,7 +27,7 @@ export class InternalStockApiError extends Error {
 }
 
 export function getInternalStockApiBaseUrl(configuredValue = import.meta.env.PUBLIC_BACKEND_BASE_URL): string {
-  return getPublicBackendBaseUrl(configuredValue) ?? '';
+  return configuredValue?.trim().replace(/\/+$/, '') ?? '';
 }
 
 export function buildInternalStockApiUrl(
@@ -60,7 +59,7 @@ export function createInternalStockApi({ backendBaseUrl = '', fetcher = fetch }:
     query?: Record<string, string | number | undefined>,
   ): Promise<TResponse> {
     const response = await fetcher(buildInternalStockApiUrl(backendBaseUrl, path, query), {
-      credentials: 'include',
+      credentials: 'same-origin',
       ...init,
       cache: 'no-store',
       headers: {

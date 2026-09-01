@@ -1,7 +1,5 @@
 ---
-import '@/styles/global.css';
-
-import { createProjectRelativeUrl, siteBrandAssets, siteConfig } from '@/config/site';
+import '../styles/global.css';
 
 interface Props {
   pageTitle: string;
@@ -9,7 +7,7 @@ interface Props {
 }
 
 const { pageTitle, pageDescription } = Astro.props;
-const htmlTitle = `${pageTitle} | ${siteConfig.title}`;
+const htmlTitle = pageTitle + ' | BlackBox Records';
 ---
 
 <!doctype html>
@@ -20,9 +18,9 @@ const htmlTitle = `${pageTitle} | ${siteConfig.title}`;
     <title>{htmlTitle}</title>
     <meta name="description" content={pageDescription} />
     <meta name="robots" content="noindex, nofollow" />
-    <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconSvg)} type="image/svg+xml" sizes="any" />
-    <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconPng96)} type="image/png" sizes="96x96" />
-    <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconIco)} sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+    <link rel="icon" href="/favicon-96x96.png" type="image/png" sizes="96x96" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
     <link

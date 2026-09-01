@@ -22,7 +22,7 @@ export type StoreItem = {
   title: string;
   subtitle: string;
   summary: string | null;
-  image: ReleaseCatalogEntry['data']['cover_image'] | DistroCatalogEntry['data']['image'];
+  image: ReleaseCatalogEntry['data']['cover_image'];
   imageAlt: string;
   eyebrow: string | null;
   metadata: string[];

@@ -8,7 +8,7 @@ import StockOperationsApp, {
   shouldApplyStockLoadResult,
 } from './StockOperationsApp';
 
-describe('StockOperationsApp loading feedback', () => {
+describe('Stock operations loading feedback', () => {
   it('renders initial stock workspace loading as a visible busy state', () => {
     const html = renderToStaticMarkup(<StockOperationsApp backendBaseUrl="http://127.0.0.1:8787" />);
 

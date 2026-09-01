@@ -133,6 +133,14 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** `public-commerce-http` declares `operator-auth` as an allowed dependency
 - **AND** `operator-auth` may use only provided `platform-shared` environment, observability, and response entrypoints.
 
+#### Scenario: Staff frontend is isolated from the public web app
+
+- **GIVEN** stock operations are built by the `@blackbox/staff` workspace
+- **WHEN** boundary validation runs
+- **THEN** the closed `staff-frontend` module owns `apps/staff/src/**`
+- **AND** it may import only the `@blackbox/api-client/internal` workspace interface
+- **AND** `operator-stock` retains backend ownership without public or staff frontend roots.
+
 ### Requirement: Compatibility facades are disallowed
 
 The system SHALL avoid temporary compatibility facades during boundary work unless a new OpenSpec change explicitly approves an exception.
