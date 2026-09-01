@@ -25,6 +25,11 @@ export type SessionBoundPendingCheckoutOrder = Omit<SessionlessPendingCheckoutOr
   checkoutSessionId: CheckoutSessionId;
 };
 
+export type ExpiredSessionBoundCheckoutHold = Pick<
+  SessionBoundPendingCheckoutOrder,
+  'checkoutExpiresAt' | 'checkoutSessionId' | 'id'
+>;
+
 export type SessionlessNotPaidCheckoutOrder = Omit<
   SessionlessPendingCheckoutOrder,
   'notPaidAt' | 'status' | 'statusUpdatedAt' | 'updatedAt'
@@ -53,7 +58,12 @@ export interface CheckoutStockHoldRepository {
   ): Promise<SessionBoundPendingCheckoutOrder | null>;
   createPendingHold(input: CreateCheckoutStockHoldInput): Promise<CreateCheckoutStockHoldResult>;
   findEffectiveAvailability(variantId: VariantId): Promise<StockQuantity | null>;
+  listOldestExpiredSessionBoundHolds(
+    variantIds: [VariantId, ...VariantId[]],
+    expiredAt: Date,
+  ): Promise<ExpiredSessionBoundCheckoutHold[]>;
   recoverCheckoutSession(orderId: string, checkoutSessionId: CheckoutSessionId, recoveredAt: Date): Promise<boolean>;
+  releaseSessionBoundHold(hold: ExpiredSessionBoundCheckoutHold, releasedAt: Date): Promise<boolean>;
   releaseSessionlessHold(
     hold: SessionlessPendingCheckoutOrder,
     releasedAt: Date,

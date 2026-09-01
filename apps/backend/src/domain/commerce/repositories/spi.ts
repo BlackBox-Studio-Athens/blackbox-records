@@ -3,6 +3,7 @@ export type {
   CheckoutStockHoldRepository,
   CreateCheckoutStockHoldInput,
   CreateCheckoutStockHoldResult,
+  ExpiredSessionBoundCheckoutHold,
   SessionBoundPendingCheckoutOrder,
   SessionlessNotPaidCheckoutOrder,
   SessionlessPendingCheckoutOrder,

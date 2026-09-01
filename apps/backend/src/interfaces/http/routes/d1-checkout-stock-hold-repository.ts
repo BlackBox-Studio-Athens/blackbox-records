@@ -1,9 +1,15 @@
-import { createStockQuantity, type CheckoutSessionId, type VariantId } from '../../../domain/commerce';
+import {
+  createStockQuantity,
+  parseCheckoutSessionId,
+  type CheckoutSessionId,
+  type VariantId,
+} from '../../../domain/commerce';
 import type {
   CheckoutOrderLineRecord,
   CheckoutStockHoldRepository,
   CreateCheckoutStockHoldInput,
   CreateCheckoutStockHoldResult,
+  ExpiredSessionBoundCheckoutHold,
   SessionBoundPendingCheckoutOrder,
   SessionlessNotPaidCheckoutOrder,
   SessionlessPendingCheckoutOrder,
@@ -11,6 +17,12 @@ import type {
 
 type EffectiveAvailabilityRow = {
   effectiveQuantity: number;
+};
+
+type ExpiredSessionBoundCheckoutHoldRow = {
+  checkoutExpiresAt: string;
+  checkoutSessionId: string;
+  id: string;
 };
 
 export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepository {
@@ -179,6 +191,36 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
     return row ? createStockQuantity(row.effectiveQuantity) : null;
   }
 
+  public async listOldestExpiredSessionBoundHolds(
+    variantIds: [VariantId, ...VariantId[]],
+    expiredAt: Date,
+  ): Promise<ExpiredSessionBoundCheckoutHold[]> {
+    const variantPlaceholders = variantIds.map(() => '?').join(', ');
+    const result = await this.db
+      .prepare(
+        [
+          'SELECT "id", "checkoutSessionId", "checkoutExpiresAt"',
+          'FROM "CheckoutOrder"',
+          'WHERE "status" = ? AND "checkoutSessionId" IS NOT NULL AND "checkoutExpiresAt" <= ?',
+          '  AND EXISTS (',
+          '    SELECT 1 FROM "CheckoutOrderLine"',
+          '    WHERE "CheckoutOrderLine"."orderId" = "CheckoutOrder"."id"',
+          `      AND "CheckoutOrderLine"."variantId" IN (${variantPlaceholders})`,
+          '  )',
+          'ORDER BY "checkoutExpiresAt" ASC, "createdAt" ASC, "id" ASC',
+          'LIMIT 5',
+        ].join('\n'),
+      )
+      .bind('pending_payment', expiredAt.toISOString(), ...variantIds)
+      .all<ExpiredSessionBoundCheckoutHoldRow>();
+
+    return result.results.map((row) => ({
+      checkoutExpiresAt: new Date(row.checkoutExpiresAt),
+      checkoutSessionId: parseCheckoutSessionId(row.checkoutSessionId),
+      id: row.id,
+    }));
+  }
+
   public async recoverCheckoutSession(
     orderId: string,
     checkoutSessionId: CheckoutSessionId,
@@ -203,6 +245,31 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
         .bind(orderId, checkoutSessionId)
         .first<{ found: number }>(),
     );
+  }
+
+  public async releaseSessionBoundHold(hold: ExpiredSessionBoundCheckoutHold, releasedAt: Date): Promise<boolean> {
+    const releasedAtIso = releasedAt.toISOString();
+    const result = await this.db
+      .prepare(
+        [
+          'UPDATE "CheckoutOrder"',
+          'SET "status" = ?, "notPaidAt" = ?, "statusUpdatedAt" = ?, "updatedAt" = ?',
+          'WHERE "id" = ? AND "checkoutSessionId" = ? AND "status" = ? AND "checkoutExpiresAt" <= ?',
+        ].join('\n'),
+      )
+      .bind(
+        'not_paid',
+        releasedAtIso,
+        releasedAtIso,
+        releasedAtIso,
+        hold.id,
+        hold.checkoutSessionId,
+        'pending_payment',
+        releasedAtIso,
+      )
+      .run();
+
+    return readChangeCount(result) === 1;
   }
 }
 

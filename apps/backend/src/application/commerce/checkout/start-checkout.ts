@@ -1,5 +1,6 @@
 import type {
   CheckoutStockHoldRepository,
+  CreateCheckoutStockHoldInput,
   ItemAvailabilityRepository,
   StockRepository,
   StoreItemOptionRepository,
@@ -189,12 +190,36 @@ export async function startCheckout(
   const createdAt = options.now ?? new Date();
   const checkoutExpiresAt = new Date(createdAt.getTime() + CHECKOUT_HOLD_DURATION_MS);
   const [firstLine, ...remainingLines] = validatedLines;
-  const holdResult = await checkoutHolds.createPendingHold({
+  const holdInput: CreateCheckoutStockHoldInput = {
     checkoutExpiresAt,
     createdAt,
     lines: [firstLine!, ...remainingLines],
     orderId: crypto.randomUUID(),
-  });
+  };
+  let holdResult = await checkoutHolds.createPendingHold(holdInput);
+
+  if (holdResult.kind === 'unavailable') {
+    const [firstVariantId, ...remainingVariantIds] = validatedLines.map((line) => line.variantId);
+    const expiredHolds = await checkoutHolds.listOldestExpiredSessionBoundHolds(
+      [firstVariantId!, ...remainingVariantIds],
+      createdAt,
+    );
+    let releasedAnyHold = false;
+
+    try {
+      for (const expiredHold of expiredHolds) {
+        const providerSession = await checkoutGateway.readCheckoutSession(expiredHold.checkoutSessionId);
+
+        if (providerSession.status === 'expired' && providerSession.paymentStatus !== 'paid') {
+          releasedAnyHold = (await checkoutHolds.releaseSessionBoundHold(expiredHold, new Date())) || releasedAnyHold;
+        }
+      }
+    } catch {
+      throw new CheckoutUnavailableError();
+    }
+
+    if (releasedAnyHold) holdResult = await checkoutHolds.createPendingHold(holdInput);
+  }
 
   if (holdResult.kind === 'unavailable') throw new CheckoutUnavailableError();
 

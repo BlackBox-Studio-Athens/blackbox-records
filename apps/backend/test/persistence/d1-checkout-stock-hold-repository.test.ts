@@ -111,6 +111,48 @@ describe('D1CheckoutStockHoldRepository', () => {
     expect(bound).toMatchObject({ checkoutSessionId: 'cs_test_hold_binding', status: 'pending_payment' });
     await expect(repository.releaseSessionlessHold(created.hold, boundAt)).resolves.toBeNull();
   });
+
+  it('lists only the five oldest expired bound holds and releases one with compare-and-set', async () => {
+    const variantId = parseVariantId(`variant_hold_cleanup_${crypto.randomUUID()}`);
+    const repository = new D1CheckoutStockHoldRepository(env.COMMERCE_DB);
+    const now = new Date('2026-09-01T00:00:00.000Z');
+    const expectedOrderIds: string[] = [];
+    await seedStock(variantId, 6);
+
+    for (let index = 0; index < 6; index += 1) {
+      const createdAt = new Date(now.getTime() - (70 - index) * 60 * 1000);
+      const orderId = crypto.randomUUID();
+      const created = await repository.createPendingHold({
+        checkoutExpiresAt: new Date(createdAt.getTime() + 30 * 60 * 1000),
+        createdAt,
+        lines: [
+          {
+            quantity: createCartQuantity(1),
+            storeItemSlug: parseStoreItemSlug('hold-cleanup-item'),
+            stripePriceId: parseStripePriceId(`price_test_hold_cleanup_${index}`),
+            variantId,
+          },
+        ],
+        orderId,
+      });
+      expect(created.kind).toBe('created');
+      if (created.kind !== 'created') continue;
+
+      expectedOrderIds.push(orderId);
+      await repository.bindCheckoutSession(
+        created.hold,
+        parseCheckoutSessionId(`cs_test_hold_cleanup_${index}`),
+        createdAt,
+      );
+    }
+
+    const candidates = await repository.listOldestExpiredSessionBoundHolds([variantId], now);
+
+    expect(candidates.map((candidate) => candidate.id)).toEqual(expectedOrderIds.slice(0, 5));
+    await expect(repository.releaseSessionBoundHold(candidates[0]!, now)).resolves.toBe(true);
+    await expect(repository.releaseSessionBoundHold(candidates[0]!, now)).resolves.toBe(false);
+    await expect(repository.findEffectiveAvailability(variantId)).resolves.toBe(1);
+  });
 });
 
 async function seedStock(variantId: string, quantity: number): Promise<void> {
