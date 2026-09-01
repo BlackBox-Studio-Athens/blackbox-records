@@ -43,8 +43,10 @@ export type StoreOfferAvailability = StoreOffer['availability'];
 
 export type HostedCheckoutSessionRequest = {
   cancelUrl: string;
+  checkoutExpiresAt: Date;
   lineItems?: CheckoutSessionLineItem[];
   newsletterOptIn?: boolean;
+  orderId: string;
   successUrl: string;
   storeItemSlug?: StoreItemSlug;
   stripePriceId?: StripePriceId;
@@ -93,6 +95,7 @@ export type StripeCheckoutSessionState = {
   currencyCode: string | null;
   customer: StripeCheckoutCustomerSnapshot;
   newsletterOptIn: boolean;
+  orderId?: string | null;
   paymentStatus: StripeCheckoutPaymentStatus;
   shippingAddress: StripeCheckoutAddressSnapshot | null;
   stripePaymentIntentId?: PaymentIntentId | null;
@@ -110,6 +113,7 @@ export type CheckoutState = {
 
 export interface CheckoutGateway {
   createHostedCheckoutSession(request: HostedCheckoutSessionRequest): Promise<HostedCheckoutSession>;
+  expireHostedCheckoutSession(checkoutSessionId: CheckoutSessionId): Promise<StripeCheckoutSessionState>;
   readCheckoutSessionLineItems(checkoutSessionId: CheckoutSessionId): Promise<FinalizedCheckoutSessionLineItem[]>;
   readCheckoutSession(checkoutSessionId: CheckoutSessionId): Promise<StripeCheckoutSessionState>;
 }

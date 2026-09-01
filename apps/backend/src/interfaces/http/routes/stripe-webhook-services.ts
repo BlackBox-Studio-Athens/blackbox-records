@@ -22,6 +22,7 @@ import {
   type PaidOrderEmailInput,
 } from '../../../application/email';
 import type { StoreItemOptionRecord } from '../../../domain/commerce/repositories/spi';
+import { parseCheckoutSessionId } from '../../../domain/commerce';
 import {
   isCatalogMutationEnabledFromBindings,
   productEnvironmentProfileFromBindings,
@@ -39,6 +40,7 @@ import {
   PrismaStripeCatalogWebhookEventRepository,
 } from '../../../infrastructure/persistence/prisma';
 import { D1PaidCheckoutFinalizationRepository } from './d1-paid-checkout-finalization-repository';
+import { D1CheckoutStockHoldRepository } from './d1-checkout-stock-hold-repository';
 import { createEmailRuntimeServices } from './email-runtime-services';
 
 type TraceContext = Parameters<typeof runWithTraceSpan>[0];
@@ -52,6 +54,7 @@ export function createStripeWebhookServices(
   const prisma = createPrismaClient(bindings);
   const orders = new PrismaOrderStateRepository(prisma);
   const paidCheckoutFinalizer = new D1PaidCheckoutFinalizationRepository(bindings.COMMERCE_DB);
+  const checkoutHolds = new D1CheckoutStockHoldRepository(bindings.COMMERCE_DB);
   const storeItems = new PrismaStoreItemOptionRepository(prisma);
   const storeOfferSnapshots = new PrismaStoreOfferSnapshotRepository(prisma);
   const variantStripeMappings = new PrismaVariantStripeMappingRepository(prisma);
@@ -109,6 +112,8 @@ export function createStripeWebhookServices(
       await safelySendPaidOrderEmailNotifications(event, emailConfig, emailProvider, logger, traceContext);
       await safelyRegisterCheckoutNewsletterOptIn(event, emailConfig, emailProvider, logger, traceContext);
     },
+    recoverCheckoutOrderSession: (orderId: string, checkoutSessionId: string) =>
+      checkoutHolds.recoverCheckoutSession(orderId, parseCheckoutSessionId(checkoutSessionId), new Date()),
     recordCatalogWebhookEvent: catalogWebhookEvents.recordCatalogEvent.bind(catalogWebhookEvents),
     reconcileCatalogVariant: (storeItem: StoreItemOptionRecord) =>
       catalogReconciler.reconcileVariant(storeItem, {

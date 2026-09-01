@@ -34,6 +34,8 @@ import {
 } from '../../../application/commerce/catalog-sync';
 import type { AppLogger } from '../../../observability';
 import { readStoreListingPrices } from '../../../application/commerce/readers';
+import type { VariantId } from '../../../domain/commerce';
+import { D1CheckoutStockHoldRepository } from './d1-checkout-stock-hold-repository';
 
 export function createPublicCommerceServices(bindings: AppBindings, logger?: Pick<AppLogger, 'warn'>) {
   const productEnvironmentProfile = productEnvironmentProfileFromBindings(bindings);
@@ -41,6 +43,19 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
   const storeItems = new PrismaStoreItemOptionRepository(prisma);
   const itemAvailability = new PrismaItemAvailabilityRepository(prisma);
   const stock = new PrismaStockRepository(prisma);
+  const checkoutHolds = new D1CheckoutStockHoldRepository(bindings.COMMERCE_DB);
+  const effectiveStock = {
+    findByVariantId: async (variantId: VariantId) => {
+      const [currentStock, effectiveAvailability] = await Promise.all([
+        stock.findByVariantId(variantId),
+        checkoutHolds.findEffectiveAvailability(variantId),
+      ]);
+
+      return currentStock && effectiveAvailability !== null
+        ? { ...currentStock, onlineQuantity: effectiveAvailability }
+        : null;
+    },
+  };
   const variantStripeMappings = new PrismaVariantStripeMappingRepository(prisma);
   const storeOfferSnapshots = new PrismaStoreOfferSnapshotRepository(prisma);
   const orders = new PrismaOrderStateRepository(prisma);
@@ -69,7 +84,7 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
       listVariantOffersForStoreItem(
         storeItems,
         itemAvailability,
-        stock,
+        effectiveStock,
         createCatalogReconciler(),
         productProjections,
         storeItemSlug,
@@ -83,7 +98,7 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
       readStoreOffer(
         storeItems,
         itemAvailability,
-        stock,
+        effectiveStock,
         createCatalogReconciler(),
         productProjections,
         storeItemSlug,
@@ -99,7 +114,7 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
         createCatalogReconciler(),
         productProjections,
         createStripeCheckoutGateway(bindings),
-        orders,
+        checkoutHolds,
         command,
         createFeatureFlagReader(bindings, logger),
         { applyCatalogMutations: catalogMutationEnabled },

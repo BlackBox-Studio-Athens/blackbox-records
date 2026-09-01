@@ -9,8 +9,15 @@
       "InternalCheckoutOrder": {
         "type": "object",
         "properties": {
+          "checkoutExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
           "checkoutSessionId": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "createdAt": {
             "type": "string",
@@ -87,6 +94,7 @@
           }
         },
         "required": [
+          "checkoutExpiresAt",
           "checkoutSessionId",
           "createdAt",
           "needsReviewAt",

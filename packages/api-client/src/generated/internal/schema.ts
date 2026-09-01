@@ -487,7 +487,9 @@ export type components = {
             requestId?: string;
         };
         InternalCheckoutOrder: {
-            checkoutSessionId: string;
+            /** Format: date-time */
+            checkoutExpiresAt: string;
+            checkoutSessionId: string | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */

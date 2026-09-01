@@ -27,6 +27,7 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
     const createdAt = input.createdAt ?? new Date('2026-04-25T10:00:00.000Z');
     const record: CheckoutOrderRecord = {
       checkoutSessionId: input.checkoutSessionId,
+      checkoutExpiresAt: input.checkoutExpiresAt ?? new Date(createdAt.getTime() + 30 * 60 * 1000),
       createdAt,
       id: `order_${this.records.size + 1}`,
       needsReviewAt: null,
@@ -41,7 +42,7 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
       variantId: input.variantId,
     };
 
-    this.records.set(record.checkoutSessionId, record);
+    this.records.set(input.checkoutSessionId, record);
 
     return record;
   }

@@ -67,7 +67,7 @@ export function createCheckoutOrderPaidEvent(input: {
     occurredAt: input.occurredAt,
     orderId: input.order.id,
     orderReference: createCheckoutOrderReferenceToken({
-      checkoutSessionId: input.order.checkoutSessionId,
+      checkoutSessionId: input.reconciliation.source.checkoutSessionId,
       orderId: input.order.id,
       referenceDate: input.order.paidAt ?? input.occurredAt,
     }),

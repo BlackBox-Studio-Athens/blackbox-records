@@ -13,12 +13,16 @@ export type CheckoutReconciliation = {
     currencyCode: string | null;
     customer: StripeCheckoutSessionState['customer'];
     newsletterOptIn: boolean;
+    orderId: string | null;
     shippingAddress: StripeCheckoutSessionState['shippingAddress'];
     stripePaymentIntentId: PaymentIntentId | null;
   };
 };
 
-export function reconcileCheckoutSession(session: StripeCheckoutSessionState): CheckoutReconciliation {
+export function reconcileCheckoutSession(
+  session: StripeCheckoutSessionState,
+  eventType?: string,
+): CheckoutReconciliation {
   return {
     checkoutState: {
       checkoutSessionId: session.checkoutSessionId,
@@ -29,13 +33,14 @@ export function reconcileCheckoutSession(session: StripeCheckoutSessionState): C
       status: session.status,
     },
     isAuthoritative: false,
-    recommendedOrderStatus: mapRecommendedOrderStatus(session),
+    recommendedOrderStatus: mapRecommendedOrderStatus(session, eventType),
     source: {
       amountTotalMinor: session.amountTotalMinor,
       checkoutSessionId: session.checkoutSessionId,
       currencyCode: session.currencyCode,
       customer: session.customer,
       newsletterOptIn: session.newsletterOptIn,
+      orderId: session.orderId ?? null,
       shippingAddress: session.shippingAddress,
       stripePaymentIntentId: session.stripePaymentIntentId ?? null,
     },
@@ -66,13 +71,17 @@ function mapCheckoutState(session: StripeCheckoutSessionState): CheckoutState['s
   return 'unknown';
 }
 
-function mapRecommendedOrderStatus(session: StripeCheckoutSessionState): OrderStatus {
+function mapRecommendedOrderStatus(session: StripeCheckoutSessionState, eventType?: string): OrderStatus {
   if (session.paymentStatus === 'paid') {
     return 'paid';
   }
 
   if (session.paymentStatus === 'no_payment_required') {
     return 'needs_review';
+  }
+
+  if (eventType === 'checkout.session.async_payment_failed') {
+    return 'not_paid';
   }
 
   if (session.status === 'expired') {

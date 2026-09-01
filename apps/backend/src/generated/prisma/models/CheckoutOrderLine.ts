@@ -248,6 +248,7 @@ export type CheckoutOrderLineOrderByWithRelationInput = {
 
 export type CheckoutOrderLineWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  orderId_variantId?: Prisma.CheckoutOrderLineOrderIdVariantIdCompoundUniqueInput
   AND?: Prisma.CheckoutOrderLineWhereInput | Prisma.CheckoutOrderLineWhereInput[]
   OR?: Prisma.CheckoutOrderLineWhereInput[]
   NOT?: Prisma.CheckoutOrderLineWhereInput | Prisma.CheckoutOrderLineWhereInput[]
@@ -258,7 +259,7 @@ export type CheckoutOrderLineWhereUniqueInput = Prisma.AtLeast<{
   quantity?: Prisma.IntFilter<"CheckoutOrderLine"> | number
   createdAt?: Prisma.DateTimeFilter<"CheckoutOrderLine"> | Date | string
   order?: Prisma.XOR<Prisma.CheckoutOrderScalarRelationFilter, Prisma.CheckoutOrderWhereInput>
-}, "id">
+}, "id" | "orderId_variantId">
 
 export type CheckoutOrderLineOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -365,6 +366,11 @@ export type CheckoutOrderLineListRelationFilter = {
 
 export type CheckoutOrderLineOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type CheckoutOrderLineOrderIdVariantIdCompoundUniqueInput = {
+  orderId: string
+  variantId: string
 }
 
 export type CheckoutOrderLineCountOrderByAggregateInput = {

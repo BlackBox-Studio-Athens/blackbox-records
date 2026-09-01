@@ -9,6 +9,7 @@ import {
 import { D1PaidCheckoutFinalizationRepository } from '../../../src/interfaces/http/routes/d1-paid-checkout-finalization-repository';
 
 type FakeCheckoutOrderRow = {
+  checkoutExpiresAt: string;
   checkoutSessionId: string;
   createdAt: string;
   id: string;
@@ -181,6 +182,7 @@ function createState(
   } = {},
 ): FakeD1State {
   const order = {
+    checkoutExpiresAt: '2026-06-20T15:29:00.000Z',
     checkoutSessionId: 'cs_test_paid',
     createdAt: '2026-06-20T14:59:00.000Z',
     id: 'order_test_paid',

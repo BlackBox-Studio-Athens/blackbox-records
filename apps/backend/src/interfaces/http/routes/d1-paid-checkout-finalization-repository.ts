@@ -29,7 +29,8 @@ import type {
 type D1Value = null | number | string;
 
 type CheckoutOrderRow = {
-  checkoutSessionId: string;
+  checkoutSessionId: null | string;
+  checkoutExpiresAt: string;
   createdAt: string;
   id: string;
   needsReviewAt: null | string;
@@ -86,6 +87,7 @@ const checkoutOrderSelectSql = [
   '  "storeItemSlug",',
   '  "variantId",',
   '  "checkoutSessionId",',
+  '  "checkoutExpiresAt",',
   '  "stripePaymentIntentId",',
   '  "shippingLockerId",',
   '  "shippingLockerCountryCode",',
@@ -397,7 +399,8 @@ function createPaidCheckoutStockChangeId(checkoutSessionId: CheckoutSessionId, v
 
 function mapCheckoutOrder(row: CheckoutOrderRow, lines: CheckoutOrderLineRecord[]): CheckoutOrderRecord {
   return {
-    checkoutSessionId: parseCheckoutSessionId(row.checkoutSessionId),
+    checkoutSessionId: row.checkoutSessionId ? parseCheckoutSessionId(row.checkoutSessionId) : null,
+    checkoutExpiresAt: new Date(row.checkoutExpiresAt),
     createdAt: new Date(row.createdAt),
     id: row.id,
     needsReviewAt: row.needsReviewAt ? new Date(row.needsReviewAt) : null,

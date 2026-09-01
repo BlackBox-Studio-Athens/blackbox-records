@@ -12,6 +12,7 @@ import {
   VariantMismatchError,
 } from '../../../../src/application/commerce/checkout';
 import type { CheckoutGateway } from '../../../../src/application/commerce/checkout/spi';
+import type { CheckoutSessionId } from '../../../../src/domain/commerce';
 import type {
   CatalogProductProjectionReader,
   CatalogReconciler,
@@ -23,6 +24,9 @@ import type {
 import type {
   CheckoutOrderRecord,
   CheckoutOrderTransitionInput,
+  CheckoutStockHoldRepository,
+  CreateCheckoutStockHoldInput,
+  CreateCheckoutStockHoldResult,
   CreatePendingCheckoutOrderInput,
   ItemAvailabilityRecord,
   ItemAvailabilityRepository,
@@ -30,6 +34,9 @@ import type {
   OrderStatus,
   StockRecord,
   StockRepository,
+  SessionBoundPendingCheckoutOrder,
+  SessionlessNotPaidCheckoutOrder,
+  SessionlessPendingCheckoutOrder,
   StoreItemOptionRecord,
   StoreItemOptionRepository,
   StoreItemSourceRef,
@@ -96,13 +103,16 @@ class InMemoryStockRepository implements StockRepository {
   }
 }
 
-class InMemoryOrderStateRepository implements OrderStateRepository {
+class InMemoryOrderStateRepository implements OrderStateRepository, CheckoutStockHoldRepository {
+  public bindShouldFail = false;
   public readonly records = new Map<string, CheckoutOrderRecord>();
+  public readonly effectiveAvailability = new Map<string, number>();
 
   public async createPending(input: CreatePendingCheckoutOrderInput): Promise<CheckoutOrderRecord> {
     const createdAt = input.createdAt ?? new Date('2026-04-25T10:00:00.000Z');
     const record: CheckoutOrderRecord = {
       checkoutSessionId: input.checkoutSessionId,
+      checkoutExpiresAt: input.checkoutExpiresAt ?? new Date(createdAt.getTime() + 30 * 60 * 1000),
       createdAt,
       id: `order_${this.records.size + 1}`,
       needsReviewAt: null,
@@ -117,13 +127,112 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
       variantId: input.variantId,
     };
 
-    this.records.set(record.checkoutSessionId, record);
+    this.records.set(input.checkoutSessionId, record);
 
     return record;
   }
 
   public async findByCheckoutSessionId(checkoutSessionId: string): Promise<CheckoutOrderRecord | null> {
     return this.records.get(checkoutSessionId) ?? null;
+  }
+
+  public async createPendingHold(input: CreateCheckoutStockHoldInput): Promise<CreateCheckoutStockHoldResult> {
+    for (const line of input.lines) {
+      if ((await this.findEffectiveAvailability(line.variantId))! < line.quantity) return { kind: 'unavailable' };
+    }
+
+    const [primaryLine] = input.lines;
+    const hold: SessionlessPendingCheckoutOrder = {
+      checkoutExpiresAt: input.checkoutExpiresAt,
+      checkoutSessionId: null,
+      createdAt: input.createdAt,
+      id: input.orderId,
+      lines: input.lines.map((line) => ({
+        createdAt: input.createdAt,
+        id: crypto.randomUUID(),
+        orderId: input.orderId,
+        ...line,
+      })),
+      needsReviewAt: null,
+      notPaidAt: null,
+      paidAt: null,
+      shippingLocker: null,
+      status: 'pending_payment',
+      statusUpdatedAt: input.createdAt,
+      storeItemSlug: primaryLine.storeItemSlug,
+      stripePaymentIntentId: null,
+      updatedAt: input.createdAt,
+      variantId: primaryLine.variantId,
+    };
+
+    this.records.set(hold.id, hold);
+    return { hold, kind: 'created' };
+  }
+
+  public async bindCheckoutSession(
+    hold: SessionlessPendingCheckoutOrder,
+    checkoutSessionId: CheckoutSessionId,
+    boundAt: Date,
+  ): Promise<SessionBoundPendingCheckoutOrder | null> {
+    if (this.bindShouldFail) return null;
+    if (this.records.get(hold.id)?.status !== 'pending_payment') return null;
+
+    const bound: SessionBoundPendingCheckoutOrder = {
+      ...hold,
+      checkoutSessionId,
+      statusUpdatedAt: boundAt,
+      updatedAt: boundAt,
+    };
+
+    this.records.delete(hold.id);
+    this.records.set(checkoutSessionId, bound);
+    return bound;
+  }
+
+  public async releaseSessionlessHold(
+    hold: SessionlessPendingCheckoutOrder,
+    releasedAt: Date,
+  ): Promise<SessionlessNotPaidCheckoutOrder | null> {
+    if (this.records.get(hold.id)?.status !== 'pending_payment') return null;
+
+    const released: SessionlessNotPaidCheckoutOrder = {
+      ...hold,
+      notPaidAt: releasedAt,
+      status: 'not_paid',
+      statusUpdatedAt: releasedAt,
+      updatedAt: releasedAt,
+    };
+
+    this.records.set(hold.id, released);
+    return released;
+  }
+
+  public async recoverCheckoutSession(
+    orderId: string,
+    recoveredCheckoutSessionId: CheckoutSessionId,
+    recoveredAt: Date,
+  ): Promise<boolean> {
+    const current = this.records.get(orderId);
+    if (!current || current.status !== 'pending_payment' || current.checkoutSessionId !== null) return false;
+
+    this.records.delete(orderId);
+    this.records.set(recoveredCheckoutSessionId, {
+      ...current,
+      checkoutSessionId: recoveredCheckoutSessionId,
+      statusUpdatedAt: recoveredAt,
+      updatedAt: recoveredAt,
+    });
+    return true;
+  }
+
+  public async findEffectiveAvailability(variantId: string) {
+    const heldQuantity = [...this.records.values()]
+      .filter((order) => order.status === 'pending_payment')
+      .flatMap((order) => order.lines ?? [])
+      .filter((line) => line.variantId === variantId)
+      .reduce((total, line) => total + line.quantity, 0);
+
+    return stockQuantity(Math.max(0, (this.effectiveAvailability.get(variantId) ?? 99) - heldQuantity));
   }
 
   public async listRecent(input: { limit: number; status?: OrderStatus | null }): Promise<CheckoutOrderRecord[]> {
@@ -287,6 +396,16 @@ describe('checkout use cases', () => {
       createHostedCheckoutSession: vi.fn(async () => ({
         checkoutSessionId: checkoutSessionId('cs_test_123'),
         checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
+      })),
+      expireHostedCheckoutSession: vi.fn(async () => ({
+        amountTotalMinor: null,
+        checkoutSessionId: checkoutSessionId('cs_test_123'),
+        currencyCode: null,
+        customer: { email: null, name: null, phone: null },
+        newsletterOptIn: false,
+        paymentStatus: 'unpaid' as const,
+        shippingAddress: null,
+        status: 'expired' as const,
       })),
       readCheckoutSessionLineItems: vi.fn(async () => []),
       readCheckoutSession: vi.fn(async () => ({
@@ -748,19 +867,21 @@ describe('checkout use cases', () => {
       checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
     });
 
-    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledWith({
-      lineItems: [
-        {
-          quantity: 1,
-          storeItemSlug: 'disintegration-black-vinyl-lp',
-          stripePriceId: 'price_test_barren_point',
-          variantId: 'variant_disintegration-black-vinyl-lp_standard',
-        },
-      ],
-      cancelUrl: 'https://example.com/checkout',
-      newsletterOptIn: false,
-      successUrl: 'https://example.com/return',
-    });
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lineItems: [
+          {
+            quantity: 1,
+            storeItemSlug: 'disintegration-black-vinyl-lp',
+            stripePriceId: 'price_test_barren_point',
+            variantId: 'variant_disintegration-black-vinyl-lp_standard',
+          },
+        ],
+        cancelUrl: 'https://example.com/checkout',
+        newsletterOptIn: false,
+        successUrl: 'https://example.com/return',
+      }),
+    );
     expect(orders.records.get('cs_test_123')).toEqual(
       expect.objectContaining({
         checkoutSessionId: 'cs_test_123',
@@ -770,6 +891,97 @@ describe('checkout use cases', () => {
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
       }),
     );
+  });
+
+  it('creates the complete 30-minute hold before requesting provider authority', async () => {
+    checkoutGateway.createHostedCheckoutSession = vi.fn(async (request) => {
+      const [sessionlessHold] = [...orders.records.values()];
+
+      expect(sessionlessHold).toMatchObject({
+        checkoutSessionId: null,
+        status: 'pending_payment',
+      });
+      expect(sessionlessHold?.lines).toHaveLength(1);
+      expect(request.orderId).toBe(sessionlessHold?.id);
+      expect(request.checkoutExpiresAt).toEqual(sessionlessHold?.checkoutExpiresAt);
+      expect(request.checkoutExpiresAt.getTime() - sessionlessHold!.createdAt.getTime()).toBe(30 * 60 * 1000);
+
+      return {
+        checkoutSessionId: checkoutSessionId('cs_test_123'),
+        checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
+      };
+    });
+
+    await startCheckout(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      checkoutGateway,
+      orders,
+      {
+        cancelUrl: 'https://example.com/checkout',
+        successUrl: 'https://example.com/return',
+        storeItemSlug: storeItem.storeItemSlug,
+        variantId: storeItem.variantId,
+      },
+    );
+  });
+
+  it('releases a sessionless hold when provider creation fails', async () => {
+    checkoutGateway.createHostedCheckoutSession = vi.fn(async () => {
+      throw new Error('provider unavailable');
+    });
+
+    await expect(
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+      ),
+    ).rejects.toThrow('provider unavailable');
+
+    expect([...orders.records.values()]).toEqual([
+      expect.objectContaining({ checkoutSessionId: null, status: 'not_paid' }),
+    ]);
+  });
+
+  it('expires a provider session before releasing a hold after binding fails', async () => {
+    orders.bindShouldFail = true;
+
+    await expect(
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+      ),
+    ).rejects.toBeInstanceOf(CheckoutUnavailableError);
+
+    expect(checkoutGateway.expireHostedCheckoutSession).toHaveBeenCalledWith('cs_test_123');
+    expect([...orders.records.values()]).toEqual([
+      expect.objectContaining({ checkoutSessionId: null, status: 'not_paid' }),
+    ]);
   });
 
   it('starts hosted Checkout with the current replacement Stripe Price', async () => {
@@ -884,19 +1096,21 @@ describe('checkout use cases', () => {
       checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
     });
 
-    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledWith({
-      lineItems: [
-        {
-          quantity: 1,
-          storeItemSlug: 'disintegration-black-vinyl-lp',
-          stripePriceId: 'price_test_pay_what_you_want',
-          variantId: 'variant_disintegration-black-vinyl-lp_standard',
-        },
-      ],
-      cancelUrl: 'https://example.com/checkout',
-      newsletterOptIn: false,
-      successUrl: 'https://example.com/return',
-    });
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lineItems: [
+          {
+            quantity: 1,
+            storeItemSlug: 'disintegration-black-vinyl-lp',
+            stripePriceId: 'price_test_pay_what_you_want',
+            variantId: 'variant_disintegration-black-vinyl-lp_standard',
+          },
+        ],
+        cancelUrl: 'https://example.com/checkout',
+        newsletterOptIn: false,
+        successUrl: 'https://example.com/return',
+      }),
+    );
   });
 
   it('starts hosted Checkout with requested CartQuantity and fixed Stripe quantity', async () => {
@@ -926,19 +1140,21 @@ describe('checkout use cases', () => {
       checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
     });
 
-    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledWith({
-      lineItems: [
-        {
-          quantity: 2,
-          storeItemSlug: 'disintegration-black-vinyl-lp',
-          stripePriceId: 'price_test_barren_point',
-          variantId: 'variant_disintegration-black-vinyl-lp_standard',
-        },
-      ],
-      cancelUrl: 'https://example.com/checkout',
-      newsletterOptIn: false,
-      successUrl: 'https://example.com/return',
-    });
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lineItems: [
+          {
+            quantity: 2,
+            storeItemSlug: 'disintegration-black-vinyl-lp',
+            stripePriceId: 'price_test_barren_point',
+            variantId: 'variant_disintegration-black-vinyl-lp_standard',
+          },
+        ],
+        cancelUrl: 'https://example.com/checkout',
+        newsletterOptIn: false,
+        successUrl: 'https://example.com/return',
+      }),
+    );
   });
 
   it('passes checkout newsletter opt-in to the hosted Checkout Session request', async () => {

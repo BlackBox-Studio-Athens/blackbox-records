@@ -127,7 +127,8 @@ model CheckoutOrder {
   id                        String              @id @default(cuid())
   storeItemSlug             String
   variantId                 String
-  checkoutSessionId         String              @unique
+  checkoutSessionId         String?             @unique
+  checkoutExpiresAt         DateTime
   stripePaymentIntentId     String?
   shippingLockerId          String?
   shippingLockerCountryCode String?
@@ -155,6 +156,7 @@ model CheckoutOrderLine {
   createdAt     DateTime      @default(now())
   order         CheckoutOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
+  @@unique([orderId, variantId])
   @@index([orderId])
   @@index([stripePriceId])
   @@index([variantId])

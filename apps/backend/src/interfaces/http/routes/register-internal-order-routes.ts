@@ -24,7 +24,8 @@ const checkoutSessionParamsSchema = z
 
 const checkoutOrderSchema = z
   .object({
-    checkoutSessionId: z.string(),
+    checkoutExpiresAt: z.string().datetime(),
+    checkoutSessionId: z.string().nullable(),
     createdAt: z.string().datetime(),
     needsReviewAt: z.string().datetime().nullable(),
     notPaidAt: z.string().datetime().nullable(),
@@ -134,6 +135,7 @@ export function registerInternalOrderRoutes(app: AppOpenApi): void {
 
 function toCheckoutOrderResponse(order: CheckoutOrderRecord) {
   return {
+    checkoutExpiresAt: order.checkoutExpiresAt.toISOString(),
     checkoutSessionId: order.checkoutSessionId,
     createdAt: order.createdAt.toISOString(),
     needsReviewAt: order.needsReviewAt?.toISOString() ?? null,

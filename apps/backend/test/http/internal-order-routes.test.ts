@@ -59,6 +59,7 @@ describe('internal order routes', () => {
   it('lists recent checkout orders for operators on the protected internal surface', async () => {
     mockReadRecentCheckoutOrders.mockResolvedValueOnce([
       {
+        checkoutExpiresAt: new Date('2026-04-25T10:30:00.000Z'),
         checkoutSessionId: 'cs_test_paid',
         createdAt: new Date('2026-04-25T10:00:00.000Z'),
         id: 'order_1',
@@ -94,6 +95,7 @@ describe('internal order routes', () => {
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual([
       {
+        checkoutExpiresAt: '2026-04-25T10:30:00.000Z',
         checkoutSessionId: 'cs_test_paid',
         createdAt: '2026-04-25T10:00:00.000Z',
         needsReviewAt: null,
@@ -116,6 +118,7 @@ describe('internal order routes', () => {
 
   it('returns checkout order detail by checkout session id', async () => {
     mockReadCheckoutOrder.mockResolvedValueOnce({
+      checkoutExpiresAt: new Date('2026-04-25T11:30:00.000Z'),
       checkoutSessionId: 'cs_test_review',
       createdAt: new Date('2026-04-25T11:00:00.000Z'),
       id: 'order_2',
@@ -142,6 +145,7 @@ describe('internal order routes', () => {
     expect(response.status).toBe(200);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      checkoutExpiresAt: '2026-04-25T11:30:00.000Z',
       checkoutSessionId: 'cs_test_review',
       createdAt: '2026-04-25T11:00:00.000Z',
       needsReviewAt: '2026-04-25T11:05:00.000Z',

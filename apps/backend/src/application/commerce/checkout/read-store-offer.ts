@@ -72,7 +72,7 @@ function readyOffer(
 export async function readStoreOffer(
   storeItems: StoreItemOptionRepository,
   itemAvailability: ItemAvailabilityRepository,
-  stock: StockRepository,
+  stock: Pick<StockRepository, 'findByVariantId'>,
   catalogReconciler: Pick<CatalogReconciler, 'reconcileVariant'>,
   productProjections: CatalogProductProjectionReader,
   storeItemSlug: unknown,
@@ -125,7 +125,7 @@ export async function readStoreOffer(
 export async function listVariantOffersForStoreItem(
   storeItems: StoreItemOptionRepository,
   itemAvailability: ItemAvailabilityRepository,
-  stock: StockRepository,
+  stock: Pick<StockRepository, 'findByVariantId'>,
   catalogReconciler: Pick<CatalogReconciler, 'reconcileVariant'>,
   productProjections: CatalogProductProjectionReader,
   storeItemSlug: unknown,

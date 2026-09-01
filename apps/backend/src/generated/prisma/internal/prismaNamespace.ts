@@ -1315,6 +1315,7 @@ export const CheckoutOrderScalarFieldEnum = {
   storeItemSlug: 'storeItemSlug',
   variantId: 'variantId',
   checkoutSessionId: 'checkoutSessionId',
+  checkoutExpiresAt: 'checkoutExpiresAt',
   stripePaymentIntentId: 'stripePaymentIntentId',
   shippingLockerId: 'shippingLockerId',
   shippingLockerCountryCode: 'shippingLockerCountryCode',

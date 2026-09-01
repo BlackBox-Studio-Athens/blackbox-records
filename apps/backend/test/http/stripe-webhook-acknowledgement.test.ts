@@ -27,6 +27,7 @@ function createServices(): StripeWebhookAcknowledgementServices {
     markCatalogEventFailed: vi.fn(async () => undefined),
     markCatalogEventSucceeded: vi.fn(async () => undefined),
     publishCheckoutOrderPaid: vi.fn(),
+    recoverCheckoutOrderSession: vi.fn(async () => true),
     recordCatalogWebhookEvent: vi.fn(async () => ({
       record: {
         catalogObjectId: 'price_test_123',
@@ -86,6 +87,7 @@ describe('Stripe webhook acknowledgement checkout events', () => {
         }),
       }),
     );
+    expect(services.recoverCheckoutOrderSession).toHaveBeenCalledWith('order_1', 'cs_test_123');
     expect(services.publishCheckoutOrderPaid).toHaveBeenCalledWith(checkoutOrderPaid);
   });
 
@@ -505,6 +507,7 @@ function createPaidCheckoutEvent(): VerifiedStripeWebhookEvent {
       id: 'cs_test_123',
       metadata: {
         newsletterOptIn: 'true',
+        orderId: 'order_1',
       },
       object: 'checkout.session',
       payment_intent: 'pi_test_123',

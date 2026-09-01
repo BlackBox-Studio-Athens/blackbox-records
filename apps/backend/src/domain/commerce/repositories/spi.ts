@@ -1,4 +1,13 @@
 export type {
+  CheckoutStockHoldLineInput,
+  CheckoutStockHoldRepository,
+  CreateCheckoutStockHoldInput,
+  CreateCheckoutStockHoldResult,
+  SessionBoundPendingCheckoutOrder,
+  SessionlessNotPaidCheckoutOrder,
+  SessionlessPendingCheckoutOrder,
+} from './checkout-stock-hold-repository';
+export type {
   StoreItemOptionRecord,
   StoreItemOptionRepository,
   StoreItemSourceKind,

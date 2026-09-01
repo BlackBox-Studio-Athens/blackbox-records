@@ -13,7 +13,8 @@ export type CheckoutOrderRecord = {
   id: string;
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
-  checkoutSessionId: CheckoutSessionId;
+  checkoutSessionId: CheckoutSessionId | null;
+  checkoutExpiresAt: Date;
   stripePaymentIntentId: PaymentIntentId | null;
   shippingLocker: ShippingLockerSnapshot | null;
   status: OrderStatus;
@@ -41,6 +42,7 @@ export type CreatePendingCheckoutOrderInput = {
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
   checkoutSessionId: CheckoutSessionId;
+  checkoutExpiresAt?: Date;
   shippingLocker: ShippingLockerSnapshot | null;
   stripePaymentIntentId?: PaymentIntentId | null;
   createdAt?: Date;

@@ -20,7 +20,8 @@ import type { PrismaClient } from '../../../generated/prisma/client';
 type PrismaOrderStateClient = Pick<PrismaClient, 'checkoutOrder' | '$executeRawUnsafe' | '$queryRawUnsafe'>;
 
 function mapCheckoutOrder(record: {
-  checkoutSessionId: string;
+  checkoutSessionId: string | null;
+  checkoutExpiresAt: Date;
   createdAt: Date;
   id: string;
   needsReviewAt: Date | null;
@@ -38,7 +39,8 @@ function mapCheckoutOrder(record: {
   lines?: CheckoutOrderLineRecord[];
 }): CheckoutOrderRecord {
   return {
-    checkoutSessionId: parseCheckoutSessionId(record.checkoutSessionId),
+    checkoutSessionId: record.checkoutSessionId ? parseCheckoutSessionId(record.checkoutSessionId) : null,
+    checkoutExpiresAt: record.checkoutExpiresAt,
     createdAt: record.createdAt,
     id: record.id,
     needsReviewAt: record.needsReviewAt,
@@ -92,6 +94,7 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
     const record = await this.prisma.checkoutOrder.create({
       data: {
         checkoutSessionId: input.checkoutSessionId,
+        checkoutExpiresAt: input.checkoutExpiresAt ?? new Date(createdAt.getTime() + 30 * 60 * 1000),
         createdAt,
         shippingLockerCountryCode: input.shippingLocker?.country_code ?? null,
         shippingLockerId: input.shippingLocker?.locker_id ?? null,

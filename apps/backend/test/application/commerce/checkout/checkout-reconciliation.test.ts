@@ -53,10 +53,20 @@ describe('checkout reconciliation', () => {
           phone: null,
         },
         newsletterOptIn: false,
+        orderId: null,
         shippingAddress: null,
         stripePaymentIntentId: 'pi_test_123',
       },
     });
+  });
+
+  it('releases an asynchronously failed payment even when the Checkout Session remains complete', () => {
+    expect(
+      reconcileCheckoutSession(
+        session({ paymentStatus: 'unpaid', status: 'complete' }),
+        'checkout.session.async_payment_failed',
+      ).recommendedOrderStatus,
+    ).toBe('not_paid');
   });
 
   it.each([
@@ -108,6 +118,7 @@ describe('checkout reconciliation', () => {
         phone: null,
       },
       newsletterOptIn: false,
+      orderId: null,
       shippingAddress: null,
       stripePaymentIntentId: null,
     });

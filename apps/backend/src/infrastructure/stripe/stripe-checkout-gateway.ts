@@ -42,6 +42,7 @@ export class StripeCheckoutGateway implements CheckoutGateway {
         : []);
     const metadataLineItem = resolvedLineItems[0];
     const session = await this.stripe.checkout.sessions.create({
+      expires_at: Math.floor(request.checkoutExpiresAt.getTime() / 1000),
       line_items: resolvedLineItems.map((lineItem) => ({
         price: lineItem.stripePriceId,
         quantity: lineItem.quantity,
@@ -50,6 +51,7 @@ export class StripeCheckoutGateway implements CheckoutGateway {
       metadata: metadataLineItem
         ? {
             ...(request.newsletterOptIn ? { newsletterOptIn: 'true' } : {}),
+            orderId: request.orderId,
             storeItemSlug: metadataLineItem.storeItemSlug,
             variantId: metadataLineItem.variantId,
           }
@@ -74,6 +76,10 @@ export class StripeCheckoutGateway implements CheckoutGateway {
       checkoutSessionId: parseCheckoutSessionId(session.id),
       checkoutUrl: session.url,
     };
+  }
+
+  public async expireHostedCheckoutSession(checkoutSessionId: CheckoutSessionId): Promise<StripeCheckoutSessionState> {
+    return toStripeCheckoutSessionState(await this.stripe.checkout.sessions.expire(checkoutSessionId));
   }
 
   public async readCheckoutSession(checkoutSessionId: CheckoutSessionId): Promise<StripeCheckoutSessionState> {

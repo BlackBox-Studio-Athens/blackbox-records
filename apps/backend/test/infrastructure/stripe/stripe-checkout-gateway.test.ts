@@ -38,6 +38,7 @@ describe('StripeCheckoutGateway', () => {
         checkout: {
           sessions: {
             create,
+            expire: vi.fn(),
             retrieve: vi.fn(),
             listLineItems: vi.fn(),
           },
@@ -48,6 +49,7 @@ describe('StripeCheckoutGateway', () => {
 
     await expect(
       gateway.createHostedCheckoutSession({
+        checkoutExpiresAt: new Date('2026-04-24T10:30:00.000Z'),
         lineItems: [
           {
             quantity: cartQuantity(2),
@@ -58,6 +60,7 @@ describe('StripeCheckoutGateway', () => {
         ],
         cancelUrl: 'https://blackbox.example/checkout',
         newsletterOptIn: true,
+        orderId: 'order_test_123',
         successUrl: 'https://blackbox.example/return',
       }),
     ).resolves.toEqual({
@@ -74,9 +77,11 @@ describe('StripeCheckoutGateway', () => {
           },
         ],
         cancel_url: 'https://blackbox.example/checkout',
+        expires_at: 1777026600,
         locale: 'en',
         metadata: {
           newsletterOptIn: 'true',
+          orderId: 'order_test_123',
           storeItemSlug: 'disintegration-black-vinyl-lp',
           variantId: 'variant_disintegration-black-vinyl-lp_standard',
         },

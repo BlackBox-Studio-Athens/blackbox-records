@@ -1,6 +1,6 @@
 import type {
+  CheckoutStockHoldRepository,
   ItemAvailabilityRepository,
-  OrderStateRepository,
   StockRepository,
   StoreItemOptionRepository,
 } from '../../../domain/commerce/repositories/spi';
@@ -25,7 +25,6 @@ import {
   type CatalogProductProjectionReader,
   type CatalogReconciler,
 } from '../catalog-sync';
-import { createPendingCheckoutOrder } from '../orders/create-pending-checkout-order';
 import type { CheckoutSessionLineItem, CheckoutGateway, FeatureFlagReader, HostedCheckoutSession } from './spi';
 
 export type StartCheckoutCommand = {
@@ -45,7 +44,10 @@ export type StartCheckoutLineCommand = {
 
 type CatalogMutationPolicy = {
   applyCatalogMutations?: boolean;
+  now?: Date;
 };
+
+const CHECKOUT_HOLD_DURATION_MS = 30 * 60 * 1000;
 
 const enabledFeatureFlags: FeatureFlagReader = {
   isNativeCheckoutEnabled: async () => true,
@@ -111,7 +113,7 @@ export async function startCheckout(
   catalogReconciler: Pick<CatalogReconciler, 'reconcileVariant'>,
   productProjections: CatalogProductProjectionReader,
   checkoutGateway: CheckoutGateway,
-  orders: OrderStateRepository,
+  checkoutHolds: CheckoutStockHoldRepository,
   command: StartCheckoutCommand,
   featureFlags: FeatureFlagReader = enabledFeatureFlags,
   options: CatalogMutationPolicy = {},
@@ -150,7 +152,7 @@ export async function startCheckout(
 
     const currentStock = await stock.findByVariantId(line.variantId);
 
-    if (!currentStock || currentStock.onlineQuantity < quantity) {
+    if (!currentStock || Math.min(currentStock.quantity, currentStock.onlineQuantity) < quantity) {
       throw new CheckoutUnavailableError();
     }
 
@@ -183,27 +185,50 @@ export async function startCheckout(
     });
   }
 
-  const checkoutSession = await checkoutGateway.createHostedCheckoutSession({
-    cancelUrl: command.cancelUrl,
-    lineItems: validatedLines,
-    newsletterOptIn: command.newsletterOptIn === true,
-    successUrl: command.successUrl,
-  });
-
   const primaryLine = validatedLines[0]!;
-
-  await createPendingCheckoutOrder(orders, {
-    checkoutSessionId: checkoutSession.checkoutSessionId,
-    lines: validatedLines.map((line) => ({
-      quantity: line.quantity,
-      stripePriceId: line.stripePriceId,
-      storeItemSlug: line.storeItemSlug,
-      variantId: line.variantId,
-    })),
-    shippingLocker: null,
-    storeItemSlug: primaryLine.storeItemSlug,
-    variantId: primaryLine.variantId,
+  const createdAt = options.now ?? new Date();
+  const checkoutExpiresAt = new Date(createdAt.getTime() + CHECKOUT_HOLD_DURATION_MS);
+  const [firstLine, ...remainingLines] = validatedLines;
+  const holdResult = await checkoutHolds.createPendingHold({
+    checkoutExpiresAt,
+    createdAt,
+    lines: [firstLine!, ...remainingLines],
+    orderId: crypto.randomUUID(),
   });
+
+  if (holdResult.kind === 'unavailable') throw new CheckoutUnavailableError();
+
+  let checkoutSession: HostedCheckoutSession;
+
+  try {
+    checkoutSession = await checkoutGateway.createHostedCheckoutSession({
+      cancelUrl: command.cancelUrl,
+      checkoutExpiresAt,
+      lineItems: validatedLines,
+      newsletterOptIn: command.newsletterOptIn === true,
+      orderId: holdResult.hold.id,
+      successUrl: command.successUrl,
+    });
+  } catch (error) {
+    await checkoutHolds.releaseSessionlessHold(holdResult.hold, new Date());
+    throw error;
+  }
+
+  const boundOrder = await checkoutHolds.bindCheckoutSession(
+    holdResult.hold,
+    checkoutSession.checkoutSessionId,
+    new Date(),
+  );
+
+  if (!boundOrder) {
+    const expiredSession = await checkoutGateway.expireHostedCheckoutSession(checkoutSession.checkoutSessionId);
+
+    if (expiredSession.status === 'expired' && expiredSession.paymentStatus !== 'paid') {
+      await checkoutHolds.releaseSessionlessHold(holdResult.hold, new Date());
+    }
+
+    throw new CheckoutUnavailableError();
+  }
 
   return checkoutSession;
 }
