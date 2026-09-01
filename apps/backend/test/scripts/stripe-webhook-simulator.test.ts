@@ -30,8 +30,15 @@ describe('Stripe webhook simulator', () => {
     ).resolves.toEqual(
       expect.objectContaining({
         checkoutSession: expect.objectContaining({
+          amount_total: 2800,
+          currency: 'eur',
+          customer_details: expect.objectContaining({
+            email: 'shopper@example.com',
+            name: 'Local Mock Shopper',
+          }),
           id: 'cs_mock_variant_disintegration-black-vinyl-lp_standard',
           payment_status: 'paid',
+          payment_intent: 'pi_local_mock',
           status: 'complete',
         }),
         isAllowed: true,

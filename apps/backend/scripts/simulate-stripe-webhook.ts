@@ -38,9 +38,26 @@ export function createStripeWebhookFixturePayload({
     created,
     data: {
       object: {
+        amount_total: 2800,
+        currency: 'eur',
+        customer_details: {
+          address: {
+            city: 'Athens',
+            country: 'GR',
+            line1: '1 Local Mock Street',
+            line2: null,
+            postal_code: '10558',
+            state: 'Attica',
+          },
+          email: 'shopper@example.com',
+          name: 'Local Mock Shopper',
+          phone: '+306900000000',
+        },
         id: checkoutSessionId,
+        metadata: {},
         object: 'checkout.session',
         payment_status: paymentStatus,
+        payment_intent: paymentStatus === 'paid' ? 'pi_local_mock' : null,
         status,
       },
     },

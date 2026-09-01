@@ -1,8 +1,28 @@
+import { readFileSync } from 'node:fs';
+
 import { describe, expect, it } from 'vitest';
 
 import { buildStackPlan, readRequiredEnvironmentIssues } from '../../../../scripts/start-local-stack';
 
 describe('local stack launcher plan', () => {
+  it('pins local Worker ports and keeps mock scripts isolated from real local Stripe secrets', () => {
+    const packageJson = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as {
+      scripts: Record<string, string>;
+    };
+
+    for (const scriptName of ['dev', 'dev:mock', 'dev:mock-api', 'dev:uat']) {
+      expect(packageJson.scripts[scriptName]).toContain('--port 8787');
+    }
+
+    for (const scriptName of ['dev:mock', 'dev:mock-api']) {
+      expect(packageJson.scripts[scriptName]).toContain('--var STRIPE_SECRET_KEY:sk_test_mock');
+      expect(packageJson.scripts[scriptName]).toContain(
+        '--var STRIPE_PAYMENT_METHOD_CONFIGURATION_ID:pmc_mock_blackbox_checkout',
+      );
+      expect(packageJson.scripts[scriptName]).toContain('--var STRIPE_WEBHOOK_SECRET:whsec_local_mock');
+    }
+  });
+
   it('builds the real Stripe test stack with D1 prep and split-port frontend env', () => {
     const plan = buildStackPlan('stripe-test');
 

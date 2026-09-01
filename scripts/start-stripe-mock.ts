@@ -3,10 +3,20 @@ import http, { type IncomingHttpHeaders, type IncomingMessage, type ServerRespon
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
+import { readLocalMockStoreOfferAmountMinor } from '../apps/backend/scripts/seed-local-mock-commerce-state';
+
 export const STRIPE_MOCK_PROXY_PORT = 12110;
 export const STRIPE_MOCK_HTTP_PORT = 12111;
 export const STRIPE_MOCK_HTTPS_PORT = 12112;
 export const STRIPE_MOCK_UPSTREAM_ORIGIN = `http://127.0.0.1:${STRIPE_MOCK_HTTP_PORT}`;
+
+type StripeMockCheckoutLineItem = {
+  amountMinor: number;
+  priceId: string;
+  quantity: number;
+};
+
+type StripeMockCheckoutLineItems = Map<string, StripeMockCheckoutLineItem[]>;
 
 export function patchStripeMockRequest(input: { body: string; method?: string; url?: string }): string {
   return input.body;
@@ -14,17 +24,22 @@ export function patchStripeMockRequest(input: { body: string; method?: string; u
 
 export function patchStripeMockResponse(input: {
   body: string;
+  checkoutLineItems?: StripeMockCheckoutLineItems;
   method?: string;
   requestBody: string;
   url?: string;
 }): string {
-  if (!isCheckoutSessionCreate(input)) {
-    return input.body;
-  }
-
   const responseJson = readJsonObject(input.body);
 
   if (!responseJson) {
+    return input.body;
+  }
+
+  if (isCheckoutSessionLineItemsRead(input)) {
+    return patchCheckoutSessionLineItems(input, responseJson);
+  }
+
+  if (!isCheckoutSessionCreate(input)) {
     return input.body;
   }
 
@@ -34,6 +49,14 @@ export function patchStripeMockResponse(input: {
   const sessionId = typeof responseJson.id === 'string' ? responseJson.id : null;
   const fragment = sessionId ? toSafeStripeMockFragment(sessionId) : toSafeStripeMockFragment(variantId);
 
+  if (sessionId) {
+    const lineItems = readCheckoutSessionCreateLineItems(requestParams);
+
+    if (lineItems.length) {
+      input.checkoutLineItems?.set(sessionId, lineItems);
+    }
+  }
+
   if (!responseJson.url || isStripeHostedCheckoutUrl(responseJson.url)) {
     responseJson.url = `https://checkout.stripe.test/session/${fragment}`;
   }
@@ -42,8 +65,10 @@ export function patchStripeMockResponse(input: {
 }
 
 export function createStripeMockProxyServer(upstreamOrigin = STRIPE_MOCK_UPSTREAM_ORIGIN): http.Server {
+  const checkoutLineItems: StripeMockCheckoutLineItems = new Map();
+
   return http.createServer((request, response) => {
-    void proxyRequest({ request, response, upstreamOrigin }).catch((error: unknown) => {
+    void proxyRequest({ checkoutLineItems, request, response, upstreamOrigin }).catch((error: unknown) => {
       writeProxyError(response, error);
     });
   });
@@ -81,10 +106,12 @@ async function main() {
 }
 
 async function proxyRequest({
+  checkoutLineItems,
   request,
   response,
   upstreamOrigin,
 }: {
+  checkoutLineItems: StripeMockCheckoutLineItems;
   request: IncomingMessage;
   response: ServerResponse;
   upstreamOrigin: string;
@@ -104,6 +131,7 @@ async function proxyRequest({
   const upstreamBody = await upstreamResponse.text();
   const patchedResponseBody = patchStripeMockResponse({
     body: upstreamBody,
+    checkoutLineItems,
     method: request.method,
     requestBody,
     url: request.url,
@@ -167,6 +195,59 @@ function isCheckoutSessionCreate(input: { method?: string; url?: string }) {
   return input.method === 'POST' && input.url?.startsWith('/v1/checkout/sessions');
 }
 
+function isCheckoutSessionLineItemsRead(input: { method?: string; url?: string }) {
+  return input.method === 'GET' && /^\/v1\/checkout\/sessions\/[^/]+\/line_items(?:\?|$)/.test(input.url ?? '');
+}
+
+function patchCheckoutSessionLineItems(
+  input: { checkoutLineItems?: StripeMockCheckoutLineItems; url?: string },
+  responseJson: Record<string, unknown>,
+): string {
+  const sessionId = /^\/v1\/checkout\/sessions\/([^/]+)\/line_items(?:\?|$)/.exec(input.url ?? '')?.[1];
+  const lineItems = sessionId ? input.checkoutLineItems?.get(decodeURIComponent(sessionId)) : null;
+
+  if (!lineItems?.length || !Array.isArray(responseJson.data)) {
+    return JSON.stringify(responseJson);
+  }
+
+  const originalLineItems = responseJson.data;
+  responseJson.data = lineItems.map((lineItem, index) => {
+    const original = isJsonObject(originalLineItems[index]) ? originalLineItems[index] : {};
+    const originalPrice = isJsonObject(original.price) ? original.price : {};
+
+    return {
+      ...original,
+      amount_subtotal: lineItem.amountMinor * lineItem.quantity,
+      amount_total: lineItem.amountMinor * lineItem.quantity,
+      price: { ...originalPrice, id: lineItem.priceId },
+      quantity: lineItem.quantity,
+    };
+  });
+
+  return JSON.stringify(responseJson);
+}
+
+function readCheckoutSessionCreateLineItems(requestParams: URLSearchParams): StripeMockCheckoutLineItem[] {
+  const lineItems: StripeMockCheckoutLineItem[] = [];
+
+  for (let index = 0; ; index += 1) {
+    const priceId = requestParams.get(`line_items[${index}][price]`);
+
+    if (!priceId) {
+      return lineItems;
+    }
+
+    const quantity = Number(requestParams.get(`line_items[${index}][quantity]`) ?? '1');
+    const amountMinor = readLocalMockStoreOfferAmountMinor(priceId);
+
+    if (!Number.isInteger(quantity) || quantity < 1 || !amountMinor) {
+      return [];
+    }
+
+    lineItems.push({ amountMinor, priceId, quantity });
+  }
+}
+
 function isStripeHostedCheckoutUrl(value: unknown): value is string {
   return typeof value === 'string' && value.startsWith('https://checkout.stripe.com/');
 }
@@ -174,10 +255,14 @@ function isStripeHostedCheckoutUrl(value: unknown): value is string {
 function readJsonObject(value: string): Record<string, unknown> | null {
   try {
     const parsed = JSON.parse(value) as unknown;
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
+    return isJsonObject(parsed) ? parsed : null;
   } catch {
     return null;
   }
+}
+
+function isJsonObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 function toSafeStripeMockFragment(value: string) {

@@ -72,4 +72,42 @@ describe('stripe-mock local launcher proxy', () => {
       }),
     );
   });
+
+  it('returns the Price IDs and quantities used to create each local Checkout Session', () => {
+    const checkoutLineItems = new Map();
+
+    patchStripeMockResponse({
+      body: JSON.stringify({ id: 'cs_test_fixture', object: 'checkout.session', url: null }),
+      checkoutLineItems,
+      method: 'POST',
+      requestBody: new URLSearchParams({
+        'line_items[0][price]': 'price_mock_disintegration_black_vinyl_lp',
+        'line_items[0][quantity]': '2',
+      }).toString(),
+      url: '/v1/checkout/sessions',
+    });
+
+    const patched = patchStripeMockResponse({
+      body: JSON.stringify({
+        data: [{ price: { id: 'price_unrelated_fixture' }, quantity: 1 }],
+        object: 'list',
+      }),
+      checkoutLineItems,
+      method: 'GET',
+      requestBody: '',
+      url: '/v1/checkout/sessions/cs_test_fixture/line_items?limit=100',
+    });
+
+    expect(JSON.parse(patched) as unknown).toEqual(
+      expect.objectContaining({
+        data: [
+          expect.objectContaining({
+            amount_total: 5600,
+            price: expect.objectContaining({ id: 'price_mock_disintegration_black_vinyl_lp' }),
+            quantity: 2,
+          }),
+        ],
+      }),
+    );
+  });
 });

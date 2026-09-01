@@ -120,6 +120,16 @@ export function createMockStripePriceId(storeItemSlug: string): string {
   return `price_mock_${toSqlIdFragment(storeItemSlug)}`;
 }
 
+export function readLocalMockStoreOfferAmountMinor(stripePriceId: string): number | null {
+  for (const [storeItemSlug, price] of mockStoreOfferPricesBySlug) {
+    if (createMockStripePriceId(storeItemSlug) === stripePriceId) {
+      return price.amountMinor;
+    }
+  }
+
+  return null;
+}
+
 export function parseFrontmatter(content: string): Record<string, string | string[]> {
   const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content);
 
