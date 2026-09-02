@@ -20,6 +20,6 @@
 
 ## 4. Hosted Proof and Completion
 
-- [ ] 4.1 With `apps/staff` deployed to `blackbox-records-staff`, attach `staff.blackboxrecordsathens.com`, configure its same-origin PRD Worker route, Access application, and PRD trust values, then use Browser Use to prove the allowlisted shared Google identity can read and perform one no-net audited mutation.
-- [ ] 4.2 Probe PRD workers.dev, `staff.blackboxrecordsathens.com`, and every other reachable PRD Worker hostname without a valid assertion and with a forged forwarded email; verify denial before D1 access.
-- [ ] 4.3 After 1.4, 4.1, and 4.2, rerun generation only if contracts changed, then rerun `pnpm test:unit`, `pnpm check`, `pnpm build`, and `pnpm openspec -- validate verify-operator-access-jwt --strict`; archive only after the exact PRD proof tree passes.
+- [x] 4.1 With `apps/staff` deployed to `blackbox-records-staff`, attach `staff.blackboxrecordsathens.com`, configure its same-origin PRD Worker route, Access application, and PRD trust values, then use Browser Use to prove the allowlisted shared Google identity can read and perform one no-net audited mutation.
+- [x] 4.2 Probe PRD workers.dev, `staff.blackboxrecordsathens.com`, and every other reachable PRD Worker hostname without a valid assertion and with a forged forwarded email; verify denial before D1 access.
+- [x] 4.3 After 1.4, 4.1, and 4.2, rerun generation only if contracts changed, then rerun `pnpm test:unit`, `pnpm check`, `pnpm build`, and `pnpm openspec -- validate verify-operator-access-jwt --strict`; archive only after the exact PRD proof tree passes.
