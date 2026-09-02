@@ -227,7 +227,11 @@ describe('stripe catalog contract projection', () => {
           amountMinor: 2800,
           currencyCode: 'EUR',
         },
-        targetEnvironments: ['uat'],
+        stockInitialization: {
+          initialOnlineQuantity: 12,
+          initialQuantity: 15,
+        },
+        targetEnvironments: ['uat', 'prd'],
       },
       expectedSandboxPrice: {
         amountMinor: 2800,
@@ -285,7 +289,7 @@ describe('stripe catalog contract projection', () => {
     );
   });
 
-  it('generates Desired Catalog State from the same content contract without production targets by default', async () => {
+  it('generates Desired Catalog State with only approved production targets', async () => {
     const contracts = await loadStripeCatalogStoreItemContracts({
       productEnvironment: 'PRD',
     });
@@ -302,11 +306,16 @@ describe('stripe catalog contract projection', () => {
         name: 'BlackBox Records - Disintegration - Black Vinyl LP',
       },
       stockInitialization: {
-        initialOnlineQuantity: null,
+        initialOnlineQuantity: 12,
+        initialQuantity: 15,
       },
-      targetEnvironments: ['uat'],
+      targetEnvironments: ['uat', 'prd'],
     });
-    expect(contracts.flatMap((contract) => contract.desiredCatalogEntry.targetEnvironments)).not.toContain('prd');
+    expect(
+      contracts
+        .filter((contract) => contract.desiredCatalogEntry.targetEnvironments.includes('prd'))
+        .map((contract) => contract.storeItemSlug),
+    ).toEqual(['disintegration-black-vinyl-lp']);
     expect(source).toContain('export const currentDesiredCatalogState');
     expect(source).toContain('createCurrentDesiredCatalogEntriesForEnvironment');
     expect(source).not.toContain('smokeCandidate');
@@ -449,9 +458,11 @@ describe('stripe catalog contract projection', () => {
     const sql = createProductionCommerceReadinessSql(contracts);
 
     expect(sql).toContain('Production catalog readiness seed generated from Desired Catalog State.');
-    expect(sql).toContain('No production-targeted StoreItemOption rows.');
-    expect(sql).toContain('No production-targeted ItemAvailability rows.');
-    expect(sql).toContain('No first-publication production stock initialization rows.');
+    expect(sql).toContain(
+      "'disintegration-black-vinyl-lp', 'release', 'disintegration', 'variant_disintegration-black-vinyl-lp_standard'",
+    );
+    expect(sql).toContain("'variant_disintegration-black-vinyl-lp_standard', 'available', TRUE");
+    expect(sql).toContain("'variant_disintegration-black-vinyl-lp_standard', 15, 12");
     expect(sql).not.toContain('99, 99');
     expect(sql).not.toContain('DO UPDATE SET\n    "quantity" = excluded."quantity"');
   });

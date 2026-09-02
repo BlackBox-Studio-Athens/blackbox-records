@@ -502,10 +502,11 @@ function createProductionStockInitializationSql(contracts: StripeCatalogStoreIte
     stockContracts
       .map((contract) => {
         const onlineQuantity = contract.desiredCatalogEntry.stockInitialization.initialOnlineQuantity ?? 0;
+        const quantity = contract.desiredCatalogEntry.stockInitialization.initialQuantity ?? onlineQuantity;
         return formatValues([
           `stock_${toSqlIdFragment(contract.storeItemSlug)}`,
           contract.variantId,
-          onlineQuantity,
+          quantity,
           onlineQuantity,
           'CURRENT_TIMESTAMP',
           'CURRENT_TIMESTAMP',

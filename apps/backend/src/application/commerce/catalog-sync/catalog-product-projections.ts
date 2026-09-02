@@ -944,7 +944,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         "Afterwise's six-track debut album blends instrumental post-rock atmosphere with post-metal weight. Written and performed by the Athens band, it was recorded and mixed at BlackBox Studio and released by BlackBox Records. Digital availability is confirmed by Bandcamp; Black Vinyl LP and CD are label editions.",
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
+        'https://blackbox-records-web.pages.dev/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
       ],
       metadata: {
         sourceId: 'disintegration',

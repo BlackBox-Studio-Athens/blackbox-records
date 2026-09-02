@@ -3,6 +3,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
+import { currentDesiredCatalogEntries } from '../apps/backend/src/application/commerce/catalog-sync/desired-catalog-state';
+
 type CheckResult = {
   detail: string;
   ok: boolean;
@@ -56,7 +58,6 @@ export function verifyEnvironmentModel(): CheckResult[] {
   const wranglerConfig = read('apps/backend/wrangler.jsonc');
   const staticSiteSpec = read('openspec/specs/static-site-and-deployment/spec.md');
   const catalogVerifyScript = read('scripts/stripe-catalog-verify.ts');
-  const desiredCatalogState = read('apps/backend/src/application/commerce/catalog-sync/desired-catalog-state.ts');
 
   return [
     {
@@ -168,7 +169,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
     },
     {
       detail: 'Generated Desired Catalog State does not combine production targets with UAT-hosted Product image URLs.',
-      ok: !hasProductionTargetWithUatAssetUrl(desiredCatalogState),
+      ok: !hasProductionTargetWithUatAssetUrl(),
     },
     {
       detail: 'Static-site baseline spec no longer names GitHub Pages as rollback/legacy production.',
@@ -314,9 +315,13 @@ function extractCheckoutOrigins(block: string): string[] {
   return match?.groups?.origins.split(',').map((origin) => origin.trim()) ?? [];
 }
 
-function hasProductionTargetWithUatAssetUrl(desiredCatalogState: string): boolean {
-  return /targetEnvironments:\s*\[[^\]]*'prd'[\s\S]*?https:\/\/blackbox-studio-athens\.github\.io\/blackbox-records/.test(
-    desiredCatalogState,
+function hasProductionTargetWithUatAssetUrl(): boolean {
+  return currentDesiredCatalogEntries.some(
+    (entry) =>
+      entry.targetEnvironments.includes('prd') &&
+      entry.productProjection.imageUrls.some((url) =>
+        url.startsWith('https://blackbox-studio-athens.github.io/blackbox-records'),
+      ),
   );
 }
 

@@ -112,6 +112,7 @@ export type DesiredCatalogEntry = {
   sourceId: string;
   sourceKind: StoreItemOptionRecord['sourceKind'];
   stockInitialization: {
+    initialQuantity?: number | null;
     initialOnlineQuantity: number | null;
   };
   storeItemSlug: string;

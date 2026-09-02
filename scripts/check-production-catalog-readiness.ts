@@ -264,6 +264,7 @@ function readProductionCatalogReadinessRows(entries: readonly DesiredCatalogEntr
   return parseD1Rows(
     runD1Sql(
       [
+        `WITH expected(variantId) AS (VALUES ${variants.map((variant) => `(${variant})`).join(', ')})`,
         'SELECT',
         '  expected.variantId AS variantId,',
         '  o.storeItemSlug AS storeItemSlug,',
@@ -278,7 +279,7 @@ function readProductionCatalogReadinessRows(entries: readonly DesiredCatalogEntr
         '  s.currencyCode AS currencyCode,',
         '  s.priceActive AS priceActive,',
         '  s.productActive AS productActive',
-        `FROM (VALUES ${variants.map((variant) => `(${variant})`).join(', ')}) AS expected(variantId)`,
+        'FROM expected',
         'LEFT JOIN StoreItemOption o ON o.variantId = expected.variantId',
         'LEFT JOIN ItemAvailability a ON a.variantId = expected.variantId',
         'LEFT JOIN Stock stock ON stock.variantId = expected.variantId',

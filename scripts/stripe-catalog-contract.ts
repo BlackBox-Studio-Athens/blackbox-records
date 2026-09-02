@@ -89,6 +89,12 @@ const CATALOG_RELEASE_PRICE_OVERRIDES: Record<string, StripeCatalogExpectedPrice
     kind: 'fixed',
   },
 };
+const CATALOG_RELEASE_PRD_INITIAL_STOCK: Record<string, { onlineQuantity: number; quantity: number }> = {
+  disintegration: {
+    onlineQuantity: 12,
+    quantity: 15,
+  },
+};
 export const STRIPE_PHYSICAL_GOODS_TAX_CODE = 'txcd_99999999';
 
 const nonPhysicalReleaseFormats = new Set(['digital']);
@@ -204,6 +210,7 @@ async function readReleaseContracts(
         const coverImage = resolveCatalogCoverImagePathForRelease(sourceId, content.cover_image);
         const titleParts = ['BlackBox Records', content.title, optionLabel].filter(Boolean);
         const expectedPrice = CATALOG_RELEASE_PRICE_OVERRIDES[sourceId] ?? createExpectedSandboxPrice(optionLabel);
+        const productionInitialStock = CATALOG_RELEASE_PRD_INITIAL_STOCK[sourceId];
 
         return {
           artistId: content.artist,
@@ -211,13 +218,18 @@ async function readReleaseContracts(
             alignmentStatus: 'checkout_eligible',
             description: normalizeDescription(content.summary, content.title),
             expectedSandboxPrice: expectedPrice,
-            imageUrl: createContentAssetUrl('releases', coverImage, options),
+            imageUrl: createContentAssetUrl(
+              'releases',
+              coverImage,
+              productionInitialStock ? { ...options, productEnvironment: 'PRD' } : options,
+            ),
             metadata: {
               sourceId,
               sourceKind: 'release',
               storeItemSlug,
             },
             name: titleParts.join(' - '),
+            productionInitialStock,
             sourceId,
             sourceKind: 'release',
             storeItemSlug,
@@ -363,6 +375,7 @@ function createContract(input: {
   imageUrl: string;
   metadata: Record<string, string>;
   name: string;
+  productionInitialStock?: { onlineQuantity: number; quantity: number };
   sourceId: string;
   sourceKind: StoreItemSourceKind;
   storeItemSlug: string;
@@ -389,10 +402,11 @@ function createContract(input: {
       sourceId: input.sourceId,
       sourceKind: input.sourceKind,
       stockInitialization: {
-        initialOnlineQuantity: null,
+        ...(input.productionInitialStock ? { initialQuantity: input.productionInitialStock.quantity } : {}),
+        initialOnlineQuantity: input.productionInitialStock?.onlineQuantity ?? null,
       },
       storeItemSlug: input.storeItemSlug,
-      targetEnvironments: ['uat'],
+      targetEnvironments: input.productionInitialStock ? ['uat', 'prd'] : ['uat'],
       variantId: input.variantId,
     },
     expectedSandboxPrice: input.expectedSandboxPrice,

@@ -27,6 +27,7 @@ const prdEntry: DesiredCatalogEntry = {
   sourceKind: 'release',
   stockInitialization: {
     initialOnlineQuantity: 2,
+    initialQuantity: 3,
   },
   storeItemSlug: 'disintegration-black-vinyl-lp',
   targetEnvironments: ['uat', 'prd'],

@@ -1100,7 +1100,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
       description:
         "Afterwise's six-track debut album blends instrumental post-rock atmosphere with post-metal weight. Written and performed by the Athens band, it was recorded and mixed at BlackBox Studio and released by BlackBox Records. Digital availability is confirmed by Bandcamp; Black Vinyl LP and CD are label editions.",
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
+        'https://blackbox-records-web.pages.dev/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
       ],
       metadata: {
         sourceId: 'disintegration',
@@ -1114,10 +1114,11 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
     sourceId: 'disintegration',
     sourceKind: 'release',
     stockInitialization: {
-      initialOnlineQuantity: null,
+      initialQuantity: 15,
+      initialOnlineQuantity: 12,
     },
     storeItemSlug: 'disintegration-black-vinyl-lp',
-    targetEnvironments: ['uat'],
+    targetEnvironments: ['uat', 'prd'],
     variantId: 'variant_disintegration-black-vinyl-lp_standard',
   },
   {
@@ -3304,7 +3305,7 @@ export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = [
 ];
 
 export const currentDesiredCatalogState: DesiredCatalogState = {
-  revision: 'desired-catalog-9e0c497f',
+  revision: 'desired-catalog-7b07eb75',
   entries: currentDesiredCatalogEntries,
 };
 
