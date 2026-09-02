@@ -94,7 +94,6 @@ vi.mock('../../src/interfaces/http/routes/stripe-webhook-services', () => ({
     applyNonPaidCheckoutReconciliation: mockApplyNonPaidCheckoutReconciliation,
     applyPaidCheckoutReconciliation: mockApplyPaidCheckoutReconciliation,
     catalogEnvironment: 'uat',
-    catalogWebhookMutationEnabled: true,
     disconnect: mockDisconnectStripeWebhookServices,
     findStoreItemByVariantId: mockFindStoreItemByVariantId,
     markCatalogEventFailed: mockMarkCatalogEventFailed,

@@ -26,7 +26,7 @@ PRD is the Cloudflare Pages static frontend:
 - `site`: `https://blackbox-records-web.pages.dev`
 - `base`: `/`
 - browser API target: `PRD_PUBLIC_BACKEND_BASE_URL`, expected to point at the PRD Worker
-- commerce state: disabled until the explicit PRD-open production-readiness gate is present
+- commerce state: checkout disabled until `PRD_LAUNCH_APPROVED=true` and `native_checkout_enabled` both pass
 
 The PRD build job in the shared static workflow sets these non-secret build-time variables before deploying the disabled PRD static artifact from `apps/web/dist`:
 
@@ -82,7 +82,7 @@ Backend Worker observability uses source-controlled Workers Logs/Traces config a
 
 ## Catalog Promotion
 
-Decap remains editorial-only. Content publication and buyable status are separate: generated catalog artifacts derive from current Store Item content, UAT provider state is applied through Stripe test-mode catalog tooling, and runtime checkout safety stays with D1, Worker gates, and operator controls. GitHub Pages UAT is validated by a separate post-merge UAT provider smoke workflow after the shared static deployment workflow in `pages.yml` completes. See [docs/catalog-promotion.md](docs/catalog-promotion.md) for catalog artifact, rollback, and Promotion Evidence expectations.
+Decap remains editorial-only. Content publication and buyable status are separate: generated catalog artifacts derive from current Store Item content, UAT provider state is applied through Stripe test-mode catalog tooling, and runtime checkout safety stays with D1, Worker gates, and operator controls. PRD catalog/D1 apply needs one-run `confirm_live_catalog_changes=true` plus CLI confirmation; this never deploys shopper runtime or enables checkout. GitHub Pages UAT is validated by a separate post-merge UAT provider smoke workflow after the shared static deployment workflow in `pages.yml` completes. See [docs/catalog-promotion.md](docs/catalog-promotion.md) for catalog artifact, rollback, and Promotion Evidence expectations.
 
 ## Prerequisites
 
@@ -374,7 +374,7 @@ Current Worker scope:
 - `pnpm dev:stack:stripe-test` prepares local D1, applies the ignored real Stripe test mapping seed, starts the Worker, and starts the static site
 - `pnpm dev:stack:stripe-mock` prepares local D1, generates local-only mock commerce state for every current store item, starts official `stripe-mock` through Go, starts the Worker with the Stripe SDK pointed at the local mock API proxy, and starts the static site in mock checkout mode
 - no webhook order authority, stock decrement, or frontend D1 wiring yet
-- PRD Worker deployment remains gated by PRD-open readiness
+- PRD checkout remains gated by explicit launch approval plus runtime enablement
 - backend-owned OpenAPI documents are emitted to `apps/backend/openapi/`
 - generated frontend-facing types and `openapi-typescript-fetch` wrappers live in `packages/api-client/`
 - frontend discovers the backend only through `PUBLIC_BACKEND_BASE_URL`
@@ -434,6 +434,8 @@ pnpm audit:commerce-boundaries
   - `mock` asks the Worker to create a local mock checkout session and redirects to the local-only mock Checkout URL.
 - Native checkout availability is controlled by the Worker-owned `native_checkout_enabled` feature gate, exposed to the
   browser only as sanitized `/api/store/capabilities` state.
+- PRD also requires Worker binding `PRD_LAUNCH_APPROVED=true`; stale or absent launch approval fails closed. Catalog
+  preparation confirmation is not a checkout input.
 - The feature gate is a runtime switch, not an environment replacement. Worker environments still isolate D1 data,
   secrets, webhook endpoints, and return origins.
 - Browser cart state is convenience state only. The current implementation stores a single browser-safe cart item in
@@ -665,7 +667,7 @@ CI/deploy credentials and public build variables:
 
 ## Cloudflare Pages PRD Deployment
 
-- Cloudflare Pages is the PRD static frontend host and remains a disabled commerce readiness surface until the PRD-open gate exists.
+- Cloudflare Pages is the PRD static frontend host and remains a disabled commerce readiness surface until launch approval and runtime checkout enablement both pass.
 - The deploy artifact remains the prebuilt Astro output at `apps/web/dist`.
 - The staff artifact is built separately at `apps/staff/dist` and deploys only to `blackbox-records-staff`.
 - Cloudflare Pages Direct Upload acceptance is handled by `.github/workflows/pages.yml`, not by local manual `wrangler pages deploy`.

@@ -22,7 +22,6 @@ function createServices(): StripeWebhookAcknowledgementServices {
     applyNonPaidCheckoutReconciliation: vi.fn(),
     applyPaidCheckoutReconciliation: vi.fn(),
     catalogEnvironment: 'uat',
-    catalogWebhookMutationEnabled: true,
     findStoreItemByVariantId: vi.fn(async () => storeItem),
     markCatalogEventFailed: vi.fn(async () => undefined),
     markCatalogEventSucceeded: vi.fn(async () => undefined),
@@ -461,11 +460,10 @@ describe('Stripe webhook acknowledgement catalog events', () => {
     expect(services.markCatalogEventSucceeded).not.toHaveBeenCalled();
   });
 
-  it('reports PRD catalog webhooks as readiness-only before the open gate', async () => {
+  it('processes PRD catalog webhooks without enabling shopper checkout', async () => {
     const services = {
       ...createServices(),
       catalogEnvironment: 'prd' as const,
-      catalogWebhookMutationEnabled: false,
     };
     const event: VerifiedStripeWebhookEvent = {
       catalogObject: {
@@ -481,12 +479,11 @@ describe('Stripe webhook acknowledgement catalog events', () => {
     } as unknown as VerifiedStripeWebhookEvent;
 
     await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).resolves.toEqual({
-      ignored: true,
       received: true,
     });
-    expect(services.recordCatalogWebhookEvent).not.toHaveBeenCalled();
-    expect(services.findStoreItemByVariantId).not.toHaveBeenCalled();
-    expect(services.reconcileCatalogVariant).not.toHaveBeenCalled();
+    expect(services.recordCatalogWebhookEvent).toHaveBeenCalledOnce();
+    expect(services.findStoreItemByVariantId).toHaveBeenCalledWith(storeItem.variantId);
+    expect(services.reconcileCatalogVariant).toHaveBeenCalledWith(storeItem);
   });
 });
 

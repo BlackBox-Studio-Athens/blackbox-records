@@ -12,11 +12,7 @@ import {
   VariantMismatchError,
   type StartCheckoutCommand,
 } from '../../../application/commerce/checkout';
-import {
-  isCatalogMutationEnabledFromBindings,
-  productEnvironmentProfileFromBindings,
-  type AppBindings,
-} from '../../../env';
+import { productEnvironmentProfileFromBindings, type AppBindings } from '../../../env';
 import {
   createPrismaClient,
   PrismaItemAvailabilityRepository,
@@ -60,7 +56,7 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
   const storeOfferSnapshots = new PrismaStoreOfferSnapshotRepository(prisma);
   const orders = new PrismaOrderStateRepository(prisma);
   const productProjections = createCurrentCatalogProductProjectionReader();
-  const catalogMutationEnabled = isCatalogMutationEnabledFromBindings(bindings);
+  const catalogMutationEnabled = productEnvironmentProfile.productEnvironment !== 'PRD';
   const createCatalogReconciler = () =>
     new CatalogReconciler({
       environment: productEnvironmentProfile.workerDeploymentTarget,

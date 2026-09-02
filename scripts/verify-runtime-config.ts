@@ -28,7 +28,7 @@ export type RuntimeConfigCategory = {
     | 'LOCAL_OPERATOR_EMAIL'
     | 'EMAIL_BRAND_HOME_URL'
     | 'EMAIL_BRAND_LOGO_URL'
-    | 'PRD_OPEN_GATE'
+    | 'PRD_LAUNCH_APPROVED'
     | 'PRD_CATALOG_CRON'
     | 'PRODUCT_ENVIRONMENT_MAPPING'
     | 'RESEND_API_KEY'
@@ -140,7 +140,7 @@ export function verifyRuntimeConfig(input: {
     classifyWranglerTextPresence('COMMERCE_DB', environmentBlock, /"binding"\s*:\s*"COMMERCE_DB"/),
     ...classifyResendRuntimeConfig(productEnvironmentProfile, environmentBlock, input.secretNames),
     classifyFlagsPresence(environmentBlock),
-    classifyPrdOpenGate(productEnvironmentProfile),
+    classifyPrdLaunchApproval(productEnvironmentProfile),
     classifyPrdCatalogCronPresence(productEnvironmentProfile, environmentBlock),
   ];
   const issues = categories.flatMap((category) =>
@@ -454,18 +454,18 @@ function classifyWorkerOriginScope(
   };
 }
 
-function classifyPrdOpenGate(productEnvironmentProfile: ProductEnvironmentProfile): RuntimeConfigCategory {
+function classifyPrdLaunchApproval(productEnvironmentProfile: ProductEnvironmentProfile): RuntimeConfigCategory {
   if (productEnvironmentProfile.productEnvironment !== 'PRD') {
     return {
-      detail: 'PRD-open gate applies only to the PRD product environment.',
-      name: 'PRD_OPEN_GATE',
+      detail: 'PRD launch approval applies only to the PRD product environment.',
+      name: 'PRD_LAUNCH_APPROVED',
       status: 'not_applicable',
     };
   }
 
   return {
-    detail: 'PRD checkout and live provider mutation stay disabled until PRD_OPEN_GATE is configured outside the repo.',
-    name: 'PRD_OPEN_GATE',
+    detail: 'PRD launch approval remains external and absent until the sole launch approver opens shopper checkout.',
+    name: 'PRD_LAUNCH_APPROVED',
     status: 'not_applicable',
   };
 }

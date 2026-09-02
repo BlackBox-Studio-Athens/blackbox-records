@@ -30,7 +30,7 @@ Current cross-workspace alignment pass on 2026-09-01:
 - TypeScript remains on `5.9.3` because the current OpenAPI code-generation toolchain still requires its TypeScript 5 peer contract.
 - Prisma remains on the stable v7 line; Prisma 8 release candidates are not accepted by this repository's compatibility policy.
 - The pnpm 12 lockfile may contain more than one YAML document; lockfile consumers must select the primary dependency document by structure.
-- Stripe API version changes are staged through UAT webhook validation and are not PRD-open actions.
+- Stripe API version changes are staged through UAT webhook validation and do not grant PRD launch approval.
 - Local validation pins Renovate `44.52.0`; the pnpm 12 `--allow-build` list is limited to Renovate's required transitive install scripts.
 
 Local config validation:

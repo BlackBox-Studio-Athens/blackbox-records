@@ -89,7 +89,7 @@ describe('runtime config verification', () => {
         expect.objectContaining({ name: 'RESEND_NEWSLETTER_SEGMENT_ID', status: 'not_applicable' }),
         expect.objectContaining({ name: 'RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL', status: 'not_applicable' }),
         expect.objectContaining({ name: 'FLAGS', status: 'not_applicable' }),
-        expect.objectContaining({ name: 'PRD_OPEN_GATE', status: 'not_applicable' }),
+        expect.objectContaining({ name: 'PRD_LAUNCH_APPROVED', status: 'not_applicable' }),
         expect.objectContaining({ name: 'PRD_CATALOG_CRON', status: 'not_applicable' }),
       ]),
     );

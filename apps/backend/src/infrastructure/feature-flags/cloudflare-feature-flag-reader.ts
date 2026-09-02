@@ -3,7 +3,7 @@ import type { FlagshipBinding } from '@cloudflare/flagship/server';
 
 import type { FeatureFlagReader } from '../../application/commerce/checkout/spi';
 import {
-  isCatalogMutationEnabledFromBindings,
+  isCheckoutLaunchApprovedFromBindings,
   productEnvironmentProfileFromBindings,
   type AppBindings,
   type ProductEnvironmentProfile,
@@ -60,7 +60,7 @@ export class CloudflareFeatureFlagReader implements FeatureFlagReader {
 }
 
 export function createFeatureFlagReader(
-  bindings: Pick<AppBindings, 'PRODUCT_ENVIRONMENT' | 'FLAGS' | 'NATIVE_CHECKOUT_ENABLED' | 'PRD_OPEN_GATE'>,
+  bindings: Pick<AppBindings, 'PRODUCT_ENVIRONMENT' | 'FLAGS' | 'NATIVE_CHECKOUT_ENABLED' | 'PRD_LAUNCH_APPROVED'>,
   logger?: Pick<AppLogger, 'warn'>,
 ): FeatureFlagReader {
   return new CloudflareFeatureFlagReader(
@@ -68,7 +68,7 @@ export function createFeatureFlagReader(
     bindings.FLAGS,
     bindings.NATIVE_CHECKOUT_ENABLED,
     logger,
-    isCatalogMutationEnabledFromBindings(bindings),
+    isCheckoutLaunchApprovedFromBindings(bindings),
   );
 }
 

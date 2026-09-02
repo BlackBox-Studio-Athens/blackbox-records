@@ -41,10 +41,27 @@ describe('CloudflareFeatureFlagReader', () => {
     expect(parseBooleanOverride('')).toBeNull();
   });
 
-  it('keeps PRD checkout closed until PRD_OPEN_GATE is open even when the runtime flag is true', async () => {
+  it('requires launch approval and runtime enablement independently in PRD', async () => {
+    const catalogPreparationOnly = {
+      confirm_live_catalog_changes: 'true',
+      NATIVE_CHECKOUT_ENABLED: 'true',
+      PRODUCT_ENVIRONMENT: 'PRD' as const,
+    };
+
+    await expect(createFeatureFlagReader(catalogPreparationOnly).isNativeCheckoutEnabled()).resolves.toBe(false);
+
     await expect(
       createFeatureFlagReader({
         NATIVE_CHECKOUT_ENABLED: 'true',
+        PRD_LAUNCH_APPROVED: 'false',
+        PRODUCT_ENVIRONMENT: 'PRD',
+      }).isNativeCheckoutEnabled(),
+    ).resolves.toBe(false);
+
+    await expect(
+      createFeatureFlagReader({
+        NATIVE_CHECKOUT_ENABLED: 'false',
+        PRD_LAUNCH_APPROVED: 'true',
         PRODUCT_ENVIRONMENT: 'PRD',
       }).isNativeCheckoutEnabled(),
     ).resolves.toBe(false);
@@ -52,10 +69,19 @@ describe('CloudflareFeatureFlagReader', () => {
     await expect(
       createFeatureFlagReader({
         NATIVE_CHECKOUT_ENABLED: 'true',
-        PRD_OPEN_GATE: 'open',
+        PRD_LAUNCH_APPROVED: 'true',
         PRODUCT_ENVIRONMENT: 'PRD',
       }).isNativeCheckoutEnabled(),
     ).resolves.toBe(true);
+
+    const retiredControlName = ['PRD', 'OPEN', 'GATE'].join('_');
+    await expect(
+      createFeatureFlagReader({
+        [retiredControlName]: 'open',
+        NATIVE_CHECKOUT_ENABLED: 'true',
+        PRODUCT_ENVIRONMENT: 'PRD' as const,
+      }).isNativeCheckoutEnabled(),
+    ).resolves.toBe(false);
   });
 
   it('uses the provider value when the Flagship binding can evaluate the native checkout flag', async () => {

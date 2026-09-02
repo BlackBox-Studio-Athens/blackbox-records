@@ -21,6 +21,11 @@ on:
         required: false
         default: false
         type: boolean
+      confirm_live_catalog_changes:
+        description: Allow this exact run to mutate the PRD Stripe catalog and PRD D1 catalog state.
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   actions: write
@@ -159,7 +164,6 @@ jobs:
       CATALOG_MUTATION_SCOPE: ${{ github.run_id }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-      PRD_OPEN_GATE: ${{ vars.PRD_OPEN_GATE }}
       STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
     steps:
@@ -168,48 +172,51 @@ jobs:
         with:
           ref: ${{ inputs.artifact_commit_sha }}
 
-      - name: Confirm PRD open gate
+      - name: Record PRD catalog confirmation
         run: |
           mkdir -p .codex-artifacts/catalog-promotion/prd
-          if [ "${PRD_OPEN_GATE}" = "open" ]; then
-            echo "PRD_LIVE_MUTATION_ENABLED=true" >> "$GITHUB_ENV"
-            echo "PRD open gate present; live provider mutation may continue." > .codex-artifacts/catalog-promotion/prd/prd-open-gate.txt
+          if [ "${{ inputs.confirm_live_catalog_changes }}" = "true" ]; then
+            {
+              echo "status=confirmed"
+              echo "scope=live Stripe catalog and PRD D1 catalog state"
+              echo "artifact_commit_sha=${{ inputs.artifact_commit_sha }}"
+              echo "run_id=${{ github.run_id }}"
+            } > .codex-artifacts/catalog-promotion/prd/prd-catalog-confirmed.txt
           else
-            echo "PRD_LIVE_MUTATION_ENABLED=false" >> "$GITHUB_ENV"
             {
               echo "status=not_configured"
-              echo "reason=PRD checkout and live provider mutation are disabled until PRD_OPEN_GATE is set to open in the catalog-promotion-prd credential scope."
+              echo "reason=Live catalog changes require confirm_live_catalog_changes=true for this exact workflow run."
               echo "artifact_commit_sha=${{ inputs.artifact_commit_sha }}"
               echo "run_id=${{ github.run_id }}"
             } > .codex-artifacts/catalog-promotion/prd/prd-not-configured.txt
           fi
 
       - name: Setup pnpm
-        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
+        if: ${{ inputs.confirm_live_catalog_changes }}
         uses: pnpm/action-setup@v6.0.10
         with:
           version: 12.0.0
 
       - name: Setup Node.js
-        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
+        if: ${{ inputs.confirm_live_catalog_changes }}
         uses: actions/setup-node@v7.0.0
         with:
           node-version: 24.20.0
           cache: pnpm
 
       - name: Install dependencies
-        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
+        if: ${{ inputs.confirm_live_catalog_changes }}
         run: pnpm install --frozen-lockfile
 
       - name: Verify PRD webhook and payment configuration
-        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
+        if: ${{ inputs.confirm_live_catalog_changes }}
         run: |
           pnpm runtime:config:verify --env prd --require-live-secrets
           pnpm stripe:webhooks:verify --env prd
           pnpm stripe:payment-methods:verify
 
       - name: Prepare PRD D1 catalog readiness
-        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
+        if: ${{ inputs.confirm_live_catalog_changes }}
         run: |
           pnpm --filter @blackbox/backend d1:migrations:apply:prd
           pnpm prd:catalog-readiness:check -- --phase pre-apply
@@ -217,33 +224,23 @@ jobs:
           pnpm prd:catalog-readiness:check -- --phase pre-apply
 
       - name: Plan PRD provider catalog
-        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
+        if: ${{ inputs.confirm_live_catalog_changes }}
         run: |
           set -o pipefail
           mkdir -p .codex-artifacts/catalog-promotion/prd
           pnpm stripe:catalog:verify --env prd --plan-apply --promotion-run-id "$CATALOG_MUTATION_SCOPE" 2>&1 | tee .codex-artifacts/catalog-promotion/prd/catalog-plan.txt
 
       - name: Apply PRD provider catalog
-        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
+        if: ${{ inputs.confirm_live_catalog_changes }}
         run: |
           set -o pipefail
-          pnpm stripe:catalog:verify --env prd --apply --ci-promotion --artifact-commit-sha "${{ inputs.artifact_commit_sha }}" --promotion-run-id "$CATALOG_MUTATION_SCOPE"
+          pnpm stripe:catalog:verify --env prd --apply --confirm-live-catalog-changes --ci-promotion --artifact-commit-sha "${{ inputs.artifact_commit_sha }}" --promotion-run-id "$CATALOG_MUTATION_SCOPE"
           pnpm stripe:catalog:verify --env prd --promotion-run-id "$CATALOG_MUTATION_SCOPE" 2>&1 | tee .codex-artifacts/catalog-promotion/prd/catalog-post-apply.txt
           pnpm prd:catalog-readiness:check -- --phase post-apply
 
-      - name: Deploy PRD Worker
-        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
-        run: pnpm deploy:backend:prd
-
       - name: Verify hosted PRD listing readiness
-        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
+        if: ${{ inputs.confirm_live_catalog_changes }}
         run: pnpm store:listing-readiness:verify -- --env prd --url "${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}/api/store/listing-prices"
-
-      - name: Dispatch PRD static deployment
-        if: env.PRD_LIVE_MUTATION_ENABLED == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run pages.yml --ref main -f artifact_commit_sha=${{ inputs.artifact_commit_sha }} -f target=prd
 
       - name: Upload PRD readiness or Promotion Evidence
         if: ${{ always() }}

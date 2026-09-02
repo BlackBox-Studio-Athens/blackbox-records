@@ -4,11 +4,11 @@ UAT evidence exists, but PRD native-commerce launch still depends on closing the
 
 ## What Changes
 
-- Define one final PRD-open gate and make this change the sole owner of full-site cutover, holding rollback/retirement, and final go/no-go evidence.
+- Make this change the sole owner of final shopper launch approval, full-site cutover, holding rollback/retirement, and final go/no-go evidence after the archived production-control refactor.
 - Require operator JWT/Access proof, checkout hold/concurrency proof, paid-delivery retry/Cron readiness, permanent Greece-only shipping, accepted Decap content, and the verified holding-page handoff before launch.
 - Make the launch data path explicit: Decap-authored repo content may become PRD release content through generated artifacts, but UAT D1, Stripe test-mode objects, synthetic stock, and UAT evidence are not promoted into PRD.
 - Remeasure Store performance after commerce consolidation; create a bounded performance child only if the current gates still fail.
-- Keep the PRD-open gate absent until live Stripe, production Worker/D1/webhook, final domain/origin, rollback, and named approval evidence all pass on one exact launch tree.
+- Keep `PRD_LAUNCH_APPROVED` absent until live Stripe, production Worker/D1/webhook, final domain/origin, rollback, and sole-approver evidence all pass on one exact launch tree.
 
 ## Prerequisite Sequence
 

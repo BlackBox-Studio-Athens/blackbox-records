@@ -34,7 +34,6 @@ export type StripeWebhookAcknowledgementServices = {
     reconciliation: ReturnType<typeof reconcileCheckoutSession>,
   ) => Promise<ApplyPaidCheckoutReconciliationResult>;
   catalogEnvironment: StripeCatalogEnvironment;
-  catalogWebhookMutationEnabled: boolean;
   findStoreItemByVariantId: (variantId: string) => Promise<StoreItemOptionRecord | null>;
   markCatalogEventFailed: (eventId: string, failureReason: string) => Promise<void>;
   markCatalogEventSucceeded: (eventId: string) => Promise<void>;
@@ -69,22 +68,6 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
   if ('catalogObject' in event) {
     const identity = readCatalogObjectEventIdentity(event.catalogObject, services.catalogEnvironment);
     const catalogObjectIdentity = readCatalogObjectIdentity(event.catalogObject);
-
-    if (!services.catalogWebhookMutationEnabled) {
-      logCatalogWebhookOutcome(services, {
-        outcome: 'catalog_readiness_only',
-        retryable: false,
-        safeReason: 'prd_open_gate_closed',
-        storeItemSlug: identity.storeItemSlug,
-        stripeEventType: event.type,
-        variantId: identity.variantId,
-      });
-
-      return {
-        ignored: true,
-        received: true,
-      };
-    }
 
     const recordResult = await services.recordCatalogWebhookEvent({
       catalogObjectId: catalogObjectIdentity.catalogObjectId,
@@ -258,7 +241,6 @@ type CatalogWebhookIgnoredReason =
   | 'foreign_environment_identity'
   | 'malformed_catalog_identity'
   | 'missing_variant_identity'
-  | 'prd_open_gate_closed'
   | 'reconciliation_failed'
   | 'variant_not_found';
 

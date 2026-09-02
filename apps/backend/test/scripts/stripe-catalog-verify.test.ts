@@ -42,6 +42,7 @@ describe('stripe catalog verify script helpers', () => {
   it('parses UAT dry-run and apply flags while requiring promotion context for PRD apply', () => {
     expect(parseStripeCatalogVerifyArgs(['--env', 'uat'])).toEqual({
       apply: false,
+      confirmLiveCatalogChanges: false,
       environment: 'uat',
       planApply: false,
       promotionContext: null,
@@ -52,6 +53,7 @@ describe('stripe catalog verify script helpers', () => {
     });
     expect(parseStripeCatalogVerifyArgs(['--env=uat', '--apply'])).toEqual({
       apply: true,
+      confirmLiveCatalogChanges: false,
       environment: 'uat',
       planApply: false,
       promotionContext: null,
@@ -59,6 +61,7 @@ describe('stripe catalog verify script helpers', () => {
     });
     expect(parseStripeCatalogVerifyArgs(['--env', 'uat', '--promotion-run-id', 'run-123'])).toEqual({
       apply: false,
+      confirmLiveCatalogChanges: false,
       environment: 'uat',
       planApply: false,
       promotionContext: {
@@ -69,12 +72,16 @@ describe('stripe catalog verify script helpers', () => {
       storeItemSlug: null,
     });
     expect(() => parseStripeCatalogVerifyArgs(['--env', 'prd', '--apply'])).toThrow(
+      'PRD Stripe catalog apply requires --confirm-live-catalog-changes.',
+    );
+    expect(() => parseStripeCatalogVerifyArgs(['--env', 'prd', '--apply', '--confirm-live-catalog-changes'])).toThrow(
       'PRD Stripe catalog apply requires promotion context.',
     );
     expect(
       parseStripeCatalogVerifyArgs([
         '--env=prd',
         '--apply',
+        '--confirm-live-catalog-changes',
         '--artifact-commit-sha',
         'abc123',
         '--promotion-run-id=run-456',
@@ -82,6 +89,7 @@ describe('stripe catalog verify script helpers', () => {
       ]),
     ).toEqual({
       apply: true,
+      confirmLiveCatalogChanges: true,
       environment: 'prd',
       planApply: false,
       promotionContext: {
@@ -103,6 +111,7 @@ describe('stripe catalog verify script helpers', () => {
   it('allows PRD dry-run without promotion context', () => {
     expect(parseStripeCatalogVerifyArgs(['--env', 'prd'])).toEqual({
       apply: false,
+      confirmLiveCatalogChanges: false,
       environment: 'prd',
       planApply: false,
       promotionContext: null,
@@ -110,14 +119,22 @@ describe('stripe catalog verify script helpers', () => {
     });
     expect(parseStripeCatalogVerifyArgs(['--env', 'prd'])).toEqual({
       apply: false,
+      confirmLiveCatalogChanges: false,
       environment: 'prd',
       planApply: false,
       promotionContext: null,
       storeItemSlug: null,
     });
-    expect(() => parseStripeCatalogVerifyArgs(['--env', 'prd', '--apply', '--artifact-commit-sha', 'abc123'])).toThrow(
-      'Run from CI with --ci-promotion, --artifact-commit-sha <sha>, and --promotion-run-id <id>.',
-    );
+    expect(() =>
+      parseStripeCatalogVerifyArgs([
+        '--env',
+        'prd',
+        '--apply',
+        '--confirm-live-catalog-changes',
+        '--artifact-commit-sha',
+        'abc123',
+      ]),
+    ).toThrow('Run from CI with --ci-promotion, --artifact-commit-sha <sha>, and --promotion-run-id <id>.');
   });
 
   it('parses one Store Item selector and rejects malformed or unknown slugs before provider access', async () => {
@@ -136,29 +153,23 @@ describe('stripe catalog verify script helpers', () => {
     expect(spawnSyncMock).not.toHaveBeenCalled();
   });
 
-  it('blocks PRD apply while the open gate is absent', async () => {
-    const previousPrdOpenGate = process.env.PRD_OPEN_GATE;
-    delete process.env.PRD_OPEN_GATE;
+  it('blocks unconfirmed PRD apply before provider access', async () => {
+    createStripeCatalogGatewayMock.mockClear();
+    spawnSyncMock.mockClear();
 
-    try {
-      await expect(
-        verifyStripeCatalog({
-          apply: true,
-          environment: 'prd',
-          promotionContext: {
-            artifactCommitSha: 'abc123',
-            ci: true,
-            runId: 'run-456',
-          },
-        }),
-      ).rejects.toThrow('PRD Stripe catalog apply is disabled until PRD_OPEN_GATE=open.');
-    } finally {
-      if (previousPrdOpenGate === undefined) {
-        delete process.env.PRD_OPEN_GATE;
-      } else {
-        process.env.PRD_OPEN_GATE = previousPrdOpenGate;
-      }
-    }
+    await expect(
+      verifyStripeCatalog({
+        apply: true,
+        environment: 'prd',
+        promotionContext: {
+          artifactCommitSha: 'abc123',
+          ci: true,
+          runId: 'run-456',
+        },
+      }),
+    ).rejects.toThrow('PRD Stripe catalog apply requires --confirm-live-catalog-changes.');
+    expect(createStripeCatalogGatewayMock).not.toHaveBeenCalled();
+    expect(spawnSyncMock).not.toHaveBeenCalled();
   });
 
   it('accepts current Stripe Price Authority during day-to-day dry-run verification', async () => {

@@ -24,6 +24,7 @@ const rootDir = process.cwd();
 const uatStaticHost = 'https://blackbox-studio-athens.github.io/blackbox-records';
 const prdStaticHost = 'https://blackbox-records-web.pages.dev';
 const prdPreviewHostFragment = '.blackbox-records-web.pages.dev';
+const retiredPrdControlName = ['PRD', 'OPEN', 'GATE'].join('_');
 const productPolicyFiles = [
   'apps/backend/src/application/email/config.ts',
   'apps/backend/src/application/email/routing.ts',
@@ -98,13 +99,18 @@ export function verifyEnvironmentModel(): CheckResult[] {
     },
     {
       detail:
-        'Catalog promotion exposes PRD at the operator boundary and gates live provider mutation without smoke steps.',
+        'Catalog promotion uses one-run confirmation for PRD catalog/D1 changes without deploying shopper runtime.',
       ok:
         catalogPromotionWorkflow.includes('- prd') &&
         !catalogPromotionWorkflow.includes('- production') &&
         catalogPromotionWorkflow.includes('catalog-promotion-prd') &&
-        catalogPromotionWorkflow.includes('PRD_OPEN_GATE') &&
+        catalogPromotionWorkflow.includes('confirm_live_catalog_changes:') &&
+        catalogPromotionWorkflow.includes('default: false') &&
+        catalogPromotionWorkflow.includes('--confirm-live-catalog-changes') &&
         catalogPromotionWorkflow.includes('prd-not-configured.txt') &&
+        !catalogPromotionWorkflow.includes(retiredPrdControlName) &&
+        !catalogPromotionWorkflow.includes('- name: Deploy PRD Worker') &&
+        !catalogPromotionWorkflow.includes('-f target=prd') &&
         !catalogPromotionWorkflow.includes('pnpm smoke:') &&
         !catalogPromotionWorkflow.includes('.codex-artifacts/smoke/'),
     },

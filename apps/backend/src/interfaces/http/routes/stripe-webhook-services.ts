@@ -14,11 +14,7 @@ import type { CheckoutReconciliation } from '../../../application/commerce/check
 import { EmailConfigurationError } from '../../../application/email';
 import { readPaidCheckoutFulfillment, type StoreItemOptionRecord } from '../../../domain/commerce/repositories/spi';
 import { parseCheckoutSessionId } from '../../../domain/commerce';
-import {
-  isCatalogMutationEnabledFromBindings,
-  productEnvironmentProfileFromBindings,
-  type AppBindings,
-} from '../../../env';
+import { productEnvironmentProfileFromBindings, type AppBindings } from '../../../env';
 import type { AppLogger } from '../../../observability';
 import { createBindingLogger } from '../../../observability';
 import { createStripeCatalogGateway, createStripeCheckoutGateway } from '../../../infrastructure/stripe';
@@ -70,7 +66,6 @@ export function createStripeWebhookServices(bindings: AppBindings, logger: AppLo
         ),
     disconnect: async () => prisma.$disconnect(),
     catalogEnvironment: productEnvironmentProfile.workerDeploymentTarget,
-    catalogWebhookMutationEnabled: isCatalogMutationEnabledFromBindings(bindings),
     logger,
     findStoreItemByVariantId: (variantId: string) => storeItems.findByVariantId(variantId),
     markCatalogEventFailed: catalogWebhookEvents.markCatalogEventFailed.bind(catalogWebhookEvents),

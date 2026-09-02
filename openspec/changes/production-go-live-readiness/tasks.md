@@ -17,7 +17,7 @@
 - [ ] 3.2 Configure and verify PRD Worker secrets, D1 binding, migrations, seed/mapping data, webhook endpoint, and paid-delivery Cron while checkout remains closed; verify redacted preflight output and no incompatible legacy rows.
 - [ ] 3.3 Verify the production operator hostname and Cloudflare Access policy enforce the archived JWT boundary before any internal read or mutation; record allowlisted success and forged/missing-assertion denial without storing identity secrets.
 - [ ] 3.4 Confirm the launch catalog artifact commit is generated from Decap/repo content that passed UAT proof; verify no UAT D1 rows, Stripe test objects, synthetic stock, or UAT evidence are copied into PRD.
-- [ ] 3.5 Define and verify each launch Store Item's live price authority, first-publication stock readiness, PRD D1 readiness rows, and permanent Greece-only fulfillment before `PRD_OPEN_GATE=open` can exist.
+- [ ] 3.5 Define and verify each launch Store Item's live price authority, first-publication stock readiness, PRD D1 readiness rows, and permanent Greece-only fulfillment before `PRD_LAUNCH_APPROVED=true` can exist.
 
 ## 4. Execute and Review Launch
 

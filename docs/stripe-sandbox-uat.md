@@ -72,7 +72,7 @@ pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env uat
 
 Do not paste the signing secret into docs, chat, screenshots, evidence files, Astro public env vars, or committed files. For an existing endpoint, reveal/copy the signing secret from Stripe Dashboard/Workbench and put it directly into Wrangler. Stripe endpoint list/retrieve APIs do not return an existing endpoint secret, so `pnpm stripe:webhooks:verify --env uat` separates endpoint configuration proof from signing-secret match proof.
 
-Catalog correctness is layered: persistent webhooks provide near-real-time sync, Store Offer reads reconcile stale snapshots, checkout start revalidates the active Stripe Price, scheduled UAT catalog verification reports drift every six hours without mutating Stripe, and `pnpm stripe:catalog:verify --env uat --apply` remains the explicit Product Environment command for current UAT catalog alignment. PRD uses the same current-state read path, but catalog mutations stay disabled until `PRD_OPEN_GATE=open`.
+Catalog correctness is layered: persistent webhooks provide near-real-time sync, Store Offer reads reconcile stale snapshots, checkout start revalidates the active Stripe Price, scheduled UAT catalog verification reports drift every six hours without mutating Stripe, and `pnpm stripe:catalog:verify --env uat --apply` remains the explicit Product Environment command for current UAT catalog alignment. PRD public reads never apply catalog mutations. Direct PRD apply requires `--confirm-live-catalog-changes`, and signed catalog webhooks may update PRD mappings/snapshots without enabling checkout.
 
 UAT is also the first leg of the generated catalog artifact pipeline described in [`docs/catalog-promotion.md`](catalog-promotion.md). Normal content publication should use the generated artifact commit and promotion workflow instead of treating sandbox apply as a detached manual checklist.
 
@@ -134,7 +134,7 @@ Troubleshooting:
 - Wrong currency: create a replacement `EUR` Price and archive the wrong-currency active Price.
 - Webhook signature failure: rotate the Stripe endpoint signing secret into the UAT Worker with `wrangler secret put STRIPE_WEBHOOK_SECRET --env uat`.
 - Stale Store Offer snapshot: run `pnpm stripe:catalog:verify --env uat`; checkout start still revalidates current Stripe state before creating a hosted session.
-- PRD disabled: UAT proof is not PRD acceptance. PRD catalog webhooks are readiness-only, public Store Offer/checkout catalog reconciliation is no-mutation, and `pnpm stripe:catalog:verify --env prd --apply` is blocked until `PRD_OPEN_GATE=open`.
+- PRD disabled: UAT proof is not PRD acceptance. Signed PRD catalog webhooks may reconcile catalog state, public Store Offer/checkout catalog reconciliation remains no-mutation, and `pnpm stripe:catalog:verify --env prd --apply` requires explicit `--confirm-live-catalog-changes` plus promotion context. None of these controls enable shopper checkout.
 
 ## Catalog Mutation Forensics
 

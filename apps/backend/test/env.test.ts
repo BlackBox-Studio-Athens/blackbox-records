@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   getProductEnvironmentProfile,
-  isCatalogMutationEnabledForWorkerRuntimeTarget,
-  isCatalogMutationEnabledFromBindings,
+  isCheckoutLaunchApprovedFromBindings,
+  isPrdLaunchApproved,
   parseProductEnvironmentCliTarget,
   productEnvironmentFromWorkerRuntimeTarget,
   productEnvironmentProfileFromWorkerRuntimeTarget,
@@ -86,21 +86,30 @@ describe('Product Environment Profile', () => {
     expect(() => parseProductEnvironmentCliTarget('test')).toThrow();
   });
 
-  it('keeps PRD catalog mutation disabled until the open gate is explicit', () => {
-    expect(isCatalogMutationEnabledForWorkerRuntimeTarget('local', undefined)).toBe(true);
-    expect(isCatalogMutationEnabledForWorkerRuntimeTarget('uat', undefined)).toBe(true);
-    expect(isCatalogMutationEnabledForWorkerRuntimeTarget('prd', undefined)).toBe(false);
-    expect(isCatalogMutationEnabledForWorkerRuntimeTarget('prd', 'review')).toBe(false);
-    expect(isCatalogMutationEnabledForWorkerRuntimeTarget('prd', 'open')).toBe(true);
+  it('requires explicit PRD launch approval only for shopper checkout', () => {
+    expect(isPrdLaunchApproved(undefined)).toBe(false);
+    expect(isPrdLaunchApproved('review')).toBe(false);
+    expect(isPrdLaunchApproved('false')).toBe(false);
+    expect(isPrdLaunchApproved(' TRUE ')).toBe(true);
     expect(
-      isCatalogMutationEnabledFromBindings({
+      isCheckoutLaunchApprovedFromBindings({
+        PRODUCT_ENVIRONMENT: 'LOCAL',
+      }),
+    ).toBe(true);
+    expect(
+      isCheckoutLaunchApprovedFromBindings({
+        PRODUCT_ENVIRONMENT: 'UAT',
+      }),
+    ).toBe(true);
+    expect(
+      isCheckoutLaunchApprovedFromBindings({
         PRODUCT_ENVIRONMENT: 'PRD',
       }),
     ).toBe(false);
     expect(
-      isCatalogMutationEnabledFromBindings({
+      isCheckoutLaunchApprovedFromBindings({
         PRODUCT_ENVIRONMENT: 'PRD',
-        PRD_OPEN_GATE: 'open',
+        PRD_LAUNCH_APPROVED: 'true',
       }),
     ).toBe(true);
   });

@@ -20,7 +20,6 @@ import {
   type StoreItemSlug,
 } from '../apps/backend/src/domain/commerce';
 import {
-  isCatalogMutationEnabledForWorkerRuntimeTarget,
   parseProductEnvironmentCliTarget,
   formatProductEnvironmentLabel,
   productEnvironmentProfileFromWorkerRuntimeTarget,
@@ -42,6 +41,7 @@ import { loadStripeCatalogStoreItemContracts, type StripeCatalogStoreItemContrac
 
 type CatalogVerifyOptions = {
   apply: boolean;
+  confirmLiveCatalogChanges?: boolean;
   environment: StripeCatalogEnvironment;
   planApply?: boolean;
   promotionContext: CatalogPromotionContext | null;
@@ -75,6 +75,7 @@ const backendDir = path.join(process.cwd(), 'apps', 'backend');
 export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptions {
   const options: CatalogVerifyOptions = {
     apply: false,
+    confirmLiveCatalogChanges: false,
     environment: 'uat',
     planApply: false,
     promotionContext: null,
@@ -90,6 +91,11 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 
     if (arg === '--apply') {
       options.apply = true;
+      continue;
+    }
+
+    if (arg === '--confirm-live-catalog-changes') {
+      options.confirmLiveCatalogChanges = true;
       continue;
     }
 
@@ -172,7 +178,7 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 
     if (arg === '--help' || arg === '-h') {
       console.log(
-        'Usage: pnpm stripe:catalog:verify --env local|uat|prd [--store-item <storeItemSlug>] [--apply|--plan-apply] [--artifact-commit-sha <sha> --promotion-run-id <id> --ci-promotion] (legacy platform aliases accepted: sandbox, production)',
+        'Usage: pnpm stripe:catalog:verify --env local|uat|prd [--store-item <storeItemSlug>] [--apply|--plan-apply] [--confirm-live-catalog-changes] [--artifact-commit-sha <sha> --promotion-run-id <id> --ci-promotion] (legacy platform aliases accepted: sandbox, production)',
       );
       process.exit(0);
     }
@@ -188,6 +194,7 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
     options.apply &&
     productEnvironmentProfileFromWorkerRuntimeTarget(options.environment).productEnvironment === 'PRD'
   ) {
+    assertPrdCatalogApplyConfirmed(options.confirmLiveCatalogChanges);
     assertPrdApplyPromotionContext(options.promotionContext);
   }
 
@@ -196,11 +203,8 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 
 export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promise<CatalogSyncRunResult> {
   const productEnvironmentProfile = productEnvironmentProfileFromWorkerRuntimeTarget(options.environment);
-  if (
-    options.apply &&
-    !isCatalogMutationEnabledForWorkerRuntimeTarget(options.environment, process.env.PRD_OPEN_GATE)
-  ) {
-    throw new Error('PRD Stripe catalog apply is disabled until PRD_OPEN_GATE=open.');
+  if (options.apply && productEnvironmentProfile.productEnvironment === 'PRD') {
+    assertPrdCatalogApplyConfirmed(options.confirmLiveCatalogChanges);
   }
 
   const allContracts = await loadStripeCatalogStoreItemContracts({
@@ -289,6 +293,12 @@ export function selectStripeCatalogContracts(
   }
 
   return selected;
+}
+
+function assertPrdCatalogApplyConfirmed(confirmed: boolean | undefined): void {
+  if (confirmed !== true) {
+    throw new Error('PRD Stripe catalog apply requires --confirm-live-catalog-changes.');
+  }
 }
 
 function assertPrdApplyPromotionContext(context: CatalogPromotionContext | null): void {

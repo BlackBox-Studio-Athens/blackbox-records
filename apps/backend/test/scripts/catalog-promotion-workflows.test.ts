@@ -34,14 +34,16 @@ describe('catalog promotion workflows', () => {
     expect(workflow).toContain('gh workflow run catalog-promotion.yml');
   });
 
-  it('keeps PRD promotion behind UAT success, PRD-open gate, and CI promotion context', () => {
+  it('keeps PRD catalog changes behind UAT success, one-run confirmation, and CI promotion context', () => {
     const workflow = readWorkflow('catalog-promotion.yml');
 
     expect(workflow).toContain("inputs.target == 'all' && needs.promote-uat.result == 'success'");
     expect(workflow).toContain('- prd');
     expect(workflow).not.toContain('- production');
     expect(workflow).toContain('catalog-promotion-prd');
-    expect(workflow).toContain('PRD_OPEN_GATE');
+    expect(workflow).toContain('confirm_live_catalog_changes:');
+    expect(workflow).toContain('default: false');
+    expect(workflow).toContain('if: ${{ inputs.confirm_live_catalog_changes }}');
     expect(workflow).toContain('prd-not-configured.txt');
     expect(workflow).toContain('pnpm test:unit');
     expect(workflow).toContain('pnpm check');
@@ -49,7 +51,9 @@ describe('catalog promotion workflows', () => {
     expect(workflow).toContain('pnpm runtime:config:verify --env prd');
     expect(workflow).toContain('pnpm prd:catalog-readiness:check -- --phase pre-apply');
     expect(workflow).toContain('pnpm prd:catalog-readiness:check -- --phase post-apply');
-    expect(workflow).toContain('pnpm stripe:catalog:verify --env prd --apply --ci-promotion');
+    expect(workflow).toContain(
+      'pnpm stripe:catalog:verify --env prd --apply --confirm-live-catalog-changes --ci-promotion',
+    );
     expect(workflow).toContain('--artifact-commit-sha "${{ inputs.artifact_commit_sha }}"');
     expect(workflow).toContain('CATALOG_MUTATION_SCOPE: ${{ github.run_id }}');
     expect(workflow).toContain('--promotion-run-id "$CATALOG_MUTATION_SCOPE"');
@@ -58,6 +62,8 @@ describe('catalog promotion workflows', () => {
     expect(workflow).not.toContain('pnpm smoke:uat-static');
     expect(workflow).not.toContain('pnpm smoke:stripe-promotion');
     expect(workflow).not.toContain('.codex-artifacts/smoke/');
+    expect(workflow).not.toContain('- name: Deploy PRD Worker');
+    expect(workflow).not.toContain('-f target=prd');
   });
 
   it('clears stale UAT catalog pointers when a provider reset is requested', () => {
@@ -102,7 +108,7 @@ describe('catalog promotion workflows', () => {
     );
     const prdApplyStep = workflow.slice(
       workflow.indexOf('- name: Apply PRD provider catalog'),
-      workflow.indexOf('- name: Deploy PRD Worker'),
+      workflow.indexOf('- name: Verify hosted PRD listing readiness'),
     );
 
     expect(uatPlanStep).toContain('set -o pipefail');

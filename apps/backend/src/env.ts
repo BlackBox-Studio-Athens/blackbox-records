@@ -147,23 +147,16 @@ export function productEnvironmentProfileFromBindings(
   return getProductEnvironmentProfile(productEnvironmentSchema.parse(bindings.PRODUCT_ENVIRONMENT));
 }
 
-export function isPrdOpenGateEnabled(value: string | undefined): boolean {
-  return value?.trim() === 'open';
+export function isPrdLaunchApproved(value: string | undefined): boolean {
+  return value?.trim().toLowerCase() === 'true';
 }
 
-export function isCatalogMutationEnabledForWorkerRuntimeTarget(
-  workerRuntimeTarget: WorkerRuntimeTarget,
-  prdOpenGate: string | undefined,
+export function isCheckoutLaunchApprovedFromBindings(
+  bindings: Pick<AppBindings, 'PRODUCT_ENVIRONMENT' | 'PRD_LAUNCH_APPROVED'>,
 ): boolean {
-  return workerRuntimeTarget !== 'prd' || isPrdOpenGateEnabled(prdOpenGate);
-}
-
-export function isCatalogMutationEnabledFromBindings(
-  bindings: Pick<AppBindings, 'PRODUCT_ENVIRONMENT' | 'PRD_OPEN_GATE'>,
-): boolean {
-  return isCatalogMutationEnabledForWorkerRuntimeTarget(
-    productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget,
-    bindings.PRD_OPEN_GATE,
+  return (
+    productEnvironmentProfileFromBindings(bindings).productEnvironment !== 'PRD' ||
+    isPrdLaunchApproved(bindings.PRD_LAUNCH_APPROVED)
   );
 }
 
@@ -176,7 +169,7 @@ export type AppBindings = {
   FLAGS?: FlagshipBinding;
   NATIVE_CHECKOUT_ENABLED?: string;
   LOCAL_OPERATOR_EMAIL?: string;
-  PRD_OPEN_GATE?: string;
+  PRD_LAUNCH_APPROVED?: string;
   EMAIL_BRAND_HOME_URL?: string;
   EMAIL_BRAND_LOGO_URL?: string;
   RESEND_API_KEY?: string;

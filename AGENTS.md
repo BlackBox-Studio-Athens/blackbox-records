@@ -7,7 +7,7 @@ If this file conflicts with the global file, follow the global file.
 
 Build and maintain the BlackBox Records Astro site.
 
-Current product environments are Local, UAT, and PRD. UAT is GitHub Pages plus the UAT Worker; PRD is Cloudflare Pages plus the PRD Worker with checkout and live provider mutation disabled until the explicit PRD-open gate exists. The live commerce handoff still has external Fourthwall history, but the repo now carries native commerce migration work; follow the active planning docs when working in that area.
+Current product environments are Local, UAT, and PRD. UAT is GitHub Pages plus the UAT Worker; PRD is Cloudflare Pages plus the PRD Worker. Live catalog/D1 preparation requires one-run confirmation, while shopper checkout separately requires `PRD_LAUNCH_APPROVED=true` and `native_checkout_enabled`. The live commerce handoff still has external Fourthwall history, but the repo now carries native commerce migration work; follow the active planning docs when working in that area.
 
 ## Current stack
 
@@ -160,6 +160,8 @@ Read these first before editing:
 - `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` is a required backend runtime variable for Stripe-backed checkout; missing or blank values fail at gateway construction.
 - `PUBLIC_CHECKOUT_CLIENT_MODE` is the browser checkout mode switch. Use `stripe` for real hosted Stripe Checkout and `mock` only for the local stripe-mock flow.
 - Native checkout availability is controlled by the Worker-owned `native_checkout_enabled` feature gate. The browser may read `/api/store/capabilities`, but it must not receive provider names, flag keys, Stripe IDs, D1 bindings, or internal evaluation errors.
+- PRD checkout additionally requires Worker binding `PRD_LAUNCH_APPROVED=true`. Live catalog confirmation never satisfies this launch approval.
+- PRD catalog promotion requires false-by-default workflow input `confirm_live_catalog_changes=true`; direct PRD apply also requires `--confirm-live-catalog-changes`. This authorization is one-run only and does not deploy the PRD Worker or static frontend.
 - Feature gates do not replace Worker environments. UAT and PRD still isolate D1 data, secrets, webhook endpoints, checkout return origins, and release evidence.
 - Cloudflare Flagship setup uses binding name `FLAGS`; do not commit a Flagship app ID to `wrangler.jsonc` until the app exists and the non-secret account-specific ID is explicitly approved.
 - StoreCart is convenience state only. Keep it behind `apps/web/src/lib/store-cart.ts`, use native `localStorage` for the current browser-only storage scope, and do not add Zustand, Redux Persist, Dexie, IndexedDB wrappers, or cart SaaS libraries unless carts become account-backed, cross-device, large/offline, or operationally authoritative.
@@ -196,7 +198,7 @@ Read these first before editing:
 ## Deployment and URL model
 
 - UAT static deployment target: GitHub Pages
-- PRD static deployment target: Cloudflare Pages, with live commerce disabled until the PRD-open gate exists
+- PRD static deployment target: Cloudflare Pages, with checkout disabled until launch approval and runtime enablement both pass
 - Canonical static CI/CD workflow: `.github/workflows/pages.yml`
 - The static frontend workflow deploys UAT to GitHub Pages and PRD to Cloudflare Pages.
 - Both static frontend deploy targets are gated by:
