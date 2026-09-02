@@ -96,4 +96,18 @@ describe('Store collection category surfaces', () => {
     expect(storeItemCardSource).toContain('data-store-coverflow-availability');
     expect(distroCardSource).toContain('data-store-coverflow-availability');
   });
+
+  it('uses one bounded Coverflow image slot while preserving ordinary catalog slots', () => {
+    const coverflowSizes = '(min-width: 40rem) 16rem, 56vw';
+
+    for (const cardSource of [storeItemCardSource, distroCardSource]) {
+      expect(cardSource.split(coverflowSizes)).toHaveLength(2);
+    }
+
+    expect(storeItemCardSource).toContain('(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw');
+    expect(distroCardSource).toContain('(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw');
+    expect(distroCardSource).toContain('(min-width: 1280px) 22vw, (min-width: 768px) 45vw, 100vw');
+    expect(storeItemCardSource).toContain('sizes={storeItemCardImageSizes}');
+    expect(distroCardSource).toContain('sizes={distroCardImageSizes}');
+  });
 });

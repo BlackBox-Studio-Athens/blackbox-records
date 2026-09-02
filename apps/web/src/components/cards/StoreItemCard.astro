@@ -16,6 +16,9 @@ const availabilityLabel = primaryAvailability?.availability.label || 'Unavailabl
 const metadataLabel = storeItem.metadata.join(' · ');
 const collectionLabel = storeItem.eyebrow || (storeItem.sourceKind === 'release' ? 'Release' : 'Distro');
 const storeItemCardImageWidths = [320, 480, 640, 800, 960];
+const storeItemCardImageSizes = coverflowPreview
+  ? '(min-width: 40rem) 16rem, 56vw'
+  : '(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw';
 ---
 
 <a
@@ -38,7 +41,7 @@ const storeItemCardImageWidths = [320, 480, 640, 800, 960];
         alt={storeItem.imageAlt}
         class="store-item-card__image h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         widths={storeItemCardImageWidths}
-        sizes="(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw"
+        sizes={storeItemCardImageSizes}
         loading={imageLoading}
       />
       <div class="absolute inset-0 bg-gradient-to-t from-black via-black/18 to-transparent"></div>

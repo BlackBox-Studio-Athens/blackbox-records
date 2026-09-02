@@ -1,13 +1,13 @@
 ## 1. Characterize the Measured Boundary
 
-- [ ] 1.1 Record commit `81ce9976` as the baseline and verify its ignored raw evidence includes bundle, mobile-load, Store-activation, wide-scroll, mobile-scroll, and legacy-scroll outputs.
-- [ ] 1.2 Add a focused failing test proving Store Item and Distro cards share the bounded Coverflow preview `sizes` value while ordinary catalog sizes remain unchanged.
+- [x] 1.1 Record commit `81ce9976` as the baseline and verify its ignored raw evidence includes bundle, mobile-load, Store-activation, wide-scroll, mobile-scroll, and legacy-scroll outputs.
+- [x] 1.2 Add a focused failing test proving Store Item and Distro cards share the bounded Coverflow preview `sizes` value while ordinary catalog sizes remain unchanged.
 
 ## 2. Right-Size Existing Coverflow Images
 
-- [ ] 2.1 Make `StoreItemCard.astro` use the bounded preview slot only when `coverflowPreview` is true; verify its existing width ladder, source, alt text, loading, card markup, and catalog slot remain unchanged.
-- [ ] 2.2 Make `DistroCard.astro` use the same bounded preview slot only when `coverflowPreview` is true; verify its home/page variants and ordinary catalog slot remain unchanged.
-- [ ] 2.3 Run the focused image and Store markup tests and verify the two card components cannot drift on the preview slot contract.
+- [x] 2.1 Make `StoreItemCard.astro` use the bounded preview slot only when `coverflowPreview` is true; verify its existing width ladder, source, alt text, loading, card markup, and catalog slot remain unchanged.
+- [x] 2.2 Make `DistroCard.astro` use the same bounded preview slot only when `coverflowPreview` is true; verify its home/page variants and ordinary catalog slot remain unchanged.
+- [x] 2.3 Run the focused image and Store markup tests and verify the two card components cannot drift on the preview slot contract.
 
 ## 3. Verify and Close the Child
 

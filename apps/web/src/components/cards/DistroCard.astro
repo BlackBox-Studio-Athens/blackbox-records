@@ -46,6 +46,11 @@ const distroSearchText = isHomeVariant
   ? [item!.data.title, item!.data.artist_or_label, item!.data.group, item!.data.format].filter(Boolean).join(' ')
   : entry!.distro!.searchText;
 const distroCardImageWidths = [320, 480, 640, 800, 960];
+const distroCardImageSizes = coverflowPreview
+  ? '(min-width: 40rem) 16rem, 56vw'
+  : isHomeVariant
+    ? '(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw'
+    : '(min-width: 1280px) 22vw, (min-width: 768px) 45vw, 100vw';
 const availabilityLabel = entry?.primaryAvailability?.availability.label || 'Unavailable';
 ---
 
@@ -67,9 +72,7 @@ const availabilityLabel = entry?.primaryAvailability?.availability.label || 'Una
         alt={sourceImageAlt}
         class="distro-card__image"
         widths={distroCardImageWidths}
-        sizes={isHomeVariant
-          ? '(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw'
-          : '(min-width: 1280px) 22vw, (min-width: 768px) 45vw, 100vw'}
+        sizes={distroCardImageSizes}
         loading={imageLoading}
       />
     </div>
