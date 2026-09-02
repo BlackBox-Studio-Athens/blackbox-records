@@ -37,7 +37,7 @@ The system SHALL expose exactly three product environments in operator-facing do
 
 ### Requirement: Product environment mapping
 
-The system SHALL maintain a single mapping from product environments to static hosts, Worker runtime targets, D1 data stores, app-owned Stripe target values, Stripe provider modes, secret stores, validation gates, and environment-derived runtime policies.
+The system SHALL maintain a single mapping from Product Environments to static hosts, Worker runtime targets, D1 data stores, app-owned Stripe target values, Stripe provider modes, secret stores, validation controls, and environment-derived runtime policies.
 
 #### Scenario: UAT mapping is evaluated
 
@@ -48,21 +48,22 @@ The system SHALL maintain a single mapping from product environments to static h
 
 - **WHEN** PRD is described or validated
 - **THEN** it maps to Cloudflare Pages static hosting, the `prd` Worker runtime target, PRD D1, app-owned Stripe target `prd`, Stripe live mode, direct production routing policy, and PRD-scoped GitHub Actions credentials
-- **AND** it records that PRD checkout and live provider mutation are disabled until an explicit production-readiness gate opens them.
-- **AND** it treats pre-go-live PRD evidence as readiness, disabled, or `not_configured` evidence rather than successful PRD Promotion Evidence.
+- **AND** live catalog preparation requires operation-specific confirmation for one exact run
+- **AND** shopper checkout requires `PRD_LAUNCH_APPROVED=true` plus the runtime `native_checkout_enabled` switch
+- **AND** pre-go-live PRD evidence remains readiness, disabled, or `not_configured` evidence rather than successful launch evidence.
 
 #### Scenario: Local mapping is evaluated
 
 - **WHEN** Local is described or validated
 - **THEN** it exposes only `mock` and `uat-connected` as normal local modes
-- **AND** any additional provider diagnostic command is documented outside the normal Local mode list.
-- **AND** `mock`, `mock-api`, and `uat-connected` are not counted as additional product environments.
+- **AND** any additional provider diagnostic command is documented outside the normal Local mode list
+- **AND** `mock`, `mock-api`, and `uat-connected` are not counted as additional Product Environments.
 
 #### Scenario: Active production-facing plans are evaluated
 
 - **WHEN** another active OpenSpec change describes production provider mutation, production proof, production checkout, or production launch readiness
-- **THEN** that change MUST be reconciled with the PRD-disabled model
-- **AND** it MUST identify whether the work is readiness-only, blocked by the PRD-open gate, or the owner of the PRD-open gate.
+- **THEN** that change MUST identify whether it owns readiness, one-run provider preparation, launch approval, or runtime enablement
+- **AND** it MUST NOT use one control for more than one of those decisions.
 
 #### Scenario: Runtime profile is resolved
 
@@ -95,7 +96,7 @@ The system MUST keep holding-page availability evidence separate from UAT accept
 
 - **WHEN** the apex serves the expected holding page with valid TLS and redirects
 - **THEN** the result proves only public-domain and holding-surface readiness
-- **AND** it does not open checkout, satisfy live Stripe or webhook gates, prove PRD D1/catalog state, or authorize `PRD_OPEN_GATE=open`.
+- **AND** it does not open checkout, satisfy live Stripe or webhook gates, prove PRD D1/catalog state, or authorize `PRD_LAUNCH_APPROVED=true`.
 
 #### Scenario: OpenSpec tasks are reviewed for unblocking
 

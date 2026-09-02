@@ -54,7 +54,7 @@ The system SHALL use Zod for repo-authored runtime input validation and OpenAPI 
 
 ### Requirement: Environment matrix validation
 
-The system SHALL provide validation that detects drift from the canonical Local, UAT, and PRD product environment model, including raw platform/provider aliases used outside approved boundaries.
+The system SHALL provide validation that detects drift from the canonical Local, UAT, and PRD Product Environment model, including raw platform/provider aliases and retired production controls used outside approved boundaries.
 
 #### Scenario: Deployment workflows are checked
 
@@ -81,9 +81,10 @@ The system SHALL provide validation that detects drift from the canonical Local,
 
 #### Scenario: PRD disabled state is checked
 
-- **WHEN** environment validation runs before production readiness is opened
-- **THEN** it verifies PRD checkout and live provider mutation fail closed
-- **AND** it reports any workflow, script, or feature gate that could enable live checkout or live provider mutation without the explicit PRD-open gate.
+- **WHEN** environment validation runs before production launch
+- **THEN** it verifies unconfirmed PRD provider mutation and unapproved or runtime-disabled PRD checkout fail closed independently
+- **AND** it rejects the retired production-control name in active workflow, runtime, documentation, and test contracts
+- **AND** it reports any path where live catalog confirmation could enable shopper checkout.
 
 #### Scenario: Baseline OpenSpec wording is checked
 
@@ -93,9 +94,9 @@ The system SHALL provide validation that detects drift from the canonical Local,
 
 #### Scenario: Raw platform aliases are checked
 
-- **WHEN** environment validation or closeout review inspects code, scripts, workflows, docs, or specs
-- **THEN** raw platform/provider aliases such as `sandbox`, `production`, `test`, and `live` are allowed only at approved boundary locations
-- **AND** any product-policy use outside those locations fails validation or is reported as an explicit reviewed exception.
+- **WHEN** environment validation scans app policy, workflows, tests, docs, and current OpenSpec artifacts
+- **THEN** raw `sandbox`, `production`, provider mode, platform environment, and deprecated production-control values outside approved boundaries are reported
+- **AND** Local/UAT/PRD remain the only Product Environment values.
 
 ### Requirement: Shared smoke harness and evidence contract
 
@@ -895,29 +896,36 @@ The system MUST keep all price-change diagnostics and evidence safe for logs, CI
 - **THEN** logs include safe fields such as Product Environment, event type, outcome, retryable status, safe reason, `storeItemSlug` when available, and `variantId` when available
 - **AND** logs do not include raw webhook bodies, full Stripe object IDs, or signing secrets.
 
-### Requirement: PRD validation remains gated
+### Requirement: PRD validation separates preparation from launch
 
-The system MUST keep live PRD price propagation disabled or readiness-only until the approved PRD-open gate exists.
+The system MUST validate live PRD catalog preparation, shopper launch approval, and runtime checkout enablement as independent controls.
 
 #### Scenario: PRD is not open
 
-- **GIVEN** `PRD_OPEN_GATE` is not configured as open
-- **WHEN** price-change propagation tooling is run for PRD
+- **GIVEN** explicit live catalog confirmation is absent
+- **WHEN** PRD price or catalog apply tooling runs
 - **THEN** it reports disabled, not configured, or readiness-only status
-- **AND** it does not mutate Stripe live mode, PRD D1, or live checkout state.
+- **AND** it does not mutate Stripe live mode or PRD D1.
+
+#### Scenario: PRD catalog preparation is confirmed
+
+- **GIVEN** one exact-commit workflow run or direct command carries explicit live catalog confirmation
+- **WHEN** PRD price or catalog apply tooling runs
+- **THEN** it may mutate only the bounded PRD provider and D1 catalog state
+- **AND** the confirmation does not alter Worker launch approval or runtime checkout state.
 
 #### Scenario: PRD catalog webhook arrives before open gate
 
-- **GIVEN** `PRD_OPEN_GATE` is not configured as open
+- **GIVEN** `PRD_LAUNCH_APPROVED` is absent or is not `true`
 - **WHEN** the PRD Worker receives a signed Stripe catalog webhook
-- **THEN** the runtime path may verify the signature and record safe readiness diagnostics
-- **AND** it does not mutate PRD D1 Store Offer snapshots, PRD VariantStripeMapping, Stripe live mode, or live checkout readiness.
+- **THEN** the runtime path may verify the signature and process catalog state according to its deployed PRD policy
+- **AND** shopper checkout remains unavailable until launch approval and runtime enablement both pass.
 
 #### Scenario: PRD opens later
 
-- **GIVEN** the production-readiness gate approves live checkout and live provider mutation
-- **WHEN** PRD price propagation validation is enabled
-- **THEN** it uses PRD Worker, PRD D1, PRD Stripe live account state, and PRD webhook secrets
+- **GIVEN** `PRD_LAUNCH_APPROVED=true`
+- **WHEN** PRD checkout validation runs
+- **THEN** it still requires `native_checkout_enabled` to resolve true
 - **AND** UAT evidence cannot be reused as PRD acceptance.
 
 ### Requirement: Frontend runtime performance profiles are repeatable

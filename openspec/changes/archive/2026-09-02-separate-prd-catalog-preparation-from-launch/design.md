@@ -37,12 +37,12 @@ The old binding is not accepted as an alias. A stale old value is ignored, which
 
 `native_checkout_enabled` remains the reversible operational control. PRD checkout requires both launch approval and runtime enablement. Either false branch blocks capability exposure and Checkout Session creation before provider work.
 
-| Live catalog confirmation | Launch approved | Runtime switch | Catalog apply | Shopper checkout |
-| --- | --- | --- | --- | --- |
-| false | false | false or true | blocked | blocked |
-| true | false | false or true | allowed for that exact run | blocked |
-| false | true | false | blocked | blocked |
-| false | true | true | blocked | enabled |
+| Live catalog confirmation | Launch approved | Runtime switch | Catalog apply              | Shopper checkout |
+| ------------------------- | --------------- | -------------- | -------------------------- | ---------------- |
+| false                     | false           | false or true  | blocked                    | blocked          |
+| true                      | false           | false or true  | allowed for that exact run | blocked          |
+| false                     | true            | false          | blocked                    | blocked          |
+| false                     | true            | true           | blocked                    | enabled          |
 
 ### Delete mixed-responsibility policy helpers
 
