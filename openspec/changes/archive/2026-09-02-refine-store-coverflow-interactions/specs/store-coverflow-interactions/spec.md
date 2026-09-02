@@ -48,9 +48,15 @@ An enhanced Store Coverflow in `preview` mode MUST use wheel input received by i
 - **THEN** positive normalized input advances toward the next Store Item and negative normalized input moves toward the previous Store Item
 - **AND** handled input is prevented from producing competing native page scroll while the pointer remains over that preview stage.
 
-#### Scenario: Visitor uses horizontal or Shift plus wheel input
+#### Scenario: Visitor uses horizontal wheel input
 
-- **WHEN** the pointer is over the Coverflow stage and horizontal wheel magnitude exceeds vertical magnitude, or the visitor holds `Shift` while producing vertical wheel input
+- **WHEN** the pointer is over the Coverflow stage and horizontal wheel magnitude exceeds vertical magnitude
+- **THEN** that input follows the same normalized threshold, direction, repeat, and wrapping rules as ordinary vertical wheel input
+- **AND** the handled input is prevented from producing a competing native horizontal scroll.
+
+#### Scenario: Visitor uses Shift plus wheel
+
+- **WHEN** the pointer is over the Coverflow stage and the visitor holds `Shift` while producing vertical wheel input
 - **THEN** that input follows the same normalized threshold, direction, repeat, and wrapping rules as ordinary vertical wheel input
 - **AND** the handled input is prevented from producing a competing native horizontal scroll.
 
@@ -89,7 +95,7 @@ Store Coverflow SHALL provide keyboard and simple-pointer operation through nati
 - **AND** Enter or Space activates native buttons while Enter activates an ordinary positioned Store Item link
 - **AND** focusing a positioned card makes it active before ordinary link activation.
 
-#### Scenario: Visitor presses arrow keys inside preview
+#### Scenario: Visitor presses arrow keys
 
 - **WHEN** focus is inside an enhanced Coverflow in `preview` mode and the visitor presses unmodified Left Arrow or Right Arrow
 - **THEN** Left Arrow moves exactly one Store Item toward Previous and Right Arrow moves exactly one Store Item toward Next, with wrapping at both ends
