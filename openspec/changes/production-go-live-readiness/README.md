@@ -19,3 +19,14 @@ Track final PRD-open launch gates for native commerce after UAT evidence.
 - Production controls: implementation commit `42a39a59`, archived by `96a1ef12`. Live catalog confirmation, shopper launch approval, and the runtime checkout feature gate are independent and fail closed.
 
 These references prove completed prerequisites only. They do not authorize Stripe, PRD data, checkout, DNS, or public launch mutations.
+
+## Post-commerce Store measurement — 2026-09-02
+
+- Baseline commit `81ce9976` transferred 5,761,330 bytes for Store All and 5,514,396 bytes for Store Distro under the declared mobile-stress profile; median LCP was about 3.26 seconds on both routes.
+- Implementation commit `46a78e3f` gives Store Item and Distro Coverflow images the bounded `(min-width: 40rem) 16rem, 56vw` slot while preserving ordinary catalog sizes. Transfer fell to 3,054,690 bytes for Store All and 3,330,724 bytes for Store Distro; median LCP improved to 2.68 and 2.76 seconds respectively.
+- Store activation passed three of three runs with 104 cards settled, one listing-price projection, zero per-card Store Offer reads, and zero Store 5xx responses. The static-only local projection remained the expected classified `404`.
+- Browser Use passed direct and shell-managed Store All/Distro at desktop and 390 px: bounded images remained visually sharp, Next/Previous and View all/Show Coverflow worked, complete card graphs remained present, focus reset to `MAIN` after shell navigation, and no overflow, blank state, or console warning/error appeared.
+- Wide Store traversal passed cleanly. Store Distro still produced isolated first-traversal long-task/layout outliers in wide, mobile, and legacy profiles, and both mobile LCP results remain above the 2.5-second gate.
+- Decision: retain the truthful image-slot fix, keep the bounded child active, and do not add loading machinery. The next design revision must test the measured remaining three-eager-cover contention before any implementation changes loading priority.
+
+Raw output is ignored under `.codex-artifacts/runtime-performance/81ce9976/` and `.codex-artifacts/runtime-performance/46a78e3f/`.
