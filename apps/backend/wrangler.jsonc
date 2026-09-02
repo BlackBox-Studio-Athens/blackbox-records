@@ -155,6 +155,12 @@
     },
     "prd": {
       "name": "blackbox-records-backend-prd",
+      "routes": [
+        {
+          "pattern": "staff.blackboxrecordsathens.com/api/internal/*",
+          "zone_name": "blackboxrecordsathens.com",
+        },
+      ],
       "observability": {
         "enabled": true,
         "logs": {

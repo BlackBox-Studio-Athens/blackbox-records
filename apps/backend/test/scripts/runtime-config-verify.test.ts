@@ -166,8 +166,6 @@ describe('runtime config verification', () => {
           "d1_databases": [{ "binding": "COMMERCE_DB" }],
           "vars": {
             "PRODUCT_ENVIRONMENT": "UAT",
-            "CF_ACCESS_TEAM_DOMAIN": "https://blackbox-records.cloudflareaccess.com",
-            "CF_ACCESS_POLICY_AUD": "operator-audience",
             "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,https://blackbox-studio-athens.github.io/blackbox-records",
             "EMAIL_BRAND_HOME_URL": "https://blackbox-studio-athens.github.io/blackbox-records/",
             "EMAIL_BRAND_LOGO_URL": "https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png",
@@ -200,6 +198,13 @@ describe('runtime config verification', () => {
     });
 
     expect(sandboxResult.issues).toEqual([]);
+    expect(sandboxResult.categories).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'CF_ACCESS_TEAM_DOMAIN', status: 'not_applicable' }),
+        expect.objectContaining({ name: 'CF_ACCESS_POLICY_AUD', status: 'not_applicable' }),
+        expect.objectContaining({ name: 'LOCAL_OPERATOR_EMAIL', status: 'not_applicable' }),
+      ]),
+    );
     expect(productionResult.issues).toContain(
       'RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL is missing (PRD must not honor the UAT sink recipient override.).',
     );

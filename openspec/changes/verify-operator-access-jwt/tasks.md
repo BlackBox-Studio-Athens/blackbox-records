@@ -3,7 +3,7 @@
 - [x] 1.1 Run `pnpm openspec:guard`, verify `align-cloudflare-environment-names` is complete and archived, then add jose 6.2.3 as a direct backend dependency; verify the lockfile has one compatible jose resolution and trust config uses only Local/UAT/PRD names.
 - [x] 1.2 Add validated CF_ACCESS_TEAM_DOMAIN, CF_ACCESS_POLICY_AUD, and Local-only LOCAL_OPERATOR_EMAIL bindings; verify hosted profiles cannot select the Local branch.
 - [x] 1.3 Confirm the operator Access application uses Google and the approved allowlist independently from Decap; verify no Decap credential or callback enters backend runtime config.
-- [ ] 1.4 Revise runtime config verification so Local requires its loopback operator identity, UAT without an operator surface does not require Access trust values but remains fail-closed for internal requests, and PRD requires both trust values before hosted proof can begin.
+- [x] 1.4 Revise runtime config verification so Local requires its loopback operator identity, UAT without an operator surface does not require Access trust values but remains fail-closed for internal requests, and PRD requires both trust values before hosted proof can begin.
 
 ## 2. One Verified Identity Boundary
 

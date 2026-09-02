@@ -180,6 +180,26 @@ function classifyOperatorAccessTrust(
     ];
   }
 
+  if (productEnvironmentProfile.productEnvironment === 'UAT') {
+    return [
+      {
+        detail: 'UAT has no operator surface.',
+        name: 'CF_ACCESS_TEAM_DOMAIN',
+        status: 'not_applicable',
+      },
+      {
+        detail: 'UAT has no operator surface.',
+        name: 'CF_ACCESS_POLICY_AUD',
+        status: 'not_applicable',
+      },
+      {
+        detail: 'Hosted Product Environments cannot use the Local operator identity bypass.',
+        name: 'LOCAL_OPERATOR_EMAIL',
+        status: 'not_applicable',
+      },
+    ];
+  }
+
   return [
     classifyWorkerConfigPresence('CF_ACCESS_TEAM_DOMAIN', environmentBlock, secretNames),
     classifyWorkerConfigPresence('CF_ACCESS_POLICY_AUD', environmentBlock, secretNames),
