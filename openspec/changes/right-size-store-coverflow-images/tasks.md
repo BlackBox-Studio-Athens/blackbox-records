@@ -26,8 +26,8 @@
 
 ## 5. Verify and Close the Child
 
-- [ ] 5.1 Commit the implementation, build that exact commit, run `pnpm performance:bundles`, and store mobile-load, Store-activation, wide-scroll, mobile-scroll, and legacy-scroll outputs under ignored `.codex-artifacts/runtime-performance/<commit>/`.
+- [x] 5.1 Commit the implementation, build that exact commit, run `pnpm performance:bundles`, and store mobile-load, Store-activation, wide-scroll, mobile-scroll, and legacy-scroll outputs under ignored `.codex-artifacts/runtime-performance/<commit>/`.
 - [ ] 5.2 Verify Store All and Store Distro meet the 2.5-second LCP, 0.1 CLS, application-work, rendering-slice, and long-task gates while retaining one listing projection, zero per-card Store Offer reads, and zero Store 5xx responses.
-- [ ] 5.3 Use Browser Use on direct and shell-managed Store All/Distro at desktop and 390 px to verify sharp and ready covers, first/repeat traversal, View all/Show Coverflow, complete cards, no blank state, no overflow or layout jump, focus behavior, and console/network cleanliness.
-- [ ] 5.4 Run `pnpm test:unit`, `pnpm check`, `pnpm build`, `pnpm audit:unused`, `pnpm audit:commerce-boundaries`, strict OpenSpec validation, and `git diff --check` against the final tree.
-- [ ] 5.5 When every gate passes, append accepted evidence to the parent README, complete only parent tasks 2.1, 2.2, 2.4, and 2.5, sync the `site-images` delta, strict-validate, and archive this child; otherwise record the exact miss and keep it active.
+- [x] 5.3 Use Browser Use on direct and shell-managed Store All/Distro at desktop and 390 px to verify sharp and ready covers, first/repeat traversal, View all/Show Coverflow, complete cards, no blank state, no overflow or layout jump, focus behavior, and console/network cleanliness.
+- [x] 5.4 Run `pnpm test:unit`, `pnpm check`, `pnpm build`, `pnpm audit:unused`, `pnpm audit:commerce-boundaries`, strict OpenSpec validation, and `git diff --check` against the final tree.
+- [x] 5.5 When every gate passes, append accepted evidence to the parent README, complete only parent tasks 2.1, 2.2, 2.4, and 2.5, sync the `site-images` delta, strict-validate, and archive this child; otherwise record the exact miss and keep it active.

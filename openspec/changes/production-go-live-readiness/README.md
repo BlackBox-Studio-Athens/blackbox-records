@@ -30,3 +30,15 @@ These references prove completed prerequisites only. They do not authorize Strip
 - Decision: retain the truthful image-slot fix, keep the bounded child active, and do not add loading machinery. The next design revision must test the measured remaining three-eager-cover contention before any implementation changes loading priority.
 
 Raw output is ignored under `.codex-artifacts/runtime-performance/81ce9976/` and `.codex-artifacts/runtime-performance/46a78e3f/`.
+
+## Active-cover priority measurement — 2026-09-03
+
+- Exact implementation commit `9f37b7db` gives only the initial first-viewport Coverflow cover eager/high priority. Coverflow neighbors and every later Distro group remain native-lazy; ordinary non-Coverflow catalogs retain their first-three eager behavior.
+- Median mobile-stress LCP improved to 2.460 seconds for Store All and 2.564 seconds for Store Distro. Store All now passes the 2.5-second gate; Store Distro still misses it by 64 milliseconds. Transfer was 3,056,872 bytes and 3,332,843 bytes respectively, and CLS stayed below 0.01 on both routes.
+- The remaining Distro LCP element is text (`p.store-orientation-panel__copy`), not Coverflow artwork. Its low TTFB and text render delay show that initial image priority is no longer the measured LCP boundary. A targeted throttled trace counted 1,831 DOM elements and large layout updates; this matches the first-traversal script/layout outliers in the wide, mobile, and legacy profiles.
+- Traversal still fails the long-task and rendering-slice gates. The largest captured failures were a 294-millisecond browser task during Distro wide first traversal, 125- and 114-millisecond tasks during Distro mobile first traversal, and isolated Store mobile-repeat and legacy-first tasks of 57 and 136 milliseconds.
+- Store activation passed three of three runs with 104 settled cards, exactly one listing-price projection, zero per-card Store Offer reads, and zero Store 5xx responses. The static-only local listing projection remained the expected classified `404`.
+- Browser Use passed direct and shell-managed Store All/Distro at desktop and 390 px. The first active image stayed sharp, neighboring images became ready during traversal, Next/Previous and View all/Show Coverflow worked without blank covers, every canonical card remained present, focus returned to `MAIN`, and no overflow, visible jump, failed image request, console warning, or console error appeared.
+- Decision: retain the active-cover-only priority implementation, keep `right-size-store-coverflow-images` active, leave parent performance tasks unchanged, and do not sync or archive the child. Any next amendment must first approve a bounded response to the measured Distro DOM/layout cost; this pass does not add observers, preload management, pagination, virtualization, batching, or dependencies.
+
+Raw output is ignored under `.codex-artifacts/runtime-performance/9f37b7db/`.
