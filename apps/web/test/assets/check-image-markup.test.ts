@@ -81,6 +81,33 @@ describe('check-image-markup', () => {
     ]);
   });
 
+  it('requires Coverflow priority only on the first image', () => {
+    const html = [
+      '<img class="store-item-card__image" src="/one.webp" loading="eager" fetchpriority="auto">',
+      '<img class="store-item-card__image" src="/two.webp" loading="eager" fetchpriority="high">',
+    ].join('');
+
+    expect(
+      checkImageMarkup(new Map([['store/index.html', html]]), [
+        {
+          route: 'store/index.html',
+          maxHighPriorityImages: 1,
+          images: [{ className: 'store-item-card__image', firstPriorityCount: 1 }],
+        },
+      ]),
+    ).toEqual([
+      {
+        route: 'store/index.html',
+        message: 'store-item-card__image #1 should have high fetch priority.',
+      },
+      { route: 'store/index.html', message: 'store-item-card__image #2 should stay lazy.' },
+      {
+        route: 'store/index.html',
+        message: 'store-item-card__image #2 should not have high fetch priority.',
+      },
+    ]);
+  });
+
   it('selects an exact responsive candidate for byte-budget checks', () => {
     const tag = '<img srcset="/portrait-480.webp 480w, /portrait-720.webp 720w">';
 

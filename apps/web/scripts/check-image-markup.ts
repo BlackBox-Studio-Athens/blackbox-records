@@ -6,6 +6,7 @@ type ImageCheck = {
   className: string;
   minCount?: number;
   firstEagerCount?: number;
+  firstPriorityCount?: number;
   minSrcsetCandidates?: number;
   requireDecoding?: boolean;
   requirePriority?: boolean;
@@ -42,11 +43,11 @@ const routeChecks: RouteCheck[] = [
   },
   {
     route: 'store/distro/index.html',
-    maxHighPriorityImages: 0,
+    maxHighPriorityImages: 1,
     images: [
       {
         className: 'distro-card__image',
-        firstEagerCount: 3,
+        firstPriorityCount: 1,
         minCount: 4,
         minSrcsetCandidates: 2,
         requireDecoding: true,
@@ -56,11 +57,11 @@ const routeChecks: RouteCheck[] = [
   },
   {
     route: 'store/index.html',
-    maxHighPriorityImages: 0,
+    maxHighPriorityImages: 1,
     images: [
       {
         className: 'store-item-card__image',
-        firstEagerCount: 3,
+        firstPriorityCount: 1,
         minCount: 4,
         minSrcsetCandidates: 2,
         requireDecoding: true,
@@ -298,6 +299,28 @@ export function checkImageMarkup(routeHtmlByPath: Map<string, string>, checks: R
           diagnostics.push({
             route: check.route,
             message: `${image.className} #${index + 1} lacks high fetch priority.`,
+          });
+        }
+
+        if (image.firstPriorityCount && index < image.firstPriorityCount && !tag.includes('loading="eager"')) {
+          diagnostics.push({ route: check.route, message: `${image.className} #${index + 1} should be eager.` });
+        }
+
+        if (image.firstPriorityCount && index < image.firstPriorityCount && !tag.includes('fetchpriority="high"')) {
+          diagnostics.push({
+            route: check.route,
+            message: `${image.className} #${index + 1} should have high fetch priority.`,
+          });
+        }
+
+        if (image.firstPriorityCount && index >= image.firstPriorityCount && !tag.includes('loading="lazy"')) {
+          diagnostics.push({ route: check.route, message: `${image.className} #${index + 1} should stay lazy.` });
+        }
+
+        if (image.firstPriorityCount && index >= image.firstPriorityCount && tag.includes('fetchpriority="high"')) {
+          diagnostics.push({
+            route: check.route,
+            message: `${image.className} #${index + 1} should not have high fetch priority.`,
           });
         }
 
