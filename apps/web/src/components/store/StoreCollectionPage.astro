@@ -8,6 +8,7 @@ import {
   createStoreDistroGroupHeadingId,
   groupStoreDistroCollectionEntries,
   selectStoreCollectionEntries,
+  type StoreCardImageLoadingMode,
   type StoreCollectionEntry,
 } from '@/lib/store-collection';
 
@@ -32,6 +33,8 @@ const STORE_COVERFLOW_INITIAL_POSITIONS = [
   'left-near',
 ] as const;
 const coverflowEligible = category.id !== 'distro' && entries.length > STORE_COVERFLOW_PREVIEW_SIZE;
+const getStoreCardImageLoadingMode = (itemIndex: number): StoreCardImageLoadingMode =>
+  coverflowEligible ? (itemIndex === 0 ? 'priority' : 'lazy') : itemIndex < 3 ? 'eager' : 'lazy';
 const initialPositionRatio = entries.length > 0 ? 1 / entries.length : 0;
 const coverflowCatalogId = `${category.id}-store-catalog`;
 ---
@@ -206,7 +209,7 @@ const coverflowCatalogId = `${category.id}-store-catalog`;
                   {entries.map((entry, itemIndex) => (
                     <StoreItemCard
                       entry={entry}
-                      imageLoading={itemIndex < 3 ? 'eager' : 'lazy'}
+                      imageLoadingMode={getStoreCardImageLoadingMode(itemIndex)}
                       coverflowPreview={coverflowEligible}
                       coverflowPosition={coverflowEligible ? STORE_COVERFLOW_INITIAL_POSITIONS[itemIndex] : undefined}
                     />

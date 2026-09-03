@@ -6,7 +6,9 @@ import { describe, expect, it } from 'vitest';
 const source = (path: string) => readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8');
 const categoryNavigationSource = source('./StoreCategoryNavigation.astro');
 const collectionPageSource = source('./StoreCollectionPage.astro');
+const distroCatalogSource = source('./StoreDistroCatalog.astro');
 const cssSource = source('../../styles/global.css');
+const storeCollectionSource = source('../../lib/store-collection.ts');
 const allRouteSource = source('../../pages/store/index.astro');
 const releasesRouteSource = source('../../pages/store/blackbox-releases/index.astro');
 const distroRouteSource = source('../../pages/store/distro/index.astro');
@@ -109,5 +111,37 @@ describe('Store collection category surfaces', () => {
     expect(distroCardSource).toContain('(min-width: 1280px) 22vw, (min-width: 768px) 45vw, 100vw');
     expect(storeItemCardSource).toContain('sizes={storeItemCardImageSizes}');
     expect(distroCardSource).toContain('sizes={distroCardImageSizes}');
+  });
+
+  it('gives initial high priority only to the first visible Coverflow cover', () => {
+    expect(storeCollectionSource).toContain("export type StoreCardImageLoadingMode = 'priority' | 'eager' | 'lazy';");
+
+    for (const cardSource of [storeItemCardSource, distroCardSource]) {
+      expect(cardSource).toContain('imageLoadingMode?: StoreCardImageLoadingMode;');
+      expect(cardSource).toContain("const imagePriority = imageLoadingMode === 'priority';");
+      expect(cardSource).toContain("loading={imagePriority ? 'eager' : imageLoadingMode}");
+      expect(cardSource).toContain("fetchpriority={imagePriority ? 'high' : 'auto'}");
+      expect(cardSource).not.toContain('imagePriority?: boolean');
+    }
+
+    expect(collectionPageSource).toContain(
+      'const getStoreCardImageLoadingMode = (itemIndex: number): StoreCardImageLoadingMode =>',
+    );
+    expect(collectionPageSource).toContain(
+      "coverflowEligible ? (itemIndex === 0 ? 'priority' : 'lazy') : itemIndex < 3 ? 'eager' : 'lazy';",
+    );
+    expect(collectionPageSource).toContain('imageLoadingMode={getStoreCardImageLoadingMode(itemIndex)}');
+    expect(distroCatalogSource).toContain(
+      'const firstDistroGroupUsesCoverflow = groupedDistroChunks[0]?.coverflowEligible === true;',
+    );
+    expect(distroCatalogSource).toContain('const firstDistroCoverflowStoreItemSlug = firstDistroGroupUsesCoverflow');
+    expect(distroCatalogSource).toContain(
+      'const getDistroCardImageLoadingMode = (storeItemSlug: string): StoreCardImageLoadingMode =>',
+    );
+    expect(distroCatalogSource).toContain(
+      "return firstDistroCoverflowStoreItemSlug === storeItemSlug ? 'priority' : 'lazy';",
+    );
+    expect(distroCatalogSource).toContain("return eagerDistroStoreItemSlugs.has(storeItemSlug) ? 'eager' : 'lazy';");
+    expect(distroCatalogSource).toContain('imageLoadingMode={getDistroCardImageLoadingMode(entry.storeItem.slug)}');
   });
 });

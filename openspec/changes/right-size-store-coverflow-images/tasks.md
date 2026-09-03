@@ -19,10 +19,10 @@
 
 ## 4. Prioritize Only the Initial Active Cover
 
-- [ ] 4.1 Extend the existing Store source-contract test to prove both cards share one `priority | eager | lazy` mode and map it to coherent loading and fetch-priority attributes.
-- [ ] 4.2 Add the shared Store card loading-mode type and update both card components without changing responsive sizes, width ladders, sources, alt text, or markup.
-- [ ] 4.3 Update Store category and Store Distro renderers so only the initial first-viewport Coverflow cover is priority, Coverflow neighbors and later groups are lazy, and ordinary leading eager behavior remains unchanged.
-- [ ] 4.4 Run the focused Store component test and verify every loading-policy scenario passes.
+- [x] 4.1 Extend the existing Store source-contract test to prove both cards share one `priority | eager | lazy` mode and map it to coherent loading and fetch-priority attributes.
+- [x] 4.2 Add the shared Store card loading-mode type and update both card components without changing responsive sizes, width ladders, sources, alt text, or markup.
+- [x] 4.3 Update Store category and Store Distro renderers so only the initial first-viewport Coverflow cover is priority, Coverflow neighbors and later groups are lazy, and ordinary leading eager behavior remains unchanged.
+- [x] 4.4 Run the focused Store component test and verify every loading-policy scenario passes.
 
 ## 5. Verify and Close the Child
 

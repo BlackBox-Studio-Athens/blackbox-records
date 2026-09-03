@@ -4,6 +4,7 @@ import { getPrimaryAvailabilityForStoreItem, type ItemAvailability } from './ite
 import { type StoreCatalogCategoryId } from './store-categories';
 
 export type StoreCatalogMembership = Exclude<StoreCatalogCategoryId, 'all'>;
+export type StoreCardImageLoadingMode = 'priority' | 'eager' | 'lazy';
 
 type StoreDistroFacets = {
   format: string | null;

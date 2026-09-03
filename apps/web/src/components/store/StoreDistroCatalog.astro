@@ -5,6 +5,7 @@ import { getDistroPageContent } from '@/lib/site-data';
 import {
   createStoreDistroGroupHeadingId,
   groupStoreDistroCollectionEntries,
+  type StoreCardImageLoadingMode,
   type StoreCollectionEntry,
 } from '@/lib/store-collection';
 import { cn } from '@/lib/utils';
@@ -49,6 +50,17 @@ const groupedDistroChunks = groupedDistroEntries.map((group) => {
   };
 });
 const eagerDistroStoreItemSlugs = new Set(entries.slice(0, 3).map((entry) => entry.storeItem.slug));
+const firstDistroGroupUsesCoverflow = groupedDistroChunks[0]?.coverflowEligible === true;
+const firstDistroCoverflowStoreItemSlug = firstDistroGroupUsesCoverflow
+  ? groupedDistroChunks[0]!.entries[0]!.storeItem.slug
+  : null;
+const getDistroCardImageLoadingMode = (storeItemSlug: string): StoreCardImageLoadingMode => {
+  if (firstDistroGroupUsesCoverflow) {
+    return firstDistroCoverflowStoreItemSlug === storeItemSlug ? 'priority' : 'lazy';
+  }
+
+  return eagerDistroStoreItemSlugs.has(storeItemSlug) ? 'eager' : 'lazy';
+};
 const itemCountLabel = `${entries.length} ${entries.length === 1 ? 'item' : 'items'}`;
 ---
 
@@ -241,7 +253,7 @@ const itemCountLabel = `${entries.length} ${entries.length === 1 ? 'item' : 'ite
                 {chunk.map((entry, itemIndex) => (
                   <DistroCard
                     entry={entry}
-                    imageLoading={eagerDistroStoreItemSlugs.has(entry.storeItem.slug) ? 'eager' : 'lazy'}
+                    imageLoadingMode={getDistroCardImageLoadingMode(entry.storeItem.slug)}
                     coverflowPreview={group.coverflowEligible}
                     coverflowPosition={
                       group.coverflowEligible

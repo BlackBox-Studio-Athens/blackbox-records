@@ -1,17 +1,18 @@
 ---
 import { Image } from 'astro:assets';
 import { Card, CardContent } from '@/components/ui/card';
-import type { StoreCollectionEntry } from '@/lib/store-collection';
+import type { StoreCardImageLoadingMode, StoreCollectionEntry } from '@/lib/store-collection';
 
 interface Props {
   coverflowPosition?: 'active' | 'back' | 'left-far' | 'left-near' | 'right-far' | 'right-near' | undefined;
   coverflowPreview?: boolean;
   entry: StoreCollectionEntry;
-  imageLoading?: 'eager' | 'lazy';
+  imageLoadingMode?: StoreCardImageLoadingMode;
 }
 
-const { coverflowPosition, coverflowPreview = false, entry, imageLoading = 'lazy' } = Astro.props;
+const { coverflowPosition, coverflowPreview = false, entry, imageLoadingMode = 'lazy' } = Astro.props;
 const { storeItem, primaryAvailability } = entry;
+const imagePriority = imageLoadingMode === 'priority';
 const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
 const metadataLabel = storeItem.metadata.join(' · ');
 const collectionLabel = storeItem.eyebrow || (storeItem.sourceKind === 'release' ? 'Release' : 'Distro');
@@ -42,7 +43,8 @@ const storeItemCardImageSizes = coverflowPreview
         class="store-item-card__image h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         widths={storeItemCardImageWidths}
         sizes={storeItemCardImageSizes}
-        loading={imageLoading}
+        loading={imagePriority ? 'eager' : imageLoadingMode}
+        fetchpriority={imagePriority ? 'high' : 'auto'}
       />
       <div class="absolute inset-0 bg-gradient-to-t from-black via-black/18 to-transparent"></div>
       <div class="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 px-4 py-4">
