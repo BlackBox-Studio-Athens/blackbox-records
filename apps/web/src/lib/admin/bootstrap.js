@@ -1,7 +1,7 @@
 import { resolveArtistSlugForSave } from './decap-artist-slug';
 import { registerPreviews } from './previews';
 
-export const sveltiaRuntimeUrl = 'https://unpkg.com/@sveltia/cms@0.205.2/dist/sveltia-cms.js';
+const sveltiaRuntimeUrl = 'https://unpkg.com/@sveltia/cms@0.205.2/dist/sveltia-cms.js';
 
 export function preserveArtistSlug({ entry }) {
   const data = entry.get('data');

@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
-import {
-  buildSveltiaConfig,
-  createSveltiaConfigErrorResponse,
-  createSveltiaConfigResponse,
-  sveltiaModeHeaderName,
-} from './sveltia-config';
+import { buildSveltiaConfig, createSveltiaConfigErrorResponse, createSveltiaConfigResponse } from './sveltia-config';
 import { SveltiaRuntimeConfigError, type SveltiaRuntimeConfig } from './sveltia-runtime-config';
 
 const logoUrl = 'https://example.com/logo.png';
@@ -271,7 +266,6 @@ describe('createSveltiaConfigResponse', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(response.headers.get('content-type')).toBe('text/yaml; charset=utf-8');
-    expect(response.headers.get(sveltiaModeHeaderName)).toBe(mode);
     expect(await response.text()).toBe(`# blackbox-sveltia-mode: ${mode}\n${yaml}`);
   });
 
@@ -282,7 +276,6 @@ describe('createSveltiaConfigResponse', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(response.headers.get('content-type')).toBe('text/yaml; charset=utf-8');
-    expect(response.headers.get(sveltiaModeHeaderName)).toBe('disabled');
     expect(body).toBe('# blackbox-sveltia-mode: disabled\n# BlackBox CMS unavailable for this build.\n');
     expect(body).not.toMatch(/backend:|repo:|proxy_url:|auth_endpoint:|auth_token_endpoint:|127\.0\.0\.1|localhost/);
   });

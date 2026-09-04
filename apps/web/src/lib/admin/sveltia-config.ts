@@ -18,13 +18,11 @@ import { buildSettingsFields } from './decap-settings-fields';
 import { buildServicesFields } from './decap-services-fields';
 import { buildSiteChromeCollections } from './decap-site-chrome-collections';
 
-export type BuildSveltiaConfigOptions = {
+type BuildSveltiaConfigOptions = {
   logoUrl: string;
   runtimeConfig: SveltiaRuntimeConfig;
   siteRootUrl: string;
 };
-
-export const sveltiaModeHeaderName = 'X-BlackBox-Sveltia-Mode';
 
 const configContentType = 'text/yaml; charset=utf-8';
 const genericConfigErrorMessage =
@@ -54,7 +52,6 @@ export function createSveltiaConfigResponse(
   const headers = {
     'Cache-Control': 'no-store',
     'Content-Type': configContentType,
-    [sveltiaModeHeaderName]: input.mode,
   };
 
   if (input.mode === 'disabled') {
@@ -71,20 +68,13 @@ export function buildSveltiaConfig(options: BuildSveltiaConfigOptions): string {
     throw new SveltiaRuntimeConfigError('Disabled CMS has no writable configuration.');
   const backendConfig = `backend:\n  name: github\n  repo: "BlackBox-Studio-Athens/blackbox-records"\n  branch: main${options.runtimeConfig.mode === 'hosted' ? `\n  base_url: ${escapeYamlScalar(options.runtimeConfig.baseUrl)}` : ''}`;
 
-  const homeFields = buildHomeFields();
-  const aboutFields = buildAboutFields();
-  const distroPageFields = buildDistroPageFields();
-  const servicesFields = buildServicesFields();
-  const settingsFields = buildSettingsFields();
-  const newsletterFields = buildNewsletterFields();
-
   const pageCollections = buildPageFileCollections({
-    homeFields,
-    aboutFields,
-    distroPageFields,
-    servicesFields,
-    settingsFields,
-    newsletterFields,
+    homeFields: buildHomeFields(),
+    aboutFields: buildAboutFields(),
+    distroPageFields: buildDistroPageFields(),
+    servicesFields: buildServicesFields(),
+    settingsFields: buildSettingsFields(),
+    newsletterFields: buildNewsletterFields(),
   });
   const siteChromeCollections = buildSiteChromeCollections();
   const collections = [

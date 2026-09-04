@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildSveltiaConfig, createSveltiaConfigResponse } from './sveltia-config';
 import { resolveSveltiaRuntimeConfig } from './sveltia-runtime-config';
 import { assertSveltiaBuildArtifacts } from './sveltia-build-validation';
-import { preserveArtistSlug, startAdmin, sveltiaRuntimeUrl } from './bootstrap';
+import { preserveArtistSlug, startAdmin } from './bootstrap';
 import { registerPreviews } from './previews';
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -117,7 +117,6 @@ describe('Sveltia integration', () => {
   );
 
   it('keeps the native static document, pinned runtime, and no retired boot or media surface', () => {
-    expect(sveltiaRuntimeUrl).toBe('https://unpkg.com/@sveltia/cms@0.205.2/dist/sveltia-cms.js');
     expect(indexHtml).toContain('src="./init.js"');
     expect(existsSync(new URL('../../pages/admin/index.astro', import.meta.url))).toBe(false);
     expect(

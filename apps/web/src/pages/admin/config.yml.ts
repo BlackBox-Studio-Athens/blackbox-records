@@ -25,8 +25,7 @@ export const GET: APIRoute = async ({ site, url }) => {
     const yaml = buildSveltiaConfig({ logoUrl, runtimeConfig, siteRootUrl });
     return createSveltiaConfigResponse({ mode: runtimeConfig.mode, yaml });
   } catch (error) {
-    const safeError = normalizeSveltiaConfigError(error);
-    if (import.meta.env.DEV) return createSveltiaConfigErrorResponse(safeError);
-    throw safeError;
+    if (import.meta.env.DEV) return createSveltiaConfigErrorResponse(error);
+    throw normalizeSveltiaConfigError(error);
   }
 };
