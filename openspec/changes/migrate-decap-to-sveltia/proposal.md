@@ -27,6 +27,12 @@ The current Decap setup carries provider-specific boot, authentication, and loca
 - `decap-editorial-operations`: Retires the Decap runtime, DecapBridge authentication, local proxy, and Decap-specific editor behavior.
 - `tooling-validation`: Replaces Decap configuration, compatibility, and smoke requirements with focused Sveltia checks.
 - `static-site-and-deployment`: Updates the read-only UAT static smoke contract from Decap/admin coverage to Sveltia/admin coverage.
+- `cloudflare-free-tier-cache-policy`: Removes provider-specific Decap wording from the generic CMS cache boundary.
+- `commerce-checkout`: Keeps repository-authored editorial content outside checkout authority without naming the retired editor.
+- `orders-stock-operator`: Replaces Decap authentication references with the independent Sveltia GitHub and Cloudflare Access boundaries.
+- `project-language`: Keeps cache terminology provider-neutral for CMS behavior.
+- `site-images`: Names Sveltia as a current consumer of stable public brand assets.
+- `stripe-catalog-field-ownership`: Replaces Decap-specific editorial and authority wording with Sveltia and repository-authored content.
 
 ## Impact
 

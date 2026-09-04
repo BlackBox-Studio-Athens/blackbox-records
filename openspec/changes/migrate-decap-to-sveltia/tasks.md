@@ -23,6 +23,10 @@
 - [x] 4.2 Coordinate the editorial save pause, deploy UAT, run `cms_admin` and `cms_assets` UAT Static Smoke, then have the owner reload admin, sign in with the designated GitHub account, and complete a no-publish Store Item, image, Release, and migrated Distro page check; fix any task-blocking defect before PRD.
 - [x] 4.3 Build/deploy the UAT-accepted implementation for the PRD target, complete the designated-account no-publish check after reloading admin, and remove remaining external DecapBridge configuration and access; verify Sveltia is the only reachable CMS, resume editorial saves, and retain no Decap rollback artifact or auth path.
 
+## 5. Specification Closure
+
+- [ ] 5.1 Replace residual operational Decap wording in current baseline capabilities with Sveltia or provider-neutral CMS/repository terminology as appropriate; strict-validate the expanded delta set and verify only archive, migration-history, and explicit anti-restoration references remain before sync and archive.
+
 ## Planning revision accepted — September 3, 2026
 
 The user approved small schema and implementation changes that simplify the migration. The scope blocker is resolved: migrate the three copy keys directly and correct native global media configuration. Do not add aliases, adapters, a KeyValue editor, or a migration framework. Resume implementation with tasks 1.2 and 1.3; prove native configuration acceptance before broader work.
