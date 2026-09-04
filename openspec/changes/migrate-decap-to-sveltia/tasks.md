@@ -13,15 +13,15 @@
 
 ## 3. Hosted Authentication And Deployment
 
-- [ ] 3.1 Deploy the official `sveltia/sveltia-cms-auth` Cloudflare Worker, register the GitHub OAuth app with callback `<worker-url>/callback`, configure encrypted `GITHUB_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, and exact UAT/PRD `ALLOWED_DOMAINS`, grant the designated GitHub CMS account repository write access, and verify that account reaches the GitHub authorization flow from an allowed hostname.
+- [x] 3.1 Deploy the official `sveltia/sveltia-cms-auth` Cloudflare Worker, register the GitHub OAuth app with callback `<worker-url>/callback`, configure encrypted `GITHUB_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, and exact UAT/PRD `ALLOWED_DOMAINS`, grant the designated GitHub CMS account repository write access, and verify that account reaches the GitHub authorization flow from an allowed hostname.
 - [x] 3.2 Replace active CMS workflow variables with `SVELTIA_BACKEND_MODE` and `SVELTIA_AUTH_BASE_URL`, remove the `apps/web/src/lib/admin/**` deployment path ignore, retain the final artifact mode check, and update read-only `cms_admin`/`cms_assets` UAT smoke for the static admin document, pinned runtime, GitHub backend, `main`, authenticator URL, configured assets, and absence of Decap, custom admin-media routes, placeholders, localhost fallbacks, and leaked secrets.
 - [x] 3.3 Update README/operator guidance for the native GitHub sign-in screen and designated account, direct hosted publication, local Chromium directory selection, manual local Git commit/push, native Asset Library, and the cutover save pause/admin reload. Verify examples match emitted config and commands, and remove active Google/DecapBridge, individual-account, token, proxy, and Decap rollback instructions without injecting replacement login UI.
 
 ## 4. Verification And Cutover
 
 - [x] 4.1 Run `pnpm test:cms-admin`, `pnpm smoke:cms-local -- --screenshots never`, `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and `pnpm build` against the exact final tree; verify every gate passes and the secret-free artifact remains disabled.
-- [ ] 4.2 Coordinate the editorial save pause, deploy UAT, run `cms_admin` and `cms_assets` UAT Static Smoke, then have the owner reload admin, sign in with the designated GitHub account, and complete a no-publish Store Item, image, Release, and migrated Distro page check; fix any task-blocking defect before PRD.
-- [ ] 4.3 Build/deploy the UAT-accepted implementation for the PRD target, complete the designated-account no-publish check after reloading admin, and remove remaining external DecapBridge configuration and access; verify Sveltia is the only reachable CMS, resume editorial saves, and retain no Decap rollback artifact or auth path.
+- [x] 4.2 Coordinate the editorial save pause, deploy UAT, run `cms_admin` and `cms_assets` UAT Static Smoke, then have the owner reload admin, sign in with the designated GitHub account, and complete a no-publish Store Item, image, Release, and migrated Distro page check; fix any task-blocking defect before PRD.
+- [x] 4.3 Build/deploy the UAT-accepted implementation for the PRD target, complete the designated-account no-publish check after reloading admin, and remove remaining external DecapBridge configuration and access; verify Sveltia is the only reachable CMS, resume editorial saves, and retain no Decap rollback artifact or auth path.
 
 ## Planning revision accepted — September 3, 2026
 
@@ -47,11 +47,15 @@ The user approved dropping old-site compatibility. Replace obsolete catalog imag
 - `pnpm audit:unused`: completed. No remaining CMS findings; unrelated existing findings remain (3 unlisted binaries, 12 unused exports, 2 unused exported types, 1 duplicate export).
 - Strict OpenSpec validation and `git diff --check` passed.
 
-### Remaining acceptance and external setup
+### Hosted rollout evidence — September 5, 2026
 
-- Task 2.2 was completed on September 4, 2026. The owner handled Chromium's native directory picker; the GPT Chrome extension performed the remaining walkthrough. No filesystem API was replaced and no Save/Publish action ran.
-- Task 3.1 remains open. On September 5, 2026, the official authenticator Worker and GitHub OAuth app were provisioned, the Worker received its client ID, encrypted client secret, and exact UAT/PRD domains, and repository variable `SVELTIA_AUTH_BASE_URL` was added. The designated account has repository administration access. Completion still requires reaching GitHub authorization from an allowed hosted admin origin.
-- Tasks 4.2 and 4.3 remain open. No commit, push, static deployment, Worker deployment, Stripe/D1 mutation, or external authentication removal occurred. Follow the one-off UAT-then-PRD sequence after the remaining acceptance gates; do not treat local test evidence as hosted acceptance.
+- Completed tasks 3.1, 4.2, and 4.3. Overall: 13/13 tasks.
+- Deployed the official authenticator Worker with encrypted GitHub OAuth credentials and exact UAT/PRD allowed domains. The designated account completed GitHub authorization from both hosted admin origins.
+- UAT workflow run 325 deployed exact commit `ec8f6ed35257455cd18a2d0498fa42915eab8254`. `cms_admin` passed 2 checks and `cms_assets` passed 11 checks with zero console or page errors.
+- UAT no-publish acceptance passed for Store Item, image, Release, migrated Distro fields, previews, and the native Asset Library.
+- PRD workflow run 326 rebuilt the same accepted commit for PRD and deployed successfully. PRD no-publish acceptance passed the same representative checks.
+- Removed repository variables `DECAPBRIDGE_BASE_URL`, `DECAPBRIDGE_GATEWAY_URL`, `DECAP_BRANCH`, `DECAP_REPOSITORY`, and `DECAP_SITE_URL`. Retained `SVELTIA_AUTH_BASE_URL`; Sveltia is the only reachable CMS.
+- No CMS Save/Publish action or Stripe/D1 mutation ran during acceptance.
 
 ## Local acceptance evidence — September 4, 2026
 
