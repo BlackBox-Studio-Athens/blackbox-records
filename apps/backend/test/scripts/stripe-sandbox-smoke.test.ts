@@ -76,7 +76,7 @@ const sessionProjectionExpectation = {
   expectedAmountMinor: 2800,
   expectedCurrencyCode: 'EUR',
   expectedProductImageUrl:
-    'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/disintegration.jpg',
+    'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/releases/disintegration.jpg',
   expectedProductName: 'BlackBox Records - Disintegration - Black Vinyl LP',
 };
 const checkoutSurfaceExpectation = {

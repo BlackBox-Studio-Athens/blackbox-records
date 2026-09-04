@@ -146,7 +146,7 @@ Read these first before editing:
 - The internal Worker API now exposes operator-only stock routes under `/api/internal/variants/*`.
 - The protected stock operations UI is served by `apps/staff/src/pages/stock/index.astro` and calls same-origin `/api/internal/*` on the protected operator hostname.
 - For local split-port development, set `PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787` so the static UI can call `pnpm dev:backend`; the Worker must allow that browser origin through `CHECKOUT_RETURN_ORIGINS`.
-- Cloudflare Access + Google protects that hostname through an explicit email allowlist; do not add shopper login or reuse Decap auth for runtime stock operations.
+- Cloudflare Access + Google protects that hostname through an explicit email allowlist; do not add shopper login or reuse CMS auth for runtime stock operations.
 - Hosted `/api/internal/*` requests require a verified `Cf-Access-Jwt-Assertion`; UAT and PRD must configure exact `CF_ACCESS_TEAM_DOMAIN` issuer and `CF_ACCESS_POLICY_AUD` audience bindings.
 - Ignore `cf-access-authenticated-user-email`. Stock-write `actor_email` comes only from the verified JWT email claim supplied through typed middleware context.
 - JWT-free identity is Local and loopback-only, using `LOCAL_OPERATOR_EMAIL`; hosted environments ignore that binding.
@@ -276,7 +276,7 @@ All JSON collection entries include `$schema` links to Astro-generated collectio
 - `releases.artist` is an Astro `reference('artists')`
 - Collection-owned images for artists/releases/news use Astro `image()`
 - Home/about decorative images also use Astro `image()`
-- Decap artist, release, and distro entries are editorial-only and must not carry CMS-authored commerce controls or Fourthwall collection fields
+- CMS artist, release, and distro entries are editorial-only and must not carry CMS-authored commerce controls or Fourthwall collection fields
 - Home/about/services/newsletter/settings/navigation/socials use structured JSON collections
 - Query helpers live in `apps/web/src/lib/site-data.ts`
 

@@ -220,7 +220,7 @@ describe('asset QA rule engine', () => {
       {
         productProjection: {
           description: 'Example',
-          imageUrls: ['/admin/media/distro/example.jpg'],
+          imageUrls: ['/assets/catalog/distro/example.jpg'],
           metadata: {},
           name: 'Example Product',
           taxCode: null,
@@ -230,7 +230,7 @@ describe('asset QA rule engine', () => {
       {
         productProjection: {
           description: 'Example',
-          imageUrls: ['https://example.com/admin/media/distro/example.jpg'],
+          imageUrls: ['https://example.com/assets/catalog/distro/example.jpg'],
           metadata: {},
           name: 'Example Product',
           taxCode: null,

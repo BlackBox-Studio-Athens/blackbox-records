@@ -5,7 +5,7 @@ import {
 } from '../editorial-validation';
 import { buildField, buildFieldMapping, buildFolderCollection } from './decap-yaml-builder';
 import { decapCollectionDescriptions } from './decap-editorial-copy';
-import { decapCollectionMedia } from './decap-media';
+import { cmsRelativeMedia } from './sveltia-media';
 
 export function buildReleaseCollection() {
   return buildFolderCollection({
@@ -22,8 +22,8 @@ export function buildReleaseCollection() {
     format: 'frontmatter',
     identifierField: 'title',
     slug: '{{slug}}',
-    mediaFolder: decapCollectionMedia.releases.mediaFolder,
-    publicFolder: decapCollectionMedia.releases.publicFolder,
+    mediaFolder: cmsRelativeMedia.mediaFolder,
+    publicFolder: cmsRelativeMedia.publicFolder,
     summary: '{{release_date}} — {{title}} — {{artist}}',
     fields: [
       buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Release title.' }),
@@ -37,7 +37,6 @@ export function buildReleaseCollection() {
           searchFields: ['title', 'slug'],
           valueField: 'slug',
           displayFields: ['title', 'slug'],
-          optionsLength: 50,
         },
       }),
       buildField({

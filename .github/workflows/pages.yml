@@ -8,7 +8,6 @@ on:
       - 'openspec/**'
       - 'apps/web/src/content/distro/**'
       - 'apps/web/src/content/releases/**'
-      - 'apps/web/src/lib/admin/**'
       - 'apps/web/src/content.config.ts'
       - 'scripts/stripe-catalog-contract.ts'
       - 'scripts/generate-stripe-uat-catalog-artifacts.ts'
@@ -105,14 +104,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      DECAP_BACKEND_MODE: hosted
-      DECAP_SITE_URL: https://blackbox-studio-athens.github.io/blackbox-records/
-      DECAP_REPOSITORY: ${{ vars.DECAP_REPOSITORY }}
-      DECAP_BRANCH: ${{ vars.DECAP_BRANCH }}
-      DECAPBRIDGE_BASE_URL: ${{ vars.DECAPBRIDGE_BASE_URL }}
-      DECAPBRIDGE_AUTH_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_ENDPOINT }}
-      DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT }}
-      DECAPBRIDGE_GATEWAY_URL: ${{ vars.DECAPBRIDGE_GATEWAY_URL }}
+      SVELTIA_BACKEND_MODE: hosted
+      SVELTIA_AUTH_BASE_URL: ${{ vars.SVELTIA_AUTH_BASE_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -136,9 +129,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Validate hosted Decap settings
-        run: pnpm cms:hosted:preflight
 
       - name: Build hosted UAT static frontend
         env:
@@ -179,37 +169,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Validate hosted Decap settings
-        if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'prd' }}
-        env:
-          DECAP_BACKEND_MODE: hosted
-          DECAP_SITE_URL: https://blackbox-records-web.pages.dev
-          DECAP_REPOSITORY: ${{ vars.DECAP_REPOSITORY }}
-          DECAP_BRANCH: ${{ vars.DECAP_BRANCH }}
-          DECAPBRIDGE_BASE_URL: ${{ vars.DECAPBRIDGE_BASE_URL }}
-          DECAPBRIDGE_AUTH_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_ENDPOINT }}
-          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT }}
-          DECAPBRIDGE_GATEWAY_URL: ${{ vars.DECAPBRIDGE_GATEWAY_URL }}
-        run: pnpm cms:hosted:preflight
-
       - name: Build hosted PRD static frontend
         if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'prd' }}
         env:
-          DECAP_BACKEND_MODE: hosted
-          DECAP_SITE_URL: https://blackbox-records-web.pages.dev
-          DECAP_REPOSITORY: ${{ vars.DECAP_REPOSITORY }}
-          DECAP_BRANCH: ${{ vars.DECAP_BRANCH }}
-          DECAPBRIDGE_BASE_URL: ${{ vars.DECAPBRIDGE_BASE_URL }}
-          DECAPBRIDGE_AUTH_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_ENDPOINT }}
-          DECAPBRIDGE_AUTH_TOKEN_ENDPOINT: ${{ secrets.DECAPBRIDGE_AUTH_TOKEN_ENDPOINT }}
-          DECAPBRIDGE_GATEWAY_URL: ${{ vars.DECAPBRIDGE_GATEWAY_URL }}
+          SVELTIA_BACKEND_MODE: hosted
+          SVELTIA_AUTH_BASE_URL: ${{ vars.SVELTIA_AUTH_BASE_URL }}
           ASTRO_SITE_URL: https://blackbox-records-web.pages.dev
           ASTRO_BASE_PATH: /
           PUBLIC_BACKEND_BASE_URL: ${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}
-        run: pnpm build:web
+        run: pnpm build
 
       - name: Build hosted staff frontend
-        if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'staff' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'staff' }}
         run: pnpm build:staff
 
       - name: Upload PRD public static artifact
@@ -273,7 +244,7 @@ jobs:
           name: prd-public-static-site-${{ inputs.artifact_commit_sha || github.sha }}
           path: apps/web/dist
 
-      - name: Deploy disabled PRD static frontend to Cloudflare Pages
+      - name: Deploy PRD static frontend to Cloudflare Pages
         uses: cloudflare/wrangler-action@v4.0.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

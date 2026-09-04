@@ -29,7 +29,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of form follows function by Adolf plays the Jazz. Source metadata identifies it as a 9-track release, released April 17, 2012.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/adolf-plays-the-jazz-form-follows-function-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/adolf-plays-the-jazz-form-follows-function-cd.jpg',
       ],
       metadata: {
         sourceId: 'adolf-plays-the-jazz-form-follows-function-cd',
@@ -56,7 +56,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of I went to the mountain by AFLMSMP. Source metadata identifies it as a 9-track release, released February 27, 2025.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/aflmsmp-i-went-to-the-mountain-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/aflmsmp-i-went-to-the-mountain-vinyl.webp',
       ],
       metadata: {
         sourceId: 'aflmsmp-i-went-to-the-mountain-vinyl',
@@ -83,7 +83,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'A raw Croatian hardcore punk record from Indoctrinate, direct in delivery and stripped of unnecessary polish.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/indoctrinate-aftermaths.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/indoctrinate-aftermaths.jpg',
       ],
       metadata: {
         sourceId: 'aftermaths',
@@ -110,7 +110,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         "Hazarder's Zagreb sludge, stoner, and doom metal leans on downtuned guitars and raw vocals from start to finish.",
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/hazarder-against-leviathan.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/hazarder-against-leviathan.jpg',
       ],
       metadata: {
         sourceId: 'against-his-story-against-leviathan',
@@ -137,7 +137,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Analekta by Agia Monaxia. Source metadata identifies it as a 6-track release, released July 19, 2019.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/agia-monaxia-analekta-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/agia-monaxia-analekta-cd.jpg',
       ],
       metadata: {
         sourceId: 'agia-monaxia-analekta-cd',
@@ -164,7 +164,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Commotion by Allochiria. Source metadata identifies it as a 9-track release, released April 23, 2023.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/allochiria-commotion-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/allochiria-commotion-vinyl.webp',
       ],
       metadata: {
         sourceId: 'allochiria-commotion-vinyl',
@@ -191,7 +191,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Omonoia by Allochiria. Source metadata identifies it as a 7-track release, released January 4, 2014.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/allochiria-omonoia-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/allochiria-omonoia-vinyl.webp',
       ],
       metadata: {
         sourceId: 'allochiria-omonoia-vinyl',
@@ -218,7 +218,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Throes by Allochiria. Source metadata identifies it as a 6-track release, released March 17, 2017.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/allochiria-throes-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/allochiria-throes-vinyl.webp',
       ],
       metadata: {
         sourceId: 'allochiria-throes-vinyl',
@@ -245,7 +245,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         "Ouranopithecus' ten-track album channels the Athens trio's psychedelic and punk influences. Recorded at Atavo and Buduzi Studios, it was produced by the band and Marios Adamopoulos and released with BlackBox Records. Digital availability is confirmed by Bandcamp; Vinyl is the label edition.",
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/ouranopithecus-album-cover-distro-mockup.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/releases/ouranopithecus-album-cover-distro-mockup.webp',
       ],
       metadata: {
         sourceId: 'anarchotribal',
@@ -272,7 +272,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Alone by Anima Triste. Source metadata identifies it as a 9-track release, released January 27, 2023.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/anima-triste-alone-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/anima-triste-alone-cd.jpg',
       ],
       metadata: {
         sourceId: 'anima-triste-alone-cd',
@@ -299,7 +299,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Anima Triste by Anima Triste. Source metadata identifies it as a 10-track release, released December 7, 2016.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/anima-triste-anima-triste-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/anima-triste-anima-triste-cd.jpg',
       ],
       metadata: {
         sourceId: 'anima-triste-anima-triste-cd',
@@ -326,7 +326,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Humanity by Anima Triste. Source metadata identifies it as a 10-track release, released September 19, 2019.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/anima-triste-humanity-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/anima-triste-humanity-cd.jpg',
       ],
       metadata: {
         sourceId: 'anima-triste-humanity-cd',
@@ -353,7 +353,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     },
     productProjection: {
       description: 'CD edition of Ατοπια by Ατοπια in the BlackBox Records distro catalog.',
-      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/atopia-atopia-cd.jpg'],
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/atopia-atopia-cd.jpg',
+      ],
       metadata: {
         sourceId: 'atopia-atopia-cd',
         sourceKind: 'distro',
@@ -379,7 +381,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Luchtbegrafenis by Aufhebung. Source metadata identifies it as a 6-track release, released February 26, 2026.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/aufhebung-luchtbegrafenis-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/aufhebung-luchtbegrafenis-vinyl.webp',
       ],
       metadata: {
         sourceId: 'aufhebung-luchtbegrafenis-vinyl',
@@ -408,7 +410,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Cassette edition of 2016 by Band in the pit. Source metadata identifies it as a 3-track release, released November 21, 2016. Cassette case artwork mockup. Actual cassette shell and labels may vary.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/band-in-the-pit-2016-cassette.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/band-in-the-pit-2016-cassette.jpg',
       ],
       metadata: {
         sourceId: 'band-in-the-pit-2016-cassette',
@@ -435,7 +437,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         "Mass Culture's Barren Point keeps the Greek band's post-hardcore and metal pressure direct and physical.",
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/mass-culture-barren-point.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/mass-culture-barren-point.jpg',
       ],
       metadata: {
         sourceId: 'barren-point',
@@ -462,7 +464,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Sadhus, The Smoking Community bring Athens sludge and crust together with brutal vocals across their second full-length release.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/sadhus-the-big-fish.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/sadhus-the-big-fish.jpg',
       ],
       metadata: {
         sourceId: 'big-fish',
@@ -489,7 +491,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Depressionland by Bipolar Architecture. Source metadata identifies it as a 9-track release, released June 24, 2022.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/bipolar-architecture-depressionland-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/bipolar-architecture-depressionland-vinyl.webp',
       ],
       metadata: {
         sourceId: 'bipolar-architecture-depressionland-vinyl',
@@ -515,7 +517,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'CD edition of Synapses by Blame the trees, released November 12, 2013.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/blame-the-trees-synapses-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/blame-the-trees-synapses-cd.jpg',
       ],
       metadata: {
         sourceId: 'blame-the-trees-synapses-cd',
@@ -541,7 +543,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description:
         'Belgian metal from three siblings in Oostend, carrying the blood, sweat, and tears behind Tranen into the grooves.',
-      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/bloed-tranen.jpg'],
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/bloed-tranen.jpg'],
       metadata: {
         sourceId: 'bloed-tranen',
         sourceKind: 'distro',
@@ -567,7 +569,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Cassette edition of Ego by Broken Fingers. Source metadata identifies it as an 11-track release, released November 29, 2019. Cassette case artwork mockup. Actual cassette shell and labels may vary.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/broken-fingers-ego-cassette.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/broken-fingers-ego-cassette.jpg',
       ],
       metadata: {
         sourceId: 'broken-fingers-ego-cassette',
@@ -593,7 +595,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description:
         "CALF's noise rock and post-hardcore from Karditsa follows the trail of Unwound, Melvins, and Slint without losing its own weight.",
-      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/calf-karditsa.jpg'],
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/calf-karditsa.jpg'],
       metadata: {
         sourceId: 'calf-vinyl-10-inch',
         sourceKind: 'distro',
@@ -619,7 +621,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'released March 13, 2026 All music written and performed by Chronoboros All lyrics written by Nikos Zalimoglou Recorded live at Ignite Music Studio Jun 2025 Recorded, mixed, and mastered by George Christoforidis Artwork and layout by Healitwithsilver',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/chronoboros-album-cover-distro-mockup.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/releases/chronoboros-album-cover-distro-mockup.webp',
       ],
       metadata: {
         sourceId: 'caregivers',
@@ -646,7 +648,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Escape the Blaze only to find another by Celuta Red, Agia Monaxia. Source metadata identifies it as a 2-track release, released May 11, 2020.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/celuta-red-agia-monaxia-escape-the-blaze-only-to-find-another-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/celuta-red-agia-monaxia-escape-the-blaze-only-to-find-another-vinyl.webp',
       ],
       metadata: {
         sourceId: 'celuta-red-agia-monaxia-escape-the-blaze-only-to-find-another-vinyl',
@@ -673,7 +675,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Amoeba by Celuta Red. Source metadata identifies it as an 8-track release, released February 27, 2015.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/celuta-red-amoeba-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/celuta-red-amoeba-cd.jpg',
       ],
       metadata: {
         sourceId: 'celuta-red-amoeba-cd',
@@ -700,7 +702,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Idle Frenzy by Celuta Red. Source metadata identifies it as a 7-track release, released May 11, 2018.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/celuta-red-idle-frenzy-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/celuta-red-idle-frenzy-cd.jpg',
       ],
       metadata: {
         sourceId: 'celuta-red-idle-frenzy-cd',
@@ -726,7 +728,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'Vinyl edition of Angry Noises by Ciśnienie. Source metadata identifies it as a 4-track release.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/cisnienie-angry-noises-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/cisnienie-angry-noises-vinyl.webp',
       ],
       metadata: {
         sourceId: 'cisnienie-angry-noises-vinyl',
@@ -752,7 +754,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'Vinyl edition of Medicine by Coyotes Arrow in the BlackBox Records distro catalog.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/coyotes-arrow-medicine-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/coyotes-arrow-medicine-vinyl.webp',
       ],
       metadata: {
         sourceId: 'coyotes-arrow-medicine-vinyl',
@@ -781,7 +783,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'A Greek split seven-inch from Zebu and Dead Elephant, pushing experimental rock and math-rock into heavier edges.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/zebu-dead-elephant-split-7-.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/zebu-dead-elephant-split-7-.jpg',
       ],
       metadata: {
         sourceId: 'crawl-eat-them-dead-or-alive-split-7',
@@ -810,7 +812,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Heavy Huge and Rotten by Dead Elephant. Source metadata identifies it as a 6-track release, released February 13, 2016.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/dead-elephant-heavy-huge-and-rotten-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/dead-elephant-heavy-huge-and-rotten-cd.jpg',
       ],
       metadata: {
         sourceId: 'dead-elephant-heavy-huge-and-rotten-cd',
@@ -837,7 +839,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Traumatique by Dead Flag Blues. Source metadata identifies it as a 5-track release, released February 3, 2021.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/dead-flag-blues-traumatique-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/dead-flag-blues-traumatique-cd.jpg',
       ],
       metadata: {
         sourceId: 'dead-flag-blues-traumatique-cd',
@@ -863,7 +865,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'CD edition of Time Expires by Deus X Machina, released February 2007.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/deus-x-machina-time-expires-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/deus-x-machina-time-expires-cd.jpg',
       ],
       metadata: {
         sourceId: 'deus-x-machina-time-expires-cd',
@@ -890,7 +892,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Light will shine by Devided. Source metadata identifies it as an 8-track release, released March 29, 2024.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/devided-light-will-shine-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/devided-light-will-shine-vinyl.webp',
       ],
       metadata: {
         sourceId: 'devided-light-will-shine-vinyl',
@@ -917,7 +919,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         "CD edition of Dirty ol' dogs by Dirty ol' dogs. Source metadata identifies it as a 8-track release, released March 9, 2019.",
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/dirty-ol-dogs-dirty-ol-dogs-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/dirty-ol-dogs-dirty-ol-dogs-cd.jpg',
       ],
       metadata: {
         sourceId: 'dirty-ol-dogs-dirty-ol-dogs-cd',
@@ -944,7 +946,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         "Afterwise's six-track debut album blends instrumental post-rock atmosphere with post-metal weight. Written and performed by the Athens band, it was recorded and mixed at BlackBox Studio and released by BlackBox Records. Digital availability is confirmed by Bandcamp; Black Vinyl LP and CD are label editions.",
       imageUrls: [
-        'https://blackbox-records-web.pages.dev/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
+        'https://blackbox-records-web.pages.dev/assets/catalog/releases/afterwise-album-cover-distro-mockup.webp',
       ],
       metadata: {
         sourceId: 'disintegration',
@@ -971,7 +973,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         "Maha Sohona carry northern Sweden's fuzz rock and doom metal through a full, heavy run on Endless Searcher.",
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/maha-sohona-endless-searcher.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/maha-sohona-endless-searcher.jpg',
       ],
       metadata: {
         sourceId: 'endless-searcher',
@@ -997,7 +999,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description:
         'CD edition of plima by Frakhtal. Source metadata identifies it as a 5-track release, released April 10, 2022.',
-      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/frakhtal-plima-cd.jpg'],
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/frakhtal-plima-cd.jpg',
+      ],
       metadata: {
         sourceId: 'frakhtal-plima-cd',
         sourceKind: 'distro',
@@ -1023,7 +1027,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of ATATOA by From Another Mother. Source metadata identifies it as a 9-track release, released March 22, 2019.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/from-another-mother-atatoa-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/from-another-mother-atatoa-cd.jpg',
       ],
       metadata: {
         sourceId: 'from-another-mother-atatoa-cd',
@@ -1050,7 +1054,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of ATATOA by From Another Mother. Source metadata identifies it as a 9-track release, released March 22, 2019.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/from-another-mother-atatoa-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/from-another-mother-atatoa-vinyl.webp',
       ],
       metadata: {
         sourceId: 'from-another-mother-atatoa-vinyl',
@@ -1077,7 +1081,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Reshaping the symbols by Full Moon Bonzai. Source metadata identifies it as a 8-track release, released December 1, 2017.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/full-moon-bonzai-reshaping-the-symbols-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/full-moon-bonzai-reshaping-the-symbols-cd.jpg',
       ],
       metadata: {
         sourceId: 'full-moon-bonzai-reshaping-the-symbols-cd',
@@ -1104,7 +1108,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         "CD edition of Kuro by Granna's House. Source metadata identifies it as a 11-track release, released May 8, 2023.",
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/granna-s-house-kuro-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/granna-s-house-kuro-cd.jpg',
       ],
       metadata: {
         sourceId: 'granna-s-house-kuro-cd',
@@ -1131,7 +1135,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of No easy Way by Gun Fever. Source metadata identifies it as a 6-track release, released November 26, 2024.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/gun-fever-no-easy-way-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/gun-fever-no-easy-way-vinyl.webp',
       ],
       metadata: {
         sourceId: 'gun-fever-no-easy-way-vinyl',
@@ -1158,7 +1162,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of The evidence of Absence by Hedvika. Source metadata identifies it as a 7-track release, released January 25, 2013.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/hedvika-the-evidence-of-absence-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/hedvika-the-evidence-of-absence-cd.jpg',
       ],
       metadata: {
         sourceId: 'hedvika-the-evidence-of-absence-cd',
@@ -1187,7 +1191,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Hey Stealthy by Hey Stealthy. Source metadata identifies it as a 6-track release, released November 1, 2024.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/hey-stealthy-hey-stealthy-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/hey-stealthy-hey-stealthy-cd.jpg',
       ],
       metadata: {
         sourceId: 'hey-stealthy-hey-stealthy-cd',
@@ -1214,7 +1218,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of 2025 EP by Huracan. Source metadata identifies it as a 4-track release, released September 18, 2025.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/huracan-2025-ep-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/huracan-2025-ep-vinyl.webp',
       ],
       metadata: {
         sourceId: 'huracan-2025-ep-vinyl',
@@ -1241,7 +1245,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'we.own.the.sky keep their progressive post-rock atmosphere intact on In Your Absence, their third full-length album.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/we-own-the-sky-in-your-absence.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/we-own-the-sky-in-your-absence.jpg',
       ],
       metadata: {
         sourceId: 'in-your-absence',
@@ -1268,7 +1272,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Whip by Kokomo. Source metadata identifies it as a 6-track release, released May 16, 2026.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/kokomo-whip-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/kokomo-whip-vinyl.webp',
       ],
       metadata: {
         sourceId: 'kokomo-whip-vinyl',
@@ -1295,7 +1299,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Sanatorium by Krav Boca. Source metadata identifies it as a 10-track release, released May 16, 2015.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/krav-boca-sanatorium-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/krav-boca-sanatorium-cd.jpg',
       ],
       metadata: {
         sourceId: 'krav-boca-sanatorium-cd',
@@ -1322,7 +1326,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Knot On Knot by Living Under Drones. Source metadata identifies it as a 6-track release, released November 30, 2021.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/living-under-drones-knot-on-knot-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/living-under-drones-knot-on-knot-vinyl.webp',
       ],
       metadata: {
         sourceId: 'living-under-drones-knot-on-knot-vinyl',
@@ -1349,7 +1353,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Skinny Peachfuzz bring fast guitars, heavy fuzz, and Italian garage punk energy to their first full-length album.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/skinny-peach-fuzz-7-.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/skinny-peach-fuzz-7-.jpg',
       ],
       metadata: {
         sourceId: 'magic-sleazeball-corrida',
@@ -1378,7 +1382,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Cassette edition of Cassette sessions by Magmarus. Source metadata identifies it as a 4-track release, released July 21, 2017. Cassette case artwork mockup. Actual cassette shell and labels may vary.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/magmarus-cassette-sessions-cassette.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/magmarus-cassette-sessions-cassette.jpg',
       ],
       metadata: {
         sourceId: 'magmarus-cassette-sessions-cassette',
@@ -1405,7 +1409,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Mazza by Malämmar. Source metadata identifies it as a 6-track release, released April 30, 2021.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/malammar-mazza-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/malammar-mazza-vinyl.webp',
       ],
       metadata: {
         sourceId: 'malammar-mazza-vinyl',
@@ -1432,7 +1436,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Vendetta by Malämmar. Source metadata identifies it as a 6-track release, released December 1, 2016.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/malammar-vendetta-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/malammar-vendetta-vinyl.webp',
       ],
       metadata: {
         sourceId: 'malammar-vendetta-vinyl',
@@ -1459,7 +1463,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Itch by Mammock. Source metadata identifies it as a 6-track release, released January 1, 2020.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/mammock-itch-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/mammock-itch-vinyl.webp',
       ],
       metadata: {
         sourceId: 'mammock-itch-vinyl',
@@ -1486,7 +1490,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Live at Dunk! Fest 2024 by Maserati. Source metadata identifies it as released May 23, 2025.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/maserati-live-at-dunk-fest-2024-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/maserati-live-at-dunk-fest-2024-vinyl.webp',
       ],
       metadata: {
         sourceId: 'maserati-live-at-dunk-fest-2024-vinyl',
@@ -1513,7 +1517,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Υγειής by Millions of Dead tourists. Source metadata identifies it as a 4-track release, released March 23, 2023.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/millions-of-dead-tourists-ygiis-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/millions-of-dead-tourists-ygiis-cd.jpg',
       ],
       metadata: {
         sourceId: 'millions-of-dead-tourists-ygiis-cd',
@@ -1539,7 +1543,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'CD edition of Blues & Ντέρτια by Μπουγιο & Dirty Johnny, released June 5, 2015.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/mpugio-dirty-johnny-blues-ntertia-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/mpugio-dirty-johnny-blues-ntertia-cd.jpg',
       ],
       metadata: {
         sourceId: 'mpugio-dirty-johnny-blues-ntertia-cd',
@@ -1565,7 +1569,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'CD edition of Slap punkabilly by Nausea Bomb in the BlackBox Records distro catalog.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/nausea-bomb-slap-punkabilly-cd-front-mockup.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/nausea-bomb-slap-punkabilly-cd-front-mockup.jpg',
       ],
       metadata: {
         sourceId: 'nausea-bomb-slap-punkabilly-cd',
@@ -1592,7 +1596,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Cosmic Radiation by Noise Raid. Source metadata identifies it as a 15-track release, released September 16, 2022.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/noise-raid-cosmic-radiation-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/noise-raid-cosmic-radiation-cd.jpg',
       ],
       metadata: {
         sourceId: 'noise-raid-cosmic-radiation-cd',
@@ -1619,7 +1623,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Last Rizla lean into Athens sludge and noise-rock on Noise Without Decay, keeping the sound heavy and frayed.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/last-rizla-noise-without-decay.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/last-rizla-noise-without-decay.jpg',
       ],
       metadata: {
         sourceId: 'noise-without-decay',
@@ -1645,7 +1649,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'Vinyl edition of Tales of disgrace by Nothing Thrives in the BlackBox Records distro catalog.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/nothing-thrives-tales-of-disgrace-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/nothing-thrives-tales-of-disgrace-vinyl.webp',
       ],
       metadata: {
         sourceId: 'nothing-thrives-tales-of-disgrace-vinyl',
@@ -1672,7 +1676,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Navigation by NYOS. Source metadata identifies it as a 6-track release, released September 29, 2017.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/nyos-navigation-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/nyos-navigation-cd.jpg',
       ],
       metadata: {
         sourceId: 'nyos-navigation-cd',
@@ -1698,7 +1702,9 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description:
         'CD edition of Okwaho by Okwaho. Source metadata identifies it as a 7-track release, released March 15, 2018.',
-      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/okwaho-okwaho-cd.jpg'],
+      imageUrls: [
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/okwaho-okwaho-cd.jpg',
+      ],
       metadata: {
         sourceId: 'okwaho-okwaho-cd',
         sourceKind: 'distro',
@@ -1724,7 +1730,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Chakra Meditations by Olaf Olafsonn and the Big Bad Trip. Source metadata identifies it as a 3-track release, released March 12, 2015.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/olaf-olafsonn-and-the-big-bad-trip-chakra-meditations-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/olaf-olafsonn-and-the-big-bad-trip-chakra-meditations-vinyl.webp',
       ],
       metadata: {
         sourceId: 'olaf-olafsonn-and-the-big-bad-trip-chakra-meditations-vinyl',
@@ -1750,7 +1756,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'One Leg Mary balance alternative post-hardcore with layered melodies and sharp instrumental turns.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/onelegmary-on-the-quiet.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/onelegmary-on-the-quiet.jpg',
       ],
       metadata: {
         sourceId: 'on-the-quiet',
@@ -1777,7 +1783,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of I, a Seawolf, a Madman by One leg Mary. Source metadata identifies it as a 8-track release, released December 27, 2014.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/one-leg-mary-i-a-seawolf-a-madman-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/one-leg-mary-i-a-seawolf-a-madman-cd.jpg',
       ],
       metadata: {
         sourceId: 'one-leg-mary-i-a-seawolf-a-madman-cd',
@@ -1804,7 +1810,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of On the quiet by One leg Mary. Source metadata identifies it as a 10-track release, released February 1, 2017.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/one-leg-mary-on-the-quiet-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/one-leg-mary-on-the-quiet-cd.jpg',
       ],
       metadata: {
         sourceId: 'one-leg-mary-on-the-quiet-cd',
@@ -1831,7 +1837,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Van Woede Tot Wanhoop by Onrust. Source metadata identifies it as an 8-track release.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/onrust-van-woede-tot-wanhoop-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/onrust-van-woede-tot-wanhoop-vinyl.webp',
       ],
       metadata: {
         sourceId: 'onrust-van-woede-tot-wanhoop-vinyl',
@@ -1858,7 +1864,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Live at Dunk! Fest 2016 by Pelican. Source metadata identifies it as a 10-track release.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/pelican-live-at-dunk-fest-2016-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/pelican-live-at-dunk-fest-2016-vinyl.webp',
       ],
       metadata: {
         sourceId: 'pelican-live-at-dunk-fest-2016-vinyl',
@@ -1884,7 +1890,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'Vinyl edition of Fortunate Isles by Pirate City in the BlackBox Records distro catalog.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/pirate-city-fortunate-isles-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/pirate-city-fortunate-isles-vinyl.webp',
       ],
       metadata: {
         sourceId: 'pirate-city-fortunate-isles-vinyl',
@@ -1910,7 +1916,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'Vinyl edition of Λωβή by Pirate City in the BlackBox Records distro catalog.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/pirate-city-lovi-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/pirate-city-lovi-vinyl.webp',
       ],
       metadata: {
         sourceId: 'pirate-city-lovi-vinyl',
@@ -1936,7 +1942,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'Vinyl edition of Πειρατεία by Pirate City in the BlackBox Records distro catalog.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/pirate-city-piratia-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/pirate-city-piratia-vinyl.webp',
       ],
       metadata: {
         sourceId: 'pirate-city-piratia-vinyl',
@@ -1963,7 +1969,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         "Primal | Ephemeral catches Mass Culture in a post-hardcore and metal mode, with the band's Greek underground roots intact.",
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/mass-culture-primal-ephemeral.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/mass-culture-primal-ephemeral.jpg',
       ],
       metadata: {
         sourceId: 'primal-ephemeral',
@@ -1990,7 +1996,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Represent Victory Below Eye by Puta Volcano. Source metadata identifies it as a 7-track release, released December 22, 2011.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/puta-volcano-represent-victory-below-eye-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/puta-volcano-represent-victory-below-eye-cd.jpg',
       ],
       metadata: {
         sourceId: 'puta-volcano-represent-victory-below-eye-cd',
@@ -2017,7 +2023,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         "Killgrave's Athens death metal brings melodic death metal and punk hardcore edges into Rise Of The Black Fang.",
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/killgrave-rise-of-the-black-fang.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/killgrave-rise-of-the-black-fang.jpg',
       ],
       metadata: {
         sourceId: 'rise-of-the-black-fang',
@@ -2044,7 +2050,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'The You and What Army Faction pair experimental no-wave and post-punk ideas on RITE, their sixth full-length album.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/the-you-and-what-army-faction-rite.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/the-you-and-what-army-faction-rite.jpg',
       ],
       metadata: {
         sourceId: 'rite',
@@ -2071,7 +2077,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Live at Dunk! Fest 2016 by Russian Circles. Source metadata identifies it as a 9-track release, released April 7, 2017.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/russian-circles-live-at-dunk-fest-2016-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/russian-circles-live-at-dunk-fest-2016-vinyl.webp',
       ],
       metadata: {
         sourceId: 'russian-circles-live-at-dunk-fest-2016-vinyl',
@@ -2098,7 +2104,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of The big fish by Sadhus. Source metadata identifies it as a 6-track release, released November 15, 2018.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/sadhus-the-big-fish-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/sadhus-the-big-fish-cd.jpg',
       ],
       metadata: {
         sourceId: 'sadhus-the-big-fish-cd',
@@ -2124,7 +2130,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'CD edition of Ατελές το ον by Salto Mortale in the BlackBox Records distro catalog.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/salto-mortale-ateles-to-on-cd-front-mockup.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/salto-mortale-ateles-to-on-cd-front-mockup.jpg',
       ],
       metadata: {
         sourceId: 'salto-mortale-ateles-to-on-cd',
@@ -2150,7 +2156,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: "Selenopolis keeps Olaf Olafsonn and the Big Bad Trip in Prague's psych and kraut rock'n'roll lane.",
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/olaf-olafsson-and-the-big-bad-trip-selenepolis.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/olaf-olafsson-and-the-big-bad-trip-selenepolis.jpg',
       ],
       metadata: {
         sourceId: 'selenopolis',
@@ -2175,7 +2181,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     },
     productProjection: {
       description: 'Spinners keep their Athens indie rock, punk, and post-hardcore sound direct and unvarnished.',
-      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/spinners-13.jpg'],
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/spinners-13.jpg'],
       metadata: {
         sourceId: 'spinners',
         sourceKind: 'distro',
@@ -2200,7 +2206,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'Steelwitch bring Athens heavy and power metal into a clean, direct first full-length album.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/steelwitch-steelwitch.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/steelwitch-steelwitch.jpg',
       ],
       metadata: {
         sourceId: 'steelwitch',
@@ -2227,7 +2233,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Baltica by Stefan Clor. Source metadata identifies it as a 17-track release, released October 20, 2017.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/stefan-clor-baltica-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/stefan-clor-baltica-cd.jpg',
       ],
       metadata: {
         sourceId: 'stefan-clor-baltica-cd',
@@ -2253,7 +2259,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'CD edition of The guilt of feeling alive by Sun of Nothing in the BlackBox Records distro catalog.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/sun-of-nothing-the-guilt-of-feeling-alive-cd-front-mockup.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/sun-of-nothing-the-guilt-of-feeling-alive-cd-front-mockup.jpg',
       ],
       metadata: {
         sourceId: 'sun-of-nothing-the-guilt-of-feeling-alive-cd',
@@ -2279,7 +2285,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description:
         "Demikhov's fuzzcore power trio from Desenzano del Garda gathers six unreleased tracks on The Chemical Bath.",
-      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/demikhov.jpg'],
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/demikhov.jpg'],
       metadata: {
         sourceId: 'the-chemical-bath',
         sourceKind: 'distro',
@@ -2305,7 +2311,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Death and Love by The Curf. Source metadata identifies it as a 9-track release, released July 21, 2017.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/the-curf-death-and-love-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/the-curf-death-and-love-cd.jpg',
       ],
       metadata: {
         sourceId: 'the-curf-death-and-love-cd',
@@ -2331,7 +2337,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description:
         'CD edition of I by The Curf. Source metadata identifies it as an 11-track release, released December 17, 2007.',
-      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/the-curf-i-cd.jpg'],
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/the-curf-i-cd.jpg'],
       metadata: {
         sourceId: 'the-curf-i-cd',
         sourceKind: 'distro',
@@ -2357,7 +2363,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of La Guerra Final by The earthbound. Source metadata identifies it as an 11-track release, released May 24, 2016.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/the-earthbound-la-guerra-final-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/the-earthbound-la-guerra-final-cd.jpg',
       ],
       metadata: {
         sourceId: 'the-earthbound-la-guerra-final-cd',
@@ -2384,7 +2390,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         "The Feathers of Oblivion keeps the Big Bad Trip lineup moving through Prague psych and kraut rock'n'roll.",
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/olaf-olafsson-and-the-big-bad-trip-the-feathers-of-oblivion.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/olaf-olafsson-and-the-big-bad-trip-the-feathers-of-oblivion.jpg',
       ],
       metadata: {
         sourceId: 'the-feathers-of-oblivion',
@@ -2411,7 +2417,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         "Their Methlab's second full-length album keeps the Athens instrumental rock and post-metal project in wide, heavy motion.",
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/their-methlab-the-last-second.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/their-methlab-the-last-second.jpg',
       ],
       metadata: {
         sourceId: 'the-last-second',
@@ -2439,7 +2445,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description:
         'Cassette edition of Random Tapes by The Vagina lips. Artwork is known-missing from the verified source, so this item uses the distro cassette fallback.',
-      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/cassette-tape.jpg'],
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/cassette-tape.jpg'],
       metadata: {
         sourceId: 'the-vagina-lips-random-tapes-cassette',
         sourceKind: 'distro',
@@ -2465,7 +2471,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of Your Kingdom, my life by Three Way plane. Source metadata identifies it as a 9-track release, released April 14, 2017.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/three-way-plane-your-kingdom-my-life-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/three-way-plane-your-kingdom-my-life-cd.jpg',
       ],
       metadata: {
         sourceId: 'three-way-plane-your-kingdom-my-life-cd',
@@ -2491,7 +2497,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'Vinyl edition of Your Kingdom, my life by Three Way plane in the BlackBox Records distro catalog.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/three-way-plane-your-kingdom-my-life-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/three-way-plane-your-kingdom-my-life-vinyl.webp',
       ],
       metadata: {
         sourceId: 'three-way-plane-your-kingdom-my-life-vinyl',
@@ -2517,7 +2523,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description:
         'CD edition of IV by Toundra. Source metadata identifies it as an 8-track release, released January 23, 2015.',
-      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/toundra-iv-cd.jpg'],
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/toundra-iv-cd.jpg'],
       metadata: {
         sourceId: 'toundra-iv-cd',
         sourceKind: 'distro',
@@ -2543,7 +2549,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Goodbye, Kings extend their Italian linear post-rock approach across Transatlantic // Transiberian.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/goodbye-kings-transatlantic-trans-siberian.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/goodbye-kings-transatlantic-trans-siberian.jpg',
       ],
       metadata: {
         sourceId: 'transatlantic-transiberian',
@@ -2570,7 +2576,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Veuel by Turpentine Valley. Source metadata identifies it as a 10-track release, released March 6, 2026.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/turpentine-valley-veuel-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/turpentine-valley-veuel-vinyl.webp',
       ],
       metadata: {
         sourceId: 'turpentine-valley-veuel-vinyl',
@@ -2597,7 +2603,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'CD edition of s/t by UKRYTE ZALETY SYSTEMU. Source metadata identifies it as an 8-track release, released February 15, 2015.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/ukryte-zalety-systemu-s-t-cd.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/ukryte-zalety-systemu-s-t-cd.jpg',
       ],
       metadata: {
         sourceId: 'ukryte-zalety-systemu-s-t-cd',
@@ -2622,7 +2628,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     },
     productProjection: {
       description: "Speck keep UnKraut's Austrian space-kraut and heavy-psych energy locked into a long-form record.",
-      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/speck-unkraut.jpg'],
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/speck-unkraut.jpg'],
       metadata: {
         sourceId: 'unkraut',
         sourceKind: 'distro',
@@ -2647,7 +2653,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'Vinyl edition of 8 Cantons by Unshaped Ahead in the BlackBox Records distro catalog.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/unshaped-ahead-8-cantons-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/unshaped-ahead-8-cantons-vinyl.webp',
       ],
       metadata: {
         sourceId: 'unshaped-ahead-8-cantons-vinyl',
@@ -2673,7 +2679,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'Zaperlipopette! keep their Swiss experimental rock and math-rock focus sharp on Voyage Voyage.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/zapetli-popette-voyage-voyage.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/zapetli-popette-voyage-voyage.jpg',
       ],
       metadata: {
         sourceId: 'voyage-voyage',
@@ -2700,7 +2706,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of A single flower by We lost the Sea. Source metadata identifies it as a 6-track release, released July 4, 2025.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/we-lost-the-sea-a-single-flower-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/we-lost-the-sea-a-single-flower-vinyl.webp',
       ],
       metadata: {
         sourceId: 'we-lost-the-sea-a-single-flower-vinyl',
@@ -2727,7 +2733,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Departure Songs by We lost the Sea. Source metadata identifies it as a 5-track release.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/we-lost-the-sea-departure-songs-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/we-lost-the-sea-departure-songs-vinyl.webp',
       ],
       metadata: {
         sourceId: 'we-lost-the-sea-departure-songs-vinyl',
@@ -2754,7 +2760,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
       description:
         'Vinyl edition of Triumph & Disaster by We lost the Sea. Source metadata identifies it as a 7-track release.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/we-lost-the-sea-triumph-disaster-vinyl.webp',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/we-lost-the-sea-triumph-disaster-vinyl.webp',
       ],
       metadata: {
         sourceId: 'we-lost-the-sea-triumph-disaster-vinyl',
@@ -2780,7 +2786,7 @@ export const currentCatalogProductProjectionEntries: CatalogProductProjectionEnt
     productProjection: {
       description: 'Three Way Plane carry their Athens alternative, punk, and noise-rock line into Wreckquiem.',
       imageUrls: [
-        'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/distro/three-way-plane-your-kingdom-my-life.jpg',
+        'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/distro/three-way-plane-your-kingdom-my-life.jpg',
       ],
       metadata: {
         sourceId: 'wreckquiem',

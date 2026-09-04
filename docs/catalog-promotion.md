@@ -1,6 +1,6 @@
 # Generated Catalog Artifacts
 
-Generated catalog artifacts are the repo-owned path for projecting current Store Item content into UAT provider state. Decap is editorial-only: it does not expose commerce fields, publish targets, smoke candidate flags, retirement controls, Stripe IDs, D1 authority, or provider mutation controls.
+Generated catalog artifacts are the repo-owned path for projecting current Store Item content into UAT provider state. Sveltia is editorial-only: it does not expose commerce fields, publish targets, smoke candidate flags, retirement controls, Stripe IDs, D1 authority, or provider mutation controls.
 
 ## Maintainer Statuses
 
@@ -22,21 +22,21 @@ Release and distro entries carry editorial Store Item content only:
 
 ## Release Checklist
 
-1. Create or update the release entry in Decap with title, artist, release date, cover image, summary, and formats.
-2. Publish the Decap entry.
+1. Create or update the release entry in Sveltia with title, artist, release date, cover image, summary, and formats.
+2. Publish the Sveltia entry.
 3. Let catalog artifact generation refresh Desired Catalog State and readiness SQL.
 4. Read Promotion Evidence before treating the release as buyable.
 
 ## Distro and Merch Checklist
 
-1. Create or update the distro entry in Decap with title, group, artist or label, image, summary, format, release date when known, and order.
-2. Publish the Decap entry.
+1. Create or update the distro entry in Sveltia with title, group, artist or label, image, summary, format, release date when known, and order.
+2. Publish the Sveltia entry.
 3. Let catalog artifact generation refresh Desired Catalog State and readiness SQL.
 4. Use Promotion Evidence, not the content commit alone, to confirm buyable status.
 
 ## Automation Shape
 
-1. Decap commits editorial content or media changes.
+1. Sveltia commits editorial content or media changes.
 2. `Catalog artifact regeneration` generates Desired Catalog State, Product Projection, UAT readiness SQL, and PRD readiness SQL.
 3. If generated artifacts drift, the workflow commits only those artifacts as `chore(catalog): regenerate promotion artifacts`.
 4. `Catalog promotion` runs from the artifact commit, not the original content-only commit.

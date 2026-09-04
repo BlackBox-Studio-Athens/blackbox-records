@@ -413,7 +413,7 @@ function createCatalogPrice(input: {
     productActive: true,
     productDescription: 'Disintegration by Afterwise.',
     productId: 'prod_test_barren_point',
-    productImages: ['https://blackbox-records-web.pages.dev/admin/media/releases/disintegration.jpg'],
+    productImages: ['https://blackbox-records-web.pages.dev/assets/catalog/releases/disintegration.jpg'],
     productMetadata: {
       appEnv: 'uat',
       sourceId: input.storeItem.sourceId,
@@ -495,7 +495,7 @@ describe('checkout use cases', () => {
     });
     productProjections.projections.set(storeItem.variantId, {
       description: 'Disintegration by Afterwise.',
-      imageUrls: ['https://blackbox-records-web.pages.dev/admin/media/releases/disintegration.jpg'],
+      imageUrls: ['https://blackbox-records-web.pages.dev/assets/catalog/releases/disintegration.jpg'],
       metadata: {
         sourceId: storeItem.sourceId,
         sourceKind: storeItem.sourceKind,

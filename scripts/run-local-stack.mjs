@@ -19,7 +19,6 @@ const requiredBinaries = [
   ['backend tsx', path.join('apps', 'backend', 'node_modules', '.bin', `tsx${binSuffix}`)],
   ['backend Wrangler', path.join('apps', 'backend', 'node_modules', '.bin', `wrangler${binSuffix}`)],
   ['web Astro', path.join('apps', 'web', 'node_modules', '.bin', `astro${binSuffix}`)],
-  ['Decap proxy', path.join('apps', 'web', 'node_modules', '.bin', `decap-server${binSuffix}`)],
 ];
 
 function missingBinaries() {

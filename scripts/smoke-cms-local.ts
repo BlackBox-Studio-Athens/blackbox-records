@@ -1,21 +1,21 @@
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync } from 'node:fs';
 import { createConnection } from 'node:net';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { parseArgs } from 'node:util';
 
-import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
+import { chromium, type Browser, type Page } from 'playwright';
 
-import { CmsSmokeLifecycle, type CmsSmokeProcess } from './cms-smoke-lifecycle';
+import { assertSveltiaBuildArtifacts } from '../apps/web/src/lib/admin/sveltia-build-validation';
+import { CmsSmokeLifecycle } from './cms-smoke-lifecycle';
 import { attachSmokePageDiagnostics, captureSmokePageScreenshot } from './smoke-browser';
 import {
-  createRouteUrl,
   createRunId,
   createSmokeEvidencePath,
   createSmokeScenarioArtifactDir,
   createSmokeSummaryPath,
-  normalizeBaseUrl,
   parsePositiveInteger,
   parseRequiredValue,
   parseScreenshotMode,
@@ -31,952 +31,60 @@ declare global {
 }
 
 export type CmsLocalSmokeOptions = {
-  cmsPort: number;
   evidenceDir: string;
   headed: boolean;
-  proxyPort: number;
   screenshots: SmokeScreenshotMode;
   timeoutMs: number;
-};
-
-type CmsCollectionName = 'artists' | 'distro' | 'news' | 'releases' | 'site-pages';
-
-type CmsEditorCheck = {
-  collection: CmsCollectionName;
-  entry: string;
-  expectedFormValues: string[];
-  issues: string[];
-  path: string;
-  screenshotPath: string | null;
-  snapshot: CmsEditorSnapshot | null;
-  status: 'failed' | 'passed';
-  url: string;
-};
-
-type CmsEditorSnapshot = {
-  bodyTextSnippet: string;
-  formValues: string[];
-  hasEmptyContentGuard: boolean;
-  hasGroupBrowseAffordance: boolean;
-  hasHiddenTopLevelMedia: boolean;
-  hasLoadedEditorChrome: boolean;
-  hash: string;
-  preview: CmsPreviewSnapshot;
-  publishClickCount: number;
-  title: string;
-};
-
-type CmsPreviewSnapshot = {
-  ariaExpanded: string | null;
-  ariaLabel: string | null;
-  focusedAfterOpen: boolean;
-  imageAlt: string | null;
-  imageLoaded: boolean;
-  imageSrc: string | null;
-  initialState: string | null;
-  templateFound: boolean;
 };
 
 type CmsReadOnlyState = {
   contentHash: string;
   gitHead: string;
-};
-
-type CmsLocalSmokeEvidence = {
-  checks: CmsEditorCheck[];
-  consoleErrors: string[];
-  environment: 'local';
-  generatedAt: string;
-  pageErrors: string[];
-  processOutput: Record<string, string[]>;
-  proxyUrl: string;
-  readOnly: {
-    after: CmsReadOnlyState;
-    before: CmsReadOnlyState;
-    externalMutationRequests: string[];
-    issues: string[];
-    publishClickCount: number;
-  };
-  siteUrl: string;
-  shutdown: {
-    browserConnected: boolean;
-    listeningPorts: number[];
-    runningPids: number[];
-  };
-  status: 'failed' | 'passed';
-  stoppedProcesses: boolean;
-  suite: 'cms-local';
-};
-
-type CmsEditorDefinition = {
-  collection: CmsCollectionName;
-  entry: string;
-  expectedFormValues: string[];
-  expectedImageAlt: string;
-  previewClassName: string;
-  requiredBodyText: string[];
-  verifyGroupBrowse?: boolean;
-};
-
-const defaultOptions: CmsLocalSmokeOptions = {
-  cmsPort: 4323,
-  evidenceDir: path.join('.codex-artifacts', 'smoke', 'local', 'cms'),
-  headed: false,
-  proxyPort: 8083,
-  screenshots: 'on-failure',
-  timeoutMs: 90_000,
+  gitStatus: string;
 };
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const webRoot = path.join(repoRoot, 'apps', 'web');
-const contentRoot = path.join(webRoot, 'src', 'content');
-const editorDefinitions: readonly CmsEditorDefinition[] = [
-  {
-    collection: 'site-pages',
-    entry: 'home-site',
-    expectedFormValues: ['Fine music on record.'],
-    expectedImageAlt: 'Black and white live band performing on stage',
-    previewClassName: 'blackbox-preview--home',
-    requiredBodyText: ['News', 'Artists'],
-  },
-  {
-    collection: 'artists',
-    entry: 'chronoboros',
-    expectedFormValues: ['Chronoboros', 'Hardcore'],
-    expectedImageAlt: 'Black-and-white samurai mask illustration used for Chronoboros',
-    previewClassName: 'blackbox-preview--artist',
-    requiredBodyText: ['Image'],
-  },
-  {
-    collection: 'releases',
-    entry: 'caregivers',
-    expectedFormValues: ['Caregivers'],
-    expectedImageAlt: 'Cropped black samurai mask illustration on the pale Caregivers cover',
-    previewClassName: 'blackbox-preview--release',
-    requiredBodyText: ['Artist', 'Chronoboros'],
-  },
-  {
-    collection: 'distro',
-    entry: 'barren-point',
-    expectedFormValues: ['Barren Point'],
-    expectedImageAlt: 'Stack of vinyl records',
-    previewClassName: 'blackbox-preview--distro',
-    requiredBodyText: ['Group', 'Vinyl 12-inch'],
-    verifyGroupBrowse: true,
-  },
-  {
-    collection: 'news',
-    entry: 'lorem-ipsum',
-    expectedFormValues: ['New Release: Caregivers, by Chronoboros'],
-    expectedImageAlt: 'Caregivers record sleeve photographed among dry leaves',
-    previewClassName: 'blackbox-preview--news',
-    requiredBodyText: ['Image'],
-  },
-];
+const siteUrl = 'http://127.0.0.1:4322/blackbox-records/';
+const runtimeUrl = 'https://unpkg.com/@sveltia/cms@0.205.2/dist/sveltia-cms.js';
 
 export function parseCmsLocalSmokeArgs(args: string[]): CmsLocalSmokeOptions {
-  const options = { ...defaultOptions };
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-
-    if (arg === '--') {
-      continue;
-    }
-
-    if (arg === '--help' || arg === '-h') {
-      console.log(
-        'Usage: pnpm smoke:cms-local -- [--cms-port <port>] [--proxy-port <port>] [--timeout-ms <ms>] [--evidence-dir <dir>] [--screenshots on-failure|always|never] [--headed]',
-      );
-      process.exit(0);
-    }
-
-    if (arg === '--cms-port') {
-      options.cmsPort = parsePositiveInteger(args[index + 1], '--cms-port');
-      index += 1;
-      continue;
-    }
-
-    if (arg?.startsWith('--cms-port=')) {
-      options.cmsPort = parsePositiveInteger(arg.slice('--cms-port='.length), '--cms-port');
-      continue;
-    }
-
-    if (arg === '--proxy-port') {
-      options.proxyPort = parsePositiveInteger(args[index + 1], '--proxy-port');
-      index += 1;
-      continue;
-    }
-
-    if (arg?.startsWith('--proxy-port=')) {
-      options.proxyPort = parsePositiveInteger(arg.slice('--proxy-port='.length), '--proxy-port');
-      continue;
-    }
-
-    if (arg === '--timeout-ms') {
-      options.timeoutMs = parsePositiveInteger(args[index + 1], '--timeout-ms');
-      index += 1;
-      continue;
-    }
-
-    if (arg?.startsWith('--timeout-ms=')) {
-      options.timeoutMs = parsePositiveInteger(arg.slice('--timeout-ms='.length), '--timeout-ms');
-      continue;
-    }
-
-    if (arg === '--evidence-dir') {
-      options.evidenceDir = parseRequiredValue('--evidence-dir', args[index + 1]);
-      index += 1;
-      continue;
-    }
-
-    if (arg?.startsWith('--evidence-dir=')) {
-      options.evidenceDir = parseRequiredValue('--evidence-dir', arg.slice('--evidence-dir='.length));
-      continue;
-    }
-
-    if (arg === '--screenshots') {
-      options.screenshots = parseScreenshotMode(args[index + 1]);
-      index += 1;
-      continue;
-    }
-
-    if (arg?.startsWith('--screenshots=')) {
-      options.screenshots = parseScreenshotMode(arg.slice('--screenshots='.length));
-      continue;
-    }
-
-    if (arg === '--headed') {
-      options.headed = true;
-      continue;
-    }
-
-    throw new Error(`Unknown argument: ${arg}`);
-  }
-
-  return options;
-}
-
-export async function runCmsLocalSmoke(options: CmsLocalSmokeOptions): Promise<CmsLocalSmokeEvidence> {
-  const runId = createRunId();
-  const runArtifactDir = path.join(options.evidenceDir, runId);
-  const siteUrl = normalizeBaseUrl(`http://127.0.0.1:${options.cmsPort}/blackbox-records`, 'siteUrl');
-  const proxyUrl = normalizeBaseUrl(`http://127.0.0.1:${options.proxyPort}/api/v1`, 'proxyUrl');
-  const lifecycle = new CmsSmokeLifecycle();
-  const before = captureCmsReadOnlyState();
-  let browser: Browser | null = null;
-  let context: BrowserContext | null = null;
-  let evidence: CmsLocalSmokeEvidence;
-
-  mkdirSync(runArtifactDir, { recursive: true });
-  lifecycle.installProcessHandlers();
-
-  try {
-    startCmsProcesses(options, lifecycle);
-    await lifecycle.race(
-      waitForLocalCmsReady({
-        lifecycle,
-        options,
-        proxyUrl,
-        siteUrl,
-      }),
-    );
-
-    browser = await lifecycle.race(chromium.launch({ headless: !options.headed }));
-    lifecycle.registerCleanup('Chromium browser', () => browser?.close());
-    context = await lifecycle.race(
-      browser.newContext({
-        locale: 'en-US',
-        viewport: { height: 900, width: 1440 },
-      }),
-    );
-    lifecycle.registerCleanup('Playwright context', () => context?.close());
-    await context.addInitScript(() => {
-      window.__BLACKBOX_CMS_SMOKE_PUBLISH_CLICKS__ = 0;
-      document.addEventListener(
-        'click',
-        (event) => {
-          const target = event.target instanceof Element ? event.target.closest('button, [role="button"]') : null;
-          if (target?.textContent?.replace(/\s+/g, ' ').trim() === 'Publish') {
-            window.__BLACKBOX_CMS_SMOKE_PUBLISH_CLICKS__ += 1;
-          }
-        },
-        true,
-      );
-    });
-    const consoleErrors: string[] = [];
-    const pageErrors: string[] = [];
-    const externalMutationRequests: string[] = [];
-    context.on('request', (request) => {
-      const method = request.method().toUpperCase();
-      const url = new URL(request.url());
-      if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && !['127.0.0.1', 'localhost'].includes(url.hostname)) {
-        externalMutationRequests.push(`${method} ${url.origin}${url.pathname}`);
-      }
-    });
-
-    const checks = await lifecycle.race(
-      (async () => {
-        const results: CmsEditorCheck[] = [];
-        for (const definition of editorDefinitions) {
-          results.push(
-            await checkEditorInFreshPage({
-              consoleErrors,
-              context: context!,
-              definition,
-              options,
-              pageErrors,
-              runArtifactDir,
-              siteUrl,
-            }),
-          );
-        }
-        results.push(
-          await checkNewArtistEditorInFreshPage({
-            consoleErrors,
-            context: context!,
-            options,
-            pageErrors,
-            runArtifactDir,
-            siteUrl,
-          }),
-        );
-        return results;
-      })(),
-    );
-    lifecycle.assertHealthy();
-
-    const after = captureCmsReadOnlyState();
-    const publishClickCount = checks.reduce((count, check) => count + (check.snapshot?.publishClickCount ?? 0), 0);
-    const readOnlyIssues = checkCmsReadOnlyInvariants({
-      after,
-      before,
-      externalMutationRequests,
-      publishClickCount,
-    });
-
-    const status =
-      checks.some((check) => check.status === 'failed') ||
-      consoleErrors.length ||
-      pageErrors.length ||
-      readOnlyIssues.length
-        ? 'failed'
-        : 'passed';
-    evidence = {
-      checks,
-      consoleErrors,
-      environment: 'local',
-      generatedAt: new Date().toISOString(),
-      pageErrors,
-      processOutput: {},
-      proxyUrl,
-      readOnly: {
-        after,
-        before,
-        externalMutationRequests,
-        issues: readOnlyIssues,
-        publishClickCount,
-      },
-      siteUrl,
-      shutdown: { browserConnected: true, listeningPorts: [], runningPids: [] },
-      status,
-      stoppedProcesses: false,
-      suite: 'cms-local',
-    };
-  } finally {
-    await lifecycle.shutdown();
-  }
-
-  evidence.processOutput = buildProcessOutput(lifecycle.processes);
-  evidence.shutdown = {
-    browserConnected: browser?.isConnected() ?? false,
-    listeningPorts: (
-      await Promise.all(
-        [options.cmsPort, options.proxyPort].map(async (port) => ((await isTcpPortListening(port)) ? port : null)),
-      )
-    ).filter((port): port is number => port !== null),
-    runningPids: lifecycle.getRunningPids(),
-  };
-  evidence.stoppedProcesses =
-    !evidence.shutdown.browserConnected &&
-    evidence.shutdown.listeningPorts.length === 0 &&
-    evidence.shutdown.runningPids.length === 0;
-  if (!evidence.stoppedProcesses) {
-    evidence.status = 'failed';
-    evidence.readOnly.issues.push('Expected Astro and decap-server processes to stop before evidence was written.');
-  }
-
-  writeJsonFile(createSmokeEvidencePath(createSmokeScenarioArtifactDir(runArtifactDir, 'editor-read-only')), evidence);
-  writeJsonFile(createSmokeSummaryPath(runArtifactDir), {
-    generatedAt: evidence.generatedAt,
-    runId,
-    status: evidence.status,
-    suite: evidence.suite,
-  });
-
-  return evidence;
-}
-
-function startCmsProcesses(options: CmsLocalSmokeOptions, lifecycle: CmsSmokeLifecycle): void {
-  const proxyExecutable = process.env.DECAP_SERVER_EXECUTABLE?.trim() || resolveWebBin('decap-server');
-  const astroExecutable = resolveWebBin('astro');
-  const sharedEnv: NodeJS.ProcessEnv = {
-    ...process.env,
-    ASTRO_DEV_BACKGROUND: '0',
-    ASTRO_BASE_PATH: '/blackbox-records/',
-    ASTRO_SITE_URL: `http://127.0.0.1:${options.cmsPort}`,
-    CMS_DEV_PORT: String(options.cmsPort),
-    DECAP_BACKEND_MODE: 'local',
-    DECAP_BRANCH: 'main',
-    DECAP_LOCAL_PROXY_PORT: String(options.proxyPort),
-  };
-
-  for (const hostedSettingName of [
-    'DECAP_REPOSITORY',
-    'DECAP_SITE_URL',
-    'DECAPBRIDGE_AUTH_ENDPOINT',
-    'DECAPBRIDGE_AUTH_TOKEN_ENDPOINT',
-    'DECAPBRIDGE_BASE_URL',
-    'DECAPBRIDGE_GATEWAY_URL',
-  ]) {
-    delete sharedEnv[hostedSettingName];
-  }
-
-  lifecycle.startProcess({
-    args: [],
-    command: proxyExecutable,
-    cwd: repoRoot,
-    env: {
-      ...sharedEnv,
-      PORT: String(options.proxyPort),
+  const { values } = parseArgs({
+    args: args.filter((arg) => arg !== '--'),
+    options: {
+      'evidence-dir': { type: 'string', default: path.join(repoRoot, '.codex-artifacts', 'smoke', 'local', 'cms') },
+      headed: { type: 'boolean', default: false },
+      help: { type: 'boolean', short: 'h' },
+      screenshots: { type: 'string', default: 'on-failure' },
+      'timeout-ms': { type: 'string', default: '90000' },
     },
-    name: 'decap-server',
   });
-  lifecycle.startProcess({
-    args: ['dev', '--host', '127.0.0.1', '--port', String(options.cmsPort)],
-    command: astroExecutable,
-    cwd: webRoot,
-    env: sharedEnv,
-    name: 'astro-dev',
-  });
-}
-
-function resolveWebBin(name: string): string {
-  const executableName = process.platform === 'win32' ? `${name}.cmd` : name;
-  return path.join(webRoot, 'node_modules', '.bin', executableName);
-}
-
-async function waitForLocalCmsReady(input: {
-  lifecycle: CmsSmokeLifecycle;
-  options: CmsLocalSmokeOptions;
-  proxyUrl: string;
-  siteUrl: string;
-}): Promise<void> {
-  await waitForHttpReachable(input.proxyUrl, input.options.timeoutMs, input.lifecycle);
-
-  const configUrl = createRouteUrl(input.siteUrl, '/admin/config.yml');
-  const configText = await waitForHttpText(configUrl, input.options.timeoutMs, input.lifecycle);
-
-  const expectedProxyUrl = `http://127.0.0.1:${input.options.proxyPort}/api/v1`;
-  const missingConfigSnippets = [
-    'backend:',
-    'name: proxy',
-    'extension: json',
-    'format: json',
-    'media_folder: "apps/web/src/content/home"',
-    'public_folder: "./"',
-    'name: "site-pages"',
-    'file: "apps/web/src/content/home/site.json"',
-    'folder: "apps/web/src/content/releases"',
-    expectedProxyUrl,
-  ].filter((snippet) => !configText.includes(snippet));
-
-  if (missingConfigSnippets.length) {
-    throw new Error(`Local CMS config missed expected snippets: ${missingConfigSnippets.join(', ')}.`);
-  }
-
-  if (/file: "src\/content\/|folder: "src\/content\/|media_folder: src\/content\//.test(configText)) {
-    throw new Error(
-      'Local CMS config still uses app-root src/content paths; remote DecapBridge needs repo-root paths.',
+  if (values.help) {
+    console.log(
+      'Usage: pnpm smoke:cms-local -- [--timeout-ms <ms>] [--evidence-dir <dir>] [--screenshots on-failure|always|never] [--headed]',
     );
+    process.exit(0);
   }
-}
-
-async function waitForHttpReachable(url: string, timeoutMs: number, lifecycle: CmsSmokeLifecycle): Promise<void> {
-  await waitUntil(timeoutMs, lifecycle, async () => {
-    const response = await fetch(url).catch(() => null);
-    return Boolean(response);
-  });
-}
-
-async function waitForHttpText(url: string, timeoutMs: number, lifecycle: CmsSmokeLifecycle): Promise<string> {
-  let text = '';
-
-  await waitUntil(timeoutMs, lifecycle, async () => {
-    const response = await fetch(url).catch(() => null);
-    if (!response?.ok) {
-      return false;
-    }
-
-    text = await response.text();
-    return Boolean(text);
-  });
-
-  return text;
-}
-
-async function waitUntil(
-  timeoutMs: number,
-  lifecycle: CmsSmokeLifecycle,
-  predicate: () => Promise<boolean>,
-): Promise<void> {
-  const startedAt = Date.now();
-
-  while (Date.now() - startedAt < timeoutMs) {
-    lifecycle.assertHealthy();
-
-    if (await predicate()) {
-      return;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-
-  throw new Error(`Timed out after ${timeoutMs}ms waiting for local CMS readiness.`);
-}
-
-async function checkEditor(input: {
-  definition: CmsEditorDefinition;
-  options: CmsLocalSmokeOptions;
-  page: Page;
-  runArtifactDir: string;
-  siteUrl: string;
-}): Promise<CmsEditorCheck> {
-  const { definition } = input;
-  const pathName = `/admin/#/collections/${definition.collection}/entries/${definition.entry}`;
-  const url = createRouteUrl(input.siteUrl, pathName);
-  const scenarioArtifactDir = createSmokeScenarioArtifactDir(input.runArtifactDir, definition.collection);
-  const issues: string[] = [];
-  let hasGroupBrowseAffordance = false;
-
-  mkdirSync(scenarioArtifactDir, { recursive: true });
-
-  if (definition.verifyGroupBrowse) {
-    await input.page.goto(createRouteUrl(input.siteUrl, `/admin/#/collections/${definition.collection}`), {
-      timeout: Math.min(input.options.timeoutMs, 30_000),
-      waitUntil: 'domcontentloaded',
-    });
-    await clickLocalDecapLogin(input.page);
-    hasGroupBrowseAffordance = await input.page
-      .waitForFunction(() => /\bGroup\b/i.test(document.body?.innerText || ''), undefined, {
-        timeout: Math.min(input.options.timeoutMs, 20_000),
-      })
-      .then(() => true)
-      .catch(() => false);
-    if (!hasGroupBrowseAffordance) {
-      issues.push('Expected Distro collection browsing to expose the configured Group affordance.');
-    }
-  }
-
-  await input.page.goto(url, {
-    timeout: Math.min(input.options.timeoutMs, 30_000),
-    waitUntil: 'domcontentloaded',
-  });
-  await input.page.waitForLoadState('networkidle', { timeout: Math.min(input.options.timeoutMs, 10_000) }).catch(() => {
-    // Decap keeps background requests open during editor boot.
-  });
-
-  await clickLocalDecapLogin(input.page);
-
-  await input.page
-    .waitForFunction(
-      () => {
-        const bodyText = document.body?.innerText || '';
-        return /\bWriting in\b.+\bcollection\b/i.test(bodyText);
-      },
-      undefined,
-      { timeout: Math.min(input.options.timeoutMs, 25_000) },
-    )
-    .catch((error: unknown) => {
-      issues.push(
-        `Expected ${definition.collection} editor chrome to load: ${redactSensitiveSmokeText(String(error))}.`,
-      );
-    });
-
-  await input.page
-    .waitForFunction(
-      ({ expectedFormValues }) => {
-        const bodyText = document.body?.innerText || '';
-        const formValues = Array.from(document.querySelectorAll('input, textarea'))
-          .map((element) =>
-            element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement ? element.value.trim() : '',
-          )
-          .filter(Boolean);
-        const hasLoadedEditorChrome = /\bWriting in\b.+\bcollection\b/i.test(bodyText);
-        const hasExpectedValues = expectedFormValues.every((value) =>
-          formValues.some((formValue) => formValue.includes(value)),
-        );
-
-        return hasLoadedEditorChrome && hasExpectedValues;
-      },
-      {
-        expectedFormValues: definition.expectedFormValues,
-      },
-      { timeout: Math.min(input.options.timeoutMs, 25_000) },
-    )
-    .catch((error: unknown) => {
-      issues.push(
-        `Expected ${definition.collection} editor to show existing content: ${redactSensitiveSmokeText(String(error))}.`,
-      );
-    });
-
-  const snapshot = await readCmsEditorSnapshot(input.page, hasGroupBrowseAffordance);
-  snapshot.preview = await checkCmsPreview(input.page, definition, input.options.timeoutMs);
-  const missingFormValues = definition.expectedFormValues.filter(
-    (value) => !snapshot.formValues.some((formValue) => formValue.includes(value)),
-  );
-
-  if (!snapshot.hasLoadedEditorChrome) {
-    issues.push(`Expected ${definition.collection} editor to show the loaded Decap editor chrome.`);
-  }
-
-  for (const missingValue of missingFormValues) {
-    issues.push(`Expected ${definition.collection} form values to include "${missingValue}".`);
-  }
-
-  for (const requiredText of definition.requiredBodyText) {
-    if (!snapshot.bodyTextSnippet.toLowerCase().includes(requiredText.toLowerCase())) {
-      issues.push(`Expected ${definition.collection} editor text to include "${requiredText}".`);
-    }
-  }
-
-  if (snapshot.hasEmptyContentGuard) {
-    issues.push(`Expected ${definition.collection} editor not to show the singleton empty-content recovery guard.`);
-  }
-
-  if (!snapshot.hasHiddenTopLevelMedia) {
-    issues.push(`Expected ${definition.collection} editor to keep the misleading top-level Media action hidden.`);
-  }
-
-  if (definition.verifyGroupBrowse && !snapshot.hasGroupBrowseAffordance) {
-    issues.push('Expected Distro group browsing evidence to remain present in the editor snapshot.');
-  }
-
-  if (!snapshot.preview.focusedAfterOpen) {
-    issues.push(`Expected ${definition.collection} preview toggle to retain focus after opening.`);
-  }
-
-  if (!snapshot.preview.templateFound) {
-    issues.push(`Expected ${definition.collection} registered preview template to render.`);
-  }
-
-  if (!snapshot.preview.imageLoaded || snapshot.preview.imageAlt !== definition.expectedImageAlt) {
-    issues.push(`Expected ${definition.collection} preview image to load with its current accessible alt text.`);
-  }
-
-  if (snapshot.publishClickCount !== 0) {
-    issues.push(`Expected ${definition.collection} smoke check never to select Publish.`);
-  }
-
-  const status = issues.length ? 'failed' : 'passed';
-  const screenshotPath = await maybeCaptureCmsScreenshot(
-    input.page,
-    scenarioArtifactDir,
-    status === 'failed',
-    input.options.screenshots,
-  );
-
   return {
-    collection: definition.collection,
-    entry: definition.entry,
-    expectedFormValues: definition.expectedFormValues,
-    issues,
-    path: pathName,
-    screenshotPath,
-    snapshot,
-    status,
-    url,
+    evidenceDir: parseRequiredValue('--evidence-dir', values['evidence-dir']),
+    headed: values.headed,
+    screenshots: parseScreenshotMode(values.screenshots),
+    timeoutMs: parsePositiveInteger(values['timeout-ms'], '--timeout-ms'),
   };
 }
 
-async function checkEditorInFreshPage(input: {
-  consoleErrors: string[];
-  context: BrowserContext;
-  definition: CmsEditorDefinition;
-  options: CmsLocalSmokeOptions;
-  pageErrors: string[];
-  runArtifactDir: string;
-  siteUrl: string;
-}): Promise<CmsEditorCheck> {
-  const page = await input.context.newPage();
-  const diagnostics = attachSmokePageDiagnostics(page);
-  page.setDefaultTimeout(input.options.timeoutMs);
-
-  try {
-    return await checkEditor({
-      definition: input.definition,
-      options: input.options,
-      page,
-      runArtifactDir: input.runArtifactDir,
-      siteUrl: input.siteUrl,
-    });
-  } finally {
-    input.consoleErrors.push(...diagnostics.consoleErrors);
-    input.pageErrors.push(...diagnostics.pageErrors);
-    diagnostics.dispose();
-    await page.close();
-  }
-}
-
-async function checkNewArtistEditorInFreshPage(input: {
-  consoleErrors: string[];
-  context: BrowserContext;
-  options: CmsLocalSmokeOptions;
-  pageErrors: string[];
-  runArtifactDir: string;
-  siteUrl: string;
-}): Promise<CmsEditorCheck> {
-  const page = await input.context.newPage();
-  const diagnostics = attachSmokePageDiagnostics(page);
-  page.setDefaultTimeout(input.options.timeoutMs);
-  const collection: CmsCollectionName = 'artists';
-  const entry = 'new';
-  const pathName = `/admin/#/collections/${collection}/new`;
-  const url = createRouteUrl(input.siteUrl, pathName);
-  const scenarioArtifactDir = createSmokeScenarioArtifactDir(input.runArtifactDir, 'artists-new');
+export function checkCmsNativeStartup(input: {
+  bodyText: string;
+  hasLocalRepositoryButton: boolean;
+  scriptUrls: string[];
+}): string[] {
   const issues: string[] = [];
-
-  mkdirSync(scenarioArtifactDir, { recursive: true });
-
-  try {
-    await page.goto(url, {
-      timeout: Math.min(input.options.timeoutMs, 30_000),
-      waitUntil: 'domcontentloaded',
-    });
-    await clickLocalDecapLogin(page);
-
-    const titleField = page.getByLabel('Title', { exact: true });
-    await titleField
-      .waitFor({ state: 'visible', timeout: Math.min(input.options.timeoutMs, 25_000) })
-      .catch((error: unknown) => {
-        issues.push(`Expected the new Artist editor title field: ${redactSensitiveSmokeText(String(error))}.`);
-      });
-
-    if ((await page.getByLabel('Slug', { exact: true }).count()) !== 0) {
-      issues.push('Expected the new Artist editor to omit the Slug field.');
-    }
-
-    const snapshot = await readCmsEditorSnapshot(page, false);
-    if (!snapshot.hasLoadedEditorChrome) {
-      issues.push('Expected the new Artist editor to show the loaded Decap editor chrome.');
-    }
-    if (snapshot.publishClickCount !== 0) {
-      issues.push('Expected the new Artist editor smoke check never to select Publish.');
-    }
-
-    const status = issues.length ? 'failed' : 'passed';
-    const screenshotPath = await maybeCaptureCmsScreenshot(
-      page,
-      scenarioArtifactDir,
-      status === 'failed',
-      input.options.screenshots,
-    );
-
-    return {
-      collection,
-      entry,
-      expectedFormValues: [],
-      issues,
-      path: pathName,
-      screenshotPath,
-      snapshot,
-      status,
-      url,
-    };
-  } finally {
-    input.consoleErrors.push(...diagnostics.consoleErrors);
-    input.pageErrors.push(...diagnostics.pageErrors);
-    diagnostics.dispose();
-    await page.close();
+  if (!input.hasLocalRepositoryButton) issues.push('Sveltia did not reach native local repository selection.');
+  if (/configuration errors?|invalid configuration|failed to load.*config/i.test(input.bodyText)) {
+    issues.push('Sveltia rejected the generated configuration.');
   }
-}
-
-async function clickLocalDecapLogin(page: Page): Promise<void> {
-  const bodyText = await page
-    .locator('body')
-    .innerText()
-    .catch(() => '');
-  if (/\bWriting in\b.+\bcollection\b/i.test(bodyText)) {
-    return;
-  }
-
-  const loginButton = page
-    .locator('[data-blackbox-cms-auth-button="true"], button', { hasText: /^(Login|Open local editor)$/i })
-    .first();
-
-  const loginReady = await loginButton
-    .waitFor({ state: 'visible', timeout: 15_000 })
-    .then(() => true)
-    .catch(() => false);
-
-  if (loginReady) {
-    await loginButton.click({ timeout: 5_000 });
-  }
-}
-
-async function readCmsEditorSnapshot(page: Page, hasGroupBrowseAffordance: boolean): Promise<CmsEditorSnapshot> {
-  return page.evaluate((groupBrowseEvidence) => {
-    const bodyText = document.body?.innerText || '';
-    const formValues = Array.from(document.querySelectorAll('input, textarea'))
-      .map((element) =>
-        element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement ? element.value.trim() : '',
-      )
-      .filter(Boolean);
-    const navMediaButton = Array.from(document.querySelectorAll<HTMLElement>('nav button')).find(
-      (button) => button.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() === 'media',
-    );
-    const mediaButton = document.querySelector<HTMLElement>('[data-blackbox-top-level-media="hidden"]');
-    return {
-      bodyTextSnippet: bodyText.replace(/\s+/g, ' ').trim().slice(0, 5_000),
-      formValues,
-      hasEmptyContentGuard: Boolean(document.querySelector('[data-blackbox-cms-empty-guard="true"]')),
-      hasGroupBrowseAffordance: groupBrowseEvidence,
-      hasHiddenTopLevelMedia:
-        !navMediaButton || Boolean(mediaButton?.hidden && mediaButton.getAttribute('aria-hidden') === 'true'),
-      hasLoadedEditorChrome: /\bWriting in\b.+\bcollection\b/i.test(bodyText),
-      hash: window.location.hash,
-      preview: {
-        ariaExpanded: null,
-        ariaLabel: null,
-        focusedAfterOpen: false,
-        imageAlt: null,
-        imageLoaded: false,
-        imageSrc: null,
-        initialState: null,
-        templateFound: false,
-      },
-      publishClickCount: window.__BLACKBOX_CMS_SMOKE_PUBLISH_CLICKS__ || 0,
-      title: document.title,
-    };
-  }, hasGroupBrowseAffordance);
-}
-
-async function checkCmsPreview(
-  page: Page,
-  definition: CmsEditorDefinition,
-  timeoutMs: number,
-): Promise<CmsPreviewSnapshot> {
-  const toggle = page.getByRole('button', { name: 'Toggle preview', exact: true });
-  const template = page.frameLocator('iframe').locator(`.${definition.previewClassName}`);
-  const toggleCount = await toggle.count();
-  if (toggleCount !== 1) {
-    return {
-      ariaExpanded: null,
-      ariaLabel: null,
-      focusedAfterOpen: false,
-      imageAlt: null,
-      imageLoaded: false,
-      imageSrc: null,
-      initialState: null,
-      templateFound: false,
-    };
-  }
-
-  const initiallyOpen = (await template.count()) === 1;
-  const isVisible = await toggle
-    .waitFor({ state: 'visible', timeout: Math.min(timeoutMs, 20_000) })
-    .then(() => true)
-    .catch(() => false);
-
-  if (!isVisible) {
-    return {
-      ariaExpanded: null,
-      ariaLabel: null,
-      focusedAfterOpen: false,
-      imageAlt: null,
-      imageLoaded: false,
-      imageSrc: null,
-      initialState: null,
-      templateFound: false,
-    };
-  }
-
-  const initialAriaExpanded = await toggle.getAttribute('aria-expanded');
-  const ariaExpanded = await toggle.getAttribute('aria-expanded');
-  const ariaLabel = await toggle.getAttribute('aria-label');
-
-  if (!initiallyOpen) {
-    await toggle.click();
-    await page
-      .waitForFunction(() => document.activeElement?.getAttribute('aria-expanded') === 'true', undefined, {
-        timeout: Math.min(timeoutMs, 5_000),
-      })
-      .catch(() => undefined);
-  }
-  const focusedAfterOpen = initiallyOpen || (await toggle.evaluate((element) => document.activeElement === element));
-  const settledAriaExpanded = await toggle.getAttribute('aria-expanded');
-  const settledAriaLabel = await toggle.getAttribute('aria-label');
-  const preview = await waitForPreviewTemplate(page, definition, timeoutMs);
-
-  return {
-    ariaExpanded: settledAriaExpanded ?? ariaExpanded,
-    ariaLabel: settledAriaLabel ?? ariaLabel,
-    focusedAfterOpen,
-    imageAlt: preview.imageAlt,
-    imageLoaded: preview.imageLoaded,
-    imageSrc: preview.imageSrc,
-    initialState: initiallyOpen || initialAriaExpanded === 'true' ? 'open' : 'closed',
-    templateFound: preview.templateFound,
-  };
-}
-
-async function waitForPreviewTemplate(
-  page: Page,
-  definition: CmsEditorDefinition,
-  timeoutMs: number,
-): Promise<Pick<CmsPreviewSnapshot, 'imageAlt' | 'imageLoaded' | 'imageSrc' | 'templateFound'>> {
-  const startedAt = Date.now();
-  const template = page.frameLocator('iframe').locator(`.${definition.previewClassName}`);
-
-  while (Date.now() - startedAt < Math.min(timeoutMs, 25_000)) {
-    if ((await template.count()) === 1) {
-      const snapshot = await template
-        .evaluate((templateElement, expectedImageAlt) => {
-          const images = Array.from(templateElement.querySelectorAll('img'));
-          const image = images.find((candidate) => candidate.alt === expectedImageAlt) || images[0] || null;
-          return {
-            imageAlt: image?.alt || null,
-            imageLoaded: Boolean(image?.complete && image.naturalWidth > 0),
-            imageSrc: image?.currentSrc || image?.src || null,
-            templateFound: true,
-          };
-        }, definition.expectedImageAlt)
-        .catch(() => null);
-      if (snapshot?.imageLoaded) return snapshot;
-    }
-
-    await page.waitForTimeout(150);
-  }
-
-  return { imageAlt: null, imageLoaded: false, imageSrc: null, templateFound: false };
-}
-
-async function maybeCaptureCmsScreenshot(
-  page: Page,
-  scenarioArtifactDir: string,
-  hasIssues: boolean,
-  mode: SmokeScreenshotMode,
-): Promise<string | null> {
-  if (mode === 'never' || (mode === 'on-failure' && !hasIssues)) {
-    return null;
-  }
-
-  const screenshotPath = path.join(scenarioArtifactDir, hasIssues ? 'failure.png' : 'final.png');
-  return captureSmokePageScreenshot(page, screenshotPath, true);
-}
-
-function buildProcessOutput(processes: CmsSmokeProcess[]): Record<string, string[]> {
-  return Object.fromEntries(processes.map((processInfo) => [processInfo.name, processInfo.output]));
+  if (!input.scriptUrls.includes(runtimeUrl)) issues.push('The pinned Sveltia runtime did not load.');
+  return issues;
 }
 
 export function checkCmsReadOnlyInvariants(input: {
@@ -987,49 +95,47 @@ export function checkCmsReadOnlyInvariants(input: {
 }): string[] {
   const issues: string[] = [];
   if (input.before.contentHash !== input.after.contentHash)
-    issues.push('CMS content files changed during the read-only smoke.');
+    issues.push('CMS content or media changed during the read-only smoke.');
   if (input.before.gitHead !== input.after.gitHead) issues.push('Git HEAD changed during the read-only smoke.');
-  if (input.publishClickCount !== 0) issues.push('The read-only smoke selected Publish.');
-  if (input.externalMutationRequests.length) {
-    issues.push(`The read-only smoke sent external mutation requests: ${input.externalMutationRequests.join(', ')}.`);
-  }
+  if (input.before.gitStatus !== input.after.gitStatus) issues.push('Git status changed during the read-only smoke.');
+  if (input.publishClickCount !== 0) issues.push('The read-only smoke selected Save or Publish.');
+  if (input.externalMutationRequests.length)
+    issues.push('The read-only smoke sent mutation requests: ' + input.externalMutationRequests.join(', ') + '.');
   return issues;
 }
 
-function captureCmsReadOnlyState(): CmsReadOnlyState {
+export function captureCmsReadOnlyState(): CmsReadOnlyState {
   const hash = createHash('sha256');
-  for (const filePath of listFilesRecursively(contentRoot)) {
-    hash.update(path.relative(contentRoot, filePath).replace(/\\/g, '/'));
-    hash.update('\0');
-    hash.update(readFileSync(filePath));
-    hash.update('\0');
+  for (const directory of [path.join(webRoot, 'src', 'content'), path.join(webRoot, 'public', 'assets')]) {
+    const files = readdirSync(directory, { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => path.join(entry.parentPath, entry.name))
+      .sort();
+    for (const file of files) {
+      hash.update(path.relative(repoRoot, file).replaceAll('\\', '/'));
+      hash.update('\0');
+      hash.update(readFileSync(file));
+      hash.update('\0');
+    }
   }
-
-  const gitHead = spawnSync('git', ['rev-parse', 'HEAD'], {
-    cwd: repoRoot,
-    encoding: 'utf8',
-    windowsHide: true,
-  });
-  if (gitHead.status !== 0 || !gitHead.stdout.trim()) throw new Error('Could not capture Git HEAD before CMS smoke.');
-
-  return { contentHash: hash.digest('hex'), gitHead: gitHead.stdout.trim() };
+  const git = (args: string[]) => {
+    const result = spawnSync('git', args, { cwd: repoRoot, encoding: 'utf8', windowsHide: true });
+    if (result.status !== 0) throw new Error('Could not capture Git state for CMS smoke.');
+    return result.stdout;
+  };
+  return {
+    contentHash: hash.digest('hex'),
+    gitHead: git(['rev-parse', 'HEAD']),
+    gitStatus: git(['status', '--porcelain', '--untracked-files=all']),
+  };
 }
 
-function listFilesRecursively(directory: string): string[] {
-  return readdirSync(directory)
-    .flatMap((name) => {
-      const absolutePath = path.join(directory, name);
-      return statSync(absolutePath).isDirectory() ? listFilesRecursively(absolutePath) : [absolutePath];
-    })
-    .sort((left, right) => left.localeCompare(right));
-}
-
-async function isTcpPortListening(port: number): Promise<boolean> {
+async function isCmsPortListening(): Promise<boolean> {
   return new Promise((resolve) => {
-    const socket = createConnection({ host: '127.0.0.1', port });
-    const finish = (isListening: boolean) => {
+    const socket = createConnection({ host: '127.0.0.1', port: 4322 });
+    const finish = (listening: boolean) => {
       socket.destroy();
-      resolve(isListening);
+      resolve(listening);
     };
     socket.once('connect', () => finish(true));
     socket.once('error', () => finish(false));
@@ -1037,29 +143,192 @@ async function isTcpPortListening(port: number): Promise<boolean> {
   });
 }
 
-async function main(): Promise<void> {
-  const options = parseCmsLocalSmokeArgs(process.argv.slice(2));
-  const evidence = await runCmsLocalSmoke(options);
-  const summary = [
-    `CMS local smoke: ${evidence.status.toUpperCase()}`,
-    `- site: ${evidence.siteUrl}`,
-    `- proxy: ${evidence.proxyUrl}`,
-    `- checks: ${evidence.checks.length}`,
-    `- console errors: ${evidence.consoleErrors.length}`,
-    `- page errors: ${evidence.pageErrors.length}`,
-  ].join('\n');
+export async function runCmsLocalSmoke(options: CmsLocalSmokeOptions) {
+  const runId = createRunId();
+  const runArtifactDir = path.join(options.evidenceDir, runId);
+  const scenarioDir = createSmokeScenarioArtifactDir(runArtifactDir, 'editor-read-only');
+  const lifecycle = new CmsSmokeLifecycle();
+  const before = captureCmsReadOnlyState();
+  const issues: string[] = [];
+  const consoleErrors: string[] = [];
+  const pageErrors: string[] = [];
+  const externalMutationRequests: string[] = [];
+  let browser: Browser | undefined;
+  let page: Page | undefined;
+  let publishClickCount = 0;
+  let screenshotPath: string | null = null;
+  let snapshot: Parameters<typeof checkCmsNativeStartup>[0] | null = null;
+  let diagnostics: ReturnType<typeof attachSmokePageDiagnostics> | undefined;
 
-  console.log(summary);
+  mkdirSync(scenarioDir, { recursive: true });
+  lifecycle.installProcessHandlers();
+  try {
+    if (await isCmsPortListening())
+      throw new Error('CMS port 4322 is occupied. Stop its owner before running the smoke.');
+    lifecycle.startProcess({
+      command: process.execPath,
+      args: [path.join(webRoot, 'scripts', 'start-cms-dev.mjs')],
+      cwd: webRoot,
+      env: { ...process.env, ASTRO_BASE_PATH: '/blackbox-records/', ASTRO_SITE_URL: 'http://127.0.0.1:4322' },
+      name: 'astro-dev',
+    });
+    const deadline = Date.now() + options.timeoutMs;
+    while (true) {
+      lifecycle.assertHealthy();
+      const response = await fetch(siteUrl + 'admin/config.yml', { signal: AbortSignal.timeout(2000) }).catch(
+        () => null,
+      );
+      if (response?.ok) break;
+      if (Date.now() >= deadline) throw new Error('Timed out waiting for local CMS configuration.');
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
 
-  if (evidence.status === 'failed') {
-    console.error(JSON.stringify(evidence, null, 2));
-    process.exitCode = 1;
+    browser = await lifecycle.race(chromium.launch({ headless: !options.headed, timeout: options.timeoutMs }));
+    lifecycle.registerCleanup('Chromium browser', () => browser?.close());
+    const context = await browser.newContext({ locale: 'en-US', viewport: { width: 1440, height: 900 } });
+    lifecycle.registerCleanup('Playwright context', () => context.close());
+    await context.route('**/*', async (route) => {
+      const request = route.request();
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method())) {
+        const url = new URL(request.url());
+        externalMutationRequests.push(request.method() + ' ' + url.origin + url.pathname);
+        await route.abort();
+      } else {
+        await route.continue();
+      }
+    });
+    await context.addInitScript(() => {
+      window.__BLACKBOX_CMS_SMOKE_PUBLISH_CLICKS__ = 0;
+      document.addEventListener(
+        'click',
+        (event) => {
+          const button = event.target instanceof Element ? event.target.closest('button, [role="button"]') : null;
+          if (/^(save|publish)\b/i.test(button?.textContent?.trim() ?? '')) {
+            window.__BLACKBOX_CMS_SMOKE_PUBLISH_CLICKS__ += 1;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        },
+        true,
+      );
+    });
+    page = await context.newPage();
+    page.setDefaultTimeout(options.timeoutMs);
+    diagnostics = attachSmokePageDiagnostics(page);
+    lifecycle.registerCleanup('Page diagnostics', () => diagnostics?.dispose());
+    const indexResponse = await lifecycle.race(
+      page.goto(siteUrl + 'admin/index.html', { waitUntil: 'domcontentloaded' }),
+    );
+    if (!indexResponse?.ok()) throw new Error('Local admin document did not load successfully.');
+    const readAsset = async (asset: string) => {
+      const response = await context.request.get(siteUrl + asset, { timeout: options.timeoutMs });
+      if (!response.ok()) throw new Error('Local CMS asset failed: ' + asset);
+      return response.text();
+    };
+    const [configYaml, bootstrapJs] = await Promise.all([readAsset('admin/config.yml'), readAsset('admin/init.js')]);
+    assertSveltiaBuildArtifacts({
+      configYaml,
+      bootstrapJs,
+      indexHtml: await indexResponse.text(),
+      expectedMode: 'local',
+    });
+    await Promise.all(['admin/admin.css', 'admin/preview.css', 'favicon.svg'].map(readAsset));
+    await lifecycle.race(
+      page.waitForFunction(
+        () =>
+          [...document.querySelectorAll('button')].some(
+            (button) => button.textContent?.trim() === 'Work with Local Repository',
+          ) || /configuration errors?|invalid configuration/i.test(document.body.innerText),
+        undefined,
+        { timeout: options.timeoutMs },
+      ),
+    );
+    snapshot = {
+      bodyText: (await page.locator('body').innerText()).slice(0, 4000),
+      hasLocalRepositoryButton: await page
+        .getByRole('button', { name: 'Work with Local Repository', exact: true })
+        .isVisible(),
+      scriptUrls: await page
+        .locator('script[src]')
+        .evaluateAll((scripts) => scripts.map((script) => (script as HTMLScriptElement).src)),
+    };
+    issues.push(...checkCmsNativeStartup(snapshot));
+    lifecycle.assertHealthy();
+  } catch (error) {
+    issues.push(redactSensitiveSmokeText(error instanceof Error ? error.message : String(error)));
+  } finally {
+    consoleErrors.push(...(diagnostics?.consoleErrors ?? []));
+    pageErrors.push(...(diagnostics?.pageErrors ?? []));
+    if (page && !page.isClosed()) {
+      publishClickCount = await page.evaluate(() => window.__BLACKBOX_CMS_SMOKE_PUBLISH_CLICKS__ ?? 0).catch(() => 0);
+      if (
+        options.screenshots === 'always' ||
+        (options.screenshots === 'on-failure' && (issues.length || consoleErrors.length || pageErrors.length))
+      ) {
+        screenshotPath = path.join(scenarioDir, issues.length ? 'failure.png' : 'final.png');
+        await captureSmokePageScreenshot(page, screenshotPath).catch(() => {
+          issues.push('Could not capture the CMS smoke screenshot.');
+        });
+      }
+    }
+    await lifecycle.shutdown().catch((error: unknown) => {
+      issues.push(redactSensitiveSmokeText(String(error)));
+    });
   }
+
+  const after = captureCmsReadOnlyState();
+  const readOnlyIssues = checkCmsReadOnlyInvariants({ after, before, externalMutationRequests, publishClickCount });
+  const shutdown = {
+    browserConnected: browser?.isConnected() ?? false,
+    listeningPorts: (await isCmsPortListening()) ? [4322] : [],
+    runningPids: lifecycle.getRunningPids(),
+  };
+  const stoppedProcesses =
+    !shutdown.browserConnected &&
+    !shutdown.runningPids.length &&
+    (!lifecycle.processes.length || !shutdown.listeningPorts.length);
+  if (!stoppedProcesses) issues.push('Expected Astro and browser processes to stop before evidence was written.');
+  const status =
+    issues.length || readOnlyIssues.length || consoleErrors.length || pageErrors.length ? 'failed' : 'passed';
+  const evidence = {
+    checks: [{ issues, screenshotPath, snapshot, status, url: siteUrl + 'admin/index.html' }],
+    consoleErrors,
+    pageErrors,
+    environment: 'local',
+    generatedAt: new Date().toISOString(),
+    processOutput: Object.fromEntries(lifecycle.processes.map((managed) => [managed.name, managed.output])),
+    readOnly: { after, before, externalMutationRequests, issues: readOnlyIssues, publishClickCount },
+    siteUrl,
+    shutdown,
+    status,
+    stoppedProcesses,
+    suite: 'cms-local',
+  };
+  writeJsonFile(createSmokeEvidencePath(scenarioDir), evidence);
+  writeJsonFile(createSmokeSummaryPath(runArtifactDir), {
+    generatedAt: evidence.generatedAt,
+    runId,
+    status,
+    suite: evidence.suite,
+  });
+  return evidence;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main().catch((error: unknown) => {
-    console.error(redactSensitiveSmokeText(error instanceof Error ? error.stack || error.message : String(error)));
-    process.exitCode = 1;
-  });
+  runCmsLocalSmoke(parseCmsLocalSmokeArgs(process.argv.slice(2)))
+    .then((evidence) => {
+      console.log('CMS local smoke: ' + evidence.status.toUpperCase());
+      for (const issue of [
+        ...evidence.checks.flatMap((check) => check.issues),
+        ...evidence.readOnly.issues,
+        ...evidence.consoleErrors,
+        ...evidence.pageErrors,
+      ])
+        console.error(issue);
+      if (evidence.status === 'failed') process.exitCode = 1;
+    })
+    .catch((error: unknown) => {
+      console.error(redactSensitiveSmokeText(String(error)));
+      process.exitCode = 1;
+    });
 }

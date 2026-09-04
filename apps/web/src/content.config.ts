@@ -3,7 +3,7 @@ import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
 import { buildBandcampEmbedUrl, buildTidalEmbedUrl } from './utils/music';
-import { DISTRO_GROUP_VALUES } from './lib/distro-data';
+import { DISTRO_GROUP_VALUES, DISTRO_INTRO_FIELDS } from './lib/distro-data';
 import {
   isHttpsUrl,
   isInternalOrHttpsUrl,
@@ -125,7 +125,7 @@ const distroPage = defineCollection({
       title: z.string(),
       intro: z.string(),
     }),
-    group_intros: z.record(z.enum(DISTRO_GROUP_VALUES), z.string()),
+    group_intros: z.record(z.enum(DISTRO_INTRO_FIELDS.map(({ name }) => name)), z.string()),
   }),
 });
 

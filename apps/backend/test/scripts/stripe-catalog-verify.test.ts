@@ -348,7 +348,7 @@ describe('stripe catalog verify script helpers', () => {
             productActive: true,
             productDescription: 'Disintegration by Afterwise.',
             productId: 'prod_1234567890abcdef',
-            productImages: ['https://blackbox-records-web.pages.dev/admin/media/releases/disintegration.jpg'],
+            productImages: ['https://blackbox-records-web.pages.dev/assets/catalog/releases/disintegration.jpg'],
             productMetadata: {},
             productName: 'BlackBox Records - Disintegration - Black Vinyl LP',
             productTaxCode: null,

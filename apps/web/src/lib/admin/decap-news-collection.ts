@@ -1,6 +1,6 @@
 import { buildField, buildFolderCollection } from './decap-yaml-builder';
 import { decapCollectionDescriptions } from './decap-editorial-copy';
-import { decapCollectionMedia } from './decap-media';
+import { cmsRelativeMedia } from './sveltia-media';
 
 export function buildNewsCollection() {
   return buildFolderCollection({
@@ -17,8 +17,8 @@ export function buildNewsCollection() {
     format: 'frontmatter',
     identifierField: 'title',
     slug: '{{slug}}',
-    mediaFolder: decapCollectionMedia.news.mediaFolder,
-    publicFolder: decapCollectionMedia.news.publicFolder,
+    mediaFolder: cmsRelativeMedia.mediaFolder,
+    publicFolder: cmsRelativeMedia.publicFolder,
     summary: '{{date}} — {{title}}',
     fields: [
       buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Article title.' }),

@@ -1,6 +1,6 @@
 import { buildFileCollection } from './decap-yaml-builder';
 import { decapCollectionDescriptions, decapSitePageDescriptions } from './decap-editorial-copy';
-import { decapCollectionMedia } from './decap-media';
+import { cmsRelativeMedia } from './sveltia-media';
 
 type BuildPageFileCollectionsOptions = {
   homeFields: string[];
@@ -34,8 +34,8 @@ export function buildPageFileCollections({
           label: 'Home Content',
           description: decapSitePageDescriptions.home,
           file: 'apps/web/src/content/home/site.json',
-          mediaFolder: decapCollectionMedia.home.mediaFolder,
-          publicFolder: decapCollectionMedia.home.publicFolder,
+          mediaFolder: cmsRelativeMedia.mediaFolder,
+          publicFolder: cmsRelativeMedia.publicFolder,
           fields: homeFields,
         },
         {
@@ -43,8 +43,8 @@ export function buildPageFileCollections({
           label: 'About Content',
           description: decapSitePageDescriptions.about,
           file: 'apps/web/src/content/about/site.json',
-          mediaFolder: decapCollectionMedia.about.mediaFolder,
-          publicFolder: decapCollectionMedia.about.publicFolder,
+          mediaFolder: cmsRelativeMedia.mediaFolder,
+          publicFolder: cmsRelativeMedia.publicFolder,
           fields: aboutFields,
         },
         {
@@ -52,8 +52,8 @@ export function buildPageFileCollections({
           label: 'Services Content',
           description: decapSitePageDescriptions.services,
           file: 'apps/web/src/content/services/site.json',
-          mediaFolder: decapCollectionMedia.services.mediaFolder,
-          publicFolder: decapCollectionMedia.services.publicFolder,
+          mediaFolder: cmsRelativeMedia.mediaFolder,
+          publicFolder: cmsRelativeMedia.publicFolder,
           fields: servicesFields,
         },
         {

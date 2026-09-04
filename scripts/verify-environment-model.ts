@@ -90,7 +90,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
       detail:
         'Shared static deployment workflow deploys PRD to Cloudflare Pages without branch or preview product deploys.',
       ok:
-        staticDeployWorkflow.includes('Deploy disabled PRD static frontend to Cloudflare Pages') &&
+        staticDeployWorkflow.includes('Deploy PRD static frontend to Cloudflare Pages') &&
         staticDeployWorkflow.includes('PRD_PUBLIC_BACKEND_BASE_URL') &&
         staticDeployWorkflow.includes('--project-name=blackbox-records-web --branch=main') &&
         !staticDeployWorkflow.includes('pages/**') &&
@@ -205,7 +205,6 @@ export function verifyStaticDeployTriggerSources(staticDeployWorkflow: string): 
     'openspec/**',
     'apps/web/src/content/distro/**',
     'apps/web/src/content/releases/**',
-    'apps/web/src/lib/admin/**',
     'apps/web/src/content.config.ts',
     'scripts/stripe-catalog-contract.ts',
     'scripts/generate-stripe-uat-catalog-artifacts.ts',

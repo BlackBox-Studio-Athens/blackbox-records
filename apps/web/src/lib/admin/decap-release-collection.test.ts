@@ -13,7 +13,6 @@ type ParsedField = {
   fields?: ParsedField[];
   label_singular?: string;
   name: string;
-  options_length?: number;
   pattern?: [string, string];
   required?: boolean;
   search_fields?: string[];
@@ -51,7 +50,6 @@ describe('Decap release collection', () => {
     expect(field('artist')).toMatchObject({
       collection: 'artists',
       display_fields: ['title', 'slug'],
-      options_length: 50,
       search_fields: ['title', 'slug'],
       value_field: 'slug',
       widget: 'relation',

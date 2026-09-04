@@ -82,7 +82,7 @@ Backend Worker observability uses source-controlled Workers Logs/Traces config a
 
 ## Catalog Promotion
 
-Decap remains editorial-only. Content publication and buyable status are separate: generated catalog artifacts derive from current Store Item content, UAT provider state is applied through Stripe test-mode catalog tooling, and runtime checkout safety stays with D1, Worker gates, and operator controls. PRD catalog/D1 apply needs one-run `confirm_live_catalog_changes=true` plus CLI confirmation; this never deploys shopper runtime or enables checkout. GitHub Pages UAT is validated by a separate post-merge UAT provider smoke workflow after the shared static deployment workflow in `pages.yml` completes. See [docs/catalog-promotion.md](docs/catalog-promotion.md) for catalog artifact, rollback, and Promotion Evidence expectations.
+Sveltia remains editorial-only. Content publication and buyable status are separate: generated catalog artifacts derive from current Store Item content, UAT provider state is applied through Stripe test-mode catalog tooling, and runtime checkout safety stays with D1, Worker gates, and operator controls. PRD catalog/D1 apply needs one-run `confirm_live_catalog_changes=true` plus CLI confirmation; this never deploys shopper runtime or enables checkout. GitHub Pages UAT is validated by a separate post-merge UAT provider smoke workflow after the shared static deployment workflow in `pages.yml` completes. See [docs/catalog-promotion.md](docs/catalog-promotion.md) for catalog artifact, rollback, and Promotion Evidence expectations.
 
 ## Prerequisites
 
@@ -150,7 +150,7 @@ Run the default full local commerce stack:
 pnpm dev:stack:stripe-mock
 ```
 
-This is what `BlackBox Local Stack` runs in WebStorm. It prepares local D1, starts official `stripe-mock` through local Go tooling, starts the Worker with the Stripe SDK pointed at the local mock API proxy, starts the local Decap file proxy, and starts the static Astro site with a mock checkout panel. The same `4321` site serves the local Decap editor at `/admin/`, backed by the repo content files through the proxy on `8082`. Local newsletter signup uses the committed fake `re_mock_*` Resend config through a no-network provider mock. It does not require Docker, real Stripe keys, real Resend keys, or `apps/backend/.dev.vars`.
+This is what `BlackBox Local Stack` runs in WebStorm. It prepares local D1, starts official `stripe-mock` through local Go tooling, starts the Worker with the Stripe SDK pointed at the local mock API proxy, starts the static Astro site with a mock checkout panel. The same `4321` site serves the local Sveltia editor at `/admin/index.html` with native directory selection. Local newsletter signup uses the committed fake `re_mock_*` Resend config through a no-network provider mock. It does not require Docker, real Stripe keys, real Resend keys, or `apps/backend/.dev.vars`.
 
 Local mock checkout smoke path:
 
@@ -158,7 +158,7 @@ Local mock checkout smoke path:
 http://127.0.0.1:4321/blackbox-records/store/checkout/
 ```
 
-Local Decap editor:
+Local Sveltia editor:
 
 ```text
 http://127.0.0.1:4321/blackbox-records/admin/
@@ -211,7 +211,7 @@ pnpm email:previews
 
 This writes ignored HTML files under `.codex-artifacts/email-previews/` for Browser Use or the documented DevTools fallback. The previews use repo-owned template builders and do not create provider state.
 
-Run the UAT static smoke when you need to verify deployed GitHub Pages static routes, Decap admin boot/config, representative public pages, checkout shell visibility, sitemap, robots, console errors, and high-risk public-secret exposure:
+Run the UAT static smoke when you need to verify deployed GitHub Pages static routes, Sveltia admin boot/config, representative public pages, checkout shell visibility, sitemap, robots, console errors, and high-risk public-secret exposure:
 
 ```sh
 pnpm smoke:uat-static -- --site-url https://blackbox-studio-athens.github.io/blackbox-records --scenario all
@@ -478,7 +478,7 @@ pnpm audit:commerce-boundaries
 - Hosted UAT and PRD internal requests require a valid `Cf-Access-Jwt-Assertion`. The Worker verifies its RS256 signature, exact `CF_ACCESS_TEAM_DOMAIN` issuer, `CF_ACCESS_POLICY_AUD` audience, lifetime, and email claim before any route service or D1 work.
 - The forwarded `cf-access-authenticated-user-email` header is ignored. Stock-write `actor_email` comes only from the verified assertion claim.
 - JWT-free operator identity exists only for Product Environment Local on `localhost` or `127.0.0.1`, using the committed local-only `LOCAL_OPERATOR_EMAIL` binding.
-- Decap login remains a separate editorial authentication boundary; its token, cookie, callbacks, and helpers never enter the Worker operator runtime.
+- Sveltia login remains a separate editorial authentication boundary; its token, cookie, callbacks, and helpers never enter the Worker operator runtime.
 - The internal Worker API now exposes operator-only stock lookup and stock-write routes under `/api/internal/variants/*`.
 - The internal Worker API now exposes read-only checkout order inspection under `/api/internal/orders*` for low-volume reconciliation. It is Access-protected, not a shopper API, and does not mutate order or stock state.
 - The protected stock operations UI is built from `apps/staff` at `/stock/`; it calls same-origin `/api/internal/*` on the protected operator hostname.
@@ -695,7 +695,7 @@ Cloudflare cache policy is explicit and versioned in repo-owned artifacts and ro
 
 ## Content model
 
-Content is managed in the repo through Astro content collections, and Decap CMS now provides an editing layer on top of the same `apps/web/src/content/**` files.
+Content is managed in the repo through Astro content collections, and Sveltia CMS now provides an editing layer on top of the same `apps/web/src/content/**` files.
 
 - Artists: `apps/web/src/content/artists/*.md`
 - Releases: `apps/web/src/content/releases/*.md`
@@ -712,153 +712,71 @@ Content is managed in the repo through Astro content collections, and Decap CMS 
 - JSON collection entries include `$schema` references to Astro-generated collection schemas for editor/CMS validation.
 - Artist, release, and distro entries stay editorial-only; Fourthwall collection handles and CMS-authored commerce controls are not part of the content contract.
 - Home/about decorative images are now validated as Astro image fields.
-- Home, About, and Services now store their page sections as editable block lists in Decap so whole sections can be deleted or reordered when needed.
+- Home, About, and Services use named fixed-layout objects; editors cannot delete or reorder their sections.
 
 Collection schemas are defined in `apps/web/src/content.config.ts`.
 
-## Decap CMS
+## Sveltia CMS
 
-BlackBox now ships with an Astro-hosted Decap CMS at `/admin/`.
+BlackBox uses Sveltia CMS `0.205.2` at `/admin/`.
 
-- Admin entry: `apps/web/src/pages/admin/index.astro`
-- Generated config: `apps/web/src/pages/admin/config.yml.ts`
-- Admin styling: `apps/web/public/admin/admin.css`
-- Preview styling/runtime: `apps/web/public/admin/preview.css`, `apps/web/public/admin/init.js`
-- Local Decap proxy: `apps/web/scripts/start-decap-proxy.mjs`
-- Combined local CMS dev server: `apps/web/scripts/start-cms-dev.mjs`
-- Collection media contract: `apps/web/src/lib/admin/decap-media.ts`
+- Static document: `apps/web/public/admin/index.html`
+- Generated configuration and bootstrap: `apps/web/src/pages/admin/config.yml.ts`, `apps/web/src/pages/admin/init.js.ts`
+- Extensions: `apps/web/src/lib/admin/bootstrap.js`, `apps/web/src/lib/admin/previews.js`
 
-### Local CMS development
+### Local editing
 
-For the full local commerce stack, `BlackBox Local Stack` already starts the local Decap proxy and serves `/admin/` from the canonical `4321` site. Use this standalone command when you only need the editor:
+Run `pnpm cms:dev`, then open `http://127.0.0.1:4322/blackbox-records/admin/index.html` in Chrome or Edge. Choose **Work with Local Repository** and select the repository root, `blackbox-records`, not `apps/web`. Allow directory access in the browser prompt.
 
-```sh
-pnpm cms:dev
+The command starts only Astro and fails if port 4322 is occupied. Stop the full local stack before starting the standalone editor. The full stack also serves the editor at `http://127.0.0.1:4321/blackbox-records/admin/index.html`.
+
+Local saves write files in your working tree. Review the diff and use Git to commit and push when ready; Sveltia does not commit or push local changes.
+
+### Build modes
+
+| Setting                         | Behavior                                                                |
+| ------------------------------- | ----------------------------------------------------------------------- |
+| `SVELTIA_BACKEND_MODE=local`    | Native directory editing; development default.                          |
+| `SVELTIA_BACKEND_MODE=hosted`   | GitHub OAuth; requires `SVELTIA_AUTH_BASE_URL`.                         |
+| `SVELTIA_BACKEND_MODE=disabled` | Unavailable admin without a loaded CMS; secret-free production default. |
+
+Hosted configuration fixes the repository to `BlackBox-Studio-Athens/blackbox-records`, branch `main`, with `publish_mode: simple`. Astro site/base settings determine public URLs. Invalid hosted settings stop the build without printing their values. The build validates its final admin artifact.
+
+### Hosted setup and login
+
+Deploy the official `sveltia/sveltia-cms-auth` project as a separate Cloudflare Worker. Register a GitHub OAuth app with callback `<authenticator-origin>/callback`. Configure the Worker's `GITHUB_CLIENT_ID`, encrypted `GITHUB_CLIENT_SECRET`, and exact domain list:
+
+```text
+ALLOWED_DOMAINS=blackbox-studio-athens.github.io,blackbox-records-web.pages.dev
 ```
 
-Run only the local Decap proxy:
+Keep credentials outside this repository and static artifacts. Set the GitHub Actions repository variable `SVELTIA_AUTH_BASE_URL` to the HTTPS authenticator origin, without a path or trailing slash. Static builds receive only this non-secret URL.
 
-```sh
-pnpm cms:proxy
-```
+Use the designated GitHub CMS account with repository write access. Open hosted `/admin/`, select **Sign In with GitHub**, and authorize that account. Keep Sveltia's native sign-in controls intact. If login succeeds but entries remain inaccessible, check the account's repository access.
 
-Default local ports:
+Hosted publication commits directly to `main` and can trigger catalog and deployment workflows. Avoid concurrent edits to the same entry. Use the protected stock UI for operational changes; the CMS does not own prices, stock, checkout, orders, or fulfillment.
 
-- Astro CMS dev server: `4322`
-- Decap proxy: `8082`
+### Media and previews
 
-Do not run standalone `pnpm cms:dev` while `BlackBox Local Stack` is running in the same workspace; Astro permits one dev server per workspace. Stop the stack first, or use the stack's `4321/admin/` URL.
+Use the native Asset Library and collection image controls. Collection images stay beside their content entries with relative stored paths. Shared assets use `/apps/web/public/assets`; public URLs use `/blackbox-records/assets` for Local/UAT and `/assets` for PRD.
 
-### Decap environment variables
+The seven previews use Sveltia's supplied asset resolver. Astro emits public catalog images at `/assets/catalog/<collection>/<filename>`, beneath the deployment base, for Store and Stripe image consumers. Source files stay in their existing content directories. The retired `/admin/media/` URLs have no redirect or fallback.
 
-Supported Decap baseline: `decap-cms@3.16.0` with `decap-server@3.11.0`.
+Collections appear in this order: Store Items, Releases, Artists, News, Site Pages, Advanced Navigation, Advanced Social Links, Advanced Site Settings. Site Pages includes Home, About, Services, Newsletter, and Distro. Artist, Release, Distro, fixed-page, and Navigation deletion remain disabled.
 
-- Local CMS Smoke owns functional, read-only editor checks at its desktop viewport.
-- Browser Use owns desktop, 390-pixel, and 320-pixel visual, responsive, focus, target-size, overflow, clipping, and console acceptance.
+### Verification and one-off cutover
 
-Maintainer build-mode matrix:
+Run `pnpm test:cms-admin`, `pnpm smoke:cms-local -- --screenshots never`, `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and `pnpm build`. Browser Use checks representative editor fields and previews at desktop and 320 CSS pixels without saving. Automated local smoke checks native configuration acceptance and leaves content and Git status unchanged.
 
-| `DECAP_BACKEND_MODE` | Intended use                                                                      | Result                                                                     |
-| -------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `local`              | `pnpm cms:dev` and Local CMS Smoke                                                | Foreground Astro plus `decap-server`; no hosted authentication.            |
-| `hosted`             | GitHub Pages UAT and the full Cloudflare Pages PRD build                          | DecapBridge PKCE/social sign-in with a generated `git-gateway` config.     |
-| `disabled`           | Ordinary secret-free builds, PRD Holding Page, and catalog-verification artifacts | Branded unavailable `/admin/`; no writable backend or runtime initializer. |
+For the Sveltia cutover:
 
-The committed example is [`apps/web/.env.example`](apps/web/.env.example). It defaults to `disabled`, names every local and hosted variable, and uses rejected placeholders for the two DecapBridge endpoint secrets. Hosted builds must replace those placeholders through the authoritative GitHub Actions variables/secrets and pass `pnpm cms:hosted:preflight` before Astro builds.
+1. Complete authenticator setup and arrange a pause on editorial saves and unrelated pushes to `main`.
+2. Keep data and consumers together. Add `[skip ci]` to cutover commits, then manually dispatch `.github/workflows/pages.yml` with `target=uat` and the exact `artifact_commit_sha`. Manual runs retain full validation.
+3. Run `cms_admin` and `cms_assets` UAT Static Smoke. The owner reloads admin, signs in with the designated account, and checks Home, Store Item, Release, images, and migrated Distro fields without publishing. Fix failures forward using the same staged sequence.
+4. Dispatch `target=prd` for the accepted SHA. Build for PRD's own Astro site/base; do not reuse the UAT artifact. Stop before PRD if a gate or owner acceptance is incomplete.
+5. After the PRD no-publish check, remove obsolete external CMS authentication access and resume editing. Subsequent automatic deployments remain unchanged.
 
-- `DECAP_BACKEND_MODE`
-  - Selects `local`, `hosted`, or `disabled` behavior.
-  - Astro development defaults to `local`; production/static builds default to `disabled` unless a workflow explicitly selects `hosted`.
-- `DECAP_SITE_URL`
-  - Published site root used by hosted Decap.
-- `DECAP_REPOSITORY`
-  - GitHub repository slug used by DecapBridge in production.
-- `DECAP_BRANCH`
-  - Branch Decap writes to. Defaults to `main`.
-- `DECAPBRIDGE_BASE_URL`
-  - DecapBridge auth base URL.
-- `DECAPBRIDGE_AUTH_ENDPOINT`
-  - PKCE auth endpoint path.
-- `DECAPBRIDGE_AUTH_TOKEN_ENDPOINT`
-  - PKCE token endpoint path.
-- `DECAPBRIDGE_GATEWAY_URL`
-  - DecapBridge gateway URL.
-- `DECAP_LOCAL_PROXY_PORT`
-  - Local Decap proxy port. Defaults to `8082`.
-- `CMS_DEV_PORT`
-  - Astro port used by `pnpm cms:dev`. Defaults to `4322`.
-
-### DecapBridge hosted setup
-
-Hosted `/admin/config.yml` is generated during the static frontend build. GitHub Pages UAT and full Cloudflare Pages PRD jobs explicitly select `DECAP_BACKEND_MODE=hosted`, set their public site URL, and run `pnpm cms:hosted:preflight` before building. The preflight reports only missing or invalid setting names; it never prints values.
-
-Add these in GitHub:
-
-- Repository `Settings -> Secrets and variables -> Actions -> Variables`
-  - `DECAP_REPOSITORY`
-    - `BlackBox-Studio-Athens/blackbox-records`
-  - `DECAP_BRANCH`
-    - `main`
-  - `DECAPBRIDGE_BASE_URL`
-    - `https://auth.decapbridge.com`
-  - `DECAPBRIDGE_GATEWAY_URL`
-    - `https://gateway.decapbridge.com`
-- Repository `Settings -> Secrets and variables -> Actions -> Secrets`
-  - `DECAPBRIDGE_AUTH_ENDPOINT`
-    - The exact PKCE auth endpoint path DecapBridge generated for this site
-  - `DECAPBRIDGE_AUTH_TOKEN_ENDPOINT`
-    - The exact PKCE token endpoint path DecapBridge generated for this site
-
-Notes:
-
-- Keep the endpoint values in GitHub `Secrets`, not `Variables`.
-- The UAT and full PRD jobs inject these values during their hosted builds, so published `/admin/config.yml` emits the real `git-gateway` PKCE config.
-- Local CMS commands force `local` mode and discard hosted-only DecapBridge settings before starting Astro and `decap-server`.
-- Ordinary secret-free production builds default to `disabled`; PRD Holding Page and catalog-verification builds also select `disabled` explicitly.
-- For hosted production access, keep the DecapBridge site on `pkce` and leave only Google enabled as a login provider.
-
-### Production auth model
-
-- Local development uses `decap-server` with the `proxy` backend. No DecapBridge login is required.
-- Hosted builds fail before Astro starts when required DecapBridge settings are missing, blank, placeholders, invalid, or loopback URLs.
-- Secret-free production builds render a branded unavailable `/admin/` surface and emit no writable backend or localhost configuration.
-- The published `/admin/` is intended to be Google-only through DecapBridge social login. The repo does not emit Decap `classic` username/password auth.
-- The local `pnpm cms:dev` flow is intentionally different from production and continues using the unauthenticated proxy backend for editing convenience.
-- Decap publishes directly to `main` with `publish_mode: simple`. Do not enable Decap editorial workflow in this iteration.
-- `cms_admin` and `cms_assets` are unauthenticated, read-only UAT Static Smoke scenarios for the deployed UAT commit. Their separate evidence is not Provider Smoke, Promotion Evidence, or authorization to deploy.
-
-### Hosted login troubleshooting
-
-- If the published `/admin/` still shows a password form, the cause is DecapBridge dashboard/provider configuration, not the generated repo config.
-- In DecapBridge, keep the site on `pkce`, disable any non-Google providers, and turn off any optional password or email/password login toggles.
-- The published `/admin/config.yml` should show `backend.name: git-gateway` and `auth_type: pkce`. If it does, the repo side is already configured for Google-only social login.
-
-### Media assets behavior
-
-- Home, About, Services, Artists, Releases, Distro, and News own their image files beside their content entries through `media_folder: "."` and `public_folder: "./"`.
-- The top-level Decap Media action is hidden because a global selection cannot preserve those collection-relative paths. Decap still requires a global media setting, so config uses the Home directory only as a non-exposed fallback.
-- `/admin/media/<collection>/<asset>` serves previews only from the seven typed collection roots, supported image extensions, and direct child filenames.
-- News preview resolution supports the existing `../releases/<asset>` references without broadening the media route or allowing arbitrary traversal.
-
-### Collection coverage
-
-The CMS edits the same Astro content files already used by the site:
-
-- Single-file collections:
-  - `home`
-  - `about`
-  - `services`
-  - `newsletter`
-  - `settings`
-- Folder collections:
-  - `navigation`
-  - `socials`
-  - `artists`
-  - `releases`
-  - `distro`
-  - `news`
-
-Image widgets are scoped per collection so saved paths stay compatible with Astro `image()` fields and collection-local assets.
+The site is pre-launch: replace obsolete catalog image URLs in source and generated artifacts; do not preserve them through a compatibility route. These repository edits do not authorize live Stripe or D1 changes.
 
 ## Artist image standard
 

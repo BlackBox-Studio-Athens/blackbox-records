@@ -210,7 +210,7 @@ describe('stripe catalog contract projection', () => {
       },
       productProjection: {
         imageUrls: [
-          'https://blackbox-records-web.pages.dev/admin/media/releases/ouranopithecus-album-cover-distro-mockup.webp',
+          'https://blackbox-records-web.pages.dev/assets/catalog/releases/ouranopithecus-album-cover-distro-mockup.webp',
         ],
         name: 'BlackBox Records - Anarchotribal - Vinyl',
         taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
@@ -239,7 +239,7 @@ describe('stripe catalog contract projection', () => {
       },
       productProjection: {
         imageUrls: [
-          'https://blackbox-records-web.pages.dev/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
+          'https://blackbox-records-web.pages.dev/assets/catalog/releases/afterwise-album-cover-distro-mockup.webp',
         ],
         name: 'BlackBox Records - Disintegration - Black Vinyl LP',
         taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
@@ -250,7 +250,7 @@ describe('stripe catalog contract projection', () => {
     });
     expect(contractsBySlug.get('barren-point')).toMatchObject({
       productProjection: {
-        imageUrls: ['https://blackbox-records-web.pages.dev/admin/media/distro/mass-culture-barren-point.jpg'],
+        imageUrls: ['https://blackbox-records-web.pages.dev/assets/catalog/distro/mass-culture-barren-point.jpg'],
         name: 'BlackBox Records - Barren Point - LP',
         taxCode: STRIPE_PHYSICAL_GOODS_TAX_CODE,
       },
@@ -272,7 +272,7 @@ describe('stripe catalog contract projection', () => {
       },
       productProjection: {
         imageUrls: [
-          'https://blackbox-records-web.pages.dev/admin/media/releases/chronoboros-album-cover-distro-mockup.webp',
+          'https://blackbox-records-web.pages.dev/assets/catalog/releases/chronoboros-album-cover-distro-mockup.webp',
         ],
         name: 'BlackBox Records - Caregivers - Vinyl',
       },
@@ -362,9 +362,9 @@ describe('stripe catalog contract projection', () => {
 
   it('rejects Product Projection image URLs that are not stable absolute public URLs', () => {
     expect(
-      isStableAbsoluteStripeImageUrl('https://blackbox-records-web.pages.dev/admin/media/distro/cassette-tape.jpg'),
+      isStableAbsoluteStripeImageUrl('https://blackbox-records-web.pages.dev/assets/catalog/distro/cassette-tape.jpg'),
     ).toBe(true);
-    expect(isStableAbsoluteStripeImageUrl('/admin/media/distro/cassette-tape.jpg')).toBe(false);
+    expect(isStableAbsoluteStripeImageUrl('/assets/catalog/distro/cassette-tape.jpg')).toBe(false);
 
     const invalidContract: StripeCatalogStoreItemContract = {
       alignmentStatus: 'checkout_eligible',
@@ -373,7 +373,7 @@ describe('stripe catalog contract projection', () => {
         desiredPrice: null,
         productProjection: {
           description: 'Invalid test contract.',
-          imageUrls: ['/admin/media/distro/cassette-tape.jpg'],
+          imageUrls: ['/assets/catalog/distro/cassette-tape.jpg'],
           metadata: {
             sourceId: 'afterglow-tape',
             sourceKind: 'distro',
@@ -395,7 +395,7 @@ describe('stripe catalog contract projection', () => {
       expectedSandboxPrice: null,
       productProjection: {
         description: 'Invalid test contract.',
-        imageUrls: ['/admin/media/distro/cassette-tape.jpg'],
+        imageUrls: ['/assets/catalog/distro/cassette-tape.jpg'],
         metadata: {
           sourceId: 'afterglow-tape',
           sourceKind: 'distro',

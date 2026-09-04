@@ -307,7 +307,7 @@ function createCatalogPrice(input: {
     productDescription: input.productProjection?.description ?? 'Disintegration by Afterwise.',
     productId: `prod_${input.priceId}`,
     productImages: input.productProjection?.imageUrls ?? [
-      'https://blackbox-records-web.pages.dev/admin/media/releases/disintegration.jpg',
+      'https://blackbox-records-web.pages.dev/assets/catalog/releases/disintegration.jpg',
     ],
     productMetadata: {
       ...(input.productProjection?.metadata ?? {}),
@@ -862,7 +862,7 @@ describe('CatalogReconciler', () => {
       apply: false,
       productProjection: {
         description: 'Disintegration by Afterwise.',
-        imageUrls: ['https://blackbox-records-web.pages.dev/admin/media/releases/disintegration.jpg'],
+        imageUrls: ['https://blackbox-records-web.pages.dev/assets/catalog/releases/disintegration.jpg'],
         metadata: {
           sourceId: storeItem.sourceId,
           sourceKind: storeItem.sourceKind,
@@ -923,7 +923,7 @@ describe('CatalogReconciler', () => {
       now: new Date('2026-05-23T10:00:00.000Z'),
       productProjection: {
         description: 'Disintegration by Afterwise.',
-        imageUrls: ['https://blackbox-records-web.pages.dev/admin/media/releases/disintegration.jpg'],
+        imageUrls: ['https://blackbox-records-web.pages.dev/assets/catalog/releases/disintegration.jpg'],
         metadata: {
           sourceId: storeItem.sourceId,
           sourceKind: storeItem.sourceKind,
@@ -1204,7 +1204,7 @@ describe('CatalogReconciler', () => {
       apply: true,
       productProjection: {
         description: 'Disintegration by Afterwise.',
-        imageUrls: ['https://blackbox-records-web.pages.dev/admin/media/releases/disintegration.jpg'],
+        imageUrls: ['https://blackbox-records-web.pages.dev/assets/catalog/releases/disintegration.jpg'],
         metadata: {
           sourceId: storeItem.sourceId,
           sourceKind: storeItem.sourceKind,
@@ -1247,7 +1247,7 @@ describe('CatalogReconciler', () => {
       applyProductProjection: false,
       productProjection: {
         description: 'Disintegration by Afterwise.',
-        imageUrls: ['https://blackbox-records-web.pages.dev/admin/media/releases/disintegration.jpg'],
+        imageUrls: ['https://blackbox-records-web.pages.dev/assets/catalog/releases/disintegration.jpg'],
         metadata: {
           sourceId: storeItem.sourceId,
           sourceKind: storeItem.sourceKind,

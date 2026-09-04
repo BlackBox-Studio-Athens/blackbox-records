@@ -1,27 +1,26 @@
-export type DecapSelectOption = {
+type DecapSelectOption = {
   label: string;
   value: string;
 };
 
-export type DecapPattern = {
+type DecapPattern = {
   message: string;
   value: string;
 };
 
-export type DecapRelationConfig = {
+type DecapRelationConfig = {
   collection: string;
   displayFields: string[];
-  optionsLength?: number;
   searchFields: string[];
   valueField: string;
 };
 
-export type DecapViewGroup = {
+type DecapViewGroup = {
   field: string;
   label: string;
 };
 
-export type DecapViewFilter = {
+type DecapViewFilter = {
   field: string;
   label: string;
   pattern: boolean | string;
@@ -168,7 +167,7 @@ function appendBaseFieldOptions(lines: string[], config: BaseFieldConfig, indent
   }
 
   if (config.allowMultiple !== undefined) {
-    lines.push(`${indent}allow_multiple: ${config.allowMultiple}`);
+    lines.push(`${indent}multiple: ${config.allowMultiple}`);
   }
 
   if (config.chooseUrl !== undefined) {
@@ -202,9 +201,6 @@ function appendBaseFieldOptions(lines: string[], config: BaseFieldConfig, indent
     lines.push(`${indent}search_fields: ${serializeYamlList(config.relation.searchFields)}`);
     lines.push(`${indent}value_field: ${escapeYamlScalar(config.relation.valueField)}`);
     lines.push(`${indent}display_fields: ${serializeYamlList(config.relation.displayFields)}`);
-    if (config.relation.optionsLength !== undefined) {
-      lines.push(`${indent}options_length: ${config.relation.optionsLength}`);
-    }
   }
 
   if (config.extras?.length) {

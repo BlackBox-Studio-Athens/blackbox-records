@@ -21,7 +21,7 @@ const contract: StripeCatalogStoreItemContract = {
     },
     productProjection: {
       description: 'Projected product.',
-      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/product.jpg'],
+      imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/releases/product.jpg'],
       metadata: {
         sourceId: 'disintegration',
         sourceKind: 'release',
@@ -47,7 +47,7 @@ const contract: StripeCatalogStoreItemContract = {
   },
   productProjection: {
     description: 'Projected product.',
-    imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/product.jpg'],
+    imageUrls: ['https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/releases/product.jpg'],
     metadata: {
       sourceId: 'disintegration',
       sourceKind: 'release',

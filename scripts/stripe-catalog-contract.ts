@@ -645,7 +645,7 @@ function createContentAssetUrl(
   const target = resolveCatalogAssetTarget(options);
   const basePath = normalizeBasePath(options.basePath ?? target.basePath);
   const siteUrl = options.siteUrl ?? target.siteUrl;
-  return new URL(`${basePath}/admin/media/${collection}/${encodeURIComponent(assetName)}`, siteUrl).toString();
+  return new URL(`${basePath}/assets/catalog/${collection}/${encodeURIComponent(assetName)}`, siteUrl).toString();
 }
 
 function resolveCatalogImageOverrideForRelease(sourceId: string): string | undefined {

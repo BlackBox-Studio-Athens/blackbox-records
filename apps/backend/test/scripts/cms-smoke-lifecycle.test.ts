@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { createServer } from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -9,7 +10,11 @@ import {
   formatCmsSmokeProcessFailure,
   type CmsSmokeProcess,
 } from '../../../../scripts/cms-smoke-lifecycle';
-import { checkCmsReadOnlyInvariants, parseCmsLocalSmokeArgs } from '../../../../scripts/smoke-cms-local';
+import {
+  checkCmsNativeStartup,
+  checkCmsReadOnlyInvariants,
+  parseCmsLocalSmokeArgs,
+} from '../../../../scripts/smoke-cms-local';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
@@ -20,11 +25,11 @@ describe('CMS smoke lifecycle', () => {
       command: `missing-cms-smoke-command-${Date.now()}`,
       cwd: repositoryRoot,
       env: process.env,
-      name: 'decap-server',
+      name: 'astro-dev',
     });
 
     await expect(lifecycle.race(new Promise((resolve) => setTimeout(resolve, 5_000)))).rejects.toThrow(
-      /decap-server .*exited|decap-server failed to start/i,
+      /astro-dev .*exited|astro-dev failed to start/i,
     );
     await lifecycle.shutdown();
   });
@@ -73,13 +78,13 @@ describe('CMS smoke lifecycle', () => {
     const processInfo = {
       child: {} as CmsSmokeProcess['child'],
       knownPids: new Set<number>(),
-      name: 'decap-server',
+      name: 'astro-dev',
       output: ['startup failed'],
       treeCaptureTimer: null,
     } satisfies CmsSmokeProcess;
 
     expect(formatCmsSmokeProcessFailure(processInfo, 'exited with code 1').message).toBe(
-      'decap-server exited with code 1.\nstartup failed',
+      'astro-dev exited with code 1.\nstartup failed',
     );
   });
 
@@ -93,57 +98,110 @@ describe('CMS smoke lifecycle', () => {
 });
 
 describe('local CMS smoke contract', () => {
-  it('parses explicit smoke options', () => {
-    expect(
-      parseCmsLocalSmokeArgs([
-        '--cms-port',
-        '4333',
-        '--proxy-port',
-        '8093',
-        '--timeout-ms',
-        '45000',
-        '--screenshots',
-        'never',
-      ]),
-    ).toMatchObject({ cmsPort: 4333, proxyPort: 8093, screenshots: 'never', timeoutMs: 45_000 });
+  it('parses supported options and keeps the CMS port fixed', () => {
+    expect(parseCmsLocalSmokeArgs(['--', '--timeout-ms', '45000', '--screenshots=never', '--headed'])).toMatchObject({
+      screenshots: 'never',
+      timeoutMs: 45_000,
+      headed: true,
+    });
+    expect(() => parseCmsLocalSmokeArgs(['--cms-port', '4333'])).toThrow();
+    expect(() => parseCmsLocalSmokeArgs(['--proxy-port', '8093'])).toThrow();
+    expect(() => parseCmsLocalSmokeArgs(['--timeout-ms', '0'])).toThrow('--timeout-ms must be a positive integer');
   });
 
-  it('fails read-only evidence for content, commit, publish, or provider mutation changes', () => {
+  it('fails read-only evidence for content, commit, status, publish, or mutation changes', () => {
     expect(
       checkCmsReadOnlyInvariants({
-        after: { contentHash: 'after', gitHead: 'after' },
-        before: { contentHash: 'before', gitHead: 'before' },
+        after: { contentHash: 'after', gitHead: 'after', gitStatus: 'after' },
+        before: { contentHash: 'before', gitHead: 'before', gitStatus: 'before' },
         externalMutationRequests: ['POST https://provider.example/write'],
         publishClickCount: 1,
       }),
     ).toEqual([
-      'CMS content files changed during the read-only smoke.',
+      'CMS content or media changed during the read-only smoke.',
       'Git HEAD changed during the read-only smoke.',
-      'The read-only smoke selected Publish.',
-      'The read-only smoke sent external mutation requests: POST https://provider.example/write.',
+      'Git status changed during the read-only smoke.',
+      'The read-only smoke selected Save or Publish.',
+      'The read-only smoke sent mutation requests: POST https://provider.example/write.',
     ]);
+    const state = { contentHash: 'same', gitHead: 'same', gitStatus: ' M existing-user-change' };
+    expect(
+      checkCmsReadOnlyInvariants({
+        before: state,
+        after: { ...state },
+        externalMutationRequests: [],
+        publishClickCount: 0,
+      }),
+    ).toEqual([]);
   });
 
-  it('covers the five representative editor and preview contracts', () => {
-    const source = readFileSync(path.join(repositoryRoot, 'scripts', 'smoke-cms-local.ts'), 'utf8');
-    for (const contract of [
-      "collection: 'site-pages'",
-      "collection: 'artists'",
-      "collection: 'releases'",
-      "collection: 'distro'",
-      "collection: 'news'",
-      "entry: 'chronoboros'",
-      "entry: 'caregivers'",
-      "entry: 'barren-point'",
-      "entry: 'lorem-ipsum'",
-      "getByRole('button', { name: 'Toggle preview', exact: true })",
-      'name: "site-pages"',
-      'file: "apps/web/src/content/home/site.json"',
-    ]) {
-      expect(source).toContain(contract);
+  it('requires the native repository picker, not only a loaded runtime', () => {
+    const scriptUrls = ['https://unpkg.com/@sveltia/cms@0.205.2/dist/sveltia-cms.js'];
+    expect(
+      checkCmsNativeStartup({
+        bodyText: 'Work with Local Repository',
+        hasLocalRepositoryButton: true,
+        scriptUrls,
+      }),
+    ).toEqual([]);
+    expect(
+      checkCmsNativeStartup({
+        bodyText: 'Configuration Errors: Invalid field name',
+        hasLocalRepositoryButton: false,
+        scriptUrls,
+      }),
+    ).toEqual([
+      'Sveltia did not reach native local repository selection.',
+      'Sveltia rejected the generated configuration.',
+    ]);
+    expect(
+      checkCmsNativeStartup({
+        bodyText: 'Configuration Errors',
+        hasLocalRepositoryButton: true,
+        scriptUrls,
+      }),
+    ).toContain('Sveltia rejected the generated configuration.');
+    expect(
+      checkCmsNativeStartup({
+        bodyText: 'Loading the editor',
+        hasLocalRepositoryButton: false,
+        scriptUrls: [],
+      }),
+    ).toHaveLength(2);
+  });
+
+  it('fails the real launcher when port 4322 is occupied, without choosing another port', async () => {
+    const occupied = createServer();
+    await new Promise<void>((resolve, reject) => {
+      occupied.once('error', reject);
+      occupied.listen(4322, '127.0.0.1', resolve);
+    });
+    const lifecycle = new CmsSmokeLifecycle();
+    try {
+      lifecycle.startProcess({
+        command: process.execPath,
+        args: [path.join(repositoryRoot, 'apps/web/scripts/start-cms-dev.mjs')],
+        cwd: path.join(repositoryRoot, 'apps/web'),
+        env: process.env,
+        name: 'astro-dev',
+      });
+      await expect(lifecycle.race(new Promise((resolve) => setTimeout(resolve, 30000)))).rejects.toThrow(
+        /Port 4322 is already in use/,
+      );
+    } finally {
+      await lifecycle.shutdown();
+      await new Promise<void>((resolve) => occupied.close(() => resolve()));
     }
-    expect(source).not.toContain('blackbox-cms-preview-auto-collapsed');
-    expect(source).not.toContain('data-blackbox-cms-scope-panel');
-    expect(source).not.toContain('data-blackbox-fixed-section-actions');
+  }, 40000);
+
+  it('uses the native strict-port launcher without a repository-write proxy or fake filesystem', () => {
+    const source = readFileSync(path.join(repositoryRoot, 'scripts', 'smoke-cms-local.ts'), 'utf8');
+    const launcher = readFileSync(path.join(repositoryRoot, 'apps/web/scripts/start-cms-dev.mjs'), 'utf8');
+    expect(source).toContain("'start-cms-dev.mjs'");
+    expect(source).toContain("'--porcelain'");
+    expect(source).not.toMatch(/decap-server|showDirectoryPicker\s*=|proxyPort/);
+    expect(launcher).toContain('strictPort: true');
+    expect(launcher).toContain('port: 4322');
+    expect(launcher).not.toContain('spawn');
   });
 });

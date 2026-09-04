@@ -15,7 +15,6 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  background: #050505;
 }
 
 body {
@@ -23,12 +22,20 @@ body {
 }
 
 .blackbox-preview {
+  box-sizing: border-box;
   min-height: 100vh;
   padding: 1rem;
   background:
     radial-gradient(circle at top right, rgba(146, 47, 63, 0.08), transparent 24%),
     linear-gradient(180deg, #111111 0%, #080808 100%);
   color: var(--bb-preview-text);
+}
+
+.blackbox-preview *,
+.blackbox-preview *::before,
+.blackbox-preview *::after {
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .blackbox-preview__shell {

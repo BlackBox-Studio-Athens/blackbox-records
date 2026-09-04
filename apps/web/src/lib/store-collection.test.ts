@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import distroPage from '../content/distro-page/site.json';
 
 vi.mock('astro:content', () => ({
   getCollection: vi.fn(async (collectionName: string) => {
@@ -193,7 +194,7 @@ describe('store collection entries', () => {
     expect(groupStoreDistroCollectionEntries(entries)).toEqual([
       {
         groupName: 'Tapes',
-        introGroupName: 'Tapes',
+        introKey: 'Tapes',
         entries: [expect.objectContaining({ storeItem: expect.objectContaining({ slug: 'afterglow-tape' }) })],
       },
     ]);
@@ -245,6 +246,15 @@ describe('store collection entries', () => {
       'Clothes',
       'Other',
     ]);
+    expect(groups.map((group) => group.introKey)).toEqual([
+      'vinyl_12_inch',
+      'vinyl_7_inch',
+      'CDs',
+      'Tapes',
+      'Clothes',
+      'Other',
+    ]);
+    expect(distroPage.group_intros[groups[1]!.introKey]).toBe(distroPage.group_intros.vinyl_7_inch);
     expect(groups[1]?.entries.map((entry) => entry.storeItem.title)).toEqual(['Alpha', 'Beta', 'small-vinyl-10']);
     expect(groups.flatMap((group) => group.entries).map((entry) => entry.storeItem.slug)).toHaveLength(entries.length);
     expect(groups.map((group) => createStoreDistroGroupHeadingId(group.groupName))).toEqual([

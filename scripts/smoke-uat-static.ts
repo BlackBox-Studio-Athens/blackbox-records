@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 
 import { chromium, type Browser, type BrowserContext, type Page, type Request } from 'playwright';
 import { parse } from 'yaml';
+import { resolveSveltiaRuntimeConfig } from '../apps/web/src/lib/admin/sveltia-runtime-config';
 
 import {
   createRouteUrl,
@@ -71,23 +72,11 @@ type UatStaticSmokeScenarioDefinition = {
 };
 
 export const CMS_BOOT_ASSET_CONTRACTS = {
-  css: {
-    path: '/admin/admin.css',
-    snippets: ['blackbox-cms', '.blackbox-cms-boot[hidden]'],
-  },
-  html: {
-    path: '/admin/index.html',
-    snippets: ['data-admin-boot-root'],
-  },
+  css: { path: '/admin/admin.css', snippets: ['#cms-status'] },
+  html: { path: '/admin/index.html', snippets: ['id="cms-status"', 'src="./init.js"', 'href="./config.yml"'] },
   runtime: {
     path: '/admin/init.js',
-    snippets: [
-      'window.__BLACKBOX_ADMIN__',
-      'blackbox:decap-ready',
-      'blackbox:decap-failed',
-      'site-pages',
-      "mediaButton.dataset.blackboxTopLevelMedia = 'hidden'",
-    ],
+    snippets: ['https://unpkg.com/@sveltia/cms@0.205.2/dist/sveltia-cms.js', 'CMS_MANUAL_INIT', 'home-site', 'preSave'],
   },
 } as const;
 
@@ -105,13 +94,11 @@ type UatStaticSmokeSummary = {
 
 export type CmsAdminRenderedState = {
   bodyText: string;
-  hasCollectionUi: boolean;
+  hasGitHubSignIn: boolean;
   hasConfigLink: boolean;
   hasCmsRoot: boolean;
   hasExactPinnedRuntime: boolean;
   hasRuntimeApi: boolean;
-  isAdminReady: boolean;
-  isAuthReady: boolean;
   runtimeScriptUrls: string[];
 };
 
@@ -144,7 +131,7 @@ const allScenarioNames: readonly UatStaticSmokeScenarioName[] = [
 
 const UAT_STATIC_SMOKE_SCENARIOS: Record<UatStaticSmokeScenarioName, UatStaticSmokeScenarioDefinition> = {
   cms_admin: {
-    description: 'Verify the Decap admin boot screen and configuration bridge.',
+    description: 'Verify native Sveltia GitHub sign-in and hosted configuration.',
     name: 'cms_admin',
   },
   cms_assets: {
@@ -343,7 +330,10 @@ async function runUatStaticSmokeScenario(input: {
       input.scenario.name === 'cms_admin'
         ? [
             await checkCmsAdminPage(page, input.options),
-            await checkTextAsset(input.options, '/admin/config.yml', ['# blackbox-decap-mode: hosted', 'collections:']),
+            await checkTextAsset(input.options, '/admin/config.yml', [
+              '# blackbox-sveltia-mode: hosted',
+              'collections:',
+            ]),
           ]
         : input.scenario.name === 'cms_assets'
           ? await checkCmsAssets(input.options)
@@ -424,25 +414,27 @@ async function runUatStaticSmokeScenario(input: {
 }
 
 async function checkCmsAdminPage(page: Page, options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck> {
-  const url = createRouteUrl(options.siteUrl, '/admin/#/');
+  const url = createRouteUrl(options.siteUrl, '/admin/index.html');
   const probe = await probeSmokeRoute(page, url, options.timeoutMs);
   const issues = [...probe.issues];
 
   await waitForCmsAdminTerminalState(page, options.timeoutMs).catch((error: unknown) => {
     issues.push(
-      `Expected /admin/#/ to reach a usable Decap auth or collection state: ${redactSensitiveSmokeText(
+      `Expected /admin/index.html to reach a native Sveltia GitHub sign-in: ${redactSensitiveSmokeText(
         truncateForConsole(String(error)),
       )}.`,
     );
   });
 
   const renderedState = await readCmsAdminRenderedState(page, options.timeoutMs).catch((error: unknown) => {
-    issues.push(`Expected /admin/#/ rendered state to be readable: ${redactSensitiveSmokeText(String(error))}.`);
+    issues.push(
+      `Expected /admin/index.html rendered state to be readable: ${redactSensitiveSmokeText(String(error))}.`,
+    );
     return null;
   });
 
   if (!probe.status || probe.status >= 400) {
-    issues.push(`Expected /admin/#/ to return HTTP 200; received ${probe.status ?? 'no response'}.`);
+    issues.push(`Expected /admin/index.html to return HTTP 200; received ${probe.status ?? 'no response'}.`);
   }
 
   if (renderedState) {
@@ -458,7 +450,7 @@ async function checkCmsAdminPage(page: Page, options: UatStaticSmokeOptions): Pr
     contentType: null,
     issues,
     kind: 'page',
-    path: '/admin/#/',
+    path: '/admin/index.html',
     status: probe.status,
     title: probe.title,
     url,
@@ -467,25 +459,10 @@ async function checkCmsAdminPage(page: Page, options: UatStaticSmokeOptions): Pr
 
 async function waitForCmsAdminTerminalState(page: Page, timeoutMs: number): Promise<void> {
   await page.waitForFunction(
-    () => {
-      const globalState = window as typeof window & {
-        __BLACKBOX_ADMIN_AUTH_READY__?: boolean;
-        __BLACKBOX_ADMIN_READY__?: boolean;
-      };
-      const bodyText = document.body?.innerText || '';
-      const hasLoadingText = /Preparing the editor|Loading configuration/i.test(bodyText);
-      const hasEnhancedAuth = Boolean(
-        globalState.__BLACKBOX_ADMIN_AUTH_READY__ ||
-        document.querySelector('[data-blackbox-cms-auth-button="true"]') ||
-        bodyText.includes('Sign in with DecapBridge'),
-      );
-      const hasCollectionUi = Boolean(
-        document.querySelector('a[href*="#/collections/"]') ||
-        /\bCollections\b|\bSite Pages\b|\bReleases\b|\bStore Items\b/.test(bodyText),
-      );
-
-      return hasEnhancedAuth || hasCollectionUi || (Boolean(globalState.__BLACKBOX_ADMIN_READY__) && !hasLoadingText);
-    },
+    () =>
+      [...document.querySelectorAll('button')].some((button) =>
+        /Sign In with.*GitHub/i.test(button.textContent ?? ''),
+      ) || /configuration errors?|invalid configuration/i.test(document.body.innerText),
     undefined,
     { timeout: Math.min(timeoutMs, 20_000) },
   );
@@ -494,37 +471,23 @@ async function waitForCmsAdminTerminalState(page: Page, timeoutMs: number): Prom
 export async function readCmsAdminRenderedState(page: Page, timeoutMs: number): Promise<CmsAdminRenderedState> {
   return page.locator('body').evaluate(
     () => {
-      const globalState = window as typeof window & {
-        __BLACKBOX_ADMIN_AUTH_READY__?: boolean;
-        __BLACKBOX_ADMIN_READY__?: boolean;
-      };
-      const bodyText = document.body?.innerText || '';
       const runtimeScriptUrls = Array.from(document.scripts)
         .map((script) => script.src)
         .filter(Boolean);
-      const hasCollectionUi = Boolean(
-        document.querySelector('a[href*="#/collections/"]') ||
-        /\bCollections\b|\bSite Pages\b|\bReleases\b|\bStore Items\b/.test(bodyText),
-      );
-
+      const configLink = document.querySelector<HTMLLinkElement>('link[rel="cms-config-url"]');
       return {
-        bodyText,
-        hasCollectionUi,
-        hasConfigLink: Boolean(document.querySelector('link[rel="cms-config-url"][href*="/admin/config.yml"]')),
+        bodyText: document.body.innerText,
+        hasGitHubSignIn: [...document.querySelectorAll('button')].some((button) =>
+          /Sign In with.*GitHub/i.test(button.textContent ?? ''),
+        ),
+        hasConfigLink: configLink?.href === new URL('./config.yml', window.location.href).href,
         hasCmsRoot: Boolean(document.getElementById('nc-root')),
-        hasExactPinnedRuntime: runtimeScriptUrls.some(
-          (url) => url === 'https://unpkg.com/decap-cms@3.16.0/dist/decap-cms.js',
-        ),
+        hasExactPinnedRuntime: runtimeScriptUrls.includes('https://unpkg.com/@sveltia/cms@0.205.2/dist/sveltia-cms.js'),
         hasRuntimeApi: Boolean((window as typeof window & { CMS?: unknown }).CMS),
-        isAdminReady: Boolean(globalState.__BLACKBOX_ADMIN_READY__),
-        isAuthReady: Boolean(
-          globalState.__BLACKBOX_ADMIN_AUTH_READY__ ||
-          document.querySelector('[data-blackbox-cms-auth-button="true"]') ||
-          bodyText.includes('Sign in with DecapBridge'),
-        ),
         runtimeScriptUrls,
       };
     },
+    undefined,
     { timeout: Math.min(timeoutMs, 20_000) },
   );
 }
@@ -571,34 +534,40 @@ async function checkCheckoutShellPage(page: Page, options: UatStaticSmokeOptions
 }
 
 async function checkCmsAssets(options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck[]> {
-  const checks: UatStaticSmokeCheck[] = [];
-
-  checks.push(
-    await checkTextAsset(options, '/admin/config.yml', [
-      'collections:',
-      'media_folder:',
-      'extension: json',
-      'format: json',
-    ]),
-  );
+  const checks = [
+    await checkTextAsset(options, '/admin/config.yml', ['# blackbox-sveltia-mode: hosted', 'collections:']),
+  ];
   for (const contract of Object.values(CMS_BOOT_ASSET_CONTRACTS)) {
     checks.push(await checkTextAsset(options, contract.path, contract.snippets));
   }
-  checks.push(await checkTextAsset(options, '/admin/preview-assets.js', ['resolvePreviewAssetUrl']));
   checks.push(await checkTextAsset(options, '/admin/preview.css', ['body']));
-  checks.push(await checkBinaryAsset(options, '/admin/media/home/hero-live-band.jpg', 'image/'));
-  checks.push(await checkBinaryAsset(options, '/admin/media/artists/Chronoboros-band-logo.jpg', 'image/'));
-  checks.push(
-    await checkBinaryAsset(
-      options,
-      '/admin/media/releases/651165517_1798070461631923_2184094727995022471_n.jpg',
-      'image/',
-    ),
-  );
-  checks.push(await checkBinaryAsset(options, '/admin/media/distro/mass-culture-barren-point.jpg', 'image/'));
-  checks.push(await checkBinaryAsset(options, '/admin/media/news/img_0697.jpg', 'image/'));
-
+  checks.push(await checkBinaryAsset(options, '/favicon.svg', 'image/'));
+  for (const route of [
+    '/',
+    '/artists/' + representativeArtistSlug + '/',
+    '/releases/' + representativeReleaseSlug + '/',
+    '/store/barren-point/',
+    '/news/' + representativeNewsSlug + '/',
+  ]) {
+    const response = await fetchSmokeResponse(createRouteUrl(options.siteUrl, route), options.timeoutMs);
+    if (!response.ok) throw new Error('CMS media source page did not return HTTP 200: ' + route);
+    checks.push(
+      await checkBinaryAsset(options, findCmsPublicMediaPath(await response.text(), options.siteUrl), 'image/'),
+    );
+  }
   return checks;
+}
+
+export function findCmsPublicMediaPath(html: string, siteUrl: string): string {
+  // ponytail: inspect generated Astro img markup only; use an HTML parser if that output format changes.
+  const source = /<main\b[\s\S]*?<img\b[^>]*\ssrc=(["'])(.*?)\1/i.exec(html)?.[2];
+  if (!source) throw new Error('CMS media source page has no rendered content image.');
+  const root = new URL(createRouteUrl(siteUrl));
+  const asset = new URL(source, root);
+  if (asset.origin !== root.origin || !asset.pathname.startsWith(root.pathname)) {
+    throw new Error('CMS collection media must be served under the site base.');
+  }
+  return '/' + asset.pathname.slice(root.pathname.length) + asset.search;
 }
 
 async function checkPublicRoutes(page: Page, options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck[]> {
@@ -775,7 +744,7 @@ async function checkTextAsset(
   if (routePath === '/admin/config.yml') {
     issues.push(...checkCmsConfigPlaceholders(text));
     issues.push(...checkCmsSingletonJsonDeclarations(text));
-    issues.push(...checkCmsHostedConfigDeclarations(text));
+    issues.push(...checkCmsHostedConfigDeclarations(text, options.siteUrl));
   }
 
   for (const exposure of scanHighRiskSmokeExposure(text)) {
@@ -913,117 +882,84 @@ export function buildUatStaticSmokeEvidence(input: UatStaticSmokeEvidenceInput):
 }
 
 export function checkCmsConfigPlaceholders(text: string): string[] {
-  const issues: string[] = [];
-  let config: Record<string, unknown>;
-
+  let config;
   try {
-    const parsed = parse(text) as unknown;
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return issues;
-    config = parsed as Record<string, unknown>;
+    config = parse(text);
   } catch {
-    return issues;
+    return [];
   }
-
-  const backend =
-    config.backend && typeof config.backend === 'object' && !Array.isArray(config.backend)
-      ? (config.backend as Record<string, unknown>)
-      : {};
-  const connectionValues = [
-    backend.repo,
-    backend.base_url,
-    backend.auth_endpoint,
-    backend.auth_token_endpoint,
-    backend.gateway_url,
+  if (!config || typeof config !== 'object') return [];
+  const values = [
+    config.backend?.repo,
+    config.backend?.base_url,
     config.site_url,
     config.display_url,
-    typeof config.logo === 'object' && config.logo !== null && !Array.isArray(config.logo)
-      ? (config.logo as Record<string, unknown>).src
-      : undefined,
+    config.logo?.src,
   ].filter((value): value is string => typeof value === 'string');
-
-  if (connectionValues.some((value) => value.includes('__SET_DECAPBRIDGE_SITE_ID__'))) {
-    issues.push('CMS config still contains the __SET_DECAPBRIDGE_SITE_ID__ placeholder.');
-  }
-
-  if (connectionValues.some((value) => /https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?/i.test(value))) {
+  const issues: string[] = [];
+  if (values.some((value) => /https?:\/\/(?:127\.|localhost\b)/i.test(value)))
     issues.push('CMS config still points at a local backend or loopback URL.');
-  }
-
-  if (connectionValues.some((value) => /(?:CHANGE_ME|REPLACE_ME|example\.com|\.invalid\b|\bTODO\b)/i.test(value))) {
+  if (values.some((value) => /__SET_|CHANGE_ME|REPLACE_ME|example\.com|\.invalid\b|\bTODO\b/i.test(value)))
     issues.push('CMS config still contains an unsafe hosted placeholder.');
-  }
-
   return issues;
 }
 
-export function checkCmsHostedConfigDeclarations(text: string): string[] {
-  const issues: string[] = [];
-  let config: Record<string, unknown>;
-
+export function checkCmsHostedConfigDeclarations(text: string, expectedSiteUrl = defaultSiteUrl): string[] {
+  let config;
   try {
-    const parsed = parse(text) as unknown;
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('root is not a mapping');
-    config = parsed as Record<string, unknown>;
-  } catch (error) {
-    return [`CMS config is not valid YAML: ${redactSensitiveSmokeText(String(error))}.`];
+    config = parse(text);
+    if (!config || typeof config !== 'object' || Array.isArray(config)) throw new Error();
+  } catch {
+    return ['CMS config is not valid YAML.'];
   }
-
-  const backend =
-    config.backend && typeof config.backend === 'object' && !Array.isArray(config.backend)
-      ? (config.backend as Record<string, unknown>)
-      : {};
-  const expectedBackendValues: Record<string, string> = {
-    auth_type: 'pkce',
+  const issues: string[] = [];
+  const backend = config.backend ?? {};
+  for (const [field, expected] of Object.entries({
+    name: 'github',
+    repo: 'BlackBox-Studio-Athens/blackbox-records',
     branch: 'main',
-    name: 'git-gateway',
-  };
-
-  for (const [field, expected] of Object.entries(expectedBackendValues)) {
-    if (backend[field] !== expected) issues.push(`CMS hosted backend.${field} must equal "${expected}".`);
+  })) {
+    if (backend[field] !== expected) issues.push('CMS hosted backend.' + field + ' must equal "' + expected + '".');
   }
-
-  for (const field of ['repo', 'auth_endpoint', 'auth_token_endpoint', 'base_url', 'gateway_url']) {
-    if (typeof backend[field] !== 'string' || !backend[field].trim()) {
-      issues.push(`CMS hosted backend.${field} must be a non-empty string.`);
-    }
+  try {
+    resolveSveltiaRuntimeConfig({
+      environment: { SVELTIA_BACKEND_MODE: 'hosted', SVELTIA_AUTH_BASE_URL: backend.base_url ?? '' },
+      isDevelopment: false,
+    });
+  } catch {
+    issues.push('CMS hosted backend.base_url must be a valid HTTPS authenticator origin.');
   }
-
-  for (const field of ['base_url', 'gateway_url']) {
-    if (typeof backend[field] === 'string' && !backend[field].startsWith('https://')) {
-      issues.push(`CMS hosted backend.${field} must use HTTPS.`);
-    }
-  }
-
-  if ('proxy_url' in backend || config.local_backend === true) {
-    issues.push('CMS hosted config must not expose local proxy settings.');
+  if (
+    ['proxy_url', 'auth_type', 'auth_endpoint', 'auth_token_endpoint', 'gateway_url'].some(
+      (field) => field in Object(backend),
+    ) ||
+    'local_backend' in config
+  ) {
+    issues.push('CMS hosted config must not expose retired authentication or proxy settings.');
   }
   if (config.publish_mode !== 'simple') issues.push('CMS hosted publish_mode must equal "simple".');
-  if (config.media_folder !== 'apps/web/src/content/home' || config.public_folder !== './') {
-    issues.push('CMS hosted global media fallback must stay aligned to the non-exposed Home media root.');
+  const siteRoot = createRouteUrl(expectedSiteUrl);
+  if (!siteRoot.startsWith('https://') || config.site_url !== siteRoot || config.display_url !== siteRoot) {
+    issues.push('CMS hosted site_url and display_url must match the HTTPS deployment site root.');
   }
-
-  const siteUrl = typeof config.site_url === 'string' ? config.site_url : '';
-  const displayUrl = typeof config.display_url === 'string' ? config.display_url : '';
-  if (!siteUrl.startsWith('https://') || displayUrl !== siteUrl) {
-    issues.push('CMS hosted site_url and display_url must match one HTTPS UAT site root.');
+  if (
+    config.media_folder !== '/apps/web/public/assets' ||
+    config.public_folder !== new URL('assets', siteRoot).pathname
+  ) {
+    issues.push('CMS hosted global media must use shared public assets under the deployment base.');
   }
-
+  if (typeof config.logo?.src !== 'string' || !config.logo.src.startsWith(siteRoot)) {
+    issues.push('CMS hosted logo must use an asset under the deployment site root.');
+  }
   const collections = Array.isArray(config.collections) ? config.collections : [];
-  const collectionNames = collections.flatMap((collection) => {
-    if (!collection || typeof collection !== 'object' || Array.isArray(collection)) return [];
-    const name = (collection as Record<string, unknown>).name;
-    return typeof name === 'string' ? [name] : [];
-  });
-  for (const collectionName of ['distro', 'releases', 'artists', 'news', 'site-pages']) {
-    if (!collectionNames.includes(collectionName)) {
-      issues.push(`CMS hosted config is missing the ${collectionName} collection.`);
+  for (const name of ['distro', 'releases', 'artists', 'news', 'site-pages', 'navigation', 'socials', 'settings']) {
+    if (!collections.some((collection: { name?: string } | null) => collection?.name === name)) {
+      issues.push('CMS hosted config is missing the ' + name + ' collection.');
     }
   }
-
-  if (/apps\/web\/src\/content\/uploads|\/admin\/media\/uploads/i.test(text)) {
-    issues.push('CMS hosted config must not advertise an unowned global uploads inventory.');
+  if (/allow_multiple:|options_length:|\/admin\/media\/|decap-cms|decapbridge|git-gateway/i.test(text)) {
+    issues.push('CMS hosted config contains a retired provider, media route, or unsupported option.');
   }
-
   return issues;
 }
 
@@ -1061,7 +997,7 @@ export function checkCmsSingletonJsonDeclarations(text: string): string[] {
   }
 
   if (/file: "src\/content\/|folder: "src\/content\/|media_folder: src\/content\//.test(text)) {
-    issues.push('CMS config still uses app-root src/content paths; DecapBridge needs repo-root apps/web paths.');
+    issues.push('CMS config still uses app-root src/content paths; Sveltia needs repo-root apps/web paths.');
   }
 
   if (jsonExtensionCount < 2) {
@@ -1077,68 +1013,21 @@ export function checkCmsSingletonJsonDeclarations(text: string): string[] {
 
 export function checkCmsAdminRenderedState(state: CmsAdminRenderedState): string[] {
   const issues: string[] = [];
-  const bodyText = state.bodyText.trim();
-  const hasLoadingText = containsAnyTextIgnoreCase(bodyText, [
-    'Preparing the editor',
-    'Loading configuration...',
-    'Loading configuration',
-  ]);
-
-  if (!state.hasConfigLink) {
-    issues.push('Expected the admin page to point at /admin/config.yml via rel="cms-config-url".');
-  }
-
-  if (!state.hasCmsRoot) {
-    issues.push('Expected Decap CMS to mount #nc-root.');
-  }
-
-  if (!state.hasExactPinnedRuntime) {
-    issues.push('Expected /admin/#/ to load exactly decap-cms@3.16.0 from the pinned runtime URL.');
-  }
-
-  if (!state.hasRuntimeApi) {
-    issues.push('Expected the pinned Decap runtime to expose the CMS registration API.');
-  }
-
-  if (!bodyText) {
-    issues.push('Expected /admin/#/ to render visible Decap CMS text.');
-    return issues;
-  }
-
-  if (hasLoadingText && !state.isAuthReady && !state.hasCollectionUi) {
-    issues.push('Expected /admin/#/ to finish Decap bootstrap instead of staying on loading copy.');
-    return issues;
-  }
-
-  if (!state.isAdminReady && !state.isAuthReady && !state.hasCollectionUi) {
-    issues.push('Expected the BlackBox admin runtime to finish registering Decap previews.');
-  }
-
-  if (!state.isAuthReady && !state.hasCollectionUi) {
-    issues.push('Expected /admin/#/ to render a usable DecapBridge auth surface or authenticated collection UI.');
-  }
-
-  if (state.isAuthReady && !state.hasCollectionUi) {
-    for (const expectedText of ['BlackBox CMS', 'Sign in to edit content', 'Sign in with DecapBridge']) {
-      if (!containsTextIgnoreCase(bodyText, expectedText)) {
-        issues.push(`Expected hosted Decap auth copy to include "${expectedText}".`);
-      }
-    }
-  }
-
-  if (/\b(?:username|password)\b|email\s*\/\s*password/i.test(bodyText)) {
-    issues.push('Expected hosted Decap auth to omit classic username/password copy.');
-  }
-
+  if (!state.hasConfigLink) issues.push('Expected the admin page to link its adjacent config.yml.');
+  if (!state.hasCmsRoot) issues.push('Expected Sveltia CMS to mount #nc-root.');
+  if (!state.hasExactPinnedRuntime) issues.push('Expected the exact Sveltia 0.205.2 runtime.');
+  if (!state.hasRuntimeApi) issues.push('Expected the Sveltia CMS registration API.');
+  if (!state.bodyText.trim()) issues.push('Expected visible Sveltia CMS text.');
+  if (!state.hasGitHubSignIn) issues.push('Expected native GitHub sign-in without authenticating.');
+  if (/configuration errors?|invalid configuration/i.test(state.bodyText))
+    issues.push('Sveltia rejected the generated configuration.');
+  if (/DecapBridge|Google|username|password/i.test(state.bodyText))
+    issues.push('Expected native GitHub OAuth without retired login copy.');
   return issues;
 }
 
 function containsTextIgnoreCase(text: string, expected: string): boolean {
   return text.toLowerCase().includes(expected.toLowerCase());
-}
-
-function containsAnyTextIgnoreCase(text: string, expectedSnippets: readonly string[]): boolean {
-  return expectedSnippets.some((snippet) => containsTextIgnoreCase(text, snippet));
 }
 
 async function main(): Promise<void> {

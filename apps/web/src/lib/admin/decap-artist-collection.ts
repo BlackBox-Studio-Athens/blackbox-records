@@ -2,7 +2,7 @@ import { buildField, buildFieldMapping, buildFolderCollection } from './decap-ya
 import { httpsUrlPatternSource, youtubeVideoIdPatternSource } from '../editorial-validation';
 import { createSlugSuggestion } from '../slugs';
 import { decapCollectionDescriptions } from './decap-editorial-copy';
-import { decapCollectionMedia } from './decap-media';
+import { cmsRelativeMedia } from './sveltia-media';
 
 export function createArtistSlugSuggestion(artistName: string): string {
   return createSlugSuggestion(artistName);
@@ -23,8 +23,8 @@ export function buildArtistCollection() {
     format: 'frontmatter',
     identifierField: 'title',
     slug: '{{slug}}',
-    mediaFolder: decapCollectionMedia.artists.mediaFolder,
-    publicFolder: decapCollectionMedia.artists.publicFolder,
+    mediaFolder: cmsRelativeMedia.mediaFolder,
+    publicFolder: cmsRelativeMedia.publicFolder,
     summary: '{{title}} — {{genre}} — {{slug}}',
     fields: [
       buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Artist or band name.' }),

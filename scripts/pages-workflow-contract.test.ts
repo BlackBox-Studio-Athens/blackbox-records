@@ -8,6 +8,16 @@ const deployPrd = workflow.slice(workflow.indexOf('  deploy-prd:'), workflow.ind
 const deployStaff = workflow.slice(workflow.indexOf('  deploy-staff:'));
 
 describe('Pages workflow contract', () => {
+  it('builds hosted Sveltia for both targets without suppressing admin-library changes', () => {
+    expect(workflow.match(/SVELTIA_BACKEND_MODE: hosted/g)).toHaveLength(2);
+    expect(workflow.match(/SVELTIA_AUTH_BASE_URL: \$\{\{ vars.SVELTIA_AUTH_BASE_URL \}\}/g)).toHaveLength(2);
+    expect(workflow).not.toMatch(/DECAP_|DECAPBRIDGE|cms:hosted:preflight/);
+    expect(workflow).not.toContain('apps/web/src/lib/admin/**');
+    const prdBuild = workflow.slice(workflow.indexOf('  build-prd-static:'), workflow.indexOf('  deploy-uat:'));
+    expect(prdBuild).toContain('run: pnpm build\n');
+    expect(prdBuild).toContain('ASTRO_BASE_PATH: /');
+  });
+
   it('keeps public and staff artifacts and deploy targets separate', () => {
     expect(workflow).toContain('- staff');
     expect(workflow).toContain("inputs.target == 'staff'");

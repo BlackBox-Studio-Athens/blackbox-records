@@ -84,7 +84,6 @@ describe('Decap YAML builder', () => {
             searchFields: ['title', 'slug'],
             valueField: '{{slug}}',
             displayFields: ['title', 'slug'],
-            optionsLength: 25,
           },
         }),
       }),
@@ -106,7 +105,6 @@ describe('Decap YAML builder', () => {
         search_fields: ['title', 'slug'],
         value_field: '{{slug}}',
         display_fields: ['title', 'slug'],
-        options_length: 25,
       },
     });
   });

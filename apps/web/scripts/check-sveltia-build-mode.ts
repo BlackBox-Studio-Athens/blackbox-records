@@ -3,26 +3,27 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  assertDecapBuildArtifacts,
+  assertSveltiaBuildArtifacts,
   assertDisabledAdminAssetTexts,
-  DecapBuildArtifactError,
-} from '../src/lib/admin/decap-build-validation';
-import { DecapRuntimeConfigError, resolveDecapBackendMode } from '../src/lib/admin/decap-runtime-config';
+  SveltiaBuildArtifactError,
+} from '../src/lib/admin/sveltia-build-validation';
+import { SveltiaRuntimeConfigError, resolveSveltiaBackendMode } from '../src/lib/admin/sveltia-runtime-config';
 
 const webRoot = fileURLToPath(new URL('..', import.meta.url));
 
 async function main(): Promise<void> {
-  const expectedMode = resolveDecapBackendMode({ environment: process.env, isDevelopment: false });
-  const [indexHtml, configYaml] = await Promise.all([
+  const expectedMode = resolveSveltiaBackendMode({ environment: process.env, isDevelopment: false });
+  const [indexHtml, configYaml, bootstrapJs] = await Promise.all([
     readFile(resolve(webRoot, 'dist', 'admin', 'index.html'), 'utf8'),
     readFile(resolve(webRoot, 'dist', 'admin', 'config.yml'), 'utf8'),
+    readFile(resolve(webRoot, 'dist', 'admin', 'init.js'), 'utf8'),
   ]);
 
-  assertDecapBuildArtifacts({ configYaml, expectedMode, indexHtml });
+  assertSveltiaBuildArtifacts({ configYaml, expectedMode, indexHtml, bootstrapJs });
   if (expectedMode === 'disabled') {
     assertDisabledAdminAssetTexts(await readAdminTextAssets(resolve(webRoot, 'dist', 'admin')));
   }
-  console.log(`Decap build mode verified: ${expectedMode}.`);
+  console.log(`Sveltia build mode verified: ${expectedMode}.`);
 }
 
 async function readAdminTextAssets(directory: string, relativeRoot = ''): Promise<Record<string, string>> {
@@ -43,10 +44,10 @@ async function readAdminTextAssets(directory: string, relativeRoot = ''): Promis
 }
 
 main().catch((error: unknown) => {
-  if (error instanceof DecapRuntimeConfigError || error instanceof DecapBuildArtifactError) {
+  if (error instanceof SveltiaRuntimeConfigError || error instanceof SveltiaBuildArtifactError) {
     console.error(error.message);
   } else {
-    console.error('Decap build-mode check could not read or validate the generated admin artifacts.');
+    console.error('Sveltia build-mode check could not read or validate the generated admin artifacts.');
   }
 
   process.exitCode = 1;

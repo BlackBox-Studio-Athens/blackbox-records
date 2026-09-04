@@ -87,7 +87,7 @@ describe('paid-order email notifications', () => {
     expect(shopperMessage.html).toContain('Payment received');
     expect(shopperMessage.html).toContain('Disintegration Black Vinyl Lp');
     expect(shopperMessage.html).toContain(
-      'src="https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp"',
+      'src="https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/releases/afterwise-album-cover-distro-mockup.webp"',
     );
     expect(shopperMessage.html).toContain('alt="Disintegration Black Vinyl Lp product image"');
     expect(shopperMessage.html).not.toContain('variant_disintegration-black-vinyl-lp_standard</td>');
@@ -236,7 +236,7 @@ function paidOrder(overrides: Partial<PaidOrderEmailInput> = {}): PaidOrderEmail
         optionLabel: null,
         productImage: {
           altText: 'Disintegration Black Vinyl Lp product image',
-          url: 'https://blackbox-studio-athens.github.io/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
+          url: 'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/releases/afterwise-album-cover-distro-mockup.webp',
         },
         quantity: 1,
         storeItemSlug: 'disintegration-black-vinyl-lp',

@@ -78,14 +78,14 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 
 #### Scenario: Shared Distro groups cross the CMS boundary
 
-- **GIVEN** Astro content validation and Decap collection builders require the same Distro group values
+- **GIVEN** Astro content validation and CMS collection builders require the same Distro group values and intro-key definitions
 - **WHEN** CMS configuration imports those closed values
 - **THEN** `apps/web/src/lib/distro-data.ts` is a provided `storefront-catalog` entrypoint
 - **AND** CMS code imports that entrypoint instead of duplicating the group list.
 
 #### Scenario: Shared editorial validation crosses the CMS boundary
 
-- **GIVEN** Astro content schemas and Decap fields require the same path, URL, email, image, and provider constraints
+- **GIVEN** Astro content schemas and CMS fields require the same path, URL, email, image, and provider constraints
 - **WHEN** CMS configuration imports those validation primitives
 - **THEN** `apps/web/src/lib/editorial-validation.ts` is a provided `platform-shared` entrypoint
 - **AND** CMS code imports that entrypoint instead of duplicating validation patterns.
@@ -215,3 +215,10 @@ The system MUST expose application-owned Store readers through the documented co
 - **WHEN** public commerce and Stripe webhook composition require the native D1 checkout-hold adapter
 - **THEN** they import `apps/backend/src/infrastructure/persistence/d1-checkout-stock-hold-repository.ts` as a provided `commerce-persistence` entrypoint
 - **AND** HTTP route modules do not own or deep-import that persistence implementation.
+
+#### Scenario: Static CMS and catalog image entrypoints remain separate
+
+- **WHEN** boundary validation checks the Sveltia migration
+- **THEN** `cms-admin` owns `apps/web/public/admin/**`, `apps/web/src/pages/admin/**`, and `apps/web/src/lib/admin/**`, with the static admin document, generated config, and generated bootstrap as entrypoints
+- **AND** `storefront-catalog` owns `apps/web/src/pages/assets/catalog/**` and exposes its static image endpoint
+- **AND** catalog image output has no CMS dependency or retired `/admin/media/**` route.

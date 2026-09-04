@@ -18,13 +18,14 @@
       "entry": [
         "astro.config.mjs",
         "src/content.config.ts",
+        "src/lib/admin/entry.js",
         "src/pages/**/*.{astro,ts}",
         "src/**/*.test.{ts,tsx}",
         "scripts/**/*.{mjs,ts}",
       ],
       "project": ["astro.config.mjs", "src/**/*.{astro,ts,tsx,js,mjs}", "scripts/**/*.{mjs,ts}", "vitest.config.ts"],
       // CSS imports, Astro's Vite SSR cookie edge, and local dev binary launching are intentional but not visible to Knip's TS graph.
-      "ignoreDependencies": ["cookie", "tailwindcss", "tw-animate-css", "decap-server", "shadcn"],
+      "ignoreDependencies": ["cookie", "tailwindcss", "tw-animate-css", "shadcn"],
     },
     "apps/staff": {
       "entry": ["astro.config.mjs", "src/pages/**/*.astro", "src/**/*.test.{ts,tsx}"],
@@ -79,7 +80,7 @@
     "apps/web/src/components/store/checkout-return-status-state.ts": ["types"],
     "apps/web/src/components/ui/button.tsx": ["types"],
     "apps/staff/src/components/ui/button.tsx": ["types"],
-    "apps/web/src/lib/admin/decap-config.ts": ["types"],
+    "apps/web/src/lib/admin/sveltia-config.ts": ["types"],
     "apps/web/src/lib/app-shell/routing.ts": ["types"],
     "apps/web/src/lib/backend/public-checkout-api.ts": ["types"],
     "apps/web/src/lib/catalog-data.ts": ["types"],

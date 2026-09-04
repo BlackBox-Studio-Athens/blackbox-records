@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
+import distroPage from '../../content/distro-page/site.json';
 import { DISTRO_GROUP_VALUES } from '../distro-data';
 import { buildDistroPageFields } from './decap-distro-page-fields';
 import { buildPageFileCollections } from './decap-page-collections';
@@ -95,7 +96,14 @@ describe('Decap page file collections', () => {
   });
 
   it('exposes only Store/Distro copy consumed by the public shelves', () => {
-    type ParsedField = { fields?: ParsedField[]; hint?: string; name: string; summary?: string; widget: string };
+    type ParsedField = {
+      fields?: ParsedField[];
+      hint?: string;
+      label?: string;
+      name: string;
+      summary?: string;
+      widget: string;
+    };
     const fields = parse(buildDistroPageFields().join('\n')) as ParsedField[];
     const field = (name: string) => fields.find((candidate) => candidate.name === name);
 
@@ -106,7 +114,17 @@ describe('Decap page file collections', () => {
       widget: 'object',
     });
     expect(field('hero')?.fields?.map(({ name }) => name)).toEqual(['title', 'intro']);
-    expect(field('group_intros')?.fields?.map(({ name }) => name)).toEqual([...DISTRO_GROUP_VALUES]);
+    expect(Object.keys(distroPage.group_intros)).toEqual([
+      'vinyl_12_inch',
+      'vinyl_10_inch',
+      'vinyl_7_inch',
+      'CDs',
+      'Clothes',
+      'Tapes',
+      'Other',
+    ]);
+    expect(field('group_intros')?.fields?.map(({ name }) => name)).toEqual(Object.keys(distroPage.group_intros));
+    expect(field('group_intros')?.fields?.map(({ label }) => label)).toEqual([...DISTRO_GROUP_VALUES]);
     expect(fields.some(({ name }) => ['page_title', 'page_description', 'section_label'].includes(name))).toBe(false);
   });
 });

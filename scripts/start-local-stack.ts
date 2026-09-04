@@ -26,23 +26,10 @@ export type StackPlan = {
 
 const rootDir = process.cwd();
 const BACKEND_PORT = 8787;
-const DECAP_PROXY_PORT = 8082;
 const STATIC_PORT = 4321;
 const UAT_WORKER_URL = 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev';
 
-const localCmsProxyCommand: StackCommand = {
-  args: ['cms:proxy'],
-  command: 'pnpm',
-  name: 'Decap proxy',
-  waitForPort: DECAP_PROXY_PORT,
-};
-
-const localCmsEnvironment = {
-  CMS_DEV_PORT: String(STATIC_PORT),
-  DECAP_BACKEND_MODE: 'local',
-  DECAP_BRANCH: 'main',
-  DECAP_LOCAL_PROXY_PORT: String(DECAP_PROXY_PORT),
-};
+const localCmsEnvironment = { SVELTIA_BACKEND_MODE: 'local' };
 
 export function buildStackPlan(mode: LocalStackMode): StackPlan {
   const prepare: StackCommand[] =
@@ -60,15 +47,8 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
     mode === 'uat-connected'
       ? [STATIC_PORT]
       : mode === 'stripe-mock' || mode === 'stripe-mock-api'
-        ? [
-            STRIPE_MOCK_PROXY_PORT,
-            STRIPE_MOCK_HTTP_PORT,
-            STRIPE_MOCK_HTTPS_PORT,
-            DECAP_PROXY_PORT,
-            BACKEND_PORT,
-            STATIC_PORT,
-          ]
-        : [DECAP_PROXY_PORT, BACKEND_PORT, STATIC_PORT];
+        ? [STRIPE_MOCK_PROXY_PORT, STRIPE_MOCK_HTTP_PORT, STRIPE_MOCK_HTTPS_PORT, BACKEND_PORT, STATIC_PORT]
+        : [BACKEND_PORT, STATIC_PORT];
 
   if (mode === 'stripe-test') {
     prepare.push({
@@ -77,7 +57,6 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
       name: 'Seed real Stripe test mappings',
     });
     longRunning.push(
-      localCmsProxyCommand,
       {
         args: ['dev:backend'],
         command: 'pnpm',
@@ -109,7 +88,6 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
         name: 'Stripe mock API',
         waitForPort: STRIPE_MOCK_PROXY_PORT,
       },
-      localCmsProxyCommand,
       {
         args: ['dev:backend:mock'],
         command: 'pnpm',
@@ -141,7 +119,6 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
         name: 'Stripe mock API',
         waitForPort: STRIPE_MOCK_PROXY_PORT,
       },
-      localCmsProxyCommand,
       {
         args: ['dev:backend:mock-api'],
         command: 'pnpm',

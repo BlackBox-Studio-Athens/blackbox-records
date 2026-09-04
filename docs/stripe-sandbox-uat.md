@@ -87,7 +87,7 @@ Catalog Field Ownership keeps UAT alignment explicit:
 
 ## Dashboard Price Change Runbook
 
-Use this when a colleague needs to change a buyable UAT Store Item price without a repo, Decap, or static deploy change.
+Use this when a colleague needs to change a buyable UAT Store Item price without a repo, Sveltia, or static deploy change.
 
 [Stripe Price amounts are immutable](https://docs.stripe.com/products-prices/manage-prices). The Dashboard's `Edit price` action cannot change the amount; use `Add another price` from that flow to create the replacement.
 
@@ -122,7 +122,7 @@ Catalog-owner verification:
 
    The override changes only the smoke assertions for the hosted amount and Stripe Checkout Session. The browser cart snapshot and generated Desired Price remain stale on purpose, proving checkout uses the current Worker-owned Store Offer and Stripe Price.
 
-Decap remains editorial-only. Editors can change item information and page copy, but must not edit checkout price, Stripe IDs, D1 IDs, stock, provider mutation controls, or any runtime secret.
+Sveltia remains editorial-only. Editors can change item information and page copy, but must not edit checkout price, Stripe IDs, D1 IDs, stock, provider mutation controls, or any runtime secret.
 
 For this UAT exercise, the colleague uses the currently selected Stripe business account and its isolated UAT Stripe Sandbox. After an account cutover, use only the new account and regenerate all UAT evidence. No separate restricted-role proof is required for this exercise; an owner-supervised authenticated session or existing team login is sufficient. Confirm the Sandbox banner and test mode before editing, keep two-step authentication enabled, and never put passwords, recovery codes, API keys, or webhook secrets in evidence. See Stripe's [sandbox access guidance](https://docs.stripe.com/sandboxes/dashboard/manage-access).
 

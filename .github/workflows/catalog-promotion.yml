@@ -61,7 +61,7 @@ jobs:
 
       - name: Run repository gates
         env:
-          DECAP_BACKEND_MODE: disabled
+          SVELTIA_BACKEND_MODE: disabled
         run: |
           pnpm test:unit
           pnpm check

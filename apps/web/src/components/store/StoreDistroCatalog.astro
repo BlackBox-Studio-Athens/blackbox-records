@@ -168,7 +168,7 @@ const itemCountLabel = `${entries.length} ${entries.length === 1 ? 'item' : 'ite
             <h2 class="distro-group-section__title" id={group.headingId}>
               {group.groupName}
             </h2>
-            <p class="distro-group-section__copy">{distroPageContent.group_intros[group.introGroupName]}</p>
+            <p class="distro-group-section__copy">{distroPageContent.group_intros[group.introKey]}</p>
           </div>
           {group.coverflowEligible && (
             <div class="store-coverflow-controls" data-store-coverflow-controls>

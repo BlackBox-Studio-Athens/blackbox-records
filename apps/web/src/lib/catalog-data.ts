@@ -131,19 +131,19 @@ function createStoreItemPath(slug: string) {
 
 const RELEASE_STORE_ITEM_IMAGE_OVERRIDES: Record<string, StoreItemImageOverride> = {
   anarchotribal: {
-    src: createProjectRelativeUrl('/admin/media/releases/ouranopithecus-album-cover-distro-mockup.webp'),
+    src: createProjectRelativeUrl('/assets/catalog/releases/ouranopithecus-album-cover-distro-mockup.webp'),
     width: 3544,
     height: 3543,
     format: 'webp',
   },
   caregivers: {
-    src: createProjectRelativeUrl('/admin/media/releases/chronoboros-album-cover-distro-mockup.webp'),
+    src: createProjectRelativeUrl('/assets/catalog/releases/chronoboros-album-cover-distro-mockup.webp'),
     width: 3544,
     height: 3543,
     format: 'webp',
   },
   disintegration: {
-    src: createProjectRelativeUrl('/admin/media/releases/afterwise-album-cover-distro-mockup.webp'),
+    src: createProjectRelativeUrl('/assets/catalog/releases/afterwise-album-cover-distro-mockup.webp'),
     width: 3544,
     height: 3543,
     format: 'webp',

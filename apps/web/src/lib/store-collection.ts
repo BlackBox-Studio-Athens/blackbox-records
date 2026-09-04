@@ -1,5 +1,5 @@
 import { listDistroEntries, listStoreItems, type StoreItem } from './catalog-data';
-import { groupDistroEntries, type DistroGroupName } from './distro-data';
+import { groupDistroEntries, type DistroGroupName, type DistroIntroKey } from './distro-data';
 import { getPrimaryAvailabilityForStoreItem, type ItemAvailability } from './item-availability';
 import { type StoreCatalogCategoryId } from './store-categories';
 
@@ -23,7 +23,7 @@ export type StoreCollectionEntry = {
 export type StoreDistroCollectionGroup = {
   entries: StoreCollectionEntry[];
   groupName: string;
-  introGroupName: DistroGroupName;
+  introKey: DistroIntroKey;
 };
 
 type StoreCatalogMembershipInput = {
@@ -85,7 +85,7 @@ export function groupStoreDistroCollectionEntries(
   return groupedEntries.map((group) => ({
     entries: group.entries.map(({ entry }) => entry),
     groupName: group.groupName,
-    introGroupName: group.introGroupName,
+    introKey: group.introKey,
   }));
 }
 

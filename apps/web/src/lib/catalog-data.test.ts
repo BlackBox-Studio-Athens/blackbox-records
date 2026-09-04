@@ -213,7 +213,7 @@ describe('StoreItem projection contract', () => {
     );
 
     expect(storeItem?.image).toEqual({
-      src: '/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
+      src: '/blackbox-records/assets/catalog/releases/afterwise-album-cover-distro-mockup.webp',
       width: 3544,
       height: 3543,
       format: 'webp',
@@ -235,7 +235,7 @@ describe('StoreItem projection contract', () => {
     );
 
     expect(storeItem?.image).toEqual({
-      src: '/blackbox-records/admin/media/releases/ouranopithecus-album-cover-distro-mockup.webp',
+      src: '/blackbox-records/assets/catalog/releases/ouranopithecus-album-cover-distro-mockup.webp',
       width: 3544,
       height: 3543,
       format: 'webp',
@@ -258,7 +258,7 @@ describe('StoreItem projection contract', () => {
 
     expect(storeItem).toMatchObject({
       image: {
-        src: '/blackbox-records/admin/media/releases/chronoboros-album-cover-distro-mockup.webp',
+        src: '/blackbox-records/assets/catalog/releases/chronoboros-album-cover-distro-mockup.webp',
         width: 3544,
         height: 3543,
         format: 'webp',

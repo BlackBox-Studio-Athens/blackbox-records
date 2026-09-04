@@ -62,7 +62,7 @@ describe('Catalog description typography', () => {
 
   it('keeps summaries conditional and detail prose on body typography', () => {
     expect(distroCatalog).toContain(
-      '<p class="distro-group-section__copy">{distroPageContent.group_intros[group.introGroupName]}</p>',
+      '<p class="distro-group-section__copy">{distroPageContent.group_intros[group.introKey]}</p>',
     );
     expect(distroCard).toContain('<p class="distro-card__summary">{sourceSummary}</p>');
     expect(releaseCard).toContain('class="release-card-summary-text text-sm leading-relaxed text-muted-foreground"');

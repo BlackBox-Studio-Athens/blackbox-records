@@ -1,5 +1,5 @@
 import { buildField, buildSchemaField } from './decap-yaml-builder';
-import { DISTRO_GROUP_VALUES } from '../distro-data';
+import { DISTRO_INTRO_FIELDS } from '../distro-data';
 
 export function buildDistroPageFields() {
   return [
@@ -32,12 +32,12 @@ export function buildDistroPageFields() {
       widget: 'object',
       hint: 'Visible copy shown with each Store/Distro format shelf.',
       collapsed: true,
-      fields: DISTRO_GROUP_VALUES.map((group) =>
+      fields: DISTRO_INTRO_FIELDS.map(({ name, label }) =>
         buildField({
-          label: group,
-          name: group,
+          label,
+          name,
           widget: 'text',
-          hint: `Intro copy for the ${group} shelf.`,
+          hint: `Intro copy for the ${label} shelf.`,
         }),
       ),
     }),

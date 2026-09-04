@@ -130,7 +130,7 @@ describe('store purchase happy path', () => {
     expect(staticCartItem).toBeNull();
     expect(cartItem).toEqual({
       availabilityLabel: 'Available',
-      image: '/blackbox-records/admin/media/releases/afterwise-album-cover-distro-mockup.webp',
+      image: '/blackbox-records/assets/catalog/releases/afterwise-album-cover-distro-mockup.webp',
       imageAlt: 'Disintegration by Afterwise',
       optionLabel: 'Black Vinyl LP',
       priceAmountMinor: 2800,
