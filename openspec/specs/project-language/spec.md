@@ -233,7 +233,7 @@ The system SHALL use canonical cache-policy terms across specs, docs, validation
 
 - **WHEN** docs or validation describe long-lived caching for content-fingerprinted build files
 - **THEN** they use `Static Asset Cache`
-- **AND** they do not use that term for Worker API JSON, checkout state, stock state, or Decap/CMS behavior.
+- **AND** they do not use that term for Worker API JSON, checkout state, stock state, or CMS behavior.
 
 #### Scenario: Route document freshness is named
 

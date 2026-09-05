@@ -224,7 +224,7 @@ The system SHALL serve local main-site header and footer brand imagery at dimens
 
 #### Scenario: Stable public brand path is still required
 
-- **GIVEN** Decap, email, metadata, or the PRD holding artifact requires a stable Public Brand Asset URL
+- **GIVEN** Sveltia, email, metadata, or the PRD holding artifact requires a stable Public Brand Asset URL
 - **WHEN** the main-site derivative is introduced
 - **THEN** the required public original or dedicated public copy remains available
 - **AND** the main site does not fetch that oversized public source when a fingerprinted derivative is available.

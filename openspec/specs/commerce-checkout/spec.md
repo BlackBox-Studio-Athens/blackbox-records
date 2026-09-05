@@ -468,7 +468,7 @@ The system SHALL present Store Item detail prices from Worker Store Offers that 
 - **GIVEN** a shopper opens one canonical Store Item detail document
 - **WHEN** the browser needs that item's price or checkout readiness
 - **THEN** it reads the Worker Store Offer for that Store Item
-- **AND** it does not use Astro content, Decap content, static JSON, browser cart state, or listing-price presentation as checkout authority.
+- **AND** it does not use repository-authored editorial content, static JSON, browser cart state, or listing-price presentation as checkout authority.
 
 #### Scenario: Store item card renders price
 

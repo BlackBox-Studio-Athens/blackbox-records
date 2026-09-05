@@ -25,7 +25,7 @@ The system SHALL authenticate the complete /api/internal/* router through one sh
 
 The system SHALL keep Sveltia GitHub authentication and Cloudflare Access operator authentication as independent boundaries.
 
-#### Scenario: Same Google account is allowlisted for both systems
+#### Scenario: Same person is allowlisted for both systems
 
 - **WHEN** a label member uses Sveltia and the operator stock surface
 - **THEN** each system performs its own login and token validation

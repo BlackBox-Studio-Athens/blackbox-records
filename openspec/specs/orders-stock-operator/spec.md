@@ -178,16 +178,16 @@ The system SHALL authenticate the complete /api/internal/* router through one sh
 
 #### Scenario: Public route is requested
 
-- **WHEN** a shopper, Stripe webhook, newsletter, services, or Decap route runs
+- **WHEN** a shopper, Stripe webhook, newsletter, services, or CMS route runs
 - **THEN** operator middleware is not applied
 - **AND** its existing authentication contract remains unchanged.
 
-### Requirement: Editorial and operator Google logins remain separate
+### Requirement: Editorial and operator authentication remain separate
 
-The system SHALL keep Decap editorial authentication and Cloudflare Access operator authentication as independent boundaries.
+The system SHALL keep Sveltia GitHub authentication and Cloudflare Access operator authentication as independent boundaries.
 
-#### Scenario: Same Google account is allowlisted for both systems
+#### Scenario: Same person is allowlisted for both systems
 
-- **WHEN** a label member uses Decap and the operator stock surface
+- **WHEN** a label member uses Sveltia and the operator stock surface
 - **THEN** each system performs its own login and token validation
 - **AND** neither reuses the other's token, cookie, callback, or auth helper.

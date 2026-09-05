@@ -832,7 +832,7 @@ The system MUST document the supported Stripe Dashboard price-change workflow fo
 - **WHEN** a colleague needs to update a buyable item price
 - **THEN** the runbook tells them to use Stripe Dashboard, open the existing app-owned Product, add the replacement EUR Price, make it the default, archive the stale active Price, and request UAT proof
 - **AND** it does not ask them to copy metadata, lookup keys, Stripe IDs, D1 IDs, or repository identifiers
-- **AND** it states that Decap edits item information only, not checkout price.
+- **AND** it states that repository-authored editorial content managed through Sveltia changes item information only, not checkout price.
 
 #### Scenario: Existing Stripe account access is used
 
@@ -1143,157 +1143,6 @@ The validation workflow SHALL extend the existing frontend runtime-performance r
 - **THEN** the run is rejected and its reason is recorded
 - **AND** Browser Use remains the authority for rendered correctness while Chrome tracing supplies only unavailable timing evidence.
 
-### Requirement: Generated Decap configuration is structurally validated
-
-The system MUST parse and validate generated Decap YAML for every supported backend mode instead of relying only on fragment assertions.
-
-#### Scenario: Decap config tests run
-
-- **WHEN** `pnpm test:cms-admin` or the web unit suite runs
-- **THEN** tests parse the generated YAML for `local`, `hosted`, and `disabled` behavior
-- **AND** they verify backend type, repository, branch, publish mode, shared-Google guidance without provider-exclusivity claims, site/display URL, collection-owned media settings, exact collection order, canonical `site-pages` identity and routes, file-entry order and descriptions, summaries, sorts, groups, filters, native image options, hidden Artist slug storage, native Artist filename generation, the horizontal wordmark, current branding options, and exact runtime version inputs.
-
-#### Scenario: Boot lifecycle tests run
-
-- **WHEN** the boot controller and admin initialization tests execute
-- **THEN** returning from `CMS.init()` while `#nc-root` is empty retains loading, and the first rendered mount child produces ready state and removes the boot surface
-- **AND** tests cover defensive `[hidden]` CSS, timeout, retry, stale-attempt rejection, and observer cleanup on success, failure, retry, and disposal.
-
-#### Scenario: Deprecated or ineffective config returns
-
-- **WHEN** generated configuration contains `logo_url`, a deprecated Markdown widget declaration, a one-sided list limit, arbitrary URL entry on a collection-owned image, or a superseded collection order
-- **THEN** deterministic validation fails
-- **AND** the failure identifies the collection and option.
-
-#### Scenario: Hosted config contains unsafe fallback data
-
-- **WHEN** a generated hosted config contains `127.0.0.1`, a placeholder site ID, blank required endpoint, or proxy backend
-- **THEN** deterministic validation fails
-- **AND** failure output names the violated setting without printing secret values.
-
-### Requirement: Decap collection contracts have focused parity checks
-
-The system MUST test the editor structure that can create direct-to-main content.
-
-#### Scenario: Collection builder tests run
-
-- **WHEN** Decap collection tests execute
-- **THEN** they verify exact collection names, file IDs, file descriptions, canonical routes, collection and file order, field names and order, widgets, requiredness, native constraints, relation settings, image options, list controls, summaries, sort/group/filter options, preview paths, and deletion policy for each collection
-- **AND** they fail when a stale CMS-only field, deprecated option, removed fixed-section type, or commerce-authority field returns.
-
-#### Scenario: Site Pages route contracts change
-
-- **WHEN** the page singletons move to collection `site-pages`
-- **THEN** tests prove the unchanged file IDs map to `#/collections/site-pages/entries/<file-id>`, file-specific previews remain registered, and singleton protection recognizes those routes
-- **AND** old Home, About, Services, Newsletter, or Distro Page collection routes are absent from active config, runtime mappings, and smoke fixtures.
-
-#### Scenario: Shared closed values change
-
-- **WHEN** Store Item groups, slug constraints, or another shared closed value changes
-- **THEN** tests prove Astro schema acceptance and Decap options remain aligned
-- **AND** current committed content still passes `pnpm check`.
-
-#### Scenario: Artist slug generation tests run
-
-- **WHEN** Artist collection and admin event tests execute
-- **THEN** a blank new Artist slug is generated from the current title through the shared slug library, while an existing or explicit slug is preserved across title edits and Decap round trips
-- **AND** tests prove no editor-visible Slug field exists and invalid or colliding source overrides fail repository validation.
-
-#### Scenario: Fixed-layout section controls change
-
-- **WHEN** Home, About, or Services builders or schemas change
-- **THEN** tests prove the exact named object keys are present and the old fixed-section arrays and type discriminators are absent
-- **AND** tests prove genuinely repeatable nested lists retain the intended native controls.
-
-#### Scenario: Rich-text widget changes
-
-- **WHEN** Markdown-backed fields move to the current rich-text widget
-- **THEN** every committed Artist and News Markdown body present at implementation time round-trips as valid content without destructive changes to semantics present in that fixture
-- **AND** Astro accepts the resulting content.
-
-#### Scenario: Repair disposition tests run
-
-- **WHEN** the admin runtime is simplified for 3.16.0
-- **THEN** focused tests cover every repair named in the design disposition table and prove each deleted behavior has a native or structural replacement where required
-- **AND** retained exceptions are individually named, bounded to an app-owned mount or matching route, safe when targets are absent, and free of generated-class and timed-click contracts.
-
-### Requirement: Decap media routes and previews are tested together
-
-The system MUST cover collection image options, media allowlists, route safety, and preview asset resolution with deterministic checks.
-
-#### Scenario: Admin media route tests run
-
-- **WHEN** the admin media route is tested
-- **THEN** tests cover every configured media root, supported extension, content type, cache header, missing asset, unknown collection, and traversal attempt
-- **AND** the route never reads outside the approved Astro content directories.
-
-#### Scenario: Preview asset resolver tests run
-
-- **WHEN** preview runtime tests exercise existing paths, blobs, data URLs, strings, asset objects, and invalid admin URLs
-- **THEN** supported assets resolve to a renderable URL
-- **AND** unsupported values produce a bounded fallback rather than a broken editor.
-
-#### Scenario: Collection image controls are checked
-
-- **WHEN** generated collection image fields are tested
-- **THEN** single-image fields disable arbitrary URL entry and multiple selection while retaining upload, browse, replace, and preview behavior
-- **AND** their media and public-folder paths remain compatible with the owning Astro `image()` field.
-
-#### Scenario: Global media inventory is checked
-
-- **WHEN** the implementation would retain a top-level uploads library
-- **THEN** a check proves every visible asset can be selected into a valid collection-owned field
-- **AND** otherwise the misleading global surface is absent without breaking collection image widgets.
-
-### Requirement: Local CMS Smoke covers representative editor behavior
-
-The system SHALL keep Local CMS Smoke read-only and SHALL cover the highest-frequency editor tasks at desktop and mobile widths.
-
-#### Scenario: Local CMS Smoke runs
-
-- **WHEN** `pnpm smoke:cms-local -- --screenshots never` runs
-- **THEN** it starts explicit local mode on `127.0.0.1`, verifies automatic boot dismissal, same-origin configured assets, and representative Home, Artist, Release, Store Item, and News editors
-- **AND** it opens new Artist, Store Item, and Release forms through semantic role/name queries, verifies the Artist form has no Slug control, selects an existing collection image without saving or publishing, and checks current values, canonical Site Pages routes, preview registrations, direct-to-main notice, functional console errors, and read-only completion.
-
-#### Scenario: Local CMS Smoke completes
-
-- **WHEN** the Local CMS Smoke exits
-- **THEN** before/after content-file hashes and `git status --porcelain` prove it has not written content files, created Git commits, or mutated provider state, and the run has not selected Save or Publish
-- **AND** all spawned Astro/proxy/browser processes terminate cleanly with the smoke exit status.
-
-### Requirement: UAT Static Smoke verifies hosted Decap safety
-
-The system SHALL verify deployed hosted-mode Decap without authenticating or publishing content.
-
-#### Scenario: UAT CMS admin smoke runs
-
-- **WHEN** `pnpm smoke:uat-static -- --scenario cms_admin` targets the GitHub Pages UAT site
-- **THEN** it verifies the branded loading surface, truthful automatic transition to hosted DecapBridge sign-in, shared-Google guidance on the BlackBox-owned surface, exact pinned Decap runtime initialization, DecapBridge PKCE config, `main` branch, and absence of placeholders, localhost URLs, repository credential prompts, and leaked secrets
-- **AND** it records failures as UAT Static Smoke evidence.
-
-#### Scenario: UAT CMS asset smoke runs
-
-- **WHEN** `pnpm smoke:uat-static -- --scenario cms_assets` targets the GitHub Pages UAT site
-- **THEN** it verifies representative Home, Artist, Release, Store Item, News, and supported collection-media assets through their admin URLs
-- **AND** it verifies boot markup in the admin HTML and the hidden boot rule in admin CSS without requiring either contract to appear in `init.js`
-- **AND** it remains read-only and separate from Provider Smoke or Promotion Evidence.
-
-### Requirement: Decap upgrades pass repository gates
-
-The system MUST validate the exact final Decap tree with focused, rendered, and repository-wide checks.
-
-#### Scenario: Decap implementation is ready for UAT
-
-- **WHEN** implementation tasks are complete
-- **THEN** Artist slug, scoped-style, branding, host-origin, and existing CMS focused tests pass, followed by `pnpm test:cms-admin`, `pnpm smoke:cms-local -- --screenshots never`, `pnpm test:unit`, `pnpm check`, and `pnpm build` against the exact final tree
-- **AND** Browser Use validates the desktop and mobile task walkthroughs while the generated secret-free local build presents disabled rather than localhost-backed CMS behavior.
-
-#### Scenario: Hosted Decap is accepted
-
-- **WHEN** the implementation commit deploys to UAT
-- **THEN** `cms_admin` and `cms_assets` UAT Static Smoke scenarios pass for that deployed commit
-- **AND** the owner completes the no-publish Google-authenticated task walkthrough before the change is marked complete.
-
 ### Requirement: Catalog promotion validation is deterministic and fail-closed
 
 The system SHALL validate generated artifacts and every UAT promotion boundary before later mutation or deployment.
@@ -1408,30 +1257,119 @@ The system MUST keep stripe listen secrets and forwarding separate from the depl
 - **THEN** it does not overwrite the deployed UAT STRIPE_WEBHOOK_SECRET
 - **AND** listener delivery is not accepted as persistent endpoint proof.
 
-### Requirement: Rendered Decap usability is validated across desktop and mobile
+### Requirement: Generated Sveltia configuration is structurally validated
 
-The system MUST validate the redesigned editor through rendered task flows in the native Codex Browser Use surface, with automated checks remaining read-only.
+The system MUST parse and validate generated Sveltia configuration for every supported mode.
 
-#### Scenario: Desktop task walkthrough runs
+#### Scenario: CMS configuration tests run
 
-- **WHEN** Local CMS is checked at a desktop viewport
-- **THEN** the check opens Store Items first, starts a new Store Item, exercises image selection or replacement without publishing, and starts a new Release
-- **AND** it verifies visible required actions, field order, validation, preview control, boot dismissal, and zero unexpected console or page errors.
+- **WHEN** `pnpm test:cms-admin` or the web unit suite runs
+- **THEN** tests verify local, hosted, and disabled modes; the fixed repository and `main`; publish mode; hosted authenticator URL; Astro-derived site URLs; output and media behavior; absolute global public media paths; native-compatible field names; exact collection order; and runtime version
+- **AND** generated output contains no Git Gateway, DecapBridge, proxy, placeholder, leaked secret, `allow_multiple`, `options_length`, or other unsupported retained option.
 
-#### Scenario: Mobile task walkthrough runs
+#### Scenario: Required hosted configuration is missing
 
-- **WHEN** the same representative flows are checked at 390 CSS pixels and the responsive floor is inspected at 320 CSS pixels
-- **THEN** `document.documentElement.scrollWidth` does not exceed `clientWidth`, and collection navigation, forms, image controls, validation, preview controls, and action bars have no horizontally clipped required action
-- **AND** primary workflow actions and standalone icon controls have at least 44 by 44 CSS-pixel targets, accessible names, visible keyboard focus, and no dependency on hover, desktop width, or interaction with the boot surface.
+- **WHEN** hosted mode has a blank or placeholder `SVELTIA_AUTH_BASE_URL`
+- **THEN** deterministic configuration generation fails with that variable name
+- **AND** no configured value or secret is printed.
 
-#### Scenario: Admin chrome and controls are inspected
+#### Scenario: Static deployment wiring changes
 
-- **WHEN** the authenticated Local CMS is inspected at desktop, 390-pixel, and 320-pixel viewports
-- **THEN** the horizontal BlackBox wordmark has nonzero rendered dimensions, the Contents document icon is absent, composite selects retain aligned native internals, and configured assets load from the active origin
-- **AND** actionable text meets WCAG 2.2 AA contrast across default, hover, focus, and active states, disabled actions remain legible and distinct, and no unexpected console or page errors occur.
+- **WHEN** hosted workflow configuration is checked
+- **THEN** it supplies only `SVELTIA_BACKEND_MODE` and `SVELTIA_AUTH_BASE_URL` for CMS behavior
+- **AND** changes under `apps/web/src/lib/admin/**` are not excluded from static deployment triggering.
 
-#### Scenario: Owner accepts the UAT editor
+### Requirement: Sveltia collection contracts have focused parity checks
 
-- **WHEN** the exact implementation commit is deployed to UAT
-- **THEN** an owner performs a no-publish walkthrough of Store Item creation, Store Item image work, and Release creation using the shared Google account
-- **AND** unresolved task-blocking usability defects prevent the change from being marked complete.
+The system MUST test the editor structure that can create direct-to-`main` content without duplicating the complete Astro schema suite.
+
+#### Scenario: Collection contract tests run
+
+- **WHEN** CMS collection tests execute
+- **THEN** they verify collection and file identities, ordering, fields, requiredness, supported constraints, relations, media options, summaries, sort/group/filter options, preview registrations, and deletion policy
+- **AND** they fail when a stale CMS-only field, removed fixed-section type, commerce-authority field, or unsupported Sveltia option returns.
+
+#### Scenario: Shared content rules change
+
+- **WHEN** shared closed values, fixed-layout objects, Markdown fields, or Artist slug behavior changes
+- **THEN** focused tests prove the CMS output remains accepted by Astro and preserves existing public identities
+- **AND** current committed content still passes `pnpm check`.
+
+#### Scenario: Distro copy-key migration is checked
+
+- **WHEN** the focused content and CMS checks run after the migration
+- **THEN** the committed Distro page JSON, generated CMS fields, Astro schema, and rendered-copy consumers agree on the new `vinyl_12_inch`, `vinyl_10_inch`, and `vinyl_7_inch` keys
+- **AND** the old space-containing copy keys are absent while field labels, other copy keys, intro text, Distro item `group` values, and shelf behavior remain unchanged.
+
+### Requirement: Sveltia previews and media paths are tested together
+
+The system MUST cover collection-owned media paths, Sveltia preview asset resolution, and the seven preview registrations with focused checks.
+
+#### Scenario: Media and preview tests run
+
+- **WHEN** CMS media and preview tests execute
+- **THEN** they cover the existing shared global asset folder and its Local/UAT/PRD public paths, collection-relative media overrides, uploaded filename normalization, existing paths, newly selected media, invalid values, preview `getAsset` use, and all seven registrations
+- **AND** they confirm the custom admin-media route, resolver, allowlist, and Asset Library suppression are absent.
+
+#### Scenario: Collection image fields are checked
+
+- **WHEN** generated image fields are tested
+- **THEN** their media paths remain compatible with the owning Astro `image()` field
+- **AND** unsupported preview values produce a bounded fallback rather than a broken editor.
+
+### Requirement: Local and rendered Sveltia validation uses the native repository flow
+
+The system SHALL keep local CMS validation read-only and SHALL use Sveltia's native directory selection instead of a proxy or fake filesystem layer.
+
+#### Scenario: Automated local smoke runs
+
+- **WHEN** `pnpm smoke:cms-local -- --screenshots never` runs
+- **THEN** it starts local mode on the fixed loopback CMS port, opens `/admin/index.html`, verifies the pinned runtime accepts the generated configuration and reaches the native repository-selection surface, and checks configured assets and functional console errors
+- **AND** a native configuration-error screen fails the smoke even if the runtime loaded and initialization returned
+- **AND** content hashes and `git status --porcelain` remain unchanged from the baseline captured after intentional source edits
+- **AND** all spawned site and browser processes terminate with the smoke exit status.
+
+#### Scenario: Rendered local walkthrough runs
+
+- **WHEN** the owner selects the repository with Chromium's native picker and Chrome is controlled through the GPT extension
+- **THEN** it checks representative Home, Store Item, and Release editing at desktop plus the 320 CSS-pixel floor and confirms the migrated Distro page fields, without selecting Save or Publish
+- **AND** collection navigation, field order, validation, image selection, previews, focus, touch targets, and horizontal overflow remain acceptable
+- **AND** content hashes and `git status --porcelain` remain unchanged from the post-migration baseline.
+
+### Requirement: UAT Static Smoke verifies hosted Sveltia safety
+
+The system SHALL verify deployed hosted-mode Sveltia without authenticating or publishing content.
+
+#### Scenario: UAT CMS admin smoke runs
+
+- **WHEN** `pnpm smoke:uat-static -- --scenario cms_admin` targets GitHub Pages UAT
+- **THEN** it verifies the static admin document, pinned Sveltia runtime, GitHub backend, fixed repository, `main`, authenticator base URL, and absence of Decap, Git Gateway, placeholders, localhost URLs, and leaked secrets
+- **AND** it reaches native GitHub sign-in without injected controls or native configuration errors and records failures as UAT Static Smoke evidence.
+
+#### Scenario: UAT CMS asset smoke runs
+
+- **WHEN** `pnpm smoke:uat-static -- --scenario cms_assets` targets GitHub Pages UAT
+- **THEN** it verifies representative admin, configuration, preview, and collection-media assets without expecting a custom admin-media route
+- **AND** it remains read-only and separate from Provider Smoke or Promotion Evidence.
+
+### Requirement: Sveltia migration passes repository gates
+
+The system MUST validate the exact final Sveltia tree before each hosted cutover.
+
+#### Scenario: Implementation is ready for UAT
+
+- **WHEN** local migration tasks are complete
+- **THEN** `pnpm test:cms-admin`, `pnpm smoke:cms-local -- --screenshots never`, `pnpm test:unit`, `pnpm check`, and `pnpm build` pass against the exact final tree
+- **AND** the secret-free artifact remains disabled rather than falling back to writable local behavior.
+
+#### Scenario: Hosted Sveltia is accepted
+
+- **WHEN** the implementation commit deploys to UAT
+- **THEN** the `cms_admin` and `cms_assets` UAT Static Smoke scenarios pass
+- **AND** the owner completes a no-publish walkthrough through the designated GitHub account before PRD cutover.
+
+#### Scenario: PRD cutover completes
+
+- **WHEN** the UAT-accepted implementation's PRD-targeted artifact deploys to PRD
+- **THEN** the owner completes a no-publish designated-account check
+- **AND** remaining DecapBridge access is removed without retaining a Decap rollback artifact or authentication path.

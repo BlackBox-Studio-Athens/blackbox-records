@@ -13,7 +13,7 @@ The system MUST keep buyable amount, currency, active Price identity, lookup key
 - **AND** the operator does not copy app metadata, lookup keys, Stripe IDs, or D1 IDs into the replacement Price
 - **AND** repository-authored editorial content, browser state, and static build artifacts remain non-authoritative for the amount and currency.
 
-#### Scenario: Decap content includes an editorial item
+#### Scenario: Sveltia content includes an editorial item
 
 - **GIVEN** a Sveltia editor updates a release or distro entry
 - **WHEN** the entry is saved

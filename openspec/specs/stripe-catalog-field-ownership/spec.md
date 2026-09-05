@@ -180,14 +180,14 @@ The system MUST keep buyable amount, currency, active Price identity, lookup key
 - **WHEN** they create or activate a replacement Price under that Product and archive the stale active Price
 - **THEN** the system treats the replacement Price as the candidate Price Authority
 - **AND** the operator does not copy app metadata, lookup keys, Stripe IDs, or D1 IDs into the replacement Price
-- **AND** repo content, Decap content, browser state, and static build artifacts remain non-authoritative for the amount and currency.
+- **AND** repository-authored editorial content, browser state, and static build artifacts remain non-authoritative for the amount and currency.
 
-#### Scenario: Decap content includes an editorial item
+#### Scenario: Sveltia content includes an editorial item
 
-- **GIVEN** a Decap editor updates a release or distro entry
+- **GIVEN** a Sveltia editor updates a release or distro entry
 - **WHEN** the entry is saved
-- **THEN** Decap can change editorial fields such as title, summary, image, group, format, order, and page copy
-- **AND** Decap does not expose or commit Stripe Price IDs, buyable amounts, currency, active Price state, D1 identifiers, or provider mutation controls.
+- **THEN** Sveltia can change editorial fields such as title, summary, image, group, format, order, and page copy
+- **AND** Sveltia does not expose or commit Stripe Price IDs, buyable amounts, currency, active Price state, D1 identifiers, or provider mutation controls.
 
 #### Scenario: Generated DesiredPrice exists
 
@@ -241,7 +241,7 @@ The system SHALL keep repo-owned Product Projection updates and Stripe-owned Pri
 
 #### Scenario: Repo content changes product presentation
 
-- **GIVEN** Decap or repo content changes title, description, image, or format presentation
+- **GIVEN** Sveltia-managed or other repo content changes title, description, image, or format presentation
 - **WHEN** Product Projection apply runs
 - **THEN** Stripe Product presentation fields may be updated according to Product Projection rules
 - **AND** Stripe Price amount and currency are unchanged unless a separate approved Price Authority path creates a replacement Price.
@@ -274,19 +274,19 @@ The system MUST classify Stripe Dashboard price changes separately from repo Pro
 
 ### Requirement: Editorial CMS identifies authoritative commerce operations
 
-The system MUST explain inside the Decap editor where common non-editorial Store Item operations happen and MUST preserve existing authority boundaries.
+The system MUST explain inside the Sveltia editor where common non-editorial Store Item operations happen and MUST preserve existing authority boundaries.
 
 #### Scenario: Editor needs to change a Store Item price
 
 - **WHEN** an editor looks for price controls while editing a Release or Distro Store Item
 - **THEN** the CMS states that price changes happen in Stripe Dashboard by creating a replacement Price under the existing Product and following existing verification
-- **AND** it does not expose or ask the editor to copy Stripe IDs, lookup keys, metadata identities, D1 IDs, amounts, or currency into Decap.
+- **AND** it does not expose or ask the editor to copy Stripe IDs, lookup keys, metadata identities, D1 IDs, amounts, or currency into Sveltia.
 
 #### Scenario: Editor needs to change available stock
 
 - **WHEN** an editor needs to record stock movement or change online quantity
 - **THEN** the CMS identifies the protected `/stock/` operations surface as the stock authority
-- **AND** it does not represent a Decap field, content order, or content deletion as stock state.
+- **AND** it does not represent a Sveltia field, content order, or content deletion as stock state.
 
 #### Scenario: Editor needs to stop an item selling
 

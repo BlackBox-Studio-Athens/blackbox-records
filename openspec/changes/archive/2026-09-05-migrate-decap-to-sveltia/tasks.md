@@ -25,7 +25,7 @@
 
 ## 5. Specification Closure
 
-- [ ] 5.1 Replace residual operational Decap wording in current baseline capabilities with Sveltia or provider-neutral CMS/repository terminology as appropriate; strict-validate the expanded delta set and verify only archive, migration-history, and explicit anti-restoration references remain before sync and archive.
+- [x] 5.1 Replace residual operational Decap wording in current baseline capabilities with Sveltia or provider-neutral CMS/repository terminology as appropriate; strict-validate the expanded delta set and verify only archive, migration-history, and explicit anti-restoration references remain before sync and archive.
 
 ## Planning revision accepted — September 3, 2026
 
@@ -66,3 +66,12 @@ The user approved dropping old-site compatibility. Replace obsolete catalog imag
 - Completed task 2.2. Overall: 10/13 tasks.
 - Chrome with the GPT extension verified Home, Store Item, Release, and migrated Distro page fields at desktop and 320 CSS pixels. Navigation, field order, validation surfaces, images, previews, focus, touch targets, and overflow passed. Preview CSS now scopes the dark background to custom previews and keeps narrow layouts inside their viewport. Browser console errors: zero.
 - Final-tree gates passed: `pnpm test:cms-admin` (64 tests), `pnpm smoke:cms-local -- --screenshots never`, `pnpm test:unit` (1,223 tests), `pnpm check`, `pnpm audit:unused`, and `pnpm build`. The secret-free build remained disabled.
+
+## Exact-tree closure evidence — September 5, 2026
+
+- Revalidated implementation commit `521f5350e69721f6ee803386f696998bbab43244`: `pnpm test:cms-admin` passed 64 tests, local CMS smoke passed, unit tests passed, `pnpm check` passed, unused-code audit completed with only the existing unrelated inventory, and `pnpm build` passed with the secret-free CMS artifact disabled.
+- UAT workflow run `33930912472` deployed the exact implementation commit successfully. Hosted `cms_admin` passed 2 checks and `cms_assets` passed 11 checks with zero console or page errors.
+- Chrome Browser Use reused the designated authenticated account, loaded the UAT Sveltia Distro collection, and opened the Barren Point editor without saving or publishing. Required fields, existing image, preview, group, format, release date, and order loaded; Save remained disabled.
+- PRD workflow run `33931491617` rebuilt and deployed the same exact implementation commit successfully. After Pages propagation, hosted `cms_admin` passed 2 checks and `cms_assets` passed 11 checks with zero console or page errors. The public apex remained on Holding Page.
+- All ten declared capability deltas were synchronized into current baseline specifications. The retired Decap capability was deleted, the Sveltia capability was created, current operational wording now uses Sveltia or provider-neutral CMS/repository terms, and remaining Decap mentions are migration-history or explicit anti-restoration checks.
+- No CMS Save/Publish action, Stripe/D1 mutation, checkout change, DNS change, provider-secret change, content publication, or public-apex mutation occurred.

@@ -117,6 +117,46 @@ The system MUST validate the exact final Sveltia tree before each hosted cutover
 - **THEN** the owner completes a no-publish designated-account check
 - **AND** remaining DecapBridge access is removed without retaining a Decap rollback artifact or authentication path.
 
+## MODIFIED Requirements
+
+### Requirement: Price-change runbook is documented
+
+The system MUST document the supported Stripe Dashboard price-change workflow for non-developer operators.
+
+#### Scenario: Colleague receives price-change instructions
+
+- **WHEN** a colleague needs to update a buyable item price
+- **THEN** the runbook tells them to use Stripe Dashboard, open the existing app-owned Product, add the replacement EUR Price, make it the default, archive the stale active Price, and request UAT proof
+- **AND** it does not ask them to copy metadata, lookup keys, Stripe IDs, D1 IDs, or repository identifiers
+- **AND** it states that repository-authored editorial content managed through Sveltia changes item information only, not checkout price.
+
+#### Scenario: Existing Stripe account access is used
+
+- **WHEN** the colleague performs the UAT price-change exercise using the same existing Stripe business account and UAT Sandbox as the owner
+- **THEN** the runbook does not require a separate restricted-role proof or a second Stripe account
+- **AND** it requires Sandbox/test-mode confirmation, two-step authentication, and confirmation that the existing Product is the intended Store Item before adding the Price.
+
+#### Scenario: Replacement Price identity fields are empty
+
+- **GIVEN** a replacement Price was created under the correct app-identified Product without Price metadata or a lookup key
+- **WHEN** only that replacement Price remains active and reconciliation runs
+- **THEN** the system repairs Price metadata and the canonical lookup key automatically
+- **AND** the runbook does not send the colleague into Stripe advanced metadata fields.
+
+#### Scenario: Existing Product identity is missing or wrong
+
+- **GIVEN** the selected Product lacks complete app identity or identifies another Store Item variant
+- **WHEN** the colleague cannot safely confirm the Product
+- **THEN** the runbook tells them to stop and request catalog-owner repair
+- **AND** it does not ask them to invent or copy identity values.
+
+#### Scenario: Multiple active prices are found
+
+- **GIVEN** verification reports ambiguous active Prices
+- **WHEN** the operator follows troubleshooting
+- **THEN** the runbook tells them to archive or deactivate stale matching Prices
+- **AND** it tells them to rerun verification before accepting checkout readiness.
+
 ## REMOVED Requirements
 
 ### Requirement: Generated Decap configuration is structurally validated

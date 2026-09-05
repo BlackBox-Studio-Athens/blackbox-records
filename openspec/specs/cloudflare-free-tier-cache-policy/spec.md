@@ -14,7 +14,7 @@ The system SHALL classify cache behavior with canonical categories for Static As
 
 - **WHEN** a maintainer reviews cache behavior
 - **THEN** the source-of-truth cache policy identifies whether the behavior belongs to static CDN/browser caching, document revalidation, Worker API freshness, authoritative commerce state, or same-session shell caching
-- **AND** the policy does not describe Decap/CMS-level caching as part of this change.
+- **AND** the policy does not describe CMS-level caching as part of this change.
 
 #### Scenario: New cacheable surface is proposed
 
