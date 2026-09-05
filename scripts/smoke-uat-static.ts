@@ -614,18 +614,12 @@ async function checkPublicRoutes(page: Page, options: UatStaticSmokeOptions): Pr
 
     if (routePath === '/store/') {
       try {
-        await page.locator('[data-store-listing-price]').first().scrollIntoViewIfNeeded({ timeout: options.timeoutMs });
         await page.waitForFunction(
           () => {
-            const firstViewportPrices = [
-              ...document.querySelectorAll<HTMLElement>('[data-store-listing-price]'),
-            ].filter((element) => {
-              const bounds = element.getBoundingClientRect();
-              return bounds.bottom > 0 && bounds.top < window.innerHeight;
-            });
+            const listingPrices = [...document.querySelectorAll<HTMLElement>('[data-store-listing-price]')];
             return (
-              firstViewportPrices.length > 0 &&
-              firstViewportPrices.every((element) =>
+              listingPrices.length > 0 &&
+              listingPrices.every((element) =>
                 ['ready', 'unavailable'].includes(element.dataset.storeListingPriceState || ''),
               )
             );
@@ -634,7 +628,7 @@ async function checkPublicRoutes(page: Page, options: UatStaticSmokeOptions): Pr
           { timeout: options.timeoutMs },
         );
       } catch {
-        issues.push('Expected first-viewport Store listing prices to reach ready or unavailable state.');
+        issues.push('Expected Store listing prices to reach ready or unavailable state.');
       }
 
       const listingProjectionReads = requestedPaths.filter((path) => path.endsWith('/api/store/listing-prices'));
