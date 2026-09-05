@@ -11,14 +11,14 @@ The system MUST keep buyable amount, currency, active Price identity, lookup key
 - **WHEN** they create or activate a replacement Price under that Product and archive the stale active Price
 - **THEN** the system treats the replacement Price as the candidate Price Authority
 - **AND** the operator does not copy app metadata, lookup keys, Stripe IDs, or D1 IDs into the replacement Price
-- **AND** repo content, Decap content, browser state, and static build artifacts remain non-authoritative for the amount and currency.
+- **AND** repository-authored editorial content, browser state, and static build artifacts remain non-authoritative for the amount and currency.
 
-#### Scenario: Decap content includes an editorial item
+#### Scenario: Sveltia content includes an editorial item
 
-- **GIVEN** a Decap editor updates a release or distro entry
+- **GIVEN** a Sveltia editor updates a release or distro entry
 - **WHEN** the entry is saved
-- **THEN** Decap can change editorial fields such as title, summary, image, group, format, order, and page copy
-- **AND** Decap does not expose or commit Stripe Price IDs, buyable amounts, currency, active Price state, D1 identifiers, or provider mutation controls.
+- **THEN** Sveltia can change editorial fields such as title, summary, image, group, format, order, and page copy
+- **AND** Sveltia does not expose or commit Stripe Price IDs, buyable amounts, currency, active Price state, D1 identifiers, or provider mutation controls.
 
 #### Scenario: Generated DesiredPrice exists
 

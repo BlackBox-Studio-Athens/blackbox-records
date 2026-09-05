@@ -17,7 +17,7 @@ The public site is a static Astro build with a persistent app shell. This change
 **Non-Goals:**
 
 - Adding a contact form, copy-to-clipboard control, email validation workflow, analytics, or client-side JavaScript.
-- Changing the About content schema, Decap fields, email addresses, title, intro, app shell, or page statistics.
+- Changing the About content schema, Sveltia fields, email addresses, title, intro, app shell, or page statistics.
 - Adding a reusable component or dependency for a single route-local presentation.
 - Redesigning the surrounding About page.
 

@@ -18,6 +18,7 @@
 
 ## 4. Closure
 
-- [ ] 4.1 Run `pnpm test:unit`, `pnpm check`, `pnpm build`, `pnpm audit:unused`, `pnpm audit:commerce-boundaries`, `pnpm performance:bundles`, strict OpenSpec validation, and `git diff --check` against the exact final tree.
-- [x] 4.2 Restore the previous selector and source-contract test after the traversal gate rejected implementation commit `6ce07d20`.
-- [ ] 4.3 If a later bounded implementation passes every gate, append concise evidence to this change and production readiness, synchronize `frontend-runtime-performance`, and archive this child.
+- [x] 4.1 Run `pnpm test:unit`, `pnpm check`, `pnpm build`, `pnpm audit:unused`, `pnpm audit:commerce-boundaries`, `pnpm performance:bundles`, and `git diff --check` against the restored tree.
+- [x] 4.2 Strict-validate this child, production readiness, Coverflow image performance, and Sveltia-overlapping active changes; record the separate pre-existing baseline warnings reported by repository-wide strict validation.
+- [x] 4.3 Restore the previous selector and source-contract test after the traversal gate rejected implementation commit `6ce07d20`.
+- [ ] 4.4 If a later bounded implementation passes every gate, append concise evidence to this change and production readiness, synchronize `frontend-runtime-performance`, and archive this child.

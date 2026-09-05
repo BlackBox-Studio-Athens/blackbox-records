@@ -24,4 +24,4 @@ None.
 - About page rendering in `apps/web/src/pages/about/index.astro`.
 - Contact-specific styling in `apps/web/src/styles/global.css`.
 - One focused source/CSS contract test under `apps/web/src/styles/`.
-- Existing About content, content schema, Decap fields, app-shell behavior, and dependencies remain unchanged.
+- Existing About content, content schema, Sveltia fields, app-shell behavior, and dependencies remain unchanged.
