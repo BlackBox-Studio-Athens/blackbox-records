@@ -7,6 +7,7 @@
 - [x] 1.5 Record archived Holding Page/domain handoff and verified rollback evidence.
 - [x] 1.6 Record archived operator Access/JWT allow-and-deny proof.
 - [x] 1.7 Record archived production-control refactor and independent-control proof.
+- [x] 1.8 Record the completed Sveltia migration, exact-commit UAT/PRD deployments, hosted smoke, and designated-account no-publish acceptance as the current editorial prerequisite.
 
 ## 2. Non-Stripe Readiness
 

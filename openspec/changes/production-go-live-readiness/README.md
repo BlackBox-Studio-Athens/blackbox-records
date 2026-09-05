@@ -13,12 +13,20 @@ Track final PRD-open launch gates for native commerce after UAT evidence.
 
 - Site performance: archived under `2026-08-31-site-performance-program`; accepted measurement commits `8469799f` and `2b96bbd7`. Store was deliberately reserved for the post-commerce remeasurement owned by this change.
 - Environment alignment: archived under `2026-08-31-align-cloudflare-environment-names`; accepted completion commit `8a8d5c64`. Local/UAT/PRD naming and the UAT runtime target were verified, and obsolete GitHub environment controls were removed.
-- Decap editor: archived by `50b3ecba`; accepted behavioral commit `55f69d7c`. Static, CMS asset, and CMS admin runs `33513979001`, `33514374291`, and `33514591960` passed, including an owner no-publish walkthrough with no commerce controls exposed.
+- Decap editor predecessor: archived by `50b3ecba`; accepted behavioral commit `55f69d7c`. Static, CMS asset, and CMS admin runs `33513979001`, `33514374291`, and `33514591960` passed, including an owner no-publish walkthrough with no commerce controls exposed. This remains migration history, not the current CMS prerequisite.
 - Holding Page/domain handoff: archived by `ec0bfe64`. Closure run `33521213349` passed on source `50b3ecba`, proving apex hosting, HTTPS, exact-host redirects, holding metadata, responsive rendering, console cleanliness, and the retained holding rollback target.
 - Operator Access/JWT: archived by `2fd6ab63`. Hosted allowlisted access, verified JWT identity, missing/forged assertion denial, and no-net-mutation checks passed.
 - Production controls: implementation commit `42a39a59`, archived by `96a1ef12`. Live catalog confirmation, shopper launch approval, and the runtime checkout feature gate are independent and fail closed.
 
 These references prove completed prerequisites only. They do not authorize Stripe, PRD data, checkout, DNS, or public launch mutations.
+
+## Sveltia editorial prerequisite — 2026-09-05
+
+- Final implementation commit `521f5350e69721f6ee803386f696998bbab43244` passed `pnpm test:cms-admin` with 64 tests, local CMS smoke, unit tests, `pnpm check`, unused-code audit, and `pnpm build`; the secret-free CMS artifact remained disabled.
+- Exact-commit UAT workflow run `33930912472` and PRD workflow run `33931491617` succeeded. Hosted `cms_admin` passed 2 checks and `cms_assets` passed 11 checks on both technical origins with zero console or page errors after normal deployment propagation.
+- Chrome Browser Use reused the designated authenticated account, loaded the UAT Sveltia Distro collection, and opened the Barren Point editor without saving or publishing. Required fields, existing image, preview, group, format, release date, and order loaded; Save remained disabled.
+- The migration is archived at `openspec/changes/archive/2026-09-05-migrate-decap-to-sveltia/` by commit `d42b57cc`. Baseline specifications now define Sveltia as the current CMS and retain Decap only as migration history or an explicit anti-restoration boundary.
+- CMS completion authorizes no Stripe, PRD data, checkout, DNS, provider-secret, content-publication, or public-launch mutation. The apex remains on Holding Page.
 
 ## Post-commerce Store measurement — 2026-09-02
 

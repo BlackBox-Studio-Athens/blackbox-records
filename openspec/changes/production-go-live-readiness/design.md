@@ -1,6 +1,6 @@
 ## Context
 
-The repository now has a verified production Holding Page, aligned Local/UAT/PRD environments, accepted Decap editing, protected operator APIs, and separate controls for catalog preparation, launch approval, and runtime checkout. Remaining launch work spans new-account Stripe proof, PRD-only data preparation, exact-tree acceptance, and an atomic public-origin cutover.
+The repository now has a verified production Holding Page, aligned Local/UAT/PRD environments, accepted Sveltia editing, protected operator APIs, and separate controls for catalog preparation, launch approval, and runtime checkout. Remaining launch work spans new-account Stripe proof, PRD-only data preparation, exact-tree acceptance, and an atomic public-origin cutover.
 
 The public apex must not imply readiness before those gates close. UAT data and Stripe test-mode objects are evidence only, not production seed material.
 
@@ -37,7 +37,7 @@ PRD is prepared from repository-owned content and generated catalog artifacts. U
 
 ### Canonical origin changes atomically
 
-At cutover, `ASTRO_SITE_URL`, Decap site URL, checkout return origins, email brand URLs, catalog asset origins, sitemap/metadata, and affected assertions move together to `https://blackboxrecordsathens.com/`. `https://blackbox-records-web.pages.dev` remains the underlying technical Pages origin. The existing production Worker URL remains the browser API target unless a separately approved public API hostname already exists.
+At cutover, `ASTRO_SITE_URL`, generated Sveltia `site_url`, checkout return origins, email brand URLs, catalog asset origins, sitemap/metadata, and affected assertions move together to `https://blackboxrecordsathens.com/`. `https://blackbox-records-web.pages.dev` remains the underlying technical Pages origin. The existing production Worker URL remains the browser API target unless a separately approved public API hostname already exists.
 
 ### Stripe work is last
 

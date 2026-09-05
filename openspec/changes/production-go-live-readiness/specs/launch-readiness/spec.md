@@ -19,7 +19,7 @@ The system MUST block PRD native-commerce launch until every prerequisite change
 #### Scenario: Prerequisite implementation evidence is reviewed
 
 - **WHEN** the final launch checklist is assembled
-- **THEN** environment alignment, production controls, listing-price stabilization, Decap acceptance, Holding Page handoff, operator JWT verification, checkout stock reservations, and paid-order delivery are complete and archived in the declared order
+- **THEN** environment alignment, production controls, listing-price stabilization, Sveltia acceptance, Holding Page handoff, operator JWT verification, checkout stock reservations, and paid-order delivery are complete and archived in the declared order
 - **AND** evidence includes Access allow/deny proof, one-unit checkout concurrency and replay safety, immediate and scheduled delivery recovery, and the verified Holding Page rollback target
 - **AND** no prerequisite implementation or performance child remains active.
 
@@ -62,11 +62,11 @@ The system MUST close new-account Stripe test-mode behavior before live-mode pre
 
 ### Requirement: Release data promotion boundary
 
-The system MUST use Decap-authored repo content and generated catalog artifacts as the launch data path for PRD, and MUST NOT copy UAT runtime/provider state into PRD.
+The system MUST use repository-authored editorial content managed through Sveltia and generated catalog artifacts as the launch data path for PRD, and MUST NOT copy UAT runtime/provider state into PRD.
 
 #### Scenario: UAT-prepared content is selected for launch
 
-- **GIVEN** colleagues have prepared release content in UAT through Decap
+- **GIVEN** colleagues have prepared repository-authored editorial content in UAT through Sveltia
 - **WHEN** that content is considered for PRD launch
 - **THEN** the launch artifact commit is generated from the repo content and has UAT proof for the same commit
 - **AND** approved launch Store Items have explicit PRD target policy, live price authority, first-publication stock readiness, PRD D1 readiness rows, and live provider ownership evidence
@@ -81,7 +81,7 @@ The system MUST change every public full-site origin dependency together during 
 
 - **GIVEN** the exact launch tree has approval and a successful bounded live checkout smoke
 - **WHEN** the apex moves from the Holding Page to production `main`
-- **THEN** `ASTRO_SITE_URL`, Decap site URL, checkout return origins, email brand URLs, catalog asset origins, sitemap/metadata, and affected assertions use `https://blackboxrecordsathens.com/`
+- **THEN** `ASTRO_SITE_URL`, generated Sveltia `site_url`, checkout return origins, email brand URLs, catalog asset origins, sitemap/metadata, and affected assertions use `https://blackboxrecordsathens.com/`
 - **AND** `https://blackbox-records-web.pages.dev` remains a technical Pages origin rather than the canonical public identity
 - **AND** the existing production Worker URL remains the browser API target unless a separate approved API-hostname change exists.
 

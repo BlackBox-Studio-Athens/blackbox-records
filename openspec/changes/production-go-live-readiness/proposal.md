@@ -4,7 +4,7 @@ Core production foundations are implemented, but final launch still needs one co
 
 ## What Changes
 
-- Record completed performance, environment, Decap, holding-page, operator-access, and production-control prerequisites by archive and accepted commit.
+- Record completed performance, environment, Sveltia, holding-page, operator-access, and production-control prerequisites by archive and accepted commit while retaining Decap evidence only as migration history.
 - Keep the public apex on the verified Holding Page while non-Stripe planning and post-commerce performance checks finish.
 - Make one exact commit SHA own the build, Worker, catalog, tests, evidence, launch approval, and cutover.
 - Require new-account Stripe test-mode closure before live-mode preparation; never promote UAT D1 rows, test objects, synthetic stock, or UAT evidence into PRD.
