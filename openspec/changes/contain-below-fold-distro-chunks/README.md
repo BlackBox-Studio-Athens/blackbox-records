@@ -1,0 +1,10 @@
+# Measurement evidence
+
+## Rejected containment experiment — 2026-09-05
+
+- Exact implementation commit `6ce07d20` extended native containment to the first chunk of every later Distro group. Raw bundle, mobile-load, Store-activation, wide-scroll, mobile-scroll, and legacy-scroll output is ignored under `.codex-artifacts/runtime-performance/6ce07d20/`.
+- Five cold mobile runs passed the load gates: Store All median LCP was 0.800 seconds with maximum CLS 0.0101; Store Distro median LCP was 0.928 seconds with maximum CLS 0.0007.
+- Three desktop Store activations each settled all 104 cards with exactly one listing-price projection, zero per-card Store Offer reads, and zero Store 5xx responses. The local static projection remained the expected separately classified `404`.
+- The experiment failed every Distro first-traversal profile. Wide runs produced repeatable 277–285 millisecond tasks and 286–292 millisecond long animation frames. Mobile runs produced repeatable 278–289 millisecond tasks and 287–299 millisecond long animation frames. Legacy runs produced repeatable 283–284 millisecond tasks and 292–295 millisecond long animation frames.
+- Store traversal and Distro repeat traversal stayed below the application-work threshold. The rejected selector shifted deferred layout into the first Distro traversal instead of removing it; this is the responsible measured work.
+- Decision: restore the previous single selector and its source-contract test, skip Browser acceptance for rejected code, keep this change and `right-size-store-coverflow-images` active, and leave production-readiness performance tasks open. No JavaScript loading controller, observer, pagination, virtualization, batching, node recycling, or dependency was added.

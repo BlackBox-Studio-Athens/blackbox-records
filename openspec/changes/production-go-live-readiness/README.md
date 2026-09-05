@@ -50,3 +50,9 @@ Raw output is ignored under `.codex-artifacts/runtime-performance/81ce9976/` and
 - Decision: retain the active-cover-only priority implementation, keep `right-size-store-coverflow-images` active, leave parent performance tasks unchanged, and do not sync or archive the child. Any next amendment must first approve a bounded response to the measured Distro DOM/layout cost; this pass does not add observers, preload management, pagination, virtualization, batching, or dependencies.
 
 Raw output is ignored under `.codex-artifacts/runtime-performance/9f37b7db/`.
+
+## Rejected below-fold Distro containment — 2026-09-05
+
+- Exact experiment commit `6ce07d20` extended native containment to the first chunk of every later Distro group. Store All and Store Distro median mobile LCP passed at 0.800 and 0.928 seconds, CLS remained below 0.011, and three Store activations retained one listing projection, zero per-card Store Offer reads, and zero Store 5xx responses.
+- The experiment failed the traversal gate on all three Distro profiles: wide first traversal produced 277–285 millisecond tasks, mobile first traversal produced 278–289 millisecond tasks, and legacy first traversal produced 283–284 millisecond tasks. Matching long animation frames reached 299 milliseconds. The selector deferred the same layout cost into first traversal rather than removing it.
+- Decision: restore the previous selector and test contract, skip Browser acceptance for rejected code, keep both performance changes active, and leave production-readiness performance tasks open. Raw output remains ignored under `.codex-artifacts/runtime-performance/6ce07d20/`.

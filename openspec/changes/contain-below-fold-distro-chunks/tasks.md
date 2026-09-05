@@ -6,9 +6,10 @@
 
 ## 2. Performance Acceptance
 
-- [ ] 2.1 Run the bundle graph and five cold mobile-load runs each for Store All and Store Distro; verify median LCP is at most 2.5 seconds and CLS is at most 0.1.
-- [ ] 2.2 Run three desktop Store activation profiles and verify exactly one listing-price projection per activation, zero per-card Store Offer reads, zero Store 5xx responses, and the static local listing-price `404` remains separately classified.
+- [x] 2.1 Run the bundle graph and five cold mobile-load runs each for Store All and Store Distro; verify median LCP is at most 2.5 seconds and CLS is at most 0.1.
+- [x] 2.2 Run three desktop Store activation profiles and verify exactly one listing-price projection per activation, zero per-card Store Offer reads, zero Store 5xx responses, and the static local listing-price `404` remains separately classified.
 - [ ] 2.3 Run wide first/repeat, mobile first/repeat, and legacy Store/Distro traversal profiles; verify application-work p95 is at most 8 milliseconds, no repeatable application rendering slice exceeds 16.7 milliseconds, and no application-attributable task or long animation frame reaches 50 milliseconds.
+- [x] 2.4 Record the rejected `6ce07d20` experiment, including its passing cold-load/request results and repeatable first-traversal failures.
 
 ## 3. Browser Acceptance
 
@@ -18,4 +19,5 @@
 ## 4. Closure
 
 - [ ] 4.1 Run `pnpm test:unit`, `pnpm check`, `pnpm build`, `pnpm audit:unused`, `pnpm audit:commerce-boundaries`, `pnpm performance:bundles`, strict OpenSpec validation, and `git diff --check` against the exact final tree.
-- [ ] 4.2 If every gate passes, append concise evidence to this change and production readiness, synchronize `frontend-runtime-performance`, and archive this child; otherwise restore only the previous selector, record the exact failure, and leave related performance tasks active.
+- [x] 4.2 Restore the previous selector and source-contract test after the traversal gate rejected implementation commit `6ce07d20`.
+- [ ] 4.3 If a later bounded implementation passes every gate, append concise evidence to this change and production readiness, synchronize `frontend-runtime-performance`, and archive this child.

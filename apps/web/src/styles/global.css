@@ -1291,8 +1291,7 @@ body {
     gap: 1.25rem;
   }
 
-  .distro-group-chunk:not(:first-child),
-  .distro-group-section:not(:first-child) .distro-group-chunk:first-child {
+  .distro-group-chunk:not(:first-child) {
     content-visibility: auto;
     contain-intrinsic-block-size: auto 192rem;
   }
