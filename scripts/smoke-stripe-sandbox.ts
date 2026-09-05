@@ -1452,6 +1452,7 @@ async function fillStripeCustomAmount(
       amount,
       fieldActionTimeoutMs,
     )) ||
+    (await fillFirstVisibleSelector(page, 'input[name="customUnitAmount"]', amount, fieldActionTimeoutMs)) ||
     (await fillFirstVisibleSelector(page, 'input[name="customAmount"]', amount, fieldActionTimeoutMs)) ||
     (await fillFirstVisibleSelector(page, 'input[name="custom_amount"]', amount, fieldActionTimeoutMs)) ||
     (await fillFirstVisibleSelector(page, 'input[name="amount"]', amount, fieldActionTimeoutMs));
