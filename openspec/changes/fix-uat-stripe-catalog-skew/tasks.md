@@ -15,4 +15,4 @@
 ## 4. Verification and Rollout
 
 - [x] 4.1 Run `pnpm test:unit`, `pnpm check`, and `pnpm build` against the final tree.
-- [ ] 4.2 Commit the scoped fix, promote the exact commit to UAT without catalog reset, and verify paid CI smoke plus Chrome checkout readiness.
+- [x] 4.2 Commit the scoped fix, promote the exact commit to UAT without catalog reset, and verify paid CI smoke plus Chrome checkout readiness.
