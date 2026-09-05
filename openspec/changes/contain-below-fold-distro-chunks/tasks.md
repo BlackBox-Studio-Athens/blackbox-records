@@ -1,8 +1,8 @@
 ## 1. Contract and Implementation
 
-- [ ] 1.1 Extend the existing containment source-contract test to prove the first chunk of the first group stays eager, later first chunks and all non-first chunks are contained, chunk size remains six, cards are not individually contained, and no client-rendering or duplicate-catalog boundary is added; verify the focused test fails before CSS implementation.
-- [ ] 1.2 Apply the exact two-selector native CSS containment rule without changing Astro markup, controllers, cards, image loading, dependencies, APIs, types, or content; verify the focused containment test passes.
-- [ ] 1.3 Run the focused Store/Distro tests and commit the exact implementation tree used for all later measurements.
+- [x] 1.1 Extend the existing containment source-contract test to prove the first chunk of the first group stays eager, later first chunks and all non-first chunks are contained, chunk size remains six, cards are not individually contained, and no client-rendering or duplicate-catalog boundary is added; verify the focused test fails before CSS implementation.
+- [x] 1.2 Apply the exact two-selector native CSS containment rule without changing Astro markup, controllers, cards, image loading, dependencies, APIs, types, or content; verify the focused containment test passes.
+- [x] 1.3 Run the focused Store/Distro tests and commit the exact implementation tree used for all later measurements.
 
 ## 2. Performance Acceptance
 
