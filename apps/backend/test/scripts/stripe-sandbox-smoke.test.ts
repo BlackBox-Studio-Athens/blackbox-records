@@ -702,6 +702,13 @@ describe('Stripe sandbox Playwright smoke runner', () => {
 
     expect(
       createStripeCheckoutSurfaceObservation(
+        'BlackBox UAT - Disintegration\nMerchant will receive 28.00 EUR\nPayment method\nGoogle Pay\nCard\nCard information',
+        { ...expectation, expectedSessionProjection: sessionProjectionExpectation },
+      ),
+    ).toMatchObject({ amountTextPresent: true, issues: [], observedAmountTexts: ['28.00 EUR'] });
+
+    expect(
+      createStripeCheckoutSurfaceObservation(
         'BlackBox UAT - Disintegration\n€10.00\nPayment method\nCard\nCard information\nSave my information for faster checkout',
         { ...expectation, expectedSessionProjection: sessionProjectionExpectation },
       ),

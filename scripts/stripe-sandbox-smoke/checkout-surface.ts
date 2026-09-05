@@ -89,7 +89,9 @@ export function createStripeCheckoutSurfaceObservation(
   const dynamicPaymentMethodLabels = extractDynamicPaymentMethodLabels(normalizedBodyText);
   const observedPaymentSurfaceLabels = uniqueStrings([...paymentMethodLabels, ...dynamicPaymentMethodLabels]);
   const observedAmountTexts = extractAmountTexts(normalizedBodyText);
-  const amountTextPresent = normalizedBodyText.includes(expectation.expectedAmountText);
+  const expectedAmountCodeText = `${(expectation.expectedSessionProjection.expectedAmountMinor / 100).toFixed(2)} ${expectation.expectedSessionProjection.expectedCurrencyCode}`;
+  const amountTextPresent =
+    normalizedBodyText.includes(expectation.expectedAmountText) || normalizedBodyText.includes(expectedAmountCodeText);
   const expectedPaymentMethodLabels = uniqueStrings(
     expectation.expectedPaymentMethodLabels.map(normalizePaymentMethodLabel),
   );
@@ -327,7 +329,9 @@ function normalizePaymentMethodLabel(label: string): string {
 }
 
 function extractAmountTexts(text: string): string[] {
-  return uniqueStrings(text.match(/(?:€|CHF|USD|EUR|GBP)\s?\d+(?:[.,]\d{2})?/g) ?? []);
+  return uniqueStrings(
+    text.match(/(?:(?:€|CHF|USD|EUR|GBP)\s?\d+(?:[.,]\d{2})?|\d+(?:[.,]\d{2})?\s(?:CHF|USD|EUR|GBP))/g) ?? [],
+  );
 }
 
 function createVisibleTextLines(text: string): string[] {
