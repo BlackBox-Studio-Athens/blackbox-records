@@ -639,14 +639,9 @@ CI/deploy credentials and public build variables:
 
 - The static Astro site has one shared deployment workflow:
   - `.github/workflows/pages.yml` runs shared repository gates once, uploads the prebuilt UAT static artifact to GitHub Pages, and uploads the prebuilt disabled PRD static artifact to Cloudflare Pages.
-- The separate UAT Worker deploy path is isolated in `.github/workflows/cloudflare-uat.yml`; `uat` is the Wrangler runtime target.
-- That workflow:
-  - runs on pushes to `uat`
-  - can also be triggered manually
-  - runs `pnpm generate:api`
-  - runs `pnpm test:unit`
-  - runs `pnpm check`
-  - deploys only the backend workspace to Cloudflare Workers
+- `.github/workflows/catalog-promotion.yml` is the only UAT Worker deployment path. It aligns Stripe and D1 for one artifact commit before deploying the Worker and dispatching the matching UAT static deployment.
+- `.github/workflows/uat-smoke.yml` runs after the static deployment and only verifies the deployed system. It does not apply migrations, reconcile catalog state, or deploy the Worker.
+- Manual UAT recovery reruns catalog promotion for the exact artifact commit with `reset_uat_catalog=false`; direct Worker-only deployment is not a supported recovery path.
 - The UAT `workers.dev` backend is reachable for browser checks, Stripe return URLs, and webhook testing.
 - Cloudflare Access is not part of public UAT browsing at this stage.
 - Phase `06.1.1` now locks a separate protected staff-only hostname and Google-backed Access contract for internal stock work, while keeping the public UAT backend reachable and unauthenticated.

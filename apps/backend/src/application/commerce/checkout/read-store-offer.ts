@@ -12,10 +12,6 @@ import {
 } from '../catalog-sync';
 import type { StoreOffer } from './types';
 
-type CatalogMutationPolicy = {
-  applyCatalogMutations?: boolean;
-};
-
 function soldOutOffer(
   storeItemSlug: StoreItemSlug,
   variantId: VariantId,
@@ -76,7 +72,6 @@ export async function readStoreOffer(
   catalogReconciler: Pick<CatalogReconciler, 'reconcileVariant'>,
   productProjections: CatalogProductProjectionReader,
   storeItemSlug: unknown,
-  options: CatalogMutationPolicy = {},
 ): Promise<StoreOffer | null> {
   const parsedStoreItemSlug = parseStoreItemSlug(storeItemSlug);
   const storeItem = await storeItems.findByStoreItemSlug(parsedStoreItemSlug);
@@ -108,7 +103,7 @@ export async function readStoreOffer(
   }
 
   const catalogResult = await catalogReconciler.reconcileVariant(storeItem, {
-    apply: options.applyCatalogMutations ?? true,
+    apply: false,
     applyProductProjection: false,
     productProjection,
   });
@@ -129,7 +124,6 @@ export async function listVariantOffersForStoreItem(
   catalogReconciler: Pick<CatalogReconciler, 'reconcileVariant'>,
   productProjections: CatalogProductProjectionReader,
   storeItemSlug: unknown,
-  options: CatalogMutationPolicy = {},
 ): Promise<StoreOffer[] | null> {
   const offer = await readStoreOffer(
     storeItems,
@@ -138,7 +132,6 @@ export async function listVariantOffersForStoreItem(
     catalogReconciler,
     productProjections,
     storeItemSlug,
-    options,
   );
 
   return offer ? [offer] : null;

@@ -302,6 +302,36 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     }
   });
 
+  it('reports the Store Offer status when checkout is not ready', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          availability: { label: 'Checkout Paused' },
+          canCheckout: false,
+          catalogStatus: 'catalog_drift',
+          price: null,
+        }),
+        status: 200,
+      })),
+    );
+
+    try {
+      await expect(
+        resolveCheckoutSurfaceExpectation(
+          'https://worker.example.test',
+          STRIPE_SANDBOX_SMOKE_SCENARIOS.checkout_surface.checkoutSurfaceExpectation!,
+          [],
+        ),
+      ).rejects.toThrow(
+        'Worker Store Offer disintegration-black-vinyl-lp is not checkout-ready: catalog_drift (Checkout Paused).',
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('resolves all supported Stripe sandbox scenarios including 3DS', () => {
     const scenarios = resolveSelectedStripeSandboxScenarios('all');
 

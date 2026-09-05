@@ -24,7 +24,11 @@ type StripeProductApiObject = {
 };
 
 type PublicStoreOfferResponse = {
+  availability?: {
+    label?: string;
+  };
   canCheckout?: boolean;
+  catalogStatus?: string;
   price?: {
     amountMinor?: number;
     currencyCode?: string;
@@ -43,7 +47,9 @@ export async function resolveCheckoutSurfaceExpectation(
   const usesWorkerStoreOfferPrice = baseExpectation.expectedAmountText === 'Worker Store Offer price';
 
   if (!offer.canCheckout || !offer.price?.display) {
-    throw new Error('Worker Store Offer is not checkout-ready for sandbox smoke.');
+    throw new Error(
+      `Worker Store Offer ${storeItemSlug} is not checkout-ready: ${offer.catalogStatus ?? 'unknown'} (${offer.availability?.label ?? 'unknown'}).`,
+    );
   }
 
   if (!usesWorkerStoreOfferPrice) {

@@ -56,7 +56,6 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
   const storeOfferSnapshots = new PrismaStoreOfferSnapshotRepository(prisma);
   const orders = new PrismaOrderStateRepository(prisma);
   const productProjections = createCurrentCatalogProductProjectionReader();
-  const catalogMutationEnabled = productEnvironmentProfile.productEnvironment !== 'PRD';
   const createCatalogReconciler = () =>
     new CatalogReconciler({
       environment: productEnvironmentProfile.workerDeploymentTarget,
@@ -84,7 +83,6 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
         createCatalogReconciler(),
         productProjections,
         storeItemSlug,
-        { applyCatalogMutations: catalogMutationEnabled },
       ),
     readCheckoutState: async (checkoutSessionId: string) =>
       readCheckoutState(createStripeCheckoutGateway(bindings), orders, checkoutSessionId),
@@ -98,9 +96,6 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
         createCatalogReconciler(),
         productProjections,
         storeItemSlug,
-        {
-          applyCatalogMutations: catalogMutationEnabled,
-        },
       ),
     startCheckout: async (command: StartCheckoutCommand) =>
       startCheckout(
@@ -113,7 +108,6 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
         checkoutHolds,
         command,
         createFeatureFlagReader(bindings, logger),
-        { applyCatalogMutations: catalogMutationEnabled },
       ),
   };
 }

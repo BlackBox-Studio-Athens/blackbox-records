@@ -72,7 +72,7 @@ pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env uat
 
 Do not paste the signing secret into docs, chat, screenshots, evidence files, Astro public env vars, or committed files. For an existing endpoint, reveal/copy the signing secret from Stripe Dashboard/Workbench and put it directly into Wrangler. Stripe endpoint list/retrieve APIs do not return an existing endpoint secret, so `pnpm stripe:webhooks:verify --env uat` separates endpoint configuration proof from signing-secret match proof.
 
-Catalog correctness is layered: persistent webhooks provide near-real-time sync, Store Offer reads reconcile stale snapshots, checkout start revalidates the active Stripe Price, scheduled UAT catalog verification reports drift every six hours without mutating Stripe, and `pnpm stripe:catalog:verify --env uat --apply` remains the explicit Product Environment command for current UAT catalog alignment. PRD public reads never apply catalog mutations. Direct PRD apply requires `--confirm-live-catalog-changes`, and signed catalog webhooks may update PRD mappings/snapshots without enabling checkout.
+Catalog correctness is layered: persistent signed webhooks repair Price mappings and Store Offer snapshots, public Store Offer reads and checkout start verify current Stripe state without mutation, scheduled UAT catalog verification reports drift every six hours without mutating Stripe, and catalog promotion owns explicit UAT catalog alignment plus Worker deployment. Product Projection drift remains checkout-blocking until a reviewed promotion applies it. Direct PRD apply requires `--confirm-live-catalog-changes`, and signed catalog webhooks may update PRD mappings/snapshots without enabling checkout.
 
 UAT is also the first leg of the generated catalog artifact pipeline described in [`docs/catalog-promotion.md`](catalog-promotion.md). Normal content publication should use the generated artifact commit and promotion workflow instead of treating sandbox apply as a detached manual checklist.
 
@@ -213,26 +213,15 @@ Operator sequence for a full UAT catalog reset:
 ```powershell
 git status --short
 git push origin main
-$catalogResetCycle = "manual-$(Get-Date -Format yyyyMMddHHmmss)"
-pnpm stripe:webhooks:verify --env uat
-pnpm stripe:catalog:verify --env uat
-pnpm stripe:catalog:reset-uat --env uat --dry-run
-pnpm stripe:catalog:reset-uat --env uat --confirm
-pnpm --filter @blackbox/backend d1:migrations:list:uat
-pnpm --filter @blackbox/backend d1:migrations:apply:uat
-pnpm --filter @blackbox/backend d1:seed:uat:catalog
-pnpm stripe:catalog:verify --env uat --plan-apply --promotion-run-id $catalogResetCycle
-pnpm stripe:catalog:verify --env uat --apply --promotion-run-id $catalogResetCycle
-pnpm stripe:catalog:verify --env uat --promotion-run-id $catalogResetCycle
-pnpm deploy:backend:uat
+gh workflow run catalog-promotion.yml --ref main -f artifact_commit_sha=$(git rev-parse HEAD) -f target=uat -f reset_uat_catalog=true
 ```
 
 Provider execution notes:
 
 - Repo-complete is not provider-complete. A pushed commit does not mutate Stripe Products, Stripe Prices, D1 stock, D1 mappings, or Store Offer snapshots.
-- `d1:migrations:list:uat` is the read-only migration check. `d1:migrations:apply:uat` and `stripe:catalog:verify --env uat --apply` are remote mutations and require the explicit UAT gate; implementation and local verification do not run them.
+- `d1:migrations:list:uat` is the read-only migration check. Catalog promotion owns remote UAT migrations, catalog mutation, and Worker deployment behind the UAT environment gate.
 - Start from a clean final tree that already passed `pnpm test:unit`, `pnpm check`, `pnpm build`, and OpenSpec validation. `git status --short` should print nothing before provider mutation begins.
-- Run the provider sequence from the final pushed commit. If reset/apply/smoke work requires a code or script fix, rerun `pnpm test:unit`, `pnpm check`, and `pnpm build`, push the fix, redeploy the UAT Worker, and rerun catalog verification.
+- Run catalog promotion from the final pushed commit. If reset/apply/smoke work requires a code or script fix, rerun `pnpm test:unit`, `pnpm check`, and `pnpm build`, push the fix, then rerun catalog promotion for that exact commit without using a Worker-only deploy.
 - Reset cleanup must cover current ownership metadata and documented legacy sandbox names such as `BlackBox UAT - ...`. Keep that fallback until there are no legacy sandbox catalog objects left.
 - Generate one unique catalog reset-cycle ID before each reset and reuse it for plan, apply retries, and post-apply verification. Generate a new ID only when starting another reset.
 - `pnpm stripe:catalog:verify --env uat` and `pnpm stripe:catalog:verify --env uat --apply` are intentionally throttled. If Stripe returns a rate-limit error after reset or apply work, wait for a short cooldown and rerun verification instead of trusting Dashboard row counts.

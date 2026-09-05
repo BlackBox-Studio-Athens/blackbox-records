@@ -40,7 +40,7 @@ Release and distro entries carry editorial Store Item content only:
 2. `Catalog artifact regeneration` generates Desired Catalog State, Product Projection, UAT readiness SQL, and PRD readiness SQL.
 3. If generated artifacts drift, the workflow commits only those artifacts as `chore(catalog): regenerate promotion artifacts`.
 4. `Catalog promotion` runs from the artifact commit, not the original content-only commit.
-5. UAT runs repository gates, config verification, D1 readiness, Stripe dry-run/apply/post-verify, and Worker deploy. It verifies every generated Store Item has one ready hosted listing-price record, then dispatches the UAT static deployment for the same artifact commit. GitHub Pages UAT validation then happens in the separate `workflow_run` smoke workflow.
+5. UAT runs repository gates, config verification, D1 readiness, Stripe dry-run/apply/post-verify, and Worker deploy. It verifies every generated Store Item has one ready hosted listing-price record, then dispatches the UAT static deployment for the same artifact commit. This is the only UAT Worker deployment path. The separate `workflow_run` smoke workflow observes the deployed system without applying migrations, mutating catalog state, or redeploying the Worker.
 6. PRD starts only after UAT proof for the same artifact commit on the normal `all` target. Live Stripe catalog and PRD D1 changes require the false-by-default `confirm_live_catalog_changes=true` input for that exact run. Without it, the job records `not_configured` evidence and performs no PRD mutation.
 7. PRD smoke is no longer part of catalog promotion. The `pnpm smoke:stripe-promotion -- --env prd --scenario all` script remains available for manual operator runs or a later dedicated workflow.
 

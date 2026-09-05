@@ -115,9 +115,9 @@ export function verifyEnvironmentModel(): CheckResult[] {
         !catalogPromotionWorkflow.includes('.codex-artifacts/smoke/'),
     },
     {
-      detail:
-        'Post-merge UAT provider smoke runs after the shared static deployment workflow, deploys the UAT Worker, and reuses the UAT promotion credential scope.',
+      detail: 'Catalog promotion owns UAT Worker deployment while post-merge provider smoke remains observation-only.',
       ok:
+        catalogPromotionWorkflow.includes('- name: Deploy UAT Worker') &&
         uatSandboxSmokeWorkflow.includes('workflow_run') &&
         uatSandboxSmokeWorkflow.includes('Deploy UAT and PRD static sites') &&
         uatSandboxSmokeWorkflow.includes("branches: ['main']") &&
@@ -125,7 +125,9 @@ export function verifyEnvironmentModel(): CheckResult[] {
         uatSandboxSmokeWorkflow.includes('concurrency:') &&
         uatSandboxSmokeWorkflow.includes('environment: catalog-promotion-uat') &&
         uatSandboxSmokeWorkflow.includes('github.event.workflow_run.head_sha') &&
-        uatSandboxSmokeWorkflow.includes('pnpm deploy:backend:uat') &&
+        !uatSandboxSmokeWorkflow.includes('pnpm deploy:backend:uat') &&
+        !uatSandboxSmokeWorkflow.includes('d1:migrations:apply:uat') &&
+        !exists('.github/workflows/cloudflare-uat.yml') &&
         uatSandboxSmokeWorkflow.includes('pnpm smoke:stripe-uat -- \\') &&
         uatSandboxSmokeWorkflow.includes('pnpm smoke:resend-uat -- \\') &&
         uatSandboxSmokeWorkflow.includes('--site-url "${UAT_SITE_URL}"') &&

@@ -580,7 +580,6 @@ describe('checkout use cases', () => {
         catalogReconciler,
         productProjections,
         storeItem.storeItemSlug,
-        { applyCatalogMutations: false },
       ),
     ).resolves.toEqual(
       expect.objectContaining({
@@ -695,7 +694,6 @@ describe('checkout use cases', () => {
           variantId: storeItem.variantId,
         },
         undefined,
-        { applyCatalogMutations: false },
       ),
     ).resolves.toEqual({
       checkoutSessionId: 'cs_test_123',
