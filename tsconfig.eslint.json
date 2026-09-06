@@ -5,7 +5,15 @@
     "checkJs": false,
     "types": ["node", "@cloudflare/workers-types"]
   },
-  "include": ["*.config.js", "*.config.mjs", "scripts/**/*.ts", "apps/**/*.ts", "apps/**/*.tsx", "packages/**/*.ts"],
+  "include": [
+    "*.config.js",
+    "*.config.mjs",
+    "scripts/**/*.ts",
+    "apps/**/*.ts",
+    "apps/**/*.tsx",
+    "packages/**/*.ts",
+    "openspec/changes/*/*.ts"
+  ],
   "exclude": [
     "node_modules",
     "dist",

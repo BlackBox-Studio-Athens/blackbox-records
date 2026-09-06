@@ -3,9 +3,19 @@
   "title": "Traumatique",
   "group": "CDs",
   "artist_or_label": "Dead Flag Blues",
-  "image": "dead-flag-blues-traumatique-cd.jpg",
-  "image_alt": "Traumatique CD front mockup",
-  "summary": "CD edition of Traumatique by Dead Flag Blues. Source metadata identifies it as a 5-track release, released February 3, 2021.",
+  "image": "dead-flag-blues-traumatique-cd-front.jpg",
+  "image_alt": "Traumatique digipak CD with the disc beside the front cover",
+  "gallery": [
+    {
+      "image": "dead-flag-blues-traumatique-cd-back.jpg",
+      "image_alt": "Traumatique digipak CD front and back covers"
+    },
+    {
+      "image": "dead-flag-blues-traumatique-cd-open.jpg",
+      "image_alt": "Traumatique digipak CD opened to show the disc and inner credits"
+    }
+  ],
+  "summary": "Five-track debut by Athens instrumental post-rock and post-metal band Dead Flag Blues, issued on digipak CD.",
   "eyebrow": "Distro",
   "format": "CD",
   "order": 27,

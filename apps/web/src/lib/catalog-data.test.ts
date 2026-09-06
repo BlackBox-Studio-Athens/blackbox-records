@@ -277,6 +277,12 @@ describe('StoreItem projection contract', () => {
         eyebrow: 'Tape',
         format: 'Cassette',
         group: 'Tapes',
+        gallery: [
+          {
+            image: createTestImage('/afterglow-back.jpg'),
+            image_alt: 'Afterglow tape back cover',
+          },
+        ],
         image: createTestImage('/afterglow.jpg'),
         image_alt: 'Afterglow tape',
         order: 1,
@@ -292,6 +298,7 @@ describe('StoreItem projection contract', () => {
     expect(storeItem.metadata).toEqual(['Tapes', 'Jun 2021', 'Cassette']);
     expect(storeItem).not.toHaveProperty('merch_url');
     expect(storeItem).not.toHaveProperty('checkoutPath');
+    expect(storeItem).not.toHaveProperty('gallery');
   });
 
   it('omits unknown distro release dates from store item metadata', () => {

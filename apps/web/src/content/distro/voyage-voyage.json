@@ -1,7 +1,7 @@
 {
   "image_alt": "Voyage Voyage front",
   "$schema": "../../../.astro/collections/distro.schema.json",
-  "summary": "Zaperlipopette! keep their Swiss experimental rock and math-rock focus sharp on Voyage Voyage.",
+  "summary": "Eight-track Basel experimental math-rock album by Zaperlipopette!.",
   "release_date": "2019-11-08",
   "order": 5,
   "artist_or_label": "Zaperlipopette!",

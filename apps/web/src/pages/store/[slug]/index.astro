@@ -1,5 +1,6 @@
 ---
 import { Image } from 'astro:assets';
+import { getEntry } from 'astro:content';
 
 import StoreOfferPriceDisplay from '@/components/store/StoreOfferPriceDisplay';
 import StoreItemPurchaseActions from '@/components/store/StoreItemPurchaseActions';
@@ -31,6 +32,13 @@ const itemTypeLabel = storeItem.sourceKind === 'release' ? 'Release' : 'Item';
 const canBuy = primaryAvailability?.canBuy ?? false;
 const cartItem = createCartLineItemSnapshotForStorePage(storeItem, primaryAvailability, storeItem.image.src);
 const cartSeed = createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
+const distroSource = storeItem.sourceKind === 'distro' ? await getEntry('distro', storeItem.sourceId) : null;
+
+if (storeItem.sourceKind === 'distro' && !distroSource) {
+  throw new Error(`Missing Distro source entry for Store Item ${storeItem.slug}: ${storeItem.sourceId}.`);
+}
+
+const gallery = distroSource?.data.gallery ?? [];
 ---
 
 <SiteLayout
@@ -141,4 +149,31 @@ const cartSeed = createPricedCartSeedForStorePage(storeItem, primaryAvailability
       </div>
     </div>
   </section>
+
+  {
+    gallery.length > 0 && (
+      <section class="layout-container pb-14 pt-6" aria-labelledby="store-item-more-views">
+        <h2
+          id="store-item-more-views"
+          class="mb-5 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground"
+        >
+          More views
+        </h2>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {gallery.map(({ image, image_alt }) => (
+            <div class="aspect-[4/5] overflow-hidden border border-border/60 bg-background/55 p-3">
+              <Image
+                src={image}
+                alt={image_alt}
+                loading="lazy"
+                widths={[480, 720, 960, 1200]}
+                sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw"
+                class="h-full w-full object-contain"
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+    )
+  }
 </SiteLayout>

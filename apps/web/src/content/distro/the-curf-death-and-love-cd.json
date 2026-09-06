@@ -3,9 +3,23 @@
   "title": "Death and Love",
   "group": "CDs",
   "artist_or_label": "The Curf",
-  "image": "the-curf-death-and-love-cd.jpg",
-  "image_alt": "Death and Love CD front mockup",
-  "summary": "CD edition of Death and Love by The Curf. Source metadata identifies it as a 9-track release, released July 21, 2017.",
+  "image": "the-curf-death-and-love-cd-front.jpg",
+  "image_alt": "Death and Love two-panel CD digipak front",
+  "gallery": [
+    {
+      "image": "the-curf-death-and-love-cd-back.jpg",
+      "image_alt": "Death and Love CD digipak back"
+    },
+    {
+      "image": "the-curf-death-and-love-cd-disc.jpg",
+      "image_alt": "Death and Love compact disc"
+    },
+    {
+      "image": "the-curf-death-and-love-cd-open.jpg",
+      "image_alt": "Death and Love CD digipak opened across both panels"
+    }
+  ],
+  "summary": "Nine-track doom and psychedelic stoner-rock album, issued as a two-panel digipak CD with an eight-page booklet.",
   "eyebrow": "Distro",
   "format": "CD",
   "order": 98,

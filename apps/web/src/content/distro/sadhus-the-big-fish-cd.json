@@ -3,9 +3,15 @@
   "title": "The big fish",
   "group": "CDs",
   "artist_or_label": "Sadhus",
-  "image": "sadhus-the-big-fish-cd.jpg",
-  "image_alt": "The big fish CD front mockup",
-  "summary": "CD edition of The big fish by Sadhus. Source metadata identifies it as a 6-track release, released November 15, 2018.",
+  "image": "sadhus-the-big-fish-cd-front.jpg",
+  "image_alt": "Big Fish screenprinted CD sleeve front",
+  "gallery": [
+    {
+      "image": "sadhus-the-big-fish-cd-open.jpg",
+      "image_alt": "Big Fish CD sleeve opened to show the disc and inner artwork"
+    }
+  ],
+  "summary": "Six-track sludge and doom-metal album by Sadhus, The Smoking Community, issued in a hand-screenprinted CD sleeve.",
   "eyebrow": "Distro",
   "format": "CD",
   "order": 28,

@@ -3,7 +3,7 @@ import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
 import { buildBandcampEmbedUrl, buildTidalEmbedUrl } from './utils/music';
-import { DISTRO_GROUP_VALUES, DISTRO_INTRO_FIELDS } from './lib/distro-data';
+import { DISTRO_INTRO_FIELDS } from './lib/distro-data';
 import {
   isHttpsUrl,
   isInternalOrHttpsUrl,
@@ -13,6 +13,7 @@ import {
   youtubeVideoIdPatternSource,
 } from './lib/editorial-validation';
 import { slugPatternSource } from './lib/slugs';
+import { createDistroContentSchema } from './lib/distro-content-schema';
 
 const requiredAltText = z.string().trim().min(1, 'Describe the visible image for people who cannot see it.');
 const httpsUrl = z.string().refine(isHttpsUrl, { message: 'Use a full HTTPS URL.' });
@@ -103,19 +104,7 @@ const news = defineCollection({
 
 const distro = defineCollection({
   loader: glob({ pattern: '**/*.json', base: './src/content/distro' }),
-  schema: ({ image }) =>
-    z.object({
-      title: z.string(),
-      group: z.enum(DISTRO_GROUP_VALUES),
-      artist_or_label: z.string(),
-      image: image(),
-      image_alt: requiredAltText,
-      summary: z.string(),
-      eyebrow: z.string().optional(),
-      format: z.string().optional(),
-      release_date: z.coerce.date().optional(),
-      order: z.number().int().nonnegative(),
-    }),
+  schema: ({ image }) => createDistroContentSchema(image),
 });
 
 const distroPage = defineCollection({

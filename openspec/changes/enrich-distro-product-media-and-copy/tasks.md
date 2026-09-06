@@ -1,0 +1,29 @@
+## 1. Add Optional Distro Galleries
+
+- [x] 1.1 Add failing schema and Sveltia tests for optional ordered `gallery` entries containing one local image and required alt text; verify existing Distro entries remain valid without the field.
+- [x] 1.2 Add the optional `gallery` schema and matching Sveltia list field without changing required primary `image`/`image_alt`, inventory, commerce, or provider fields; verify focused schema/CMS tests pass.
+- [x] 1.3 Add failing direct detail-route tests proving a Distro item's `sourceId` loads gallery data from its original content entry in canonical `/store/[slug]/` rendering, while shared `StorePageEntry`, `StoreItem`, card, cart, checkout-return, provider, and release-derived projections remain unchanged.
+- [x] 1.4 Render secondary images in `/store/[slug]/` as a lazy responsive Astro image grid below the existing Distro detail block without adding a Store overlay or shared detail abstraction; verify zero-, one-, and multi-secondary-image fixtures have correct order, alt text, stable geometry, and no client gallery dependency.
+
+## 2. Establish Research Evidence
+
+- [x] 2.1 Generate `research-ledger.tsv` dynamically from current Distro content entries, keyed by `content_id` and reconciled to the Distro Inventory Source, with `group`, copy evidence/status, per-asset `filename → official source URL → rights status` evidence, CD-photo status, and notes; record current totals as a snapshot rather than hard-coded acceptance criteria.
+- [x] 2.2 Run one change-local completeness check over current Distro content, the Distro Inventory Source, and the ledger; verify it detects a missing or duplicate content id, unresolved copy review, unresolved current CD photo, unmatched inventory row, missing per-asset source/rights evidence, or retained generic `Source metadata identifies` boilerplate without adding a runtime check or permanent active-change-path test.
+
+## 3. Research CD Media and Copy
+
+- [ ] 3.1 Using the Chrome GPT extension first and Computer Use only as fallback, research every current CD alphabetically in small ledger-driven batches; verify each completed row has official Bandcamp and/or official band/label Facebook evidence, reviewed copy, a verified physical-CD image, and recorded reuse rights for each accepted asset.
+- [ ] 3.2 Add only useful matching-edition secondary views with required alt text when distinct official views exist; verify duplicate crops, unrelated editions, marketplace images, cover-only substitutes, and generated mockups do not satisfy completion.
+- [ ] 3.3 Keep any CD without a verified physical-product photo explicitly unresolved and request a user-supplied verified asset; do not claim change completion while such a row remains.
+
+## 4. Research Remaining Distro Copy
+
+- [x] 4.1 Review every current non-CD summary by physical group and alphabetically in small ledger-driven batches using official Bandcamp and/or official band/label Facebook evidence; retain supported copy, rewrite only generic, unsupported, inaccurate, or stale copy, and update each ledger row.
+
+## 5. Verify Content and Projection Boundaries
+
+- [ ] 5.1 Run the final dynamic completeness check; verify one ledger row per current Distro content entry, complete copy review, real physical-product photography for every current CD, per-asset source/rights evidence, manifest reconciliation, no duplicate row, and no unresolved blocker before completion is claimed.
+- [x] 5.2 Run the artwork-fetcher unit suite only if its existing normalization or evidence helpers changed; otherwise verify no browser automation or new network source was added under `tools/artwork-fetcher`.
+- [ ] 5.3 Regenerate and check catalog artifacts with the existing repo commands, then run read-only `pnpm stripe:catalog:verify --env uat` when UAT access is configured; verify primary image/summary drift is explicit, gallery images are absent from provider projection, and no provider mutation is applied.
+- [ ] 5.4 Run `pnpm assets:check`, `pnpm test:unit`, `pnpm check`, and `pnpm build`; verify asset policy, content schemas, generated artifacts, tests, and production build pass on the final tree.
+- [x] 5.5 Use Browser Use at desktop and 390 pixels on a representative single-image Distro detail, each approved gallery cardinality available in the final content, and Store cards; verify image quality, order, alt/accessibility structure, lazy loading, no overflow/layout shift, and unchanged primary card/cart presentation without adding duplicate or low-value media to satisfy testing.
