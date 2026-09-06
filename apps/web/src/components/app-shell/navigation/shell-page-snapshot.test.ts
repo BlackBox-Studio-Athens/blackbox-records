@@ -118,12 +118,23 @@ describe('shell page snapshots', () => {
     const group = {
       dataset: {
         storeCoverflowInitialPositionRatio: String(1 / 53),
-        storeCoverflowMode: 'catalog',
+        storeCoverflowInitialMode: 'catalog',
+        storeCoverflowMode: 'preview',
         storeCoverflowPreviewCount: '6',
         storeCoverflowRemainingCount: '52',
         storeCoverflowTotal: '53',
       },
       removeAttribute: (name: string) => removed.add(name),
+      querySelector(selector: string) {
+        if (selector === '[data-store-coverflow-controls]') return controls;
+        if (selector === '[data-store-coverflow-toggle]') return toggle;
+        if (selector === '[data-store-coverflow-status]') return status;
+        return null;
+      },
+      querySelectorAll(selector: string) {
+        if (selector.includes('[data-store-coverflow-next]')) return [previousButton, nextButton, toggle];
+        return [];
+      },
       style: {
         removeProperty: (name: string) => styleProperties.delete(name),
         setProperty: (name: string, value: string) => styleProperties.set(name, value),
@@ -163,17 +174,48 @@ describe('shell page snapshots', () => {
       textContent: "You're viewing 34 of 53.",
     };
     const formatDisclosure = { open: true };
+    const selectedRoot = { removeAttribute: (name: string) => removed.add(name) };
+    const currentSection = { removeAttribute: (name: string) => removed.add(name) };
+    const allFormatLink = {
+      dataset: { distroFormatKey: 'all' },
+      removeAttribute: (name: string) => removed.add(name),
+      setAttribute: (name: string, value: string) => {
+        if (name === 'aria-current') allFormatLinkAriaCurrent = value;
+      },
+      toggleAttribute: (_name: string, force: boolean) => {
+        allFormatLinkCurrent = force;
+      },
+    };
+    const selectedFormatLink = {
+      dataset: { distroFormatKey: 'distro-group-vinyl-7-inch' },
+      removeAttribute: (name: string) => {
+        removed.add(name);
+        if (name === 'aria-current') selectedFormatLinkAriaCurrent = null;
+      },
+      setAttribute: () => undefined,
+      toggleAttribute: (_name: string, force: boolean) => {
+        selectedFormatLinkCurrent = force;
+      },
+    };
+    const formatSummary = {
+      dataset: { distroFormatSummaryInitialLabel: 'All formats' },
+      textContent: 'Vinyl 7-inch',
+    };
+    let allFormatLinkAriaCurrent: string | null = null;
+    let allFormatLinkCurrent = false;
+    let selectedFormatLinkAriaCurrent: string | null = 'true';
+    let selectedFormatLinkCurrent = true;
     const root = {
       querySelectorAll(selector: string) {
         if (selector === '[data-store-coverflow-group]') return [group];
         if (selector === '[data-store-coverflow-card]') return [card];
-        if (selector === '[data-store-coverflow-controls]') return [controls];
-        if (selector.includes('[data-store-coverflow-next]')) return [previousButton, nextButton, toggle];
-        if (selector === '[data-store-coverflow-toggle]') return [toggle];
-        if (selector === '[data-store-coverflow-status]') return [status];
         if (selector === '[data-store-coverflow-initial-value]') return [currentValue, remainingValue];
         if (selector === '[data-store-coverflow-summary]') return [summary];
         if (selector === '[data-distro-format-disclosure]') return [formatDisclosure];
+        if (selector === '[data-distro-selected-format]') return [selectedRoot];
+        if (selector === '[data-distro-format-current]') return [currentSection, selectedFormatLink];
+        if (selector === '[data-distro-format-link]') return [allFormatLink, selectedFormatLink];
+        if (selector === '[data-distro-format-summary-current]') return [formatSummary];
         return [];
       },
     } as unknown as ParentNode;
@@ -187,11 +229,14 @@ describe('shell page snapshots', () => {
         'data-store-coverflow-transitioning',
         'data-store-coverflow-visited',
         'data-store-coverflow-selected',
+        'data-distro-format-current',
+        'data-distro-selected-format',
         'aria-disabled',
+        'aria-current',
         'aria-roledescription',
       ]),
     );
-    expect(group.dataset.storeCoverflowMode).toBe('preview');
+    expect(group.dataset.storeCoverflowMode).toBe('catalog');
     expect(group.dataset).toMatchObject({
       storeCoverflowPreviewCount: '6',
       storeCoverflowRemainingCount: '52',
@@ -199,15 +244,20 @@ describe('shell page snapshots', () => {
     });
     expect(styleProperties.get('--store-coverflow-position-ratio')).toBe(String(1 / 53));
     expect(card.dataset.storeCoverflowPosition).toBe('active');
-    expect(controls.hidden).toBe(false);
-    expect(toggle.textContent).toBe('View all 53');
-    expect(toggleAriaExpanded).toBe('false');
-    expect(status.textContent).toBe('Barren Point — Bonebrokk');
-    expect(status.hidden).toBe(false);
+    expect(controls.hidden).toBe(true);
+    expect(toggle.textContent).toBe('Show Coverflow');
+    expect(toggleAriaExpanded).toBe('true');
+    expect(status.textContent).toBe('');
+    expect(status.hidden).toBe(true);
     expect(currentValue.textContent).toBe('1');
     expect(remainingValue.textContent).toBe('52');
     expect(summary.textContent).toBe("You're viewing 1 of 53.");
     expect(formatDisclosure.open).toBe(false);
+    expect(allFormatLinkCurrent).toBe(true);
+    expect(allFormatLinkAriaCurrent).toBe('true');
+    expect(selectedFormatLinkCurrent).toBe(false);
+    expect(selectedFormatLinkAriaCurrent).toBeNull();
+    expect(formatSummary.textContent).toBe('All formats');
   });
 
   it('reads the swappable main payload and route metadata', () => {

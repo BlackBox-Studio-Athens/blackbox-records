@@ -1,5 +1,4 @@
 const COVERFLOW_POSITIONS = ['active', 'right-near', 'right-far', 'back', 'left-far', 'left-near'] as const;
-const COVERFLOW_POSITION_OFFSETS = [0, 1, 2, 3, -2, -1] as const;
 const POINTER_INTENT_DISTANCE = 10;
 const TOUCH_SWIPE_DISTANCE = 40;
 const TOUCH_HORIZONTAL_DOMINANCE = 1.25;
@@ -29,6 +28,8 @@ type StoreCoverflowGroup = {
   currentValue: HTMLElement;
   disclosureRail: HTMLElement;
   element: HTMLElement;
+  initialMode: 'catalog' | 'preview';
+  lastActiveIndex: number;
   nextButton: HTMLButtonElement;
   positionedCards: Set<HTMLElement>;
   previousButton: HTMLButtonElement;
@@ -48,6 +49,7 @@ export type StoreCoverflowDom = {
 
 export type StoreCoverflowController = {
   cleanup: () => void;
+  setFocusedGroup: (groupElement: HTMLElement | null) => void;
   setSearchActive: (isActive: boolean) => void;
 };
 
@@ -150,6 +152,7 @@ export function readStoreCoverflowDom(root: ParentNode | null): StoreCoverflowDo
       const stage = element.querySelector<HTMLElement>('[data-store-coverflow-stage]');
       const cards = [...element.querySelectorAll<HTMLElement>('[data-store-coverflow-card]')];
       const totalCount = Number(element.dataset.storeCoverflowTotal);
+      const initialMode = element.dataset.storeCoverflowInitialMode || element.dataset.storeCoverflowMode;
       if (
         !controls ||
         !currentValue ||
@@ -162,8 +165,9 @@ export function readStoreCoverflowDom(root: ParentNode | null): StoreCoverflowDo
         !summary ||
         !reveal ||
         !stage ||
+        (initialMode !== 'catalog' && initialMode !== 'preview') ||
         !Number.isInteger(totalCount) ||
-        totalCount <= COVERFLOW_POSITIONS.length ||
+        totalCount < 2 ||
         cards.length !== totalCount
       ) {
         return null;
@@ -175,6 +179,8 @@ export function readStoreCoverflowDom(root: ParentNode | null): StoreCoverflowDo
         currentValue,
         disclosureRail,
         element,
+        initialMode,
+        lastActiveIndex: 0,
         nextButton,
         positionedCards: new Set(cards.filter((card) => card.hasAttribute('data-store-coverflow-position'))),
         previousButton,
@@ -182,7 +188,7 @@ export function readStoreCoverflowDom(root: ParentNode | null): StoreCoverflowDo
         reveal,
         selectedCard: null,
         stage,
-        state: { mode: 'preview', activeIndex: 0 },
+        state: initialMode === 'preview' ? { mode: 'preview', activeIndex: 0 } : { mode: 'catalog' },
         status,
         summary,
         toggleButton,
@@ -205,6 +211,8 @@ export function createStoreCoverflowController(
 
   let revision = 0;
   let inFlight: Animation[] | null = null;
+  let focusedGroupElement: HTMLElement | null = null;
+  let searchActive = false;
 
   const renderGroup = (group: StoreCoverflowGroup) => {
     group.element.toggleAttribute('data-store-coverflow-ready', true);
@@ -214,9 +222,9 @@ export function createStoreCoverflowController(
     if (group.state.mode === 'preview') {
       const activeIndex = group.state.activeIndex;
       const nextPositions = new Map<HTMLElement, string>();
-      COVERFLOW_POSITION_OFFSETS.forEach((offset, positionIndex) => {
-        const cardIndex = (activeIndex + offset + group.cards.length) % group.cards.length;
-        nextPositions.set(group.cards[cardIndex]!, COVERFLOW_POSITIONS[positionIndex]!);
+      group.cards.forEach((card, cardIndex) => {
+        const position = getStoreCoverflowPosition(cardIndex, activeIndex, group.cards.length);
+        if (position) nextPositions.set(card, position);
       });
       group.positionedCards.forEach((card) => {
         if (!nextPositions.has(card)) card.removeAttribute('data-store-coverflow-position');
@@ -258,7 +266,9 @@ export function createStoreCoverflowController(
     group.status.hidden = true;
     group.previousButton.removeAttribute('aria-disabled');
     group.nextButton.removeAttribute('aria-disabled');
-    group.controls.hidden = group.state.mode === 'search-results';
+    group.controls.hidden =
+      group.state.mode === 'search-results' ||
+      (group.initialMode === 'catalog' && group.element !== focusedGroupElement);
     group.toggleButton.textContent = 'Show Coverflow';
     group.toggleButton.setAttribute('aria-expanded', 'true');
     if (!group.element.hasAttribute('data-store-coverflow-transitioning')) setAriaDisabled(group.toggleButton, false);
@@ -266,7 +276,21 @@ export function createStoreCoverflowController(
 
   const setGroupState = (group: StoreCoverflowGroup, state: StoreCoverflowState) => {
     group.state = state;
+    if (state.mode === 'preview') group.lastActiveIndex = state.activeIndex;
+    if (state.mode === 'catalog' && state.selectedIndex !== undefined) group.lastActiveIndex = state.selectedIndex;
     renderGroup(group);
+  };
+
+  const restoreGroupPresentations = () => {
+    dom.groups.forEach((group) => {
+      const shouldPreview = group.initialMode === 'preview' || group.element === focusedGroupElement;
+      setGroupState(
+        group,
+        shouldPreview
+          ? { mode: 'preview', activeIndex: group.lastActiveIndex }
+          : { mode: 'catalog', selectedIndex: group.lastActiveIndex },
+      );
+    });
   };
 
   const clearTransitionState = () => {
@@ -554,17 +578,24 @@ export function createStoreCoverflowController(
   });
 
   return {
+    setFocusedGroup(groupElement) {
+      cancelTransition();
+      focusedGroupElement = groupElement;
+      if (!searchActive) restoreGroupPresentations();
+    },
     setSearchActive(isActive) {
       cancelTransition();
-      dom.groups.forEach((group) => {
-        setGroupState(
-          group,
-          reduceStoreCoverflowState(group.state, { type: 'search', active: isActive }, group.cards.length),
-        );
-      });
+      searchActive = isActive;
+      if (isActive) {
+        dom.groups.forEach((group) => setGroupState(group, { mode: 'search-results' }));
+      } else {
+        restoreGroupPresentations();
+      }
     },
     cleanup() {
       cancelTransition();
+      focusedGroupElement = null;
+      searchActive = false;
       groupListeners.forEach(
         ({
           group,
@@ -589,7 +620,8 @@ export function createStoreCoverflowController(
           group.stage.removeEventListener('pointermove', onPointerMove);
           group.stage.removeEventListener('pointerup', onPointerUp);
           group.stage.removeEventListener('wheel', onWheel);
-          group.state = { mode: 'preview', activeIndex: 0 };
+          group.lastActiveIndex = 0;
+          group.state = group.initialMode === 'preview' ? { mode: 'preview', activeIndex: 0 } : { mode: 'catalog' };
           renderGroup(group);
           group.element.removeAttribute('data-store-coverflow-ready');
           group.element.removeAttribute('data-store-coverflow-visited');

@@ -200,7 +200,7 @@ describe('store collection entries', () => {
     ]);
   });
 
-  it('retains physical group order, combined small vinyl, Clothes, and title tie-breakers', () => {
+  it('retains exact physical group order, separate small vinyl formats, intros, and title tie-breakers', () => {
     const createDistroEntry = (
       slug: string,
       group: NonNullable<StoreCollectionEntry['distro']>['group'],
@@ -240,7 +240,8 @@ describe('store collection entries', () => {
 
     expect(groups.map((group) => group.groupName)).toEqual([
       'Vinyl 12-inch',
-      '7-inch & 10-inch Vinyl',
+      'Vinyl 10-inch',
+      'Vinyl 7-inch',
       'CDs',
       'Tapes',
       'Clothes',
@@ -248,18 +249,23 @@ describe('store collection entries', () => {
     ]);
     expect(groups.map((group) => group.introKey)).toEqual([
       'vinyl_12_inch',
+      'vinyl_10_inch',
       'vinyl_7_inch',
       'CDs',
       'Tapes',
       'Clothes',
       'Other',
     ]);
-    expect(distroPage.group_intros[groups[1]!.introKey]).toBe(distroPage.group_intros.vinyl_7_inch);
-    expect(groups[1]?.entries.map((entry) => entry.storeItem.title)).toEqual(['Alpha', 'Beta', 'small-vinyl-10']);
+    expect(distroPage.group_intros[groups[1]!.introKey]).toBe(distroPage.group_intros.vinyl_10_inch);
+    expect(distroPage.group_intros[groups[2]!.introKey]).toBe(distroPage.group_intros.vinyl_7_inch);
+    expect(groups[1]?.entries.map((entry) => entry.storeItem.title)).toEqual(['small-vinyl-10']);
+    expect(groups[2]?.entries.map((entry) => entry.storeItem.title)).toEqual(['Alpha', 'Beta']);
+    expect(groups.map((group) => group.entries.length)).toEqual([1, 1, 2, 1, 1, 1, 1]);
     expect(groups.flatMap((group) => group.entries).map((entry) => entry.storeItem.slug)).toHaveLength(entries.length);
     expect(groups.map((group) => createStoreDistroGroupHeadingId(group.groupName))).toEqual([
       'distro-group-vinyl-12-inch',
-      'distro-group-7-inch-10-inch-vinyl',
+      'distro-group-vinyl-10-inch',
+      'distro-group-vinyl-7-inch',
       'distro-group-cds',
       'distro-group-tapes',
       'distro-group-clothes',

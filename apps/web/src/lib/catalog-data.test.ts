@@ -142,7 +142,7 @@ function createStoreItemCollisionRecord(
 }
 
 describe('groupDistroEntries', () => {
-  it('combines small-vinyl groups, sorts items, and omits empty groups', () => {
+  it('keeps small-vinyl groups separate, sorts items, and omits empty groups', () => {
     const entries: Array<{ data: { group: DistroGroupName; order: number; title: string } }> = [
       { data: { group: 'Tapes', order: 5, title: 'C' } },
       { data: { group: 'Vinyl 7-inch', order: 2, title: 'B' } },
@@ -154,16 +154,17 @@ describe('groupDistroEntries', () => {
 
     const groups = groupDistroEntries(entries);
 
-    expect(groups.map((group) => group.groupName)).toEqual(['Vinyl 12-inch', '7-inch & 10-inch Vinyl', 'CDs', 'Tapes']);
-    expect(groups[0]?.entries).toHaveLength(1);
-    expect(groups[1]?.entries).toHaveLength(3);
-    expect(groups[2]?.entries).toHaveLength(1);
-    expect(groups[1]?.entries.map((entry) => entry.data.title)).toEqual(['A', 'B', 'G']);
-    expect(groups[1]?.entries.map((entry) => entry.data.group)).toEqual([
-      'Vinyl 7-inch',
-      'Vinyl 7-inch',
+    expect(groups.map((group) => group.groupName)).toEqual([
+      'Vinyl 12-inch',
       'Vinyl 10-inch',
+      'Vinyl 7-inch',
+      'CDs',
+      'Tapes',
     ]);
+    expect(groups[0]?.entries).toHaveLength(1);
+    expect(groups[1]?.entries.map((entry) => entry.data.title)).toEqual(['G']);
+    expect(groups[2]?.entries.map((entry) => entry.data.title)).toEqual(['A', 'B']);
+    expect(groups[3]?.entries).toHaveLength(1);
   });
 });
 

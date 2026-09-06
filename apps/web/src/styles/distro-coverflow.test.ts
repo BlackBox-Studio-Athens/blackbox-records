@@ -31,7 +31,10 @@ const cssSource = readFileSync(fileURLToPath(new URL('./global.css', import.meta
 
 describe('Distro Coverflow progressive enhancement', () => {
   it('derives full-group position state while retaining one complete card render path', () => {
-    expect(pageSource).toContain('coverflowEligible: totalCount > STORE_COVERFLOW_PREVIEW_SIZE');
+    expect(pageSource).toContain('const coverflowEnrolled = totalCount >= 2');
+    expect(pageSource).toContain(
+      "const coverflowInitialMode = totalCount > STORE_COVERFLOW_PREVIEW_SIZE ? 'preview' : 'catalog'",
+    );
     expect(pageSource).toContain('const totalCount = group.entries.length');
     expect(pageSource).toContain('const positionedCount = Math.min(STORE_COVERFLOW_PREVIEW_SIZE, totalCount)');
     expect(pageSource).toContain('const initialCurrentPosition = 1');
@@ -39,8 +42,13 @@ describe('Distro Coverflow progressive enhancement', () => {
     expect(pageSource).toContain('const initialPositionRatio = initialCurrentPosition / totalCount');
     expect(pageSource.match(/<DistroCard/g)).toHaveLength(1);
     expect(pageSource).toContain('group.chunks.map((chunk, chunkIndex)');
-    expect(pageSource).toContain("data-store-coverflow-mode={group.coverflowEligible ? 'preview' : undefined}");
-    expect(pageSource).toContain('data-store-coverflow-total={group.coverflowEligible ? group.totalCount : undefined}');
+    expect(pageSource).toContain(
+      'data-store-coverflow-mode={group.coverflowEnrolled ? group.coverflowInitialMode : undefined}',
+    );
+    expect(pageSource).toContain(
+      'data-store-coverflow-initial-mode={group.coverflowEnrolled ? group.coverflowInitialMode : undefined}',
+    );
+    expect(pageSource).toContain('data-store-coverflow-total={group.coverflowEnrolled ? group.totalCount : undefined}');
     expect(pageSource).toContain('data-store-coverflow-preview-count');
     expect(pageSource).toContain('data-store-coverflow-remaining-count');
     expect(pageSource).toContain('data-store-coverflow-initial-position-ratio');
@@ -53,7 +61,7 @@ describe('Distro Coverflow progressive enhancement', () => {
     expect(pageSource).toContain('class="store-coverflow-rail" aria-hidden="true"');
     expect(pageSource).toContain('data-store-coverflow-disclosure-rail');
     expect(pageSource).toContain('class="store-coverflow-actions__toggle"');
-    expect(pageSource).toContain('aria-expanded="false"');
+    expect(pageSource).toContain("aria-expanded={group.coverflowStartsInPreview ? 'false' : 'true'}");
     expect(pageSource).toContain('data-store-coverflow-initial-label');
     expect(pageSource).toContain('class="store-coverflow-reveal" data-store-coverflow-reveal-mask aria-hidden="true"');
     expect(pageSource).not.toContain('01 / 06');
@@ -62,10 +70,11 @@ describe('Distro Coverflow progressive enhancement', () => {
     expect(pageSource).not.toMatch(/aria-disabled="true"\s+data-store-coverflow-previous/);
     expect(cardSource).toContain('data-store-coverflow-initial-position={coverflowPosition}');
     expect(cardSource).toContain('data-store-coverflow-availability');
-    expect(pageSource).toContain('coverflowPreview={group.coverflowEligible}');
-    expect(pageSource).not.toContain('coverflowPreview={group.coverflowEligible && chunkIndex === 0}');
+    expect(pageSource).toContain('coverflowEnrolled={group.coverflowEnrolled}');
+    expect(pageSource).toContain('coverflowPreview={group.coverflowStartsInPreview}');
+    expect(cardSource).toContain("data-store-coverflow-card={coverflowEnrolled ? '' : undefined}");
     expect(pageSource.indexOf('data-store-coverflow-toggle')).toBeLessThan(
-      pageSource.indexOf('class="store-coverflow-shell"'),
+      pageSource.indexOf("class={group.coverflowEnrolled ? 'store-coverflow-shell' : undefined}"),
     );
   });
 
@@ -102,7 +111,9 @@ describe('Distro Coverflow progressive enhancement', () => {
   });
 
   it('uses one responsive six-position stage across every card with a flat reduced-motion fallback', () => {
-    expect(pageSource).toContain("group.coverflowEligible && 'distro-group-section--coverflow'");
+    expect(pageSource).toContain("group.coverflowEnrolled && 'distro-group-section--coverflow'");
+    expect(controllerSource).toContain('totalCount < 2');
+    expect(controllerSource).toContain('getStoreCoverflowPosition(cardIndex, activeIndex, group.cards.length)');
     expect(pageSource).not.toContain('aria-roledescription');
     expect(controllerSource).toContain("group.element.setAttribute('aria-roledescription', 'carousel')");
     expect(controllerSource).toContain("group.element.removeAttribute('aria-roledescription')");

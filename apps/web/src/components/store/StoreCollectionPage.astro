@@ -119,6 +119,7 @@ const coverflowCatalogId = `${category.id}-store-catalog`;
           aria-label={`${category.label} Store collection`}
           data-store-coverflow-group={coverflowEligible ? '' : undefined}
           data-store-coverflow-mode={coverflowEligible ? 'preview' : undefined}
+          data-store-coverflow-initial-mode={coverflowEligible ? 'preview' : undefined}
           data-store-coverflow-total={coverflowEligible ? entries.length : undefined}
           data-store-coverflow-preview-count={coverflowEligible ? STORE_COVERFLOW_PREVIEW_SIZE : undefined}
           data-store-coverflow-remaining-count={coverflowEligible ? entries.length - 1 : undefined}

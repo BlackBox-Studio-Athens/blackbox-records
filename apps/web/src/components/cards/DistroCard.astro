@@ -7,6 +7,7 @@ import type { StoreCardImageLoadingMode, StoreCollectionEntry } from '@/lib/stor
 import { cn } from '@/lib/utils';
 
 interface Props {
+  coverflowEnrolled?: boolean;
   coverflowPosition?: 'active' | 'back' | 'left-far' | 'left-near' | 'right-far' | 'right-near' | undefined;
   coverflowPreview?: boolean;
   entry?: StoreCollectionEntry;
@@ -16,6 +17,7 @@ interface Props {
 }
 
 const {
+  coverflowEnrolled = false,
   coverflowPosition,
   coverflowPreview = false,
   entry,
@@ -60,7 +62,7 @@ const availabilityLabel = entry?.primaryAvailability?.availability.label || 'Una
   href={storeItem.storePath}
   aria-label={isHomeVariant ? undefined : `${sourceTitle} — ${sourceSubtitle}`}
   data-astro-prefetch
-  data-store-coverflow-card={coverflowPreview ? '' : undefined}
+  data-store-coverflow-card={coverflowEnrolled ? '' : undefined}
   data-store-coverflow-initial-position={coverflowPosition}
   data-store-coverflow-position={coverflowPosition}
   data-distro-search-item={isHomeVariant ? undefined : ''}

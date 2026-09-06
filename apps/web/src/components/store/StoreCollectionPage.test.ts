@@ -132,7 +132,10 @@ describe('Store collection category surfaces', () => {
     );
     expect(collectionPageSource).toContain('imageLoadingMode={getStoreCardImageLoadingMode(itemIndex)}');
     expect(distroCatalogSource).toContain(
-      'const firstDistroGroupUsesCoverflow = groupedDistroChunks[0]?.coverflowEligible === true;',
+      'const firstDistroGroupUsesCoverflow = groupedDistroChunks[0]?.coverflowStartsInPreview === true;',
+    );
+    expect(collectionPageSource).toContain(
+      "data-store-coverflow-initial-mode={coverflowEligible ? 'preview' : undefined}",
     );
     expect(distroCatalogSource).toContain('const firstDistroCoverflowStoreItemSlug = firstDistroGroupUsesCoverflow');
     expect(distroCatalogSource).toContain(

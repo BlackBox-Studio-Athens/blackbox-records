@@ -28,17 +28,33 @@ type DistroSearchChunk = {
   items: DistroSearchItem[];
 };
 
-export type DistroSearchDom = {
-  chunks: DistroSearchChunk[];
-  formatDisclosure: HTMLDetailsElement | null;
-  groups: Array<{ chunks: DistroSearchChunk[]; element: HTMLElement }>;
-  items: DistroSearchItem[];
-  navigation: HTMLElement | null;
-  root: ParentNode;
+type DistroFormatLink = {
+  element: HTMLElement;
+  formatKey: string;
 };
 
+type DistroFormatGroup = {
+  chunks: DistroSearchChunk[];
+  element: HTMLElement;
+  formatKey: string;
+  target: HTMLElement;
+};
+
+export type DistroSearchDom = {
+  chunks: DistroSearchChunk[];
+  formatLinks: DistroFormatLink[];
+  formatDisclosure: HTMLDetailsElement | null;
+  formatSummaryCurrent: HTMLElement | null;
+  groups: DistroFormatGroup[];
+  items: DistroSearchItem[];
+  navigation: HTMLElement | null;
+  root: HTMLElement;
+};
+
+const ALL_DISTRO_FORMATS_KEY = 'all';
+
 export function readDistroSearchDom(
-  root: ParentNode | null,
+  root: HTMLElement | null,
   navigation: HTMLElement | null = null,
 ): DistroSearchDom | null {
   if (!root) return null;
@@ -55,20 +71,106 @@ export function readDistroSearchDom(
       .filter((item): item is DistroSearchItem => Boolean(item)),
   }));
   const chunksByElement = new Map(chunks.map((chunk) => [chunk.element, chunk]));
-  const groups = [...root.querySelectorAll<HTMLElement>('[data-distro-search-group]')].map((element) => ({
-    element,
-    chunks: [...element.querySelectorAll<HTMLElement>('[data-distro-search-chunk]')]
-      .map((chunkElement) => chunksByElement.get(chunkElement))
-      .filter((chunk): chunk is DistroSearchChunk => Boolean(chunk)),
-  }));
+  const groups = [...root.querySelectorAll<HTMLElement>('[data-distro-search-group]')]
+    .map((element): DistroFormatGroup | null => {
+      const formatKey = element.dataset.distroFormatKey;
+      const target = element.querySelector<HTMLElement>('[data-distro-format-target]');
+      if (!formatKey || !target) return null;
+
+      return {
+        element,
+        formatKey,
+        target,
+        chunks: [...element.querySelectorAll<HTMLElement>('[data-distro-search-chunk]')]
+          .map((chunkElement) => chunksByElement.get(chunkElement))
+          .filter((chunk): chunk is DistroSearchChunk => Boolean(chunk)),
+      };
+    })
+    .filter((group): group is DistroFormatGroup => group !== null);
+  const formatLinkElements = navigation
+    ? [...navigation.querySelectorAll<HTMLElement>('[data-distro-format-link]')]
+    : [];
+  const formatLinks = formatLinkElements
+    .map((element): DistroFormatLink | null => {
+      const formatKey = element.dataset.distroFormatKey;
+      return formatKey ? { element, formatKey } : null;
+    })
+    .filter((link): link is DistroFormatLink => link !== null);
+  if (groups.length !== root.querySelectorAll('[data-distro-search-group]').length) return null;
+  if (formatLinks.length !== formatLinkElements.length) return null;
+
   return {
     chunks,
+    formatLinks,
     formatDisclosure: navigation?.querySelector<HTMLDetailsElement>('[data-distro-format-disclosure]') ?? null,
+    formatSummaryCurrent: navigation?.querySelector<HTMLElement>('[data-distro-format-summary-current]') ?? null,
     groups,
     items,
     navigation,
     root,
   };
+}
+
+export function resolveInitialDistroFormatKey(hash: string, dom: Pick<DistroSearchDom, 'groups'>) {
+  let requestedKey = '';
+  try {
+    requestedKey = decodeURIComponent(hash.replace(/^#/, ''));
+  } catch {
+    return ALL_DISTRO_FORMATS_KEY;
+  }
+
+  return dom.groups.some((group) => group.formatKey === requestedKey) ? requestedKey : ALL_DISTRO_FORMATS_KEY;
+}
+
+export function applyDistroFormatSelection(
+  dom: DistroSearchDom,
+  requestedKey: string,
+  coverflowController: Pick<StoreCoverflowController, 'setFocusedGroup'> | null = null,
+) {
+  const selectedGroup = dom.groups.find((group) => group.formatKey === requestedKey) ?? null;
+  const formatKey = selectedGroup?.formatKey ?? ALL_DISTRO_FORMATS_KEY;
+
+  if (selectedGroup) dom.root.setAttribute('data-distro-selected-format', formatKey);
+  else dom.root.removeAttribute('data-distro-selected-format');
+
+  dom.groups.forEach((group) => {
+    const isCurrent = group === selectedGroup;
+    group.element.toggleAttribute('data-distro-format-current', isCurrent);
+    if (isCurrent) group.element.setAttribute('aria-current', 'true');
+    else group.element.removeAttribute('aria-current');
+  });
+  dom.formatLinks.forEach((link) => {
+    const isCurrent = link.formatKey === formatKey;
+    link.element.toggleAttribute('data-distro-format-current', isCurrent);
+    if (isCurrent) link.element.setAttribute('aria-current', 'true');
+    else link.element.removeAttribute('aria-current');
+  });
+  if (dom.formatSummaryCurrent) {
+    dom.formatSummaryCurrent.textContent = selectedGroup?.target.textContent?.trim() || 'All formats';
+  }
+  closeDistroFormatDisclosure(dom);
+  coverflowController?.setFocusedGroup(selectedGroup?.element ?? null);
+
+  return {
+    formatKey,
+    target: selectedGroup?.target ?? dom.root,
+  };
+}
+
+export function selectDistroFormat(
+  dom: DistroSearchDom,
+  requestedKey: string,
+  coverflowController: Pick<StoreCoverflowController, 'setFocusedGroup'> | null = null,
+  focusTarget = false,
+) {
+  const selection = applyDistroFormatSelection(dom, requestedKey, coverflowController);
+  if (!focusTarget) return { ...selection, cancelFocus: () => undefined };
+
+  const frameId = requestAnimationFrame(() => {
+    selection.target.focus({ preventScroll: true });
+    selection.target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  return { ...selection, cancelFocus: () => cancelAnimationFrame(frameId) };
 }
 
 export function closeDistroFormatDisclosure(dom: Pick<DistroSearchDom, 'formatDisclosure'>) {
@@ -147,6 +249,7 @@ export function getDistroSearchResultState(visibleCount: number) {
 function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
   const coverflowControllerRef = useRef<StoreCoverflowController | null>(null);
   const domRef = useRef<DistroSearchDom | null>(null);
+  const formatFocusCleanupRef = useRef<(() => void) | null>(null);
   const searcherRef = useRef<ReturnType<typeof createExactFirstSearcher<DistroSearchItem>> | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -168,17 +271,35 @@ function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
     coverflowControllerRef.current = coverflowDom ? createStoreCoverflowController(coverflowDom) : null;
     searcherRef.current = createExactFirstSearcher(dom.items, (item) => item.searchText);
     const onNavigationClick = (event: Event) => {
-      if (event.target instanceof Element && event.target.closest('[data-scroll-to-target]')) {
-        closeDistroFormatDisclosure(dom);
-      }
+      const formatLink =
+        event.target instanceof Element ? event.target.closest<HTMLElement>('[data-distro-format-link]') : null;
+      const formatKey = formatLink?.dataset.distroFormatKey;
+      if (!formatKey) return;
+
+      formatFocusCleanupRef.current?.();
+      formatFocusCleanupRef.current = selectDistroFormat(
+        dom,
+        formatKey,
+        coverflowControllerRef.current,
+        true,
+      ).cancelFocus;
     };
     dom.navigation?.addEventListener('click', onNavigationClick);
+    const initialFormatKey = resolveInitialDistroFormatKey(window.location.hash, dom);
+    formatFocusCleanupRef.current = selectDistroFormat(
+      dom,
+      initialFormatKey,
+      coverflowControllerRef.current,
+      initialFormatKey !== ALL_DISTRO_FORMATS_KEY,
+    ).cancelFocus;
     setVisibleCount(dom.items.filter((item) => !item.element.hidden).length);
     setIsReady(true);
 
     return () => {
       dom.navigation?.removeEventListener('click', onNavigationClick);
-      closeDistroFormatDisclosure(dom);
+      formatFocusCleanupRef.current?.();
+      formatFocusCleanupRef.current = null;
+      applyDistroFormatSelection(dom, ALL_DISTRO_FORMATS_KEY, coverflowControllerRef.current);
       coverflowControllerRef.current?.cleanup();
       applyDistroSearch(dom, null);
       coverflowControllerRef.current = null;
@@ -191,7 +312,11 @@ function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
     const dom = domRef.current;
     if (!dom || !isReady) return undefined;
     const hasQuery = searchQuery.trim().length > 0;
-    if (hasQuery) closeDistroFormatDisclosure(dom);
+    if (hasQuery) {
+      formatFocusCleanupRef.current?.();
+      formatFocusCleanupRef.current = null;
+      applyDistroFormatSelection(dom, ALL_DISTRO_FORMATS_KEY, coverflowControllerRef.current);
+    }
     coverflowControllerRef.current?.setSearchActive(hasQuery);
 
     if (!hasQuery) {
