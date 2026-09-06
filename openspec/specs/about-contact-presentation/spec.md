@@ -1,6 +1,7 @@
 # about-contact-presentation Specification
 
 ## Purpose
+
 Define a clear, accessible About-page contact directory that preserves authored content and fits the existing BlackBox visual system.
 
 ## Requirements
