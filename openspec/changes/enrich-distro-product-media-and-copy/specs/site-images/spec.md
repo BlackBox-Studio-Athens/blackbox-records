@@ -21,6 +21,12 @@ The system SHALL use matched repository artwork, verified artwork-fetcher output
 - **AND** reviewable research evidence maps the accepted local filename to that source URL and its reuse-rights status
 - **AND** no browser automation or authentication bypass is added to `tools/artwork-fetcher`.
 
+#### Scenario: Accepted product photography receives editorial retouching
+
+- **WHEN** a verified official product photo is cropped, corrected, cleaned, or extended for a consistent presentation
+- **THEN** its original source URL and reuse-rights evidence remain attached to every derivative filename
+- **AND** generated pixels, when used, are confined to the surrounding scene and do not alter product identity, packaging, artwork, text, geometry, colors, discs, wear, or overlapping hands.
+
 #### Scenario: Primary and secondary image roles are assigned
 
 - **WHEN** a Distro item has more than one accepted image

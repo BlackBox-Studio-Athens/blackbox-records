@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -36,6 +37,7 @@ type CopySourceType = 'bandcamp' | 'instagram' | 'youtube' | 'official_site' | '
 type CopyStatus = 'pending' | 'retained' | 'rewritten' | 'unresolved';
 type CdPhotoStatus = 'not_applicable' | 'pending' | 'verified' | 'unresolved';
 type MediaEvidence = { filename: string; source_url: string; rights_status: string };
+type MediaHash = { filename: string; hash: string };
 type LedgerRow = {
   content_id: string;
   group: string;
@@ -75,9 +77,10 @@ async function main() {
 
   if (mode) throw new Error(`Unknown argument: ${mode}`);
 
-  const errors = validateLedger(contents, inventory, await readLedger(true));
+  const rows = await readLedger(true);
+  const errors = [...validateLedger(contents, inventory, rows), ...(await validateMediaFiles(contents))];
   if (errors.length > 0) throw new Error(`Research ledger validation failed:\n- ${errors.join('\n- ')}`);
-  printSnapshot(contents, await readLedger(true));
+  printSnapshot(contents, rows);
 }
 
 async function loadDistroContent(): Promise<DistroContent[]> {
@@ -295,6 +298,38 @@ function findDuplicates(values: string[]): string[] {
   return [...duplicates].sort();
 }
 
+async function validateMediaFiles(contents: DistroContent[]): Promise<string[]> {
+  const filenames = [...new Set(contents.flatMap(getMediaFilenames))].sort();
+  const hashes: MediaHash[] = [];
+  const errors: string[] = [];
+
+  for (const filename of filenames) {
+    try {
+      hashes.push({
+        filename,
+        hash: createHash('sha256')
+          .update(await readFile(path.join(CONTENT_DIR, filename)))
+          .digest('hex'),
+      });
+    } catch (error) {
+      errors.push(
+        `${filename}: cannot read referenced media file (${error instanceof Error ? error.message : String(error)}).`,
+      );
+    }
+  }
+
+  return [...errors, ...findDuplicateMediaHashes(hashes)];
+}
+
+function findDuplicateMediaHashes(records: MediaHash[]): string[] {
+  const filenamesByHash = new Map<string, string[]>();
+  for (const { filename, hash } of records) filenamesByHash.set(hash, [...(filenamesByHash.get(hash) ?? []), filename]);
+  return [...filenamesByHash.values()]
+    .filter((filenames) => filenames.length > 1)
+    .map((filenames) => `Duplicate image bytes: ${filenames.sort().join(', ')}.`)
+    .sort();
+}
+
 function isHttpsUrl(value: string): boolean {
   try {
     return new URL(value).protocol === 'https:';
@@ -363,6 +398,14 @@ function runSelfTest(): void {
     validateLedger([{ ...content, summary: `${BOILERPLATE} a release.` }], inventory, [row]).some((error) =>
       error.includes('boilerplate'),
     ),
+  );
+  assert.deepEqual(
+    findDuplicateMediaHashes([
+      { filename: 'fixture-a.jpg', hash: 'same' },
+      { filename: 'fixture-b.jpg', hash: 'same' },
+      { filename: 'fixture-c.jpg', hash: 'different' },
+    ]),
+    ['Duplicate image bytes: fixture-a.jpg, fixture-b.jpg.'],
   );
 }
 

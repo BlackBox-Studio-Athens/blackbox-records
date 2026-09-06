@@ -27,3 +27,10 @@
 - [ ] 5.3 Regenerate and check catalog artifacts with the existing repo commands, then run read-only `pnpm stripe:catalog:verify --env uat` when UAT access is configured; verify primary image/summary drift is explicit, gallery images are absent from provider projection, and no provider mutation is applied.
 - [ ] 5.4 Run `pnpm assets:check`, `pnpm test:unit`, `pnpm check`, and `pnpm build`; verify asset policy, content schemas, generated artifacts, tests, and production build pass on the final tree.
 - [x] 5.5 Use Browser Use at desktop and 390 pixels on a representative single-image Distro detail, each approved gallery cardinality available in the final content, and Store cards; verify image quality, order, alt/accessibility structure, lazy loading, no overflow/layout shift, and unchanged primary card/cart presentation without adding duplicate or low-value media to satisfy testing.
+
+## 6. Normalize Verified CD Photography
+
+- [x] 6.1 Extend the change-local ledger validator to hash every referenced image and reject byte-identical photos stored under different filenames; cover the failure in `--self-test` without changing the CLI, TSV columns, or dependencies.
+- [ ] 6.2 Produce distinct source-derived Anima Triste title crops and split the Sun of Nothing wide photograph into front primary and back gallery assets; update alt text, evidence, and processing notes while preserving official source and rights records.
+- [ ] 6.3 Normalize all accepted verified-CD primary and gallery photos to 1440x1800, 4:5, sRGB with authentic scenes and protected products unchanged; preserve filenames/formats where practical and keep working files outside the repository.
+- [ ] 6.4 Generate before/after contact sheets, inspect every final asset at 100%, and verify Store cards and details at desktop and 390 pixels through Browser Use.

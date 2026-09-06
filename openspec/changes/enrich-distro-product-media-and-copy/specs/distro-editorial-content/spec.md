@@ -43,6 +43,18 @@ Every current Distro item classified as a CD MUST use at least one image of the 
 - **THEN** one image remains the primary image and additional verified views may be stored as secondary images
 - **AND** duplicate crops or unrelated editions are not added merely to increase image count.
 
+#### Scenario: One official photograph contains multiple stocked CDs
+
+- **WHEN** the same official photograph is evidence for more than one stocked title
+- **THEN** each item uses a distinct title-specific source-derived crop in which its own packaging remains identifiable
+- **AND** byte-identical full-frame reuse across different filenames is rejected.
+
+#### Scenario: Verified CD photography is retouched
+
+- **WHEN** an accepted physical-product photograph is normalized for Store presentation
+- **THEN** the final asset is 1440x1800, 4:5, sRGB, correctly oriented, metadata-stripped, and restrained in sharpening and compression
+- **AND** the photographed product, packaging, artwork, printed text, disc, geometry, edition colors, wear, and overlapping hands remain unchanged.
+
 #### Scenario: No verified physical CD image is found
 
 - **WHEN** official Bandcamp and official artist or label Facebook sources do not provide a confidently matched physical-product image

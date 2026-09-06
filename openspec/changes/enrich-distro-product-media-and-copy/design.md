@@ -51,6 +51,12 @@ Run one dynamic completeness check against the current content collection, Distr
 
 Primary-image replacements and summary edits may change generated Stripe Product Projection artifacts, but gallery images do not. Regenerate and check repo artifacts, then report UAT Product Projection drift through the existing dry-run path. Do not apply UAT or PRD provider mutations without separate authorization.
 
+### Retouch verified photography conservatively
+
+Normalize accepted physical-CD photos to 1440x1800, 4:5, sRGB assets with metadata stripped and restrained sharpening. Preserve existing filenames and formats where practical. Extend only the photographed surrounding scene; product artwork, printed text, packaging, discs, geometry, edition colors, wear, and hands overlapping the product remain source-derived and unchanged. Use deterministic crop, perspective, tonal, and background-extension work whenever it produces a clean result. A GPT Image result is acceptable only when visual comparison confirms that generated pixels remain outside the protected product; reject one drifting result and fall back to deterministic processing rather than retrying broadly.
+
+When one official photograph contains multiple products, create a distinct identifiable crop for each title and reject byte-identical reuse across filenames. The Anima Triste group photograph therefore yields left, center, and right title-specific crops. The Sun of Nothing wide photograph yields a front primary and a distinct back gallery view. Keep temporary masks and working files outside the repository; commit no duplicate raw archive or XCF file.
+
 ## Risks / Trade-offs
 
 - [Official CD photo does not exist] → Mark the ledger row unresolved and request a user-supplied verified asset; do not pass a mockup as complete.
@@ -59,6 +65,8 @@ Primary-image replacements and summary edits may change generated Stripe Product
 - [Catalog changes during the pass] → Regenerate or reconcile the content-id ledger and run the dynamic completeness check against the final catalog.
 - [Gallery increases page weight] → Keep secondary images lazy, responsive, and off the card/provider projection; verify a representative single-image page and each approved gallery cardinality available in the final content on mobile, while fixture tests cover optional multi-image rendering.
 - [Primary media or summary causes catalog drift] → Regenerate committed artifacts and keep provider apply outside this change unless explicitly authorized.
+- [Retouch changes product evidence] → Reject the edit and use the source-derived deterministic fallback; never invent missing product detail.
+- [One group photo is reused for several titles] → Require identifiable title-specific crops and distinct final hashes, or leave the affected title unresolved.
 
 ## Migration Plan
 
