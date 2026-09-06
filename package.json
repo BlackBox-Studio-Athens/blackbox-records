@@ -2,7 +2,7 @@
   "name": "blackbox-records",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@12.0.0",
+  "packageManager": "pnpm@12.3.1",
   "engines": {
     "node": "24.20.0"
   },
