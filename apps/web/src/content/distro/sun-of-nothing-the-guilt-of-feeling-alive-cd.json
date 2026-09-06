@@ -4,7 +4,13 @@
   "group": "CDs",
   "artist_or_label": "Sun of Nothing",
   "image": "sun-of-nothing-the-guilt-of-feeling-alive-cd-front.jpg",
-  "image_alt": "The Guilt of Feeling Alive CD front and back",
+  "image_alt": "Front cover of Sun of Nothing's The Guilt of Feeling Alive CD",
+  "gallery": [
+    {
+      "image": "sun-of-nothing-the-guilt-of-feeling-alive-cd-back.jpg",
+      "image_alt": "Back cover of Sun of Nothing's The Guilt of Feeling Alive CD"
+    }
+  ],
   "summary": "Five-track avant-garde and post-black-metal album by Sun of Nothing, issued on CD.",
   "eyebrow": "Distro",
   "format": "CD",
