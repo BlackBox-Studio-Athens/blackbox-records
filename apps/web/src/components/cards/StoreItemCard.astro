@@ -16,10 +16,13 @@ const imagePriority = imageLoadingMode === 'priority';
 const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
 const metadataLabel = storeItem.metadata.join(' · ');
 const collectionLabel = storeItem.eyebrow || (storeItem.sourceKind === 'release' ? 'Release' : 'Distro');
+const isDistroCd = entry.distro?.group === 'CDs';
 const storeItemCardImageWidths = [320, 480, 640, 800, 960];
-const storeItemCardImageSizes = coverflowPreview
-  ? '(min-width: 40rem) 16rem, 56vw'
-  : '(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw';
+const storeItemCardImageSizes = isDistroCd
+  ? '(min-width: 1280px) 24rem, (min-width: 768px) 50vw, 100vw'
+  : coverflowPreview
+    ? '(min-width: 40rem) 16rem, 56vw'
+    : '(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw';
 ---
 
 <a
@@ -36,35 +39,49 @@ const storeItemCardImageSizes = coverflowPreview
   >
     <div
       class="store-item-card__image-frame relative aspect-[4/5] overflow-hidden border-b border-[#2b2b2b] bg-[#0d0d0d]"
+      style={isDistroCd ? 'aspect-ratio: 1;' : undefined}
     >
       <Image
         src={storeItem.image}
         alt={storeItem.imageAlt}
         class="store-item-card__image h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        data-store-cd-image={isDistroCd ? '' : undefined}
+        style={isDistroCd ? 'object-fit: contain; transform: none;' : undefined}
         widths={storeItemCardImageWidths}
         sizes={storeItemCardImageSizes}
         loading={imagePriority ? 'eager' : imageLoadingMode}
         fetchpriority={imagePriority ? 'high' : 'auto'}
       />
-      <div class="absolute inset-0 bg-gradient-to-t from-black via-black/18 to-transparent"></div>
-      <div class="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 px-4 py-4">
-        <div class="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/78">
-          <span>{collectionLabel}</span>
-        </div>
-        <span
-          class:list={[
-            'inline-flex items-center border px-2 py-1 text-[10px] uppercase tracking-[0.18em]',
-            primaryAvailability?.canBuy
-              ? 'border-white/25 bg-black/35 text-white/82'
-              : 'border-white/15 bg-black/45 text-white/55',
-          ]}
-          data-store-coverflow-availability
-        >
-          {availabilityLabel}
-        </span>
-      </div>
+      {!isDistroCd && <div class="absolute inset-0 bg-gradient-to-t from-black via-black/18 to-transparent" />}
+      {
+        !isDistroCd && (
+          <div class="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 px-4 py-4">
+            <div class="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/78">
+              <span>{collectionLabel}</span>
+            </div>
+            <span
+              class:list={[
+                'inline-flex items-center border px-2 py-1 text-[10px] uppercase tracking-[0.18em]',
+                primaryAvailability?.canBuy
+                  ? 'border-white/25 bg-black/35 text-white/82'
+                  : 'border-white/15 bg-black/45 text-white/55',
+              ]}
+              data-store-coverflow-availability
+            >
+              {availabilityLabel}
+            </span>
+          </div>
+        )
+      }
     </div>
     <CardContent className="store-item-card__content flex flex-1 flex-col gap-4 p-5">
+      {
+        isDistroCd && (
+          <p class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground" data-store-coverflow-availability>
+            {collectionLabel} · {availabilityLabel}
+          </p>
+        )
+      }
       <div class="space-y-2">
         {metadataLabel && <p class="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{metadataLabel}</p>}
         <h2 class="brand-card-title text-foreground">{storeItem.title}</h2>

@@ -42,6 +42,7 @@ const sourceImageAlt = isHomeVariant ? item!.data.image_alt : storeItem.imageAlt
 const sourceTitle = isHomeVariant ? item!.data.title : storeItem.title;
 const sourceSubtitle = isHomeVariant ? item!.data.artist_or_label : storeItem.subtitle;
 const sourceSummary = isHomeVariant ? item!.data.summary : storeItem.summary;
+const isDistroCd = (isHomeVariant ? item!.data.group : entry!.distro!.group) === 'CDs';
 const metadataItems = isHomeVariant
   ? [item!.data.eyebrow || null, item!.data.format || item!.data.group].filter(Boolean)
   : [storeItem.eyebrow || null, entry!.distro!.format || entry!.distro!.group].filter(Boolean);
@@ -49,11 +50,13 @@ const distroSearchText = isHomeVariant
   ? [item!.data.title, item!.data.artist_or_label, item!.data.group, item!.data.format].filter(Boolean).join(' ')
   : entry!.distro!.searchText;
 const distroCardImageWidths = [320, 480, 640, 800, 960];
-const distroCardImageSizes = coverflowPreview
-  ? '(min-width: 40rem) 16rem, 56vw'
-  : isHomeVariant
-    ? '(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw'
-    : '(min-width: 1280px) 22vw, (min-width: 768px) 45vw, 100vw';
+const distroCardImageSizes = isDistroCd
+  ? '(min-width: 1280px) 24rem, (min-width: 768px) 50vw, 100vw'
+  : coverflowPreview
+    ? '(min-width: 40rem) 16rem, 56vw'
+    : isHomeVariant
+      ? '(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw'
+      : '(min-width: 1280px) 22vw, (min-width: 768px) 45vw, 100vw';
 const availabilityLabel = entry?.primaryAvailability?.availability.label || 'Unavailable';
 ---
 
@@ -74,6 +77,8 @@ const availabilityLabel = entry?.primaryAvailability?.availability.label || 'Una
         src={sourceImage}
         alt={sourceImageAlt}
         class="distro-card__image"
+        data-store-cd-image={isDistroCd ? '' : undefined}
+        style={isDistroCd ? 'object-fit: contain; transform: none;' : undefined}
         widths={distroCardImageWidths}
         sizes={distroCardImageSizes}
         loading={imagePriority ? 'eager' : imageLoadingMode}

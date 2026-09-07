@@ -52,8 +52,22 @@ Every current Distro item classified as a CD MUST use at least one image of the 
 #### Scenario: Verified CD photography is retouched
 
 - **WHEN** an accepted physical-product photograph is normalized for Store presentation
-- **THEN** the final asset is 1440x1800, 4:5, sRGB, correctly oriented, metadata-stripped, and restrained in sharpening and compression
+- **THEN** its primary is 1440x1440 sRGB and its galleries retain natural proportions with a maximum 1800px longest edge without enlargement
+- **AND** exports are correctly oriented, metadata-stripped, and restrained in sharpening and compression
 - **AND** the photographed product, packaging, artwork, printed text, disc, geometry, edition colors, wear, and overlapping hands remain unchanged.
+
+#### Scenario: A correctly sized file has insufficient photographic detail
+
+- **WHEN** a crop clips packaging, lacks usable native product detail, or relies on blurred duplicate padding
+- **THEN** it fails visual acceptance despite valid dimensions and a unique hash
+- **AND** the original is replaced with a better verified photograph or recorded as a source blocker without inventing missing product detail.
+
+#### Scenario: CD photography is displayed in Store
+
+- **WHEN** a CD appears in a browse card or on its detail page
+- **THEN** its full image is contained without hover cropping or dark photo overlays
+- **AND** its detail frame is square and independent of adjacent text height
+- **AND** responsive image size hints cover expanded cards as well as preview cards.
 
 #### Scenario: No verified physical CD image is found
 
@@ -70,6 +84,7 @@ The system SHALL allow a Distro item to define an ordered list of secondary loca
 - **WHEN** its Store Item detail page renders
 - **THEN** secondary images appear after the primary presentation in source order in an accessible responsive product gallery
 - **AND** every rendered image has explicit alt text and stable layout geometry.
+- **AND** intrinsic dimensions preserve each gallery image's natural proportions without forced portrait cropping.
 
 #### Scenario: Distro item has no secondary images
 

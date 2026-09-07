@@ -39,6 +39,7 @@ if (storeItem.sourceKind === 'distro' && !distroSource) {
 }
 
 const gallery = distroSource?.data.gallery ?? [];
+const isDistroCd = distroSource?.data.group === 'CDs';
 ---
 
 <SiteLayout
@@ -47,30 +48,42 @@ const gallery = distroSource?.data.gallery ?? [];
 >
   <section class="layout-container pt-14 pb-6">
     <div class="grid gap-8 border border-border/70 bg-card/35 p-6 lg:grid-cols-[0.9fr_1.1fr] lg:p-8">
-      <div class="relative overflow-hidden border border-border/60 bg-background/55">
+      <div
+        class:list={['relative overflow-hidden border border-border/60 bg-background/55', isDistroCd && 'self-start']}
+      >
         <Image
           src={storeItem.image}
           alt={storeItem.imageAlt}
-          class="store-item-detail__image aspect-[4/5] h-full w-full object-cover"
+          class:list={[
+            'store-item-detail__image w-full',
+            isDistroCd ? 'aspect-square h-auto object-contain' : 'aspect-[4/5] h-full object-cover',
+          ]}
+          data-store-cd-image={isDistroCd ? '' : undefined}
           priority
           widths={[720, 1080, 1440, 1800]}
           sizes="(min-width: 1024px) 40vw, 100vw"
         />
-        <div class="absolute inset-0 bg-gradient-to-t from-black/78 via-black/10 to-transparent"></div>
-        <div class="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 px-5 py-5">
-          <div class="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/78">
-            {storeItem.eyebrow && <span>{storeItem.eyebrow}</span>}
-            <span class="text-white/55">{storeItem.sourceKind === 'release' ? 'BlackBox' : 'Distro'}</span>
-          </div>
-          <span
-            class:list={[
-              'inline-flex items-center border px-2 py-1 text-[10px] uppercase tracking-[0.18em]',
-              canBuy ? 'border-white/25 bg-black/35 text-white/82' : 'border-white/15 bg-black/45 text-white/55',
-            ]}
-          >
-            {availabilityLabel}
-          </span>
-        </div>
+        {
+          !isDistroCd && (
+            <>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/78 via-black/10 to-transparent" />
+              <div class="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 px-5 py-5">
+                <div class="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/78">
+                  {storeItem.eyebrow && <span>{storeItem.eyebrow}</span>}
+                  <span class="text-white/55">{storeItem.sourceKind === 'release' ? 'BlackBox' : 'Distro'}</span>
+                </div>
+                <span
+                  class:list={[
+                    'inline-flex items-center border px-2 py-1 text-[10px] uppercase tracking-[0.18em]',
+                    canBuy ? 'border-white/25 bg-black/35 text-white/82' : 'border-white/15 bg-black/45 text-white/55',
+                  ]}
+                >
+                  {availabilityLabel}
+                </span>
+              </div>
+            </>
+          )
+        }
       </div>
 
       <div class="flex flex-col justify-between gap-8">
@@ -159,16 +172,16 @@ const gallery = distroSource?.data.gallery ?? [];
         >
           More views
         </h2>
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {gallery.map(({ image, image_alt }) => (
-            <div class="aspect-[4/5] overflow-hidden border border-border/60 bg-background/55 p-3">
+            <div class="overflow-hidden border border-border/60 bg-background/55">
               <Image
                 src={image}
                 alt={image_alt}
                 loading="lazy"
                 widths={[480, 720, 960, 1200]}
                 sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw"
-                class="h-full w-full object-contain"
+                class="h-auto w-full"
               />
             </div>
           ))}
