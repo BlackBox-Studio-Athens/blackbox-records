@@ -34,3 +34,12 @@
 - [x] 6.2 Produce distinct source-derived Anima Triste title crops and split the Sun of Nothing wide photograph into front primary and back gallery assets; update alt text, evidence, and processing notes while preserving official source and rights records.
 - [x] 6.3 Normalize all accepted verified-CD primary and gallery photos to 1440x1800, 4:5, sRGB with authentic scenes and protected products unchanged; preserve filenames/formats where practical and keep working files outside the repository.
 - [x] 6.4 Generate before/after contact sheets, inspect every final asset at 100%, and verify Store cards and details at desktop and 390 pixels through Browser Use.
+
+## 7. Professional CD Photography (supersedes the section 6 presentation standard)
+
+- [x] 7.1 Implement contained square CD cards/details, remove CD darkening and clipping zoom, correct expanded-card size hints, and render natural-proportion galleries with focused regression checks.
+- [ ] 7.2 Research better Anima originals and reconcile packaging evidence; replace only complete, sharp, matched editions. Record blockers and an unsent original-photo request when sources are inadequate.
+- [ ] 7.3 Review Anima, The Curf and Full Moon Bonzai pilots before rebuilding other accepted photos from original sources; use square primaries, natural galleries and protected products without blurred duplicate padding.
+- [ ] 7.4 Inspect every final asset at 100% and retain before/after contact sheets with per-photo source, processing, resolution and acceptance evidence. Do not mark this complete while required replacements remain blocked.
+- [x] 7.5 Run ledger self-test/default validation, asset/unit/check/build gates, regenerate catalog artifacts and read-only UAT verification; report existing and new blockers explicitly. Results and failures are recorded in `photo-qa.md`; this does not mean all gates passed.
+- [ ] 7.6 Verify desktop and 390px coverflow, expanded/search catalog, Store cards, detail and gallery rendering, image selection, order, accessibility, overflow and layout stability.
