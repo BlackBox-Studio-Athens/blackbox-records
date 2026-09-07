@@ -33,4 +33,4 @@
 - [x] 6.1 Extend the change-local ledger validator to hash every referenced image and reject byte-identical photos stored under different filenames; cover the failure in `--self-test` without changing the CLI, TSV columns, or dependencies.
 - [x] 6.2 Produce distinct source-derived Anima Triste title crops and split the Sun of Nothing wide photograph into front primary and back gallery assets; update alt text, evidence, and processing notes while preserving official source and rights records.
 - [x] 6.3 Normalize all accepted verified-CD primary and gallery photos to 1440x1800, 4:5, sRGB with authentic scenes and protected products unchanged; preserve filenames/formats where practical and keep working files outside the repository.
-- [ ] 6.4 Generate before/after contact sheets, inspect every final asset at 100%, and verify Store cards and details at desktop and 390 pixels through Browser Use.
+- [x] 6.4 Generate before/after contact sheets, inspect every final asset at 100%, and verify Store cards and details at desktop and 390 pixels through Browser Use.
