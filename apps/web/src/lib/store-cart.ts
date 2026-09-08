@@ -200,6 +200,9 @@ export function addStoreCartItem(
   const existingLine = currentState.lines.find((line) => line.variantId === parsedLineItemSnapshot.variantId);
 
   if (existingLine) {
+    if (existingLine.priceKind === 'pay_what_you_want' || parsedLineItemSnapshot.priceKind === 'pay_what_you_want') {
+      return currentState;
+    }
     return normalizeStoreCartState({
       lines: currentState.lines.map((line) =>
         line.variantId === parsedLineItemSnapshot.variantId
@@ -235,7 +238,7 @@ export function incrementCartLineQuantityByVariant(
 ): StoreCartState {
   const currentState = normalizeStoreCartState(state);
   const line = currentState.lines.find((candidate) => candidate.variantId === variantId);
-  if (!line) return currentState;
+  if (!line || line.priceKind === 'pay_what_you_want') return currentState;
 
   return setCartLineQuantityByVariant(variantId, line.quantity + 1, currentState);
 }

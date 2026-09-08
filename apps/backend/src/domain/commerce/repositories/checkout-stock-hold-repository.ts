@@ -59,6 +59,7 @@ export interface CheckoutStockHoldRepository {
     hold: SessionlessPendingCheckoutOrder,
     checkoutSessionId: CheckoutSessionId,
     boundAt: Date,
+    checkoutExpiresAt?: Date,
   ): Promise<SessionBoundPendingCheckoutOrder | null>;
   createPendingHold(input: CreateCheckoutStockHoldInput): Promise<CreateCheckoutStockHoldResult>;
   findEffectiveAvailability(variantId: VariantId): Promise<StockQuantity | null>;
@@ -66,7 +67,12 @@ export interface CheckoutStockHoldRepository {
     variantIds: [VariantId, ...VariantId[]],
     expiredAt: Date,
   ): Promise<ExpiredSessionBoundCheckoutHold[]>;
-  recoverCheckoutSession(orderId: string, checkoutSessionId: CheckoutSessionId, recoveredAt: Date): Promise<boolean>;
+  recoverCheckoutSession(
+    orderId: string,
+    checkoutSessionId: CheckoutSessionId,
+    recoveredAt: Date,
+    checkoutExpiresAt?: Date,
+  ): Promise<boolean>;
   releaseSessionBoundHold(hold: ExpiredSessionBoundCheckoutHold, releasedAt: Date): Promise<boolean>;
   releaseSessionlessHold(
     hold: SessionlessPendingCheckoutOrder,

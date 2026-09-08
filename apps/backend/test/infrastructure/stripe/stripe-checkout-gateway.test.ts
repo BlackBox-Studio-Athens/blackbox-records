@@ -1,6 +1,7 @@
+import Stripe from 'stripe';
 import { describe, expect, it, vi } from 'vitest';
 
-import { CheckoutConfigurationError } from '../../../src/application/commerce/checkout';
+import { CheckoutConfigurationError, CheckoutCreationError } from '../../../src/application/commerce/checkout';
 import type { AppBindings } from '../../../src/env';
 import {
   createStripeCheckoutGateway,
@@ -34,8 +35,136 @@ describe('createStripeClientOptions', () => {
 });
 
 describe('StripeCheckoutGateway', () => {
+  it('freezes expiry and idempotency parameters across real SDK retries', async () => {
+    let now = Date.parse('2026-09-09T10:00:02.900Z');
+    const clock = vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const requests: { body: string; key: string | null }[] = [];
+    const stripe = new Stripe('sk_test_mock', {
+      maxNetworkRetries: 1,
+      httpClient: Stripe.createFetchHttpClient(async (_url, init) => {
+        requests.push({ body: String(init?.body), key: new Headers(init?.headers).get('Idempotency-Key') });
+        now += 2_000;
+        if (requests.length === 1) {
+          return new Response(JSON.stringify({ error: { type: 'api_error', message: 'retry' } }), { status: 500 });
+        }
+        const expiry = Number(new URLSearchParams(String(init?.body)).get('expires_at'));
+        return new Response(
+          JSON.stringify({
+            id: 'cs_test_retry',
+            url: 'https://checkout.stripe.test/session/retry',
+            expires_at: expiry,
+          }),
+        );
+      }),
+    });
+    try {
+      const result = await new StripeCheckoutGateway(stripe, 'pmc_test').createHostedCheckoutSession({
+        cancelUrl: 'https://example.com/cancel',
+        checkoutExpiresAt: new Date(now - 1000),
+        orderId: 'order_retry',
+        successUrl: 'https://example.com/return',
+        storeItemSlug: storeItemSlug('test-item'),
+        stripePriceId: stripePriceId('price_test_retry'),
+        variantId: variantId('variant_test_retry'),
+      });
+      expect(requests).toHaveLength(2);
+      expect(requests[0]).toEqual(requests[1]);
+      expect(requests[0]?.key).toBe('checkout-order:order_retry');
+      expect(result.checkoutExpiresAt).toEqual(new Date('2026-09-09T10:35:02.000Z'));
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
+  it.each([
+    [
+      new Stripe.errors.StripeInvalidRequestError({ statusCode: 400, param: 'expires_at', message: 'invalid expiry' }),
+      true,
+    ],
+    [new Stripe.errors.StripeAPIError({ statusCode: 500, message: 'server failure' }), false],
+    [new Stripe.errors.StripeConnectionError({ message: 'timeout' }), false],
+  ] as const)('classifies provider creation failure %# conservatively', async (error, definitiveNonCreation) => {
+    const gateway = new StripeCheckoutGateway(
+      {
+        checkout: {
+          sessions: {
+            create: async () => {
+              throw error;
+            },
+          },
+        },
+      } as never,
+      'pmc_test',
+    );
+    await expect(
+      gateway.createHostedCheckoutSession({
+        cancelUrl: 'https://example.com/cancel',
+        checkoutExpiresAt: new Date(),
+        orderId: 'order_failure',
+        successUrl: 'https://example.com/return',
+      }),
+    ).rejects.toMatchObject({ definitiveNonCreation, session: null });
+  });
+
+  it('retains accepted Session identity when a usable URL is missing', async () => {
+    const gateway = new StripeCheckoutGateway(
+      {
+        checkout: {
+          sessions: {
+            create: async () => ({ id: 'cs_test_no_url', expires_at: 1777026600, url: null }),
+          },
+        },
+      } as never,
+      'pmc_test',
+    );
+    const result = gateway.createHostedCheckoutSession({
+      cancelUrl: 'https://example.com/cancel',
+      checkoutExpiresAt: new Date(),
+      orderId: 'order_no_url',
+      successUrl: 'https://example.com/return',
+    });
+    await expect(result).rejects.toBeInstanceOf(CheckoutCreationError);
+    await expect(result).rejects.toMatchObject({
+      definitiveNonCreation: false,
+      session: { checkoutSessionId: 'cs_test_no_url', checkoutExpiresAt: new Date('2026-04-24T10:30:00.000Z') },
+    });
+  });
+
+  it('calculates expiry after delayed hold work with a provider latency margin', async () => {
+    const createdAt = new Date('2026-09-09T10:00:00.900Z');
+    const providerNow = new Date(createdAt.getTime() + 2_000);
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(providerNow.getTime());
+    const create = vi.fn(async (params: { expires_at?: number }) => {
+      expect(params.expires_at! - Math.floor(providerNow.getTime() / 1000)).toBe(35 * 60);
+      return {
+        expires_at: params.expires_at,
+        id: 'cs_test_delayed',
+        url: 'https://checkout.stripe.test/session/cs_test_delayed',
+      };
+    });
+    const gateway = new StripeCheckoutGateway(
+      { checkout: { sessions: { create } } } as never,
+      'pmc_test_blackbox_checkout',
+    );
+
+    try {
+      await gateway.createHostedCheckoutSession({
+        cancelUrl: 'https://blackbox.example/checkout',
+        checkoutExpiresAt: new Date(createdAt.getTime() + 30 * 60 * 1000),
+        orderId: 'order_delayed',
+        storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
+        stripePriceId: stripePriceId('price_test_barren_point'),
+        successUrl: 'https://blackbox.example/return',
+        variantId: variantId('variant_disintegration-black-vinyl-lp_standard'),
+      });
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
   it('creates hosted Checkout Sessions with fixed quantities and required shipping/contact collection', async () => {
     const create = vi.fn(async () => ({
+      expires_at: 1777026600,
       id: 'cs_test_123',
       url: 'https://checkout.stripe.test/session/cs_test_123',
     }));
@@ -74,6 +203,7 @@ describe('StripeCheckoutGateway', () => {
         successUrl: 'https://blackbox.example/return',
       }),
     ).resolves.toEqual({
+      checkoutExpiresAt: new Date('2026-04-24T10:30:00.000Z'),
       checkoutSessionId: 'cs_test_123',
       checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
     });
@@ -87,7 +217,7 @@ describe('StripeCheckoutGateway', () => {
           },
         ],
         cancel_url: 'https://blackbox.example/checkout',
-        expires_at: 1777026600,
+        expires_at: expect.any(Number),
         locale: 'en',
         metadata: {
           newsletterConsentCopyVersion: 'blackbox-newsletter-v1',
@@ -105,6 +235,7 @@ describe('StripeCheckoutGateway', () => {
         },
         success_url: 'https://blackbox.example/return',
       }),
+      { idempotencyKey: 'checkout-order:order_test_123' },
     );
     const createCalls = create.mock.calls as unknown as Array<[{ line_items: unknown[] }]>;
     const createPayload = createCalls[0]?.[0];

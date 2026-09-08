@@ -86,7 +86,11 @@ describe('Stripe webhook acknowledgement checkout events', () => {
         }),
       }),
     );
-    expect(services.recoverCheckoutOrderSession).toHaveBeenCalledWith('order_1', 'cs_test_123');
+    expect(services.recoverCheckoutOrderSession).toHaveBeenCalledWith(
+      'order_1',
+      'cs_test_123',
+      new Date(1_790_002_100_000),
+    );
     expect(services.publishCheckoutOrderPaid).toHaveBeenCalledWith(checkoutOrderPaid);
   });
 
@@ -491,6 +495,7 @@ function createPaidCheckoutEvent(): VerifiedStripeWebhookEvent {
   return {
     checkoutSession: {
       amount_total: 2500,
+      expires_at: 1_790_002_100,
       currency: 'eur',
       customer_details: {
         address: {

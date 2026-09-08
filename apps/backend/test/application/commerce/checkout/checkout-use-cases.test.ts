@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   CatalogDriftError,
+  CheckoutCreationError,
+  CustomPriceCartError,
   CheckoutUnavailableError,
   NativeCheckoutDisabledError,
   listVariantOffersForStoreItem,
@@ -180,12 +182,14 @@ class InMemoryOrderStateRepository implements OrderStateRepository, CheckoutStoc
     hold: SessionlessPendingCheckoutOrder,
     checkoutSessionId: CheckoutSessionId,
     boundAt: Date,
+    checkoutExpiresAt: Date = hold.checkoutExpiresAt,
   ): Promise<SessionBoundPendingCheckoutOrder | null> {
     if (this.bindShouldFail) return null;
     if (this.records.get(hold.id)?.status !== 'pending_payment') return null;
 
     const bound: SessionBoundPendingCheckoutOrder = {
       ...hold,
+      checkoutExpiresAt,
       checkoutSessionId,
       statusUpdatedAt: boundAt,
       updatedAt: boundAt,
@@ -218,6 +222,7 @@ class InMemoryOrderStateRepository implements OrderStateRepository, CheckoutStoc
     orderId: string,
     recoveredCheckoutSessionId: CheckoutSessionId,
     recoveredAt: Date,
+    checkoutExpiresAt?: Date,
   ): Promise<boolean> {
     const current = this.records.get(orderId);
     if (!current || current.status !== 'pending_payment' || current.checkoutSessionId !== null) return false;
@@ -225,6 +230,7 @@ class InMemoryOrderStateRepository implements OrderStateRepository, CheckoutStoc
     this.records.delete(orderId);
     this.records.set(recoveredCheckoutSessionId, {
       ...current,
+      checkoutExpiresAt: checkoutExpiresAt ?? current.checkoutExpiresAt,
       checkoutSessionId: recoveredCheckoutSessionId,
       statusUpdatedAt: recoveredAt,
       updatedAt: recoveredAt,
@@ -273,12 +279,7 @@ class InMemoryOrderStateRepository implements OrderStateRepository, CheckoutStoc
   public async releaseSessionBoundHold(hold: ExpiredSessionBoundCheckoutHold, releasedAt: Date): Promise<boolean> {
     const current = this.records.get(hold.checkoutSessionId);
 
-    if (
-      !current ||
-      current.id !== hold.id ||
-      current.status !== 'pending_payment' ||
-      current.checkoutExpiresAt > releasedAt
-    ) {
+    if (!current || current.id !== hold.id || current.status !== 'pending_payment') {
       return false;
     }
 
@@ -451,6 +452,7 @@ describe('checkout use cases', () => {
     orders = new InMemoryOrderStateRepository();
     checkoutGateway = {
       createHostedCheckoutSession: vi.fn(async () => ({
+        checkoutExpiresAt: new Date('2026-09-09T10:35:02.000Z'),
         checkoutSessionId: checkoutSessionId('cs_test_123'),
         checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
       })),
@@ -954,7 +956,7 @@ describe('checkout use cases', () => {
     );
   });
 
-  it('creates the complete 30-minute hold before requesting provider authority', async () => {
+  it('creates the provisional 35-minute hold before requesting provider authority', async () => {
     checkoutGateway.createHostedCheckoutSession = vi.fn(async (request) => {
       const [sessionlessHold] = [...orders.records.values()];
 
@@ -965,9 +967,10 @@ describe('checkout use cases', () => {
       expect(sessionlessHold?.lines).toHaveLength(1);
       expect(request.orderId).toBe(sessionlessHold?.id);
       expect(request.checkoutExpiresAt).toEqual(sessionlessHold?.checkoutExpiresAt);
-      expect(request.checkoutExpiresAt.getTime() - sessionlessHold!.createdAt.getTime()).toBe(30 * 60 * 1000);
+      expect(request.checkoutExpiresAt.getTime() - sessionlessHold!.createdAt.getTime()).toBe(35 * 60 * 1000);
 
       return {
+        checkoutExpiresAt: new Date('2026-09-09T10:35:02.000Z'),
         checkoutSessionId: checkoutSessionId('cs_test_123'),
         checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
       };
@@ -1176,7 +1179,7 @@ describe('checkout use cases', () => {
     expect(orders.records.get('cs_test_stale_error')).toMatchObject({ status: 'pending_payment' });
   });
 
-  it('releases a sessionless hold when provider creation fails', async () => {
+  it('retains a sessionless hold when provider creation is uncertain', async () => {
     checkoutGateway.createHostedCheckoutSession = vi.fn(async () => {
       throw new Error('provider unavailable');
     });
@@ -1200,7 +1203,7 @@ describe('checkout use cases', () => {
     ).rejects.toThrow('provider unavailable');
 
     expect([...orders.records.values()]).toEqual([
-      expect.objectContaining({ checkoutSessionId: null, status: 'not_paid' }),
+      expect.objectContaining({ checkoutSessionId: null, status: 'pending_payment' }),
     ]);
   });
 
@@ -1227,7 +1230,7 @@ describe('checkout use cases', () => {
 
     expect(checkoutGateway.expireHostedCheckoutSession).toHaveBeenCalledWith('cs_test_123');
     expect([...orders.records.values()]).toEqual([
-      expect.objectContaining({ checkoutSessionId: null, status: 'not_paid' }),
+      expect.objectContaining({ checkoutSessionId: 'cs_test_123', status: 'not_paid' }),
     ]);
   });
 
@@ -1305,6 +1308,159 @@ describe('checkout use cases', () => {
 
     expect(checkoutGateway.createHostedCheckoutSession).not.toHaveBeenCalled();
     expect(orders.records.size).toBe(0);
+  });
+
+  it.each(['quantity two', 'duplicates', 'mixed cart', 'two custom Prices'])(
+    'rejects a current custom Price with %s before any hold or Session write',
+    async (scenario) => {
+      const secondItem = {
+        ...storeItem,
+        storeItemSlug: storeItemSlug('second-item'),
+        variantId: toVariantId('variant_second_item'),
+      };
+      storeItems = new InMemoryStoreItemOptionRepository([storeItem, secondItem]);
+      for (const item of [storeItem, secondItem]) {
+        itemAvailability.records.set(item.variantId, {
+          ...itemAvailability.records.get(storeItem.variantId)!,
+          variantId: item.variantId,
+        });
+        await stock.save(item.variantId, { quantity: 3, onlineQuantity: 3 });
+        productProjections.projections.set(item.variantId, {
+          ...productProjections.projections.get(storeItem.variantId)!,
+        });
+        catalogReconciler.prices.set(
+          item.variantId,
+          createCatalogPrice({
+            customUnitAmount: { maximumAmountMinor: 10000, minimumAmountMinor: 100, presetAmountMinor: 500 },
+            priceId: `price_test_${item.variantId}`,
+            priceKind: item === secondItem && scenario === 'mixed cart' ? 'fixed' : 'pay_what_you_want',
+            storeItem: item,
+          }),
+        );
+      }
+      const line = {
+        quantity: cartQuantity(scenario === 'quantity two' ? 2 : 1),
+        storeItemSlug: storeItem.storeItemSlug,
+        variantId: storeItem.variantId,
+      };
+      const lines =
+        scenario === 'quantity two'
+          ? [line]
+          : scenario === 'duplicates'
+            ? [line, line]
+            : [
+                line,
+                { quantity: cartQuantity(1), storeItemSlug: secondItem.storeItemSlug, variantId: secondItem.variantId },
+              ];
+      await expect(
+        startCheckout(
+          storeItems,
+          itemAvailability,
+          stock,
+          catalogReconciler,
+          productProjections,
+          checkoutGateway,
+          orders,
+          { lines, cancelUrl: 'https://example.com/checkout', successUrl: 'https://example.com/return' },
+        ),
+      ).rejects.toBeInstanceOf(CustomPriceCartError);
+      expect(orders.createPendingHoldCalls).toBe(0);
+      expect(orders.records.size).toBe(0);
+      expect(checkoutGateway.createHostedCheckoutSession).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([true, false])('releases only definitive non-creation (%s)', async (definitive) => {
+    checkoutGateway.createHostedCheckoutSession = vi.fn(async () => {
+      throw new CheckoutCreationError(definitive);
+    });
+    await expect(
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+        },
+      ),
+    ).rejects.toBeInstanceOf(CheckoutCreationError);
+    expect([...orders.records.values()][0]?.status).toBe(definitive ? 'not_paid' : 'pending_payment');
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['open', 'timeout'])(
+    'retains Session identity after binding failure and %s expiry outcome',
+    async (outcome) => {
+      vi.spyOn(orders, 'bindCheckoutSession').mockRejectedValue(new Error('D1 binding failed'));
+      const session = await checkoutGateway.readCheckoutSession(checkoutSessionId('cs_test_123'));
+      checkoutGateway.expireHostedCheckoutSession = vi.fn(async () => {
+        if (outcome === 'timeout') throw new Error('expiry timeout');
+        return { ...session, status: 'open' as const, paymentStatus: 'unpaid' as const };
+      });
+      await expect(
+        startCheckout(
+          storeItems,
+          itemAvailability,
+          stock,
+          catalogReconciler,
+          productProjections,
+          checkoutGateway,
+          orders,
+          {
+            storeItemSlug: storeItem.storeItemSlug,
+            variantId: storeItem.variantId,
+            cancelUrl: 'https://example.com/checkout',
+            successUrl: 'https://example.com/return',
+          },
+        ),
+      ).rejects.toThrow();
+      expect(orders.records.get('cs_test_123')).toMatchObject({
+        checkoutSessionId: 'cs_test_123',
+        status: 'pending_payment',
+        checkoutExpiresAt: new Date('2026-09-09T10:35:02.000Z'),
+      });
+      expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('retains a known Session and accepted expiry when its URL is missing', async () => {
+    orders.bindShouldFail = true;
+    const acceptedExpiry = new Date('2026-09-09T10:35:02.000Z');
+    checkoutGateway.createHostedCheckoutSession = vi.fn(async () => {
+      throw new CheckoutCreationError(false, {
+        checkoutSessionId: checkoutSessionId('cs_test_no_url'),
+        checkoutExpiresAt: acceptedExpiry,
+      });
+    });
+    await expect(
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+        },
+      ),
+    ).rejects.toBeInstanceOf(CheckoutCreationError);
+    expect(orders.records.get('cs_test_no_url')).toMatchObject({
+      status: 'pending_payment',
+      checkoutExpiresAt: acceptedExpiry,
+    });
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledTimes(1);
   });
 
   it('starts hosted Checkout for pay-what-you-want items using only the Stripe Price ID', async () => {

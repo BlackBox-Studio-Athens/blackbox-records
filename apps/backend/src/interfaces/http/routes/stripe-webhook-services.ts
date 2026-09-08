@@ -104,8 +104,13 @@ export function createStripeWebhookServices(bindings: AppBindings, logger: AppLo
         });
       }
     },
-    recoverCheckoutOrderSession: (orderId: string, checkoutSessionId: string) =>
-      checkoutHolds.recoverCheckoutSession(orderId, parseCheckoutSessionId(checkoutSessionId), new Date()),
+    recoverCheckoutOrderSession: (orderId: string, checkoutSessionId: string, checkoutExpiresAt?: Date) =>
+      checkoutHolds.recoverCheckoutSession(
+        orderId,
+        parseCheckoutSessionId(checkoutSessionId),
+        new Date(),
+        checkoutExpiresAt,
+      ),
     recordCatalogWebhookEvent: catalogWebhookEvents.recordCatalogEvent.bind(catalogWebhookEvents),
     reconcileCatalogVariant: (storeItem: StoreItemOptionRecord) =>
       catalogReconciler.reconcileVariant(storeItem, {

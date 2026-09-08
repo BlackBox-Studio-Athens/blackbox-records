@@ -38,7 +38,11 @@ export type StripeWebhookAcknowledgementServices = {
   markCatalogEventFailed: (eventId: string, failureReason: string) => Promise<void>;
   markCatalogEventSucceeded: (eventId: string) => Promise<void>;
   publishCheckoutOrderPaid: (event: CheckoutOrderPaid) => Promise<void>;
-  recoverCheckoutOrderSession: (orderId: string, checkoutSessionId: string) => Promise<boolean>;
+  recoverCheckoutOrderSession: (
+    orderId: string,
+    checkoutSessionId: string,
+    checkoutExpiresAt?: Date,
+  ) => Promise<boolean>;
   recordCatalogWebhookEvent: (
     input: RecordStripeCatalogWebhookEventInput,
   ) => Promise<RecordStripeCatalogWebhookEventResult>;
@@ -179,7 +183,11 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
   const reconciliation = reconcileCheckoutSession(toStripeCheckoutSessionState(event.checkoutSession), event.type);
 
   if (reconciliation.source.orderId) {
-    await services.recoverCheckoutOrderSession(reconciliation.source.orderId, reconciliation.source.checkoutSessionId);
+    await services.recoverCheckoutOrderSession(
+      reconciliation.source.orderId,
+      reconciliation.source.checkoutSessionId,
+      Number.isFinite(event.checkoutSession.expires_at) ? new Date(event.checkoutSession.expires_at * 1000) : undefined,
+    );
   }
 
   if (reconciliation.recommendedOrderStatus === 'paid') {

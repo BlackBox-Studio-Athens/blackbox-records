@@ -8,6 +8,7 @@ import type {
 } from '../../application/commerce/checkout/spi';
 import {
   CheckoutConfigurationError,
+  CheckoutCreationError,
   NEWSLETTER_CONSENT_COPY_VERSION,
   createCartQuantity,
   parseCheckoutSessionId,
@@ -42,40 +43,56 @@ export class StripeCheckoutGateway implements CheckoutGateway {
           ]
         : []);
     const metadataLineItem = resolvedLineItems[0];
-    const session = await this.stripe.checkout.sessions.create({
-      expires_at: Math.floor(request.checkoutExpiresAt.getTime() / 1000),
-      line_items: resolvedLineItems.map((lineItem) => ({
-        price: lineItem.stripePriceId,
-        quantity: lineItem.quantity,
-      })),
-      cancel_url: request.cancelUrl,
-      metadata: metadataLineItem
-        ? {
-            ...(request.newsletterOptIn ? { newsletterOptIn: 'true' } : {}),
-            ...(request.newsletterOptIn ? { newsletterConsentCopyVersion: NEWSLETTER_CONSENT_COPY_VERSION } : {}),
-            orderId: request.orderId,
-            storeItemSlug: metadataLineItem.storeItemSlug,
-            variantId: metadataLineItem.variantId,
-          }
-        : undefined,
-      locale: 'en',
-      mode: 'payment',
-      payment_method_configuration: this.paymentMethodConfigurationId,
-      phone_number_collection: {
-        enabled: true,
-      },
-      shipping_address_collection: {
-        allowed_countries: ['GR'],
-      },
-      success_url: request.successUrl,
-    });
+    let session: Stripe.Checkout.Session;
+    try {
+      session = await this.stripe.checkout.sessions.create(
+        {
+          expires_at: Math.floor(Date.now() / 1000) + 35 * 60,
+          line_items: resolvedLineItems.map((lineItem) => ({
+            price: lineItem.stripePriceId,
+            quantity: lineItem.quantity,
+          })),
+          cancel_url: request.cancelUrl,
+          metadata: metadataLineItem
+            ? {
+                ...(request.newsletterOptIn ? { newsletterOptIn: 'true' } : {}),
+                ...(request.newsletterOptIn ? { newsletterConsentCopyVersion: NEWSLETTER_CONSENT_COPY_VERSION } : {}),
+                orderId: request.orderId,
+                storeItemSlug: metadataLineItem.storeItemSlug,
+                variantId: metadataLineItem.variantId,
+              }
+            : undefined,
+          locale: 'en',
+          mode: 'payment',
+          payment_method_configuration: this.paymentMethodConfigurationId,
+          phone_number_collection: {
+            enabled: true,
+          },
+          shipping_address_collection: {
+            allowed_countries: ['GR'],
+          },
+          success_url: request.successUrl,
+        },
+        { idempotencyKey: `checkout-order:${request.orderId}` },
+      );
+    } catch (error) {
+      // Only a parameter rejection proves this request did not create a Session.
+      const definitiveNonCreation =
+        error instanceof Stripe.errors.StripeInvalidRequestError && error.statusCode === 400;
+      throw new CheckoutCreationError(definitiveNonCreation);
+    }
 
-    if (!session.url) {
-      throw new CheckoutConfigurationError('Stripe did not return a hosted Checkout URL.');
+    const identity = {
+      checkoutExpiresAt: new Date(session.expires_at * 1000),
+      checkoutSessionId: parseCheckoutSessionId(session.id),
+    };
+
+    if (!session.url?.trim() || !Number.isFinite(identity.checkoutExpiresAt.getTime())) {
+      throw new CheckoutCreationError(false, identity);
     }
 
     return {
-      checkoutSessionId: parseCheckoutSessionId(session.id),
+      ...identity,
       checkoutUrl: session.url,
     };
   }

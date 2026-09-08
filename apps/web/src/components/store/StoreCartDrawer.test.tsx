@@ -28,6 +28,28 @@ const cartItem: CartLineItemSnapshot = {
 const resolveHref = (path: string) => `/blackbox-records${path}`;
 
 describe('StoreCartDrawer', () => {
+  it('explains custom-Price restrictions and disables only quantity increases', () => {
+    const markup = renderToStaticMarkup(
+      <StoreCartDrawerPanel
+        cartState={addStoreCartItem({
+          ...cartItem,
+          priceKind: 'pay_what_you_want',
+          priceAmountMinor: null,
+          priceDisplay: 'Pay what you want',
+        })}
+        onContinueShopping={() => undefined}
+        onDecrementItem={() => undefined}
+        onIncrementItem={() => undefined}
+        onRemoveItem={() => undefined}
+        renderHeader={false}
+        resolveHref={resolveHref}
+      />,
+    );
+    expect(markup).toContain('purchase this item alone, with quantity one');
+    expect(markup).toMatch(/aria-label="Increase quantity for Disintegration" disabled=""/);
+    expect(markup).not.toMatch(/aria-label="Decrease quantity for Disintegration" disabled/);
+    expect(markup).toContain('aria-describedby="cart-price-guidance-');
+  });
   it('creates an empty drawer view without checkout route', () => {
     expect(createStoreCartDrawerView(createEmptyStoreCartState(), resolveHref)).toEqual({
       checkoutHref: null,

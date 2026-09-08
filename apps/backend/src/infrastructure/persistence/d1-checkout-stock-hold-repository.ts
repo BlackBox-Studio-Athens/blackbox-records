@@ -127,22 +127,31 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
     hold: SessionlessPendingCheckoutOrder,
     checkoutSessionId: CheckoutSessionId,
     boundAt: Date,
+    checkoutExpiresAt: Date = hold.checkoutExpiresAt,
   ): Promise<SessionBoundPendingCheckoutOrder | null> {
     const result = await this.db
       .prepare(
         [
           'UPDATE "CheckoutOrder"',
-          'SET "checkoutSessionId" = ?, "statusUpdatedAt" = ?, "updatedAt" = ?',
+          'SET "checkoutSessionId" = ?, "checkoutExpiresAt" = ?, "statusUpdatedAt" = ?, "updatedAt" = ?',
           'WHERE "id" = ? AND "status" = ? AND "checkoutSessionId" IS NULL',
         ].join('\n'),
       )
-      .bind(checkoutSessionId, boundAt.toISOString(), boundAt.toISOString(), hold.id, 'pending_payment')
+      .bind(
+        checkoutSessionId,
+        checkoutExpiresAt.toISOString(),
+        boundAt.toISOString(),
+        boundAt.toISOString(),
+        hold.id,
+        'pending_payment',
+      )
       .run();
 
     if (readChangeCount(result) === 0) return null;
 
     return {
       ...hold,
+      checkoutExpiresAt,
       checkoutSessionId,
       statusUpdatedAt: boundAt,
       updatedAt: boundAt,
@@ -236,16 +245,24 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
     orderId: string,
     checkoutSessionId: CheckoutSessionId,
     recoveredAt: Date,
+    checkoutExpiresAt?: Date,
   ): Promise<boolean> {
     const result = await this.db
       .prepare(
         [
           'UPDATE "CheckoutOrder"',
-          'SET "checkoutSessionId" = ?, "statusUpdatedAt" = ?, "updatedAt" = ?',
+          'SET "checkoutSessionId" = ?, "checkoutExpiresAt" = COALESCE(?, "checkoutExpiresAt"), "statusUpdatedAt" = ?, "updatedAt" = ?',
           'WHERE "id" = ? AND "status" = ? AND "checkoutSessionId" IS NULL',
         ].join('\n'),
       )
-      .bind(checkoutSessionId, recoveredAt.toISOString(), recoveredAt.toISOString(), orderId, 'pending_payment')
+      .bind(
+        checkoutSessionId,
+        checkoutExpiresAt?.toISOString() ?? null,
+        recoveredAt.toISOString(),
+        recoveredAt.toISOString(),
+        orderId,
+        'pending_payment',
+      )
       .run();
 
     if (readChangeCount(result) === 1) return true;
@@ -265,19 +282,10 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
         [
           'UPDATE "CheckoutOrder"',
           'SET "status" = ?, "notPaidAt" = ?, "statusUpdatedAt" = ?, "updatedAt" = ?',
-          'WHERE "id" = ? AND "checkoutSessionId" = ? AND "status" = ? AND "checkoutExpiresAt" <= ?',
+          'WHERE "id" = ? AND "checkoutSessionId" = ? AND "status" = ?',
         ].join('\n'),
       )
-      .bind(
-        'not_paid',
-        releasedAtIso,
-        releasedAtIso,
-        releasedAtIso,
-        hold.id,
-        hold.checkoutSessionId,
-        'pending_payment',
-        releasedAtIso,
-      )
+      .bind('not_paid', releasedAtIso, releasedAtIso, releasedAtIso, hold.id, hold.checkoutSessionId, 'pending_payment')
       .run();
 
     return readChangeCount(result) === 1;

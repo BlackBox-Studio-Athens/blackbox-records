@@ -185,14 +185,26 @@ export function StoreCartDrawerPanel({
                         </span>
                         <button
                           type="button"
-                          className="w-9 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                          className="w-9 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
                           onClick={() => onIncrementItem(line.variantId)}
                           aria-label={`Increase quantity for ${line.title}`}
+                          disabled={line.priceKind === 'pay_what_you_want'}
+                          aria-describedby={
+                            line.priceKind === 'pay_what_you_want' ? `cart-price-guidance-${line.variantId}` : undefined
+                          }
                         >
                           +
                         </button>
                       </div>
                     </div>
+                    {line.priceKind === 'pay_what_you_want' && (
+                      <p
+                        id={`cart-price-guidance-${line.variantId}`}
+                        className="text-xs leading-5 text-muted-foreground"
+                      >
+                        Pay what you want: purchase this item alone, with quantity one.
+                      </p>
+                    )}
                   </div>
                 </article>
               ))}

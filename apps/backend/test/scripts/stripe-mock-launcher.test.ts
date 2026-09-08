@@ -3,6 +3,15 @@ import { describe, expect, it } from 'vitest';
 import { patchStripeMockRequest, patchStripeMockResponse } from '../../../../scripts/start-stripe-mock';
 
 describe('stripe-mock local launcher proxy', () => {
+  it('returns the requested local expiry rather than the static fixture deadline', () => {
+    const patched = patchStripeMockResponse({
+      body: JSON.stringify({ id: 'cs_test_expiry', object: 'checkout.session', expires_at: 1, url: null }),
+      method: 'POST',
+      requestBody: 'expires_at=1777026600',
+      url: '/v1/checkout/sessions',
+    });
+    expect(JSON.parse(patched)).toMatchObject({ expires_at: 1777026600 });
+  });
   it('leaves hosted Checkout requests unchanged', () => {
     const body = new URLSearchParams({
       cancel_url: 'http://127.0.0.1:4321/checkout',

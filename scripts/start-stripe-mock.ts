@@ -44,6 +44,9 @@ export function patchStripeMockResponse(input: {
   }
 
   const requestParams = new URLSearchParams(input.requestBody);
+  if (responseJson.object === 'checkout.session' && requestParams.has('expires_at')) {
+    responseJson.expires_at = Number(requestParams.get('expires_at'));
+  }
   const variantId = requestParams.get('metadata[variantId]') ?? 'local';
 
   const sessionId = typeof responseJson.id === 'string' ? responseJson.id : null;

@@ -1,4 +1,6 @@
 export {
+  CheckoutCreationError,
+  CustomPriceCartError,
   CheckoutConfigurationError,
   CheckoutUnavailableError,
   NativeCheckoutDisabledError,

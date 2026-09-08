@@ -130,13 +130,37 @@ describe('D1CheckoutStockHoldRepository', () => {
     if (created.kind !== 'created') return;
 
     const boundAt = new Date('2026-08-31T22:01:00.000Z');
+    const acceptedExpiry = new Date('2026-08-31T22:36:02.000Z');
     const bound = await repository.bindCheckoutSession(
       created.hold,
       parseCheckoutSessionId('cs_test_hold_binding'),
       boundAt,
+      acceptedExpiry,
     );
 
     expect(bound).toMatchObject({ checkoutSessionId: 'cs_test_hold_binding', status: 'pending_payment' });
+    expect(bound?.checkoutExpiresAt).toEqual(acceptedExpiry);
+    expect(
+      await env.COMMERCE_DB.prepare('SELECT "checkoutExpiresAt" FROM "CheckoutOrder" WHERE "id" = ?')
+        .bind(created.hold.id)
+        .first(),
+    ).toEqual({ checkoutExpiresAt: acceptedExpiry.toISOString() });
+    await env.COMMERCE_DB.prepare('UPDATE "CheckoutOrder" SET "checkoutSessionId" = NULL WHERE "id" = ?')
+      .bind(created.hold.id)
+      .run();
+    await expect(
+      repository.recoverCheckoutSession(
+        created.hold.id,
+        parseCheckoutSessionId('cs_test_hold_binding'),
+        boundAt,
+        acceptedExpiry,
+      ),
+    ).resolves.toBe(true);
+    expect(
+      await env.COMMERCE_DB.prepare('SELECT "checkoutExpiresAt" FROM "CheckoutOrder" WHERE "id" = ?')
+        .bind(created.hold.id)
+        .first(),
+    ).toEqual({ checkoutExpiresAt: acceptedExpiry.toISOString() });
     await expect(repository.releaseSessionlessHold(created.hold, boundAt)).resolves.toBeNull();
   });
 

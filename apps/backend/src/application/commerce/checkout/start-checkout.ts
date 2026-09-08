@@ -14,6 +14,8 @@ import {
   type VariantId,
 } from '../../../domain/commerce';
 import {
+  CheckoutCreationError,
+  CustomPriceCartError,
   CheckoutUnavailableError,
   NativeCheckoutDisabledError,
   StoreItemNotFoundError,
@@ -47,7 +49,7 @@ type StartCheckoutOptions = {
   now?: Date;
 };
 
-const CHECKOUT_HOLD_DURATION_MS = 30 * 60 * 1000;
+const CHECKOUT_HOLD_DURATION_MS = 35 * 60 * 1000;
 
 const enabledFeatureFlags: FeatureFlagReader = {
   isNativeCheckoutEnabled: async () => true,
@@ -117,7 +119,7 @@ export async function startCheckout(
   command: StartCheckoutCommand,
   featureFlags: FeatureFlagReader = enabledFeatureFlags,
   options: StartCheckoutOptions = {},
-): Promise<HostedCheckoutSession> {
+): Promise<Pick<HostedCheckoutSession, 'checkoutSessionId' | 'checkoutUrl'>> {
   if (!(await featureFlags.isNativeCheckoutEnabled())) {
     throw new NativeCheckoutDisabledError();
   }
@@ -188,6 +190,12 @@ export async function startCheckout(
     });
   }
 
+  if (
+    validatedLines.some((line) => line.unitAmountMinor === null && (validatedLines.length !== 1 || line.quantity !== 1))
+  ) {
+    throw new CustomPriceCartError();
+  }
+
   const createdAt = options.now ?? new Date();
   const checkoutExpiresAt = new Date(createdAt.getTime() + CHECKOUT_HOLD_DURATION_MS);
   const [firstLine, ...remainingLines] = validatedLines;
@@ -236,25 +244,56 @@ export async function startCheckout(
       successUrl: command.successUrl,
     });
   } catch (error) {
-    await checkoutHolds.releaseSessionlessHold(holdResult.hold, new Date());
+    if (error instanceof CheckoutCreationError && error.definitiveNonCreation) {
+      await checkoutHolds.releaseSessionlessHold(holdResult.hold, new Date());
+    } else if (error instanceof CheckoutCreationError && error.session) {
+      await checkoutHolds.recoverCheckoutSession(
+        holdResult.hold.id,
+        error.session.checkoutSessionId,
+        new Date(),
+        error.session.checkoutExpiresAt,
+      );
+    }
     throw error;
   }
 
-  const boundOrder = await checkoutHolds.bindCheckoutSession(
-    holdResult.hold,
-    checkoutSession.checkoutSessionId,
-    new Date(),
-  );
+  let boundOrder;
+  try {
+    boundOrder = await checkoutHolds.bindCheckoutSession(
+      holdResult.hold,
+      checkoutSession.checkoutSessionId,
+      new Date(),
+      checkoutSession.checkoutExpiresAt,
+    );
+  } catch {
+    // A failed write can still have committed; recover the same Session below.
+    boundOrder = null;
+  }
 
   if (!boundOrder) {
+    const recovered = await checkoutHolds.recoverCheckoutSession(
+      holdResult.hold.id,
+      checkoutSession.checkoutSessionId,
+      new Date(),
+      checkoutSession.checkoutExpiresAt,
+    );
     const expiredSession = await checkoutGateway.expireHostedCheckoutSession(checkoutSession.checkoutSessionId);
-
-    if (expiredSession.status === 'expired' && expiredSession.paymentStatus !== 'paid') {
-      await checkoutHolds.releaseSessionlessHold(holdResult.hold, new Date());
+    if (recovered && expiredSession.status === 'expired' && expiredSession.paymentStatus !== 'paid') {
+      await checkoutHolds.releaseSessionBoundHold(
+        {
+          id: holdResult.hold.id,
+          checkoutSessionId: checkoutSession.checkoutSessionId,
+          checkoutExpiresAt: checkoutSession.checkoutExpiresAt,
+        },
+        new Date(),
+      );
     }
 
     throw new CheckoutUnavailableError();
   }
 
-  return checkoutSession;
+  return {
+    checkoutSessionId: checkoutSession.checkoutSessionId,
+    checkoutUrl: checkoutSession.checkoutUrl,
+  };
 }

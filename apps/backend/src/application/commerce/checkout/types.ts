@@ -73,6 +73,7 @@ export type FinalizedCheckoutSessionLineItem = {
 };
 
 export type HostedCheckoutSession = {
+  checkoutExpiresAt: Date;
   checkoutSessionId: CheckoutSessionId;
   checkoutUrl: string;
 };

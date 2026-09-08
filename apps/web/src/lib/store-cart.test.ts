@@ -4,6 +4,8 @@ import {
   addStoreCartItem,
   createCartCheckoutPath,
   createEmptyStoreCartState,
+  incrementCartLineQuantityByVariant,
+  decrementCartLineQuantityByVariant,
   getStoreCartCount,
   parseSerializedStoreCartState,
   readStoreCartState,
@@ -44,6 +46,29 @@ function createMemoryStorage() {
 }
 
 describe('store cart state', () => {
+  it('guards custom-Price increments without removing mixed cart contents', () => {
+    const custom = {
+      ...canonicalItem,
+      priceKind: 'pay_what_you_want' as const,
+      priceAmountMinor: null,
+      priceDisplay: 'Pay what you want',
+    };
+    const state = addStoreCartItem(custom);
+    expect(incrementCartLineQuantityByVariant(custom.variantId, state)).toEqual(state);
+    expect(addStoreCartItem(custom, state)).toEqual(state);
+    const mixed = addStoreCartItem({ ...canonicalItem, variantId: 'variant_second', storeItemSlug: 'second' }, state);
+    expect(incrementCartLineQuantityByVariant(custom.variantId, mixed)).toEqual(mixed);
+    expect(incrementCartLineQuantityByVariant('variant_second', mixed).lines[1]?.quantity).toBe(2);
+    expect(decrementCartLineQuantityByVariant('variant_second', mixed).lines[0]).toEqual(state.lines[0]);
+  });
+
+  it('preserves stale custom-Price quantity for explicit shopper correction', () => {
+    const state = addStoreCartItem(canonicalItem, addStoreCartItem(canonicalItem));
+    state.lines[0]!.priceKind = 'pay_what_you_want';
+    const guarded = incrementCartLineQuantityByVariant(canonicalItem.variantId, state);
+    expect(guarded.lines[0]?.quantity).toBe(2);
+    expect(decrementCartLineQuantityByVariant(canonicalItem.variantId, guarded).lines[0]?.quantity).toBe(1);
+  });
   it('starts empty with count 0', () => {
     const state = createEmptyStoreCartState();
 
