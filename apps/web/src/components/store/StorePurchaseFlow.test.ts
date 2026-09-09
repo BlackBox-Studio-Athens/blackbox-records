@@ -41,6 +41,7 @@ vi.mock('astro:content', () => ({
             eyebrow: 'Tape',
             format: 'Cassette',
             group: 'Tapes',
+            gallery: [{ image: { src: '/afterglow-back.jpg' }, image_alt: 'Afterglow tape back cover' }],
             image: { src: '/afterglow.jpg' },
             image_alt: 'Afterglow tape',
             order: 1,
@@ -238,6 +239,7 @@ describe('store purchase happy path', () => {
     expect(browserOwnedPayload).not.toContain('BOX_NOW_API');
     expect(browserOwnedPayload).not.toContain('whsec_');
     expect(browserOwnedPayload).not.toContain('sk_');
+    expect(browserOwnedPayload).not.toContain('afterglow-back.jpg');
     expect(storage.getItem(STORE_CART_STORAGE_KEY)).toContain('disintegration-black-vinyl-lp');
   });
 });

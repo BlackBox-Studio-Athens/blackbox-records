@@ -37,7 +37,7 @@ export const SERVICES_INQUIRY_DETAIL_PROMPTS = {
     hint: 'Add the item, quantity, and deadline if known.',
     label: 'Item / Quantity / Deadline',
   },
-  'Vinyl Printing': {
+  'Vinyl Pressing': {
     hint: 'Add the format, quantity, and target date if known.',
     label: 'Format / Quantity / Target Date',
   },

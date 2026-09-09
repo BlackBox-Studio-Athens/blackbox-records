@@ -52,14 +52,14 @@ Checkout start aggregates duplicate CartLines by variant, validates positive qua
 
 D1 serializes the transaction boundary; the second concurrent transaction sees the first pending order. Local D1 concurrency tests are acceptance evidence, not an assumption.
 
-The order receives an app-generated ID and fixed checkoutExpiresAt before provider work. Stripe Checkout receives that order ID in private metadata and the same expiry, 30 minutes after creation.
+The order receives an app-generated ID and provisional checkoutExpiresAt before provider work. The 2026-09-09 recheck found that the implemented exact 30-minute timestamp can fall below Stripe's minimum after D1/network latency. `fix-stripe-checkout-creation` calculates a 35-minute target immediately before the SDK call and persists provider-accepted expiry during binding/recovery. This correction must be implemented and proved before reservation UAT acceptance; local time alone still cannot release a payable hold.
 
 ### Bind or terminate without inventing another state
 
 After Stripe returns:
 
-- bind checkoutSessionId to the same pending order and return the hosted URL;
-- if provider creation failed, compare-and-set the sessionless order to not_paid;
+- bind checkoutSessionId and accepted expiry to the same pending order and return the hosted URL;
+- if provider non-creation is definitive, compare-and-set the sessionless order to not_paid; timeout, network, 5xx, or unusable success responses retain the hold for metadata/operator recovery;
 - if session binding failed, request provider expiry;
 - after confirmed expiry, compare-and-set the order to not_paid;
 - if non-payable state cannot be confirmed, retain pending_payment and the stock hold.

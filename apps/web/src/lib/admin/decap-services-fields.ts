@@ -47,7 +47,7 @@ export function buildServicesFields() {
               label: 'ID',
               name: 'id',
               widget: 'string',
-              hint: 'Stable ID used for inquiry preselection. Use lowercase kebab-case, for example "vinyl-printing".',
+              hint: 'Stable section anchor. Use lowercase kebab-case, for example "vinyl-printing".',
               pattern: { value: slugPatternSource, message: 'Use lowercase kebab-case, for example vinyl-printing.' },
             }),
             buildField({ label: 'Title', name: 'title', widget: 'string', hint: 'Visible service heading.' }),

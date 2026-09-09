@@ -6,7 +6,7 @@ import { createBlackBoxEmailTemplate } from './templates';
 import type { EmailProviderGateway } from './spi';
 import type { EmailMessageContent, EmailOperationResult, EmailRuntimeConfig, EmailTag } from './types';
 
-export const SERVICES_INQUIRY_SERVICES = ['General', 'Tour Booking', 'Merch Printing', 'Vinyl Printing'] as const;
+export const SERVICES_INQUIRY_SERVICES = ['General', 'Tour Booking', 'Merch Printing', 'Vinyl Pressing'] as const;
 
 export type ServicesInquiryService = (typeof SERVICES_INQUIRY_SERVICES)[number];
 
@@ -14,7 +14,7 @@ export const SERVICES_INQUIRY_RECIPIENT_ALIAS_BY_SERVICE = {
   General: 'info@blackboxrecordsathens.com',
   'Tour Booking': 'booking@blackboxrecordsathens.com',
   'Merch Printing': 'merch@blackboxrecordsathens.com',
-  'Vinyl Printing': 'vinyl@blackboxrecordsathens.com',
+  'Vinyl Pressing': 'vinyl@blackboxrecordsathens.com',
 } as const satisfies Record<ServicesInquiryService, string>;
 
 export const SERVICES_INQUIRY_FIELD_LIMITS = {
@@ -31,14 +31,14 @@ const servicesInquiryProviderTagByService = {
   General: 'general',
   'Tour Booking': 'tour-booking',
   'Merch Printing': 'merch-printing',
-  'Vinyl Printing': 'vinyl-printing',
+  'Vinyl Pressing': 'vinyl-pressing',
 } as const satisfies Record<ServicesInquiryService, string>;
 
 const servicesInquiryDetailLabelByService = {
   General: 'Useful context',
   'Tour Booking': 'Date / City / Venue',
   'Merch Printing': 'Item / Quantity / Deadline',
-  'Vinyl Printing': 'Format / Quantity / Target Date',
+  'Vinyl Pressing': 'Format / Quantity / Target Date',
 } as const satisfies Record<ServicesInquiryService, string>;
 
 const optionalBoundedText = (maxLength: number) =>

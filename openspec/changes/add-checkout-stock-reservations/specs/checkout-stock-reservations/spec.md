@@ -56,14 +56,20 @@ The system SHALL bind at most one Stripe Checkout Session to a pending order and
 #### Scenario: Provider session is created
 
 - **WHEN** Stripe accepts checkout creation
-- **THEN** the session has the app order ID in private metadata and a fixed 30-minute expiry
-- **AND** its session ID is bound uniquely to the existing pending order.
+- **THEN** the session has the app order ID in private metadata and the 35-minute target calculated immediately before the provider call
+- **AND** its session ID and accepted expiry are bound to the existing pending order, preserving unique session identity.
 
 #### Scenario: Provider creation fails
 
-- **WHEN** no Stripe Checkout Session was created
+- **WHEN** provider non-creation is definitive
 - **THEN** the sessionless pending order changes to not_paid
 - **AND** its lines stop reducing effective availability.
+
+#### Scenario: Provider creation is uncertain
+
+- **WHEN** a timeout, network failure, provider 5xx, or unusable success response leaves creation uncertain
+- **THEN** the pending hold and any known Session identity remain available for recovery
+- **AND** local time or the error response alone does not release the hold.
 
 #### Scenario: Session binding fails
 
@@ -74,7 +80,7 @@ The system SHALL bind at most one Stripe Checkout Session to a pending order and
 #### Scenario: Metadata webhook arrives
 
 - **WHEN** a verified Stripe event contains the app order ID for a sessionless pending order
-- **THEN** reconciliation can recover and bind that session identity before applying its guarded outcome.
+- **THEN** reconciliation can recover and bind that session identity and accepted expiry before applying its guarded outcome.
 
 ### Requirement: Provider-confirmed outcomes consume or release the hold once
 

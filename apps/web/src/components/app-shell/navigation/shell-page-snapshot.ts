@@ -25,6 +25,7 @@ export function sanitizeStoreCoverflowSnapshot(root: ParentNode) {
     } else {
       groupElement.style.removeProperty('--store-coverflow-position-ratio');
     }
+    groupElement.removeAttribute('data-store-coverflow-pending-disclosure');
     groupElement.removeAttribute('data-store-coverflow-ready');
     groupElement.removeAttribute('data-store-coverflow-reveal');
     groupElement.removeAttribute('data-store-coverflow-transitioning');

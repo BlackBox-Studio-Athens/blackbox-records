@@ -2,7 +2,7 @@ export const SERVICES_INQUIRY_SERVICE_OPTIONS = [
   'General',
   'Tour Booking',
   'Merch Printing',
-  'Vinyl Printing',
+  'Vinyl Pressing',
 ] as const;
 
 export type ServicesInquiryService = (typeof SERVICES_INQUIRY_SERVICE_OPTIONS)[number];
@@ -11,14 +11,14 @@ export const SERVICES_INQUIRY_RECIPIENT_ALIAS_BY_SERVICE = {
   General: 'info@blackboxrecordsathens.com',
   'Tour Booking': 'booking@blackboxrecordsathens.com',
   'Merch Printing': 'merch@blackboxrecordsathens.com',
-  'Vinyl Printing': 'vinyl@blackboxrecordsathens.com',
+  'Vinyl Pressing': 'vinyl@blackboxrecordsathens.com',
 } as const satisfies Record<ServicesInquiryService, string>;
 
 const SERVICES_INQUIRY_DETAIL_LABEL_BY_SERVICE = {
   General: 'Useful context',
   'Tour Booking': 'Date / City / Venue',
   'Merch Printing': 'Item / Quantity / Deadline',
-  'Vinyl Printing': 'Format / Quantity / Target Date',
+  'Vinyl Pressing': 'Format / Quantity / Target Date',
 } as const satisfies Record<ServicesInquiryService, string>;
 
 const CRLF = '\r\n';

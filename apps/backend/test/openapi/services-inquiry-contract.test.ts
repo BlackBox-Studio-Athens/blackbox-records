@@ -23,13 +23,19 @@ describe('Services inquiry public contract', () => {
         email: `${'e'.repeat(242)}@example.com`,
         message: 'm'.repeat(SERVICES_INQUIRY_FIELD_LIMITS.message),
         name: 'n'.repeat(SERVICES_INQUIRY_FIELD_LIMITS.name),
-        service: 'Vinyl Printing',
+        service: 'Vinyl Pressing',
         serviceDetails: 'd'.repeat(SERVICES_INQUIRY_FIELD_LIMITS.serviceDetails),
       }),
     ).toBeDefined();
 
     expect(servicesInquiryBodySchema.safeParse({ ...validInquiry, recipient: 'attacker@example.com' }).success).toBe(
       false,
+    );
+  });
+
+  it('normalizes the exact legacy service value before canonical validation', () => {
+    expect(servicesInquiryBodySchema.parse({ ...validInquiry, service: 'Vinyl Printing' }).service).toBe(
+      'Vinyl Pressing',
     );
   });
 
@@ -102,6 +108,7 @@ describe('Services inquiry public contract', () => {
       required: ['email', 'message', 'name', 'service'],
     });
     expect(requestSchema.properties?.service?.enum).toEqual([...SERVICES_INQUIRY_SERVICES]);
+    expect(requestSchema.properties?.service?.enum).not.toContain('Vinyl Printing');
     expect(requestSchema.properties?.name?.maxLength).toBe(SERVICES_INQUIRY_FIELD_LIMITS.name);
     expect(requestSchema.properties?.email?.maxLength).toBe(SERVICES_INQUIRY_FIELD_LIMITS.email);
     expect(requestSchema.properties?.bandOrProject?.maxLength).toBe(SERVICES_INQUIRY_FIELD_LIMITS.bandOrProject);

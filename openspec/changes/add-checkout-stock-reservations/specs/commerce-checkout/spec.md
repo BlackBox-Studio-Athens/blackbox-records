@@ -13,7 +13,8 @@ The system MUST create the complete pending CheckoutOrder hold before requesting
 #### Scenario: Hosted checkout is created
 
 - **WHEN** Stripe accepts the request
-- **THEN** the session expires after 30 minutes
+- **THEN** the session uses the 35-minute target calculated immediately before the provider call
+- **AND** the accepted expiry is retained on the bound pending order
 - **AND** private metadata carries only the app order identity needed for recovery.
 
 ### Requirement: Store reads use D1 availability without provider calls

@@ -105,12 +105,34 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
       if (typeof CSS !== 'undefined' && CSS.supports('transform-style', 'preserve-3d')) {
         document.documentElement.setAttribute('data-store-coverflow-capable', '');
 
+        document.addEventListener(
+          'click',
+          (event) => {
+            const toggle =
+              event.target instanceof Element ? event.target.closest('[data-store-coverflow-toggle]') : null;
+            const group = toggle?.closest('[data-store-coverflow-group]');
+            if (
+              !group ||
+              group.hasAttribute('data-store-coverflow-ready') ||
+              group.hasAttribute('data-store-coverflow-pending-disclosure') ||
+              document.querySelector('[data-store-coverflow-pending-disclosure]')
+            ) {
+              return;
+            }
+
+            event.preventDefault();
+            group.setAttribute('data-store-coverflow-pending-disclosure', '');
+          },
+          true,
+        );
+
         window.addEventListener(
           'load',
           () => {
             window.setTimeout(() => {
               const groups = [...document.querySelectorAll('[data-store-coverflow-group]')];
               if (groups.length > 0 && groups.some((group) => !group.hasAttribute('data-store-coverflow-ready'))) {
+                groups.forEach((group) => group.removeAttribute('data-store-coverflow-pending-disclosure'));
                 document.documentElement.removeAttribute('data-store-coverflow-capable');
               }
             }, 15000);

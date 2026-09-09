@@ -505,7 +505,7 @@ export type components = {
             message: string;
             name: string;
             /** @enum {string} */
-            service: "General" | "Tour Booking" | "Merch Printing" | "Vinyl Printing";
+            service: "General" | "Tour Booking" | "Merch Printing" | "Vinyl Pressing";
             serviceDetails?: string;
         };
         ServicesInquiryResponse: {

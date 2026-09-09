@@ -22,6 +22,7 @@
 - [x] 4.1 Map paid, unpaid, async-success, async-failure, and expiry events to guarded CheckoutOrder transitions; verify pending_payment is the only nonterminal hold state.
 - [x] 4.2 Extend first paid reconciliation to decrement stock and mark the order paid in one transaction; verify replay and reordered terminal events mutate stock at most once.
 - [x] 4.3 Add the bounded oldest-five provider check only when stale pending orders alone block checkout; verify one retry, provider-confirmed release only, and fail-closed provider errors.
+- [ ] 4.4 Include implemented `fix-paid-order-reconciliation` and `make-operator-stock-writes-atomic` corrections in reservation acceptance; verify durable paid-shortage review, retryable missing-order handling, correct collected shipping, and operator/checkout stock concurrency on the same tree.
 
 ## 5. Validation and Rollout
 

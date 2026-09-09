@@ -69,6 +69,7 @@ const MobileNavigationSheet = lazy(() => import('./view/MobileNavigationSheet'))
 const ShellOverlayPanel = lazy(() => import('./view/ShellOverlayPanel'));
 const ShellPlayerSurface = lazy(() => import('./view/ShellPlayerSurface'));
 const StoreCartDrawer = lazy(() => import('@/components/store/StoreCartDrawer'));
+const preloadStoreDistroSearch = () => import('@/components/store/StoreDistroSearch');
 
 type OverlayState = ShellOverlayState;
 
@@ -265,6 +266,7 @@ export default function AppShellRoot({
 
     const timeoutId = window.setTimeout(() => {
       if (groups.some((group) => !group.hasAttribute('data-store-coverflow-ready'))) {
+        groups.forEach((group) => group.removeAttribute('data-store-coverflow-pending-disclosure'));
         document.documentElement.removeAttribute('data-store-coverflow-capable');
       }
     }, 15000);
@@ -292,7 +294,9 @@ export default function AppShellRoot({
         cleanup = controller?.cleanup;
       })
       .catch(() => {
-        if (!cancelled) document.documentElement.removeAttribute('data-store-coverflow-capable');
+        if (!cancelled) {
+          document.documentElement.removeAttribute('data-store-coverflow-capable');
+        }
       });
 
     return () => {
@@ -361,24 +365,13 @@ export default function AppShellRoot({
       return;
     }
 
-    let disconnect: (() => void) | undefined;
-    const connect = () => {
-      disconnect = connectShellPortalTarget({
-        activePathname: activeShellPathname,
-        queryTarget: () => document.querySelector<HTMLElement>('[data-distro-search]'),
-        scheduler: window,
-        setTarget: setDistroSearchContainer,
-        targetPathname: '/store/distro/',
-      });
-    };
-
-    if (document.readyState === 'complete') connect();
-    else window.addEventListener('load', connect, { once: true });
-
-    return () => {
-      window.removeEventListener('load', connect);
-      disconnect?.();
-    };
+    return connectShellPortalTarget({
+      activePathname: activeShellPathname,
+      queryTarget: () => document.querySelector<HTMLElement>('[data-distro-search]'),
+      scheduler: window,
+      setTarget: setDistroSearchContainer,
+      targetPathname: '/store/distro/',
+    });
   }, [activeShellPathname]);
 
   useEffect(() => {
@@ -432,6 +425,7 @@ export default function AppShellRoot({
     clearStoreLoadingFeedback();
     clearStoreListingPriceActivation(storeListingPriceActivationStateRef.current);
     if (kind !== 'store') return undefined;
+    if (pathname === '/store/distro/') void preloadStoreDistroSearch().catch(() => undefined);
 
     const activation = prepareStoreListingPriceActivation({
       pathname,
@@ -495,7 +489,10 @@ export default function AppShellRoot({
   }
 
   async function prefetchShellSectionHref(href: string) {
-    await shellPageLoader.prefetchHref(href);
+    const pagePrefetch = shellPageLoader.prefetchHref(href);
+    const route = parseShellSectionRoute(new URL(href, window.location.href).pathname);
+    if (route?.pathname === '/store/distro/') void preloadStoreDistroSearch().catch(() => undefined);
+    await pagePrefetch;
   }
 
   async function openShellSectionHref(

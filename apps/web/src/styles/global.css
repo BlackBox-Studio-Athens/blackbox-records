@@ -4193,16 +4193,6 @@ body.is-app-shell-overlay-open {
   }
 }
 
-@keyframes store-coverflow-disclosure-fill {
-  from {
-    transform: scaleX(var(--store-coverflow-position-ratio));
-  }
-
-  to {
-    transform: scaleX(1);
-  }
-}
-
 html[data-store-coverflow-capable]
   [data-store-coverflow-mode='preview'][data-store-coverflow-ready]:not([data-store-coverflow-visited])
   .store-coverflow-rail__fill {
@@ -4213,12 +4203,6 @@ html[data-store-coverflow-capable]
   [data-store-coverflow-mode='preview'][data-store-coverflow-ready]:not([data-store-coverflow-visited])
   [data-store-coverflow-remaining] {
   animation: store-coverflow-remaining-in 180ms ease 100ms both;
-}
-
-html[data-store-coverflow-capable]
-  [data-store-coverflow-mode='preview'][data-store-coverflow-reveal='catalog-pending']
-  .store-coverflow-rail__fill {
-  animation: store-coverflow-disclosure-fill 180ms linear both;
 }
 
 @keyframes store-catalog-reveal {
@@ -4476,7 +4460,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-reveal='catalog'] .stor
   inset: 0;
   background: #0d0d0d;
   pointer-events: none;
-  animation: store-catalog-reveal 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: store-catalog-reveal 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] .store-coverflow-depth,
@@ -4609,10 +4593,6 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   html[data-store-coverflow-capable] [data-store-coverflow-group] .store-coverflow-rail__fill {
     transform: scaleX(var(--store-coverflow-position-ratio));
     transition: none;
-  }
-
-  html[data-store-coverflow-capable] [data-store-coverflow-reveal='catalog-pending'] .store-coverflow-rail__fill {
-    transform: scaleX(1);
   }
 
   html[data-store-coverflow-capable] [data-store-coverflow-group] [data-store-coverflow-remaining] {

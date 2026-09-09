@@ -225,6 +225,7 @@ describe('shell page snapshots', () => {
     expect(removed).toEqual(
       new Set([
         'data-store-coverflow-ready',
+        'data-store-coverflow-pending-disclosure',
         'data-store-coverflow-reveal',
         'data-store-coverflow-transitioning',
         'data-store-coverflow-visited',

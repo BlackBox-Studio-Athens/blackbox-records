@@ -21,6 +21,7 @@ The system MUST block PRD native-commerce launch until every prerequisite change
 - **WHEN** the final launch checklist is assembled
 - **THEN** environment alignment, production controls, listing-price stabilization, Sveltia acceptance, Holding Page handoff, operator JWT verification, checkout stock reservations, and paid-order delivery are complete and archived in the declared order
 - **AND** evidence includes Access allow/deny proof, one-unit checkout concurrency and replay safety, immediate and scheduled delivery recovery, and the verified Holding Page rollback target
+- **AND** checkout creation, paid-order reconciliation/return, and atomic operator-stock corrections have local regression and new-account acceptance evidence
 - **AND** no prerequisite implementation or performance child remains active.
 
 #### Scenario: Shipping scope is reviewed
@@ -37,8 +38,9 @@ The system MUST associate launch artifacts, configuration, validation, evidence,
 #### Scenario: Exact-tree evidence is accepted
 
 - **WHEN** build, Worker, catalog, migration, test, performance, browser, and provider evidence is recorded
-- **THEN** every result identifies the same accepted commit SHA
-- **AND** a later change to an affected surface invalidates and reruns the corresponding evidence before launch.
+- **THEN** final launch checks identify the accepted artifact commit SHA and relevant environment configuration/deployment
+- **AND** historical prerequisite results retain their original source references
+- **AND** a later source, generated-artifact, or configuration change reruns affected checks; evidence notes or archival alone do not invalidate unchanged runtime proof.
 
 ### Requirement: Stripe-last provider sequence
 
@@ -46,10 +48,28 @@ The system MUST close new-account Stripe test-mode behavior before live-mode pre
 
 #### Scenario: New Stripe account test mode is prepared
 
-- **WHEN** account access and approved test credentials exist
-- **THEN** listing-price replacement behavior is proved and archived first
-- **AND** checkout reservation creation, settlement, expiry, replay safety, and one-unit concurrency are proved and archived second
-- **AND** paid-order immediate delivery, controlled retry, scheduled recovery, idempotency, and independent delivery kinds are proved and archived third.
+- **WHEN** account access, approved test credentials, and approved delivery recipients exist
+- **THEN** listing-price replacement behavior is proved first
+- **AND** checkout reservation creation, settlement, expiry, replay safety, and one-unit concurrency are proved next
+- **AND** paid-order delivery and recovery are accepted after reservation proof, with shared scenarios reused where applicable
+- **AND** all prerequisite changes are archived before launch without using archival paperwork as a barrier to shared UAT execution.
+
+#### Scenario: Review corrections are accepted
+
+- **WHEN** reservation and paid-order provider evidence is collected
+- **THEN** all three correction changes are implemented on that tree
+- **AND** checkout-creation and atomic-stock corrections are proved before reservation archival
+- **AND** paid-reconciliation correction archival follows the shared reservation and outbox acceptance
+- **AND** overlapping tasks reference the same accepted evidence without requiring duplicate purchases or unchanged test reruns
+- **AND** a local mock or failure-reproduction probe never substitutes for new-account provider proof.
+
+#### Scenario: Production delivery recovery is prepared
+
+- **WHEN** PRD delivery readiness is evaluated with shopper checkout closed
+- **THEN** a 15-minute paid-delivery schedule exists in committed PRD configuration and the deployed Worker
+- **AND** an observed invocation proves the correct environment bindings
+- **AND** the same bounded handler has controlled transient-failure recovery evidence from UAT
+- **AND** the check creates no synthetic paid production order or unapproved email.
 
 #### Scenario: Live provider resources are prepared
 
@@ -59,6 +79,35 @@ The system MUST close new-account Stripe test-mode behavior before live-mode pre
 - **THEN** PRD catalog mutation requires one-run live-catalog confirmation
 - **AND** Store capabilities report checkout disabled
 - **AND** checkout creation rejects before provider work.
+
+### Requirement: Manual selling operations are accepted before launch
+
+The system MUST keep launch blocked until an owner-approved manual fulfillment/refund procedure, shipping-charge model, and tax/receipt/invoice workflow have been configured and verified against the actual checkout experience.
+
+#### Scenario: Manual handoff is rehearsed
+
+- **WHEN** the new-account test purchase is reviewed for launch acceptance
+- **THEN** assigned operators can find paid orders, review exceptions, and failed deliveries
+- **AND** the runbook covers Greek BOX NOW destination/shipment handling, dispatch recording that prevents duplicate fulfillment, manual refunds, and explicit returned-stock reconciliation
+- **AND** test evidence distinguishes a runbook rehearsal from an actual physical shipment.
+
+#### Scenario: Checkout charges and receipts are reviewed
+
+- **WHEN** the owner selects included delivery or a separate shipping charge and the intended tax/receipt/invoice workflow
+- **THEN** the configured checkout total and shopper-visible claims match that approved model
+- **AND** required monetary implementation and acceptance finish before launch
+- **AND** absent provider options or Dashboard defaults are not treated as proof of the advertised behavior.
+
+### Requirement: Shopper selling information is available before launch
+
+The system MUST provide accessible, owner-approved shipping timing/rates, return/refund instructions, customer contact, and privacy information before opening checkout.
+
+#### Scenario: Shopper reviews purchase conditions
+
+- **WHEN** a shopper uses Store and checkout on the accepted launch artifact
+- **THEN** the relevant information is reachable through accessible storefront links
+- **AND** it agrees with the configured Greek delivery scope, charges, contact channels, and manual operations
+- **AND** missing business or policy decisions remain launch blockers rather than invented text.
 
 ### Requirement: Release data promotion boundary
 
@@ -75,15 +124,24 @@ The system MUST use repository-authored editorial content managed through Svelti
 
 ### Requirement: Canonical production cutover
 
-The system MUST change every public full-site origin dependency together during the approved public cutover.
+The system MUST prepare and verify every final public-origin dependency in the accepted full-site artifact before approval, then expose that artifact at the apex only after the approved live smoke succeeds.
 
 #### Scenario: Public apex is cut over
 
 - **GIVEN** the exact launch tree has approval and a successful bounded live checkout smoke
 - **WHEN** the apex moves from the Holding Page to production `main`
-- **THEN** `ASTRO_SITE_URL`, generated Sveltia `site_url`, checkout return origins, email brand URLs, catalog asset origins, sitemap/metadata, and affected assertions use `https://blackboxrecordsathens.com/`
+- **THEN** `ASTRO_SITE_URL`, generated Sveltia `site_url`, public checkout returns, shopper-facing email links, sitemap/metadata, and affected assertions use `https://blackboxrecordsathens.com/`
+- **AND** catalog/email images keep their verified PRD asset URLs without requiring an asset-host migration
 - **AND** `https://blackbox-records-web.pages.dev` remains a technical Pages origin rather than the canonical public identity
 - **AND** the existing production Worker URL remains the browser API target unless a separate approved API-hostname change exists.
+
+#### Scenario: Final origins are staged
+
+- **WHEN** the accepted full-site artifact is verified through the technical Pages origin while the apex serves Holding Page
+- **THEN** its canonical metadata, CMS, and shopper-facing links already target the final apex
+- **AND** catalog/email images remain reachable on the PRD asset host while the apex serves Holding Page
+- **AND** technical and apex checkout return origins are explicitly allowlisted for smoke and public use respectively
+- **AND** successful smoke is followed by routing cutover, without code or generated-asset changes that would invalidate acceptance.
 
 #### Scenario: Live smoke or cutover fails
 
@@ -105,7 +163,7 @@ The system MUST treat the user's explicit approval as the only final go/no-go au
 
 #### Scenario: User approves launch
 
-- **WHEN** all exact-tree evidence passes and the user gives explicit approval
+- **WHEN** all pre-activation evidence passes and the user explicitly approves the bounded live smoke and conditional public cutover
 - **THEN** `PRD_LAUNCH_APPROVED=true` may be deployed for the accepted Worker configuration
 - **AND** one bounded live checkout smoke runs before apex cutover.
 

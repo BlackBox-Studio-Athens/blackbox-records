@@ -8,8 +8,10 @@ Core production foundations are implemented, but final launch still needs one co
 - Keep the public apex on the verified Holding Page while non-Stripe planning and post-commerce performance checks finish.
 - Make one exact commit SHA own the build, Worker, catalog, tests, evidence, launch approval, and cutover.
 - Require new-account Stripe test-mode closure before live-mode preparation; never promote UAT D1 rows, test objects, synthetic stock, or UAT evidence into PRD.
+- Close the verified checkout-creation, paid-reconciliation, and operator-stock correction changes before commerce sign-off, with local regressions and separate new-account acceptance.
+- Verify the committed and deployed PRD delivery schedule, rehearse manual fulfillment/refund operations, and publish approved shipping/returns/privacy information with explicit charge and receipt/invoice decisions.
 - Keep live catalog preparation separate from shopper launch approval and runtime checkout enablement.
-- Make `https://blackboxrecordsathens.com/` canonical only during the approved cutover; the Pages origin remains technical.
+- Prepare final-origin artifacts before approval, then expose the verified full site at `https://blackboxrecordsathens.com/` during approved cutover; the Pages origin remains technical.
 - Make the user the sole final go/no-go approver and keep the Holding Page as the immediate rollback target for at least 24 hours after launch.
 
 ## Capabilities

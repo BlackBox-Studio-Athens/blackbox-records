@@ -14,9 +14,11 @@ import {
 } from './runtime-performance-helpers';
 
 type Profile =
+  | 'desktop-distro-disclosure'
   | 'desktop-load'
   | 'desktop-store-activation'
   | 'legacy-scroll'
+  | 'mobile-distro-disclosure'
   | 'mobile-load'
   | 'mobile-scroll'
   | 'mobile-store-activation'
@@ -39,9 +41,16 @@ const productEnvironment = args.get('product-environment') ?? 'Local';
 const STORE_ACTIVATION_TIMEOUT_MS = 120_000;
 
 const profiles = {
+  'desktop-distro-disclosure': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 1 },
   'desktop-load': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 1 },
   'desktop-store-activation': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 1 },
   'mobile-load': {
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    cpu: 4,
+    network: { latency: 150, downloadThroughput: 200_000, uploadThroughput: 93_750 },
+  },
+  'mobile-distro-disclosure': {
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
     cpu: 4,
@@ -328,6 +337,147 @@ async function storeActivationRun(page: Page, cdp: CDPSession, browserVersion: s
   };
 }
 
+async function distroDisclosureRun(page: Page, entry: 'direct' | 'shell') {
+  let releaseDistroModule = () => undefined;
+  const distroModuleGate = new Promise<void>((resolve) => {
+    releaseDistroModule = resolve;
+  });
+  let distroModulePaused = false;
+
+  await page.route('**/*StoreDistroSearch*', async (route) => {
+    if (!distroModulePaused) {
+      distroModulePaused = true;
+      await distroModuleGate;
+    }
+    await route.continue();
+  });
+
+  const distroModuleRequest = page.waitForRequest((request) => request.url().includes('StoreDistroSearch'), {
+    timeout: STORE_ACTIVATION_TIMEOUT_MS,
+  });
+
+  if (entry === 'direct') {
+    await page.goto(routeUrl('store/distro'), { waitUntil: 'commit' });
+  } else {
+    await page.goto(routeUrl('store'), { waitUntil: 'load' });
+    await page.waitForFunction(
+      () => document.querySelector('astro-island[component-url*="AppShellRoot"]:not([ssr])') !== null,
+      undefined,
+      { timeout: STORE_ACTIVATION_TIMEOUT_MS },
+    );
+    const distroLink = page.locator('a[href$="/store/distro/"]').first();
+    await distroLink.waitFor({ state: 'attached' });
+    await distroLink.evaluate((element: HTMLElement) => element.click());
+    await page.waitForFunction(
+      () => location.pathname.endsWith('/store/distro/') && document.querySelector('[data-distro-search-root]'),
+      undefined,
+      { timeout: STORE_ACTIVATION_TIMEOUT_MS },
+    );
+  }
+
+  const group = page.locator('[data-distro-search-root] [data-store-coverflow-group]').first();
+  const toggle = group.locator('[data-store-coverflow-toggle]');
+  await toggle.waitFor({ state: 'visible' });
+
+  const controllerReadyBeforeClick = await group.getAttribute('data-store-coverflow-ready');
+  const clickAt = performance.now();
+  await toggle.evaluate((element: HTMLElement) => element.click());
+  const pendingBeforeRelease = await group.getAttribute('data-store-coverflow-pending-disclosure');
+  await distroModuleRequest;
+  const releaseAt = performance.now();
+  releaseDistroModule();
+
+  await page.waitForFunction(
+    () => {
+      const element = document.querySelector<HTMLElement>('[data-distro-search-root] [data-store-coverflow-group]');
+      return element?.hasAttribute('data-store-coverflow-ready') && element.dataset.storeCoverflowMode === 'catalog';
+    },
+    undefined,
+    { polling: 'raf', timeout: STORE_ACTIVATION_TIMEOUT_MS },
+  );
+  const catalogAt = performance.now();
+  await page.waitForFunction(
+    () => {
+      const element = document.querySelector<HTMLElement>('[data-distro-search-root] [data-store-coverflow-group]');
+      return (
+        element?.dataset.storeCoverflowMode === 'catalog' &&
+        !element.hasAttribute('data-store-coverflow-transitioning') &&
+        !element.hasAttribute('data-store-coverflow-reveal')
+      );
+    },
+    undefined,
+    { polling: 'raf', timeout: STORE_ACTIVATION_TIMEOUT_MS },
+  );
+  const firstRevealCompleteAt = performance.now();
+
+  await toggle.evaluate((element: HTMLElement) => element.click());
+  await page.waitForFunction(
+    () => {
+      const element = document.querySelector<HTMLElement>('[data-store-coverflow-group]');
+      return (
+        element?.dataset.storeCoverflowMode === 'preview' && !element.hasAttribute('data-store-coverflow-transitioning')
+      );
+    },
+    undefined,
+    { polling: 'raf', timeout: STORE_ACTIVATION_TIMEOUT_MS },
+  );
+
+  const ready = await page.evaluate(async () => {
+    const element = document.querySelector<HTMLElement>('[data-distro-search-root] [data-store-coverflow-group]')!;
+    const button = element.querySelector<HTMLButtonElement>('[data-store-coverflow-toggle]')!;
+    const measurements = (
+      window as unknown as { __runtimePerformance: { cls: number; longTasks: number[]; loafs: number[] } }
+    ).__runtimePerformance;
+    measurements.longTasks = [];
+    measurements.loafs = [];
+
+    const start = performance.now();
+    button.click();
+    const clickHandlerMs = performance.now() - start;
+    const animations = element.querySelector<HTMLElement>('[data-store-coverflow-reveal-mask]')?.getAnimations() ?? [];
+    const stateAtNextFrame = await new Promise<{ ariaExpanded: string | null; mode: string | undefined }>((resolve) =>
+      requestAnimationFrame(() =>
+        resolve({ ariaExpanded: button.getAttribute('aria-expanded'), mode: element.dataset.storeCoverflowMode }),
+      ),
+    );
+    await Promise.allSettled(animations.map((animation) => animation.finished));
+
+    return {
+      ariaExpanded: button.getAttribute('aria-expanded'),
+      cls: measurements.cls,
+      clickHandlerMs,
+      longTasks: measurements.longTasks,
+      mode: element.dataset.storeCoverflowMode,
+      stateAtNextFrame,
+      visualMs: performance.now() - start,
+    };
+  });
+
+  const visualBudgetMs = profile.startsWith('desktop-') ? 250 : 350;
+  const maxLongTaskMs = Math.max(0, ...ready.longTasks);
+  return {
+    entry,
+    firstClick: {
+      clickToCatalogMs: catalogAt - clickAt,
+      clickToRevealCompleteMs: firstRevealCompleteAt - clickAt,
+      controllerReadyBeforeClick: controllerReadyBeforeClick !== null,
+      pendingBeforeRelease: pendingBeforeRelease !== null,
+      releaseToCatalogMs: catalogAt - releaseAt,
+    },
+    ready,
+    rejectionReasons: [
+      controllerReadyBeforeClick !== null ? 'controller was ready before delayed first click' : null,
+      pendingBeforeRelease === null ? 'first click was not retained before module release' : null,
+      ready.mode !== 'catalog' || ready.ariaExpanded !== 'true' ? 'ready click did not enter catalog mode' : null,
+      ready.stateAtNextFrame.mode !== 'catalog' || ready.stateAtNextFrame.ariaExpanded !== 'true'
+        ? 'catalog state was not ready by the next animation frame'
+        : null,
+      ready.visualMs > visualBudgetMs ? `visual reveal took ${ready.visualMs.toFixed(1)}ms` : null,
+      maxLongTaskMs >= 50 ? `disclosure produced a ${maxLongTaskMs.toFixed(1)}ms long task` : null,
+    ].filter(Boolean),
+  };
+}
+
 async function scrollTraversal(page: Page, cdp: CDPSession, label: 'first' | 'repeat') {
   const settings = profiles[profile] as (typeof profiles)['wide-scroll'];
   await page.evaluate(() => {
@@ -367,7 +517,21 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const results = [];
   try {
-    if (profile.endsWith('store-activation')) {
+    if (profile.endsWith('distro-disclosure')) {
+      for (let run = 1; run <= runs; run += 1) {
+        for (const entry of ['direct', 'shell'] as const) {
+          const settings = profiles[profile];
+          const context = await browser.newContext({
+            viewport: settings.viewport,
+            deviceScaleFactor: settings.deviceScaleFactor,
+          });
+          const page = await context.newPage();
+          await configure(context, page);
+          results.push({ run, profile, entry, result: await distroDisclosureRun(page, entry) });
+          await context.close();
+        }
+      }
+    } else if (profile.endsWith('store-activation')) {
       for (let run = 1; run <= runs; run += 1) {
         const settings = profiles[profile];
         const context = await browser.newContext({
@@ -413,7 +577,7 @@ async function main() {
   await mkdir(dirname(output), { recursive: true });
   await writeFile(
     output,
-    `${JSON.stringify({ commit: process.env.RUNTIME_PERFORMANCE_COMMIT ?? 'record-with-git-rev-parse', baseUrl, productEnvironment, profile, settings: profiles[profile], runs, routes, expectedStoreCardCount, blockThirdPartyAnalytics, capturedAt: new Date().toISOString(), method: profile.endsWith('store-activation') ? 'fresh-context same-document Store activation' : 'existing runtime profile', runOrder: results.map((result) => ('run' in result ? result.run : null)), summary: profile.endsWith('store-activation') ? summarizeStoreActivationRuns(results.map((entry) => entry.result)) : undefined, results }, null, 2)}\n`,
+    `${JSON.stringify({ commit: process.env.RUNTIME_PERFORMANCE_COMMIT ?? 'record-with-git-rev-parse', baseUrl, productEnvironment, profile, settings: profiles[profile], runs, routes, expectedStoreCardCount, blockThirdPartyAnalytics, capturedAt: new Date().toISOString(), method: profile.endsWith('distro-disclosure') ? 'fresh-context delayed and ready Store Distro disclosure' : profile.endsWith('store-activation') ? 'fresh-context same-document Store activation' : 'existing runtime profile', runOrder: results.map((result) => ('run' in result ? result.run : null)), summary: profile.endsWith('store-activation') ? summarizeStoreActivationRuns(results.map((entry) => entry.result)) : undefined, results }, null, 2)}\n`,
   );
   console.log(output);
 }

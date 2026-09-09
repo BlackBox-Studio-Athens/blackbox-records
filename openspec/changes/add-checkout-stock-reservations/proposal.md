@@ -5,10 +5,10 @@ Checkout validates stock before creating Stripe Checkout but decrements it only 
 ## What Changes
 
 - Treat CheckoutOrder with status pending_payment, together with its aggregated CheckoutOrderLine rows, as the temporary checkout stock hold.
-- Make checkoutSessionId nullable and unique and add one fixed checkoutExpiresAt value.
+- Make checkoutSessionId nullable and unique and add checkoutExpiresAt, initially provisional and replaced by the provider-accepted expiry during binding.
 - Create the pending order and all lines atomically before calling Stripe.
 - Calculate effective availability as the lower of physical and online stock minus quantities in pending-payment order lines.
-- Create Stripe Checkout with the same fixed 30-minute expiry and private app order ID metadata, then bind the session ID to the existing order.
+- Create Stripe Checkout with a 35-minute target calculated immediately before the provider call and private app order ID metadata, then bind the session ID and accepted expiry to the existing order.
 - Use guarded order transitions for paid, expired, and failed outcomes; pending_payment also covers asynchronous payment pending.
 - Keep stale cleanup bounded and provider-confirmed. Listing reads never call Stripe.
 - Do not add reservation tables, a reservation ID, another state machine, a reserved counter, Durable Objects, Queues, or Workflows.

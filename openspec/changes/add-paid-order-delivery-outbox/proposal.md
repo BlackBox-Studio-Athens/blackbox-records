@@ -26,5 +26,5 @@ Paid reconciliation currently commits the order and stock before email and newsl
 ## Impact
 
 - D1 and Prisma schema, paid reconciliation, order-line creation, Resend/newsletter gateways, scheduled Worker entrypoint, protected order reads, and focused tests.
-- Sequence: begin repo-local implementation after the accepted CheckoutOrder transaction and verified operator identity code contracts from `add-checkout-stock-reservations` and `verify-operator-access-jwt` are present. Their hosted proof and archival remain rollout gates before UAT delivery execution.
+- Sequence: build on the CheckoutOrder transaction and verified operator identity contracts. Verify Access before hosted operator checks and reservation behavior before accepting outbox recovery. Shared UAT execution uses approved recipients; prerequisites archive before outbox archival, without requiring a separate deployment solely for paperwork.
 - No new hosted service; this change consumes the operator-auth boundary and does not redefine it.

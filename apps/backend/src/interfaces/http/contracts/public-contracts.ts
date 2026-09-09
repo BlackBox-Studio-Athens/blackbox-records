@@ -150,7 +150,10 @@ export const servicesInquiryBodySchema = z
     email: z.string().trim().max(SERVICES_INQUIRY_FIELD_LIMITS.email).email(),
     message: z.string().trim().min(1).max(SERVICES_INQUIRY_FIELD_LIMITS.message),
     name: z.string().trim().min(1).max(SERVICES_INQUIRY_FIELD_LIMITS.name),
-    service: z.enum(SERVICES_INQUIRY_SERVICES),
+    service: z.preprocess(
+      (value) => (value === 'Vinyl Printing' ? 'Vinyl Pressing' : value),
+      z.enum(SERVICES_INQUIRY_SERVICES),
+    ),
     serviceDetails: z.string().trim().max(SERVICES_INQUIRY_FIELD_LIMITS.serviceDetails).optional(),
   })
   .strict()

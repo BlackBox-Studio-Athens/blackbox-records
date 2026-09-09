@@ -48,7 +48,7 @@ describe('services inquiry email application input', () => {
       General: 'info@blackboxrecordsathens.com',
       'Tour Booking': 'booking@blackboxrecordsathens.com',
       'Merch Printing': 'merch@blackboxrecordsathens.com',
-      'Vinyl Printing': 'vinyl@blackboxrecordsathens.com',
+      'Vinyl Pressing': 'vinyl@blackboxrecordsathens.com',
     });
   });
 
@@ -115,7 +115,7 @@ describe('services inquiry email application input', () => {
     ['General', 'general'],
     ['Tour Booking', 'tour-booking'],
     ['Merch Printing', 'merch-printing'],
-    ['Vinyl Printing', 'vinyl-printing'],
+    ['Vinyl Pressing', 'vinyl-pressing'],
   ] as const)('provides safe purpose and tags for %s', (service, serviceTag) => {
     expect(SERVICES_INQUIRY_EMAIL_PURPOSE).toBe('services-inquiry');
     expect(createServicesInquiryEmailTags(service)).toEqual([
@@ -191,7 +191,7 @@ describe('services inquiry email template', () => {
     const input = {
       ...validInquiry,
       bandOrProject: 'Night Shift',
-      service: 'Vinyl Printing' as const,
+      service: 'Vinyl Pressing' as const,
       serviceDetails: '12 inch / 300 / November',
     };
     const content = buildServicesInquiryEmail(input);
@@ -220,7 +220,7 @@ describe('services inquiry send use case', () => {
     ['General', 'info@blackboxrecordsathens.com', 'general'],
     ['Tour Booking', 'booking@blackboxrecordsathens.com', 'tour-booking'],
     ['Merch Printing', 'merch@blackboxrecordsathens.com', 'merch-printing'],
-    ['Vinyl Printing', 'vinyl@blackboxrecordsathens.com', 'vinyl-printing'],
+    ['Vinyl Pressing', 'vinyl@blackboxrecordsathens.com', 'vinyl-pressing'],
   ] as const)('sends %s to its fixed PRD alias', async (service, recipient, serviceTag) => {
     mockRandomUuid('11111111-1111-4111-8111-111111111111');
     const { provider, sendEmail } = createProvider();
@@ -383,7 +383,7 @@ describe('services inquiry send use case', () => {
       email: 'private@example.com',
       message: 'Private message body',
       name: 'Private Visitor',
-      service: 'Vinyl Printing' as const,
+      service: 'Vinyl Pressing' as const,
       serviceDetails: 'Private service details',
     };
 
@@ -394,7 +394,7 @@ describe('services inquiry send use case', () => {
       idempotencyKey: 'blackbox:uat:services-inquiry:77777777-7777-4777-8777-777777777777',
       retryable: false,
       safeReason: undefined,
-      service: 'vinyl-printing',
+      service: 'vinyl-pressing',
       sinkRouted: true,
       status: 'sent',
     });

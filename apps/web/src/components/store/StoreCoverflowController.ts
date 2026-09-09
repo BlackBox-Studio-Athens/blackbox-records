@@ -328,17 +328,12 @@ export function createStoreCoverflowController(
 
     try {
       if (targetState.mode === 'catalog') {
-        group.element.dataset.storeCoverflowReveal = 'catalog-pending';
         group.element.toggleAttribute('data-store-coverflow-visited', true);
-        const railAnimations = group.disclosureRail.getAnimations?.() ?? [];
-        inFlight = railAnimations;
-        await Promise.allSettled(railAnimations.map((animation) => animation.finished));
-        if (revision !== token) return;
+        group.element.dataset.storeCoverflowReveal = 'catalog';
       }
 
       setGroupState(group, targetState);
       if (targetState.mode === 'catalog' && activeCard) {
-        group.element.dataset.storeCoverflowReveal = 'catalog';
         activeCard.focus({ preventScroll: true });
         activeCard.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'nearest', inline: 'nearest' });
       }
@@ -577,6 +572,15 @@ export function createStoreCoverflowController(
     };
   });
 
+  queueMicrotask(() => {
+    const pendingDisclosureGroup = dom.groups.find((group) =>
+      group.element.hasAttribute('data-store-coverflow-pending-disclosure'),
+    );
+    if (!pendingDisclosureGroup) return;
+    pendingDisclosureGroup.element.removeAttribute('data-store-coverflow-pending-disclosure');
+    void runDisclosure(pendingDisclosureGroup);
+  });
+
   return {
     setFocusedGroup(groupElement) {
       cancelTransition();
@@ -584,6 +588,7 @@ export function createStoreCoverflowController(
       if (!searchActive) restoreGroupPresentations();
     },
     setSearchActive(isActive) {
+      if (searchActive === isActive) return;
       cancelTransition();
       searchActive = isActive;
       if (isActive) {
@@ -623,6 +628,7 @@ export function createStoreCoverflowController(
           group.lastActiveIndex = 0;
           group.state = group.initialMode === 'preview' ? { mode: 'preview', activeIndex: 0 } : { mode: 'catalog' };
           renderGroup(group);
+          group.element.removeAttribute('data-store-coverflow-pending-disclosure');
           group.element.removeAttribute('data-store-coverflow-ready');
           group.element.removeAttribute('data-store-coverflow-visited');
           group.element.removeAttribute('aria-roledescription');

@@ -18,12 +18,6 @@ describe('app shell startup closure', () => {
     expect(source).toContain(
       "setStoreCartHeaderContainer(document.querySelector<HTMLElement>('[data-store-cart-header-root]'))",
     );
-    expect(source).toContain(
-      "if (typeof window === 'undefined') return;\n\n    let disconnect: (() => void) | undefined;",
-    );
-    expect(source).not.toContain(
-      "if (activeShellPathname !== '/store/distro/') {\n      setDistroSearchContainer(null);\n      return;\n    }\n\n    let disconnect: (() => void) | undefined;\n    let cancelled",
-    );
     expect(source).toContain('.catch(() =>');
     expect(portalSource).toContain('storeCartBridgeFailed ?');
     expect(portalSource).toContain('Cart is unavailable.');
@@ -32,9 +26,13 @@ describe('app shell startup closure', () => {
       expect(portalSource).toContain(`const ${moduleName} = React.lazy(`);
     }
     expect(source).toContain("document.querySelector<HTMLElement>('[data-distro-search]')");
-    expect(source).toContain(
-      "if (activeShellPathname !== '/store/distro/') {\n      setDistroSearchContainer(null);\n      return;\n    }\n\n    let disconnect: (() => void) | undefined;\n    const connect = () =>",
-    );
+    expect(source).toContain("const preloadStoreDistroSearch = () => import('@/components/store/StoreDistroSearch')");
+    expect(source.match(/preloadStoreDistroSearch\(\)/g)).toHaveLength(2);
+    expect(source).toContain("if (pathname === '/store/distro/')");
+    expect(source).toContain('parseShellSectionRoute(new URL(href, window.location.href).pathname)');
+    expect(source).toContain("route?.pathname === '/store/distro/'");
+    expect(source).not.toContain("document.readyState === 'complete'");
+    expect(source).not.toContain("window.addEventListener('load', connect");
     expect(source).toContain("activeShellPathname !== '/store/distro/'");
     expect(source).toContain("targetPathname: '/store/distro/'");
     expect(source).toContain("parseShellSectionRoute(activeShellPathname)?.kind !== 'store'");

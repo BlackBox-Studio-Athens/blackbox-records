@@ -27,6 +27,11 @@ const controllerSource = readFileSync(
   fileURLToPath(new URL('../components/store/StoreCoverflowController.ts', import.meta.url)),
   'utf8',
 );
+const layoutSource = readFileSync(fileURLToPath(new URL('../layouts/SiteLayout.astro', import.meta.url)), 'utf8');
+const runtimePerformanceSource = readFileSync(
+  fileURLToPath(new URL('../../../../scripts/measure-runtime-performance.ts', import.meta.url)),
+  'utf8',
+);
 const cssSource = readFileSync(fileURLToPath(new URL('./global.css', import.meta.url)), 'utf8');
 
 describe('Distro Coverflow progressive enhancement', () => {
@@ -90,6 +95,24 @@ describe('Distro Coverflow progressive enhancement', () => {
     expect(searchSource).toContain('ensureStoreCoverflowCapability()');
   });
 
+  it('retains one disclosure activation until the shared controller is ready', () => {
+    expect(layoutSource).toContain("closest('[data-store-coverflow-toggle]')");
+    expect(layoutSource).toContain("hasAttribute('data-store-coverflow-ready')");
+    expect(layoutSource).toContain("hasAttribute('data-store-coverflow-pending-disclosure')");
+    expect(layoutSource).toContain("setAttribute('data-store-coverflow-pending-disclosure', '')");
+    expect(controllerSource).toContain("removeAttribute('data-store-coverflow-pending-disclosure')");
+  });
+
+  it('keeps Distro disclosure acceptance in the existing runtime harness', () => {
+    expect(runtimePerformanceSource).toContain("'desktop-distro-disclosure'");
+    expect(runtimePerformanceSource).toContain("'mobile-distro-disclosure'");
+    expect(runtimePerformanceSource).toContain("page.route('**/*StoreDistroSearch*'");
+    expect(runtimePerformanceSource).toContain("getAttribute('data-store-coverflow-pending-disclosure')");
+    expect(runtimePerformanceSource).toContain("getAttribute('aria-expanded')");
+    expect(runtimePerformanceSource).toContain('stateAtNextFrame');
+    expect(runtimePerformanceSource).toContain('getAnimations()');
+  });
+
   it('uses one Distro orientation panel and exposes search results only for an active query', () => {
     expect(pageSource).toContain('data-store-orientation="distro"');
     expect(pageSource).toContain('<p class="store-orientation-panel__eyebrow">Store shelf</p>');
@@ -136,13 +159,13 @@ describe('Distro Coverflow progressive enhancement', () => {
       /data-store-coverflow-mode='preview'[\s\S]*?data-store-coverflow-card\]:not\(\[data-store-coverflow-position\]\)[\s\S]*?display: none/,
     );
     expect(cssSource).toMatch(/\.distro-card__content[\s\S]*?display: none/);
-    expect(cssSource).toContain('animation: store-catalog-reveal 300ms');
+    expect(cssSource).toContain('animation: store-catalog-reveal 180ms');
     expect(cssSource).toContain('animation: store-coverflow-preview-rail-in 360ms');
-    expect(cssSource).toContain('animation: store-coverflow-disclosure-fill 180ms');
+    expect(cssSource).not.toContain('animation: store-coverflow-disclosure-fill');
     expect(cssSource).toContain('transform: scaleX(var(--store-coverflow-position-ratio))');
     expect(cssSource).toContain('transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1)');
     expect(cssSource).toMatch(/\.store-coverflow-stat[\s\S]*?justify-content: flex-end/);
-    expect(cssSource).toContain("data-store-coverflow-reveal='catalog-pending'");
+    expect(cssSource).not.toContain("data-store-coverflow-reveal='catalog-pending'");
     expect(cssSource).toContain('grid-template-columns: repeat(auto-fit, minmax(min(5rem, 100%), 1fr))');
     expect(cssSource).toContain('background: #0d0d0d');
     expect(cssSource).not.toContain('view-transition-name');

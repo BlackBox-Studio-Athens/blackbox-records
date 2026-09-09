@@ -50,7 +50,7 @@ const serviceRoutes = [
   ['General', 'info@blackboxrecordsathens.com'],
   ['Tour Booking', 'booking@blackboxrecordsathens.com'],
   ['Merch Printing', 'merch@blackboxrecordsathens.com'],
-  ['Vinyl Printing', 'vinyl@blackboxrecordsathens.com'],
+  ['Vinyl Pressing', 'vinyl@blackboxrecordsathens.com'],
 ] as const;
 
 afterEach(() => {
@@ -77,6 +77,27 @@ describe('public Services inquiry HTTP route', () => {
       replyTo: validInquiry.email,
       to: recipient,
     });
+  });
+
+  it('accepts the exact legacy vinyl value and sends canonical downstream data', async () => {
+    const sendEmail = vi.spyOn(ResendEmailGateway.prototype, 'sendEmail').mockResolvedValue({ ok: true });
+
+    const response = await submitInquiry(
+      {
+        ...validInquiry,
+        service: 'Vinyl Printing',
+      },
+      prdBindings,
+    );
+
+    expect(response.status).toBe(200);
+    expect(sendEmail).toHaveBeenCalledOnce();
+    expect(sendEmail.mock.calls[0]?.[0]).toMatchObject({
+      subject: 'Services Inquiry — Vinyl Pressing — BlackBox Test',
+      tags: expect.arrayContaining([{ name: 'service', value: 'vinyl-pressing' }]),
+      to: 'vinyl@blackboxrecordsathens.com',
+    });
+    expect(JSON.stringify(sendEmail.mock.calls[0]?.[0])).not.toContain('Vinyl Printing');
   });
 
   it.each([

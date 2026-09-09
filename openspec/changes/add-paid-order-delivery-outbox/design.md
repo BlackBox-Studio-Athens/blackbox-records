@@ -85,7 +85,7 @@ Protected order reads may expose validated fulfillment fields and delivery summa
 
 ## Migration Plan
 
-1. Confirm both accepted prerequisite code contracts are present, then preflight existing paid rows without printing shopper data. Complete their hosted proof and archival before UAT delivery execution.
+1. Confirm prerequisite code contracts and hosted Access proof, then preflight paid rows without printing shopper data. Use approved recipients for shared reservation/outbox UAT execution; accept reservation behavior before outbox recovery and archive prerequisites before this change. Follow the launch plan's shared correction evidence sequence.
 2. Add direct order/line columns, the delivery table, constraints, and indexes in one additive migration; regenerate Prisma.
 3. Write line snapshots at checkout creation and validate paid-order records as a discriminated repository result.
 4. Extend first paid reconciliation and replace direct webhook sends with the shared delivery processor.

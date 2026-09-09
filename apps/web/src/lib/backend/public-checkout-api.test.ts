@@ -102,7 +102,7 @@ describe('createPublicCheckoutApi', () => {
       email: 'alex@example.com',
       message: 'We need vinyl help.',
       name: 'Alex',
-      service: 'Vinyl Printing',
+      service: 'Vinyl Pressing',
     };
     let receivedBody: ServicesInquiryBody | null = null;
     webMswServer.use(

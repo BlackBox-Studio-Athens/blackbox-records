@@ -13,7 +13,7 @@ describe('services inquiry mailto', () => {
       General: 'info@blackboxrecordsathens.com',
       'Tour Booking': 'booking@blackboxrecordsathens.com',
       'Merch Printing': 'merch@blackboxrecordsathens.com',
-      'Vinyl Printing': 'vinyl@blackboxrecordsathens.com',
+      'Vinyl Pressing': 'vinyl@blackboxrecordsathens.com',
     });
 
     for (const [service, recipientEmail] of Object.entries(SERVICES_INQUIRY_RECIPIENT_ALIAS_BY_SERVICE)) {
@@ -37,12 +37,12 @@ describe('services inquiry mailto', () => {
       email: 'mass@example.com',
       message: 'We need vinyl help.',
       name: 'Alex',
-      service: 'Vinyl Printing',
+      service: 'Vinyl Pressing',
       serviceDetails: '12 inch / 300 / November',
     });
-    const subject = 'Services Inquiry — Vinyl Printing — Mass Culture';
+    const subject = 'Services Inquiry — Vinyl Pressing — Mass Culture';
     const body = [
-      'Service: Vinyl Printing',
+      'Service: Vinyl Pressing',
       'Name: Alex',
       'Email: mass@example.com',
       'Band / Project: Mass Culture',

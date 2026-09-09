@@ -16,24 +16,32 @@
 - [ ] 2.3 Use Browser Use to verify Store rendering, first/repeat traversal, navigation, overlays, player lifecycle, mobile layout, accessibility, and console cleanliness.
 - [ ] 2.4 Verify one listing-price projection request per Store activation, zero per-card Store Offer reads, and zero Store 5xx responses.
 - [ ] 2.5 Record a no-action result when gates pass, or plan, fix, validate, and archive one bounded performance child for a reproducible application-attributable failure.
+- [ ] 2.6 Implement and locally validate `fix-stripe-checkout-creation`, `fix-paid-order-reconciliation`, and `make-operator-stock-writes-atomic`; record focused regressions for all six code findings before hosted commerce acceptance. Their new-account acceptance and archival remain section 3 work.
+- [ ] 2.7 Inventory public selling information and obtain approved shipping timing/rates, return/refund process, support contact, and privacy wording; publish missing information with accessible Store/checkout/footer links and Browser Use proof. Do not invent business or legal terms.
+- [ ] 2.8 Record owner-approved delivery-charge treatment and tax/receipt/invoice workflow; configure the chosen model and finish any required monetary implementation/spec update before accepting totals. Verify advertised receipt behavior rather than assuming Dashboard defaults.
+- [ ] 2.9 Write the manual operations runbook: paid/review/failed-delivery checks, Greek BOX NOW destination/shipment handoff, duplicate-safe dispatch recording, Dashboard refunds, and returned-stock reconciliation, with an owner for each step.
 
 ## 3. New Stripe Account Test-Mode Closure
 
-- [ ] 3.1 Obtain access to the new Stripe account and approved test/live credentials through secret stores without committing secrets or full Stripe IDs.
+- [ ] 3.1 Obtain new-account test access, approved secret-store credentials, and approved UAT email recipients before any paid test can trigger delivery; keep secrets, private recipients, and full Stripe IDs out of Git.
 - [ ] 3.2 Complete, strict-validate, sync, and archive `stabilize-store-listing-prices` against the new account's test mode.
-- [ ] 3.3 Complete, strict-validate, sync, and archive `add-checkout-stock-reservations` against the same accepted test-mode commit.
-- [ ] 3.4 Obtain approved UAT email recipients without committing private recipient data.
-- [ ] 3.5 Complete, strict-validate, sync, and archive `add-paid-order-delivery-outbox` with immediate and controlled-retry proof.
+- [ ] 3.3 On one corrected UAT commit, prove provider-valid expiry, accepted/rejected custom-Price carts, reservation settlement/expiry/replay, operator/checkout concurrency, and protected stale-recount conflicts; include paid-reconciliation corrections and link shared evidence once.
+- [ ] 3.4 Prove differing billing/shipping, delayed confirmation, failed webhook resend, and durable shortage review on that tree; exercise immediate delivery and controlled scheduled recovery only with approved recipients.
+- [ ] 3.5 Complete the remaining `add-paid-order-delivery-outbox` delivery-kind, idempotency, and recovery acceptance using the shared proof; rerun only missing or affected checks.
+- [ ] 3.6 Strict-validate, sync, and archive checkout-creation and atomic-stock corrections, then reservations, then the outbox after each change's evidence passes. Archival does not require another payment or deployment of unchanged code.
+- [ ] 3.7 Strict-validate, sync, and archive `fix-paid-order-reconciliation` after the shared reservation/outbox proof; link the accepted evidence and single manual exception procedure.
+- [ ] 3.8 Rehearse the complete new-account test purchase and manual fulfillment/refund handoff with approved recipients and test data; verify advertised totals, receipt behavior, dispatch record, and returned-stock procedure without claiming a physical shipment was tested unless one was actually performed.
 
 ## 4. Live Stripe and PRD Preparation While Checkout Is Closed
 
-- [ ] 4.1 Select one exact launch commit SHA to own static build, Worker, catalog, migrations, tests, evidence, approval, and cutover.
+- [ ] 4.1 Prepare the PRD configuration and final-origin artifact settings while checkout and apex cutover remain closed; freeze the launch commit only after source/configuration/generation changes finish in 4.6.
 - [ ] 4.2 Keep `PRD_LAUNCH_APPROVED` absent and `native_checkout_enabled=false`; verify capabilities report disabled and checkout creation rejects before provider work.
 - [ ] 4.3 Create live Products/Prices, Payment Method Configuration, and the production webhook endpoint using API version `2026-08-26.dahlia`; store secrets only in approved stores.
 - [ ] 4.4 Apply PRD D1 migrations and readiness seed, then configure live price mappings without copying UAT rows, test objects, synthetic stock, or UAT evidence.
-- [ ] 4.5 Configure paid-delivery Cron, Resend, Access trust, Worker bindings, checkout origins, and permanent Greece-only delivery.
-- [ ] 4.6 Run catalog promotion for the exact artifact commit with `target=prd`, `confirm_live_catalog_changes=true`, and direct CLI confirmation.
-- [ ] 4.7 Deploy the exact Worker and static artifacts to technical PRD origins; verify catalog, webhook, D1, Access, Cron, and runtime configuration while checkout remains closed.
+- [ ] 4.5 Add the existing paid-delivery `*/15 * * * *` Cron explicitly to the PRD environment in `apps/backend/wrangler.jsonc`; configure Resend, Access trust, Worker bindings, checkout origins, and permanent Greece-only delivery. Reuse the current scheduled handler, bounded processor, and outbox.
+- [ ] 4.6 Finish source/configuration/generation changes, pin catalog images to the reachable PRD asset host through the existing override, and record the accepted artifact SHA/environment. Run catalog promotion from that commit with `target=prd` and one applicable confirmation: workflow `confirm_live_catalog_changes=true` or direct CLI `--confirm-live-catalog-changes`.
+- [ ] 4.7 Deploy that commit's Worker and static artifacts to technical PRD origins; verify final canonical metadata, reachable catalog/email images while the apex still serves Holding Page, the technical/apex return allowlist, catalog, webhook, D1, Access, Cron, and configuration with checkout closed.
+- [ ] 4.8 Verify the committed and deployed PRD Cron configuration plus an observed scheduled invocation with correct PRD bindings; attach the same handler's controlled transient-failure recovery proof from UAT. Do not seed fake production paid orders or send unapproved emails; inspect actual live-smoke delivery only after 6.3 authorization.
 
 ## 5. Exact-Tree Acceptance
 
@@ -41,14 +49,14 @@
 - [ ] 5.2 Regenerate Prisma and OpenAPI/client artifacts twice and verify deterministic output.
 - [ ] 5.3 Run `pnpm test:unit`, `pnpm check`, `pnpm build`, `pnpm audit:unused`, `pnpm audit:commerce-boundaries`, and `pnpm performance:bundles`.
 - [ ] 5.4 Strict-validate every remaining active OpenSpec change, search for retired controls and stale origins, run `git diff --check`, and review the final worktree.
-- [ ] 5.5 Use Browser Use on technical PRD origins for navigation, Store, live Checkout, Greece-only rejection, operator access, stock/order reconciliation, delivery state, overlays, player, mobile layout, and console/network cleanliness.
+- [ ] 5.5 Use Browser Use on technical PRD origins for navigation, Store, disabled-checkout rejection, operator access, overlays, player, mobile layout, and console/network cleanliness. Reference UAT payment/reconciliation proof here; live payment, stock settlement, and delivery checks belong to 6.3 after approval.
 
 ## 6. Final Activation and Stability
 
 - [ ] 6.1 Set `native_checkout_enabled=true` while launch approval remains absent and verify checkout stays closed.
-- [ ] 6.2 Record final exact-tree evidence and request the user's sole go/no-go decision.
-- [ ] 6.3 After explicit approval, set `PRD_LAUNCH_APPROVED=true`, deploy the accepted Worker configuration, and run one bounded live checkout smoke.
+- [ ] 6.2 Record completed pre-activation evidence, the prepared final-origin artifacts, and remaining live-smoke/public-routing checks; request the user's sole go/no-go decision.
+- [ ] 6.3 After explicit approval, set `PRD_LAUNCH_APPROVED=true` for the accepted Worker code, record that configuration/deployment change, and run one bounded live checkout smoke through the technical return origin; verify actual payment, stock/order settlement, collected Greek shipping, and delivery state.
 - [ ] 6.4 On smoke failure, set `native_checkout_enabled=false`, remove launch approval if needed, and leave the apex on the Holding Page.
-- [ ] 6.5 On smoke success, atomically update full-site origins, repoint the apex from `holding` to production `main`, and verify HTTPS plus `www` redirects.
+- [ ] 6.5 On smoke success, repoint the apex from `holding` to the already-verified production artifact without code or generated-asset changes; verify public canonical URLs, checkout return routing, HTTPS, and `www` redirects.
 - [ ] 6.6 Keep the Holding Page available as immediate rollback for at least 24 hours and record stability evidence.
 - [ ] 6.7 After accepted stability, retire holding-only workflow/source/artifact/branch dependencies, remove holding `noindex` remnants, sync final specs, and archive this change.

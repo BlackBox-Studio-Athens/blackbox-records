@@ -127,7 +127,7 @@ describe('ServicesInquiryForm', () => {
       email: 'alex@example.com',
       message: 'We need vinyl help.',
       name: 'Alex',
-      service: 'Vinyl Printing',
+      service: 'Vinyl Pressing',
       serviceDetails: '12 inch / 300 / November',
     });
     const html = renderToStaticMarkup(
@@ -141,7 +141,7 @@ describe('ServicesInquiryForm', () => {
     expect(html).not.toContain('target=');
     expect(html).toContain('vinyl@blackboxrecordsathens.com');
     expect(html).toContain('Inquiry summary');
-    expect(html).toContain('Services Inquiry — Vinyl Printing — Mass Culture');
+    expect(html).toContain('Services Inquiry — Vinyl Pressing — Mass Culture');
     expect(html).toContain('Copy inquiry details');
     expect(componentSource).not.toMatch(/window\.open|target=["']_blank/);
   });
@@ -193,7 +193,7 @@ describe('ServicesInquiryForm', () => {
         hint: 'Add the item, quantity, and deadline if known.',
         label: 'Item / Quantity / Deadline',
       },
-      'Vinyl Printing': {
+      'Vinyl Pressing': {
         hint: 'Add the format, quantity, and target date if known.',
         label: 'Format / Quantity / Target Date',
       },
@@ -259,7 +259,7 @@ describe('ServicesInquiryForm', () => {
       email: 'alex@example.com',
       message: 'We need vinyl help.',
       name: 'Alex',
-      service: 'Vinyl Printing',
+      service: 'Vinyl Pressing',
       serviceDetails: '12 inch / 300 / November',
     };
 
