@@ -465,6 +465,7 @@ describe('checkout use cases', () => {
         newsletterOptIn: false,
         paymentStatus: 'unpaid' as const,
         shippingAddress: null,
+        shippingRecipientName: null,
         status: 'expired' as const,
       })),
       readCheckoutSessionLineItems: vi.fn(async () => []),
@@ -481,6 +482,7 @@ describe('checkout use cases', () => {
         newsletterOptIn: false,
         paymentStatus: 'paid' as const,
         shippingAddress: null,
+        shippingRecipientName: null,
         status: 'complete' as const,
       })),
     };
@@ -1036,6 +1038,7 @@ describe('checkout use cases', () => {
       newsletterOptIn: false,
       paymentStatus: 'unpaid' as const,
       shippingAddress: null,
+      shippingRecipientName: null,
       status: 'expired' as const,
     }));
 
@@ -1100,6 +1103,7 @@ describe('checkout use cases', () => {
       newsletterOptIn: false,
       paymentStatus: 'unpaid' as const,
       shippingAddress: null,
+      shippingRecipientName: null,
       status: 'open' as const,
     }));
 

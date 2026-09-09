@@ -60,6 +60,22 @@ function createCatalogResult(issues: CatalogSyncIssue[] = []): CatalogSyncVarian
 }
 
 describe('Stripe webhook acknowledgement checkout events', () => {
+  it('looks up sessions without metadata before ignoring unrelated missing orders', async () => {
+    const services = createServices();
+    const event = createPaidCheckoutEvent();
+    if (!('checkoutSession' in event)) throw new Error('Expected checkout fixture');
+    event.checkoutSession.metadata = {};
+    vi.mocked(services.applyPaidCheckoutReconciliation).mockResolvedValueOnce({
+      kind: 'missing_order',
+      checkoutSessionId: event.checkoutSession.id,
+    } as never);
+    await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).resolves.toEqual({
+      received: true,
+      ignored: true,
+    });
+    expect(services.applyPaidCheckoutReconciliation).toHaveBeenCalledOnce();
+    expect(services.recoverCheckoutOrderSession).not.toHaveBeenCalled();
+  });
   it('publishes CheckoutOrderPaid only after paid reconciliation applies', async () => {
     const services = createServices();
     const checkoutOrderPaid = createCheckoutOrderPaidFixture();
@@ -497,6 +513,19 @@ function createPaidCheckoutEvent(): VerifiedStripeWebhookEvent {
       amount_total: 2500,
       expires_at: 1_790_002_100,
       currency: 'eur',
+      collected_information: {
+        shipping_details: {
+          name: 'Shipping Recipient',
+          address: {
+            city: 'Athens',
+            country: 'GR',
+            line1: 'Shipping Street 2',
+            line2: null,
+            postal_code: '10558',
+            state: null,
+          },
+        },
+      },
       customer_details: {
         address: {
           city: 'Athens',

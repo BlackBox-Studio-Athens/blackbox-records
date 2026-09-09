@@ -214,6 +214,7 @@ export const CheckoutOrderScalarFieldEnum = {
   paidAt: 'paidAt',
   notPaidAt: 'notPaidAt',
   needsReviewAt: 'needsReviewAt',
+  needsReviewReason: 'needsReviewReason',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

@@ -38,6 +38,7 @@ type CheckoutOrderRow = {
   currencyCode: null | string;
   id: string;
   needsReviewAt: null | string;
+  needsReviewReason: null | string;
   newsletterConsentAt: null | string;
   newsletterConsentCopyVersion: null | string;
   newsletterOptIn: boolean | number | null;
@@ -135,6 +136,7 @@ const checkoutOrderSelectSql = [
   '  "paidAt",',
   '  "notPaidAt",',
   '  "needsReviewAt",',
+  '  "needsReviewReason",',
   '  "createdAt",',
   '  "updatedAt"',
   'FROM "CheckoutOrder"',
@@ -582,6 +584,7 @@ function mapCheckoutOrder(row: CheckoutOrderRow, lines: CheckoutOrderLineRecord[
     currencyCode: row.currencyCode,
     id: row.id,
     needsReviewAt: row.needsReviewAt ? new Date(row.needsReviewAt) : null,
+    needsReviewReason: row.needsReviewReason,
     newsletterConsentAt: row.newsletterConsentAt ? new Date(row.newsletterConsentAt) : null,
     newsletterConsentCopyVersion: row.newsletterConsentCopyVersion,
     newsletterOptIn: row.newsletterOptIn === null ? null : Boolean(row.newsletterOptIn),

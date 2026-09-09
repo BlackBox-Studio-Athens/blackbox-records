@@ -46,30 +46,22 @@ export function clearStoreCartAfterPaidCheckout(
 export default function CheckoutReturnStatus({ api, checkoutPath, itemPath, storePath }: CheckoutReturnStatusProps) {
   const [loadState, setLoadState] = useState<CheckoutReturnLoadState>({ kind: 'loading' });
   const clearedCheckoutSessionIds = useRef(new Set<string>());
+  const refreshStatus = useRef<(() => void) | null>(null);
   const view = createCheckoutReturnStatusView(loadState);
 
   useEffect(() => {
-    let isActive = true;
     const checkoutApi = api ?? createPublicCheckoutApi();
     const checkoutSessionId = readCheckoutSessionIdFromSearch(window.location.search);
-
-    async function loadStateFromWorker() {
-      const nextState = await loadCheckoutReturnState(checkoutApi, checkoutSessionId);
-
-      if (isActive) {
-        setLoadState(nextState);
-      }
-    }
-
-    void loadStateFromWorker();
-
+    const connection = connectCheckoutReturnStatus(checkoutApi, checkoutSessionId, setLoadState);
+    refreshStatus.current = connection.refresh;
     return () => {
-      isActive = false;
+      refreshStatus.current = null;
+      connection.stop();
     };
   }, [api]);
 
   useEffect(() => {
-    if (loadState.kind !== 'ready' || loadState.checkoutState.state !== 'paid') return;
+    if (loadState.kind !== 'ready' || !createCheckoutReturnStatusView(loadState).isFinal) return;
 
     const { checkoutSessionId } = loadState.checkoutState;
     if (clearedCheckoutSessionIds.current.has(checkoutSessionId)) return;
@@ -87,8 +79,57 @@ export default function CheckoutReturnStatus({ api, checkoutPath, itemPath, stor
   }
 
   return (
-    <CheckoutReturnStatusScreen checkoutPath={checkoutPath} itemPath={itemPath} storePath={storePath} view={view} />
+    <CheckoutReturnStatusScreen
+      checkoutPath={checkoutPath}
+      itemPath={itemPath}
+      storePath={storePath}
+      view={view}
+      onRefresh={() => refreshStatus.current?.()}
+    />
   );
+}
+
+export function connectCheckoutReturnStatus(
+  api: Pick<PublicCheckoutApi, 'readCheckoutState'>,
+  sessionId: string | null,
+  onState: (state: CheckoutReturnLoadState) => void,
+) {
+  let active = true;
+  let inFlight = false;
+  let refreshes = 0;
+  let stopped = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let lastState: CheckoutReturnLoadState = { kind: 'loading' };
+
+  async function refresh() {
+    if (!active || inFlight) return;
+    clearTimeout(timer);
+    inFlight = true;
+    const result = await loadCheckoutReturnState(api, sessionId);
+    inFlight = false;
+    if (!active) return;
+    if (result.kind === 'error') stopped = true;
+    lastState = result.kind === 'error' && lastState.kind === 'ready' ? lastState : result;
+    if (lastState.kind === 'ready') lastState = { ...lastState, refreshStopped: stopped || refreshes >= 12 };
+    onState(lastState);
+    if (createCheckoutReturnStatusView(lastState).autoRefresh) {
+      timer = setTimeout(() => {
+        refreshes += 1;
+        void refresh();
+      }, 5000);
+    }
+  }
+
+  void refresh();
+  return {
+    refresh: () => {
+      void refresh();
+    },
+    stop: () => {
+      active = false;
+      clearTimeout(timer);
+    },
+  };
 }
 
 function CheckoutReturnPendingStatus() {
@@ -199,11 +240,13 @@ export function CheckoutReturnStatusScreen({
   itemPath,
   storePath,
   view,
+  onRefresh,
 }: {
   checkoutPath: string;
   itemPath?: string | null | undefined;
   storePath: string;
   view: CheckoutReturnStatusView;
+  onRefresh?: () => void;
 }) {
   return (
     <section className="mx-auto max-w-4xl space-y-5" data-checkout-return-status>
@@ -228,27 +271,47 @@ export function CheckoutReturnStatusScreen({
           >
             {CHECKOUT_RETURN_ACTION_COPY.continueShopping}
           </a>
-          <a
-            className="inline-flex min-h-11 items-center justify-center bg-foreground px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-background transition-colors hover:bg-foreground/88"
-            href={checkoutPath}
-          >
-            {CHECKOUT_RETURN_ACTION_COPY.retryCheckout}
-          </a>
-          {itemPath && (
-            <a
-              className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-              href={itemPath}
-            >
-              {CHECKOUT_RETURN_ACTION_COPY.backToItem}
-            </a>
+          {view.supportOnly ? (
+            <>
+              <button
+                type="button"
+                className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-sm"
+                onClick={onRefresh}
+              >
+                Refresh status
+              </button>
+              <a
+                className="inline-flex min-h-11 items-center justify-center bg-foreground px-4 text-sm text-background"
+                href="mailto:support@blackboxrecordsathens.com"
+              >
+                Contact the label
+              </a>
+            </>
+          ) : (
+            <>
+              <a
+                className="inline-flex min-h-11 items-center justify-center bg-foreground px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-background transition-colors hover:bg-foreground/88"
+                href={checkoutPath}
+              >
+                {CHECKOUT_RETURN_ACTION_COPY.retryCheckout}
+              </a>
+              {itemPath && (
+                <a
+                  className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                  href={itemPath}
+                >
+                  {CHECKOUT_RETURN_ACTION_COPY.backToItem}
+                </a>
+              )}
+              <button
+                type="button"
+                className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                onClick={() => requestStoreCartOpen()}
+              >
+                {CHECKOUT_RETURN_ACTION_COPY.backToCart}
+              </button>
+            </>
           )}
-          <button
-            type="button"
-            className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            onClick={() => requestStoreCartOpen()}
-          >
-            {CHECKOUT_RETURN_ACTION_COPY.backToCart}
-          </button>
         </div>
       </div>
     </section>

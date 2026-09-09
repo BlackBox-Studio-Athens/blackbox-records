@@ -40,6 +40,19 @@ export function createStripeWebhookFixturePayload({
       object: {
         amount_total: 2800,
         currency: 'eur',
+        collected_information: {
+          shipping_details: {
+            name: 'Local Mock Recipient',
+            address: {
+              city: 'Athens',
+              country: 'GR',
+              line1: '1 Local Mock Street',
+              line2: null,
+              postal_code: '10558',
+              state: 'Attica',
+            },
+          },
+        },
         customer_details: {
           address: {
             city: 'Athens',

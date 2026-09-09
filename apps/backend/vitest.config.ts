@@ -20,6 +20,7 @@ export default defineConfig({
     cloudflareTest({
       main: './src/index.ts',
       miniflare: {
+        modulesRules: [{ type: 'CompiledWasm', include: ['**/*.wasm', '**/*.wasm?module'] }],
         bindings: {
           PRODUCT_ENVIRONMENT: 'LOCAL',
           LOCAL_OPERATOR_EMAIL: 'operator@blackboxrecords.example',

@@ -34,6 +34,7 @@ export function currentPaidCheckoutOrder(newsletterOptIn = true): CurrentPaidChe
       },
     ],
     needsReviewAt: null,
+    needsReviewReason: null,
     newsletterConsentAt: newsletterOptIn ? paidAt : null,
     newsletterConsentCopyVersion: newsletterOptIn ? 'blackbox-newsletter-v1' : null,
     newsletterOptIn,

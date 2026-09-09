@@ -164,6 +164,7 @@ model CheckoutOrder {
   paidAt                       DateTime?
   notPaidAt                    DateTime?
   needsReviewAt                DateTime?
+  needsReviewReason            String?
   createdAt                    DateTime            @default(now())
   updatedAt                    DateTime            @updatedAt
   lines                        CheckoutOrderLine[]

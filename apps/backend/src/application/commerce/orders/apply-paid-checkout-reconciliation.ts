@@ -6,7 +6,9 @@ import type {
   StockRecord,
   OrderStateRepository,
   PaidCheckoutFulfillmentReadResult,
+  OrderReviewReason,
 } from '../../../domain/commerce/repositories/spi';
+import { readPaidCheckoutFulfillment } from '../../../domain/commerce/repositories/spi';
 import {
   createCartQuantity,
   type CartQuantity,
@@ -20,7 +22,6 @@ import {
 } from './checkout-order-paid-event';
 import { InvalidOrderTransitionError } from './errors';
 import type { PaidCheckoutFinalizationRepository } from './paid-checkout-finalization';
-import { transitionCheckoutOrder } from './transition-checkout-order';
 
 export type ApplyPaidCheckoutReconciliationResult =
   | {
@@ -82,36 +83,38 @@ export async function applyPaidCheckoutReconciliation(
     };
   }
 
+  if (currentOrder.status !== 'pending_payment') {
+    return { kind: 'replay', order: currentOrder, paidFulfillment: readPaidCheckoutFulfillment(currentOrder) };
+  }
+
+  async function recordReview(reason: OrderReviewReason): Promise<ApplyPaidCheckoutReconciliationResult> {
+    const order = await orders.saveTransition(checkoutSessionId, {
+      expectedStatus: 'pending_payment',
+      status: 'needs_review',
+      statusUpdatedAt: appliedAt,
+      stripePaymentIntentId: reconciliation.source.stripePaymentIntentId,
+      needsReviewReason: reason,
+    });
+    if (!order || order.status === 'pending_payment') throw new Error('Paid checkout review was not saved.');
+    if (order.status !== 'needs_review' || order.needsReviewReason !== reason) {
+      return { kind: 'replay', order, paidFulfillment: readPaidCheckoutFulfillment(order) };
+    }
+    return { kind: 'needs_review', order, reason };
+  }
+
   const persistedOrderLines = readCheckoutOrderLines(currentOrder);
   const reconciledOrderLines = reconcileFinalizedLineItems(persistedOrderLines, finalizedLineItems);
 
   if (!reconciledOrderLines) {
-    try {
-      const orderTransitionResult = await transitionCheckoutOrder(orders, {
-        checkoutSessionId,
-        stripePaymentIntentId: reconciliation.source.stripePaymentIntentId,
-        toStatus: 'needs_review',
-        transitionedAt: appliedAt,
-      });
-
-      return {
-        kind: 'needs_review',
-        order: orderTransitionResult.order,
-        reason: 'Paid checkout line items could not be reconciled.',
-      };
-    } catch (error) {
-      if (error instanceof InvalidOrderTransitionError) {
-        return {
-          kind: 'rejected',
-          reason: error.message,
-        };
-      }
-
-      throw error;
-    }
+    return recordReview('line_mismatch');
   }
 
-  const paidFulfillmentDetails = readStripeCollectedPaidOrderFulfillmentDetails(reconciliation);
+  let paidFulfillmentDetails;
+  try {
+    paidFulfillmentDetails = readStripeCollectedPaidOrderFulfillmentDetails(reconciliation);
+  } catch {
+    return recordReview('incomplete_fulfillment');
+  }
   const amountTotalMinor = reconciliation.source.amountTotalMinor;
   const currencyCode = reconciliation.source.currencyCode;
 
@@ -163,7 +166,7 @@ export async function applyPaidCheckoutReconciliation(
     }
 
     if (finalizationResult.kind === 'stock_unavailable') {
-      return finalizationResult;
+      return recordReview('stock_unavailable');
     }
 
     return {
@@ -181,10 +184,10 @@ export async function applyPaidCheckoutReconciliation(
     };
   } catch (error) {
     if (error instanceof InvalidOrderTransitionError) {
-      return {
-        kind: 'rejected',
-        reason: error.message,
-      };
+      const order = await orders.findByCheckoutSessionId(checkoutSessionId);
+      if (order && order.status !== 'pending_payment') {
+        return { kind: 'replay', order, paidFulfillment: readPaidCheckoutFulfillment(order) };
+      }
     }
 
     throw error;

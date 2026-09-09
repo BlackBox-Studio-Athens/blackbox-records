@@ -2,6 +2,7 @@ import type { CheckoutSessionId, PaymentIntentId, StoreItemSlug, StripePriceId, 
 import type { CartQuantity } from '../quantities';
 
 export type OrderStatus = 'pending_payment' | 'paid' | 'not_paid' | 'needs_review';
+export type OrderReviewReason = 'stock_unavailable' | 'line_mismatch' | 'incomplete_fulfillment';
 
 export type ShippingLockerSnapshot = {
   locker_id: string;
@@ -36,12 +37,14 @@ export type CheckoutOrderRecord = {
   paidAt: Date | null;
   notPaidAt: Date | null;
   needsReviewAt: Date | null;
+  needsReviewReason: string | null;
   createdAt: Date;
   updatedAt: Date;
   lines?: CheckoutOrderLineRecord[];
 };
 
 export const EMPTY_PAID_CHECKOUT_ORDER_FIELDS = {
+  needsReviewReason: null,
   amountTotalMinor: null,
   currencyCode: null,
   newsletterConsentAt: null,
@@ -59,6 +62,7 @@ export const EMPTY_PAID_CHECKOUT_ORDER_FIELDS = {
 } as const satisfies Pick<
   CheckoutOrderRecord,
   | 'amountTotalMinor'
+  | 'needsReviewReason'
   | 'currencyCode'
   | 'newsletterConsentAt'
   | 'newsletterConsentCopyVersion'
@@ -232,6 +236,8 @@ export type CreatePendingCheckoutOrderLineInput = {
 };
 
 export type CheckoutOrderTransitionInput = {
+  expectedStatus?: OrderStatus;
+  needsReviewReason?: OrderReviewReason;
   status: OrderStatus;
   statusUpdatedAt: Date;
   stripePaymentIntentId?: PaymentIntentId | null;

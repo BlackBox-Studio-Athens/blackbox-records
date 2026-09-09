@@ -99,6 +99,7 @@ vi.mock('../../src/interfaces/http/routes/stripe-webhook-services', () => ({
     markCatalogEventFailed: mockMarkCatalogEventFailed,
     markCatalogEventSucceeded: mockMarkCatalogEventSucceeded,
     publishCheckoutOrderPaid: mockPublishCheckoutOrderPaid,
+    recoverCheckoutOrderSession: vi.fn(async () => false),
     reconcileCatalogVariant: mockReconcileCatalogVariant,
     recordCatalogWebhookEvent: mockRecordCatalogWebhookEvent,
   }),
@@ -173,6 +174,55 @@ function createSignatureHeader(payload: string): string {
 }
 
 describe('Stripe webhook routes', () => {
+  it.each(['missing_order', 'write_failure'] as const)(
+    'returns retryable 503 for %s, then accepts a successful resend',
+    async (failure) => {
+      const event = JSON.parse(createStripeEventPayload('checkout.session.completed'));
+      event.data.object.metadata = { orderId: 'order_pending_recovery' };
+      const payload = JSON.stringify(event);
+      if (failure === 'missing_order')
+        mockApplyPaidCheckoutReconciliation.mockResolvedValueOnce({
+          kind: 'missing_order',
+          checkoutSessionId: 'cs_test_123',
+        } as never);
+      else mockApplyPaidCheckoutReconciliation.mockRejectedValueOnce(new Error('injected pre-commit failure'));
+      const app = createHttpApp();
+      const send = () =>
+        app.request(
+          'http://backend.test/api/stripe/webhooks',
+          {
+            body: payload,
+            method: 'POST',
+            headers: { 'stripe-signature': createSignatureHeader(payload) },
+          },
+          testBindings,
+        );
+      const failed = await send();
+      expect(failed.status).toBe(503);
+      expectNoStoreCacheControl(failed);
+      expect(mockPublishCheckoutOrderPaid).not.toHaveBeenCalled();
+      expect(await failed.text()).not.toContain('injected');
+      expect((await send()).status).toBe(200);
+      expect(mockPublishCheckoutOrderPaid).toHaveBeenCalledOnce();
+    },
+  );
+
+  it.each(['replay', 'needs_review'] as const)('acknowledges durable %s without normal delivery', async (kind) => {
+    mockApplyPaidCheckoutReconciliation.mockResolvedValueOnce({ kind } as never);
+    const payload = createStripeEventPayload('checkout.session.completed');
+    const response = await createHttpApp().request(
+      'http://backend.test/api/stripe/webhooks',
+      {
+        body: payload,
+        method: 'POST',
+        headers: { 'stripe-signature': createSignatureHeader(payload) },
+      },
+      testBindings,
+    );
+    expect(response.status).toBe(200);
+    expect(mockPublishCheckoutOrderPaid).not.toHaveBeenCalled();
+  });
+
   beforeEach(() => {
     vi.restoreAllMocks();
     mockApplyNonPaidCheckoutReconciliation.mockClear();

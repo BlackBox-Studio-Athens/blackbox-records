@@ -29,6 +29,7 @@ export type {
   ListRecentCheckoutOrdersInput,
   OrderStateRepository,
   OrderStatus,
+  OrderReviewReason,
   PaidCheckoutFulfillmentReadResult,
   ShippingLockerSnapshot,
 } from './order-state-repository';

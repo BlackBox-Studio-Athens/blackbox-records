@@ -111,6 +111,7 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
     const next: CheckoutOrderRecord = {
       ...current,
       needsReviewAt: transition.status === 'needs_review' ? transition.statusUpdatedAt : current.needsReviewAt,
+      needsReviewReason: transition.needsReviewReason ?? current.needsReviewReason,
       notPaidAt: transition.status === 'not_paid' ? transition.statusUpdatedAt : current.notPaidAt,
       paidAt: transition.status === 'paid' ? transition.statusUpdatedAt : current.paidAt,
       status: transition.status,
@@ -302,6 +303,7 @@ describe('paid checkout reconciliation', () => {
           newsletterOptIn: false,
           paymentStatus: 'unpaid',
           shippingAddress: null,
+          shippingRecipientName: null,
           status: 'open',
         }),
         appliedAt,
@@ -339,11 +341,12 @@ describe('paid checkout reconciliation', () => {
     await expect(
       applyPaidCheckoutReconciliation(orders, paidCheckoutFinalizer, paidReconciliation(), appliedAt),
     ).resolves.toEqual({
-      kind: 'stock_unavailable',
+      kind: 'needs_review',
       order: expect.objectContaining({
-        status: 'pending_payment',
+        status: 'needs_review',
+        needsReviewReason: 'stock_unavailable',
       }),
-      reason: 'Paid checkout cannot decrement unavailable stock.',
+      reason: 'stock_unavailable',
     });
     expect(stock.saveCalls).toBe(0);
     expect(stockChanges.records).toHaveLength(0);
@@ -422,7 +425,7 @@ describe('paid checkout reconciliation', () => {
       order: expect.objectContaining({
         status: 'needs_review',
       }),
-      reason: 'Paid checkout line items could not be reconciled.',
+      reason: 'line_mismatch',
     });
     expect(stock.saveCalls).toBe(0);
     expect(stockChanges.records).toHaveLength(0);
@@ -442,6 +445,7 @@ function paidReconciliation(overrides: Partial<Parameters<typeof reconcileChecko
     newsletterConsentCopyVersion: 'blackbox-newsletter-v1',
     newsletterOptIn: true,
     paymentStatus: 'paid',
+    shippingRecipientName: 'Shipping Recipient',
     shippingAddress: {
       city: 'Athens',
       country: 'GR',

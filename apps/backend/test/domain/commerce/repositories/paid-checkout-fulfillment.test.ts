@@ -147,6 +147,7 @@ function currentPaidOrder(): CheckoutOrderRecord {
       },
     ],
     needsReviewAt: null,
+    needsReviewReason: null,
     newsletterConsentAt: null,
     newsletterConsentCopyVersion: null,
     newsletterOptIn: false,

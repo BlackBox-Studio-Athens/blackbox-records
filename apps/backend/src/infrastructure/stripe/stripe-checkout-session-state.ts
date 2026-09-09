@@ -28,7 +28,8 @@ export function toStripeCheckoutSessionState(session: Stripe.Checkout.Session): 
     newsletterOptIn: session.metadata?.newsletterOptIn === 'true',
     orderId: readOptionalString(session.metadata?.orderId),
     paymentStatus: session.payment_status as StripeCheckoutPaymentStatus,
-    shippingAddress: readAddressSnapshot(session.customer_details?.address ?? null),
+    shippingAddress: readAddressSnapshot(session.collected_information?.shipping_details?.address ?? null),
+    shippingRecipientName: readOptionalString(session.collected_information?.shipping_details?.name),
     status: session.status as StripeCheckoutSessionStatus,
     stripePaymentIntentId: readStripePaymentIntentId(session.payment_intent),
   };

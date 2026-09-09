@@ -199,6 +199,7 @@ function reconciliation(status: StripeCheckoutSessionStatus, paymentStatus: Stri
     newsletterOptIn: false,
     paymentStatus,
     shippingAddress: null,
+    shippingRecipientName: null,
     status,
     stripePaymentIntentId: paymentIntentId('pi_test_123'),
   });

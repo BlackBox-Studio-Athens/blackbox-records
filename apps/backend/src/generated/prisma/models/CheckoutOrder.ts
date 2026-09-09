@@ -63,6 +63,7 @@ export type CheckoutOrderMinAggregateOutputType = {
   paidAt: Date | null
   notPaidAt: Date | null
   needsReviewAt: Date | null
+  needsReviewReason: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -96,6 +97,7 @@ export type CheckoutOrderMaxAggregateOutputType = {
   paidAt: Date | null
   notPaidAt: Date | null
   needsReviewAt: Date | null
+  needsReviewReason: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -129,6 +131,7 @@ export type CheckoutOrderCountAggregateOutputType = {
   paidAt: number
   notPaidAt: number
   needsReviewAt: number
+  needsReviewReason: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -172,6 +175,7 @@ export type CheckoutOrderMinAggregateInputType = {
   paidAt?: true
   notPaidAt?: true
   needsReviewAt?: true
+  needsReviewReason?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -205,6 +209,7 @@ export type CheckoutOrderMaxAggregateInputType = {
   paidAt?: true
   notPaidAt?: true
   needsReviewAt?: true
+  needsReviewReason?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -238,6 +243,7 @@ export type CheckoutOrderCountAggregateInputType = {
   paidAt?: true
   notPaidAt?: true
   needsReviewAt?: true
+  needsReviewReason?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -358,6 +364,7 @@ export type CheckoutOrderGroupByOutputType = {
   paidAt: Date | null
   notPaidAt: Date | null
   needsReviewAt: Date | null
+  needsReviewReason: string | null
   createdAt: Date
   updatedAt: Date
   _count: CheckoutOrderCountAggregateOutputType | null
@@ -414,6 +421,7 @@ export type CheckoutOrderWhereInput = {
   paidAt?: Prisma.DateTimeNullableFilter<"CheckoutOrder"> | Date | string | null
   notPaidAt?: Prisma.DateTimeNullableFilter<"CheckoutOrder"> | Date | string | null
   needsReviewAt?: Prisma.DateTimeNullableFilter<"CheckoutOrder"> | Date | string | null
+  needsReviewReason?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CheckoutOrder"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CheckoutOrder"> | Date | string
   lines?: Prisma.CheckoutOrderLineListRelationFilter
@@ -449,6 +457,7 @@ export type CheckoutOrderOrderByWithRelationInput = {
   paidAt?: Prisma.SortOrderInput | Prisma.SortOrder
   notPaidAt?: Prisma.SortOrderInput | Prisma.SortOrder
   needsReviewAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  needsReviewReason?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   lines?: Prisma.CheckoutOrderLineOrderByRelationAggregateInput
@@ -487,6 +496,7 @@ export type CheckoutOrderWhereUniqueInput = Prisma.AtLeast<{
   paidAt?: Prisma.DateTimeNullableFilter<"CheckoutOrder"> | Date | string | null
   notPaidAt?: Prisma.DateTimeNullableFilter<"CheckoutOrder"> | Date | string | null
   needsReviewAt?: Prisma.DateTimeNullableFilter<"CheckoutOrder"> | Date | string | null
+  needsReviewReason?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CheckoutOrder"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CheckoutOrder"> | Date | string
   lines?: Prisma.CheckoutOrderLineListRelationFilter
@@ -522,6 +532,7 @@ export type CheckoutOrderOrderByWithAggregationInput = {
   paidAt?: Prisma.SortOrderInput | Prisma.SortOrder
   notPaidAt?: Prisma.SortOrderInput | Prisma.SortOrder
   needsReviewAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  needsReviewReason?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.CheckoutOrderCountOrderByAggregateInput
@@ -563,6 +574,7 @@ export type CheckoutOrderScalarWhereWithAggregatesInput = {
   paidAt?: Prisma.DateTimeNullableWithAggregatesFilter<"CheckoutOrder"> | Date | string | null
   notPaidAt?: Prisma.DateTimeNullableWithAggregatesFilter<"CheckoutOrder"> | Date | string | null
   needsReviewAt?: Prisma.DateTimeNullableWithAggregatesFilter<"CheckoutOrder"> | Date | string | null
+  needsReviewReason?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"CheckoutOrder"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"CheckoutOrder"> | Date | string
 }
@@ -596,6 +608,7 @@ export type CheckoutOrderCreateInput = {
   paidAt?: Date | string | null
   notPaidAt?: Date | string | null
   needsReviewAt?: Date | string | null
+  needsReviewReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   lines?: Prisma.CheckoutOrderLineCreateNestedManyWithoutOrderInput
@@ -631,6 +644,7 @@ export type CheckoutOrderUncheckedCreateInput = {
   paidAt?: Date | string | null
   notPaidAt?: Date | string | null
   needsReviewAt?: Date | string | null
+  needsReviewReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   lines?: Prisma.CheckoutOrderLineUncheckedCreateNestedManyWithoutOrderInput
@@ -666,6 +680,7 @@ export type CheckoutOrderUpdateInput = {
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   notPaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   needsReviewAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  needsReviewReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lines?: Prisma.CheckoutOrderLineUpdateManyWithoutOrderNestedInput
@@ -701,6 +716,7 @@ export type CheckoutOrderUncheckedUpdateInput = {
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   notPaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   needsReviewAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  needsReviewReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lines?: Prisma.CheckoutOrderLineUncheckedUpdateManyWithoutOrderNestedInput
@@ -736,6 +752,7 @@ export type CheckoutOrderCreateManyInput = {
   paidAt?: Date | string | null
   notPaidAt?: Date | string | null
   needsReviewAt?: Date | string | null
+  needsReviewReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -769,6 +786,7 @@ export type CheckoutOrderUpdateManyMutationInput = {
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   notPaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   needsReviewAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  needsReviewReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -802,6 +820,7 @@ export type CheckoutOrderUncheckedUpdateManyInput = {
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   notPaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   needsReviewAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  needsReviewReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -835,6 +854,7 @@ export type CheckoutOrderCountOrderByAggregateInput = {
   paidAt?: Prisma.SortOrder
   notPaidAt?: Prisma.SortOrder
   needsReviewAt?: Prisma.SortOrder
+  needsReviewReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -872,6 +892,7 @@ export type CheckoutOrderMaxOrderByAggregateInput = {
   paidAt?: Prisma.SortOrder
   notPaidAt?: Prisma.SortOrder
   needsReviewAt?: Prisma.SortOrder
+  needsReviewReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -905,6 +926,7 @@ export type CheckoutOrderMinOrderByAggregateInput = {
   paidAt?: Prisma.SortOrder
   notPaidAt?: Prisma.SortOrder
   needsReviewAt?: Prisma.SortOrder
+  needsReviewReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -983,6 +1005,7 @@ export type CheckoutOrderCreateWithoutLinesInput = {
   paidAt?: Date | string | null
   notPaidAt?: Date | string | null
   needsReviewAt?: Date | string | null
+  needsReviewReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deliveries?: Prisma.PaidOrderDeliveryCreateNestedManyWithoutOrderInput
@@ -1017,6 +1040,7 @@ export type CheckoutOrderUncheckedCreateWithoutLinesInput = {
   paidAt?: Date | string | null
   notPaidAt?: Date | string | null
   needsReviewAt?: Date | string | null
+  needsReviewReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deliveries?: Prisma.PaidOrderDeliveryUncheckedCreateNestedManyWithoutOrderInput
@@ -1067,6 +1091,7 @@ export type CheckoutOrderUpdateWithoutLinesInput = {
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   notPaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   needsReviewAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  needsReviewReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deliveries?: Prisma.PaidOrderDeliveryUpdateManyWithoutOrderNestedInput
@@ -1101,6 +1126,7 @@ export type CheckoutOrderUncheckedUpdateWithoutLinesInput = {
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   notPaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   needsReviewAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  needsReviewReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deliveries?: Prisma.PaidOrderDeliveryUncheckedUpdateManyWithoutOrderNestedInput
@@ -1135,6 +1161,7 @@ export type CheckoutOrderCreateWithoutDeliveriesInput = {
   paidAt?: Date | string | null
   notPaidAt?: Date | string | null
   needsReviewAt?: Date | string | null
+  needsReviewReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   lines?: Prisma.CheckoutOrderLineCreateNestedManyWithoutOrderInput
@@ -1169,6 +1196,7 @@ export type CheckoutOrderUncheckedCreateWithoutDeliveriesInput = {
   paidAt?: Date | string | null
   notPaidAt?: Date | string | null
   needsReviewAt?: Date | string | null
+  needsReviewReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   lines?: Prisma.CheckoutOrderLineUncheckedCreateNestedManyWithoutOrderInput
@@ -1219,6 +1247,7 @@ export type CheckoutOrderUpdateWithoutDeliveriesInput = {
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   notPaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   needsReviewAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  needsReviewReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lines?: Prisma.CheckoutOrderLineUpdateManyWithoutOrderNestedInput
@@ -1253,6 +1282,7 @@ export type CheckoutOrderUncheckedUpdateWithoutDeliveriesInput = {
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   notPaidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   needsReviewAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  needsReviewReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lines?: Prisma.CheckoutOrderLineUncheckedUpdateManyWithoutOrderNestedInput
@@ -1327,6 +1357,7 @@ export type CheckoutOrderSelect<ExtArgs extends runtime.Types.Extensions.Interna
   paidAt?: boolean
   notPaidAt?: boolean
   needsReviewAt?: boolean
+  needsReviewReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   lines?: boolean | Prisma.CheckoutOrder$linesArgs<ExtArgs>
@@ -1363,6 +1394,7 @@ export type CheckoutOrderSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   paidAt?: boolean
   notPaidAt?: boolean
   needsReviewAt?: boolean
+  needsReviewReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["checkoutOrder"]>
@@ -1396,6 +1428,7 @@ export type CheckoutOrderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   paidAt?: boolean
   notPaidAt?: boolean
   needsReviewAt?: boolean
+  needsReviewReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["checkoutOrder"]>
@@ -1429,11 +1462,12 @@ export type CheckoutOrderSelectScalar = {
   paidAt?: boolean
   notPaidAt?: boolean
   needsReviewAt?: boolean
+  needsReviewReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CheckoutOrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "storeItemSlug" | "variantId" | "checkoutSessionId" | "checkoutExpiresAt" | "stripePaymentIntentId" | "amountTotalMinor" | "currencyCode" | "recipientName" | "shopperEmail" | "shopperPhone" | "shippingAddressLine1" | "shippingAddressLine2" | "shippingAddressCity" | "shippingAddressPostalCode" | "shippingAddressState" | "shippingAddressCountryCode" | "newsletterOptIn" | "newsletterConsentAt" | "newsletterConsentCopyVersion" | "shippingLockerId" | "shippingLockerCountryCode" | "shippingLockerNameOrLabel" | "status" | "statusUpdatedAt" | "paidAt" | "notPaidAt" | "needsReviewAt" | "createdAt" | "updatedAt", ExtArgs["result"]["checkoutOrder"]>
+export type CheckoutOrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "storeItemSlug" | "variantId" | "checkoutSessionId" | "checkoutExpiresAt" | "stripePaymentIntentId" | "amountTotalMinor" | "currencyCode" | "recipientName" | "shopperEmail" | "shopperPhone" | "shippingAddressLine1" | "shippingAddressLine2" | "shippingAddressCity" | "shippingAddressPostalCode" | "shippingAddressState" | "shippingAddressCountryCode" | "newsletterOptIn" | "newsletterConsentAt" | "newsletterConsentCopyVersion" | "shippingLockerId" | "shippingLockerCountryCode" | "shippingLockerNameOrLabel" | "status" | "statusUpdatedAt" | "paidAt" | "notPaidAt" | "needsReviewAt" | "needsReviewReason" | "createdAt" | "updatedAt", ExtArgs["result"]["checkoutOrder"]>
 export type CheckoutOrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   lines?: boolean | Prisma.CheckoutOrder$linesArgs<ExtArgs>
   deliveries?: boolean | Prisma.CheckoutOrder$deliveriesArgs<ExtArgs>
@@ -1477,6 +1511,7 @@ export type $CheckoutOrderPayload<ExtArgs extends runtime.Types.Extensions.Inter
     paidAt: Date | null
     notPaidAt: Date | null
     needsReviewAt: Date | null
+    needsReviewReason: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["checkoutOrder"]>
@@ -1932,6 +1967,7 @@ export interface CheckoutOrderFieldRefs {
   readonly paidAt: Prisma.FieldRef<"CheckoutOrder", 'DateTime'>
   readonly notPaidAt: Prisma.FieldRef<"CheckoutOrder", 'DateTime'>
   readonly needsReviewAt: Prisma.FieldRef<"CheckoutOrder", 'DateTime'>
+  readonly needsReviewReason: Prisma.FieldRef<"CheckoutOrder", 'String'>
   readonly createdAt: Prisma.FieldRef<"CheckoutOrder", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"CheckoutOrder", 'DateTime'>
 }

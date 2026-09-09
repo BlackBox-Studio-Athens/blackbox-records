@@ -563,6 +563,7 @@ export type components = {
             };
             /** Format: date-time */
             needsReviewAt: string | null;
+            needsReviewReason: string | null;
             /** Format: date-time */
             notPaidAt: string | null;
             /** Format: date-time */

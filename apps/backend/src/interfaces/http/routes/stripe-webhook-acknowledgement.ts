@@ -50,6 +50,13 @@ export type StripeWebhookAcknowledgementServices = {
   logger?: Pick<AppLogger, 'info' | 'warn'>;
 };
 
+export class StripeWebhookReconciliationError extends Error {
+  constructor() {
+    super('Checkout reconciliation is temporarily unavailable.');
+    this.name = 'StripeWebhookReconciliationError';
+  }
+}
+
 export async function acknowledgeVerifiedStripeWebhookEvent(
   event: VerifiedStripeWebhookEvent,
   services: StripeWebhookAcknowledgementServices,
@@ -183,15 +190,35 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
   const reconciliation = reconcileCheckoutSession(toStripeCheckoutSessionState(event.checkoutSession), event.type);
 
   if (reconciliation.source.orderId) {
-    await services.recoverCheckoutOrderSession(
-      reconciliation.source.orderId,
-      reconciliation.source.checkoutSessionId,
-      Number.isFinite(event.checkoutSession.expires_at) ? new Date(event.checkoutSession.expires_at * 1000) : undefined,
-    );
+    try {
+      await services.recoverCheckoutOrderSession(
+        reconciliation.source.orderId,
+        reconciliation.source.checkoutSessionId,
+        Number.isFinite(event.checkoutSession.expires_at)
+          ? new Date(event.checkoutSession.expires_at * 1000)
+          : undefined,
+      );
+    } catch {
+      throw new StripeWebhookReconciliationError();
+    }
   }
 
   if (reconciliation.recommendedOrderStatus === 'paid') {
-    const result = await services.applyPaidCheckoutReconciliation(reconciliation);
+    let result: ApplyPaidCheckoutReconciliationResult;
+    try {
+      result = await services.applyPaidCheckoutReconciliation(reconciliation);
+    } catch {
+      throw new StripeWebhookReconciliationError();
+    }
+
+    if (
+      result.kind === 'missing_order' &&
+      !reconciliation.source.orderId &&
+      !event.checkoutSession.metadata?.storeItemSlug &&
+      !event.checkoutSession.metadata?.variantId
+    ) {
+      return { received: true, ignored: true };
+    }
 
     services.logger?.info({
       checkoutSessionIdHash: safeCheckoutSessionId(reconciliation.source.checkoutSessionId),
@@ -202,8 +229,16 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
       safeReason: 'reason' in result ? result.reason : undefined,
     });
 
+    if (result.kind === 'missing_order' || result.kind === 'stock_unavailable' || result.kind === 'rejected') {
+      throw new StripeWebhookReconciliationError();
+    }
+
     if (result.kind === 'applied') {
-      await services.publishCheckoutOrderPaid(result.checkoutOrderPaid);
+      try {
+        await services.publishCheckoutOrderPaid(result.checkoutOrderPaid);
+      } catch {
+        services.logger?.warn({ event: 'paid_order_delivery_outcome', safeReason: 'unknown', status: 'pending' });
+      }
     }
   } else if (
     reconciliation.recommendedOrderStatus === 'needs_review' ||

@@ -2,6 +2,8 @@
 
 Track final PRD-open launch gates for native commerce after UAT evidence.
 
+The single [commerce operations runbook](../../../docs/commerce-operations.md) covers failed-webhook resend, terminal paid-order review/contact/refund, delivery checks, and manual dispatch. Local correction evidence belongs to `fix-paid-order-reconciliation`; named ownership, hosted rehearsals, and parent acceptance remain open. PRD launch controls remain closed.
+
 ## PRD Holding Page handoff — 2026-09-01
 
 - `https://blackboxrecordsathens.com/` serves the isolated PRD Holding Page from the existing Pages `holding` branch; `www` and apex HTTP requests canonicalize to the HTTPS apex with exact-host `308` redirects that preserve path and query.

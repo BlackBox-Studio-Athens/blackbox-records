@@ -101,7 +101,7 @@ export function readStripeCollectedPaidOrderFulfillmentDetails(
   reconciliation: CheckoutReconciliation,
 ): CheckoutOrderPaidFulfillmentDetails {
   const shippingAddress = reconciliation.source.shippingAddress;
-  const recipientName = reconciliation.source.customer.name?.trim();
+  const recipientName = reconciliation.source.shippingRecipientName?.trim();
   const shopperEmail = reconciliation.source.customer.email?.trim();
 
   if (

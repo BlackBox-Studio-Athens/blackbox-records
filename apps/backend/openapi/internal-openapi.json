@@ -328,6 +328,12 @@
               }
             ]
           },
+          "needsReviewReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "needsReviewAt": {
             "type": [
               "string",
@@ -404,6 +410,7 @@
           "createdAt",
           "deliveries",
           "fulfillment",
+          "needsReviewReason",
           "needsReviewAt",
           "notPaidAt",
           "paidAt",

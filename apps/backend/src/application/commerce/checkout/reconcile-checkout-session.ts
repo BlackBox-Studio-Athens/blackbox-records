@@ -16,6 +16,7 @@ export type CheckoutReconciliation = {
     newsletterOptIn: boolean;
     orderId: string | null;
     shippingAddress: StripeCheckoutSessionState['shippingAddress'];
+    shippingRecipientName: string | null;
     stripePaymentIntentId: PaymentIntentId | null;
   };
 };
@@ -44,6 +45,7 @@ export function reconcileCheckoutSession(
       newsletterOptIn: session.newsletterOptIn,
       orderId: session.orderId ?? null,
       shippingAddress: session.shippingAddress,
+      shippingRecipientName: session.shippingRecipientName,
       stripePaymentIntentId: session.stripePaymentIntentId ?? null,
     },
   };

@@ -1,7 +1,11 @@
 import { env } from 'cloudflare:workers';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { FinalizePaidCheckoutCommand } from '../../../src/application/commerce/orders';
+import { applyPaidCheckoutReconciliation } from '../../../src/application/commerce/orders';
+import { reconcileCheckoutSession } from '../../../src/application/commerce/checkout';
+import { toStripeCheckoutSessionState } from '../../../src/infrastructure/stripe/stripe-checkout-session-state';
+import { createPrismaClient, PrismaOrderStateRepository } from '../../../src/infrastructure/persistence/prisma';
 import {
   createCartQuantity,
   parseCheckoutSessionId,
@@ -14,6 +18,146 @@ import { readPaidCheckoutFulfillment } from '../../../src/domain/commerce/reposi
 import { D1PaidCheckoutFinalizationRepository } from '../../../src/interfaces/http/routes/d1-paid-checkout-finalization-repository';
 
 describe('D1PaidCheckoutFinalizationRepository', () => {
+  it.each(['stock_unavailable', 'line_mismatch', 'incomplete_fulfillment'] as const)(
+    'durably records %s and preserves review on replay',
+    async (reason) => {
+      const seeded = await seedPendingCheckout({ stockQuantity: reason === 'stock_unavailable' ? 0 : 5 });
+      const prisma = createPrismaClient({ COMMERCE_DB: env.COMMERCE_DB });
+      const orders = new PrismaOrderStateRepository(prisma);
+      const reconciliation = paidReconciliationFor(seeded);
+      if (reason === 'incomplete_fulfillment') reconciliation.source.shippingAddress = null;
+      const lines =
+        reason === 'line_mismatch'
+          ? [
+              {
+                lineAmountMinor: 2500,
+                quantity: createCartQuantity(1),
+                stripePriceId: parseStripePriceId('price_unmapped'),
+              },
+            ]
+          : [];
+      const finalizer = new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB);
+      try {
+        const result = await applyPaidCheckoutReconciliation(orders, finalizer, reconciliation, new Date(), lines);
+        expect(result).toMatchObject({
+          kind: 'needs_review',
+          reason,
+          order: {
+            status: 'needs_review',
+            needsReviewReason: reason,
+            stripePaymentIntentId: reconciliation.source.stripePaymentIntentId,
+          },
+        });
+        await expect(readDeliveryKinds(seeded.orderId)).resolves.toEqual([]);
+        await expect(readStockChangeCount(seeded.checkoutSessionId)).resolves.toBe(0);
+        await expect(readStock(seeded.variantId)).resolves.toEqual({
+          quantity: reason === 'stock_unavailable' ? 0 : 5,
+          onlineQuantity: reason === 'stock_unavailable' ? 0 : 5,
+        });
+        const saved = await orders.findByCheckoutSessionId(seeded.checkoutSessionId);
+        reconciliation.source.stripePaymentIntentId = parsePaymentIntentId('pi_different_replay');
+        await expect(applyPaidCheckoutReconciliation(orders, finalizer, reconciliation)).resolves.toMatchObject({
+          kind: 'replay',
+          order: saved,
+        });
+      } finally {
+        await prisma.$disconnect();
+      }
+    },
+  );
+
+  it('retries a failed review write without acknowledging or consuming stock', async () => {
+    const seeded = await seedPendingCheckout({ stockQuantity: 0 });
+    const prisma = createPrismaClient({ COMMERCE_DB: env.COMMERCE_DB });
+    const orders = new PrismaOrderStateRepository(prisma);
+    const finalizer = new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB);
+    await env.COMMERCE_DB.exec(
+      `CREATE TRIGGER fail_review BEFORE UPDATE ON "CheckoutOrder" WHEN NEW.status = 'needs_review' BEGIN SELECT RAISE(ABORT, 'injected review failure'); END`,
+    );
+    try {
+      await expect(applyPaidCheckoutReconciliation(orders, finalizer, paidReconciliationFor(seeded))).rejects.toThrow();
+      await expect(readOrderStatus(seeded.checkoutSessionId)).resolves.toBe('pending_payment');
+      await expect(readDeliveryKinds(seeded.orderId)).resolves.toEqual([]);
+    } finally {
+      await env.COMMERCE_DB.exec('DROP TRIGGER fail_review');
+    }
+    try {
+      await expect(
+        applyPaidCheckoutReconciliation(orders, finalizer, paidReconciliationFor(seeded)),
+      ).resolves.toMatchObject({ kind: 'needs_review' });
+    } finally {
+      await prisma.$disconnect();
+    }
+  });
+
+  it.each(['paid', 'not_paid', 'needs_review'] as const)(
+    'preserves winning %s state when a review changes zero D1 rows',
+    async (winner) => {
+      const seeded = await seedPendingCheckout();
+      const prisma = createPrismaClient({ COMMERCE_DB: env.COMMERCE_DB });
+      const orders = new PrismaOrderStateRepository(prisma);
+      const finalizer = new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB);
+      const save = orders.saveTransition.bind(orders);
+      vi.spyOn(orders, 'saveTransition').mockImplementationOnce(async (id, input) => {
+        if (winner === 'paid') await finalizer.finalizePaidCheckout(finalizationCommand(seeded));
+        else
+          await env.COMMERCE_DB.prepare(
+            'UPDATE "CheckoutOrder" SET status = ?, "needsReviewReason" = ?, "stripePaymentIntentId" = ? WHERE id = ?',
+          )
+            .bind(winner, winner === 'needs_review' ? 'stock_unavailable' : null, 'pi_winner', seeded.orderId)
+            .run();
+        return save(id, input);
+      });
+      const reconciliation = paidReconciliationFor(seeded);
+      reconciliation.source.shippingAddress = null;
+      try {
+        await expect(applyPaidCheckoutReconciliation(orders, finalizer, reconciliation)).resolves.toMatchObject({
+          kind: 'replay',
+          order: { status: winner, needsReviewReason: winner === 'needs_review' ? 'stock_unavailable' : null },
+        });
+        await expect(readStockChangeCount(seeded.checkoutSessionId)).resolves.toBe(winner === 'paid' ? 1 : 0);
+        const order = await orders.findByCheckoutSessionId(seeded.checkoutSessionId);
+        expect(order?.stripePaymentIntentId).toBe(
+          winner === 'paid' ? finalizationCommand(seeded).stripePaymentIntentId : 'pi_winner',
+        );
+      } finally {
+        await prisma.$disconnect();
+      }
+    },
+  );
+
+  it('persists collected Greek shipping despite British billing and ignores changed paid replay facts', async () => {
+    const seeded = await seedPendingCheckout();
+    const prisma = createPrismaClient({ COMMERCE_DB: env.COMMERCE_DB });
+    const orders = new PrismaOrderStateRepository(prisma);
+    const finalizer = new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB);
+    const reconciliation = paidReconciliationFor(seeded);
+    try {
+      const result = await applyPaidCheckoutReconciliation(orders, finalizer, reconciliation);
+      expect(result).toMatchObject({
+        kind: 'applied',
+        order: {
+          recipientName: 'Shipping Recipient',
+          shippingAddressLine1: 'Shipping 12',
+          shippingAddressCountryCode: 'GR',
+          shopperEmail: 'buyer@example.com',
+        },
+      });
+      const saved = await orders.findByCheckoutSessionId(seeded.checkoutSessionId);
+      expect(saved && readPaidCheckoutFulfillment(saved).kind).toBe('current');
+      reconciliation.source.shippingRecipientName = 'Changed Recipient';
+      reconciliation.source.shippingAddress = null;
+      await expect(applyPaidCheckoutReconciliation(orders, finalizer, reconciliation)).resolves.toMatchObject({
+        kind: 'replay',
+        order: saved,
+      });
+      await expect(readStockChangeCount(seeded.checkoutSessionId)).resolves.toBe(1);
+      await expect(readDeliveryKinds(seeded.orderId)).resolves.toEqual(['ops_fulfillment', 'shopper_confirmation']);
+    } finally {
+      await prisma.$disconnect();
+    }
+  });
+
   it('atomically commits paid facts, line snapshots, stock, and all consented deliveries', async () => {
     const seeded = await seedPendingCheckout();
     const repository = new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB);
@@ -153,6 +297,45 @@ type SeededCheckout = {
   orderId: string;
   variantId: ReturnType<typeof parseVariantId>;
 };
+
+function paidReconciliationFor(seeded: SeededCheckout) {
+  return reconcileCheckoutSession(
+    toStripeCheckoutSessionState({
+      id: seeded.checkoutSessionId,
+      amount_total: 2500,
+      currency: 'eur',
+      payment_status: 'paid',
+      status: 'complete',
+      payment_intent: 'pi_shipping_test',
+      customer_details: {
+        name: 'Billing Buyer',
+        email: 'buyer@example.com',
+        phone: null,
+        address: {
+          country: 'GB',
+          city: 'London',
+          line1: 'Billing 99',
+          postal_code: 'SW1A 1AA',
+          line2: null,
+          state: null,
+        },
+      },
+      collected_information: {
+        shipping_details: {
+          name: 'Shipping Recipient',
+          address: {
+            country: 'GR',
+            city: 'Athens',
+            line1: 'Shipping 12',
+            postal_code: '10558',
+            line2: null,
+            state: null,
+          },
+        },
+      },
+    } as unknown as Parameters<typeof toStripeCheckoutSessionState>[0]),
+  );
+}
 
 async function seedPendingCheckout(input: { stockQuantity?: number } = {}): Promise<SeededCheckout> {
   const suffix = crypto.randomUUID();

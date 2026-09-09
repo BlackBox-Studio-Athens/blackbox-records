@@ -27,6 +27,7 @@ function mapCheckoutOrder(record: {
   currencyCode: string | null;
   id: string;
   needsReviewAt: Date | null;
+  needsReviewReason: string | null;
   newsletterConsentAt: Date | null;
   newsletterConsentCopyVersion: string | null;
   newsletterOptIn: boolean | null;
@@ -60,6 +61,7 @@ function mapCheckoutOrder(record: {
     currencyCode: record.currencyCode,
     id: record.id,
     needsReviewAt: record.needsReviewAt,
+    needsReviewReason: record.needsReviewReason,
     newsletterConsentAt: record.newsletterConsentAt,
     newsletterConsentCopyVersion: record.newsletterConsentCopyVersion,
     newsletterOptIn: record.newsletterOptIn,
@@ -212,19 +214,21 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
       return null;
     }
 
-    const record = await this.prisma.checkoutOrder.update({
+    await this.prisma.checkoutOrder.updateMany({
       data: {
         needsReviewAt: transition.status === 'needs_review' ? transition.statusUpdatedAt : current.needsReviewAt,
+        needsReviewReason:
+          transition.status === 'needs_review' ? (transition.needsReviewReason ?? null) : current.needsReviewReason,
         notPaidAt: transition.status === 'not_paid' ? transition.statusUpdatedAt : current.notPaidAt,
         paidAt: transition.status === 'paid' ? transition.statusUpdatedAt : current.paidAt,
         status: transition.status,
         statusUpdatedAt: transition.statusUpdatedAt,
         stripePaymentIntentId: transition.stripePaymentIntentId ?? current.stripePaymentIntentId,
       },
-      where: { checkoutSessionId },
+      where: { checkoutSessionId, status: transition.expectedStatus ?? current.status },
     });
 
-    return mapCheckoutOrder({ ...record, lines: await this.readCheckoutOrderLines(record.id) });
+    return this.findByCheckoutSessionId(parseCheckoutSessionId(checkoutSessionId));
   }
 
   private async createCheckoutOrderLines(

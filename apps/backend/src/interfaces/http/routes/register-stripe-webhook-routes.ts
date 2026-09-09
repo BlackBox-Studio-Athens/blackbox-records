@@ -7,7 +7,10 @@ import {
   verifyStripeWebhookEvent,
 } from '../../../infrastructure/stripe';
 import { jsonError, jsonNoStore } from '../responses';
-import { acknowledgeVerifiedStripeWebhookEvent } from './stripe-webhook-acknowledgement';
+import {
+  acknowledgeVerifiedStripeWebhookEvent,
+  StripeWebhookReconciliationError,
+} from './stripe-webhook-acknowledgement';
 import { createStripeWebhookServices } from './stripe-webhook-services';
 
 export function registerStripeWebhookRoutes(app: AppOpenApi): void {
@@ -44,6 +47,15 @@ export function registerStripeWebhookRoutes(app: AppOpenApi): void {
 
       return jsonNoStore(context.json(acknowledgement, 200));
     } catch (error) {
+      if (error instanceof StripeWebhookReconciliationError) {
+        logger.warn({
+          event: 'stripe_webhook_outcome',
+          outcome: 'reconciliation_failed',
+          provider: 'stripe',
+          retryable: true,
+        });
+        return jsonError(context, { code: 'service_unavailable', message: error.message, status: 503 });
+      }
       if (error instanceof StripeWebhookConfigurationError) {
         logger.error({
           event: 'stripe_webhook_outcome',

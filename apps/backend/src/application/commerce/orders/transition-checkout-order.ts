@@ -44,6 +44,7 @@ export async function transitionCheckoutOrder(
   }
 
   const transitionedOrder = await orders.saveTransition(command.checkoutSessionId, {
+    expectedStatus: currentOrder.status,
     status: command.toStatus,
     statusUpdatedAt: command.transitionedAt ?? new Date(),
     stripePaymentIntentId: command.stripePaymentIntentId,
@@ -55,6 +56,6 @@ export async function transitionCheckoutOrder(
 
   return {
     order: transitionedOrder,
-    transitioned: true,
+    transitioned: transitionedOrder.status === command.toStatus && transitionedOrder.status !== currentOrder.status,
   };
 }

@@ -32,6 +32,12 @@ describe('Stripe webhook simulator', () => {
         checkoutSession: expect.objectContaining({
           amount_total: 2800,
           currency: 'eur',
+          collected_information: expect.objectContaining({
+            shipping_details: expect.objectContaining({
+              name: 'Local Mock Recipient',
+              address: expect.objectContaining({ country: 'GR' }),
+            }),
+          }),
           customer_details: expect.objectContaining({
             email: 'shopper@example.com',
             name: 'Local Mock Shopper',

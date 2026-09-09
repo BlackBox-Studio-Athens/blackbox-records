@@ -9,6 +9,7 @@ import CheckoutReturnStatus, {
   CheckoutReturnStatusScreen,
   CheckoutSuccessScreen,
   clearStoreCartAfterPaidCheckout,
+  connectCheckoutReturnStatus,
   requestStoreCartOpen,
 } from './CheckoutReturnStatus';
 import {
@@ -53,6 +54,22 @@ function createMemoryStorage(): Storage {
 }
 
 describe('CheckoutReturnStatus', () => {
+  it.each([null, 'pending_payment', 'needs_review', 'not_paid'] as const)(
+    'does not confirm payment before a paid order exists: %s',
+    (orderStatus) => {
+      const view = createCheckoutReturnStatusView({
+        kind: 'ready',
+        checkoutState: {
+          ...checkoutState,
+          state: 'paid',
+          paymentStatus: 'paid',
+          orderStatus,
+        },
+      });
+      expect(view.isFinal).toBe(false);
+      expect(view.detail).not.toContain('order is recorded');
+    },
+  );
   it('reads only session_id from the return query string', () => {
     expect(readCheckoutSessionIdFromSearch('?session_id=cs_test_123&redirect_status=succeeded')).toBe('cs_test_123');
     expect(readCheckoutSessionIdFromSearch('?redirect_status=succeeded')).toBeNull();
@@ -96,6 +113,8 @@ describe('CheckoutReturnStatus', () => {
         checkoutState: {
           ...checkoutState,
           state,
+          paymentStatus: state === 'paid' ? 'paid' : 'unpaid',
+          orderStatus: state === 'paid' ? 'paid' : 'pending_payment',
         },
         kind: 'ready',
       }),
@@ -137,6 +156,8 @@ describe('CheckoutReturnStatus', () => {
         ...checkoutState,
         shippingLocker: null,
         state: 'paid',
+        paymentStatus: 'paid',
+        orderStatus: 'paid',
         status: 'complete',
       },
       kind: 'ready',
@@ -259,4 +280,65 @@ describe('CheckoutReturnStatus', () => {
     expect(requestStoreCartOpen(eventTarget)).toBe(true);
     expect(opened).toBe(true);
   });
+
+  it('refreshes without overlap, confirms delayed orders, and stops on unmount', async () => {
+    vi.useFakeTimers();
+    const pending: CheckoutState = { ...checkoutState, paymentStatus: 'paid', state: 'paid' };
+    let resolveRead!: (state: CheckoutState) => void;
+    const api = {
+      readCheckoutState: vi
+        .fn()
+        .mockResolvedValueOnce(pending)
+        .mockImplementationOnce(
+          () =>
+            new Promise<CheckoutState>((resolve) => {
+              resolveRead = resolve;
+            }),
+        ),
+    };
+    const onState = vi.fn();
+    const connection = connectCheckoutReturnStatus(api, 'cs_test_123', onState);
+    try {
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(api.readCheckoutState).toHaveBeenCalledTimes(2);
+      connection.refresh();
+      await vi.advanceTimersByTimeAsync(15000);
+      expect(api.readCheckoutState).toHaveBeenCalledTimes(2);
+      resolveRead({ ...pending, orderStatus: 'paid' });
+      await vi.advanceTimersByTimeAsync(60000);
+      expect(createCheckoutReturnStatusView(onState.mock.lastCall![0]).isFinal).toBe(true);
+      expect(api.readCheckoutState).toHaveBeenCalledTimes(2);
+    } finally {
+      connection.stop();
+      vi.useRealTimers();
+    }
+  });
+
+  it.each(['budget', 'error', 'review', 'unmount'] as const)(
+    'stops refresh on %s and preserves payment facts',
+    async (ending) => {
+      vi.useFakeTimers();
+      const pending: CheckoutState = { ...checkoutState, state: 'paid', paymentStatus: 'paid' };
+      const api = { readCheckoutState: vi.fn().mockResolvedValue(pending) };
+      if (ending === 'error')
+        api.readCheckoutState.mockResolvedValueOnce(pending).mockRejectedValueOnce(new Error('offline'));
+      if (ending === 'review') api.readCheckoutState.mockResolvedValueOnce({ ...pending, orderStatus: 'needs_review' });
+      const onState = vi.fn();
+      const connection = connectCheckoutReturnStatus(api, 'cs_test_123', onState);
+      try {
+        await vi.advanceTimersByTimeAsync(0);
+        if (ending === 'unmount') connection.stop();
+        await vi.advanceTimersByTimeAsync(120000);
+        expect(api.readCheckoutState).toHaveBeenCalledTimes(ending === 'budget' ? 13 : ending === 'error' ? 2 : 1);
+        const view = createCheckoutReturnStatusView(onState.mock.lastCall![0]);
+        expect(view.isFinal).toBe(false);
+        expect(view.supportOnly).toBe(true);
+        if (ending !== 'unmount') expect(view.autoRefresh).not.toBe(true);
+        if (ending === 'error') expect(view.detail).toContain('Payment was received');
+      } finally {
+        connection.stop();
+        vi.useRealTimers();
+      }
+    },
+  );
 });

@@ -3,10 +3,12 @@ import type { CheckoutState, PublicCheckoutApi } from '@/lib/backend/public-chec
 export type CheckoutReturnLoadState =
   | { kind: 'loading' }
   | { kind: 'missing_session' }
-  | { kind: 'ready'; checkoutState: CheckoutState }
+  | { kind: 'ready'; checkoutState: CheckoutState; refreshStopped?: boolean }
   | { kind: 'error'; message: string };
 
 export type CheckoutReturnStatusView = {
+  autoRefresh?: boolean;
+  supportOnly?: boolean;
   badgeLabel: string;
   detail: string;
   isFinal: boolean;
@@ -102,7 +104,30 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
     };
   }
 
-  if (state.checkoutState.state === 'paid') {
+  const { checkoutState } = state;
+  const paymentReceived = checkoutState.paymentStatus === 'paid';
+  if (
+    checkoutState.orderStatus === 'needs_review' ||
+    (checkoutState.orderStatus === 'not_paid' && (paymentReceived || checkoutState.state === 'processing')) ||
+    (checkoutState.orderStatus === 'paid' && !paymentReceived)
+  ) {
+    return {
+      badgeLabel: 'Needs Review',
+      detail: paymentReceived
+        ? 'Payment was received, but your order needs our attention.'
+        : 'Your order status needs our attention.',
+      isFinal: false,
+      kicker: 'Order Review',
+      nextStep: 'Contact the label for help. Do not pay again.',
+      nextSteps: null,
+      shippingLocker,
+      supportOnly: true,
+      title: 'Contact the label',
+      tone: 'attention',
+    };
+  }
+
+  if (paymentReceived && checkoutState.orderStatus === 'paid') {
     return {
       badgeLabel: 'Confirmed',
       detail: 'Payment is confirmed and your order is recorded.',
@@ -116,13 +141,35 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
     };
   }
 
+  if (paymentReceived) {
+    return {
+      autoRefresh: !state.refreshStopped,
+      badgeLabel: 'Payment Received',
+      detail: 'Payment was received. We are waiting for your order confirmation.',
+      isFinal: false,
+      kicker: 'Order Pending',
+      nextStep: state.refreshStopped
+        ? 'Refresh the status or contact the label. Do not pay again.'
+        : 'We will check again automatically. Do not pay again.',
+      nextSteps: null,
+      shippingLocker,
+      supportOnly: true,
+      title: 'Confirming your order',
+      tone: 'attention',
+    };
+  }
+
   if (state.checkoutState.state === 'processing') {
     return {
+      autoRefresh: !state.refreshStopped,
+      supportOnly: true,
       badgeLabel: 'Processing',
       detail: 'Stripe is still processing the payment.',
       isFinal: false,
       kicker: 'Payment Pending',
-      nextStep: 'Wait a short while before retrying, so you do not start a duplicate payment.',
+      nextStep: state.refreshStopped
+        ? 'Refresh the status or contact the label before trying again.'
+        : 'We will check again automatically. Do not start another payment.',
       nextSteps: null,
       shippingLocker,
       title: 'Payment Processing',

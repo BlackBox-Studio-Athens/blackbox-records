@@ -107,6 +107,7 @@ export type StripeCheckoutSessionState = {
   orderId?: string | null;
   paymentStatus: StripeCheckoutPaymentStatus;
   shippingAddress: StripeCheckoutAddressSnapshot | null;
+  shippingRecipientName: string | null;
   stripePaymentIntentId?: PaymentIntentId | null;
   status: StripeCheckoutSessionStatus;
 };

@@ -18,6 +18,7 @@ function session(input: Partial<StripeCheckoutSessionState>): StripeCheckoutSess
     newsletterOptIn: false,
     paymentStatus: 'unpaid',
     shippingAddress: null,
+    shippingRecipientName: null,
     status: 'open',
     ...input,
   };
@@ -57,6 +58,7 @@ describe('checkout reconciliation', () => {
         newsletterOptIn: false,
         orderId: null,
         shippingAddress: null,
+        shippingRecipientName: null,
         stripePaymentIntentId: 'pi_test_123',
       },
     });
@@ -123,6 +125,7 @@ describe('checkout reconciliation', () => {
       newsletterOptIn: false,
       orderId: null,
       shippingAddress: null,
+      shippingRecipientName: null,
       stripePaymentIntentId: null,
     });
   });
