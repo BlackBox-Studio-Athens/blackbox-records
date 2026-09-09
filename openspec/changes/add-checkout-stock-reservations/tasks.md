@@ -12,9 +12,10 @@
 
 ## 3. Stripe Binding and Recovery
 
-- [x] 3.1 Create Stripe Checkout with the app order ID in private metadata and the same fixed 30-minute expiry; verify browser responses expose neither value as authority.
-- [x] 3.2 Bind the returned session ID to the existing order; verify provider-create failure changes a sessionless order to not_paid.
+- [x] 3.1 Create Stripe Checkout with the app order ID in private metadata and a fresh 35-minute provider deadline after hold creation; persist the accepted expiry and keep browser responses non-authoritative.
+- [x] 3.2 Bind the returned Session identity and accepted expiry to the existing order; release a sessionless hold only after definitive non-creation, retaining uncertain outcomes for recovery.
 - [x] 3.3 On bind failure, expire the provider session and release only after confirmed non-payable state; verify uncertain sessions retain the hold and metadata webhooks can recover the order.
+- [x] 3.4 Complete `fix-stripe-checkout-creation`: provider latency, accepted expiry binding/recovery, custom-Price rejection before holds, and uncertain hold retention passed. See `../archive/2026-09-09-fix-stripe-checkout-creation/acceptance.md`; reservation UAT settlement/replay acceptance remains under 5.2.
 
 ## 4. Reconciliation
 

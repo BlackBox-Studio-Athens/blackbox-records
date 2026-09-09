@@ -676,7 +676,7 @@ The system MUST represent public Store Offers as states discriminated by the exi
 
 ### Requirement: Hosted Checkout supports authoritative pay-what-you-want Prices
 
-The system SHALL let a ready pay-what-you-want Store Offer reach Stripe-hosted amount entry without moving price authority into the browser.
+The system SHALL let a ready pay-what-you-want Store Offer reach Stripe-hosted amount entry only as a cart containing exactly one line of quantity one, without moving price authority into the browser.
 
 #### Scenario: Store Offer is displayed
 
@@ -686,9 +686,21 @@ The system SHALL let a ready pay-what-you-want Store Offer reach Stripe-hosted a
 
 #### Scenario: Shopper starts checkout
 
-- **WHEN** stock, availability, mapping, and the custom Price are ready
+- **WHEN** stock, availability, mapping, and the custom Price are ready and the aggregated cart contains only that line with quantity one
 - **THEN** the Worker creates Checkout with the authoritative Stripe Price ID
 - **AND** Stripe collects the shopper amount.
+
+#### Scenario: Custom Price cart is incompatible
+
+- **WHEN** an authoritative pay-what-you-want line appears with another line or its aggregated quantity exceeds one
+- **THEN** the Worker rejects checkout before creating a hold or provider Session
+- **AND** the browser explains that the item must be purchased alone at quantity one
+- **AND** the cart retains its contents for the shopper to correct.
+
+#### Scenario: Browser state is stale or bypassed
+
+- **WHEN** duplicate lines, a stale fixed-price display snapshot, or a direct request would bypass cart controls
+- **THEN** the Worker enforces the constraint using merged quantities and the current authoritative Price kind.
 
 #### Scenario: Payment completes
 
@@ -698,8 +710,8 @@ The system SHALL let a ready pay-what-you-want Store Offer reach Stripe-hosted a
 
 #### Scenario: Fixed-price item starts checkout
 
-- **WHEN** the offer uses a fixed Stripe Price
-- **THEN** existing fixed-price checkout behavior remains unchanged.
+- **WHEN** every offer uses a fixed Stripe Price
+- **THEN** existing fixed-price multi-line checkout and supported quantities remain unchanged.
 
 ### Requirement: Public catalog reconciliation is mutation-free
 
@@ -716,3 +728,32 @@ The system MUST verify current Stripe catalog state during public Store Offer re
 - **WHEN** the Worker revalidates a cart before creating Stripe Checkout
 - **THEN** it performs catalog reconciliation in read-only mode
 - **AND** explicit promotion or signed catalog webhooks remain responsible for catalog repair.
+
+### Requirement: Hosted Checkout expiry tolerates creation latency
+
+The system MUST calculate the requested expiry from current time plus 35 minutes immediately before the provider call, retain the provider-accepted expiry on the CheckoutOrder, and release held stock only after definitive non-creation or provider-confirmed terminal non-payable state.
+
+#### Scenario: Hold creation consumes time
+
+- **WHEN** time elapses between committing the pending hold and creating hosted Checkout
+- **THEN** the outgoing expiry is calculated after that delay with the five-minute margin above Stripe's minimum
+- **AND** the accepted session expiry is recorded with its binding.
+
+#### Scenario: Provider rejects the requested expiry
+
+- **WHEN** Stripe definitively rejects creation because the requested expiry is invalid
+- **THEN** checkout returns a browser-safe failure and releases its sessionless hold
+- **AND** the application does not create a replacement Session inside that failed attempt.
+
+#### Scenario: SDK retries creation
+
+- **WHEN** the SDK retries the same create request
+- **THEN** its order-derived idempotency key and every request parameter, including expiry, remain identical
+- **AND** recovery does not issue a new create request after the SDK attempt has ended.
+
+#### Scenario: Provider outcome or binding is uncertain
+
+- **WHEN** a timeout, network failure, provider 5xx, missing usable URL, or binding failure leaves creation or payment eligibility uncertain
+- **THEN** the pending hold remains recoverable through the same order identity
+- **AND** retry does not create a second Session for that order
+- **AND** local time alone does not release the hold.
