@@ -35,4 +35,4 @@ For incomplete or suspect historical shipping, record whether customer contact/m
 
 ## Rehearsal evidence
 
-`fix-paid-order-reconciliation` owns the local signed HTTP 503/resend and D1 shortage/replay rehearsals. Those use synthetic data, send no customer messages, issue no refunds, and leave terminal review orders closed. Hosted provider resend, approved-recipient delivery, historical-order inspection, named ownership, and launch acceptance remain pending in `production-go-live-readiness`.
+[Paid-order reconciliation evidence](../openspec/changes/fix-paid-order-reconciliation/evidence.md) records local signed HTTP 503/D1 tests and old-account UAT shipping, provider resend, sink-only delivery, controlled shortage, and historical-order inspection. Test review orders remain terminal; no refunds or customer contact were performed. New-account acceptance, named ownership, and launch acceptance remain pending in `production-go-live-readiness`.

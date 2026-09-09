@@ -2,7 +2,7 @@
 
 Track final PRD-open launch gates for native commerce after UAT evidence.
 
-The single [commerce operations runbook](../../../docs/commerce-operations.md) covers failed-webhook resend, terminal paid-order review/contact/refund, delivery checks, and manual dispatch. Local correction evidence belongs to `fix-paid-order-reconciliation`; named ownership, hosted rehearsals, and parent acceptance remain open. PRD launch controls remain closed.
+The single [commerce operations runbook](../../../docs/commerce-operations.md) covers failed-webhook resend, terminal paid-order review/contact/refund, delivery checks, and manual dispatch. [Paid-order correction evidence](../fix-paid-order-reconciliation/evidence.md) records commit `ec3a4d61`, historical-order inspection, and old-account UAT paid delivery, shipping, retry, and review diagnostics. New-account hosted acceptance, named ownership, and parent acceptance remain open. PRD launch controls remain closed.
 
 ## PRD Holding Page handoff — 2026-09-01
 
