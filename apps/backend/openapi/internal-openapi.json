@@ -500,6 +500,13 @@
       "InternalStockState": {
         "type": "object",
         "properties": {
+          "revision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
           "onlineQuantity": {
             "type": "integer",
             "minimum": 0
@@ -517,6 +524,7 @@
           }
         },
         "required": [
+          "revision",
           "onlineQuantity",
           "quantity",
           "updatedAt"
@@ -709,6 +717,13 @@
       "InternalStockCountBody": {
         "type": "object",
         "properties": {
+          "expectedRevision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
           "countedQuantity": {
             "type": "integer",
             "minimum": 0
@@ -727,6 +742,7 @@
           }
         },
         "required": [
+          "expectedRevision",
           "countedQuantity",
           "onlineQuantity"
         ]
@@ -1207,6 +1223,16 @@
           },
           "404": {
             "description": "Variant not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stock changed since the recount began.",
             "content": {
               "application/json": {
                 "schema": {

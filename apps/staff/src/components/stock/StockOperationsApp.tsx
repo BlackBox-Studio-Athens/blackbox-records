@@ -10,6 +10,7 @@ import { LoadingButtonContent, LoadingInline, LoadingStateBlock } from '../ui/lo
 import { Textarea } from '../ui/textarea';
 import {
   createInternalStockApi,
+  InternalStockApiError,
   type InternalStockDetail,
   type InternalStockHistoryResponse,
   type InternalVariantSummary,
@@ -42,6 +43,10 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
   const [countedQuantity, setCountedQuantity] = useState('');
   const [onlineQuantity, setOnlineQuantity] = useState('');
   const [countNotes, setCountNotes] = useState('');
+  const [expectedRevision, setExpectedRevision] = useState<number | null>(null);
+  const [countNeedsReassessment, setCountNeedsReassessment] = useState(false);
+  const [hasFreshStock, setHasFreshStock] = useState(false);
+  const countVariantRef = useRef('');
   const activeStockLoadRequestRef = useRef(0);
 
   const api = createInternalStockApi({ backendBaseUrl });
@@ -77,6 +82,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     }
 
     setSelectedVariantId(variantId);
+    setHasFreshStock(false);
     setErrorMessage(null);
     setIsLoading(true);
     setLoadingIntent(intent);
@@ -96,8 +102,15 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
 
       setStockDetail(detail);
       setHistory(historyResponse.entries);
-      setCountedQuantity(String(detail.stock.quantity));
-      setOnlineQuantity(String(detail.stock.onlineQuantity));
+      setHasFreshStock(true);
+      if (countVariantRef.current !== variantId) {
+        countVariantRef.current = variantId;
+        setCountedQuantity(String(detail.stock.quantity));
+        setOnlineQuantity(String(detail.stock.onlineQuantity));
+        setCountNotes('');
+        setExpectedRevision(detail.stock.revision);
+        setCountNeedsReassessment(false);
+      }
       setStatusMessage(`Loaded ${variantId}.`);
 
       if (shouldUpdateUrl) {
@@ -107,8 +120,6 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
       }
     } catch (error) {
       if (shouldApplyStockLoadResult(activeStockLoadRequestRef.current, requestId)) {
-        setStockDetail(null);
-        setHistory([]);
         setErrorMessage(readErrorMessage(error));
         setStatusMessage(intent === 'refresh' ? 'Stock refresh failed.' : 'Variant detail unavailable.');
       }
@@ -172,7 +183,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
   async function handleStockCount(event: { preventDefault(): void }) {
     event.preventDefault();
 
-    if (!canMutateSelectedStock) {
+    if (!canMutateSelectedStock || !hasFreshStock || isSubmitting || isLoading || countNeedsReassessment) {
       return;
     }
 
@@ -184,14 +195,25 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
 
     try {
       await api.recordStockCount(variantId, {
+        expectedRevision,
         countedQuantity: Number(countedQuantity),
         notes: normalizeNotes(countNotes),
         onlineQuantity: Number(onlineQuantity),
       });
       setCountNotes('');
+      countVariantRef.current = '';
       await loadVariant(variantId, false, 'refresh');
       setStatusMessage('StockCount recorded.');
     } catch (error) {
+      setCountNeedsReassessment(true);
+      await loadVariant(variantId, false, 'refresh');
+      if (error instanceof InternalStockApiError && error.status === 409) {
+        setStatusMessage('Stock changed. Your count and notes are retained. Reassess before submitting again.');
+      } else {
+        setStatusMessage(
+          'The count was not confirmed. Refresh stock and history before deciding whether to submit again.',
+        );
+      }
       setErrorMessage(readErrorMessage(error));
     } finally {
       setIsSubmitting(false);
@@ -290,6 +312,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                     'group grid gap-2 border border-white/10 bg-black/30 p-3 text-left transition hover:border-white/30 hover:bg-white/5',
                     selectedVariantId === variant.variantId && 'border-white/45 bg-white/10',
                   )}
+                  disabled={isSubmitting}
                   key={variant.variantId}
                   onClick={() => void loadVariant(variant.variantId)}
                   type="button"
@@ -467,7 +490,29 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                     placeholder="Notes"
                     value={countNotes}
                   />
-                  <Button className="rounded-none" disabled={!canMutateSelectedStock || isSubmitting} type="submit">
+                  {countNeedsReassessment && (
+                    <Button
+                      className="rounded-none"
+                      disabled={!canMutateSelectedStock || !hasFreshStock || isLoading || isSubmitting}
+                      onClick={() => {
+                        if (!selectedStockDetail || !hasFreshStock) return;
+                        setExpectedRevision(selectedStockDetail.stock.revision);
+                        setCountNeedsReassessment(false);
+                        setStatusMessage('Count reassessed against the displayed stock. Review and save when ready.');
+                      }}
+                      type="button"
+                      variant="outline"
+                    >
+                      I have reassessed this count
+                    </Button>
+                  )}
+                  <Button
+                    className="rounded-none"
+                    disabled={
+                      !canMutateSelectedStock || !hasFreshStock || isSubmitting || isLoading || countNeedsReassessment
+                    }
+                    type="submit"
+                  >
                     {submittingIntent === 'stockCount' ? (
                       <LoadingButtonContent label="Saving StockCount" />
                     ) : (

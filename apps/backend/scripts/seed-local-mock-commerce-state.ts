@@ -284,6 +284,7 @@ function createStockSql(storeItems: LocalMockStoreItem[]): string {
     'ON CONFLICT DO UPDATE SET',
     '    "quantity" = excluded."quantity",',
     '    "onlineQuantity" = excluded."onlineQuantity",',
+    '    "revision" = "Stock"."revision" + 1,',
     '    "updatedAt" = CURRENT_TIMESTAMP;',
   ].join('\n');
 }

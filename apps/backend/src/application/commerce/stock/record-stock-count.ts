@@ -1,13 +1,10 @@
-import type {
-  StockCountRepository,
-  StockRepository,
-  StoreItemOptionRepository,
-} from '../../../domain/commerce/repositories/spi';
+import type { OperatorStockRepository, StoreItemOptionRepository } from '../../../domain/commerce/repositories/spi';
 import { createStockQuantity, createStockState, parseVariantId } from '../../../domain/commerce';
-import { InvalidStockOperationError, VariantNotFoundError } from './errors';
+import { InvalidStockOperationError, StockConflictError, VariantNotFoundError } from './errors';
 import type { RecordedStockCount } from './types';
 
 export type RecordStockCountCommand = {
+  expectedRevision: unknown;
   variantId: unknown;
   countedQuantity: unknown;
   onlineQuantity: unknown;
@@ -17,8 +14,7 @@ export type RecordStockCountCommand = {
 
 export async function recordStockCount(
   storeItemOptions: StoreItemOptionRepository,
-  stock: StockRepository,
-  stockCounts: StockCountRepository,
+  stock: OperatorStockRepository,
   command: RecordStockCountCommand,
 ): Promise<RecordedStockCount> {
   const variantId = parseVariantId(command.variantId);
@@ -38,9 +34,16 @@ export async function recordStockCount(
     throw new InvalidStockOperationError('Online stock cannot exceed counted stock.');
   }
 
-  const savedStock = await stock.save(variantId, nextStock);
+  const expectedRevision = command.expectedRevision;
+  if (
+    expectedRevision !== null &&
+    (typeof expectedRevision !== 'number' || !Number.isSafeInteger(expectedRevision) || expectedRevision < 0)
+  ) {
+    throw new InvalidStockOperationError('A stock revision or explicit null is required.');
+  }
 
-  const entry = await stockCounts.record({
+  const result = await stock.recordCount({
+    expectedRevision,
     actorEmail: command.actorEmail,
     countedQuantity: nextStock.quantity,
     notes: command.notes,
@@ -48,8 +51,6 @@ export async function recordStockCount(
     variantId,
   });
 
-  return {
-    entry,
-    stock: savedStock,
-  };
+  if (!result) throw new StockConflictError();
+  return result;
 }

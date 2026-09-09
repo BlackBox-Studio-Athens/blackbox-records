@@ -27,16 +27,19 @@ export type AggregateStock = {
 }
 
 export type StockAvgAggregateOutputType = {
+  revision: number | null
   quantity: number | null
   onlineQuantity: number | null
 }
 
 export type StockSumAggregateOutputType = {
+  revision: number | null
   quantity: number | null
   onlineQuantity: number | null
 }
 
 export type StockMinAggregateOutputType = {
+  revision: number | null
   id: string | null
   variantId: string | null
   quantity: number | null
@@ -46,6 +49,7 @@ export type StockMinAggregateOutputType = {
 }
 
 export type StockMaxAggregateOutputType = {
+  revision: number | null
   id: string | null
   variantId: string | null
   quantity: number | null
@@ -55,6 +59,7 @@ export type StockMaxAggregateOutputType = {
 }
 
 export type StockCountAggregateOutputType = {
+  revision: number
   id: number
   variantId: number
   quantity: number
@@ -66,16 +71,19 @@ export type StockCountAggregateOutputType = {
 
 
 export type StockAvgAggregateInputType = {
+  revision?: true
   quantity?: true
   onlineQuantity?: true
 }
 
 export type StockSumAggregateInputType = {
+  revision?: true
   quantity?: true
   onlineQuantity?: true
 }
 
 export type StockMinAggregateInputType = {
+  revision?: true
   id?: true
   variantId?: true
   quantity?: true
@@ -85,6 +93,7 @@ export type StockMinAggregateInputType = {
 }
 
 export type StockMaxAggregateInputType = {
+  revision?: true
   id?: true
   variantId?: true
   quantity?: true
@@ -94,6 +103,7 @@ export type StockMaxAggregateInputType = {
 }
 
 export type StockCountAggregateInputType = {
+  revision?: true
   id?: true
   variantId?: true
   quantity?: true
@@ -190,6 +200,7 @@ export type StockGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
 }
 
 export type StockGroupByOutputType = {
+  revision: number
   id: string
   variantId: string
   quantity: number
@@ -222,6 +233,7 @@ export type StockWhereInput = {
   AND?: Prisma.StockWhereInput | Prisma.StockWhereInput[]
   OR?: Prisma.StockWhereInput[]
   NOT?: Prisma.StockWhereInput | Prisma.StockWhereInput[]
+  revision?: Prisma.IntFilter<"Stock"> | number
   id?: Prisma.StringFilter<"Stock"> | string
   variantId?: Prisma.StringFilter<"Stock"> | string
   quantity?: Prisma.IntFilter<"Stock"> | number
@@ -231,6 +243,7 @@ export type StockWhereInput = {
 }
 
 export type StockOrderByWithRelationInput = {
+  revision?: Prisma.SortOrder
   id?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
@@ -245,6 +258,7 @@ export type StockWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.StockWhereInput | Prisma.StockWhereInput[]
   OR?: Prisma.StockWhereInput[]
   NOT?: Prisma.StockWhereInput | Prisma.StockWhereInput[]
+  revision?: Prisma.IntFilter<"Stock"> | number
   quantity?: Prisma.IntFilter<"Stock"> | number
   onlineQuantity?: Prisma.IntFilter<"Stock"> | number
   createdAt?: Prisma.DateTimeFilter<"Stock"> | Date | string
@@ -252,6 +266,7 @@ export type StockWhereUniqueInput = Prisma.AtLeast<{
 }, "id" | "variantId">
 
 export type StockOrderByWithAggregationInput = {
+  revision?: Prisma.SortOrder
   id?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
@@ -269,6 +284,7 @@ export type StockScalarWhereWithAggregatesInput = {
   AND?: Prisma.StockScalarWhereWithAggregatesInput | Prisma.StockScalarWhereWithAggregatesInput[]
   OR?: Prisma.StockScalarWhereWithAggregatesInput[]
   NOT?: Prisma.StockScalarWhereWithAggregatesInput | Prisma.StockScalarWhereWithAggregatesInput[]
+  revision?: Prisma.IntWithAggregatesFilter<"Stock"> | number
   id?: Prisma.StringWithAggregatesFilter<"Stock"> | string
   variantId?: Prisma.StringWithAggregatesFilter<"Stock"> | string
   quantity?: Prisma.IntWithAggregatesFilter<"Stock"> | number
@@ -278,6 +294,7 @@ export type StockScalarWhereWithAggregatesInput = {
 }
 
 export type StockCreateInput = {
+  revision?: number
   id?: string
   variantId: string
   quantity: number
@@ -287,6 +304,7 @@ export type StockCreateInput = {
 }
 
 export type StockUncheckedCreateInput = {
+  revision?: number
   id?: string
   variantId: string
   quantity: number
@@ -296,6 +314,7 @@ export type StockUncheckedCreateInput = {
 }
 
 export type StockUpdateInput = {
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   id?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
@@ -305,6 +324,7 @@ export type StockUpdateInput = {
 }
 
 export type StockUncheckedUpdateInput = {
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   id?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
@@ -314,6 +334,7 @@ export type StockUncheckedUpdateInput = {
 }
 
 export type StockCreateManyInput = {
+  revision?: number
   id?: string
   variantId: string
   quantity: number
@@ -323,6 +344,7 @@ export type StockCreateManyInput = {
 }
 
 export type StockUpdateManyMutationInput = {
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   id?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
@@ -332,6 +354,7 @@ export type StockUpdateManyMutationInput = {
 }
 
 export type StockUncheckedUpdateManyInput = {
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   id?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
@@ -341,6 +364,7 @@ export type StockUncheckedUpdateManyInput = {
 }
 
 export type StockCountOrderByAggregateInput = {
+  revision?: Prisma.SortOrder
   id?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
@@ -350,11 +374,13 @@ export type StockCountOrderByAggregateInput = {
 }
 
 export type StockAvgOrderByAggregateInput = {
+  revision?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   onlineQuantity?: Prisma.SortOrder
 }
 
 export type StockMaxOrderByAggregateInput = {
+  revision?: Prisma.SortOrder
   id?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
@@ -364,6 +390,7 @@ export type StockMaxOrderByAggregateInput = {
 }
 
 export type StockMinOrderByAggregateInput = {
+  revision?: Prisma.SortOrder
   id?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
@@ -373,6 +400,7 @@ export type StockMinOrderByAggregateInput = {
 }
 
 export type StockSumOrderByAggregateInput = {
+  revision?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   onlineQuantity?: Prisma.SortOrder
 }
@@ -388,6 +416,7 @@ export type IntFieldUpdateOperationsInput = {
 
 
 export type StockSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+  revision?: boolean
   id?: boolean
   variantId?: boolean
   quantity?: boolean
@@ -397,6 +426,7 @@ export type StockSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
 }, ExtArgs["result"]["stock"]>
 
 export type StockSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+  revision?: boolean
   id?: boolean
   variantId?: boolean
   quantity?: boolean
@@ -406,6 +436,7 @@ export type StockSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 }, ExtArgs["result"]["stock"]>
 
 export type StockSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+  revision?: boolean
   id?: boolean
   variantId?: boolean
   quantity?: boolean
@@ -415,6 +446,7 @@ export type StockSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 }, ExtArgs["result"]["stock"]>
 
 export type StockSelectScalar = {
+  revision?: boolean
   id?: boolean
   variantId?: boolean
   quantity?: boolean
@@ -423,12 +455,13 @@ export type StockSelectScalar = {
   updatedAt?: boolean
 }
 
-export type StockOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "variantId" | "quantity" | "onlineQuantity" | "createdAt" | "updatedAt", ExtArgs["result"]["stock"]>
+export type StockOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"revision" | "id" | "variantId" | "quantity" | "onlineQuantity" | "createdAt" | "updatedAt", ExtArgs["result"]["stock"]>
 
 export type $StockPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Stock"
   objects: {}
   scalars: runtime.Types.Extensions.GetPayloadResult<{
+    revision: number
     id: string
     variantId: string
     quantity: number
@@ -518,8 +551,8 @@ export interface StockDelegate<ExtArgs extends runtime.Types.Extensions.Internal
    * // Get first 10 Stocks
    * const stocks = await prisma.stock.findMany({ take: 10 })
    * 
-   * // Only select the `id`
-   * const stockWithIdOnly = await prisma.stock.findMany({ select: { id: true } })
+   * // Only select the `revision`
+   * const stockWithRevisionOnly = await prisma.stock.findMany({ select: { revision: true } })
    * 
    */
   findMany<T extends StockFindManyArgs>(args?: Prisma.SelectSubset<T, StockFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$StockPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -563,9 +596,9 @@ export interface StockDelegate<ExtArgs extends runtime.Types.Extensions.Internal
    *   ]
    * })
    * 
-   * // Create many Stocks and only return the `id`
-   * const stockWithIdOnly = await prisma.stock.createManyAndReturn({
-   *   select: { id: true },
+   * // Create many Stocks and only return the `revision`
+   * const stockWithRevisionOnly = await prisma.stock.createManyAndReturn({
+   *   select: { revision: true },
    *   data: [
    *     // ... provide data here
    *   ]
@@ -654,9 +687,9 @@ export interface StockDelegate<ExtArgs extends runtime.Types.Extensions.Internal
    *   ]
    * })
    * 
-   * // Update zero or more Stocks and only return the `id`
-   * const stockWithIdOnly = await prisma.stock.updateManyAndReturn({
-   *   select: { id: true },
+   * // Update zero or more Stocks and only return the `revision`
+   * const stockWithRevisionOnly = await prisma.stock.updateManyAndReturn({
+   *   select: { revision: true },
    *   where: {
    *     // ... provide filter here
    *   },
@@ -858,6 +891,7 @@ export interface Prisma__StockClient<T, Null = never, ExtArgs extends runtime.Ty
  * Fields of the Stock model
  */
 export interface StockFieldRefs {
+  readonly revision: Prisma.FieldRef<"Stock", 'Int'>
   readonly id: Prisma.FieldRef<"Stock", 'String'>
   readonly variantId: Prisma.FieldRef<"Stock", 'String'>
   readonly quantity: Prisma.FieldRef<"Stock", 'Int'>

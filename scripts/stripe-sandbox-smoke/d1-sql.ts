@@ -29,6 +29,7 @@ export function createSandboxSmokeStockTopUpSql(minimumQuantity: number, variant
     'SET',
     `  "quantity" = CASE WHEN "quantity" < ${minimumQuantity} THEN ${minimumQuantity} ELSE "quantity" END,`,
     `  "onlineQuantity" = CASE WHEN "onlineQuantity" < ${minimumQuantity} THEN ${minimumQuantity} ELSE "onlineQuantity" END,`,
+    `  "revision" = "revision" + CASE WHEN "quantity" < ${minimumQuantity} OR "onlineQuantity" < ${minimumQuantity} THEN 1 ELSE 0 END,`,
     '  "updatedAt" = CURRENT_TIMESTAMP',
     `WHERE "variantId" = '${escapedVariantId}';`,
     '',

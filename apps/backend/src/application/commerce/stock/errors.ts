@@ -11,3 +11,10 @@ export class InvalidStockOperationError extends Error {
     this.name = 'InvalidStockOperationError';
   }
 }
+
+export class StockConflictError extends Error {
+  public constructor() {
+    super('Stock changed. Refresh and reassess the count before submitting again.');
+    this.name = 'StockConflictError';
+  }
+}

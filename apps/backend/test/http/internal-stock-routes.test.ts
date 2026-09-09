@@ -27,6 +27,7 @@ const mockRecordStockChange = vi.fn();
 const mockRecordStockCount = vi.fn();
 const VariantNotFoundError = class VariantNotFoundError extends Error {};
 const InvalidStockOperationError = class InvalidStockOperationError extends Error {};
+const StockConflictError = class StockConflictError extends Error {};
 const mockCreateInternalStockServices = vi.fn();
 
 function expectNoStoreCacheControl(response: Response): void {
@@ -40,6 +41,7 @@ vi.mock('../../src/interfaces/http/routes/internal-stock-services', () => ({
     return {
       disconnect: mockDisconnect,
       errors: {
+        StockConflictError,
         InvalidStockOperationError,
         VariantNotFoundError,
       },
@@ -55,6 +57,50 @@ vi.mock('../../src/interfaces/http/routes/internal-stock-services', () => ({
 describe('internal stock routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it.each([undefined, -1, 1.5, '0', {}, true])(
+    'rejects malformed or omitted recount revision %j',
+    async (expectedRevision) => {
+      const response = await createHttpApp().request(
+        'http://127.0.0.1/api/internal/variants/variant_test/stock/counts',
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ countedQuantity: 1, onlineQuantity: 1, expectedRevision }),
+        },
+        LOCAL_ENV,
+      );
+      expect(response.status).toBe(400);
+      expect(mockRecordStockCount).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([null, 0, 7])('returns a safe 409 for a valid mismatched revision %j', async (expectedRevision) => {
+    mockRecordStockCount.mockRejectedValueOnce(new StockConflictError('Stock changed. Reassess the count.'));
+    const response = await createHttpApp().request(
+      'http://127.0.0.1/api/internal/variants/variant_test/stock/counts',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          countedQuantity: 1,
+          onlineQuantity: 1,
+          expectedRevision,
+          actorEmail: 'attacker@example.com',
+        }),
+      },
+      LOCAL_ENV,
+    );
+    expect(response.status).toBe(409);
+    expectNoStoreCacheControl(response);
+    expect(mockRecordStockCount).toHaveBeenCalledWith(
+      expect.objectContaining({
+        expectedRevision,
+        actorEmail: LOCAL_ENV.LOCAL_OPERATOR_EMAIL,
+      }),
+    );
+    await expect(response.json()).resolves.toMatchObject({ code: 'stock_conflict' });
   });
 
   it('rejects a hosted request without an Access assertion before service construction', async () => {
@@ -108,6 +154,7 @@ describe('internal stock routes', () => {
       sourceId: 'disintegration',
       sourceKind: 'release',
       stock: {
+        revision: 4,
         onlineQuantity: 2,
         quantity: 3,
         updatedAt: new Date('2026-04-24T12:00:00.000Z'),
@@ -129,6 +176,7 @@ describe('internal stock routes', () => {
       sourceId: 'disintegration',
       sourceKind: 'release',
       stock: {
+        revision: 4,
         onlineQuantity: 2,
         quantity: 3,
         updatedAt: '2026-04-24T12:00:00.000Z',
@@ -150,6 +198,7 @@ describe('internal stock routes', () => {
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
       stock: {
+        revision: 5,
         createdAt: new Date('2026-04-24T10:00:00.000Z'),
         onlineQuantity: 1,
         quantity: 2,
@@ -197,6 +246,7 @@ describe('internal stock routes', () => {
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
       stock: {
+        revision: 5,
         onlineQuantity: 1,
         quantity: 2,
         updatedAt: '2026-04-24T12:05:00.000Z',
@@ -229,6 +279,7 @@ describe('internal stock routes', () => {
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
       stock: {
+        revision: 5,
         createdAt: new Date('2026-04-24T10:00:00.000Z'),
         onlineQuantity: 1,
         quantity: 2,
@@ -272,6 +323,7 @@ describe('internal stock routes', () => {
       {
         body: JSON.stringify({
           countedQuantity: 1,
+          expectedRevision: 0,
           onlineQuantity: 2,
         }),
         headers: {

@@ -20,6 +20,7 @@ export async function readVariantStock(
   return {
     ...storeItem,
     stock: {
+      revision: currentStock?.revision ?? null,
       quantity: currentStock?.quantity ?? 0,
       onlineQuantity: currentStock?.onlineQuantity ?? 0,
       updatedAt: currentStock?.updatedAt ?? null,

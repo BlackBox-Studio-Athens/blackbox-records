@@ -148,6 +148,7 @@ export type ItemAvailabilityScalarFieldEnum = (typeof ItemAvailabilityScalarFiel
 
 
 export const StockScalarFieldEnum = {
+  revision: 'revision',
   id: 'id',
   variantId: 'variantId',
   quantity: 'quantity',

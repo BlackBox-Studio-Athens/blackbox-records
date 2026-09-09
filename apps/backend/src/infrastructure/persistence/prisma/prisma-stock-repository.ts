@@ -5,6 +5,7 @@ import type { PrismaClient } from '../../../generated/prisma/client';
 type PrismaStockClient = Pick<PrismaClient, 'stock'>;
 
 function mapStock(record: {
+  revision: number;
   createdAt: Date;
   onlineQuantity: number;
   quantity: number;
@@ -12,6 +13,7 @@ function mapStock(record: {
   variantId: string;
 }): StockRecord {
   return {
+    revision: record.revision,
     createdAt: record.createdAt,
     onlineQuantity: createStockQuantity(record.onlineQuantity),
     quantity: createStockQuantity(record.quantity),
@@ -39,6 +41,7 @@ export class PrismaStockRepository implements StockRepository {
         variantId,
       },
       update: {
+        revision: { increment: 1 },
         onlineQuantity: state.onlineQuantity,
         quantity: state.quantity,
       },

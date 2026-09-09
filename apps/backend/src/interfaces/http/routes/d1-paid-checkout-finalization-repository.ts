@@ -89,6 +89,7 @@ type GroupedLineItem = {
 const paidOrderDeliveryKinds = ['shopper_confirmation', 'ops_fulfillment'] as const;
 
 type StockRow = {
+  revision: number;
   createdAt: string;
   onlineQuantity: number;
   quantity: number;
@@ -162,7 +163,7 @@ const checkoutOrderLinesSql = [
 ].join('\n');
 
 const stockSelectSql = [
-  'SELECT "variantId", "quantity", "onlineQuantity", "createdAt", "updatedAt"',
+  'SELECT "variantId", "quantity", "onlineQuantity", "revision", "createdAt", "updatedAt"',
   'FROM "Stock"',
   'WHERE "variantId" = ?',
 ].join('\n');
@@ -325,6 +326,7 @@ export class D1PaidCheckoutFinalizationRepository implements PaidCheckoutFinaliz
               'UPDATE "Stock"',
               'SET "quantity" = "quantity" - ?,',
               '    "onlineQuantity" = "onlineQuantity" - ?,',
+              '    "revision" = "revision" + 1,',
               '    "updatedAt" = ?',
               'WHERE "variantId" = ?',
               'AND EXISTS (',
@@ -635,6 +637,7 @@ function mapCheckoutOrderLine(row: CheckoutOrderLineRow): CheckoutOrderLineRecor
 
 function mapStock(row: StockRow): StockRecord {
   return {
+    revision: row.revision,
     createdAt: new Date(row.createdAt),
     onlineQuantity: createStockQuantity(row.onlineQuantity),
     quantity: createStockQuantity(row.quantity),

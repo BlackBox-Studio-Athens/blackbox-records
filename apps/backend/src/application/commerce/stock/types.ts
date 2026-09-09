@@ -9,6 +9,7 @@ export type VariantSummary = StoreItemOptionRecord;
 
 export type VariantStockDetail = VariantSummary & {
   stock: {
+    revision: number | null;
     quantity: number;
     onlineQuantity: number;
     updatedAt: Date | null;

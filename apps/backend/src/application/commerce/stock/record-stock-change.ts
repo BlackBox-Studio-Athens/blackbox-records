@@ -1,9 +1,5 @@
-import type {
-  StockChangeRepository,
-  StockRepository,
-  StoreItemOptionRepository,
-} from '../../../domain/commerce/repositories/spi';
-import { createStockChangeDelta, createStockQuantity, parseVariantId } from '../../../domain/commerce';
+import type { OperatorStockRepository, StoreItemOptionRepository } from '../../../domain/commerce/repositories/spi';
+import { createStockChangeDelta, parseVariantId } from '../../../domain/commerce';
 import { InvalidStockOperationError, VariantNotFoundError } from './errors';
 import type { RecordedStockChange } from './types';
 
@@ -17,8 +13,7 @@ export type RecordStockChangeCommand = {
 
 export async function recordStockChange(
   storeItemOptions: StoreItemOptionRepository,
-  stock: StockRepository,
-  stockChanges: StockChangeRepository,
+  stock: OperatorStockRepository,
   command: RecordStockChangeCommand,
 ): Promise<RecordedStockChange> {
   const variantId = parseVariantId(command.variantId);
@@ -40,20 +35,7 @@ export async function recordStockChange(
     throw new InvalidStockOperationError('Stock change reason is required.');
   }
 
-  const currentStock = await stock.findByVariantId(variantId);
-  const nextQuantity = (currentStock?.quantity ?? 0) + quantityDelta;
-
-  if (nextQuantity < 0) {
-    throw new InvalidStockOperationError('Stock quantity cannot go below zero.');
-  }
-
-  const nextOnlineQuantity = clampOnlineQuantity((currentStock?.onlineQuantity ?? 0) + quantityDelta, nextQuantity);
-  const savedStock = await stock.save(variantId, {
-    onlineQuantity: createStockQuantity(nextOnlineQuantity),
-    quantity: createStockQuantity(nextQuantity),
-  });
-
-  const entry = await stockChanges.record({
+  const result = await stock.recordChange({
     actorEmail: command.actorEmail,
     notes: command.notes,
     quantityDelta,
@@ -61,20 +43,8 @@ export async function recordStockChange(
     variantId,
   });
 
-  return {
-    entry,
-    stock: savedStock,
-  };
-}
-
-function clampOnlineQuantity(onlineQuantity: number, quantity: number): number {
-  if (onlineQuantity < 0) {
-    return 0;
+  if (!result) {
+    throw new InvalidStockOperationError('Stock quantity cannot go below zero.');
   }
-
-  if (onlineQuantity > quantity) {
-    return quantity;
-  }
-
-  return onlineQuantity;
+  return result;
 }

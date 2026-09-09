@@ -10,6 +10,7 @@ import {
   VariantNotFoundError,
 } from '../../../../src/application/commerce/stock';
 import type {
+  OperatorStockRepository,
   RecordStockChangeInput,
   RecordStockCountInput,
   StockChangeRecord,
@@ -73,6 +74,7 @@ class InMemoryStockRepository implements StockRepository {
   public async save(variantId: string, state: { onlineQuantity: number; quantity: number }): Promise<StockRecord> {
     const existing = this.records.get(variantId);
     const record: StockRecord = {
+      revision: (existing?.revision ?? -1) + 1,
       createdAt: existing?.createdAt ?? new Date('2026-04-24T10:00:00.000Z'),
       onlineQuantity: stockQuantity(state.onlineQuantity),
       quantity: stockQuantity(state.quantity),
@@ -146,12 +148,38 @@ describe('commerce stock use cases', () => {
   let stock: InMemoryStockRepository;
   let stockChanges: InMemoryStockChangeRepository;
   let stockCounts: InMemoryStockCountRepository;
+  let operatorStock: OperatorStockRepository;
 
   beforeEach(() => {
     storeItems = new InMemoryStoreItemOptionRepository([storeItem]);
     stock = new InMemoryStockRepository();
     stockChanges = new InMemoryStockChangeRepository();
     stockCounts = new InMemoryStockCountRepository();
+    operatorStock = {
+      recordChange: async (input) => {
+        const current = await stock.findByVariantId(input.variantId);
+        const quantity = (current?.quantity ?? 0) + input.quantityDelta;
+        if (quantity < 0) return null;
+        return {
+          stock: await stock.save(input.variantId, {
+            quantity,
+            onlineQuantity: Math.min(quantity, Math.max(0, (current?.onlineQuantity ?? 0) + input.quantityDelta)),
+          }),
+          entry: await stockChanges.record(input),
+        };
+      },
+      recordCount: async (input) => {
+        const current = await stock.findByVariantId(input.variantId);
+        if ((current?.revision ?? null) !== input.expectedRevision) return null;
+        return {
+          stock: await stock.save(input.variantId, {
+            quantity: input.countedQuantity,
+            onlineQuantity: input.onlineQuantity,
+          }),
+          entry: await stockCounts.record(input),
+        };
+      },
+    };
   });
 
   it('searches variants through the shared store item mapping seam', async () => {
@@ -162,6 +190,7 @@ describe('commerce stock use cases', () => {
     await expect(readVariantStock(storeItems, stock, storeItem.variantId)).resolves.toEqual({
       ...storeItem,
       stock: {
+        revision: null,
         onlineQuantity: 0,
         quantity: 0,
         updatedAt: null,
@@ -170,7 +199,7 @@ describe('commerce stock use cases', () => {
   });
 
   it('records a stock change and updates current stock totals', async () => {
-    const result = await recordStockChange(storeItems, stock, stockChanges, {
+    const result = await recordStockChange(storeItems, operatorStock, {
       actorEmail: 'operator@blackboxrecords.example',
       notes: 'Initial delivery',
       quantityDelta: stockChangeDelta(3),
@@ -192,7 +221,7 @@ describe('commerce stock use cases', () => {
 
   it('rejects stock changes that would drive stock below zero', async () => {
     await expect(
-      recordStockChange(storeItems, stock, stockChanges, {
+      recordStockChange(storeItems, operatorStock, {
         actorEmail: 'operator@blackboxrecords.example',
         notes: null,
         quantityDelta: stockChangeDelta(-1),
@@ -203,7 +232,7 @@ describe('commerce stock use cases', () => {
   });
 
   it('records a stock count and resets total and online stock', async () => {
-    await recordStockChange(storeItems, stock, stockChanges, {
+    await recordStockChange(storeItems, operatorStock, {
       actorEmail: 'operator@blackboxrecords.example',
       notes: null,
       quantityDelta: stockChangeDelta(5),
@@ -211,7 +240,8 @@ describe('commerce stock use cases', () => {
       variantId: storeItem.variantId,
     });
 
-    const result = await recordStockCount(storeItems, stock, stockCounts, {
+    const result = await recordStockCount(storeItems, operatorStock, {
+      expectedRevision: 0,
       actorEmail: 'operator@blackboxrecords.example',
       countedQuantity: stockQuantity(2),
       notes: 'Shelf recount',
@@ -225,14 +255,15 @@ describe('commerce stock use cases', () => {
   });
 
   it('returns immutable combined stock history entries ordered by most recent first', async () => {
-    await recordStockChange(storeItems, stock, stockChanges, {
+    await recordStockChange(storeItems, operatorStock, {
       actorEmail: 'operator@blackboxrecords.example',
       notes: null,
       quantityDelta: stockChangeDelta(5),
       reason: 'delivery',
       variantId: storeItem.variantId,
     });
-    await recordStockCount(storeItems, stock, stockCounts, {
+    await recordStockCount(storeItems, operatorStock, {
+      expectedRevision: 0,
       actorEmail: 'operator@blackboxrecords.example',
       countedQuantity: stockQuantity(4),
       notes: 'Recounted after prep',

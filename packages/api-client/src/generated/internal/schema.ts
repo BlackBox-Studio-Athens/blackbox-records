@@ -385,6 +385,15 @@ export type paths = {
                         "application/json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
+                /** @description Stock changed since the recount began. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
                 /** @description Operator authentication is temporarily unavailable. */
                 503: {
                     headers: {
@@ -605,6 +614,7 @@ export type components = {
         };
         InternalStockCountBody: {
             countedQuantity: number;
+            expectedRevision: number | null;
             notes?: string | null;
             onlineQuantity: number;
         };
@@ -631,6 +641,7 @@ export type components = {
         InternalStockState: {
             onlineQuantity: number;
             quantity: number;
+            revision: number | null;
             /** Format: date-time */
             updatedAt: string | null;
         };

@@ -2,6 +2,7 @@ import type { VariantId } from '../ids';
 import type { StockStateValue, StockQuantity } from '../quantities';
 
 export type StockRecord = {
+  revision: number;
   variantId: VariantId;
   quantity: StockQuantity;
   onlineQuantity: StockQuantity;

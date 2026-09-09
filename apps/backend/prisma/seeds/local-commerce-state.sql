@@ -145,4 +145,5 @@ VALUES
 ON CONFLICT("variantId") DO UPDATE SET
     "quantity" = excluded."quantity",
     "onlineQuantity" = excluded."onlineQuantity",
+    "revision" = "Stock"."revision" + 1,
     "updatedAt" = CURRENT_TIMESTAMP;

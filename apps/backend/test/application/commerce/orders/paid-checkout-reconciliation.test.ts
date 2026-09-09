@@ -137,6 +137,7 @@ class InMemoryStockRepository implements StockRepository {
   public async save(variantId: string, state: { onlineQuantity: number; quantity: number }): Promise<StockRecord> {
     this.saveCalls += 1;
     const record: StockRecord = {
+      revision: (this.records.get(variantId)?.revision ?? -1) + 1,
       createdAt: new Date('2026-04-24T10:00:00.000Z'),
       onlineQuantity: stockQuantity(state.onlineQuantity),
       quantity: stockQuantity(state.quantity),

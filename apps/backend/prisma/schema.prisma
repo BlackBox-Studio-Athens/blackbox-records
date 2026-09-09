@@ -103,6 +103,7 @@ model ItemAvailability {
 }
 
 model Stock {
+  revision       Int      @default(0)
   id             String   @id @default(cuid())
   variantId      String   @unique
   quantity       Int

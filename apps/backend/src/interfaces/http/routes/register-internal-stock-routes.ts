@@ -86,6 +86,7 @@ const variantSummarySchema = z
 
 const stockStateSchema = z
   .object({
+    revision: z.number().int().min(0).nullable(),
     onlineQuantity: z.number().int().min(0),
     quantity: z.number().int().min(0),
     updatedAt: z.string().datetime().nullable(),
@@ -147,6 +148,7 @@ const stockChangeBodySchema = z
 
 const stockCountBodySchema = z
   .object({
+    expectedRevision: z.number().int().min(0).nullable(),
     countedQuantity: z.number().int().min(0),
     notes: z.string().trim().min(1).max(500).nullable().optional(),
     onlineQuantity: z.number().int().min(0),
@@ -319,6 +321,10 @@ const postStockCountRoute = createRoute({
     params: variantParamsSchema,
   },
   responses: {
+    409: {
+      content: { 'application/json': { schema: backendErrorResponseSchema } },
+      description: 'Stock changed since the recount began.',
+    },
     200: {
       content: {
         'application/json': {
@@ -529,6 +535,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
           },
           () =>
             services.recordStockCount({
+              expectedRevision: body.expectedRevision,
               actorEmail: operatorEmail,
               countedQuantity: body.countedQuantity,
               notes: body.notes ?? null,
@@ -554,6 +561,10 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
           ),
         );
       } catch (error) {
+        if (error instanceof services.errors.StockConflictError) {
+          logStockOutcome(logger, 'warn', { operation: 'count', outcome: 'conflict', safeReason: 'stock_changed' });
+          return jsonError(context, { code: 'stock_conflict', message: error.message, status: 409 });
+        }
         const routeError = toInternalStockRouteError(services, error, {
           includeInvalidStockOperation: true,
           invalidRequestMessage: 'Invalid stock count request.',
@@ -582,7 +593,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
 function toStockDetailResponse(detail: {
   sourceId: string;
   sourceKind: 'release' | 'distro';
-  stock: { onlineQuantity: number; quantity: number; updatedAt: Date | null };
+  stock: { revision: number | null; onlineQuantity: number; quantity: number; updatedAt: Date | null };
   storeItemSlug: string;
   variantId: string;
 }) {
@@ -595,8 +606,14 @@ function toStockDetailResponse(detail: {
   };
 }
 
-function toStockStateResponse(stock: { onlineQuantity: number; quantity: number; updatedAt: Date | null }) {
+function toStockStateResponse(stock: {
+  revision: number | null;
+  onlineQuantity: number;
+  quantity: number;
+  updatedAt: Date | null;
+}) {
   return {
+    revision: stock.revision,
     onlineQuantity: stock.onlineQuantity,
     quantity: stock.quantity,
     updatedAt: stock.updatedAt?.toISOString() ?? null,

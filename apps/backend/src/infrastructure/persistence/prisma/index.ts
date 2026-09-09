@@ -1,4 +1,5 @@
 export { createPrismaClient } from './create-prisma-client';
+export { D1OperatorStockRepository } from './d1-operator-stock-repository';
 export { PrismaItemAvailabilityRepository } from './prisma-item-availability-repository';
 export { PrismaOrderStateRepository } from './prisma-order-state-repository';
 export { PrismaStoreItemOptionRepository } from './prisma-store-item-option-repository';

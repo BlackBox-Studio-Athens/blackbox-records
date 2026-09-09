@@ -88,6 +88,7 @@ export const internalStockFixtures = {
     sourceId: 'disintegration',
     sourceKind: 'release',
     stock: {
+      revision: 0,
       onlineQuantity: 4,
       quantity: 5,
       updatedAt: '2026-05-23T10:15:00.000Z',
@@ -170,6 +171,7 @@ export function createInternalStockHandlers(): HttpHandler[] {
             variantId: params.variantId,
           },
           stock: {
+            revision: 1,
             onlineQuantity: 3,
             quantity: 4,
             updatedAt: '2026-05-23T10:20:00.000Z',

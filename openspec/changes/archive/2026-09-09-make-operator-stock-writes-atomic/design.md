@@ -18,6 +18,8 @@ Replace the stock-save/ledger-save sequence with operation-specific persistence 
 
 Reuse database constraints for quantity validity. A conditional D1 update matching zero rows is not a SQL error: guard its audit insert too, and return a conflict/failure instead of committing an audit row without a stock mutation. Verify both rejected conditions and actual statement failures. Do not add a separate stock counter or move paid finalization into the operator path.
 
+Implementation inspection found no existing Stock quantity constraints. The user approved insert/update validation triggers in the additive revision migration on 2026-09-09, enforcing integer, non-negative physical and online quantities with online quantity no greater than physical quantity, without rebuilding Stock.
+
 ### Recounts carry a monotonic stock revision
 
 Add a non-negative integer `revision` to Stock with default zero in an additive migration. Every runtime stock writer, including paid finalization, increments it in the same transaction as its quantity change. Audit repository/direct-SQL writers so no path changes stock without advancing the revision. Existing preparation scripts must preserve/increment revision on updates and use zero only on first insert.
@@ -38,4 +40,4 @@ The token goes only through the protected stock contract and generated client, n
 1. Add the revision migration through the existing Wrangler/D1 workflow and regenerate Prisma. Keep prior migration history intact.
 2. Update every stock writer, protected read/write contract, generated client, and staff conflict handling; retain existing module boundaries. Update boundary spec/manifest only if named entrypoints or dependencies change.
 3. Prove delta/delta, delta/paid, recount/paid, absent-row races, and rollback in real local D1, then run repository gates.
-4. Validate Access-protected UAT stock operations on the accepted commerce tree before launch acceptance. Apply PRD schema/code under the launch change with checkout closed. Rollback stops operator writes/checkout as needed and retains revision data and audit history.
+4. Accept this correction using real local D1 regressions, native local staff browser proof, and repository gates. The user approved this sequence on 2026-09-09 because the staff portal is PRD-only; no UAT staff portal is provisioned. Sync/archive the locally accepted correction, then require protected PRD adjustment, recount, stale-conflict, retained-input, and Access allow/deny proof under `production-go-live-readiness` before launch sign-off. Apply PRD schema/code under that launch change with checkout closed. Rollback stops operator writes/checkout as needed and retains revision data and audit history.

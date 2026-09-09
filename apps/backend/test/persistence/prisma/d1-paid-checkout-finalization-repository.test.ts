@@ -8,6 +8,8 @@ import { toStripeCheckoutSessionState } from '../../../src/infrastructure/stripe
 import { createPrismaClient, PrismaOrderStateRepository } from '../../../src/infrastructure/persistence/prisma';
 import {
   createCartQuantity,
+  createStockQuantity,
+  createStockChangeDelta,
   parseCheckoutSessionId,
   parsePaymentIntentId,
   parseStoreItemSlug,
@@ -16,6 +18,9 @@ import {
 } from '../../../src/domain/commerce';
 import { readPaidCheckoutFulfillment } from '../../../src/domain/commerce/repositories/spi';
 import { D1PaidCheckoutFinalizationRepository } from '../../../src/interfaces/http/routes/d1-paid-checkout-finalization-repository';
+import { recordStockChange } from '../../../src/application/commerce/stock';
+import type { StoreItemOptionRepository } from '../../../src/domain/commerce/repositories/spi';
+import { D1OperatorStockRepository } from '../../../src/infrastructure/persistence/prisma/d1-operator-stock-repository';
 
 describe('D1PaidCheckoutFinalizationRepository', () => {
   it.each(['stock_unavailable', 'line_mismatch', 'incomplete_fulfillment'] as const)(
@@ -158,6 +163,245 @@ describe('D1PaidCheckoutFinalizationRepository', () => {
     }
   });
 
+  it('serializes a recount competing with paid settlement', async () => {
+    const seeded = await seedPendingCheckout({ stockQuantity: 1 });
+    const stock = new D1OperatorStockRepository(env.COMMERCE_DB);
+    const [paid, count] = await Promise.all([
+      new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB).finalizePaidCheckout(finalizationCommand(seeded)),
+      stock.recordCount({
+        variantId: seeded.variantId,
+        expectedRevision: 0,
+        countedQuantity: createStockQuantity(5),
+        onlineQuantity: createStockQuantity(5),
+        notes: null,
+        actorEmail: 'operator@example.com',
+      }),
+    ]);
+    expect(paid.kind).toBe('transitioned');
+    await expect(readStock(seeded.variantId)).resolves.toEqual({
+      quantity: count ? 4 : 0,
+      onlineQuantity: count ? 4 : 0,
+    });
+    expect(
+      await env.COMMERCE_DB.prepare('SELECT COUNT(*) AS n FROM "StockCount" WHERE "variantId" = ?')
+        .bind(seeded.variantId)
+        .first('n'),
+    ).toBe(count ? 1 : 0);
+  });
+
+  it('advances revision for physical-only and online-only recount changes', async () => {
+    const seeded = await seedPendingCheckout();
+    const stock = new D1OperatorStockRepository(env.COMMERCE_DB);
+    const input = { variantId: seeded.variantId, notes: null, actorEmail: 'operator@example.com' };
+    const physical = await stock.recordCount({
+      ...input,
+      expectedRevision: 0,
+      countedQuantity: createStockQuantity(6),
+      onlineQuantity: createStockQuantity(5),
+    });
+    expect(physical?.stock.revision).toBe(1);
+    const online = await stock.recordCount({
+      ...input,
+      expectedRevision: 1,
+      countedQuantity: createStockQuantity(6),
+      onlineQuantity: createStockQuantity(4),
+    });
+    expect(online?.stock.revision).toBe(2);
+    await expect(
+      stock.recordCount({
+        ...input,
+        expectedRevision: 1,
+        countedQuantity: createStockQuantity(6),
+        onlineQuantity: createStockQuantity(5),
+      }),
+    ).resolves.toBeNull();
+  });
+  it('serializes two deltas and rejects a stale recount even after equal sale and restock', async () => {
+    const seeded = await seedPendingCheckout({ stockQuantity: 1 });
+    const stock = new D1OperatorStockRepository(env.COMMERCE_DB);
+    const delta = {
+      variantId: seeded.variantId,
+      quantityDelta: createStockChangeDelta(1),
+      reason: 'restock',
+      notes: null,
+      actorEmail: 'operator@example.com',
+    };
+    const results = await Promise.all([stock.recordChange(delta), stock.recordChange(delta)]);
+    expect(results.every(Boolean)).toBe(true);
+    await expect(readStock(seeded.variantId)).resolves.toEqual({ quantity: 3, onlineQuantity: 3 });
+    const revision = Math.max(...results.map((result) => result!.stock.revision));
+    await new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB).finalizePaidCheckout(finalizationCommand(seeded));
+    await stock.recordChange(delta);
+    await expect(
+      stock.recordCount({
+        variantId: seeded.variantId,
+        expectedRevision: revision,
+        countedQuantity: createStockQuantity(3),
+        onlineQuantity: createStockQuantity(3),
+        notes: 'stale',
+        actorEmail: 'operator@example.com',
+      }),
+    ).resolves.toBeNull();
+    await expect(readStock(seeded.variantId)).resolves.toEqual({ quantity: 3, onlineQuantity: 3 });
+    expect(
+      await env.COMMERCE_DB.prepare('SELECT COUNT(*) AS n FROM "StockCount" WHERE "variantId" = ?')
+        .bind(seeded.variantId)
+        .first('n'),
+    ).toBe(0);
+    expect(
+      await env.COMMERCE_DB.prepare('SELECT COUNT(*) AS n FROM "StockChange" WHERE "variantId" = ?')
+        .bind(seeded.variantId)
+        .first('n'),
+    ).toBe(4);
+  });
+
+  it('rejects a recount read before paid settlement without an orphan audit', async () => {
+    const seeded = await seedPendingCheckout({ stockQuantity: 1 });
+    const stock = new D1OperatorStockRepository(env.COMMERCE_DB);
+    await new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB).finalizePaidCheckout(finalizationCommand(seeded));
+    await expect(
+      stock.recordCount({
+        variantId: seeded.variantId,
+        expectedRevision: 0,
+        countedQuantity: createStockQuantity(1),
+        onlineQuantity: createStockQuantity(1),
+        notes: null,
+        actorEmail: 'operator@example.com',
+      }),
+    ).resolves.toBeNull();
+    await expect(readStock(seeded.variantId)).resolves.toEqual({ quantity: 0, onlineQuantity: 0 });
+    expect(
+      await env.COMMERCE_DB.prepare('SELECT COUNT(*) AS n FROM "StockCount" WHERE "variantId" = ?')
+        .bind(seeded.variantId)
+        .first('n'),
+    ).toBe(0);
+  });
+
+  it('allows only one absent-row recount and distinguishes absent from revision zero', async () => {
+    const stock = new D1OperatorStockRepository(env.COMMERCE_DB);
+    const input = {
+      variantId: parseVariantId(`variant_count_${crypto.randomUUID()}`),
+      countedQuantity: createStockQuantity(0),
+      onlineQuantity: createStockQuantity(0),
+      notes: null,
+      actorEmail: 'operator@example.com',
+    };
+    await expect(stock.recordCount({ ...input, expectedRevision: 0 })).resolves.toBeNull();
+    const results = await Promise.all([
+      stock.recordCount({ ...input, expectedRevision: null }),
+      stock.recordCount({ ...input, expectedRevision: null }),
+    ]);
+    expect(results.filter(Boolean)).toHaveLength(1);
+    expect(results.find(Boolean)?.stock.revision).toBe(0);
+    expect(
+      await env.COMMERCE_DB.prepare('SELECT COUNT(*) AS n FROM "StockCount" WHERE "variantId" = ?')
+        .bind(input.variantId)
+        .first('n'),
+    ).toBe(1);
+  });
+
+  it('retains both first-row deltas and guards a concurrent negative quantity', async () => {
+    const stock = new D1OperatorStockRepository(env.COMMERCE_DB);
+    const input = {
+      variantId: parseVariantId(`variant_delta_${crypto.randomUUID()}`),
+      reason: 'movement',
+      notes: null,
+      actorEmail: 'operator@example.com',
+    };
+    await Promise.all(
+      [1, 1].map((delta) => stock.recordChange({ ...input, quantityDelta: createStockChangeDelta(delta) })),
+    );
+    const results = await Promise.all(
+      [-2, -2].map((delta) => stock.recordChange({ ...input, quantityDelta: createStockChangeDelta(delta) })),
+    );
+    expect(results.filter(Boolean)).toHaveLength(1);
+    await expect(readStock(input.variantId)).resolves.toEqual({ quantity: 0, onlineQuantity: 0 });
+    expect(
+      await env.COMMERCE_DB.prepare('SELECT COUNT(*) AS n FROM "StockChange" WHERE "variantId" = ?')
+        .bind(input.variantId)
+        .first('n'),
+    ).toBe(3);
+  });
+
+  it.each(['StockChange', 'StockCount'] as const)('rolls back stock when %s insertion fails', async (table) => {
+    const seeded = await seedPendingCheckout();
+    const stock = new D1OperatorStockRepository(env.COMMERCE_DB);
+    await env.COMMERCE_DB.prepare(
+      `CREATE TRIGGER fail_operator_audit BEFORE INSERT ON "${table}"
+      BEGIN SELECT RAISE(ABORT, 'injected ledger failure'); END;`,
+    ).run();
+    try {
+      const input = { variantId: seeded.variantId, notes: null, actorEmail: 'operator@example.com' };
+      await expect(
+        table === 'StockChange'
+          ? stock.recordChange({ ...input, quantityDelta: createStockChangeDelta(1), reason: 'restock' })
+          : stock.recordCount({
+              ...input,
+              expectedRevision: 0,
+              countedQuantity: createStockQuantity(9),
+              onlineQuantity: createStockQuantity(8),
+            }),
+      ).rejects.toThrow('injected ledger failure');
+      await expect(readStock(seeded.variantId)).resolves.toEqual({ quantity: 5, onlineQuantity: 5 });
+      expect(
+        await env.COMMERCE_DB.prepare('SELECT revision FROM "Stock" WHERE "variantId" = ?')
+          .bind(seeded.variantId)
+          .first('revision'),
+      ).toBe(0);
+      expect(
+        await env.COMMERCE_DB.prepare(`SELECT COUNT(*) AS n FROM "${table}" WHERE "variantId" = ?`)
+          .bind(seeded.variantId)
+          .first('n'),
+      ).toBe(0);
+    } finally {
+      await env.COMMERCE_DB.exec('DROP TRIGGER fail_operator_audit');
+    }
+  });
+
+  it('enforces quantity and revision validity in D1 itself', async () => {
+    const seeded = await seedPendingCheckout();
+    for (const assignment of [
+      '"quantity" = -1',
+      '"onlineQuantity" = -1',
+      '"onlineQuantity" = 6',
+      '"quantity" = 1.5',
+      '"revision" = -1',
+    ]) {
+      await expect(
+        env.COMMERCE_DB.prepare(`UPDATE "Stock" SET ${assignment} WHERE "variantId" = ?`).bind(seeded.variantId).run(),
+      ).rejects.toThrow();
+    }
+    await expect(readStock(seeded.variantId)).resolves.toEqual({ quantity: 5, onlineQuantity: 5 });
+  });
+  it('retains a paid sale interleaved with an operator restock in real local D1', async () => {
+    const seeded = await seedPendingCheckout({ stockQuantity: 1 });
+    const option = {
+      storeItemSlug: parseStoreItemSlug('operator-restock'),
+      sourceKind: 'release' as const,
+      sourceId: seeded.orderId,
+      variantId: seeded.variantId,
+    };
+    const options: StoreItemOptionRepository = {
+      findByVariantId: async () => option,
+      findByStoreItemSlug: async () => option,
+      findBySource: async () => option,
+      search: async () => [option],
+    };
+    const stock = new D1OperatorStockRepository(env.COMMERCE_DB);
+    const [paid] = await Promise.all([
+      new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB).finalizePaidCheckout(finalizationCommand(seeded)),
+      recordStockChange(options, stock, {
+        variantId: seeded.variantId,
+        quantityDelta: 1,
+        reason: 'restock',
+        notes: null,
+        actorEmail: 'operator@example.com',
+      }),
+    ]);
+    expect(paid.kind).toBe('transitioned');
+    await expect(readStock(seeded.variantId)).resolves.toEqual({ quantity: 1, onlineQuantity: 1 });
+    await expect(readStockChangeCount(seeded.checkoutSessionId)).resolves.toBe(1);
+  });
   it('atomically commits paid facts, line snapshots, stock, and all consented deliveries', async () => {
     const seeded = await seedPendingCheckout();
     const repository = new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB);

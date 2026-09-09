@@ -517,7 +517,8 @@ function validateManifest(manifest = loadModuleBoundariesManifest()) {
 
   for (const ownedEntry of getOwnedEntries(manifest)) {
     for (const rootPattern of ownedEntry.roots) {
-      const matches = allFiles.filter((filePath) => globToRegExp(rootPattern).test(filePath));
+      const rootMatcher = globToRegExp(rootPattern);
+      const matches = allFiles.filter((filePath) => rootMatcher.test(filePath));
       const disallowedDirectoryNames =
         manifest.entrypointPolicy?.disallowedModuleDirectoryNames ?? DEFAULT_DISALLOWED_MODULE_DIRECTORY_NAMES;
 

@@ -90,6 +90,8 @@ Normal reads do not contact Stripe. When a checkout would fail solely because ex
 
 ## Migration Plan
 
+On 2026-09-10, the user approved the existing old-account UAT Stripe sandbox for final reservation acceptance. This supersedes the new-account prerequisite for this change's UAT evidence only. A later account cutover still requires fresh account-scoped configuration and acceptance; old-account evidence does not certify the new account or PRD.
+
 1. Confirm the settled Store Offer and Price Authority code contract is present.
 2. Make checkoutSessionId nullable, add checkoutExpiresAt and line constraints/indexes, and regenerate Prisma.
 3. Add discriminated order types, effective-availability query, and D1 concurrency tests.
