@@ -85,6 +85,8 @@ Protected order reads may expose validated fulfillment fields and delivery summa
 
 ## Migration Plan
 
+Reservation prerequisite accepted on 2026-09-10: Worker commit `c503e4d9ab7f09cdc719df8cec9e81ee1f8cac14`, UAT version `89aae672-2249-4dd4-8463-241d0311e7d5`. The user approved the old-account Stripe sandbox for this reservation acceptance. See [reservation acceptance](../archive/2026-09-10-add-checkout-stock-reservations/acceptance.md) for creation/binding, paid settlement, expiry release, replay, collected-shipping, and PRD-closed evidence. Outbox task 4.3 still requires its controlled retry on an accepted proof tree; this prerequisite does not mark that task complete or certify a later account cutover.
+
 1. Confirm prerequisite code contracts and hosted Access proof, then preflight paid rows without printing shopper data. Use approved recipients for shared reservation/outbox UAT execution; accept reservation behavior before outbox recovery and archive prerequisites before this change. Follow the launch plan's shared correction evidence sequence.
 2. Add direct order/line columns, the delivery table, constraints, and indexes in one additive migration; regenerate Prisma.
 3. Write line snapshots at checkout creation and validate paid-order records as a discriminated repository result.

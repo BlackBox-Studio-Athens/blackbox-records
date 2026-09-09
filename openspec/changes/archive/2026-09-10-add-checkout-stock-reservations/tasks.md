@@ -15,7 +15,7 @@
 - [x] 3.1 Create Stripe Checkout with the app order ID in private metadata and a fresh 35-minute provider deadline after hold creation; persist the accepted expiry and keep browser responses non-authoritative.
 - [x] 3.2 Bind the returned Session identity and accepted expiry to the existing order; release a sessionless hold only after definitive non-creation, retaining uncertain outcomes for recovery.
 - [x] 3.3 On bind failure, expire the provider session and release only after confirmed non-payable state; verify uncertain sessions retain the hold and metadata webhooks can recover the order.
-- [x] 3.4 Complete `fix-stripe-checkout-creation`: provider latency, accepted expiry binding/recovery, custom-Price rejection before holds, and uncertain hold retention passed. See `../archive/2026-09-09-fix-stripe-checkout-creation/acceptance.md`; reservation UAT settlement/replay acceptance remains under 5.2.
+- [x] 3.4 Complete `fix-stripe-checkout-creation`: provider latency, accepted expiry binding/recovery, custom-Price rejection before holds, and uncertain hold retention passed. See `../2026-09-09-fix-stripe-checkout-creation/acceptance.md`; reservation UAT settlement/replay acceptance remains under 5.2.
 
 ## 4. Reconciliation
 
@@ -27,5 +27,5 @@
 ## 5. Validation and Rollout
 
 - [x] 5.1 Run local migration, D1 rollback/concurrency tests, stripe-mock readiness, signed webhook simulation, commerce-boundary audit, pnpm test:unit, pnpm check, and pnpm build.
-- [ ] 5.2 Prove UAT creation, binding, paid settlement, expiry release, and replay safety while PRD checkout remains closed.
-- [ ] 5.3 Strict validation already passes locally. After 5.2, rerun `pnpm openspec -- validate add-checkout-stock-reservations --strict`, archive the change, and record the exact accepted UAT commit as prerequisite evidence for `add-paid-order-delivery-outbox`.
+- [x] 5.2 Prove UAT creation, binding, paid settlement, expiry release, and replay safety while PRD checkout remains closed. Accepted old-account UAT Worker commit: `c503e4d9ab7f09cdc719df8cec9e81ee1f8cac14`; see `acceptance.md`.
+- [x] 5.3 Strict change validation passed, all three delta specs were synced and verified, the change was archived, and the exact accepted UAT commit was recorded in the outbox design prerequisite.
