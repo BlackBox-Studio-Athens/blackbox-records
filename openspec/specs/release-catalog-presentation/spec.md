@@ -234,3 +234,63 @@ The showcase SHALL use intrinsic sizing so release titles, metadata, summaries, 
 - **THEN** only the latest feature keeps first-viewport image priority
 - **AND** Upcoming and remaining artwork keep their existing loading contracts
 - **AND** existing reduced-motion behavior suppresses nonessential artwork motion
+
+### Requirement: Release details expose source-backed editorial data
+
+The site SHALL present useful verified release context and complete structured credits for _Disintegration_ and _Anarchotribal_ through the existing Release summary, formats, credits, date, and album-player presentation.
+
+#### Scenario: Disintegration Release detail is enriched
+
+- **WHEN** a visitor opens the _Disintegration_ Release detail directly or in the app-shell overlay
+- **THEN** it identifies the June 9, 2026 six-track debut as instrumental post-rock/post-metal from Athens
+- **AND** its formats distinguish provider-confirmed Digital from label-owned Black Vinyl LP and CD
+- **AND** its credits identify Afterwise as writer/performer; George Stamatiou, Stavros Apostolou, Ilias Daramouskas, Markos Kousounadis Knousen, and Giannis Avraam with their instruments; Jim Spanos' recording/mixing work at BlackBox Studio; Nikos Dimitrakakos and Jim Spanos' mastering at Unreal Studio; Joshua Takak's artwork; and BlackBox Records' label role
+
+#### Scenario: Anarchotribal Release detail is enriched
+
+- **WHEN** a visitor opens the _Anarchotribal_ Release detail directly or in the app-shell overlay
+- **THEN** it identifies the June 6, 2026 ten-track album by the Athens psychedelic/punk-influenced rock trio
+- **AND** its formats distinguish provider-confirmed Digital from label-owned Vinyl
+- **AND** its credits identify music by Ouranopithecus; lyrics by Zon Pletsis; Mario, Jack, and Zon Pletsis with their instruments; the Atavo and Buduzi Studios recording locations; Kostas Ragiadakos' drum-engineering/mastering roles; Marios Adamopoulos' engineering/recording/mixing/production roles; Ouranopithecus' production role; Nina Politimou and Marianna Tzaneti on `Bad`; Voltas and Ouranopithecus' artwork; Edward S. Curtis' original cover photography; and BlackBox Records' label role
+
+#### Scenario: Existing Release presentation carries the enrichment
+
+- **WHEN** both enriched Release entries are built
+- **THEN** their existing `summary`, `formats`, and `credits` fields render without a new schema field or detail component
+- **AND** the direct and overlay routes present the same summary, formats, and credits
+- **AND** the album player continues using the exact Bandcamp and Tidal values introduced by `7193409a`
+- **AND** no native track-list UI is added because the verified album player already exposes the tracks
+
+### Requirement: Highlighted Release summaries use restrained editorial typography
+
+The Releases page SHALL render optional `Latest out now` and `Upcoming` summaries with the existing mono font family while preserving each role's current font size, line height, color, width, spacing, sentence casing, and wrapping. Remaining catalog-card summaries and Release detail prose MUST remain on the body font.
+
+#### Scenario: Latest Release summary renders
+
+- **WHEN** the highlighted latest Release provides a summary
+- **THEN** its summary uses the existing mono font family
+- **AND** it gains no uppercase transformation or label-style letter spacing.
+
+#### Scenario: Upcoming Release summary renders
+
+- **WHEN** the selected Upcoming Release provides a summary
+- **THEN** its summary uses the existing mono font family
+- **AND** its existing smaller scale and subordinate hierarchy remain unchanged.
+
+#### Scenario: Highlighted summary is absent
+
+- **WHEN** the latest or Upcoming Release does not provide a summary
+- **THEN** the corresponding summary remains omitted
+- **AND** no placeholder or empty typography surface is added.
+
+#### Scenario: Catalog cards and details render summaries
+
+- **WHEN** a remaining Release card or Release detail page renders descriptive prose
+- **THEN** that prose retains the body font
+- **AND** the highlighted-summary accent does not become a catalog-wide body treatment.
+
+#### Scenario: Highlighted summaries reflow
+
+- **WHEN** a visitor views highlighted Release summaries at 320 or 390 CSS pixels
+- **THEN** the summaries wrap without clipping, overlap, or horizontal page scrolling
+- **AND** Release titles, metadata, formats, and actions retain their existing hierarchy and operability.

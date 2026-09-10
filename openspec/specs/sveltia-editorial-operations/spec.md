@@ -122,7 +122,7 @@ The system MUST preserve collection/file identities, editorial meaning, and fixe
 - **THEN** `group_intros` stores `vinyl_12_inch`, `vinyl_10_inch`, and `vinyl_7_inch` instead of `Vinyl 12-inch`, `Vinyl 10-inch`, and `Vinyl 7-inch`, respectively
 - **AND** the corresponding text and visible field labels remain unchanged, as do the `CDs`, `Clothes`, `Tapes`, and `Other` keys
 - **AND** the editor retains fixed named text fields, not an arbitrary key/value editor
-- **AND** Distro item `group` values, public routes, shelf labels, ordering, membership, and rendered intro text remain unchanged, including the combined 7-inch/10-inch shelf's use of the 7-inch intro.
+- **AND** rendered shelf labels, ordering, membership, and intro text use separate `Vinyl 10-inch` and `Vinyl 7-inch` shelves, each with its matching intro.
 
 #### Scenario: Optional field is left blank
 

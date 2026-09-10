@@ -334,6 +334,10 @@ export function createStoreCoverflowController(
 
       setGroupState(group, targetState);
       if (targetState.mode === 'catalog' && activeCard) {
+        // Let the browser lay out the catalog before focus can force synchronous layout.
+        void getComputedStyle(group.element).color;
+        await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+        if (revision !== token) return;
         activeCard.focus({ preventScroll: true });
         activeCard.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'nearest', inline: 'nearest' });
       }

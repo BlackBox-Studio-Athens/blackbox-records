@@ -61,7 +61,7 @@ const availabilityLabel = entry?.primaryAvailability?.availability.label || 'Una
 ---
 
 <a
-  class:list={['group block h-full distro-card', isHomeVariant ? 'distro-card--home' : 'distro-card--page']}
+  class:list={['group flex flex-col distro-card', isHomeVariant ? 'distro-card--home' : 'distro-card--page']}
   href={storeItem.storePath}
   aria-label={isHomeVariant ? undefined : `${sourceTitle} — ${sourceSubtitle}`}
   data-astro-prefetch

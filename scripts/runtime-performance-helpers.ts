@@ -15,6 +15,21 @@ export type StoreActivationMilestones = {
 
 type Interval = { end: number; start: number };
 
+export function assertTraversalSetup(
+  groups: Array<{ ready: boolean; mode: string | null; cardCount: number }>,
+  expanded: boolean,
+) {
+  if (
+    groups.length === 0 ||
+    groups.some((group) => !group.ready || group.cardCount === 0 || !['preview', 'catalog'].includes(group.mode ?? ''))
+  ) {
+    throw new Error('Traversal requires complete, ready Coverflow groups.');
+  }
+  if (expanded && groups.some((group) => group.mode !== 'catalog')) {
+    throw new Error('Expanded traversal requires catalog mode for every group.');
+  }
+}
+
 function percentile(values: number[], fraction: number) {
   if (values.length === 0) return 0;
   const sorted = values.toSorted((left, right) => left - right);
@@ -175,6 +190,7 @@ export function summarizeTrace(events: TraceEvent[]) {
     paint: summarize(paint),
     mainStyleLayoutPaint: summarize(workByWindow),
     script: summarize(script),
+    tasks: summarize(tasks),
     taskCount: tasks.length,
     longTaskCount: tasks.filter((duration) => duration >= 50).length,
     longTaskTime: tasks.filter((duration) => duration >= 50).reduce((total, duration) => total + duration, 0),

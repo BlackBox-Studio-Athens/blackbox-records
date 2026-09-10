@@ -1019,9 +1019,10 @@ body {
   }
 
   .distro-card__surface {
-    display: grid;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
     gap: 0;
-    height: 100%;
     transition:
       background-color 0.22s ease,
       border-color 0.22s ease;
@@ -1034,6 +1035,7 @@ body {
   }
 
   .distro-card__image-frame {
+    flex-shrink: 0;
     position: relative;
     aspect-ratio: 1;
     overflow: hidden;
@@ -1055,7 +1057,7 @@ body {
   }
 
   .distro-card__title {
-    font-family: var(--font-display-brand);
+    font-family: var(--font-display-ui);
     font-size: clamp(1.55rem, 4.6vw, 2.05rem);
     letter-spacing: 0.035em;
     line-height: 0.98;
@@ -1260,6 +1262,7 @@ body {
 
   .distro-page-groups {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 2.4rem;
     padding-top: 1rem;
     padding-bottom: 3.5rem;
@@ -1267,6 +1270,7 @@ body {
 
   .distro-group-section {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1.25rem;
     border-top: 1px solid #2b2b2b;
     padding-top: 1.35rem;
@@ -1302,12 +1306,8 @@ body {
   .distro-group-chunks,
   .distro-group-grid {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1.25rem;
-  }
-
-  .distro-group-chunk:not(:first-child) {
-    content-visibility: auto;
-    contain-intrinsic-block-size: auto 192rem;
   }
 
   .store-coverflow-controls {
@@ -1458,8 +1458,15 @@ body {
 
   .store-item-card--listing {
     min-width: 0;
-    content-visibility: auto;
-    contain-intrinsic-block-size: auto 40rem;
+  }
+
+  .distro-card--page,
+  .store-item-card--listing {
+    contain: layout inline-size;
+  }
+
+  .store-item-card--listing .brand-card-title {
+    font-family: var(--font-display-ui);
   }
 
   .artists-roster-section {
@@ -4277,11 +4284,7 @@ html[data-store-coverflow-capable]
 
 html[data-store-coverflow-capable]
   [data-store-coverflow-mode='preview']
-  [data-store-coverflow-card]:not([data-store-coverflow-position]) {
-  display: none;
-}
-
-html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] [data-store-coverflow-card] {
+  [data-store-coverflow-card]:where([data-store-coverflow-position]) {
   position: absolute;
   top: 0.25rem;
   left: 50%;
@@ -4346,25 +4349,52 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] [data-s
     rotateY(48deg) scale(0.82);
 }
 
-html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .distro-card__surface,
-html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .distro-card__image-frame,
-html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-item-card__surface,
-html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-item-card__image-frame {
+html[data-store-coverflow-capable]
+  [data-store-coverflow-mode='preview']
+  :where([data-store-coverflow-position])
+  .distro-card__surface,
+html[data-store-coverflow-capable]
+  [data-store-coverflow-mode='preview']
+  :where([data-store-coverflow-position])
+  .distro-card__image-frame,
+html[data-store-coverflow-capable]
+  [data-store-coverflow-mode='preview']
+  :where([data-store-coverflow-position])
+  .store-item-card__surface,
+html[data-store-coverflow-capable]
+  [data-store-coverflow-mode='preview']
+  :where([data-store-coverflow-position])
+  .store-item-card__image-frame {
   height: 100%;
 }
 
-html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .distro-card__image-frame,
-html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-item-card__image-frame {
+html[data-store-coverflow-capable]
+  [data-store-coverflow-mode='preview']
+  :where([data-store-coverflow-position])
+  .distro-card__image-frame,
+html[data-store-coverflow-capable]
+  [data-store-coverflow-mode='preview']
+  :where([data-store-coverflow-position])
+  .store-item-card__image-frame {
   aspect-ratio: auto;
   border-bottom: 0;
 }
 
-html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .distro-card__content,
-html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-item-card__content {
+html[data-store-coverflow-capable]
+  [data-store-coverflow-mode='preview']
+  :where([data-store-coverflow-position])
+  .distro-card__content,
+html[data-store-coverflow-capable]
+  [data-store-coverflow-mode='preview']
+  :where([data-store-coverflow-position])
+  .store-item-card__content {
   display: none;
 }
 
-html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] [data-store-coverflow-availability] {
+html[data-store-coverflow-capable]
+  [data-store-coverflow-mode='preview']
+  :where([data-store-coverflow-position])
+  [data-store-coverflow-availability] {
   display: none;
 }
 
@@ -4449,6 +4479,29 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   scroll-margin-block: calc(var(--header-height) + 5rem) 1.5rem;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  html[data-store-coverflow-capable]
+    [data-store-coverflow-mode='preview'][data-store-coverflow-group]
+    .distro-group-chunk,
+  html[data-store-coverflow-capable]
+    [data-store-coverflow-mode='preview']
+    .store-catalog-chunks[data-store-coverflow-stage] {
+    display: grid;
+    visibility: hidden;
+  }
+
+  html[data-store-coverflow-capable]
+    [data-store-coverflow-mode='preview']
+    [data-store-coverflow-card][data-store-coverflow-position] {
+    visibility: visible;
+  }
+
+  html[data-store-coverflow-capable]
+    [data-store-coverflow-mode='preview'][data-store-coverflow-group]
+    .store-coverflow-shell {
+    padding-inline: 0;
+  }
+}
 html[data-store-coverflow-capable] [data-store-coverflow-reveal='catalog'] .store-coverflow-shell {
   position: relative;
   isolation: isolate;
@@ -4635,7 +4688,9 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
     display: block;
   }
 
-  html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .distro-group-chunk {
+  html[data-store-coverflow-capable]
+    [data-store-coverflow-mode='preview'][data-store-coverflow-group]
+    .distro-group-chunk {
     display: contents;
   }
 
@@ -4650,7 +4705,6 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
     display: grid;
   }
 
-  html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-coverflow-controls,
   html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-coverflow-status {
     display: none;
   }
@@ -4969,10 +5023,6 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
     gap: 1.5rem;
   }
 
-  .distro-group-chunk:not(:first-child) {
-    contain-intrinsic-block-size: auto 96rem;
-  }
-
   .artists-roster-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -5220,10 +5270,6 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   .distro-group-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1.5rem;
-  }
-
-  .distro-group-chunk:not(:first-child) {
-    contain-intrinsic-block-size: auto 64rem;
   }
 
   .artists-roster-grid {

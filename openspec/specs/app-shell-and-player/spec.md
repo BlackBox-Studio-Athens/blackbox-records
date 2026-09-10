@@ -177,52 +177,90 @@ The system SHALL keep loading feedback consistent whether shell navigation uses 
 
 ### Requirement: Homepage hero scroll opacity is transition-free
 
-The app shell SHALL keep homepage hero opacity and visibility state free of CSS opacity transitions and per-scroll custom-property writes.
+The app shell SHALL keep the existing responsive homepage hero image fixed and visible for as long as the Home route owns it. The existing coarse hero scrolled state SHALL crossfade the media layer between opacity `1` and `0.12` while an internal black veil crossfades between opacity `0` and `0.5` over the same 240 milliseconds without changing media visibility, while the scroll indicator retains its immediate transition-free state.
 
 #### Scenario: Shopper scrolls through the homepage hero
 
+- **WHEN** the homepage hero renders at the top of Home
+- **THEN** the existing responsive image fills the viewport at opacity `1`
+- **AND** the hero-scoped shade preserves the approved first-viewport composition
+- **AND** the shade declares no opacity or visibility transition, keyframe, transform, parallax effect, or scroll-linked progress property.
+
+#### Scenario: Shopper crosses into later Home content
+
 - **GIVEN** the homepage hero is rendered in the persistent app shell
-- **WHEN** the shopper scrolls from the hero into the next homepage section
-- **THEN** the media layer, shade layer, and scroll indicator update their hero scrolled state without declaring opacity transitions
-- **AND** scrolling does not repeatedly start and cancel opacity transitions for those scroll targets
-- **AND** the app shell does not write `--homepage-hero-scroll-progress` on every scroll frame
-- **AND** no removed grain layer remains part of the required scroll-state contract.
+- **AND** the browser does not request reduced motion
+- **WHEN** the existing coarse hero state changes to scrolled
+- **THEN** the media layer remains fixed and visible while its opacity transitions from its current value to `0.12` over 240 milliseconds using `cubic-bezier(0.22, 1, 0.36, 1)`
+- **AND** an absolute `#050505` veil inside that media layer transitions from its current value to opacity `0.5` using the identical duration and curve
+- **AND** no second fixed element, filter, blur, blend mode, or additional image is introduced
+- **AND** the media layer does not become hidden after the transition
+- **AND** the hero shade leaves through normal document scrolling without sharing the crossfade
+- **AND** later content stacks above the ghost on static dark surfaces of `rgb(13 13 13 / 76%)` for News, `rgb(20 20 20 / 78%)` for Artists, and `rgb(13 13 13 / 74%)` for Newsletter
+- **AND** the ghost remains visibly continuous through those section surfaces
+- **AND** cards retain opaque readable surfaces
+- **AND** the footer fully covers the ghost
+- **AND** the scroll indicator changes state without an opacity transition and its hidden child animation stops.
+
+#### Scenario: Shopper returns above the threshold
+
+- **GIVEN** the Home media is crossfading or settled at the ghost endpoint
+- **WHEN** the existing coarse hero state changes to not scrolled
+- **THEN** the media remains fixed and visible
+- **AND** the same declared 240-millisecond duration and curve transition media opacity from the current value to `1` and veil opacity from the current value to `0`
+- **AND** an interrupted native CSS reversal remains bounded without a separate application animation state or timer.
 
 #### Scenario: Scroll state changes only at the coarse threshold
 
 - **GIVEN** the homepage hero scroll sync is connected
 - **WHEN** repeated scroll events stay on the same side of the hero scrolled threshold
 - **THEN** the app shell does not mutate the hero class repeatedly
-- **AND** the app shell toggles the scrolled class when the threshold state changes.
+- **AND** the app shell does not write `--homepage-hero-scroll-progress`, opacity, or any media style property on scroll
+- **AND** the Home hero opacity transition does not restart or cancel because of those same-side events.
+
+#### Scenario: Shopper leaves and returns to Home
+
+- **WHEN** shell navigation leaves Home
+- **THEN** the Home hero DOM and ghost no longer render on the destination route
+- **AND** the route-scoped scroll synchronization disconnects
+- **AND** returning to Home recreates the opacity-`1` first-viewport composition without global backdrop state or a full document reload.
 
 #### Scenario: Reduced motion remains respected
 
 - **WHEN** the browser reports a reduced-motion preference
-- **THEN** the homepage hero keeps nonessential animation and transition behavior disabled by the existing reduced-motion rules
-- **AND** the scroll-state performance work does not remove visible content or status text.
+- **THEN** the media reaches opacity `0.12` and the black veil reaches opacity `0.5` in the scrolled state without a transition
+- **AND** the media reaches opacity `1` and the black veil reaches opacity `0` in the not-scrolled state without a transition
+- **AND** the media remains fixed and visible at both endpoints
+- **AND** nonessential Home animation remains disabled
+- **AND** visible content and status text remain available.
 
 ### Requirement: Homepage hero render work is bounded
 
-The app shell SHALL preserve the homepage hero composition without continuous full-viewport raster effects.
+The app shell SHALL preserve the homepage hero composition without continuous full-viewport raster effects. One already-loaded fixed image MAY remain behind later Home content, and its existing media layer plus one internal solid-color veil MAY each perform one bounded opacity transition per coarse threshold-side change only while they cause no repeated hero-attributable paint, raster, decode, animation, or application work after the transition settles.
 
 #### Scenario: Homepage hero is visible
 
 - **WHEN** the homepage hero renders in the first viewport
 - **THEN** its primary image retains eager high-priority responsive delivery
-- **AND** the approved monochrome, contrast, and static texture treatment does not require a runtime image filter, animated grain layer, or blending layer
+- **AND** no duplicate image request or decode is introduced for the ghost
+- **AND** the approved monochrome, contrast, and static texture treatment does not require a runtime image filter, animated grain layer, backdrop filter, or blend mode
 - **AND** no hero visual-effect animation runs infinitely by default.
 
 #### Scenario: Shopper passes the hero threshold
 
-- **WHEN** the existing coarse hero scroll state changes to scrolled
-- **THEN** decorative hero media no longer performs animation or paint work behind later content
-- **AND** returning above the threshold restores the static hero composition without per-scroll custom-property writes or opacity-transition churn.
+- **WHEN** the existing coarse hero scroll state changes side
+- **THEN** only media opacity and the internal black-veil opacity perform one bounded 240-millisecond transition each
+- **AND** media visibility, position, scale, filter, and background position remain unchanged
+- **AND** the hero shade leaves with its containing hero rather than remaining as a second fixed layer
+- **AND** first, repeat, and settled-scroll evidence shows no repeated hero-attributable paint, raster, image-decode, animation, or layer-invalidation work after the transition settles
+- **AND** application-attributable main-thread plus style, layout, and paint work remains within the existing performance budget
+- **AND** no application-attributable task or long animation frame of at least 50 milliseconds is introduced.
 
 #### Scenario: Reduced motion is requested
 
 - **WHEN** the browser reports a reduced-motion preference
-- **THEN** nonessential hero motion remains disabled
-- **AND** no fallback effect adds continuous filter, paint, or raster work.
+- **THEN** the selected opacity endpoint applies without a transition
+- **AND** no fallback effect adds continuous filter, paint, raster, or compositor animation work.
 
 ### Requirement: Homepage hero scroll synchronization is route-scoped
 
@@ -304,3 +342,67 @@ The app shell SHALL run nonessential infinite loading and orientation animation 
 - **WHEN** the browser reports a reduced-motion preference
 - **THEN** loading and scroll-cue animation remain disabled
 - **AND** shell navigation state, route completion, and visible content remain understandable without motion.
+
+### Requirement: Release fields exclusively author player sources
+
+The system MUST derive player providers only from validated Release provider fields while keeping Artist links and commerce links outside player input.
+
+#### Scenario: Artist has provider profile links
+
+- **WHEN** an Artist has Bandcamp or Tidal entries in `profile_links`
+- **THEN** those entries remain outbound navigation
+- **AND** they do not create player providers or prove that a Release is playable
+
+#### Scenario: Release has zero provider sources
+
+- **WHEN** both Release provider fields are absent
+- **THEN** derived player data is unavailable
+- **AND** no listen trigger or player iframe is created
+
+#### Scenario: Release has one or both provider sources
+
+- **WHEN** one or both Release provider fields fully match their supported URL shapes
+- **THEN** one builder returns player data with stable Release identity, nonblank display title, and a non-empty provider collection
+- **AND** content does not author provider availability, layout, priority, or session state
+
+#### Scenario: Merch URL points to a music provider
+
+- **WHEN** a Release `merch_url` points to Bandcamp or another provider
+- **THEN** it remains commerce navigation and does not become player input
+
+### Requirement: Provider data is internally coherent
+
+The system SHALL use discriminated provider and player-data types so provider ID, embed layout, URL, and availability cannot contradict each other.
+
+#### Scenario: Bandcamp provider is derived
+
+- **WHEN** a valid Bandcamp album or track embed is parsed
+- **THEN** provider ID is `bandcamp`
+- **AND** layout is respectively `bandcamp-album` or `bandcamp-track`
+
+#### Scenario: Tidal provider is derived
+
+- **WHEN** a valid Tidal album, track, playlist, or video URL is parsed
+- **THEN** provider ID is `tidal`, layout is `tidal`, and the corresponding embed URL is derived
+
+#### Scenario: Provider URL is only partially supported
+
+- **WHEN** a provider URL contains an unsupported host, entity, path segment, or unconsumed trailing path
+- **THEN** content validation rejects it
+- **AND** no partial or ambiguous provider is derived
+
+### Requirement: Player sessions use stable Release identity
+
+The persistent shell MUST distinguish session identity from display title.
+
+#### Scenario: Player trigger opens a session
+
+- **WHEN** a valid Release player trigger opens or switches a provider
+- **THEN** session reuse and provider preference are keyed by stable Release identity
+- **AND** the formatted Release title remains display copy only
+
+#### Scenario: Two releases share display text
+
+- **GIVEN** two Releases have the same formatted display title
+- **WHEN** the user opens their player triggers
+- **THEN** the shell treats them as distinct Release sessions

@@ -155,8 +155,11 @@ describe('Distro Coverflow progressive enhancement', () => {
       new Set([...cssSource.matchAll(/data-store-coverflow-position='([^']+)'/g)].map((match) => match[1])),
     ).toEqual(new Set(['active', 'right-near', 'right-far', 'back', 'left-far', 'left-near']));
     expect(cssSource).toMatch(/data-store-coverflow-ready[\s\S]*?\.distro-group-chunk[\s\S]*?display: contents/);
+    expect(cssSource).not.toMatch(
+      /data-store-coverflow-mode='preview'[^{}]*data-store-coverflow-card\]:not\(\[data-store-coverflow-position\]\)[^{}]*\{[^}]*display: none/,
+    );
     expect(cssSource).toMatch(
-      /data-store-coverflow-mode='preview'[\s\S]*?data-store-coverflow-card\]:not\(\[data-store-coverflow-position\]\)[\s\S]*?display: none/,
+      /\[data-store-coverflow-card\]:where\(\[data-store-coverflow-position\]\)\s*\{\s*position: absolute/,
     );
     expect(cssSource).toMatch(/\.distro-card__content[\s\S]*?display: none/);
     expect(cssSource).toContain('animation: store-catalog-reveal 180ms');
@@ -173,8 +176,10 @@ describe('Distro Coverflow progressive enhancement', () => {
     expect(cssSource).toContain('[data-store-coverflow-availability]');
     expect(cssSource).toContain('[data-store-coverflow-position]:is(:hover, :focus-visible)');
     expect(cssSource).toContain('.store-item-card__image');
-    expect(cssSource).toMatch(/\.distro-group-chunk:not\(:first-child\)[\s\S]*?content-visibility: auto/);
+    expect(cssSource).not.toMatch(/\.distro-group-chunk[^{}]*\{[^}]*content-visibility/);
     expect(cssSource).toMatch(/prefers-reduced-motion: reduce[\s\S]*?transform-style: flat/);
+    const reducedMotionCss = cssSource.slice(cssSource.indexOf('@media (prefers-reduced-motion: reduce)'));
+    expect(reducedMotionCss).not.toMatch(/\.store-coverflow-controls[^{}]*\{[^}]*display:\s*none/);
     expect(cssSource).toMatch(/prefers-reduced-motion: reduce[\s\S]*?position: static/);
     expect(cssSource).toMatch(/prefers-reduced-motion: reduce[\s\S]*?\.distro-group-chunk[\s\S]*?display: contents/);
     expect(cssSource).toMatch(/prefers-reduced-motion: reduce[\s\S]*?\.store-item-card__content[\s\S]*?display: grid/);

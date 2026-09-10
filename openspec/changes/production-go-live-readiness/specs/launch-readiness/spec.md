@@ -21,7 +21,8 @@ The system MUST block PRD native-commerce launch until every prerequisite change
 - **WHEN** the final launch checklist is assembled
 - **THEN** environment alignment, production controls, listing-price stabilization, Sveltia acceptance, Holding Page handoff, operator JWT verification, checkout stock reservations, and paid-order delivery are complete and archived in the declared order
 - **AND** evidence includes Access allow/deny proof, one-unit checkout concurrency and replay safety, immediate and scheduled delivery recovery, and the verified Holding Page rollback target
-- **AND** checkout creation, paid-order reconciliation/return, and atomic operator-stock corrections have local regression and new-account acceptance evidence
+- **AND** checkout creation and paid-order reconciliation/return corrections have local regression and new-account acceptance evidence
+- **AND** atomic operator-stock correction has local D1/browser evidence and protected PRD acceptance after migration and matching Worker/staff deployment with checkout closed
 - **AND** no prerequisite implementation or performance child remains active.
 
 #### Scenario: Shipping scope is reviewed
@@ -62,6 +63,14 @@ The system MUST close new-account Stripe test-mode behavior before live-mode pre
 - **AND** paid-reconciliation correction archival follows the shared reservation and outbox acceptance
 - **AND** overlapping tasks reference the same accepted evidence without requiring duplicate purchases or unchanged test reruns
 - **AND** a local mock or failure-reproduction probe never substitutes for new-account provider proof.
+
+#### Scenario: PRD-only operator correction is accepted
+
+- **GIVEN** the staff portal is PRD-only and no UAT staff portal exists
+- **WHEN** atomic operator-stock correction is locally validated
+- **THEN** real local D1 race/rollback tests, native local browser flows, and repository gates permit correction archival
+- **AND** launch still requires protected PRD Access allow/deny, approved real-stock adjustment/recount, stale-conflict retained input, explicit reassessment, and matching audit proof with checkout closed
+- **AND** local archival authorizes neither PRD mutation nor shopper launch and requires no synthetic production sales or stock.
 
 #### Scenario: Production delivery recovery is prepared
 

@@ -113,12 +113,18 @@ The system MUST map each supported service to a fixed BlackBox alias in trusted 
 
 #### Scenario: Vinyl Pressing inquiry is routed
 
-- **WHEN** the service is `Vinyl Pressing`
+- **WHEN** the canonical service is `Vinyl Pressing`
 - **THEN** the intended recipient is `vinyl@blackboxrecordsathens.com`.
+
+#### Scenario: Prior vinyl value reaches a newer Worker
+
+- **WHEN** the Worker receives the exact prior service value `Vinyl Printing`
+- **THEN** it normalizes the value to `Vinyl Pressing` before canonical validation and recipient lookup
+- **AND** email content, logs, and provider tags use the canonical value.
 
 #### Scenario: Browser attempts recipient override
 
-- **WHEN** a request includes a recipient address or unsupported service value
+- **WHEN** a request includes a recipient address or another unsupported service value
 - **THEN** the Worker rejects the request
 - **AND** it does not send email.
 

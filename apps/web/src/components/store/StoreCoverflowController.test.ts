@@ -118,6 +118,11 @@ function createHarness(
   pendingDisclosure = false,
   animations = true,
 ) {
+  vi.stubGlobal('getComputedStyle', () => ({ color: 'white' }));
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+    callback(0);
+    return 1;
+  });
   const element = new FakeElement();
   element.toggleAttribute('data-store-coverflow-pending-disclosure', pendingDisclosure);
   const stage = new FakeElement();
@@ -271,6 +276,27 @@ describe('Store Coverflow helpers', () => {
 });
 
 describe('Store Coverflow controller', () => {
+  it('applies catalog state immediately but cancels deferred focus when search takes over', async () => {
+    const { cards, controller, element, toggleButton } = createHarness();
+    let nextFrame: FrameRequestCallback | undefined;
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      nextFrame = callback;
+      return 1;
+    });
+
+    element.dispatch('click', toggleButton);
+    expect(element.dataset.storeCoverflowMode).toBe('catalog');
+    expect(toggleButton.getAttribute('aria-expanded')).toBe('true');
+    expect(cards[0]!.focus).not.toHaveBeenCalled();
+    controller.setSearchActive(true);
+    nextFrame!(0);
+    nextFrame!(16);
+    await Promise.resolve();
+    expect(element.dataset.storeCoverflowMode).toBe('search-results');
+    expect(cards[0]!.focus).not.toHaveBeenCalled();
+    controller.cleanup();
+  });
+
   it('consumes one retained pre-ready disclosure and clears pending state', async () => {
     const { cards, controller, element, reveal, toggleButton } = createHarness(8, 'preview', true);
 
@@ -291,6 +317,7 @@ describe('Store Coverflow controller', () => {
   it('opens a retained disclosure when reduced motion yields no animations', async () => {
     const { element, reveal, toggleButton } = createHarness(8, 'preview', true, false);
 
+    await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
 
@@ -418,6 +445,8 @@ describe('Store Coverflow controller', () => {
     expect(element.dataset.storeCoverflowMode).toBe('catalog');
     expect(cards[0]!.hasAttribute('data-store-coverflow-selected')).toBe(true);
     expect(toggleButton.getAttribute('aria-expanded')).toBe('true');
+    expect(cards[0]!.focus).not.toHaveBeenCalled();
+    await Promise.resolve();
     expect(cards[0]!.focus).toHaveBeenCalledWith({ preventScroll: true });
     await Promise.resolve();
     await Promise.resolve();

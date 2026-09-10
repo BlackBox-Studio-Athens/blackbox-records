@@ -125,6 +125,44 @@ The system SHALL balance initial rendering and first traversal on Store All and 
 - **AND** intrinsic-size estimates, when used, are measured for the owning route and breakpoint
 - **AND** client-side virtualization is not introduced by default.
 
+#### Scenario: Distro initial layout boundary is bounded
+
+- **GIVEN** Store Distro renders multiple six-card chunks across one or more groups
+- **WHEN** the initial document is laid out
+- **THEN** the first chunk of the first group remains eagerly rendered
+- **AND** below-fold chunks use a measured rendering strategy for their actual preview, expanded catalog, or fallback state
+- **AND** containment is not required on wrappers that generate no layout box
+- **AND** group headers, format navigation, and search structure remain outside card containment; cards may use layout and inline-size containment without block-size or paint containment
+- **AND** every card remains server-rendered in canonical source order.
+
+#### Scenario: Store rendering modes are measured
+
+- **WHEN** a Store rendering change is evaluated
+- **THEN** Store All and Store Distro settled preview and expanded catalog first and repeat traversal are measured separately at the declared wide and mobile profiles
+- **AND** evidence identifies the implementation tree, browser version, group modes, card counts, and scroll extent
+- **AND** a failed enhancement setup is not silently counted as preview acceptance
+- **AND** raw traces for failing traversals remain available to attribute individual rendering slices and tasks
+- **AND** windowed work summaries do not replace individual-slice, long-task, or long-animation-frame gates
+- **AND** native animation-frame timestamps and callback-dispatch intervals are recorded separately, with a rendering interval for the final scroll input
+- **AND** search, later-group selection, reduced motion, and enhancement-disabled fallback preserve complete content and accessible navigation.
+
+#### Scenario: Store preserves prepared catalog layout
+
+- **WHEN** an enhanced Store collection shows a Coverflow preview
+- **THEN** non-preview cards may remain invisibly laid out in their canonical grids at catalog width
+- **AND** only positioned preview cards are visible and keyboard-accessible in that preview
+- **AND** catalog, search, reduced-motion, and enhancement-disabled views retain complete content without estimated-height corridors
+- **AND** Store listing and Distro card titles may use the existing UI display font while page/group headings retain the brand font and original font assets remain unchanged
+- **AND** optional Google font display prevents an unbounded late font replacement.
+
+#### Scenario: Distro disclosure separates rendering phases
+
+- **WHEN** View all changes the group to catalog mode
+- **THEN** catalog state and expanded accessibility state apply synchronously
+- **AND** the existing controller may resolve styles before allowing a complete rendering frame ahead of focus
+- **AND** search, format selection, cleanup, or navigation cancels obsolete deferred focus
+- **AND** the existing disclosure visual-completion and long-task budgets still apply.
+
 #### Scenario: Shopper begins the first traversal
 
 - **WHEN** previously skipped content approaches the declared first-scroll corridor
@@ -152,6 +190,13 @@ The system SHALL balance initial rendering and first traversal on Store All and 
 - **THEN** the existing Store renderer remains authoritative and the residual is recorded as non-passing
 - **AND** the report names the rejected evidence, the unchanged commerce/request boundary, and this post-consolidation Store route remeasurement before any future bounded remedy
 - **AND** the residual does not authorize pagination, virtualization, infinite scrolling, node recycling, batch Store Offer reads, static price authority, or a passing performance claim.
+
+#### Scenario: September 2026 catalog residual is explicitly accepted
+
+- **GIVEN** the final `contain-below-fold-distro-chunks` implementation has passing functional, load, and request checks
+- **WHEN** its explicitly approved acceptance is recorded
+- **THEN** the 51 ms mobile disclosure task, instrumented 51–77 ms tasks, and inconclusive attribution of occasional wide traversal spans remain documented as change-specific exceptions
+- **AND** closure does not relabel those measurements as numerical passes or relax the default budgets for subsequent changes.
 
 ### Requirement: Critical font delivery is bounded and glyph-safe
 
@@ -356,3 +401,26 @@ The system SHALL overlap the one listing-price projection read with Store HTML w
 - **WHEN** comparable absolute evidence or the allowed paired control does not improve price settlement by the declared amount, content or veil timing regresses beyond the declared bound, request cardinality changes, or checkout authority coverage fails
 - **THEN** the change is not accepted
 - **AND** evidence identifies request scheduling, network contention, DOM application, transition timing, or measurement invalidity before another remedy is proposed.
+
+### Requirement: Store Distro disclosure is first-click reliable and bounded
+
+Store Distro full-catalog disclosure MUST retain its first activation across route-lazy controller readiness and MUST complete within the existing fixed interaction profiles without weakening load budgets.
+
+#### Scenario: Controller readiness is delayed
+
+- **WHEN** a direct load or shell entry delays the route-lazy Distro controller and the visitor activates `View all` once before readiness
+- **THEN** the same activation enters catalog mode exactly once after readiness
+- **AND** no second activation is required.
+
+#### Scenario: Ready controller opens the catalog
+
+- **WHEN** the visitor activates `View all` after controller readiness
+- **THEN** catalog mode and `aria-expanded="true"` apply by the next animation frame
+- **AND** the visual reveal completes within 250 milliseconds on the fixed desktop profile and 350 milliseconds on the fixed mobile-stress profile
+- **AND** disclosure introduces no application-attributable task of 50 milliseconds or longer.
+
+#### Scenario: Disclosure optimization preserves route budgets
+
+- **WHEN** the Store Distro route runs the fixed load and interaction profiles
+- **THEN** LCP remains no more than 2.5 seconds and CLS remains no more than 0.1
+- **AND** unrelated routes do not request or execute the Distro search module.

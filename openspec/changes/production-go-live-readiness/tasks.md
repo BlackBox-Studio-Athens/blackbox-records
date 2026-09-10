@@ -11,12 +11,12 @@
 
 ## 2. Non-Stripe Readiness
 
-- [ ] 2.1 Build one exact commit, run the bundle graph check, and store raw performance output under ignored `.codex-artifacts/runtime-performance/<commit>/`.
-- [ ] 2.2 Run the documented desktop cold, mobile stress, wide scroll, mobile scroll, and legacy Store/Distro profiles.
+- [x] 2.1 Build one exact commit, run the bundle graph check, and store raw performance output under ignored `.codex-artifacts/runtime-performance/<commit>/`.
+- [x] 2.2 Run the documented desktop cold, mobile stress, wide scroll, mobile scroll, and legacy Store/Distro profiles.
 - [ ] 2.3 Use Browser Use to verify Store rendering, first/repeat traversal, navigation, overlays, player lifecycle, mobile layout, accessibility, and console cleanliness.
-- [ ] 2.4 Verify one listing-price projection request per Store activation, zero per-card Store Offer reads, and zero Store 5xx responses.
-- [ ] 2.5 Record a no-action result when gates pass, or plan, fix, validate, and archive one bounded performance child for a reproducible application-attributable failure.
-- [ ] 2.6 Implement and locally validate `fix-stripe-checkout-creation`, `fix-paid-order-reconciliation`, and `make-operator-stock-writes-atomic`; record focused regressions for all six code findings before hosted commerce acceptance. Their new-account acceptance and archival remain section 3 work.
+- [x] 2.4 Verify one listing-price projection request per Store activation, zero per-card Store Offer reads, and zero Store 5xx responses.
+- [x] 2.5 Record a no-action result when gates pass, or plan, fix, validate, and archive one bounded performance child for a reproducible application-attributable failure.
+- [ ] 2.6 Implement and locally validate `fix-stripe-checkout-creation`, `fix-paid-order-reconciliation`, and `make-operator-stock-writes-atomic`; record focused regressions for all six code findings before hosted commerce acceptance. Atomic-stock correction archival uses accepted local D1/browser proof; its protected PRD acceptance remains task 4.9. Provider-dependent acceptance and archival remain section 3 work.
 - [ ] 2.7 Inventory public selling information and obtain approved shipping timing/rates, return/refund process, support contact, and privacy wording; publish missing information with accessible Store/checkout/footer links and Browser Use proof. Do not invent business or legal terms.
 - [ ] 2.8 Record owner-approved delivery-charge treatment and tax/receipt/invoice workflow; configure the chosen model and finish any required monetary implementation/spec update before accepting totals. Verify advertised receipt behavior rather than assuming Dashboard defaults.
 - [ ] 2.9 Write the manual operations runbook: paid/review/failed-delivery checks, Greek BOX NOW destination/shipment handoff, duplicate-safe dispatch recording, Dashboard refunds, and returned-stock reconciliation, with an owner for each step.
@@ -25,10 +25,10 @@
 
 - [ ] 3.1 Obtain new-account test access, approved secret-store credentials, and approved UAT email recipients before any paid test can trigger delivery; keep secrets, private recipients, and full Stripe IDs out of Git.
 - [ ] 3.2 Complete, strict-validate, sync, and archive `stabilize-store-listing-prices` against the new account's test mode.
-- [ ] 3.3 On one corrected UAT commit, prove provider-valid expiry, accepted/rejected custom-Price carts, reservation settlement/expiry/replay, operator/checkout concurrency, and protected stale-recount conflicts; include paid-reconciliation corrections and link shared evidence once.
+- [ ] 3.3 On one corrected UAT commit, prove provider-valid expiry, accepted/rejected custom-Price carts, and reservation settlement/expiry/replay; include paid-reconciliation corrections and link shared evidence once. Reference the atomic-stock local D1 operator/checkout race proof; protected staff flows are PRD-only and belong to 4.9.
 - [ ] 3.4 Prove differing billing/shipping, delayed confirmation, failed webhook resend, and durable shortage review on that tree; exercise immediate delivery and controlled scheduled recovery only with approved recipients.
 - [ ] 3.5 Complete the remaining `add-paid-order-delivery-outbox` delivery-kind, idempotency, and recovery acceptance using the shared proof; rerun only missing or affected checks.
-- [ ] 3.6 Strict-validate, sync, and archive checkout-creation and atomic-stock corrections, then reservations, then the outbox after each change's evidence passes. Archival does not require another payment or deployment of unchanged code.
+- [ ] 3.6 Strict-validate, sync, and archive provider-dependent checkout-creation work, then reservations, then the outbox after each change's evidence passes; reference the locally accepted atomic-stock archive. Archival does not require another payment or deployment of unchanged code.
 - [ ] 3.7 Strict-validate, sync, and archive `fix-paid-order-reconciliation` after the shared reservation/outbox proof; link the accepted evidence and single manual exception procedure.
 - [ ] 3.8 Rehearse the complete new-account test purchase and manual fulfillment/refund handoff with approved recipients and test data; verify advertised totals, receipt behavior, dispatch record, and returned-stock procedure without claiming a physical shipment was tested unless one was actually performed.
 
@@ -42,6 +42,7 @@
 - [ ] 4.6 Finish source/configuration/generation changes, pin catalog images to the reachable PRD asset host through the existing override, and record the accepted artifact SHA/environment. Run catalog promotion from that commit with `target=prd` and one applicable confirmation: workflow `confirm_live_catalog_changes=true` or direct CLI `--confirm-live-catalog-changes`.
 - [ ] 4.7 Deploy that commit's Worker and static artifacts to technical PRD origins; verify final canonical metadata, reachable catalog/email images while the apex still serves Holding Page, the technical/apex return allowlist, catalog, webhook, D1, Access, Cron, and configuration with checkout closed.
 - [ ] 4.8 Verify the committed and deployed PRD Cron configuration plus an observed scheduled invocation with correct PRD bindings; attach the same handler's controlled transient-failure recovery proof from UAT. Do not seed fake production paid orders or send unapproved emails; inspect actual live-smoke delivery only after 6.3 authorization.
+- [ ] 4.9 After deploying the revision migration and matching Worker/staff code with checkout closed, use native Browser Use on `staff.blackboxrecordsathens.com` to prove Access allow/deny, an approved real-stock adjustment and recount, stale-recount 409 with retained count/notes, and explicit reassessment. Verify matching D1 audit entries and reference local D1 race/rollback evidence; do not manufacture production sales or synthetic stock. This protected PRD proof is required before launch sign-off despite the atomic-stock correction's local archival.
 
 ## 5. Exact-Tree Acceptance
 

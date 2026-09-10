@@ -1,9 +1,12 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 
 import { chromium, type BrowserContext, type CDPSession, type Page, type Request } from 'playwright';
 
 import {
+  assertTraversalSetup,
   countStoreActivationRequests,
   extractStoreActivationMilestones,
   storeActivationRejectionReasons,
@@ -38,7 +41,64 @@ const output = args.get('output') ?? `.codex-artifacts/runtime-performance/${Dat
 const blockThirdPartyAnalytics = args.get('block-third-party-analytics') === 'true';
 const expectedStoreCardCount = Number(args.get('store-card-count') ?? 104);
 const productEnvironment = args.get('product-environment') ?? 'Local';
+const traversalMode = args.get('traversal-mode') ?? 'preview';
+if (!['preview', 'catalog'].includes(traversalMode)) throw new Error('Unknown traversal mode.');
+const catalogGroup = Number(args.get('catalog-group') ?? 0);
+if (!Number.isInteger(catalogGroup) || catalogGroup < 0) throw new Error('Invalid catalog group index.');
+const buildDirectory = args.get('build-directory') ?? 'apps/web/dist';
+const buildMode = args.get('build-mode') ?? 'production-static';
 const STORE_ACTIVATION_TIMEOUT_MS = 120_000;
+
+async function measurementTree() {
+  const revision = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+  const files = execFileSync(
+    'git',
+    [
+      'ls-files',
+      '-z',
+      '--cached',
+      '--others',
+      '--exclude-standard',
+      '--',
+      'apps',
+      'packages',
+      'scripts',
+      'package.json',
+      'pnpm-lock.yaml',
+      'pnpm-workspace.yaml',
+    ],
+    { encoding: 'utf8' },
+  )
+    .split('\0')
+    .filter(Boolean);
+  const dirtyFiles = execFileSync('git', ['diff', 'HEAD', '--name-only', '-z'], { encoding: 'utf8' })
+    .split('\0')
+    .filter(Boolean);
+  const hashFiles = async (paths: string[]) => {
+    const hash = createHash('sha256');
+    for (const path of [...new Set(paths)].sort()) {
+      hash.update(path).update('\0');
+      try {
+        hash.update(await readFile(path));
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+        hash.update('<deleted>');
+      }
+    }
+    return hash.digest('hex');
+  };
+  const artifacts = (await readdir(buildDirectory, { recursive: true, withFileTypes: true }))
+    .filter((entry) => entry.isFile())
+    .map((entry) => join(entry.parentPath, entry.name));
+  return {
+    revision,
+    sourceHash: await hashFiles(files),
+    buildHash: await hashFiles(artifacts),
+    dirtyFiles: await Promise.all(
+      dirtyFiles.filter((file) => files.includes(file)).map(async (path) => ({ path, hash: await hashFiles([path]) })),
+    ),
+  };
+}
 
 const profiles = {
   'desktop-distro-disclosure': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 1 },
@@ -101,14 +161,22 @@ async function configure(context: BrowserContext, page: Page) {
       lcp: null as null | Record<string, unknown>,
       longTasks: [] as number[],
       loafs: [] as number[],
+      longTaskEntries: [] as Array<{ startTime: number; duration: number }>,
+      loafEntries: [] as Array<{ startTime: number; duration: number; scripts?: unknown[] }>,
     };
     Object.assign(window, { __runtimePerformance: measurements });
     new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) measurements.longTasks.push(entry.duration);
+      for (const entry of list.getEntries()) {
+        measurements.longTasks.push(entry.duration);
+        measurements.longTaskEntries.push(entry.toJSON());
+      }
     }).observe({ type: 'longtask', buffered: true });
     if (PerformanceObserver.supportedEntryTypes.includes('long-animation-frame')) {
       new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) measurements.loafs.push(entry.duration);
+        for (const entry of list.getEntries()) {
+          measurements.loafs.push(entry.duration);
+          measurements.loafEntries.push(entry.toJSON());
+        }
       }).observe({ type: 'long-animation-frame', buffered: true });
     }
     new PerformanceObserver((list) => {
@@ -355,6 +423,8 @@ async function distroDisclosureRun(page: Page, entry: 'direct' | 'shell') {
   const distroModuleRequest = page.waitForRequest((request) => request.url().includes('StoreDistroSearch'), {
     timeout: STORE_ACTIVATION_TIMEOUT_MS,
   });
+  // Navigation can fail before this promise is awaited; preserve that original error.
+  void distroModuleRequest.catch(() => undefined);
 
   if (entry === 'direct') {
     await page.goto(routeUrl('store/distro'), { waitUntil: 'commit' });
@@ -426,10 +496,14 @@ async function distroDisclosureRun(page: Page, entry: 'direct' | 'shell') {
     const element = document.querySelector<HTMLElement>('[data-distro-search-root] [data-store-coverflow-group]')!;
     const button = element.querySelector<HTMLButtonElement>('[data-store-coverflow-toggle]')!;
     const measurements = (
-      window as unknown as { __runtimePerformance: { cls: number; longTasks: number[]; loafs: number[] } }
+      window as unknown as {
+        __runtimePerformance: {
+          cls: number;
+          longTaskEntries: Array<{ startTime: number; duration: number }>;
+          loafEntries: Array<{ startTime: number; duration: number }>;
+        };
+      }
     ).__runtimePerformance;
-    measurements.longTasks = [];
-    measurements.loafs = [];
 
     const start = performance.now();
     button.click();
@@ -441,15 +515,27 @@ async function distroDisclosureRun(page: Page, entry: 'direct' | 'shell') {
       ),
     );
     await Promise.allSettled(animations.map((animation) => animation.finished));
+    const endedAt = performance.now();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const longTaskEntries = measurements.longTaskEntries.filter(
+      (entry) => entry.startTime < endedAt && entry.startTime + entry.duration > start,
+    );
+    const loafEntries = measurements.loafEntries.filter(
+      (entry) => entry.startTime < endedAt && entry.startTime + entry.duration > start,
+    );
 
     return {
       ariaExpanded: button.getAttribute('aria-expanded'),
       cls: measurements.cls,
       clickHandlerMs,
-      longTasks: measurements.longTasks,
+      startedAt: start,
+      endedAt,
+      longTaskEntries,
+      loafEntries,
+      longTasks: longTaskEntries.map((entry) => entry.duration),
       mode: element.dataset.storeCoverflowMode,
       stateAtNextFrame,
-      visualMs: performance.now() - start,
+      visualMs: endedAt - start,
     };
   });
 
@@ -478,7 +564,105 @@ async function distroDisclosureRun(page: Page, entry: 'direct' | 'shell') {
   };
 }
 
-async function scrollTraversal(page: Page, cdp: CDPSession, label: 'first' | 'repeat') {
+async function traversalState(page: Page) {
+  return page.evaluate(() => ({
+    groups: [...document.querySelectorAll<HTMLElement>('[data-store-coverflow-group]')].map((group) => ({
+      id: group.id,
+      ready: group.hasAttribute('data-store-coverflow-ready'),
+      mode: group.getAttribute('data-store-coverflow-mode'),
+      cardCount: group.querySelectorAll('[data-store-coverflow-card]').length,
+      chunks: [...group.querySelectorAll<HTMLElement>('.distro-group-chunk')].map((chunk) => ({
+        display: getComputedStyle(chunk).display,
+        contentVisibility: getComputedStyle(chunk).contentVisibility,
+        intrinsicBlockSize: getComputedStyle(chunk).containIntrinsicBlockSize,
+      })),
+    })),
+    cardCount: document.querySelectorAll('[data-store-listing-price]').length,
+    distroCardCount: document.querySelectorAll('[data-distro-search-item]').length,
+    coverflowCardCount: document.querySelectorAll('[data-store-coverflow-card]').length,
+    scrollY: window.scrollY,
+    scrollHeight: document.documentElement.scrollHeight,
+    fontStatus: document.fonts.status,
+    images: [...document.images].map((image) => ({
+      url: image.currentSrc,
+      complete: image.complete,
+      width: image.naturalWidth,
+    })),
+    resources: performance.getEntriesByType('resource').map((entry) => entry.toJSON()),
+  }));
+}
+
+async function prepareTraversal(page: Page) {
+  if (!(await page.locator('[data-store-coverflow-group]').count())) {
+    if (new URL(page.url()).pathname.includes('/store')) throw new Error('Store traversal has no groups.');
+    return { readyAt: null, disclosures: [], state: await traversalState(page) };
+  }
+  await page.waitForFunction(() => {
+    const groups = [...document.querySelectorAll('[data-store-coverflow-group]')];
+    return groups.length > 0 && groups.every((group) => group.hasAttribute('data-store-coverflow-ready'));
+  });
+  const readyAt = await page.evaluate(() => performance.now());
+  const disclosures: Array<{
+    groupIndex: number;
+    durationMs: number;
+    handlerMs: number;
+    handlerScrollY: number;
+    scrollY: number;
+    longTasks: number[];
+    loafs: number[];
+  }> = [];
+  if (traversalMode === 'catalog') {
+    const groups = page.locator('[data-store-coverflow-group]');
+    if (catalogGroup >= (await groups.count())) throw new Error('Catalog group does not exist.');
+    for (const index of [catalogGroup]) {
+      const group = groups.nth(index);
+      if ((await group.getAttribute('data-store-coverflow-mode')) !== 'preview') continue;
+      // DOM activation avoids Playwright scrolling through the first corridor to click.
+      const click = await group.locator('[data-store-coverflow-toggle]').evaluate((element: HTMLElement) => {
+        const start = performance.now();
+        element.click();
+        return { start, handlerMs: performance.now() - start, scrollY: window.scrollY };
+      });
+      await page.waitForFunction((groupIndex) => {
+        const element = document.querySelectorAll('[data-store-coverflow-group]')[groupIndex];
+        return (
+          element?.getAttribute('data-store-coverflow-mode') === 'catalog' &&
+          !element.hasAttribute('data-store-coverflow-transitioning') &&
+          !element.hasAttribute('data-store-coverflow-reveal')
+        );
+      }, index);
+      const disclosure = await page.evaluate((start) => {
+        const end = performance.now();
+        const measurements = (
+          window as unknown as {
+            __runtimePerformance: {
+              longTaskEntries: Array<{ startTime: number; duration: number }>;
+              loafEntries: Array<{ startTime: number; duration: number }>;
+            };
+          }
+        ).__runtimePerformance;
+        return {
+          durationMs: end - start,
+          scrollY: window.scrollY,
+          longTasks: measurements.longTaskEntries
+            .filter((entry) => entry.startTime < end && entry.startTime + entry.duration > start)
+            .map((entry) => entry.duration),
+          loafs: measurements.loafEntries
+            .filter((entry) => entry.startTime < end && entry.startTime + entry.duration > start)
+            .map((entry) => entry.duration),
+        };
+      }, click.start);
+      disclosures.push({ groupIndex: index, handlerMs: click.handlerMs, handlerScrollY: click.scrollY, ...disclosure });
+    }
+  }
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const state = await traversalState(page);
+  assertTraversalSetup(state.groups, false);
+  if (traversalMode === 'catalog') assertTraversalSetup([state.groups[catalogGroup]], true);
+  return { readyAt, disclosures, state };
+}
+
+async function scrollTraversal(page: Page, cdp: CDPSession, label: 'first' | 'repeat', tracePath: string) {
   const settings = profiles[profile] as (typeof profiles)['wide-scroll'];
   await page.evaluate(() => {
     const measurements = (window as unknown as { __runtimePerformance: { longTasks: number[]; loafs: number[] } })
@@ -490,22 +674,63 @@ async function scrollTraversal(page: Page, cdp: CDPSession, label: 'first' | 're
   const browser = await page.evaluate(
     async ({ frames, step }) => {
       const intervals: number[] = [];
-      let previous = performance.now();
+      const callbackIntervals: number[] = [];
+      const startedAt = performance.now();
+      let previousFrame = await new Promise<number>((resolve) => requestAnimationFrame(resolve));
+      let previousCallback = performance.now();
       for (let frame = 0; frame < frames; frame += 1) {
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-        const now = performance.now();
-        intervals.push(now - previous);
-        previous = now;
         window.scrollBy(0, step);
+        const frameAt = await new Promise<number>((resolve) => requestAnimationFrame(resolve));
+        const now = performance.now();
+        intervals.push(frameAt - previousFrame);
+        callbackIntervals.push(now - previousCallback);
+        previousFrame = frameAt;
+        previousCallback = now;
       }
-      const measurements = (window as unknown as { __runtimePerformance: { longTasks: number[]; loafs: number[] } })
-        .__runtimePerformance;
-      return { intervals, scrollY: window.scrollY, longTasks: measurements.longTasks, loafs: measurements.loafs };
+      const endedAt = performance.now();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const measurements = (
+        window as unknown as {
+          __runtimePerformance: {
+            longTaskEntries: Array<{ startTime: number; duration: number }>;
+            loafEntries: Array<{ startTime: number; duration: number; scripts?: unknown[] }>;
+          };
+        }
+      ).__runtimePerformance;
+      const longTaskEntries = measurements.longTaskEntries.filter(
+        (entry) => entry.startTime < endedAt && entry.startTime + entry.duration > startedAt,
+      );
+      const loafEntries = measurements.loafEntries.filter(
+        (entry) => entry.startTime < endedAt && entry.startTime + entry.duration > startedAt,
+      );
+      return {
+        intervals,
+        callbackIntervals,
+        startedAt,
+        endedAt,
+        scrollY: window.scrollY,
+        longTaskEntries,
+        loafEntries,
+        longTasks: longTaskEntries.map((entry) => entry.duration),
+        loafs: loafEntries.map((entry) => entry.duration),
+      };
     },
     { frames: settings.frames, step: settings.step },
   );
-  const trace = summarizeTrace(await readTrace(cdp));
-  return { label, frameIntervals: summarize(browser.intervals), ...browser, trace };
+  const events = await readTrace(cdp);
+  const trace = summarizeTrace(events);
+  await mkdir(dirname(tracePath), { recursive: true });
+  await writeFile(tracePath, JSON.stringify({ traceEvents: events }));
+  return {
+    label,
+    cadenceClock: 'requestAnimationFrame timestamp',
+    frameIntervals: summarize(browser.intervals),
+    callbackCadence: summarize(browser.callbackIntervals),
+    ...browser,
+    trace,
+    tracePath,
+    state: await traversalState(page),
+  };
 }
 
 function routeUrl(route: string) {
@@ -514,6 +739,7 @@ function routeUrl(route: string) {
 }
 
 async function main() {
+  const tree = await measurementTree();
   const browser = await chromium.launch({ headless: true });
   const results = [];
   try {
@@ -560,11 +786,22 @@ async function main() {
             await page.goto(url, { waitUntil: 'networkidle' });
             await page.addStyleTag({ content: 'html { scroll-behavior: auto !important; }' });
             await page.evaluate(() => window.scrollTo(0, 0));
-            const first = await scrollTraversal(page, cdp, 'first');
+            const tracePrefix = `${output}.${route.replaceAll('/', '-')}-${run}`;
+            await startTrace(cdp);
+            const setup = await prepareTraversal(page);
+            const setupEvents = await readTrace(cdp);
+            const setupTracePath = `${tracePrefix}-setup.trace.json`;
+            await mkdir(dirname(setupTracePath), { recursive: true });
+            await writeFile(setupTracePath, JSON.stringify({ traceEvents: setupEvents }));
+            const setupTrace = summarizeTrace(setupEvents);
+            const first = await scrollTraversal(page, cdp, 'first', `${tracePrefix}-first.trace.json`);
             await page.evaluate(() => window.scrollTo(0, 0));
             await page.waitForTimeout(500);
-            const repeat = profile === 'legacy-scroll' ? null : await scrollTraversal(page, cdp, 'repeat');
-            results.push({ route, run, profile, first, repeat });
+            const repeat =
+              profile === 'legacy-scroll'
+                ? null
+                : await scrollTraversal(page, cdp, 'repeat', `${tracePrefix}-repeat.trace.json`);
+            results.push({ route, run, profile, setup, setupTrace, setupTracePath, first, repeat });
           }
           await context.close();
         }
@@ -574,12 +811,15 @@ async function main() {
     await browser.close();
   }
 
+  const finalTree = await measurementTree();
+  const treeUnchanged = JSON.stringify(tree) === JSON.stringify(finalTree);
   await mkdir(dirname(output), { recursive: true });
   await writeFile(
     output,
-    `${JSON.stringify({ commit: process.env.RUNTIME_PERFORMANCE_COMMIT ?? 'record-with-git-rev-parse', baseUrl, productEnvironment, profile, settings: profiles[profile], runs, routes, expectedStoreCardCount, blockThirdPartyAnalytics, capturedAt: new Date().toISOString(), method: profile.endsWith('distro-disclosure') ? 'fresh-context delayed and ready Store Distro disclosure' : profile.endsWith('store-activation') ? 'fresh-context same-document Store activation' : 'existing runtime profile', runOrder: results.map((result) => ('run' in result ? result.run : null)), summary: profile.endsWith('store-activation') ? summarizeStoreActivationRuns(results.map((entry) => entry.result)) : undefined, results }, null, 2)}\n`,
+    `${JSON.stringify({ commit: tree.revision, tree, finalTree, treeUnchanged, browserVersion: browser.version(), buildDirectory, buildMode, cacheState: 'fresh browser context per run', traversalMode, catalogGroup, baseUrl, productEnvironment, profile, settings: profiles[profile], runs, routes, expectedStoreCardCount, blockThirdPartyAnalytics, capturedAt: new Date().toISOString(), method: profile.endsWith('distro-disclosure') ? 'fresh-context delayed and ready Store Distro disclosure' : profile.endsWith('store-activation') ? 'fresh-context same-document Store activation' : 'existing runtime profile', runOrder: results.map((result) => ('run' in result ? result.run : null)), summary: profile.endsWith('store-activation') ? summarizeStoreActivationRuns(results.map((entry) => entry.result)) : undefined, results }, null, 2)}\n`,
   );
   console.log(output);
+  if (!treeUnchanged) throw new Error('Measurement inputs changed during the run; evidence is invalid.');
 }
 
 main().catch((error: unknown) => {

@@ -8,15 +8,15 @@ TBD - created by archiving change organize-distro-format-discovery. Update Purpo
 
 ### Requirement: Distro physical types remain exact
 
-The system MUST preserve each Distro record's accepted physical type in content and inventory data while treating Store Categories and combined browse categories as derived presentation only.
+The system MUST preserve each Distro record's accepted physical type in content and inventory data while treating Store Categories and browse headings as derived presentation only.
 
 #### Scenario: Small vinyl is grouped for browsing
 
 - **GIVEN** a Store Item classified as `Distro` has a source record with exact group `Vinyl 7-inch` or `Vinyl 10-inch`
 - **WHEN** the Store Distro category groups records for browsing
-- **THEN** the record appears under `7-inch & 10-inch Vinyl`
-- **AND** the combined label is not persisted as a content group, inventory item type, Store Item field, Store Category, variant identity, or Store Offer field
-- **AND** the record's exact physical type remains visible.
+- **THEN** the record appears under the matching `Vinyl 7-inch` or `Vinyl 10-inch` heading
+- **AND** the two physical types are not combined into one browse group
+- **AND** the record's exact physical type remains visible and unchanged in content, inventory, Store Item, variant, and Store Offer authority.
 
 #### Scenario: Free-text format differs from physical type wording
 
@@ -44,7 +44,7 @@ The system SHALL derive a stable browse sequence for Store Items classified as `
 #### Scenario: Populated groups are rendered
 
 - **WHEN** Distro-category entries are prepared for `/store/distro/`
-- **THEN** populated groups appear in this order: `Vinyl 12-inch`, `7-inch & 10-inch Vinyl`, `CDs`, `Tapes`, `Clothes`, `Other`
+- **THEN** populated groups appear in this order: `Vinyl 12-inch`, `Vinyl 10-inch`, `Vinyl 7-inch`, `CDs`, `Tapes`, `Clothes`, `Other`
 - **AND** empty groups are omitted
 - **AND** every canonical distro-sourced Store Item remains in its group even when it also belongs to `BlackBox Releases` or `Merch`.
 
@@ -57,5 +57,5 @@ The system SHALL derive a stable browse sequence for Store Items classified as `
 #### Scenario: Distro JavaScript is unavailable
 
 - **WHEN** `/store/distro/` is rendered without client JavaScript
-- **THEN** every canonical distro-sourced Store Item remains present under its derived browse heading
+- **THEN** every canonical distro-sourced Store Item remains present under its exact derived browse heading
 - **AND** each appears only once within the Distro document regardless of additional Store Category memberships.

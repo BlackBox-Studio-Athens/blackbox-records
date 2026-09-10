@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  assertTraversalSetup,
   countStoreActivationRequests,
   dynamicImportSpecifiers,
   extractStoreActivationMilestones,
@@ -11,6 +12,25 @@ import {
 } from './runtime-performance-helpers';
 
 describe('runtime performance helpers', () => {
+  it('rejects missing readiness and incomplete expanded traversal setup', () => {
+    expect(() => assertTraversalSetup([], false)).toThrow();
+    expect(() => assertTraversalSetup([{ ready: false, mode: 'preview', cardCount: 6 }], false)).toThrow();
+    expect(() => assertTraversalSetup([{ ready: true, mode: 'preview', cardCount: 6 }], true)).toThrow();
+    expect(() => assertTraversalSetup([{ ready: true, mode: 'catalog', cardCount: 6 }], true)).not.toThrow();
+  });
+
+  it('preserves a long individual slice even when windowed p95 passes', () => {
+    const result = summarizeTrace([
+      { name: 'thread_name', pid: 1, tid: 1, args: { name: 'CrRendererMain' } },
+      { name: 'RunTask', pid: 1, tid: 1, ts: 0, dur: 270_000 },
+      { name: 'Layout', pid: 1, tid: 1, ts: 0, dur: 265_000 },
+      { name: 'Paint', pid: 1, tid: 1, ts: 10_000_000, dur: 100 },
+    ]);
+    expect(result.mainStyleLayoutPaint.p95).toBeLessThan(8);
+    expect(result.layout.maximum).toBe(265);
+    expect(result.tasks.maximum).toBe(270);
+    expect(result.longTaskCount).toBe(1);
+  });
   it('reads Vite template-literal dynamic imports', () => {
     expect(dynamicImportSpecifiers('import(`./store-cart.A1b2.js`); import("./drawer.C3d4.js")')).toEqual([
       './store-cart.A1b2.js',

@@ -8,7 +8,7 @@ TBD - created by archiving change add-distro-coverflow-catalog-disclosure. Updat
 
 ### Requirement: Eligible Distro groups provide a bounded 3D Coverflow preview
 
-The Store Distro category SHALL enhance a populated classified group into a responsive BlackBox 3D Coverflow when the group contains more than six Store Items and the required client platform support is available.
+The Store Distro category SHALL enhance a populated classified group into a responsive BlackBox 3D Coverflow when the group contains more than six Store Items, or when a group containing two or more Store Items is explicitly selected through enhanced format navigation, and the required client platform support is available.
 
 #### Scenario: Large group is eligible
 
@@ -21,9 +21,17 @@ The Store Distro category SHALL enhance a populated classified group into a resp
 - **AND** one prominent shared status identifies the active Store Item by title and artist or label without a numeric position prefix that could be mistaken for a date.
 - **AND** the group uses the same shared Store Coverflow controller and lifecycle as eligible flat Store categories without a second Distro mount.
 
+#### Scenario: Focused small group is eligible
+
+- **WHEN** `/store/distro/` has JavaScript and `transform-style: preserve-3d` support, no search query is active, and enhanced format navigation explicitly selects a group containing two to six Store Items
+- **THEN** that selected group enters `preview` mode using the same server-rendered cards, controls, status, and shared Store Coverflow controller
+- **AND** every item in the selected group is available in canonical order
+- **AND** each card receives one stage position, with exactly one active front-facing cover after initialization and after each navigation step, including when the group contains exactly two items
+- **AND** returning to `All formats` returns that small group to its complete grid without changing membership or order.
+
 #### Scenario: Group is ineligible
 
-- **WHEN** a populated group contains six or fewer Store Items
+- **WHEN** `All formats` is current and a populated group contains six or fewer Store Items, or an explicitly selected group contains only one Store Item
 - **THEN** the group remains in its existing catalog layout
 - **AND** no Coverflow control or alternative catalog order is exposed.
 
@@ -33,7 +41,7 @@ The Store Distro category SHALL enhance a populated classified group into a resp
 - **THEN** it uses a compact stage and side-cover spacing suited to the narrow viewport
 - **AND WHEN** the same group is viewed at `40rem` or wider
 - **THEN** it uses a wider but compact stage with restrained cover size and enough lateral and depth spacing to keep neighboring records apparent without dominating the viewport
-- **AND** both presentations use the same canonical card nodes, six relative positions, controls, state, and order.
+- **AND** both presentations use the same canonical card nodes, up to six relative positions, controls, state, and order.
 
 #### Scenario: Visitor navigates the preview
 
@@ -62,7 +70,7 @@ The Store Distro category SHALL enhance a populated classified group into a resp
 
 - **WHEN** an eligible group is in `preview` mode
 - **THEN** each positioned card presents artwork without its catalog copy while retaining one static, server-authored accessible link name `{title} — {artist_or_label}` across all modes
-- **AND** exactly six cards receive relative stage positions while every offstage card and empty wrapper gap uses `display: none` after enhancement is ready
+- **AND** up to six cards receive relative stage positions while every offstage card and empty wrapper gap uses `display: none` after enhancement is ready
 - **AND** preview does not use opacity, offscreen positioning, or `aria-hidden` to conceal focusable offstage records or wrappers
 - **AND** Store Item availability labels and badges are absent from positioned preview covers while catalog, search-results, unsupported, and no-JavaScript presentations retain their existing availability presentation
 - **AND** actionable positioned covers use the same hover and focus-visible cue as All Store Coverflow
@@ -161,7 +169,7 @@ The enhancement MUST reuse the same server-rendered Store Distro card nodes and 
 - **WHEN** an eligible group moves between `preview`, `catalog`, and `search-results`
 - **THEN** the same server-rendered Store Item card nodes and wrapper nodes change presentation in place
 - **AND** Store Items are neither duplicated, recreated, reordered, paginated, nor virtualized
-- **AND** search remains the sole writer of card, wrapper, and group `hidden` state while Coverflow writes only its own group-mode, bounded card-position, selected-card, control-state, status, and temporary transition attributes
+- **AND** search remains the sole writer of card, wrapper, and group `hidden` state while Coverflow writes only its own group-mode, bounded card-position, selected-card, control-state, status, pending-disclosure, and temporary transition attributes
 - **AND** Store Offer availability and price remain tied to the canonical Store Item rather than a Distro-only commerce model
 - **AND** no carousel, animation, gesture, or state-management dependency is added.
 
@@ -175,7 +183,8 @@ The enhancement MUST reuse the same server-rendered Store Distro card nodes and 
 #### Scenario: Motion is active
 
 - **WHEN** the visitor changes the active preview record, hovers or focuses an actionable positioned cover, or toggles catalog disclosure
-- **THEN** motion is event-driven, affects at most the six preview covers and one group reveal surface; cover navigation completes within 300ms and disclosure completes within 480ms of authored animation time
+- **THEN** motion is event-driven, affects at most the six preview covers and one group reveal surface; cover navigation completes within 300ms and catalog disclosure uses at most 180ms of authored animation time
+- **AND** catalog mode, toggle state, focus, and nearest-block scroll update before disclosure animation is awaited
 - **AND** disclosure uses component-local CSS rather than a document View Transition, and `try/finally` cleanup removes in-flight state after completion or interruption
 - **AND** hover or focus animates only the child artwork and inner surface under the shared Store Coverflow cue while outer 3D position transforms remain state-owned
 - **AND** reduced-motion presentation removes the artwork transform while retaining a static surface and visible focus cue
@@ -184,9 +193,10 @@ The enhancement MUST reuse the same server-rendered Store Distro card nodes and 
 
 #### Scenario: Initial mount and disclosure performance are measured
 
-- **WHEN** `/store/distro/` runs direct loads, app-shell entries, 320px and 390px mobile checks, and focused wheel, keyboard, hover, and reduced-motion checks
+- **WHEN** `/store/distro/` runs direct loads, app-shell entries, 320px and 390px mobile checks, focused wheel, keyboard, hover, reduced-motion checks, and delayed-controller first-activation checks
 - **THEN** the complete canonical catalog remains available, movement stays bounded to the positioned stage, and the mobile disclosure introduces no horizontal page overflow or visible layout instability
 - **AND** native page wheel behavior resumes outside the hovered preview stage and whenever `catalog` or `search-results` mode owns the presentation
+- **AND** a disclosure activation received before controller readiness reaches catalog mode exactly once after readiness without a second activation
 - **AND** any local development-server or unavailable-API delay is classified separately from Coverflow interaction behavior rather than used as a strict new latency gate
 - **AND** the supported server-authored preview produces no preceding full-catalog frame while unsupported clients retain the full catalog
 - **AND** existing project Core Web Vitals budgets remain policy while the archived Store activation evidence remains the scheduling baseline.
@@ -232,8 +242,8 @@ Each eligible Coverflow preview SHALL expose the relationship between its bounde
 - **AND WHEN** Previous, Next, or a positioned side cover changes the active record
 - **THEN** the rail glides to `current / total` with restrained transform-only motion and no looping or ambient animation
 - **AND WHEN** the visitor activates `View all {total}`
-- **THEN** the preview band and rail remain visible while the rail reaches 100% during the first 180ms and the catalog remains concealed
-- **AND** the hard-edged catalog reveal begins only after the rail fill completes, removes the preview-only band from presentation, and reaches its final state within the established 480ms authored-animation budget
+- **THEN** catalog mode and its accessible toggle state apply immediately without waiting for the continuation rail
+- **AND** one hard-edged catalog reveal removes the preview-only band from presentation and reaches its final state within 180ms of authored animation time
 - **AND** no timer loop, animation-frame loop, document View Transition, layout animation, or new controller mode is introduced.
 
 #### Scenario: Reduced motion or unsupported enhancement remains complete
