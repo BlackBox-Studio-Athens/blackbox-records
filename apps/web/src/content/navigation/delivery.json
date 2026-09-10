@@ -1,0 +1,8 @@
+{
+  "$schema": "../../../.astro/collections/navigation.schema.json",
+  "title": "Delivery information",
+  "url": "/terms/",
+  "order": 8,
+  "show_in_header": false,
+  "show_in_footer": true
+}

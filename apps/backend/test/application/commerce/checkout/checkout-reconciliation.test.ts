@@ -46,6 +46,8 @@ describe('checkout reconciliation', () => {
       isAuthoritative: false,
       recommendedOrderStatus: 'paid',
       source: {
+        status: 'complete',
+        paymentStatus: 'paid',
         amountTotalMinor: null,
         checkoutSessionId: 'cs_test_123',
         currencyCode: null,
@@ -113,6 +115,8 @@ describe('checkout reconciliation', () => {
 
   it('defaults missing backend-only Stripe source identifiers to null', () => {
     expect(reconcileCheckoutSession(session({})).source).toEqual({
+      status: 'open',
+      paymentStatus: 'unpaid',
       amountTotalMinor: null,
       checkoutSessionId: 'cs_test_123',
       currencyCode: null,

@@ -496,6 +496,9 @@ export type components = {
             requestId?: string;
         };
         InternalCheckoutOrder: {
+            acceptedDeliveryAmountMinor: number | null;
+            /** @enum {string|null} */
+            acceptedParcelTier: "small" | "medium" | null;
             /** Format: date-time */
             checkoutExpiresAt: string;
             checkoutSessionId: string | null;
@@ -531,17 +534,22 @@ export type components = {
                 amountTotalMinor: number;
                 /** @enum {string} */
                 currencyCode: "EUR";
+                deliveryGrossMinor: number | null;
+                deliveryVatMinor: number | null;
                 /** @enum {string} */
                 kind: "current";
                 lines: {
                     displayName: string;
                     lineAmountMinor: number;
+                    lineVatMinor: number | null;
                     optionLabel: string | null;
                     quantity: number;
                     storeItemSlug: string;
+                    taxRatePercent: number | null;
                     unitAmountMinor: number;
                     variantId: string;
                 }[];
+                merchandiseGrossMinor: number | null;
                 newsletterConsent: {
                     /** @enum {boolean} */
                     optedIn: false;
@@ -569,7 +577,9 @@ export type components = {
                     email: string;
                     phone: string | null;
                 };
+                totalVatMinor: number | null;
             };
+            monetaryPolicyReference: string | null;
             /** Format: date-time */
             needsReviewAt: string | null;
             needsReviewReason: string | null;

@@ -3,6 +3,56 @@ import { describe, expect, it } from 'vitest';
 import { patchStripeMockRequest, patchStripeMockResponse } from '../../../../scripts/start-stripe-mock';
 
 describe('stripe-mock local launcher proxy', () => {
+  it('retains synthetic inclusive amounts and accepted delivery across Session reads', () => {
+    const checkoutSessions = new Map();
+    const checkoutLineItems = new Map();
+    const created = JSON.parse(
+      patchStripeMockResponse({
+        body: JSON.stringify({ id: 'cs_test_money', object: 'checkout.session' }),
+        checkoutSessions,
+        checkoutLineItems,
+        method: 'POST',
+        url: '/v1/checkout/sessions',
+        requestBody: new URLSearchParams({
+          'line_items[0][price]': 'price_mock_disintegration_black_vinyl_lp',
+          'line_items[0][quantity]': '1',
+          'automatic_tax[enabled]': 'true',
+          'shipping_options[0][shipping_rate_data][fixed_amount][amount]': '250',
+          'metadata[parcelTier]': 'small',
+          'metadata[monetaryPolicyReference]': 'synthetic-v1',
+        }).toString(),
+      }),
+    );
+    expect(created).toMatchObject({
+      amount_total: 3050,
+      automatic_tax: { enabled: true, status: 'complete' },
+      shipping_cost: { amount_total: 250, amount_tax: 48 },
+      total_details: { amount_tax: 590, amount_discount: 0 },
+    });
+    expect(
+      JSON.parse(
+        patchStripeMockResponse({
+          body: '{}',
+          checkoutSessions,
+          method: 'GET',
+          url: '/v1/checkout/sessions/cs_test_money',
+          requestBody: '',
+        }),
+      ),
+    ).toEqual(created);
+    expect(
+      JSON.parse(
+        patchStripeMockResponse({
+          body: '{"status":"expired"}',
+          checkoutSessions,
+          method: 'POST',
+          url: '/v1/checkout/sessions/cs_test_money/expire',
+          requestBody: '',
+        }),
+      ),
+    ).toMatchObject({ status: 'expired', amount_total: 3050 });
+    expect(checkoutSessions.get('cs_test_money')?.status).toBe('expired');
+  });
   it('returns the requested local expiry rather than the static fixture deadline', () => {
     const patched = patchStripeMockResponse({
       body: JSON.stringify({ id: 'cs_test_expiry', object: 'checkout.session', expires_at: 1, url: null }),

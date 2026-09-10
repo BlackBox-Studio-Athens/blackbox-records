@@ -30,12 +30,16 @@ export type CheckoutOrderLineAvgAggregateOutputType = {
   quantity: number | null
   unitAmountMinor: number | null
   lineAmountMinor: number | null
+  lineVatMinor: number | null
+  taxRatePercent: number | null
 }
 
 export type CheckoutOrderLineSumAggregateOutputType = {
   quantity: number | null
   unitAmountMinor: number | null
   lineAmountMinor: number | null
+  lineVatMinor: number | null
+  taxRatePercent: number | null
 }
 
 export type CheckoutOrderLineMinAggregateOutputType = {
@@ -49,6 +53,8 @@ export type CheckoutOrderLineMinAggregateOutputType = {
   optionLabel: string | null
   unitAmountMinor: number | null
   lineAmountMinor: number | null
+  lineVatMinor: number | null
+  taxRatePercent: number | null
   createdAt: Date | null
 }
 
@@ -63,6 +69,8 @@ export type CheckoutOrderLineMaxAggregateOutputType = {
   optionLabel: string | null
   unitAmountMinor: number | null
   lineAmountMinor: number | null
+  lineVatMinor: number | null
+  taxRatePercent: number | null
   createdAt: Date | null
 }
 
@@ -77,6 +85,8 @@ export type CheckoutOrderLineCountAggregateOutputType = {
   optionLabel: number
   unitAmountMinor: number
   lineAmountMinor: number
+  lineVatMinor: number
+  taxRatePercent: number
   createdAt: number
   _all: number
 }
@@ -86,12 +96,16 @@ export type CheckoutOrderLineAvgAggregateInputType = {
   quantity?: true
   unitAmountMinor?: true
   lineAmountMinor?: true
+  lineVatMinor?: true
+  taxRatePercent?: true
 }
 
 export type CheckoutOrderLineSumAggregateInputType = {
   quantity?: true
   unitAmountMinor?: true
   lineAmountMinor?: true
+  lineVatMinor?: true
+  taxRatePercent?: true
 }
 
 export type CheckoutOrderLineMinAggregateInputType = {
@@ -105,6 +119,8 @@ export type CheckoutOrderLineMinAggregateInputType = {
   optionLabel?: true
   unitAmountMinor?: true
   lineAmountMinor?: true
+  lineVatMinor?: true
+  taxRatePercent?: true
   createdAt?: true
 }
 
@@ -119,6 +135,8 @@ export type CheckoutOrderLineMaxAggregateInputType = {
   optionLabel?: true
   unitAmountMinor?: true
   lineAmountMinor?: true
+  lineVatMinor?: true
+  taxRatePercent?: true
   createdAt?: true
 }
 
@@ -133,6 +151,8 @@ export type CheckoutOrderLineCountAggregateInputType = {
   optionLabel?: true
   unitAmountMinor?: true
   lineAmountMinor?: true
+  lineVatMinor?: true
+  taxRatePercent?: true
   createdAt?: true
   _all?: true
 }
@@ -234,6 +254,8 @@ export type CheckoutOrderLineGroupByOutputType = {
   optionLabel: string | null
   unitAmountMinor: number | null
   lineAmountMinor: number | null
+  lineVatMinor: number | null
+  taxRatePercent: number | null
   createdAt: Date
   _count: CheckoutOrderLineCountAggregateOutputType | null
   _avg: CheckoutOrderLineAvgAggregateOutputType | null
@@ -271,6 +293,8 @@ export type CheckoutOrderLineWhereInput = {
   optionLabel?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
   unitAmountMinor?: Prisma.IntNullableFilter<"CheckoutOrderLine"> | number | null
   lineAmountMinor?: Prisma.IntNullableFilter<"CheckoutOrderLine"> | number | null
+  lineVatMinor?: Prisma.IntNullableFilter<"CheckoutOrderLine"> | number | null
+  taxRatePercent?: Prisma.FloatNullableFilter<"CheckoutOrderLine"> | number | null
   createdAt?: Prisma.DateTimeFilter<"CheckoutOrderLine"> | Date | string
   order?: Prisma.XOR<Prisma.CheckoutOrderScalarRelationFilter, Prisma.CheckoutOrderWhereInput>
 }
@@ -286,6 +310,8 @@ export type CheckoutOrderLineOrderByWithRelationInput = {
   optionLabel?: Prisma.SortOrderInput | Prisma.SortOrder
   unitAmountMinor?: Prisma.SortOrderInput | Prisma.SortOrder
   lineAmountMinor?: Prisma.SortOrderInput | Prisma.SortOrder
+  lineVatMinor?: Prisma.SortOrderInput | Prisma.SortOrder
+  taxRatePercent?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   order?: Prisma.CheckoutOrderOrderByWithRelationInput
 }
@@ -305,6 +331,8 @@ export type CheckoutOrderLineWhereUniqueInput = Prisma.AtLeast<{
   optionLabel?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
   unitAmountMinor?: Prisma.IntNullableFilter<"CheckoutOrderLine"> | number | null
   lineAmountMinor?: Prisma.IntNullableFilter<"CheckoutOrderLine"> | number | null
+  lineVatMinor?: Prisma.IntNullableFilter<"CheckoutOrderLine"> | number | null
+  taxRatePercent?: Prisma.FloatNullableFilter<"CheckoutOrderLine"> | number | null
   createdAt?: Prisma.DateTimeFilter<"CheckoutOrderLine"> | Date | string
   order?: Prisma.XOR<Prisma.CheckoutOrderScalarRelationFilter, Prisma.CheckoutOrderWhereInput>
 }, "id" | "orderId_variantId">
@@ -320,6 +348,8 @@ export type CheckoutOrderLineOrderByWithAggregationInput = {
   optionLabel?: Prisma.SortOrderInput | Prisma.SortOrder
   unitAmountMinor?: Prisma.SortOrderInput | Prisma.SortOrder
   lineAmountMinor?: Prisma.SortOrderInput | Prisma.SortOrder
+  lineVatMinor?: Prisma.SortOrderInput | Prisma.SortOrder
+  taxRatePercent?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.CheckoutOrderLineCountOrderByAggregateInput
   _avg?: Prisma.CheckoutOrderLineAvgOrderByAggregateInput
@@ -342,6 +372,8 @@ export type CheckoutOrderLineScalarWhereWithAggregatesInput = {
   optionLabel?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrderLine"> | string | null
   unitAmountMinor?: Prisma.IntNullableWithAggregatesFilter<"CheckoutOrderLine"> | number | null
   lineAmountMinor?: Prisma.IntNullableWithAggregatesFilter<"CheckoutOrderLine"> | number | null
+  lineVatMinor?: Prisma.IntNullableWithAggregatesFilter<"CheckoutOrderLine"> | number | null
+  taxRatePercent?: Prisma.FloatNullableWithAggregatesFilter<"CheckoutOrderLine"> | number | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"CheckoutOrderLine"> | Date | string
 }
 
@@ -355,6 +387,8 @@ export type CheckoutOrderLineCreateInput = {
   optionLabel?: string | null
   unitAmountMinor?: number | null
   lineAmountMinor?: number | null
+  lineVatMinor?: number | null
+  taxRatePercent?: number | null
   createdAt?: Date | string
   order: Prisma.CheckoutOrderCreateNestedOneWithoutLinesInput
 }
@@ -370,6 +404,8 @@ export type CheckoutOrderLineUncheckedCreateInput = {
   optionLabel?: string | null
   unitAmountMinor?: number | null
   lineAmountMinor?: number | null
+  lineVatMinor?: number | null
+  taxRatePercent?: number | null
   createdAt?: Date | string
 }
 
@@ -383,6 +419,8 @@ export type CheckoutOrderLineUpdateInput = {
   optionLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   lineAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  lineVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  taxRatePercent?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   order?: Prisma.CheckoutOrderUpdateOneRequiredWithoutLinesNestedInput
 }
@@ -398,6 +436,8 @@ export type CheckoutOrderLineUncheckedUpdateInput = {
   optionLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   lineAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  lineVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  taxRatePercent?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -412,6 +452,8 @@ export type CheckoutOrderLineCreateManyInput = {
   optionLabel?: string | null
   unitAmountMinor?: number | null
   lineAmountMinor?: number | null
+  lineVatMinor?: number | null
+  taxRatePercent?: number | null
   createdAt?: Date | string
 }
 
@@ -425,6 +467,8 @@ export type CheckoutOrderLineUpdateManyMutationInput = {
   optionLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   lineAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  lineVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  taxRatePercent?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -439,6 +483,8 @@ export type CheckoutOrderLineUncheckedUpdateManyInput = {
   optionLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   lineAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  lineVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  taxRatePercent?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -468,6 +514,8 @@ export type CheckoutOrderLineCountOrderByAggregateInput = {
   optionLabel?: Prisma.SortOrder
   unitAmountMinor?: Prisma.SortOrder
   lineAmountMinor?: Prisma.SortOrder
+  lineVatMinor?: Prisma.SortOrder
+  taxRatePercent?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -475,6 +523,8 @@ export type CheckoutOrderLineAvgOrderByAggregateInput = {
   quantity?: Prisma.SortOrder
   unitAmountMinor?: Prisma.SortOrder
   lineAmountMinor?: Prisma.SortOrder
+  lineVatMinor?: Prisma.SortOrder
+  taxRatePercent?: Prisma.SortOrder
 }
 
 export type CheckoutOrderLineMaxOrderByAggregateInput = {
@@ -488,6 +538,8 @@ export type CheckoutOrderLineMaxOrderByAggregateInput = {
   optionLabel?: Prisma.SortOrder
   unitAmountMinor?: Prisma.SortOrder
   lineAmountMinor?: Prisma.SortOrder
+  lineVatMinor?: Prisma.SortOrder
+  taxRatePercent?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -502,6 +554,8 @@ export type CheckoutOrderLineMinOrderByAggregateInput = {
   optionLabel?: Prisma.SortOrder
   unitAmountMinor?: Prisma.SortOrder
   lineAmountMinor?: Prisma.SortOrder
+  lineVatMinor?: Prisma.SortOrder
+  taxRatePercent?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -509,6 +563,8 @@ export type CheckoutOrderLineSumOrderByAggregateInput = {
   quantity?: Prisma.SortOrder
   unitAmountMinor?: Prisma.SortOrder
   lineAmountMinor?: Prisma.SortOrder
+  lineVatMinor?: Prisma.SortOrder
+  taxRatePercent?: Prisma.SortOrder
 }
 
 export type CheckoutOrderLineCreateNestedManyWithoutOrderInput = {
@@ -553,6 +609,14 @@ export type CheckoutOrderLineUncheckedUpdateManyWithoutOrderNestedInput = {
   deleteMany?: Prisma.CheckoutOrderLineScalarWhereInput | Prisma.CheckoutOrderLineScalarWhereInput[]
 }
 
+export type NullableFloatFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
 export type CheckoutOrderLineCreateWithoutOrderInput = {
   id?: string
   storeItemSlug: string
@@ -563,6 +627,8 @@ export type CheckoutOrderLineCreateWithoutOrderInput = {
   optionLabel?: string | null
   unitAmountMinor?: number | null
   lineAmountMinor?: number | null
+  lineVatMinor?: number | null
+  taxRatePercent?: number | null
   createdAt?: Date | string
 }
 
@@ -576,6 +642,8 @@ export type CheckoutOrderLineUncheckedCreateWithoutOrderInput = {
   optionLabel?: string | null
   unitAmountMinor?: number | null
   lineAmountMinor?: number | null
+  lineVatMinor?: number | null
+  taxRatePercent?: number | null
   createdAt?: Date | string
 }
 
@@ -618,6 +686,8 @@ export type CheckoutOrderLineScalarWhereInput = {
   optionLabel?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
   unitAmountMinor?: Prisma.IntNullableFilter<"CheckoutOrderLine"> | number | null
   lineAmountMinor?: Prisma.IntNullableFilter<"CheckoutOrderLine"> | number | null
+  lineVatMinor?: Prisma.IntNullableFilter<"CheckoutOrderLine"> | number | null
+  taxRatePercent?: Prisma.FloatNullableFilter<"CheckoutOrderLine"> | number | null
   createdAt?: Prisma.DateTimeFilter<"CheckoutOrderLine"> | Date | string
 }
 
@@ -631,6 +701,8 @@ export type CheckoutOrderLineCreateManyOrderInput = {
   optionLabel?: string | null
   unitAmountMinor?: number | null
   lineAmountMinor?: number | null
+  lineVatMinor?: number | null
+  taxRatePercent?: number | null
   createdAt?: Date | string
 }
 
@@ -644,6 +716,8 @@ export type CheckoutOrderLineUpdateWithoutOrderInput = {
   optionLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   lineAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  lineVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  taxRatePercent?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -657,6 +731,8 @@ export type CheckoutOrderLineUncheckedUpdateWithoutOrderInput = {
   optionLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   lineAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  lineVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  taxRatePercent?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -670,6 +746,8 @@ export type CheckoutOrderLineUncheckedUpdateManyWithoutOrderInput = {
   optionLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   unitAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   lineAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  lineVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  taxRatePercent?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -686,6 +764,8 @@ export type CheckoutOrderLineSelect<ExtArgs extends runtime.Types.Extensions.Int
   optionLabel?: boolean
   unitAmountMinor?: boolean
   lineAmountMinor?: boolean
+  lineVatMinor?: boolean
+  taxRatePercent?: boolean
   createdAt?: boolean
   order?: boolean | Prisma.CheckoutOrderDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["checkoutOrderLine"]>
@@ -701,6 +781,8 @@ export type CheckoutOrderLineSelectCreateManyAndReturn<ExtArgs extends runtime.T
   optionLabel?: boolean
   unitAmountMinor?: boolean
   lineAmountMinor?: boolean
+  lineVatMinor?: boolean
+  taxRatePercent?: boolean
   createdAt?: boolean
   order?: boolean | Prisma.CheckoutOrderDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["checkoutOrderLine"]>
@@ -716,6 +798,8 @@ export type CheckoutOrderLineSelectUpdateManyAndReturn<ExtArgs extends runtime.T
   optionLabel?: boolean
   unitAmountMinor?: boolean
   lineAmountMinor?: boolean
+  lineVatMinor?: boolean
+  taxRatePercent?: boolean
   createdAt?: boolean
   order?: boolean | Prisma.CheckoutOrderDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["checkoutOrderLine"]>
@@ -731,10 +815,12 @@ export type CheckoutOrderLineSelectScalar = {
   optionLabel?: boolean
   unitAmountMinor?: boolean
   lineAmountMinor?: boolean
+  lineVatMinor?: boolean
+  taxRatePercent?: boolean
   createdAt?: boolean
 }
 
-export type CheckoutOrderLineOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderId" | "storeItemSlug" | "variantId" | "stripePriceId" | "quantity" | "displayName" | "optionLabel" | "unitAmountMinor" | "lineAmountMinor" | "createdAt", ExtArgs["result"]["checkoutOrderLine"]>
+export type CheckoutOrderLineOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderId" | "storeItemSlug" | "variantId" | "stripePriceId" | "quantity" | "displayName" | "optionLabel" | "unitAmountMinor" | "lineAmountMinor" | "lineVatMinor" | "taxRatePercent" | "createdAt", ExtArgs["result"]["checkoutOrderLine"]>
 export type CheckoutOrderLineInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   order?: boolean | Prisma.CheckoutOrderDefaultArgs<ExtArgs>
 }
@@ -761,6 +847,8 @@ export type $CheckoutOrderLinePayload<ExtArgs extends runtime.Types.Extensions.I
     optionLabel: string | null
     unitAmountMinor: number | null
     lineAmountMinor: number | null
+    lineVatMinor: number | null
+    taxRatePercent: number | null
     createdAt: Date
   }, ExtArgs["result"]["checkoutOrderLine"]>
   composites: {}
@@ -1196,6 +1284,8 @@ export interface CheckoutOrderLineFieldRefs {
   readonly optionLabel: Prisma.FieldRef<"CheckoutOrderLine", 'String'>
   readonly unitAmountMinor: Prisma.FieldRef<"CheckoutOrderLine", 'Int'>
   readonly lineAmountMinor: Prisma.FieldRef<"CheckoutOrderLine", 'Int'>
+  readonly lineVatMinor: Prisma.FieldRef<"CheckoutOrderLine", 'Int'>
+  readonly taxRatePercent: Prisma.FieldRef<"CheckoutOrderLine", 'Float'>
   readonly createdAt: Prisma.FieldRef<"CheckoutOrderLine", 'DateTime'>
 }
     

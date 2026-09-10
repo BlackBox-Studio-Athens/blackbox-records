@@ -34,6 +34,30 @@ const productionConfig = readEmailRuntimeConfig({
 });
 
 describe('paid-order email notifications', () => {
+  it('uses the persisted inclusive breakdown in both confirmations without claiming a Fiscal Document', async () => {
+    const { provider, sendEmail } = createProvider();
+    await sendPaidOrderEmailNotifications({
+      config: sandboxConfig,
+      provider,
+      logger: createLogger(),
+      order: {
+        ...paidOrder(),
+        amountTotalMinor: 2730,
+        merchandiseGrossMinor: 2480,
+        deliveryGrossMinor: 250,
+        totalVatMinor: 528,
+        acceptedParcelTier: 'small',
+      },
+    });
+    for (const index of [0, 1]) {
+      const message = sentMessage(sendEmail, index);
+      expect(message.text).toContain('Merchandise: €24.80');
+      expect(message.text).toContain('BOX NOW Small locker delivery: €2.50');
+      expect(message.text).toContain('Including VAT: €5.28');
+      expect(message.text).toContain('Total paid: €27.30');
+    }
+    expect(sentMessage(sendEmail, 0).text).toContain('not a tax invoice or VAT receipt');
+  });
   it('sends shopper and ops emails through the UAT sink with deterministic keys, tags, and designed content', async () => {
     const { provider, sendEmail } = createProvider();
     const logger = createLogger();

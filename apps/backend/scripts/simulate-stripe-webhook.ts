@@ -6,6 +6,7 @@ import Stripe from 'stripe';
 import type { StripeCheckoutWebhookEventType } from '../src/infrastructure/stripe';
 
 export type StripeWebhookFixtureOptions = {
+  monetarySource?: Record<string, unknown>;
   checkoutSessionId?: string;
   created?: number;
   eventId?: string;
@@ -32,13 +33,17 @@ export function createStripeWebhookFixturePayload({
   paymentStatus = 'paid',
   status = 'complete',
   type,
+  monetarySource,
 }: StripeWebhookFixtureOptions): string {
   return JSON.stringify({
     api_version: '2026-08-26.dahlia',
     created,
     data: {
       object: {
-        amount_total: 2800,
+        amount_total: monetarySource?.amount_total ?? 2800,
+        automatic_tax: monetarySource?.automatic_tax,
+        shipping_cost: monetarySource?.shipping_cost,
+        total_details: monetarySource?.total_details,
         currency: 'eur',
         collected_information: {
           shipping_details: {
@@ -67,7 +72,7 @@ export function createStripeWebhookFixturePayload({
           phone: '+306900000000',
         },
         id: checkoutSessionId,
-        metadata: {},
+        metadata: monetarySource?.metadata ?? {},
         object: 'checkout.session',
         payment_status: paymentStatus,
         payment_intent: paymentStatus === 'paid' ? 'pi_local_mock' : null,
@@ -119,8 +124,18 @@ async function main() {
   const type = readWebhookEventType(process.argv[2]);
   const checkoutSessionId = readWebhookCheckoutSessionId();
   const endpointUrl = process.env.STRIPE_WEBHOOK_ENDPOINT_URL?.trim() || defaultEndpointUrl;
+  const monetarySource = (await fetch(
+    `http://127.0.0.1:12110/v1/checkout/sessions/${encodeURIComponent(checkoutSessionId)}`,
+    {
+      headers: { Authorization: 'Bearer sk_test_mock' },
+    },
+  ).then((response) => {
+    if (!response.ok) throw new Error('Could not read the local mock Checkout Session.');
+    return response.json();
+  })) as Record<string, unknown>;
   const result = await simulateStripeWebhook({
     checkoutSessionId,
+    monetarySource,
     endpointUrl,
     type,
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET?.trim() || defaultWebhookSecret,

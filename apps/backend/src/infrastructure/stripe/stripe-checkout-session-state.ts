@@ -15,6 +15,15 @@ import {
 export function toStripeCheckoutSessionState(session: Stripe.Checkout.Session): StripeCheckoutSessionState {
   return {
     amountTotalMinor: readAmountTotalMinor(session.amount_total),
+    monetary: {
+      automaticTaxStatus: session.automatic_tax?.enabled ? session.automatic_tax.status : null,
+      deliveryGrossMinor: session.shipping_cost?.amount_total ?? null,
+      deliveryVatMinor: session.shipping_cost?.amount_tax ?? null,
+      totalVatMinor: session.total_details?.amount_tax ?? null,
+      discountMinor: session.total_details?.amount_discount ?? null,
+      parcelTier: session.metadata?.parcelTier ?? null,
+      policyReference: session.metadata?.monetaryPolicyReference ?? null,
+    },
     checkoutSessionId: parseCheckoutSessionId(session.id),
     currencyCode: readOptionalString(session.currency)?.toUpperCase() ?? null,
     customer: {

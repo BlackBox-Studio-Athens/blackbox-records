@@ -29,6 +29,8 @@ import {
   type CatalogReconciler,
 } from '../catalog-sync';
 import type { CheckoutSessionLineItem, CheckoutGateway, FeatureFlagReader, HostedCheckoutSession } from './spi';
+import { quoteDelivery, type PackingPolicy } from './packing';
+import { createPackingPolicy } from './packing-policy';
 
 export type StartCheckoutCommand = {
   cancelUrl: string;
@@ -47,6 +49,8 @@ export type StartCheckoutLineCommand = {
 
 type StartCheckoutOptions = {
   now?: Date;
+  packingPolicy?: PackingPolicy;
+  monetaryPolicyReference?: string | null;
 };
 
 const CHECKOUT_HOLD_DURATION_MS = 35 * 60 * 1000;
@@ -197,9 +201,22 @@ export async function startCheckout(
   }
 
   const createdAt = options.now ?? new Date();
+  const delivery = quoteDelivery(validatedLines, options.packingPolicy ?? createPackingPolicy());
+  if (!delivery || !options.monetaryPolicyReference?.trim()) throw new CheckoutUnavailableError();
+  if (
+    !Number.isSafeInteger(validatedLines.reduce((sum, line) => sum + (line.lineAmountMinor ?? 0), delivery.amountMinor))
+  ) {
+    throw new CheckoutUnavailableError();
+  }
+  const monetaryPolicy = {
+    acceptedDeliveryAmountMinor: delivery.amountMinor,
+    acceptedParcelTier: delivery.tier,
+    monetaryPolicyReference: options.monetaryPolicyReference,
+  };
   const checkoutExpiresAt = new Date(createdAt.getTime() + CHECKOUT_HOLD_DURATION_MS);
   const [firstLine, ...remainingLines] = validatedLines;
   const holdInput: CreateCheckoutStockHoldInput = {
+    monetaryPolicy,
     checkoutExpiresAt,
     createdAt,
     lines: [firstLine!, ...remainingLines],
@@ -236,6 +253,7 @@ export async function startCheckout(
 
   try {
     checkoutSession = await checkoutGateway.createHostedCheckoutSession({
+      monetaryPolicy,
       cancelUrl: command.cancelUrl,
       checkoutExpiresAt,
       lineItems: validatedLines,

@@ -1,5 +1,6 @@
 import type { CheckoutSessionId, PaymentIntentId, StoreItemSlug, StripePriceId, VariantId } from '../ids';
 import type { CartQuantity } from '../quantities';
+import type { OrderMonetaryFields } from '../monetary';
 
 export type OrderStatus = 'pending_payment' | 'paid' | 'not_paid' | 'needs_review';
 export type OrderReviewReason = 'stock_unavailable' | 'line_mismatch' | 'incomplete_fulfillment';
@@ -10,7 +11,7 @@ export type ShippingLockerSnapshot = {
   locker_name_or_label: string;
 };
 
-export type CheckoutOrderRecord = {
+export type CheckoutOrderRecord = OrderMonetaryFields & {
   amountTotalMinor: number | null;
   id: string;
   storeItemSlug: StoreItemSlug;
@@ -200,6 +201,8 @@ function isValidDate(value: Date | null): value is Date {
 }
 
 export type CheckoutOrderLineRecord = {
+  lineVatMinor?: number | null;
+  taxRatePercent?: number | null;
   displayName: string | null;
   id: string;
   lineAmountMinor: number | null;

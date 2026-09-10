@@ -269,6 +269,47 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/store/delivery-quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        lines: components["schemas"]["StartCheckoutLine"][];
+                    };
+                };
+            };
+            responses: {
+                /** @description Current complete-cart delivery quote, or unavailable. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeliveryQuoteResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/store/items/{storeItemSlug}": {
         parameters: {
             query?: never;
@@ -423,6 +464,17 @@ export type components = {
             locker_id: string;
             locker_name_or_label: string;
         };
+        DeliveryQuoteResponse: {
+            quote: {
+                amountMinor: number;
+                /** @enum {string} */
+                currencyCode: "EUR";
+                merchandiseGrossMinor: number | null;
+                /** @enum {string} */
+                tier: "small" | "medium";
+                totalAmountMinor: number | null;
+            } | null;
+        };
         NewsletterRegistrationBody: {
             /** @enum {boolean} */
             consentAccepted: true;
@@ -531,6 +583,15 @@ export type components = {
             nativeCheckout: {
                 enabled: boolean;
                 unavailableReason: string | null;
+            };
+            pricing?: {
+                /** @enum {string} */
+                currencyCode: "EUR";
+                deliveryCharges: {
+                    medium: number;
+                    small: number;
+                };
+                vatDisclosure: string;
             };
         };
     };

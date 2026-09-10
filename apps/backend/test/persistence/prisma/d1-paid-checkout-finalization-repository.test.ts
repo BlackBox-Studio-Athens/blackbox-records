@@ -23,6 +23,168 @@ import type { StoreItemOptionRepository } from '../../../src/domain/commerce/rep
 import { D1OperatorStockRepository } from '../../../src/infrastructure/persistence/prisma/d1-operator-stock-repository';
 
 describe('D1PaidCheckoutFinalizationRepository', () => {
+  it.each([
+    { tier: 'small', delivery: 250, deliveryVat: 48, gross: 2480, quantity: 1, vat: 480, custom: false },
+    { tier: 'medium', delivery: 350, deliveryVat: 68, gross: 2480, quantity: 1, vat: 480, custom: false },
+    { tier: 'small', delivery: 250, deliveryVat: 48, gross: 3000, quantity: 3, vat: 581, custom: false },
+    { tier: 'small', delivery: 250, deliveryVat: 48, gross: 2480, quantity: 1, vat: 480, custom: true },
+  ] as const)('atomically preserves inclusive $tier money and line-rounded VAT for $quantity units', async (sale) => {
+    const seeded = await seedPendingCheckout();
+    const prisma = createPrismaClient({ COMMERCE_DB: env.COMMERCE_DB });
+    const orders = new PrismaOrderStateRepository(prisma);
+    try {
+      await env.COMMERCE_DB.prepare(
+        'UPDATE "CheckoutOrder" SET "acceptedDeliveryAmountMinor" = ?, "acceptedParcelTier" = ?, "monetaryPolicyReference" = ? WHERE "id" = ?',
+      )
+        .bind(sale.delivery, sale.tier, 'synthetic-seller-regime-v1', seeded.orderId)
+        .run();
+      await env.COMMERCE_DB.prepare(
+        'UPDATE "CheckoutOrderLine" SET "quantity" = ?, "unitAmountMinor" = ?, "lineAmountMinor" = ? WHERE "orderId" = ?',
+      )
+        .bind(
+          sale.quantity,
+          sale.custom ? null : sale.gross / sale.quantity,
+          sale.custom ? null : sale.gross,
+          seeded.orderId,
+        )
+        .run();
+      const pending = (await orders.findByCheckoutSessionId(seeded.checkoutSessionId))!;
+      const reconciliation = paidReconciliationFor(seeded);
+      Object.assign(reconciliation.source, {
+        orderId: seeded.orderId,
+        amountTotalMinor: sale.gross + sale.delivery,
+        monetary: {
+          automaticTaxStatus: 'complete',
+          deliveryGrossMinor: sale.delivery,
+          deliveryVatMinor: sale.deliveryVat,
+          totalVatMinor: sale.vat + sale.deliveryVat,
+          discountMinor: 0,
+          parcelTier: sale.tier,
+          policyReference: 'synthetic-seller-regime-v1',
+        },
+      });
+      const lines = [
+        {
+          stripePriceId: pending.lines![0]!.stripePriceId!,
+          quantity: createCartQuantity(sale.quantity),
+          lineAmountMinor: sale.gross,
+          lineVatMinor: sale.vat,
+          customAmountValid: sale.custom,
+          taxRatePercent: 24,
+          currencyCode: 'EUR',
+          taxInclusive: true,
+          discountMinor: 0,
+        },
+      ];
+      const finalizer = new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB);
+      const outcomes = await Promise.all(
+        [1, 2].map(() => applyPaidCheckoutReconciliation(orders, finalizer, reconciliation, new Date(), lines)),
+      );
+      expect(outcomes.map((result) => result.kind).sort()).toEqual(['applied', 'replay']);
+      const paid = await orders.findByCheckoutSessionId(seeded.checkoutSessionId);
+      expect(paid).toMatchObject({
+        status: 'paid',
+        amountTotalMinor: sale.gross + sale.delivery,
+        merchandiseGrossMinor: sale.gross,
+        deliveryGrossMinor: sale.delivery,
+        deliveryVatMinor: sale.deliveryVat,
+        totalVatMinor: sale.vat + sale.deliveryVat,
+        lines: [expect.objectContaining({ lineVatMinor: sale.vat, taxRatePercent: 24 })],
+      });
+      expect(paid!.amountTotalMinor! - paid!.totalVatMinor!).toBe(
+        sale.gross + sale.delivery - sale.vat - sale.deliveryVat,
+      );
+      reconciliation.source.monetary!.deliveryGrossMinor = 999;
+      reconciliation.source.monetary!.policyReference = 'later-seller-regime';
+      await expect(
+        applyPaidCheckoutReconciliation(orders, finalizer, reconciliation, new Date(), lines),
+      ).resolves.toMatchObject({ kind: 'replay', order: paid });
+      await expect(readStockChangeCount(seeded.checkoutSessionId)).resolves.toBe(1);
+      await expect(readDeliveryKinds(seeded.orderId)).resolves.toEqual(['ops_fulfillment', 'shopper_confirmation']);
+    } finally {
+      await prisma.$disconnect();
+    }
+  });
+
+  it.each([
+    'total',
+    'shipping',
+    'zero_tax',
+    'failed_tax',
+    'quantity',
+    'fixed_price',
+    'currency',
+    'identity',
+    'discount',
+    'missing_lines',
+  ])('holds a paid %s mismatch for durable review without stock or outbox effects', async (mismatch) => {
+    const seeded = await seedPendingCheckout();
+    const prisma = createPrismaClient({ COMMERCE_DB: env.COMMERCE_DB });
+    const orders = new PrismaOrderStateRepository(prisma);
+    try {
+      await env.COMMERCE_DB.prepare(
+        'UPDATE "CheckoutOrder" SET "acceptedDeliveryAmountMinor" = 250, "acceptedParcelTier" = ?, "monetaryPolicyReference" = ? WHERE "id" = ?',
+      )
+        .bind('small', 'synthetic-v1', seeded.orderId)
+        .run();
+      const pending = (await orders.findByCheckoutSessionId(seeded.checkoutSessionId))!;
+      const reconciliation = paidReconciliationFor(seeded);
+      Object.assign(reconciliation.source, {
+        orderId: seeded.orderId,
+        amountTotalMinor: 2750,
+        monetary: {
+          automaticTaxStatus: 'complete',
+          deliveryGrossMinor: 250,
+          deliveryVatMinor: 48,
+          totalVatMinor: 532,
+          discountMinor: 0,
+          parcelTier: 'small',
+          policyReference: 'synthetic-v1',
+        },
+      });
+      const lines = [
+        {
+          stripePriceId: pending.lines![0]!.stripePriceId!,
+          quantity: createCartQuantity(1),
+          lineAmountMinor: 2500,
+          lineVatMinor: 484,
+          taxRatePercent: 24,
+          currencyCode: 'EUR',
+          taxInclusive: true,
+          discountMinor: 0,
+        },
+      ];
+      if (mismatch === 'total') reconciliation.source.amountTotalMinor = 2751;
+      if (mismatch === 'shipping') reconciliation.source.monetary!.deliveryGrossMinor = 350;
+      if (mismatch === 'zero_tax') lines[0]!.lineVatMinor = 0;
+      if (mismatch === 'failed_tax') reconciliation.source.monetary!.automaticTaxStatus = 'failed';
+      if (mismatch === 'quantity') lines[0]!.quantity = createCartQuantity(2);
+      if (mismatch === 'fixed_price') lines[0]!.lineAmountMinor = 2400;
+      if (mismatch === 'currency') lines[0]!.currencyCode = 'USD';
+      if (mismatch === 'identity') reconciliation.source.orderId = 'other';
+      if (mismatch === 'discount') reconciliation.source.monetary!.discountMinor = 10;
+      if (mismatch === 'missing_lines') lines.length = 0;
+      const finalizer = new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB);
+      if (mismatch === 'failed_tax') {
+        vi.spyOn(orders, 'saveTransition').mockRejectedValueOnce(new Error('review-write-retry'));
+        await expect(
+          applyPaidCheckoutReconciliation(orders, finalizer, reconciliation, new Date(), lines),
+        ).rejects.toThrow('review-write-retry');
+        expect((await orders.findByCheckoutSessionId(seeded.checkoutSessionId))?.status).toBe('pending_payment');
+      }
+      await expect(
+        applyPaidCheckoutReconciliation(orders, finalizer, reconciliation, new Date(), lines),
+      ).resolves.toMatchObject({
+        kind: 'needs_review',
+        reason: 'line_mismatch',
+        order: { needsReviewReason: 'line_mismatch' },
+      });
+      await expect(readStockChangeCount(seeded.checkoutSessionId)).resolves.toBe(0);
+      await expect(readDeliveryKinds(seeded.orderId)).resolves.toEqual([]);
+    } finally {
+      await prisma.$disconnect();
+    }
+  });
   it.each(['stock_unavailable', 'line_mismatch', 'incomplete_fulfillment'] as const)(
     'durably records %s and preserves review on replay',
     async (reason) => {

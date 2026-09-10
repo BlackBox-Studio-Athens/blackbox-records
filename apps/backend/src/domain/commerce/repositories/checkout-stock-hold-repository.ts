@@ -1,5 +1,6 @@
 import type { CheckoutSessionId, StoreItemSlug, StripePriceId, VariantId } from '../ids';
 import type { CartQuantity, StockQuantity } from '../quantities';
+import type { AcceptedMonetaryPolicy } from '../monetary';
 import type { CheckoutOrderLineRecord, CheckoutOrderRecord } from './order-state-repository';
 
 export type CheckoutStockHoldLineInput = {
@@ -45,6 +46,7 @@ export type SessionlessNotPaidCheckoutOrder = Omit<
 };
 
 export type CreateCheckoutStockHoldInput = {
+  monetaryPolicy?: AcceptedMonetaryPolicy;
   checkoutExpiresAt: Date;
   createdAt: Date;
   lines: [CheckoutStockHoldLineInput, ...CheckoutStockHoldLineInput[]];

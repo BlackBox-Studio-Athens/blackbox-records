@@ -33,6 +33,7 @@ export type StripeCatalogCustomUnitAmount = {
 };
 
 export type StripeCatalogPrice = {
+  taxBehavior?: 'inclusive' | 'exclusive' | 'unspecified' | null;
   active: boolean;
   amountMinor: number | null;
   currencyCode: string | null;
@@ -212,6 +213,8 @@ export type StripeCatalogMutationContext = {
 };
 
 export type CatalogSyncIssueCode =
+  | 'wrong_tax_behavior'
+  | 'wrong_tax_code'
   | 'ambiguous_active_price'
   | 'foreign_environment_identity'
   | 'inactive_price'

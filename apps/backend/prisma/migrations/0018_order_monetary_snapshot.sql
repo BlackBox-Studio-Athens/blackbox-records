@@ -1,0 +1,9 @@
+ALTER TABLE "CheckoutOrder" ADD COLUMN "acceptedDeliveryAmountMinor" INTEGER;
+ALTER TABLE "CheckoutOrder" ADD COLUMN "acceptedParcelTier" TEXT;
+ALTER TABLE "CheckoutOrder" ADD COLUMN "monetaryPolicyReference" TEXT;
+ALTER TABLE "CheckoutOrder" ADD COLUMN "merchandiseGrossMinor" INTEGER;
+ALTER TABLE "CheckoutOrder" ADD COLUMN "deliveryGrossMinor" INTEGER;
+ALTER TABLE "CheckoutOrder" ADD COLUMN "deliveryVatMinor" INTEGER;
+ALTER TABLE "CheckoutOrder" ADD COLUMN "totalVatMinor" INTEGER;
+ALTER TABLE "CheckoutOrderLine" ADD COLUMN "lineVatMinor" INTEGER;
+ALTER TABLE "CheckoutOrderLine" ADD COLUMN "taxRatePercent" REAL;

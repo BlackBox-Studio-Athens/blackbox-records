@@ -31,6 +31,13 @@ import { readPaidCheckoutFulfillment } from '../../../domain/commerce/repositori
 type D1Value = null | number | string;
 
 type CheckoutOrderRow = {
+  acceptedDeliveryAmountMinor: number | null;
+  acceptedParcelTier: 'small' | 'medium' | null;
+  monetaryPolicyReference: string | null;
+  merchandiseGrossMinor: number | null;
+  deliveryGrossMinor: number | null;
+  deliveryVatMinor: number | null;
+  totalVatMinor: number | null;
   amountTotalMinor: null | number;
   checkoutSessionId: null | string;
   checkoutExpiresAt: string;
@@ -65,6 +72,8 @@ type CheckoutOrderRow = {
 };
 
 type CheckoutOrderLineRow = {
+  lineVatMinor: number | null;
+  taxRatePercent: number | null;
   createdAt: string;
   displayName: null | string;
   id: string;
@@ -79,6 +88,8 @@ type CheckoutOrderLineRow = {
 };
 
 type GroupedLineItem = {
+  lineVatMinor: number | null;
+  taxRatePercent: number | null;
   lineAmountMinor: number;
   quantity: number;
   stockChangeId: string;
@@ -116,6 +127,8 @@ const checkoutOrderSelectSql = [
   '  "checkoutExpiresAt",',
   '  "stripePaymentIntentId",',
   '  "amountTotalMinor",',
+  '  "acceptedDeliveryAmountMinor", "acceptedParcelTier", "monetaryPolicyReference",',
+  '  "merchandiseGrossMinor", "deliveryGrossMinor", "deliveryVatMinor", "totalVatMinor",',
   '  "currencyCode",',
   '  "recipientName",',
   '  "shopperEmail",',
@@ -156,6 +169,7 @@ const checkoutOrderLinesSql = [
   '  "quantity",',
   '  "unitAmountMinor",',
   '  "lineAmountMinor",',
+  '  "lineVatMinor", "taxRatePercent",',
   '  "createdAt"',
   'FROM "CheckoutOrderLine"',
   'WHERE "orderId" = ?',
@@ -197,6 +211,22 @@ export class D1PaidCheckoutFinalizationRepository implements PaidCheckoutFinaliz
     }
 
     const groupedLineItems = groupLineItems(command.checkoutSessionId, command.lineItems);
+    if (currentOrder.monetaryPolicyReference) {
+      const snapshot = command.monetarySnapshot;
+      if (
+        !snapshot ||
+        snapshot.deliveryGrossMinor !== currentOrder.acceptedDeliveryAmountMinor ||
+        snapshot.merchandiseGrossMinor + snapshot.deliveryGrossMinor !== command.amountTotalMinor ||
+        command.lineItems.reduce((sum, line) => sum + line.lineAmountMinor, 0) !== snapshot.merchandiseGrossMinor ||
+        command.lineItems.reduce((sum, line) => sum + (line.lineVatMinor ?? NaN), 0) + snapshot.deliveryVatMinor !==
+          snapshot.totalVatMinor ||
+        command.lineItems.length !== groupedLineItems.length ||
+        command.currencyCode !== 'EUR' ||
+        !Object.values(snapshot).every((amount) => Number.isSafeInteger(amount) && amount > 0)
+      ) {
+        throw new Error('Incomplete paid monetary snapshot.');
+      }
+    }
     const unavailableStock = await this.findUnavailableStock(groupedLineItems);
 
     if (unavailableStock) {
@@ -265,7 +295,7 @@ export class D1PaidCheckoutFinalizationRepository implements PaidCheckoutFinaliz
           .prepare(
             [
               'UPDATE "CheckoutOrderLine"',
-              'SET "quantity" = ?, "unitAmountMinor" = ?, "lineAmountMinor" = ?',
+              'SET "quantity" = ?, "unitAmountMinor" = ?, "lineAmountMinor" = ?, "lineVatMinor" = ?, "taxRatePercent" = ?',
               'WHERE "orderId" = ? AND "variantId" = ?',
               'AND EXISTS (',
               '  SELECT 1 FROM "CheckoutOrder"',
@@ -277,6 +307,8 @@ export class D1PaidCheckoutFinalizationRepository implements PaidCheckoutFinaliz
             lineItem.quantity,
             lineItem.unitAmountMinor,
             lineItem.lineAmountMinor,
+            lineItem.lineVatMinor,
+            lineItem.taxRatePercent,
             orderId,
             lineItem.variantId,
             orderId,
@@ -391,6 +423,7 @@ export class D1PaidCheckoutFinalizationRepository implements PaidCheckoutFinaliz
             '    "statusUpdatedAt" = ?,',
             '    "paidAt" = ?,',
             '    "amountTotalMinor" = ?,',
+            '    "merchandiseGrossMinor" = ?, "deliveryGrossMinor" = ?, "deliveryVatMinor" = ?, "totalVatMinor" = ?,',
             '    "currencyCode" = ?,',
             '    "recipientName" = ?,',
             '    "shopperEmail" = ?,',
@@ -420,6 +453,10 @@ export class D1PaidCheckoutFinalizationRepository implements PaidCheckoutFinaliz
           transitionedAt,
           transitionedAt,
           command.amountTotalMinor,
+          command.monetarySnapshot?.merchandiseGrossMinor ?? null,
+          command.monetarySnapshot?.deliveryGrossMinor ?? null,
+          command.monetarySnapshot?.deliveryVatMinor ?? null,
+          command.monetarySnapshot?.totalVatMinor ?? null,
           command.currencyCode,
           command.recipientName,
           command.shopperEmail,
@@ -565,6 +602,8 @@ function groupLineItems(
   }
 
   return [...quantityByVariantId].map(([variantId, quantity]) => ({
+    lineVatMinor: lineItems.find((line) => line.variantId === variantId)?.lineVatMinor ?? null,
+    taxRatePercent: lineItems.find((line) => line.variantId === variantId)?.taxRatePercent ?? null,
     lineAmountMinor: amountByVariantId.get(variantId)!,
     quantity: createCartQuantity(quantity),
     stockChangeId: createPaidCheckoutStockChangeId(checkoutSessionId, variantId),
@@ -580,6 +619,13 @@ function createPaidCheckoutStockChangeId(checkoutSessionId: CheckoutSessionId, v
 function mapCheckoutOrder(row: CheckoutOrderRow, lines: CheckoutOrderLineRecord[]): CheckoutOrderRecord {
   return {
     amountTotalMinor: row.amountTotalMinor,
+    acceptedDeliveryAmountMinor: row.acceptedDeliveryAmountMinor,
+    acceptedParcelTier: row.acceptedParcelTier,
+    monetaryPolicyReference: row.monetaryPolicyReference,
+    merchandiseGrossMinor: row.merchandiseGrossMinor,
+    deliveryGrossMinor: row.deliveryGrossMinor,
+    deliveryVatMinor: row.deliveryVatMinor,
+    totalVatMinor: row.totalVatMinor,
     checkoutSessionId: row.checkoutSessionId ? parseCheckoutSessionId(row.checkoutSessionId) : null,
     checkoutExpiresAt: new Date(row.checkoutExpiresAt),
     createdAt: new Date(row.createdAt),
@@ -625,6 +671,8 @@ function mapCheckoutOrderLine(row: CheckoutOrderLineRow): CheckoutOrderLineRecor
     displayName: row.displayName,
     id: row.id,
     lineAmountMinor: row.lineAmountMinor,
+    lineVatMinor: row.lineVatMinor,
+    taxRatePercent: row.taxRatePercent,
     optionLabel: row.optionLabel,
     orderId: row.orderId,
     quantity: createCartQuantity(row.quantity),

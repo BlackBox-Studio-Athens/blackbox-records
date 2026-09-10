@@ -296,6 +296,7 @@ function createCatalogPrice(input: {
 
   return {
     active: input.active ?? true,
+    taxBehavior: 'inclusive',
     amountMinor: input.priceKind === 'pay_what_you_want' ? null : (input.amountMinor ?? 2800),
     currencyCode: input.currencyCode ?? 'EUR',
     customUnitAmount: input.customUnitAmount ?? null,
@@ -314,7 +315,7 @@ function createCatalogPrice(input: {
       ...metadata,
     },
     productName: input.productProjection?.name ?? 'BlackBox Records - Disintegration - Black Vinyl LP',
-    productTaxCode: input.productProjection?.taxCode ?? null,
+    productTaxCode: input.productProjection?.taxCode ?? 'txcd_99999999',
   };
 }
 
@@ -481,6 +482,29 @@ describe('CatalogReconciler', () => {
       currencyCode: 'EUR',
       stripePriceId: oldPrice.priceId,
     });
+  });
+
+  it.each(['exclusive', 'unspecified', null] as const)(
+    'rejects %s tax behavior without changing gross Price Authority',
+    async (taxBehavior) => {
+      const price = { ...createCatalogPrice({ amountMinor: 2480, priceId: 'price_tax_policy' }), taxBehavior };
+      const { reconciler, stripeCatalog } = createReconciler();
+      stripeCatalog.prices.set(price.priceId, price);
+      const result = await reconciler.reconcileVariant(storeItem, { apply: true });
+      expect(result.issues).toContainEqual(expect.objectContaining({ code: 'wrong_tax_behavior' }));
+      expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
+      expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
+      expect(stripeCatalog.prices.get(price.priceId)?.amountMinor).toBe(2480);
+    },
+  );
+
+  it('rejects an unapproved Product tax code', async () => {
+    const price = { ...createCatalogPrice({ priceId: 'price_wrong_tax' }), productTaxCode: 'txcd_00000000' };
+    const { reconciler, stripeCatalog } = createReconciler();
+    stripeCatalog.prices.set(price.priceId, price);
+    expect((await reconciler.reconcileVariant(storeItem, { apply: false })).issues).toContainEqual(
+      expect.objectContaining({ code: 'wrong_tax_code' }),
+    );
   });
 
   it('bootstraps a missing second item without changing the first item Price', async () => {

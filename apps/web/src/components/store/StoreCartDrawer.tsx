@@ -11,6 +11,7 @@ import {
 } from '@/lib/store-cart';
 
 type StoreCartDrawerProps = {
+  deliverySummary?: React.ReactNode;
   cartState: StoreCartState;
   open: boolean;
   onContinueShopping: () => void;
@@ -54,6 +55,7 @@ export function createStoreCartDrawerView(cartState: StoreCartState, resolveHref
 }
 
 export default function StoreCartDrawer({
+  deliverySummary,
   cartState,
   open,
   onContinueShopping,
@@ -70,6 +72,7 @@ export default function StoreCartDrawer({
         className="top-[var(--header-height)] bottom-auto flex h-[calc(100dvh-var(--header-height))] w-[min(100vw,460px)] max-w-none flex-col border-l border-border/80 bg-background/98 p-0 text-foreground sm:max-w-none"
       >
         <StoreCartDrawerPanel
+          deliverySummary={deliverySummary}
           cartState={cartState}
           onContinueShopping={onContinueShopping}
           onDecrementItem={onDecrementItem}
@@ -83,6 +86,7 @@ export default function StoreCartDrawer({
 }
 
 export function StoreCartDrawerPanel({
+  deliverySummary,
   cartState,
   onContinueShopping,
   onDecrementItem,
@@ -212,15 +216,7 @@ export function StoreCartDrawerPanel({
           </div>
 
           <div className="space-y-4 border-t border-border/70 px-6 py-6">
-            <div className="flex items-center justify-between gap-4 text-sm">
-              <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                {STORE_CART_DRAWER_COPY.subtotal}
-              </span>
-              <span className="font-display text-2xl uppercase tracking-[0.08em] text-foreground">
-                {view.subtotalDisplay}
-              </span>
-            </div>
-            <p className="text-xs leading-5 text-muted-foreground">{STORE_CART_DRAWER_COPY.shipping}</p>
+            {deliverySummary}
             <a
               className="inline-flex min-h-11 w-full items-center justify-center bg-foreground px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-background transition-colors hover:bg-foreground/88"
               href={view.checkoutHref || undefined}

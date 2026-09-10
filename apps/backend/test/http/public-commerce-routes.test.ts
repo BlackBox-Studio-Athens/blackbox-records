@@ -16,6 +16,7 @@ const mockListVariantOffersForStoreItem = vi.fn();
 const mockReadStoreCapabilities = vi.fn();
 const mockReadStoreListingPrices = vi.fn();
 const mockStartCheckout = vi.fn();
+const mockQuoteDelivery = vi.fn();
 const mockReadCheckoutState = vi.fn();
 const mockRegisterNewsletterSignup = vi.fn();
 const mockSubmitServicesInquiry = vi.fn();
@@ -37,6 +38,7 @@ vi.mock('../../src/interfaces/http/routes/public-commerce-services', () => ({
     readStoreListingPrices: mockReadStoreListingPrices,
     readStoreOffer: mockReadStoreOffer,
     startCheckout: mockStartCheckout,
+    quoteDelivery: mockQuoteDelivery,
   }),
 }));
 
@@ -78,6 +80,49 @@ function expectNoStoreCacheControl(response: Response): void {
 }
 
 describe('public commerce routes', () => {
+  it('returns only the authoritative public quote and rejects browser money overrides', async () => {
+    const app = createHttpApp();
+    const lines = [
+      {
+        storeItemSlug: 'disintegration-black-vinyl-lp',
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
+        quantity: 1,
+      },
+    ];
+    const quote = {
+      tier: 'small',
+      amountMinor: 250,
+      currencyCode: 'EUR',
+      merchandiseGrossMinor: 2480,
+      totalAmountMinor: 2730,
+    };
+    mockQuoteDelivery.mockResolvedValue(quote);
+    const response = await app.request(
+      'http://backend.test/api/store/delivery-quote',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lines }),
+      },
+      testBindings,
+    );
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    expect(await response.json()).toEqual({ quote });
+    for (const override of [{ amountMinor: 1 }, { tier: 'small' }, { totalVatMinor: 0 }]) {
+      const rejected = await app.request(
+        'http://backend.test/api/store/delivery-quote',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lines, ...override }),
+        },
+        testBindings,
+      );
+      expect(rejected.status).toBe(400);
+    }
+    expect(mockQuoteDelivery).toHaveBeenCalledTimes(1);
+  });
   beforeEach(() => {
     vi.clearAllMocks();
   });

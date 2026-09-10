@@ -89,7 +89,15 @@ export const catalogFieldOwnershipMatrix: readonly CatalogFieldOwnership[] = [
   {
     driftCategory: 'price_authority',
     fieldGroup: 'stripe_price_authority',
-    fields: ['stripePriceId', 'lookupKey', 'amountMinor', 'currencyCode', 'priceActive', 'productActive'],
+    fields: [
+      'stripePriceId',
+      'lookupKey',
+      'amountMinor',
+      'currencyCode',
+      'taxBehavior',
+      'priceActive',
+      'productActive',
+    ],
     mutationPolicy: 'sandbox_apply_only',
     owner: 'stripe_price_authority',
     syncDirection: 'stripe_price_to_d1_store_offer',

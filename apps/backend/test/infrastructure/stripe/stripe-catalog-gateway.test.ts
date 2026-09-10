@@ -110,107 +110,119 @@ describe('StripeCatalogGatewayClient', () => {
     ]);
   });
 
-  it('creates a Price against the resolved Product without combined-create shortcuts', async () => {
-    const metadata = {
-      appEnv: 'uat' as const,
-      sourceId: 'disintegration',
-      sourceKind: 'release' as const,
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_disintegration-black-vinyl-lp_standard',
-    };
-    const product = {
-      active: true,
-      description: 'Disintegration by Afterwise.',
-      id: 'prod_1234567890abcdef',
-      images: [],
-      metadata,
-      name: 'BlackBox Records - Disintegration - Black Vinyl LP',
-      tax_code: null,
-    };
-    const productsCreate = vi.fn(async () => product);
-    const pricesCreate = vi.fn(async () => ({
-      active: true,
-      currency: 'eur',
-      id: 'price_1234567890abcdef',
-      lastResponse: {
-        headers: {
-          'idempotent-replayed': 'true',
-        },
-        requestId: 'req_catalog_create',
-      },
-      lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
-      metadata: product.metadata,
-      product,
-      unit_amount: 2800,
-    }));
-    const pricesList = vi.fn(async () => ({
-      data: [],
-      has_more: false,
-    }));
-    const gateway = new StripeCatalogGatewayClient({
-      prices: {
-        create: pricesCreate,
-        list: pricesList,
-        update: vi.fn(),
-      },
-      products: {
-        create: productsCreate,
-        list: vi.fn(),
-        update: vi.fn(),
-      },
-    } as never);
-
-    const result = await gateway.createCatalogPrice(
-      {
-        amountMinor: 2800,
-        currencyCode: 'EUR',
-        kind: 'fixed',
-        lookupKey: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
-        metadata,
-        productName: 'BlackBox Records - Disintegration - Black Vinyl LP',
-        productProjection: {
-          description: 'Disintegration by Afterwise.',
-          imageUrls: [],
-          metadata: {},
-          name: 'BlackBox Records - Disintegration - Black Vinyl LP',
-          taxCode: null,
-        },
-      },
-      createStripeCatalogMutationContext({
-        action: 'create_catalog_price',
-        environment: 'uat',
-        identity: 'revision_disintegration-black-vinyl-lp-2800-eur',
-        requestShape: {
-          amountMinor: 2800,
-          currencyCode: 'EUR',
-        },
+  it.each(['fixed', 'pay_what_you_want'] as const)(
+    'creates an inclusive %s Price against the resolved Product',
+    async (kind) => {
+      const metadata = {
+        appEnv: 'uat' as const,
+        sourceId: 'disintegration',
+        sourceKind: 'release' as const,
+        storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
-      }),
-    );
+      };
+      const product = {
+        active: true,
+        description: 'Disintegration by Afterwise.',
+        id: 'prod_1234567890abcdef',
+        images: [],
+        metadata,
+        name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+        tax_code: null,
+      };
+      const productsCreate = vi.fn(async () => product);
+      const pricesCreate = vi.fn(async () => ({
+        active: true,
+        currency: 'eur',
+        id: 'price_1234567890abcdef',
+        lastResponse: {
+          headers: {
+            'idempotent-replayed': 'true',
+          },
+          requestId: 'req_catalog_create',
+        },
+        lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+        metadata: product.metadata,
+        product,
+        unit_amount: 2800,
+      }));
+      const pricesList = vi.fn(async () => ({
+        data: [],
+        has_more: false,
+      }));
+      const gateway = new StripeCatalogGatewayClient({
+        prices: {
+          create: pricesCreate,
+          list: pricesList,
+          update: vi.fn(),
+        },
+        products: {
+          create: productsCreate,
+          list: vi.fn(),
+          update: vi.fn(),
+        },
+      } as never);
 
-    const productCreateCalls = productsCreate.mock.calls as unknown as Array<[Record<string, unknown>]>;
-    const priceCreateCalls = pricesCreate.mock.calls as unknown as Array<
-      [Record<string, unknown>, Record<string, unknown>]
-    >;
+      const result = await gateway.createCatalogPrice(
+        {
+          ...(kind === 'fixed'
+            ? { kind, amountMinor: 2800 }
+            : { kind, minimumAmountMinor: 1000, presetAmountMinor: 2800, maximumAmountMinor: 5000 }),
+          currencyCode: 'EUR',
+          lookupKey: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
+          metadata,
+          productName: 'BlackBox Records - Disintegration - Black Vinyl LP',
+          productProjection: {
+            description: 'Disintegration by Afterwise.',
+            imageUrls: [],
+            metadata: {},
+            name: 'BlackBox Records - Disintegration - Black Vinyl LP',
+            taxCode: null,
+          },
+        },
+        createStripeCatalogMutationContext({
+          action: 'create_catalog_price',
+          environment: 'uat',
+          identity: 'revision_disintegration-black-vinyl-lp-2800-eur',
+          requestShape: {
+            amountMinor: 2800,
+            currencyCode: 'EUR',
+          },
+          variantId: 'variant_disintegration-black-vinyl-lp_standard',
+        }),
+      );
 
-    expect(productCreateCalls[0]?.[0]).not.toHaveProperty('default_price_data');
-    expect(pricesCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        product: 'prod_1234567890abcdef',
-        transfer_lookup_key: true,
-      }),
-      expect.objectContaining({
-        idempotencyKey: expect.stringContaining(':price'),
-      }),
-    );
-    expect(priceCreateCalls[0]?.[0]).not.toHaveProperty('product_data');
-    expect(result).toMatchObject({
-      idempotentReplayed: true,
-      priceId: 'price_1234567890abcdef',
-      productId: 'prod_1234567890abcdef',
-      requestId: 'req_catalog_create',
-    });
-  });
+      const productCreateCalls = productsCreate.mock.calls as unknown as Array<[Record<string, unknown>]>;
+      const priceCreateCalls = pricesCreate.mock.calls as unknown as Array<
+        [Record<string, unknown>, Record<string, unknown>]
+      >;
+
+      expect(productCreateCalls[0]?.[0]).not.toHaveProperty('default_price_data');
+      expect(pricesCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          product: 'prod_1234567890abcdef',
+          tax_behavior: 'inclusive',
+          transfer_lookup_key: true,
+        }),
+        expect.objectContaining({
+          idempotencyKey: expect.stringContaining(':price'),
+        }),
+      );
+      expect(priceCreateCalls[0]?.[0]).not.toHaveProperty('product_data');
+      expect(priceCreateCalls[0]?.[0]).toMatchObject(
+        kind === 'fixed'
+          ? { unit_amount: 2800 }
+          : {
+              custom_unit_amount: { enabled: true, minimum: 1000, preset: 2800, maximum: 5000 },
+            },
+      );
+      expect(result).toMatchObject({
+        idempotentReplayed: true,
+        priceId: 'price_1234567890abcdef',
+        productId: 'prod_1234567890abcdef',
+        requestId: 'req_catalog_create',
+      });
+    },
+  );
 
   it('repairs a replacement Price lookup key with an atomic transfer', async () => {
     const metadata = {

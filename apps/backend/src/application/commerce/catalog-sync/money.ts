@@ -36,7 +36,7 @@ export function createStoreOfferPrice(
 }
 
 export function createStoreOfferPriceFromCatalogPrice(price: StripeCatalogPrice): StoreOfferPrice | null {
-  if (!price.currencyCode) {
+  if (price.currencyCode?.toUpperCase() !== 'EUR' || price.taxBehavior !== 'inclusive') {
     return null;
   }
 
@@ -51,6 +51,15 @@ export function createStoreOfferPriceFromCatalogPrice(price: StripeCatalogPrice)
     ) {
       return null;
     }
+    const { minimumAmountMinor, presetAmountMinor, maximumAmountMinor } = price.customUnitAmount;
+    if (
+      ![minimumAmountMinor, presetAmountMinor, maximumAmountMinor].every(
+        (amount) => Number.isSafeInteger(amount) && amount > 0,
+      ) ||
+      minimumAmountMinor > presetAmountMinor ||
+      presetAmountMinor > maximumAmountMinor
+    )
+      return null;
 
     return createStoreOfferPrice({
       currencyCode: price.currencyCode,
@@ -61,7 +70,7 @@ export function createStoreOfferPriceFromCatalogPrice(price: StripeCatalogPrice)
     });
   }
 
-  if (price.amountMinor === null) {
+  if (price.amountMinor === null || !Number.isSafeInteger(price.amountMinor) || price.amountMinor <= 0) {
     return null;
   }
 

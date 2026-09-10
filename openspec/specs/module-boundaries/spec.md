@@ -69,6 +69,15 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** those route files are owned by the closed `checkout-web` module
 - **AND** item-scoped checkout compatibility pages stay owned by `checkout-web` until removed.
 
+#### Scenario: VAT and delivery summaries are shared with the cart
+
+- **GIVEN** cart and checkout display a Worker-validated delivery quote
+- **WHEN** the app shell composes the cart drawer
+- **THEN** it supplies the `checkout-web` provided `DeliverySummary.tsx` component through the cart drawer's presentation slot
+- **AND** `store-cart` does not depend on checkout HTTP clients or payment authority
+- **AND** `checkout-web` owns `DeliveryRates.tsx` and `/terms/` delivery information
+- **AND** `commerce-domain` owns the accepted policy and order monetary types in `monetary.ts`, exposed through its existing root entrypoint.
+
 #### Scenario: Store category routes are added
 
 - **GIVEN** Store collection pages exist at `/store/`, `/store/blackbox-releases/`, `/store/distro/`, and `/store/merch/`

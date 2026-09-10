@@ -25,6 +25,7 @@ export function patchStripeMockRequest(input: { body: string; method?: string; u
 export function patchStripeMockResponse(input: {
   body: string;
   checkoutLineItems?: StripeMockCheckoutLineItems;
+  checkoutSessions?: Map<string, Record<string, unknown>>;
   method?: string;
   requestBody: string;
   url?: string;
@@ -37,6 +38,20 @@ export function patchStripeMockResponse(input: {
 
   if (isCheckoutSessionLineItemsRead(input)) {
     return patchCheckoutSessionLineItems(input, responseJson);
+  }
+
+  const readId =
+    input.method === 'GET' ? /^\/v1\/checkout\/sessions\/([^/?]+)(?:\?|$)/.exec(input.url ?? '')?.[1] : null;
+  const saved = readId ? input.checkoutSessions?.get(decodeURIComponent(readId)) : null;
+  if (saved) return JSON.stringify(saved);
+
+  const expiredId =
+    input.method === 'POST' ? /^\/v1\/checkout\/sessions\/([^/?]+)\/expire(?:\?|$)/.exec(input.url ?? '')?.[1] : null;
+  const expiring = expiredId ? input.checkoutSessions?.get(decodeURIComponent(expiredId)) : null;
+  if (expiredId && expiring && responseJson.status === 'expired') {
+    const expired = { ...expiring, status: 'expired', url: null };
+    input.checkoutSessions?.set(decodeURIComponent(expiredId), expired);
+    return JSON.stringify(expired);
   }
 
   if (!isCheckoutSessionCreate(input)) {
@@ -57,23 +72,46 @@ export function patchStripeMockResponse(input: {
 
     if (lineItems.length) {
       input.checkoutLineItems?.set(sessionId, lineItems);
+      const delivery = Number(requestParams.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'));
+      if (delivery > 0 && requestParams.get('automatic_tax[enabled]') === 'true') {
+        const merchandise = lineItems.reduce((sum, line) => sum + line.amountMinor * line.quantity, 0);
+        const vat = lineItems.reduce((sum, line) => sum + Math.round((line.amountMinor * line.quantity * 24) / 124), 0);
+        const deliveryVat = Math.round((delivery * 24) / 124);
+        Object.assign(responseJson, {
+          currency: 'eur',
+          amount_total: merchandise + delivery,
+          automatic_tax: { enabled: true, status: 'complete' },
+          shipping_cost: { amount_subtotal: delivery - deliveryVat, amount_total: delivery, amount_tax: deliveryVat },
+          total_details: { amount_discount: 0, amount_shipping: delivery, amount_tax: vat + deliveryVat },
+          metadata: Object.fromEntries(
+            [...requestParams].flatMap(([key, value]) => {
+              const match = /^metadata\[(.+)\]$/.exec(key);
+              return match ? [[match[1]!, value]] : [];
+            }),
+          ),
+        });
+      }
     }
   }
 
   if (!responseJson.url || isStripeHostedCheckoutUrl(responseJson.url)) {
     responseJson.url = `https://checkout.stripe.test/session/${fragment}`;
   }
+  if (sessionId) input.checkoutSessions?.set(sessionId, responseJson);
 
   return JSON.stringify(responseJson);
 }
 
 export function createStripeMockProxyServer(upstreamOrigin = STRIPE_MOCK_UPSTREAM_ORIGIN): http.Server {
   const checkoutLineItems: StripeMockCheckoutLineItems = new Map();
+  const checkoutSessions = new Map<string, Record<string, unknown>>();
 
   return http.createServer((request, response) => {
-    void proxyRequest({ checkoutLineItems, request, response, upstreamOrigin }).catch((error: unknown) => {
-      writeProxyError(response, error);
-    });
+    void proxyRequest({ checkoutLineItems, checkoutSessions, request, response, upstreamOrigin }).catch(
+      (error: unknown) => {
+        writeProxyError(response, error);
+      },
+    );
   });
 }
 
@@ -110,11 +148,13 @@ async function main() {
 
 async function proxyRequest({
   checkoutLineItems,
+  checkoutSessions,
   request,
   response,
   upstreamOrigin,
 }: {
   checkoutLineItems: StripeMockCheckoutLineItems;
+  checkoutSessions: Map<string, Record<string, unknown>>;
   request: IncomingMessage;
   response: ServerResponse;
   upstreamOrigin: string;
@@ -135,6 +175,7 @@ async function proxyRequest({
   const patchedResponseBody = patchStripeMockResponse({
     body: upstreamBody,
     checkoutLineItems,
+    checkoutSessions,
     method: request.method,
     requestBody,
     url: request.url,
@@ -195,7 +236,7 @@ async function waitForStripeMock() {
 }
 
 function isCheckoutSessionCreate(input: { method?: string; url?: string }) {
-  return input.method === 'POST' && input.url?.startsWith('/v1/checkout/sessions');
+  return input.method === 'POST' && /^\/v1\/checkout\/sessions(?:\?|$)/.test(input.url ?? '');
 }
 
 function isCheckoutSessionLineItemsRead(input: { method?: string; url?: string }) {
@@ -214,15 +255,26 @@ function patchCheckoutSessionLineItems(
   }
 
   const originalLineItems = responseJson.data;
+  responseJson.has_more = false;
   responseJson.data = lineItems.map((lineItem, index) => {
     const original = isJsonObject(originalLineItems[index]) ? originalLineItems[index] : {};
     const originalPrice = isJsonObject(original.price) ? original.price : {};
 
     return {
       ...original,
-      amount_subtotal: lineItem.amountMinor * lineItem.quantity,
+      amount_subtotal:
+        lineItem.amountMinor * lineItem.quantity - Math.round((lineItem.amountMinor * lineItem.quantity * 24) / 124),
+      amount_tax: Math.round((lineItem.amountMinor * lineItem.quantity * 24) / 124),
+      amount_discount: 0,
+      currency: 'eur',
+      taxes: [
+        {
+          amount: Math.round((lineItem.amountMinor * lineItem.quantity * 24) / 124),
+          rate: { percentage: 24, inclusive: true, country: 'GR' },
+        },
+      ],
       amount_total: lineItem.amountMinor * lineItem.quantity,
-      price: { ...originalPrice, id: lineItem.priceId },
+      price: { ...originalPrice, id: lineItem.priceId, tax_behavior: 'inclusive' },
       quantity: lineItem.quantity,
     };
   });

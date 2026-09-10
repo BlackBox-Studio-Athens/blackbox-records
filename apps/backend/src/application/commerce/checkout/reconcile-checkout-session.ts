@@ -8,6 +8,9 @@ export type CheckoutReconciliation = {
   isAuthoritative: false;
   recommendedOrderStatus: OrderStatus;
   source: {
+    monetary?: StripeCheckoutSessionState['monetary'];
+    status?: StripeCheckoutSessionState['status'];
+    paymentStatus?: StripeCheckoutSessionState['paymentStatus'];
     amountTotalMinor: number | null;
     checkoutSessionId: CheckoutSessionId;
     currencyCode: string | null;
@@ -37,6 +40,9 @@ export function reconcileCheckoutSession(
     isAuthoritative: false,
     recommendedOrderStatus: mapRecommendedOrderStatus(session, eventType),
     source: {
+      monetary: session.monetary,
+      status: session.status,
+      paymentStatus: session.paymentStatus,
       amountTotalMinor: session.amountTotalMinor,
       checkoutSessionId: session.checkoutSessionId,
       currencyCode: session.currencyCode,

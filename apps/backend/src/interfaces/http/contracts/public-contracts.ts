@@ -65,6 +65,13 @@ const storeOfferSchema = z
 
 const storeCapabilitiesSchema = z
   .object({
+    pricing: z
+      .object({
+        vatDisclosure: z.string(),
+        deliveryCharges: z.object({ small: z.number().int().positive(), medium: z.number().int().positive() }),
+        currencyCode: z.literal('EUR'),
+      })
+      .optional(),
     nativeCheckout: z.object({
       enabled: z.boolean(),
       unavailableReason: z.union([z.string(), z.null()]),
@@ -112,6 +119,47 @@ const startCheckoutBodySchema = z
   })
   .strict()
   .openapi('StartCheckoutBody');
+
+export const postDeliveryQuoteRoute = createRoute({
+  method: 'post',
+  path: '/api/store/delivery-quote',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: z
+            .object({
+              lines: z.array(startCheckoutLineSchema).min(1).max(100),
+            })
+            .strict(),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Current complete-cart delivery quote, or unavailable.',
+      content: {
+        'application/json': {
+          schema: z
+            .object({
+              quote: z
+                .object({
+                  tier: z.enum(['small', 'medium']),
+                  amountMinor: z.number().int().positive(),
+                  currencyCode: z.literal('EUR'),
+                  merchandiseGrossMinor: z.number().int().positive().nullable(),
+                  totalAmountMinor: z.number().int().positive().nullable(),
+                })
+                .nullable(),
+            })
+            .openapi('DeliveryQuoteResponse'),
+        },
+      },
+    },
+  },
+  tags: ['Store'],
+});
 
 const startCheckoutResponseSchema = z
   .object({
@@ -419,6 +467,7 @@ export const postServicesInquiryRoute = createRoute({
 });
 
 const publicContractModules = [
+  postDeliveryQuoteRoute,
   getStoreCapabilitiesRoute,
   getStoreListingPricesRoute,
   getStoreItemRoute,

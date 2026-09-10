@@ -35,6 +35,58 @@ describe('createStripeClientOptions', () => {
 });
 
 describe('StripeCheckoutGateway', () => {
+  it('reads every finalized tax line and enforces immutable custom Price bounds', async () => {
+    const line = {
+      id: 'li_first',
+      amount_total: 2480,
+      amount_tax: 480,
+      amount_discount: 0,
+      currency: 'eur',
+      quantity: 1,
+      taxes: [{ rate: { percentage: 24, inclusive: true, country: 'GR' } }],
+      price: {
+        id: 'price_custom_tax',
+        tax_behavior: 'inclusive',
+        custom_unit_amount: { minimum: 1000, maximum: 3000 },
+      },
+    };
+    const listLineItems = vi
+      .fn()
+      .mockResolvedValueOnce({ data: [line], has_more: true })
+      .mockResolvedValueOnce({ data: [{ ...line, id: 'li_second', amount_total: 3001 }], has_more: false });
+    const gateway = new StripeCheckoutGateway({ checkout: { sessions: { listLineItems } } } as never, 'pmc_test');
+    const lines = await gateway.readCheckoutSessionLineItems(checkoutSessionId('cs_test_tax'));
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toMatchObject({
+      lineAmountMinor: 2480,
+      lineVatMinor: 480,
+      taxRatePercent: 24,
+      taxInclusive: true,
+      customAmountValid: true,
+    });
+    expect(lines[1]?.customAmountValid).toBe(false);
+    expect(listLineItems).toHaveBeenLastCalledWith('cs_test_tax', {
+      limit: 100,
+      expand: ['data.taxes'],
+      starting_after: 'li_first',
+    });
+  });
+
+  it('does not silently omit a malformed provider line', async () => {
+    const gateway = new StripeCheckoutGateway(
+      {
+        checkout: {
+          sessions: {
+            listLineItems: async () => ({ data: [{ quantity: 0 }], has_more: false }),
+          },
+        },
+      } as never,
+      'pmc_test',
+    );
+    await expect(gateway.readCheckoutSessionLineItems(checkoutSessionId('cs_test_tax'))).rejects.toThrow(
+      'Incomplete Checkout line item',
+    );
+  });
   it('freezes expiry and idempotency parameters across real SDK retries', async () => {
     let now = Date.parse('2026-09-09T10:00:02.900Z');
     const clock = vi.spyOn(Date, 'now').mockImplementation(() => now);
@@ -59,6 +111,11 @@ describe('StripeCheckoutGateway', () => {
     });
     try {
       const result = await new StripeCheckoutGateway(stripe, 'pmc_test').createHostedCheckoutSession({
+        monetaryPolicy: {
+          acceptedDeliveryAmountMinor: 250,
+          acceptedParcelTier: 'small',
+          monetaryPolicyReference: 'synthetic-local-inclusive-v1',
+        },
         cancelUrl: 'https://example.com/cancel',
         checkoutExpiresAt: new Date(now - 1000),
         orderId: 'order_retry',
@@ -98,6 +155,11 @@ describe('StripeCheckoutGateway', () => {
     );
     await expect(
       gateway.createHostedCheckoutSession({
+        monetaryPolicy: {
+          acceptedDeliveryAmountMinor: 250,
+          acceptedParcelTier: 'small',
+          monetaryPolicyReference: 'synthetic-local-inclusive-v1',
+        },
         cancelUrl: 'https://example.com/cancel',
         checkoutExpiresAt: new Date(),
         orderId: 'order_failure',
@@ -118,6 +180,11 @@ describe('StripeCheckoutGateway', () => {
       'pmc_test',
     );
     const result = gateway.createHostedCheckoutSession({
+      monetaryPolicy: {
+        acceptedDeliveryAmountMinor: 250,
+        acceptedParcelTier: 'small',
+        monetaryPolicyReference: 'synthetic-local-inclusive-v1',
+      },
       cancelUrl: 'https://example.com/cancel',
       checkoutExpiresAt: new Date(),
       orderId: 'order_no_url',
@@ -149,6 +216,11 @@ describe('StripeCheckoutGateway', () => {
 
     try {
       await gateway.createHostedCheckoutSession({
+        monetaryPolicy: {
+          acceptedDeliveryAmountMinor: 250,
+          acceptedParcelTier: 'small',
+          monetaryPolicyReference: 'synthetic-local-inclusive-v1',
+        },
         cancelUrl: 'https://blackbox.example/checkout',
         checkoutExpiresAt: new Date(createdAt.getTime() + 30 * 60 * 1000),
         orderId: 'order_delayed',
@@ -197,6 +269,11 @@ describe('StripeCheckoutGateway', () => {
             variantId: variantId('variant_disintegration-black-vinyl-lp_standard'),
           },
         ],
+        monetaryPolicy: {
+          acceptedDeliveryAmountMinor: 250,
+          acceptedParcelTier: 'small',
+          monetaryPolicyReference: 'synthetic-local-inclusive-v1',
+        },
         cancelUrl: 'https://blackbox.example/checkout',
         newsletterOptIn: true,
         orderId: 'order_test_123',
@@ -220,6 +297,8 @@ describe('StripeCheckoutGateway', () => {
         expires_at: expect.any(Number),
         locale: 'en',
         metadata: {
+          parcelTier: 'small',
+          monetaryPolicyReference: 'synthetic-local-inclusive-v1',
           newsletterConsentCopyVersion: 'blackbox-newsletter-v1',
           newsletterOptIn: 'true',
           orderId: 'order_test_123',
@@ -234,6 +313,19 @@ describe('StripeCheckoutGateway', () => {
           allowed_countries: ['GR'],
         },
         success_url: 'https://blackbox.example/return',
+        automatic_tax: { enabled: true },
+        adaptive_pricing: { enabled: false },
+        shipping_options: [
+          {
+            shipping_rate_data: {
+              display_name: 'BOX NOW Small locker delivery',
+              type: 'fixed_amount',
+              fixed_amount: { amount: 250, currency: 'eur' },
+              tax_behavior: 'inclusive',
+              tax_code: 'txcd_92010001',
+            },
+          },
+        ],
       }),
       { idempotencyKey: 'checkout-order:order_test_123' },
     );
@@ -287,6 +379,12 @@ describe('StripeCheckoutGateway', () => {
     await expect(gateway.readCheckoutSessionLineItems(checkoutSessionId('cs_test_123'))).resolves.toEqual([
       {
         lineAmountMinor: 3700,
+        customAmountValid: false,
+        lineVatMinor: null,
+        taxRatePercent: null,
+        currencyCode: null,
+        taxInclusive: false,
+        discountMinor: null,
         quantity: 1,
         stripePriceId: 'price_test_pay_what_you_want',
       },

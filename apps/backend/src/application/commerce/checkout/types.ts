@@ -9,6 +9,7 @@ import type {
 } from '../../../domain/commerce';
 import type { OrderStatus } from '../../../domain/commerce/repositories/spi';
 import type { StoreOfferPrice } from '../catalog-sync';
+import type { AcceptedMonetaryPolicy } from '../../../domain/commerce';
 
 export type StoreOfferCatalogStatus = 'catalog_drift' | 'ready' | 'sold_out';
 
@@ -44,6 +45,7 @@ export type StoreOffer = StoreOfferIdentity &
 export type StoreOfferAvailability = StoreOffer['availability'];
 
 export type HostedCheckoutSessionRequest = {
+  monetaryPolicy?: AcceptedMonetaryPolicy;
   cancelUrl: string;
   checkoutExpiresAt: Date;
   lineItems?: CheckoutSessionLineItem[];
@@ -67,6 +69,12 @@ export type CheckoutSessionLineItem = {
 };
 
 export type FinalizedCheckoutSessionLineItem = {
+  customAmountValid?: boolean;
+  lineVatMinor?: number | null;
+  taxRatePercent?: number | null;
+  currencyCode?: string | null;
+  taxInclusive?: boolean;
+  discountMinor?: number | null;
   lineAmountMinor: number | null;
   quantity: CartQuantity;
   stripePriceId: StripePriceId;
@@ -98,6 +106,15 @@ export type StripeCheckoutAddressSnapshot = {
 };
 
 export type StripeCheckoutSessionState = {
+  monetary?: {
+    automaticTaxStatus: string | null;
+    deliveryGrossMinor: number | null;
+    deliveryVatMinor: number | null;
+    totalVatMinor: number | null;
+    discountMinor: number | null;
+    parcelTier: string | null;
+    policyReference: string | null;
+  } | null;
   amountTotalMinor: number | null;
   checkoutSessionId: CheckoutSessionId;
   currencyCode: string | null;

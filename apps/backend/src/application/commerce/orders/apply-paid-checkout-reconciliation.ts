@@ -9,12 +9,7 @@ import type {
   OrderReviewReason,
 } from '../../../domain/commerce/repositories/spi';
 import { readPaidCheckoutFulfillment } from '../../../domain/commerce/repositories/spi';
-import {
-  createCartQuantity,
-  type CartQuantity,
-  type CheckoutSessionId,
-  type StripePriceId,
-} from '../../../domain/commerce';
+import { createCartQuantity, type CheckoutSessionId } from '../../../domain/commerce';
 import {
   createCheckoutOrderPaidEvent,
   readStripeCollectedPaidOrderFulfillmentDetails,
@@ -22,6 +17,8 @@ import {
 } from './checkout-order-paid-event';
 import { InvalidOrderTransitionError } from './errors';
 import type { PaidCheckoutFinalizationRepository } from './paid-checkout-finalization';
+import type { FinalizedCheckoutSessionLineItem } from '../checkout/spi';
+import { reconcileMonetarySnapshot } from './reconcile-monetary-snapshot';
 
 export type ApplyPaidCheckoutReconciliationResult =
   | {
@@ -103,6 +100,13 @@ export async function applyPaidCheckoutReconciliation(
   }
 
   const persistedOrderLines = readCheckoutOrderLines(currentOrder);
+  if (reconciliation.source.monetary?.policyReference && !currentOrder.monetaryPolicyReference) {
+    return recordReview('line_mismatch');
+  }
+  const monetarySnapshot = currentOrder.monetaryPolicyReference
+    ? reconcileMonetarySnapshot(currentOrder, reconciliation.source, finalizedLineItems)
+    : null;
+  if (currentOrder.monetaryPolicyReference && !monetarySnapshot) return recordReview('line_mismatch');
   const reconciledOrderLines = reconcileFinalizedLineItems(persistedOrderLines, finalizedLineItems);
 
   if (!reconciledOrderLines) {
@@ -132,11 +136,16 @@ export async function applyPaidCheckoutReconciliation(
 
   try {
     const finalizationResult = await paidCheckoutFinalizer.finalizePaidCheckout({
+      monetarySnapshot,
       amountTotalMinor,
       checkoutSessionId,
       currencyCode,
       lineItems: reconciledOrderLines.map((line) => ({
         lineAmountMinor: line.lineAmountMinor!,
+        lineVatMinor:
+          finalizedLineItems.find((item) => item.stripePriceId === line.stripePriceId)?.lineVatMinor ?? null,
+        taxRatePercent:
+          finalizedLineItems.find((item) => item.stripePriceId === line.stripePriceId)?.taxRatePercent ?? null,
         quantity: line.quantity,
         unitAmountMinor: line.unitAmountMinor!,
         variantId: line.variantId,
@@ -194,11 +203,7 @@ export async function applyPaidCheckoutReconciliation(
   }
 }
 
-export type FinalizedPaidCheckoutLineItem = {
-  lineAmountMinor: number | null;
-  quantity: CartQuantity;
-  stripePriceId: StripePriceId;
-};
+export type FinalizedPaidCheckoutLineItem = FinalizedCheckoutSessionLineItem;
 
 function readCheckoutOrderLines(order: CheckoutOrderRecord): CheckoutOrderLineRecord[] {
   return order.lines?.length

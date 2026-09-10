@@ -338,6 +338,12 @@ function toCatalogPrice(price: StripePriceWithExpandedProduct): StripeCatalogPri
   return {
     active: price.active,
     amountMinor: price.unit_amount,
+    taxBehavior:
+      price.tax_behavior === 'inclusive'
+        ? 'inclusive'
+        : price.tax_behavior === 'exclusive'
+          ? 'exclusive'
+          : 'unspecified',
     currencyCode: price.currency?.toUpperCase() ?? null,
     customUnitAmount: toCatalogCustomUnitAmount(price.custom_unit_amount),
     idempotentReplayed: getStripeIdempotentReplayed(price),
@@ -368,6 +374,7 @@ function createStripePriceCreateParams(
     metadata: input.metadata,
     product: productId,
     transfer_lookup_key: true,
+    tax_behavior: 'inclusive',
   } satisfies Omit<Stripe.PriceCreateParams, 'custom_unit_amount' | 'unit_amount'>;
 
   if (input.kind === 'pay_what_you_want') {
@@ -389,6 +396,7 @@ function createStripePriceCreateParams(
 }
 
 function matchesCatalogPriceInput(price: StripeCatalogPrice, input: StripeCatalogPriceCreateInput): boolean {
+  if (price.taxBehavior !== 'inclusive') return false;
   if (price.priceKind !== input.kind || price.currencyCode?.toUpperCase() !== input.currencyCode.toUpperCase()) {
     return false;
   }

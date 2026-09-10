@@ -28,10 +28,20 @@ export type AggregateCheckoutOrder = {
 
 export type CheckoutOrderAvgAggregateOutputType = {
   amountTotalMinor: number | null
+  acceptedDeliveryAmountMinor: number | null
+  merchandiseGrossMinor: number | null
+  deliveryGrossMinor: number | null
+  deliveryVatMinor: number | null
+  totalVatMinor: number | null
 }
 
 export type CheckoutOrderSumAggregateOutputType = {
   amountTotalMinor: number | null
+  acceptedDeliveryAmountMinor: number | null
+  merchandiseGrossMinor: number | null
+  deliveryGrossMinor: number | null
+  deliveryVatMinor: number | null
+  totalVatMinor: number | null
 }
 
 export type CheckoutOrderMinAggregateOutputType = {
@@ -42,6 +52,13 @@ export type CheckoutOrderMinAggregateOutputType = {
   checkoutExpiresAt: Date | null
   stripePaymentIntentId: string | null
   amountTotalMinor: number | null
+  acceptedDeliveryAmountMinor: number | null
+  acceptedParcelTier: string | null
+  monetaryPolicyReference: string | null
+  merchandiseGrossMinor: number | null
+  deliveryGrossMinor: number | null
+  deliveryVatMinor: number | null
+  totalVatMinor: number | null
   currencyCode: string | null
   recipientName: string | null
   shopperEmail: string | null
@@ -76,6 +93,13 @@ export type CheckoutOrderMaxAggregateOutputType = {
   checkoutExpiresAt: Date | null
   stripePaymentIntentId: string | null
   amountTotalMinor: number | null
+  acceptedDeliveryAmountMinor: number | null
+  acceptedParcelTier: string | null
+  monetaryPolicyReference: string | null
+  merchandiseGrossMinor: number | null
+  deliveryGrossMinor: number | null
+  deliveryVatMinor: number | null
+  totalVatMinor: number | null
   currencyCode: string | null
   recipientName: string | null
   shopperEmail: string | null
@@ -110,6 +134,13 @@ export type CheckoutOrderCountAggregateOutputType = {
   checkoutExpiresAt: number
   stripePaymentIntentId: number
   amountTotalMinor: number
+  acceptedDeliveryAmountMinor: number
+  acceptedParcelTier: number
+  monetaryPolicyReference: number
+  merchandiseGrossMinor: number
+  deliveryGrossMinor: number
+  deliveryVatMinor: number
+  totalVatMinor: number
   currencyCode: number
   recipientName: number
   shopperEmail: number
@@ -140,10 +171,20 @@ export type CheckoutOrderCountAggregateOutputType = {
 
 export type CheckoutOrderAvgAggregateInputType = {
   amountTotalMinor?: true
+  acceptedDeliveryAmountMinor?: true
+  merchandiseGrossMinor?: true
+  deliveryGrossMinor?: true
+  deliveryVatMinor?: true
+  totalVatMinor?: true
 }
 
 export type CheckoutOrderSumAggregateInputType = {
   amountTotalMinor?: true
+  acceptedDeliveryAmountMinor?: true
+  merchandiseGrossMinor?: true
+  deliveryGrossMinor?: true
+  deliveryVatMinor?: true
+  totalVatMinor?: true
 }
 
 export type CheckoutOrderMinAggregateInputType = {
@@ -154,6 +195,13 @@ export type CheckoutOrderMinAggregateInputType = {
   checkoutExpiresAt?: true
   stripePaymentIntentId?: true
   amountTotalMinor?: true
+  acceptedDeliveryAmountMinor?: true
+  acceptedParcelTier?: true
+  monetaryPolicyReference?: true
+  merchandiseGrossMinor?: true
+  deliveryGrossMinor?: true
+  deliveryVatMinor?: true
+  totalVatMinor?: true
   currencyCode?: true
   recipientName?: true
   shopperEmail?: true
@@ -188,6 +236,13 @@ export type CheckoutOrderMaxAggregateInputType = {
   checkoutExpiresAt?: true
   stripePaymentIntentId?: true
   amountTotalMinor?: true
+  acceptedDeliveryAmountMinor?: true
+  acceptedParcelTier?: true
+  monetaryPolicyReference?: true
+  merchandiseGrossMinor?: true
+  deliveryGrossMinor?: true
+  deliveryVatMinor?: true
+  totalVatMinor?: true
   currencyCode?: true
   recipientName?: true
   shopperEmail?: true
@@ -222,6 +277,13 @@ export type CheckoutOrderCountAggregateInputType = {
   checkoutExpiresAt?: true
   stripePaymentIntentId?: true
   amountTotalMinor?: true
+  acceptedDeliveryAmountMinor?: true
+  acceptedParcelTier?: true
+  monetaryPolicyReference?: true
+  merchandiseGrossMinor?: true
+  deliveryGrossMinor?: true
+  deliveryVatMinor?: true
+  totalVatMinor?: true
   currencyCode?: true
   recipientName?: true
   shopperEmail?: true
@@ -343,6 +405,13 @@ export type CheckoutOrderGroupByOutputType = {
   checkoutExpiresAt: Date
   stripePaymentIntentId: string | null
   amountTotalMinor: number | null
+  acceptedDeliveryAmountMinor: number | null
+  acceptedParcelTier: string | null
+  monetaryPolicyReference: string | null
+  merchandiseGrossMinor: number | null
+  deliveryGrossMinor: number | null
+  deliveryVatMinor: number | null
+  totalVatMinor: number | null
   currencyCode: string | null
   recipientName: string | null
   shopperEmail: string | null
@@ -400,6 +469,13 @@ export type CheckoutOrderWhereInput = {
   checkoutExpiresAt?: Prisma.DateTimeFilter<"CheckoutOrder"> | Date | string
   stripePaymentIntentId?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   amountTotalMinor?: Prisma.IntNullableFilter<"CheckoutOrder"> | number | null
+  acceptedDeliveryAmountMinor?: Prisma.IntNullableFilter<"CheckoutOrder"> | number | null
+  acceptedParcelTier?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  monetaryPolicyReference?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  merchandiseGrossMinor?: Prisma.IntNullableFilter<"CheckoutOrder"> | number | null
+  deliveryGrossMinor?: Prisma.IntNullableFilter<"CheckoutOrder"> | number | null
+  deliveryVatMinor?: Prisma.IntNullableFilter<"CheckoutOrder"> | number | null
+  totalVatMinor?: Prisma.IntNullableFilter<"CheckoutOrder"> | number | null
   currencyCode?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   recipientName?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   shopperEmail?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
@@ -436,6 +512,13 @@ export type CheckoutOrderOrderByWithRelationInput = {
   checkoutExpiresAt?: Prisma.SortOrder
   stripePaymentIntentId?: Prisma.SortOrderInput | Prisma.SortOrder
   amountTotalMinor?: Prisma.SortOrderInput | Prisma.SortOrder
+  acceptedDeliveryAmountMinor?: Prisma.SortOrderInput | Prisma.SortOrder
+  acceptedParcelTier?: Prisma.SortOrderInput | Prisma.SortOrder
+  monetaryPolicyReference?: Prisma.SortOrderInput | Prisma.SortOrder
+  merchandiseGrossMinor?: Prisma.SortOrderInput | Prisma.SortOrder
+  deliveryGrossMinor?: Prisma.SortOrderInput | Prisma.SortOrder
+  deliveryVatMinor?: Prisma.SortOrderInput | Prisma.SortOrder
+  totalVatMinor?: Prisma.SortOrderInput | Prisma.SortOrder
   currencyCode?: Prisma.SortOrderInput | Prisma.SortOrder
   recipientName?: Prisma.SortOrderInput | Prisma.SortOrder
   shopperEmail?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -475,6 +558,13 @@ export type CheckoutOrderWhereUniqueInput = Prisma.AtLeast<{
   checkoutExpiresAt?: Prisma.DateTimeFilter<"CheckoutOrder"> | Date | string
   stripePaymentIntentId?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   amountTotalMinor?: Prisma.IntNullableFilter<"CheckoutOrder"> | number | null
+  acceptedDeliveryAmountMinor?: Prisma.IntNullableFilter<"CheckoutOrder"> | number | null
+  acceptedParcelTier?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  monetaryPolicyReference?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  merchandiseGrossMinor?: Prisma.IntNullableFilter<"CheckoutOrder"> | number | null
+  deliveryGrossMinor?: Prisma.IntNullableFilter<"CheckoutOrder"> | number | null
+  deliveryVatMinor?: Prisma.IntNullableFilter<"CheckoutOrder"> | number | null
+  totalVatMinor?: Prisma.IntNullableFilter<"CheckoutOrder"> | number | null
   currencyCode?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   recipientName?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   shopperEmail?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
@@ -511,6 +601,13 @@ export type CheckoutOrderOrderByWithAggregationInput = {
   checkoutExpiresAt?: Prisma.SortOrder
   stripePaymentIntentId?: Prisma.SortOrderInput | Prisma.SortOrder
   amountTotalMinor?: Prisma.SortOrderInput | Prisma.SortOrder
+  acceptedDeliveryAmountMinor?: Prisma.SortOrderInput | Prisma.SortOrder
+  acceptedParcelTier?: Prisma.SortOrderInput | Prisma.SortOrder
+  monetaryPolicyReference?: Prisma.SortOrderInput | Prisma.SortOrder
+  merchandiseGrossMinor?: Prisma.SortOrderInput | Prisma.SortOrder
+  deliveryGrossMinor?: Prisma.SortOrderInput | Prisma.SortOrder
+  deliveryVatMinor?: Prisma.SortOrderInput | Prisma.SortOrder
+  totalVatMinor?: Prisma.SortOrderInput | Prisma.SortOrder
   currencyCode?: Prisma.SortOrderInput | Prisma.SortOrder
   recipientName?: Prisma.SortOrderInput | Prisma.SortOrder
   shopperEmail?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -553,6 +650,13 @@ export type CheckoutOrderScalarWhereWithAggregatesInput = {
   checkoutExpiresAt?: Prisma.DateTimeWithAggregatesFilter<"CheckoutOrder"> | Date | string
   stripePaymentIntentId?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
   amountTotalMinor?: Prisma.IntNullableWithAggregatesFilter<"CheckoutOrder"> | number | null
+  acceptedDeliveryAmountMinor?: Prisma.IntNullableWithAggregatesFilter<"CheckoutOrder"> | number | null
+  acceptedParcelTier?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
+  monetaryPolicyReference?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
+  merchandiseGrossMinor?: Prisma.IntNullableWithAggregatesFilter<"CheckoutOrder"> | number | null
+  deliveryGrossMinor?: Prisma.IntNullableWithAggregatesFilter<"CheckoutOrder"> | number | null
+  deliveryVatMinor?: Prisma.IntNullableWithAggregatesFilter<"CheckoutOrder"> | number | null
+  totalVatMinor?: Prisma.IntNullableWithAggregatesFilter<"CheckoutOrder"> | number | null
   currencyCode?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
   recipientName?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
   shopperEmail?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
@@ -587,6 +691,13 @@ export type CheckoutOrderCreateInput = {
   checkoutExpiresAt: Date | string
   stripePaymentIntentId?: string | null
   amountTotalMinor?: number | null
+  acceptedDeliveryAmountMinor?: number | null
+  acceptedParcelTier?: string | null
+  monetaryPolicyReference?: string | null
+  merchandiseGrossMinor?: number | null
+  deliveryGrossMinor?: number | null
+  deliveryVatMinor?: number | null
+  totalVatMinor?: number | null
   currencyCode?: string | null
   recipientName?: string | null
   shopperEmail?: string | null
@@ -623,6 +734,13 @@ export type CheckoutOrderUncheckedCreateInput = {
   checkoutExpiresAt: Date | string
   stripePaymentIntentId?: string | null
   amountTotalMinor?: number | null
+  acceptedDeliveryAmountMinor?: number | null
+  acceptedParcelTier?: string | null
+  monetaryPolicyReference?: string | null
+  merchandiseGrossMinor?: number | null
+  deliveryGrossMinor?: number | null
+  deliveryVatMinor?: number | null
+  totalVatMinor?: number | null
   currencyCode?: string | null
   recipientName?: string | null
   shopperEmail?: string | null
@@ -659,6 +777,13 @@ export type CheckoutOrderUpdateInput = {
   checkoutExpiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountTotalMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  acceptedDeliveryAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  acceptedParcelTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  monetaryPolicyReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  merchandiseGrossMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deliveryGrossMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deliveryVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  totalVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shopperEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -695,6 +820,13 @@ export type CheckoutOrderUncheckedUpdateInput = {
   checkoutExpiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountTotalMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  acceptedDeliveryAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  acceptedParcelTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  monetaryPolicyReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  merchandiseGrossMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deliveryGrossMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deliveryVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  totalVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shopperEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -731,6 +863,13 @@ export type CheckoutOrderCreateManyInput = {
   checkoutExpiresAt: Date | string
   stripePaymentIntentId?: string | null
   amountTotalMinor?: number | null
+  acceptedDeliveryAmountMinor?: number | null
+  acceptedParcelTier?: string | null
+  monetaryPolicyReference?: string | null
+  merchandiseGrossMinor?: number | null
+  deliveryGrossMinor?: number | null
+  deliveryVatMinor?: number | null
+  totalVatMinor?: number | null
   currencyCode?: string | null
   recipientName?: string | null
   shopperEmail?: string | null
@@ -765,6 +904,13 @@ export type CheckoutOrderUpdateManyMutationInput = {
   checkoutExpiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountTotalMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  acceptedDeliveryAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  acceptedParcelTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  monetaryPolicyReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  merchandiseGrossMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deliveryGrossMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deliveryVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  totalVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shopperEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -799,6 +945,13 @@ export type CheckoutOrderUncheckedUpdateManyInput = {
   checkoutExpiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountTotalMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  acceptedDeliveryAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  acceptedParcelTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  monetaryPolicyReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  merchandiseGrossMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deliveryGrossMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deliveryVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  totalVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shopperEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -833,6 +986,13 @@ export type CheckoutOrderCountOrderByAggregateInput = {
   checkoutExpiresAt?: Prisma.SortOrder
   stripePaymentIntentId?: Prisma.SortOrder
   amountTotalMinor?: Prisma.SortOrder
+  acceptedDeliveryAmountMinor?: Prisma.SortOrder
+  acceptedParcelTier?: Prisma.SortOrder
+  monetaryPolicyReference?: Prisma.SortOrder
+  merchandiseGrossMinor?: Prisma.SortOrder
+  deliveryGrossMinor?: Prisma.SortOrder
+  deliveryVatMinor?: Prisma.SortOrder
+  totalVatMinor?: Prisma.SortOrder
   currencyCode?: Prisma.SortOrder
   recipientName?: Prisma.SortOrder
   shopperEmail?: Prisma.SortOrder
@@ -861,6 +1021,11 @@ export type CheckoutOrderCountOrderByAggregateInput = {
 
 export type CheckoutOrderAvgOrderByAggregateInput = {
   amountTotalMinor?: Prisma.SortOrder
+  acceptedDeliveryAmountMinor?: Prisma.SortOrder
+  merchandiseGrossMinor?: Prisma.SortOrder
+  deliveryGrossMinor?: Prisma.SortOrder
+  deliveryVatMinor?: Prisma.SortOrder
+  totalVatMinor?: Prisma.SortOrder
 }
 
 export type CheckoutOrderMaxOrderByAggregateInput = {
@@ -871,6 +1036,13 @@ export type CheckoutOrderMaxOrderByAggregateInput = {
   checkoutExpiresAt?: Prisma.SortOrder
   stripePaymentIntentId?: Prisma.SortOrder
   amountTotalMinor?: Prisma.SortOrder
+  acceptedDeliveryAmountMinor?: Prisma.SortOrder
+  acceptedParcelTier?: Prisma.SortOrder
+  monetaryPolicyReference?: Prisma.SortOrder
+  merchandiseGrossMinor?: Prisma.SortOrder
+  deliveryGrossMinor?: Prisma.SortOrder
+  deliveryVatMinor?: Prisma.SortOrder
+  totalVatMinor?: Prisma.SortOrder
   currencyCode?: Prisma.SortOrder
   recipientName?: Prisma.SortOrder
   shopperEmail?: Prisma.SortOrder
@@ -905,6 +1077,13 @@ export type CheckoutOrderMinOrderByAggregateInput = {
   checkoutExpiresAt?: Prisma.SortOrder
   stripePaymentIntentId?: Prisma.SortOrder
   amountTotalMinor?: Prisma.SortOrder
+  acceptedDeliveryAmountMinor?: Prisma.SortOrder
+  acceptedParcelTier?: Prisma.SortOrder
+  monetaryPolicyReference?: Prisma.SortOrder
+  merchandiseGrossMinor?: Prisma.SortOrder
+  deliveryGrossMinor?: Prisma.SortOrder
+  deliveryVatMinor?: Prisma.SortOrder
+  totalVatMinor?: Prisma.SortOrder
   currencyCode?: Prisma.SortOrder
   recipientName?: Prisma.SortOrder
   shopperEmail?: Prisma.SortOrder
@@ -933,6 +1112,11 @@ export type CheckoutOrderMinOrderByAggregateInput = {
 
 export type CheckoutOrderSumOrderByAggregateInput = {
   amountTotalMinor?: Prisma.SortOrder
+  acceptedDeliveryAmountMinor?: Prisma.SortOrder
+  merchandiseGrossMinor?: Prisma.SortOrder
+  deliveryGrossMinor?: Prisma.SortOrder
+  deliveryVatMinor?: Prisma.SortOrder
+  totalVatMinor?: Prisma.SortOrder
 }
 
 export type CheckoutOrderScalarRelationFilter = {
@@ -984,6 +1168,13 @@ export type CheckoutOrderCreateWithoutLinesInput = {
   checkoutExpiresAt: Date | string
   stripePaymentIntentId?: string | null
   amountTotalMinor?: number | null
+  acceptedDeliveryAmountMinor?: number | null
+  acceptedParcelTier?: string | null
+  monetaryPolicyReference?: string | null
+  merchandiseGrossMinor?: number | null
+  deliveryGrossMinor?: number | null
+  deliveryVatMinor?: number | null
+  totalVatMinor?: number | null
   currencyCode?: string | null
   recipientName?: string | null
   shopperEmail?: string | null
@@ -1019,6 +1210,13 @@ export type CheckoutOrderUncheckedCreateWithoutLinesInput = {
   checkoutExpiresAt: Date | string
   stripePaymentIntentId?: string | null
   amountTotalMinor?: number | null
+  acceptedDeliveryAmountMinor?: number | null
+  acceptedParcelTier?: string | null
+  monetaryPolicyReference?: string | null
+  merchandiseGrossMinor?: number | null
+  deliveryGrossMinor?: number | null
+  deliveryVatMinor?: number | null
+  totalVatMinor?: number | null
   currencyCode?: string | null
   recipientName?: string | null
   shopperEmail?: string | null
@@ -1070,6 +1268,13 @@ export type CheckoutOrderUpdateWithoutLinesInput = {
   checkoutExpiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountTotalMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  acceptedDeliveryAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  acceptedParcelTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  monetaryPolicyReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  merchandiseGrossMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deliveryGrossMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deliveryVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  totalVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shopperEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1105,6 +1310,13 @@ export type CheckoutOrderUncheckedUpdateWithoutLinesInput = {
   checkoutExpiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountTotalMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  acceptedDeliveryAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  acceptedParcelTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  monetaryPolicyReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  merchandiseGrossMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deliveryGrossMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deliveryVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  totalVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shopperEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1140,6 +1352,13 @@ export type CheckoutOrderCreateWithoutDeliveriesInput = {
   checkoutExpiresAt: Date | string
   stripePaymentIntentId?: string | null
   amountTotalMinor?: number | null
+  acceptedDeliveryAmountMinor?: number | null
+  acceptedParcelTier?: string | null
+  monetaryPolicyReference?: string | null
+  merchandiseGrossMinor?: number | null
+  deliveryGrossMinor?: number | null
+  deliveryVatMinor?: number | null
+  totalVatMinor?: number | null
   currencyCode?: string | null
   recipientName?: string | null
   shopperEmail?: string | null
@@ -1175,6 +1394,13 @@ export type CheckoutOrderUncheckedCreateWithoutDeliveriesInput = {
   checkoutExpiresAt: Date | string
   stripePaymentIntentId?: string | null
   amountTotalMinor?: number | null
+  acceptedDeliveryAmountMinor?: number | null
+  acceptedParcelTier?: string | null
+  monetaryPolicyReference?: string | null
+  merchandiseGrossMinor?: number | null
+  deliveryGrossMinor?: number | null
+  deliveryVatMinor?: number | null
+  totalVatMinor?: number | null
   currencyCode?: string | null
   recipientName?: string | null
   shopperEmail?: string | null
@@ -1226,6 +1452,13 @@ export type CheckoutOrderUpdateWithoutDeliveriesInput = {
   checkoutExpiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountTotalMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  acceptedDeliveryAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  acceptedParcelTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  monetaryPolicyReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  merchandiseGrossMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deliveryGrossMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deliveryVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  totalVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shopperEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1261,6 +1494,13 @@ export type CheckoutOrderUncheckedUpdateWithoutDeliveriesInput = {
   checkoutExpiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountTotalMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  acceptedDeliveryAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  acceptedParcelTier?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  monetaryPolicyReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  merchandiseGrossMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deliveryGrossMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  deliveryVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  totalVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currencyCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shopperEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1336,6 +1576,13 @@ export type CheckoutOrderSelect<ExtArgs extends runtime.Types.Extensions.Interna
   checkoutExpiresAt?: boolean
   stripePaymentIntentId?: boolean
   amountTotalMinor?: boolean
+  acceptedDeliveryAmountMinor?: boolean
+  acceptedParcelTier?: boolean
+  monetaryPolicyReference?: boolean
+  merchandiseGrossMinor?: boolean
+  deliveryGrossMinor?: boolean
+  deliveryVatMinor?: boolean
+  totalVatMinor?: boolean
   currencyCode?: boolean
   recipientName?: boolean
   shopperEmail?: boolean
@@ -1373,6 +1620,13 @@ export type CheckoutOrderSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   checkoutExpiresAt?: boolean
   stripePaymentIntentId?: boolean
   amountTotalMinor?: boolean
+  acceptedDeliveryAmountMinor?: boolean
+  acceptedParcelTier?: boolean
+  monetaryPolicyReference?: boolean
+  merchandiseGrossMinor?: boolean
+  deliveryGrossMinor?: boolean
+  deliveryVatMinor?: boolean
+  totalVatMinor?: boolean
   currencyCode?: boolean
   recipientName?: boolean
   shopperEmail?: boolean
@@ -1407,6 +1661,13 @@ export type CheckoutOrderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   checkoutExpiresAt?: boolean
   stripePaymentIntentId?: boolean
   amountTotalMinor?: boolean
+  acceptedDeliveryAmountMinor?: boolean
+  acceptedParcelTier?: boolean
+  monetaryPolicyReference?: boolean
+  merchandiseGrossMinor?: boolean
+  deliveryGrossMinor?: boolean
+  deliveryVatMinor?: boolean
+  totalVatMinor?: boolean
   currencyCode?: boolean
   recipientName?: boolean
   shopperEmail?: boolean
@@ -1441,6 +1702,13 @@ export type CheckoutOrderSelectScalar = {
   checkoutExpiresAt?: boolean
   stripePaymentIntentId?: boolean
   amountTotalMinor?: boolean
+  acceptedDeliveryAmountMinor?: boolean
+  acceptedParcelTier?: boolean
+  monetaryPolicyReference?: boolean
+  merchandiseGrossMinor?: boolean
+  deliveryGrossMinor?: boolean
+  deliveryVatMinor?: boolean
+  totalVatMinor?: boolean
   currencyCode?: boolean
   recipientName?: boolean
   shopperEmail?: boolean
@@ -1467,7 +1735,7 @@ export type CheckoutOrderSelectScalar = {
   updatedAt?: boolean
 }
 
-export type CheckoutOrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "storeItemSlug" | "variantId" | "checkoutSessionId" | "checkoutExpiresAt" | "stripePaymentIntentId" | "amountTotalMinor" | "currencyCode" | "recipientName" | "shopperEmail" | "shopperPhone" | "shippingAddressLine1" | "shippingAddressLine2" | "shippingAddressCity" | "shippingAddressPostalCode" | "shippingAddressState" | "shippingAddressCountryCode" | "newsletterOptIn" | "newsletterConsentAt" | "newsletterConsentCopyVersion" | "shippingLockerId" | "shippingLockerCountryCode" | "shippingLockerNameOrLabel" | "status" | "statusUpdatedAt" | "paidAt" | "notPaidAt" | "needsReviewAt" | "needsReviewReason" | "createdAt" | "updatedAt", ExtArgs["result"]["checkoutOrder"]>
+export type CheckoutOrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "storeItemSlug" | "variantId" | "checkoutSessionId" | "checkoutExpiresAt" | "stripePaymentIntentId" | "amountTotalMinor" | "acceptedDeliveryAmountMinor" | "acceptedParcelTier" | "monetaryPolicyReference" | "merchandiseGrossMinor" | "deliveryGrossMinor" | "deliveryVatMinor" | "totalVatMinor" | "currencyCode" | "recipientName" | "shopperEmail" | "shopperPhone" | "shippingAddressLine1" | "shippingAddressLine2" | "shippingAddressCity" | "shippingAddressPostalCode" | "shippingAddressState" | "shippingAddressCountryCode" | "newsletterOptIn" | "newsletterConsentAt" | "newsletterConsentCopyVersion" | "shippingLockerId" | "shippingLockerCountryCode" | "shippingLockerNameOrLabel" | "status" | "statusUpdatedAt" | "paidAt" | "notPaidAt" | "needsReviewAt" | "needsReviewReason" | "createdAt" | "updatedAt", ExtArgs["result"]["checkoutOrder"]>
 export type CheckoutOrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   lines?: boolean | Prisma.CheckoutOrder$linesArgs<ExtArgs>
   deliveries?: boolean | Prisma.CheckoutOrder$deliveriesArgs<ExtArgs>
@@ -1490,6 +1758,13 @@ export type $CheckoutOrderPayload<ExtArgs extends runtime.Types.Extensions.Inter
     checkoutExpiresAt: Date
     stripePaymentIntentId: string | null
     amountTotalMinor: number | null
+    acceptedDeliveryAmountMinor: number | null
+    acceptedParcelTier: string | null
+    monetaryPolicyReference: string | null
+    merchandiseGrossMinor: number | null
+    deliveryGrossMinor: number | null
+    deliveryVatMinor: number | null
+    totalVatMinor: number | null
     currencyCode: string | null
     recipientName: string | null
     shopperEmail: string | null
@@ -1946,6 +2221,13 @@ export interface CheckoutOrderFieldRefs {
   readonly checkoutExpiresAt: Prisma.FieldRef<"CheckoutOrder", 'DateTime'>
   readonly stripePaymentIntentId: Prisma.FieldRef<"CheckoutOrder", 'String'>
   readonly amountTotalMinor: Prisma.FieldRef<"CheckoutOrder", 'Int'>
+  readonly acceptedDeliveryAmountMinor: Prisma.FieldRef<"CheckoutOrder", 'Int'>
+  readonly acceptedParcelTier: Prisma.FieldRef<"CheckoutOrder", 'String'>
+  readonly monetaryPolicyReference: Prisma.FieldRef<"CheckoutOrder", 'String'>
+  readonly merchandiseGrossMinor: Prisma.FieldRef<"CheckoutOrder", 'Int'>
+  readonly deliveryGrossMinor: Prisma.FieldRef<"CheckoutOrder", 'Int'>
+  readonly deliveryVatMinor: Prisma.FieldRef<"CheckoutOrder", 'Int'>
+  readonly totalVatMinor: Prisma.FieldRef<"CheckoutOrder", 'Int'>
   readonly currencyCode: Prisma.FieldRef<"CheckoutOrder", 'String'>
   readonly recipientName: Prisma.FieldRef<"CheckoutOrder", 'String'>
   readonly shopperEmail: Prisma.FieldRef<"CheckoutOrder", 'String'>

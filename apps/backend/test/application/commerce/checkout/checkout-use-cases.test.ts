@@ -9,11 +9,21 @@ import {
   listVariantOffersForStoreItem,
   readCheckoutState,
   readStoreOffer,
-  startCheckout,
+  startCheckout as startCheckoutWithPolicy,
+  createPackingPolicy,
   StoreItemNotFoundError,
   VariantMismatchError,
 } from '../../../../src/application/commerce/checkout';
 import type { CheckoutGateway } from '../../../../src/application/commerce/checkout/spi';
+
+function startCheckout(...args: Parameters<typeof startCheckoutWithPolicy>) {
+  args[9] = {
+    packingPolicy: createPackingPolicy('local'),
+    monetaryPolicyReference: 'synthetic-local-inclusive-v1',
+    ...args[9],
+  };
+  return startCheckoutWithPolicy(...args);
+}
 import type { CheckoutSessionId, VariantId } from '../../../../src/domain/commerce';
 import type {
   CatalogProductProjectionReader,
@@ -413,6 +423,7 @@ function createCatalogPrice(input: {
     priceKind: input.priceKind ?? 'fixed',
     priceId: stripePriceId(input.priceId ?? 'price_test_barren_point'),
     productActive: true,
+    taxBehavior: 'inclusive',
     productDescription: 'Disintegration by Afterwise.',
     productId: 'prod_test_barren_point',
     productImages: ['https://blackbox-records-web.pages.dev/assets/catalog/releases/disintegration.jpg'],
@@ -424,7 +435,7 @@ function createCatalogPrice(input: {
       variantId: input.storeItem.variantId,
     },
     productName: 'BlackBox Records - Disintegration - Black Vinyl LP',
-    productTaxCode: null,
+    productTaxCode: 'txcd_99999999',
   };
 }
 

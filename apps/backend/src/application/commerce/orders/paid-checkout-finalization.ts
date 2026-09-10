@@ -14,12 +14,15 @@ import {
   type CartQuantity,
   type CheckoutSessionId,
   type PaymentIntentId,
+  type OrderMonetarySnapshot,
   type VariantId,
 } from '../../../domain/commerce';
 import { CheckoutOrderNotFoundError, InvalidOrderTransitionError } from './errors';
 import { evaluateOrderTransition } from './order-state';
 
 export type PaidCheckoutFinalizationLineItem = {
+  lineVatMinor?: number | null;
+  taxRatePercent?: number | null;
   lineAmountMinor: number;
   quantity: CartQuantity;
   unitAmountMinor: number;
@@ -27,6 +30,7 @@ export type PaidCheckoutFinalizationLineItem = {
 };
 
 export type FinalizePaidCheckoutCommand = {
+  monetarySnapshot?: OrderMonetarySnapshot | null;
   amountTotalMinor: number;
   checkoutSessionId: CheckoutSessionId;
   currencyCode: 'EUR';

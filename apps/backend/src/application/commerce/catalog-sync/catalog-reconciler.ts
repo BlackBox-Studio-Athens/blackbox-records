@@ -84,6 +84,7 @@ export class CatalogReconciler {
         mapping,
         resolvedPrice: {
           active: snapshot.priceActive,
+          taxBehavior: 'inclusive',
           amountMinor: snapshot.amountMinor,
           currencyCode: snapshot.currencyCode,
           customUnitAmount: null,
@@ -212,6 +213,18 @@ export class CatalogReconciler {
     }
 
     if (resolvedPrice) {
+      if (resolvedPrice.productTaxCode !== 'txcd_99999999') {
+        issues.push(createIssue(storeItem, 'wrong_tax_code', 'Product must use the approved tangible-goods tax code.'));
+      }
+      if (resolvedPrice.taxBehavior !== 'inclusive') {
+        issues.push(
+          createIssue(
+            storeItem,
+            'wrong_tax_behavior',
+            'Price must explicitly include VAT; use the approved replacement procedure.',
+          ),
+        );
+      }
       if (!resolvedPrice.active) {
         issues.push(createIssue(storeItem, 'inactive_price', 'Resolved Stripe Price is inactive.'));
       }
@@ -681,6 +694,8 @@ export function hasBlockingCatalogIssue(issues: CatalogSyncIssue[]): boolean {
       'wrong_amount',
       'wrong_custom_amount',
       'wrong_currency',
+      'wrong_tax_behavior',
+      'wrong_tax_code',
       'wrong_price_kind',
       'wrong_variant_identity',
     ].includes(issue.code),
@@ -688,7 +703,7 @@ export function hasBlockingCatalogIssue(issues: CatalogSyncIssue[]): boolean {
 }
 
 export function classifyCatalogSyncIssue(code: CatalogSyncIssue['code']): CatalogSyncIssue['driftCategory'] {
-  if (code === 'inactive_product' || code === 'product_projection_mismatch') {
+  if (code === 'inactive_product' || code === 'product_projection_mismatch' || code === 'wrong_tax_code') {
     return 'product_projection';
   }
 

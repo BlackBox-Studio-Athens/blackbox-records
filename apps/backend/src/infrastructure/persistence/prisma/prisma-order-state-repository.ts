@@ -20,6 +20,13 @@ import type { PrismaClient } from '../../../generated/prisma/client';
 type PrismaOrderStateClient = Pick<PrismaClient, 'checkoutOrder' | '$executeRawUnsafe' | '$queryRawUnsafe'>;
 
 function mapCheckoutOrder(record: {
+  acceptedDeliveryAmountMinor?: number | null;
+  acceptedParcelTier?: string | null;
+  monetaryPolicyReference?: string | null;
+  merchandiseGrossMinor?: number | null;
+  deliveryGrossMinor?: number | null;
+  deliveryVatMinor?: number | null;
+  totalVatMinor?: number | null;
   amountTotalMinor: number | null;
   checkoutSessionId: string | null;
   checkoutExpiresAt: Date;
@@ -55,6 +62,16 @@ function mapCheckoutOrder(record: {
 }): CheckoutOrderRecord {
   return {
     amountTotalMinor: record.amountTotalMinor,
+    acceptedDeliveryAmountMinor: record.acceptedDeliveryAmountMinor ?? null,
+    acceptedParcelTier:
+      record.acceptedParcelTier === 'small' || record.acceptedParcelTier === 'medium'
+        ? record.acceptedParcelTier
+        : null,
+    monetaryPolicyReference: record.monetaryPolicyReference ?? null,
+    merchandiseGrossMinor: record.merchandiseGrossMinor ?? null,
+    deliveryGrossMinor: record.deliveryGrossMinor ?? null,
+    deliveryVatMinor: record.deliveryVatMinor ?? null,
+    totalVatMinor: record.totalVatMinor ?? null,
     checkoutSessionId: record.checkoutSessionId ? parseCheckoutSessionId(record.checkoutSessionId) : null,
     checkoutExpiresAt: record.checkoutExpiresAt,
     createdAt: record.createdAt,
@@ -95,6 +112,8 @@ function mapCheckoutOrder(record: {
 }
 
 type CheckoutOrderLineRow = {
+  lineVatMinor?: number | null;
+  taxRatePercent?: number | null;
   displayName: string | null;
   id: string;
   lineAmountMinor: number | null;
@@ -114,6 +133,8 @@ function mapCheckoutOrderLine(row: CheckoutOrderLineRow): CheckoutOrderLineRecor
     displayName: row.displayName,
     id: row.id,
     lineAmountMinor: row.lineAmountMinor,
+    lineVatMinor: row.lineVatMinor ?? null,
+    taxRatePercent: row.taxRatePercent ?? null,
     optionLabel: row.optionLabel,
     orderId: row.orderId,
     quantity: createCartQuantity(row.quantity),
@@ -276,7 +297,7 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
 
   private async readCheckoutOrderLines(orderId: string): Promise<CheckoutOrderLineRecord[]> {
     const rows = await this.prisma.$queryRawUnsafe<CheckoutOrderLineRow[]>(
-      'SELECT "id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "displayName", "optionLabel", "quantity", "unitAmountMinor", "lineAmountMinor", "createdAt" FROM "CheckoutOrderLine" WHERE "orderId" = ? ORDER BY "createdAt" ASC, "id" ASC',
+      'SELECT "id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "displayName", "optionLabel", "quantity", "unitAmountMinor", "lineAmountMinor", "lineVatMinor", "taxRatePercent", "createdAt" FROM "CheckoutOrderLine" WHERE "orderId" = ? ORDER BY "createdAt" ASC, "id" ASC',
       orderId,
     );
 

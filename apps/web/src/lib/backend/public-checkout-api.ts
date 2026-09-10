@@ -13,6 +13,15 @@ export type ServicesInquiryResponse = PublicApiComponents['schemas']['ServicesIn
 export type StartCheckoutBody = PublicApiComponents['schemas']['StartCheckoutBody'];
 export type StartCheckoutResponse = PublicApiComponents['schemas']['StartCheckoutResponse'];
 export type BackendErrorResponse = PublicApiComponents['schemas']['BackendErrorResponse'];
+export type DeliveryQuoteResponse = PublicApiComponents['schemas']['DeliveryQuoteResponse'];
+
+export async function readDeliveryQuote(
+  lines: NonNullable<StartCheckoutBody['lines']>,
+): Promise<DeliveryQuoteResponse> {
+  const fetcher = createPublicApiFetcher(resolvePublicCheckoutApiBaseUrl());
+  const request = fetcher.path('/api/store/delivery-quote').method('post').create();
+  return readPublicCheckoutResponse(() => request({ lines }), 'Could not calculate delivery.');
+}
 
 type OpenApiErrorLike = {
   data: unknown;

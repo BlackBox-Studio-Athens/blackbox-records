@@ -86,6 +86,10 @@ export async function attemptPaidOrderDelivery(input: {
 function toPaidOrderEmailInput(order: CurrentPaidCheckoutOrder): PaidOrderEmailInput {
   return {
     amountTotalMinor: order.amountTotalMinor,
+    merchandiseGrossMinor: order.merchandiseGrossMinor,
+    deliveryGrossMinor: order.deliveryGrossMinor,
+    totalVatMinor: order.totalVatMinor,
+    acceptedParcelTier: order.acceptedParcelTier,
     checkoutSessionId: order.checkoutSessionId,
     currencyCode: order.currencyCode,
     customerName: order.recipientName,

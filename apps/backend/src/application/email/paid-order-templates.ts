@@ -65,7 +65,7 @@ export function buildPaidOrderShopperEmail(input: {
       contentHtml: [
         renderReferenceBlock('Order reference', input.order.orderReference),
         renderLineItemSummary(input.order, { includeVariant: false }),
-        renderDetailTable([['Total paid', totalPaid]]),
+        renderDetailTable([...monetaryRows(input.order), ['Total paid', totalPaid]]),
         renderParagraph(shopperPaymentThankYouCopy),
         renderSupportCta(input.replyToEmail),
         renderPaymentDocumentNote(),
@@ -80,6 +80,7 @@ export function buildPaidOrderShopperEmail(input: {
       `Order reference: ${input.order.orderReference}`,
       `Item: ${shopperLineItems}`,
       `Total paid: ${totalPaid}`,
+      ...monetaryRows(input.order).map(([label, amount]) => `${label}: ${amount}`),
       '',
       shopperPaymentThankYouCopy,
       `Support: ${input.replyToEmail}`,
@@ -115,6 +116,7 @@ export function buildPaidOrderOpsEmail(input: {
         ]),
         warnings.length ? renderWarningList(warnings) : '',
         renderLineItemSummary(input.order, { includeVariant: true }),
+        monetaryRows(input.order).length ? renderDetailTable(monetaryRows(input.order)) : '',
         renderDetailSection('Order', [
           ['Reference', [input.order.orderReference]],
           ['Payment state', ['Paid']],
@@ -144,6 +146,7 @@ export function buildPaidOrderOpsEmail(input: {
       `Order reference: ${input.order.orderReference}`,
       'Payment state: Paid',
       `Total paid: ${formatTotalPaid(input.order)}`,
+      ...monetaryRows(input.order).map(([label, amount]) => `${label}: ${amount}`),
       `Item / variant / quantity: ${formatOpsLineItems(input.order)}`,
       '',
       'Shopper:',
@@ -364,6 +367,26 @@ function formatTotalPaid(order: PaidOrderEmailInput): string {
     currency: order.currencyCode,
     style: 'currency',
   }).format(order.amountTotalMinor / 100);
+}
+
+function monetaryRows(order: PaidOrderEmailInput): Array<[string, string]> {
+  if (
+    typeof order.merchandiseGrossMinor !== 'number' ||
+    typeof order.deliveryGrossMinor !== 'number' ||
+    typeof order.totalVatMinor !== 'number' ||
+    !order.acceptedParcelTier
+  )
+    return [];
+  const format = (amount: number) =>
+    new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(amount / 100);
+  return [
+    ['Merchandise', format(order.merchandiseGrossMinor)],
+    [
+      `BOX NOW ${order.acceptedParcelTier === 'small' ? 'Small' : 'Medium'} locker delivery`,
+      format(order.deliveryGrossMinor),
+    ],
+    ['Including VAT', format(order.totalVatMinor)],
+  ];
 }
 
 function formatShippingAddressRows(address: PaidOrderEmailInput['shippingAddress']): Array<[string, string[]]> {

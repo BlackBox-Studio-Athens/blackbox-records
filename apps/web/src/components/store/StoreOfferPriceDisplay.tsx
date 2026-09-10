@@ -82,17 +82,26 @@ export default function StoreOfferPriceDisplay({ api, className, storeItemSlug }
   }, [api, storeItemSlug]);
 
   return (
-    <span
-      aria-busy={view.isLoading ? 'true' : undefined}
-      className={cn(
-        className,
-        view.tone === 'loading' && 'text-muted-foreground',
-        view.tone === 'unavailable' && 'text-muted-foreground',
-      )}
-      data-store-offer-price
-      data-store-offer-price-state={view.tone}
-    >
-      {view.label}
+    <span>
+      <span
+        aria-busy={view.isLoading ? 'true' : undefined}
+        className={cn(
+          className,
+          view.tone === 'loading' && 'text-muted-foreground',
+          view.tone === 'unavailable' && 'text-muted-foreground',
+        )}
+        data-store-offer-price
+        data-store-offer-price-state={view.tone}
+      >
+        {view.label}
+      </span>
+      <span className="mt-2 block text-xs leading-5 text-muted-foreground">
+        VAT included. Shipping calculated in your cart.{' '}
+        <a className="underline" href={`${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/terms/`}>
+          Delivery rates and terms
+        </a>
+        .
+      </span>
     </span>
   );
 }

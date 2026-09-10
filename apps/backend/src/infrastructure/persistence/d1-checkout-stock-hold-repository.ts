@@ -51,8 +51,9 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
           'INSERT INTO "CheckoutOrder"',
           '  ("id", "storeItemSlug", "variantId", "checkoutSessionId", "checkoutExpiresAt", "stripePaymentIntentId",',
           '   "shippingLockerId", "shippingLockerCountryCode", "shippingLockerNameOrLabel", "status",',
-          '   "statusUpdatedAt", "paidAt", "notPaidAt", "needsReviewAt", "createdAt", "updatedAt")',
-          'SELECT ?, ?, ?, NULL, ?, NULL, NULL, NULL, NULL, ?, ?, NULL, NULL, NULL, ?, ?',
+          '   "statusUpdatedAt", "paidAt", "notPaidAt", "needsReviewAt", "createdAt", "updatedAt",',
+          '   "acceptedDeliveryAmountMinor", "acceptedParcelTier", "monetaryPolicyReference")',
+          'SELECT ?, ?, ?, NULL, ?, NULL, NULL, NULL, NULL, ?, ?, NULL, NULL, NULL, ?, ?, ?, ?, ?',
           `WHERE ${availability.sql}`,
         ].join('\n'),
       )
@@ -65,6 +66,9 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
         input.createdAt.toISOString(),
         input.createdAt.toISOString(),
         input.createdAt.toISOString(),
+        input.monetaryPolicy?.acceptedDeliveryAmountMinor ?? null,
+        input.monetaryPolicy?.acceptedParcelTier ?? null,
+        input.monetaryPolicy?.monetaryPolicyReference ?? null,
         ...availability.params,
       );
     const lineInserts = lineRecords.map((line) =>
@@ -103,6 +107,7 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
     return {
       hold: {
         ...EMPTY_PAID_CHECKOUT_ORDER_FIELDS,
+        ...input.monetaryPolicy,
         checkoutExpiresAt: input.checkoutExpiresAt,
         checkoutSessionId: null,
         createdAt: input.createdAt,

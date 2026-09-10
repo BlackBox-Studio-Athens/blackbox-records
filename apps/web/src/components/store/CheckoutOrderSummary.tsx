@@ -41,7 +41,7 @@ export type CheckoutOrderSummaryView = CheckoutOrderSummaryInput & {
 export const CHECKOUT_ORDER_SUMMARY_COPY = {
   backToItem: 'Back To Item',
   securePayment: 'Payment opens on Stripe. BlackBox never sees card details.',
-  subtotal: 'Subtotal',
+  subtotal: 'Cart estimate, before delivery',
   title: 'Order Summary',
 } as const;
 

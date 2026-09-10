@@ -69,6 +69,7 @@ const MobileNavigationSheet = lazy(() => import('./view/MobileNavigationSheet'))
 const ShellOverlayPanel = lazy(() => import('./view/ShellOverlayPanel'));
 const ShellPlayerSurface = lazy(() => import('./view/ShellPlayerSurface'));
 const StoreCartDrawer = lazy(() => import('@/components/store/StoreCartDrawer'));
+const CartDeliverySummary = lazy(() => import('@/components/store/DeliverySummary'));
 const preloadStoreDistroSearch = () => import('@/components/store/StoreDistroSearch');
 
 type OverlayState = ShellOverlayState;
@@ -698,6 +699,7 @@ export default function AppShellRoot({
           }
         >
           <StoreCartDrawer
+            deliverySummary={<CartDeliverySummary lines={storeCartState.lines} />}
             cartState={storeCartState}
             open
             resolveHref={createProjectRelativeUrl}

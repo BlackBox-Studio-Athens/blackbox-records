@@ -177,6 +177,7 @@ describe('stripe catalog verify script helpers', () => {
     const lookupKey = createStripeCatalogLookupKey('uat', storeItem);
     const metadata = createStripeCatalogMetadata('uat', storeItem);
     const wrongAmountPrice: StripeCatalogPrice = {
+      taxBehavior: 'inclusive',
       active: true,
       amountMinor: 1,
       currencyCode: 'EUR',
@@ -191,7 +192,7 @@ describe('stripe catalog verify script helpers', () => {
       productImages: [],
       productMetadata: metadata,
       productName: null,
-      productTaxCode: null,
+      productTaxCode: 'txcd_99999999',
     };
     const stripeCatalog = {
       archivePrice: vi.fn(),

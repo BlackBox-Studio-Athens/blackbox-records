@@ -59,6 +59,17 @@ describe('internal order routes', () => {
 
   it('lists recent checkout orders for operators on the protected internal surface', async () => {
     const paidOrder = currentPaidCheckoutOrder();
+    Object.assign(paidOrder, {
+      amountTotalMinor: 2750,
+      merchandiseGrossMinor: 2500,
+      deliveryGrossMinor: 250,
+      deliveryVatMinor: 48,
+      totalVatMinor: 532,
+      acceptedDeliveryAmountMinor: 250,
+      acceptedParcelTier: 'small',
+      monetaryPolicyReference: 'private-seller-policy',
+    });
+    Object.assign(paidOrder.lines[0]!, { lineVatMinor: 484, taxRatePercent: 24 });
     mockReadRecentCheckoutOrders.mockResolvedValueOnce([
       {
         deliveries: [
@@ -111,7 +122,11 @@ describe('internal order routes', () => {
           },
         ],
         fulfillment: {
-          amountTotalMinor: 2500,
+          merchandiseGrossMinor: 2500,
+          deliveryGrossMinor: 250,
+          deliveryVatMinor: 48,
+          totalVatMinor: 532,
+          amountTotalMinor: 2750,
           currencyCode: 'EUR',
           kind: 'current',
           lines: [
@@ -119,6 +134,8 @@ describe('internal order routes', () => {
               displayName: 'Disintegration Black Vinyl LP',
               lineAmountMinor: 2500,
               unitAmountMinor: 2500,
+              lineVatMinor: 484,
+              taxRatePercent: 24,
             }),
           ],
           newsletterConsent: {
@@ -182,6 +199,9 @@ describe('internal order routes', () => {
     expect(response.status).toBe(200);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      acceptedDeliveryAmountMinor: null,
+      acceptedParcelTier: null,
+      monetaryPolicyReference: null,
       checkoutExpiresAt: '2026-04-25T11:30:00.000Z',
       checkoutSessionId: 'cs_test_review',
       createdAt: '2026-04-25T11:00:00.000Z',

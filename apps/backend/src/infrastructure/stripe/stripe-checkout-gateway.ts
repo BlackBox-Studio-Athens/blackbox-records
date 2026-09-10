@@ -30,6 +30,16 @@ export class StripeCheckoutGateway implements CheckoutGateway {
   ) {}
 
   public async createHostedCheckoutSession(request: HostedCheckoutSessionRequest): Promise<HostedCheckoutSession> {
+    const policy = request.monetaryPolicy;
+    if (
+      !policy ||
+      !Number.isSafeInteger(policy.acceptedDeliveryAmountMinor) ||
+      policy.acceptedDeliveryAmountMinor <= 0 ||
+      !['small', 'medium'].includes(policy.acceptedParcelTier) ||
+      !policy.monetaryPolicyReference.trim()
+    ) {
+      throw new CheckoutConfigurationError('Checkout monetary policy is not configured.');
+    }
     const resolvedLineItems =
       request.lineItems ??
       (request.storeItemSlug && request.stripePriceId && request.variantId
@@ -48,6 +58,21 @@ export class StripeCheckoutGateway implements CheckoutGateway {
       session = await this.stripe.checkout.sessions.create(
         {
           expires_at: Math.floor(Date.now() / 1000) + 35 * 60,
+          automatic_tax: { enabled: true },
+          adaptive_pricing: { enabled: false },
+          allow_promotion_codes: false,
+          tax_id_collection: { enabled: false },
+          shipping_options: [
+            {
+              shipping_rate_data: {
+                display_name: `BOX NOW ${policy.acceptedParcelTier === 'small' ? 'Small' : 'Medium'} locker delivery`,
+                type: 'fixed_amount',
+                fixed_amount: { amount: policy.acceptedDeliveryAmountMinor, currency: 'eur' },
+                tax_behavior: 'inclusive',
+                tax_code: 'txcd_92010001',
+              },
+            },
+          ],
           line_items: resolvedLineItems.map((lineItem) => ({
             price: lineItem.stripePriceId,
             quantity: lineItem.quantity,
@@ -58,6 +83,8 @@ export class StripeCheckoutGateway implements CheckoutGateway {
                 ...(request.newsletterOptIn ? { newsletterOptIn: 'true' } : {}),
                 ...(request.newsletterOptIn ? { newsletterConsentCopyVersion: NEWSLETTER_CONSENT_COPY_VERSION } : {}),
                 orderId: request.orderId,
+                parcelTier: policy.acceptedParcelTier,
+                monetaryPolicyReference: policy.monetaryPolicyReference,
                 storeItemSlug: metadataLineItem.storeItemSlug,
                 variantId: metadataLineItem.variantId,
               }
@@ -108,17 +135,41 @@ export class StripeCheckoutGateway implements CheckoutGateway {
   }
 
   public async readCheckoutSessionLineItems(checkoutSessionId: CheckoutSessionId) {
-    const stripeLineItemsResponse = await this.stripe.checkout.sessions.listLineItems(checkoutSessionId, {
-      limit: 100,
-    });
+    const stripeLineItems: Stripe.LineItem[] = [];
+    let startingAfter: string | undefined;
+    do {
+      const page = await this.stripe.checkout.sessions.listLineItems(checkoutSessionId, {
+        limit: 100,
+        expand: ['data.taxes'],
+        ...(startingAfter ? { starting_after: startingAfter } : {}),
+      });
+      stripeLineItems.push(...page.data);
+      const next = page.has_more ? page.data.at(-1)?.id : undefined;
+      if (next && next === startingAfter) throw new Error('Repeated Checkout line pagination.');
+      startingAfter = next;
+      if (page.has_more && !startingAfter) throw new Error('Incomplete Checkout line pagination.');
+    } while (startingAfter);
 
-    return stripeLineItemsResponse.data.flatMap((lineItem) => {
+    return stripeLineItems.flatMap((lineItem) => {
       if (!lineItem.quantity || !lineItem.price?.id) {
-        return [];
+        throw new Error('Incomplete Checkout line item.');
       }
 
       return [
         {
+          customAmountValid:
+            !!lineItem.price.custom_unit_amount &&
+            lineItem.quantity === 1 &&
+            Number.isSafeInteger(lineItem.price.custom_unit_amount.minimum) &&
+            Number.isSafeInteger(lineItem.price.custom_unit_amount.maximum) &&
+            Number.isSafeInteger(lineItem.amount_total) &&
+            lineItem.amount_total >= (lineItem.price.custom_unit_amount.minimum ?? 1) &&
+            lineItem.amount_total <= (lineItem.price.custom_unit_amount.maximum ?? Number.MAX_SAFE_INTEGER),
+          lineVatMinor: lineItem.amount_tax ?? null,
+          taxRatePercent: lineItem.taxes?.length === 1 ? lineItem.taxes[0]!.rate.percentage : null,
+          currencyCode: lineItem.currency?.toUpperCase() ?? null,
+          taxInclusive: lineItem.price?.tax_behavior === 'inclusive',
+          discountMinor: lineItem.amount_discount ?? null,
           lineAmountMinor:
             Number.isInteger(lineItem.amount_total) && lineItem.amount_total > 0 ? lineItem.amount_total : null,
           quantity: createCartQuantity(lineItem.quantity),

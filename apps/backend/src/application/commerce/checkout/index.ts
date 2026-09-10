@@ -9,6 +9,9 @@ export {
 } from './errors';
 export { CatalogDriftError } from '../catalog-sync';
 export { readStoreCapabilities } from './feature-gates';
+export { quoteDelivery } from './packing';
+export { createPackingPolicy, deliveryCharges, vatDisclosure, hostedMonetaryPolicyReference } from './packing-policy';
+export type { DeliveryQuote, PackingPolicy } from './packing';
 export { listVariantOffersForStoreItem, readStoreOffer } from './read-store-offer';
 export { readCheckoutState } from './read-checkout-state';
 export { reconcileCheckoutSession } from './reconcile-checkout-session';

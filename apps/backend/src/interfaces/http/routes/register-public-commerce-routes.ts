@@ -6,6 +6,7 @@ import {
   getStoreItemRoute,
   getStoreItemVariantsRoute,
   postCheckoutSessionRoute,
+  postDeliveryQuoteRoute,
 } from '../contracts/public-contracts';
 import { createStartCheckoutLineCommand } from '../../../application/commerce/checkout';
 import { requestLogger, safeCheckoutSessionId, traceContextFromHono, runWithTraceSpan } from '../../../observability';
@@ -14,6 +15,14 @@ import { createPublicCheckoutCancelUrl, createPublicCheckoutReturnUrl } from './
 import { createPublicCommerceServices } from './public-commerce-services';
 
 export function registerPublicCommerceRoutes(app: AppOpenApi): void {
+  app.openapi(postDeliveryQuoteRoute, async (context) => {
+    const services = createPublicCommerceServices(context.env);
+    try {
+      return jsonNoStore(context.json({ quote: await services.quoteDelivery(context.req.valid('json').lines) }, 200));
+    } finally {
+      await services.disconnect();
+    }
+  });
   app.openapi(getStoreCapabilitiesRoute, async (context) => {
     const logger = requestLogger(context);
     const services = createPublicCommerceServices(context.env, logger);

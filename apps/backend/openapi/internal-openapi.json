@@ -142,6 +142,34 @@
                     "type": "integer",
                     "exclusiveMinimum": 0
                   },
+                  "merchandiseGrossMinor": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "exclusiveMinimum": 0
+                  },
+                  "deliveryGrossMinor": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "exclusiveMinimum": 0
+                  },
+                  "deliveryVatMinor": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "exclusiveMinimum": 0
+                  },
+                  "totalVatMinor": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "exclusiveMinimum": 0
+                  },
                   "currencyCode": {
                     "type": "string",
                     "enum": [
@@ -165,6 +193,20 @@
                         },
                         "lineAmountMinor": {
                           "type": "integer",
+                          "exclusiveMinimum": 0
+                        },
+                        "lineVatMinor": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ],
+                          "exclusiveMinimum": 0
+                        },
+                        "taxRatePercent": {
+                          "type": [
+                            "number",
+                            "null"
+                          ],
                           "exclusiveMinimum": 0
                         },
                         "optionLabel": {
@@ -193,6 +235,8 @@
                       "required": [
                         "displayName",
                         "lineAmountMinor",
+                        "lineVatMinor",
+                        "taxRatePercent",
                         "optionLabel",
                         "quantity",
                         "storeItemSlug",
@@ -316,6 +360,10 @@
                 },
                 "required": [
                   "amountTotalMinor",
+                  "merchandiseGrossMinor",
+                  "deliveryGrossMinor",
+                  "deliveryVatMinor",
+                  "totalVatMinor",
                   "currencyCode",
                   "kind",
                   "lines",
@@ -326,6 +374,30 @@
                   "shopperContact"
                 ]
               }
+            ]
+          },
+          "monetaryPolicyReference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "acceptedDeliveryAmountMinor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "exclusiveMinimum": 0
+          },
+          "acceptedParcelTier": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "small",
+              "medium",
+              null
             ]
           },
           "needsReviewReason": {
@@ -410,6 +482,9 @@
           "createdAt",
           "deliveries",
           "fulfillment",
+          "monetaryPolicyReference",
+          "acceptedDeliveryAmountMinor",
+          "acceptedParcelTier",
           "needsReviewReason",
           "needsReviewAt",
           "notPaidAt",

@@ -206,6 +206,9 @@
       "roots": [
         "apps/web/src/components/store/checkout-*.ts",
         "apps/web/src/components/store/Checkout*.tsx",
+        "apps/web/src/components/store/DeliverySummary.tsx",
+        "apps/web/src/components/store/DeliveryRates.tsx",
+        "apps/web/src/pages/terms/**",
         "apps/web/src/components/store/StoreItemPurchaseActions.tsx",
         "apps/web/src/pages/store/checkout/**",
         "apps/web/src/pages/store/[slug]/checkout/**",
@@ -216,7 +219,8 @@
         "apps/web/src/pages/store/checkout/index.astro",
         "apps/web/src/pages/store/checkout/return/index.astro",
         "apps/web/src/pages/store/[slug]/checkout/index.astro",
-        "apps/web/src/components/store/CheckoutOrderSummary.tsx"
+        "apps/web/src/components/store/CheckoutOrderSummary.tsx",
+        "apps/web/src/components/store/DeliverySummary.tsx"
       ],
       "namedInterfaces": {
         "browser-checkout-api": "apps/web/src/lib/backend/public-checkout-api.ts"
@@ -297,6 +301,7 @@
         "apps/backend/src/domain/commerce/index.ts",
         "apps/backend/src/domain/commerce/ids.ts",
         "apps/backend/src/domain/commerce/quantities.ts",
+        "apps/backend/src/domain/commerce/monetary.ts",
         "apps/backend/src/domain/commerce/repositories/**"
       ],
       "providedEntrypoints": ["apps/backend/src/domain/commerce/index.ts"],

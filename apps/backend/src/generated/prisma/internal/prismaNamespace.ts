@@ -1394,6 +1394,13 @@ export const CheckoutOrderScalarFieldEnum = {
   checkoutExpiresAt: 'checkoutExpiresAt',
   stripePaymentIntentId: 'stripePaymentIntentId',
   amountTotalMinor: 'amountTotalMinor',
+  acceptedDeliveryAmountMinor: 'acceptedDeliveryAmountMinor',
+  acceptedParcelTier: 'acceptedParcelTier',
+  monetaryPolicyReference: 'monetaryPolicyReference',
+  merchandiseGrossMinor: 'merchandiseGrossMinor',
+  deliveryGrossMinor: 'deliveryGrossMinor',
+  deliveryVatMinor: 'deliveryVatMinor',
+  totalVatMinor: 'totalVatMinor',
   currencyCode: 'currencyCode',
   recipientName: 'recipientName',
   shopperEmail: 'shopperEmail',
@@ -1434,6 +1441,8 @@ export const CheckoutOrderLineScalarFieldEnum = {
   optionLabel: 'optionLabel',
   unitAmountMinor: 'unitAmountMinor',
   lineAmountMinor: 'lineAmountMinor',
+  lineVatMinor: 'lineVatMinor',
+  taxRatePercent: 'taxRatePercent',
   createdAt: 'createdAt'
 } as const
 
@@ -1531,6 +1540,13 @@ export type EnumOrderStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Pris
 
 
 /**
+ * Reference to a field of type 'Float'
+ */
+export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+/**
  * Reference to a field of type 'PaidOrderDeliveryKind'
  */
 export type EnumPaidOrderDeliveryKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaidOrderDeliveryKind'>
@@ -1541,13 +1557,6 @@ export type EnumPaidOrderDeliveryKindFieldRefInput<$PrismaModel> = FieldRefInput
  * Reference to a field of type 'PaidOrderDeliveryStatus'
  */
 export type EnumPaidOrderDeliveryStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaidOrderDeliveryStatus'>
-    
-
-
-/**
- * Reference to a field of type 'Float'
- */
-export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
     
 
 /**

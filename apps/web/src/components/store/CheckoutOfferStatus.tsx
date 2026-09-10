@@ -18,6 +18,7 @@ import {
   type CheckoutOfferStatusView,
 } from './checkout-offer-status-state';
 import CheckoutShippingStep from './CheckoutShippingStep';
+import { DeliverySummary, useDeliveryQuote } from './DeliverySummary';
 import { createCheckoutShippingGateView } from './checkout-shipping-step-state';
 import { createCartLineItemSnapshotFromWorkerOffer, type StoreItemCartSeed } from './StoreItemPurchaseActions';
 
@@ -90,6 +91,19 @@ export default function CheckoutOfferStatus({
   const ctaView = createStripeCheckoutCtaView(isStartingCheckout);
   const shippingGateView = createCheckoutShippingGateView(checkoutClientMode);
   const hasCheckoutLine = cartLines.length > 0 || Boolean(workerFallbackLineItem);
+  const delivery = useDeliveryQuote(
+    cartLines.length
+      ? cartLines
+      : workerFallbackLineItem
+        ? [
+            {
+              storeItemSlug: workerFallbackLineItem.storeItemSlug,
+              variantId: workerFallbackLineItem.variantId,
+              quantity: 1,
+            },
+          ]
+        : [],
+  );
 
   useEffect(() => {
     let isActive = true;
@@ -150,6 +164,7 @@ export default function CheckoutOfferStatus({
   }, []);
 
   async function handleStartCheckout() {
+    if (!delivery.quote || delivery.loading) return;
     const checkoutApi = api ?? createPublicCheckoutApi();
 
     if (!shippingGateView.canContinueToPayment) {
@@ -219,7 +234,11 @@ export default function CheckoutOfferStatus({
                 view.tone === 'loading' && 'border-border/70 bg-background/50 text-muted-foreground',
               )}
             >
-              {view.badgeLabel}
+              {view.canStartCheckout && (delivery.loading || !delivery.quote)
+                ? delivery.loading
+                  ? 'Checking delivery'
+                  : 'Delivery unavailable'
+                : view.badgeLabel}
             </Badge>
           </div>
 
@@ -235,6 +254,7 @@ export default function CheckoutOfferStatus({
           </div>
 
           <div className="space-y-4">
+            <DeliverySummary {...delivery} />
             <p className="text-sm leading-relaxed text-muted-foreground">{view.detail}</p>
             {view.tone === 'loading' && (
               <LoadingInline
@@ -273,7 +293,7 @@ export default function CheckoutOfferStatus({
                   type="button"
                   size="lg"
                   className="inline-flex h-auto min-h-11 w-full flex-wrap gap-2 rounded-none px-4 py-3 text-center uppercase tracking-[0.16em] whitespace-normal sm:w-auto sm:min-w-72 sm:flex-nowrap sm:gap-3 sm:px-6"
-                  disabled={isStartingCheckout}
+                  disabled={isStartingCheckout || delivery.loading || !delivery.quote}
                   aria-busy={isStartingCheckout ? 'true' : undefined}
                   onClick={() => {
                     void handleStartCheckout();

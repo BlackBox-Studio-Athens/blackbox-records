@@ -41,7 +41,7 @@ describe('CheckoutOrderSummary', () => {
     expect(markup).toContain('Disintegration');
     expect(markup).toContain('Afterwise');
     expect(markup).toContain('Black Vinyl LP');
-    expect(markup).toContain('Subtotal');
+    expect(markup).toContain('Cart estimate, before delivery');
     expect(markup).toContain('€28.00');
     expect(markup).toContain('Payment opens on Stripe. BlackBox never sees card details.');
     expect(markup).toContain('/blackbox-records/store/disintegration-black-vinyl-lp/');

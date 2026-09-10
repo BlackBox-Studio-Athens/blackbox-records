@@ -1,0 +1,30 @@
+---
+import InternalPageHero from '@/components/InternalPageHero.astro';
+import DeliveryRates from '@/components/store/DeliveryRates';
+import SiteLayout from '@/layouts/SiteLayout.astro';
+import { createProjectRelativeUrl } from '@/config/site';
+---
+
+<SiteLayout pageTitle="Delivery information" pageDescription="VAT-inclusive pricing and Greek BOX NOW locker delivery.">
+  <InternalPageHero sectionLabel="Store" title="Delivery information" />
+  <section class="page-content-width-constrained-container space-y-6 py-10" aria-label="Delivery information">
+    <div class="max-w-2xl space-y-5 text-sm leading-7">
+      <DeliveryRates client:load />
+      <p>
+        Delivery is to a BOX NOW locker in Greece, including supported island destinations, with no island surcharge. We
+        arrange your locker with you before dispatch. A street address collected at payment does not mean home delivery.
+      </p>
+      <p>
+        If your cart cannot fit a supported parcel, checkout is unavailable. We absorb packaging and carrier cost
+        differences for accepted orders; there is no later delivery top-up.
+      </p>
+      <p>
+        For delivery timing, locker arrangements, returns or a damaged item, <a
+          class="underline"
+          href={createProjectRelativeUrl('/about/')}>contact BlackBox</a
+        >.
+      </p>
+      <p><a class="underline" href={createProjectRelativeUrl('/store/')}>Back to Store</a></p>
+    </div>
+  </section>
+</SiteLayout>

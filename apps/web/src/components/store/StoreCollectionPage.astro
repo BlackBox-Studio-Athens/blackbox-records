@@ -43,6 +43,10 @@ const coverflowCatalogId = `${category.id}-store-catalog`;
   <InternalPageHero sectionLabel="Store" title={category.heading} />
 
   <StoreCategoryNavigation activeCategoryId={category.id} />
+  <p class="layout-container pt-4 text-xs leading-5 text-muted-foreground">
+    VAT included. Shipping calculated in your cart.{' '}
+    <a class="underline" href={createProjectRelativeUrl('/terms/')}>Delivery rates and terms</a>.
+  </p>
 
   {
     category.id === 'distro' ? (

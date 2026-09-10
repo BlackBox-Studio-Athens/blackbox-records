@@ -88,6 +88,10 @@ export type PaidOrderEmailShopperContact = {
 };
 
 export type PaidOrderEmailInput = {
+  merchandiseGrossMinor?: number | null;
+  deliveryGrossMinor?: number | null;
+  totalVatMinor?: number | null;
+  acceptedParcelTier?: 'small' | 'medium' | null;
   amountTotalMinor: number | null;
   checkoutSessionId: string;
   currencyCode: string | null;

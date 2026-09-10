@@ -174,6 +174,46 @@ function createSignatureHeader(payload: string): string {
 }
 
 describe('Stripe webhook routes', () => {
+  it('passes signed inclusive Session and shipping facts to reconciliation without exposing them publicly', async () => {
+    const event = JSON.parse(createStripeEventPayload('checkout.session.completed'));
+    Object.assign(event.data.object, {
+      amount_total: 2730,
+      currency: 'eur',
+      automatic_tax: { enabled: true, status: 'complete' },
+      shipping_cost: { amount_total: 250, amount_tax: 48 },
+      total_details: { amount_tax: 528, amount_discount: 0 },
+      metadata: { orderId: 'order_tax', parcelTier: 'small', monetaryPolicyReference: 'synthetic-v1' },
+    });
+    const payload = JSON.stringify(event);
+    const response = await createHttpApp().request(
+      'http://backend.test/api/stripe/webhooks',
+      {
+        method: 'POST',
+        body: payload,
+        headers: { 'stripe-signature': createSignatureHeader(payload) },
+      },
+      testBindings,
+    );
+    expect(response.status).toBe(200);
+    expect(mockApplyPaidCheckoutReconciliation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: expect.objectContaining({
+          amountTotalMinor: 2730,
+          currencyCode: 'EUR',
+          monetary: {
+            automaticTaxStatus: 'complete',
+            deliveryGrossMinor: 250,
+            deliveryVatMinor: 48,
+            totalVatMinor: 528,
+            discountMinor: 0,
+            parcelTier: 'small',
+            policyReference: 'synthetic-v1',
+          },
+        }),
+      }),
+    );
+    expect(await response.text()).not.toContain('synthetic-v1');
+  });
   it.each(['missing_order', 'write_failure'] as const)(
     'returns retryable 503 for %s, then accepts a successful resend',
     async (failure) => {

@@ -144,6 +144,13 @@ model CheckoutOrder {
   checkoutExpiresAt            DateTime
   stripePaymentIntentId        String?
   amountTotalMinor             Int?
+  acceptedDeliveryAmountMinor  Int?
+  acceptedParcelTier           String?
+  monetaryPolicyReference      String?
+  merchandiseGrossMinor        Int?
+  deliveryGrossMinor           Int?
+  deliveryVatMinor             Int?
+  totalVatMinor                Int?
   currencyCode                 String?
   recipientName                String?
   shopperEmail                 String?
@@ -186,6 +193,8 @@ model CheckoutOrderLine {
   optionLabel     String?
   unitAmountMinor Int?
   lineAmountMinor Int?
+  lineVatMinor    Int?
+  taxRatePercent  Float?
   createdAt       DateTime      @default(now())
   order           CheckoutOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
 

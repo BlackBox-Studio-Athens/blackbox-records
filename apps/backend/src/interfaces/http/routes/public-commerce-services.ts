@@ -10,6 +10,11 @@ import {
   startCheckout,
   StoreItemNotFoundError,
   VariantMismatchError,
+  createPackingPolicy,
+  quoteDelivery,
+  hostedMonetaryPolicyReference,
+  deliveryCharges,
+  vatDisclosure,
   type StartCheckoutCommand,
 } from '../../../application/commerce/checkout';
 import { productEnvironmentProfileFromBindings, type AppBindings } from '../../../env';
@@ -35,6 +40,8 @@ import { D1CheckoutStockHoldRepository } from '../../../infrastructure/persisten
 
 export function createPublicCommerceServices(bindings: AppBindings, logger?: Pick<AppLogger, 'warn'>) {
   const productEnvironmentProfile = productEnvironmentProfileFromBindings(bindings);
+  const target = productEnvironmentProfile.workerDeploymentTarget;
+  const packingPolicy = createPackingPolicy(target, /^[sr]k_test_/.test(bindings.STRIPE_SECRET_KEY));
   const prisma = createPrismaClient(bindings);
   const storeItems = new PrismaStoreItemOptionRepository(prisma);
   const itemAvailability = new PrismaItemAvailabilityRepository(prisma);
@@ -86,7 +93,50 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
       ),
     readCheckoutState: async (checkoutSessionId: string) =>
       readCheckoutState(createStripeCheckoutGateway(bindings), orders, checkoutSessionId),
-    readStoreCapabilities: async () => readStoreCapabilities(createFeatureFlagReader(bindings, logger)),
+    readStoreCapabilities: async () => ({
+      ...(await readStoreCapabilities(createFeatureFlagReader(bindings, logger))),
+      pricing: { vatDisclosure, deliveryCharges, currencyCode: 'EUR' as const },
+    }),
+    quoteDelivery: async (lines: { storeItemSlug: string; variantId: string; quantity: number }[]) => {
+      const merged = new Map<string, { storeItemSlug: string; variantId: string; quantity: number }>();
+      for (const line of lines) {
+        const existing = merged.get(line.variantId);
+        const quantity = (existing?.quantity ?? 0) + line.quantity;
+        if (
+          !Number.isInteger(quantity) ||
+          quantity < 1 ||
+          quantity > 9 ||
+          (existing && existing.storeItemSlug !== line.storeItemSlug)
+        )
+          return null;
+        merged.set(line.variantId, { ...line, quantity });
+      }
+      const quote = quoteDelivery([...merged.values()], packingPolicy);
+      if (!quote) return null;
+      let merchandiseGrossMinor: number | null = 0;
+      for (const line of merged.values()) {
+        const offer = await readStoreOffer(
+          storeItems,
+          itemAvailability,
+          effectiveStock,
+          createCatalogReconciler(),
+          productProjections,
+          line.storeItemSlug,
+        );
+        if (!offer?.canCheckout || offer.variantId !== line.variantId) return null;
+        const availableStock = await effectiveStock.findByVariantId(offer.variantId);
+        if (!availableStock || availableStock.onlineQuantity < line.quantity) return null;
+        if (offer.price.kind === 'pay_what_you_want') {
+          if (merged.size !== 1 || line.quantity !== 1) return null;
+          merchandiseGrossMinor = null;
+        } else if (merchandiseGrossMinor !== null) {
+          merchandiseGrossMinor += offer.price.amountMinor * line.quantity;
+        }
+      }
+      const totalAmountMinor = merchandiseGrossMinor === null ? null : merchandiseGrossMinor + quote.amountMinor;
+      if (totalAmountMinor !== null && !Number.isSafeInteger(totalAmountMinor)) return null;
+      return { ...quote, merchandiseGrossMinor, totalAmountMinor };
+    },
     readStoreListingPrices: async () => readStoreListingPrices(storeOfferSnapshots),
     readStoreOffer: async (storeItemSlug: string) =>
       readStoreOffer(
@@ -108,6 +158,12 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
         checkoutHolds,
         command,
         createFeatureFlagReader(bindings, logger),
+        {
+          packingPolicy,
+          monetaryPolicyReference: packingPolicy.allowSynthetic
+            ? `synthetic-${target}-inclusive-v1`
+            : hostedMonetaryPolicyReference,
+        },
       ),
   };
 }

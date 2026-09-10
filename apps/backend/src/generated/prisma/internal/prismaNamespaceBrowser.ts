@@ -194,6 +194,13 @@ export const CheckoutOrderScalarFieldEnum = {
   checkoutExpiresAt: 'checkoutExpiresAt',
   stripePaymentIntentId: 'stripePaymentIntentId',
   amountTotalMinor: 'amountTotalMinor',
+  acceptedDeliveryAmountMinor: 'acceptedDeliveryAmountMinor',
+  acceptedParcelTier: 'acceptedParcelTier',
+  monetaryPolicyReference: 'monetaryPolicyReference',
+  merchandiseGrossMinor: 'merchandiseGrossMinor',
+  deliveryGrossMinor: 'deliveryGrossMinor',
+  deliveryVatMinor: 'deliveryVatMinor',
+  totalVatMinor: 'totalVatMinor',
   currencyCode: 'currencyCode',
   recipientName: 'recipientName',
   shopperEmail: 'shopperEmail',
@@ -234,6 +241,8 @@ export const CheckoutOrderLineScalarFieldEnum = {
   optionLabel: 'optionLabel',
   unitAmountMinor: 'unitAmountMinor',
   lineAmountMinor: 'lineAmountMinor',
+  lineVatMinor: 'lineVatMinor',
+  taxRatePercent: 'taxRatePercent',
   createdAt: 'createdAt'
 } as const
 
