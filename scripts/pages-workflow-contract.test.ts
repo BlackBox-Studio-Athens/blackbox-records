@@ -38,4 +38,15 @@ describe('Pages workflow contract', () => {
     expect(deployStaff).not.toContain('--project-name=blackbox-records-web');
     expect(workflow).not.toContain('generate:api');
   });
+
+  it('rebuilds every hosted staff artifact with same-origin API reads after the public build', () => {
+    const staffBuild = workflow.slice(
+      workflow.indexOf('      - name: Build hosted staff frontend'),
+      workflow.indexOf('      - name: Upload PRD public static artifact'),
+    );
+    expect(staffBuild).toContain("github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'staff'");
+    expect(staffBuild).toContain("PUBLIC_BACKEND_BASE_URL: ''");
+    expect(staffBuild).toContain('run: pnpm build:staff');
+    expect(workflow.indexOf('run: pnpm build\n')).toBeLessThan(workflow.indexOf(staffBuild));
+  });
 });

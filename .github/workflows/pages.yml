@@ -180,7 +180,9 @@ jobs:
         run: pnpm build
 
       - name: Build hosted staff frontend
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'staff' }}
+        if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'staff' }}
+        env:
+          PUBLIC_BACKEND_BASE_URL: ''
         run: pnpm build:staff
 
       - name: Upload PRD public static artifact
