@@ -75,7 +75,7 @@ describe('Catalog description typography', () => {
     );
 
     const releaseDetailSummaryClass = /release\.data\.summary && \(\s*<p class="([^"]+)">/s.exec(releaseDetail)?.[1];
-    const storeItemSummaryClass = /storeItem\.summary && \(\s*<p class="([^"]+)">/s.exec(storeItemDetail)?.[1];
+    const storeItemSummaryClass = /storeItem\.summary && \(?\s*<p class="([^"]+)">/s.exec(storeItemDetail)?.[1];
 
     expect(releaseDetailSummaryClass).toBe('max-w-2xl text-sm leading-relaxed text-muted-foreground');
     expect(storeItemSummaryClass).toBe('max-w-2xl text-sm leading-relaxed text-muted-foreground');

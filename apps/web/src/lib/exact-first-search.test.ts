@@ -20,6 +20,22 @@ const readDistroSearchText = (item: (typeof distroItems)[number]) =>
   [item.title, item.artistOrLabel, item.group, item.format].join(' ');
 
 describe('exact-first search', () => {
+  it.each(['pethicus', 'pithecus', 'vinyl pethicus', 'ANARCHOTRIBAL   vinyl', 'ouranopithecus anarchotribal'])(
+    'finds partial names, typos, and reordered terms for %s',
+    (query) => {
+      const items = ['Anarchotribal Ouranopithecus Vinyl LP', 'Barren Point Tape'];
+      expect(createExactFirstSearcher(items, (item) => item).search(query)).toEqual([items[0]]);
+    },
+  );
+
+  it('ignores accents and punctuation while requiring every query term', () => {
+    const items = ['Μαύρο Café Vinyl 12-inch', 'Other Tape'];
+    const searcher = createExactFirstSearcher(items, (item) => item);
+    expect(searcher.search('μαυρο cafe 12 inch')).toEqual([items[0]]);
+    expect(searcher.search('cafe tape')).toEqual([]);
+    expect(searcher.search('zz')).toEqual([]);
+  });
+
   it.each([
     ['care', 'Caregivers'],
     ['chronoboros', 'Caregivers'],

@@ -10,9 +10,10 @@ const storeCard = readFileSync(fileURLToPath(new URL('../cards/StoreItemCard.ast
 describe('Store Item detail gallery contract', () => {
   it('contains CD photography without changing non-CD framing or shared projections', () => {
     expect(source).toContain("const isDistroCd = distroSource?.data.group === 'CDs';");
-    expect(source).toContain("isDistroCd && 'self-start'");
-    expect(source).toContain("isDistroCd ? 'aspect-square h-auto object-contain' : 'aspect-[4/5] h-full object-cover'");
-    expect(source).toContain('!isDistroCd && (');
+    expect(source).toContain('grid items-start');
+    expect(source).toContain("isDistroCd ? 'aspect-square h-auto object-contain' : 'aspect-[4/5] h-auto object-cover'");
+    expect(source).not.toContain('{availabilityLabel}');
+    expect(source.indexOf('data-store-purchase-group')).toBeLessThan(source.indexOf('<Image'));
     for (const card of [distroCard, storeCard]) {
       expect(card).toContain("style={isDistroCd ? 'object-fit: contain; transform: none;' : undefined}");
       expect(card).toContain("? '(min-width: 1280px) 24rem, (min-width: 768px) 50vw, 100vw'");

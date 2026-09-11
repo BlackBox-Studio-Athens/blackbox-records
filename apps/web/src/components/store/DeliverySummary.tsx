@@ -1,4 +1,5 @@
 import * as React from 'react';
+import PurchaseInformation from '@/components/PurchaseInformation';
 import {
   readDeliveryQuote,
   type DeliveryQuoteResponse,
@@ -8,7 +9,6 @@ import {
 type Lines = NonNullable<StartCheckoutBody['lines']>;
 const money = (amount: number) =>
   new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(amount / 100);
-const termsHref = `${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/terms/`;
 
 export function useDeliveryQuote(lines: Lines) {
   const key = JSON.stringify(
@@ -60,13 +60,8 @@ export function DeliverySummary({ loading, quote }: ReturnType<typeof useDeliver
           </div>
         </dl>
       )}
-      <p className="text-xs leading-5 text-muted-foreground">
-        Greece-only locker delivery. VAT is included, never added again.{' '}
-        <a className="underline" href={termsHref}>
-          Delivery rates and terms
-        </a>
-        .
-      </p>
+      <p className="text-xs leading-5 text-muted-foreground">VAT is included, never added again.</p>
+      <PurchaseInformation />
     </div>
   );
 }

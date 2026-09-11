@@ -1270,6 +1270,16 @@ async function runScenarioWithBrowser(input: {
       await newsletterOptIn.waitFor({ state: 'visible', timeout: input.options.timeoutMs });
       await checkoutButton.waitFor({ state: 'visible', timeout: input.options.timeoutMs });
       await newsletterOptIn.check({ timeout: input.options.fieldActionTimeoutMs });
+      await page.waitForFunction(
+        () => {
+          const button = [...document.querySelectorAll('button')].find((candidate) =>
+            /(?:pay securely with|continue to) stripe(?: checkout)?/i.test(candidate.textContent ?? ''),
+          );
+          return Boolean(button && !button.disabled);
+        },
+        undefined,
+        { timeout: input.options.timeoutMs },
+      );
       await Promise.all([
         page.waitForURL(/checkout\.stripe\.com/, { timeout: input.options.timeoutMs, waitUntil: 'commit' }),
         checkoutButton.click({ timeout: input.options.fieldActionTimeoutMs }),

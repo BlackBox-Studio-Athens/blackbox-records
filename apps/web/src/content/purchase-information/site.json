@@ -1,0 +1,73 @@
+{
+  "$schema": "../../../.astro/collections/purchaseInformation.schema.json",
+  "publication": "pending",
+  "content": {
+    "revision": "2026-09-11",
+    "seller": {
+      "name": "Seller name to be confirmed",
+      "address": "Public seller address to be confirmed",
+      "support_email": "support@example.invalid"
+    },
+    "terms": {
+      "dispatch": {
+        "summary": "Dispatch timing to be confirmed.",
+        "paragraphs": ["Order preparation time, dispatch days and delay notifications to be confirmed."]
+      },
+      "delivery": {
+        "summary": "Greece-only BOX NOW locker delivery. We arrange your locker with you before dispatch. A street address collected at payment does not mean home delivery.",
+        "paragraphs": [
+          "Delivery is to a BOX NOW locker in Greece, including supported island destinations, with no island surcharge. We arrange your locker with you before dispatch. A street address collected at payment does not mean home delivery.",
+          "If your cart cannot fit a supported parcel, checkout is unavailable. We absorb packaging and carrier cost differences for accepted orders; there is no later delivery top-up."
+        ]
+      },
+      "returns": {
+        "summary": "Return and refund arrangements to be confirmed.",
+        "paragraphs": [
+          "Return eligibility, request procedure, return address, shipping responsibility and refund timing to be confirmed."
+        ]
+      },
+      "damaged_items": {
+        "summary": "Damaged-item support procedure to be confirmed.",
+        "paragraphs": [
+          "How to report a damaged or incorrect item, information needed and available remedies to be confirmed."
+        ]
+      },
+      "uncollected_parcels": {
+        "summary": "Uncollected-parcel handling to be confirmed.",
+        "paragraphs": [
+          "Collection reminders, returned parcel handling, redelivery arrangements and any applicable costs to be confirmed."
+        ]
+      }
+    },
+    "privacy": {
+      "purposes": {
+        "summary": "Data-use wording to be confirmed.",
+        "paragraphs": [
+          "Approved purposes and legal bases for purchase, payment, fulfillment, support, service inquiry, optional newsletter, analytics and security processing to be confirmed."
+        ]
+      },
+      "recipients": {
+        "summary": "Service-provider disclosures to be confirmed.",
+        "paragraphs": [
+          "Actual recipients, provider roles and any international transfer wording for Stripe, Cloudflare, GitHub Pages, Resend, BOX NOW, Glancelytics, Google Fonts and optional Bandcamp, Tidal or YouTube embeds to be confirmed. Fiscal services must be described only after operational acceptance."
+        ]
+      },
+      "retention": {
+        "summary": "Retention periods to be confirmed.",
+        "paragraphs": [
+          "Retention periods or criteria for orders, contact details, inquiries, newsletter consent, provider records and logs; browser cart storage and deletion behavior to be confirmed."
+        ]
+      },
+      "rights": {
+        "summary": "Privacy rights wording to be confirmed.",
+        "paragraphs": [
+          "Applicable rights, request procedure, newsletter withdrawal, complaint route and any limitations to be confirmed."
+        ]
+      },
+      "contact": {
+        "summary": "Privacy contact to be confirmed.",
+        "paragraphs": ["Controller identity and the contact route for privacy requests to be confirmed."]
+      }
+    }
+  }
+}

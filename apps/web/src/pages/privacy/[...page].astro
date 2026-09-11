@@ -1,0 +1,23 @@
+---
+import InternalPageHero from '@/components/InternalPageHero.astro';
+import PurchaseDocument from '@/components/PurchaseDocument';
+import SiteLayout from '@/layouts/SiteLayout.astro';
+import { getPurchaseInformation } from '@/lib/purchase-information';
+
+export function getStaticPaths() {
+  const information = getPurchaseInformation();
+  return information ? [{ params: { page: undefined }, props: { information } }] : [];
+}
+
+const { information } = Astro.props;
+---
+
+<SiteLayout
+  pageTitle="Privacy information"
+  pageDescription="How BlackBox Records uses personal information and how to contact us about privacy."
+>
+  <InternalPageHero sectionLabel="BlackBox Records" title="Privacy information" />
+  <section class="page-content-width-constrained-container py-10">
+    <PurchaseDocument kind="privacy" information={information} />
+  </section>
+</SiteLayout>

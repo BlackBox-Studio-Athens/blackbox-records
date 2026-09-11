@@ -3,27 +3,60 @@ import InternalPageHero from '@/components/InternalPageHero.astro';
 import DeliveryRates from '@/components/store/DeliveryRates';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { createProjectRelativeUrl } from '@/config/site';
+import PurchaseDocument from '@/components/PurchaseDocument';
+import { getPurchaseInformation } from '@/lib/purchase-information';
+
+const information = getPurchaseInformation();
 ---
 
-<SiteLayout pageTitle="Delivery information" pageDescription="VAT-inclusive pricing and Greek BOX NOW locker delivery.">
-  <InternalPageHero sectionLabel="Store" title="Delivery information" />
+<SiteLayout
+  pageTitle="Purchase and delivery information"
+  pageDescription="Delivery, returns and purchase help for BlackBox Records orders."
+>
+  <InternalPageHero sectionLabel="Store" title="Purchase and delivery information" />
   <section class="page-content-width-constrained-container space-y-6 py-10" aria-label="Delivery information">
     <div class="max-w-2xl space-y-5 text-sm leading-7">
       <DeliveryRates client:load />
-      <p>
-        Delivery is to a BOX NOW locker in Greece, including supported island destinations, with no island surcharge. We
-        arrange your locker with you before dispatch. A street address collected at payment does not mean home delivery.
-      </p>
-      <p>
-        If your cart cannot fit a supported parcel, checkout is unavailable. We absorb packaging and carrier cost
-        differences for accepted orders; there is no later delivery top-up.
-      </p>
-      <p>
-        For delivery timing, locker arrangements, returns or a damaged item, <a
-          class="underline"
-          href={createProjectRelativeUrl('/about/')}>contact BlackBox</a
-        >.
-      </p>
+      {
+        information ? (
+          <PurchaseDocument kind="terms" information={information} />
+        ) : (
+          <>
+            <section id="delivery" class="scroll-mt-28 space-y-3">
+              <h2 class="font-display text-3xl">Locker delivery</h2>
+              <p>
+                Delivery is to a BOX NOW locker in Greece, including supported island destinations, with no island
+                surcharge. We arrange your locker with you before dispatch. A street address collected at payment does
+                not mean home delivery.
+              </p>
+              <p>
+                If your cart cannot fit a supported parcel, checkout is unavailable. We absorb packaging and carrier
+                cost differences for accepted orders; there is no later delivery top-up.
+              </p>
+            </section>
+            <section id="returns" class="scroll-mt-28 space-y-3">
+              <h2 class="font-display text-3xl">Returns and refunds</h2>
+              <p>
+                For returns or a damaged item,{' '}
+                <a class="underline" href="#support">
+                  contact BlackBox
+                </a>
+                .
+              </p>
+            </section>
+            <section id="support" class="scroll-mt-28 space-y-3">
+              <h2 class="font-display text-3xl">Purchase help</h2>
+              <p>
+                For delivery timing, locker arrangements, returns or a damaged item,
+                <a class="underline" href={createProjectRelativeUrl('/about/')}>
+                  contact BlackBox
+                </a>
+                .
+              </p>
+            </section>
+          </>
+        )
+      }
       <p><a class="underline" href={createProjectRelativeUrl('/store/')}>Back to Store</a></p>
     </div>
   </section>

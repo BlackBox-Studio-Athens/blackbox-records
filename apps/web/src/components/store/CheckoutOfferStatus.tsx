@@ -19,6 +19,7 @@ import {
 } from './checkout-offer-status-state';
 import CheckoutShippingStep from './CheckoutShippingStep';
 import { DeliverySummary, useDeliveryQuote } from './DeliverySummary';
+import { PrivacyLink } from '@/components/PurchaseInformation';
 import { createCheckoutShippingGateView } from './checkout-shipping-step-state';
 import { createCartLineItemSnapshotFromWorkerOffer, type StoreItemCartSeed } from './StoreItemPurchaseActions';
 
@@ -279,6 +280,9 @@ export default function CheckoutOfferStatus({
                     Email me BlackBox Records release, distro, and event updates. You can unsubscribe anytime.
                   </span>
                 </label>
+                <div className="text-xs text-muted-foreground">
+                  <PrivacyLink />
+                </div>
 
                 {showReviewSiteMarker && (
                   <p

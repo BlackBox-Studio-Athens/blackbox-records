@@ -131,6 +131,9 @@ The Store SHALL present source-derived, purpose-specific orientation panels for 
 
 #### Scenario: Orientation remains server-rendered
 
+- **WHEN** All Store loads or is restored through shell navigation
+- **THEN** Browse Distro formats starts expanded and remains a native disclosure the shopper can collapse.
+
 - **WHEN** JavaScript is unavailable
 - **THEN** the same panel labels, source-derived totals, format links, and category descriptions remain available in the complete static document where applicable
 - **AND** the compact All format handoff remains usable, with one static catalog total and no nonfunctional search control

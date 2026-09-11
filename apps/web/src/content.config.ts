@@ -14,6 +14,7 @@ import {
 } from './lib/editorial-validation';
 import { slugPatternSource } from './lib/slugs';
 import { createDistroContentSchema } from './lib/distro-content-schema';
+import { purchaseInformationSchema } from './lib/purchase-information-schema';
 
 const requiredAltText = z.string().trim().min(1, 'Describe the visible image for people who cannot see it.');
 const httpsUrl = z.string().refine(isHttpsUrl, { message: 'Use a full HTTPS URL.' });
@@ -275,7 +276,13 @@ const services = defineCollection({
     }),
 });
 
+const purchaseInformation = defineCollection({
+  loader: glob({ pattern: '**/*.json', base: './src/content/purchase-information' }),
+  schema: purchaseInformationSchema,
+});
+
 export const collections = {
+  purchaseInformation,
   artists,
   releases,
   news,

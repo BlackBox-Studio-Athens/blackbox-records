@@ -78,6 +78,14 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **AND** `checkout-web` owns `DeliveryRates.tsx` and `/terms/` delivery information
 - **AND** `commerce-domain` owns the accepted policy and order monetary types in `monetary.ts`, exposed through its existing root entrypoint.
 
+#### Scenario: Purchase information crosses public presentation boundaries
+
+- **GIVEN** public purchase and privacy information is shared by Store Item, checkout, footer and personal-data forms
+- **WHEN** those surfaces render policy copy or links
+- **THEN** `platform-shared` owns and provides `components/PurchaseInformation.tsx`, `components/PurchaseDocument.tsx`, `lib/purchase-information.ts` and `lib/purchase-information-schema.ts` under `apps/web/src/`, with the purchase-information content entry owned by the same module
+- **AND** `checkout-web` owns the static `/terms/` and `/privacy/` routes and retains all runtime monetary presentation
+- **AND** shared editorial information does not import checkout clients or become price, tax or order authority.
+
 #### Scenario: Store category routes are added
 
 - **GIVEN** Store collection pages exist at `/store/`, `/store/blackbox-releases/`, `/store/distro/`, and `/store/merch/`

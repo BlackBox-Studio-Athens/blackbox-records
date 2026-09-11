@@ -24,6 +24,13 @@ The system SHALL provide Search Store on `/store/` across all rendered Store Ite
 
 The system MUST reuse the existing Distro local search behavior, returning exact normalized substring matches before considering fuzzy fallback, without remote search or catalog reordering.
 
+Normalization SHALL ignore case, accents, punctuation, and repeated whitespace. Query terms SHALL match across searchable fields in any order, with every term required. Exact matches take priority; otherwise terms of four or more characters may use the existing Fuse fallback at threshold 0.3. Shorter terms require substring matches to avoid noisy results.
+
+#### Scenario: Partial artist name includes spelling mistakes
+
+- **WHEN** the shopper searches for `pethicus` or `vinyl pethicus`
+- **THEN** the Ouranopithecus vinyl Store Item is included, despite the partial name and spelling differences.
+
 #### Scenario: Exact matches exist
 
 - **WHEN** a case-insensitive query matches one or more searchable item texts exactly as a substring

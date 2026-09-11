@@ -6,6 +6,8 @@ import SocialIcon from '@/components/icons/SocialIcon.astro';
 import { getFooterNavigationItems, getLabelSettings, getSocialItems } from '@/lib/site-data';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { PrivacyLink } from '@/components/PurchaseInformation';
+import { getPurchaseInformation } from '@/lib/purchase-information';
 
 const [footerNavigationItems, socialItems, labelSettings] = await Promise.all([
   getFooterNavigationItems(),
@@ -60,6 +62,13 @@ const footerSocialItems = socialItems.filter((item) => item.url.trim() && item.u
     <div class="space-y-3">
       <h3 class="site-footer-heading">Sitemap</h3>
       <ul class="site-footer-nav-list">
+        {
+          getPurchaseInformation() && (
+            <li>
+              <PrivacyLink />
+            </li>
+          )
+        }
         {
           footerNavigationItems.map((item) => {
             const linkAttributes = resolveLinkAttributes(item.url);

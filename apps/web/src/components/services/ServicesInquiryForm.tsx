@@ -1,4 +1,5 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
+import { PrivacyLink } from '@/components/PurchaseInformation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -482,6 +483,9 @@ export default function ServicesInquiryForm({
           {isSubmitting ? 'Sending inquiry…' : submitText}
         </Button>
         <ServicesInquirySubmissionFeedback status={state.status} />
+      </div>
+      <div className="text-xs text-muted-foreground">
+        <PrivacyLink />
       </div>
       <ServicesInquiryEmailFallback
         copyStatus={copyStatus}

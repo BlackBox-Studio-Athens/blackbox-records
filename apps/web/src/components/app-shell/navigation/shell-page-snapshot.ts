@@ -110,7 +110,7 @@ export function readDocumentShellPageSnapshot(
     element.removeAttribute('data-store-search-active');
   });
   mainElementClone.querySelectorAll<HTMLDetailsElement>('[data-store-format-disclosure]').forEach((element) => {
-    element.open = false;
+    element.open = true;
   });
   mainElementClone.querySelectorAll<HTMLElement>('[data-distro-search-hidden]').forEach((hiddenElement) => {
     hiddenElement.removeAttribute('data-distro-search-hidden');

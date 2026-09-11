@@ -2,6 +2,7 @@ import { createAbsoluteSiteUrl } from '@/config/site';
 import { getReleaseDetailSlug, listArtistProfiles, listNewsArticles, listReleaseCatalog } from '@/lib/catalog-data';
 import { getDiscoverableStoreCatalogCategories } from '@/lib/store-categories';
 import { listStoreCollectionEntries } from '@/lib/store-collection';
+import { getPurchaseInformation } from '@/lib/purchase-information';
 
 export async function GET() {
   const [artists, releases, news, storeEntries] = await Promise.all([
@@ -19,6 +20,7 @@ export async function GET() {
     '/',
     '/about/',
     '/terms/',
+    ...(getPurchaseInformation() ? ['/privacy/'] : []),
     '/artists/',
     '/releases/',
     '/news/',

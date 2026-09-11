@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { PrivacyLink } from '@/components/PurchaseInformation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -149,6 +150,9 @@ export default function NewsletterSignupForm({
       </label>
 
       <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">{note}</p>
+      <div className="text-xs text-muted-foreground">
+        <PrivacyLink />
+      </div>
 
       <p id={statusId} role="status" aria-live="polite" aria-atomic="true" className={view.statusClassName}>
         {view.statusMessage}

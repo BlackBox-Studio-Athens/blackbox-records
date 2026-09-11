@@ -104,7 +104,7 @@ export default function StoreItemPurchaseActions({ api, cartItem, cartSeed }: St
         type="button"
         size="lg"
         variant={isChecking ? 'default' : 'outline'}
-        className="pointer-events-none min-w-56 rounded-none border-border/60 uppercase tracking-[0.12em]"
+        className="pointer-events-none h-auto min-h-11 w-full min-w-0 whitespace-normal rounded-none border-border/60 py-3 uppercase tracking-[0.12em] sm:w-auto sm:min-w-56"
         disabled
         aria-busy={isChecking ? 'true' : undefined}
       >
@@ -121,7 +121,7 @@ export default function StoreItemPurchaseActions({ api, cartItem, cartSeed }: St
     <Button
       type="button"
       size="lg"
-      className="min-w-56 rounded-none uppercase tracking-[0.12em]"
+      className="h-auto min-h-11 w-full min-w-0 whitespace-normal rounded-none py-3 uppercase tracking-[0.12em] sm:w-auto sm:min-w-56"
       data-store-item-add-to-cart
       onClick={() => requestStoreCartAddItem(resolvedCartItem)}
     >

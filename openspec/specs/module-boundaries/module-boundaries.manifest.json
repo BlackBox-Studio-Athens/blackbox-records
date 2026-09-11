@@ -209,6 +209,7 @@
         "apps/web/src/components/store/DeliverySummary.tsx",
         "apps/web/src/components/store/DeliveryRates.tsx",
         "apps/web/src/pages/terms/**",
+        "apps/web/src/pages/privacy/**",
         "apps/web/src/components/store/StoreItemPurchaseActions.tsx",
         "apps/web/src/pages/store/checkout/**",
         "apps/web/src/pages/store/[slug]/checkout/**",
@@ -467,6 +468,11 @@
     "platform-shared": {
       "status": "closed",
       "roots": [
+        "apps/web/src/components/PurchaseInformation.tsx",
+        "apps/web/src/components/PurchaseDocument.tsx",
+        "apps/web/src/lib/purchase-information.ts",
+        "apps/web/src/lib/purchase-information-schema.ts",
+        "apps/web/src/content/purchase-information/**",
         "apps/web/src/config/site.ts",
         "apps/web/src/lib/editorial-validation.ts",
         "apps/web/src/utils/urls.ts",
@@ -480,6 +486,10 @@
       ],
       "providedEntrypoints": [
         "apps/web/src/config/site.ts",
+        "apps/web/src/components/PurchaseInformation.tsx",
+        "apps/web/src/components/PurchaseDocument.tsx",
+        "apps/web/src/lib/purchase-information.ts",
+        "apps/web/src/lib/purchase-information-schema.ts",
         "apps/web/src/lib/editorial-validation.ts",
         "apps/web/src/lib/backend/api-client.ts",
         "apps/web/src/lib/backend/public-backend-config.ts",
