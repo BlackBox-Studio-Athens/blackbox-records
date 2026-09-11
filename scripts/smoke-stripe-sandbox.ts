@@ -1332,6 +1332,8 @@ async function runScenarioWithBrowser(input: {
       );
     });
     await timeStripeSandboxStep(input.scenario.name, 'Stripe submit', durations, 'stripeSubmitMs', async () => {
+      // ponytail: Stripe debounces field/tax updates; replace this test-only settling window if it exposes readiness.
+      await sleep(2000);
       await clickStripePayButton(page);
     });
 
@@ -1426,6 +1428,10 @@ async function readStripeCheckoutSurface(
     { timeout: timeoutMs },
   );
 
+  await page
+    .getByText(expectation.expectedAmountText, { exact: true })
+    .first()
+    .waitFor({ state: 'visible', timeout: timeoutMs });
   const bodyText = await page.locator('body').innerText({ timeout: 10_000 });
 
   return createStripeCheckoutSurfaceObservation(bodyText, expectation);
