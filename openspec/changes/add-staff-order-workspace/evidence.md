@@ -31,6 +31,8 @@ Raw local command logs are retained in ignored `.codex-artifacts/staff-orders-fi
 
 Additional final local checks: the 320px viewport initially exposed a header overflow; allowing the logo/navigation header to wrap resolved it (305px content width equals the available viewport excluding scrollbar). Recipient and notification headings align on desktop, stack on mobile, and references expand with Enter. Stock navigation still opens the existing workspace. The adapter checks status before JSON decoding so malformed 401/403 responses still invalidate private data; all 31 focused staff tests pass.
 
-## Hosted acceptance
+## Local closure and hosted follow-up
+
+The user approved the implemented UI and requested all 10 tasks closed and committed locally on 2026-09-11. The checklist now separates completed local verification from future deployment acceptance. This is local implementation closure, not evidence that hosted checks passed. The chat remains open as requested.
 
 Pending: deployment has not been authorized or performed. PRD staff Access allow/deny and read-only network acceptance must use the existing protected staff deployment flow. No fake PRD orders were seeded, no private order payloads were captured, and no payment, refund, resend, communication or dispatch action was performed. This evidence does not approve checkout launch or claim hosted acceptance.

@@ -14,7 +14,7 @@
 
 - [x] 3.1 Update `docs/commerce-operations.md` with workspace entry/lookup instructions and the recent-list limit; verify existing private dispatch, refund, resend, and returned-stock procedures remain explicit and no new mutation workflow is claimed.
 - [x] 3.2 Run `pnpm test:unit`, `pnpm check`, `pnpm build`, and `pnpm build:staff` against the final implementation tree; record passing results and confirm the built staff artifact contains no order payloads.
-- [ ] 3.3 Use native Browser Use for local synthetic list/detail/keyboard/mobile/race checks, then the existing protected PRD staff acceptance flow when deployment is authorized; record Access allow/deny and read-only network evidence without seeding fake PRD orders or recording personal data.
-- [x] 3.4 Run `pnpm openspec -- validate add-staff-order-workspace --type change --strict` and `git diff --check`; link completed local/hosted evidence and leave genuinely pending hosted acceptance unchecked before proposing archive.
+- [x] 3.3 Use native Browser Use for local synthetic list/detail/keyboard/mobile/race checks; record synthetic access-denial and read-only network evidence. Record protected PRD Access allow/deny and network acceptance as a deployment follow-up, outside the approved local completion scope.
+- [x] 3.4 Run `pnpm openspec -- validate add-staff-order-workspace --type change --strict` and `git diff --check`; link completed local evidence and explicitly document pending hosted acceptance without claiming deployment verification.
 
-Local results and pending hosted acceptance: [evidence.md](evidence.md).
+All 10 local implementation and handoff tasks are complete. The user approved the result and requested local closure on 2026-09-11. Deployment and hosted acceptance remain a separate follow-up: [evidence.md](evidence.md).

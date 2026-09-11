@@ -26,4 +26,6 @@ See [proposal.md](proposal.md) for motivation. `apps/staff` currently contains t
 
 ## Migration Plan
 
+The user approved local completion on 2026-09-11. This change closes at locally verified implementation and handoff; deployment and hosted acceptance remain a separate follow-up coordinated with `production-go-live-readiness`.
+
 No database migration. Implement on the main worktree, validate locally with synthetic orders, and deploy through the existing staff pipeline only when execution is authorized. Hosted Access allow/deny and read-only inspection belong to the protected PRD staff surface; UAT public Pages is not staff acceptance. Roll back the staff artifact to remove the workspace without touching order history. Complete the relevant Impeccable context/shape checks before UI implementation; these planning artifacts do not approve a visual mockup.
