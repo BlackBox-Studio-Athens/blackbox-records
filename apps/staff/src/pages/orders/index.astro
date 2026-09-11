@@ -1,0 +1,10 @@
+---
+import OrderWorkspace from '../../components/orders/OrderWorkspace';
+import StockOpsLayout from '../../layouts/StockOpsLayout.astro';
+import { getInternalStockApiBaseUrl } from '../../lib/backend/internal-stock-api';
+import '../../styles/orders.css';
+---
+
+<StockOpsLayout pageTitle="Orders" pageDescription="Protected order inspection for BlackBox Records staff.">
+  <OrderWorkspace backendBaseUrl={getInternalStockApiBaseUrl()} client:load />
+</StockOpsLayout>

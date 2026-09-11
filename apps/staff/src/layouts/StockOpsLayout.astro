@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import { Boxes, ReceiptText } from 'lucide-react';
 
 interface Props {
   pageTitle: string;
@@ -29,7 +30,20 @@ const htmlTitle = pageTitle + ' | BlackBox Records';
     />
   </head>
   <body class="min-h-screen overflow-x-clip bg-background text-foreground">
-    <a class="accessibility-skip-to-content-link" href="#main">Skip to stock operations</a>
+    <a class="accessibility-skip-to-content-link" href="#main">Skip to workspace</a>
+    <header class="staff-header">
+      <a href="/stock/" class="staff-brand" aria-label="BlackBox Records staff, stock workspace"
+        ><img src="/logo-horizontal.png" alt="BlackBox Records" width="1024" height="253" /></a
+      >
+      <nav aria-label="Staff workspace">
+        <a href="/stock/" aria-current={Astro.url.pathname.startsWith('/stock/') ? 'page' : undefined}
+          ><Boxes size={19} aria-hidden="true" />Stock</a
+        >
+        <a href="/orders/" aria-current={Astro.url.pathname.startsWith('/orders/') ? 'page' : undefined}
+          ><ReceiptText size={19} aria-hidden="true" />Orders</a
+        >
+      </nav>
+    </header>
     <main id="main" tabindex="-1">
       <slot />
     </main>

@@ -15,9 +15,9 @@ afterEach(() => {
 });
 
 describe('frontend route isolation', () => {
-  it('rejects stock files in the public artifact', () => {
-    const dist = createDist(['index.html', 'stock/index.html']);
-    expect(() => assertFrontendRouteIsolation('web', dist)).toThrow('stock/index.html');
+  it.each(['stock/index.html', 'orders/index.html'])('rejects %s in the public artifact', (route) => {
+    const dist = createDist(['index.html', route]);
+    expect(() => assertFrontendRouteIsolation('web', dist)).toThrow(route);
   });
 
   it.each(['admin/index.html', 'store/index.html'])('rejects %s in the staff artifact', (violation) => {
@@ -38,6 +38,8 @@ function createStaffDist(violation?: string): string {
     'favicon.ico',
     'favicon.svg',
     'index.html',
+    'logo-horizontal.png',
+    'orders/index.html',
     'robots.txt',
     'stock/index.html',
     ...(violation ? [violation] : []),

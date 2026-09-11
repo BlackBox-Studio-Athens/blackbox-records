@@ -10,6 +10,8 @@ const staffFiles = new Set([
   'favicon.ico',
   'favicon.svg',
   'index.html',
+  'logo-horizontal.png',
+  'orders/index.html',
   'robots.txt',
   'stock/index.html',
 ]);
@@ -18,9 +20,11 @@ export function assertFrontendRouteIsolation(mode: FrontendRouteIsolationMode, d
   const files = listFiles(distDir);
 
   if (mode === 'web') {
-    const stockFiles = files.filter((file) => file === 'stock' || file.startsWith('stock/'));
+    const stockFiles = files.filter((file) =>
+      ['stock', 'orders'].some((route) => file === route || file.startsWith(`${route}/`)),
+    );
     if (stockFiles.length > 0) {
-      throw new Error(`Public web artifact contains stock files: ${stockFiles.join(', ')}`);
+      throw new Error(`Public web artifact contains staff files: ${stockFiles.join(', ')}`);
     }
     return;
   }
