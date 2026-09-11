@@ -76,11 +76,16 @@ export default function ShellPortalOutlets({
       {distroSearchContainer
         ? createPortal(
             <PortalErrorBoundary
-              fallback={<p role="alert">Distro search is unavailable.</p>}
+              key={activeShellPathname}
+              fallback={<p role="alert">Store search is unavailable. Browse the catalog below.</p>}
               onError={() => document.documentElement.removeAttribute('data-store-coverflow-capable')}
             >
-              <React.Suspense fallback={loadingStatus('distro search')}>
-                <StoreDistroSearch key={activeShellPathname} pageKey={activeShellPathname} />
+              <React.Suspense fallback={loadingStatus('Store search')}>
+                <StoreDistroSearch
+                  key={activeShellPathname}
+                  pageKey={activeShellPathname}
+                  scope={activeShellPathname === '/store/' ? 'all' : 'distro'}
+                />
               </React.Suspense>
             </PortalErrorBoundary>,
             distroSearchContainer,

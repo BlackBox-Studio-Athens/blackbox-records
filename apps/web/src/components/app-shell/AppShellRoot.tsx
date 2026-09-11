@@ -277,7 +277,12 @@ export default function AppShellRoot({
 
   useEffect(() => {
     const storeRoute = parseShellSectionRoute(activeShellPathname);
-    if (storeRoute?.kind !== 'store' || storeRoute.pathname === '/store/distro/' || typeof window === 'undefined')
+    if (
+      storeRoute?.kind !== 'store' ||
+      storeRoute.pathname === '/store/distro/' ||
+      storeRoute.pathname === '/store/' ||
+      typeof window === 'undefined'
+    )
       return;
 
     let cancelled = false;
@@ -361,17 +366,20 @@ export default function AppShellRoot({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    if (activeShellPathname !== '/store/distro/') {
+    if (activeShellPathname !== '/store/distro/' && activeShellPathname !== '/store/') {
       setDistroSearchContainer(null);
       return;
     }
 
     return connectShellPortalTarget({
       activePathname: activeShellPathname,
-      queryTarget: () => document.querySelector<HTMLElement>('[data-distro-search]'),
+      queryTarget: () =>
+        document.querySelector<HTMLElement>(
+          activeShellPathname === '/store/' ? '[data-store-search]' : '[data-distro-search]',
+        ),
       scheduler: window,
       setTarget: setDistroSearchContainer,
-      targetPathname: '/store/distro/',
+      targetPathname: activeShellPathname,
     });
   }, [activeShellPathname]);
 
@@ -426,7 +434,7 @@ export default function AppShellRoot({
     clearStoreLoadingFeedback();
     clearStoreListingPriceActivation(storeListingPriceActivationStateRef.current);
     if (kind !== 'store') return undefined;
-    if (pathname === '/store/distro/') void preloadStoreDistroSearch().catch(() => undefined);
+    if (pathname === '/store/distro/' || pathname === '/store/') void preloadStoreDistroSearch().catch(() => undefined);
 
     const activation = prepareStoreListingPriceActivation({
       pathname,
@@ -492,7 +500,8 @@ export default function AppShellRoot({
   async function prefetchShellSectionHref(href: string) {
     const pagePrefetch = shellPageLoader.prefetchHref(href);
     const route = parseShellSectionRoute(new URL(href, window.location.href).pathname);
-    if (route?.pathname === '/store/distro/') void preloadStoreDistroSearch().catch(() => undefined);
+    if (route?.pathname === '/store/distro/' || route?.pathname === '/store/')
+      void preloadStoreDistroSearch().catch(() => undefined);
     await pagePrefetch;
   }
 

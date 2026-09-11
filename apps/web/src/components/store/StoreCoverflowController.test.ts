@@ -276,6 +276,20 @@ describe('Store Coverflow helpers', () => {
 });
 
 describe('Store Coverflow controller', () => {
+  it('keeps an untouched preview and clears All search into the complete catalog without moving focus', () => {
+    const { cards, controller, element, toggleButton } = createHarness();
+    controller.setSearchActive(false, 'catalog');
+    expect(element.dataset.storeCoverflowMode).toBe('preview');
+    controller.setSearchActive(true, 'catalog');
+    expect(element.dataset.storeCoverflowMode).toBe('search-results');
+    expect(cards.every((card) => !card.hasAttribute('data-store-coverflow-position'))).toBe(true);
+    controller.setSearchActive(false, 'catalog');
+    expect(element.dataset.storeCoverflowMode).toBe('catalog');
+    expect(toggleButton.textContent).toBe('Show Coverflow');
+    expect(cards.every((card) => card.focus.mock.calls.length === 0)).toBe(true);
+    controller.cleanup();
+    expect(element.dataset.storeCoverflowMode).toBe('preview');
+  });
   it('applies catalog state immediately but cancels deferred focus when search takes over', async () => {
     const { cards, controller, element, toggleButton } = createHarness();
     let nextFrame: FrameRequestCallback | undefined;

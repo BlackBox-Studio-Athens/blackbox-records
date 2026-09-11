@@ -103,6 +103,15 @@ export function readDocumentShellPageSnapshot(
   mainElementClone.querySelectorAll<HTMLElement>('[data-distro-search]').forEach((placeholderElement) => {
     placeholderElement.innerHTML = '';
   });
+  mainElementClone.querySelectorAll<HTMLElement>('[data-store-search]').forEach((placeholderElement) => {
+    placeholderElement.innerHTML = '';
+  });
+  mainElementClone.querySelectorAll<HTMLElement>('[data-store-search-active]').forEach((element) => {
+    element.removeAttribute('data-store-search-active');
+  });
+  mainElementClone.querySelectorAll<HTMLDetailsElement>('[data-store-format-disclosure]').forEach((element) => {
+    element.open = false;
+  });
   mainElementClone.querySelectorAll<HTMLElement>('[data-distro-search-hidden]').forEach((hiddenElement) => {
     hiddenElement.removeAttribute('data-distro-search-hidden');
   });

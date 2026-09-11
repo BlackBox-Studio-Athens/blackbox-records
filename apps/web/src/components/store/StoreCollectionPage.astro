@@ -39,7 +39,11 @@ const initialPositionRatio = entries.length > 0 ? 1 / entries.length : 0;
 const coverflowCatalogId = `${category.id}-store-catalog`;
 ---
 
-<SiteLayout pageTitle={category.title} pageDescription={category.description}>
+<SiteLayout
+  pageTitle={category.title}
+  pageDescription={category.description}
+  mainClass={category.id === 'all' ? 'store-all-page' : ''}
+>
   <InternalPageHero sectionLabel="Store" title={category.heading} />
 
   <StoreCategoryNavigation activeCategoryId={category.id} />
@@ -52,36 +56,40 @@ const coverflowCatalogId = `${category.id}-store-catalog`;
     category.id === 'distro' ? (
       <slot name="distro" />
     ) : (
-      <>
-        <section class="layout-container pb-6 pt-8" aria-labelledby="store-collection-heading">
+      <div data-store-search-root={category.id === 'all' ? '' : undefined}>
+        <section
+          class:list={['layout-container', category.id === 'all' ? 'py-4' : 'pb-6 pt-8']}
+          aria-labelledby="store-collection-heading"
+        >
           {category.id === 'all' ? (
             <div class="store-orientation-panel store-orientation-panel--all" data-store-orientation="all">
               <div class="store-orientation-panel__primary">
-                <p class="store-orientation-panel__eyebrow">Store shelf</p>
-                <h2 class="store-orientation-panel__title" id="store-collection-heading">
-                  One shelf for label releases, distro finds, and whatever still belongs in the room.
+                <h2 class="store-all-intro" id="store-collection-heading">
+                  Label releases and distro finds.
                 </h2>
-                <p class="store-orientation-panel__total">{itemCountLabel} total</p>
+                <div class="distro-page-search" data-store-search />
               </div>
               {distroGroups.length > 0 && (
-                <nav class="store-format-ledger" aria-label="Browse Distro formats">
-                  <p class="store-orientation-panel__eyebrow">Browse Distro formats</p>
-                  <ul class="store-format-ledger__list">
-                    {distroGroups.map((group) => (
-                      <li>
-                        <a
-                          class="store-format-ledger__link"
-                          href={createProjectRelativeUrl(
-                            `/store/distro/#${createStoreDistroGroupHeadingId(group.groupName)}`,
-                          )}
-                        >
-                          <span>{group.groupName}</span>
-                          <span>{group.entries.length}</span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </nav>
+                <details class="store-format-ledger" data-store-format-disclosure>
+                  <summary>Browse Distro formats</summary>
+                  <nav aria-label="Browse Distro formats">
+                    <ul class="store-format-ledger__list">
+                      {distroGroups.map((group) => (
+                        <li>
+                          <a
+                            class="store-format-ledger__link"
+                            href={createProjectRelativeUrl(
+                              `/store/distro/#${createStoreDistroGroupHeadingId(group.groupName)}`,
+                            )}
+                          >
+                            <span>{group.groupName}</span>
+                            <span>{group.entries.length}</span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </nav>
+                </details>
               )}
             </div>
           ) : category.id === 'blackbox-releases' ? (
@@ -132,37 +140,43 @@ const coverflowCatalogId = `${category.id}-store-catalog`;
         >
           {entries.length > 0 ? (
             <>
+              {category.id === 'all' && <p class="store-all-catalog-total">{itemCountLabel}</p>}
               {coverflowEligible && (
                 <div class="store-coverflow-overview">
                   <div class="store-coverflow-controls" data-store-coverflow-controls>
                     <div class="store-coverflow-depth">
-                      <dl class="store-coverflow-stats">
-                        <div class="store-coverflow-stat">
-                          <dt>On this shelf</dt>
-                          <dd>{entries.length}</dd>
-                        </div>
-                        <div class="store-coverflow-stat" data-store-coverflow-current>
-                          <dt>Now viewing</dt>
-                          <dd data-store-coverflow-current-value data-store-coverflow-initial-value="1">
-                            1
-                          </dd>
-                        </div>
-                        <div class="store-coverflow-stat" data-store-coverflow-remaining>
-                          <dt>More</dt>
-                          <dd
-                            data-store-coverflow-remaining-value
-                            data-store-coverflow-initial-value={entries.length - 1}
-                          >
-                            {entries.length - 1}
-                          </dd>
-                        </div>
-                      </dl>
+                      {category.id !== 'all' && (
+                        <dl class="store-coverflow-stats">
+                          <div class="store-coverflow-stat">
+                            <dt>On this shelf</dt>
+                            <dd>{entries.length}</dd>
+                          </div>
+                          <div class="store-coverflow-stat" data-store-coverflow-current>
+                            <dt>Now viewing</dt>
+                            <dd data-store-coverflow-current-value data-store-coverflow-initial-value="1">
+                              1
+                            </dd>
+                          </div>
+                          <div class="store-coverflow-stat" data-store-coverflow-remaining>
+                            <dt>More</dt>
+                            <dd
+                              data-store-coverflow-remaining-value
+                              data-store-coverflow-initial-value={entries.length - 1}
+                            >
+                              {entries.length - 1}
+                            </dd>
+                          </div>
+                        </dl>
+                      )}
                       <div class="store-coverflow-rail" aria-hidden="true">
                         <span class="store-coverflow-rail__track" />
                         <span class="store-coverflow-rail__fill" data-store-coverflow-disclosure-rail />
                       </div>
                       <p
                         class="store-coverflow-summary"
+                        role={category.id === 'all' ? 'status' : undefined}
+                        aria-live={category.id === 'all' ? 'polite' : undefined}
+                        aria-atomic={category.id === 'all' ? 'true' : undefined}
                         data-store-coverflow-summary
                         data-store-coverflow-initial-label={`You're viewing 1 of ${entries.length}.`}
                       >
@@ -193,8 +207,8 @@ const coverflowCatalogId = `${category.id}-store-catalog`;
               {coverflowEligible && (
                 <p
                   class="store-coverflow-status"
-                  role="status"
-                  aria-live="polite"
+                  role={category.id === 'all' ? undefined : 'status'}
+                  aria-live={category.id === 'all' ? 'off' : 'polite'}
                   aria-atomic="true"
                   data-store-coverflow-status
                   data-store-coverflow-initial-label={`${entries[0]!.storeItem.title} — ${entries[0]!.storeItem.subtitle}`}
@@ -207,13 +221,14 @@ const coverflowCatalogId = `${category.id}-store-catalog`;
                   <span class="store-coverflow-reveal" data-store-coverflow-reveal-mask aria-hidden="true" />
                 )}
                 <div
-                  id={coverflowEligible ? coverflowCatalogId : undefined}
+                  id={coverflowEligible || category.id === 'all' ? coverflowCatalogId : undefined}
                   class="store-catalog-chunks"
                   data-store-coverflow-stage={coverflowEligible ? '' : undefined}
                 >
                   {entries.map((entry, itemIndex) => (
                     <StoreItemCard
                       entry={entry}
+                      searchable={category.id === 'all'}
                       imageLoadingMode={getStoreCardImageLoadingMode(itemIndex)}
                       coverflowPreview={coverflowEligible}
                       coverflowPosition={coverflowEligible ? STORE_COVERFLOW_INITIAL_POSITIONS[itemIndex] : undefined}
@@ -223,12 +238,16 @@ const coverflowCatalogId = `${category.id}-store-catalog`;
               </div>
             </>
           ) : (
-            <p class="border border-border/70 px-6 py-8 text-sm text-muted-foreground" role="status">
-              No merch currently available.
+            <p
+              id={category.id === 'all' ? coverflowCatalogId : undefined}
+              class="border border-border/70 px-6 py-8 text-sm text-muted-foreground"
+              role="status"
+            >
+              {category.id === 'all' ? 'No Store items currently available.' : 'No merch currently available.'}
             </p>
           )}
         </section>
-      </>
+      </div>
     )
   }
 </SiteLayout>

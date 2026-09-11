@@ -120,7 +120,7 @@ describe('Distro Coverflow progressive enhancement', () => {
     expect(pageSource.match(/{itemCountLabel}/g)).toHaveLength(1);
     expect(pageSource).toContain('class="store-orientation-panel__distro-tools"');
     expect(pageSource).toContain('class="distro-page-search" data-distro-search');
-    expect(searchSource).toContain("aria-describedby={hasActiveSearch ? 'distro-search-result-count' : undefined}");
+    expect(searchSource).toContain('aria-describedby={hasActiveSearch ? `${scope}-search-result-count` : undefined}');
     expect(searchSource).toContain('{hasActiveSearch ? (');
     expect(searchSource).toContain('Clear search');
     expect(searchSource).not.toContain('{totalCount} total');

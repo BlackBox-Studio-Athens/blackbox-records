@@ -8,9 +8,16 @@ interface Props {
   coverflowPreview?: boolean;
   entry: StoreCollectionEntry;
   imageLoadingMode?: StoreCardImageLoadingMode;
+  searchable?: boolean;
 }
 
-const { coverflowPosition, coverflowPreview = false, entry, imageLoadingMode = 'lazy' } = Astro.props;
+const {
+  coverflowPosition,
+  coverflowPreview = false,
+  entry,
+  imageLoadingMode = 'lazy',
+  searchable = false,
+} = Astro.props;
 const { storeItem, primaryAvailability } = entry;
 const imagePriority = imageLoadingMode === 'priority';
 const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
@@ -30,6 +37,10 @@ const storeItemCardImageSizes = isDistroCd
   href={storeItem.storePath}
   aria-label={`${storeItem.title} — ${storeItem.subtitle}`}
   data-astro-prefetch
+  data-distro-search-item={searchable ? '' : undefined}
+  data-distro-search-text={searchable
+    ? [storeItem.title, storeItem.subtitle, ...storeItem.metadata, entry.distro?.group].filter(Boolean).join(' ')
+    : undefined}
   data-store-coverflow-card={coverflowPreview ? '' : undefined}
   data-store-coverflow-initial-position={coverflowPosition}
   data-store-coverflow-position={coverflowPosition}

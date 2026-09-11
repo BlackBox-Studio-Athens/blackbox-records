@@ -16,6 +16,7 @@ const SEARCH_HIDDEN_ATTRIBUTE = 'data-distro-search-hidden';
 
 type StoreDistroSearchProps = {
   pageKey: string;
+  scope?: 'all' | 'distro';
 };
 
 type DistroSearchItem = {
@@ -223,6 +224,10 @@ export function applyDistroSearch(dom: DistroSearchDom, matchedElements: Readonl
     dom.items.filter((item) => !item.element.hidden && matchedElements.has(item.element)).map((item) => item.element),
   );
 
+  if (dom.groups.length === 0) {
+    dom.items.forEach((item) => setSearchHidden(item.element, !visibleElements.has(item.element)));
+  }
+
   dom.groups.forEach((group) => {
     const hasVisibleItem = group.chunks.some((chunk) => chunk.items.some((item) => visibleElements.has(item.element)));
     setSearchHidden(group.element, !hasVisibleItem);
@@ -246,7 +251,10 @@ export function getDistroSearchResultState(visibleCount: number) {
   };
 }
 
-function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
+function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const searchLabel = scope === 'all' ? 'Search Store' : 'Search distro';
+  const resultsId = scope === 'all' ? 'all-store-catalog' : 'distro-search-results';
   const coverflowControllerRef = useRef<StoreCoverflowController | null>(null);
   const domRef = useRef<DistroSearchDom | null>(null);
   const formatFocusCleanupRef = useRef<(() => void) | null>(null);
@@ -259,8 +267,8 @@ function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
 
   useEffect(() => {
     const dom = readDistroSearchDom(
-      document.querySelector<HTMLElement>('[data-distro-search-root]'),
-      document.querySelector<HTMLElement>('[data-distro-format-navigation]'),
+      document.querySelector<HTMLElement>(scope === 'all' ? '[data-store-search-root]' : '[data-distro-search-root]'),
+      scope === 'distro' ? document.querySelector<HTMLElement>('[data-distro-format-navigation]') : null,
     );
     if (!dom) return;
 
@@ -286,12 +294,14 @@ function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
     };
     dom.navigation?.addEventListener('click', onNavigationClick);
     const initialFormatKey = resolveInitialDistroFormatKey(window.location.hash, dom);
-    formatFocusCleanupRef.current = selectDistroFormat(
-      dom,
-      initialFormatKey,
-      coverflowControllerRef.current,
-      initialFormatKey !== ALL_DISTRO_FORMATS_KEY,
-    ).cancelFocus;
+    if (scope === 'distro') {
+      formatFocusCleanupRef.current = selectDistroFormat(
+        dom,
+        initialFormatKey,
+        coverflowControllerRef.current,
+        initialFormatKey !== ALL_DISTRO_FORMATS_KEY,
+      ).cancelFocus;
+    }
     setVisibleCount(dom.items.filter((item) => !item.element.hidden).length);
     setIsReady(true);
 
@@ -299,25 +309,27 @@ function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
       dom.navigation?.removeEventListener('click', onNavigationClick);
       formatFocusCleanupRef.current?.();
       formatFocusCleanupRef.current = null;
-      applyDistroFormatSelection(dom, ALL_DISTRO_FORMATS_KEY, coverflowControllerRef.current);
+      if (scope === 'distro') applyDistroFormatSelection(dom, ALL_DISTRO_FORMATS_KEY, coverflowControllerRef.current);
+      dom.root.removeAttribute('data-store-search-active');
       coverflowControllerRef.current?.cleanup();
       applyDistroSearch(dom, null);
       coverflowControllerRef.current = null;
       domRef.current = null;
       searcherRef.current = null;
     };
-  }, [pageKey]);
+  }, [pageKey, scope]);
 
   useEffect(() => {
     const dom = domRef.current;
     if (!dom || !isReady) return undefined;
     const hasQuery = searchQuery.trim().length > 0;
+    if (scope === 'all') dom.root.toggleAttribute('data-store-search-active', hasQuery);
     if (hasQuery) {
       formatFocusCleanupRef.current?.();
       formatFocusCleanupRef.current = null;
-      applyDistroFormatSelection(dom, ALL_DISTRO_FORMATS_KEY, coverflowControllerRef.current);
+      if (scope === 'distro') applyDistroFormatSelection(dom, ALL_DISTRO_FORMATS_KEY, coverflowControllerRef.current);
     }
-    coverflowControllerRef.current?.setSearchActive(hasQuery);
+    coverflowControllerRef.current?.setSearchActive(hasQuery, scope === 'all' ? 'catalog' : 'preview');
 
     if (!hasQuery) {
       if (!hasDistroSearchHiddenState(dom)) {
@@ -333,7 +345,7 @@ function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
     const matchedElements = new Set((searcherRef.current?.search(searchQuery) || []).map((item) => item.element));
     setVisibleCount(applyDistroSearch(dom, matchedElements));
     return undefined;
-  }, [isReady, searchQuery]);
+  }, [isReady, searchQuery, scope]);
 
   if (!isReady) return null;
 
@@ -345,21 +357,22 @@ function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
           aria-hidden="true"
         />
         <Input
+          ref={inputRef}
           type="search"
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder="Search distro"
+          placeholder={searchLabel}
           className="artists-roster-filters-panel__input h-11 rounded-none border-[#2b2b2b] bg-[#111111] pr-3 pl-10 text-[0.95rem]"
-          aria-controls="distro-search-results"
-          aria-describedby={hasActiveSearch ? 'distro-search-result-count' : undefined}
-          aria-label="Search distro"
+          aria-controls={resultsId}
+          aria-describedby={hasActiveSearch ? `${scope}-search-result-count` : undefined}
+          aria-label={searchLabel}
         />
       </div>
 
       {hasActiveSearch ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p
-            id="distro-search-result-count"
+            id={`${scope}-search-result-count`}
             className="text-xs tracking-[0.18em] uppercase text-muted-foreground"
             role="status"
             aria-live="polite"
@@ -372,19 +385,21 @@ function StoreDistroSearch({ pageKey }: StoreDistroSearchProps) {
             variant="ghost"
             size="sm"
             className="rounded-none px-2 text-[11px] tracking-[0.16em] uppercase text-muted-foreground hover:bg-transparent hover:text-foreground"
-            onClick={() => setSearchQuery('')}
+            onClick={() => {
+              inputRef.current?.focus();
+              setSearchQuery('');
+            }}
           >
             Clear search
           </Button>
         </div>
       ) : null}
 
-      {resultState.isEmpty ? (
-        <div
-          className="artists-roster-empty-state distro-search-empty-state rounded-none border border-[#2b2b2b] bg-[#141414] px-5 py-6"
-          role="status"
-        >
-          <p className="text-sm tracking-[0.04em] text-muted-foreground">No distro items match your search.</p>
+      {hasActiveSearch && resultState.isEmpty ? (
+        <div className="artists-roster-empty-state distro-search-empty-state rounded-none border border-[#2b2b2b] bg-[#141414] px-5 py-6">
+          <p className="text-sm tracking-[0.04em] text-muted-foreground">
+            {scope === 'all' ? 'No Store items match your search.' : 'No distro items match your search.'}
+          </p>
         </div>
       ) : null}
     </div>

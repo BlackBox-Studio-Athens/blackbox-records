@@ -4020,6 +4020,80 @@ body.is-app-shell-overlay-open {
   background: color-mix(in srgb, var(--card) 58%, transparent);
 }
 
+.store-orientation-panel--all {
+  align-items: start;
+}
+
+.store-all-page > section:first-child {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.store-all-page .internal-page-hero__title {
+  margin-top: 0.5rem;
+}
+
+.store-all-page .store-category-signal__link {
+  min-height: 2.75rem;
+}
+
+.store-orientation-panel--all .store-orientation-panel__primary,
+.store-orientation-panel--all .store-format-ledger {
+  padding: 0.75rem 1rem;
+}
+
+.store-all-intro {
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.store-orientation-panel--all summary {
+  min-height: 2.75rem;
+  align-content: center;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.store-orientation-panel--all .store-format-ledger__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
+  gap: 0 1rem;
+  margin-top: 0.5rem;
+}
+
+.store-all-catalog-total {
+  padding-block: 0.75rem;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+html[data-store-coverflow-capable] [data-store-search-root] [data-store-coverflow-group] > .store-all-catalog-total,
+[data-store-search-active] .store-all-catalog-total,
+html:not([data-store-coverflow-capable]) [data-store-search-root] .store-coverflow-overview,
+[data-store-search-active] .store-coverflow-overview {
+  display: none;
+}
+
+[data-store-search-root] .store-coverflow-overview {
+  padding: 0.75rem 1rem;
+}
+
+html[data-store-coverflow-capable]
+  [data-store-search-root]
+  [data-store-coverflow-mode='catalog']
+  .store-coverflow-depth {
+  display: block;
+}
+
+html[data-store-coverflow-capable]
+  [data-store-search-root]
+  [data-store-coverflow-mode='catalog']
+  .store-coverflow-rail {
+  display: none;
+}
+
 .store-orientation-panel__primary,
 .store-orientation-panel__count,
 .store-orientation-panel__distro-tools,

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createExactFirstSearcher } from '@/lib/exact-first-search';
 
 import {
   applyDistroFormatSelection,
@@ -195,14 +196,14 @@ describe('Distro format selection', () => {
   it('restores All formats before search activation and again during cleanup', () => {
     const searchEffectIndex = source.indexOf(
       'if (hasQuery)',
-      source.indexOf('useEffect(() =>', source.indexOf('[pageKey]')),
+      source.indexOf('useEffect(() =>', source.indexOf('[pageKey, scope]')),
     );
     const searchResetIndex = source.indexOf(
       'applyDistroFormatSelection(dom, ALL_DISTRO_FORMATS_KEY, coverflowControllerRef.current);',
       searchEffectIndex,
     );
     expect(searchResetIndex).toBeGreaterThan(searchEffectIndex);
-    expect(searchResetIndex).toBeLessThan(source.indexOf('setSearchActive(hasQuery)', searchEffectIndex));
+    expect(searchResetIndex).toBeLessThan(source.indexOf('setSearchActive(hasQuery,', searchEffectIndex));
     expect(source).toMatch(
       /return \(\) => \{[\s\S]*?applyDistroFormatSelection\(dom, ALL_DISTRO_FORMATS_KEY[\s\S]*?coverflowControllerRef\.current\?\.cleanup\(\)/,
     );
@@ -212,6 +213,51 @@ describe('Distro format selection', () => {
 });
 
 describe('Distro search DOM filtering', () => {
+  it.each(['all', 'distro'])('matches and clears the %s catalog without replacing or reordering cards', (scope) => {
+    const { dom } = createDom();
+    if (scope === 'all') {
+      dom.groups = [];
+      dom.chunks = [];
+      dom.navigation = null;
+    }
+    dom.items.forEach((item, index) => {
+      item.searchText = ['Disintegration Black Vinyl LP', 'Disintegraton LP', 'Disintegration CD'][index]!;
+    });
+    const originalItems = [...dom.items];
+    const searcher = createExactFirstSearcher(dom.items, (item) => item.searchText);
+    const exact = searcher.search('  DISINTEGRATION  ');
+    expect(exact).toEqual([dom.items[0], dom.items[2]]);
+    expect(applyDistroSearch(dom, new Set(exact.map((item) => item.element)))).toBe(2);
+    expect(dom.items[1]!.element.hasAttribute('data-distro-search-hidden')).toBe(true);
+    expect(dom.items.every((item) => !item.searchText.toLowerCase().includes('disintegraion'))).toBe(true);
+    expect(searcher.search('disintegraion')).not.toHaveLength(0);
+    expect(applyDistroSearch(dom, new Set(searcher.search('zzzzzzzz').map((item) => item.element)))).toBe(0);
+    expect(searcher.search('   ')).toEqual(originalItems);
+    expect(applyDistroSearch(dom, null)).toBe(3);
+    expect(dom.items.every((item) => !item.element.hasAttribute('data-distro-search-hidden'))).toBe(true);
+    expect(dom.items).toEqual(originalItems);
+  });
+
+  it.each([
+    ['all', 0],
+    ['all', 1],
+    ['distro', 0],
+    ['distro', 1],
+  ] as const)('filters %s with %i cards and missing optional text', (scope, count) => {
+    const { dom } = createDom();
+    if (scope === 'all') {
+      dom.groups = [];
+      dom.chunks = [];
+    }
+    dom.items = dom.items.slice(0, count);
+    dom.chunks.forEach((chunk) => {
+      chunk.items = chunk.items.filter((item) => dom.items.includes(item));
+    });
+    const searcher = createExactFirstSearcher(dom.items, () => 'Title');
+    expect(applyDistroSearch(dom, new Set(searcher.search('Title').map((item) => item.element)))).toBe(count);
+    expect(applyDistroSearch(dom, new Set())).toBe(0);
+    expect(applyDistroSearch(dom, null)).toBe(count);
+  });
   it('hides unmatched cards and empty chunks and groups without changing order', () => {
     const { cards, chunks, dom, groups } = createDom();
     const originalOrder = dom.items.slice();

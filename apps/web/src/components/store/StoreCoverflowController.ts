@@ -25,7 +25,7 @@ export type StoreCoverflowWheelState = {
 type StoreCoverflowGroup = {
   cards: HTMLElement[];
   controls: HTMLElement;
-  currentValue: HTMLElement;
+  currentValue: HTMLElement | null;
   disclosureRail: HTMLElement;
   element: HTMLElement;
   initialMode: 'catalog' | 'preview';
@@ -33,7 +33,7 @@ type StoreCoverflowGroup = {
   nextButton: HTMLButtonElement;
   positionedCards: Set<HTMLElement>;
   previousButton: HTMLButtonElement;
-  remainingValue: HTMLElement;
+  remainingValue: HTMLElement | null;
   reveal: HTMLElement;
   selectedCard: HTMLElement | null;
   stage: HTMLElement;
@@ -50,7 +50,7 @@ export type StoreCoverflowDom = {
 export type StoreCoverflowController = {
   cleanup: () => void;
   setFocusedGroup: (groupElement: HTMLElement | null) => void;
-  setSearchActive: (isActive: boolean) => void;
+  setSearchActive: (isActive: boolean, exitMode?: 'catalog' | 'preview') => void;
 };
 
 export function ensureStoreCoverflowCapability(
@@ -155,12 +155,10 @@ export function readStoreCoverflowDom(root: ParentNode | null): StoreCoverflowDo
       const initialMode = element.dataset.storeCoverflowInitialMode || element.dataset.storeCoverflowMode;
       if (
         !controls ||
-        !currentValue ||
         !previousButton ||
         !nextButton ||
         !toggleButton ||
         !disclosureRail ||
-        !remainingValue ||
         !status ||
         !summary ||
         !reveal ||
@@ -254,8 +252,8 @@ export function createStoreCoverflowController(
       group.toggleButton.setAttribute('aria-expanded', 'false');
       if (!group.element.hasAttribute('data-store-coverflow-transitioning')) setAriaDisabled(group.toggleButton, false);
       const currentPosition = group.state.activeIndex + 1;
-      group.currentValue.textContent = String(currentPosition);
-      group.remainingValue.textContent = String(group.cards.length - currentPosition);
+      if (group.currentValue) group.currentValue.textContent = String(currentPosition);
+      if (group.remainingValue) group.remainingValue.textContent = String(group.cards.length - currentPosition);
       group.summary.textContent = `You're viewing ${currentPosition} of ${group.cards.length}.`;
       group.element.style.setProperty('--store-coverflow-position-ratio', String(currentPosition / group.cards.length));
       group.status.textContent = group.cards[group.state.activeIndex]!.getAttribute('aria-label') || '';
@@ -263,6 +261,7 @@ export function createStoreCoverflowController(
     }
 
     group.status.textContent = '';
+    group.summary.textContent = `${group.cards.length} items`;
     group.status.hidden = true;
     group.previousButton.removeAttribute('aria-disabled');
     group.nextButton.removeAttribute('aria-disabled');
@@ -591,12 +590,14 @@ export function createStoreCoverflowController(
       focusedGroupElement = groupElement;
       if (!searchActive) restoreGroupPresentations();
     },
-    setSearchActive(isActive) {
+    setSearchActive(isActive, exitMode = 'preview') {
       if (searchActive === isActive) return;
       cancelTransition();
       searchActive = isActive;
       if (isActive) {
         dom.groups.forEach((group) => setGroupState(group, { mode: 'search-results' }));
+      } else if (exitMode === 'catalog') {
+        dom.groups.forEach((group) => setGroupState(group, { mode: 'catalog' }));
       } else {
         restoreGroupPresentations();
       }

@@ -36,9 +36,7 @@ describe('Store collection category surfaces', () => {
   });
 
   it('uses one category-aware page for canonical metadata, listings, counts, and Distro discovery', () => {
-    expect(collectionPageSource).toContain(
-      '<SiteLayout pageTitle={category.title} pageDescription={category.description}>',
-    );
+    expect(collectionPageSource).toContain('pageTitle={category.title}');
     expect(collectionPageSource).toContain('<InternalPageHero sectionLabel="Store" title={category.heading} />');
     expect(collectionPageSource).toContain('const itemCountLabel');
     expect(collectionPageSource).toContain('<StoreItemCard');
@@ -54,7 +52,10 @@ describe('Store collection category surfaces', () => {
     expect(collectionPageSource).toContain('data-store-orientation="all"');
     expect(collectionPageSource).toContain('data-store-orientation="blackbox-releases"');
     expect(collectionPageSource).toContain('data-store-orientation="generic"');
-    expect(collectionPageSource).toContain('{itemCountLabel} total');
+    expect(collectionPageSource).toContain('class="store-all-catalog-total">{itemCountLabel}');
+    expect(collectionPageSource).toContain('data-store-search');
+    expect(collectionPageSource).toContain("searchable={category.id === 'all'}");
+    expect(collectionPageSource).toContain('data-store-format-disclosure');
     expect(collectionPageSource).toContain('<span>{group.entries.length}</span>');
     expect(collectionPageSource).toContain("category.id === 'blackbox-releases'");
     expect(collectionPageSource).not.toContain('getDistroPageContent');
