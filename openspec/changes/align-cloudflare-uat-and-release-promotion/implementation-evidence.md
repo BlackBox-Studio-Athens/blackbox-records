@@ -68,3 +68,21 @@ Before PRD promotion, the holding branch deployment was `a1a4392a-5bb3-4fe1-aa4e
 Recovery uses the installed Wrangler's native `versions upload` and `versions deploy --version-tag` commands for PRD code promotion. The version tag is unique to the promotion run and attempt, and candidate identity is rechecked before deploying it at 100%. This preserves existing triggers and runtime variables without expanding the credential or changing staff Access protection. Route provisioning remains separate. See [Cloudflare versions and deployments](https://developers.cloudflare.com/workers/versions-and-deployments/) and [Wrangler Worker commands](https://developers.cloudflare.com/workers/wrangler/commands/workers/). A workflow regression check rejects route-reconciling deployment commands in this path.
 
 The next [promotion attempt 34694375641](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/34694375641) passed Worker version upload/deployment and identity verification. Pages preflight then returned authentication error 10000: `catalog-promotion-prd` has its own Worker/D1 `CLOUDFLARE_API_TOKEN`, which overrides the repository Pages token. The static steps now run in a separate dependent job without the provider environment, mirroring the already verified UAT credential separation. Both jobs retain candidate guards, the shared release lock, and actual-state reporting; no credential was copied or broadened.
+
+## Accepted disabled PRD promotion
+
+[Promotion run 34694837343](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/34694837343) succeeded using the retained bundle from accepted UAT run `34693270329`, source `c70cfd7374e5d06f77d03ee18d4d25462c6e849c`, release number 355. The recovered workflow is committed at `3e636dc2` on main. Both Worker and Pages jobs verified the same candidate; no PRD artifact was rebuilt and the catalog job was skipped.
+
+- PRD Worker version: `72472f14-d071-49f7-b2fc-c13f31ddf1ba`.
+- PRD public Pages deployment: `ffd53762-fce3-48f6-a5c4-cbcbae4e1639`.
+- PRD staff Pages deployment: `f458872b-c9b7-4f3b-b482-549b48535aed`.
+- UAT, PRD public, and PRD staff `release.json` all identify source `c70cfd7374e5d06f77d03ee18d4d25462c6e849c`, run `34693270329`, number 355; PRD Worker headers match.
+- PRD launch bindings match the pre-promotion snapshot, and `/api/store/capabilities` reports checkout disabled. No live catalog or launch confirmation was supplied.
+- Holding deployment `a1a4392a-5bb3-4fe1-aa4e-b57095d720d2` is unchanged; native browser reload of the apex still shows `UNDER CONSTRUCTION.` Staff `/stock/` redirects to the existing Cloudflare Access host.
+- UAT and PRD selected operational snapshots are identical before/after PRD promotion. UAT retains 104 stock rows, 498 orders, and 501 order lines; PRD retains one stock row and zero orders. The only schema change is the already recorded additive PRD migration 0019.
+
+## Final verification and EmDash handoff
+
+The final behavioral revision `3e636dc2` passed `pnpm test:unit`, `pnpm check`, and `pnpm build` before pushing. Recovery commits used `[skip ci]` to preserve the reviewed UAT candidate while the explicitly dispatched PRD workflow retained all candidate checks. The remaining handoff edits are documentation and task status only. Boundary checks are included in `pnpm check`; environment-model and strict OpenSpec validation are also recorded with the final verification logs under ignored `.codex-artifacts/`.
+
+The EmDash implementer can use `https://blackbox-records-web-uat.pages.dev/` as the accepted review site and [the release runbook](../../../docs/catalog-promotion.md) for explicit promotion, seven-day expiry recovery, and compatible application rollback. Actual credential separation and the two CMS-allowed Pages hostnames are verified. The next change must retain Local `/blackbox-records/`, hosted `/`, candidate identity checks, staff Access, and PRD launch separation. Live catalog/provider acceptance and apex activation remain separate go-live work; this change supplies no approval for them. The unrelated EmDash planning directory is untouched, and this change remains unarchived.
