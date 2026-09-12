@@ -13,6 +13,8 @@ BlackBox Records uses three Product Environments: Local, UAT, and PRD. Other nam
 
 PRD exists as a deployable static readiness surface. Live catalog preparation requires explicit confirmation for one exact promotion run and does not authorize Worker or static deployment. Shopper checkout remains closed until separate launch approval and runtime enablement both pass. Before those controls pass, PRD evidence is readiness-only, disabled, or `not_configured`; it is not successful launch evidence.
 
+Main pushes deploy only UAT. Disabled PRD code promotion separately requires `target=prd`, the reviewed full `artifact_commit_sha`, successful `candidate_run_id`, and `confirm_code_promotion=true`. It consumes the paired retained PRD artifacts, checks current UAT/Worker identity and configuration, and preserves the holding branch and apex. Seven-day artifact expiry requires rebuilding and revalidating the same SHA as a new UAT candidate. See [the release runbook](catalog-promotion.md).
+
 ## Review Site Marker
 
 The UAT static build sets the private build-time flag `SHOW_REVIEW_SITE_MARKER=true` and renders three cues: a solid `TEST SITE` label with `Test payments only` beneath the header wordmark, a `[TEST]` browser-title prefix, and `Test checkout. No real payment will be taken.` beside the final checkout action. Local, full PRD, PRD Holding Page, and diagnostic builds leave the flag unset, so they render none of these cues. Review Site Marker is presentational only: Worker feature gates and Stripe configuration still control checkout and payment authority.

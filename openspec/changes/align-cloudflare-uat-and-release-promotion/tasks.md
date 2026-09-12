@@ -10,7 +10,7 @@ Implement before the hosted EmDash migration. Follow the apply-change workflow c
 ## 2. Establish matching Cloudflare hosting
 
 - [x] 2.1 Add the dedicated UAT Pages target to the existing environment profile and keep hosted base `/` with canonical Local `/blackbox-records/`; verify URL/profile tests cover distinct UAT/PRD backend origins and unchanged local launcher URLs.
-- [x] 2.2 Resolve and provision the intended UAT Pages project through authorized account operations, or record missing account access as outstanding; verify the actual project ID/origin and target credential scope before committing non-secret configuration.
+- [ ] 2.2 Resolve and provision the intended UAT Pages project through authorized account operations, or record missing account access as outstanding; verify the actual project ID/origin and target credential scope before committing non-secret configuration.
 - [x] 2.3 Update UAT checkout-return/CORS allowlists, media/catalog origins, sitemap/robots, temporary Sveltia site configuration, and smoke defaults through existing helpers; verify no active UAT path resolves to PRD or the retired GitHub Pages origin.
 - [x] 2.4 Apply matching static cache/redirect policy and preserve exact UAT Review Site Marker behavior; verify target artifact tests cover HTML revalidation, fingerprinted assets, marker presence in UAT, and marker absence in Local/PRD/holding.
 
@@ -32,7 +32,7 @@ Implement before the hosted EmDash migration. Follow the apply-change workflow c
 
 ## 5. Handoff and final verification
 
-- [ ] 5.1 Document the short workflow “commit → review UAT → explicitly promote this candidate” and artifact-expiry recovery in `README.md` and affected runbooks/agent guidance; verify commands, actual URLs, and all gate names match implementation.
+- [x] 5.1 Document the short workflow “commit → review UAT → explicitly promote this candidate” and artifact-expiry recovery in `README.md` and affected runbooks/agent guidance; verify commands, actual URLs, and all gate names match implementation.
 - [ ] 5.2 Exercise failed/stale promotion and compatible application rollback in UAT; deliver evidence that recovery preserves D1 stock, reservations, and orders and that no atomic multi-provider rollback is claimed.
 - [ ] 5.3 If separately authorized, exercise promotion to the disabled PRD readiness target with no live catalog mutation; verify exact candidate/artifact identity and unchanged launch gates, otherwise leave this hosted acceptance task explicitly outstanding.
 - [ ] 5.4 Run `pnpm test:unit`, `pnpm check`, `pnpm build`, relevant boundary/environment/workflow checks, and `pnpm openspec -- validate align-cloudflare-uat-and-release-promotion --strict`; verify the exact final tree and deliver the accepted UAT URL, promotion runbook, rollback references, and prerequisite status for the EmDash implementer.

@@ -22,3 +22,9 @@ The before/after D1 snapshots were identical:
 | PRD    |          1 |      0 | `BF0D6912F5757402246A8C24A6472FEA8B8E5D086932898512593A0ADFDA75CC` |
 
 Ignored snapshot files contain application identities and quantities/statuses, excluding shopper contact/address fields. This rejection is failure-path evidence, not hosted acceptance or a successful rollback.
+
+## Credential separation
+
+[Retry 34690620552](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/34690620552) passed the paired build and reached the empty-project API check. The UAT environment's Worker credential was denied Pages access (Cloudflare code 10000), before data or deployment mutation. The prior pipeline used the repository Pages credential separately from the UAT environment Worker credential. The workflow restores that separation: Pages preflight → UAT Worker preparation/deployment → Pages deployment → canonical UAT smoke, under one non-cancelling release lock. No credential was copied, broadened, or replaced.
+
+Recovery checks out the release script from the current workflow revision into an ignored tools directory, while compiling app artifacts from the selected source SHA. This allows an older compatible app revision to be rebuilt with current guards; bundles without compiled Worker release identity fail before deployment.

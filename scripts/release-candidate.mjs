@@ -168,6 +168,10 @@ async function main(command, target) {
       files: {},
     };
     validateOrder(candidate, null);
+    for (const target of ['uat', 'prd']) {
+      const worker = readFileSync(`${bundle}/${target}/worker/index.js`, 'utf8');
+      assert.ok(worker.includes(sha) && worker.includes('X-Release-SHA'), 'Worker has no compiled release identity.');
+    }
     for (const surface of ['uat/public', 'prd/public', 'prd/staff']) {
       const html = readFileSync(`${bundle}/${surface}/index.html`, 'utf8');
       if (surface === 'uat/public') assert.ok(html.includes('[TEST] ') && html.includes('TEST SITE'));
@@ -234,7 +238,9 @@ async function main(command, target) {
     assert.equal(String(candidate.runId), process.env.GITHUB_RUN_ID);
   }
   const site = target === 'uat' ? config.uatSite : config.prdSite;
-  const current = await publicJson(`${site}/release.json`, true);
+  // Pages access is verified by the preceding job using the separate Pages credential.
+  const backendOnly = command === 'verify-backend' || command === 'verify-worker';
+  const current = backendOnly ? null : await publicJson(`${site}/release.json`, true);
   validateOrder(candidate, current);
   const workerResponse = await fetch(`${backend}/api/store/capabilities`, { signal: AbortSignal.timeout(30_000) });
   assert.ok(workerResponse.ok);
@@ -245,7 +251,7 @@ async function main(command, target) {
   }
   if (command === 'verify-hosted' || command === 'verify-worker') {
     validateWorker(candidate, workerResponse);
-  } else assert.equal(command, 'verify');
+  } else assert.ok(['verify', 'verify-backend'].includes(command));
   console.log(`${target.toUpperCase()} ${command}: ${candidate.sha} / run ${candidate.runId}`);
 }
 

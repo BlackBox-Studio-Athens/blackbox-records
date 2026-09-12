@@ -28,10 +28,15 @@ describe('one gated release', () => {
       expect(job['timeout-minutes']).toBeGreaterThan(0);
       expect(job['timeout-minutes']).toBeLessThanOrEqual(40);
     }
-    expect(release.jobs['deploy-uat'].needs).toBe('build-candidate');
+    expect(release.jobs['inspect-uat-pages'].needs).toBe('build-candidate');
+    expect(release.jobs['inspect-uat-pages'].environment).toBeUndefined();
+    expect(release.jobs['deploy-uat'].needs).toEqual(['build-candidate', 'inspect-uat-pages']);
+    expect(release.jobs['deploy-uat'].environment).toBe('catalog-promotion-uat');
+    expect(release.jobs['deploy-uat-static'].needs).toBe('deploy-uat');
+    expect(release.jobs['deploy-uat-static'].environment).toBeUndefined();
+    expect(release.jobs['smoke-uat'].needs).toBe('deploy-uat-static');
     const steps = release.jobs['deploy-uat'].steps.map((step: { name: string }) => step.name);
-    expect(steps.indexOf('Deploy UAT Worker')).toBeLessThan(steps.indexOf('Deploy UAT to Cloudflare Pages'));
-    expect(steps.indexOf('Deploy UAT to Cloudflare Pages')).toBeLessThan(steps.indexOf('Run UAT provider smoke'));
+    expect(steps.indexOf('Prepare UAT catalog schema')).toBeLessThan(steps.indexOf('Deploy UAT Worker'));
     expect(source.match(/--scenario happy_path_paid,pay_what_you_want_paid/g)).toHaveLength(1);
     expect(source).not.toMatch(/gh workflow run|git commit|DELETE FROM|stripe:catalog:reset/);
     expect(release.on.push['paths-ignore']).toEqual(['docs/**', 'openspec/**', '*.md', 'LICENSE']);
@@ -40,7 +45,9 @@ describe('one gated release', () => {
   it('rechecks identity before mutations and records mixed revision outcomes', () => {
     const steps = release.jobs['deploy-prd'].steps;
     for (const step of steps.filter((step: { run?: string }) => /wrangler|d1:migrations/.test(step.run ?? ''))) {
-      expect(step.run.trim().startsWith('node scripts/release-candidate.mjs verify prd')).toBe(true);
+      expect(
+        step.run.trim().startsWith('node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd'),
+      ).toBe(true);
     }
     const report = steps.find((step: { name: string }) => step.name === 'Record actual deployed revisions');
     expect(report.if).toBe('${{ always() }}');

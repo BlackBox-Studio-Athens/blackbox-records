@@ -50,6 +50,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          [[ "$GITHUB_REF" == 'refs/heads/main' ]]
           [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
           gh api "repos/$GITHUB_REPOSITORY/compare/$SOURCE_SHA...main" --jq '.status' | grep -Eq '^(ahead|identical)$'
       - &checkout
@@ -71,6 +72,14 @@ jobs:
       - &install
         name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - &release-tools
+        name: Checkout trusted release tooling
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .codex-artifacts/release-tools
+          sparse-checkout: scripts/release-candidate.mjs
+          sparse-checkout-cone-mode: false
       - name: Run unit tests
         run: pnpm test:unit
       - name: Run workspace checks
@@ -106,7 +115,7 @@ jobs:
           cp -R apps/staff/dist .codex-artifacts/release/prd/staff
           pnpm --filter @blackbox/backend exec wrangler deploy --env uat --dry-run --outdir ../../.codex-artifacts/release/uat/worker --define "RELEASE_SOURCE_SHA:\"$SOURCE_SHA\"" --define "RELEASE_RUN_NUMBER:\"$GITHUB_RUN_NUMBER\""
           pnpm --filter @blackbox/backend exec wrangler deploy --env prd --dry-run --outdir ../../.codex-artifacts/release/prd/worker --define "RELEASE_SOURCE_SHA:\"$SOURCE_SHA\"" --define "RELEASE_RUN_NUMBER:\"$GITHUB_RUN_NUMBER\""
-          node scripts/release-candidate.mjs pack
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs pack
       - name: Upload verified release bundle
         uses: actions/upload-artifact@v7.0.1
         with:
@@ -114,12 +123,33 @@ jobs:
           path: .codex-artifacts/release
           if-no-files-found: error
           retention-days: 7
-  deploy-uat:
+  inspect-uat-pages:
     needs: build-candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - *checkout
+      - *pnpm
+      - *node
+      - *install
+      - *release-tools
+      - &download-candidate
+        name: Download verified release bundle
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: release-${{ inputs.artifact_commit_sha || github.sha }}
+          path: .codex-artifacts/release
+      - name: Verify Pages credential and UAT preconditions
+        run: node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify uat
+  deploy-uat:
+    needs: [build-candidate, inspect-uat-pages]
     runs-on: ubuntu-latest
     environment: catalog-promotion-uat
     timeout-minutes: 40
-    env:
+    env: &uat-credentials
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
@@ -129,13 +159,10 @@ jobs:
       - *pnpm
       - *node
       - *install
-      - name: Download verified release bundle
-        uses: actions/download-artifact@v8.0.1
-        with:
-          name: release-${{ inputs.artifact_commit_sha || github.sha }}
-          path: .codex-artifacts/release
+      - *release-tools
+      - *download-candidate
       - name: Verify UAT mutation preconditions
-        run: node scripts/release-candidate.mjs verify uat
+        run: node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-backend uat
       - name: Prepare UAT catalog schema
         run: |
           pnpm runtime:config:verify --env uat
@@ -146,15 +173,47 @@ jobs:
           pnpm stripe:catalog:verify --env uat --apply
       - name: Deploy UAT Worker
         run: |
-          node scripts/release-candidate.mjs verify uat
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-backend uat
           pnpm --filter @blackbox/backend exec wrangler deploy ../../.codex-artifacts/release/uat/worker/index.js --env uat --config wrangler.jsonc --no-bundle --keep-vars
-          node scripts/release-candidate.mjs verify-worker uat
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-worker uat
           pnpm store:listing-readiness:verify -- --env uat --url "$UAT_PUBLIC_BACKEND_BASE_URL/api/store/listing-prices"
+      - &observe-uat
+        name: Record actual deployed revisions
+        if: ${{ always() }}
+        run: node .codex-artifacts/release-tools/scripts/release-candidate.mjs observe uat >> "$GITHUB_STEP_SUMMARY"
+  deploy-uat-static:
+    needs: deploy-uat
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - *checkout
+      - *pnpm
+      - *node
+      - *install
+      - *release-tools
+      - *download-candidate
       - name: Deploy UAT to Cloudflare Pages
         run: |
-          node scripts/release-candidate.mjs verify uat
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify uat
           pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/uat/public --project-name=blackbox-records-web-uat --branch=main --commit-hash="$SOURCE_SHA"
-          node scripts/release-candidate.mjs verify-hosted uat
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-hosted uat
+      - *observe-uat
+  smoke-uat:
+    needs: deploy-uat-static
+    runs-on: ubuntu-latest
+    environment: catalog-promotion-uat
+    timeout-minutes: 40
+    env: *uat-credentials
+    steps:
+      - *checkout
+      - *pnpm
+      - *node
+      - *install
+      - *release-tools
+      - *download-candidate
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
       - name: Run UAT provider smoke
@@ -162,10 +221,8 @@ jobs:
           pnpm smoke:stripe-uat -- --site-url https://blackbox-records-web-uat.pages.dev --worker-url "$UAT_PUBLIC_BACKEND_BASE_URL" --scenario happy_path_paid,pay_what_you_want_paid --screenshots on-failure
           pnpm smoke:resend-uat -- --worker-url "$UAT_PUBLIC_BACKEND_BASE_URL"
           pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all --screenshots on-failure
-          node scripts/release-candidate.mjs verify-hosted uat
-      - name: Record actual deployed revisions
-        if: ${{ always() }}
-        run: node scripts/release-candidate.mjs observe uat >> "$GITHUB_STEP_SUMMARY"
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-hosted uat
+      - *observe-uat
       - name: Upload UAT acceptance evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v7.0.1
@@ -196,6 +253,7 @@ jobs:
       - *pnpm
       - *node
       - *install
+      - *release-tools
       - name: Download selected candidate artifacts
         uses: actions/download-artifact@v8.0.1
         with:
@@ -204,28 +262,28 @@ jobs:
           github-token: ${{ github.token }}
           path: .codex-artifacts/release
       - name: Verify PRD mutation preconditions
-        run: node scripts/release-candidate.mjs verify prd
+        run: node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
       - name: Apply compatible PRD migrations
         run: |
-          node scripts/release-candidate.mjs verify prd
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
           pnpm --filter @blackbox/backend d1:migrations:apply:prd
       - name: Deploy candidate PRD Worker
         run: |
-          node scripts/release-candidate.mjs verify prd
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
           pnpm --filter @blackbox/backend exec wrangler deploy ../../.codex-artifacts/release/prd/worker/index.js --env prd --config wrangler.jsonc --no-bundle --keep-vars
-          node scripts/release-candidate.mjs verify-worker prd
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-worker prd
       - name: Deploy PRD static frontend to Cloudflare Pages
         run: |
-          node scripts/release-candidate.mjs verify prd
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
           pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/prd/public --project-name=blackbox-records-web --branch=main --commit-hash="$SOURCE_SHA"
-          node scripts/release-candidate.mjs verify-hosted prd
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-hosted prd
       - name: Deploy staff frontend to Cloudflare Pages
         run: |
-          node scripts/release-candidate.mjs verify prd
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
           pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/prd/staff --project-name=blackbox-records-staff --branch=main --commit-hash="$SOURCE_SHA"
       - name: Record actual deployed revisions
         if: ${{ always() }}
-        run: node scripts/release-candidate.mjs observe prd >> "$GITHUB_STEP_SUMMARY"
+        run: node .codex-artifacts/release-tools/scripts/release-candidate.mjs observe prd >> "$GITHUB_STEP_SUMMARY"
   catalog-prd:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_live_catalog_changes && !inputs.confirm_code_promotion }}
     runs-on: ubuntu-latest
@@ -241,6 +299,7 @@ jobs:
       - *pnpm
       - *node
       - *install
+      - *release-tools
       - name: Verify catalog source
         run: pnpm test:unit && pnpm check && pnpm build
       - name: Prepare explicitly authorized PRD catalog
@@ -266,6 +325,7 @@ jobs:
       - *pnpm
       - *node
       - *install
+      - *release-tools
       - name: Configure legacy GitHub Pages
         uses: actions/configure-pages@v6.0.0
       - name: Build legacy UAT recovery artifact

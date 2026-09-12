@@ -643,7 +643,7 @@ CI/deploy credentials and public build variables:
   - `.github/workflows/pages.yml` runs shared repository gates once, deploys the prebuilt UAT artifact to Cloudflare Pages; a separate confirmed promotion consumes the retained PRD artifacts.
 - `.github/workflows/pages.yml` owns repository gates, catalog preparation, UAT Worker deployment, static deployments, and same-SHA UAT smoke.
 - `.github/workflows/uat-smoke.yml` remains available for manual diagnostics.
-- Rerun the release at the same source SHA after correcting its readiness report. See the catalog release runbook for the explicit one-time UAT reset recovery.
+- Rerun the release at the same source SHA after correcting its readiness report. See the catalog release runbook for compatible application rollback; routine releases never reset operational data.
 - The UAT `workers.dev` backend is reachable for browser checks, Stripe return URLs, and webhook testing.
 - Cloudflare Access is not part of public UAT browsing at this stage.
 - Phase `06.1.1` now locks a separate protected staff-only hostname and Google-backed Access contract for internal stock work, while keeping the public UAT backend reachable and unauthenticated.
