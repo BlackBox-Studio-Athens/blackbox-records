@@ -36,6 +36,13 @@ export function validateRun(run, sha, repository) {
   assert.equal(run.head_repository.full_name, repository);
 }
 
+export function validateArtifacts(artifacts, sha) {
+  assert.ok(
+    artifacts.some((artifact) => artifact.name === `release-${sha}` && !artifact.expired),
+    'Candidate artifact missing or expired.',
+  );
+}
+
 export function validateIdentity(candidate, current, config) {
   assert.equal(candidate.schema, 1);
   assert.deepEqual(candidate.configuration, config, 'Target configuration changed; revalidate the candidate.');
@@ -47,6 +54,16 @@ export function validateIdentity(candidate, current, config) {
 export function validateOrder(candidate, current) {
   assert.ok(Number.isSafeInteger(candidate.runNumber) && candidate.runNumber > 0, 'Invalid candidate run number.');
   if (current) assert.ok(candidate.runNumber >= current.runNumber, 'A newer candidate already mutated this target.');
+}
+
+export function validateWorker(candidate, response) {
+  assert.ok(response.ok, 'Worker is unavailable.');
+  assert.equal(response.headers.get('X-Release-SHA'), candidate.sha, 'Worker source differs from selected artifact.');
+  assert.equal(
+    Number(response.headers.get('X-Release-Run-Number')),
+    candidate.runNumber,
+    'Worker belongs to another candidate run.',
+  );
 }
 
 export async function observe(candidate, target, request = fetch) {
@@ -89,7 +106,11 @@ export function inventory(directory, prefix = '') {
 async function publicJson(url, optional = false) {
   const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(30_000) });
   if (optional && response.status === 404) return null;
-  if (optional && response.status === 523 && new URL(url).hostname === 'blackbox-records-web-uat.pages.dev') {
+  if (
+    optional &&
+    [522, 523].includes(response.status) &&
+    new URL(url).hostname === 'blackbox-records-web-uat.pages.dev'
+  ) {
     const deployments = JSON.parse(
       execFileSync(
         process.execPath,
@@ -197,11 +218,15 @@ async function main(command, target) {
     const artifacts = gh(
       `repos/${process.env.GITHUB_REPOSITORY}/actions/runs/${candidate.runId}/artifacts?per_page=100`,
     ).artifacts;
-    assert.ok(
-      artifacts.some((artifact) => artifact.name === `release-${candidate.sha}` && !artifact.expired),
-      'Candidate artifact expired.',
-    );
+    validateArtifacts(artifacts, candidate.sha);
     validateIdentity(candidate, await publicJson(`${config.uatSite}/release.json`), config);
+    validateWorker(
+      candidate,
+      await fetch(`${config.uatBackend}/api/store/capabilities`, {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(30_000),
+      }),
+    );
     const capabilities = await publicJson(`${config.prdBackend}/api/store/capabilities`);
     assert.equal(capabilities.nativeCheckout.enabled, false, 'This promotion path is for disabled PRD readiness only.');
   } else {
@@ -219,12 +244,7 @@ async function main(command, target) {
     assert.deepEqual(current, identity(candidate), 'Deployed artifact identity mismatch.');
   }
   if (command === 'verify-hosted' || command === 'verify-worker') {
-    assert.equal(
-      workerResponse.headers.get('X-Release-SHA'),
-      candidate.sha,
-      'Worker source differs from selected artifact.',
-    );
-    assert.equal(Number(workerRunNumber), candidate.runNumber, 'Worker belongs to another candidate run.');
+    validateWorker(candidate, workerResponse);
   } else assert.equal(command, 'verify');
   console.log(`${target.toUpperCase()} ${command}: ${candidate.sha} / run ${candidate.runId}`);
 }

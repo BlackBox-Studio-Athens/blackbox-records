@@ -9,19 +9,19 @@ Implement before the hosted EmDash migration. Follow the apply-change workflow c
 
 ## 2. Establish matching Cloudflare hosting
 
-- [ ] 2.1 Add the dedicated UAT Pages target to the existing environment profile and keep hosted base `/` with canonical Local `/blackbox-records/`; verify URL/profile tests cover distinct UAT/PRD backend origins and unchanged local launcher URLs.
-- [ ] 2.2 Resolve and provision the intended UAT Pages project through authorized account operations, or record missing account access as outstanding; verify the actual project ID/origin and target credential scope before committing non-secret configuration.
-- [ ] 2.3 Update UAT checkout-return/CORS allowlists, media/catalog origins, sitemap/robots, temporary Sveltia site configuration, and smoke defaults through existing helpers; verify no active UAT path resolves to PRD or the retired GitHub Pages origin.
-- [ ] 2.4 Apply matching static cache/redirect policy and preserve exact UAT Review Site Marker behavior; verify target artifact tests cover HTML revalidation, fingerprinted assets, marker presence in UAT, and marker absence in Local/PRD/holding.
+- [x] 2.1 Add the dedicated UAT Pages target to the existing environment profile and keep hosted base `/` with canonical Local `/blackbox-records/`; verify URL/profile tests cover distinct UAT/PRD backend origins and unchanged local launcher URLs.
+- [x] 2.2 Resolve and provision the intended UAT Pages project through authorized account operations, or record missing account access as outstanding; verify the actual project ID/origin and target credential scope before committing non-secret configuration.
+- [x] 2.3 Update UAT checkout-return/CORS allowlists, media/catalog origins, sitemap/robots, temporary Sveltia site configuration, and smoke defaults through existing helpers; verify no active UAT path resolves to PRD or the retired GitHub Pages origin.
+- [x] 2.4 Apply matching static cache/redirect policy and preserve exact UAT Review Site Marker behavior; verify target artifact tests cover HTML revalidation, fingerprinted assets, marker presence in UAT, and marker absence in Local/PRD/holding.
 
 ## 3. Implement candidate review and explicit promotion
 
-- [ ] 3.1 Refactor the canonical release workflow so relevant main pushes verify/build/deploy UAT only while retaining documentation-only exclusions and manual dispatch; verify workflow tests reject any push-triggered PRD deployment or live catalog apply.
-- [ ] 3.2 Produce paired UAT/PRD public artifacts and compatible backend artifacts from one SHA, extending existing evidence with digests and non-secret target configuration; verify artifact handoff tests reject mixed SHAs, missing artifacts, and target-variable leakage.
-- [ ] 3.3 Add manual PRD promotion of an exact successful candidate SHA/run with false-by-default code confirmation; verify wrong repository/workflow, untrusted revision, stale candidate, expired artifact, and changed configuration all stop before mutation.
-- [ ] 3.4 Preserve bounded non-cancelling target mutation locks and candidate/target rechecks; verify overlapping-run tests cannot deploy an older candidate after newer accepted state or cancel an in-progress provider mutation.
-- [ ] 3.5 Keep migrations, backend readiness, static deployment, and one canonical provider-smoke invocation ordered with revision-bound results; verify partial-failure tests report the actual mixed backend/frontend state and never reset stock or provider objects.
-- [ ] 3.6 Preserve PRD Holding Page isolation and independent code, catalog, launch, and checkout controls; verify a confirmed disabled-PRD code promotion cannot switch the apex or enable checkout.
+- [x] 3.1 Refactor the canonical release workflow so relevant main pushes verify/build/deploy UAT only while retaining documentation-only exclusions and manual dispatch; verify workflow tests reject any push-triggered PRD deployment or live catalog apply.
+- [x] 3.2 Produce paired UAT/PRD public artifacts and compatible backend artifacts from one SHA, extending existing evidence with digests and non-secret target configuration; verify artifact handoff tests reject mixed SHAs, missing artifacts, and target-variable leakage.
+- [x] 3.3 Add manual PRD promotion of an exact successful candidate SHA/run with false-by-default code confirmation; verify wrong repository/workflow, untrusted revision, stale candidate, expired artifact, and changed configuration all stop before mutation.
+- [x] 3.4 Preserve bounded non-cancelling target mutation locks and candidate/target rechecks; verify overlapping-run tests cannot deploy an older candidate after newer accepted state or cancel an in-progress provider mutation.
+- [x] 3.5 Keep migrations, backend readiness, static deployment, and one canonical provider-smoke invocation ordered with revision-bound results; verify partial-failure tests report the actual mixed backend/frontend state and never reset stock or provider objects.
+- [x] 3.6 Preserve PRD Holding Page isolation and independent code, catalog, launch, and checkout controls; verify a confirmed disabled-PRD code promotion cannot switch the apex or enable checkout.
 
 ## 4. Prove UAT and retire the old deployment path
 

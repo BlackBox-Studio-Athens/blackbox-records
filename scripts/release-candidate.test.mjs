@@ -3,7 +3,16 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { inventory, observe, validateIdentity, validateOrder, validateRun, verifyFiles } from './release-candidate.mjs';
+import {
+  inventory,
+  observe,
+  validateArtifacts,
+  validateIdentity,
+  validateOrder,
+  validateRun,
+  validateWorker,
+  verifyFiles,
+} from './release-candidate.mjs';
 
 const sha = 'a'.repeat(40);
 const repository = 'example/repository';
@@ -63,9 +72,22 @@ test('superseded UAT, mixed revisions and changed config cannot authorize promot
   validateOrder(candidate, null);
   validateOrder(candidate, current);
   assert.throws(() => validateOrder(candidate, { ...current, runNumber: 11 }));
+  validateWorker(candidate, new Response('{}', { headers: { 'X-Release-SHA': sha, 'X-Release-Run-Number': '10' } }));
+  assert.throws(() =>
+    validateWorker(candidate, new Response('{}', { headers: { 'X-Release-SHA': sha, 'X-Release-Run-Number': '11' } })),
+  );
+  assert.throws(() =>
+    validateWorker(
+      candidate,
+      new Response('{}', { headers: { 'X-Release-SHA': 'b'.repeat(40), 'X-Release-Run-Number': '10' } }),
+    ),
+  );
 });
 
 test('retained artifact verification rejects missing and modified files', (context) => {
+  validateArtifacts([{ name: `release-${sha}`, expired: false }], sha);
+  assert.throws(() => validateArtifacts([{ name: `release-${sha}`, expired: true }], sha));
+  assert.throws(() => validateArtifacts([{ name: `release-${'b'.repeat(40)}`, expired: false }], sha));
   const directory = mkdtempSync(path.join(os.tmpdir(), 'blackbox-release-'));
   context.after(() => {
     assert.equal(path.dirname(directory), path.resolve(os.tmpdir()));

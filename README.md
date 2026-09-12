@@ -533,7 +533,7 @@ pnpm audit:commerce-boundaries
 - Current checkout return allowlist entries are exact origins only:
   - `http://127.0.0.1:4321`
   - `http://localhost:4321`
-  - `https://blackbox-studio-athens.github.io`
+  - `https://blackbox-records-web-uat.pages.dev`
   - `https://blackbox-records-web.pages.dev`
 - Add Cloudflare Pages preview origins only as exact emitted origins during validation; never use `*.pages.dev`.
 - `apps/backend/prisma/schema.prisma` includes a local placeholder SQLite URL only to satisfy the current Prisma 6 CLI; Worker runtime access still goes through `env.COMMERCE_DB`.
@@ -659,7 +659,7 @@ CI/deploy credentials and public build variables:
   - `pnpm build:web` for the UAT artifact
 - The build step passes `PUBLIC_BACKEND_BASE_URL` from `UAT_PUBLIC_BACKEND_BASE_URL` so the Cloudflare Pages URL serves as the public UAT surface.
 - Pushes go directly to `main` in this repo.
-- If CI fails on `main`, Cloudflare Pages does not publish the broken UAT revision; fix it with a follow-up commit or revert the bad commit on `main`.
+- A failed build blocks UAT deployment. A later deployment or smoke failure may leave changed or mixed hosted revisions; inspect the workflow summary before retrying or validating a compatible rollback.
 - Cloudflare Pages is the UAT static host and must not be described as PRD rollback or legacy production hosting.
 
 ## Cloudflare Pages PRD Deployment

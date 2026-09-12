@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -11,6 +12,26 @@ import {
 } from '../../scripts/check-static-cache-policy';
 
 describe('check-static-cache-policy', () => {
+  it('revalidates shared hosted HTML and disables release identity caching', () => {
+    const headers = readFileSync(new URL('../../public/_headers', import.meta.url), 'utf8');
+    expect(validateStaticCachePolicyArtifact(headers)).toEqual([]);
+    const rules = parseHeadersArtifact(headers);
+    expect(rules.find((rule) => rule.path === '/release.json')?.headers).toEqual(['Cache-Control: no-store']);
+    for (const route of [
+      '/',
+      '/store/*',
+      '/artists/*',
+      '/releases/*',
+      '/news/*',
+      '/about/*',
+      '/services/*',
+      '/app-shell-overlay/*',
+    ]) {
+      expect(rules.find((rule) => rule.path === route)?.headers).toEqual([
+        'Cache-Control: public, max-age=0, must-revalidate',
+      ]);
+    }
+  });
   it('parses header rules from the built artifact format', () => {
     expect(
       parseHeadersArtifact(
