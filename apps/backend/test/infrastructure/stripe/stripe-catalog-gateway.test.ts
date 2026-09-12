@@ -4,110 +4,83 @@ import { createStripeCatalogMutationContext } from '../../../src/application/com
 import { StripeCatalogGatewayClient } from '../../../src/infrastructure/stripe/stripe-catalog-gateway';
 
 describe('StripeCatalogGatewayClient', () => {
-  it('discovers active owned objects with partial catalog metadata', async () => {
-    const gateway = new StripeCatalogGatewayClient({
-      prices: {
-        list: vi.fn(async () => ({
-          data: [
-            {
-              active: true,
-              currency: 'eur',
-              id: 'price_partial_metadata_12345678',
-              lookup_key: null,
-              metadata: {
-                appEnv: 'uat',
-              },
-              product: 'prod_partial_metadata_12345678',
-              unit_amount: 2800,
-            },
-            {
-              active: true,
-              currency: 'eur',
-              id: 'price_unowned_12345678',
-              lookup_key: null,
-              metadata: {},
-              product: 'prod_unowned_12345678',
-              unit_amount: 2800,
-            },
-          ],
-          has_more: false,
-        })),
-      },
-      products: {
-        list: vi.fn(async () => ({
-          data: [
-            {
-              active: true,
-              id: 'prod_partial_metadata_12345678',
-              metadata: {
-                appEnv: 'uat',
-              },
-              name: 'Partial Product',
-            },
-            {
-              active: true,
-              id: 'prod_unowned_12345678',
-              metadata: {},
-              name: 'Unowned Product',
-            },
-          ],
-          has_more: false,
-        })),
-      },
-    } as never);
-
-    await expect(gateway.listOwnedPrices('uat')).resolves.toEqual([
-      expect.objectContaining({
-        priceId: 'price_partial_metadata_12345678',
-      }),
-    ]);
-    await expect(gateway.listOwnedProducts('uat')).resolves.toEqual([
-      expect.objectContaining({
-        productId: 'prod_partial_metadata_12345678',
-      }),
-    ]);
-  });
-
-  it('discovers an active Price through its expanded Product metadata', async () => {
+  it('resumes an interrupted bootstrap without creating another Product or Price', async () => {
     const metadata = {
       appEnv: 'uat' as const,
-      sourceId: 'disintegration',
-      sourceKind: 'release' as const,
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      sourceKind: 'distro' as const,
+      sourceId: 'record',
+      storeItemSlug: 'record',
+      variantId: 'variant_record_standard',
     };
+    const product = {
+      id: 'prod_blackbox_uat_variant_record_standard',
+      active: true,
+      metadata,
+      default_price: null,
+    };
+    const price = {
+      id: 'price_existing',
+      product,
+      active: true,
+      unit_amount: 2800,
+      currency: 'eur',
+      tax_behavior: 'inclusive',
+      metadata,
+      lookup_key: 'blackbox:uat:record:variant_record_standard',
+    };
+    const create = vi.fn();
+    const update = vi.fn();
     const gateway = new StripeCatalogGatewayClient({
-      prices: {
-        list: vi.fn(async () => ({
-          data: [
-            {
-              active: true,
-              currency: 'eur',
-              id: 'price_product_identity_12345678',
-              lookup_key: null,
-              metadata: {},
-              product: {
-                active: true,
-                id: 'prod_product_identity_12345678',
-                metadata,
-                name: 'BlackBox Records - Disintegration - Black Vinyl LP',
-              },
-              unit_amount: 2900,
-            },
-          ],
-          has_more: false,
-        })),
-      },
+      products: { list: () => [product], create, update },
+      prices: { list: async () => ({ data: [price], has_more: false }), create },
     } as never);
-
-    await expect(gateway.listPricesByMetadata(metadata)).resolves.toEqual([
-      expect.objectContaining({
-        amountMinor: 2900,
-        metadata: {},
-        priceId: 'price_product_identity_12345678',
-        productMetadata: metadata,
+    await expect(
+      gateway.createCatalogPrice({
+        kind: 'fixed',
+        amountMinor: 2800,
+        currencyCode: 'EUR',
+        lookupKey: price.lookup_key,
+        metadata,
+        productName: 'Record',
       }),
-    ]);
+    ).resolves.toMatchObject({ priceId: 'price_existing', productId: product.id });
+    expect(create).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalledWith(product.id, { default_price: price.id }, undefined);
+  });
+
+  it('retrieves only the bound Product default Price and rejects unsupported defaults', async () => {
+    const product = {
+      id: 'prod_bound',
+      active: true,
+      livemode: false,
+      metadata: { appEnv: 'uat' },
+      default_price: {
+        id: 'price_default',
+        product: 'prod_bound',
+        active: true,
+        type: 'one_time',
+        livemode: false,
+        unit_amount: 2800,
+        currency: 'eur',
+        metadata: {},
+        lookup_key: null,
+        tax_behavior: 'inclusive',
+        custom_unit_amount: null,
+      },
+    };
+    const retrieve = vi.fn(async () => product);
+    const gateway = new StripeCatalogGatewayClient({ products: { retrieve } } as never);
+    await expect(gateway.retrieveDefaultPrice('prod_bound')).resolves.toMatchObject({
+      priceId: 'price_default',
+      productId: 'prod_bound',
+      amountMinor: 2800,
+    });
+    expect(retrieve).toHaveBeenCalledWith('prod_bound', { expand: ['default_price'] });
+    product.default_price.product = 'prod_foreign';
+    await expect(gateway.retrieveDefaultPrice('prod_bound')).resolves.toBeNull();
+    product.default_price.product = 'prod_bound';
+    product.default_price.type = 'recurring';
+    await expect(gateway.retrieveDefaultPrice('prod_bound')).resolves.toBeNull();
   });
 
   it.each(['fixed', 'pay_what_you_want'] as const)(
@@ -157,7 +130,7 @@ describe('StripeCatalogGatewayClient', () => {
         },
         products: {
           create: productsCreate,
-          list: vi.fn(),
+          list: vi.fn(() => []),
           update: vi.fn(),
         },
       } as never);
@@ -224,149 +197,6 @@ describe('StripeCatalogGatewayClient', () => {
     },
   );
 
-  it('repairs a replacement Price lookup key with an atomic transfer', async () => {
-    const metadata = {
-      appEnv: 'uat' as const,
-      sourceId: 'disintegration',
-      sourceKind: 'release' as const,
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_disintegration-black-vinyl-lp_standard',
-    };
-    const lookupKey = 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard';
-    const pricesUpdate = vi.fn(async () => ({
-      active: true,
-      currency: 'eur',
-      id: 'price_lookup_repair_12345678',
-      lookup_key: lookupKey,
-      metadata,
-      product: {
-        active: true,
-        id: 'prod_lookup_repair_12345678',
-        metadata,
-        name: 'BlackBox Records - Disintegration - Black Vinyl LP',
-      },
-      unit_amount: 3200,
-    }));
-    const gateway = new StripeCatalogGatewayClient({
-      prices: {
-        update: pricesUpdate,
-      },
-    } as never);
-    const context = createStripeCatalogMutationContext({
-      action: 'repair_lookup_key',
-      environment: 'uat',
-      identity: 'price_lookup_repair_12345678',
-      requestShape: {
-        lookupKey,
-        transferLookupKey: true,
-      },
-      variantId: metadata.variantId,
-    });
-
-    await expect(
-      gateway.updatePriceLookupKey('price_lookup_repair_12345678', lookupKey, context),
-    ).resolves.toMatchObject({
-      lookupKey,
-      priceId: 'price_lookup_repair_12345678',
-    });
-    expect(pricesUpdate).toHaveBeenCalledWith(
-      'price_lookup_repair_12345678',
-      {
-        expand: ['product'],
-        lookup_key: lookupKey,
-        transfer_lookup_key: true,
-      },
-      {
-        idempotencyKey: context.idempotencyKey,
-      },
-    );
-  });
-
-  it('repairs Price metadata without rewriting matching Product metadata', async () => {
-    const metadata = {
-      appEnv: 'uat' as const,
-      sourceId: 'disintegration',
-      sourceKind: 'release' as const,
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_disintegration-black-vinyl-lp_standard',
-    };
-    const productsUpdate = vi.fn();
-    const pricesUpdate = vi.fn(async () => ({
-      active: true,
-      currency: 'eur',
-      id: 'price_metadata_repair_12345678',
-      lookup_key: null,
-      metadata,
-      product: {
-        active: true,
-        id: 'prod_metadata_repair_12345678',
-        metadata,
-        name: 'BlackBox Records - Disintegration - Black Vinyl LP',
-      },
-      unit_amount: 2900,
-    }));
-    const gateway = new StripeCatalogGatewayClient({
-      prices: {
-        update: pricesUpdate,
-      },
-      products: {
-        update: productsUpdate,
-      },
-    } as never);
-
-    await expect(gateway.updatePriceMetadata('price_metadata_repair_12345678', metadata)).resolves.toMatchObject({
-      metadata,
-      productMetadata: metadata,
-    });
-    expect(pricesUpdate).toHaveBeenCalledWith(
-      'price_metadata_repair_12345678',
-      {
-        expand: ['product'],
-        metadata,
-      },
-      undefined,
-    );
-    expect(productsUpdate).not.toHaveBeenCalled();
-  });
-
-  it('repairs incomplete Product metadata with Price metadata', async () => {
-    const metadata = {
-      appEnv: 'uat' as const,
-      sourceId: 'disintegration',
-      sourceKind: 'release' as const,
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_disintegration-black-vinyl-lp_standard',
-    };
-    const productsUpdate = vi.fn();
-    const gateway = new StripeCatalogGatewayClient({
-      prices: {
-        update: vi.fn(async () => ({
-          active: true,
-          currency: 'eur',
-          id: 'price_incomplete_product_metadata_12345678',
-          lookup_key: null,
-          metadata,
-          product: {
-            active: true,
-            id: 'prod_incomplete_metadata_12345678',
-            metadata: {
-              appEnv: 'uat',
-            },
-            name: 'BlackBox Records - Disintegration - Black Vinyl LP',
-          },
-          unit_amount: 2900,
-        })),
-      },
-      products: {
-        update: productsUpdate,
-      },
-    } as never);
-
-    await gateway.updatePriceMetadata('price_incomplete_product_metadata_12345678', metadata);
-
-    expect(productsUpdate).toHaveBeenCalledWith('prod_incomplete_metadata_12345678', { metadata }, undefined);
-  });
-
   it('creates pay-what-you-want Prices with Stripe custom unit amount fields', async () => {
     const metadata = {
       appEnv: 'uat' as const,
@@ -408,7 +238,7 @@ describe('StripeCatalogGatewayClient', () => {
       },
       products: {
         create: productsCreate,
-        list: vi.fn(),
+        list: vi.fn(() => []),
         update: vi.fn(),
       },
     } as never);

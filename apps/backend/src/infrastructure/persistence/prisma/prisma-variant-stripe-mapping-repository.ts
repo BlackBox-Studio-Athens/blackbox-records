@@ -5,15 +5,25 @@ import type {
 import { parseStripePriceId, parseVariantId } from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
-function mapVariantStripeMapping(record: { stripePriceId: string; variantId: string }): VariantStripeMappingRecord {
+function mapVariantStripeMapping(record: {
+  stripePriceId: string;
+  stripeProductId: string | null;
+  variantId: string;
+}): VariantStripeMappingRecord {
   return {
     variantId: parseVariantId(record.variantId),
     stripePriceId: parseStripePriceId(record.stripePriceId),
+    stripeProductId: record.stripeProductId,
   };
 }
 
 export class PrismaVariantStripeMappingRepository implements VariantStripeMappingRepository {
   public constructor(private readonly prisma: PrismaClient) {}
+
+  public async findByStripeProductId(stripeProductId: string): Promise<VariantStripeMappingRecord | null> {
+    const record = await this.prisma.variantStripeMapping.findUnique({ where: { stripeProductId } });
+    return record ? mapVariantStripeMapping(record) : null;
+  }
 
   public async findByVariantId(variantId: string): Promise<VariantStripeMappingRecord | null> {
     const record = await this.prisma.variantStripeMapping.findUnique({
@@ -26,10 +36,12 @@ export class PrismaVariantStripeMappingRepository implements VariantStripeMappin
   public async save(record: VariantStripeMappingRecord): Promise<VariantStripeMappingRecord> {
     const savedRecord = await this.prisma.variantStripeMapping.upsert({
       create: {
+        stripeProductId: record.stripeProductId,
         stripePriceId: record.stripePriceId,
         variantId: record.variantId,
       },
       update: {
+        stripeProductId: record.stripeProductId,
         stripePriceId: record.stripePriceId,
       },
       where: {

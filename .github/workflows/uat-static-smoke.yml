@@ -1,5 +1,4 @@
 name: UAT static smoke
-
 on:
   workflow_dispatch:
     inputs:
@@ -43,21 +42,13 @@ on:
         required: true
         default: false
         type: boolean
-  workflow_run:
-    workflows: ['Deploy UAT and PRD static sites']
-    branches: ['main']
-    types: [completed]
-
 permissions:
   contents: read
-
 concurrency:
-  group: 'uat-static-smoke-${{ github.event.workflow_run.head_branch || github.ref }}'
+  group: uat-static-smoke-${{ github.event.workflow_run.head_branch || github.ref }}
   cancel-in-progress: true
-
 jobs:
   smoke:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -70,25 +61,20 @@ jobs:
       - name: Checkout deployed commit
         uses: actions/checkout@v7.0.1
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-
+          ref: ${{ github.sha }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.10
         with:
           version: 12.0.0
-
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:
           node-version: 24.20.0
           cache: pnpm
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
-
       - name: Run UAT static smoke
         run: |
           args=(
@@ -104,7 +90,6 @@ jobs:
           fi
 
           pnpm smoke:uat-static -- "${args[@]}"
-
       - name: Upload UAT static smoke evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v7.0.1

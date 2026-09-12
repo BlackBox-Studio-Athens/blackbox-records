@@ -1,3 +1,5 @@
+import { DatabaseSync } from 'node:sqlite';
+import { readdirSync, readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -13,7 +15,7 @@ import {
   type StripeCatalogStoreItemContract,
 } from '../../../../scripts/stripe-catalog-contract';
 import {
-  createDesiredCatalogStateSource,
+  createCatalogManifestSource,
   createProductionCommerceReadinessSql,
   createSandboxUatCatalogStock,
   createSandboxUatCommerceSql,
@@ -294,7 +296,7 @@ describe('stripe catalog contract projection', () => {
       productEnvironment: 'PRD',
     });
     const disintegration = contracts.find((contract) => contract.storeItemSlug === 'disintegration-black-vinyl-lp');
-    const source = createDesiredCatalogStateSource(contracts);
+    const source = createCatalogManifestSource(contracts);
 
     expect(disintegration?.desiredCatalogEntry).toMatchObject({
       availability: 'published',
@@ -316,8 +318,8 @@ describe('stripe catalog contract projection', () => {
         .filter((contract) => contract.desiredCatalogEntry.targetEnvironments.includes('prd'))
         .map((contract) => contract.storeItemSlug),
     ).toEqual(['disintegration-black-vinyl-lp']);
-    expect(source).toContain('export const currentDesiredCatalogState');
-    expect(source).toContain('createCurrentDesiredCatalogEntriesForEnvironment');
+    expect(source).toContain('export const catalogManifest');
+    expect(source).toContain('targetEnvironments');
     expect(source).not.toContain('smokeCandidate');
   });
 
@@ -350,7 +352,7 @@ describe('stripe catalog contract projection', () => {
     expect(currentCatalogProductProjectionEntries).toEqual(
       contracts.map((contract) => ({
         alignmentStatus: contract.alignmentStatus,
-        expectedSandboxPrice: contract.expectedSandboxPrice,
+        expectedSandboxPrice: contract.desiredCatalogEntry.desiredPrice,
         productProjection: contract.productProjection,
         sourceId: contract.sourceId,
         sourceKind: contract.sourceKind,
@@ -440,17 +442,38 @@ describe('stripe catalog contract projection', () => {
     expect(sql).toContain("'caregivers-vinyl', 'release', 'caregivers', 'variant_caregivers-vinyl_standard'");
     expect(sql).not.toContain("'chronoboros-caregivers-vinyl', 'distro'");
     expect(sql).not.toContain('variant_chronoboros-caregivers-vinyl_standard');
-    expect(sql).toContain('DELETE FROM "StoreItemOption"\nWHERE "storeItemSlug" = \'mass-culture-lp\'');
-    expect(sql).toContain(
-      'DELETE FROM "VariantStripeMapping"\nWHERE "variantId" = \'variant_mass-culture-lp_standard\'',
-    );
-    expect(sql).toContain(
-      '"variantId" = \'variant_barren-point_standard\'\n       AND NOT EXISTS (\n           SELECT 1\n           FROM "StoreItemOption" current_store_item',
-    );
-    expect(sql).not.toContain("\"variantId\" IN ('variant_mass-culture-lp_standard', 'variant_barren-point_standard'");
+    expect(sql).not.toContain('DELETE FROM');
+    expect(sql.match(/ON CONFLICT\("variantId"\) DO NOTHING/g)).toHaveLength(2);
+    expect(sql).not.toContain('"quantity" = excluded');
+    expect(sql).not.toContain('"canBuy" = excluded');
     expect(sql).not.toContain("'mass-culture-lp', 'distro'");
     expect(sql).not.toContain('price_');
     expect(sql).not.toContain('sk_');
+  });
+
+  it('preserves counted stock and checkout pauses when readiness SQL runs again', async () => {
+    const db = new DatabaseSync(':memory:');
+    const migrations = path.resolve(__dirname, '../../prisma/migrations');
+    try {
+      for (const file of readdirSync(migrations)
+        .filter((file) => file.endsWith('.sql'))
+        .sort()) {
+        db.exec(readFileSync(path.join(migrations, file), 'utf8'));
+      }
+      const sql = createSandboxUatCommerceSql(await loadStripeCatalogStoreItemContracts());
+      db.exec(sql);
+      db.exec(
+        "UPDATE Stock SET quantity=7, onlineQuantity=3, revision=9; UPDATE ItemAvailability SET canBuy=0, status='sold_out';",
+      );
+      db.exec(sql);
+      expect(
+        db.prepare('SELECT COUNT(*) AS count FROM Stock WHERE quantity<>7 OR onlineQuantity<>3 OR revision<>9').get()
+          ?.count,
+      ).toBe(0);
+      expect(db.prepare('SELECT COUNT(*) AS count FROM ItemAvailability WHERE canBuy<>0').get()?.count).toBe(0);
+    } finally {
+      db.close();
+    }
   });
 
   it('generates PRD D1 readiness without sandbox stock defaults or stock overwrites', async () => {

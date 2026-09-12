@@ -10,25 +10,17 @@ function readWorkflow(name: string): string {
 }
 
 describe('UAT provider smoke workflow', () => {
-  it('runs after the UAT Pages deploy without mutating UAT', () => {
+  it('retains manual diagnostics without deploying or migrating UAT', () => {
     const workflow = readWorkflow('uat-smoke.yml');
 
     expect(workflow).toContain('name: UAT provider smoke');
     expect(workflow).toContain('workflow_dispatch:');
-    expect(workflow).toContain('workflow_run');
-    expect(workflow).toContain('Deploy UAT and PRD static sites');
-    expect(workflow).toContain("branches: ['main']");
-    expect(workflow).toContain('types: [completed]');
     expect(workflow).toContain('permissions:');
     expect(workflow).toContain('contents: read');
     expect(workflow).toContain('concurrency:');
-    expect(workflow).toContain("group: 'uat-smoke-${{ github.event.workflow_run.head_branch }}'");
     expect(workflow).toContain('cancel-in-progress: true');
     expect(workflow).toContain('environment: catalog-promotion-uat');
-    expect(workflow).toContain(
-      "github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'",
-    );
-    expect(workflow).toContain('github.event.workflow_run.head_sha || github.sha');
+    expect(workflow).toContain('ref: ${{ github.sha }}');
     expect(workflow).toContain('pnpm stripe:webhooks:verify --env uat');
     expect(workflow).toContain('pnpm stripe:payment-methods:verify');
     expect(workflow).not.toContain('pnpm deploy:backend:uat');

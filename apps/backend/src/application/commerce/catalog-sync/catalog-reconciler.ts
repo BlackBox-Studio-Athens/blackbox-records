@@ -24,6 +24,7 @@ import type {
   StripeCatalogProduct,
   StripeCatalogProductProjection,
 } from './types';
+import { createStoreOfferPriceFromCatalogPrice } from './money';
 
 const STORE_OFFER_FRESHNESS_MS = 24 * 60 * 60 * 1_000;
 const MAX_CATALOG_ITEMS = 500;
@@ -118,15 +119,19 @@ export class CatalogReconciler {
       };
     }
 
-    const [lookupPrices, metadataPrices] = await Promise.all([
-      this.dependencies.stripeCatalog.listPricesByLookupKey(lookupKey),
-      this.dependencies.stripeCatalog.listPricesByMetadata(metadata),
-    ]);
-    const mappedPrice = mapping ? await this.dependencies.stripeCatalog.retrievePrice(mapping.stripePriceId) : null;
-    const candidates = uniquePrices([...lookupPrices, ...metadataPrices, ...(mappedPrice ? [mappedPrice] : [])]);
+    const mappedPrice =
+      mapping && !mapping.stripeProductId
+        ? await this.dependencies.stripeCatalog.retrievePrice(mapping.stripePriceId)
+        : null;
+    const productId = mapping?.stripeProductId ?? mappedPrice?.productId;
+    const defaultPrice = productId ? await this.dependencies.stripeCatalog.retrieveDefaultPrice(productId) : null;
+    const candidates = defaultPrice ? [defaultPrice] : [];
     const issues: CatalogSyncIssue[] = [];
     const actions: CatalogSyncAction[] = [];
-    const expectedPrice = options.expectedPrice ? normalizeExpectedPrice(options.expectedPrice) : null;
+    const expectedPrice =
+      options.expectedPrice && this.dependencies.environment !== 'prd'
+        ? normalizeExpectedPrice(options.expectedPrice)
+        : null;
 
     if (mapping && isPlaceholderStripePriceId(mapping.stripePriceId, this.dependencies.environment)) {
       issues.push(createIssue(storeItem, 'placeholder_price_mapping', 'D1 points at a placeholder Stripe Price ID.'));
@@ -151,28 +156,9 @@ export class CatalogReconciler {
       );
     }
 
-    const activeMatches = candidates.filter(
-      (price) =>
-        price.active &&
-        price.productActive &&
-        matchesCatalogIdentity(price, storeItem, this.dependencies.environment, lookupKey),
-    );
+    let resolvedPrice = defaultPrice;
 
-    if (activeMatches.length > 1) {
-      issues.push(
-        createIssue(
-          storeItem,
-          'ambiguous_active_price',
-          `Multiple active Prices match ${lookupKey}; archive or disambiguate the stale Price.`,
-        ),
-      );
-    }
-
-    let resolvedPrice = activeMatches.length === 1 ? activeMatches[0]! : null;
-
-    if (!resolvedPrice && expectedPrice && issues.length === 0) {
-      const repairIdentity =
-        activeMatches.length === 0 ? createPriceRepairMutationIdentity(mappedPrice, mapping, snapshot) : null;
+    if (!resolvedPrice && !mapping && expectedPrice && issues.length === 0) {
       const priceInput = createCatalogPriceInput(
         storeItem,
         lookupKey,
@@ -184,7 +170,7 @@ export class CatalogReconciler {
         this.dependencies.environment,
         storeItem.variantId,
         'create_catalog_price',
-        createCatalogPriceMutationIdentity(expectedPrice, options.productProjection ?? null, repairIdentity),
+        createCatalogPriceMutationIdentity(expectedPrice, options.productProjection ?? null, null),
         priceInput,
         this.dependencies.creationMutationScope,
       );
@@ -213,6 +199,9 @@ export class CatalogReconciler {
     }
 
     if (resolvedPrice) {
+      if (!createStoreOfferPriceFromCatalogPrice(resolvedPrice)) {
+        issues.push(createIssue(storeItem, 'wrong_amount', 'Default Price has an unsupported amount configuration.'));
+      }
       if (resolvedPrice.productTaxCode !== 'txcd_99999999') {
         issues.push(createIssue(storeItem, 'wrong_tax_code', 'Product must use the approved tangible-goods tax code.'));
       }
@@ -247,49 +236,11 @@ export class CatalogReconciler {
         );
       }
 
-      if (resolvedPrice.lookupKey === null) {
-        const lookupKeyContext = createMutationContext(
-          this.dependencies.environment,
-          storeItem.variantId,
-          'repair_lookup_key',
-          resolvedPrice.priceId,
-          {
-            lookupKey,
-            stripePriceId: resolvedPrice.priceId,
-            transferLookupKey: true,
-          },
-        );
-        actions.push({
-          kind: 'repair_lookup_key',
-          lookupKey,
-          stripePriceId: resolvedPrice.priceId,
-          ...createMutationEvidence(lookupKeyContext),
-        });
-      }
-
-      if (mapping?.stripePriceId !== resolvedPrice.priceId) {
+      if (mapping?.stripePriceId !== resolvedPrice.priceId || mapping?.stripeProductId !== resolvedPrice.productId) {
         actions.push({ kind: 'update_mapping', stripePriceId: resolvedPrice.priceId });
       }
 
-      if (!hasMetadata(resolvedPrice.metadata, metadata) || !hasMetadata(resolvedPrice.productMetadata, metadata)) {
-        const metadataContext = createMutationContext(
-          this.dependencies.environment,
-          storeItem.variantId,
-          'update_stripe_metadata',
-          resolvedPrice.priceId,
-          {
-            metadata,
-            priceId: resolvedPrice.priceId,
-          },
-        );
-        actions.push({
-          kind: 'update_stripe_metadata',
-          stripePriceId: resolvedPrice.priceId,
-          ...createMutationEvidence(metadataContext),
-        });
-      }
-
-      if (options.productProjection) {
+      if (options.productProjection && options.applyProductProjection !== false) {
         const productProjectionIssues = findProductProjectionIssues(
           resolvedPrice,
           createExpectedStripeProductProjection(metadata, options.productProjection),
@@ -304,7 +255,7 @@ export class CatalogReconciler {
             ),
           );
 
-          if (resolvedPrice.productId && options.applyProductProjection !== false) {
+          if (resolvedPrice.productId) {
             const productContext = createMutationContext(
               this.dependencies.environment,
               storeItem.variantId,
@@ -375,26 +326,16 @@ export class CatalogReconciler {
 
   public async verifyBuyableCatalog(input: {
     apply: boolean;
-    auditOwnedObjects?: boolean;
     expectedPrices?: Map<string, StripeCatalogExpectedPrice>;
     expectedProductProjections?: Map<string, StripeCatalogProductProjection>;
     now?: Date;
   }): Promise<CatalogSyncRunResult> {
     const storeItems = await this.dependencies.storeItems.search(null, MAX_CATALOG_ITEMS);
-    const expectedVariantIds = input.expectedPrices
-      ? new Set(input.expectedPrices.keys())
-      : new Set(storeItems.map((item) => item.variantId));
-    const ownedObjectDriftIssues =
-      input.auditOwnedObjects === false ? [] : await this.findOwnedObjectDriftIssues(expectedVariantIds);
-    const apply = input.apply && !hasBlockingCatalogIssue(ownedObjectDriftIssues);
-    const results = await this.verifyCatalogSequentially(storeItems, {
-      ...input,
-      apply,
-    });
-    const issues = [...results.flatMap((result) => result.issues), ...ownedObjectDriftIssues];
+    const results = await this.verifyCatalogSequentially(storeItems, input);
+    const issues = results.flatMap((result) => result.issues);
 
     return {
-      dryRun: !apply,
+      dryRun: !input.apply,
       environment: this.dependencies.environment,
       issues,
       results,
@@ -405,7 +346,6 @@ export class CatalogReconciler {
     storeItems: StoreItemOptionRecord[],
     input: {
       apply: boolean;
-      auditOwnedObjects?: boolean;
       expectedPrices?: Map<string, StripeCatalogExpectedPrice>;
       expectedProductProjections?: Map<string, StripeCatalogProductProjection>;
       now?: Date;
@@ -415,7 +355,6 @@ export class CatalogReconciler {
 
     for (const storeItem of storeItems) {
       results.push(await this.verifyCatalogStoreItem(storeItem, input));
-      await sleep(500);
     }
 
     return results;
@@ -425,7 +364,6 @@ export class CatalogReconciler {
     storeItem: StoreItemOptionRecord,
     input: {
       apply: boolean;
-      auditOwnedObjects?: boolean;
       expectedPrices?: Map<string, StripeCatalogExpectedPrice>;
       expectedProductProjections?: Map<string, StripeCatalogProductProjection>;
       now?: Date;
@@ -443,36 +381,6 @@ export class CatalogReconciler {
     });
   }
 
-  private async findOwnedObjectDriftIssues(expectedVariantIds: Set<string>): Promise<CatalogSyncIssue[]> {
-    const [ownedPrices, ownedProducts] = await Promise.all([
-      this.dependencies.stripeCatalog.listOwnedPrices(this.dependencies.environment),
-      this.dependencies.stripeCatalog.listOwnedProducts(this.dependencies.environment),
-    ]);
-    const issues: CatalogSyncIssue[] = [];
-
-    for (const price of ownedPrices) {
-      const identity = readPriceCatalogIdentity(price);
-      const code = classifyOwnedObjectIdentity(identity, expectedVariantIds, this.dependencies.environment, 'price');
-
-      if (code) {
-        issues.push(createOwnedObjectIssue(identity, code, `Stripe Price ${redactStripeObjectId(price.priceId)}`));
-      }
-    }
-
-    for (const product of ownedProducts) {
-      const identity = readMetadataCatalogIdentity(product.metadata) ?? emptyCatalogIdentity();
-      const code = classifyOwnedObjectIdentity(identity, expectedVariantIds, this.dependencies.environment, 'product');
-
-      if (code) {
-        issues.push(
-          createOwnedObjectIssue(identity, code, `Stripe Product ${redactStripeObjectId(product.productId)}`),
-        );
-      }
-    }
-
-    return issues;
-  }
-
   private async applyActions(
     storeItem: StoreItemOptionRecord,
     lookupKey: string,
@@ -482,23 +390,10 @@ export class CatalogReconciler {
     productProjection: StripeCatalogProductProjection | null,
   ): Promise<void> {
     for (const action of actions) {
-      if (action.kind === 'archive_price') {
-        const archivedPrice = await this.dependencies.stripeCatalog.archivePrice(
-          action.stripePriceId,
-          mutationContextFromAction(action),
-        );
-        applyMutationResponseEvidence(action, archivedPrice);
-      } else if (action.kind === 'repair_lookup_key') {
-        this.assertCatalogMutationAllowed(storeItem, lookupKey, resolvedPrice, action.kind);
-        const updatedPrice = await this.dependencies.stripeCatalog.updatePriceLookupKey(
-          resolvedPrice.priceId,
-          action.lookupKey,
-          mutationContextFromAction(action),
-        );
-        applyMutationResponseEvidence(action, updatedPrice);
-      } else if (action.kind === 'update_mapping') {
+      if (action.kind === 'update_mapping') {
         await this.dependencies.variantStripeMappings.save({
           stripePriceId: resolvedPrice.priceId,
+          stripeProductId: resolvedPrice.productId,
           variantId: storeItem.variantId,
         });
       } else if (action.kind === 'update_snapshot' && resolvedPrice.currencyCode) {
@@ -519,14 +414,6 @@ export class CatalogReconciler {
           syncedAt: now,
           variantId: storeItem.variantId,
         });
-      } else if (action.kind === 'update_stripe_metadata') {
-        this.assertCatalogMutationAllowed(storeItem, lookupKey, resolvedPrice, action.kind);
-        const updatedPrice = await this.dependencies.stripeCatalog.updatePriceMetadata(
-          resolvedPrice.priceId,
-          createStripeCatalogMetadata(this.dependencies.environment, storeItem),
-          mutationContextFromAction(action),
-        );
-        applyMutationResponseEvidence(action, updatedPrice);
       } else if (action.kind === 'update_product_projection' && productProjection) {
         this.assertCatalogMutationAllowed(storeItem, lookupKey, resolvedPrice, action.kind);
         const updatedProduct = await this.dependencies.stripeCatalog.updateProductProjection(
@@ -775,15 +662,6 @@ function sameStringList(left: string[], right: string[]): boolean {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
-type CatalogObjectIdentity = {
-  appEnv: string | null;
-  appEnvs: string[];
-  malformed: boolean;
-  proven: boolean;
-  storeItemSlug: string;
-  variantId: string;
-};
-
 function createCatalogPriceInput(
   storeItem: StoreItemOptionRecord,
   lookupKey: string,
@@ -849,13 +727,6 @@ function createMutationEvidence(context: StripeCatalogMutationContext, price?: S
   };
 }
 
-function applyMutationResponseEvidence(action: CatalogSyncAction, price: StripeCatalogPrice): void {
-  Object.assign(action, {
-    requestId: price.requestId ?? null,
-    replayed: price.idempotentReplayed ?? null,
-  });
-}
-
 function applyProductMutationResponseEvidence(action: CatalogSyncAction, product: StripeCatalogProduct): void {
   Object.assign(action, {
     requestId: product.requestId ?? null,
@@ -887,174 +758,12 @@ function describeCustomUnitAmount(amount: StripeCatalogPrice['customUnitAmount']
     : 'none';
 }
 
-function createPriceRepairMutationIdentity(
-  price: StripeCatalogPrice | null,
-  mapping: { stripePriceId: string } | null,
-  snapshot: { priceActive: boolean; productActive: boolean; stripePriceId: string } | null,
-): string | null {
-  if (price) {
-    return [
-      'replace_price_v2',
-      price.priceId,
-      price.active ? 'price_active' : 'price_inactive',
-      price.productActive ? 'product_active' : 'product_inactive',
-    ].join('_');
-  }
-
-  if (mapping) {
-    return ['replace_mapping', mapping.stripePriceId].join('_');
-  }
-
-  if (snapshot) {
-    return [
-      'replace_snapshot',
-      snapshot.stripePriceId,
-      snapshot.priceActive ? 'price_active' : 'price_inactive',
-      snapshot.productActive ? 'product_active' : 'product_inactive',
-    ].join('_');
-  }
-
-  return null;
-}
-
-function readPriceCatalogIdentity(price: StripeCatalogPrice): CatalogObjectIdentity {
-  return mergeCatalogIdentities([
-    readLookupKeyCatalogIdentity(price.lookupKey),
-    readMetadataCatalogIdentity(price.metadata),
-    readMetadataCatalogIdentity(price.productMetadata),
-  ]);
-}
-
-function readLookupKeyCatalogIdentity(lookupKey: string | null): CatalogObjectIdentity | null {
-  if (!lookupKey?.startsWith('blackbox:')) {
-    return null;
-  }
-
-  const parts = lookupKey.split(':');
-  const appEnv = parts[1] ?? null;
-  const storeItemSlug = parts[2] || 'unknown';
-  const variantId = parts[3] || 'unknown';
-
-  return {
-    appEnv,
-    appEnvs: appEnv ? [appEnv] : [],
-    malformed: parts.length !== 4 || !appEnv || !parts[2] || !parts[3],
-    proven: true,
-    storeItemSlug,
-    variantId,
-  };
-}
-
-function readMetadataCatalogIdentity(metadata: Record<string, string>): CatalogObjectIdentity | null {
-  if (
-    !metadata.appEnv &&
-    !metadata.sourceId &&
-    !metadata.sourceKind &&
-    !metadata.storeItemSlug &&
-    !metadata.variantId
-  ) {
-    return null;
-  }
-
-  return {
-    appEnv: metadata.appEnv ?? null,
-    appEnvs: metadata.appEnv ? [metadata.appEnv] : [],
-    malformed:
-      !metadata.appEnv || !metadata.sourceId || !metadata.sourceKind || !metadata.storeItemSlug || !metadata.variantId,
-    proven: true,
-    storeItemSlug: metadata.storeItemSlug || 'unknown',
-    variantId: metadata.variantId || 'unknown',
-  };
-}
-
-function mergeCatalogIdentities(identities: Array<CatalogObjectIdentity | null>): CatalogObjectIdentity {
-  const provenIdentities = identities.filter((identity): identity is CatalogObjectIdentity =>
-    Boolean(identity?.proven),
-  );
-  const primary = provenIdentities[0];
-  const storeItemSlugs = new Set(
-    provenIdentities.map((identity) => identity.storeItemSlug).filter(isKnownIdentityValue),
-  );
-  const variantIds = new Set(provenIdentities.map((identity) => identity.variantId).filter(isKnownIdentityValue));
-
-  return {
-    appEnv: primary?.appEnv ?? null,
-    appEnvs: [...new Set(provenIdentities.flatMap((identity) => identity.appEnvs))],
-    malformed:
-      provenIdentities.some((identity) => identity.malformed) || storeItemSlugs.size > 1 || variantIds.size > 1,
-    proven: provenIdentities.length > 0,
-    storeItemSlug: primary?.storeItemSlug ?? 'unknown',
-    variantId: primary?.variantId ?? 'unknown',
-  };
-}
-
-function isKnownIdentityValue(value: string): boolean {
-  return value !== 'unknown';
-}
-
-function emptyCatalogIdentity(): CatalogObjectIdentity {
-  return {
-    appEnv: null,
-    appEnvs: [],
-    malformed: false,
-    proven: false,
-    storeItemSlug: 'unknown',
-    variantId: 'unknown',
-  };
-}
-
-function classifyOwnedObjectIdentity(
-  identity: CatalogObjectIdentity,
-  knownVariants: Set<string>,
-  environment: StripeCatalogEnvironment,
-  objectKind: 'price' | 'product',
-): CatalogSyncIssue['code'] | null {
-  if (!identity.proven) {
-    return null;
-  }
-
-  if (identity.malformed) {
-    return 'malformed_catalog_identity';
-  }
-
-  if (identity.appEnvs.includes('sandbox')) {
-    return 'legacy_environment_identity';
-  }
-
-  if (identity.appEnvs.some((appEnv) => appEnv !== environment)) {
-    return 'foreign_environment_identity';
-  }
-
-  if (!knownVariants.has(identity.variantId)) {
-    return objectKind === 'price' ? 'owned_orphan_price' : 'owned_orphan_product';
-  }
-
-  return null;
-}
-
-function createOwnedObjectIssue(
-  identity: CatalogObjectIdentity,
-  code: CatalogSyncIssue['code'],
-  objectLabel: string,
-): CatalogSyncIssue {
-  return {
-    code,
-    detail: `${objectLabel} has ${code.replaceAll('_', ' ')}.`,
-    driftCategory: classifyCatalogSyncIssue(code),
-    storeItemSlug: identity.storeItemSlug,
-    variantId: identity.variantId,
-  };
-}
-
 function canApplyCatalogActions(issues: CatalogSyncIssue[]): boolean {
   return !issues.some((issue) => hasBlockingCatalogIssue([issue]) && !isRepairableCatalogApplyIssue(issue));
 }
 
 function isRepairableCatalogApplyIssue(issue: CatalogSyncIssue): boolean {
-  return (
-    issue.code === 'product_projection_mismatch' ||
-    (issue.code === 'wrong_variant_identity' && issue.detail.startsWith('Mapped Price '))
-  );
+  return issue.code === 'product_projection_mismatch';
 }
 
 function isPlaceholderStripePriceId(value: string, environment: StripeCatalogEnvironment): boolean {
@@ -1076,14 +785,4 @@ function createIssue(
     storeItemSlug: storeItem.storeItemSlug,
     variantId: storeItem.variantId,
   };
-}
-
-function uniquePrices(prices: StripeCatalogPrice[]): StripeCatalogPrice[] {
-  return [...new Map(prices.map((price) => [price.priceId, price])).values()];
-}
-
-function sleep(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, milliseconds);
-  });
 }

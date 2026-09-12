@@ -7,6 +7,7 @@
     "node": "24.20.0"
   },
   "scripts": {
+    "postinstall": "pnpm stripe:catalog:artifacts:generate",
     "dev": "pnpm dev:web",
     "dev:web": "pnpm --filter @blackbox/web dev",
     "dev:staff": "pnpm --filter @blackbox/staff dev",
@@ -29,8 +30,6 @@
     "checkout:preflight:stripe-test": "tsx scripts/check-stripe-test-checkout.ts",
     "stripe:catalog:verify": "tsx scripts/stripe-catalog-verify.ts",
     "store:listing-readiness:verify": "tsx scripts/verify-store-listing-readiness.ts",
-    "stripe:catalog:reset-uat": "pnpm --filter @blackbox/backend exec tsx scripts/stripe-catalog-reset-sandbox.ts",
-    "stripe:catalog:reset-sandbox": "pnpm stripe:catalog:reset-uat",
     "stripe:catalog:artifacts:generate": "tsx scripts/generate-stripe-uat-catalog-artifacts.ts --write",
     "stripe:catalog:artifacts:check": "tsx scripts/generate-stripe-uat-catalog-artifacts.ts --check",
     "prd:catalog-readiness:check": "tsx scripts/check-production-catalog-readiness.ts",
@@ -58,7 +57,7 @@
     "worker:dev": "pnpm dev:backend",
     "worker:dev:uat": "pnpm dev:backend:uat",
     "worker:dev:sandbox": "pnpm worker:dev:uat",
-    "build": "pnpm build:web && pnpm build:staff",
+    "build": "pnpm stripe:catalog:artifacts:generate && pnpm build:web && pnpm build:staff",
     "build:web": "pnpm --filter @blackbox/web build && tsx scripts/check-frontend-route-isolation.ts web",
     "build:staff": "pnpm --filter @blackbox/staff build && tsx scripts/check-frontend-route-isolation.ts staff",
     "cache:policy:check": "pnpm --filter @blackbox/web cache:policy:check",
@@ -80,14 +79,14 @@
     "format:check": "prettier . --check",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
-    "check": "pnpm stripe:catalog:artifacts:check && pnpm environment:model:verify && pnpm format:check && pnpm lint && pnpm check:types && pnpm check:boundaries",
+    "check": "pnpm stripe:catalog:artifacts:generate && pnpm environment:model:verify && pnpm format:check && pnpm lint && pnpm check:types && pnpm check:boundaries",
     "check:boundaries": "pnpm audit:module-boundaries && pnpm depcruise:boundaries && pnpm audit:commerce-boundaries",
     "check:types": "pnpm --parallel --filter @blackbox/web --filter @blackbox/staff --filter @blackbox/backend --filter @blackbox/api-client check",
     "check:web": "pnpm --filter @blackbox/web check",
     "check:staff": "pnpm --filter @blackbox/staff check",
     "check:backend": "pnpm --filter @blackbox/backend check",
     "check:api-client": "pnpm --filter @blackbox/api-client check",
-    "test:unit": "pnpm --parallel --filter @blackbox/web --filter @blackbox/staff --filter @blackbox/backend --filter @blackbox/api-client test && pnpm test:contracts",
+    "test:unit": "pnpm stripe:catalog:artifacts:generate && pnpm --parallel --filter @blackbox/web --filter @blackbox/staff --filter @blackbox/backend --filter @blackbox/api-client test && pnpm test:contracts",
     "test:contracts": "pnpm --filter @blackbox/web exec vitest --root ../.. run scripts/check-frontend-route-isolation.test.ts scripts/pages-workflow-contract.test.ts",
     "test:app-shell": "pnpm --filter @blackbox/web exec vitest run src/components/app-shell",
     "test:cms-admin": "pnpm --filter @blackbox/web exec vitest run src/lib/admin",
@@ -95,7 +94,8 @@
     "test:staff": "pnpm --filter @blackbox/staff test:unit",
     "test:backend": "pnpm --filter @blackbox/backend test",
     "test:api-client": "pnpm --filter @blackbox/api-client test",
-    "depcruise:boundaries": "depcruise --config .dependency-cruiser.cjs apps/web/src apps/staff/src apps/backend/src packages/api-client/src"
+    "depcruise:boundaries": "depcruise --config .dependency-cruiser.cjs apps/web/src apps/staff/src apps/backend/src packages/api-client/src",
+    "catalog:bindings:migrate": "pnpm --filter @blackbox/backend exec tsx scripts/migrate-catalog-product-bindings.ts"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",

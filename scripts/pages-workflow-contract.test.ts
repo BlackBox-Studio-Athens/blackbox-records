@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const workflow = readFileSync(fileURLToPath(new URL('../.github/workflows/pages.yml', import.meta.url)), 'utf8');
 const deployPrd = workflow.slice(workflow.indexOf('  deploy-prd:'), workflow.indexOf('  deploy-staff:'));
-const deployStaff = workflow.slice(workflow.indexOf('  deploy-staff:'));
+const deployStaff = workflow.slice(workflow.indexOf('  deploy-staff:'), workflow.indexOf('  catalog-uat:'));
 
 describe('Pages workflow contract', () => {
   it('builds hosted Sveltia for both targets without suppressing admin-library changes', () => {

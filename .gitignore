@@ -27,6 +27,9 @@ files/
 node_modules/.astro/
 node_modules/.vite/
 .codex-artifacts/
+apps/backend/src/application/commerce/catalog-sync/catalog-manifest.generated.ts
+apps/backend/prisma/seeds/uat-commerce-state.sql
+apps/backend/prisma/seeds/prd-commerce-readiness.sql
 .env.local
 **/.env.local
 

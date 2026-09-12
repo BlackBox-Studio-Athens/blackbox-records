@@ -56,8 +56,8 @@ Read these first before editing:
 - Backend production deploy: `pnpm deploy:backend:production`
 - Static frontend deploy workflow: `.github/workflows/pages.yml`
 - Staff static build: `pnpm build:staff`
-- Catalog artifact regeneration workflow: `.github/workflows/catalog-artifacts.yml`
-- Catalog promotion workflow: `.github/workflows/catalog-promotion.yml`
+- Catalog generation: `pnpm stripe:catalog:artifacts:generate` (ignored build inputs)
+- Gated catalog and site release workflow: `.github/workflows/pages.yml`
 - Full local stack with real Stripe test mode: `pnpm dev:stack:stripe-test`
 - Local frontend connected to deployed UAT Worker/API: `pnpm dev:stack:uat-connected`
 - Local official stripe-mock launcher: `pnpm stripe-mock:local`

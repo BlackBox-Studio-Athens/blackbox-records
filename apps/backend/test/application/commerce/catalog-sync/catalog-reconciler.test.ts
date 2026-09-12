@@ -75,6 +75,9 @@ class InMemoryStoreItems implements StoreItemOptionRepository {
 
 class InMemoryVariantMappings implements VariantStripeMappingRepository {
   public readonly records = new Map<string, VariantStripeMappingRecord>();
+  public async findByStripeProductId(productId: string) {
+    return [...this.records.values()].find((record) => record.stripeProductId === productId) ?? null;
+  }
 
   public async findByVariantId(id: string): Promise<VariantStripeMappingRecord | null> {
     return this.records.get(id) ?? null;
@@ -104,6 +107,10 @@ class InMemoryStoreOfferSnapshots implements StoreOfferSnapshotRepository {
 }
 
 class InMemoryStripeCatalog implements StripeCatalogGateway {
+  public readonly defaultPrices = new Map<string, StripeCatalogPrice>();
+  public async retrieveDefaultPrice(productId: string): Promise<StripeCatalogPrice | null> {
+    return this.defaultPrices.get(productId) ?? null;
+  }
   public readonly archivePrice = vi.fn(async (priceId: string, _context?: StripeCatalogMutationContext) => {
     const price = this.prices.get(priceId);
 
@@ -437,997 +444,139 @@ describe('Stripe catalog identity helpers', () => {
   });
 });
 
+function boundCatalog() {
+  const state = createReconciler();
+  const price = createCatalogPrice({ priceId: 'price_current' });
+  state.stripeCatalog.prices.set(price.priceId, price);
+  state.stripeCatalog.defaultPrices.set(price.productId!, price);
+  state.mappings.records.set(storeItem.variantId, {
+    variantId: storeItem.variantId,
+    stripePriceId: price.priceId,
+    stripeProductId: price.productId,
+  });
+  return { ...state, price };
+}
+
 describe('CatalogReconciler', () => {
-  it('scopes catalog creation idempotency to the promotion run', async () => {
-    const first = await createReconciler({ creationMutationScope: 'promotion-run-123' }).reconciler.reconcileVariant(
-      storeItem,
-      { apply: false, expectedPrice: fixedExpectedPrice() },
-    );
-    const retry = await createReconciler({ creationMutationScope: 'promotion-run-123' }).reconciler.reconcileVariant(
-      storeItem,
-      { apply: false, expectedPrice: fixedExpectedPrice() },
-    );
-    const nextPromotion = await createReconciler({
-      creationMutationScope: 'promotion-run-456',
-    }).reconciler.reconcileVariant(storeItem, { apply: false, expectedPrice: fixedExpectedPrice() });
-    const readCreateKey = (result: typeof first) =>
-      result.actions.find((action) => action.kind === 'create_catalog_price')?.idempotencyKey;
-
-    expect(readCreateKey(first)).toBe(readCreateKey(retry));
-    expect(readCreateKey(nextPromotion)).not.toBe(readCreateKey(first));
-  });
-
-  it('preserves valid Price Authority when Desired Price differs', async () => {
-    const oldPrice = createCatalogPrice({ amountMinor: 1000, priceId: 'price_test_disintegration_1000' });
-    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set(oldPrice.priceId, oldPrice);
-    mappings.records.set(storeItem.variantId, {
-      stripePriceId: oldPrice.priceId,
-      variantId: storeItem.variantId,
-    });
-
-    const result = await reconciler.reconcileVariant(storeItem, {
-      apply: true,
-      expectedPrice: fixedExpectedPrice(2800, 'disintegration-black-vinyl-lp-2800-eur'),
-      now: new Date('2026-05-23T10:00:00.000Z'),
-    });
-
+  it('uses the Product default and refreshes D1 while older Prices stay active', async () => {
+    const { reconciler, stripeCatalog, mappings, snapshots, price } = boundCatalog();
+    const replacement = {
+      ...price,
+      priceId: stripePriceId('price_replacement'),
+      amountMinor: 3100,
+      lookupKey: null,
+      metadata: {},
+    };
+    stripeCatalog.prices.set(replacement.priceId, replacement);
+    stripeCatalog.defaultPrices.set(price.productId!, replacement);
+    const result = await reconciler.reconcileVariant(storeItem, { apply: true, applyProductProjection: false });
     expect(result.issues).toEqual([]);
-    expect(result.actions).toEqual([{ kind: 'update_snapshot' }]);
-    expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
-    expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
-    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(oldPrice.priceId);
-    expect(snapshots.records.get(storeItem.variantId)).toMatchObject({
-      amountMinor: 1000,
-      currencyCode: 'EUR',
-      stripePriceId: oldPrice.priceId,
+    expect(result.resolvedPrice?.priceId).toBe(replacement.priceId);
+    expect(mappings.records.get(storeItem.variantId)).toMatchObject({
+      stripeProductId: price.productId,
+      stripePriceId: replacement.priceId,
     });
-  });
-
-  it.each(['exclusive', 'unspecified', null] as const)(
-    'rejects %s tax behavior without changing gross Price Authority',
-    async (taxBehavior) => {
-      const price = { ...createCatalogPrice({ amountMinor: 2480, priceId: 'price_tax_policy' }), taxBehavior };
-      const { reconciler, stripeCatalog } = createReconciler();
-      stripeCatalog.prices.set(price.priceId, price);
-      const result = await reconciler.reconcileVariant(storeItem, { apply: true });
-      expect(result.issues).toContainEqual(expect.objectContaining({ code: 'wrong_tax_behavior' }));
-      expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
-      expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
-      expect(stripeCatalog.prices.get(price.priceId)?.amountMinor).toBe(2480);
-    },
-  );
-
-  it('rejects an unapproved Product tax code', async () => {
-    const price = { ...createCatalogPrice({ priceId: 'price_wrong_tax' }), productTaxCode: 'txcd_00000000' };
-    const { reconciler, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set(price.priceId, price);
-    expect((await reconciler.reconcileVariant(storeItem, { apply: false })).issues).toContainEqual(
-      expect.objectContaining({ code: 'wrong_tax_code' }),
-    );
-  });
-
-  it('bootstraps a missing second item without changing the first item Price', async () => {
-    const firstPrice = createCatalogPrice({ amountMinor: 1000, priceId: 'price_test_disintegration_1000' });
-    const { mappings, reconciler, stripeCatalog } = createReconciler({
-      storeItems: [storeItem, unavailableStoreItem],
-    });
-    stripeCatalog.prices.set(firstPrice.priceId, firstPrice);
-    mappings.records.set(storeItem.variantId, {
-      stripePriceId: firstPrice.priceId,
-      variantId: storeItem.variantId,
-    });
-
-    const result = await reconciler.verifyBuyableCatalog({
-      apply: true,
-      expectedPrices: new Map([
-        [storeItem.variantId, fixedExpectedPrice(2800)],
-        [unavailableStoreItem.variantId, fixedExpectedPrice(1200)],
-      ]),
-    });
-
-    expect(result.issues).toEqual([]);
-    expect(stripeCatalog.createCatalogPrice).toHaveBeenCalledOnce();
-    expect(stripeCatalog.createCatalogPrice).toHaveBeenCalledWith(
-      expect.objectContaining({
-        amountMinor: 1200,
-        metadata: expect.objectContaining({ storeItemSlug: unavailableStoreItem.storeItemSlug }),
-      }),
-      expect.any(Object),
-    );
-    expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
-    expect(stripeCatalog.prices.get(firstPrice.priceId)).toMatchObject({
-      amountMinor: 1000,
-      priceId: firstPrice.priceId,
-    });
-    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(firstPrice.priceId);
-    expect(mappings.records.get(unavailableStoreItem.variantId)?.stripePriceId).toBe(
-      'price_test_noise-without-decay_1200',
-    );
-  });
-
-  it('does not treat elapsed snapshot time as drift', async () => {
-    const price = createCatalogPrice({ priceId: 'price_test_disintegration_2800' });
-    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set(price.priceId, price);
-    mappings.records.set(storeItem.variantId, {
-      stripePriceId: price.priceId,
-      variantId: storeItem.variantId,
-    });
-    snapshots.records.set(storeItem.variantId, {
-      amountMinor: 2800,
-      currencyCode: 'EUR',
-      freshUntil: new Date('2026-05-22T10:00:00.000Z'),
-      priceActive: true,
-      productActive: true,
-      storeItemSlug: storeItem.storeItemSlug,
-      stripeLookupKey: createStripeCatalogLookupKey('uat', storeItem),
-      stripePriceId: price.priceId,
-      syncedAt: new Date('2026-05-21T10:00:00.000Z'),
-      variantId: storeItem.variantId,
-    });
-
-    const result = await reconciler.reconcileVariant(storeItem, {
-      apply: false,
-      now: new Date('2026-05-23T10:00:00.000Z'),
-    });
-
-    expect(result.issues).toEqual([]);
-    expect(result.actions).toEqual([]);
-    expect(snapshots.records.get(storeItem.variantId)?.freshUntil.toISOString()).toBe('2026-05-22T10:00:00.000Z');
-    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(price.priceId);
-    expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
+    expect(snapshots.records.get(storeItem.variantId)?.amountMinor).toBe(3100);
+    expect(price.active).toBe(true);
     expect(stripeCatalog.updatePriceLookupKey).not.toHaveBeenCalled();
     expect(stripeCatalog.updatePriceMetadata).not.toHaveBeenCalled();
   });
 
-  it('accepts a Dashboard replacement Price as day-to-day Price Authority without Desired Price repair', async () => {
-    const oldPrice = createCatalogPrice({
-      active: false,
-      amountMinor: 2800,
-      priceId: 'price_test_disintegration_2800',
-    });
-    const replacementPrice = createCatalogPrice({
-      amountMinor: 3200,
-      priceId: 'price_test_disintegration_3200_dashboard',
-    });
-    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set(oldPrice.priceId, oldPrice);
-    stripeCatalog.prices.set(replacementPrice.priceId, replacementPrice);
-    mappings.records.set(storeItem.variantId, {
-      stripePriceId: oldPrice.priceId,
-      variantId: storeItem.variantId,
-    });
-
-    const result = await reconciler.reconcileVariant(storeItem, {
-      apply: true,
-      now: new Date('2026-05-23T10:00:00.000Z'),
-    });
-
+  it('never scans account Prices for bound items and ignores unrelated foreign objects', async () => {
+    const { reconciler, stripeCatalog } = boundCatalog();
+    const lookup = vi.spyOn(stripeCatalog, 'listPricesByLookupKey');
+    const metadata = vi.spyOn(stripeCatalog, 'listPricesByMetadata');
+    const owned = vi.spyOn(stripeCatalog, 'listOwnedPrices');
+    const foreign = createCatalogPrice({ priceId: 'price_foreign', environment: 'prd' });
+    stripeCatalog.prices.set(foreign.priceId, foreign);
+    const result = await reconciler.verifyBuyableCatalog({ apply: true });
     expect(result.issues).toEqual([]);
-    expect(result.actions).toEqual(
-      expect.arrayContaining([
-        { kind: 'update_mapping', stripePriceId: replacementPrice.priceId },
-        { kind: 'update_snapshot' },
-      ]),
-    );
-    expect(result.actions).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kind: 'archive_price' }),
-        expect.objectContaining({ kind: 'create_catalog_price' }),
-      ]),
-    );
-    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(replacementPrice.priceId);
-    expect(snapshots.records.get(storeItem.variantId)).toMatchObject({
-      amountMinor: 3200,
-      currencyCode: 'EUR',
-      stripePriceId: replacementPrice.priceId,
-    });
+    expect(lookup).not.toHaveBeenCalled();
+    expect(metadata).not.toHaveBeenCalled();
+    expect(owned).not.toHaveBeenCalled();
   });
 
-  it('resolves a metadata-identified replacement Price when the lookup key is missing', async () => {
-    const replacementPrice = {
-      ...createCatalogPrice({
-        amountMinor: 3200,
-        priceId: 'price_test_disintegration_metadata_only',
-      }),
-      lookupKey: null,
-    };
-    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set(replacementPrice.priceId, replacementPrice);
-
-    const result = await reconciler.reconcileVariant(storeItem, {
-      apply: true,
-      now: new Date('2026-05-23T10:00:00.000Z'),
-    });
-
-    expect(result.issues).toEqual([]);
-    expect(result.actions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          kind: 'repair_lookup_key',
-          lookupKey: createStripeCatalogLookupKey('uat', storeItem),
-          stripePriceId: replacementPrice.priceId,
-        }),
-        { kind: 'update_mapping', stripePriceId: replacementPrice.priceId },
-        { kind: 'update_snapshot' },
-      ]),
-    );
-    expect(stripeCatalog.updatePriceLookupKey).toHaveBeenCalledWith(
-      replacementPrice.priceId,
-      createStripeCatalogLookupKey('uat', storeItem),
-      expect.objectContaining({ idempotencyKey: expect.stringContaining(':repair_lookup_key:') }),
-    );
-    expect(stripeCatalog.prices.get(replacementPrice.priceId)?.lookupKey).toBe(
-      createStripeCatalogLookupKey('uat', storeItem),
-    );
-    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(replacementPrice.priceId);
-    expect(snapshots.records.get(storeItem.variantId)).toMatchObject({
-      amountMinor: 3200,
-      stripePriceId: replacementPrice.priceId,
-    });
-  });
-
-  it('repairs a replacement Price that inherits identity from its Product', async () => {
-    const oldPrice = createCatalogPrice({
-      active: false,
-      amountMinor: 2800,
-      priceId: 'price_test_disintegration_2800_product_identity',
-    });
-    const replacementPrice = {
-      ...createCatalogPrice({
-        amountMinor: 2900,
-        priceId: 'price_test_disintegration_2900_product_identity',
-      }),
-      lookupKey: null,
-      metadata: {},
-      productId: oldPrice.productId,
-    };
-    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set(oldPrice.priceId, oldPrice);
-    stripeCatalog.prices.set(replacementPrice.priceId, replacementPrice);
-    mappings.records.set(storeItem.variantId, {
-      stripePriceId: oldPrice.priceId,
-      variantId: storeItem.variantId,
-    });
-
-    const result = await reconciler.reconcileVariant(storeItem, {
-      apply: true,
-      now: new Date('2026-05-23T10:00:00.000Z'),
-    });
-
-    expect(result.issues).toEqual([]);
-    expect(result.resolvedPrice).toMatchObject({
-      amountMinor: 2900,
-      currencyCode: 'EUR',
-      priceId: replacementPrice.priceId,
-    });
-    expect(result.actions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          kind: 'repair_lookup_key',
-          stripePriceId: replacementPrice.priceId,
-        }),
-        { kind: 'update_mapping', stripePriceId: replacementPrice.priceId },
-        expect.objectContaining({
-          kind: 'update_stripe_metadata',
-          stripePriceId: replacementPrice.priceId,
-        }),
-        { kind: 'update_snapshot' },
-      ]),
-    );
-    expect(stripeCatalog.prices.get(replacementPrice.priceId)).toMatchObject({
-      lookupKey: createStripeCatalogLookupKey('uat', storeItem),
-      metadata: replacementPrice.productMetadata,
-    });
-    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(replacementPrice.priceId);
-    expect(snapshots.records.get(storeItem.variantId)).toMatchObject({
-      amountMinor: 2900,
-      currencyCode: 'EUR',
-      stripePriceId: replacementPrice.priceId,
-    });
-  });
-
-  it('fails closed when lookup key and metadata identify different variants', async () => {
-    const conflictingPrice = {
-      ...createCatalogPrice({
-        amountMinor: 3200,
-        priceId: 'price_test_disintegration_conflicting_identity',
-      }),
-      metadata: {
-        appEnv: 'uat',
-        sourceId: storeItem.sourceId,
-        sourceKind: storeItem.sourceKind,
-        storeItemSlug: storeItem.storeItemSlug,
-        variantId: 'variant_other_standard',
-      },
-    };
-    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set(conflictingPrice.priceId, conflictingPrice);
-
-    const result = await reconciler.reconcileVariant(storeItem, {
-      apply: true,
-      now: new Date('2026-05-23T10:00:00.000Z'),
-    });
-
-    expect(result.issues).toEqual(
-      expect.arrayContaining([expect.objectContaining({ code: 'wrong_variant_identity' })]),
-    );
-    expect(mappings.records.get(storeItem.variantId)).toBeUndefined();
-    expect(snapshots.records.get(storeItem.variantId)).toBeUndefined();
-  });
-
-  it('fails closed when a Dashboard replacement Price uses the wrong currency', async () => {
-    const price = createCatalogPrice({
-      amountMinor: 3200,
-      currencyCode: 'USD',
-      priceId: 'price_test_disintegration_usd',
-    });
-    const { reconciler, snapshots, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set(price.priceId, price);
-
-    const result = await reconciler.reconcileVariant(storeItem, {
-      apply: true,
-      now: new Date('2026-05-23T10:00:00.000Z'),
-    });
-
-    expect(result.issues).toEqual([expect.objectContaining({ code: 'wrong_currency' })]);
-    expect(result.actions).toEqual(
-      expect.arrayContaining([
-        {
-          kind: 'update_mapping',
-          stripePriceId: price.priceId,
-        },
-      ]),
-    );
-    expect(snapshots.records.get(storeItem.variantId)).toBeUndefined();
-  });
-
-  it('bootstraps missing pay-what-you-want Price Authority and writes a nullable snapshot', async () => {
-    const { reconciler, snapshots, stripeCatalog } = createReconciler();
-
-    const result = await reconciler.reconcileVariant(storeItem, {
-      apply: true,
-      expectedPrice: {
-        currencyCode: 'EUR',
-        kind: 'pay_what_you_want',
-        maximumAmountMinor: 10000,
-        minimumAmountMinor: 100,
-        presetAmountMinor: 500,
-        revision: 'disintegration-black-vinyl-lp-pay-what-you-want-100-500-10000-eur',
-      },
-      now: new Date('2026-05-23T10:00:00.000Z'),
-    });
-
-    expect(result.issues).toEqual([]);
-    expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
-    expect(stripeCatalog.createCatalogPrice).toHaveBeenCalledWith(
-      expect.objectContaining({
-        currencyCode: 'EUR',
-        kind: 'pay_what_you_want',
-        maximumAmountMinor: 10000,
-        minimumAmountMinor: 100,
-        presetAmountMinor: 500,
-      }),
-      expect.objectContaining({
-        idempotencyKey: expect.stringContaining('pay-what-you-want-100-500-10000-eur'),
-      }),
-    );
-    expect(result.resolvedPrice).toMatchObject({
-      customUnitAmount: {
-        maximumAmountMinor: 10000,
-        minimumAmountMinor: 100,
-        presetAmountMinor: 500,
-      },
-      priceKind: 'pay_what_you_want',
-    });
-    expect(result.actions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kind: 'create_catalog_price' }),
-        { kind: 'update_mapping', stripePriceId: 'price_test_disintegration_pay_what_you_want' },
-        { kind: 'update_snapshot' },
-      ]),
-    );
-    expect(snapshots.records.get(storeItem.variantId)).toMatchObject({
-      amountMinor: null,
-      currencyCode: 'EUR',
-      stripePriceId: 'price_test_disintegration_pay_what_you_want',
-    });
-  });
-
-  it('repairs a stale D1 mapping when a correct active Price already exists', async () => {
-    const stalePrice = {
-      ...createCatalogPrice({ amountMinor: 1000, priceId: 'price_test_legacy_1000' }),
-      lookupKey: 'blackbox_uat_disintegration_black_vinyl_lp_eur_1000',
-      metadata: {},
-      productMetadata: {},
-    };
-    const correctedPrice = createCatalogPrice({ priceId: 'price_test_disintegration_2800' });
-    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set(stalePrice.priceId, stalePrice);
-    stripeCatalog.prices.set(correctedPrice.priceId, correctedPrice);
-    mappings.records.set(storeItem.variantId, {
-      stripePriceId: stalePrice.priceId,
-      variantId: storeItem.variantId,
-    });
-
-    const result = await reconciler.reconcileVariant(storeItem, {
-      apply: true,
-      expectedPrice: fixedExpectedPrice(2800, 'disintegration-black-vinyl-lp-2800-eur'),
-      now: new Date('2026-05-23T10:00:00.000Z'),
-    });
-
-    expect(result.issues).toEqual([expect.objectContaining({ code: 'wrong_variant_identity' })]);
-    expect(result.actions).toEqual(
-      expect.arrayContaining([
-        { kind: 'update_mapping', stripePriceId: correctedPrice.priceId },
-        { kind: 'update_snapshot' },
-      ]),
-    );
-    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(correctedPrice.priceId);
-    expect(snapshots.records.get(storeItem.variantId)).toMatchObject({
-      amountMinor: 2800,
-      currencyCode: 'EUR',
-      stripePriceId: correctedPrice.priceId,
-    });
-  });
-
-  it('plans Product Projection updates separately from Price Authority', async () => {
-    const price = {
-      ...createCatalogPrice({ priceId: 'price_test_disintegration_2800' }),
-      productDescription: 'Dashboard-edited description.',
-      productImages: ['https://example.com/dashboard-image.jpg'],
-      productName: 'Dashboard edited name',
-    };
-    const { reconciler, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set(price.priceId, price);
-
-    const result = await reconciler.reconcileVariant(storeItem, {
-      apply: false,
-      productProjection: {
-        description: 'Disintegration by Afterwise.',
-        imageUrls: ['https://blackbox-records-web.pages.dev/assets/catalog/releases/disintegration.jpg'],
-        metadata: {
-          sourceId: storeItem.sourceId,
-          sourceKind: storeItem.sourceKind,
-          storeItemSlug: storeItem.storeItemSlug,
-          variantId: storeItem.variantId,
-        },
-        name: 'BlackBox Records - Disintegration - Black Vinyl LP',
-        taxCode: null,
-      },
-    });
-
-    expect(result.issues).toEqual([
-      expect.objectContaining({
-        code: 'product_projection_mismatch',
-        driftCategory: 'product_projection',
-      }),
-    ]);
-    expect(result.actions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kind: 'update_product_projection', productId: price.productId }),
-      ]),
-    );
-    expect(result.actions).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kind: 'create_catalog_price' }),
-        expect.objectContaining({ kind: 'archive_price', stripePriceId: price.priceId }),
-      ]),
-    );
-  });
-
-  it('keeps dry-run verification mutation-free for Stripe and D1 write paths', async () => {
-    const price = {
-      ...createCatalogPrice({ amountMinor: 1000, priceId: 'price_test_disintegration_1000' }),
-      productDescription: 'Dashboard-edited description.',
-    };
-    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set(price.priceId, price);
-    mappings.records.set(storeItem.variantId, {
-      stripePriceId: price.priceId,
-      variantId: storeItem.variantId,
-    });
-    snapshots.records.set(storeItem.variantId, {
-      amountMinor: 1000,
-      currencyCode: 'EUR',
-      freshUntil: new Date('2026-05-22T10:00:00.000Z'),
-      priceActive: true,
-      productActive: true,
-      storeItemSlug: storeItem.storeItemSlug,
-      stripeLookupKey: createStripeCatalogLookupKey('uat', storeItem),
-      stripePriceId: price.priceId,
-      syncedAt: new Date('2026-05-21T10:00:00.000Z'),
-      variantId: storeItem.variantId,
-    });
-
-    const result = await reconciler.reconcileVariant(storeItem, {
-      apply: false,
-      expectedPrice: fixedExpectedPrice(),
-      now: new Date('2026-05-23T10:00:00.000Z'),
-      productProjection: {
-        description: 'Disintegration by Afterwise.',
-        imageUrls: ['https://blackbox-records-web.pages.dev/assets/catalog/releases/disintegration.jpg'],
-        metadata: {
-          sourceId: storeItem.sourceId,
-          sourceKind: storeItem.sourceKind,
-          storeItemSlug: storeItem.storeItemSlug,
-          variantId: storeItem.variantId,
-        },
-        name: 'BlackBox Records - Disintegration - Black Vinyl LP',
-        taxCode: null,
-      },
-    });
-
-    expect(result.issues).toEqual(
-      expect.arrayContaining([expect.objectContaining({ code: 'product_projection_mismatch' })]),
-    );
-    expect(result.actions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kind: 'update_product_projection', productId: price.productId }),
-      ]),
-    );
-    expect(result.actions).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kind: 'archive_price' }),
-        expect.objectContaining({ kind: 'create_catalog_price' }),
-        expect.objectContaining({ kind: 'update_snapshot' }),
-      ]),
-    );
-    expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
+  it.each([
+    ['inactive_price', { active: false }],
+    ['inactive_product', { productActive: false }],
+    ['wrong_currency', { currencyCode: 'USD' }],
+    ['wrong_tax_behavior', { taxBehavior: 'exclusive' }],
+    ['wrong_tax_code', { productTaxCode: 'txcd_wrong' }],
+    ['wrong_amount', { amountMinor: -1 }],
+    ['wrong_variant_identity', { productMetadata: { appEnv: 'prd' } }],
+    ['wrong_variant_identity', { lookupKey: 'blackbox:uat:other:variant_other_standard' }],
+  ] as const)('rejects %s without saving or creating a replacement', async (code, fields) => {
+    const { reconciler, stripeCatalog, snapshots, price } = boundCatalog();
+    stripeCatalog.defaultPrices.set(price.productId!, { ...price, ...fields });
+    const result = await reconciler.reconcileVariant(storeItem, { apply: true, expectedPrice: fixedExpectedPrice() });
+    expect(result.issues.some((issue) => issue.code === code)).toBe(true);
+    expect(snapshots.records.size).toBe(0);
     expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
-    expect(stripeCatalog.updatePriceMetadata).not.toHaveBeenCalled();
-    expect(stripeCatalog.updateProductProjection).not.toHaveBeenCalled();
-    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(price.priceId);
-    expect(snapshots.records.get(storeItem.variantId)?.freshUntil.toISOString()).toBe('2026-05-22T10:00:00.000Z');
   });
 
-  it('reports non-checkout variants without forcing Price Authority alignment', async () => {
-    const { mappings, reconciler } = createReconciler({ storeItems: [storeItem, unavailableStoreItem] });
-    mappings.records.set(unavailableStoreItem.variantId, {
-      stripePriceId: stripePriceId('price_test_stale_unavailable'),
-      variantId: unavailableStoreItem.variantId,
-    });
-
-    const result = await reconciler.verifyBuyableCatalog({
-      apply: false,
-      expectedPrices: new Map([[storeItem.variantId, fixedExpectedPrice()]]),
-    });
-    const unavailableResult = result.results.find(
-      (item) => item.storeItem.variantId === unavailableStoreItem.variantId,
-    );
-
-    expect(unavailableResult).toMatchObject({
-      actions: [],
-      issueCount: 0,
-      resolvedPrice: null,
-    });
-    expect(result.issues).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ variantId: unavailableStoreItem.variantId })]),
-    );
-  });
-
-  it('requires Price Authority in day-to-day verification without comparing Desired Price amounts', async () => {
-    const replacementPrice = createCatalogPrice({
-      amountMinor: 3200,
-      priceId: 'price_test_disintegration_3200_dashboard',
-    });
-    const { reconciler, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set(replacementPrice.priceId, replacementPrice);
-
-    const result = await reconciler.verifyBuyableCatalog({
-      apply: false,
-    });
-
-    expect(result.issues).toEqual([]);
-    expect(result.results[0]?.resolvedPrice).toMatchObject({
-      amountMinor: 3200,
-      priceId: replacementPrice.priceId,
-    });
-    expect(result.results[0]?.actions).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kind: 'archive_price' }),
-        expect.objectContaining({ kind: 'create_catalog_price' }),
-      ]),
-    );
-  });
-
-  it('reports malformed, legacy, foreign, and owned-orphan catalog identities without cleanup mutation', async () => {
-    const { reconciler, stripeCatalog } = createReconciler();
-    const currentPrice = createCatalogPrice({ priceId: 'price_test_disintegration_2800' });
-    const orphanMetadata = {
-      appEnv: 'uat' as const,
-      sourceId: 'orphan-release',
-      sourceKind: 'release' as const,
-      storeItemSlug: 'orphan-release-black-vinyl-lp',
-      variantId: 'variant_orphan-release-black-vinyl-lp_standard',
-    };
-    stripeCatalog.prices.set(currentPrice.priceId, currentPrice);
-    stripeCatalog.prices.set('price_malformed', {
-      ...createCatalogPrice({ priceId: 'price_malformed' }),
-      lookupKey: 'blackbox:uat:missing-variant',
-      metadata: {},
-      productMetadata: {},
-    });
-    stripeCatalog.prices.set('price_legacy', {
-      ...createCatalogPrice({ priceId: 'price_legacy' }),
-      lookupKey: 'blackbox:sandbox:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
-      metadata: {
-        ...createStripeCatalogMetadata('uat', storeItem),
-        appEnv: 'sandbox',
-      },
-    });
-    stripeCatalog.prices.set('price_foreign', createCatalogPrice({ environment: 'prd', priceId: 'price_foreign' }));
-    stripeCatalog.prices.set('price_orphan', {
-      ...createCatalogPrice({ priceId: 'price_orphan' }),
-      lookupKey: 'blackbox:uat:orphan-release-black-vinyl-lp:variant_orphan-release-black-vinyl-lp_standard',
-      metadata: orphanMetadata,
-      productMetadata: orphanMetadata,
-    });
-    stripeCatalog.prices.set('price_partial_metadata_12345678', {
-      ...createCatalogPrice({ priceId: 'price_partial_metadata_12345678' }),
-      lookupKey: null,
-      metadata: { appEnv: 'uat' },
-      productMetadata: {},
-    });
-    stripeCatalog.prices.set('price_source_only_metadata_87654321', {
-      ...createCatalogPrice({ priceId: 'price_source_only_metadata_87654321' }),
-      lookupKey: null,
-      metadata: { sourceId: 'orphan-release', sourceKind: 'release' },
-      productMetadata: {},
-    });
-    stripeCatalog.prices.set('price_unowned', {
-      ...createCatalogPrice({ priceId: 'price_unowned' }),
-      lookupKey: null,
-      metadata: {},
-      productMetadata: {},
-    });
-    stripeCatalog.products.set('prod_orphan', {
-      active: true,
-      metadata: orphanMetadata,
-      name: 'Orphan Release',
-      productId: 'prod_orphan',
-    });
-    stripeCatalog.products.set('prod_partial_metadata_12345678', {
-      active: true,
-      metadata: { appEnv: 'uat' },
-      name: 'Partial Product',
-      productId: 'prod_partial_metadata_12345678',
-    });
-    stripeCatalog.products.set('prod_source_only_metadata_87654321', {
-      active: true,
-      metadata: { sourceId: 'orphan-release', sourceKind: 'release' },
-      name: 'Source-only Product',
-      productId: 'prod_source_only_metadata_87654321',
-    });
-
-    const result = await reconciler.verifyBuyableCatalog({
-      apply: false,
-      expectedPrices: new Map([[storeItem.variantId, fixedExpectedPrice()]]),
-    });
-
-    expect(result.issues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ code: 'malformed_catalog_identity', driftCategory: 'catalog_identity' }),
-        expect.objectContaining({ code: 'legacy_environment_identity', driftCategory: 'catalog_identity' }),
-        expect.objectContaining({ code: 'foreign_environment_identity', driftCategory: 'catalog_identity' }),
-        expect.objectContaining({ code: 'owned_orphan_price', driftCategory: 'catalog_identity' }),
-        expect.objectContaining({ code: 'owned_orphan_product', driftCategory: 'catalog_identity' }),
-      ]),
-    );
-    expect(result.issues).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ detail: expect.stringContaining('price_unowned') })]),
-    );
-    expect(result.issues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ detail: expect.stringContaining('price_...4321') }),
-        expect.objectContaining({ detail: expect.stringContaining('prod_...4321') }),
-      ]),
-    );
-    expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
-    expect(stripeCatalog.updatePriceMetadata).not.toHaveBeenCalled();
-    expect(stripeCatalog.updateProductProjection).not.toHaveBeenCalled();
-  });
-
-  it('aborts apply-mode mutation when global owned-object drift exists', async () => {
-    const { reconciler, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set(
-      'price_test_disintegration_1000',
-      createCatalogPrice({ amountMinor: 1000, priceId: 'price_test_disintegration_1000' }),
-    );
-    stripeCatalog.prices.set('price_orphan', {
-      ...createCatalogPrice({ priceId: 'price_orphan' }),
-      lookupKey: 'blackbox:uat:orphan-release-black-vinyl-lp:variant_orphan-release-black-vinyl-lp_standard',
-      metadata: {
-        appEnv: 'uat',
-        sourceId: 'orphan-release',
-        sourceKind: 'release',
-        storeItemSlug: 'orphan-release-black-vinyl-lp',
-        variantId: 'variant_orphan-release-black-vinyl-lp_standard',
-      },
-      productMetadata: {
-        appEnv: 'uat',
-        sourceId: 'orphan-release',
-        sourceKind: 'release',
-        storeItemSlug: 'orphan-release-black-vinyl-lp',
-        variantId: 'variant_orphan-release-black-vinyl-lp_standard',
-      },
-    });
-
-    const result = await reconciler.verifyBuyableCatalog({
-      apply: true,
-      expectedPrices: new Map([[storeItem.variantId, fixedExpectedPrice()]]),
-    });
-
-    expect(result.dryRun).toBe(true);
-    expect(result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'owned_orphan_price' })]));
-    expect(result.results[0]?.actions).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kind: 'archive_price' }),
-        expect.objectContaining({ kind: 'create_catalog_price' }),
-      ]),
-    );
-    expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
-    expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
-    expect(stripeCatalog.updatePriceMetadata).not.toHaveBeenCalled();
-    expect(stripeCatalog.updateProductProjection).not.toHaveBeenCalled();
-  });
-
-  it('reports owned objects outside the expected environment catalog as orphan drift', async () => {
-    const { reconciler, stripeCatalog } = createReconciler({ environment: 'prd' });
-    stripeCatalog.prices.set(
-      'price_live_unexpected_prd',
-      createCatalogPrice({ environment: 'prd', priceId: 'price_live_unexpected_prd' }),
-    );
-
-    const result = await reconciler.verifyBuyableCatalog({
-      apply: false,
-      expectedPrices: new Map(),
-    });
-
-    expect(result.issues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ code: 'owned_orphan_price', variantId: storeItem.variantId }),
-        expect.objectContaining({ code: 'owned_orphan_product', variantId: storeItem.variantId }),
-      ]),
-    );
-  });
-
-  it('reports mixed lookup and metadata identities as malformed catalog identity', async () => {
-    const { reconciler, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set('price_mixed_identity', {
-      ...createCatalogPrice({ priceId: 'price_mixed_identity' }),
-      metadata: {
-        appEnv: 'uat',
-        sourceId: 'orphan-release',
-        sourceKind: 'release',
-        storeItemSlug: 'orphan-release-black-vinyl-lp',
-        variantId: 'variant_orphan-release-black-vinyl-lp_standard',
-      },
-    });
-
-    const result = await reconciler.verifyBuyableCatalog({
-      apply: false,
-      expectedPrices: new Map([[storeItem.variantId, fixedExpectedPrice()]]),
-    });
-
-    expect(result.issues).toEqual(
-      expect.arrayContaining([expect.objectContaining({ code: 'malformed_catalog_identity' })]),
-    );
-  });
-
-  it('applies sandbox Product Projection updates with idempotency keys', async () => {
-    const price = {
-      ...createCatalogPrice({ priceId: 'price_test_disintegration_2800' }),
-      productDescription: 'Dashboard-edited description.',
-    };
-    const { reconciler, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set(price.priceId, price);
-
-    const result = await reconciler.reconcileVariant(storeItem, {
-      apply: true,
-      productProjection: {
-        description: 'Disintegration by Afterwise.',
-        imageUrls: ['https://blackbox-records-web.pages.dev/assets/catalog/releases/disintegration.jpg'],
-        metadata: {
-          sourceId: storeItem.sourceId,
-          sourceKind: storeItem.sourceKind,
-          storeItemSlug: storeItem.storeItemSlug,
-          variantId: storeItem.variantId,
-        },
-        name: 'BlackBox Records - Disintegration - Black Vinyl LP',
-        taxCode: null,
-      },
-    });
-
-    expect(stripeCatalog.updateProductProjection).toHaveBeenCalledWith(
-      price.productId,
-      expect.any(Object),
-      expect.objectContaining({
-        idempotencyKey: expect.stringContaining('update_product_projection'),
-      }),
-    );
-    expect(result.actions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          kind: 'update_product_projection',
-          replayed: true,
-          requestId: 'req_update_product_projection',
-        }),
-      ]),
-    );
-  });
-
-  it('reports Product Projection drift without mutating Stripe during runtime reconciliation', async () => {
-    const price = {
-      ...createCatalogPrice({ priceId: 'price_test_disintegration_2800' }),
-      productDescription: 'Dashboard-edited description.',
-    };
-    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set(price.priceId, price);
-
-    const result = await reconciler.reconcileVariant(storeItem, {
-      apply: true,
-      applyProductProjection: false,
-      productProjection: {
-        description: 'Disintegration by Afterwise.',
-        imageUrls: ['https://blackbox-records-web.pages.dev/assets/catalog/releases/disintegration.jpg'],
-        metadata: {
-          sourceId: storeItem.sourceId,
-          sourceKind: storeItem.sourceKind,
-          storeItemSlug: storeItem.storeItemSlug,
-          variantId: storeItem.variantId,
-        },
-        name: 'BlackBox Records - Disintegration - Black Vinyl LP',
-        taxCode: null,
-      },
-    });
-
-    expect(result.issues).toEqual(
-      expect.arrayContaining([expect.objectContaining({ code: 'product_projection_mismatch' })]),
-    );
-    expect(result.actions).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ kind: 'update_product_projection' })]),
-    );
-    expect(stripeCatalog.updateProductProjection).not.toHaveBeenCalled();
-    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(price.priceId);
-    expect(snapshots.records.get(storeItem.variantId)?.stripePriceId).toBe(price.priceId);
-  });
-
-  it('fails closed when multiple active Stripe Prices match one Store Item variant', async () => {
-    const { reconciler, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set('price_test_one', createCatalogPrice({ priceId: 'price_test_one' }));
-    stripeCatalog.prices.set('price_test_two', createCatalogPrice({ priceId: 'price_test_two' }));
-
-    const result = await reconciler.reconcileVariant(storeItem, { apply: false });
-
+  it('fails a missing default instead of selecting another active Price', async () => {
+    const { reconciler, stripeCatalog, price } = boundCatalog();
+    stripeCatalog.defaultPrices.delete(price.productId!);
+    const result = await reconciler.reconcileVariant(storeItem, { apply: true, expectedPrice: fixedExpectedPrice() });
     expect(result.resolvedPrice).toBeNull();
-    expect(result.issues).toEqual([
-      expect.objectContaining({ code: 'ambiguous_active_price' }),
-      expect.objectContaining({ code: 'missing_price' }),
-    ]);
-  });
-
-  it('salts create idempotency when replacing an inactive mapped Product', async () => {
-    const stalePrice = createCatalogPrice({
-      priceId: 'price_test_inactive_product',
-      productActive: false,
-    });
-    const { mappings, reconciler, stripeCatalog } = createReconciler();
-    stripeCatalog.prices.set(stalePrice.priceId, stalePrice);
-    mappings.records.set(storeItem.variantId, {
-      stripePriceId: stalePrice.priceId,
-      variantId: storeItem.variantId,
-    });
-
-    const result = await reconciler.reconcileVariant(storeItem, {
-      apply: true,
-      expectedPrice: fixedExpectedPrice(2800, 'disintegration-black-vinyl-lp-2800-eur'),
-      now: new Date('2026-05-23T10:00:00.000Z'),
-    });
-
-    expect(result.issues).toEqual([]);
-    expect(stripeCatalog.createCatalogPrice).toHaveBeenCalledWith(
-      expect.any(Object),
-      expect.objectContaining({
-        idempotencyKey: expect.stringContaining(
-          'revision_disintegration-black-vinyl-lp-2800-eur:replace_price_v2_price_test_inactive_product_price_active_product_inactive',
-        ),
-      }),
-    );
-    expect(result.actions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ kind: 'create_catalog_price' }),
-        { kind: 'update_mapping', stripePriceId: 'price_test_disintegration_2800' },
-        { kind: 'update_snapshot' },
-      ]),
-    );
-  });
-
-  it('salts create idempotency when a stale D1 mapping cannot be retrieved from Stripe', async () => {
-    const { mappings, reconciler, stripeCatalog } = createReconciler();
-    mappings.records.set(storeItem.variantId, {
-      stripePriceId: stripePriceId('price_test_missing_in_stripe'),
-      variantId: storeItem.variantId,
-    });
-
-    const result = await reconciler.reconcileVariant(storeItem, {
-      apply: true,
-      expectedPrice: fixedExpectedPrice(2800, 'disintegration-black-vinyl-lp-2800-eur'),
-      now: new Date('2026-05-23T10:00:00.000Z'),
-    });
-
-    expect(result.issues).toEqual([]);
-    expect(stripeCatalog.createCatalogPrice).toHaveBeenCalledWith(
-      expect.any(Object),
-      expect.objectContaining({
-        idempotencyKey: expect.stringContaining(
-          'revision_disintegration-black-vinyl-lp-2800-eur:replace_mapping_price_test_missing_in_stripe',
-        ),
-      }),
-    );
-  });
-
-  it('preserves app-owned production Price Authority when Desired Price differs', async () => {
-    const oldPrice = createCatalogPrice({
-      amountMinor: 1000,
-      environment: 'prd',
-      priceId: 'price_live_disintegration_1000',
-    });
-    const { mappings, reconciler, snapshots, stripeCatalog } = createReconciler({ environment: 'prd' });
-    stripeCatalog.prices.set(oldPrice.priceId, oldPrice);
-    mappings.records.set(storeItem.variantId, {
-      stripePriceId: oldPrice.priceId,
-      variantId: storeItem.variantId,
-    });
-
-    const result = await reconciler.reconcileVariant(storeItem, {
-      apply: true,
-      expectedPrice: fixedExpectedPrice(2800, 'disintegration-black-vinyl-lp-2800-eur'),
-      now: new Date('2026-05-23T10:00:00.000Z'),
-    });
-
-    expect(result.issues).toEqual([]);
-    expect(result.actions).toEqual([{ kind: 'update_snapshot' }]);
-    expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
+    expect(result.issues.some((issue) => issue.code === 'missing_price')).toBe(true);
     expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
-    expect(mappings.records.get(storeItem.variantId)?.stripePriceId).toBe(oldPrice.priceId);
-    expect(snapshots.records.get(storeItem.variantId)).toMatchObject({
-      amountMinor: 1000,
-      currencyCode: 'EUR',
-      stripePriceId: oldPrice.priceId,
-    });
   });
 
-  it('does not mutate production metadata when the resolved Price is ambiguous or not app-owned', async () => {
-    const wrongPrice = {
-      ...createCatalogPrice({
-        environment: 'prd',
-        priceId: 'price_live_wrong_owner',
-      }),
-      lookupKey: 'other-app:production:disintegration-black-vinyl-lp',
-      metadata: {},
-      productMetadata: {},
-    };
-    const { mappings, reconciler, stripeCatalog } = createReconciler({ environment: 'prd' });
-    stripeCatalog.prices.set(wrongPrice.priceId, wrongPrice);
-    mappings.records.set(storeItem.variantId, {
-      stripePriceId: wrongPrice.priceId,
-      variantId: storeItem.variantId,
-    });
+  it('backfills a trusted Product binding without changing the selling amount', async () => {
+    const { reconciler, mappings, price } = boundCatalog();
+    mappings.records.set(storeItem.variantId, { variantId: storeItem.variantId, stripePriceId: price.priceId });
+    await reconciler.reconcileVariant(storeItem, { apply: true });
+    expect(mappings.records.get(storeItem.variantId)?.stripeProductId).toBe(price.productId);
+  });
 
-    const result = await reconciler.reconcileVariant(storeItem, {
+  it('dry-run reads current authority without mutations', async () => {
+    const { reconciler, snapshots, price } = boundCatalog();
+    const result = await reconciler.reconcileVariant(storeItem, { apply: false, expectedPrice: fixedExpectedPrice(1) });
+    expect(result.resolvedPrice?.amountMinor).toBe(price.amountMinor);
+    expect(snapshots.records.size).toBe(0);
+  });
+
+  it('repeated and delayed refreshes read the latest default without provider mutations', async () => {
+    const { reconciler, stripeCatalog, snapshots, price } = boundCatalog();
+    await reconciler.reconcileVariant(storeItem, { apply: true });
+    stripeCatalog.defaultPrices.set(price.productId!, { ...price, amountMinor: 3200 });
+    await reconciler.reconcileVariant(storeItem, { apply: true });
+    const replay = await reconciler.reconcileVariant(storeItem, { apply: true });
+    expect(snapshots.records.get(storeItem.variantId)?.amountMinor).toBe(3200);
+    expect(replay.actions).toEqual([]);
+  });
+
+  it('preserves custom amount authority and nullable listing amount', async () => {
+    const { reconciler, stripeCatalog, snapshots, price } = boundCatalog();
+    stripeCatalog.defaultPrices.set(price.productId!, {
+      ...price,
+      amountMinor: null,
+      priceKind: 'pay_what_you_want',
+      customUnitAmount: { minimumAmountMinor: 100, presetAmountMinor: 500, maximumAmountMinor: 10000 },
+    });
+    const result = await reconciler.reconcileVariant(storeItem, { apply: true });
+    expect(result.issues).toEqual([]);
+    expect(snapshots.records.get(storeItem.variantId)?.amountMinor).toBeNull();
+  });
+
+  it('bootstraps new UAT items but never invents PRD selling prices', async () => {
+    const uat = createReconciler();
+    await uat.reconciler.reconcileVariant(storeItem, { apply: true, expectedPrice: fixedExpectedPrice() });
+    expect(uat.stripeCatalog.createCatalogPrice).toHaveBeenCalledTimes(1);
+    const prd = createReconciler({ environment: 'prd' });
+    const result = await prd.reconciler.reconcileVariant(storeItem, {
       apply: true,
       expectedPrice: fixedExpectedPrice(),
     });
+    expect(result.issues.some((issue) => issue.code === 'missing_price')).toBe(true);
+    expect(prd.stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
+  });
 
-    expect(result.issues).toEqual([
-      expect.objectContaining({ code: 'wrong_variant_identity' }),
-      expect.objectContaining({ code: 'missing_price' }),
-    ]);
-    expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
-    expect(stripeCatalog.archivePrice).not.toHaveBeenCalled();
-    expect(stripeCatalog.updatePriceMetadata).not.toHaveBeenCalled();
-    expect(stripeCatalog.updateProductProjection).not.toHaveBeenCalled();
+  it('requires every listed item to have valid authority', async () => {
+    const { reconciler } = createReconciler({ storeItems: [storeItem, unavailableStoreItem] });
+    const result = await reconciler.verifyBuyableCatalog({ apply: false });
+    expect(result.results).toHaveLength(2);
+    expect(result.results.every((entry) => entry.issues.some((issue) => issue.code === 'missing_price'))).toBe(true);
   });
 });

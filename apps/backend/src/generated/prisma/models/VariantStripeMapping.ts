@@ -28,6 +28,7 @@ export type VariantStripeMappingMinAggregateOutputType = {
   id: string | null
   variantId: string | null
   stripePriceId: string | null
+  stripeProductId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -36,6 +37,7 @@ export type VariantStripeMappingMaxAggregateOutputType = {
   id: string | null
   variantId: string | null
   stripePriceId: string | null
+  stripeProductId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -44,6 +46,7 @@ export type VariantStripeMappingCountAggregateOutputType = {
   id: number
   variantId: number
   stripePriceId: number
+  stripeProductId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -54,6 +57,7 @@ export type VariantStripeMappingMinAggregateInputType = {
   id?: true
   variantId?: true
   stripePriceId?: true
+  stripeProductId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -62,6 +66,7 @@ export type VariantStripeMappingMaxAggregateInputType = {
   id?: true
   variantId?: true
   stripePriceId?: true
+  stripeProductId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -70,6 +75,7 @@ export type VariantStripeMappingCountAggregateInputType = {
   id?: true
   variantId?: true
   stripePriceId?: true
+  stripeProductId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -151,6 +157,7 @@ export type VariantStripeMappingGroupByOutputType = {
   id: string
   variantId: string
   stripePriceId: string
+  stripeProductId: string | null
   createdAt: Date
   updatedAt: Date
   _count: VariantStripeMappingCountAggregateOutputType | null
@@ -180,6 +187,7 @@ export type VariantStripeMappingWhereInput = {
   id?: Prisma.StringFilter<"VariantStripeMapping"> | string
   variantId?: Prisma.StringFilter<"VariantStripeMapping"> | string
   stripePriceId?: Prisma.StringFilter<"VariantStripeMapping"> | string
+  stripeProductId?: Prisma.StringNullableFilter<"VariantStripeMapping"> | string | null
   createdAt?: Prisma.DateTimeFilter<"VariantStripeMapping"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"VariantStripeMapping"> | Date | string
 }
@@ -188,6 +196,7 @@ export type VariantStripeMappingOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   stripePriceId?: Prisma.SortOrder
+  stripeProductId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -195,18 +204,20 @@ export type VariantStripeMappingOrderByWithRelationInput = {
 export type VariantStripeMappingWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   variantId?: string
+  stripeProductId?: string
   AND?: Prisma.VariantStripeMappingWhereInput | Prisma.VariantStripeMappingWhereInput[]
   OR?: Prisma.VariantStripeMappingWhereInput[]
   NOT?: Prisma.VariantStripeMappingWhereInput | Prisma.VariantStripeMappingWhereInput[]
   stripePriceId?: Prisma.StringFilter<"VariantStripeMapping"> | string
   createdAt?: Prisma.DateTimeFilter<"VariantStripeMapping"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"VariantStripeMapping"> | Date | string
-}, "id" | "variantId">
+}, "id" | "variantId" | "stripeProductId">
 
 export type VariantStripeMappingOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   stripePriceId?: Prisma.SortOrder
+  stripeProductId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.VariantStripeMappingCountOrderByAggregateInput
@@ -221,6 +232,7 @@ export type VariantStripeMappingScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"VariantStripeMapping"> | string
   variantId?: Prisma.StringWithAggregatesFilter<"VariantStripeMapping"> | string
   stripePriceId?: Prisma.StringWithAggregatesFilter<"VariantStripeMapping"> | string
+  stripeProductId?: Prisma.StringNullableWithAggregatesFilter<"VariantStripeMapping"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"VariantStripeMapping"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"VariantStripeMapping"> | Date | string
 }
@@ -229,6 +241,7 @@ export type VariantStripeMappingCreateInput = {
   id?: string
   variantId: string
   stripePriceId: string
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -237,6 +250,7 @@ export type VariantStripeMappingUncheckedCreateInput = {
   id?: string
   variantId: string
   stripePriceId: string
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -245,6 +259,7 @@ export type VariantStripeMappingUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   stripePriceId?: Prisma.StringFieldUpdateOperationsInput | string
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -253,6 +268,7 @@ export type VariantStripeMappingUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   stripePriceId?: Prisma.StringFieldUpdateOperationsInput | string
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -261,6 +277,7 @@ export type VariantStripeMappingCreateManyInput = {
   id?: string
   variantId: string
   stripePriceId: string
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -269,6 +286,7 @@ export type VariantStripeMappingUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   stripePriceId?: Prisma.StringFieldUpdateOperationsInput | string
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -277,6 +295,7 @@ export type VariantStripeMappingUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   stripePriceId?: Prisma.StringFieldUpdateOperationsInput | string
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -285,6 +304,7 @@ export type VariantStripeMappingCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   stripePriceId?: Prisma.SortOrder
+  stripeProductId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -293,6 +313,7 @@ export type VariantStripeMappingMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   stripePriceId?: Prisma.SortOrder
+  stripeProductId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -301,8 +322,13 @@ export type VariantStripeMappingMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   stripePriceId?: Prisma.SortOrder
+  stripeProductId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
 }
 
 
@@ -311,6 +337,7 @@ export type VariantStripeMappingSelect<ExtArgs extends runtime.Types.Extensions.
   id?: boolean
   variantId?: boolean
   stripePriceId?: boolean
+  stripeProductId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["variantStripeMapping"]>
@@ -319,6 +346,7 @@ export type VariantStripeMappingSelectCreateManyAndReturn<ExtArgs extends runtim
   id?: boolean
   variantId?: boolean
   stripePriceId?: boolean
+  stripeProductId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["variantStripeMapping"]>
@@ -327,6 +355,7 @@ export type VariantStripeMappingSelectUpdateManyAndReturn<ExtArgs extends runtim
   id?: boolean
   variantId?: boolean
   stripePriceId?: boolean
+  stripeProductId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["variantStripeMapping"]>
@@ -335,11 +364,12 @@ export type VariantStripeMappingSelectScalar = {
   id?: boolean
   variantId?: boolean
   stripePriceId?: boolean
+  stripeProductId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type VariantStripeMappingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "variantId" | "stripePriceId" | "createdAt" | "updatedAt", ExtArgs["result"]["variantStripeMapping"]>
+export type VariantStripeMappingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "variantId" | "stripePriceId" | "stripeProductId" | "createdAt" | "updatedAt", ExtArgs["result"]["variantStripeMapping"]>
 
 export type $VariantStripeMappingPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "VariantStripeMapping"
@@ -348,6 +378,7 @@ export type $VariantStripeMappingPayload<ExtArgs extends runtime.Types.Extension
     id: string
     variantId: string
     stripePriceId: string
+    stripeProductId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["variantStripeMapping"]>
@@ -776,6 +807,7 @@ export interface VariantStripeMappingFieldRefs {
   readonly id: Prisma.FieldRef<"VariantStripeMapping", 'String'>
   readonly variantId: Prisma.FieldRef<"VariantStripeMapping", 'String'>
   readonly stripePriceId: Prisma.FieldRef<"VariantStripeMapping", 'String'>
+  readonly stripeProductId: Prisma.FieldRef<"VariantStripeMapping", 'String'>
   readonly createdAt: Prisma.FieldRef<"VariantStripeMapping", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"VariantStripeMapping", 'DateTime'>
 }

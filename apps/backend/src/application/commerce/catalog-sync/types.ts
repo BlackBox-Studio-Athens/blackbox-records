@@ -148,26 +148,12 @@ export type PromotionEvidence = PromotionRun & {
 };
 
 export type StripeCatalogGateway = {
-  archivePrice(priceId: StripePriceId, context?: StripeCatalogMutationContext): Promise<StripeCatalogPrice>;
+  retrieveDefaultPrice(productId: string): Promise<StripeCatalogPrice | null>;
   createCatalogPrice(
     input: StripeCatalogPriceCreateInput,
     context?: StripeCatalogMutationContext,
   ): Promise<StripeCatalogPrice>;
-  listOwnedPrices(environment: StripeCatalogEnvironment): Promise<StripeCatalogPrice[]>;
-  listOwnedProducts(environment: StripeCatalogEnvironment): Promise<StripeCatalogProduct[]>;
-  listPricesByLookupKey(lookupKey: string): Promise<StripeCatalogPrice[]>;
-  listPricesByMetadata(metadata: StripeCatalogIdentityMetadata): Promise<StripeCatalogPrice[]>;
   retrievePrice(priceId: StripePriceId): Promise<StripeCatalogPrice | null>;
-  updatePriceLookupKey(
-    priceId: StripePriceId,
-    lookupKey: string,
-    context?: StripeCatalogMutationContext,
-  ): Promise<StripeCatalogPrice>;
-  updatePriceMetadata(
-    priceId: StripePriceId,
-    metadata: StripeCatalogIdentityMetadata,
-    context?: StripeCatalogMutationContext,
-  ): Promise<StripeCatalogPrice>;
   updateProductProjection(
     productId: string,
     input: StripeCatalogProductProjectionUpdateInput,

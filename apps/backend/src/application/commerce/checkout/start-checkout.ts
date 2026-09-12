@@ -169,7 +169,7 @@ export async function startCheckout(
     }
 
     const catalogResult = await catalogReconciler.reconcileVariant(storeItem, {
-      apply: false,
+      apply: true,
       applyProductProjection: false,
       productProjection,
     });

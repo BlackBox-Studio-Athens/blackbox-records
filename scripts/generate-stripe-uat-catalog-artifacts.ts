@@ -9,15 +9,9 @@ import { loadStripeCatalogStoreItemContracts, type StripeCatalogStoreItemContrac
 
 type GenerateMode = 'check' | 'write';
 
-const projectionPath = path.join(
+const manifestPath = path.join(
   process.cwd(),
-  'apps',
-  'backend',
-  'src',
-  'application',
-  'commerce',
-  'catalog-sync',
-  'catalog-product-projections.ts',
+  'apps/backend/src/application/commerce/catalog-sync/catalog-manifest.generated.ts',
 );
 const sandboxUatSeedPath = path.join(process.cwd(), 'apps', 'backend', 'prisma', 'seeds', 'uat-commerce-state.sql');
 const productionReadinessSeedPath = path.join(
@@ -28,17 +22,6 @@ const productionReadinessSeedPath = path.join(
   'seeds',
   'prd-commerce-readiness.sql',
 );
-const desiredCatalogStatePath = path.join(
-  process.cwd(),
-  'apps',
-  'backend',
-  'src',
-  'application',
-  'commerce',
-  'catalog-sync',
-  'desired-catalog-state.ts',
-);
-
 export function createSandboxUatCatalogStock(_contract: Pick<StripeCatalogStoreItemContract, 'storeItemSlug'>): {
   onlineQuantity: number;
   quantity: number;
@@ -49,123 +32,20 @@ export function createSandboxUatCatalogStock(_contract: Pick<StripeCatalogStoreI
   };
 }
 
-export function createCatalogProductProjectionSource(contracts: StripeCatalogStoreItemContract[]): string {
-  const entries = contracts.map((contract) => ({
-    alignmentStatus: contract.alignmentStatus,
-    expectedSandboxPrice: contract.expectedSandboxPrice,
-    productProjection: contract.productProjection,
-    sourceId: contract.sourceId,
-    sourceKind: contract.sourceKind,
-    storeItemSlug: contract.storeItemSlug,
-    variantId: contract.variantId,
-  }));
-
-  return `${[
-    "import type { StoreItemOptionRecord } from '../../../domain/commerce/repositories/spi';",
-    "import type { StripeCatalogEnvironment, StripeCatalogExpectedPrice, StripeCatalogProductProjection } from './types';",
-    '',
-    "export type CatalogProductProjectionAlignmentStatus = 'checkout_eligible' | 'future_buyable' | 'unavailable';",
-    '',
-    'export type CatalogProductProjectionEntry = {',
-    '  alignmentStatus: CatalogProductProjectionAlignmentStatus;',
-    '  expectedSandboxPrice: StripeCatalogExpectedPrice | null;',
-    '  productProjection: StripeCatalogProductProjection;',
-    '  sourceId: string;',
-    "  sourceKind: StoreItemOptionRecord['sourceKind'];",
-    '  storeItemSlug: string;',
-    '  variantId: string;',
-    '};',
-    '',
-    'export type CatalogProductProjectionReader = {',
-    '  findByStoreItem(storeItem: StoreItemOptionRecord): StripeCatalogProductProjection | null;',
-    '};',
-    '',
-    'export const currentCatalogProductProjectionEntries: CatalogProductProjectionEntry[] = ',
-    `${JSON.stringify(entries, null, 2)};`,
-    '',
-    'export function createCurrentCatalogProductProjectionReader(): CatalogProductProjectionReader {',
-    '  return {',
-    '    findByStoreItem: findCurrentCatalogProductProjection,',
-    '  };',
-    '}',
-    '',
-    'export function findCurrentCatalogProductProjection(',
-    '  storeItem: StoreItemOptionRecord,',
-    '): StripeCatalogProductProjection | null {',
-    '  return findCurrentCatalogProductProjectionEntry(storeItem)?.productProjection ?? null;',
-    '}',
-    '',
-    'export function findCurrentCatalogProductProjectionEntry(',
-    '  storeItem: StoreItemOptionRecord,',
-    '): CatalogProductProjectionEntry | null {',
-    '  return (',
-    '    currentCatalogProductProjectionEntries.find(',
-    '      (entry) =>',
-    '        entry.storeItemSlug === storeItem.storeItemSlug &&',
-    '        entry.variantId === storeItem.variantId &&',
-    '        entry.sourceKind === storeItem.sourceKind &&',
-    '        entry.sourceId === storeItem.sourceId,',
-    '    ) ?? null',
-    '  );',
-    '}',
-    '',
-    'export function createCurrentCatalogExpectedProductProjectionMap(): Map<string, StripeCatalogProductProjection> {',
-    '  return new Map(currentCatalogProductProjectionEntries.map((entry) => [entry.variantId, entry.productProjection]));',
-    '}',
-    '',
-    'export function createCurrentCatalogExpectedSandboxPriceMap(',
-    '  environment: StripeCatalogEnvironment,',
-    '): Map<string, StripeCatalogExpectedPrice> {',
-    "  if (environment !== 'uat') {",
-    '    return new Map();',
-    '  }',
-    '',
-    '  return new Map(',
-    '    currentCatalogProductProjectionEntries.flatMap((entry) =>',
-    '      entry.expectedSandboxPrice ? [[entry.variantId, entry.expectedSandboxPrice] as const] : [],',
-    '    ),',
-    '  );',
-    '}',
-    '',
-  ].join('\n')}`;
-}
-
-export function createDesiredCatalogStateSource(contracts: StripeCatalogStoreItemContract[]): string {
-  const entries = contracts.map((contract) => contract.desiredCatalogEntry);
-  const revision = createDesiredCatalogStateRevision(contracts);
-
-  return `${[
-    "import type { DesiredCatalogEntry, DesiredCatalogEnvironment, DesiredCatalogState, DesiredPrice } from './types';",
-    '',
-    'export type { DesiredCatalogEntry, DesiredCatalogEnvironment, DesiredCatalogState, DesiredPrice };',
-    '',
-    'export const currentDesiredCatalogEntries: DesiredCatalogEntry[] = ',
-    `${JSON.stringify(entries, null, 2)};`,
-    '',
-    'export const currentDesiredCatalogState: DesiredCatalogState = {',
-    `  revision: ${JSON.stringify(revision)},`,
-    '  entries: currentDesiredCatalogEntries,',
-    '};',
-    '',
-    'export function createCurrentDesiredCatalogEntriesForEnvironment(',
-    '  environment: DesiredCatalogEnvironment,',
-    '): DesiredCatalogEntry[] {',
-    '  return currentDesiredCatalogEntries.filter((entry) => entry.targetEnvironments.includes(environment));',
-    '}',
-    '',
-    'export function createCurrentDesiredPriceMap(environment: DesiredCatalogEnvironment): Map<string, DesiredPrice> {',
-    '  return new Map(',
-    '    createCurrentDesiredCatalogEntriesForEnvironment(environment).flatMap((entry) =>',
-    '      entry.desiredPrice ? [[entry.variantId, entry.desiredPrice] as const] : [],',
-    '    ),',
-    '  );',
-    '}',
-    '',
-    'export function findCurrentDesiredCatalogEntry(variantId: string): DesiredCatalogEntry | null {',
-    '  return currentDesiredCatalogEntries.find((entry) => entry.variantId === variantId) ?? null;',
-    '}',
-    '',
-  ].join('\n')}`;
+export function createCatalogManifestSource(contracts: StripeCatalogStoreItemContract[]): string {
+  const manifest = {
+    revision: createDesiredCatalogStateRevision(contracts),
+    entries: contracts.map((contract) => ({
+      ...contract.desiredCatalogEntry,
+      alignmentStatus: contract.alignmentStatus,
+    })),
+  };
+  return (
+    "import type { DesiredCatalogEntry } from './types';\n" +
+    "export const catalogManifest: { revision: string; entries: Array<DesiredCatalogEntry & { alignmentStatus: 'checkout_eligible' | 'future_buyable' | 'unavailable' }> } = " +
+    JSON.stringify(manifest, null, 2) +
+    ';\n'
+  );
 }
 
 export function createSandboxUatCommerceSql(contracts: StripeCatalogStoreItemContract[]): string {
@@ -176,7 +56,6 @@ export function createSandboxUatCommerceSql(contracts: StripeCatalogStoreItemCon
   return [
     '-- Sandbox-only UAT commerce readiness seed generated from Astro store content.',
     '-- This file contains no Stripe IDs or secrets; Price mappings and Store Offer snapshots are owned by catalog apply.',
-    createStaleIdentityCleanupSql(),
     createStoreItemOptionSql(contracts),
     createItemAvailabilitySql(contracts),
     createStockSql(contracts),
@@ -203,22 +82,13 @@ async function run(mode: GenerateMode): Promise<void> {
   const contracts = await loadStripeCatalogStoreItemContracts();
   const generated = [
     {
-      content: await format(createDesiredCatalogStateSource(contracts), {
+      content: await format(createCatalogManifestSource(contracts), {
         parser: 'typescript',
         printWidth: 120,
         singleQuote: true,
       }),
-      label: 'Desired Catalog State',
-      path: desiredCatalogStatePath,
-    },
-    {
-      content: await format(createCatalogProductProjectionSource(contracts), {
-        parser: 'typescript',
-        printWidth: 120,
-        singleQuote: true,
-      }),
-      label: 'catalog Product Projection manifest',
-      path: projectionPath,
+      label: 'catalog build manifest',
+      path: manifestPath,
     },
     {
       content: createSandboxUatCommerceSql(contracts),
@@ -269,83 +139,6 @@ function createDesiredCatalogStateRevision(contracts: StripeCatalogStoreItemCont
   }
 
   return `desired-catalog-${hash.toString(16).padStart(8, '0')}`;
-}
-
-function createStaleIdentityCleanupSql(): string {
-  const staleBarrenPointVariantPredicate = createStaleCurrentVariantPredicate({
-    sourceId: 'barren-point',
-    sourceKind: 'distro',
-    storeItemSlug: 'barren-point',
-    variantId: 'variant_barren-point_standard',
-  });
-  const staleDisintegrationVariantPredicate = createStaleCurrentVariantPredicate({
-    sourceId: 'disintegration',
-    sourceKind: 'release',
-    storeItemSlug: 'disintegration-black-vinyl-lp',
-    variantId: 'variant_disintegration-black-vinyl-lp_standard',
-  });
-
-  return [
-    '-- Cleanup for renamed sandbox-only identities from the pre-decoupling Barren Point / Disintegration catalog.',
-    'UPDATE "StoreItemOption"',
-    'SET "id" = \'store_item_option_disintegration_black_vinyl_lp\',',
-    '    "sourceKind" = \'release\',',
-    '    "sourceId" = \'disintegration\',',
-    '    "variantId" = \'variant_disintegration-black-vinyl-lp_standard\',',
-    '    "updatedAt" = CURRENT_TIMESTAMP',
-    'WHERE "storeItemSlug" = \'disintegration-black-vinyl-lp\'',
-    '  AND "variantId" = \'variant_barren-point_standard\';',
-    '',
-    'DELETE FROM "StoreOfferSnapshot"',
-    'WHERE "storeItemSlug" = \'mass-culture-lp\'',
-    '   OR "variantId" = \'variant_mass-culture-lp_standard\'',
-    ...formatOrPredicates([staleBarrenPointVariantPredicate, staleDisintegrationVariantPredicate]),
-    ';',
-    '',
-    'DELETE FROM "VariantStripeMapping"',
-    'WHERE "variantId" = \'variant_mass-culture-lp_standard\'',
-    ...formatOrPredicates([staleBarrenPointVariantPredicate, staleDisintegrationVariantPredicate]),
-    ';',
-    '',
-    'DELETE FROM "Stock"',
-    'WHERE "variantId" = \'variant_mass-culture-lp_standard\'',
-    ...formatOrPredicates([staleBarrenPointVariantPredicate, staleDisintegrationVariantPredicate]),
-    ';',
-    '',
-    'DELETE FROM "ItemAvailability"',
-    'WHERE "variantId" = \'variant_mass-culture-lp_standard\'',
-    ...formatOrPredicates([staleBarrenPointVariantPredicate, staleDisintegrationVariantPredicate]),
-    ';',
-    '',
-    'DELETE FROM "StoreItemOption"',
-    'WHERE "storeItemSlug" = \'mass-culture-lp\'',
-    '   OR "variantId" = \'variant_mass-culture-lp_standard\';',
-  ].join('\n');
-}
-
-function createStaleCurrentVariantPredicate(input: {
-  sourceId: string;
-  sourceKind: StripeCatalogStoreItemContract['sourceKind'];
-  storeItemSlug: string;
-  variantId: string;
-}): string[] {
-  return [
-    '(',
-    `       "variantId" = ${formatSqlValue(input.variantId)}`,
-    '       AND NOT EXISTS (',
-    '           SELECT 1',
-    '           FROM "StoreItemOption" current_store_item',
-    `           WHERE current_store_item."variantId" = ${formatSqlValue(input.variantId)}`,
-    `             AND current_store_item."storeItemSlug" = ${formatSqlValue(input.storeItemSlug)}`,
-    `             AND current_store_item."sourceKind" = ${formatSqlValue(input.sourceKind)}`,
-    `             AND current_store_item."sourceId" = ${formatSqlValue(input.sourceId)}`,
-    '       )',
-    ')',
-  ];
-}
-
-function formatOrPredicates(predicates: string[][]): string[] {
-  return predicates.flatMap((predicate) => predicate.map((line, index) => (index === 0 ? `   OR ${line}` : line)));
 }
 
 function createStoreItemOptionSql(contracts: StripeCatalogStoreItemContract[]): string {
@@ -410,10 +203,7 @@ function createItemAvailabilitySql(contracts: StripeCatalogStoreItemContract[]):
         ]),
       )
       .join(',\n'),
-    'ON CONFLICT("variantId") DO UPDATE SET',
-    '    "status" = excluded."status",',
-    '    "canBuy" = excluded."canBuy",',
-    '    "updatedAt" = CURRENT_TIMESTAMP;',
+    'ON CONFLICT("variantId") DO NOTHING;',
   ].join('\n');
 }
 
@@ -442,10 +232,7 @@ function createProductionItemAvailabilitySql(contracts: StripeCatalogStoreItemCo
         ]),
       )
       .join(',\n'),
-    'ON CONFLICT("variantId") DO UPDATE SET',
-    '    "status" = excluded."status",',
-    '    "canBuy" = excluded."canBuy",',
-    '    "updatedAt" = CURRENT_TIMESTAMP;',
+    'ON CONFLICT("variantId") DO NOTHING;',
   ].join('\n');
 }
 
@@ -473,11 +260,7 @@ function createStockSql(contracts: StripeCatalogStoreItemContract[]): string {
         ]);
       })
       .join(',\n'),
-    'ON CONFLICT("variantId") DO UPDATE SET',
-    '    "quantity" = excluded."quantity",',
-    '    "onlineQuantity" = excluded."onlineQuantity",',
-    '    "revision" = "Stock"."revision" + 1,',
-    '    "updatedAt" = CURRENT_TIMESTAMP;',
+    'ON CONFLICT("variantId") DO NOTHING;',
   ].join('\n');
 }
 

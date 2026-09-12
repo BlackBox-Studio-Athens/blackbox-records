@@ -94,6 +94,7 @@ export const VariantStripeMappingScalarFieldEnum = {
   id: 'id',
   variantId: 'variantId',
   stripePriceId: 'stripePriceId',
+  stripeProductId: 'stripeProductId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

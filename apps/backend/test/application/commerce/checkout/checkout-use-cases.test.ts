@@ -587,7 +587,7 @@ describe('checkout use cases', () => {
     );
   });
 
-  it('can read Store Offer price without applying catalog mutations', async () => {
+  it('can read Store Offer price while refreshing D1 catalog state', async () => {
     await expect(
       readStoreOffer(
         storeItems,
@@ -604,7 +604,7 @@ describe('checkout use cases', () => {
       }),
     );
 
-    expect(catalogReconciler.calls[0]?.options.apply).toBe(false);
+    expect(catalogReconciler.calls[0]?.options.apply).toBe(true);
     expect(catalogReconciler.calls[0]?.options.applyProductProjection).toBe(false);
   });
 
@@ -693,7 +693,7 @@ describe('checkout use cases', () => {
     });
   });
 
-  it('can start checkout without applying catalog mutations', async () => {
+  it('can start checkout while refreshing D1 catalog state', async () => {
     await expect(
       startCheckout(
         storeItems,
@@ -716,7 +716,7 @@ describe('checkout use cases', () => {
       checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
     });
 
-    expect(catalogReconciler.calls[0]?.options.apply).toBe(false);
+    expect(catalogReconciler.calls[0]?.options.apply).toBe(true);
   });
 
   it('rejects disabled native checkout before Stripe or order writes', async () => {

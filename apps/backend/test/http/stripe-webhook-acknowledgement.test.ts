@@ -21,8 +21,7 @@ function createServices(): StripeWebhookAcknowledgementServices {
   return {
     applyNonPaidCheckoutReconciliation: vi.fn(),
     applyPaidCheckoutReconciliation: vi.fn(),
-    catalogEnvironment: 'uat',
-    findStoreItemByVariantId: vi.fn(async () => storeItem),
+    findStoreItemByStripeProductId: vi.fn(async () => storeItem),
     markCatalogEventFailed: vi.fn(async () => undefined),
     markCatalogEventSucceeded: vi.fn(async () => undefined),
     publishCheckoutOrderPaid: vi.fn(),
@@ -130,380 +129,79 @@ describe('Stripe webhook acknowledgement checkout events', () => {
   });
 });
 
+function catalogEvent(kind: 'price' | 'product' = 'price'): VerifiedStripeWebhookEvent {
+  return {
+    id: 'evt_catalog',
+    created: 1790000000,
+    isAllowed: true,
+    type: kind === 'price' ? 'price.updated' : 'product.updated',
+    catalogObject:
+      kind === 'price'
+        ? { id: 'price_test', object: kind, product: 'prod_test', metadata: {}, lookup_key: null }
+        : { id: 'prod_test', object: kind, metadata: {} },
+  } as VerifiedStripeWebhookEvent;
+}
+
 describe('Stripe webhook acknowledgement catalog events', () => {
-  it('reconciles Product catalog events by app-owned variant metadata', async () => {
+  it.each(['price', 'product'] as const)(
+    'refreshes only the bound item for %s events without requiring payload metadata',
+    async (kind) => {
+      const services = createServices();
+      await expect(acknowledgeVerifiedStripeWebhookEvent(catalogEvent(kind), services)).resolves.toEqual({
+        received: true,
+      });
+      expect(services.findStoreItemByStripeProductId).toHaveBeenCalledWith('prod_test');
+      expect(services.reconcileCatalogVariant).toHaveBeenCalledWith(storeItem);
+      expect(services.markCatalogEventSucceeded).toHaveBeenCalledWith('evt_catalog');
+    },
+  );
+
+  it('ignores unbound Products even when payload metadata claims a local identity', async () => {
     const services = createServices();
-    const event: VerifiedStripeWebhookEvent = {
-      catalogObject: {
-        id: 'prod_test_123',
-        metadata: {
-          appEnv: 'uat',
-          sourceId: 'disintegration',
-          sourceKind: 'release',
-          storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_disintegration-black-vinyl-lp_standard',
-        },
-        object: 'product',
-      },
-      created: 1_790_000_000,
-      id: 'evt_catalog_product',
-      isAllowed: true,
-      type: 'product.updated',
-    } as unknown as VerifiedStripeWebhookEvent;
-
-    await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).resolves.toEqual({ received: true });
-    expect(services.recordCatalogWebhookEvent).toHaveBeenCalledWith({
-      catalogObjectId: 'prod_test_123',
-      catalogObjectKind: 'product',
-      eventId: 'evt_catalog_product',
-      eventType: 'product.updated',
-      stripeCreatedAt: new Date(1_790_000_000 * 1000),
-      variantId: 'variant_disintegration-black-vinyl-lp_standard',
-    });
-    expect(services.findStoreItemByVariantId).toHaveBeenCalledWith('variant_disintegration-black-vinyl-lp_standard');
-    expect(services.reconcileCatalogVariant).toHaveBeenCalledWith(storeItem);
-    expect(services.markCatalogEventSucceeded).toHaveBeenCalledWith('evt_catalog_product');
-  });
-
-  it('reconciles Price catalog events by deterministic lookup key when metadata is absent', async () => {
-    const services = createServices();
-    const event: VerifiedStripeWebhookEvent = {
-      catalogObject: {
-        id: 'price_test_123',
-        lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
-        metadata: {},
-        object: 'price',
-      },
-      created: 1_790_000_000,
-      id: 'evt_catalog_price',
-      isAllowed: true,
-      type: 'price.updated',
-    } as unknown as VerifiedStripeWebhookEvent;
-
-    await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).resolves.toEqual({ received: true });
-    expect(services.findStoreItemByVariantId).toHaveBeenCalledWith('variant_disintegration-black-vinyl-lp_standard');
-    expect(services.reconcileCatalogVariant).toHaveBeenCalledWith(storeItem);
-    expect(services.markCatalogEventSucceeded).toHaveBeenCalledWith('evt_catalog_price');
-  });
-
-  it('acknowledges conflicting catalog identity without reconciliation', async () => {
-    const services = createServices();
-    const event: VerifiedStripeWebhookEvent = {
-      catalogObject: {
-        id: 'price_test_conflicting_identity',
-        lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
-        metadata: {
-          appEnv: 'uat',
-          sourceId: 'disintegration',
-          sourceKind: 'release',
-          storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_other_standard',
-        },
-        object: 'price',
-      },
-      created: 1_790_000_000,
-      id: 'evt_catalog_conflicting_identity',
-      isAllowed: true,
-      type: 'price.updated',
-    } as unknown as VerifiedStripeWebhookEvent;
-
-    await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).resolves.toEqual({
-      ignored: true,
+    vi.mocked(services.findStoreItemByStripeProductId).mockResolvedValue(null);
+    await expect(acknowledgeVerifiedStripeWebhookEvent(catalogEvent(), services)).resolves.toEqual({
       received: true,
-    });
-    expect(services.findStoreItemByVariantId).not.toHaveBeenCalled();
-    expect(services.reconcileCatalogVariant).not.toHaveBeenCalled();
-    expect(services.markCatalogEventSucceeded).toHaveBeenCalledWith('evt_catalog_conflicting_identity');
-  });
-
-  it('acknowledges BlackBox metadata with an external lookup key as conflicting identity', async () => {
-    const services = createServices();
-    const event: VerifiedStripeWebhookEvent = {
-      catalogObject: {
-        id: 'price_test_external_lookup_conflict',
-        lookup_key: 'external:catalog:price',
-        metadata: {
-          appEnv: 'uat',
-          sourceId: 'disintegration',
-          sourceKind: 'release',
-          storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'variant_disintegration-black-vinyl-lp_standard',
-        },
-        object: 'price',
-      },
-      created: 1_790_000_000,
-      id: 'evt_catalog_external_lookup_conflict',
-      isAllowed: true,
-      type: 'price.updated',
-    } as unknown as VerifiedStripeWebhookEvent;
-
-    await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).resolves.toEqual({
       ignored: true,
-      received: true,
     });
-    expect(services.findStoreItemByVariantId).not.toHaveBeenCalled();
-    expect(services.reconcileCatalogVariant).not.toHaveBeenCalled();
-    expect(services.markCatalogEventSucceeded).toHaveBeenCalledWith('evt_catalog_external_lookup_conflict');
-  });
-
-  it('acknowledges duplicate catalog events without replaying reconciliation', async () => {
-    const services = createServices();
-    vi.mocked(services.recordCatalogWebhookEvent).mockResolvedValueOnce({
-      record: {
-        catalogObjectId: 'price_test_123',
-        catalogObjectKind: 'price' as const,
-        eventId: 'evt_catalog_price',
-        eventType: 'price.updated',
-        processingCompletedAt: new Date('2026-05-24T00:01:00.000Z'),
-        processingFailureReason: null,
-        processingStatus: 'succeeded' as const,
-        processedAt: new Date('2026-05-24T00:00:00.000Z'),
-        stripeCreatedAt: new Date(1_790_000_000 * 1000),
-        variantId: storeItem.variantId,
-      },
-      status: 'duplicate_succeeded' as const,
-    });
-    const event: VerifiedStripeWebhookEvent = {
-      catalogObject: {
-        id: 'price_test_123',
-        lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
-        metadata: {},
-        object: 'price',
-      },
-      created: 1_790_000_000,
-      id: 'evt_catalog_price',
-      isAllowed: true,
-      type: 'price.updated',
-    } as unknown as VerifiedStripeWebhookEvent;
-
-    await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).resolves.toEqual({ received: true });
-    expect(services.findStoreItemByVariantId).not.toHaveBeenCalled();
     expect(services.reconcileCatalogVariant).not.toHaveBeenCalled();
   });
 
-  it('retries duplicate catalog events that previously failed processing', async () => {
+  it('does not repeat successful event mutations', async () => {
     const services = createServices();
-    vi.mocked(services.recordCatalogWebhookEvent).mockResolvedValueOnce({
-      record: {
-        catalogObjectId: 'price_test_123',
-        catalogObjectKind: 'price' as const,
-        eventId: 'evt_catalog_price',
-        eventType: 'price.updated',
-        processingCompletedAt: null,
-        processingFailureReason: 'reconciliation_failed',
-        processingStatus: 'failed' as const,
-        processedAt: new Date('2026-05-24T00:00:00.000Z'),
-        stripeCreatedAt: new Date(1_790_000_000 * 1000),
-        variantId: storeItem.variantId,
-      },
-      status: 'duplicate_retryable' as const,
-    });
-    const event: VerifiedStripeWebhookEvent = {
-      catalogObject: {
-        id: 'price_test_123',
-        lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
-        metadata: {},
-        object: 'price',
-      },
-      created: 1_790_000_000,
-      id: 'evt_catalog_price',
-      isAllowed: true,
-      type: 'price.updated',
-    } as unknown as VerifiedStripeWebhookEvent;
-
-    await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).resolves.toEqual({ received: true });
-    expect(services.reconcileCatalogVariant).toHaveBeenCalledWith(storeItem);
-    expect(services.markCatalogEventSucceeded).toHaveBeenCalledWith('evt_catalog_price');
+    const recorded = await services.recordCatalogWebhookEvent({} as never);
+    vi.mocked(services.recordCatalogWebhookEvent).mockResolvedValue({ ...recorded, status: 'duplicate_succeeded' });
+    await acknowledgeVerifiedStripeWebhookEvent(catalogEvent(), services);
+    expect(services.reconcileCatalogVariant).not.toHaveBeenCalled();
   });
 
-  it('reconciles out-of-order catalog events from current Store Item state instead of event payload state', async () => {
+  it('keeps failed refreshes retryable and completes a successful retry', async () => {
     const services = createServices();
-    const event: VerifiedStripeWebhookEvent = {
-      catalogObject: {
-        active: false,
-        id: 'price_test_old_payload',
-        lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
-        metadata: {},
-        object: 'price',
-        unit_amount: 1000,
-      },
-      created: 1_790_000_000,
-      id: 'evt_catalog_price_old_payload',
-      isAllowed: true,
-      type: 'price.updated',
-    } as unknown as VerifiedStripeWebhookEvent;
-
-    await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).resolves.toEqual({ received: true });
-    expect(services.reconcileCatalogVariant).toHaveBeenCalledWith(storeItem);
-    expect(services.reconcileCatalogVariant).toHaveBeenCalledTimes(1);
-    expect(services.markCatalogEventSucceeded).toHaveBeenCalledWith('evt_catalog_price_old_payload');
+    vi.mocked(services.reconcileCatalogVariant).mockRejectedValueOnce(new Error('Stripe unavailable'));
+    await expect(acknowledgeVerifiedStripeWebhookEvent(catalogEvent(), services)).rejects.toThrow('Stripe unavailable');
+    expect(services.markCatalogEventFailed).toHaveBeenCalledWith('evt_catalog', 'reconciliation_failed');
+    expect(services.markCatalogEventSucceeded).not.toHaveBeenCalled();
+    await acknowledgeVerifiedStripeWebhookEvent(catalogEvent(), services);
+    expect(services.markCatalogEventSucceeded).toHaveBeenCalledWith('evt_catalog');
   });
 
-  it('records blocking catalog drift without logging false reconciliation success', async () => {
-    const logger = {
-      info: vi.fn(),
-      warn: vi.fn(),
-    };
-    const services = {
-      ...createServices(),
-      logger,
-    };
-    vi.mocked(services.reconcileCatalogVariant).mockResolvedValueOnce(
+  it('acknowledges persistent catalog drift without enabling checkout', async () => {
+    const services = createServices();
+    vi.mocked(services.reconcileCatalogVariant).mockResolvedValue(
       createCatalogResult([
         {
-          code: 'ambiguous_active_price',
-          detail: 'Multiple active Prices match the variant.',
+          code: 'missing_price',
+          detail: 'Missing default',
           driftCategory: 'price_authority',
           storeItemSlug: storeItem.storeItemSlug,
           variantId: storeItem.variantId,
         },
       ]),
     );
-    const event: VerifiedStripeWebhookEvent = {
-      catalogObject: {
-        id: 'price_test_ambiguous',
-        lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
-        metadata: {},
-        object: 'price',
-      },
-      created: 1_790_000_000,
-      id: 'evt_catalog_ambiguous',
-      isAllowed: true,
-      type: 'price.updated',
-    } as unknown as VerifiedStripeWebhookEvent;
-
-    await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).resolves.toEqual({
+    await expect(acknowledgeVerifiedStripeWebhookEvent(catalogEvent(), services)).resolves.toEqual({
+      received: true,
       ignored: true,
-      received: true,
     });
-    expect(services.markCatalogEventSucceeded).toHaveBeenCalledWith('evt_catalog_ambiguous');
-    expect(services.markCatalogEventFailed).not.toHaveBeenCalled();
-    expect(logger.info).toHaveBeenCalledWith(
-      expect.objectContaining({
-        outcome: 'catalog_drift',
-        retryable: false,
-        safeReason: 'ambiguous_active_price',
-      }),
-    );
-    expect(logger.info).not.toHaveBeenCalledWith(expect.objectContaining({ outcome: 'catalog_reconciled' }));
-  });
-
-  it('acknowledges deleted catalog events without reconciliation when no variant can be read', async () => {
-    const services = createServices();
-    const event: VerifiedStripeWebhookEvent = {
-      catalogObject: {
-        deleted: true,
-        id: 'price_test_123',
-        object: 'price',
-      },
-      created: 1_790_000_000,
-      id: 'evt_catalog_deleted',
-      isAllowed: true,
-      type: 'price.deleted',
-    } as unknown as VerifiedStripeWebhookEvent;
-
-    await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).resolves.toEqual({
-      ignored: true,
-      received: true,
-    });
-    expect(services.findStoreItemByVariantId).not.toHaveBeenCalled();
-    expect(services.reconcileCatalogVariant).not.toHaveBeenCalled();
-    expect(services.markCatalogEventSucceeded).toHaveBeenCalledWith('evt_catalog_deleted');
-  });
-
-  it('acknowledges malformed catalog identity without reconciliation', async () => {
-    const services = createServices();
-    const event: VerifiedStripeWebhookEvent = {
-      catalogObject: {
-        id: 'price_test_123',
-        lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:not-a-variant',
-        metadata: {},
-        object: 'price',
-      },
-      created: 1_790_000_000,
-      id: 'evt_catalog_malformed',
-      isAllowed: true,
-      type: 'price.updated',
-    } as unknown as VerifiedStripeWebhookEvent;
-
-    await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).resolves.toEqual({
-      ignored: true,
-      received: true,
-    });
-    expect(services.findStoreItemByVariantId).not.toHaveBeenCalled();
-    expect(services.reconcileCatalogVariant).not.toHaveBeenCalled();
-    expect(services.markCatalogEventSucceeded).toHaveBeenCalledWith('evt_catalog_malformed');
-  });
-
-  it('ignores catalog events from another Product Environment without D1 mutation', async () => {
-    const services = createServices();
-    const event: VerifiedStripeWebhookEvent = {
-      catalogObject: {
-        id: 'price_test_123',
-        lookup_key: 'blackbox:prd:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
-        metadata: {},
-        object: 'price',
-      },
-      created: 1_790_000_000,
-      id: 'evt_catalog_foreign',
-      isAllowed: true,
-      type: 'price.updated',
-    } as unknown as VerifiedStripeWebhookEvent;
-
-    await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).resolves.toEqual({
-      ignored: true,
-      received: true,
-    });
-    expect(services.findStoreItemByVariantId).not.toHaveBeenCalled();
-    expect(services.reconcileCatalogVariant).not.toHaveBeenCalled();
-    expect(services.markCatalogEventSucceeded).toHaveBeenCalledWith('evt_catalog_foreign');
-  });
-
-  it('leaves catalog events retryable when reconciliation fails', async () => {
-    const services = createServices();
-    vi.mocked(services.reconcileCatalogVariant).mockRejectedValueOnce(new Error('Stripe unavailable'));
-    const event: VerifiedStripeWebhookEvent = {
-      catalogObject: {
-        id: 'price_test_123',
-        lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
-        metadata: {},
-        object: 'price',
-      },
-      created: 1_790_000_000,
-      id: 'evt_catalog_retryable',
-      isAllowed: true,
-      type: 'price.updated',
-    } as unknown as VerifiedStripeWebhookEvent;
-
-    await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).rejects.toThrow('Stripe unavailable');
-    expect(services.markCatalogEventFailed).toHaveBeenCalledWith('evt_catalog_retryable', 'reconciliation_failed');
-    expect(services.markCatalogEventSucceeded).not.toHaveBeenCalled();
-  });
-
-  it('processes PRD catalog webhooks without enabling shopper checkout', async () => {
-    const services = {
-      ...createServices(),
-      catalogEnvironment: 'prd' as const,
-    };
-    const event: VerifiedStripeWebhookEvent = {
-      catalogObject: {
-        id: 'price_live_123',
-        lookup_key: 'blackbox:prd:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
-        metadata: {},
-        object: 'price',
-      },
-      created: 1_790_000_000,
-      id: 'evt_catalog_prd_readiness',
-      isAllowed: true,
-      type: 'price.updated',
-    } as unknown as VerifiedStripeWebhookEvent;
-
-    await expect(acknowledgeVerifiedStripeWebhookEvent(event, services)).resolves.toEqual({
-      received: true,
-    });
-    expect(services.recordCatalogWebhookEvent).toHaveBeenCalledOnce();
-    expect(services.findStoreItemByVariantId).toHaveBeenCalledWith(storeItem.variantId);
-    expect(services.reconcileCatalogVariant).toHaveBeenCalledWith(storeItem);
+    expect(services.applyPaidCheckoutReconciliation).not.toHaveBeenCalled();
   });
 });
 

@@ -54,6 +54,7 @@ model VariantStripeMapping {
   id            String   @id @default(cuid())
   variantId     String   @unique
   stripePriceId String
+  stripeProductId String? @unique
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

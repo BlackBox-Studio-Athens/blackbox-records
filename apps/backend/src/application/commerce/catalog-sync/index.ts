@@ -59,3 +59,4 @@ export type {
   StripeCatalogProductProjection,
   StripeCatalogProductProjectionUpdateInput,
 } from './types';
+export { catalogManifest } from './catalog-manifest.generated';

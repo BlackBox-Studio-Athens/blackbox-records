@@ -6,7 +6,6 @@ import {
   createStripeCatalogLookupKey,
   createStripeCatalogMetadata,
   type CatalogSyncRunResult,
-  type StripeCatalogGateway,
   type StripeCatalogPrice,
 } from '../../src/application/commerce/catalog-sync';
 import { createStripeCatalogGateway } from '../../src/infrastructure/stripe';
@@ -195,6 +194,7 @@ describe('stripe catalog verify script helpers', () => {
       productTaxCode: 'txcd_99999999',
     };
     const stripeCatalog = {
+      retrieveDefaultPrice: vi.fn().mockResolvedValue(wrongAmountPrice),
       archivePrice: vi.fn(),
       createCatalogPrice: vi.fn(),
       listOwnedPrices: vi.fn().mockResolvedValue([]),
@@ -205,7 +205,7 @@ describe('stripe catalog verify script helpers', () => {
       retrievePrice: vi.fn().mockResolvedValue(null),
       updatePriceMetadata: vi.fn(),
       updateProductProjection: vi.fn(),
-    } satisfies StripeCatalogGateway;
+    };
 
     process.env.STRIPE_SECRET_KEY = 'sk_test_script_dry_run';
     createStripeCatalogGatewayMock.mockReturnValue(stripeCatalog);
@@ -223,7 +223,8 @@ describe('stripe catalog verify script helpers', () => {
               amountMinor: null,
               currencyCode: null,
               freshUntil: null,
-              mappingStripePriceId: null,
+              mappingStripePriceId: wrongAmountPrice.priceId,
+              mappingStripeProductId: wrongAmountPrice.productId,
               priceActive: null,
               productActive: null,
               snapshotStripePriceId: null,

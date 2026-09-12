@@ -70,4 +70,6 @@ if (remaining.length > 0) {
   process.exit(1);
 }
 
+const catalogStatus = run(pnpmCommand, ['stripe:catalog:artifacts:generate']);
+if (catalogStatus !== 0) process.exit(catalogStatus);
 process.exit(run(pnpmCommand, ['exec', 'tsx', 'scripts/start-local-stack.ts', mode]));

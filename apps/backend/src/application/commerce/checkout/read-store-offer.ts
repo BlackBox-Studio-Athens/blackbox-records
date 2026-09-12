@@ -103,7 +103,7 @@ export async function readStoreOffer(
   }
 
   const catalogResult = await catalogReconciler.reconcileVariant(storeItem, {
-    apply: false,
+    apply: true,
     applyProductProjection: false,
     productProjection,
   });

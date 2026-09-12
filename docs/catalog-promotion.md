@@ -1,114 +1,46 @@
-# Generated Catalog Artifacts
+# Catalog release
 
-Generated catalog artifacts are the repo-owned path for projecting current Store Item content into UAT provider state. Sveltia is editorial-only: it does not expose commerce fields, publish targets, smoke candidate flags, retirement controls, Stripe IDs, D1 authority, or provider mutation controls.
+The operating model is:
 
-## Maintainer Statuses
+- Sveltia/repository: titles, descriptions, artwork, and Store Item identities.
+- Stripe Dashboard: selling prices. Each variant has one Product; its **default Price** is the selling price.
+- BlackBox stock operations: stock and intentional checkout pauses. D1 owns orders and reservations.
 
-- Published content: the Astro content entry exists and can render on the static site. This does not mean checkout is enabled.
-- UAT buyable: generated Desired Catalog State includes the Store Item for UAT, UAT D1 readiness has been applied through the UAT Worker runtime target, Stripe test-mode catalog verification passes, and post-merge UAT smoke evidence exists.
-- PRD buyable: requires confirmed live catalog preparation plus separate final launch approval and runtime checkout enablement. Catalog preparation alone never makes an item shopper-buyable.
-- Promotion failed: content may still be visible, but checkout must be treated as not promoted until the Promotion Evidence failure category is fixed and rerun.
+## Publishing
 
-## Editorial Fields
+Push content or code to main. The **Release BlackBox** workflow in `.github/workflows/pages.yml` generates one catalog manifest, runs tests/checks/builds, synchronizes release items, deploys the UAT Worker and selected static hosts, then runs UAT smoke tests. Every stage uses the same full source SHA. Generated catalogs and SQL are build inputs, not bot commits.
 
-Release and distro entries carry editorial Store Item content only:
+One shared release lock prevents overlapping stateful runs. An invalid release item stops deployment. Zero stock or a D1 checkout pause does not invalidate an otherwise configured catalog. Unrelated Stripe objects are ignored; a conflicting bound Product is rejected.
 
-- releases: title, artist, release date, cover image, summary, formats, embeds, credits, and optional direct merch URL.
-- distro: title, group, artist or label, image, summary, eyebrow, format, release date, and order.
-- generated catalog policy: every current visible Store Item generates a UAT Desired Catalog Entry by default.
-- Generated Desired Price derives from format or option labels only to create a new item's initial Price Authority: cassette/tape `1200 EUR`, T-shirt/tee `2000 EUR`, and other physical goods `2800 EUR`. Normal promotion never replaces one valid active Stripe Price because this generated value differs.
-- default Stripe Tax code for generated physical goods remains `txcd_99999999`.
-- smoke selection uses the first published entry for the target environment.
+## Changing a price
 
-## Release Checklist
+Open the existing Stripe Product, add an EUR Price with inclusive tax, and choose **Set as default price**. Older Prices can remain active. Leave app identifiers and Product presentation alone.
 
-1. Create or update the release entry in Sveltia with title, artist, release date, cover image, summary, and formats.
-2. Publish the Sveltia entry.
-3. Let catalog artifact generation refresh Desired Catalog State and readiness SQL.
-4. Read Promotion Evidence before treating the release as buyable.
+Signed Product/Price events refresh only the bound item. Detail and checkout reads fetch the current default and repair the D1 projection if a webhook was missed. Checkout still uses the validated concrete Price ID.
 
-## Distro and Merch Checklist
+For a targeted check or repair:
 
-1. Create or update the distro entry in Sveltia with title, group, artist or label, image, summary, format, release date when known, and order.
-2. Publish the Sveltia entry.
-3. Let catalog artifact generation refresh Desired Catalog State and readiness SQL.
-4. Use Promotion Evidence, not the content commit alone, to confirm buyable status.
+```sh
+pnpm stripe:catalog:verify --env uat --store-item <store-item-slug>
+pnpm stripe:catalog:verify --env uat --store-item <store-item-slug> --apply
+```
 
-## Automation Shape
+Routine synchronization never resets stock, clears pauses, archives catalog objects, or replaces an existing selling amount. UAT can initialize genuinely new items with explicit test prices. PRD initial prices must already be configured in Stripe.
 
-1. Sveltia commits editorial content or media changes.
-2. `Catalog artifact regeneration` generates Desired Catalog State, Product Projection, UAT readiness SQL, and PRD readiness SQL.
-3. If generated artifacts drift, the workflow commits only those artifacts as `chore(catalog): regenerate promotion artifacts`.
-4. `Catalog promotion` runs from the artifact commit, not the original content-only commit.
-5. UAT runs repository gates, config verification, D1 readiness, Stripe dry-run/apply/post-verify, and Worker deploy. It verifies every generated Store Item has one ready hosted listing-price record, then dispatches the UAT static deployment for the same artifact commit. This is the only UAT Worker deployment path. The separate `workflow_run` smoke workflow observes the deployed system without applying migrations, mutating catalog state, or redeploying the Worker.
-6. PRD starts only after UAT proof for the same artifact commit on the normal `all` target. Live Stripe catalog and PRD D1 changes require the false-by-default `confirm_live_catalog_changes=true` input for that exact run. Without it, the job records `not_configured` evidence and performs no PRD mutation.
-7. PRD smoke is no longer part of catalog promotion. The `pnpm smoke:stripe-promotion -- --env prd --scenario all` script remains available for manual operator runs or a later dedicated workflow.
+## Credentials and PRD
 
-Pushing the repo is not the buyable-status source of truth. Promotion Evidence from the catalog promotion workflow is the source for UAT buyable status. PRD additionally requires separate launch approval and runtime checkout enablement.
+Keep the existing GitHub environments `catalog-promotion-uat` and `catalog-promotion-prd`. Each holds `CLOUDFLARE_API_TOKEN` and `STRIPE_SECRET_KEY`, with `CLOUDFLARE_ACCOUNT_ID` and `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` as variables. Worker runtime secrets remain separate.
 
-## Price Changes and Repair
+Live Stripe/D1 mutation requires the false-by-default `confirm_live_catalog_changes` input for that exact run. It never enables checkout: `PRD_LAUNCH_APPROVED=true` and `native_checkout_enabled` remain separate launch controls. Without live confirmation, the PRD catalog remains unchanged and the disabled frontend can still publish.
 
-Change an existing item's price in Stripe Dashboard by creating the replacement Price under the identified Product and archiving the old Price. The signed Stripe webhook updates only that Store Item's D1 mapping and listing snapshot. If webhook delivery needs repair, run `pnpm stripe:catalog:verify --env uat --store-item <storeItemSlug>` first, then rerun with `--apply`; unrelated Store Items are not inspected or mutated. Full-catalog verification remains a deliberate read-only audit when `--store-item` and `--apply` are omitted.
+## Migration and retry
 
-## Provider Setup
+The additive D1 migration retains existing Price mappings and adds a unique nullable Product binding. Run `pnpm catalog:bindings:migrate --env uat` for a dry run; add `--apply` after reviewing it. PRD apply also requires `--confirm-live-catalog-changes`.
 
-The `Catalog promotion` workflow expects two GitHub Actions credential scopes. The post-merge UAT provider smoke workflow reuses `catalog-promotion-uat`; no new GitHub Actions environment is needed:
+Migration exports affected D1 tables and validates all selected bindings before provider writes. A trusted Price mapping supplies the Product and preserves the current amount. Missing or conflicting mappings/defaults stop the migration. Backups and provider IDs stay in ignored `.codex-artifacts/catalog-migration/` files.
 
-- `catalog-promotion-uat`
-- `catalog-promotion-prd`
+The one-time `recover_reset_uat` release input handles the known reset-damaged UAT catalog. It requires exactly one matching UAT Product per missing binding, selects its existing default or sole existing Price, and restores only those validated objects. It does not delete foreign objects or reset inventory. Leave this input false for ordinary releases.
 
-The `catalog-promotion-uat` environment already carries the UAT Cloudflare and Stripe values used by the smoke runner.
+Rerun **Release BlackBox** with the same full source SHA after fixing a reported problem. Stable Product identities and Product-scoped Price checks allow interrupted new-item creation to resume. Stripe idempotency keys are additional protection, not permanent deduplication.
 
-Each promotion environment needs these non-secret variables:
-
-- `CLOUDFLARE_ACCOUNT_ID`
-- `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`
-
-Each promotion environment needs these secrets:
-
-- `CLOUDFLARE_API_TOKEN`
-- `STRIPE_SECRET_KEY`
-
-The target Worker environment must also have the required Wrangler runtime configuration before promotion runs:
-
-- `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `CHECKOUT_RETURN_ORIGINS`
-- `COMMERCE_DB`
-
-Use `pnpm runtime:config:verify --env uat` and `pnpm runtime:config:verify --env prd` as the non-mutating readiness probes. The disabled PRD probe does not require live Stripe secrets; confirmed PRD catalog runs use `pnpm runtime:config:verify --env prd --require-live-secrets`.
-
-These values must be entered more than once because the stores are intentionally isolated. GitHub Actions secrets are available only to workflow jobs, Cloudflare Worker secrets are available only to the deployed Worker runtime, ignored local files are available only on one developer machine, and Stripe Dashboard/Workbench values remain inside Stripe. The repo validates names and presence, but it must not copy sensitive values between stores, print them, or commit them.
-
-Current manual provider checklist before final proof:
-
-1. Add `CLOUDFLARE_API_TOKEN` and `STRIPE_SECRET_KEY` to both `catalog-promotion-uat` and `catalog-promotion-prd`.
-2. Add `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` to both catalog promotion environments as a variable or secret according to the account policy.
-3. Add PRD Worker secrets for `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` from `apps/backend` with `wrangler secret put --env prd`.
-4. Remove the obsolete production control variable from GitHub and Worker configuration. Do not create a persistent catalog-preparation variable.
-5. For an authorized exact-commit PRD catalog run, select `confirm_live_catalog_changes=true`; direct PRD apply also requires `--confirm-live-catalog-changes`.
-6. Keep `PRD_LAUNCH_APPROVED` absent until final launch approval. Catalog promotion does not deploy the PRD Worker or static frontend and cannot change checkout state.
-
-The current PRD D1 database and Worker shell exist under the `prd` Worker runtime target. If the PRD provider resources are rebuilt from scratch, recreate `blackbox-records-commerce-prd`, update the `COMMERCE_DB` binding in `apps/backend/wrangler.jsonc`, apply D1 migrations, and deploy `blackbox-records-backend-prd` before adding Worker secrets.
-
-## Reruns
-
-Rerun catalog promotion from the artifact commit that contains generated Desired Catalog State, not the original content-only commit. Use the `Catalog promotion` workflow with `artifact_commit_sha` set to that commit and `target` set to `uat`, `prd`, or `all`. PRD reruns should use `all` unless UAT proof for the same artifact commit is already accepted and the rerun is a PRD-only recovery.
-
-## Evidence Examples
-
-- Promotion success: UAT finishes from the artifact commit and a separately confirmed PRD catalog run finishes from the same artifact commit; catalog verification reports no blocking drift. This does not prove shopper launch.
-- Content validation failure: the artifact workflow fails before provider mutation because required Store Item identity, copy, format, or image data cannot be resolved.
-- Provider ambiguity failure: catalog dry-run finds multiple active provider Prices or non-app-owned provider objects for one variant, so apply does not run.
-- PRD disabled: the PRD job records `not_configured` when one-run catalog confirmation is false; this is expected before authorized preparation and does not mutate live providers or PRD catalog read models.
-- PRD smoke failure: provider apply may have succeeded during preparation, but failed live checkout proof keeps the item non-buyable until corrected and re-approved.
-- PRD paid smoke not configured: live checkout surface proof may pass after launch approval, but paid smoke evidence records `not_configured`; this is expected until a live paid smoke policy is approved.
-
-## Rollback and Retirement
-
-Static frontend rollback is enough only for editorial rendering regressions. If checkout must stop, use the D1/operator checkout pause flow or a corrective promotion so D1 availability makes the affected Store Offer non-buyable without deleting Stripe Products, Stripe Prices, orders, stock ledger rows, or evidence.
-
-For an immediate operational pause, run `pnpm catalog:checkout:pause -- --variant-id <variantId>` to preview the D1 availability mutation, then rerun with `--apply` for the target environment. This command updates only `ItemAvailability` to `sold_out` / `canBuy = false`; it does not delete provider catalog objects, order state, stock rows, or Promotion Evidence.
-
-PRD reset does not exist. Sandbox reset remains a separate explicit UAT maintenance command and is not part of normal item promotion.
+The workflow summary records completed stages. Stripe, D1, Workers, and static hosts are separate systems: this is a readiness gate, not an atomic deployment. Preparation is additive; existing frontend artifacts remain until their replacement deploys.

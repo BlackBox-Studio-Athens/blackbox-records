@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 
 import {
   CatalogReconciler,
+  catalogManifest,
   catalogFieldOwnershipMatrix,
   redactStripeObjectId,
   type CatalogDriftCategory,
@@ -37,7 +38,7 @@ import type {
   VariantStripeMappingRepository,
 } from '../apps/backend/src/domain/commerce/repositories/spi';
 import { createStripeCatalogGateway } from '../apps/backend/src/infrastructure/stripe';
-import { loadStripeCatalogStoreItemContracts, type StripeCatalogStoreItemContract } from './stripe-catalog-contract';
+import type { StripeCatalogStoreItemContract } from './stripe-catalog-contract';
 
 type CatalogVerifyOptions = {
   apply: boolean;
@@ -59,6 +60,7 @@ type D1CatalogRow = {
   currencyCode: string | null;
   freshUntil: string | null;
   mappingStripePriceId: string | null;
+  mappingStripeProductId: string | null;
   priceActive: boolean | number | null;
   productActive: boolean | number | null;
   snapshotStripePriceId: string | null;
@@ -207,9 +209,9 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
     assertPrdCatalogApplyConfirmed(options.confirmLiveCatalogChanges);
   }
 
-  const allContracts = await loadStripeCatalogStoreItemContracts({
-    productEnvironment: productEnvironmentProfile.productEnvironment === 'PRD' ? 'PRD' : 'UAT',
-  });
+  const allContracts: StripeCatalogStoreItemContract[] = catalogManifest.entries
+    .filter((entry) => entry.targetEnvironments.includes(options.environment === 'prd' ? 'prd' : 'uat'))
+    .map((entry) => ({ ...entry, desiredCatalogEntry: entry, expectedSandboxPrice: entry.desiredPrice }));
   const contracts = selectStripeCatalogContracts(allContracts, options.storeItemSlug ?? null);
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
 
@@ -225,6 +227,9 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
   });
   const createReconciler = () => {
     const rows = readD1CatalogRows(options.environment, contracts);
+    const missing = contracts.filter((contract) => !rows.some((row) => row.variantId === contract.variantId));
+    if (missing.length)
+      throw new Error(`Missing catalog identities: ${missing.map((item) => item.storeItemSlug).join(', ')}.`);
     const repositories = createD1CatalogRepositories(options.environment, rows);
 
     return new CatalogReconciler({
@@ -240,7 +245,6 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
 
   const result = await reconciler.verifyBuyableCatalog({
     apply: options.apply,
-    auditOwnedObjects: options.storeItemSlug === null,
     expectedPrices,
     expectedProductProjections,
   });
@@ -263,7 +267,6 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
   if (options.apply && appliedActions.length > 0) {
     const postApplyResult = await createReconciler().verifyBuyableCatalog({
       apply: false,
-      auditOwnedObjects: options.storeItemSlug === null,
       expectedPrices: desiredPrices,
       expectedProductProjections,
     });
@@ -534,6 +537,7 @@ function createD1CatalogRepositories(environment: StripeCatalogEnvironment, rows
               row.variantId,
               {
                 stripePriceId: parseStripePriceId(row.mappingStripePriceId),
+                stripeProductId: row.mappingStripeProductId,
                 variantId: parseVariantId(row.variantId),
               },
             ],
@@ -578,18 +582,21 @@ function createD1CatalogRepositories(environment: StripeCatalogEnvironment, rows
     search: async (_query, limit) => storeItemRecords.slice(0, limit),
   };
   const variantStripeMappings: VariantStripeMappingRepository = {
+    findByStripeProductId: async (productId) =>
+      [...mappingRecords.values()].find((record) => record.stripeProductId === productId) ?? null,
     findByVariantId: async (variantId) => mappingRecords.get(variantId) ?? null,
     save: async (record) => {
       mappingRecords.set(record.variantId, record);
       runD1Sql(
         environment,
         [
-          'INSERT INTO VariantStripeMapping (id, variantId, stripePriceId, createdAt, updatedAt)',
+          'INSERT INTO VariantStripeMapping (id, variantId, stripePriceId, stripeProductId, createdAt, updatedAt)',
           `VALUES (${sqlString(`variant_stripe_mapping_${toSqlIdFragment(record.variantId)}`)}, ${sqlString(
             record.variantId,
-          )}, ${sqlString(record.stripePriceId)}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+          )}, ${sqlString(record.stripePriceId)}, ${record.stripeProductId ? sqlString(record.stripeProductId) : 'NULL'}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
           'ON CONFLICT(variantId) DO UPDATE SET',
           '  stripePriceId = excluded.stripePriceId,',
+          '  stripeProductId = excluded.stripeProductId,',
           '  updatedAt = CURRENT_TIMESTAMP;',
         ].join('\n'),
       );
@@ -626,6 +633,7 @@ function readD1CatalogRows(
         '  o.sourceId AS sourceId,',
         '  o.variantId AS variantId,',
         '  m.stripePriceId AS mappingStripePriceId,',
+        '  m.stripeProductId AS mappingStripeProductId,',
         '  s.stripePriceId AS snapshotStripePriceId,',
         '  s.stripeLookupKey AS stripeLookupKey,',
         '  s.amountMinor AS amountMinor,',

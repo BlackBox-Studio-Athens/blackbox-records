@@ -1,26 +1,17 @@
-name: Deploy UAT and PRD static sites
-
+name: Release BlackBox
 on:
   push:
-    branches: ['main']
+    branches:
+      - main
     paths-ignore:
-      - 'docs/**'
-      - 'openspec/**'
-      - 'apps/web/src/content/distro/**'
-      - 'apps/web/src/content/releases/**'
-      - 'apps/web/src/content.config.ts'
-      - 'scripts/stripe-catalog-contract.ts'
-      - 'scripts/generate-stripe-uat-catalog-artifacts.ts'
-      - 'apps/backend/src/application/commerce/catalog-sync/catalog-product-projections.ts'
-      - 'apps/backend/src/application/commerce/catalog-sync/desired-catalog-state.ts'
-      - 'apps/backend/prisma/seeds/uat-commerce-state.sql'
-      - 'apps/backend/prisma/seeds/prd-commerce-readiness.sql'
+      - docs/**
+      - openspec/**
       - '*.md'
-      - 'LICENSE'
+      - LICENSE
   workflow_dispatch:
     inputs:
       artifact_commit_sha:
-        description: Commit to deploy after catalog promotion; defaults to current main.
+        description: Full source commit SHA; defaults to the triggering commit.
         required: false
         type: string
       target:
@@ -33,42 +24,52 @@ on:
           - uat
           - prd
           - staff
-
+      confirm_live_catalog_changes:
+        description: Authorize live Stripe and PRD D1 catalog changes for this run only.
+        type: boolean
+        required: false
+        default: false
+      recover_reset_uat:
+        description: Recover the known reset-damaged UAT bindings after exporting and validating them.
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
-
 concurrency:
-  group: 'static-sites-${{ github.ref }}'
-  cancel-in-progress: true
-
+  group: blackbox-release
+  cancel-in-progress: false
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout
+      - &a1
+        name: Checkout
         uses: actions/checkout@v7.0.1
-        with:
+        with: &a7
           ref: ${{ inputs.artifact_commit_sha || github.sha }}
-
-      - name: Setup pnpm
+      - name: Require an immutable source revision
+        env:
+          SOURCE_SHA: ${{ inputs.artifact_commit_sha || github.sha }}
+        run: '[[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]'
+      - &a2
+        name: Setup pnpm
         uses: pnpm/action-setup@v6.0.10
-        with:
+        with: &a8
           version: 12.0.0
-
-      - name: Setup Node.js
+      - &a3
+        name: Setup Node.js
         uses: actions/setup-node@v7.0.0
-        with:
+        with: &a9
           node-version: 24.20.0
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install dependencies
+      - &a4
+        name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Run unit tests
         run: pnpm test:unit
-
   workspace-checks:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -77,30 +78,23 @@ jobs:
         uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.artifact_commit_sha || github.sha }}
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.10
         with:
           version: 12.0.0
-
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:
           node-version: 24.20.0
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Run workspace checks
         run: pnpm check
-
       - name: Run unused code audit
         run: pnpm audit:unused
-
   build-uat-static:
-    if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'uat' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -111,25 +105,20 @@ jobs:
         uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.artifact_commit_sha || github.sha }}
-
       - name: Configure GitHub Pages UAT
         uses: actions/configure-pages@v6.0.0
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.10
         with:
           version: 12.0.0
-
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:
           node-version: 24.20.0
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Build hosted UAT static frontend
         env:
           ASTRO_SITE_URL: https://blackbox-studio-athens.github.io
@@ -137,15 +126,12 @@ jobs:
           PUBLIC_BACKEND_BASE_URL: ${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}
           SHOW_REVIEW_SITE_MARKER: 'true'
         run: pnpm build:web
-
       - name: Upload UAT Pages artifact
         uses: actions/upload-pages-artifact@v5.0.0
         with:
           path: apps/web/dist
           retention-days: 1
-
   build-prd-static:
-    if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'prd' || inputs.target == 'staff' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -153,22 +139,18 @@ jobs:
         uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.artifact_commit_sha || github.sha }}
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.10
         with:
           version: 12.0.0
-
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:
           node-version: 24.20.0
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Build hosted PRD static frontend
         if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'prd' }}
         env:
@@ -178,13 +160,11 @@ jobs:
           ASTRO_BASE_PATH: /
           PUBLIC_BACKEND_BASE_URL: ${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}
         run: pnpm build
-
       - name: Build hosted staff frontend
         if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'staff' }}
         env:
           PUBLIC_BACKEND_BASE_URL: ''
         run: pnpm build:staff
-
       - name: Upload PRD public static artifact
         if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'prd' }}
         uses: actions/upload-artifact@v7.0.1
@@ -193,7 +173,6 @@ jobs:
           path: apps/web/dist
           if-no-files-found: error
           retention-days: 1
-
       - name: Upload PRD staff static artifact
         if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'staff' }}
         uses: actions/upload-artifact@v7.0.1
@@ -202,13 +181,14 @@ jobs:
           path: apps/staff/dist
           if-no-files-found: error
           retention-days: 1
-
   deploy-uat:
     if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'uat' }}
     needs:
       - unit-tests
       - workspace-checks
       - build-uat-static
+      - deploy-worker-uat
+      - catalog-prd
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -222,18 +202,18 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v5.0.0
         continue-on-error: true
-
       - name: Retry UAT GitHub Pages deploy
         id: deployment_retry
         if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v5.0.0
-
   deploy-prd:
     if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'prd' }}
     needs:
       - unit-tests
       - workspace-checks
       - build-prd-static
+      - deploy-worker-uat
+      - catalog-prd
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -245,7 +225,6 @@ jobs:
         with:
           name: prd-public-static-site-${{ inputs.artifact_commit_sha || github.sha }}
           path: apps/web/dist
-
       - name: Deploy PRD static frontend to Cloudflare Pages
         uses: cloudflare/wrangler-action@v4.0.0
         with:
@@ -254,13 +233,14 @@ jobs:
           command: pages deploy apps/web/dist --project-name=blackbox-records-web --branch=main
           packageManager: npm
           wranglerVersion: 4.127.1
-
   deploy-staff:
     if: ${{ github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'staff' }}
     needs:
       - unit-tests
       - workspace-checks
       - build-prd-static
+      - deploy-worker-uat
+      - catalog-prd
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -272,7 +252,6 @@ jobs:
         with:
           name: prd-staff-static-site-${{ inputs.artifact_commit_sha || github.sha }}
           path: apps/staff/dist
-
       - name: Deploy staff frontend to Cloudflare Pages
         uses: cloudflare/wrangler-action@v4.0.0
         with:
@@ -281,3 +260,174 @@ jobs:
           command: pages deploy apps/staff/dist --project-name=blackbox-records-staff --branch=main
           packageManager: npm
           wranglerVersion: 4.127.1
+  catalog-uat:
+    needs:
+      - unit-tests
+      - workspace-checks
+      - build-uat-static
+      - build-prd-static
+    runs-on: ubuntu-latest
+    environment: catalog-promotion-uat
+    timeout-minutes: 25
+    env: &a6
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}
+      SOURCE_SHA: ${{ inputs.artifact_commit_sha || github.sha }}
+    steps:
+      - *a1
+      - *a2
+      - *a3
+      - *a4
+      - name: Prepare UAT catalog schema
+        run: |-
+          pnpm runtime:config:verify --env uat
+          pnpm stripe:webhooks:verify --env uat
+          pnpm stripe:payment-methods:verify
+          pnpm --filter @blackbox/backend d1:migrations:apply:uat
+      - name: Recover reset-damaged UAT bindings
+        if: ${{ inputs.recover_reset_uat }}
+        run: pnpm --filter @blackbox/backend exec tsx scripts/migrate-catalog-product-bindings.ts --env uat --recover-reset-uat --apply
+      - name: Preserve migration backup
+        if: ${{ always() && inputs.recover_reset_uat }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: uat-catalog-migration-${{ github.run_id }}
+          path: .codex-artifacts/catalog-migration/
+          retention-days: 30
+          include-hidden-files: true
+      - name: Synchronize UAT release items
+        run: |-
+          pnpm --filter @blackbox/backend d1:seed:uat:catalog
+          pnpm stripe:catalog:verify --env uat --apply
+  catalog-prd:
+    needs:
+      - unit-tests
+      - workspace-checks
+      - build-uat-static
+      - build-prd-static
+      - catalog-uat
+    runs-on: ubuntu-latest
+    environment: catalog-promotion-prd
+    timeout-minutes: 25
+    env: *a6
+    steps:
+      - name: Keep live catalog and checkout authorization separate
+        if: ${{ !inputs.confirm_live_catalog_changes }}
+        run: echo "Live catalog unchanged; PRD checkout launch controls remain in force." >> "$GITHUB_STEP_SUMMARY"
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with: *a7
+        if: ${{ inputs.confirm_live_catalog_changes }}
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.10
+        with: *a8
+        if: ${{ inputs.confirm_live_catalog_changes }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.0.0
+        with: *a9
+        if: ${{ inputs.confirm_live_catalog_changes }}
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        if: ${{ inputs.confirm_live_catalog_changes }}
+      - name: Prepare explicitly authorized PRD catalog
+        if: ${{ inputs.confirm_live_catalog_changes }}
+        run: |-
+          pnpm runtime:config:verify --env prd --require-live-secrets
+          pnpm stripe:webhooks:verify --env prd
+          pnpm stripe:payment-methods:verify
+          pnpm --filter @blackbox/backend d1:migrations:apply:prd
+          pnpm --filter @blackbox/backend d1:seed:prd:catalog-readiness
+          pnpm stripe:catalog:verify --env prd --apply --confirm-live-catalog-changes --ci-promotion --artifact-commit-sha "$SOURCE_SHA" --promotion-run-id "$GITHUB_RUN_ID"
+  deploy-worker-uat:
+    needs:
+      - catalog-uat
+      - catalog-prd
+    runs-on: ubuntu-latest
+    environment: catalog-promotion-uat
+    timeout-minutes: 10
+    env: *a6
+    steps:
+      - *a1
+      - *a2
+      - *a3
+      - *a4
+      - name: Deploy UAT Worker
+        run: pnpm deploy:backend:uat
+      - name: Verify hosted UAT listings
+        run: pnpm store:listing-readiness:verify -- --env uat --url "${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}/api/store/listing-prices"
+  smoke-uat:
+    runs-on: ubuntu-latest
+    environment: catalog-promotion-uat
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      UAT_SITE_URL: https://blackbox-studio-athens.github.io/blackbox-records
+      UAT_WORKER_URL: https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev
+    steps:
+      - name: Checkout deployed commit
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.artifact_commit_sha || github.sha }}
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.10
+        with:
+          version: 12.0.0
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24.20.0
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Verify UAT webhook and payment configuration
+        run: |
+          pnpm stripe:webhooks:verify --env uat
+          pnpm stripe:payment-methods:verify
+      - name: Run UAT provider smoke
+        run: |
+          pnpm smoke:stripe-uat -- \
+            --site-url "${UAT_SITE_URL}" \
+            --worker-url "${UAT_WORKER_URL}" \
+            --scenario happy_path_paid,pay_what_you_want_paid \
+            --screenshots on-failure
+          pnpm smoke:resend-uat -- \
+            --worker-url "${UAT_WORKER_URL}"
+      - name: Run UAT static smoke
+        run: pnpm smoke:uat-static -- --site-url "$UAT_SITE_URL" --scenario all --screenshots on-failure
+      - name: Upload UAT provider smoke evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: uat-smoke-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .codex-artifacts/smoke/uat/stripe-sandbox/**
+            .codex-artifacts/smoke/uat/resend-uat/**
+          if-no-files-found: warn
+    needs:
+      - deploy-uat
+    timeout-minutes: 20
+  release-report:
+    if: ${{ always() }}
+    needs:
+      - catalog-uat
+      - catalog-prd
+      - deploy-worker-uat
+      - deploy-uat
+      - deploy-prd
+      - deploy-staff
+      - smoke-uat
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report completed release stages
+        env:
+          SOURCE_SHA: ${{ inputs.artifact_commit_sha || github.sha }}
+          STAGES: ${{ toJSON(needs) }}
+        run: |-
+          printf "Source: %s\n\n" "$SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
+          printf "%s\n" "$STAGES" >> "$GITHUB_STEP_SUMMARY"

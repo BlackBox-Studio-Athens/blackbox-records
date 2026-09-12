@@ -65,9 +65,11 @@ export function createStripeWebhookServices(bindings: AppBindings, logger: AppLo
           applyPaidCheckoutReconciliation(orders, paidCheckoutFinalizer, reconciliation, new Date(), lineItems),
         ),
     disconnect: async () => prisma.$disconnect(),
-    catalogEnvironment: productEnvironmentProfile.workerDeploymentTarget,
     logger,
-    findStoreItemByVariantId: (variantId: string) => storeItems.findByVariantId(variantId),
+    findStoreItemByStripeProductId: async (productId: string) => {
+      const mapping = await variantStripeMappings.findByStripeProductId(productId);
+      return mapping ? storeItems.findByVariantId(mapping.variantId) : null;
+    },
     markCatalogEventFailed: catalogWebhookEvents.markCatalogEventFailed.bind(catalogWebhookEvents),
     markCatalogEventSucceeded: catalogWebhookEvents.markCatalogEventSucceeded.bind(catalogWebhookEvents),
     publishCheckoutOrderPaid: async (event: CheckoutOrderPaid): Promise<void> => {

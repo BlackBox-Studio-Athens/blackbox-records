@@ -36,7 +36,7 @@ Complete repo work first. Then perform this manual/provider sequence from the ex
 5. Run `pnpm runtime:config:verify --env uat`, `pnpm stripe:payment-methods:verify`, `pnpm stripe:webhooks:verify --env uat`, catalog verification/apply, Worker deploy, and fresh paid UAT smoke. Existing evidence is historical and cannot prove the new account.
 6. Keep PRD closed. Repeat the equivalent live-account setup and evidence only through `production-go-live-readiness`; do not copy UAT test IDs or treat UAT proof as PRD approval.
 
-The committed mock Stripe configuration, Prisma migration history, tracked UAT/PRD seed templates, and static frontend configuration do not change solely because the Stripe account changes.
+The committed mock Stripe configuration, Prisma migration history, generated UAT/PRD seed inputs, and static frontend configuration do not change solely because the Stripe account changes.
 
 ## Operator Webhook Readiness
 
@@ -72,191 +72,25 @@ pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env uat
 
 Do not paste the signing secret into docs, chat, screenshots, evidence files, Astro public env vars, or committed files. For an existing endpoint, reveal/copy the signing secret from Stripe Dashboard/Workbench and put it directly into Wrangler. Stripe endpoint list/retrieve APIs do not return an existing endpoint secret, so `pnpm stripe:webhooks:verify --env uat` separates endpoint configuration proof from signing-secret match proof.
 
-Catalog correctness is layered: persistent signed webhooks repair Price mappings and Store Offer snapshots, public Store Offer reads and checkout start verify current Stripe state without mutation, scheduled UAT catalog verification reports drift every six hours without mutating Stripe, and catalog promotion owns explicit UAT catalog alignment plus Worker deployment. Product Projection drift remains checkout-blocking until a reviewed promotion applies it. Direct PRD apply requires `--confirm-live-catalog-changes`, and signed catalog webhooks may update PRD mappings/snapshots without enabling checkout.
+## Price changes and release
 
-UAT is also the first leg of the generated catalog artifact pipeline described in [`docs/catalog-promotion.md`](catalog-promotion.md). Normal content publication should use the generated artifact commit and promotion workflow instead of treating sandbox apply as a detached manual checklist.
+The Product's default Price selects the selling amount. Add an EUR Price with inclusive VAT under the existing Product and choose **Set as default price**. Older active Prices are harmless; do not move lookup keys or edit identity metadata.
 
-Catalog Field Ownership keeps UAT alignment explicit:
+Signed catalog webhooks refresh only the bound item. Detail and checkout reads retrieve current provider state and repair D1 snapshots. There is no runtime catalog cron and no normal reset flow. Repo presentation updates happen during the release; stock and pauses remain in D1.
 
-- Product Projection is repo-owned and may update Stripe Product name, description, image URLs, and metadata only through a reviewed UAT apply. UAT Product image URLs use the GitHub Pages UAT asset base.
-- Price Authority is Stripe-owned. Change prices by adding a replacement Price under the existing app-identified Product, making it the default, archiving the stale Price, and letting reconciliation repair Price identity.
-- Stripe Dashboard edits to Product presentation are drift unless repo content/projection is updated first.
-- `pnpm stripe:catalog:verify --env uat` is day-to-day current-state verification; it accepts one valid active Stripe replacement Price as authority even when generated Desired Price still has the old amount.
-- `pnpm stripe:catalog:verify --env uat --apply` is UAT-only promotion/apply mode and should follow a reviewed dry-run plan. In this mode generated Desired Price is enforced again.
-- Full-catalog sandbox reset is a deactivation flow, not hard deletion. It only targets Stripe test-mode objects identified by BlackBox sandbox metadata, lookup keys, or documented catalog-derived legacy sandbox names.
-
-## Dashboard Price Change Runbook
-
-Use this when a colleague needs to change a buyable UAT Store Item price without a repo, Sveltia, or static deploy change.
-
-[Stripe Price amounts are immutable](https://docs.stripe.com/products-prices/manage-prices). The Dashboard's `Edit price` action cannot change the amount; use `Add another price` from that flow to create the replacement.
-
-Colleague steps:
-
-1. Confirm the Stripe Sandbox/test-mode banner, then open the existing Product for the intended Store Item. Do not create a new Product.
-2. On the current Price, open the overflow menu, choose `Edit price`, then choose `Add another price`.
-3. Enter the new amount and select `EUR`.
-4. Make the replacement Price the default and save.
-5. Archive the old Price so only the replacement remains active.
-6. Stop there and request UAT verification. Leave Advanced fields, metadata, lookup keys, Stripe IDs, D1 IDs, and repository identifiers untouched.
-
-The existing Product already carries app identity. When reconciliation finds its sole active replacement Price, it transfers the canonical lookup key and fills the Price metadata automatically.
-
-Catalog-owner verification:
-
-1. Run `pnpm stripe:webhooks:verify --env uat`.
-2. Run `pnpm stripe:catalog:verify --env uat`.
-   The current UAT catalog has unrelated legacy identity and Product Projection drift, so the global command may exit nonzero. For this exercise, require the target variant to have no Price Authority, D1 readiness, or Store Offer snapshot issue. Do not use `--apply`.
-3. Read `/api/store/items/<storeItemSlug>` on the UAT Worker and confirm the browser-safe price/readiness.
-4. Run the non-payment Checkout surface smoke with the temporary amount in minor units and confirm hosted Checkout displays the new amount before payment submission:
-
-   ```sh
-   pnpm smoke:stripe-uat -- --scenario checkout_surface --expected-checkout-amount-minor <amount-minor>
-   ```
-
-   When local Cloudflare credentials are unavailable, dispatch the credentialed GitHub Actions proof instead:
-
-   ```sh
-   gh workflow run uat-smoke.yml --ref main -f expected_checkout_amount_minor=<amount-minor>
-   ```
-
-   The override changes only the smoke assertions for the hosted amount and Stripe Checkout Session. The browser cart snapshot and generated Desired Price remain stale on purpose, proving checkout uses the current Worker-owned Store Offer and Stripe Price.
-
-Sveltia remains editorial-only. Editors can change item information and page copy, but must not edit checkout price, Stripe IDs, D1 IDs, stock, provider mutation controls, or any runtime secret.
-
-For this UAT exercise, the colleague uses the currently selected Stripe business account and its isolated UAT Stripe Sandbox. After an account cutover, use only the new account and regenerate all UAT evidence. No separate restricted-role proof is required for this exercise; an owner-supervised authenticated session or existing team login is sufficient. Confirm the Sandbox banner and test mode before editing, keep two-step authentication enabled, and never put passwords, recovery codes, API keys, or webhook secrets in evidence. See Stripe's [sandbox access guidance](https://docs.stripe.com/sandboxes/dashboard/manage-access).
-
-Troubleshooting:
-
-- Missing Price metadata or lookup key: leave the advanced fields untouched. Reconciliation repairs them when the Price is under the correct app-identified Product and is the sole active candidate.
-- Product cannot be confirmed or identity drift remains: stop and ask the catalog owner to repair the Product. Do not invent or copy identity values.
-- Multiple active Prices: archive or deactivate stale matching Prices until only one active Price identifies the variant.
-- Wrong currency: create a replacement `EUR` Price and archive the wrong-currency active Price.
-- Webhook signature failure: rotate the Stripe endpoint signing secret into the UAT Worker with `wrangler secret put STRIPE_WEBHOOK_SECRET --env uat`.
-- Stale Store Offer snapshot: run `pnpm stripe:catalog:verify --env uat`; checkout start still revalidates current Stripe state before creating a hosted session.
-- PRD disabled: UAT proof is not PRD acceptance. Signed PRD catalog webhooks may reconcile catalog state, public Store Offer/checkout catalog reconciliation remains no-mutation, and `pnpm stripe:catalog:verify --env prd --apply` requires explicit `--confirm-live-catalog-changes` plus promotion context. None of these controls enable shopper checkout.
-
-## Catalog Mutation Forensics
-
-Use this when Stripe test-mode Products or Prices are unexpectedly created, reactivated, archived, or moved to a different lookup key. This is separate from Dashboard price replacement and webhook propagation, which is recorded in the [archived OpenSpec change](../openspec/changes/archive/2026-07-10-stripe-dashboard-price-webhook-propagation/proposal.md).
-
-Start with a local report:
+See [Catalog release](catalog-promotion.md) for the single workflow, credentials, targeted verification, migration, and retry commands. The manual provider smoke remains available after a deployment:
 
 ```sh
-pnpm stripe:catalog:verify --env uat
+pnpm smoke:stripe-uat -- --scenario happy_path_paid,pay_what_you_want_paid --screenshots on-failure
 ```
 
-The report includes Product Environment, Store Item identity, lookup key, planned action kind, idempotency key, request shape, request ID when Stripe exposes it, replay status when Stripe exposes it, drift classification, and redacted Stripe object IDs. It must not print Stripe secrets, webhook signatures, raw provider payloads, card data, shopper PII, or full `prod_...`, `price_...`, `evt_...`, or `we_...` IDs.
-
-In Stripe Workbench or Dashboard Events, start with these filters around the suspected timestamp:
-
-```text
-POST /v1/products
-POST /v1/prices
-product.created
-price.created
-product.*
-price.*
-```
-
-Capture these fields before cleanup:
-
-- timestamp and event type
-- redacted Product or Price ID
-- lookup key and metadata identity (`appEnv`, `sourceId`, `sourceKind`, `storeItemSlug`, `variantId`)
-- `api_version`
-- `request.id`
-- `request.idempotency_key`
-- API key label when visible
-- source, endpoint, method, IP when visible, and status
-
-Stripe Events API full-payload access is limited to 30 days. Keep older operator evidence as ignored local exports under `.codex-artifacts/` or another ignored evidence path, redacted before sharing. Stripe Search may help with diagnostics, drift discovery, duplicate scans, or backfill; it does not replace current-state checkout reconciliation by lookup key, metadata, and D1 mapping.
-
-Product IDs remain Stripe-generated for existing catalog objects. Do not switch to deterministic Product IDs unless a future full recreate/import explicitly approves it and covers collision behavior.
-
-Stripe idempotency keys are retry protection for mutating `POST` requests, not long-term audit storage, actor attribution, or an independent-run lock. Catalog tooling keeps Stripe SDK retry behavior at the default client setting and relies on verify dry-runs, run identity, and operator review for independent apply runs. Promotion CI scopes Product and Price creation to the GitHub run so a post-reset apply cannot replay pre-reset objects, while retries within that run remain deterministic.
-
-Cleanup order:
-
-1. Run `pnpm stripe:catalog:verify --env uat` and review the dry-run report.
-2. Capture the Workbench/Event fields above before mutating anything.
-3. Classify ownership and environment. Cleanup may target only confirmed BlackBox-owned UAT test-mode objects.
-4. Refuse unclassified objects and foreign-environment objects.
-5. Reset cleanup strips canonical lookup and metadata identity from every repo-owned Price; default Prices that Stripe refuses to archive are detached without deactivation.
-6. Run the explicit cleanup/apply command only after dry-run review.
-7. Rerun `pnpm stripe:catalog:verify --env uat` and confirm current active catalog state.
-
-## Full Catalog UAT Alignment
-
-The UAT catalog is generated from current Astro Store Item content. The placeholder `___.json` distro file remains excluded by the projection loader until it becomes an explicit content decision.
-
-Sandbox test Price defaults:
-
-- Cassette/tape: `1200 EUR`
-- T-shirt/tee: `2000 EUR`
-- Vinyl, LP, releases, and unknown physical goods: `2800 EUR`
-
-Sandbox stock defaults:
-
-- `afterglow-tape`: `quantity = 1`, `onlineQuantity = 1`
-- every other current Store Item: `quantity = 99`, `onlineQuantity = 99`
-
-Sandbox Product category / Stripe Tax default:
-
-- every current physical Store Item uses `General - Tangible Goods` / `txcd_99999999`
-- `General - Electronically Supplied Services` / `txcd_10000000` is not the default for shipped vinyl, cassettes, CDs, shirts, or similar merch
-
-Static pages may show items as available with `Worker-confirmed at checkout`. They must not expose Stripe Price IDs, D1 IDs, stock authority, secrets, or authoritative prices.
-
-Operator sequence for a full UAT catalog reset:
-
-```powershell
-git status --short
-git push origin main
-gh workflow run catalog-promotion.yml --ref main -f artifact_commit_sha=$(git rev-parse HEAD) -f target=uat -f reset_uat_catalog=true
-```
-
-Provider execution notes:
-
-- Repo-complete is not provider-complete. A pushed commit does not mutate Stripe Products, Stripe Prices, D1 stock, D1 mappings, or Store Offer snapshots.
-- `d1:migrations:list:uat` is the read-only migration check. Catalog promotion owns remote UAT migrations, catalog mutation, and Worker deployment behind the UAT environment gate.
-- Start from a clean final tree that already passed `pnpm test:unit`, `pnpm check`, `pnpm build`, and OpenSpec validation. `git status --short` should print nothing before provider mutation begins.
-- Run catalog promotion from the final pushed commit. If reset/apply/smoke work requires a code or script fix, rerun `pnpm test:unit`, `pnpm check`, and `pnpm build`, push the fix, then rerun catalog promotion for that exact commit without using a Worker-only deploy.
-- Reset cleanup must cover current ownership metadata and documented legacy sandbox names such as `BlackBox UAT - ...`. Keep that fallback until there are no legacy sandbox catalog objects left.
-- Generate one unique catalog reset-cycle ID before each reset and reuse it for plan, apply retries, and post-apply verification. Generate a new ID only when starting another reset.
-- `pnpm stripe:catalog:verify --env uat` and `pnpm stripe:catalog:verify --env uat --apply` are intentionally throttled. If Stripe returns a rate-limit error after reset or apply work, wait for a short cooldown and rerun verification instead of trusting Dashboard row counts.
-- Stripe Dashboard product counts are diagnostic only. Acceptance proof is the CLI report showing every expected variant checked with zero Product Projection, Price Authority, D1 readiness, and Store Offer snapshot issues, plus UAT smoke evidence.
-- `pnpm stripe:webhooks:verify --env uat` proves endpoint shape, mode, status, and event coverage. Existing endpoint signing-secret match is proven by `happy_path_paid` reaching a paid Worker order, not by Stripe endpoint list/retrieve APIs.
-- Keep `afterglow-tape` reserved for low-stock behavior. Generic happy-path smoke should use a high-stock item so repeated proof runs do not consume the low-stock test case.
-
-GitHub Pages UAT smoke:
-
-```powershell
-pnpm smoke:stripe-uat -- --site-url https://blackbox-studio-athens.github.io/blackbox-records/ --scenario checkout_surface
-pnpm smoke:stripe-uat -- --site-url https://blackbox-studio-athens.github.io/blackbox-records/ --scenario happy_path_paid
-```
-
-For explicit operator receipt proof, run the canonical paid pair with the existing authenticated Resend CLI profile:
-
-```powershell
-pnpm smoke:stripe-uat -- `
-  --site-url https://blackbox-studio-athens.github.io/blackbox-records/ `
-  --worker-url https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev `
-  --scenario happy_path_paid,pay_what_you_want_paid `
-  --verify-email-receipts
-```
-
-Receipt mode is non-interactive after start, with a default 120-second receipt deadline. It fails before paid provider state if the Resend CLI, profile, Receiving access, or JSON output is invalid; it does not invoke login or accept an API key argument. It requires one shopper and one ops receipt per paid order at `uat-sink@ambkime.resend.app`. Evidence records only safe order references, audience, received timestamp, match count, status, and issues. The credential-free GitHub workflow does not enable this mode.
-
-Run the Resend UAT smoke after the UAT Worker has `RESEND_API_KEY` and `RESEND_NEWSLETTER_TOPIC_ID` configured:
+For a changed fixed price, use the no-payment proof:
 
 ```sh
-pnpm smoke:resend-uat
+pnpm smoke:stripe-uat -- --scenario checkout_surface --expected-checkout-amount-minor <amount-minor>
 ```
 
-This posts one synthetic consented signup to `/api/newsletter/registrations` and one synthetic Services inquiry to `/api/services/inquiries`. The UAT Worker must return provider-accepted `registered` and `submitted` statuses under the managed `uat-sink@ambkime.resend.app` routing policy. Evidence is written under `.codex-artifacts/smoke/uat/resend-uat/`; it records only safe response status, route, recipient policy, and issues, never inquiry name, visitor email, message, or service details.
-
-Evidence must stay ignored/redacted. Do not commit or paste Stripe secrets, webhook secrets, full `price_...`, `prod_...`, `we_...` IDs, customer payment details, or raw provider payloads.
+For unexpected provider changes, inspect the Product and Price history in Stripe Workbench, including the event, request ID, and API key label. Avoid treating webhook arrival order as current state.
 
 ## What To Test
 

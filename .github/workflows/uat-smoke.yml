@@ -1,5 +1,4 @@
 name: UAT provider smoke
-
 on:
   workflow_dispatch:
     inputs:
@@ -7,21 +6,13 @@ on:
         description: Optional replacement Price amount in minor units; runs the no-payment Checkout surface proof.
         required: false
         type: string
-  workflow_run:
-    workflows: ['Deploy UAT and PRD static sites']
-    branches: ['main']
-    types: [completed]
-
 permissions:
   contents: read
-
 concurrency:
-  group: 'uat-smoke-${{ github.event.workflow_run.head_branch }}'
+  group: uat-smoke-${{ github.event.workflow_run.head_branch }}
   cancel-in-progress: true
-
 jobs:
   smoke:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment: catalog-promotion-uat
     env:
@@ -35,30 +26,24 @@ jobs:
       - name: Checkout deployed commit
         uses: actions/checkout@v7.0.1
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-
+          ref: ${{ github.sha }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.10
         with:
           version: 12.0.0
-
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:
           node-version: 24.20.0
           cache: pnpm
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
-
       - name: Verify UAT webhook and payment configuration
         run: |
           pnpm stripe:webhooks:verify --env uat
           pnpm stripe:payment-methods:verify
-
       - name: Run UAT provider smoke
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.expected_checkout_amount_minor == '' }}
         run: |
@@ -69,7 +54,6 @@ jobs:
             --screenshots on-failure
           pnpm smoke:resend-uat -- \
             --worker-url "${UAT_WORKER_URL}"
-
       - name: Run replacement Price Checkout surface proof
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_checkout_amount_minor != '' }}
         env:
@@ -81,7 +65,6 @@ jobs:
             --scenario checkout_surface \
             --expected-checkout-amount-minor "${EXPECTED_CHECKOUT_AMOUNT_MINOR}" \
             --screenshots on-failure
-
       - name: Upload UAT provider smoke evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v7.0.1

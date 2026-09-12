@@ -3,7 +3,6 @@ import Stripe from 'stripe';
 import { parseStripePriceId } from '../../domain/commerce';
 import type {
   StripeCatalogGateway,
-  StripeCatalogIdentityMetadata,
   StripeCatalogMutationContext,
   StripeCatalogPrice,
   StripeCatalogPriceCreateInput,
@@ -22,17 +21,22 @@ type StripePriceWithExpandedProduct = Stripe.Price & {
 export class StripeCatalogGatewayClient implements StripeCatalogGateway {
   public constructor(private readonly stripe: Stripe) {}
 
-  public async archivePrice(priceId: string, context?: StripeCatalogMutationContext): Promise<StripeCatalogPrice> {
-    const price = (await this.stripe.prices.update(
-      priceId,
-      {
-        active: false,
-        expand: ['product'],
-      },
-      toStripeRequestOptions(context),
-    )) as StripePriceWithExpandedProduct;
-
-    return toCatalogPrice(price);
+  public async retrieveDefaultPrice(productId: string): Promise<StripeCatalogPrice | null> {
+    try {
+      const product = await this.stripe.products.retrieve(productId, { expand: ['default_price'] });
+      if ('deleted' in product || !product.default_price || typeof product.default_price === 'string') {
+        return null;
+      }
+      const price = product.default_price;
+      const parentId = typeof price.product === 'string' ? price.product : price.product.id;
+      if (parentId !== product.id || price.type !== 'one_time' || price.livemode !== product.livemode) {
+        return null;
+      }
+      return toCatalogPrice({ ...price, product });
+    } catch (error) {
+      if (isStripeNotFoundError(error)) return null;
+      throw error;
+    }
   }
 
   public async retrievePrice(priceId: string): Promise<StripeCatalogPrice | null> {
@@ -51,229 +55,75 @@ export class StripeCatalogGatewayClient implements StripeCatalogGateway {
     }
   }
 
-  public async listPricesByLookupKey(lookupKey: string): Promise<StripeCatalogPrice[]> {
-    return this.listPrices({
-      expand: ['data.product'],
-      lookup_keys: [lookupKey],
-    });
-  }
-
-  public async listPricesByMetadata(metadata: StripeCatalogIdentityMetadata): Promise<StripeCatalogPrice[]> {
-    const prices = await this.listPrices({
-      active: true,
-      expand: ['data.product'],
-    });
-
-    return prices.filter(
-      (price) =>
-        hasMetadata(price.metadata, metadata) ||
-        hasMetadata(price.productMetadata, metadata) ||
-        price.lookupKey === `blackbox:${metadata.appEnv}:${metadata.storeItemSlug}:${metadata.variantId}`,
-    );
-  }
-
-  public async listOwnedPrices(_environment: StripeCatalogIdentityMetadata['appEnv']): Promise<StripeCatalogPrice[]> {
-    const prices = await this.listPrices({
-      active: true,
-      expand: ['data.product'],
-    });
-
-    return prices.filter(
-      (price) =>
-        price.lookupKey?.startsWith('blackbox:') ||
-        hasBlackBoxCatalogMetadataHint(price.metadata) ||
-        hasBlackBoxCatalogMetadataHint(price.productMetadata),
-    );
-  }
-
-  public async listOwnedProducts(
-    _environment: StripeCatalogIdentityMetadata['appEnv'],
-  ): Promise<StripeCatalogProduct[]> {
-    const products: StripeCatalogProduct[] = [];
-    let startingAfter: string | undefined;
-
-    do {
-      const page = await this.stripe.products.list({
-        active: true,
-        limit: 100,
-        starting_after: startingAfter,
-      });
-
-      products.push(
-        ...page.data.map(toCatalogProduct).filter((product) => hasBlackBoxCatalogMetadataHint(product.metadata)),
-      );
-      startingAfter = page.has_more ? page.data.at(-1)?.id : undefined;
-    } while (startingAfter);
-
-    return products;
-  }
-
   public async createCatalogPrice(
     input: StripeCatalogPriceCreateInput,
     context?: StripeCatalogMutationContext,
   ): Promise<StripeCatalogPrice> {
-    const existingPrice = (await this.listPricesByMetadata(input.metadata)).find(
-      (price) => price.active && price.productActive && matchesCatalogPriceInput(price, input),
+    if (input.metadata.appEnv !== 'uat') throw new Error('Only UAT may bootstrap test Prices.');
+    const products = await this.catalogProducts();
+    const matches = products.filter(
+      (product) =>
+        product.metadata.appEnv === input.metadata.appEnv && product.metadata.variantId === input.metadata.variantId,
     );
-
-    if (existingPrice) {
-      return this.updatePriceMetadata(existingPrice.priceId, input.metadata, context);
-    }
-
-    const inactivePrice = (await this.listInactivePricesByMetadata(input.metadata)).find(
-      (price) => (!price.active || !price.productActive) && matchesCatalogPriceInput(price, input) && price.productId,
-    );
-
-    if (inactivePrice) {
-      await this.releaseInactiveLookupKey(input.lookupKey, context);
-      return this.restoreInactiveCatalogPrice(inactivePrice, input, context);
-    }
-
-    await this.releaseInactiveLookupKey(input.lookupKey, context);
-
-    const product = await this.stripe.products.create(
-      {
-        active: true,
-        description: input.productProjection?.description,
-        images: input.productProjection?.imageUrls,
-        metadata: {
-          ...(input.productProjection?.metadata ?? {}),
-          ...input.metadata,
-        },
-        name: input.productProjection?.name ?? input.productName,
-        tax_code: input.productProjection?.taxCode ?? undefined,
-      },
-      toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, 'product')),
-    );
-    const price = (await this.stripe.prices.create(
-      createStripePriceCreateParams(input, product.id),
-      toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, 'price')),
-    )) as StripePriceWithExpandedProduct;
-
-    return toCatalogPrice(price);
-  }
-
-  private async listInactivePricesByMetadata(metadata: StripeCatalogIdentityMetadata): Promise<StripeCatalogPrice[]> {
-    const [activePrices, inactivePrices] = await Promise.all([
-      this.listPrices({
-        active: true,
-        expand: ['data.product'],
-      }),
-      this.listPrices({
-        active: false,
-        expand: ['data.product'],
-      }),
-    ]);
-
-    return [...activePrices, ...inactivePrices].filter(
-      (price) =>
-        (!price.active || !price.productActive) &&
-        (hasMetadata(price.metadata, metadata) ||
-          hasMetadata(price.productMetadata, metadata) ||
-          price.lookupKey === `blackbox:${metadata.appEnv}:${metadata.storeItemSlug}:${metadata.variantId}`),
-    );
-  }
-
-  private async restoreInactiveCatalogPrice(
-    price: StripeCatalogPrice,
-    input: StripeCatalogPriceCreateInput,
-    context?: StripeCatalogMutationContext,
-  ): Promise<StripeCatalogPrice> {
-    if (!price.productId) {
-      return price;
-    }
-
-    await this.stripe.products.update(
-      price.productId,
-      {
-        active: true,
-        description: input.productProjection?.description,
-        images: input.productProjection?.imageUrls,
-        metadata: {
-          ...(input.productProjection?.metadata ?? {}),
-          ...input.metadata,
-        },
-        name: input.productProjection?.name ?? input.productName,
-        tax_code: input.productProjection?.taxCode ?? undefined,
-      },
-      toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, `restore_product_${price.priceId}`)),
-    );
-
-    const restoredPrice = (await this.stripe.prices.update(
-      price.priceId,
-      {
-        active: true,
-        expand: ['product'],
-        lookup_key: input.lookupKey,
-        metadata: input.metadata,
-      },
-      toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, `restore_price_${price.priceId}`)),
-    )) as StripePriceWithExpandedProduct;
-
-    return toCatalogPrice(restoredPrice);
-  }
-
-  private async releaseInactiveLookupKey(lookupKey: string, context?: StripeCatalogMutationContext): Promise<void> {
-    const prices = await this.listPricesByLookupKey(lookupKey);
-    const inactivePrices = prices.filter(
-      (price) => price.lookupKey === lookupKey && (!price.active || !price.productActive),
-    );
-
-    for (const price of inactivePrices) {
-      await this.stripe.prices.update(
-        price.priceId,
+    if (matches.length > 1) throw new Error('Multiple Products identify this variant; review its binding.');
+    let product = matches[0];
+    const stableId = 'prod_blackbox_' + input.metadata.appEnv + '_' + input.metadata.variantId;
+    if (product) {
+      if (!product.active || !hasMetadata(product.metadata, input.metadata)) {
+        throw new Error('Existing Product is paused or has conflicting identity; review its binding.');
+      }
+      if (product.default_price) {
+        const price = await this.retrieveDefaultPrice(product.id);
+        if (!price) throw new Error('Existing Product has an invalid default Price.');
+        return price;
+      }
+      if (product.id !== stableId) throw new Error('Existing Product needs an explicit default-price backfill.');
+    } else {
+      product = await this.stripe.products.create(
         {
-          expand: ['product'],
-          lookup_key: '',
+          id: stableId,
+          name: input.productProjection?.name ?? input.productName,
+          description: input.productProjection?.description,
+          images: input.productProjection?.imageUrls,
+          metadata: { ...input.productProjection?.metadata, ...input.metadata },
+          tax_code: input.productProjection?.taxCode ?? undefined,
         },
-        toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, `release_lookup_${price.priceId}`)),
-      );
-    }
-  }
-
-  public async updatePriceMetadata(
-    priceId: string,
-    metadata: StripeCatalogIdentityMetadata,
-    context?: StripeCatalogMutationContext,
-  ): Promise<StripeCatalogPrice> {
-    const price = (await this.stripe.prices.update(
-      priceId,
-      {
-        metadata,
-        expand: ['product'],
-      },
-      toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, 'price')),
-    )) as StripePriceWithExpandedProduct;
-
-    const product = getActiveProduct(price.product);
-
-    if (product && !hasMetadata(normalizeMetadata(product.metadata), metadata)) {
-      await this.stripe.products.update(
-        product.id,
-        { metadata },
         toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, 'product')),
       );
+      products.push(product);
     }
-
-    return toCatalogPrice(price);
+    const existingPrices = await this.listPrices({ product: product.id, expand: ['data.product'] });
+    if (existingPrices.length > 1 || (existingPrices[0] && !matchesCatalogPriceInput(existingPrices[0], input))) {
+      throw new Error('Interrupted bootstrap has conflicting Prices; review before retrying.');
+    }
+    let price = existingPrices[0];
+    if (!price) {
+      price = toCatalogPrice(
+        await this.stripe.prices.create(
+          createStripePriceCreateParams(input, product.id),
+          toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, 'price')),
+        ),
+      );
+    }
+    if (!price.active) throw new Error('Interrupted bootstrap Price was paused; review before retrying.');
+    await this.stripe.products.update(
+      product.id,
+      { default_price: price.priceId },
+      toStripeRequestOptions(deriveStripeCatalogChildMutationContext(context, 'default')),
+    );
+    product.default_price = price.priceId;
+    return price;
   }
 
-  public async updatePriceLookupKey(
-    priceId: string,
-    lookupKey: string,
-    context?: StripeCatalogMutationContext,
-  ): Promise<StripeCatalogPrice> {
-    const price = (await this.stripe.prices.update(
-      priceId,
-      {
-        expand: ['product'],
-        lookup_key: lookupKey,
-        transfer_lookup_key: true,
-      },
-      toStripeRequestOptions(context),
-    )) as StripePriceWithExpandedProduct;
+  private products: Promise<Stripe.Product[]> | undefined;
 
-    return toCatalogPrice(price);
+  private catalogProducts(): Promise<Stripe.Product[]> {
+    // One inventory read per release bootstrap; runtime uses the persisted Product binding.
+    return (this.products ??= (async () => {
+      const products: Stripe.Product[] = [];
+      for await (const product of this.stripe.products.list({ limit: 100 })) products.push(product);
+      return products;
+    })());
   }
 
   public async updateProductProjection(
@@ -463,12 +313,6 @@ function toStripeRequestOptions(context: StripeCatalogMutationContext | undefine
 
 function hasMetadata(candidate: Record<string, string>, expected: Record<string, string>): boolean {
   return Object.entries(expected).every(([key, value]) => candidate[key] === value);
-}
-
-function hasBlackBoxCatalogMetadataHint(metadata: Record<string, string>): boolean {
-  return Boolean(
-    metadata.appEnv || metadata.sourceId || metadata.sourceKind || metadata.storeItemSlug || metadata.variantId,
-  );
 }
 
 function getStripeRequestId(object: unknown): string | null {

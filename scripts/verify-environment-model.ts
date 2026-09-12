@@ -1,3 +1,4 @@
+import { parse } from 'yaml';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -54,7 +55,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
     read('apps/web/src/pages/store/checkout/index.astro'),
     read('apps/web/src/pages/store/[slug]/checkout/index.astro'),
   ].join('\n');
-  const catalogPromotionWorkflow = read('.github/workflows/catalog-promotion.yml');
+  const catalogPromotionWorkflow = staticDeployWorkflow;
   const uatSandboxSmokeWorkflow = read('.github/workflows/uat-smoke.yml');
   const wranglerConfig = read('apps/backend/wrangler.jsonc');
   const staticSiteSpec = read('openspec/specs/static-site-and-deployment/spec.md');
@@ -62,14 +63,13 @@ export function verifyEnvironmentModel(): CheckResult[] {
 
   return [
     {
-      detail:
-        'Shared static deployment workflow skips audited documentation and catalog-promotion-owned inputs while preserving manual dispatch.',
+      detail: 'One release workflow handles content-only and mixed commits while preserving manual dispatch.',
       ok: verifyStaticDeployTriggerSources(staticDeployWorkflow),
     },
     {
       detail: 'Shared static deployment workflow deploys UAT to GitHub Pages with UAT_PUBLIC_BACKEND_BASE_URL.',
       ok:
-        staticDeployWorkflow.includes('Deploy UAT and PRD static sites') &&
+        staticDeployWorkflow.includes('Release BlackBox') &&
         staticDeployWorkflow.includes('Deploy UAT to GitHub Pages') &&
         staticDeployWorkflow.includes('UAT_PUBLIC_BACKEND_BASE_URL') &&
         !staticDeployWorkflow.includes('PUBLIC_BACKEND_BASE_URL="${{ vars.PUBLIC_BACKEND_BASE_URL }}"'),
@@ -107,24 +107,17 @@ export function verifyEnvironmentModel(): CheckResult[] {
         catalogPromotionWorkflow.includes('confirm_live_catalog_changes:') &&
         catalogPromotionWorkflow.includes('default: false') &&
         catalogPromotionWorkflow.includes('--confirm-live-catalog-changes') &&
-        catalogPromotionWorkflow.includes('prd-not-configured.txt') &&
+        catalogPromotionWorkflow.includes('Live catalog unchanged') &&
         !catalogPromotionWorkflow.includes(retiredPrdControlName) &&
         !catalogPromotionWorkflow.includes('- name: Deploy PRD Worker') &&
-        !catalogPromotionWorkflow.includes('-f target=prd') &&
-        !catalogPromotionWorkflow.includes('pnpm smoke:') &&
-        !catalogPromotionWorkflow.includes('.codex-artifacts/smoke/'),
+        !catalogPromotionWorkflow.includes('-f target=prd'),
     },
     {
       detail: 'Catalog promotion owns UAT Worker deployment while post-merge provider smoke remains observation-only.',
       ok:
         catalogPromotionWorkflow.includes('- name: Deploy UAT Worker') &&
-        uatSandboxSmokeWorkflow.includes('workflow_run') &&
-        uatSandboxSmokeWorkflow.includes('Deploy UAT and PRD static sites') &&
-        uatSandboxSmokeWorkflow.includes("branches: ['main']") &&
-        uatSandboxSmokeWorkflow.includes('types: [completed]') &&
-        uatSandboxSmokeWorkflow.includes('concurrency:') &&
-        uatSandboxSmokeWorkflow.includes('environment: catalog-promotion-uat') &&
-        uatSandboxSmokeWorkflow.includes('github.event.workflow_run.head_sha') &&
+        staticDeployWorkflow.includes('smoke-uat:') &&
+        staticDeployWorkflow.includes('cancel-in-progress: false') &&
         !uatSandboxSmokeWorkflow.includes('pnpm deploy:backend:uat') &&
         !uatSandboxSmokeWorkflow.includes('d1:migrations:apply:uat') &&
         !exists('.github/workflows/cloudflare-uat.yml') &&
@@ -169,7 +162,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
       ok:
         catalogVerifyScript.includes('parseProductEnvironmentCliTarget') &&
         catalogVerifyScript.includes('productEnvironmentProfileFromWorkerRuntimeTarget') &&
-        catalogVerifyScript.includes("productEnvironmentProfile.productEnvironment === 'PRD' ? 'PRD' : 'UAT'"),
+        catalogVerifyScript.includes('catalogManifest.entries'),
     },
     {
       detail: 'Raw platform/provider aliases stay out of product-policy modules outside approved boundaries.',
@@ -190,42 +183,18 @@ export function verifyEnvironmentModel(): CheckResult[] {
 }
 
 export function verifyStaticDeployTriggerSources(staticDeployWorkflow: string): boolean {
-  const triggerEvents =
-    /(?:^|\r?\n)on:\r?\n(?<events>[\s\S]*?)(?=\r?\n(?:permissions:|concurrency:|jobs:)|(?![\s\S]))/m.exec(
-      staticDeployWorkflow,
-    )?.groups?.events ?? '';
-  const push =
-    /^\x20{2}push:\r?\n(?<push>[\s\S]*?)(?=\r?\n\x20{2}workflow_dispatch:)/m.exec(triggerEvents)?.groups?.push ?? '';
-  const ignoredPaths =
-    /^\x20{4}paths-ignore:\r?\n(?<paths>(?:\x20{6}- '[^']+'\r?\n?)+)/m
-      .exec(push)
-      ?.groups?.paths?.split(/\r?\n/)
-      .filter(Boolean)
-      .map((line) => /^\s*-\s+'([^']+)'$/.exec(line)?.[1] ?? '') ?? [];
-  const expectedIgnoredPaths = [
-    'docs/**',
-    'openspec/**',
-    'apps/web/src/content/distro/**',
-    'apps/web/src/content/releases/**',
-    'apps/web/src/content.config.ts',
-    'scripts/stripe-catalog-contract.ts',
-    'scripts/generate-stripe-uat-catalog-artifacts.ts',
-    'apps/backend/src/application/commerce/catalog-sync/catalog-product-projections.ts',
-    'apps/backend/src/application/commerce/catalog-sync/desired-catalog-state.ts',
-    'apps/backend/prisma/seeds/uat-commerce-state.sql',
-    'apps/backend/prisma/seeds/prd-commerce-readiness.sql',
-    '*.md',
-    'LICENSE',
-  ];
-
-  return (
-    /^\x20{2}push:\r?$/m.test(triggerEvents) &&
-    /^\x20{4}branches: \['main'\]\r?$/m.test(push) &&
-    ignoredPaths.length === expectedIgnoredPaths.length &&
-    expectedIgnoredPaths.every((path, index) => ignoredPaths[index] === path) &&
-    /^\x20{2}workflow_dispatch:\r?$/m.test(triggerEvents) &&
-    !/commit.?message|head_commit|github\.event\.commits/i.test(staticDeployWorkflow)
-  );
+  try {
+    const workflow = parse(staticDeployWorkflow);
+    const push = workflow.on?.push;
+    return (
+      JSON.stringify(push?.branches) === JSON.stringify(['main']) &&
+      JSON.stringify(push?.['paths-ignore']) === JSON.stringify(['docs/**', 'openspec/**', '*.md', 'LICENSE']) &&
+      Object.hasOwn(workflow.on ?? {}, 'workflow_dispatch') &&
+      !/commit.?message|head_commit|github\.event\.commits/i.test(staticDeployWorkflow)
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function verifyReviewSiteMarkerSources({

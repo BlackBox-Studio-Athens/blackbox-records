@@ -93,9 +93,8 @@ vi.mock('../../src/interfaces/http/routes/stripe-webhook-services', () => ({
   createStripeWebhookServices: () => ({
     applyNonPaidCheckoutReconciliation: mockApplyNonPaidCheckoutReconciliation,
     applyPaidCheckoutReconciliation: mockApplyPaidCheckoutReconciliation,
-    catalogEnvironment: 'uat',
     disconnect: mockDisconnectStripeWebhookServices,
-    findStoreItemByVariantId: mockFindStoreItemByVariantId,
+    findStoreItemByStripeProductId: mockFindStoreItemByVariantId,
     markCatalogEventFailed: mockMarkCatalogEventFailed,
     markCatalogEventSucceeded: mockMarkCatalogEventSucceeded,
     publishCheckoutOrderPaid: mockPublishCheckoutOrderPaid,
@@ -154,6 +153,7 @@ function createStripeCatalogPriceEventPayload(type: 'price.created' | 'price.upd
         lookup_key: 'blackbox:uat:disintegration-black-vinyl-lp:variant_disintegration-black-vinyl-lp_standard',
         metadata: {},
         object: 'price',
+        product: 'prod_test_123',
         unit_amount: 3200,
       },
     },
