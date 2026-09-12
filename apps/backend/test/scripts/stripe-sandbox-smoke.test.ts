@@ -75,8 +75,7 @@ const readySummary: RemoteD1ReadinessSummary = {
 const sessionProjectionExpectation = {
   expectedAmountMinor: 2800,
   expectedCurrencyCode: 'EUR',
-  expectedProductImageUrl:
-    'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/releases/disintegration.jpg',
+  expectedProductImageUrl: 'https://blackbox-records-web-uat.pages.dev/assets/catalog/releases/disintegration.jpg',
   expectedProductName: 'BlackBox Records - Disintegration - Black Vinyl LP',
 };
 const checkoutSurfaceExpectation = {
@@ -107,7 +106,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
       headed: false,
       scenarioSelection: 'all',
       screenshots: 'on-failure',
-      siteUrl: 'https://blackbox-studio-athens.github.io/blackbox-records',
+      siteUrl: 'https://blackbox-records-web-uat.pages.dev',
       timeoutMs: 120_000,
       trace: false,
       verifyEmailReceipts: false,

@@ -1,12 +1,12 @@
 # Stripe Sandbox UAT Guide
 
-This guide is for label-member testing of UAT checkout on GitHub Pages. `sandbox` means Stripe test-mode provider behavior here, not a Cloudflare or Wrangler Product Environment.
+This guide is for label-member testing of UAT checkout on Cloudflare Pages. `sandbox` means Stripe test-mode provider behavior here, not a Cloudflare or Wrangler Product Environment.
 
 ## Test URL
 
-Use the GitHub Pages UAT site:
+Use the Cloudflare Pages UAT site:
 
-https://blackbox-studio-athens.github.io/blackbox-records/
+https://blackbox-records-web-uat.pages.dev/
 
 The site is static, but checkout calls the UAT Worker/API. That Worker is deployed through the Wrangler `uat` runtime target:
 

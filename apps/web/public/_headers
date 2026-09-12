@@ -1,2 +1,29 @@
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
+
+/release.json
+  Cache-Control: no-store
+
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/store/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/artists/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/releases/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/news/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/about/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/services/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/app-shell-overlay/*
+  Cache-Control: public, max-age=0, must-revalidate

@@ -7,9 +7,8 @@ import { ResendEmailGateway } from '../../src/infrastructure/resend';
 const localBindings = {
   CHECKOUT_RETURN_ORIGINS: 'http://127.0.0.1:4321,http://localhost:4321',
   COMMERCE_DB: {} as D1Database,
-  EMAIL_BRAND_HOME_URL: 'https://blackbox-studio-athens.github.io/blackbox-records/',
-  EMAIL_BRAND_LOGO_URL:
-    'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
+  EMAIL_BRAND_HOME_URL: 'https://blackbox-records-web-uat.pages.dev/',
+  EMAIL_BRAND_LOGO_URL: 'https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-horizontal.png',
   PRODUCT_ENVIRONMENT: 'LOCAL' as const,
   RESEND_API_KEY: 're_mock_blackbox_local',
   RESEND_FROM_EMAIL: 'orders@blackboxrecordsathens.com',

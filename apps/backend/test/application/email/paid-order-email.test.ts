@@ -9,9 +9,8 @@ import type { EmailProviderGateway, ProviderEmailMessage } from '../../../src/ap
 import type { PaidOrderEmailInput } from '../../../src/application/email';
 
 const sandboxConfig = readEmailRuntimeConfig({
-  EMAIL_BRAND_HOME_URL: 'https://blackbox-studio-athens.github.io/blackbox-records/',
-  EMAIL_BRAND_LOGO_URL:
-    'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
+  EMAIL_BRAND_HOME_URL: 'https://blackbox-records-web-uat.pages.dev/',
+  EMAIL_BRAND_LOGO_URL: 'https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-horizontal.png',
   PRODUCT_ENVIRONMENT: 'UAT',
   RESEND_API_KEY: 're_mock_blackbox_local',
   RESEND_FROM_EMAIL: 'orders@blackboxrecordsathens.com',
@@ -103,7 +102,7 @@ describe('paid-order email notifications', () => {
     const shopperMessage = sentMessage(sendEmail, 0);
     expect(shopperMessage.html).not.toContain('UAT sink delivery');
     expect(shopperMessage.html).toContain(
-      'src="https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png"',
+      'src="https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-horizontal.png"',
     );
     expect(shopperMessage.html).toContain('width="180" height="44" alt="BlackBox Records"');
     expect(shopperMessage.html).not.toContain('>BlackBox Records</span>');
@@ -111,7 +110,7 @@ describe('paid-order email notifications', () => {
     expect(shopperMessage.html).toContain('Payment received');
     expect(shopperMessage.html).toContain('Disintegration Black Vinyl Lp');
     expect(shopperMessage.html).toContain(
-      'src="https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/releases/afterwise-album-cover-distro-mockup.webp"',
+      'src="https://blackbox-records-web-uat.pages.dev/assets/catalog/releases/afterwise-album-cover-distro-mockup.webp"',
     );
     expect(shopperMessage.html).toContain('alt="Disintegration Black Vinyl Lp product image"');
     expect(shopperMessage.html).not.toContain('variant_disintegration-black-vinyl-lp_standard</td>');
@@ -260,7 +259,7 @@ function paidOrder(overrides: Partial<PaidOrderEmailInput> = {}): PaidOrderEmail
         optionLabel: null,
         productImage: {
           altText: 'Disintegration Black Vinyl Lp product image',
-          url: 'https://blackbox-studio-athens.github.io/blackbox-records/assets/catalog/releases/afterwise-album-cover-distro-mockup.webp',
+          url: 'https://blackbox-records-web-uat.pages.dev/assets/catalog/releases/afterwise-album-cover-distro-mockup.webp',
         },
         quantity: 1,
         storeItemSlug: 'disintegration-black-vinyl-lp',

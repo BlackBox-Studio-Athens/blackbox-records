@@ -33,6 +33,8 @@ Freeze source/configuration changes, including final-origin settings, before sel
 
 ### UAT and PRD data stay isolated
 
+The active `align-cloudflare-uat-and-release-promotion` change owns the dedicated Cloudflare Pages UAT cutover and explicit Software Release promotion. Use its accepted UAT source SHA/run and verified PRD-targeted artifacts for technical PRD deployment once that change is accepted. Main pushes do not authorize PRD publication. Code confirmation is separate from live-catalog confirmation, launch approval, runtime checkout enablement, and apex activation. Existing prerequisite evidence retains its original host and revision; a changed target or configuration requires fresh affected checks.
+
 PRD is prepared from repository-owned content and generated catalog artifacts. UAT D1 rows, Stripe test-mode Products/Prices, synthetic stock, and UAT smoke evidence are never copied or treated as PRD data.
 
 ### Canonical origin changes atomically

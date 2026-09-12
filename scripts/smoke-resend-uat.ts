@@ -56,7 +56,7 @@ export type ResendUatSmokeSummary = {
 
 const defaultWorkerUrl = 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev';
 const defaultEvidenceDir = path.join('.codex-artifacts', 'smoke', 'uat', 'resend-uat');
-const uatSiteOrigin = 'https://blackbox-studio-athens.github.io';
+const uatSiteOrigin = 'https://blackbox-records-web-uat.pages.dev';
 
 export function parseResendUatSmokeArgs(args: string[]): ResendUatSmokeOptions {
   const options: ResendUatSmokeOptions = {

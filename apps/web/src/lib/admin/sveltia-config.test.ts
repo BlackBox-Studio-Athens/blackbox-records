@@ -6,7 +6,7 @@ import { SveltiaRuntimeConfigError, type SveltiaRuntimeConfig } from './sveltia-
 
 const logoUrl = 'https://example.com/logo.png';
 const localSiteRootUrl = 'http://127.0.0.1:4322/blackbox-records/';
-const hostedSiteRootUrl = 'https://blackbox-studio-athens.github.io/blackbox-records/';
+const hostedSiteRootUrl = 'https://blackbox-records-web-uat.pages.dev/';
 const localRuntimeConfig: SveltiaRuntimeConfig = { mode: 'local' };
 const hostedRuntimeConfig: SveltiaRuntimeConfig = { mode: 'hosted', baseUrl: 'https://blackbox-cms-auth.workers.dev' };
 
@@ -78,7 +78,7 @@ describe('buildSveltiaConfig', () => {
 
   it.each([
     [localSiteRootUrl, '/blackbox-records/assets'],
-    [hostedSiteRootUrl, '/blackbox-records/assets'],
+    [hostedSiteRootUrl, '/assets'],
     ['https://blackbox-records-web.pages.dev/', '/assets'],
   ])('uses shared public assets under the site base %s', (siteRootUrl, publicFolder) => {
     const config = parse(buildConfig(hostedRuntimeConfig, siteRootUrl));

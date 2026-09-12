@@ -1,52 +1,41 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-
+import { parse } from 'yaml';
 import { describe, expect, it } from 'vitest';
 
-const workflow = readFileSync(fileURLToPath(new URL('../.github/workflows/pages.yml', import.meta.url)), 'utf8');
-const deployPrd = workflow.slice(workflow.indexOf('  deploy-prd:'), workflow.indexOf('  deploy-staff:'));
-const deployStaff = workflow.slice(workflow.indexOf('  deploy-staff:'), workflow.indexOf('  catalog-uat:'));
+const workflow = parse(readFileSync(fileURLToPath(new URL('../.github/workflows/pages.yml', import.meta.url)), 'utf8'));
+const build = workflow.jobs['build-candidate'];
+const promotion = workflow.jobs['deploy-prd'];
 
-describe('Pages workflow contract', () => {
-  it('builds hosted Sveltia for both targets without suppressing admin-library changes', () => {
-    expect(workflow.match(/SVELTIA_BACKEND_MODE: hosted/g)).toHaveLength(2);
-    expect(workflow.match(/SVELTIA_AUTH_BASE_URL: \$\{\{ vars.SVELTIA_AUTH_BASE_URL \}\}/g)).toHaveLength(2);
-    expect(workflow).not.toMatch(/DECAP_|DECAPBRIDGE|cms:hosted:preflight/);
-    expect(workflow).not.toContain('apps/web/src/lib/admin/**');
-    const prdBuild = workflow.slice(workflow.indexOf('  build-prd-static:'), workflow.indexOf('  deploy-uat:'));
-    expect(prdBuild).toContain('run: pnpm build\n');
-    expect(prdBuild).toContain('ASTRO_BASE_PATH: /');
+describe('Pages artifact promotion contract', () => {
+  it('builds paired targets after the repository gates without provider credentials', () => {
+    expect(build.env).toBeUndefined();
+    const steps = build.steps.map((step: { name: string }) => step.name);
+    expect(steps.indexOf('Run unit tests')).toBeLessThan(steps.indexOf('Build hosted UAT static frontend'));
+    expect(steps.indexOf('Run workspace checks')).toBeLessThan(steps.indexOf('Build hosted UAT static frontend'));
+    expect(steps.indexOf('Run unused code audit')).toBeLessThan(steps.indexOf('Build hosted UAT static frontend'));
+    const uat = build.steps.find((step: { name: string }) => step.name === 'Build hosted UAT static frontend');
+    const prd = build.steps.find((step: { name: string }) => step.name === 'Build hosted PRD static frontend');
+    expect(uat.env.ASTRO_BASE_PATH).toBe('/');
+    expect(prd.env.ASTRO_BASE_PATH).toBe('/');
+    expect(uat.env.PUBLIC_BACKEND_BASE_URL).not.toBe(prd.env.PUBLIC_BACKEND_BASE_URL);
+    expect(uat.env.SHOW_REVIEW_SITE_MARKER).toBe('true');
+    expect(prd.env.SHOW_REVIEW_SITE_MARKER).toBeUndefined();
+    const staff = build.steps.find((step: { name: string }) => step.name === 'Build hosted staff frontend');
+    expect(staff.env.PUBLIC_BACKEND_BASE_URL).toBe('');
   });
 
-  it('keeps public and staff artifacts and deploy targets separate', () => {
-    expect(workflow).toContain('- staff');
-    expect(workflow).toContain("inputs.target == 'staff'");
-    expect(deployPrd).toContain("inputs.target == 'all' || inputs.target == 'prd'");
-    expect(deployPrd).not.toContain("inputs.target == 'staff'");
-    expect(deployPrd).toContain('name: prd-public-static-site-${{ inputs.artifact_commit_sha || github.sha }}');
-    expect(deployPrd).toContain('path: apps/web/dist');
-    expect(deployPrd).toContain('--project-name=blackbox-records-web');
-    expect(deployPrd).not.toContain('prd-staff-static-site-');
-    expect(deployPrd).not.toContain('apps/staff/dist');
-    expect(deployPrd).not.toContain('--project-name=blackbox-records-staff');
-    expect(deployStaff).toContain("inputs.target == 'all' || inputs.target == 'staff'");
-    expect(deployStaff).toContain('name: prd-staff-static-site-${{ inputs.artifact_commit_sha || github.sha }}');
-    expect(deployStaff).toContain('path: apps/staff/dist');
-    expect(deployStaff).toContain('--project-name=blackbox-records-staff');
-    expect(deployStaff).not.toContain('prd-public-static-site-');
-    expect(deployStaff).not.toContain('apps/web/dist');
-    expect(deployStaff).not.toContain('--project-name=blackbox-records-web');
-    expect(workflow).not.toContain('generate:api');
-  });
-
-  it('rebuilds every hosted staff artifact with same-origin API reads after the public build', () => {
-    const staffBuild = workflow.slice(
-      workflow.indexOf('      - name: Build hosted staff frontend'),
-      workflow.indexOf('      - name: Upload PRD public static artifact'),
+  it('promotes only the selected retained artifact without rebuilding it', () => {
+    const download = promotion.steps.find(
+      (step: { name: string }) => step.name === 'Download selected candidate artifacts',
     );
-    expect(staffBuild).toContain("github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'staff'");
-    expect(staffBuild).toContain("PUBLIC_BACKEND_BASE_URL: ''");
-    expect(staffBuild).toContain('run: pnpm build:staff');
-    expect(workflow.indexOf('run: pnpm build\n')).toBeLessThan(workflow.indexOf(staffBuild));
+    expect(download.with['run-id']).toBe('${{ inputs.candidate_run_id }}');
+    expect(download.with.name).toBe('release-${{ inputs.artifact_commit_sha }}');
+    expect(JSON.stringify(promotion)).not.toContain('pnpm build');
+    expect(JSON.stringify(promotion)).toContain('--no-bundle');
+    expect(JSON.stringify(promotion)).toContain('/prd/public --project-name=blackbox-records-web --branch=main');
+    expect(JSON.stringify(promotion)).toContain('/prd/staff --project-name=blackbox-records-staff --branch=main');
+    expect(promotion.env.SOURCE_SHA).toBe('${{ inputs.artifact_commit_sha }}');
+    expect(promotion.steps[0].with.ref).toBe('${{ github.sha }}');
   });
 });

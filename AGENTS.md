@@ -7,7 +7,7 @@ If this file conflicts with the global file, follow the global file.
 
 Build and maintain the BlackBox Records Astro site.
 
-Current product environments are Local, UAT, and PRD. UAT is GitHub Pages plus the UAT Worker; PRD is Cloudflare Pages plus the PRD Worker. Live catalog/D1 preparation requires one-run confirmation, while shopper checkout separately requires `PRD_LAUNCH_APPROVED=true` and `native_checkout_enabled`. The live commerce handoff still has external Fourthwall history, but the repo now carries native commerce migration work; follow the active planning docs when working in that area.
+Current product environments are Local, UAT, and PRD. UAT is Cloudflare Pages plus the UAT Worker; PRD is Cloudflare Pages plus the PRD Worker. Live catalog/D1 preparation requires one-run confirmation, while shopper checkout separately requires `PRD_LAUNCH_APPROVED=true` and `native_checkout_enabled`. The live commerce handoff still has external Fourthwall history, but the repo now carries native commerce migration work; follow the active planning docs when working in that area.
 
 ## Current stack
 
@@ -197,10 +197,12 @@ Read these first before editing:
 
 ## Deployment and URL model
 
-- UAT static deployment target: GitHub Pages
+- UAT static deployment target: Cloudflare Pages
 - PRD static deployment target: Cloudflare Pages, with checkout disabled until launch approval and runtime enablement both pass
 - Canonical static CI/CD workflow: `.github/workflows/pages.yml`
-- The static frontend workflow deploys UAT to GitHub Pages and PRD to Cloudflare Pages.
+- The static frontend workflow deploys UAT to Cloudflare Pages and PRD to Cloudflare Pages.
+- Main pushes deploy only UAT to `blackbox-records-web-uat` at `https://blackbox-records-web-uat.pages.dev/`, using hosted base `/`. Local keeps `/blackbox-records/`.
+- PRD code promotion requires the reviewed full `artifact_commit_sha`, successful `candidate_run_id`, and `confirm_code_promotion=true`. It consumes the retained PRD bundle without rebuilding; seven-day expiry requires a fresh UAT candidate for the same SHA. Code confirmation does not authorize live catalog mutation, apex changes, or launch. See `docs/catalog-promotion.md`.
 - Both static frontend deploy targets are gated by:
   - `pnpm test:unit`
   - `pnpm check`
@@ -218,8 +220,8 @@ Read these first before editing:
 - The PRD static build job may pass only non-secret PRD build-target env plus browser-safe public Astro env into the build: `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, and `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`; keep `PUBLIC_CHECKOUT_CLIENT_MODE` unset.
 - Cloudflare Pages PRD deploys must run through `.github/workflows/pages.yml`. Manual local `wrangler pages deploy` is diagnostic only and is not acceptance evidence.
 - Cloudflare Pages must not own backend routes, Pages Functions, D1 access, Stripe secrets, webhooks, operator auth, stock mutations, order state, or future BOX NOW runtime secrets.
-- GitHub Pages is the UAT static host. Do not describe it as PRD rollback or legacy production hosting.
-- Native commerce migration work must treat UAT as GitHub Pages plus UAT Worker and PRD as Cloudflare Pages plus PRD Worker. External-shop behavior remains historical commerce context, not the final architecture.
+- Cloudflare Pages is the UAT static host. Do not describe it as PRD rollback or legacy production hosting.
+- Native commerce migration work must treat UAT as Cloudflare Pages plus UAT Worker and PRD as Cloudflare Pages plus PRD Worker. External-shop behavior remains historical commerce context, not the final architecture.
 
 ## Project map
 
@@ -454,4 +456,4 @@ These checks are mandatory both:
 - Reintroducing Jekyll/Decap-era files or assumptions
 - Moving shell state into scattered document-global scripts
 - Reintroducing real route swaps on top-level section links without revisiting player persistence
-- Introducing SSR/live content features unless the deployment model intentionally changes away from static GitHub Pages UAT plus static Cloudflare Pages PRD
+- Introducing SSR/live content features unless the deployment model intentionally changes away from static Cloudflare Pages UAT plus static Cloudflare Pages PRD

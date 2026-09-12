@@ -23,7 +23,7 @@ export function buildSettingsFields() {
       label: 'URL',
       name: 'url',
       widget: 'string',
-      hint: 'Canonical site URL including https://. Example: https://blackbox-studio-athens.github.io/blackbox-records/.',
+      hint: 'Canonical site URL including https://. Example: https://blackbox-records-web-uat.pages.dev/.',
       pattern: { value: httpsUrlPatternSource, message: 'Use the full canonical HTTPS site URL.' },
     }),
     buildField({

@@ -22,7 +22,7 @@ type ReviewSiteMarkerSources = {
 };
 
 const rootDir = process.cwd();
-const uatStaticHost = 'https://blackbox-studio-athens.github.io/blackbox-records';
+const uatStaticHost = 'https://blackbox-records-web-uat.pages.dev';
 const prdStaticHost = 'https://blackbox-records-web.pages.dev';
 const prdPreviewHostFragment = '.blackbox-records-web.pages.dev';
 const retiredPrdControlName = ['PRD', 'OPEN', 'GATE'].join('_');
@@ -58,7 +58,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
   const catalogPromotionWorkflow = staticDeployWorkflow;
   const uatSandboxSmokeWorkflow = read('.github/workflows/uat-smoke.yml');
   const wranglerConfig = read('apps/backend/wrangler.jsonc');
-  const staticSiteSpec = read('openspec/specs/static-site-and-deployment/spec.md');
+
   const catalogVerifyScript = read('scripts/stripe-catalog-verify.ts');
 
   return [
@@ -67,10 +67,10 @@ export function verifyEnvironmentModel(): CheckResult[] {
       ok: verifyStaticDeployTriggerSources(staticDeployWorkflow),
     },
     {
-      detail: 'Shared static deployment workflow deploys UAT to GitHub Pages with UAT_PUBLIC_BACKEND_BASE_URL.',
+      detail: 'Shared static deployment workflow deploys UAT to Cloudflare Pages with UAT_PUBLIC_BACKEND_BASE_URL.',
       ok:
         staticDeployWorkflow.includes('Release BlackBox') &&
-        staticDeployWorkflow.includes('Deploy UAT to GitHub Pages') &&
+        staticDeployWorkflow.includes('Deploy UAT to Cloudflare Pages') &&
         staticDeployWorkflow.includes('UAT_PUBLIC_BACKEND_BASE_URL') &&
         !staticDeployWorkflow.includes('PUBLIC_BACKEND_BASE_URL="${{ vars.PUBLIC_BACKEND_BASE_URL }}"'),
     },
@@ -101,13 +101,13 @@ export function verifyEnvironmentModel(): CheckResult[] {
       detail:
         'Catalog promotion uses one-run confirmation for PRD catalog/D1 changes without deploying shopper runtime.',
       ok:
-        catalogPromotionWorkflow.includes('- prd') &&
+        catalogPromotionWorkflow.includes('options: [uat, prd]') &&
         !catalogPromotionWorkflow.includes('- production') &&
         catalogPromotionWorkflow.includes('catalog-promotion-prd') &&
         catalogPromotionWorkflow.includes('confirm_live_catalog_changes:') &&
         catalogPromotionWorkflow.includes('default: false') &&
         catalogPromotionWorkflow.includes('--confirm-live-catalog-changes') &&
-        catalogPromotionWorkflow.includes('Live catalog unchanged') &&
+        catalogPromotionWorkflow.includes('!inputs.confirm_code_promotion') &&
         !catalogPromotionWorkflow.includes(retiredPrdControlName) &&
         !catalogPromotionWorkflow.includes('- name: Deploy PRD Worker') &&
         !catalogPromotionWorkflow.includes('-f target=prd'),
@@ -116,7 +116,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
       detail: 'Catalog promotion owns UAT Worker deployment while post-merge provider smoke remains observation-only.',
       ok:
         catalogPromotionWorkflow.includes('- name: Deploy UAT Worker') &&
-        staticDeployWorkflow.includes('smoke-uat:') &&
+        staticDeployWorkflow.includes('Run UAT provider smoke') &&
         staticDeployWorkflow.includes('cancel-in-progress: false') &&
         !uatSandboxSmokeWorkflow.includes('pnpm deploy:backend:uat') &&
         !uatSandboxSmokeWorkflow.includes('d1:migrations:apply:uat') &&
@@ -140,7 +140,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
       ),
     },
     {
-      detail: 'UAT Worker checkout origins allow GitHub Pages plus local uat-connected diagnostics only.',
+      detail: 'UAT Worker checkout origins allow Cloudflare Pages plus local uat-connected diagnostics only.',
       ok: hasCheckoutOrigins(
         wranglerConfig,
         'uat',
@@ -173,11 +173,10 @@ export function verifyEnvironmentModel(): CheckResult[] {
       ok: !hasProductionTargetWithUatAssetUrl(),
     },
     {
-      detail: 'Static-site baseline spec no longer names GitHub Pages as rollback/legacy production.',
+      detail: 'UAT and PRD deploy to distinct Cloudflare Pages projects.',
       ok:
-        !/rollback\/legacy|GitHub Pages rollback|canonical target/i.test(staticSiteSpec) &&
-        staticSiteSpec.includes('GitHub Pages as the only UAT static host') &&
-        staticSiteSpec.includes('Cloudflare Pages as the only PRD static host'),
+        staticDeployWorkflow.includes('--project-name=blackbox-records-web-uat --branch=main') &&
+        staticDeployWorkflow.includes('--project-name=blackbox-records-web --branch=main'),
     },
   ];
 }
@@ -229,7 +228,7 @@ export function verifyReviewSiteMarkerSources({
     !checkoutRoutes.includes('PUBLIC_SHOW_REVIEW_SITE_MARKER') &&
     !header.includes('Astro.url.hostname') &&
     uatBuildStep?.includes("SHOW_REVIEW_SITE_MARKER: 'true'") === true &&
-    (staticDeployWorkflow.match(/SHOW_REVIEW_SITE_MARKER/g) ?? []).length === 1 &&
+    (staticDeployWorkflow.split('  legacy-uat:')[0].match(/SHOW_REVIEW_SITE_MARKER/g) ?? []).length === 1 &&
     !holdingWorkflow.includes('SHOW_REVIEW_SITE_MARKER')
   );
 }
@@ -295,9 +294,7 @@ function hasProductionTargetWithUatAssetUrl(): boolean {
   return currentDesiredCatalogEntries.some(
     (entry) =>
       entry.targetEnvironments.includes('prd') &&
-      entry.productProjection.imageUrls.some((url) =>
-        url.startsWith('https://blackbox-studio-athens.github.io/blackbox-records'),
-      ),
+      entry.productProjection.imageUrls.some((url) => url.startsWith('https://blackbox-records-web-uat.pages.dev')),
   );
 }
 

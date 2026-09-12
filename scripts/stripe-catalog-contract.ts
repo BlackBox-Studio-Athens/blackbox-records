@@ -7,7 +7,11 @@ import type {
   StripeCatalogExpectedPrice,
   StripeCatalogProductProjection,
 } from '../apps/backend/src/application/commerce/catalog-sync';
-import { parseProductEnvironmentCliTarget, type ProductEnvironment } from '../apps/backend/src/env';
+import {
+  getProductEnvironmentProfile,
+  parseProductEnvironmentCliTarget,
+  type ProductEnvironment,
+} from '../apps/backend/src/env';
 import { createSlugSuggestion } from '../apps/web/src/lib/slugs';
 import {
   createPhysicalEditionKey,
@@ -73,10 +77,10 @@ type ReleaseCatalogContractCandidate = {
   title: string;
 };
 
-const defaultSiteUrl = 'https://blackbox-studio-athens.github.io';
-const defaultBasePath = '/blackbox-records/';
-const prdSiteUrl = 'https://blackbox-records-web.pages.dev';
-const prdBasePath = '/';
+const defaultSiteUrl = getProductEnvironmentProfile('UAT').publicSite.origin;
+const defaultBasePath = getProductEnvironmentProfile('UAT').publicSite.basePath;
+const prdSiteUrl = getProductEnvironmentProfile('PRD').publicSite.origin;
+const prdBasePath = getProductEnvironmentProfile('PRD').publicSite.basePath;
 const CATALOG_RELEASE_IMAGE_OVERRIDES: Record<string, string> = {
   anarchotribal: 'ouranopithecus-album-cover-distro-mockup.webp',
   caregivers: 'chronoboros-album-cover-distro-mockup.webp',

@@ -166,9 +166,9 @@ describe('runtime config verification', () => {
           "d1_databases": [{ "binding": "COMMERCE_DB" }],
           "vars": {
             "PRODUCT_ENVIRONMENT": "UAT",
-            "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,https://blackbox-studio-athens.github.io/blackbox-records",
-            "EMAIL_BRAND_HOME_URL": "https://blackbox-studio-athens.github.io/blackbox-records/",
-            "EMAIL_BRAND_LOGO_URL": "https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png",
+            "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,https://blackbox-records-web-uat.pages.dev",
+            "EMAIL_BRAND_HOME_URL": "https://blackbox-records-web-uat.pages.dev/",
+            "EMAIL_BRAND_LOGO_URL": "https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-horizontal.png",
             "RESEND_FROM_EMAIL": "orders@blackboxrecordsathens.com",
             "RESEND_OPS_TO_EMAIL": "blackboxrecordsathens@gmail.com",
             "RESEND_REPLY_TO_EMAIL": "support@blackboxrecordsathens.com",

@@ -3,7 +3,7 @@ import { CheckoutConfigurationError } from '../../../application/commerce/checko
 const DEFAULT_CHECKOUT_RETURN_ORIGINS = [
   'http://127.0.0.1:4321',
   'http://localhost:4321',
-  'https://blackbox-studio-athens.github.io/blackbox-records',
+  'https://blackbox-records-web-uat.pages.dev',
 ];
 const CART_CHECKOUT_PATH = '/store/checkout/';
 const CART_CHECKOUT_RETURN_PATH = '/store/checkout/return/';

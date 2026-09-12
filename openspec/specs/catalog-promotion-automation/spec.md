@@ -6,83 +6,54 @@ Defines deterministic, fail-closed promotion of committed catalog artifacts thro
 
 ## Requirements
 
-### Requirement: Editorial catalog changes produce one committed artifact revision
+### Requirement: Release builds use one source revision
 
-The system SHALL generate deterministic catalog artifacts from current Store Item content and repository-owned policy without adding CMS-authored commerce authority.
+Each release SHALL use one source SHA and generate one canonical catalog build manifest consumed by the Worker and synchronizer. Generated data SHALL NOT require bot commits or duplicate committed catalogs.
 
-#### Scenario: Catalog content changes
+#### Scenario: Content-only or mixed commit
 
-- **WHEN** a content commit changes generated catalog output
-- **THEN** automation creates one bot artifact commit on the same branch
-- **AND** all provider, D1, deployment, and evidence steps use that artifact commit.
+- **WHEN** either reaches main
+- **THEN** it follows the same generation, repository checks, catalog readiness, and deployment gate.
 
-#### Scenario: Bot artifact commit reruns generation
+### Requirement: One release workflow gates deployment
 
-- **WHEN** the generated artifacts already match source content
-- **THEN** no further commit is created.
+The pages release workflow SHALL own preparation, UAT Worker deployment, static deployment, and same-SHA smoke tests. All stateful release runs SHALL share a non-cancelling lock.
 
-#### Scenario: Artifact generation or repository gates fail
+#### Scenario: Invalid release item
 
-- **WHEN** deterministic generation, tests, checks, or build fail
-- **THEN** provider mutation and deployment do not start.
+- **WHEN** any intended item lacks valid catalog configuration
+- **THEN** all deployment jobs are blocked
+- **AND** intentional D1 sold-out or paused availability alone does not invalidate configured catalog state.
 
-### Requirement: UAT catalog promotion is ordered and fail-closed
+#### Scenario: A newer release arrives
 
-The system SHALL promote one artifact commit through UAT in a serialized sequence, and that sequence SHALL be the only supported UAT Worker deployment path.
+- **WHEN** another release is already applying state
+- **THEN** the running release finishes under the shared lock before another starts.
 
-#### Scenario: UAT promotion succeeds
+### Requirement: Live catalog preparation requires one-run authorization
 
-- **WHEN** UAT configuration, webhook, D1 readiness, provider dry-run/apply, post-apply verification, Worker deployment, and hosted listing readiness all pass
-- **THEN** the workflow dispatches the UAT static deployment for the same commit
-- **AND** downstream provider smoke validates the deployed release without applying D1 migrations or deploying the Worker.
+Live Stripe and PRD D1 mutation SHALL require false-by-default, one-run confirmation. That authorization SHALL NOT enable shopper checkout. PRD launch-disabled frontend publication SHALL remain an intentional valid state.
 
-#### Scenario: A promotion step fails
+#### Scenario: Confirmation is absent
 
-- **WHEN** any step finds missing configuration, ambiguous provider state, non-ready catalog state, failed deployment, or failed smoke
-- **THEN** every later step is skipped
-- **AND** evidence names the failed stage and safe rerun action.
+- **WHEN** the release publishes the disabled PRD frontend
+- **THEN** no live catalog or PRD D1 mutation occurs and existing launch controls remain unchanged.
 
-#### Scenario: A newer artifact commit arrives
+### Requirement: Catalog release outcomes identify completed stages
 
-- **WHEN** an older promotion is still pending
-- **THEN** target concurrency supersedes the stale run
-- **AND** the stale commit cannot deploy after the newer catalog.
+The workflow SHALL report the source SHA and stage outcomes, including failed or skipped deployment and smoke stages. Ordinary reports SHALL exclude secrets, full provider IDs, and customer data.
 
-#### Scenario: A direct UAT Worker deployment path is inspected
+#### Scenario: A deployment fails after preparation
 
-- **WHEN** repository validation inspects active deployment workflows
-- **THEN** no standalone or smoke-owned UAT Worker deployment path exists
-- **AND** catalog promotion remains the sole workflow that deploys the UAT Worker.
+- **WHEN** only some stages completed
+- **THEN** the report identifies them and the same source SHA can be retried
+- **AND** no reset or atomic cross-provider rollback is implied.
 
-### Requirement: PRD requires explicit live catalog confirmation
+### Requirement: Catalog migration preserves trusted state
 
-The system MUST NOT perform live PRD catalog mutation unless the exact promotion run carries an explicit, false-by-default live catalog confirmation. Shopper launch approval MUST NOT authorize provider mutation by implication.
+Migration SHALL export affected D1 state and validate all selected Product/Price bindings before provider writes. Missing/conflicting mappings SHALL require review. Known UAT reset damage MAY be recovered explicitly using only exact UAT identities and existing prices.
 
-#### Scenario: PRD readiness is evaluated
+#### Scenario: Routine release after migration
 
-- **WHEN** an artifact commit reaches the PRD branch without explicit live catalog confirmation
-- **THEN** redacted readiness or dry-run work may execute
-- **AND** no live provider, PRD D1, Worker, static deployment, or Checkout mutation occurs.
-
-#### Scenario: Confirmed PRD catalog preparation runs
-
-- **GIVEN** repository gates passed for one exact artifact commit
-- **WHEN** an operator selects PRD and explicitly confirms live catalog changes for that run
-- **THEN** the workflow may apply the bounded provider and PRD D1 catalog changes for that commit
-- **AND** the confirmation expires with that workflow run
-- **AND** it does not approve or enable shopper checkout.
-
-#### Scenario: Direct PRD apply is requested
-
-- **WHEN** a maintainer invokes a direct PRD catalog apply without the explicit confirmation option
-- **THEN** the command fails before provider or D1 mutation.
-
-### Requirement: Promotion evidence is redacted and revision-bound
-
-The system SHALL retain concise Promotion Evidence for success, failure, supersession, and gated PRD outcomes.
-
-#### Scenario: Evidence is produced
-
-- **WHEN** a promotion run finishes
-- **THEN** evidence records source/artifact commits, target, app-owned identities/counts, step outcomes, deployment references, smoke outcome, and rerun guidance
-- **AND** excludes secrets, full provider IDs, raw payloads, payment details, and customer data.
+- **WHEN** synchronization runs repeatedly
+- **THEN** it preserves stock, reservations, checkout pauses, historical orders, and existing selling prices.

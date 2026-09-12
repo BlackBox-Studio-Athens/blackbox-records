@@ -15,10 +15,10 @@ Static Astro site for the BlackBox Records label.
 
 The site uses one Product Environment model: Local, UAT, and PRD. The full matrix lives in [`docs/environment-model.md`](docs/environment-model.md).
 
-UAT is the GitHub Pages static frontend:
+UAT is the Cloudflare Pages static frontend:
 
-- `site`: `https://blackbox-studio-athens.github.io`
-- `base`: `/blackbox-records/`
+- `site`: `https://blackbox-records-web-uat.pages.dev`
+- `base`: `/`
 - browser API target: `UAT_PUBLIC_BACKEND_BASE_URL`, expected to point at the UAT Worker
 
 PRD is the Cloudflare Pages static frontend:
@@ -42,12 +42,14 @@ The protected staff frontend is a separate static Astro app:
 - Pages project: `blackbox-records-staff`
 - hosted API target: same-origin `/api/internal/*`
 
-GitHub Pages UAT keeps the repo defaults in `apps/web/astro.config.mjs`:
+Local keeps the base-path defaults in `apps/web/astro.config.mjs`; hosted builds override both values:
 
 - `site`: `https://blackbox-studio-athens.github.io`
 - `base`: `/blackbox-records/`
 
-For label-member UAT, the GitHub Pages URL is intentionally wired to the UAT Worker on deploy-relevant `main` pushes. Repository-only documentation pushes are skipped by the shared static workflow, while `workflow_dispatch` remains available for a forced redeploy. Tester instructions live in [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md). This is Stripe test mode only and is not PRD go-live approval.
+For label-member UAT, the Cloudflare Pages URL is intentionally wired to the UAT Worker on deploy-relevant `main` pushes. Repository-only documentation pushes are skipped by the shared static workflow, while `workflow_dispatch` remains available for a forced redeploy. Tester instructions live in [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md). This is Stripe test mode only and is not PRD go-live approval.
+
+Commit → review UAT → explicitly promote this candidate. Main pushes deploy UAT only. In **Release BlackBox**, select `target=prd`, the reviewed full `artifact_commit_sha`, its successful `candidate_run_id`, and `confirm_code_promotion=true`. Promotion consumes the retained PRD public/staff and Worker artifacts without rebuilding. UAT must still serve that candidate, configuration must match, and no newer release may have mutated PRD. Artifacts expire after seven days: dispatch `target=uat` with the same full SHA, wait for fresh acceptance, then use its new run ID. See [the release runbook](docs/catalog-promotion.md). Code confirmation does not authorize live catalog changes, apex activation, or shopper launch.
 
 The UAT build alone shows the layered Review Site Marker: a solid `TEST SITE` label with `Test payments only` beneath the header wordmark, a `[TEST]` browser-title prefix, and `Test checkout. No real payment will be taken.` beside the final checkout action. These presentational cues identify a review URL; they do not enable checkout or own payment authority, which remain controlled by the Worker and Stripe configuration. Local, full PRD, and PRD Holding Page builds leave all three cues unset.
 
@@ -82,7 +84,7 @@ Backend Worker observability uses source-controlled Workers Logs/Traces config a
 
 ## Catalog Promotion
 
-Sveltia remains editorial-only. Content publication and buyable status are separate: generated catalog artifacts derive from current Store Item content, UAT provider state is applied through Stripe test-mode catalog tooling, and runtime checkout safety stays with D1, Worker gates, and operator controls. PRD catalog/D1 apply needs one-run `confirm_live_catalog_changes=true` plus CLI confirmation; this never deploys shopper runtime or enables checkout. GitHub Pages UAT is validated by a separate post-merge UAT provider smoke workflow after the shared static deployment workflow in `pages.yml` completes. See [docs/catalog-promotion.md](docs/catalog-promotion.md) for catalog artifact, rollback, and Promotion Evidence expectations.
+Sveltia remains editorial-only. Content publication and buyable status are separate: generated catalog artifacts derive from current Store Item content, UAT provider state is applied through Stripe test-mode catalog tooling, and runtime checkout safety stays with D1, Worker gates, and operator controls. PRD catalog/D1 apply needs one-run `confirm_live_catalog_changes=true` plus CLI confirmation; this never deploys shopper runtime or enables checkout. Cloudflare Pages UAT is validated by the canonical provider smoke inside `pages.yml` after deployment. See [docs/catalog-promotion.md](docs/catalog-promotion.md) for catalog artifact, rollback, and Promotion Evidence expectations.
 
 ## Prerequisites
 
@@ -181,7 +183,7 @@ pnpm smoke:stripe-uat -- --scenario all
 
 The Stripe UAT smoke runner targets the deployed UAT Worker path, drives Stripe-hosted Checkout with Playwright, checks UAT D1 remotely through Wrangler, and writes ignored evidence to `.codex-artifacts/smoke/uat/stripe-sandbox/<run-id>/` with a `summary.json` at the run root and `evidence.json` per scenario.
 
-The runner defaults to the GitHub Pages UAT site and is also used by the downstream GitHub Actions `catalog-promotion-uat` environment after the UAT Pages deploy succeeds.
+The runner defaults to the Cloudflare Pages UAT site and is also used by the same-release GitHub Actions `catalog-promotion-uat` environment after the UAT Pages deploy succeeds.
 
 Supported scenarios are `happy_path_paid`, `three_d_secure`, `card_declined`, `insufficient_funds`, `expired_card`, `incorrect_cvc`, `processing_error`, and `all`. The committed JetBrains run configuration `Stripe Sandbox Smoke` runs `--scenario all` through `pnpm smoke:stripe-uat`. Stripe’s current test card reference lives at <https://docs.stripe.com/testing#cards>. Paid deployed UAT smoke expects the persistent Stripe Dashboard/Workbench webhook endpoint to deliver to `https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev/api/stripe/webhooks`; `stripe listen` is local/temporary diagnostic tooling only and is not persistent readiness evidence.
 
@@ -211,10 +213,10 @@ pnpm email:previews
 
 This writes ignored HTML files under `.codex-artifacts/email-previews/` for Browser Use or the documented DevTools fallback. The previews use repo-owned template builders and do not create provider state.
 
-Run the UAT static smoke when you need to verify deployed GitHub Pages static routes, Sveltia admin boot/config, representative public pages, checkout shell visibility, sitemap, robots, console errors, and high-risk public-secret exposure:
+Run the UAT static smoke when you need to verify deployed Cloudflare Pages static routes, Sveltia admin boot/config, representative public pages, checkout shell visibility, sitemap, robots, console errors, and high-risk public-secret exposure:
 
 ```sh
-pnpm smoke:uat-static -- --site-url https://blackbox-studio-athens.github.io/blackbox-records --scenario all
+pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all
 ```
 
 The UAT static smoke runner is manual by design and writes ignored evidence to `.codex-artifacts/smoke/uat/uat-static/<run-id>/`. The supported scenarios are `cms_admin`, `cms_assets`, `checkout_shell`, `public_routes`, and `all`. It never creates provider state.
@@ -513,7 +515,7 @@ pnpm audit:commerce-boundaries
 - Paid-order email brand URLs are non-secret Worker runtime config and must match the Product Environment profile:
   - `EMAIL_BRAND_HOME_URL`
   - `EMAIL_BRAND_LOGO_URL`
-  - Local/UAT use the GitHub Pages public site and logo URLs.
+  - Local/UAT use the Cloudflare Pages public site and logo URLs.
   - PRD uses the Cloudflare Pages public site and logo URLs until an approved custom public site domain replaces them.
 - Resend uses `blackboxrecordsathens.com` for sending and a separate managed `*.resend.app` Receiving sink for UAT. Keep Receiving disabled on `blackboxrecordsathens.com`; DNS verification, SPF/DKIM/DMARC alignment, Cloudflare Email Routing for support replies, Topic/Segment setup, and Worker secret upload are manual operator checkpoints; do not commit provider-readiness evidence.
 - Local and automated tests use application-level provider mocks and committed fake `re_mock_*` values. UAT application email and newsletter Contact writes route to the sink recipient; PRD ignores that override and uses real recipients only after provider setup is complete.
@@ -599,7 +601,7 @@ UAT D1 seed flow:
 
 1. Apply UAT migrations only when the UAT environment is intentionally being prepared: `pnpm --filter @blackbox/backend d1:migrations:apply:uat`.
 2. Apply the non-secret base commerce seed with `pnpm --filter @blackbox/backend d1:seed:uat` when preparing the older narrow sandbox fixture.
-3. Apply the full GitHub Pages UAT catalog readiness seed with `pnpm --filter @blackbox/backend d1:seed:uat:catalog` before full-catalog `pnpm stripe:catalog:verify --env uat --apply`.
+3. Apply the full Cloudflare Pages UAT catalog readiness seed with `pnpm --filter @blackbox/backend d1:seed:uat:catalog` before full-catalog `pnpm stripe:catalog:verify --env uat --apply`.
 4. Do not use local mock stock, `price_mock_*` rows, real Stripe Price IDs, BOX NOW credentials, or production data in sandbox seed files.
 
 Local development:
@@ -616,7 +618,7 @@ cp apps/backend/.dev.vars.example apps/backend/.dev.vars
   creating or reading Checkout Sessions.
 - Hosted Worker checkout fails closed if the `FLAGS` binding is absent or feature evaluation fails; local/mock checkout
   remains enabled by default for no-account development.
-- Checkout session creation and split-port browser API reads accept origins only from `CHECKOUT_RETURN_ORIGINS`; configured origins include local static dev, Cloudflare Pages PRD, and the GitHub Pages UAT origin.
+- Checkout session creation and split-port browser API reads accept origins only from `CHECKOUT_RETURN_ORIGINS`; configured origins include local static dev, Cloudflare Pages PRD, and the Cloudflare Pages UAT origin.
 - The static checkout shell does not load Stripe.js or receive a Checkout `client_secret`; it redirects to the Worker-returned hosted Checkout URL.
 - `stripe-mock` mode does not require `apps/backend/.dev.vars` because the Worker `mock` env binds harmless local Stripe mock configuration and the browser redirects to a local-only mock Checkout URL.
 
@@ -630,7 +632,7 @@ CI/deploy credentials and public build variables:
 - `PUBLIC_BACKEND_BASE_URL`
 
 - `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are only for authenticating CI or a developer into Cloudflare for deployment.
-- `ASTRO_SITE_URL` and `ASTRO_BASE_PATH` are non-secret static build target values. Cloudflare Pages PRD uses `https://blackbox-records-web.pages.dev` plus `/`; GitHub Pages UAT uses `https://blackbox-studio-athens.github.io` plus `/blackbox-records/`.
+- `ASTRO_SITE_URL` and `ASTRO_BASE_PATH` are non-secret static build target values. Cloudflare Pages PRD uses `https://blackbox-records-web.pages.dev` plus `/`; Cloudflare Pages UAT uses `https://blackbox-records-web-uat.pages.dev` plus `/`.
 - `PUBLIC_BACKEND_BASE_URL` is the browser-visible backend discovery variable for the static Astro frontend.
 - None of these values are the Worker's runtime business secrets.
 - Deployed runtime secrets terminate as Cloudflare Worker secrets/bindings, not as browser env vars and not as GitHub-only config.
@@ -638,7 +640,7 @@ CI/deploy credentials and public build variables:
 ## UAT backend CI/CD
 
 - The static Astro site has one shared deployment workflow:
-  - `.github/workflows/pages.yml` runs shared repository gates once, uploads the prebuilt UAT static artifact to GitHub Pages, and uploads the prebuilt disabled PRD static artifact to Cloudflare Pages.
+  - `.github/workflows/pages.yml` runs shared repository gates once, deploys the prebuilt UAT artifact to Cloudflare Pages; a separate confirmed promotion consumes the retained PRD artifacts.
 - `.github/workflows/pages.yml` owns repository gates, catalog preparation, UAT Worker deployment, static deployments, and same-SHA UAT smoke.
 - `.github/workflows/uat-smoke.yml` remains available for manual diagnostics.
 - Rerun the release at the same source SHA after correcting its readiness report. See the catalog release runbook for the explicit one-time UAT reset recovery.
@@ -646,19 +648,19 @@ CI/deploy credentials and public build variables:
 - Cloudflare Access is not part of public UAT browsing at this stage.
 - Phase `06.1.1` now locks a separate protected staff-only hostname and Google-backed Access contract for internal stock work, while keeping the public UAT backend reachable and unauthenticated.
 
-## GitHub Pages UAT CI/CD
+## Cloudflare Pages UAT CI/CD
 
 - UAT deployment is handled by `.github/workflows/pages.yml`.
-- Deploy-relevant pushes to `main` run the shared UAT and PRD static deployment; pushes changing only `docs/**`, `openspec/**`, root `*.md`, or root `LICENSE` are skipped. `workflow_dispatch` remains available for a forced deployment.
+- Deploy-relevant pushes to `main` build both targets and deploy UAT only; pushes changing only `docs/**`, `openspec/**`, root `*.md`, or root `LICENSE` are skipped. `workflow_dispatch` remains available for a forced deployment.
 - The shared static workflow uses Node 24.20.0, pnpm 12.0.0, explicit pnpm setup/install steps, and only deploys UAT if all of these succeed:
   - `pnpm test:unit`
   - `pnpm check`
   - `pnpm audit:unused`
   - `pnpm build:web` for the UAT artifact
-- The build step passes `PUBLIC_BACKEND_BASE_URL` from `UAT_PUBLIC_BACKEND_BASE_URL` so the GitHub Pages URL serves as the public UAT surface.
+- The build step passes `PUBLIC_BACKEND_BASE_URL` from `UAT_PUBLIC_BACKEND_BASE_URL` so the Cloudflare Pages URL serves as the public UAT surface.
 - Pushes go directly to `main` in this repo.
-- If CI fails on `main`, GitHub Pages does not publish the broken UAT revision; fix it with a follow-up commit or revert the bad commit on `main`.
-- GitHub Pages is the UAT static host and must not be described as PRD rollback or legacy production hosting.
+- If CI fails on `main`, Cloudflare Pages does not publish the broken UAT revision; fix it with a follow-up commit or revert the bad commit on `main`.
+- Cloudflare Pages is the UAT static host and must not be described as PRD rollback or legacy production hosting.
 
 ## Cloudflare Pages PRD Deployment
 
@@ -742,7 +744,7 @@ Hosted configuration fixes the repository to `BlackBox-Studio-Athens/blackbox-re
 Deploy the official `sveltia/sveltia-cms-auth` project as a separate Cloudflare Worker. Register a GitHub OAuth app with callback `<authenticator-origin>/callback`. Configure the Worker's `GITHUB_CLIENT_ID`, encrypted `GITHUB_CLIENT_SECRET`, and exact domain list:
 
 ```text
-ALLOWED_DOMAINS=blackbox-studio-athens.github.io,blackbox-records-web.pages.dev
+ALLOWED_DOMAINS=blackbox-records-web-uat.pages.dev,blackbox-records-web.pages.dev
 ```
 
 Keep credentials outside this repository and static artifacts. Set the GitHub Actions repository variable `SVELTIA_AUTH_BASE_URL` to the HTTPS authenticator origin, without a path or trailing slash. Static builds receive only this non-secret URL.
@@ -806,7 +808,7 @@ If a source crops badly, replace the source image rather than adding focal-point
 
 - `.run/BlackBox Local Stack.run.xml` is the canonical committed local-stack launcher.
 - `.run/Stripe Sandbox Smoke.run.xml` is the at-will automated Playwright Stripe test-mode checkout launcher and runs `pnpm smoke:stripe-uat -- --scenario all`.
-- It targets the GitHub Pages UAT site by default.
+- It targets the Cloudflare Pages UAT site by default.
 - It runs `pnpm dev:stack:stripe-mock`, which starts local D1 prep, local official `stripe-mock` through Go, the local Worker backend pointed at the local stripe-mock proxy, and the local Astro frontend without Docker or real Stripe keys.
 - Real Stripe test mode remains available from the terminal through `pnpm dev:stack:stripe-test`.
 - `pnpm dev:stack:stripe-mock-api` is a terminal alias for the same official stripe-mock API path; do not add a second WebStorm launcher for it unless explicitly requested.

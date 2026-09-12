@@ -434,27 +434,6 @@ The system SHALL report static deployment speed in separate build-verification a
 - **THEN** the workflow report identifies it separately from repository verification and Astro build time
 - **AND** repository build/check optimization is not credited with fixing provider deploy latency unless post-change data proves it.
 
-### Requirement: Catalog-affecting deployment follows the verified artifact commit
-
-The system SHALL deploy UAT catalog changes only from the artifact commit whose backend/provider state passed hosted readiness.
-
-#### Scenario: Visible Store Item set changes
-
-- **WHEN** UAT promotion prepares and verifies the catalog
-- **THEN** Worker deployment and hosted listing readiness precede static deployment dispatch
-- **AND** the independent push path does not publish that catalog-set commit first.
-
-#### Scenario: Editorial content does not affect the catalog set
-
-- **WHEN** a normal non-catalog static change passes repository gates
-- **THEN** the standard static deployment path remains available.
-
-#### Scenario: PRD launch gate is closed
-
-- **WHEN** catalog automation evaluates PRD
-- **THEN** it does not deploy a live catalog Worker or static launch surface
-- **AND** production-go-live-readiness remains the owner of later PRD launch sequencing.
-
 ### Requirement: UAT Worker readiness includes persistent webhook proof
 
 The system SHALL include persistent Stripe endpoint configuration and delivery evidence in UAT Worker readiness.
@@ -518,3 +497,18 @@ The system MUST omit the shared UAT/PRD static deployment workflow for a `main` 
 - **WHEN** repository environment-model validation checks the shared static deployment workflow
 - **THEN** it requires the audited repository-only path exclusions and preserved manual dispatch
 - **AND** it rejects broad Markdown exclusion or commit-message coupling.
+
+### Requirement: Catalog deployments use the gated source revision
+
+All normal deployments SHALL follow the same source SHA and release readiness gate in pages.yml. No catalog-only bypass, artifact bot commit, or cross-workflow deployment dispatch SHALL exist.
+
+#### Scenario: Source affects catalog or code
+
+- **WHEN** repository gates and catalog preparation pass
+- **THEN** UAT Worker deployment and hosted listing checks precede static publication
+- **AND** smoke tests use that same source SHA.
+
+#### Scenario: PRD launch is disabled
+
+- **WHEN** the disabled PRD frontend is published
+- **THEN** existing checkout launch controls remain unchanged.

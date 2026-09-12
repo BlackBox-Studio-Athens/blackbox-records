@@ -9,9 +9,8 @@ import { createHttpApp } from '../../src/interfaces/http/app';
 const localBindings: AppBindings = {
   CHECKOUT_RETURN_ORIGINS: 'http://127.0.0.1:4321',
   COMMERCE_DB: env.COMMERCE_DB,
-  EMAIL_BRAND_HOME_URL: 'https://blackbox-studio-athens.github.io/blackbox-records/',
-  EMAIL_BRAND_LOGO_URL:
-    'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
+  EMAIL_BRAND_HOME_URL: 'https://blackbox-records-web-uat.pages.dev/',
+  EMAIL_BRAND_LOGO_URL: 'https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-horizontal.png',
   PRODUCT_ENVIRONMENT: 'LOCAL',
   RESEND_API_KEY: 're_mock_blackbox_local',
   RESEND_FROM_EMAIL: 'orders@blackboxrecordsathens.com',

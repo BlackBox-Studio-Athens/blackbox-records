@@ -71,16 +71,16 @@ describe('createHttpApp', () => {
       'http://backend.test/api/nope',
       {
         headers: {
-          Origin: 'https://blackbox-studio-athens.github.io',
+          Origin: 'https://blackbox-records-web-uat.pages.dev',
         },
       },
       {
         ...testBindings,
-        CHECKOUT_RETURN_ORIGINS: 'https://blackbox-studio-athens.github.io/blackbox-records',
+        CHECKOUT_RETURN_ORIGINS: 'https://blackbox-records-web-uat.pages.dev',
       },
     );
 
-    expect(response.headers.get('access-control-allow-origin')).toBe('https://blackbox-studio-athens.github.io');
+    expect(response.headers.get('access-control-allow-origin')).toBe('https://blackbox-records-web-uat.pages.dev');
   });
 
   it('keeps CORS preflight headers intact on API routes', async () => {

@@ -10,9 +10,8 @@ import { readEmailRuntimeConfig, type EmailProviderGateway } from '../../../../s
 import { currentPaidCheckoutOrder } from '../../../fixtures/current-paid-checkout-order';
 
 const config = readEmailRuntimeConfig({
-  EMAIL_BRAND_HOME_URL: 'https://blackbox-studio-athens.github.io/blackbox-records/',
-  EMAIL_BRAND_LOGO_URL:
-    'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
+  EMAIL_BRAND_HOME_URL: 'https://blackbox-records-web-uat.pages.dev/',
+  EMAIL_BRAND_LOGO_URL: 'https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-horizontal.png',
   PRODUCT_ENVIRONMENT: 'UAT',
   RESEND_API_KEY: 're_mock_blackbox_local',
   RESEND_FROM_EMAIL: 'orders@blackboxrecordsathens.com',

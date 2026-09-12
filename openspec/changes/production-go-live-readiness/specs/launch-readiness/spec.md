@@ -41,6 +41,7 @@ The system MUST associate launch artifacts, configuration, validation, evidence,
 - **WHEN** build, Worker, catalog, migration, test, performance, browser, and provider evidence is recorded
 - **THEN** final launch checks identify the accepted artifact commit SHA and relevant environment configuration/deployment
 - **AND** historical prerequisite results retain their original source references
+- **AND** technical PRD code deployment follows explicit Software Release promotion of the accepted UAT candidate SHA/run and its verified PRD-targeted artifacts, independently of live-catalog and shopper-launch authorization
 - **AND** a later source, generated-artifact, or configuration change reruns affected checks; evidence notes or archival alone do not invalidate unchanged runtime proof.
 
 ### Requirement: Stripe-last provider sequence

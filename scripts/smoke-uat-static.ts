@@ -112,7 +112,7 @@ export type UatStaticSmokeEvidenceInput = {
   status: UatStaticSmokeEvidence['status'];
 };
 
-const defaultSiteUrl = 'https://blackbox-studio-athens.github.io/blackbox-records';
+const defaultSiteUrl = 'https://blackbox-records-web-uat.pages.dev';
 const defaultEvidenceDir = path.join('.codex-artifacts', 'smoke', 'uat', 'uat-static');
 const representativeReleaseSlug = 'disintegration';
 const representativeArtistSlug = 'chronoboros';

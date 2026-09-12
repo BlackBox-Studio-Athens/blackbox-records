@@ -56,7 +56,7 @@ const metadataType = layoutType === 'news' ? 'article' : 'website';
 const configuredPublicBackendBaseUrl = import.meta.env.PUBLIC_BACKEND_BASE_URL?.trim();
 const publicBackendOrigin = configuredPublicBackendBaseUrl ? new URL(configuredPublicBackendBaseUrl).origin : null;
 const orgName = labelSettings.label_name || siteConfig.title;
-const orgUrl = labelSettings.url || createAbsoluteSiteUrl('/');
+const orgUrl = createAbsoluteSiteUrl('/');
 const orgLogo = labelSettings.logo?.includes('://') ? labelSettings.logo : createAbsoluteSiteUrl(labelSettings.logo);
 const sameAs = socialItems.filter((item) => item.url && item.url !== '#').map((item) => item.url);
 const showReviewSiteMarker = import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true';

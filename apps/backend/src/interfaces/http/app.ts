@@ -10,6 +10,9 @@ import { jsonError } from './responses';
 import { registerInternalRoutes } from './routes/register-internal-routes';
 import { registerPublicRoutes } from './routes/register-public-routes';
 
+declare const RELEASE_SOURCE_SHA: string;
+declare const RELEASE_RUN_NUMBER: string;
+
 export function createHttpApp(): AppOpenApi {
   const app = new OpenAPIHono<AppEnv>({
     defaultHook(result, context) {
@@ -24,6 +27,11 @@ export function createHttpApp(): AppOpenApi {
   });
 
   app.use('/api/*', requestId({ limitLength: 80 }));
+  app.use('/api/*', async (context, next) => {
+    await next();
+    if (typeof RELEASE_SOURCE_SHA !== 'undefined') context.header('X-Release-SHA', RELEASE_SOURCE_SHA);
+    if (typeof RELEASE_RUN_NUMBER !== 'undefined') context.header('X-Release-Run-Number', RELEASE_RUN_NUMBER);
+  });
   app.use('/api/*', requestObservabilityMiddleware());
   app.use(
     '/api/*',

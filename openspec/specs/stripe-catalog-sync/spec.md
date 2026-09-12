@@ -39,23 +39,6 @@ The system MUST NOT use Astro content or browser state as the authority for buya
 - **THEN** checkout is disabled or rejected with an actionable catalog-drift error
 - **AND** the storefront does not present an Astro fixture price as authoritative.
 
-### Requirement: Stripe catalog identity alignment
-
-The system SHALL align each buyable Store Item variant with a Stripe Product and active Stripe Price through app-owned identifiers.
-
-#### Scenario: Buyable variant is verified against Stripe
-
-- **GIVEN** a Store Item variant is buyable
-- **WHEN** catalog verification runs for the selected environment
-- **THEN** Stripe has an active Product/Price pair whose metadata or lookup key identifies the same `storeItemSlug` and `variantId`
-- **AND** D1 `VariantStripeMapping` points to that Price.
-
-#### Scenario: Mapping points at the wrong Stripe Price
-
-- **GIVEN** D1 maps a `variantId` to a Stripe Price
-- **WHEN** that Price metadata, lookup key, amount, currency, or active status does not match the Store Offer contract
-- **THEN** catalog verification fails and reports the variant without printing secrets.
-
 ### Requirement: Stripe catalog drift is fail-closed
 
 The system MUST not create or accept placeholder Stripe Prices for real storefront checkout evidence.
@@ -126,103 +109,6 @@ The system SHALL provide a repeatable Stripe-native forensics path for unexpecte
 - **THEN** the system relies on local catalog reports, ignored evidence exports, Worker logs, and D1 state
 - **AND** the docs state that Stripe Events may no longer be available for that timestamp.
 
-### Requirement: Current catalog verification detects owned orphan objects
-
-The system MUST detect active BlackBox-owned Stripe catalog objects that are not part of the current expected Store Item catalog for the selected Product Environment.
-
-#### Scenario: Active owned Price is not expected
-
-- **GIVEN** a Stripe Price is active and identifies BlackBox ownership through lookup key or metadata
-- **WHEN** catalog verification runs for a Product Environment
-- **THEN** the Price is reported as drift if its `storeItemSlug`, `variantId`, or Product Environment is not in the current expected catalog
-- **AND** checkout is not enabled from that unexpected Price.
-
-#### Scenario: Legacy sandbox identity is still present
-
-- **GIVEN** Stripe contains an active object with legacy `blackbox:sandbox:*` identity or documented legacy UAT naming
-- **WHEN** UAT catalog verification runs
-- **THEN** the object is reported separately from current `blackbox:uat:*` catalog entries
-- **AND** the cleanup action is explicit and redacted.
-
-#### Scenario: Cleanup apply is requested
-
-- **GIVEN** owned orphan drift has been reviewed in dry-run output
-- **WHEN** an explicit cleanup apply command runs
-- **THEN** it mutates only confirmed BlackBox-owned objects for the selected Product Environment
-- **AND** it refuses to mutate objects whose ownership or Product Environment cannot be classified.
-
-### Requirement: Current-state reconciliation remains authoritative
-
-The system MUST use current Stripe Product and Price state for catalog authority rather than stale local report data, Stripe search snapshots, or webhook payload snapshots.
-
-#### Scenario: Catalog reconciliation resolves a Store Item variant
-
-- **GIVEN** the Worker or catalog verifier needs the current Price for a Store Item variant
-- **WHEN** reconciliation runs
-- **THEN** it resolves candidates through current Stripe list or retrieve operations by lookup key, metadata, and existing D1 mapping
-- **AND** it does not treat Stripe Search results as the only source of checkout authority.
-
-#### Scenario: Stripe Search is used
-
-- **GIVEN** an operator or script uses Stripe Search for catalog diagnostics
-- **WHEN** results are inspected
-- **THEN** the results are used for drift discovery, backfill, or duplicate investigation
-- **AND** checkout readiness still depends on the reconciler's current-state validation.
-
-### Requirement: Catalog mutations use deterministic idempotency
-
-The system MUST use deterministic Stripe idempotency keys for mutating Product and Price API requests issued by catalog verification, catalog apply, and catalog cleanup flows.
-
-#### Scenario: Logical catalog mutation is retried
-
-- **GIVEN** a catalog mutation request fails after being sent to Stripe
-- **WHEN** the same logical mutation is retried with the same amount, currency, Product Projection, repair target, and action identity
-- **THEN** the Stripe idempotency key is the same
-- **AND** retrying cannot create an additional Product or Price for that logical mutation.
-
-#### Scenario: Intended mutation input changes
-
-- **GIVEN** the target amount, currency, Product Projection, repair target, or mutation purpose changes
-- **WHEN** the catalog mutation is prepared again
-- **THEN** the Stripe idempotency key identity changes
-- **AND** Stripe does not treat the changed operation as a retry of the previous request.
-
-#### Scenario: Catalog creation follows a new promotion reset
-
-- **GIVEN** an independent catalog promotion resets repo-owned Products and Prices
-- **WHEN** that promotion creates replacement catalog objects
-- **THEN** Product and Price create idempotency includes a reset-cycle scope that is stable within one workflow attempt and changes on a rerun that repeats reset
-- **AND** a rerun that does not repeat reset keeps the prior scope so a partial Product and Price creation can retry safely
-- **AND** Stripe does not replay catalog objects created by an earlier promotion run.
-
-#### Scenario: Idempotency key is built
-
-- **GIVEN** catalog code prepares a Stripe mutating API request
-- **WHEN** the idempotency key is built
-- **THEN** the key is bounded to Stripe's accepted key length
-- **AND** the identity includes a stable request-shape fingerprint for the Stripe write parameters that define that logical mutation.
-
-#### Scenario: Stripe response is replayed
-
-- **GIVEN** Stripe reports that a response was served from a prior idempotent request
-- **WHEN** local evidence or diagnostics are recorded
-- **THEN** the report captures safe request correlation such as request ID, action kind, replay status, Product Environment, and variant identity when available
-- **AND** it does not use replay status as proof that the resulting catalog state is still current.
-
-#### Scenario: Read-only full-catalog audit runs
-
-- **GIVEN** an operator or CI audit inspects the full UAT catalog
-- **WHEN** drift is detected
-- **THEN** the audit reports drift without relying on idempotency keys to prevent provider mutation
-- **AND** no Stripe Product or Price is created, reactivated, or archived by the read-only audit.
-
-#### Scenario: Independent apply runs overlap
-
-- **GIVEN** two independent catalog apply or cleanup runs are started
-- **WHEN** they target the same Product Environment
-- **THEN** orchestration uses run identity, dry-run review, and workflow or operator concurrency controls
-- **AND** Stripe idempotency keys are not treated as a distributed lock for independent runs.
-
 ### Requirement: Catalog reports expose safe mutation correlation
 
 The system SHALL expose safe correlation fields for catalog verification, apply, cleanup, and repair actions.
@@ -258,87 +144,6 @@ The system MUST make Stripe Product and Price creation shape explicit so catalog
 - **THEN** the flow is reported and logged as combined Product/Price creation
 - **AND** tests prove it cannot silently bypass normal Price identity, metadata, lookup-key, and idempotency checks.
 
-### Requirement: Dashboard replacement Prices propagate through catalog reconciliation
-
-The system MUST treat a Stripe Dashboard replacement Price as the accepted operator path for changing a Store Item variant's buyable amount or currency.
-
-#### Scenario: Replacement Price becomes active authority
-
-- **GIVEN** a Stripe Dashboard operator creates an active replacement Price for an existing Store Item variant
-- **AND** the replacement Price belongs to the existing active Product with complete matching app identity metadata
-- **AND** the previous Price is inactive, archived, or no longer matches the active lookup key
-- **WHEN** catalog reconciliation runs for that variant
-- **THEN** D1 `VariantStripeMapping` points to the replacement Price
-- **AND** D1 `StoreOfferSnapshot` stores the replacement amount, currency, lookup key, active status, and Price identity.
-
-#### Scenario: Replacement Price inherits Product identity
-
-- **GIVEN** a replacement Price has no lookup key or Price-level app identity metadata
-- **AND** its active parent Product carries complete app identity metadata for the same Product Environment, Store Item, and variant
-- **WHEN** catalog reconciliation runs
-- **THEN** the system MAY resolve that Price as authority only when it is the sole active Price candidate under that identified Product
-- **AND** apply reconciliation repairs the canonical lookup key and Price metadata without operator entry
-- **AND** it does not rewrite already-matching Product identity metadata as part of Price-only repair.
-
-#### Scenario: Replacement Price or Product identity conflicts
-
-- **GIVEN** a replacement Price carries a non-empty lookup key or app identity that conflicts with its Product or expected Store Item variant
-- **WHEN** catalog reconciliation runs
-- **THEN** the system reports Price Authority drift and fails closed
-- **AND** it does not overwrite the conflicting identity or make checkout ready.
-
-#### Scenario: Amount or currency changed on old Price is not expected
-
-- **GIVEN** an operator attempts to change a buyable amount or currency by editing repo content or stale generated expected-price data
-- **WHEN** catalog reconciliation evaluates the Store Item variant
-- **THEN** the system rejects that path as field-ownership drift
-- **AND** requires a Stripe replacement Price or approved environment-scoped catalog promotion flow.
-
-### Requirement: Catalog webhooks reconcile current Stripe state
-
-The system SHALL process Stripe Product and Price webhook events as change notifications and reconcile current Stripe catalog state before mutating D1 Store Offer authority.
-
-#### Scenario: Price update event arrives
-
-- **GIVEN** Stripe sends a signed `price.updated` event for a known Store Item variant
-- **WHEN** the Worker records the event and identifies the matching Product Environment and variant from metadata or lookup key
-- **THEN** the Worker retrieves or lists current Stripe Product/Price candidates through the catalog gateway
-- **AND** reconciliation uses the current active Stripe state rather than copying the webhook payload amount directly into D1.
-
-#### Scenario: Price creation event arrives
-
-- **GIVEN** Stripe sends a signed `price.created` event for a replacement Price
-- **WHEN** the event identifies a known Store Item variant
-- **THEN** the Worker reconciles the variant and updates D1 only if exactly one active Price is authoritative for that variant
-- **AND** checkout remains unavailable for the variant when reconciliation reports blocking Price Authority drift.
-
-#### Scenario: Product update event arrives
-
-- **GIVEN** Stripe sends a signed `product.updated` event for a Product carrying app identity metadata
-- **WHEN** the Worker identifies affected Store Item variants in the same Product Environment as the Worker
-- **THEN** the Worker reconciles matching variants so Product active status, Product Projection drift, and linked Price authority are reflected in D1 and diagnostics.
-
-#### Scenario: Catalog event belongs to another Product Environment
-
-- **GIVEN** Stripe sends a signed Product or Price event whose `appEnv` metadata or environment-scoped lookup key does not match the Worker's Product Environment
-- **WHEN** the Worker processes the event
-- **THEN** the Worker records or logs an ignored non-retryable outcome
-- **AND** it does not mutate D1 mappings, D1 Store Offer snapshots, Stripe state, or checkout readiness for the receiving environment.
-
-#### Scenario: Catalog event identity is malformed
-
-- **GIVEN** Stripe sends a signed Product or Price event with malformed `variantId`, malformed `storeItemSlug`, or incomplete app identity
-- **WHEN** the Worker cannot safely identify one local Store Item variant in the same Product Environment
-- **THEN** the Worker records or logs an ignored non-retryable outcome with redacted context
-- **AND** it does not retry indefinitely or mutate D1.
-
-#### Scenario: Deleted catalog event lacks variant identity
-
-- **GIVEN** Stripe sends a `price.deleted` or `product.deleted` event that does not include Store Item identity metadata
-- **WHEN** the Worker cannot identify a variant from the event payload
-- **THEN** the Worker records or logs the ignored catalog event without mutating D1
-- **AND** authoritative reads, checkout, or targeted manual verification remain responsible for detecting any resulting drift.
-
 ### Requirement: Catalog webhook handling is replay-safe
 
 The system MUST safely handle duplicate, failed, retried, and out-of-order Stripe catalog webhook deliveries.
@@ -370,49 +175,6 @@ The system MUST safely handle duplicate, failed, retried, and out-of-order Strip
 - **WHEN** the Worker cannot read Stripe or D1 during reconciliation
 - **THEN** the webhook response is retryable rather than falsely acknowledging successful propagation
 - **AND** duplicate suppression does not skip the retry unless a prior attempt already succeeded.
-
-### Requirement: Ambiguous Price Authority fails closed
-
-The system MUST refuse to choose a buyable Price when Stripe Dashboard state has ambiguous active Prices for one Store Item variant.
-
-#### Scenario: Two active Prices match one variant
-
-- **GIVEN** two or more active Stripe Prices match the same Product Environment, `storeItemSlug`, and `variantId`
-- **WHEN** catalog reconciliation runs from webhook, Store Offer read, checkout start, targeted manual verification, or a deliberate read-only audit
-- **THEN** the result reports `ambiguous_active_price`
-- **AND** no D1 Store Offer snapshot is promoted as checkout-ready for that variant.
-
-#### Scenario: Active Price has wrong identity
-
-- **GIVEN** an active Stripe Price is linked to a Product but its metadata or lookup key identifies a different Store Item variant
-- **WHEN** catalog reconciliation evaluates the local D1 mapping
-- **THEN** the result reports Price Authority drift
-- **AND** checkout remains disabled for the affected variant until a matching active Price exists.
-
-### Requirement: Store Offer snapshots recover from missed webhooks
-
-The system SHALL keep authoritative Store Offer reads, checkout start, and targeted manual catalog verification as backstops when webhook propagation is delayed or missed.
-
-#### Scenario: Webhook was missed
-
-- **GIVEN** Stripe Price state changed but D1 `StoreOfferSnapshot` still contains the previous Price
-- **WHEN** a shopper-facing authoritative Store Offer read runs
-- **THEN** the Worker reconciles current Stripe state before returning price/readiness
-- **AND** the response returns the current replacement Price or a fail-closed catalog-drift state.
-
-#### Scenario: Manual verification runs after price change
-
-- **GIVEN** an operator changes a Price in Stripe Dashboard
-- **WHEN** `pnpm stripe:catalog:verify --env uat --store-item <storeItemSlug>` runs, with explicit apply when repair is required
-- **THEN** the report classifies Product Projection, Price Authority, D1 mapping, and Store Offer snapshot status for only the identified Store Item variant
-- **AND** apply mode does not reconcile or mutate unrelated variants
-- **AND** output does not print Stripe secrets or full account-private object IDs.
-
-#### Scenario: Runtime catalog cron is absent
-
-- **WHEN** UAT Worker triggers and handlers are inspected
-- **THEN** no scheduled full-catalog Stripe verification or time-only snapshot renewal is registered
-- **AND** deliberate full-catalog verification remains an operator or CI audit path rather than a runtime cron.
 
 ### Requirement: Catalog generation requires canonical app identity
 
@@ -488,3 +250,65 @@ The system SHALL map fixed desired prices to Stripe unit_amount and pay-what-you
 - **WHEN** catalog sync handles a valid distro desired price
 - **THEN** it accepts only the matching price kind, EUR currency, and configured amount shape
 - **AND** ambiguous or mismatched provider state fails closed.
+
+### Requirement: Each variant binds one Product and its default Price
+
+Each variant SHALL bind to one Stripe Product in D1. The Product's default Price SHALL select its selling price. Runtime validation SHALL confirm app identity, environment, active state, one-time price type, EUR currency, supported fixed/custom amount, and approved inclusive VAT configuration.
+
+#### Scenario: A Product default changes
+
+- **WHEN** an operator chooses a replacement default Price while older Prices remain active
+- **THEN** detail, checkout, and targeted snapshot refresh use the new default Price
+- **AND** older Prices do not cause ambiguity or get archived by synchronization.
+
+#### Scenario: Bound identity conflicts
+
+- **WHEN** a bound Product or selected Price identifies another environment or variant
+- **THEN** reconciliation fails closed without rewriting that identity.
+
+### Requirement: Runtime price resolution retrieves the bound Product
+
+Runtime reconciliation SHALL retrieve the bound Product and its expanded default Price directly. Account-wide scans SHALL NOT select runtime price authority.
+
+#### Scenario: Default Price is missing
+
+- **WHEN** a bound Product has no valid default Price
+- **THEN** the item reports catalog drift rather than selecting another active Price or generating a fallback amount.
+
+### Requirement: Catalog notifications refresh only bound Products
+
+Signed Product and Price events SHALL identify an affected item through its persisted Product binding and reread current provider state. Event metadata, amount, and arrival order SHALL NOT select selling authority.
+
+#### Scenario: Replacement Price has no app metadata
+
+- **WHEN** its signed event references a bound Product
+- **THEN** only that item is refreshed from the current default Price.
+
+#### Scenario: An unrelated event arrives
+
+- **WHEN** its Product has no local binding
+- **THEN** it is acknowledged without catalog mutation.
+
+### Requirement: Catalog initialization resumes without duplicate objects
+
+New UAT items SHALL use stable Product identities and scoped Price inspection in addition to Stripe idempotency keys. Ordinary synchronization SHALL preserve existing Prices, stock, pauses, reservations, and orders.
+
+#### Scenario: Bootstrap is interrupted
+
+- **WHEN** a retry occurs after Product or Price creation
+- **THEN** it reuses those objects and establishes the default without duplicates
+- **AND** conflicting or paused existing objects require review.
+
+#### Scenario: PRD has no configured Price
+
+- **WHEN** live preparation is explicitly authorized
+- **THEN** missing PRD pricing blocks readiness; test fixtures never create live selling prices.
+
+### Requirement: Authoritative reads refresh listing snapshots
+
+Detail and checkout reads SHALL resolve the current default Price and refresh the corresponding D1 mapping and snapshot without mutating provider presentation or Prices. Targeted manual repair SHALL remain available.
+
+#### Scenario: Webhook is missed
+
+- **WHEN** an authoritative read follows a Dashboard price change
+- **THEN** it returns current authority and repairs the listing projection or fails closed.

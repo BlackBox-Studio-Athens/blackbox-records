@@ -18,7 +18,7 @@ import {
   type CmsAdminRenderedState,
 } from '../../../../scripts/smoke-uat-static';
 
-const siteRoot = 'https://blackbox-studio-athens.github.io/blackbox-records/';
+const siteRoot = 'https://blackbox-records-web-uat.pages.dev/';
 const hostedConfig = buildSveltiaConfig({
   siteRootUrl: siteRoot,
   logoUrl: siteRoot + 'assets/logo.svg',
@@ -220,7 +220,7 @@ describe('UAT static smoke runner', () => {
   it('checks deployed collection images instead of the retired admin-media route', () => {
     expect(
       findCmsPublicMediaPath(
-        '<header><img src="/logo.svg"></header><main><picture><img src="/blackbox-records/_astro/cover.webp"></picture></main>',
+        '<header><img src="/logo.svg"></header><main><picture><img src="/_astro/cover.webp"></picture></main>',
         siteRoot,
       ),
     ).toBe('/_astro/cover.webp');
@@ -233,9 +233,9 @@ describe('UAT static smoke runner', () => {
     expect(() => findCmsPublicMediaPath('<main><img src="https://other.example/cover.jpg"></main>', siteRoot)).toThrow(
       'under the site base',
     );
-    expect(() => findCmsPublicMediaPath('<main><img src="/assets/cover.jpg"></main>', siteRoot)).toThrow(
-      'under the site base',
-    );
+    expect(() =>
+      findCmsPublicMediaPath('<main><img src="/assets/cover.jpg"></main>', 'http://127.0.0.1:4321/blackbox-records/'),
+    ).toThrow('under the site base');
   });
 
   it('builds evidence with the read-only unauthenticated smoke contract', () => {

@@ -14,13 +14,34 @@ import {
 } from '../src/env';
 
 describe('Product Environment Profile', () => {
+  it('keeps hosted targets isolated at root while Local retains base-path coverage', () => {
+    const local = getProductEnvironmentProfile('LOCAL');
+    const uat = getProductEnvironmentProfile('UAT');
+    const prd = getProductEnvironmentProfile('PRD');
+    expect(local.publicSite).toEqual({
+      origin: 'http://127.0.0.1:4321',
+      basePath: '/blackbox-records/',
+      pagesProject: null,
+    });
+    expect(uat.publicSite).toEqual({
+      origin: 'https://blackbox-records-web-uat.pages.dev',
+      basePath: '/',
+      pagesProject: 'blackbox-records-web-uat',
+    });
+    expect(prd.publicSite).toEqual({
+      origin: 'https://blackbox-records-web.pages.dev',
+      basePath: '/',
+      pagesProject: 'blackbox-records-web',
+    });
+    expect(uat.publicBackendOrigin).not.toBe(prd.publicBackendOrigin);
+  });
   it('maps each Product Environment to one Worker runtime target and policy profile', () => {
     expect(Object.keys(productEnvironmentProfiles)).toEqual(['LOCAL', 'UAT', 'PRD']);
 
     expect(getProductEnvironmentProfile('LOCAL')).toMatchObject({
       emailBrand: {
-        homeUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/',
-        logoUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
+        homeUrl: 'https://blackbox-records-web-uat.pages.dev/',
+        logoUrl: 'https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-horizontal.png',
       },
       emailDeliveryPolicy: 'direct',
       nativeCheckoutEnabledByDefault: true,
@@ -33,8 +54,8 @@ describe('Product Environment Profile', () => {
         applyScheduledChanges: false,
       },
       emailBrand: {
-        homeUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/',
-        logoUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
+        homeUrl: 'https://blackbox-records-web-uat.pages.dev/',
+        logoUrl: 'https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-horizontal.png',
       },
       emailDeliveryPolicy: 'uat-sink',
       emailProviderTag: 'uat',

@@ -24,6 +24,12 @@ export type OperatorIdentity = {
 };
 
 export const productEnvironmentProfileSchema = z.object({
+  publicSite: z.object({
+    origin: z.url(),
+    basePath: z.string(),
+    pagesProject: z.string().nullable(),
+  }),
+  publicBackendOrigin: z.url(),
   catalogVerificationPolicy: z.object({
     applyScheduledChanges: z.boolean(),
   }),
@@ -46,13 +52,15 @@ const productEnvironmentProfileMapSchema = z.record(productEnvironmentSchema, pr
 
 export const productEnvironmentProfiles = productEnvironmentProfileMapSchema.parse({
   LOCAL: {
+    publicSite: { origin: 'http://127.0.0.1:4321', basePath: '/blackbox-records/', pagesProject: null },
+    publicBackendOrigin: 'http://127.0.0.1:8787',
     catalogVerificationPolicy: {
       applyScheduledChanges: true,
     },
     emailDeliveryPolicy: 'direct',
     emailBrand: {
-      homeUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/',
-      logoUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
+      homeUrl: 'https://blackbox-records-web-uat.pages.dev/',
+      logoUrl: 'https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-horizontal.png',
     },
     emailProviderTag: 'local',
     nativeCheckoutEnabledByDefault: true,
@@ -62,13 +70,19 @@ export const productEnvironmentProfiles = productEnvironmentProfileMapSchema.par
     workerDeploymentTarget: 'local',
   },
   UAT: {
+    publicSite: {
+      origin: 'https://blackbox-records-web-uat.pages.dev',
+      basePath: '/',
+      pagesProject: 'blackbox-records-web-uat',
+    },
+    publicBackendOrigin: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
     catalogVerificationPolicy: {
       applyScheduledChanges: false,
     },
     emailDeliveryPolicy: 'uat-sink',
     emailBrand: {
-      homeUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/',
-      logoUrl: 'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
+      homeUrl: 'https://blackbox-records-web-uat.pages.dev/',
+      logoUrl: 'https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-horizontal.png',
     },
     emailProviderTag: 'uat',
     nativeCheckoutEnabledByDefault: false,
@@ -78,6 +92,12 @@ export const productEnvironmentProfiles = productEnvironmentProfileMapSchema.par
     workerDeploymentTarget: 'uat',
   },
   PRD: {
+    publicSite: {
+      origin: 'https://blackbox-records-web.pages.dev',
+      basePath: '/',
+      pagesProject: 'blackbox-records-web',
+    },
+    publicBackendOrigin: 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev',
     catalogVerificationPolicy: {
       applyScheduledChanges: false,
     },

@@ -418,7 +418,7 @@ function classifyWorkerOriginScope(
   const hasLocal = origins.some(
     (origin) => origin.startsWith('http://127.0.0.1') || origin.startsWith('http://localhost'),
   );
-  const hasUat = origins.includes('https://blackbox-studio-athens.github.io/blackbox-records');
+  const hasUat = origins.includes('https://blackbox-records-web-uat.pages.dev');
   const hasPrd = origins.includes('https://blackbox-records-web.pages.dev');
   const hasPreview = origins.some(
     (origin) =>
@@ -437,8 +437,8 @@ function classifyWorkerOriginScope(
     return {
       detail:
         hasUat && hasLocal && !hasPrd && !hasPreview
-          ? 'UAT Worker allows GitHub Pages plus local uat-connected diagnostics.'
-          : 'UAT Worker must allow GitHub Pages and local uat-connected diagnostics, but not PRD or preview origins.',
+          ? 'UAT Worker allows Cloudflare Pages UAT plus local uat-connected diagnostics.'
+          : 'UAT Worker must allow Cloudflare Pages UAT and local uat-connected diagnostics, but not PRD or preview origins.',
       name: 'WORKER_ORIGIN_SCOPE',
       status: hasUat && hasLocal && !hasPrd && !hasPreview ? 'present' : 'missing',
     };

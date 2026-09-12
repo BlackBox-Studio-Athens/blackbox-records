@@ -25,9 +25,8 @@ export default defineConfig({
           PRODUCT_ENVIRONMENT: 'LOCAL',
           LOCAL_OPERATOR_EMAIL: 'operator@blackboxrecords.example',
           CHECKOUT_RETURN_ORIGINS: 'http://127.0.0.1:4321,http://localhost:4321',
-          EMAIL_BRAND_HOME_URL: 'https://blackbox-studio-athens.github.io/blackbox-records/',
-          EMAIL_BRAND_LOGO_URL:
-            'https://blackbox-studio-athens.github.io/blackbox-records/assets/images/brand/logo-horizontal.png',
+          EMAIL_BRAND_HOME_URL: 'https://blackbox-records-web-uat.pages.dev/',
+          EMAIL_BRAND_LOGO_URL: 'https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-horizontal.png',
           STRIPE_API_BASE_URL: 'http://127.0.0.1:12110',
           STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: 'pmc_test_blackbox_workers_pool',
           STRIPE_SECRET_KEY: 'sk_test_workers_pool',

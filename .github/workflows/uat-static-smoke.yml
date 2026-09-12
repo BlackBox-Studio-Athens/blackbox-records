@@ -5,7 +5,7 @@ on:
       site_url:
         description: Deployed UAT static site URL.
         required: true
-        default: https://blackbox-studio-athens.github.io/blackbox-records
+        default: https://blackbox-records-web-uat.pages.dev
         type: string
       scenario:
         description: Smoke scenario to run.
@@ -54,7 +54,7 @@ jobs:
     env:
       UAT_STATIC_EVIDENCE_DIR: ${{ inputs.evidence_dir || '.codex-artifacts/smoke/uat/uat-static' }}
       UAT_STATIC_SCREENSHOTS: ${{ inputs.screenshots || 'on-failure' }}
-      UAT_STATIC_SITE_URL: ${{ inputs.site_url || 'https://blackbox-studio-athens.github.io/blackbox-records' }}
+      UAT_STATIC_SITE_URL: ${{ inputs.site_url || 'https://blackbox-records-web-uat.pages.dev' }}
       UAT_STATIC_SMOKE_SCENARIO: ${{ inputs.scenario || 'all' }}
       UAT_STATIC_TIMEOUT_MS: ${{ inputs.timeout_ms || '60000' }}
     steps:

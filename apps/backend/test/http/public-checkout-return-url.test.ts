@@ -40,9 +40,9 @@ describe('public checkout return URL policy', () => {
     ).toBe('https://blackbox.example/blackbox-records/store/checkout/return/?session_id={CHECKOUT_SESSION_ID}');
   });
 
-  it('falls back to the configured GitHub Pages base path when only the origin is available', () => {
+  it('falls back to the configured Cloudflare UAT root when only the origin is available', () => {
     const headers = new Headers({
-      origin: 'https://blackbox-studio-athens.github.io',
+      origin: 'https://blackbox-records-web-uat.pages.dev',
     });
 
     expect(
@@ -50,16 +50,14 @@ describe('public checkout return URL policy', () => {
         headers,
         'http://backend.test/api/checkout/sessions',
         'disintegration-black-vinyl-lp',
-        'https://blackbox-studio-athens.github.io/blackbox-records',
+        'https://blackbox-records-web-uat.pages.dev',
       ),
-    ).toBe(
-      'https://blackbox-studio-athens.github.io/blackbox-records/store/checkout/return/?session_id={CHECKOUT_SESSION_ID}',
-    );
+    ).toBe('https://blackbox-records-web-uat.pages.dev/store/checkout/return/?session_id={CHECKOUT_SESSION_ID}');
   });
 
   it('falls back to the configured site base for cancel URLs too', () => {
     const headers = new Headers({
-      origin: 'https://blackbox-studio-athens.github.io',
+      origin: 'https://blackbox-records-web-uat.pages.dev',
     });
 
     expect(
@@ -67,9 +65,9 @@ describe('public checkout return URL policy', () => {
         headers,
         'http://backend.test/api/checkout/sessions',
         'disintegration-black-vinyl-lp',
-        'https://blackbox-studio-athens.github.io/blackbox-records',
+        'https://blackbox-records-web-uat.pages.dev',
       ),
-    ).toBe('https://blackbox-studio-athens.github.io/blackbox-records/store/checkout/');
+    ).toBe('https://blackbox-records-web-uat.pages.dev/store/checkout/');
   });
 
   it('rejects fallback origins outside the configured allowlist', () => {

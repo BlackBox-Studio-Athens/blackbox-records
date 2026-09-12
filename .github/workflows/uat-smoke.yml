@@ -9,8 +9,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: uat-smoke-${{ github.event.workflow_run.head_branch }}
-  cancel-in-progress: true
+  group: blackbox-release
+  cancel-in-progress: false
 jobs:
   smoke:
     runs-on: ubuntu-latest
@@ -20,7 +20,7 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
       STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-      UAT_SITE_URL: https://blackbox-studio-athens.github.io/blackbox-records
+      UAT_SITE_URL: https://blackbox-records-web-uat.pages.dev
       UAT_WORKER_URL: https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev
     steps:
       - name: Checkout deployed commit

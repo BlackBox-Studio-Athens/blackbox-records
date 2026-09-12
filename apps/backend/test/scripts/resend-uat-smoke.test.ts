@@ -68,7 +68,7 @@ describe('Resend UAT smoke runner', () => {
         body: JSON.stringify(inquiry),
         headers: {
           'content-type': 'application/json',
-          origin: 'https://blackbox-studio-athens.github.io',
+          origin: 'https://blackbox-records-web-uat.pages.dev',
         },
         method: 'POST',
       }),

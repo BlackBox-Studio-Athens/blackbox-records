@@ -8,7 +8,15 @@ The operating model is:
 
 ## Publishing
 
-Push content or code to main. The **Release BlackBox** workflow in `.github/workflows/pages.yml` generates one catalog manifest, runs tests/checks/builds, synchronizes release items, deploys the UAT Worker and selected static hosts, then runs UAT smoke tests. Every stage uses the same full source SHA. Generated catalogs and SQL are build inputs, not bot commits.
+Commit → review UAT → explicitly promote this candidate. Push content or code to main. **Release BlackBox** in `.github/workflows/pages.yml` runs repository gates, builds paired UAT/PRD public and Worker artifacts plus PRD staff, synchronizes UAT release items, deploys UAT, and runs the canonical paid/newsletter/static smoke. Review `https://blackbox-records-web-uat.pages.dev/`. Every artifact records one full source SHA; generated catalogs and SQL remain build inputs.
+
+To promote, dispatch that workflow on `main` with `target=prd`, the reviewed full `artifact_commit_sha`, the successful UAT `candidate_run_id`, and `confirm_code_promotion=true`. Leave `confirm_live_catalog_changes=false`. PRD consumes the retained bundle without rebuilding, checks every file digest and the configuration fingerprint, applies compatible migrations, deploys the Worker, verifies readiness, then deploys public and staff artifacts. It never changes DNS or the holding branch.
+
+Candidate bundles and smoke evidence expire after seven days. An expired, failed, foreign, superseded, or configuration-mismatched candidate cannot promote. Dispatch `target=uat` with the same full SHA to rebuild and revalidate it as a new run, then review again. The run's workflow revision and selected source revision are recorded separately for this recovery path.
+
+For compatible application rollback, rebuild the last known-good source as a new UAT candidate. Its migration inventory and runtime configuration must remain compatible with the deployed schema. Compare existing D1 stock, reservations, and orders before and after; do not delete or reseed them. After fresh UAT acceptance, select that new candidate for code promotion. Do not rerun an older mutation job after a newer candidate: monotonic release headers reject it.
+
+Each mutation rechecks identity under a non-cancelling release lock. If the Worker succeeds and Pages fails, the workflow summary records both actual revisions, including unavailable surfaces. Retry the same candidate while it remains current, or validate a compatible rollback candidate. Additive schema changes remain in place; this is not atomic rollback across providers.
 
 One shared release lock prevents overlapping stateful runs. An invalid release item stops deployment. Zero stock or a D1 checkout pause does not invalidate an otherwise configured catalog. Unrelated Stripe objects are ignored; a conflicting bound Product is rejected.
 

@@ -18,7 +18,8 @@ describe('UAT provider smoke workflow', () => {
     expect(workflow).toContain('permissions:');
     expect(workflow).toContain('contents: read');
     expect(workflow).toContain('concurrency:');
-    expect(workflow).toContain('cancel-in-progress: true');
+    expect(workflow).toContain('group: blackbox-release');
+    expect(workflow).toContain('cancel-in-progress: false');
     expect(workflow).toContain('environment: catalog-promotion-uat');
     expect(workflow).toContain('ref: ${{ github.sha }}');
     expect(workflow).toContain('pnpm stripe:webhooks:verify --env uat');
