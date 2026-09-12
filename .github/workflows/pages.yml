@@ -29,11 +29,6 @@ on:
         type: boolean
         required: false
         default: false
-      recover_reset_uat:
-        description: Recover the known reset-damaged UAT bindings after exporting and validating them.
-        type: boolean
-        required: false
-        default: false
 permissions:
   contents: read
 concurrency:
@@ -286,17 +281,6 @@ jobs:
           pnpm stripe:webhooks:verify --env uat
           pnpm stripe:payment-methods:verify
           pnpm --filter @blackbox/backend d1:migrations:apply:uat
-      - name: Recover reset-damaged UAT bindings
-        if: ${{ inputs.recover_reset_uat }}
-        run: pnpm --filter @blackbox/backend exec tsx scripts/migrate-catalog-product-bindings.ts --env uat --recover-reset-uat --apply
-      - name: Preserve migration backup
-        if: ${{ always() && inputs.recover_reset_uat }}
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: uat-catalog-migration-${{ github.run_id }}
-          path: .codex-artifacts/catalog-migration/
-          retention-days: 30
-          include-hidden-files: true
       - name: Synchronize UAT release items
         run: |-
           pnpm --filter @blackbox/backend d1:seed:uat:catalog

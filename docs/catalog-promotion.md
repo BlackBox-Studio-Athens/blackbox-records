@@ -39,7 +39,7 @@ The additive D1 migration retains existing Price mappings and adds a unique null
 
 Migration exports affected D1 tables and validates all selected bindings before provider writes. A trusted Price mapping supplies the Product and preserves the current amount. Missing or conflicting mappings/defaults stop the migration. Backups and provider IDs stay in ignored `.codex-artifacts/catalog-migration/` files.
 
-The one-time `recover_reset_uat` release input handles the known reset-damaged UAT catalog. It requires exactly one matching UAT Product per missing binding, selects its existing default or sole existing Price, and restores only those validated objects. It does not delete foreign objects or reset inventory. Leave this input false for ordinary releases.
+Reset recovery is an exceptional operator repair from reviewed backups and provider history. It is deliberately absent from the release workflow; ordinary retries never reactivate archived objects or infer identities from Product names.
 
 Rerun **Release BlackBox** with the same full source SHA after fixing a reported problem. Stable Product identities and Product-scoped Price checks allow interrupted new-item creation to resume. Stripe idempotency keys are additional protection, not permanent deduplication.
 

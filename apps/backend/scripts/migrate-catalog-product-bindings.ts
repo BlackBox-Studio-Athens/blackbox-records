@@ -12,9 +12,7 @@ const root = path.resolve(backend, '../..');
 const args = process.argv.slice(2);
 const environment = args[args.indexOf('--env') + 1];
 const apply = args.includes('--apply');
-const recover = args.includes('--recover-reset-uat');
 if (environment !== 'uat' && environment !== 'prd') throw new Error('Select --env uat|prd.');
-if (recover && environment !== 'uat') throw new Error('Reset recovery is UAT-only.');
 if (apply && environment === 'prd' && !args.includes('--confirm-live-catalog-changes')) {
   throw new Error('PRD migration requires --confirm-live-catalog-changes for this run.');
 }
@@ -72,31 +70,11 @@ const contracts = (
     productEnvironment: environment === 'uat' ? 'UAT' : 'PRD',
   })
 ).filter((c) => c.desiredCatalogEntry.targetEnvironments.includes(environment));
-const products: Stripe.Product[] = [];
-if (recover)
-  for await (const product of stripe.products.list({ limit: 100 })) {
-    if (product.metadata.appEnv === environment) products.push(product);
-  }
-await writeFile(path.join(evidence, 'products.json'), JSON.stringify(products, null, 2));
 const plan = [];
 for (const contract of contracts) {
   const mapping = rows.find((row) => row.variantId === contract.variantId);
   if (mapping?.stripeProductId) continue;
-  let priceId = mapping?.stripePriceId;
-  if (!priceId && recover) {
-    const matches = products.filter((p) => p.metadata.variantId === contract.variantId);
-    if (matches.length !== 1)
-      throw new Error(`${contract.storeItemSlug}: recovery needs exactly one known UAT Product.`);
-    const product = matches[0]!;
-    if (product.default_price)
-      priceId = typeof product.default_price === 'string' ? product.default_price : product.default_price.id;
-    else {
-      const prices = await stripe.prices.list({ product: product.id, limit: 100 });
-      if (prices.has_more || prices.data.length !== 1)
-        throw new Error(`${contract.storeItemSlug}: review missing default Price.`);
-      priceId = prices.data[0]!.id;
-    }
-  }
+  const priceId = mapping?.stripePriceId;
   if (!priceId) throw new Error(`${contract.storeItemSlug}: trusted Price mapping is missing.`);
   const price = await gateway.retrievePrice(priceId);
   const expected = {
@@ -123,14 +101,12 @@ for (const contract of contracts) {
   const currentDefault = typeof product.default_price === 'string' ? product.default_price : product.default_price?.id;
   if (currentDefault && currentDefault !== priceId)
     throw new Error(`${contract.storeItemSlug}: default differs from trusted mapping.`);
-  if ((!price.active || !product.active) && !recover)
+  if (!price.active || !product.active)
     throw new Error(`${contract.storeItemSlug}: paused objects require explicit review.`);
   plan.push({
     variantId: contract.variantId,
     productId: product.id,
     priceId,
-    priceActive: price.active,
-    productActive: product.active,
     currentDefault,
   });
 }
@@ -140,10 +116,8 @@ console.log(
 );
 if (apply) {
   for (const item of plan) {
-    if (!item.priceActive) await stripe.prices.update(item.priceId, { active: true });
-    if (!item.productActive || !item.currentDefault)
+    if (!item.currentDefault)
       await stripe.products.update(item.productId, {
-        ...(item.productActive ? {} : { active: true }),
         default_price: item.priceId,
       });
   }
