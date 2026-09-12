@@ -575,7 +575,7 @@ describe('CatalogReconciler', () => {
 
   it('requires every listed item to have valid authority', async () => {
     const { reconciler } = createReconciler({ storeItems: [storeItem, unavailableStoreItem] });
-    const result = await reconciler.verifyBuyableCatalog({ apply: false });
+    const result = await reconciler.verifyBuyableCatalog({ apply: false, expectedPrices: new Map() });
     expect(result.results).toHaveLength(2);
     expect(result.results.every((entry) => entry.issues.some((issue) => issue.code === 'missing_price'))).toBe(true);
   });

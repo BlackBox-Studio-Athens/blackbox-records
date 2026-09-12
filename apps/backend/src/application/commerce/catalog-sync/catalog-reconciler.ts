@@ -52,7 +52,6 @@ export type ReconcileCatalogVariantOptions = {
   expectedPrice?: StripeCatalogExpectedPrice | null;
   now?: Date;
   productProjection?: StripeCatalogProductProjection | null;
-  requirePriceAuthority?: boolean;
 };
 
 export class CatalogReconciler {
@@ -63,7 +62,6 @@ export class CatalogReconciler {
     options: ReconcileCatalogVariantOptions,
   ): Promise<CatalogSyncVariantResult> {
     const now = options.now ?? new Date();
-    const requirePriceAuthority = options.requirePriceAuthority ?? true;
     const lookupKey = createStripeCatalogLookupKey(this.dependencies.environment, storeItem);
     const metadata = createStripeCatalogMetadata(this.dependencies.environment, storeItem);
     const [mapping, snapshot] = await Promise.all([
@@ -101,19 +99,6 @@ export class CatalogReconciler {
           productName: null,
           productTaxCode: null,
         },
-        snapshot,
-        storeItem,
-      };
-    }
-
-    if (!requirePriceAuthority) {
-      return {
-        actions: [],
-        issueCount: 0,
-        issues: [],
-        lookupKey,
-        mapping,
-        resolvedPrice: null,
         snapshot,
         storeItem,
       };
@@ -370,13 +355,11 @@ export class CatalogReconciler {
     },
   ): Promise<CatalogSyncVariantResult> {
     const expectedPrice = input.expectedPrices?.get(storeItem.variantId) ?? null;
-    const requirePriceAuthority = input.expectedPrices ? input.expectedPrices.has(storeItem.variantId) : true;
 
     return this.reconcileVariant(storeItem, {
       apply: input.apply,
       expectedPrice,
       productProjection: input.expectedProductProjections?.get(storeItem.variantId) ?? null,
-      requirePriceAuthority,
       now: input.now,
     });
   }

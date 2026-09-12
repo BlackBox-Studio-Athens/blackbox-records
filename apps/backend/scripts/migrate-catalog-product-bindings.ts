@@ -1,6 +1,5 @@
 import { execFileSync } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Stripe from 'stripe';
@@ -10,7 +9,6 @@ import { StripeCatalogGatewayClient } from '../src/infrastructure/stripe/stripe-
 
 const backend = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const root = path.resolve(backend, '../..');
-const require = createRequire(import.meta.url);
 const args = process.argv.slice(2);
 const environment = args[args.indexOf('--env') + 1];
 const apply = args.includes('--apply');
@@ -28,7 +26,7 @@ const evidence = path.join(root, '.codex-artifacts/catalog-migration', `${enviro
 await mkdir(evidence, { recursive: true });
 
 function wrangler(args: string[]): string {
-  return execFileSync(process.execPath, [require.resolve('wrangler/bin/wrangler.js'), ...args], {
+  return execFileSync(process.execPath, [path.join(backend, 'node_modules/wrangler/bin/wrangler.js'), ...args], {
     cwd: backend,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -79,6 +77,7 @@ if (recover)
   for await (const product of stripe.products.list({ limit: 100 })) {
     if (product.metadata.appEnv === environment) products.push(product);
   }
+await writeFile(path.join(evidence, 'products.json'), JSON.stringify(products, null, 2));
 const plan = [];
 for (const contract of contracts) {
   const mapping = rows.find((row) => row.variantId === contract.variantId);
