@@ -267,7 +267,9 @@ jobs:
       - name: Deploy candidate PRD Worker
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
-          pnpm --filter @blackbox/backend exec wrangler deploy ../../.codex-artifacts/release/prd/worker/index.js --env prd --config wrangler.jsonc --no-bundle --keep-vars
+          pnpm --filter @blackbox/backend exec wrangler versions upload ../../.codex-artifacts/release/prd/worker/index.js --env prd --config wrangler.jsonc --no-bundle --keep-vars --tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
+          pnpm --filter @blackbox/backend exec wrangler versions deploy --env prd --config wrangler.jsonc --version-tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT@100%" --yes
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-worker prd
       - name: Deploy PRD static frontend to Cloudflare Pages
         run: |

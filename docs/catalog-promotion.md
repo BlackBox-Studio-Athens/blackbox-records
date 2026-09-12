@@ -10,7 +10,7 @@ The operating model is:
 
 Commit → review UAT → explicitly promote this candidate. Push content or code to main. **Release BlackBox** in `.github/workflows/pages.yml` runs repository gates, builds paired UAT/PRD public and Worker artifacts plus PRD staff, synchronizes UAT release items, deploys UAT, and runs the canonical paid/newsletter/static smoke. Review `https://blackbox-records-web-uat.pages.dev/`. Every artifact records one full source SHA; generated catalogs and SQL remain build inputs.
 
-To promote, dispatch that workflow on `main` with `target=prd`, the reviewed full `artifact_commit_sha`, the successful UAT `candidate_run_id`, and `confirm_code_promotion=true`. Leave `confirm_live_catalog_changes=false`. PRD consumes the retained bundle without rebuilding, checks every file digest and the configuration fingerprint, applies compatible migrations, deploys the Worker, verifies readiness, then deploys public and staff artifacts. It never changes DNS or the holding branch.
+To promote, dispatch that workflow on `main` with `target=prd`, the reviewed full `artifact_commit_sha`, the successful UAT `candidate_run_id`, and `confirm_code_promotion=true`. Leave `confirm_live_catalog_changes=false`. PRD consumes the retained bundle without rebuilding, checks every file digest and the configuration fingerprint, applies compatible migrations, uploads a Worker version tagged with the promotion run and attempt, deploys that exact tag to 100% without reconciling routes, verifies readiness, then deploys public and staff artifacts. It never changes DNS or the holding branch.
 
 Candidate bundles and smoke evidence expire after seven days. An expired, failed, foreign, superseded, or configuration-mismatched candidate cannot promote. Dispatch `target=uat` with the same full SHA to rebuild and revalidate it as a new run, then review again. The run's workflow revision and selected source revision are recorded separately for this recovery path.
 
@@ -37,7 +37,7 @@ Routine synchronization never resets stock, clears pauses, archives catalog obje
 
 ## Credentials and PRD
 
-Keep the existing GitHub environments `catalog-promotion-uat` and `catalog-promotion-prd`. Each holds `CLOUDFLARE_API_TOKEN` and `STRIPE_SECRET_KEY`, with `CLOUDFLARE_ACCOUNT_ID` and `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` as variables. Worker runtime secrets remain separate.
+Keep the existing GitHub environments `catalog-promotion-uat` and `catalog-promotion-prd`. UAT Worker/D1 and provider steps use the UAT environment credential; Pages steps use the repository Pages credential. PRD code promotion requires its effective Cloudflare credential to cover the PRD Worker versions/deployments, D1, and Pages targets. Existing staff routes remain provisioned separately; routine code promotion does not require zone-route mutation permission. `STRIPE_SECRET_KEY` and `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` are required only for provider operations; disabled PRD code promotion does not need Stripe credentials. `CLOUDFLARE_ACCOUNT_ID` is non-secret and included in the candidate configuration fingerprint. Worker runtime secrets remain separate.
 
 Live Stripe/D1 mutation requires the false-by-default `confirm_live_catalog_changes` input for that exact run. It never enables checkout: `PRD_LAUNCH_APPROVED=true` and `native_checkout_enabled` remain separate launch controls. Without live confirmation, the PRD catalog remains unchanged and the disabled frontend can still publish.
 

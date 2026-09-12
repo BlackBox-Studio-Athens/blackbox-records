@@ -28,11 +28,11 @@ Implement before the hosted EmDash migration. Follow the apply-change workflow c
 - [x] 4.1 Deploy the verified candidate to the new authorized UAT target; verify its exact revision with public-route, asset, cache, metadata, redirect, and checkout-return smoke evidence under the existing Smoke Harness.
 - [x] 4.2 Run the existing fixed-price and pay-what-you-want Stripe UAT paid scenarios plus newsletter smoke against the new origin; verify signed webhook processing, D1 outcomes, UAT email sink routing, and absence of PRD effects.
 - [x] 4.3 Browser-review representative mobile/desktop direct routes, shell navigation, player persistence, overlays, cart, and Review Site Marker; verify no origin/base change breaks behavior or layout.
-- [ ] 4.4 Retire GitHub Pages deployment jobs/permissions/triggers only after new UAT acceptance; verify active workflows and smoke defaults have one canonical UAT public target, preserving historical artifacts without another writable deployment path.
+- [x] 4.4 Retire GitHub Pages deployment jobs/permissions/triggers only after new UAT acceptance; verify active workflows and smoke defaults have one canonical UAT public target, preserving historical artifacts without another writable deployment path.
 
 ## 5. Handoff and final verification
 
 - [x] 5.1 Document the short workflow “commit → review UAT → explicitly promote this candidate” and artifact-expiry recovery in `README.md` and affected runbooks/agent guidance; verify commands, actual URLs, and all gate names match implementation.
-- [ ] 5.2 Exercise failed/stale promotion and compatible application rollback in UAT; deliver evidence that recovery preserves D1 stock, reservations, and orders and that no atomic multi-provider rollback is claimed.
+- [x] 5.2 Exercise failed/stale promotion and compatible application rollback in UAT; deliver evidence that recovery preserves D1 stock, reservations, and orders and that no atomic multi-provider rollback is claimed.
 - [ ] 5.3 If separately authorized, exercise promotion to the disabled PRD readiness target with no live catalog mutation; verify exact candidate/artifact identity and unchanged launch gates, otherwise leave this hosted acceptance task explicitly outstanding.
 - [ ] 5.4 Run `pnpm test:unit`, `pnpm check`, `pnpm build`, relevant boundary/environment/workflow checks, and `pnpm openspec -- validate align-cloudflare-uat-and-release-promotion --strict`; verify the exact final tree and deliver the accepted UAT URL, promotion runbook, rollback references, and prerequisite status for the EmDash implementer.
