@@ -12,6 +12,7 @@ import {
   validateRun,
   validateWorker,
   verifyFiles,
+  waitForDeployment,
 } from './release-candidate.mjs';
 
 const sha = 'a'.repeat(40);
@@ -26,6 +27,24 @@ const run = {
   repository: { full_name: repository },
   head_repository: { full_name: repository },
 };
+
+test('post-deployment propagation checks retry within a fixed attempt budget', async () => {
+  let attempts = 0;
+  const pause = async () => {};
+  await waitForDeployment(async () => {
+    if (++attempts === 1) throw new Error('Previous edge revision');
+  }, pause);
+  assert.equal(attempts, 2);
+  attempts = 0;
+  await assert.rejects(
+    waitForDeployment(async () => {
+      attempts += 1;
+      throw new Error('Still mismatched');
+    }, pause),
+    /Still mismatched/,
+  );
+  assert.equal(attempts, 12);
+});
 
 test('partial deployment evidence retains the Worker revision when Pages is unavailable', async () => {
   const candidate = {

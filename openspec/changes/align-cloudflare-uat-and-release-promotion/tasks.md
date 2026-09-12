@@ -10,7 +10,7 @@ Implement before the hosted EmDash migration. Follow the apply-change workflow c
 ## 2. Establish matching Cloudflare hosting
 
 - [x] 2.1 Add the dedicated UAT Pages target to the existing environment profile and keep hosted base `/` with canonical Local `/blackbox-records/`; verify URL/profile tests cover distinct UAT/PRD backend origins and unchanged local launcher URLs.
-- [ ] 2.2 Resolve and provision the intended UAT Pages project through authorized account operations, or record missing account access as outstanding; verify the actual project ID/origin and target credential scope before committing non-secret configuration.
+- [x] 2.2 Resolve and provision the intended UAT Pages project through authorized account operations, or record missing account access as outstanding; verify the actual project ID/origin and target credential scope before committing non-secret configuration.
 - [x] 2.3 Update UAT checkout-return/CORS allowlists, media/catalog origins, sitemap/robots, temporary Sveltia site configuration, and smoke defaults through existing helpers; verify no active UAT path resolves to PRD or the retired GitHub Pages origin.
 - [x] 2.4 Apply matching static cache/redirect policy and preserve exact UAT Review Site Marker behavior; verify target artifact tests cover HTML revalidation, fingerprinted assets, marker presence in UAT, and marker absence in Local/PRD/holding.
 
@@ -25,9 +25,9 @@ Implement before the hosted EmDash migration. Follow the apply-change workflow c
 
 ## 4. Prove UAT and retire the old deployment path
 
-- [ ] 4.1 Deploy the verified candidate to the new authorized UAT target; verify its exact revision with public-route, asset, cache, metadata, redirect, and checkout-return smoke evidence under the existing Smoke Harness.
-- [ ] 4.2 Run the existing fixed-price and pay-what-you-want Stripe UAT paid scenarios plus newsletter smoke against the new origin; verify signed webhook processing, D1 outcomes, UAT email sink routing, and absence of PRD effects.
-- [ ] 4.3 Browser-review representative mobile/desktop direct routes, shell navigation, player persistence, overlays, cart, and Review Site Marker; verify no origin/base change breaks behavior or layout.
+- [x] 4.1 Deploy the verified candidate to the new authorized UAT target; verify its exact revision with public-route, asset, cache, metadata, redirect, and checkout-return smoke evidence under the existing Smoke Harness.
+- [x] 4.2 Run the existing fixed-price and pay-what-you-want Stripe UAT paid scenarios plus newsletter smoke against the new origin; verify signed webhook processing, D1 outcomes, UAT email sink routing, and absence of PRD effects.
+- [x] 4.3 Browser-review representative mobile/desktop direct routes, shell navigation, player persistence, overlays, cart, and Review Site Marker; verify no origin/base change breaks behavior or layout.
 - [ ] 4.4 Retire GitHub Pages deployment jobs/permissions/triggers only after new UAT acceptance; verify active workflows and smoke defaults have one canonical UAT public target, preserving historical artifacts without another writable deployment path.
 
 ## 5. Handoff and final verification

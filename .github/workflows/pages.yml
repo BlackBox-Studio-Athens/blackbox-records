@@ -5,10 +5,6 @@ on:
     paths-ignore: [docs/**, openspec/**, '*.md', LICENSE]
   workflow_dispatch:
     inputs:
-      legacy_uat:
-        description: Temporary legacy UAT recovery path; removed after Cloudflare acceptance.
-        type: boolean
-        default: false
       artifact_commit_sha:
         description: Full source SHA. Required for PRD promotion; UAT defaults to the triggering SHA.
         type: string
@@ -35,6 +31,7 @@ concurrency:
   group: blackbox-release
   cancel-in-progress: false
 env:
+  CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
   UAT_PUBLIC_BACKEND_BASE_URL: ${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}
   PRD_PUBLIC_BACKEND_BASE_URL: ${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}
   SVELTIA_AUTH_BASE_URL: ${{ vars.SVELTIA_AUTH_BASE_URL }}
@@ -310,34 +307,3 @@ jobs:
           pnpm --filter @blackbox/backend d1:migrations:apply:prd
           pnpm --filter @blackbox/backend d1:seed:prd:catalog-readiness
           pnpm stripe:catalog:verify --env prd --apply --confirm-live-catalog-changes --ci-promotion --artifact-commit-sha "$SOURCE_SHA" --promotion-run-id "$GITHUB_RUN_ID"
-  legacy-uat:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.legacy_uat && inputs.target == 'uat' }}
-    needs: build-candidate
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment: github-pages
-    steps:
-      - *checkout
-      - *pnpm
-      - *node
-      - *install
-      - *release-tools
-      - name: Configure legacy GitHub Pages
-        uses: actions/configure-pages@v6.0.0
-      - name: Build legacy UAT recovery artifact
-        env:
-          ASTRO_SITE_URL: https://blackbox-studio-athens.github.io
-          ASTRO_BASE_PATH: /blackbox-records/
-          PUBLIC_BACKEND_BASE_URL: ${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}
-          SVELTIA_BACKEND_MODE: hosted
-          SHOW_REVIEW_SITE_MARKER: 'true'
-        run: pnpm build:web
-      - uses: actions/upload-pages-artifact@v5.0.0
-        with:
-          path: apps/web/dist
-          retention-days: 1
-      - uses: actions/deploy-pages@v5.0.0

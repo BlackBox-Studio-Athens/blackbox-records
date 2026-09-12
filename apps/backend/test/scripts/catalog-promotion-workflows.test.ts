@@ -40,6 +40,9 @@ describe('one gated release', () => {
     expect(source.match(/--scenario happy_path_paid,pay_what_you_want_paid/g)).toHaveLength(1);
     expect(source).not.toMatch(/gh workflow run|git commit|DELETE FROM|stripe:catalog:reset/);
     expect(release.on.push['paths-ignore']).toEqual(['docs/**', 'openspec/**', '*.md', 'LICENSE']);
+    expect(source).not.toMatch(
+      /legacy_uat|legacy-uat|configure-pages|upload-pages-artifact|deploy-pages|pages: write|id-token: write/,
+    );
   });
 
   it('rechecks identity before mutations and records mixed revision outcomes', () => {

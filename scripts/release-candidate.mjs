@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { setTimeout } from 'node:timers/promises';
 
 const bundle = '.codex-artifacts/release';
 const manifestPath = `${bundle}/manifest.json`;
@@ -13,6 +14,7 @@ const gh = (endpoint) => JSON.parse(execFileSync('gh', ['api', endpoint], { enco
 
 export function configuration(env = process.env) {
   return {
+    cloudflareAccount: env.CLOUDFLARE_ACCOUNT_ID,
     uatSite: 'https://blackbox-records-web-uat.pages.dev',
     prdSite: 'https://blackbox-records-web.pages.dev',
     uatBackend: env.UAT_PUBLIC_BACKEND_BASE_URL,
@@ -22,6 +24,18 @@ export function configuration(env = process.env) {
     lockfile: sha256(readFileSync('pnpm-lock.yaml')),
     migrations: inventory('apps/backend/prisma/migrations'),
   };
+}
+
+export async function waitForDeployment(verify, pause = () => setTimeout(5000)) {
+  // ponytail: retry complete read-only checks; poll only identities if artifact reads become costly.
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    try {
+      return await verify();
+    } catch (error) {
+      if (attempt === 11) throw error;
+      await pause();
+    }
+  }
 }
 
 export function validateRun(run, sha, repository) {
@@ -155,6 +169,7 @@ async function main(command, target) {
     assert.match(process.env.GITHUB_RUN_ID ?? '', /^[1-9][0-9]*$/);
     assert.match(process.env.GITHUB_SHA ?? '', /^[0-9a-f]{40}$/);
     const config = configuration();
+    assert.match(config.cloudflareAccount ?? '', /^[0-9a-f]{32}$/, 'Select an explicit Cloudflare account.');
     assert.equal(config.uatBackend, 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev');
     assert.equal(config.prdBackend, 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev');
     cpSync('apps/backend/prisma/migrations', `${bundle}/migrations`, { recursive: true });
@@ -256,7 +271,9 @@ async function main(command, target) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main(process.argv[2], process.argv[3]).catch((error) => {
+  const verify = () => main(process.argv[2], process.argv[3]);
+  const result = ['verify-worker', 'verify-hosted'].includes(process.argv[2]) ? waitForDeployment(verify) : verify();
+  result.catch((error) => {
     console.error(error.message);
     process.exitCode = 1;
   });

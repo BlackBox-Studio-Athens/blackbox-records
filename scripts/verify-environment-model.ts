@@ -228,7 +228,7 @@ export function verifyReviewSiteMarkerSources({
     !checkoutRoutes.includes('PUBLIC_SHOW_REVIEW_SITE_MARKER') &&
     !header.includes('Astro.url.hostname') &&
     uatBuildStep?.includes("SHOW_REVIEW_SITE_MARKER: 'true'") === true &&
-    (staticDeployWorkflow.split('  legacy-uat:')[0].match(/SHOW_REVIEW_SITE_MARKER/g) ?? []).length === 1 &&
+    (staticDeployWorkflow.match(/SHOW_REVIEW_SITE_MARKER/g) ?? []).length === 1 &&
     !holdingWorkflow.includes('SHOW_REVIEW_SITE_MARKER')
   );
 }
