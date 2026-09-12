@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 const workflow = parse(readFileSync(fileURLToPath(new URL('../.github/workflows/pages.yml', import.meta.url)), 'utf8'));
 const build = workflow.jobs['build-candidate'];
 const promotion = workflow.jobs['deploy-prd'];
+const staticPromotion = workflow.jobs['deploy-prd-static'];
 
 describe('Pages artifact promotion contract', () => {
   it('builds paired targets after the repository gates without provider credentials', () => {
@@ -30,16 +31,18 @@ describe('Pages artifact promotion contract', () => {
   });
 
   it('promotes only the selected retained artifact without rebuilding it', () => {
-    const download = promotion.steps.find(
-      (step: { name: string }) => step.name === 'Download selected candidate artifacts',
-    );
-    expect(download.with['run-id']).toBe('${{ inputs.candidate_run_id }}');
-    expect(download.with.name).toBe('release-${{ inputs.artifact_commit_sha }}');
-    expect(JSON.stringify(promotion)).not.toContain('pnpm build');
+    for (const job of [promotion, staticPromotion]) {
+      const download = job.steps.find(
+        (step: { name: string }) => step.name === 'Download selected candidate artifacts',
+      );
+      expect(download.with['run-id']).toBe('${{ inputs.candidate_run_id }}');
+      expect(download.with.name).toBe('release-${{ inputs.artifact_commit_sha }}');
+      expect(JSON.stringify(job)).not.toContain('pnpm build');
+      expect(job.env.SOURCE_SHA).toBe('${{ inputs.artifact_commit_sha }}');
+      expect(job.steps[0].with.ref).toBe('${{ github.sha }}');
+    }
     expect(JSON.stringify(promotion)).toContain('--no-bundle');
-    expect(JSON.stringify(promotion)).toContain('/prd/public --project-name=blackbox-records-web --branch=main');
-    expect(JSON.stringify(promotion)).toContain('/prd/staff --project-name=blackbox-records-staff --branch=main');
-    expect(promotion.env.SOURCE_SHA).toBe('${{ inputs.artifact_commit_sha }}');
-    expect(promotion.steps[0].with.ref).toBe('${{ github.sha }}');
+    expect(JSON.stringify(staticPromotion)).toContain('/prd/public --project-name=blackbox-records-web --branch=main');
+    expect(JSON.stringify(staticPromotion)).toContain('/prd/staff --project-name=blackbox-records-staff --branch=main');
   });
 });

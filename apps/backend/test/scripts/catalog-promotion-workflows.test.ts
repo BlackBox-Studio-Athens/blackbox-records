@@ -35,6 +35,10 @@ describe('one gated release', () => {
     expect(release.jobs['deploy-uat-static'].needs).toBe('deploy-uat');
     expect(release.jobs['deploy-uat-static'].environment).toBeUndefined();
     expect(release.jobs['smoke-uat'].needs).toBe('deploy-uat-static');
+    expect(release.jobs['deploy-prd'].environment).toBe('catalog-promotion-prd');
+    expect(release.jobs['deploy-prd-static'].environment).toBeUndefined();
+    expect(release.jobs['deploy-prd-static'].needs).toBe('deploy-prd');
+    expect(release.jobs['deploy-prd-static'].if).toBe(release.jobs['deploy-prd'].if);
     const steps = release.jobs['deploy-uat'].steps.map((step: { name: string }) => step.name);
     expect(steps.indexOf('Prepare UAT catalog schema')).toBeLessThan(steps.indexOf('Deploy UAT Worker'));
     expect(source.match(/--scenario happy_path_paid,pay_what_you_want_paid/g)).toHaveLength(1);
@@ -46,7 +50,7 @@ describe('one gated release', () => {
   });
 
   it('rechecks identity before mutations and records mixed revision outcomes', () => {
-    const steps = release.jobs['deploy-prd'].steps;
+    const steps = [...release.jobs['deploy-prd'].steps, ...release.jobs['deploy-prd-static'].steps];
     for (const step of steps.filter((step: { run?: string }) => /wrangler|d1:migrations/.test(step.run ?? ''))) {
       expect(
         step.run.trim().startsWith('node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd'),

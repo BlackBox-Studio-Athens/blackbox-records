@@ -231,11 +231,11 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_code_promotion }}
     runs-on: ubuntu-latest
     environment: catalog-promotion-prd
-    permissions:
+    permissions: &prd-permissions
       contents: read
       actions: read
     timeout-minutes: 25
-    env:
+    env: &prd-release-env
       SOURCE_SHA: ${{ inputs.artifact_commit_sha }}
       CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
       CONFIRM_CODE_PROMOTION: ${{ inputs.confirm_code_promotion }}
@@ -243,7 +243,8 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
     steps:
-      - name: Checkout trusted promotion tooling
+      - &checkout-promotion
+        name: Checkout trusted promotion tooling
         uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.sha }}
@@ -251,7 +252,8 @@ jobs:
       - *node
       - *install
       - *release-tools
-      - name: Download selected candidate artifacts
+      - &download-selected-candidate
+        name: Download selected candidate artifacts
         uses: actions/download-artifact@v8.0.1
         with:
           name: release-${{ inputs.artifact_commit_sha }}
@@ -271,6 +273,24 @@ jobs:
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
           pnpm --filter @blackbox/backend exec wrangler versions deploy --env prd --config wrangler.jsonc --version-tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT@100%" --yes
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-worker prd
+      - &observe-prd
+        name: Record actual deployed revisions
+        if: ${{ always() }}
+        run: node .codex-artifacts/release-tools/scripts/release-candidate.mjs observe prd >> "$GITHUB_STEP_SUMMARY"
+  deploy-prd-static:
+    needs: deploy-prd
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_code_promotion }}
+    runs-on: ubuntu-latest
+    permissions: *prd-permissions
+    timeout-minutes: 25
+    env: *prd-release-env
+    steps:
+      - *checkout-promotion
+      - *pnpm
+      - *node
+      - *install
+      - *release-tools
+      - *download-selected-candidate
       - name: Deploy PRD static frontend to Cloudflare Pages
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
@@ -280,9 +300,7 @@ jobs:
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
           pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/prd/staff --project-name=blackbox-records-staff --branch=main --commit-hash="$SOURCE_SHA"
-      - name: Record actual deployed revisions
-        if: ${{ always() }}
-        run: node .codex-artifacts/release-tools/scripts/release-candidate.mjs observe prd >> "$GITHUB_STEP_SUMMARY"
+      - *observe-prd
   catalog-prd:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_live_catalog_changes && !inputs.confirm_code_promotion }}
     runs-on: ubuntu-latest
