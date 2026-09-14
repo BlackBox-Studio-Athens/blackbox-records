@@ -75,6 +75,14 @@ Local preparation on 2026-09-15 produced 129 records and 152 media objects, plan
 
 ## Hosted readiness observation — 2026-09-15 local time
 
+### UAT publication checkpoint
+
+All 129 native CMS records now have published revisions. The 104 Release/Distro items were published through the existing item-publication command, including Product presentation and approved artwork; the remaining 25 records used native editorial publication. The sequential batch returned no `needs_review` outcomes. Evidence is retained in `.codex-artifacts/emdash-m1/uat-item-publication-batch.json`, `uat-item-publication-pilot.json`, `uat-editorial-publication-batch.json`, and `uat-final-publication-request.json`.
+
+This supersedes the earlier unpublished-draft and no-provider-mutation observations. It does not prove public Pages publication or completed item-operation receipts. Final request `3043fd73-b2e7-4c20-8509-1be2747b69c0` remains pending. The first hosted capture reached the authenticated CMS but correctly rejected an inventory changing during the batch. The current code candidate must deploy before the final content snapshot can use the new public loader.
+
+CI exposed an invalid root `sharp` lockfile reference; it now resolves to the existing peer-qualified snapshot. A frozen offline installation and all 12 capture/publication script tests passed through WebStorm. Commit `c6a4658c` starts the next UAT release. Broad Local suites were skipped at the user's request; canonical CI gates remain enabled. No PRD apply or promotion is authorized by this checkpoint.
+
 Read-only Cloudflare dashboard inspection in Chrome Blackbox confirmed the configured PRD CMS and UAT CMS database IDs, the combined UAT staff route, and the retained separate staff Pages application. PRD still displays the internal API staff route. Seven D1 databases now exist (dashboard limit ten), totaling 7.67 MB; the older six-database budget must not be reused. D1 displayed 86.14k rows read and 268 rows written for September 14, with zero billable usage. R2 billing displayed 208 Class A operations, 768 Class B operations and 0.01 GB-month storage for September 2–14, all included. Worker billing displayed 9.88k requests and zero billable usage for the current cycle; this is not a daily remaining-request measurement.
 
 No resource, route, binding, plan or data was changed. Dashboard counters can lag. Before hosted recovery, finish the current operation estimate and verify Durable Object/current request headroom; budget recovery databases within the three remaining slots. The dashboard table-count column displayed zero even for populated databases, so it is not accepted as schema evidence.
