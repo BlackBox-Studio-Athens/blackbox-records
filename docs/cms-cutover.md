@@ -57,6 +57,10 @@ The verified provider objects were copied into the existing ignored Local mock c
 
 UAT reconciliation subsequently completed for all 104 items, retaining exact protected-table hashes for prices, stock, allocation, 502 orders and 505 order lines. Both sets of additive UAT migrations are applied. See [runtime catalog evidence](../openspec/changes/replace-sveltia-with-emdash-operations/runtime-catalog-evidence.md#localuat-reconciliation-completion--2026-09-15). No UAT provider mutation or PRD apply occurred; UAT CMS drafts have not been published.
 
+The canonical CMS build and UAT deploy completed at source commit `1f92b900`, Worker version `5987e621-62d5-4ed5-9daf-94c2bf5ac22d`. Staff assets, CMS and commerce share the existing UAT Worker and protected hostname; generated configuration passed the no-KV build guard. The Local stack was restarted afterward with persistent data retained. Evidence: `.codex-artifacts/emdash-m1/uat-combined-runtime-deploy.json` and `post-uat-local-stack.json`.
+
+Hosted publication still needs its credentials configured: the UAT Worker currently has only its existing Stripe/Resend secrets, and GitHub has none of the `UAT_CMS_*` secrets or publication-budget variable. The Worker also needs a repository-scoped Actions dispatch credential in `CMS_PUBLICATION_GITHUB_TOKEN`. Do not reuse a broad personal CLI token. Chrome's normal Blackbox profile blocks the staff page before application loading, while the user's Incognito window reaches Google login; this is not evidence of a Worker outage or a reason to weaken Access.
+
 Local preparation on 2026-09-15 produced 129 records and 152 media objects, plan SHA-256 e7aa6f8a50e916a3557fd6fe7f09f1b40abf2aff5d280446d2de6b550fd70000. Evidence: .codex-artifacts/emdash-m1/prd-import-preparation-final.json. This is a source plan, not proof of deployed PRD reconciliation. Synthetic approval-boundary tests passed through WebStorm without network access; no live approval was supplied or consumed.
 
 ## Hosted readiness observation — 2026-09-15 local time
