@@ -52,7 +52,13 @@ test('dispatches only the fixed workflow payload, waits for queued CI, and prese
   expect(
     await bindPublicationRun(
       env.TEST_CMS_DB,
-      { id: item.id, environment: 'uat', dispatchToken: body.inputs.dispatch_token, ciRunId: '12345' },
+      {
+        id: item.id,
+        environment: 'uat',
+        dispatchToken: body.inputs.dispatch_token,
+        ciRunId: '12345',
+        codeSha: 'c'.repeat(40),
+      },
       now + 900_000,
     ),
   ).toBe(true);
@@ -132,6 +138,7 @@ test('does not dispatch again when CI claimed a run but the dispatch response wa
           environment: 'uat',
           dispatchToken: body.inputs.dispatch_token,
           ciRunId: '12345',
+          codeSha: 'c'.repeat(40),
         },
         now,
       ),

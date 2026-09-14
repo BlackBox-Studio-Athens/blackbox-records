@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import {
+  contentPublicationIdentity,
   inventory,
   observe,
   validateArtifacts,
@@ -17,6 +18,25 @@ import {
 
 const sha = 'a'.repeat(40);
 const repository = 'example/repository';
+
+test('publication metadata preserves deployed code identity while replacing only content identity', () => {
+  const code = { sha, runId: '123', runNumber: 10, content: { old: true }, private: 'omit' };
+  const content = {
+    publicationId: '12345678-1234-4234-8234-123456789012',
+    ciRunId: '456',
+    snapshotSha256: 'b'.repeat(64),
+    token: 'omit',
+  };
+  assert.deepEqual(contentPublicationIdentity(code, content, sha), {
+    sha,
+    runId: '123',
+    runNumber: 10,
+    content: { publicationId: content.publicationId, ciRunId: '456', snapshotSha256: content.snapshotSha256 },
+  });
+  assert.throws(() => contentPublicationIdentity(code, content, 'c'.repeat(40)), /selected deployed code/);
+  for (const invalid of [{ publicationId: '../private' }, { ciRunId: 'main' }, { snapshotSha256: 'bad' }])
+    assert.throws(() => contentPublicationIdentity(code, { ...content, ...invalid }, sha));
+});
 const run = {
   head_sha: sha,
   status: 'completed',

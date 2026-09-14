@@ -39,6 +39,7 @@ async function prepare() {
     environment: 'uat',
     dispatchToken: claim!.dispatchToken,
     ciRunId: '12345',
+    codeSha: 'c'.repeat(40),
   });
   const upload = (kind: 'media' | 'snapshot', body: BodyInit, headers: Record<string, string> = {}) =>
     new Request(`https://staff.example/_emdash/api/blackbox/publications/${kind}`, {
@@ -97,6 +98,7 @@ test('uploads private media and binds one complete snapshot, with write-free rep
   expect(await readPublication(env.TEST_CMS_DB, 'uat', item.id)).toEqual({
     ...item,
     ciRunId: '12345',
+    codeSha: 'c'.repeat(40),
     snapshotSha256: result.snapshotSha256,
   });
 });

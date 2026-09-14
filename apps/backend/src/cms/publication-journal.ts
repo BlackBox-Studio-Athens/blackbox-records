@@ -113,21 +113,34 @@ export async function acknowledgePublicationDispatch(
 // Only a verified workflow identity may call this; a dispatch token is not authentication.
 export async function bindPublicationRun(
   db: D1Database,
-  input: { id: string; environment: 'local' | 'uat' | 'prd'; dispatchToken: string; ciRunId: string },
+  input: { id: string; environment: 'local' | 'uat' | 'prd'; dispatchToken: string; ciRunId: string; codeSha: string },
   now = Date.now(),
 ) {
   const value = requestSchema
     .pick({ id: true, environment: true })
-    .extend({ dispatchToken: z.uuid(), ciRunId: z.string().regex(/^[1-9][0-9]{0,19}$/) })
+    .extend({
+      dispatchToken: z.uuid(),
+      ciRunId: z.string().regex(/^[1-9][0-9]{0,19}$/),
+      codeSha: z.string().regex(/^[a-f0-9]{40}$/),
+    })
     .parse(input);
   z.number().int().nonnegative().safe().parse(now);
   const result = await db
     .prepare(
-      `UPDATE _blackbox_publications SET ci_run_id = ?
+      `UPDATE _blackbox_publications SET ci_run_id = ?, code_sha = ?
       WHERE id = ? AND environment = ? AND dispatch_token = ? AND status = 'pending'
-      AND (ci_run_id = ? OR (ci_run_id IS NULL AND dispatch_after > ?))`,
+      AND ((ci_run_id = ? AND code_sha = ?) OR (ci_run_id IS NULL AND code_sha IS NULL AND dispatch_after > ?))`,
     )
-    .bind(value.ciRunId, value.id, value.environment, value.dispatchToken, value.ciRunId, now)
+    .bind(
+      value.ciRunId,
+      value.codeSha,
+      value.id,
+      value.environment,
+      value.dispatchToken,
+      value.ciRunId,
+      value.codeSha,
+      now,
+    )
     .run();
   return result.meta.changes === 1;
 }
@@ -151,6 +164,38 @@ export async function bindPublicationSnapshot(
     AND (snapshot_sha256 IS NULL OR snapshot_sha256 = ?)`,
     )
     .bind(value.snapshotSha256, value.id, value.environment, value.ciRunId, value.snapshotSha256)
+    .run();
+  return result.meta.changes === 1;
+}
+
+export const publicationCompletionSchema = requestSchema.pick({ id: true, environment: true }).extend({
+  ciRunId: z.string().regex(/^[1-9][0-9]{0,19}$/),
+  codeSha: z.string().regex(/^[a-f0-9]{40}$/),
+  snapshotSha256: z.string().regex(/^[a-f0-9]{64}$/),
+  deploymentId: z.uuid(),
+});
+
+// The caller verifies the public deployment first. Older acknowledgements cannot replace a newer Live record.
+export async function completePublication(db: D1Database, input: z.input<typeof publicationCompletionSchema>) {
+  const value = publicationCompletionSchema.parse(input);
+  const result = await db
+    .prepare(
+      `UPDATE _blackbox_publications SET status = 'live', deployment_id = ?
+    WHERE id = ? AND environment = ? AND status = 'pending'
+    AND ci_run_id = ? AND code_sha = ? AND snapshot_sha256 = ?
+    AND NOT EXISTS (SELECT 1 FROM _blackbox_publications AS newer
+      WHERE newer.environment = ? AND newer.status = 'live'
+      AND newer.rowid > _blackbox_publications.rowid)`,
+    )
+    .bind(
+      value.deploymentId,
+      value.id,
+      value.environment,
+      value.ciRunId,
+      value.codeSha,
+      value.snapshotSha256,
+      value.environment,
+    )
     .run();
   return result.meta.changes === 1;
 }

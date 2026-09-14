@@ -151,6 +151,27 @@ function identity(candidate) {
   return { sha: candidate.sha, runId: candidate.runId, runNumber: candidate.runNumber };
 }
 
+export function contentPublicationIdentity(code, content, checkedOutSha) {
+  assert.match(code.sha ?? '', /^[a-f0-9]{40}$/);
+  assert.equal(code.sha, checkedOutSha, 'Publication must build the selected deployed code.');
+  assert.match(code.runId ?? '', /^[1-9][0-9]{0,19}$/);
+  validateOrder(code, null);
+  assert.match(
+    content.publicationId ?? '',
+    /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i,
+  );
+  assert.match(content.ciRunId ?? '', /^[1-9][0-9]{0,19}$/);
+  assert.match(content.snapshotSha256 ?? '', /^[a-f0-9]{64}$/);
+  return {
+    ...identity(code),
+    content: {
+      publicationId: content.publicationId,
+      ciRunId: content.ciRunId,
+      snapshotSha256: content.snapshotSha256,
+    },
+  };
+}
+
 export function verifyFiles(candidate, directory = bundle) {
   for (const target of ['uat/public', 'prd/public', 'prd/staff', 'uat/worker', 'prd/worker', 'migrations']) {
     assert.ok(existsSync(`${directory}/${target}`), `Missing artifact: ${target}`);

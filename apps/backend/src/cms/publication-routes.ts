@@ -5,6 +5,8 @@ import { isCmsCollection } from '@blackbox/content-model';
 import {
   bindPublicationRun,
   bindPublicationSnapshot,
+  completePublication,
+  publicationCompletionSchema,
   PublicationRequestConflictError,
   readPublication,
   requestPublication,
@@ -14,7 +16,12 @@ const revisionId = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
 const bodySchema = z.object({ id: z.uuid(), requestedRevision: revisionId }).strict();
 const root = '/_emdash/api/blackbox/publications';
 export const publicationRunPath = root + '/run';
-export const publicationWorkflowPaths = new Set([publicationRunPath, root + '/media', root + '/snapshot']);
+export const publicationWorkflowPaths = new Set([
+  publicationRunPath,
+  root + '/media',
+  root + '/snapshot',
+  root + '/complete',
+]);
 
 export async function handlePublicationWorkflow(
   request: Request,
@@ -25,6 +32,7 @@ export async function handlePublicationWorkflow(
     hostname: string | undefined;
     token: string | undefined;
   },
+  send: typeof fetch = fetch,
 ) {
   const reply = async (status: number, value: unknown) => {
     await request.body?.pipeTo(new WritableStream());
@@ -44,6 +52,67 @@ export async function handlePublicationWorkflow(
   )
     return reply(403, { error: 'FORBIDDEN' });
   if (!publicationWorkflowPaths.has(url.pathname) || url.search) return reply(404, { error: 'NOT_FOUND' });
+  if (url.pathname === root + '/complete') {
+    if (request.method !== 'POST') return reply(405, { error: 'METHOD_NOT_ALLOWED' });
+    let input;
+    try {
+      if (request.headers.get('Content-Type')?.split(';')[0].trim() !== 'application/json')
+        throw new Error('JSON required');
+      input = publicationCompletionSchema
+        .omit({ environment: true })
+        .strict()
+        .parse(await readJson(request.body, 4096));
+    } catch {
+      return reply(400, { error: 'INVALID_REQUEST' });
+    }
+    try {
+      const item = await readPublication(context.db, environment.data, input.id);
+      if (
+        !item ||
+        item.ciRunId !== input.ciRunId ||
+        item.codeSha !== input.codeSha ||
+        item.snapshotSha256 !== input.snapshotSha256
+      )
+        return reply(409, { error: 'PUBLICATION_CONFLICT' });
+      if (item.status === 'live')
+        return item.deploymentId === input.deploymentId
+          ? reply(200, { id: item.id, status: 'live' })
+          : reply(409, { error: 'PUBLICATION_CONFLICT' });
+      if (item.status !== 'pending') return reply(409, { error: 'PUBLICATION_CONFLICT' });
+      const site = {
+        local: 'http://127.0.0.1:4321/blackbox-records',
+        uat: 'https://blackbox-records-web-uat.pages.dev',
+        prd: 'https://blackbox-records-web.pages.dev',
+      }[environment.data];
+      const response = await send(site + '/release.json', {
+        cache: 'no-store',
+        redirect: 'manual',
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (response.status !== 200) {
+        await response.body?.cancel();
+        throw new Error('Deployment unavailable');
+      }
+      const proof = z
+        .object({
+          sha: z.literal(input.codeSha),
+          content: z.object({
+            publicationId: z.literal(input.id),
+            ciRunId: z.literal(input.ciRunId),
+            snapshotSha256: z.literal(input.snapshotSha256),
+          }),
+        })
+        .parse(await readJson(response.body, 4096));
+      const completed = await completePublication(context.db, {
+        ...input,
+        codeSha: proof.sha,
+        environment: environment.data,
+      });
+      return completed ? reply(200, { id: input.id, status: 'live' }) : reply(409, { error: 'PUBLICATION_CONFLICT' });
+    } catch {
+      return reply(503, { error: 'PUBLICATION_UNAVAILABLE' });
+    }
+  }
   if (url.pathname !== publicationRunPath) {
     if (request.method !== 'PUT') return reply(405, { error: 'METHOD_NOT_ALLOWED' });
     const identity = z.object({ id: z.uuid(), ciRunId: z.string().regex(/^[1-9][0-9]{0,19}$/) }).safeParse({
@@ -102,7 +171,12 @@ export async function handlePublicationWorkflow(
     if (request.headers.get('Content-Type')?.split(';')[0].trim() !== 'application/json')
       throw new Error('JSON required');
     input = z
-      .object({ id: z.uuid(), dispatchToken: z.uuid(), ciRunId: z.string().regex(/^[1-9][0-9]{0,19}$/) })
+      .object({
+        id: z.uuid(),
+        dispatchToken: z.uuid(),
+        ciRunId: z.string().regex(/^[1-9][0-9]{0,19}$/),
+        codeSha: z.string().regex(/^[a-f0-9]{40}$/),
+      })
       .strict()
       .parse(await readJson(request.body, 4096));
   } catch {

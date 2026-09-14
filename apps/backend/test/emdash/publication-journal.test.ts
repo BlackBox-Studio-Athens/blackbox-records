@@ -2,6 +2,7 @@ import { applyD1Migrations, env } from 'cloudflare:test';
 import { beforeAll, expect, test } from 'vitest';
 import {
   bindPublicationRun,
+  completePublication,
   claimPublicationDispatch,
   readPublication,
   requestPublication,
@@ -76,7 +77,13 @@ test('serializes dispatch, recovers an expired attempt, and binds only one verif
   expect(first.requestedRevision).toBe(input.requestedRevision);
   expect(await claimPublicationDispatch(env.TEST_CMS_DB, 'local', now + 299_999)).toBeNull();
   expect(await readPublication(env.TEST_CMS_DB, 'local', input.id)).toEqual(saved);
-  const run = { id: input.id, environment: input.environment, dispatchToken: first.dispatchToken, ciRunId: '1234' };
+  const run = {
+    id: input.id,
+    environment: input.environment,
+    dispatchToken: first.dispatchToken,
+    ciRunId: '1234',
+    codeSha: 'c'.repeat(40),
+  };
   expect(await bindPublicationRun(env.TEST_CMS_DB, { ...run, environment: 'uat' }, now)).toBe(false);
   expect(await bindPublicationRun(env.TEST_CMS_DB, run, now + 300_000)).toBe(false);
   const retried = await claimPublicationDispatch(env.TEST_CMS_DB, 'local', now + 300_000);
@@ -92,7 +99,18 @@ test('serializes dispatch, recovers an expired attempt, and binds only one verif
   const retainedRun = competing[0] ? '1234' : '5678';
   expect(await bindPublicationRun(env.TEST_CMS_DB, { ...recovered, ciRunId: retainedRun }, now + 900_000)).toBe(true);
   expect(await claimPublicationDispatch(env.TEST_CMS_DB, 'local', now + 900_000)).toBeNull();
-  expect(await readPublication(env.TEST_CMS_DB, 'local', input.id)).toEqual({ ...saved, ciRunId: retainedRun });
+  expect(await readPublication(env.TEST_CMS_DB, 'local', input.id)).toEqual({
+    ...saved,
+    ciRunId: retainedRun,
+    codeSha: run.codeSha,
+  });
+  expect(
+    await bindPublicationRun(
+      env.TEST_CMS_DB,
+      { ...recovered, ciRunId: retainedRun, codeSha: 'd'.repeat(40) },
+      now + 900_000,
+    ),
+  ).toBe(false);
   for (const ciRunId of ['', '0', '../runs/123', '1e4', '9'.repeat(21)])
     await expect(bindPublicationRun(env.TEST_CMS_DB, { ...recovered, ciRunId }, now)).rejects.toThrow();
 });
@@ -122,4 +140,31 @@ test('dispatches the latest waiting request without reviving an older request af
   expect((await readPublication(env.TEST_CMS_DB, 'uat', latest.id))?.status).toBe('pending');
   expect(await claimPublicationDispatch(env.TEST_CMS_DB, 'prd', now)).toBeNull();
   await expect(claimPublicationDispatch(env.TEST_CMS_DB, 'uat', Number.NaN)).rejects.toThrow();
+});
+
+test('rejects an older completion after a newer publication becomes Live', async () => {
+  const completion = {
+    environment: 'local' as const,
+    ciRunId: '123',
+    codeSha: 'a'.repeat(40),
+    snapshotSha256: 'b'.repeat(64),
+    deploymentId: crypto.randomUUID(),
+  };
+  const ids = [crypto.randomUUID(), crypto.randomUUID()];
+  for (const id of ids) {
+    await requestPublication(env.TEST_CMS_DB, {
+      id,
+      environment: 'local',
+      actorEmail: 'operator@example.com',
+      requestedRevision: id,
+    });
+    await env.TEST_CMS_DB.prepare(
+      'UPDATE _blackbox_publications SET ci_run_id = ?, code_sha = ?, snapshot_sha256 = ? WHERE id = ?',
+    )
+      .bind(completion.ciRunId, completion.codeSha, completion.snapshotSha256, id)
+      .run();
+  }
+  expect(await completePublication(env.TEST_CMS_DB, { ...completion, id: ids[1]! })).toBe(true);
+  expect(await completePublication(env.TEST_CMS_DB, { ...completion, id: ids[0]! })).toBe(false);
+  expect((await readPublication(env.TEST_CMS_DB, 'local', ids[0]!))?.status).toBe('pending');
 });

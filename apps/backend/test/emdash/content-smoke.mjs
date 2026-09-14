@@ -213,7 +213,12 @@ try {
     fetch('http://127.0.0.1:8799/_emdash/api/blackbox/publications/run', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: publication.id, dispatchToken: dispatch.dispatchToken, ciRunId }),
+      body: JSON.stringify({
+        id: publication.id,
+        dispatchToken: dispatch.dispatchToken,
+        ciRunId,
+        codeSha: 'c'.repeat(40),
+      }),
     });
   const deniedRun = await bindRun('b'.repeat(64));
   assert.equal(deniedRun.status, 403);

@@ -1,6 +1,11 @@
 import { applyD1Migrations, env } from 'cloudflare:test';
 import { beforeAll, expect, test } from 'vitest';
-import { claimPublicationDispatch, readPublication, requestPublication } from '../../src/cms/publication-journal';
+import {
+  bindPublicationSnapshot,
+  claimPublicationDispatch,
+  readPublication,
+  requestPublication,
+} from '../../src/cms/publication-journal';
 import { handlePublicationWorkflow, publicationRunPath } from '../../src/cms/publication-routes';
 
 beforeAll(async () => {
@@ -29,7 +34,7 @@ test('authenticates a target-specific CI claim and preserves one pending run on 
     requestedRevision: 'published-for-ci',
   });
   const claim = await claimPublicationDispatch(env.TEST_CMS_DB, 'uat');
-  const input = { id: item.id, dispatchToken: claim!.dispatchToken, ciRunId: '12345' };
+  const input = { id: item.id, dispatchToken: claim!.dispatchToken, ciRunId: '12345', codeSha: 'c'.repeat(40) };
   for (const credential of ['', 'b'.repeat(64), 'a'.repeat(63)])
     expect((await handlePublicationWorkflow(post(input, credential), context)).status).toBe(403);
   for (const origin of ['https://wrong.example', 'http://staff.example'])
@@ -48,12 +53,24 @@ test('authenticates a target-specific CI claim and preserves one pending run on 
   expect(await accepted.json()).toEqual({ id: item.id, status: 'pending' });
   expect((await handlePublicationWorkflow(post(input), context)).status).toBe(200);
   expect((await handlePublicationWorkflow(post({ ...input, ciRunId: '54321' }), context)).status).toBe(409);
+  expect((await handlePublicationWorkflow(post({ ...input, codeSha: 'd'.repeat(40) }), context)).status).toBe(409);
   expect((await handlePublicationWorkflow(post(input), { ...context, environment: 'prd' })).status).toBe(409);
-  expect(await readPublication(env.TEST_CMS_DB, 'uat', item.id)).toEqual({ ...item, ciRunId: input.ciRunId });
+  expect(await readPublication(env.TEST_CMS_DB, 'uat', item.id)).toEqual({
+    ...item,
+    ciRunId: input.ciRunId,
+    codeSha: input.codeSha,
+  });
 });
 
 test('restricts the machine credential to the exact route, method and bounded claim payload', async () => {
-  const input = { id: crypto.randomUUID(), dispatchToken: crypto.randomUUID(), ciRunId: '12345' };
+  const input = {
+    id: crypto.randomUUID(),
+    dispatchToken: crypto.randomUUID(),
+    ciRunId: '12345',
+    codeSha: 'c'.repeat(40),
+  };
+  for (const codeSha of [undefined, 'main', 'c'.repeat(39), 'C'.repeat(40)])
+    expect((await handlePublicationWorkflow(post({ ...input, codeSha }), context)).status).toBe(400);
   for (const extra of [{ environment: 'prd' }, { status: 'live' }, { padding: 'x'.repeat(5000) }, { ciRunId: '../1' }])
     expect((await handlePublicationWorkflow(post({ ...input, ...extra }), context)).status).toBe(400);
   for (const path of [publicationRunPath + '?target=prd', publicationRunPath + '/complete', '/api/internal/orders'])
@@ -88,4 +105,72 @@ test('restricts the machine credential to the exact route, method and bounded cl
       .status,
   ).toBe(409);
   expect((await handlePublicationWorkflow(post(input), { ...context, db: env.COMMERCE_DB })).status).toBe(503);
+});
+
+test('marks only a matching deployed code and snapshot Live and replays acknowledgement without another fetch', async () => {
+  const item = await requestPublication(env.TEST_CMS_DB, {
+    id: crypto.randomUUID(),
+    environment: 'prd',
+    actorEmail: 'operator@example.com',
+    requestedRevision: 'live-completion',
+  });
+  const claim = await claimPublicationDispatch(env.TEST_CMS_DB, 'prd');
+  const target = { ...context, environment: 'prd' };
+  const run = { id: item.id, dispatchToken: claim!.dispatchToken, ciRunId: '67890', codeSha: 'e'.repeat(40) };
+  expect((await handlePublicationWorkflow(post(run), target)).status).toBe(200);
+  const input = {
+    id: item.id,
+    ciRunId: run.ciRunId,
+    codeSha: run.codeSha,
+    snapshotSha256: 'f'.repeat(64),
+    deploymentId: crypto.randomUUID(),
+  };
+  await bindPublicationSnapshot(env.TEST_CMS_DB, {
+    id: input.id,
+    ciRunId: input.ciRunId,
+    snapshotSha256: input.snapshotSha256,
+    environment: 'prd',
+  });
+  const complete = (body = input, credential = token) =>
+    new Request('https://staff.example/_emdash/api/blackbox/publications/complete', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${credential}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  let calls = 0;
+  let valid = false;
+  const send: typeof fetch = async (url, options) => {
+    calls++;
+    expect(url).toBe('https://blackbox-records-web.pages.dev/release.json');
+    expect(options?.redirect).toBe('manual');
+    expect(options?.headers).toBeUndefined();
+    return Response.json({
+      sha: valid ? input.codeSha : 'a'.repeat(40),
+      content: {
+        publicationId: input.id,
+        ciRunId: input.ciRunId,
+        snapshotSha256: input.snapshotSha256,
+      },
+    });
+  };
+  expect((await handlePublicationWorkflow(complete(input, 'b'.repeat(64)), target, send)).status).toBe(403);
+  expect((await handlePublicationWorkflow(complete({ ...input, codeSha: 'a'.repeat(40) }), target, send)).status).toBe(
+    409,
+  );
+  expect(calls).toBe(0);
+  expect((await handlePublicationWorkflow(complete(), target, send)).status).toBe(503);
+  expect((await readPublication(env.TEST_CMS_DB, 'prd', item.id))?.status).toBe('pending');
+  valid = true;
+  expect(await (await handlePublicationWorkflow(complete(), target, send)).json()).toEqual({
+    id: item.id,
+    status: 'live',
+  });
+  expect(await (await handlePublicationWorkflow(complete(), target, send)).json()).toEqual({
+    id: item.id,
+    status: 'live',
+  });
+  expect(calls).toBe(2);
+  expect(
+    (await handlePublicationWorkflow(complete({ ...input, deploymentId: crypto.randomUUID() }), target, send)).status,
+  ).toBe(409);
 });
