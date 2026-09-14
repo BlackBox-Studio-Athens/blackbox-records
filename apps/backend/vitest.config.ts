@@ -52,6 +52,8 @@ export default defineConfig({
   ],
   test: {
     maxWorkers: 2,
+    // Integration cases cross real workerd/D1 boundaries; allow local process scheduling delays.
+    testTimeout: 15_000,
     exclude: [
       'test/architecture/**/*.test.ts',
       'test/http/internal-order-routes.test.ts',
