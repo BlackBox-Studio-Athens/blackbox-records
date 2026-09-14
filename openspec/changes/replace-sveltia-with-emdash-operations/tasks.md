@@ -2,7 +2,7 @@ Use the apply-change workflow. Finish one usable workflow at a time in the deliv
 
 ## Delivery order — revised 2026-09-14
 
-The 60 acceptance tasks remain intact: 24 are complete and 36 remain open. This is not a percentage of effort or usable product completion. The local item price, stock, creation, and draft-preview workflows are usable; content editing acceptance and public publication are not finished. Do not add checkboxes merely to make the count rise.
+The 60 acceptance tasks remain intact: 25 are complete and 35 remain open. This is not a percentage of effort or usable product completion. Local editorial publication and draft preview work; item publication and retained legacy catalog reconciliation remain unfinished. Price editing requires a reconciled item. Do not add checkboxes merely to make the count rise.
 
 | Order    | Usable outcome                                                                                                         | Existing tasks to finish together                                                                               |
 | -------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |

@@ -340,7 +340,7 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
           </Card>
         </aside>
 
-        <main className="grid content-start gap-5">
+        <div className="grid content-start gap-5">
           {showPrice && selectedVariantId && (
             <ItemPriceEditor key={selectedVariantId} variantId={selectedVariantId} backendBaseUrl={backendBaseUrl} />
           )}
@@ -559,7 +559,7 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
               {history.length === 0 && <p className="text-sm text-white/50">No recent history loaded.</p>}
             </CardContent>
           </Card>
-        </main>
+        </div>
       </section>
     </div>
   );

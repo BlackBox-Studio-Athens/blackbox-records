@@ -54,10 +54,14 @@ export default function ItemPriceEditor({ variantId, backendBaseUrl }: { variant
         }
         await load();
         if (active) setMessage('');
-      } catch {
+      } catch (caught) {
         if (active) {
           setError(true);
-          setMessage('Price is unavailable. Reload to try again.');
+          setMessage(
+            caught instanceof InternalStockApiError && caught.status === 409
+              ? 'Item setup or price needs review before editing. Ask a label administrator for help.'
+              : 'Price is unavailable. Reload to try again.',
+          );
         }
       }
     })();
@@ -118,6 +122,7 @@ export default function ItemPriceEditor({ variantId, backendBaseUrl }: { variant
       } else setMessage('The price change is not finished. Select Check again.');
     } catch (caught) {
       setError(true);
+      if (caught instanceof InternalStockApiError && caught.status === 409) setNeedsReview(true);
       setMessage(
         caught instanceof InternalStockApiError
           ? caught.status === 409
