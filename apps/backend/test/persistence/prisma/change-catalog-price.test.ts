@@ -14,8 +14,8 @@ import {
 } from '../../../src/infrastructure/persistence/prisma';
 import { parseStripePriceId } from '../../../src/domain/commerce';
 
-it.each(['none', 'create', 'select', 'complete', 'external'] as const)(
-  'finishes a price command after %s acknowledgement loss without duplicating logical writes',
+it.each(['none', 'draft', 'create', 'select', 'complete', 'external'] as const)(
+  'handles the %s price scenario without duplicating logical writes or publishing drafts',
   async (interruption) => {
     const db = createPrismaClient({ COMMERCE_DB: env.COMMERCE_DB });
     try {
@@ -28,7 +28,7 @@ it.each(['none', 'create', 'select', 'complete', 'external'] as const)(
           cmsSourceId: `cms-command-${interruption}`,
           itemType: 'vinyl',
           priceKind: 'fixed',
-          catalogAvailability: 'published',
+          catalogAvailability: interruption === 'draft' ? 'withheld' : 'published',
           catalogRevision: 1,
           productProjection: { name: 'Record', description: '', imageUrls: [], metadata: {}, taxCode: null },
         },
@@ -121,7 +121,7 @@ it.each(['none', 'create', 'select', 'complete', 'external'] as const)(
         });
         return;
       }
-      if (interruption !== 'none') {
+      if (interruption !== 'none' && interruption !== 'draft') {
         await expect(changeCatalogPrice(deps, item.variantId, 'verified@example.com', command)).rejects.toThrow(
           'acknowledgement',
         );
@@ -145,6 +145,7 @@ it.each(['none', 'create', 'select', 'complete', 'external'] as const)(
       expect(selections).toBe(1);
       expect(await db.storeItemOption.findUnique({ where: { variantId: item.variantId } })).toMatchObject({
         catalogRevision: 2,
+        catalogAvailability: interruption === 'draft' ? 'withheld' : 'published',
       });
       expect(await db.storeOfferSnapshot.findUnique({ where: { variantId: item.variantId } })).toMatchObject({
         amountMinor: 2500,

@@ -2,6 +2,8 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import http, { type IncomingHttpHeaders, type IncomingMessage, type ServerResponse } from 'node:http';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
+import { createLocalStripeMockCatalog } from './local-stripe-mock-catalog';
 
 import { readLocalMockStoreOfferAmountMinor } from '../apps/backend/scripts/seed-local-mock-commerce-state';
 
@@ -102,12 +104,16 @@ export function patchStripeMockResponse(input: {
   return JSON.stringify(responseJson);
 }
 
-export function createStripeMockProxyServer(upstreamOrigin = STRIPE_MOCK_UPSTREAM_ORIGIN): http.Server {
+export function createStripeMockProxyServer(
+  upstreamOrigin = STRIPE_MOCK_UPSTREAM_ORIGIN,
+  catalogFile?: string,
+): http.Server {
   const checkoutLineItems: StripeMockCheckoutLineItems = new Map();
   const checkoutSessions = new Map<string, Record<string, unknown>>();
+  const catalog = createLocalStripeMockCatalog(catalogFile);
 
   return http.createServer((request, response) => {
-    void proxyRequest({ checkoutLineItems, checkoutSessions, request, response, upstreamOrigin }).catch(
+    void proxyRequest({ catalog, checkoutLineItems, checkoutSessions, request, response, upstreamOrigin }).catch(
       (error: unknown) => {
         writeProxyError(response, error);
       },
@@ -120,7 +126,10 @@ async function main() {
 
   await waitForStripeMock();
 
-  const proxy = createStripeMockProxyServer();
+  const proxy = createStripeMockProxyServer(
+    STRIPE_MOCK_UPSTREAM_ORIGIN,
+    resolve('apps/backend/.wrangler/state/mock-catalog.json'),
+  );
   await new Promise<void>((resolve) => {
     proxy.listen(STRIPE_MOCK_PROXY_PORT, '127.0.0.1', resolve);
   });
@@ -147,12 +156,14 @@ async function main() {
 }
 
 async function proxyRequest({
+  catalog,
   checkoutLineItems,
   checkoutSessions,
   request,
   response,
   upstreamOrigin,
 }: {
+  catalog: ReturnType<typeof createLocalStripeMockCatalog>;
   checkoutLineItems: StripeMockCheckoutLineItems;
   checkoutSessions: Map<string, Record<string, unknown>>;
   request: IncomingMessage;
@@ -172,16 +183,29 @@ async function proxyRequest({
     method: request.method,
   });
   const upstreamBody = await upstreamResponse.text();
-  const patchedResponseBody = patchStripeMockResponse({
-    body: upstreamBody,
-    checkoutLineItems,
-    checkoutSessions,
-    method: request.method,
-    requestBody,
-    url: request.url,
+  const catalogResponse = catalog({
+    url: request.url ?? '/',
+    method: request.method ?? 'GET',
+    body: requestBody,
+    status: upstreamResponse.status,
+    idempotencyKey:
+      typeof request.headers['idempotency-key'] === 'string' ? request.headers['idempotency-key'] : undefined,
   });
+  const patchedResponseBody =
+    catalogResponse?.body ??
+    patchStripeMockResponse({
+      body: upstreamBody,
+      checkoutLineItems,
+      checkoutSessions,
+      method: request.method,
+      requestBody,
+      url: request.url,
+    });
 
-  response.writeHead(upstreamResponse.status, copyResponseHeaders(upstreamResponse.headers, patchedResponseBody));
+  response.writeHead(
+    catalogResponse?.status ?? upstreamResponse.status,
+    copyResponseHeaders(upstreamResponse.headers, patchedResponseBody),
+  );
   response.end(patchedResponseBody);
 }
 
@@ -354,7 +378,7 @@ function copyResponseHeaders(headers: Headers, body: string): Record<string, str
   const copied: Record<string, string> = {};
 
   for (const [key, value] of headers.entries()) {
-    if (key.toLowerCase() === 'content-length') {
+    if (['content-length', 'transfer-encoding'].includes(key.toLowerCase())) {
       continue;
     }
 

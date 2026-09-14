@@ -10,7 +10,7 @@ const runtimeCatalogSchema = z.object({
   cmsSourceId: nonblank,
   itemType: nonblank,
   priceKind: z.enum(['fixed', 'pay_what_you_want']),
-  catalogAvailability: z.literal('published'),
+  catalogAvailability: z.enum(['published', 'withheld', 'retired']),
   catalogRevision: z.number().int().positive(),
   productProjection: z
     .object({
@@ -29,8 +29,13 @@ export function createRuntimeCatalogProductProjectionReader(
   return {
     async findByStoreItem(storeItem) {
       const record = await catalog.findByStoreItem(storeItem);
-      const parsed = runtimeCatalogSchema.safeParse(record);
-      return parsed.success ? parsed.data.productProjection : null;
+      return record?.catalogAvailability === 'published' ? readRuntimeCatalogPresentation(record) : null;
     },
   };
+}
+
+// Staff may edit a fully set-up item's price before publication; this does not make it buyable.
+export function readRuntimeCatalogPresentation(record: unknown) {
+  const parsed = runtimeCatalogSchema.safeParse(record);
+  return parsed.success ? parsed.data.productProjection : null;
 }

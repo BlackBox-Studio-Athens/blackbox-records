@@ -12,7 +12,7 @@ import {
   createStripeCatalogMetadata,
   createStripeCatalogMutationContext,
 } from './catalog-identifiers';
-import { createRuntimeCatalogProductProjectionReader } from './runtime-catalog-product-projections';
+import { readRuntimeCatalogPresentation } from './runtime-catalog-product-projections';
 import { createStoreOfferPriceFromCatalogPrice } from './money';
 import { CatalogPriceConflictError, STORE_OFFER_FRESHNESS_MS } from './types';
 import type { StripeCatalogEnvironment, StripeCatalogGateway, StripeCatalogPriceChangeGateway } from './types';
@@ -122,7 +122,7 @@ export async function changeCatalogPrice(deps: Dependencies, variant: string, ac
   try {
     const item = await deps.catalog.findByVariantId(variantId);
     const record = item && (await deps.catalog.findByStoreItem(item));
-    const projection = item && (await createRuntimeCatalogProductProjectionReader(deps.catalog).findByStoreItem(item));
+    const projection = readRuntimeCatalogPresentation(record);
     const mapping = await deps.mappings.findByVariantId(variantId);
     if (
       !item ||
