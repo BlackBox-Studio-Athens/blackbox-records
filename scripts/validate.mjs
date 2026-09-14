@@ -84,7 +84,20 @@ export function monitorSourceChanges(cwd) {
     });
     if (![0, 1].includes(result.exitCode)) throw new Error('Cannot classify changed source paths.');
     const ignored = new Set(result.stdout.split('\0'));
-    return [...touched].filter((name) => !ignored.has(name)).sort();
+    const tracked = new Set((await execa('git', ['ls-files', '-z'], { cwd })).stdout.split('\0'));
+    const source = [];
+    for (const name of touched) {
+      if (ignored.has(name)) continue;
+      const stat = await lstat(path.join(cwd, name)).catch((error) => {
+        if (error.code === 'ENOENT') return null;
+        throw error;
+      });
+      // pnpm creates and removes extensionless _tmp_<pid>_<hex> filesystem probes.
+      // Never exclude a surviving file, or a tracked file with a matching name.
+      if (!stat && !tracked.has(name) && /(?:^|\/)_tmp_\d+_[0-9a-f]{8}$/.test(name)) continue;
+      if (!stat?.isDirectory()) source.push(name);
+    }
+    return source.sort();
   };
 }
 
@@ -161,6 +174,7 @@ export async function runValidation({
         entry.status = 'passed';
       } catch (error) {
         entry.exitCode = error.exitCode || 1;
+        entry.error = error.message;
         entry.status = controller.signal.aborted ? 'cancelled' : 'failed';
       } finally {
         await output.close();
@@ -173,7 +187,7 @@ export async function runValidation({
         .filter((line) => /(?:Test Files|Tests)\s+\d|^[#ℹ] (?:tests|pass|fail) \d/.test(line));
       log(`${entry.status.toUpperCase()} ${phase.name} ${(entry.durationMs / 1000).toFixed(1)}s`);
       if (entry.status !== 'passed') {
-        log(`Exit code: ${entry.exitCode}\n${diagnosticExcerpt(content)}\nLog: ${logPath}`);
+        log(`Exit code: ${entry.exitCode}\n${diagnosticExcerpt(content || entry.error || '')}\nLog: ${logPath}`);
       }
       return entry.status === 'passed';
     }

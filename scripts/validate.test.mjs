@@ -127,6 +127,13 @@ test('source fingerprint detects tracked, untracked and deleted source but ignor
   await new Promise((resolve) => setTimeout(resolve, 30));
   assert.ok((await stopMonitoring()).includes('source.txt'));
   assert.deepEqual(await sourceIdentity(cwd), original);
+  await mkdir(path.join(cwd, 'existing'));
+  const stopGeneratedMonitoring = monitorSourceChanges(cwd);
+  await writeFile(path.join(cwd, 'existing', '_tmp_123_abcdef12'), 'pnpm probe');
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  await rm(path.join(cwd, 'existing', '_tmp_123_abcdef12'));
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.deepEqual(await stopGeneratedMonitoring(), []);
   await mkdir(path.join(cwd, '.codex-artifacts'));
   await writeFile(path.join(cwd, '.codex-artifacts', 'log'), 'ignored');
   assert.deepEqual(await sourceIdentity(cwd), original);
