@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
-import { internalSitePathPatternSource } from '../editorial-validation';
+import { internalSitePathPatternSource } from '@blackbox/content-model';
 import { buildSiteChromeCollections } from './decap-site-chrome-collections';
 
 describe('Decap site chrome collections', () => {

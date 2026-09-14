@@ -1,5 +1,5 @@
 import { buildField, buildSchemaField } from './decap-yaml-builder';
-import { httpsUrlPatternSource, publicImagePathPatternSource } from '../editorial-validation';
+import { httpsUrlPatternSource, publicImagePathPatternSource } from '@blackbox/content-model';
 
 export function buildSettingsFields() {
   return [

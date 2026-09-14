@@ -44,3 +44,29 @@ export function isSocialProfileUrl(value: string): boolean {
 export function isPublicImagePath(value: string): boolean {
   return publicImagePathPattern.test(value);
 }
+
+export const DISTRO_GROUP_VALUES = [
+  'Vinyl 12-inch',
+  'Vinyl 10-inch',
+  'Vinyl 7-inch',
+  'CDs',
+  'Clothes',
+  'Tapes',
+  'Other',
+] as const;
+
+export type DistroGroupName = (typeof DISTRO_GROUP_VALUES)[number];
+
+export const DISTRO_INTRO_FIELDS = [
+  { name: 'vinyl_12_inch', label: 'Vinyl 12-inch' },
+  { name: 'vinyl_10_inch', label: 'Vinyl 10-inch' },
+  { name: 'vinyl_7_inch', label: 'Vinyl 7-inch' },
+  { name: 'CDs', label: 'CDs' },
+  { name: 'Clothes', label: 'Clothes' },
+  { name: 'Tapes', label: 'Tapes' },
+  { name: 'Other', label: 'Other' },
+] as const;
+
+export type DistroIntroKey = (typeof DISTRO_INTRO_FIELDS)[number]['name'];
+
+export const slugPatternSource = '^[a-z0-9]+(?:-[a-z0-9]+)*$';

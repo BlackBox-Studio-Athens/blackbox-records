@@ -1,5 +1,5 @@
 import { buildField, buildSchemaField } from './decap-yaml-builder';
-import { internalSitePathPatternSource } from '../editorial-validation';
+import { internalSitePathPatternSource } from '@blackbox/content-model';
 
 export function buildHomeFields() {
   return [

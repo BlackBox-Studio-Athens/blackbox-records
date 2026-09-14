@@ -4,7 +4,7 @@ import source from '@/content/purchase-information/site.json';
 import PurchaseInformation, { PrivacyLink } from '@/components/PurchaseInformation';
 import PurchaseDocument from '@/components/PurchaseDocument';
 import { getPurchaseInformation, purchasePrivacyHeadings, purchaseTermsHeadings } from './purchase-information';
-import { purchaseInformationSchema } from './purchase-information-schema';
+import { purchaseInformationSchema } from '@blackbox/content-model';
 
 afterEach(() => vi.unstubAllEnvs());
 

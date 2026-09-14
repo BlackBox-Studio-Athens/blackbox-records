@@ -1,5 +1,5 @@
 import { getPurchaseInformation, isPurchaseInformationDraft } from '@/lib/purchase-information';
-import type { ApprovedPurchaseInformation } from '@/lib/purchase-information-schema';
+import type { ApprovedPurchaseInformation } from '@blackbox/content-model';
 
 const linkClass = 'inline-flex min-h-11 items-center underline underline-offset-4';
 

@@ -1,6 +1,6 @@
 import slugify from '@sindresorhus/slugify';
 
-export const slugPatternSource = '^[a-z0-9]+(?:-[a-z0-9]+)*$';
+import { slugPatternSource } from '@blackbox/content-model';
 const slugPattern = new RegExp(slugPatternSource);
 
 export type SlugValidationResult =

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'astro/zod';
 
-import { createDistroContentSchema } from './distro-content-schema';
+import { createDistroContentSchema } from '@blackbox/content-model';
 
 const schema = createDistroContentSchema(() => z.string().min(1));
 const baseEntry = {

@@ -1,6 +1,6 @@
 import { buildField, buildFieldMapping, buildSchemaField } from './decap-yaml-builder';
-import { emailAddressPatternSource, httpsUrlPatternSource } from '../editorial-validation';
-import { slugPatternSource } from '../slugs';
+import { emailAddressPatternSource, httpsUrlPatternSource } from '@blackbox/content-model';
+import { slugPatternSource } from '@blackbox/content-model';
 
 export function buildServicesFields() {
   return [

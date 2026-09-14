@@ -1,5 +1,5 @@
 import { publication, content } from '@/content/purchase-information/site.json';
-import type { ApprovedPurchaseInformation } from './purchase-information-schema';
+import type { ApprovedPurchaseInformation } from '@blackbox/content-model';
 
 // Astro validates the entry. Draft wording is visible only in the local dev preview.
 export function getPurchaseInformation(): ApprovedPurchaseInformation | null {

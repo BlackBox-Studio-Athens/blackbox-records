@@ -84,7 +84,7 @@ import {
   mapStoreItemsBySlug,
   type StoreItem,
 } from './catalog-data';
-import type { DistroGroupName } from './distro-data';
+import type { DistroGroupName } from '@blackbox/content-model';
 
 type ReleaseEntry = CollectionEntry<'releases'>;
 type ReleaseEntryData = ReleaseEntry['data'];

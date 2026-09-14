@@ -10,7 +10,7 @@ import {
   isSocialProfileUrl,
   tidalContentUrlPatternSource,
   youtubeVideoIdPatternSource,
-} from './editorial-validation';
+} from '@blackbox/content-model';
 
 describe('editorial validation', () => {
   it('accepts safe internal paths and rejects traversal, protocol-relative, and backslash paths', () => {

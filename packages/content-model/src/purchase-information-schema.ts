@@ -1,4 +1,4 @@
-import { z } from 'astro/zod';
+import { z } from 'zod';
 
 const text = z.string().trim().min(1);
 const section = z.object({ summary: text, paragraphs: z.array(text).min(1) }).strict();

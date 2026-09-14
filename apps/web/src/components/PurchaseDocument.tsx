@@ -1,5 +1,5 @@
 import { isPurchaseInformationDraft, purchasePrivacyHeadings, purchaseTermsHeadings } from '@/lib/purchase-information';
-import type { ApprovedPurchaseInformation } from '@/lib/purchase-information-schema';
+import type { ApprovedPurchaseInformation } from '@blackbox/content-model';
 
 export default function PurchaseDocument({
   kind,

@@ -3,9 +3,9 @@ import {
   buildTidalPlayerProviderFromEmbedUrl,
   type PlayerProvider,
   type PlayerProviderId,
-} from '@/utils/music';
+} from '@blackbox/content-model';
 
-export type { PlayerEmbedLayout, PlayerProvider, PlayerProviderId } from '@/utils/music';
+export type { PlayerEmbedLayout, PlayerProvider, PlayerProviderId } from '@blackbox/content-model';
 
 export type PlayerProviderEmbedUrls = {
   bandcampEmbedUrl?: string | undefined;

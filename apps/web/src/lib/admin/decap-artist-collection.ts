@@ -1,5 +1,5 @@
 import { buildField, buildFieldMapping, buildFolderCollection } from './decap-yaml-builder';
-import { httpsUrlPatternSource, youtubeVideoIdPatternSource } from '../editorial-validation';
+import { httpsUrlPatternSource, youtubeVideoIdPatternSource } from '@blackbox/content-model';
 import { createSlugSuggestion } from '../slugs';
 import { decapCollectionDescriptions } from './decap-editorial-copy';
 import { cmsRelativeMedia } from './sveltia-media';

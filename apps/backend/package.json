@@ -9,7 +9,7 @@
     "dev:mock-api": "wrangler dev --env mock-api --port 8787 --var STRIPE_SECRET_KEY:sk_test_mock --var STRIPE_PAYMENT_METHOD_CONFIGURATION_ID:pmc_mock_blackbox_checkout --var STRIPE_WEBHOOK_SECRET:whsec_local_mock",
     "dev:uat": "wrangler dev --env uat --port 8787",
     "dev:sandbox": "pnpm dev:uat",
-    "deploy:uat": "wrangler deploy --env uat",
+    "deploy:uat": "pnpm build:cms --env uat && wrangler deploy --config dist/server/wrangler.json",
     "deploy:sandbox": "pnpm deploy:uat",
     "deploy:prd": "wrangler deploy --env prd",
     "deploy:production": "pnpm deploy:prd",
@@ -41,29 +41,46 @@
     "webhook:simulate:local": "tsx scripts/simulate-stripe-webhook.ts",
     "check": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run --config vitest.config.ts && vitest run --config vitest.node.config.ts",
-    "test:node": "vitest run --config vitest.node.config.ts"
+    "test:node": "vitest run --config vitest.node.config.ts",
+    "test:emdash": "astro build --root test/emdash && node test/emdash/smoke.mjs",
+    "test:cms-render": "node test/emdash/parity-smoke.mjs",
+    "build:cms": "node scripts/build-cms.mjs",
+    "cms:migrations": "node scripts/migrate-cms.mjs",
+    "cms:application-migrations:local": "node scripts/migrate-cms-application.mjs",
+    "test:staff-hosting": "node test/emdash/staff-smoke.mjs",
+    "test:cms-content": "node --import tsx test/emdash/content-smoke.mjs",
+    "test:cms-import": "node --import tsx test/emdash/import-smoke.mjs",
+    "test:cms-media-privacy:uat": "node test/emdash/uat-media-privacy.mjs"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "14.3.1",
+    "@astrojs/react": "6.0.4",
     "@cloudflare/flagship": "0.5.0",
+    "@emdash-cms/cloudflare": "0.37.0",
     "@hono/zod-openapi": "^1.6.1",
     "@openfeature/server-sdk": "1.23.0",
     "@prisma/adapter-d1": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "astro": "7.3.2",
+    "emdash": "0.37.0",
     "hono": "4.13.5",
     "jose": "6.2.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "resend": "^6.25.0",
     "stripe": "^22.6.0",
     "unique-names-generator": "^4.7.1",
-    "zod": "^4.5.4"
+    "zod": "^4.5.4",
+    "@blackbox/content-model": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.22.0",
-    "@cloudflare/workers-types": "^5.20260831.1",
+    "@cloudflare/workers-types": "^5.20260911.1",
     "@types/node": "^24.13.3",
     "prisma": "^7.10.0",
     "tsx": "4.23.13",
     "typescript": "^5.9.3",
     "vitest": "4.1.11",
-    "wrangler": "^4.127.1"
+    "wrangler": "^4.131.1"
   }
 }

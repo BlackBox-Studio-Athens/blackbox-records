@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
 import distroPage from '../../content/distro-page/site.json';
-import { DISTRO_GROUP_VALUES } from '../distro-data';
+import { DISTRO_GROUP_VALUES } from '@blackbox/content-model';
 import { buildDistroPageFields } from './decap-distro-page-fields';
 import { buildPageFileCollections } from './decap-page-collections';
 

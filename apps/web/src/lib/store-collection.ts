@@ -1,5 +1,6 @@
 import { listDistroEntries, listStoreItems, type StoreItem } from './catalog-data';
-import { groupDistroEntries, type DistroGroupName, type DistroIntroKey } from './distro-data';
+import { groupDistroEntries } from './distro-data';
+import type { DistroGroupName, DistroIntroKey } from '@blackbox/content-model';
 import { getPrimaryAvailabilityForStoreItem, type ItemAvailability } from './item-availability';
 import { type StoreCatalogCategoryId } from './store-categories';
 

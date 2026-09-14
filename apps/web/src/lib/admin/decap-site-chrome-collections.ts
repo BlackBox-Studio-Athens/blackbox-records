@@ -1,6 +1,6 @@
 import { buildField, buildFolderCollection, buildSchemaField } from './decap-yaml-builder';
 import { decapCollectionDescriptions } from './decap-editorial-copy';
-import { httpsUrlPatternSource, internalSitePathPatternSource } from '../editorial-validation';
+import { httpsUrlPatternSource, internalSitePathPatternSource } from '@blackbox/content-model';
 
 export function buildSiteChromeCollections() {
   return {

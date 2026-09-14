@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
 import { buildDistroCollection } from './decap-distro-collection';
-import { DISTRO_GROUP_VALUES } from '../distro-data';
+import { DISTRO_GROUP_VALUES } from '@blackbox/content-model';
 
 type ParsedField = {
   allow_add?: boolean;

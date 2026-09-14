@@ -1,7 +1,7 @@
 import { buildField, buildFolderCollection, buildSchemaField } from './decap-yaml-builder';
 import { decapCollectionDescriptions } from './decap-editorial-copy';
 import { cmsRelativeMedia } from './sveltia-media';
-import { DISTRO_GROUP_VALUES } from '../distro-data';
+import { DISTRO_GROUP_VALUES } from '@blackbox/content-model';
 
 export function buildDistroCollection() {
   return buildFolderCollection({

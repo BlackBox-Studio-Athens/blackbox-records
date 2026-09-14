@@ -8,7 +8,8 @@ vi.mock('astro:config/client', () => ({
   site: 'https://blackbox-studio-athens.github.io',
 }));
 
-import { buildBandcampEmbedUrl, buildEmbeddedPlayerData, buildTidalEmbedUrl } from './music';
+import { buildBandcampEmbedUrl, buildTidalEmbedUrl } from '@blackbox/content-model';
+import { buildEmbeddedPlayerData } from './music';
 
 function readReleaseFrontmatter(slug: string) {
   const releasePath = fileURLToPath(new URL(`../content/releases/${slug}.md`, import.meta.url));

@@ -2,7 +2,7 @@ import {
   bandcampEmbedUrlPatternSource,
   internalOrHttpsUrlPatternSource,
   tidalContentUrlPatternSource,
-} from '../editorial-validation';
+} from '@blackbox/content-model';
 import { buildField, buildFieldMapping, buildFolderCollection } from './decap-yaml-builder';
 import { decapCollectionDescriptions } from './decap-editorial-copy';
 import { cmsRelativeMedia } from './sveltia-media';

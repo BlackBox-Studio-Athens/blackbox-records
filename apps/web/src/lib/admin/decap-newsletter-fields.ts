@@ -1,5 +1,5 @@
 import { buildField, buildSchemaField } from './decap-yaml-builder';
-import { emailAddressPatternSource } from '../editorial-validation';
+import { emailAddressPatternSource } from '@blackbox/content-model';
 
 export function buildNewsletterFields() {
   return [

@@ -1,5 +1,5 @@
 import { buildField, buildSchemaField } from './decap-yaml-builder';
-import { DISTRO_INTRO_FIELDS } from '../distro-data';
+import { DISTRO_INTRO_FIELDS } from '@blackbox/content-model';
 
 export function buildDistroPageFields() {
   return [

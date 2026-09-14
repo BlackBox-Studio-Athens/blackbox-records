@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
-import { emailAddressPatternSource } from '../editorial-validation';
+import { emailAddressPatternSource } from '@blackbox/content-model';
 import { buildNewsletterFields } from './decap-newsletter-fields';
 
 describe('Decap newsletter fields', () => {

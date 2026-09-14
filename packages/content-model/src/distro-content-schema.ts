@@ -1,6 +1,6 @@
-import { z } from 'astro/zod';
+import { z } from 'zod';
 
-import { DISTRO_GROUP_VALUES } from './distro-data';
+import { DISTRO_GROUP_VALUES } from './validation';
 
 const requiredAltText = z.string().trim().min(1, 'Describe the visible image for people who cannot see it.');
 

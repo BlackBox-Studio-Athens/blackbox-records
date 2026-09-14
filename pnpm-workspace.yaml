@@ -2,6 +2,9 @@ packages:
   - apps/*
   - packages/*
 overrides:
+  'astro@7.3.2>vite': 8.3.0
+  '@astrojs/cloudflare@14.3.1>vite': 8.3.0
+  'vite@8.3.0>rolldown': 1.2.8
   '@cloudflare/vitest-pool-workers>miniflare': 5.20260828.0-alpha
   '@cloudflare/vitest-pool-workers>wrangler': 4.127.1
   msw: 2.15.0
@@ -19,3 +22,5 @@ minimumReleaseAgeExclude:
   - '@cloudflare/workers-types@5.20260831.1'
   - lucide-react@1.38.0
   - shadcn@4.19.1
+patchedDependencies:
+  emdash@0.37.0: patches/emdash@0.37.0.patch

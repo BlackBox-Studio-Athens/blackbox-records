@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
-import { httpsUrlPatternSource, publicImagePathPatternSource } from '../editorial-validation';
+import { httpsUrlPatternSource, publicImagePathPatternSource } from '@blackbox/content-model';
 import { buildSettingsFields } from './decap-settings-fields';
 
 describe('Decap settings fields', () => {
