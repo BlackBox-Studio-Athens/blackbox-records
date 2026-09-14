@@ -45,7 +45,8 @@ Read these first before editing:
 ## Commands
 
 - Install deps: `pnpm install`
-- Frontend dev server: `pnpm dev` or `pnpm dev:web`
+- Normal Local stack: `pnpm dev` (alias for `pnpm dev:stack:stripe-mock`)
+- Frontend-only dev server: `pnpm dev:web`
 - Staff frontend dev server: `pnpm dev:staff`
 - Frontend-only static-site launcher: `pnpm site:dev`
 - Codex/browser-smoke background site launcher: `pnpm site:dev:bg`
@@ -115,7 +116,7 @@ Read these first before editing:
 - If that port is unavailable, the launcher should fail clearly rather than silently drifting to another port.
 - Only the static-site launcher should keep a browser/debug target attached.
 - Backend local D1 comes from Wrangler automatically during Worker dev; do not add a second D1 process to the run-config flow.
-- The stack launcher scripts must run D1 migrations and seed SQL before starting the Worker/static site.
+- The stack launcher scripts must apply D1 migrations before starting the Worker/static site. Normal mock startup seeds commerce only when empty and preserves existing stock/prices. The combined Local Worker bootstraps CMS content only when all collections are empty and persists D1/R2 under `apps/backend/.wrangler/state`.
 - Keep `BlackBox Local Stack` working whenever frontend env, backend env, ports, checkout setup, D1 migrations, seed files, or WebStorm run configs change. If a change breaks the canonical launcher, fix the launcher or docs in the same commit.
 - The deterministic local mock checkout smoke path is `http://127.0.0.1:4321/blackbox-records/store/checkout/`; stripe-mock mode now seeds every current visible store item with fake local checkout state.
 - `pnpm dev:stack:uat-connected` runs the local static frontend against the deployed UAT Worker/API. It must not require copying UAT Stripe secrets or UAT Worker secrets into local files.

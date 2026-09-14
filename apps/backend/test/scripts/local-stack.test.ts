@@ -15,11 +15,8 @@ describe('local stack launcher plan', () => {
     }
 
     for (const scriptName of ['dev:mock', 'dev:mock-api']) {
-      expect(packageJson.scripts[scriptName]).toContain('--var STRIPE_SECRET_KEY:sk_test_mock');
-      expect(packageJson.scripts[scriptName]).toContain(
-        '--var STRIPE_PAYMENT_METHOD_CONFIGURATION_ID:pmc_mock_blackbox_checkout',
-      );
-      expect(packageJson.scripts[scriptName]).toContain('--var STRIPE_WEBHOOK_SECRET:whsec_local_mock');
+      expect(packageJson.scripts[scriptName]).toContain('build:cms --env mock');
+      expect(packageJson.scripts[scriptName]).toContain('scripts/start-local-cms.mjs');
     }
   });
 
@@ -57,8 +54,8 @@ describe('local stack launcher plan', () => {
 
     expect(plan.ports).toEqual([12110, 12111, 12112, 8787, 4321]);
     expect(plan.prepare.map((command) => command.args.join(' '))).toEqual([
-      '--filter @blackbox/backend d1:prepare:local',
-      '--filter @blackbox/backend d1:seed:stripe-mock:local',
+      '--filter @blackbox/backend d1:migrations:apply:local',
+      '--filter @blackbox/backend d1:seed:stripe-mock:local --if-empty',
     ]);
     expect(plan.longRunning).toEqual([
       expect.objectContaining({
@@ -87,8 +84,8 @@ describe('local stack launcher plan', () => {
 
     expect(plan.ports).toEqual([12110, 12111, 12112, 8787, 4321]);
     expect(plan.prepare.map((command) => command.args.join(' '))).toEqual([
-      '--filter @blackbox/backend d1:prepare:local',
-      '--filter @blackbox/backend d1:seed:stripe-mock:local',
+      '--filter @blackbox/backend d1:migrations:apply:local',
+      '--filter @blackbox/backend d1:seed:stripe-mock:local --if-empty',
     ]);
     expect(plan.longRunning).toEqual([
       expect.objectContaining({

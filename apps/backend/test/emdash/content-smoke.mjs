@@ -21,6 +21,23 @@ const localState = mkdtempSync(join(stateRoot, 'publication-smoke-'));
 const workflowToken = 'a'.repeat(64);
 let worker;
 try {
+  const commerceMigration = spawnSync(
+    process.execPath,
+    [
+      fileURLToPath(new URL('node_modules/wrangler/bin/wrangler.js', root)),
+      'd1',
+      'migrations',
+      'apply',
+      'COMMERCE_DB',
+      '--local',
+      '--persist-to',
+      localState,
+      '--config',
+      fileURLToPath(new URL('dist/server/wrangler.json', root)),
+    ],
+    { env: { ...process.env, CI: 'true' }, encoding: 'utf8', windowsHide: true },
+  );
+  assert.equal(commerceMigration.status, 0, commerceMigration.stdout + commerceMigration.stderr);
   worker = await unstable_dev(fileURLToPath(new URL('dist/server/entry.mjs', root)), {
     config: fileURLToPath(new URL('dist/server/wrangler.json', root)),
     ip: '127.0.0.1',
@@ -33,6 +50,9 @@ try {
     logLevel: 'error',
     experimental: { disableExperimentalWarning: true },
   });
+  const stock = await fetch('http://127.0.0.1:8799/api/internal/variants');
+  assert.equal(stock.status, 200, await stock.clone().text());
+  assert.deepEqual(await stock.json(), []);
   async function request(path, method = 'GET', body) {
     const form = body instanceof FormData;
     const response = await fetch('http://127.0.0.1:8799/_emdash/api' + path, {

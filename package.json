@@ -8,7 +8,7 @@
   },
   "scripts": {
     "postinstall": "pnpm stripe:catalog:artifacts:generate",
-    "dev": "pnpm dev:web",
+    "dev": "pnpm dev:stack:stripe-mock",
     "dev:web": "pnpm --filter @blackbox/web dev",
     "dev:staff": "pnpm --filter @blackbox/staff dev",
     "site:dev": "pnpm --filter @blackbox/web dev:static",

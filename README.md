@@ -166,7 +166,9 @@ Run the default full local commerce stack:
 pnpm dev:stack:stripe-mock
 ```
 
-This is what `BlackBox Local Stack` runs in WebStorm. It prepares local D1, starts official `stripe-mock` through local Go tooling, starts the Worker with the Stripe SDK pointed at the local mock API proxy, starts the static Astro site with a mock checkout panel. The same `4321` site serves the local Sveltia editor at `/admin/index.html` with native directory selection. Local newsletter signup uses the committed fake `re_mock_*` Resend config through a no-network provider mock. It does not require Docker, real Stripe keys, real Resend keys, or `apps/backend/.dev.vars`.
+`pnpm dev` and `BlackBox Local Stack` in WebStorm run this same command. It applies Local D1 migrations, seeds mock commerce only when the store is empty, starts official `stripe-mock` through Go, and builds/starts the combined CMS and commerce Worker. The public Astro site stays at `http://127.0.0.1:4321/blackbox-records/`; Content, Items, Stock and Orders share `http://127.0.0.1:8787/content/` and the same Local operator identity. The Worker imports initial editorial content only when all CMS collections are empty. Existing content, stock and prices remain in `apps/backend/.wrangler/state` across restarts. The Local mock launcher does not load `.dev.vars` or dotenv credentials. Local newsletter signup uses the committed fake `re_mock_*` Resend config through a no-network provider mock. It does not require Docker, real Stripe keys, real Resend keys, or hosted login.
+
+Local content publication is still being integrated: a saved draft or Pending request does not yet refresh the public site. Sveltia remains available only during replacement acceptance. If an initial import is interrupted, use the explicit idempotent CMS import diagnostic to finish it; ordinary startup never overwrites existing editorial records. `pnpm dev:web` and `pnpm site:dev` remain frontend-only diagnostics. Running `d1:seed:stripe-mock:local` explicitly without `--if-empty` is a reseed diagnostic that replaces mock stock/price fixtures, not the normal restart path.
 
 Local mock checkout smoke path:
 

@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --port 8787",
-    "dev:mock": "wrangler dev --env mock --port 8787 --var STRIPE_SECRET_KEY:sk_test_mock --var STRIPE_PAYMENT_METHOD_CONFIGURATION_ID:pmc_mock_blackbox_checkout --var STRIPE_WEBHOOK_SECRET:whsec_local_mock",
-    "dev:mock-api": "wrangler dev --env mock-api --port 8787 --var STRIPE_SECRET_KEY:sk_test_mock --var STRIPE_PAYMENT_METHOD_CONFIGURATION_ID:pmc_mock_blackbox_checkout --var STRIPE_WEBHOOK_SECRET:whsec_local_mock",
+    "dev:mock": "pnpm build:cms --env mock && node --import tsx scripts/start-local-cms.mjs --port 8787",
+    "dev:mock-api": "pnpm build:cms --env mock-api && node --import tsx scripts/start-local-cms.mjs --port 8787",
     "dev:uat": "wrangler dev --env uat --port 8787",
     "dev:sandbox": "pnpm dev:uat",
     "deploy:uat": "pnpm build:cms --env uat && wrangler deploy --config dist/server/wrangler.json",

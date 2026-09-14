@@ -37,8 +37,13 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
       ? []
       : [
           {
-            args: ['--filter', '@blackbox/backend', 'd1:prepare:local'],
+            args: [
+              '--filter',
+              '@blackbox/backend',
+              mode === 'stripe-test' ? 'd1:prepare:local' : 'd1:migrations:apply:local',
+            ],
             command: 'pnpm',
+            env: { CI: 'true' },
             name: 'Prepare local D1',
           },
         ];
@@ -77,7 +82,7 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
     );
   } else if (mode === 'stripe-mock') {
     prepare.push({
-      args: ['--filter', '@blackbox/backend', 'd1:seed:stripe-mock:local'],
+      args: ['--filter', '@blackbox/backend', 'd1:seed:stripe-mock:local', '--if-empty'],
       command: 'pnpm',
       name: 'Seed stripe-mock mappings',
     });
@@ -108,7 +113,7 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
     );
   } else if (mode === 'stripe-mock-api') {
     prepare.push({
-      args: ['--filter', '@blackbox/backend', 'd1:seed:stripe-mock:local'],
+      args: ['--filter', '@blackbox/backend', 'd1:seed:stripe-mock:local', '--if-empty'],
       command: 'pnpm',
       name: 'Seed stripe-mock mappings',
     });
@@ -238,17 +243,16 @@ async function main() {
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 
-  for (const command of plan.longRunning) {
-    processes.start(command);
-
-    if (command.waitForPort) {
-      await Promise.race([waitForPort(command.waitForPort, command.name), processes.waitForUnexpectedExit()]);
-    }
-  }
-
   try {
+    for (const command of plan.longRunning) {
+      processes.start(command);
+      if (command.waitForPort) {
+        await Promise.race([waitForPort(command.waitForPort, command.name), processes.waitForUnexpectedExit()]);
+      }
+    }
     await processes.waitForUnexpectedExit();
   } catch (error) {
+    await processes.shutdown();
     exitAfterUnexpectedServiceExit(error);
   }
 }
