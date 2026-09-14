@@ -158,3 +158,6 @@ The Orders lookup wrapping fix in 010b2c10 passes Chrome Blackbox layout verific
 
 Chrome Blackbox opened Ouranopithecus in two canonical Local editor tabs. Saving the unchanged record in the first advanced its revision without altering editorial values. The second attempted to save Genre=Unsaved stale revision check and received the explicit conflict message; the text remained visible and Save draft became disabled. Keep editing preserved that text. Discard changes and reload then restored Experimental Weird Rock, showed No unsaved changes and re-enabled Save draft. The test text was never persisted or published; the unchanged save created only a Local draft revision. This closes the previously unverified browser conflict/reload interaction. Unsupported native rich-text commands and the broader hosted acceptance remain open.
 
+
+Task 6.1 is complete: Content, Items, Stock and Orders reuse StockOpsLayout with active navigation state and the same-origin API context. The narrow workspace navigation evidence above verifies the Local transition between all four sections without another login. This does not close hosted allowlist, role/revocation or artifact credential acceptance in task 2.3, nor the broader accessibility matrix in 6.5.
+
