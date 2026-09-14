@@ -145,6 +145,7 @@ jobs:
         with:
           name: release-${{ inputs.artifact_commit_sha || github.sha }}
           path: .codex-artifacts/release
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
   inspect-uat-pages:

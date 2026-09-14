@@ -14,6 +14,11 @@ describe('one gated release', () => {
     ).run;
     expect(build).toContain('build:cms --env uat');
     expect(build).toContain('cp -R apps/backend/dist .codex-artifacts/release/uat/worker');
+    const upload = release.jobs['build-candidate'].steps.find(
+      (step: { name: string }) => step.name === 'Upload verified release bundle',
+    ).with;
+    expect(upload.path).toBe('.codex-artifacts/release');
+    expect(upload['include-hidden-files']).toBe(true);
     const deploy = release.jobs['deploy-uat'].steps.find(
       (step: { name: string }) => step.name === 'Deploy UAT Worker',
     ).run;
