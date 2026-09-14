@@ -136,8 +136,9 @@ jobs:
         run: |
           cp -R apps/web/dist .codex-artifacts/release/prd/public
           cp -R apps/staff/dist .codex-artifacts/release/prd/staff
-          pnpm --filter @blackbox/backend exec wrangler deploy --env uat --dry-run --outdir ../../.codex-artifacts/release/uat/worker --define "RELEASE_SOURCE_SHA:\"$SOURCE_SHA\"" --define "RELEASE_RUN_NUMBER:\"$GITHUB_RUN_NUMBER\""
-          pnpm --filter @blackbox/backend exec wrangler deploy --env prd --dry-run --outdir ../../.codex-artifacts/release/prd/worker --define "RELEASE_SOURCE_SHA:\"$SOURCE_SHA\"" --define "RELEASE_RUN_NUMBER:\"$GITHUB_RUN_NUMBER\""
+          pnpm --filter @blackbox/backend build:cms --env uat
+          cp -R apps/backend/dist .codex-artifacts/release/uat/worker
+          pnpm --filter @blackbox/backend exec wrangler deploy --config wrangler.jsonc --env prd --dry-run --outdir ../../.codex-artifacts/release/prd/worker --define "RELEASE_SOURCE_SHA:\"$SOURCE_SHA\"" --define "RELEASE_RUN_NUMBER:\"$GITHUB_RUN_NUMBER\""
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs pack
       - name: Upload verified release bundle
         uses: actions/upload-artifact@v7.0.1
@@ -197,7 +198,7 @@ jobs:
       - name: Deploy UAT Worker
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-backend uat
-          pnpm --filter @blackbox/backend exec wrangler deploy ../../.codex-artifacts/release/uat/worker/index.js --env uat --config wrangler.jsonc --no-bundle --keep-vars
+          pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/uat/worker/server/wrangler.json --keep-vars
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-worker uat
           pnpm store:listing-readiness:verify -- --env uat --url "$UAT_PUBLIC_BACKEND_BASE_URL/api/store/listing-prices"
       - &observe-uat

@@ -65,7 +65,13 @@ export default defineConfig({
   session: false,
   publicDir: '../staff/dist',
   adapter: cloudflare({ configPath: '.emdash/wrangler.build.json', imageService: 'passthrough' }),
-  vite: { build: { rolldownOptions: { output: { strictExecutionOrder: true } } } },
+  vite: {
+    define: {
+      ...(process.env.SOURCE_SHA ? { RELEASE_SOURCE_SHA: JSON.stringify(process.env.SOURCE_SHA) } : {}),
+      ...(process.env.GITHUB_RUN_NUMBER ? { RELEASE_RUN_NUMBER: JSON.stringify(process.env.GITHUB_RUN_NUMBER) } : {}),
+    },
+    build: { rolldownOptions: { output: { strictExecutionOrder: true } } },
+  },
   integrations: [
     react(),
     emdash({

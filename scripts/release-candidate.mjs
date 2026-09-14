@@ -262,7 +262,11 @@ async function main(command, target) {
     };
     validateOrder(candidate, null);
     for (const target of ['uat', 'prd']) {
-      const worker = readFileSync(`${bundle}/${target}/worker/index.js`, 'utf8');
+      const directory = `${bundle}/${target}/worker`;
+      const worker = Object.keys(inventory(directory))
+        .filter((name) => /\.(?:js|mjs)$/.test(name))
+        .map((name) => readFileSync(`${directory}/${name}`, 'utf8'))
+        .join('\n');
       assert.ok(worker.includes(sha) && worker.includes('X-Release-SHA'), 'Worker has no compiled release identity.');
     }
     for (const surface of ['uat/public', 'prd/public', 'prd/staff']) {

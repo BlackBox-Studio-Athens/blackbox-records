@@ -8,6 +8,19 @@ const source = readFileSync(path.join(root, '.github/workflows/pages.yml'), 'utf
 const release = parse(source);
 
 describe('one gated release', () => {
+  it('retains and deploys the combined UAT runtime with its generated bindings and staff assets', () => {
+    const build = release.jobs['build-candidate'].steps.find(
+      (step: { name: string }) => step.name === 'Retain PRD and Worker artifacts',
+    ).run;
+    expect(build).toContain('build:cms --env uat');
+    expect(build).toContain('cp -R apps/backend/dist .codex-artifacts/release/uat/worker');
+    const deploy = release.jobs['deploy-uat'].steps.find(
+      (step: { name: string }) => step.name === 'Deploy UAT Worker',
+    ).run;
+    expect(deploy).toContain('uat/worker/server/wrangler.json --keep-vars');
+    expect(deploy).not.toContain('worker/index.js');
+  });
+
   it('limits main pushes to UAT and keeps code/catalog/launch authorization independent', () => {
     expect(release.on.workflow_dispatch.inputs.target.default).toBe('uat');
     expect(release.on.workflow_dispatch.inputs.confirm_code_promotion.default).toBe(false);
