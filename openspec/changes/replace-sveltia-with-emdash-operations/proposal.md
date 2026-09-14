@@ -6,6 +6,8 @@ Use self-hosted EmDash for editorial CMS functionality and extend the working st
 
 ## What Changes
 
+Implementation priority, revised at the user's request on 2026-09-14: finish usable member workflows with the backend already prepared. Work in the outcome order recorded in `tasks.md`, rather than expanding backend infrastructure or accumulating isolated checkpoints. Keep all acceptance requirements; measure progress by demonstrated workflows as well as completed tasks. No new framework, dependency, journal, or service is justified unless an existing required workflow cannot work without it.
+
 - **BREAKING:** Replace Sveltia/Git content writes with EmDash-managed editorial content in a dedicated D1 database and media in R2. Use supported EmDash APIs from the BlackBox-owned staff UI; its built-in admin is not the normal member workspace.
 - **BREAKING:** Separate Content Publication from Software Release. Publishing uses the environment's deployed, approved code revision and a consistent published-content snapshot, without committing content or deploying a Worker.
 - **BREAKING:** Replace the generated catalog compiled into the backend with persisted runtime catalog records in `COMMERCE_DB`. Existing Stripe Product bindings and Product default Prices remain authoritative; stock and orders remain in their existing D1 model.
