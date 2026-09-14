@@ -1,4 +1,5 @@
 import { applyD1Migrations, env } from 'cloudflare:test';
+import { createHash } from 'node:crypto';
 import { beforeAll, expect, test } from 'vitest';
 import {
   bindPublicationSnapshot,
@@ -158,11 +159,27 @@ test('marks only a matching deployed code and snapshot Live and replays acknowle
   const target = { ...context, environment: 'prd' };
   const run = { id: item.id, dispatchToken: claim!.dispatchToken, ciRunId: '67890', codeSha: 'e'.repeat(40) };
   expect((await handlePublicationWorkflow(post(run), target)).status).toBe(200);
+  const manifest = JSON.stringify({
+    schemaVersion: 1,
+    environment: 'prd',
+    records: [
+      {
+        collection: 'socials',
+        id: 'social',
+        slug: 'social',
+        revisionId: item.requestedRevision,
+        data: { title: 'Social', url: '#', order: 0 },
+      },
+    ],
+    media: [],
+  });
+  const snapshotSha256 = createHash('sha256').update(manifest).digest('hex');
+  await env.TEST_SNAPSHOTS.put(`snapshots/prd/manifest/${snapshotSha256}`, manifest);
   const input = {
     id: item.id,
     ciRunId: run.ciRunId,
     codeSha: run.codeSha,
-    snapshotSha256: 'f'.repeat(64),
+    snapshotSha256,
     deploymentId: crypto.randomUUID(),
   };
   await bindPublicationSnapshot(env.TEST_CMS_DB, {
