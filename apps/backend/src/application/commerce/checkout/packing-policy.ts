@@ -1,4 +1,3 @@
-import { currentCatalogProductProjectionEntries } from '../catalog-sync';
 import type { ItemPackingProfile, PackagePackingProfile, PackingPolicy } from './packing';
 
 export const deliveryCharges = { small: 250, medium: 350 };
@@ -49,9 +48,7 @@ export function createPackingPolicy(target: 'local' | 'uat' | 'prd' = 'prd', str
   return {
     allowSynthetic,
     charges: deliveryCharges,
-    items: allowSynthetic
-      ? new Map(currentCatalogProductProjectionEntries.map(({ variantId }) => [variantId, syntheticItemProfile]))
-      : measuredItems,
+    items: allowSynthetic ? { get: () => syntheticItemProfile } : measuredItems,
     packages: allowSynthetic ? syntheticPackages : measuredPackages,
   };
 }

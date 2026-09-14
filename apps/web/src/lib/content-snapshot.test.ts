@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import { afterEach, expect, it, vi } from 'vitest';
 import { readContentSnapshot, snapshotCollection } from './content-snapshot';
 import { contentSnapshotInput } from './content-loader';
+import { parseContentSnapshot } from '@blackbox/content-model';
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -28,6 +29,14 @@ it('loads only checksum-bound content, maps stable references and rejects altere
     const snapshot = {
       schemaVersion: 1,
       environment: 'local',
+      storeItems: [
+        {
+          sourceKind: 'release',
+          sourceId: 'stable-release',
+          storeItemSlug: 'original-store-slug',
+          variantId: 'variant_persisted',
+        },
+      ],
       records: [
         {
           collection: 'artists',
@@ -80,6 +89,24 @@ it('loads only checksum-bound content, maps stable references and rejects altere
       },
     });
     expect(snapshotCollection(loaded, 'releases')[0]!.data.artist).toBe('stable-artist');
+    expect(snapshotCollection(loaded, 'releases')[0]!.data.store_item).toEqual({
+      storeItemSlug: 'original-store-slug',
+      variantId: 'variant_persisted',
+    });
+    expect(() =>
+      parseContentSnapshot(
+        JSON.stringify({ ...snapshot, storeItems: [...snapshot.storeItems, ...snapshot.storeItems] }),
+        'local',
+      ),
+    ).toThrow('Duplicate');
+    expect(() =>
+      parseContentSnapshot(
+        JSON.stringify({ ...snapshot, storeItems: [{ ...snapshot.storeItems[0], sourceId: 'missing' }] }),
+        'local',
+      ),
+    ).toThrow('published source');
+    loaded.snapshot.storeItems = [];
+    expect(snapshotCollection(loaded, 'releases')[0]!.data.store_item).toBeNull();
     loaded.snapshot.records.push({
       collection: 'services',
       id: 'services',

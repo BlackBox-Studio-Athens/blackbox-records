@@ -5,10 +5,15 @@ import { authenticate } from './auth';
 import { DurableObject } from 'cloudflare:workers';
 import { CommerceRuntime } from '../index';
 import { isSupportedCmsApiRequest, isCmsTokenExportRead } from '../middleware';
-import { handlePublicationRequest, handlePublicationWorkflow, publicationWorkflowPaths } from './publication-routes';
+import {
+  handlePublicationRequest,
+  handlePublicationWorkflow,
+  publicationWorkflowPaths,
+  publicationCatalogPath,
+} from './publication-routes';
 import { dispatchPendingPublication, reconcilePendingPublication } from './publication-dispatch';
 import { handleItemArtwork, itemArtworkPath, publishedMediaPath, servePublishedMedia } from './item-artwork';
-import { reconcileItemPublications, guardItemLifecycle } from './item-publication-recovery';
+import { reconcileItemPublications, guardItemLifecycle, readPublicationCatalog } from './item-publication-recovery';
 
 export { CommerceRuntime };
 
@@ -100,9 +105,13 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
   async fetch(request: Request): Promise<Response> {
     const bindings = this.env;
     const url = new URL(request.url);
-    if (publicationWorkflowPaths.has(url.pathname))
+    if (
+      publicationWorkflowPaths.has(url.pathname) &&
+      !(url.pathname === publicationCatalogPath && bindings.PRODUCT_ENVIRONMENT === 'LOCAL')
+    )
       return handlePublicationWorkflow(request, {
         db: bindings.CMS_DB,
+        commerce: bindings.COMMERCE_DB,
         bucket: bindings.MEDIA,
         environment: bindings.PRODUCT_ENVIRONMENT?.toLowerCase(),
         hostname: bindings.CMS_HOSTNAME,
@@ -123,6 +132,14 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       if (!exportRead) identity = await authenticate(request);
     } catch {
       return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
+    }
+    if (url.pathname === publicationCatalogPath) {
+      if (!identity || identity.role < 30 || request.method !== 'GET' || url.search)
+        return new Response('Forbidden', { status: 403 });
+      return Response.json(
+        { data: await readPublicationCatalog(bindings.COMMERCE_DB) },
+        { headers: { 'Cache-Control': 'private, no-store' } },
+      );
     }
     if (url.pathname === '/_emdash/api/blackbox/item-publications/reconcile') {
       if (

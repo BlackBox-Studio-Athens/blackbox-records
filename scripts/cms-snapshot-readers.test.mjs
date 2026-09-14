@@ -26,6 +26,7 @@ test('captures through fixed GET routes without forwarding unrelated credentials
   const requests = [];
   const readers = createCmsSnapshotReaders({
     environment: 'uat',
+    publicationToken: 'a'.repeat(64),
     target: 'https://staff-uat.blackboxrecordsathens.com/',
     headers: {
       'cf-access-client-id': 'test-id',
@@ -39,6 +40,10 @@ test('captures through fixed GET routes without forwarding unrelated credentials
       assert.equal(init.method, 'GET');
       assert.equal(init.redirect, 'manual');
       assert.equal(init.headers.has('cookie'), false);
+      if (url.pathname.endsWith('/publications/catalog')) {
+        assert.equal(init.headers.get('authorization'), `Bearer ${'a'.repeat(64)}`);
+        return Response.json({ data: [] });
+      }
       assert.equal(init.headers.has('authorization'), false);
       assert.equal(init.headers.get('cf-access-client-id'), 'test-id');
       if (url.pathname.includes('/revisions/'))
@@ -76,7 +81,7 @@ test('captures through fixed GET routes without forwarding unrelated credentials
   });
   const result = await captureCmsSnapshot(readers);
   assert.equal(result.snapshot.records[0].data.title, 'Live title');
-  assert.equal(requests.length, 27);
+  assert.equal(requests.length, 29);
   await assert.rejects(readers.readRevision('../private'), /Invalid/);
 });
 

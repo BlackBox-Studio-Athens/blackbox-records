@@ -18,6 +18,12 @@ import {
   purchaseInformationSchema,
 } from '@blackbox/content-model';
 
+const storeIdentity = z
+  .object({ storeItemSlug: z.string().min(1), variantId: z.string().min(1) })
+  .strict()
+  .nullable()
+  .optional();
+
 const artists = defineCollection({
   loader: publicContentLoader('artists', '**/*.{md,mdx}', './src/content/artists'),
   schema: ({ image }) =>
@@ -31,6 +37,7 @@ const releases = defineCollection({
   loader: publicContentLoader('releases', '**/*.{md,mdx}', './src/content/releases'),
   schema: ({ image }) =>
     createReleasesContentSchema(image, { artist: reference('artists') }).extend({
+      store_item: storeIdentity,
       editorial_body: cmsBodySchema.optional(),
       content_media: z.record(z.string(), image()).optional(),
     }),
@@ -47,7 +54,7 @@ const news = defineCollection({
 
 const distro = defineCollection({
   loader: publicContentLoader('distro', '**/*.json', './src/content/distro'),
-  schema: ({ image }) => createDistroContentSchema(image),
+  schema: ({ image }) => createDistroContentSchema(image).extend({ store_item: storeIdentity }),
 });
 
 const distroPage = defineCollection({

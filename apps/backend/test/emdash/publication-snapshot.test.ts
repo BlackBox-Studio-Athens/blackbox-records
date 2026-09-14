@@ -8,6 +8,40 @@ import {
   requestPublication,
 } from '../../src/cms/publication-journal';
 import { handlePublicationWorkflow } from '../../src/cms/publication-routes';
+import { createPrismaClient } from '../../src/infrastructure/persistence/prisma';
+
+test('exports only stable catalog identities behind the target publication credential', async () => {
+  const db = createPrismaClient(env);
+  try {
+    const item = {
+      sourceKind: 'release' as const,
+      sourceId: 'catalog-source',
+      storeItemSlug: 'stable-item',
+      variantId: 'variant_catalog_export',
+    };
+    await db.storeItemOption.create({ data: { ...item, cmsSourceId: 'private-cms-id', catalogRevision: 1 } });
+    const ctx = { ...context, commerce: env.COMMERCE_DB };
+    const url = 'https://staff.example/_emdash/api/blackbox/publications/catalog';
+    expect((await handlePublicationWorkflow(new Request(url), ctx)).status).toBe(403);
+    const response = await handlePublicationWorkflow(
+      new Request(url, { headers: { Authorization: `Bearer ${token}` } }),
+      ctx,
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+    expect(await response.json()).toEqual({ data: [item] });
+    expect(
+      (
+        await handlePublicationWorkflow(
+          new Request(url.replace('staff.example', 'other.example'), { headers: { Authorization: `Bearer ${token}` } }),
+          ctx,
+        )
+      ).status,
+    ).toBe(403);
+  } finally {
+    await db.$disconnect();
+  }
+});
 
 beforeAll(async () => {
   await applyD1Migrations(env.TEST_CMS_DB, env.TEST_CMS_MIGRATIONS);

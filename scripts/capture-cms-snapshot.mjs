@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { contentMediaIds, sourceCollectionNames, validateCmsRevisionContent } from '@blackbox/content-model';
+import {
+  contentMediaIds,
+  sourceCollectionNames,
+  validateCmsRevisionContent,
+  snapshotStoreItemSchema,
+} from '@blackbox/content-model';
 import { validateImage } from '../apps/backend/src/cms/media-upload.ts';
 
 const identifier = z.string().min(1).max(128);
@@ -42,6 +47,7 @@ export async function captureCmsSnapshot({
   readRevision,
   readMedia,
   readMediaFile,
+  readStoreItems,
   maxRequests = 200,
   maxMediaBytes = 256 * 1024 * 1024,
 }) {
@@ -83,6 +89,12 @@ export async function captureCmsSnapshot({
     return items.sort((a, b) => `${a.collection}/${a.id}`.localeCompare(`${b.collection}/${b.id}`));
   }
   const before = await inventory();
+  const catalog = readStoreItems
+    ? z
+        .array(snapshotStoreItemSchema)
+        .max(1000)
+        .parse(await read(readStoreItems))
+    : undefined;
   const records = [];
   for (const item of before.filter((item) => item.status === 'published')) {
     if (!item.liveRevisionId) throw new Error('Published CMS record has no live revision.');
@@ -165,7 +177,15 @@ export async function captureCmsSnapshot({
   const after = await inventory();
   if (JSON.stringify(canonical(before)) !== JSON.stringify(canonical(after)))
     throw new Error('CMS inventory changed; capture again.');
-  const snapshot = canonical({ schemaVersion: 1, environment, records, media });
+  if (catalog && JSON.stringify(catalog) !== JSON.stringify(await read(readStoreItems)))
+    throw new Error('Catalog identities changed; capture again.');
+  const storeItems = catalog?.filter((item) =>
+    records.some(
+      (record) =>
+        record.collection === (item.sourceKind === 'release' ? 'releases' : 'distro') && record.slug === item.sourceId,
+    ),
+  );
+  const snapshot = canonical({ schemaVersion: 1, environment, records, media, ...(storeItems ? { storeItems } : {}) });
   const json = JSON.stringify(snapshot);
   return { snapshot, json, sha256: createHash('sha256').update(json).digest('hex'), requests, files };
 }

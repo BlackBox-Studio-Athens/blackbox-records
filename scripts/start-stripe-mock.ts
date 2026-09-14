@@ -26,6 +26,7 @@ export function patchStripeMockRequest(input: { body: string; method?: string; u
 
 export function patchStripeMockResponse(input: {
   body: string;
+  catalog?: ReturnType<typeof createLocalStripeMockCatalog>;
   checkoutLineItems?: StripeMockCheckoutLineItems;
   checkoutSessions?: Map<string, Record<string, unknown>>;
   method?: string;
@@ -70,7 +71,7 @@ export function patchStripeMockResponse(input: {
   const fragment = sessionId ? toSafeStripeMockFragment(sessionId) : toSafeStripeMockFragment(variantId);
 
   if (sessionId) {
-    const lineItems = readCheckoutSessionCreateLineItems(requestParams);
+    const lineItems = readCheckoutSessionCreateLineItems(requestParams, input.catalog);
 
     if (lineItems.length) {
       input.checkoutLineItems?.set(sessionId, lineItems);
@@ -195,6 +196,7 @@ async function proxyRequest({
     catalogResponse?.body ??
     patchStripeMockResponse({
       body: upstreamBody,
+      catalog,
       checkoutLineItems,
       checkoutSessions,
       method: request.method,
@@ -306,7 +308,10 @@ function patchCheckoutSessionLineItems(
   return JSON.stringify(responseJson);
 }
 
-function readCheckoutSessionCreateLineItems(requestParams: URLSearchParams): StripeMockCheckoutLineItem[] {
+function readCheckoutSessionCreateLineItems(
+  requestParams: URLSearchParams,
+  catalog?: ReturnType<typeof createLocalStripeMockCatalog>,
+): StripeMockCheckoutLineItem[] {
   const lineItems: StripeMockCheckoutLineItem[] = [];
 
   for (let index = 0; ; index += 1) {
@@ -317,9 +322,18 @@ function readCheckoutSessionCreateLineItems(requestParams: URLSearchParams): Str
     }
 
     const quantity = Number(requestParams.get(`line_items[${index}][quantity]`) ?? '1');
-    const amountMinor = readLocalMockStoreOfferAmountMinor(priceId);
+    const retained = catalog?.({
+      url: `/v1/prices/${encodeURIComponent(priceId)}`,
+      method: 'GET',
+      body: '',
+      status: 200,
+    });
+    const price = retained?.status === 200 ? JSON.parse(retained.body) : null;
+    const amountMinor = price
+      ? (price.unit_amount ?? price.custom_unit_amount?.preset)
+      : readLocalMockStoreOfferAmountMinor(priceId);
 
-    if (!Number.isInteger(quantity) || quantity < 1 || !amountMinor) {
+    if (!Number.isInteger(quantity) || quantity < 1 || !Number.isSafeInteger(amountMinor) || amountMinor <= 0) {
       return [];
     }
 

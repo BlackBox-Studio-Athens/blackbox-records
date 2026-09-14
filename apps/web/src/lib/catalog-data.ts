@@ -16,6 +16,7 @@ export type DistroCatalogEntry = CollectionEntry<'distro'>;
 export type StoreItemSourceKind = 'release' | 'distro';
 export type StoreItem = {
   slug: string;
+  variantId?: string;
   taxCategory: StoreItemTaxCategory;
   sourceKind: StoreItemSourceKind;
   sourceId: string;
@@ -175,18 +176,19 @@ function createReleaseStoreItemSlug(releaseEntry: ReleaseCatalogEntry): string {
 export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEntry): Promise<StoreItem> {
   const artistProfile = await resolveArtistProfileForRelease(releaseEntry);
   const artistDisplayName = resolveReleaseArtistDisplayName(releaseEntry, artistProfile || undefined);
-  const slug = createReleaseStoreItemSlug(releaseEntry);
+  const slug = releaseEntry.data.store_item?.storeItemSlug ?? createReleaseStoreItemSlug(releaseEntry);
   const metadata = [formatMonthYear(releaseEntry.data.release_date), ...(releaseEntry.data.formats || [])];
 
   return {
     slug,
+    ...(releaseEntry.data.store_item ? { variantId: releaseEntry.data.store_item.variantId } : {}),
     taxCategory: 'physical_goods',
     sourceKind: 'release',
     sourceId: releaseEntry.id,
     title: releaseEntry.data.title,
     subtitle: artistDisplayName,
     summary: releaseEntry.data.summary || null,
-    image: resolveStoreItemImageForRelease(releaseEntry),
+    image: releaseEntry.data.store_item ? releaseEntry.data.cover_image : resolveStoreItemImageForRelease(releaseEntry),
     imageAlt: normalizeStoreItemImageAlt(releaseEntry.data.cover_image_alt, releaseEntry.data.title),
     eyebrow: 'Release',
     metadata,
@@ -195,12 +197,13 @@ export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEnt
 }
 
 export function createStoreItemFromDistroEntry(distroEntry: DistroCatalogEntry): StoreItem {
-  const slug = distroEntry.id;
+  const slug = distroEntry.data.store_item?.storeItemSlug ?? distroEntry.id;
   const releaseDate = distroEntry.data.release_date ? formatMonthYear(distroEntry.data.release_date) : null;
   const metadata = [distroEntry.data.group, releaseDate, distroEntry.data.format].filter(Boolean) as string[];
 
   return {
     slug,
+    ...(distroEntry.data.store_item ? { variantId: distroEntry.data.store_item.variantId } : {}),
     taxCategory: 'physical_goods',
     sourceKind: 'distro',
     sourceId: distroEntry.id,
@@ -216,11 +219,14 @@ export function createStoreItemFromDistroEntry(distroEntry: DistroCatalogEntry):
 }
 
 export async function getStoreItemForRelease(releaseEntry: ReleaseCatalogEntry) {
+  if (releaseEntry.data.store_item === null) return null;
   return createStoreItemFromRelease(releaseEntry);
 }
 
 export async function listStoreItems(): Promise<StoreItem[]> {
-  const [releaseCatalog, distroEntries] = await Promise.all([listReleaseCatalog(), listDistroEntries()]);
+  const [releases, distro] = await Promise.all([listReleaseCatalog(), listDistroEntries()]);
+  const releaseCatalog = releases.filter((entry) => entry.data.store_item !== null);
+  const distroEntries = distro.filter((entry) => entry.data.store_item !== null);
 
   const releaseStoreItems = await Promise.all(
     releaseCatalog.map((releaseEntry) => createStoreItemFromRelease(releaseEntry)),

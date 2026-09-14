@@ -103,6 +103,7 @@ export async function backfillRuntimeCatalog(args: string[]) {
       env: { type: 'string' },
       'cms-plan': { type: 'string' },
       'cms-report': { type: 'string' },
+      'store-item-slug': { type: 'string', multiple: true },
       apply: { type: 'boolean', default: false },
       'plan-sha256': { type: 'string' },
       'confirm-live-catalog-changes': { type: 'boolean', default: false },
@@ -115,9 +116,15 @@ export async function backfillRuntimeCatalog(args: string[]) {
     throw new Error('Run dry-run first, then pass its --plan-sha256 to apply.');
   if (values.apply && environment === 'prd' && !values['confirm-live-catalog-changes'])
     throw new Error('PRD requires one-run live catalog confirmation.');
-  const entries = catalogManifest.entries.filter((entry) =>
+  let entries = catalogManifest.entries.filter((entry) =>
     entry.targetEnvironments.includes(environment === 'prd' ? 'prd' : 'uat'),
   );
+  if (values['store-item-slug']?.length) {
+    const selected = new Set(values['store-item-slug']);
+    if ([...selected].some((slug) => !entries.some((entry) => entry.storeItemSlug === slug)))
+      throw new Error('Selected Store Item is absent from the target migration manifest.');
+    entries = entries.filter((entry) => selected.has(entry.storeItemSlug));
+  }
   const sources = readBackfillSources(
     environment,
     entries,

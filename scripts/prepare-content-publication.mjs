@@ -52,6 +52,7 @@ export async function prepareContentPublication(input, fetchImpl = fetch) {
       environment: config.environment,
       target: config.target,
       token: config.exportToken,
+      publicationToken: config.token,
       headers,
       fetchImpl,
     }),

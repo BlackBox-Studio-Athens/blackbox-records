@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { completeSnapshot, storeSnapshotMedia } from './snapshot-storage';
 import { isCmsCollection, parseContentSnapshot } from '@blackbox/content-model';
+import { readPublicationCatalog } from './item-publication-recovery';
 import {
   bindPublicationRun,
   bindPublicationSnapshot,
@@ -18,8 +19,10 @@ const revisionId = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
 const bodySchema = z.object({ id: z.uuid(), requestedRevision: revisionId }).strict();
 const root = '/_emdash/api/blackbox/publications';
 export const publicationRunPath = root + '/run';
+export const publicationCatalogPath = root + '/catalog';
 export const publicationWorkflowPaths = new Set([
   publicationRunPath,
+  publicationCatalogPath,
   root + '/media',
   root + '/snapshot',
   root + '/complete',
@@ -29,6 +32,7 @@ export async function handlePublicationWorkflow(
   request: Request,
   context: {
     db: D1Database;
+    commerce?: D1Database;
     bucket: R2Bucket;
     environment: string | undefined;
     hostname: string | undefined;
@@ -54,6 +58,11 @@ export async function handlePublicationWorkflow(
   )
     return reply(403, { error: 'FORBIDDEN' });
   if (!publicationWorkflowPaths.has(url.pathname) || url.search) return reply(404, { error: 'NOT_FOUND' });
+  if (url.pathname === publicationCatalogPath) {
+    if (request.method !== 'GET') return reply(405, { error: 'METHOD_NOT_ALLOWED' });
+    if (!context.commerce) return reply(503, { error: 'CATALOG_UNAVAILABLE' });
+    return reply(200, { data: await readPublicationCatalog(context.commerce) });
+  }
   if (request.method === 'GET' && [root + '/snapshot', root + '/media'].includes(url.pathname)) {
     const selected = z.object({ id: z.uuid(), ciRunId: z.string().regex(/^[1-9][0-9]{0,19}$/) }).safeParse({
       id: request.headers.get('X-Publication-ID'),

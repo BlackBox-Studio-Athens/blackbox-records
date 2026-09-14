@@ -52,6 +52,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       environment: values.env,
       target: values.target,
       token: process.env.CMS_EXPORT_TOKEN,
+      publicationToken: process.env.CMS_PUBLICATION_EXPORT_TOKEN,
       headers: {
         'cf-access-client-id': process.env.CMS_EXPORT_ACCESS_CLIENT_ID ?? '',
         'cf-access-client-secret': process.env.CMS_EXPORT_ACCESS_CLIENT_SECRET ?? '',

@@ -18,6 +18,21 @@ const imageBytes = Buffer.from(
   'base64',
 );
 
+test('omits legacy catalog identities that have no published CMS source', async () => {
+  const capture = await captureCmsSnapshot({
+    ...readers(),
+    readStoreItems: async () => [
+      {
+        sourceKind: 'distro',
+        sourceId: '___',
+        storeItemSlug: 'local-invalid-fixture',
+        variantId: 'variant_____standard',
+      },
+    ],
+  });
+  assert.deepEqual(capture.snapshot.storeItems, []);
+});
+
 test('activates a prepared Local build and restores the served build when replacement fails', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'blackbox-publication-'));
   try {
@@ -126,6 +141,10 @@ test('publication preparation claims before bounded export and stops immediately
         return Response.json({ id: input.publicationId, status: 'pending' });
       }
       if (init.method === 'GET') {
+        if (url.pathname.endsWith('/catalog')) {
+          assert.equal(init.headers.get('Authorization'), null);
+          return Response.json({ data: [] });
+        }
         assert.equal(init.headers.get('Authorization'), `Bearer ${input.exportToken}`);
         return Response.json({ data: { items: [], total: 0, nextCursor: null } });
       }
@@ -136,8 +155,8 @@ test('publication preparation claims before bounded export and stops immediately
         snapshotSha256: createHash('sha256').update(init.body).digest('hex'),
       });
     });
-    assert.equal(result.requests, 26);
-    assert.equal(calls, 28);
+    assert.equal(result.requests, 28);
+    assert.equal(calls, 30);
     assert.equal(JSON.parse(await readFile(result.path, 'utf8')).environment, 'local');
   } finally {
     await rm(parent, { recursive: true, force: true });

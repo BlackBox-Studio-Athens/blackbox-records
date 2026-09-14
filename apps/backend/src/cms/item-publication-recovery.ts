@@ -1,6 +1,14 @@
 import { D1CatalogOperationRepository } from '../infrastructure/persistence/prisma';
 import { readPublication } from './publication-journal';
 import { z } from 'zod';
+import { snapshotStoreItemSchema } from '@blackbox/content-model';
+
+export async function readPublicationCatalog(db: D1Database) {
+  const rows = await db
+    .prepare('SELECT sourceKind, sourceId, storeItemSlug, variantId FROM StoreItemOption ORDER BY variantId LIMIT 1001')
+    .all();
+  return z.array(snapshotStoreItemSchema).max(1000).parse(rows.results);
+}
 
 export async function guardItemLifecycle(
   request: Request,

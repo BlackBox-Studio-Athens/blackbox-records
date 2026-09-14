@@ -66,6 +66,14 @@ export function snapshotCollection(loaded: LoadedSnapshot, collection: string) {
     .map((record) => {
       const { body, ...editorial } = record.data;
       const data = field(editorial) as Record<string, unknown>;
+      if (loaded.snapshot.storeItems && ['releases', 'distro'].includes(record.collection)) {
+        const item = loaded.snapshot.storeItems.find(
+          (item) =>
+            item.sourceKind === (record.collection === 'releases' ? 'release' : 'distro') &&
+            item.sourceId === record.slug,
+        );
+        data.store_item = item ? { storeItemSlug: item.storeItemSlug, variantId: item.variantId } : null;
+      }
       if (record.collection === 'artists') data.slug = record.slug;
       if (record.collection === 'releases') data.artist = artists.get(String(record.data.artist));
       if (['artists', 'releases', 'news'].includes(record.collection)) {

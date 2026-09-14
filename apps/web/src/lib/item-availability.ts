@@ -42,7 +42,7 @@ export type UnbuyableItemAvailability = {
 export type ItemAvailability = BuyableItemAvailability | UnbuyableItemAvailability;
 
 function createStoreItemVariantId(storeItem: StoreItem): string {
-  return `variant_${storeItem.slug}_standard`;
+  return storeItem.variantId ?? `variant_${storeItem.slug}_standard`;
 }
 
 function createStoreItemOptionLabel(storeItem: StoreItem): string | null {

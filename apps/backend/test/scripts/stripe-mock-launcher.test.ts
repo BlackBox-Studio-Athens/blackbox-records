@@ -1,8 +1,36 @@
 import { describe, expect, it } from 'vitest';
 
 import { patchStripeMockRequest, patchStripeMockResponse } from '../../../../scripts/start-stripe-mock';
+import { createLocalStripeMockCatalog } from '../../../../scripts/local-stripe-mock-catalog';
 
 describe('stripe-mock local launcher proxy', () => {
+  it('uses the retained Price for a newly created item instead of the legacy mock price table', () => {
+    const catalog = createLocalStripeMockCatalog();
+    catalog({ method: 'POST', url: '/v1/products', body: 'id=prod_blackbox_new&name=New', status: 200 });
+    const saved = catalog({
+      method: 'POST',
+      url: '/v1/prices',
+      body: 'product=prod_blackbox_new&currency=eur&unit_amount=2400',
+      status: 200,
+    })!;
+    const priceId = JSON.parse(saved.body).id;
+    const result = JSON.parse(
+      patchStripeMockResponse({
+        catalog,
+        method: 'POST',
+        url: '/v1/checkout/sessions',
+        body: JSON.stringify({ id: 'cs_test_new', object: 'checkout.session' }),
+        requestBody: new URLSearchParams({
+          'line_items[0][price]': priceId,
+          'line_items[0][quantity]': '2',
+          'automatic_tax[enabled]': 'true',
+          'shipping_options[0][shipping_rate_data][fixed_amount][amount]': '250',
+        }).toString(),
+      }),
+    );
+    expect(result.amount_total).toBe(5050);
+    expect(result.shipping_cost.amount_total).toBe(250);
+  });
   it('retains synthetic inclusive amounts and accepted delivery across Session reads', () => {
     const checkoutSessions = new Map();
     const checkoutLineItems = new Map();
