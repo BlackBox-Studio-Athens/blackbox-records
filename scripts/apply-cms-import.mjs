@@ -1,15 +1,22 @@
 // Browser and Local imports use the same native API writes and identity checks.
-export async function applyCmsImport(plan, readMedia, { apply = false, verifyOnly = false, progress = () => {} } = {}) {
+export async function applyCmsImport(
+  plan,
+  readMedia,
+  { apply = false, verifyOnly = false, progress = () => {}, confirmLiveCmsChanges = false, reviewedPlanSha256 } = {},
+) {
   const target = new URL(plan.target);
   const local =
     target.protocol === 'http:' &&
     ['localhost', '127.0.0.1'].includes(target.hostname) &&
     ['8787', '8799'].includes(target.port);
   if (
-    (!local && target.origin !== 'https://staff-uat.blackboxrecordsathens.com') ||
+    (!local &&
+      !['https://staff-uat.blackboxrecordsathens.com', 'https://staff.blackboxrecordsathens.com'].includes(
+        target.origin,
+      )) ||
     target.href !== target.origin + '/'
   )
-    throw new Error('Only Local and the exact UAT CMS are supported.');
+    throw new Error('Only Local and the exact UAT/PRD CMS are supported.');
   const check = (condition, message) => {
     if (!condition) throw new Error(message);
   };
@@ -18,7 +25,13 @@ export async function applyCmsImport(plan, readMedia, { apply = false, verifyOnl
     Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())), (byte) =>
       byte.toString(16).padStart(2, '0'),
     ).join('');
+  const planSha256 = await sha256(new Blob([JSON.stringify(plan)]));
+  if (apply && target.origin === 'https://staff.blackboxrecordsathens.com') {
+    check(confirmLiveCmsChanges === true, 'PRD CMS apply requires one-run live CMS approval.');
+    check(reviewedPlanSha256 === planSha256, 'PRD CMS plan differs from the reviewed plan.');
+  }
   const report = {
+    planSha256,
     target: target.origin,
     apply,
     verifyOnly,

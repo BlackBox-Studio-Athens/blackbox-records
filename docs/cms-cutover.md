@@ -23,7 +23,7 @@ PRD Worker name is `blackbox-records-backend-prd`. CMS identities come from `app
 4. Freeze Sveltia editorial writes and identify the final source commit. Keep that freeze through reconciliation and source switching. Prepare a final inventory of source identities, CMS identities, references, revisions and media hashes. Record current commerce identity mappings, stock, prices and historical order references for comparison; CMS recovery must never restore commerce data.
 5. Produce a read-only PRD migration/backfill report against those exact targets. Include the reviewed migration fingerprint, catalog plan hash, source commit, backup references and every proposed resource/route change. Resolve all conflicts before requesting one-run approval.
 
-The current importer supports Local execution and Local/UAT preparation only. Do not point its Local command at PRD or relabel a UAT plan. PRD import preparation and its explicit one-run apply boundary must be implemented and rehearsed before this worksheet becomes executable.
+Prepare a PRD plan locally with `node --import tsx scripts/import-cms-content.mjs --preparePrd .codex-artifacts/emdash-m1/prd-import-preparation`. Preparation validates source content/media and writes plan.json plus the existing browser import function; it performs no hosted requests. The returned planSha256 identifies the exact serialized plan. The shared import function accepts the exact PRD hostname; an apply additionally requires `confirmLiveCmsChanges: true` and `reviewedPlanSha256` matching that plan. Supply these only after one-run approval of the concrete report. Do not relabel a UAT plan. Authenticated hosted preflight, quota budgeting and the PRD rehearsal remain outstanding.
 
 ## Authorized execution order
 
@@ -44,3 +44,5 @@ Only after replacement acceptance remove Sveltia writers, Git OAuth and old admi
 | CMS data recovery needed                             | Restore into isolated resources, verify identities/media/rendering, then review the binding switch. Keep original resources available. Never restore `COMMERCE_DB` as part of CMS recovery. |
 
 Tasks 10.3–10.5 and 11.1–11.5 remain open until their actual target evidence and required authorization exist.
+
+Local preparation on 2026-09-15 produced 129 records and 152 media objects, plan SHA-256 e7aa6f8a50e916a3557fd6fe7f09f1b40abf2aff5d280446d2de6b550fd70000. Evidence: .codex-artifacts/emdash-m1/prd-import-preparation-final.json. This is a source plan, not proof of deployed PRD reconciliation. Synthetic approval-boundary tests passed through WebStorm without network access; no live approval was supplied or consumed.
