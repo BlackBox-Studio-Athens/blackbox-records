@@ -153,3 +153,8 @@ This does not close the full keyboard/touch/contrast acceptance matrix. The narr
 
 The Orders lookup wrapping fix in 010b2c10 passes Chrome Blackbox layout verification against the built staff preview at 320x800: Find order measures approximately 126x44 CSS pixels, wraps below the input, and is fully visible; document width remains 305 CSS pixels. WebStorm built and served the static preview (order-lookup-final-build.json and order-lookup-preview.json). This preview has no backend API and is layout evidence only. The viewport override was reset; the canonical connected Local stack was not stopped.
 
+
+### Two-editor stale-save recovery — 2026-09-15
+
+Chrome Blackbox opened Ouranopithecus in two canonical Local editor tabs. Saving the unchanged record in the first advanced its revision without altering editorial values. The second attempted to save Genre=Unsaved stale revision check and received the explicit conflict message; the text remained visible and Save draft became disabled. Keep editing preserved that text. Discard changes and reload then restored Experimental Weird Rock, showed No unsaved changes and re-enabled Save draft. The test text was never persisted or published; the unchanged save created only a Local draft revision. This closes the previously unverified browser conflict/reload interaction. Unsupported native rich-text commands and the broader hosted acceptance remain open.
+
