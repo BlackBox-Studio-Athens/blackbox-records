@@ -44,6 +44,11 @@ export { Prisma }
  */
 export type StoreItemOption = Prisma.StoreItemOptionModel
 /**
+ * Model CatalogOperation
+ * 
+ */
+export type CatalogOperation = Prisma.CatalogOperationModel
+/**
  * Model VariantStripeMapping
  * 
  */

@@ -23,6 +23,11 @@ export * from './enums';
  */
 export type StoreItemOption = Prisma.StoreItemOptionModel
 /**
+ * Model CatalogOperation
+ * 
+ */
+export type CatalogOperation = Prisma.CatalogOperationModel
+/**
  * Model VariantStripeMapping
  * 
  */

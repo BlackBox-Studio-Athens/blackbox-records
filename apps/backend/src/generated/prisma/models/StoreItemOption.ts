@@ -20,8 +20,18 @@ export type StoreItemOptionModel = runtime.Types.Result.DefaultSelection<Prisma.
 
 export type AggregateStoreItemOption = {
   _count: StoreItemOptionCountAggregateOutputType | null
+  _avg: StoreItemOptionAvgAggregateOutputType | null
+  _sum: StoreItemOptionSumAggregateOutputType | null
   _min: StoreItemOptionMinAggregateOutputType | null
   _max: StoreItemOptionMaxAggregateOutputType | null
+}
+
+export type StoreItemOptionAvgAggregateOutputType = {
+  catalogRevision: number | null
+}
+
+export type StoreItemOptionSumAggregateOutputType = {
+  catalogRevision: number | null
 }
 
 export type StoreItemOptionMinAggregateOutputType = {
@@ -30,6 +40,11 @@ export type StoreItemOptionMinAggregateOutputType = {
   sourceKind: $Enums.StoreItemSourceKind | null
   sourceId: string | null
   variantId: string | null
+  cmsSourceId: string | null
+  itemType: string | null
+  priceKind: string | null
+  catalogAvailability: string | null
+  catalogRevision: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -40,6 +55,11 @@ export type StoreItemOptionMaxAggregateOutputType = {
   sourceKind: $Enums.StoreItemSourceKind | null
   sourceId: string | null
   variantId: string | null
+  cmsSourceId: string | null
+  itemType: string | null
+  priceKind: string | null
+  catalogAvailability: string | null
+  catalogRevision: number | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -50,11 +70,25 @@ export type StoreItemOptionCountAggregateOutputType = {
   sourceKind: number
   sourceId: number
   variantId: number
+  cmsSourceId: number
+  itemType: number
+  priceKind: number
+  productProjection: number
+  catalogAvailability: number
+  catalogRevision: number
   createdAt: number
   updatedAt: number
   _all: number
 }
 
+
+export type StoreItemOptionAvgAggregateInputType = {
+  catalogRevision?: true
+}
+
+export type StoreItemOptionSumAggregateInputType = {
+  catalogRevision?: true
+}
 
 export type StoreItemOptionMinAggregateInputType = {
   id?: true
@@ -62,6 +96,11 @@ export type StoreItemOptionMinAggregateInputType = {
   sourceKind?: true
   sourceId?: true
   variantId?: true
+  cmsSourceId?: true
+  itemType?: true
+  priceKind?: true
+  catalogAvailability?: true
+  catalogRevision?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -72,6 +111,11 @@ export type StoreItemOptionMaxAggregateInputType = {
   sourceKind?: true
   sourceId?: true
   variantId?: true
+  cmsSourceId?: true
+  itemType?: true
+  priceKind?: true
+  catalogAvailability?: true
+  catalogRevision?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -82,6 +126,12 @@ export type StoreItemOptionCountAggregateInputType = {
   sourceKind?: true
   sourceId?: true
   variantId?: true
+  cmsSourceId?: true
+  itemType?: true
+  priceKind?: true
+  productProjection?: true
+  catalogAvailability?: true
+  catalogRevision?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -125,6 +175,18 @@ export type StoreItemOptionAggregateArgs<ExtArgs extends runtime.Types.Extension
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: StoreItemOptionAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: StoreItemOptionSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: StoreItemOptionMinAggregateInputType
@@ -155,6 +217,8 @@ export type StoreItemOptionGroupByArgs<ExtArgs extends runtime.Types.Extensions.
   take?: number
   skip?: number
   _count?: StoreItemOptionCountAggregateInputType | true
+  _avg?: StoreItemOptionAvgAggregateInputType
+  _sum?: StoreItemOptionSumAggregateInputType
   _min?: StoreItemOptionMinAggregateInputType
   _max?: StoreItemOptionMaxAggregateInputType
 }
@@ -165,9 +229,17 @@ export type StoreItemOptionGroupByOutputType = {
   sourceKind: $Enums.StoreItemSourceKind
   sourceId: string
   variantId: string
+  cmsSourceId: string | null
+  itemType: string | null
+  priceKind: string | null
+  productProjection: runtime.JsonValue | null
+  catalogAvailability: string
+  catalogRevision: number
   createdAt: Date
   updatedAt: Date
   _count: StoreItemOptionCountAggregateOutputType | null
+  _avg: StoreItemOptionAvgAggregateOutputType | null
+  _sum: StoreItemOptionSumAggregateOutputType | null
   _min: StoreItemOptionMinAggregateOutputType | null
   _max: StoreItemOptionMaxAggregateOutputType | null
 }
@@ -196,6 +268,12 @@ export type StoreItemOptionWhereInput = {
   sourceKind?: Prisma.EnumStoreItemSourceKindFilter<"StoreItemOption"> | $Enums.StoreItemSourceKind
   sourceId?: Prisma.StringFilter<"StoreItemOption"> | string
   variantId?: Prisma.StringFilter<"StoreItemOption"> | string
+  cmsSourceId?: Prisma.StringNullableFilter<"StoreItemOption"> | string | null
+  itemType?: Prisma.StringNullableFilter<"StoreItemOption"> | string | null
+  priceKind?: Prisma.StringNullableFilter<"StoreItemOption"> | string | null
+  productProjection?: Prisma.JsonNullableFilter<"StoreItemOption">
+  catalogAvailability?: Prisma.StringFilter<"StoreItemOption"> | string
+  catalogRevision?: Prisma.IntFilter<"StoreItemOption"> | number
   createdAt?: Prisma.DateTimeFilter<"StoreItemOption"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"StoreItemOption"> | Date | string
 }
@@ -206,6 +284,12 @@ export type StoreItemOptionOrderByWithRelationInput = {
   sourceKind?: Prisma.SortOrder
   sourceId?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
+  cmsSourceId?: Prisma.SortOrderInput | Prisma.SortOrder
+  itemType?: Prisma.SortOrderInput | Prisma.SortOrder
+  priceKind?: Prisma.SortOrderInput | Prisma.SortOrder
+  productProjection?: Prisma.SortOrderInput | Prisma.SortOrder
+  catalogAvailability?: Prisma.SortOrder
+  catalogRevision?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -215,14 +299,21 @@ export type StoreItemOptionWhereUniqueInput = Prisma.AtLeast<{
   storeItemSlug?: string
   variantId?: string
   sourceKind_sourceId?: Prisma.StoreItemOptionSourceKindSourceIdCompoundUniqueInput
+  sourceKind_cmsSourceId?: Prisma.StoreItemOptionSourceKindCmsSourceIdCompoundUniqueInput
   AND?: Prisma.StoreItemOptionWhereInput | Prisma.StoreItemOptionWhereInput[]
   OR?: Prisma.StoreItemOptionWhereInput[]
   NOT?: Prisma.StoreItemOptionWhereInput | Prisma.StoreItemOptionWhereInput[]
   sourceKind?: Prisma.EnumStoreItemSourceKindFilter<"StoreItemOption"> | $Enums.StoreItemSourceKind
   sourceId?: Prisma.StringFilter<"StoreItemOption"> | string
+  cmsSourceId?: Prisma.StringNullableFilter<"StoreItemOption"> | string | null
+  itemType?: Prisma.StringNullableFilter<"StoreItemOption"> | string | null
+  priceKind?: Prisma.StringNullableFilter<"StoreItemOption"> | string | null
+  productProjection?: Prisma.JsonNullableFilter<"StoreItemOption">
+  catalogAvailability?: Prisma.StringFilter<"StoreItemOption"> | string
+  catalogRevision?: Prisma.IntFilter<"StoreItemOption"> | number
   createdAt?: Prisma.DateTimeFilter<"StoreItemOption"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"StoreItemOption"> | Date | string
-}, "id" | "storeItemSlug" | "variantId" | "sourceKind_sourceId">
+}, "id" | "storeItemSlug" | "variantId" | "sourceKind_sourceId" | "sourceKind_cmsSourceId">
 
 export type StoreItemOptionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -230,11 +321,19 @@ export type StoreItemOptionOrderByWithAggregationInput = {
   sourceKind?: Prisma.SortOrder
   sourceId?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
+  cmsSourceId?: Prisma.SortOrderInput | Prisma.SortOrder
+  itemType?: Prisma.SortOrderInput | Prisma.SortOrder
+  priceKind?: Prisma.SortOrderInput | Prisma.SortOrder
+  productProjection?: Prisma.SortOrderInput | Prisma.SortOrder
+  catalogAvailability?: Prisma.SortOrder
+  catalogRevision?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.StoreItemOptionCountOrderByAggregateInput
+  _avg?: Prisma.StoreItemOptionAvgOrderByAggregateInput
   _max?: Prisma.StoreItemOptionMaxOrderByAggregateInput
   _min?: Prisma.StoreItemOptionMinOrderByAggregateInput
+  _sum?: Prisma.StoreItemOptionSumOrderByAggregateInput
 }
 
 export type StoreItemOptionScalarWhereWithAggregatesInput = {
@@ -246,6 +345,12 @@ export type StoreItemOptionScalarWhereWithAggregatesInput = {
   sourceKind?: Prisma.EnumStoreItemSourceKindWithAggregatesFilter<"StoreItemOption"> | $Enums.StoreItemSourceKind
   sourceId?: Prisma.StringWithAggregatesFilter<"StoreItemOption"> | string
   variantId?: Prisma.StringWithAggregatesFilter<"StoreItemOption"> | string
+  cmsSourceId?: Prisma.StringNullableWithAggregatesFilter<"StoreItemOption"> | string | null
+  itemType?: Prisma.StringNullableWithAggregatesFilter<"StoreItemOption"> | string | null
+  priceKind?: Prisma.StringNullableWithAggregatesFilter<"StoreItemOption"> | string | null
+  productProjection?: Prisma.JsonNullableWithAggregatesFilter<"StoreItemOption">
+  catalogAvailability?: Prisma.StringWithAggregatesFilter<"StoreItemOption"> | string
+  catalogRevision?: Prisma.IntWithAggregatesFilter<"StoreItemOption"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"StoreItemOption"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"StoreItemOption"> | Date | string
 }
@@ -256,6 +361,12 @@ export type StoreItemOptionCreateInput = {
   sourceKind: $Enums.StoreItemSourceKind
   sourceId: string
   variantId: string
+  cmsSourceId?: string | null
+  itemType?: string | null
+  priceKind?: string | null
+  productProjection?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  catalogAvailability?: string
+  catalogRevision?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -266,6 +377,12 @@ export type StoreItemOptionUncheckedCreateInput = {
   sourceKind: $Enums.StoreItemSourceKind
   sourceId: string
   variantId: string
+  cmsSourceId?: string | null
+  itemType?: string | null
+  priceKind?: string | null
+  productProjection?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  catalogAvailability?: string
+  catalogRevision?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -276,6 +393,12 @@ export type StoreItemOptionUpdateInput = {
   sourceKind?: Prisma.EnumStoreItemSourceKindFieldUpdateOperationsInput | $Enums.StoreItemSourceKind
   sourceId?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  cmsSourceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  itemType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  productProjection?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  catalogAvailability?: Prisma.StringFieldUpdateOperationsInput | string
+  catalogRevision?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -286,6 +409,12 @@ export type StoreItemOptionUncheckedUpdateInput = {
   sourceKind?: Prisma.EnumStoreItemSourceKindFieldUpdateOperationsInput | $Enums.StoreItemSourceKind
   sourceId?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  cmsSourceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  itemType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  productProjection?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  catalogAvailability?: Prisma.StringFieldUpdateOperationsInput | string
+  catalogRevision?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -296,6 +425,12 @@ export type StoreItemOptionCreateManyInput = {
   sourceKind: $Enums.StoreItemSourceKind
   sourceId: string
   variantId: string
+  cmsSourceId?: string | null
+  itemType?: string | null
+  priceKind?: string | null
+  productProjection?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  catalogAvailability?: string
+  catalogRevision?: number
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -306,6 +441,12 @@ export type StoreItemOptionUpdateManyMutationInput = {
   sourceKind?: Prisma.EnumStoreItemSourceKindFieldUpdateOperationsInput | $Enums.StoreItemSourceKind
   sourceId?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  cmsSourceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  itemType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  productProjection?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  catalogAvailability?: Prisma.StringFieldUpdateOperationsInput | string
+  catalogRevision?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -316,6 +457,12 @@ export type StoreItemOptionUncheckedUpdateManyInput = {
   sourceKind?: Prisma.EnumStoreItemSourceKindFieldUpdateOperationsInput | $Enums.StoreItemSourceKind
   sourceId?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
+  cmsSourceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  itemType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priceKind?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  productProjection?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  catalogAvailability?: Prisma.StringFieldUpdateOperationsInput | string
+  catalogRevision?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -325,14 +472,29 @@ export type StoreItemOptionSourceKindSourceIdCompoundUniqueInput = {
   sourceId: string
 }
 
+export type StoreItemOptionSourceKindCmsSourceIdCompoundUniqueInput = {
+  sourceKind: $Enums.StoreItemSourceKind
+  cmsSourceId: string
+}
+
 export type StoreItemOptionCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   storeItemSlug?: Prisma.SortOrder
   sourceKind?: Prisma.SortOrder
   sourceId?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
+  cmsSourceId?: Prisma.SortOrder
+  itemType?: Prisma.SortOrder
+  priceKind?: Prisma.SortOrder
+  productProjection?: Prisma.SortOrder
+  catalogAvailability?: Prisma.SortOrder
+  catalogRevision?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type StoreItemOptionAvgOrderByAggregateInput = {
+  catalogRevision?: Prisma.SortOrder
 }
 
 export type StoreItemOptionMaxOrderByAggregateInput = {
@@ -341,6 +503,11 @@ export type StoreItemOptionMaxOrderByAggregateInput = {
   sourceKind?: Prisma.SortOrder
   sourceId?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
+  cmsSourceId?: Prisma.SortOrder
+  itemType?: Prisma.SortOrder
+  priceKind?: Prisma.SortOrder
+  catalogAvailability?: Prisma.SortOrder
+  catalogRevision?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -351,8 +518,17 @@ export type StoreItemOptionMinOrderByAggregateInput = {
   sourceKind?: Prisma.SortOrder
   sourceId?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
+  cmsSourceId?: Prisma.SortOrder
+  itemType?: Prisma.SortOrder
+  priceKind?: Prisma.SortOrder
+  catalogAvailability?: Prisma.SortOrder
+  catalogRevision?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type StoreItemOptionSumOrderByAggregateInput = {
+  catalogRevision?: Prisma.SortOrder
 }
 
 export type StringFieldUpdateOperationsInput = {
@@ -361,6 +537,18 @@ export type StringFieldUpdateOperationsInput = {
 
 export type EnumStoreItemSourceKindFieldUpdateOperationsInput = {
   set?: $Enums.StoreItemSourceKind
+}
+
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
+}
+
+export type IntFieldUpdateOperationsInput = {
+  set?: number
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type DateTimeFieldUpdateOperationsInput = {
@@ -375,6 +563,12 @@ export type StoreItemOptionSelect<ExtArgs extends runtime.Types.Extensions.Inter
   sourceKind?: boolean
   sourceId?: boolean
   variantId?: boolean
+  cmsSourceId?: boolean
+  itemType?: boolean
+  priceKind?: boolean
+  productProjection?: boolean
+  catalogAvailability?: boolean
+  catalogRevision?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["storeItemOption"]>
@@ -385,6 +579,12 @@ export type StoreItemOptionSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   sourceKind?: boolean
   sourceId?: boolean
   variantId?: boolean
+  cmsSourceId?: boolean
+  itemType?: boolean
+  priceKind?: boolean
+  productProjection?: boolean
+  catalogAvailability?: boolean
+  catalogRevision?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["storeItemOption"]>
@@ -395,6 +595,12 @@ export type StoreItemOptionSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   sourceKind?: boolean
   sourceId?: boolean
   variantId?: boolean
+  cmsSourceId?: boolean
+  itemType?: boolean
+  priceKind?: boolean
+  productProjection?: boolean
+  catalogAvailability?: boolean
+  catalogRevision?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["storeItemOption"]>
@@ -405,11 +611,17 @@ export type StoreItemOptionSelectScalar = {
   sourceKind?: boolean
   sourceId?: boolean
   variantId?: boolean
+  cmsSourceId?: boolean
+  itemType?: boolean
+  priceKind?: boolean
+  productProjection?: boolean
+  catalogAvailability?: boolean
+  catalogRevision?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type StoreItemOptionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "storeItemSlug" | "sourceKind" | "sourceId" | "variantId" | "createdAt" | "updatedAt", ExtArgs["result"]["storeItemOption"]>
+export type StoreItemOptionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "storeItemSlug" | "sourceKind" | "sourceId" | "variantId" | "cmsSourceId" | "itemType" | "priceKind" | "productProjection" | "catalogAvailability" | "catalogRevision" | "createdAt" | "updatedAt", ExtArgs["result"]["storeItemOption"]>
 
 export type $StoreItemOptionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "StoreItemOption"
@@ -420,6 +632,12 @@ export type $StoreItemOptionPayload<ExtArgs extends runtime.Types.Extensions.Int
     sourceKind: $Enums.StoreItemSourceKind
     sourceId: string
     variantId: string
+    cmsSourceId: string | null
+    itemType: string | null
+    priceKind: string | null
+    productProjection: runtime.JsonValue | null
+    catalogAvailability: string
+    catalogRevision: number
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["storeItemOption"]>
@@ -850,6 +1068,12 @@ export interface StoreItemOptionFieldRefs {
   readonly sourceKind: Prisma.FieldRef<"StoreItemOption", 'StoreItemSourceKind'>
   readonly sourceId: Prisma.FieldRef<"StoreItemOption", 'String'>
   readonly variantId: Prisma.FieldRef<"StoreItemOption", 'String'>
+  readonly cmsSourceId: Prisma.FieldRef<"StoreItemOption", 'String'>
+  readonly itemType: Prisma.FieldRef<"StoreItemOption", 'String'>
+  readonly priceKind: Prisma.FieldRef<"StoreItemOption", 'String'>
+  readonly productProjection: Prisma.FieldRef<"StoreItemOption", 'Json'>
+  readonly catalogAvailability: Prisma.FieldRef<"StoreItemOption", 'String'>
+  readonly catalogRevision: Prisma.FieldRef<"StoreItemOption", 'Int'>
   readonly createdAt: Prisma.FieldRef<"StoreItemOption", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"StoreItemOption", 'DateTime'>
 }

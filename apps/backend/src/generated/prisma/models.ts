@@ -9,6 +9,7 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/StoreItemOption'
+export type * from './models/CatalogOperation'
 export type * from './models/VariantStripeMapping'
 export type * from './models/StoreOfferSnapshot'
 export type * from './models/StripeCatalogWebhookEvent'

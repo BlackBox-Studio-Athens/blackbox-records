@@ -398,6 +398,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   StoreItemOption: 'StoreItemOption',
+  CatalogOperation: 'CatalogOperation',
   VariantStripeMapping: 'VariantStripeMapping',
   StoreOfferSnapshot: 'StoreOfferSnapshot',
   StripeCatalogWebhookEvent: 'StripeCatalogWebhookEvent',
@@ -423,7 +424,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "storeItemOption" | "variantStripeMapping" | "storeOfferSnapshot" | "stripeCatalogWebhookEvent" | "itemAvailability" | "stock" | "stockChange" | "stockCount" | "checkoutOrder" | "checkoutOrderLine" | "paidOrderDelivery"
+    modelProps: "storeItemOption" | "catalogOperation" | "variantStripeMapping" | "storeOfferSnapshot" | "stripeCatalogWebhookEvent" | "itemAvailability" | "stock" | "stockChange" | "stockCount" | "checkoutOrder" | "checkoutOrderLine" | "paidOrderDelivery"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -498,6 +499,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.StoreItemOptionCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.StoreItemOptionCountAggregateOutputType> | number
+        }
+      }
+    }
+    CatalogOperation: {
+      payload: Prisma.$CatalogOperationPayload<ExtArgs>
+      fields: Prisma.CatalogOperationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CatalogOperationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogOperationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CatalogOperationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogOperationPayload>
+        }
+        findFirst: {
+          args: Prisma.CatalogOperationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogOperationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CatalogOperationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogOperationPayload>
+        }
+        findMany: {
+          args: Prisma.CatalogOperationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogOperationPayload>[]
+        }
+        create: {
+          args: Prisma.CatalogOperationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogOperationPayload>
+        }
+        createMany: {
+          args: Prisma.CatalogOperationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CatalogOperationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogOperationPayload>[]
+        }
+        delete: {
+          args: Prisma.CatalogOperationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogOperationPayload>
+        }
+        update: {
+          args: Prisma.CatalogOperationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogOperationPayload>
+        }
+        deleteMany: {
+          args: Prisma.CatalogOperationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CatalogOperationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CatalogOperationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogOperationPayload>[]
+        }
+        upsert: {
+          args: Prisma.CatalogOperationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CatalogOperationPayload>
+        }
+        aggregate: {
+          args: Prisma.CatalogOperationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCatalogOperation>
+        }
+        groupBy: {
+          args: Prisma.CatalogOperationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CatalogOperationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CatalogOperationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CatalogOperationCountAggregateOutputType> | number
         }
       }
     }
@@ -1283,11 +1358,37 @@ export const StoreItemOptionScalarFieldEnum = {
   sourceKind: 'sourceKind',
   sourceId: 'sourceId',
   variantId: 'variantId',
+  cmsSourceId: 'cmsSourceId',
+  itemType: 'itemType',
+  priceKind: 'priceKind',
+  productProjection: 'productProjection',
+  catalogAvailability: 'catalogAvailability',
+  catalogRevision: 'catalogRevision',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type StoreItemOptionScalarFieldEnum = (typeof StoreItemOptionScalarFieldEnum)[keyof typeof StoreItemOptionScalarFieldEnum]
+
+
+export const CatalogOperationScalarFieldEnum = {
+  id: 'id',
+  kind: 'kind',
+  inputFingerprint: 'inputFingerprint',
+  actorEmail: 'actorEmail',
+  variantId: 'variantId',
+  expectedRevision: 'expectedRevision',
+  step: 'step',
+  status: 'status',
+  results: 'results',
+  claimToken: 'claimToken',
+  leaseUntil: 'leaseUntil',
+  safeReason: 'safeReason',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CatalogOperationScalarFieldEnum = (typeof CatalogOperationScalarFieldEnum)[keyof typeof CatalogOperationScalarFieldEnum]
 
 
 export const VariantStripeMappingScalarFieldEnum = {
@@ -1477,6 +1578,38 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+export const QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+} as const
+
+export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
 export const NullsOrder = {
   first: 'first',
   last: 'last'
@@ -1506,9 +1639,16 @@ export type EnumStoreItemSourceKindFieldRefInput<$PrismaModel> = FieldRefInputTy
 
 
 /**
- * Reference to a field of type 'DateTime'
+ * Reference to a field of type 'Json'
  */
-export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+/**
+ * Reference to a field of type 'QueryMode'
+ */
+export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
 
 
@@ -1516,6 +1656,13 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
  * Reference to a field of type 'Int'
  */
 export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime'
+ */
+export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
     
 
 
@@ -1712,6 +1859,7 @@ export interface PrismaClientOptionsWithAdapter extends PrismaClientBaseOptions 
 export type PrismaClientOptions = PrismaClientOptionsWithAccelerateUrl | PrismaClientOptionsWithAdapter
 export type GlobalOmitConfig = {
   storeItemOption?: Prisma.StoreItemOptionOmit
+  catalogOperation?: Prisma.CatalogOperationOmit
   variantStripeMapping?: Prisma.VariantStripeMappingOmit
   storeOfferSnapshot?: Prisma.StoreOfferSnapshotOmit
   stripeCatalogWebhookEvent?: Prisma.StripeCatalogWebhookEventOmit

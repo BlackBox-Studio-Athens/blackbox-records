@@ -44,10 +44,35 @@ model StoreItemOption {
   sourceKind    StoreItemSourceKind
   sourceId      String
   variantId     String              @unique
+  cmsSourceId   String?
+  itemType      String?
+  priceKind     String?
+  productProjection Json?
+  catalogAvailability String       @default("withheld")
+  catalogRevision Int              @default(0)
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
 
   @@unique([sourceKind, sourceId])
+  @@unique([sourceKind, cmsSourceId])
+}
+
+model CatalogOperation {
+  id               String   @id
+  kind             String
+  inputFingerprint String
+  actorEmail       String
+  variantId        String
+  expectedRevision Int
+  step             String   @default("started")
+  status           String   @default("pending")
+  results          Json     @default("{}")
+  claimToken       String?
+  leaseUntil       String?
+  safeReason       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now())
+  // The unresolved-item partial unique index is maintained by the SQL migration.
 }
 
 model VariantStripeMapping {
