@@ -69,7 +69,7 @@ export default function ContentPreview({
   const body =
     Array.isArray(data.body) && data.body.length > 0 ? (
       <Suspense fallback={<p>Loading text…</p>}>
-        <ContentBodyEditor value={data.body as never} editable={false} minimal />
+        <ContentBodyEditor key={JSON.stringify(data.body)} value={data.body as never} editable={false} minimal />
       </Suspense>
     ) : null;
   return (

@@ -270,6 +270,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
           </h2>
           <fieldset disabled={busy || !!pendingNew} className="grid min-w-0 gap-6">
             <ContentFields
+              key={`${document.item.id || document.item.slug}:${document._rev}`}
               collection={collection}
               data={data}
               base={base}
