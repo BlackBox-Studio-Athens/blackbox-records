@@ -407,12 +407,16 @@ pnpm dev:clean
 ## Verification
 
 ```sh
-pnpm test:unit
-pnpm check
-pnpm build
+pnpm validate
 ```
 
 `pnpm check` is the repo-owned quality gate. It runs Prettier format verification, ESLint, and the existing Astro/TypeScript content checks.
+
+`pnpm validate` (also `pnpm validate:full`) runs the complete tests, checks and build with one catalog preparation. The original `pnpm test:unit`, `pnpm check`, and `pnpm build` commands remain standalone equivalents. Full logs and `summary.json` are retained under `.codex-artifacts/validation/<run-id>/`; the summary records source identity and rejects a source change during validation.
+
+For iteration, use `pnpm validate:fast --scope web|staff|backend|api-client|all`. The default is `all`; use it for shared packages, content, config, migrations, or tooling. This runs complete selected-package tests and type checks plus root contracts, but is always partial and does not replace full completion or task-specific browser/CMS/asset checks. Full validation overlaps tests and checks after preparation with at most two groups; `--jobs 1` runs sequentially for comparison or resource contention. This candidate configuration remains subject to the benchmark acceptance targets. A stale `.codex-artifacts/validation/active.lock` after a hard kill requires checking that its recorded PID is no longer running before removing that exact lock.
+
+The measurement protocol and acceptance targets are in [the validation benchmark](docs/validation-benchmark.md). Reduced output alone is not proof of reduced total AI usage.
 
 Backend-only verification:
 

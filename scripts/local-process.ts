@@ -13,6 +13,7 @@ export type LocalProcessCommand = {
 export type LocalProcessLogger = (message: string) => void;
 
 export type LocalProcessOptions = {
+  cancelSignal?: AbortSignal;
   cwd?: string;
   logger?: LocalProcessLogger;
   stdio?: TextExecaOptions['stdio'];
@@ -149,6 +150,8 @@ class LongRunningProcessGroup {
 
 function createExecaOptions(command: LocalProcessCommand, options: LocalProcessOptions): TextExecaOptions {
   return {
+    cancelSignal: options.cancelSignal,
+    killDescendants: Boolean(options.cancelSignal),
     cwd: command.cwd ?? options.cwd,
     env: command.env,
     encoding: 'utf8',

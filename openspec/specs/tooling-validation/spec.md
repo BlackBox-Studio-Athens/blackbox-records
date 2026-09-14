@@ -12,7 +12,24 @@ The system SHALL run the standard repository gates after behavior-changing imple
 
 - **GIVEN** code changes affect runtime behavior, tests, build output, scripts, or workflows
 - **WHEN** implementation is complete
-- **THEN** `pnpm test:unit`, `pnpm check`, and `pnpm build` must pass before completion is claimed.
+- **THEN** `pnpm validate` (alias `pnpm validate:full`) must pass every test, check, and build leaf previously owned by `pnpm test:unit`, `pnpm check`, and `pnpm build` before completion is claimed
+- **AND** those three standalone commands remain supported with their own catalog preparation
+- **AND** partial `pnpm validate:fast` results never establish completion.
+
+#### Scenario: Local validation evidence is produced
+
+- **WHEN** validation runs
+- **THEN** compact phase results point to full local logs and a JSON summary
+- **AND** the summary records source SHA, tracked/untracked source fingerprint, tool versions, durations, and phase exit status
+- **AND** source changes, cancellation, and incomplete phases prevent full success
+- **AND** task-specific rendered, asset, CMS, and hosted checks retain their existing scope.
+
+#### Scenario: A separate worktree is explicitly authorized
+
+- **GIVEN** the user explicitly requested a separate worktree
+- **WHEN** the OpenSpec guard or wrapper receives `--allow-worktree`
+- **THEN** it permits that repository checkout and does not forward the opt-in to OpenSpec
+- **AND** omitting the flag preserves the default main-worktree and main-branch restriction.
 
 ### Requirement: Asset QA is read-only
 

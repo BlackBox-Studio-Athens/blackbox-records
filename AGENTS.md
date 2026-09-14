@@ -189,12 +189,12 @@ Read these first before editing:
 
 ### Required command policy
 
-- After finishing any implementation that changes behavior, run:
-  - `pnpm test:unit`
-  - `pnpm check`
-  - `pnpm build`
+- After finishing behavior-changing implementation, run `pnpm validate` (alias `pnpm validate:full`). It executes every leaf of `pnpm test:unit`, `pnpm check`, and `pnpm build`, with catalog preparation once. The three legacy commands remain supported independently.
+- Use `pnpm validate:fast --scope web|staff|backend|api-client|all` only during iteration. Default to `all`; shared package, content, configuration, migration, and tooling changes require `all`. Partial success never establishes completion.
+- Read the compact phase results first. On failure, inspect the named log excerpt before rerunning. Full logs and source fingerprints live in `.codex-artifacts/validation/`; do not paste successful logs into context.
+- A `passed` full summary is valid only for its recorded source fingerprint. Changed source, cancellation, missing phases, and incomplete evidence cannot establish completion. Browser/CMS/asset and other task-specific checks remain additional.
 - `pnpm check` includes Prettier format verification, ESLint, and Astro/TypeScript content checks.
-- Before pushing, run the same three commands again unless they were just run against the exact final tree you are pushing
+- Before pushing, run full validation again unless it just passed against the exact final tree you are pushing.
 - Do not claim completion or push with unverified behavioral changes
 
 ## Deployment and URL model
@@ -390,6 +390,7 @@ This is an iframe boundary, not an app bug.
 - Before creating or updating OpenSpec artifacts, archiving a change, or implementing OpenSpec-backed work, run the repo main-worktree guard through `pnpm openspec:guard`.
 - OpenSpec and non-OpenSpec prepared work must happen in the main worktree at `C:\Users\SVall\WebstormProjects\blackbox-records` on branch `main`; do not create new branches or git worktrees unless the user explicitly asks.
 - Use `pnpm openspec -- <args>` for OpenSpec work from the main worktree; `pnpm openspec:readonly -- <args>` remains a compatibility alias for the same guarded command.
+- When the user explicitly authorizes a separate worktree, use `pnpm openspec:guard --allow-worktree` and `pnpm openspec --allow-worktree -- <args>`. This opt-in preserves the default restriction. The validation-efficiency worktree is explicitly authorized for this change.
 - Keep prepared work separated with small, meaningful commits on `main`.
 - Baseline behavior lives under `openspec/specs/<domain>/spec.md`.
 - Planned or unfinished work lives under `openspec/changes/<change-id>/` with `proposal.md`, `tasks.md`, and delta specs under `specs/<domain>/spec.md`.
