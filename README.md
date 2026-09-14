@@ -848,10 +848,8 @@ If a source crops badly, replace the source image rather than adding focal-point
 
 ## WebStorm run configuration
 
-- `.run/BlackBox Local Stack.run.xml` is the canonical committed local-stack launcher.
-- `.run/Stripe Sandbox Smoke.run.xml` is the at-will automated Playwright Stripe test-mode checkout launcher and runs `pnpm smoke:stripe-uat -- --scenario all`.
-- It targets the Cloudflare Pages UAT site by default.
-- It runs `pnpm dev:stack:stripe-mock`, which starts local D1 prep, local official `stripe-mock` through Go, the local Worker backend pointed at the local stripe-mock proxy, and the local Astro frontend without Docker or real Stripe keys.
+- `.run/BlackBox Local Stack.run.xml` runs `pnpm dev:stack:stripe-mock`, the same flow as `pnpm dev`: Local D1 preparation, official `stripe-mock` through Go, the combined CMS/commerce Worker and the public snapshot service. It needs no Docker, real keys or `.dev.vars`.
+- `.run/Stripe Sandbox Smoke.run.xml` runs `pnpm smoke:stripe-uat -- --scenario all --screenshots always --timeout-ms 120000` against deployed UAT. It is a provider diagnostic, not a Local startup step. Its only committed environment value is the non-secret expected payment label `Link`.
 - Real Stripe test mode remains available from the terminal through `pnpm dev:stack:stripe-test`.
 - `pnpm dev:stack:stripe-mock-api` is a terminal alias for the same official stripe-mock API path; do not add a second WebStorm launcher for it unless explicitly requested.
 - Other focused backend/frontend scripts remain available from the terminal, not committed IDE run configs.
