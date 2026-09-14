@@ -138,3 +138,8 @@ Implemented private checksum-addressed CMS backups, seven daily points plus the 
 All executions used WebStorm MCP. Evidence pointers are `.codex-artifacts/emdash-m1/backup-native-trigger-capture.json`, `backup-local-restore-verified.json`, and `backup-local-compare-verified.json`. The focused executable contract passed retention, checksum rejection, metadata restoration, large bound values, foreign keys and trigger preservation. Native export ordering and SQL literal limits required separate schema/data capture and bound restoration; triggers are installed after rows so restore preserves captured maintenance state.
 
 Full-suite reruns were skipped at the user's request. Hosted buckets, quota pilot, schedule activation and restored application/public rendering remain unverified; tasks 10.1/10.2 remain open. No hosted mutation or PRD cutover occurred.
+
+### Inline draft recovery acceptance — 2026-09-15
+
+Chrome Blackbox profile on the rebuilt canonical Local stack verified that Keep editing preserves an unsaved Genre change and Discard changes and reload restores Experimental Weird Rock with No unsaved changes. No save, publication, provider write or persistent content change occurred. Staff checks passed via WebStorm (inline-reload-check.json). The first combined build failed because the running Worker locked dist/client on Windows; stopping and restarting BlackBox Local Stack through WebStorm rebuilt the artifact successfully (inline-reload-stack.json), preserving existing stock and prices. Full stale-revision and narrow-viewport acceptance remain open.
+
