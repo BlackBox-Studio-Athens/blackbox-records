@@ -63,7 +63,18 @@ export function diagnosticExcerpt(text) {
     .slice(0, 6000);
 }
 
-export function monitorSourceChanges(cwd) {
+export async function monitorSourceChanges(cwd) {
+  const names = (await execa('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd })).stdout
+    .split('\0')
+    .filter(Boolean);
+  const initial = new Map();
+  for (const name of names) {
+    const stat = await lstat(path.join(cwd, name), { bigint: true }).catch((error) => {
+      if (error.code === 'ENOENT') return null;
+      throw error;
+    });
+    if (stat) initial.set(name, stat);
+  }
   const touched = new Set();
   let failure;
   const watcher = watch(cwd, { recursive: true }, (_event, filename) => {
@@ -88,13 +99,17 @@ export function monitorSourceChanges(cwd) {
     const source = [];
     for (const name of touched) {
       if (ignored.has(name)) continue;
-      const stat = await lstat(path.join(cwd, name)).catch((error) => {
+      const stat = await lstat(path.join(cwd, name), { bigint: true }).catch((error) => {
         if (error.code === 'ENOENT') return null;
         throw error;
       });
       // pnpm creates and removes extensionless _tmp_<pid>_<hex> filesystem probes.
       // Never exclude a surviving file, or a tracked file with a matching name.
       if (!stat && !tracked.has(name) && /(?:^|\/)_tmp_\d+_[0-9a-f]{8}$/.test(name)) continue;
+      const before = initial.get(name);
+      // Windows can notify on access/attribute activity. Reads are not source edits.
+      if (stat && before && stat.mtimeNs === before.mtimeNs && stat.size === before.size && stat.mode === before.mode)
+        continue;
       if (!stat?.isDirectory()) source.push(name);
     }
     return source.sort();
@@ -145,7 +160,7 @@ export async function runValidation({
   try {
     await lock.writeFile(String(process.pid));
     await mkdir(evidenceDir);
-    if (identify === sourceIdentity) stopMonitoring = monitorSourceChanges(cwd);
+    if (identify === sourceIdentity) stopMonitoring = await monitorSourceChanges(cwd);
     summary.sourceBefore = await identify(cwd);
     summary.pnpm = await readPnpmVersion();
     if (fast) log('PARTIAL validation: this does not establish implementation completion.');

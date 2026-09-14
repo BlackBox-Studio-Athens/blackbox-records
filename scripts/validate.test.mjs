@@ -120,7 +120,11 @@ test('source fingerprint detects tracked, untracked and deleted source but ignor
     { cwd },
   );
   const original = await sourceIdentity(cwd);
-  const stopMonitoring = monitorSourceChanges(cwd);
+  const stopReadMonitoring = await monitorSourceChanges(cwd);
+  await readFile(path.join(cwd, 'source.txt'));
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.deepEqual(await stopReadMonitoring(), []);
+  const stopMonitoring = await monitorSourceChanges(cwd);
   await writeFile(path.join(cwd, 'source.txt'), 'transient');
   await new Promise((resolve) => setTimeout(resolve, 30));
   await writeFile(path.join(cwd, 'source.txt'), 'before');
@@ -128,7 +132,7 @@ test('source fingerprint detects tracked, untracked and deleted source but ignor
   assert.ok((await stopMonitoring()).includes('source.txt'));
   assert.deepEqual(await sourceIdentity(cwd), original);
   await mkdir(path.join(cwd, 'existing'));
-  const stopGeneratedMonitoring = monitorSourceChanges(cwd);
+  const stopGeneratedMonitoring = await monitorSourceChanges(cwd);
   await writeFile(path.join(cwd, 'existing', '_tmp_123_abcdef12'), 'pnpm probe');
   await new Promise((resolve) => setTimeout(resolve, 30));
   await rm(path.join(cwd, 'existing', '_tmp_123_abcdef12'));
