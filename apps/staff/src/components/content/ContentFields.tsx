@@ -166,20 +166,22 @@ export default function ContentFields({
       <h2 id="content-body-label" className="text-xl font-semibold">
         Full text
       </h2>
-      <p className="text-sm text-muted-foreground">
+      <p id="content-body-help" className="text-sm text-muted-foreground">
         Use paragraphs, headings, lists, quotes, links, images with descriptions, or code. HTML, tables, galleries and
         text alignment are not supported.
       </p>
       <Suspense fallback={<p>Loading text editor…</p>}>
         <ContentBodyEditor
           aria-labelledby="content-body-label"
+          aria-describedby={bodyValidation.success ? 'content-body-help' : 'content-body-help content-body-error'}
+          aria-invalid={!bodyValidation.success}
           editable={!disabled}
           value={(data.body ?? []) as never}
           onChange={(body) => set('body', body)}
         />
       </Suspense>
       {!bodyValidation.success && (
-        <p role="alert" className="border border-border p-3">
+        <p id="content-body-error" role="alert" className="border border-border p-3">
           {bodyValidation.error.issues[0]?.message} Your text is still here and has not been saved.
         </p>
       )}

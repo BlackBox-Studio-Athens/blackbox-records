@@ -6,7 +6,9 @@ import { I18nProvider } from '@lingui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@emdash-cms/admin/styles.css';
 
-export default function ContentBodyEditor(props: PortableTextEditorProps) {
+export default function ContentBodyEditor(
+  props: PortableTextEditorProps & { 'aria-describedby'?: string; 'aria-invalid'?: boolean },
+) {
   const onEditorReady = useCallback<NonNullable<PortableTextEditorProps['onEditorReady']>>(
     (editor) => {
       if (editor) {
@@ -14,12 +16,15 @@ export default function ContentBodyEditor(props: PortableTextEditorProps) {
         input.setAttribute('role', 'textbox');
         input.setAttribute('aria-multiline', 'true');
         input.setAttribute('aria-readonly', String(props.editable === false));
+        input.setAttribute('aria-invalid', String(props['aria-invalid'] === true));
+        if (props['aria-describedby']) input.setAttribute('aria-describedby', props['aria-describedby']);
+        else input.removeAttribute('aria-describedby');
         if (props['aria-labelledby']) input.setAttribute('aria-labelledby', props['aria-labelledby']);
         else input.setAttribute('aria-label', 'Draft full text');
       }
       props.onEditorReady?.(editor);
     },
-    [props.editable, props['aria-labelledby'], props.onEditorReady],
+    [props.editable, props['aria-labelledby'], props['aria-describedby'], props['aria-invalid'], props.onEditorReady],
   );
   const [queries] = useState(
     () => new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } } }),
