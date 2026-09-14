@@ -11,6 +11,7 @@ const staffFiles = new Set([
   'favicon.svg',
   'index.html',
   'items/index.html',
+  'items/new/index.html',
   'logo-horizontal.png',
   'orders/index.html',
   'robots.txt',

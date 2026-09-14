@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 describe('frontend route isolation', () => {
-  it.each(['stock/index.html', 'orders/index.html', 'items/index.html'])(
+  it.each(['stock/index.html', 'orders/index.html', 'items/index.html', 'items/new/index.html'])(
     'rejects %s in the public artifact',
     (route) => {
       const dist = createDist(['index.html', route]);
@@ -42,6 +42,7 @@ function createStaffDist(violation?: string): string {
     'favicon.svg',
     'index.html',
     'items/index.html',
+    'items/new/index.html',
     'logo-horizontal.png',
     'orders/index.html',
     'robots.txt',

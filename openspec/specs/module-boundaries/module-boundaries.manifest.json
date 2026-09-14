@@ -465,7 +465,8 @@
       "namedInterfaces": {},
       "allowedDependencies": [],
       "allowedWorkspaceInterfaces": {
-        "@blackbox/api-client": ["./internal"]
+        "@blackbox/api-client": ["./internal"],
+        "@blackbox/content-model": ["."]
       },
       "ownershipExceptions": []
     },

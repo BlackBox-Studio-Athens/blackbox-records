@@ -2,7 +2,7 @@ Use the apply-change workflow. Finish one usable workflow at a time in the deliv
 
 ## Delivery order — revised 2026-09-14
 
-The 60 acceptance tasks remain intact: 22 are complete and 38 remain open. This is not a percentage of effort or usable product completion. Several backend commands are prepared, but the member workspace and public publication path are not finished. Do not add checkboxes merely to make the count rise.
+The 60 acceptance tasks remain intact: 23 are complete and 37 remain open. This is not a percentage of effort or usable product completion. The local item price, stock, and creation workflows are usable; content editing and public publication are not finished. Do not add checkboxes merely to make the count rise.
 
 | Order    | Usable outcome                                                                                                         | Existing tasks to finish together                                                                               |
 | -------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -75,7 +75,7 @@ The protected price command now passes fixed/custom SDK-to-D1 acceptance, author
 
 The protected Item Setup API now integrates CMS linkage, runtime identity, Product/Price binding, opening stock, and completion. Local HTTP/SDK/D1 recovery and paid-sale evidence is in [setup-command-evidence.md](setup-command-evidence.md). Task 7.3 retains explicit republish acceptance through the publication flow; guided UI/publication and hosted outcome checks remain separate tasks.
 
-- [ ] 7.1 Add guided Release/Distro/Merch setup with existing-record selection, generated stable identities, one variant, EUR, explicit initial price, and zero-by-default physical stock with matching online default; verify form/API fixtures do not fabricate prices or persist presentation category as commerce authority.
+- [x] 7.1 Add guided Release/Distro/Merch setup with existing-record selection, generated stable identities, one variant, EUR, explicit initial price, and zero-by-default physical stock with matching online default; verify form/API fixtures do not fabricate prices or persist presentation category as commerce authority. See the guided member setup evidence in [setup-command-evidence.md](setup-command-evidence.md).
 - [x] 7.2 Implement resumable CMS source linkage and runtime identity setup through the operation journal; verify duplicate submissions and partial CMS success cannot create extra Releases, Distro sources, Store Items, or variants. See [setup-command-evidence.md](setup-command-evidence.md).
 - [ ] 7.3 Implement initial Product/Price binding and one-time opening stock through existing stock/application seams; verify retry, republish, and subsequent sales never reapply opening quantities and that ambiguous bindings remain non-buyable.
 - [ ] 7.4 Complete the guided Publish item action with approved immutable media and targeted Product Projection only when checkout presentation changed; verify it needs no second member task, leaves Price Authority unchanged, and safely resumes a failed projection before static publication.

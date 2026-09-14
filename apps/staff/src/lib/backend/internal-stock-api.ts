@@ -1,4 +1,4 @@
-import type { InternalApiComponents } from '@blackbox/api-client/internal';
+import type { InternalApiComponents, InternalApiOperations } from '@blackbox/api-client/internal';
 
 export type InternalVariantSummary = InternalApiComponents['schemas']['InternalVariantSummary'];
 export type InternalStockDetail = InternalApiComponents['schemas']['InternalStockDetail'];
@@ -8,6 +8,8 @@ export type InternalStockCountBody = InternalApiComponents['schemas']['InternalS
 export type RecordedStockChangeResponse = InternalApiComponents['schemas']['RecordedStockChangeResponse'];
 export type RecordedStockCountResponse = InternalApiComponents['schemas']['RecordedStockCountResponse'];
 export type CatalogPriceDetail = InternalApiComponents['schemas']['CatalogPriceDetail'];
+export type CatalogSetupCommand =
+  InternalApiOperations['setupCatalogItem']['requestBody']['content']['application/json'];
 export type CatalogPriceCommand = Pick<CatalogPriceDetail, 'expectedRevision' | 'price'> & {
   operationId: string;
   confirmLivePriceChange: boolean;
@@ -85,6 +87,13 @@ export function createInternalStockApi({ backendBaseUrl = '', fetcher = fetch }:
   }
 
   return {
+    setupItem(body: CatalogSetupCommand) {
+      return fetchJson<InternalApiComponents['schemas']['CatalogItemSetupResult']>('/api/internal/items/setup', {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: { 'X-Blackbox-Request': '1' },
+      });
+    },
     readPrice(variantId: string) {
       return fetchJson<CatalogPriceDetail>(`/api/internal/variants/${encodeURIComponent(variantId)}/price`);
     },

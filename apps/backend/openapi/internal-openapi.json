@@ -530,6 +530,9 @@
       "InternalVariantSummary": {
         "type": "object",
         "properties": {
+          "displayName": {
+            "type": "string"
+          },
           "sourceId": {
             "type": "string"
           },

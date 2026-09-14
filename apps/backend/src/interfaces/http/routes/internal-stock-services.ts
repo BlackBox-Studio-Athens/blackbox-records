@@ -33,7 +33,12 @@ export function createInternalStockServices(bindings: AppBindings) {
       StockConflictError,
       VariantNotFoundError,
     },
-    readVariantStock: async (variantId: string) => readVariantStock(storeItemOptions, stock, variantId),
+    readVariantStock: async (variantId: string) => {
+      const { stock: state, ...item } = await readVariantStock(storeItemOptions, stock, variantId);
+      const record = await storeItemOptions.findByStoreItem(item);
+      const name = (record?.productProjection as { name?: unknown } | null)?.name;
+      return { ...item, stock: state, ...(typeof name === 'string' && name.trim() ? { displayName: name } : {}) };
+    },
     readVariantStockHistory: async (variantId: string, limit: number) =>
       readVariantStockHistory(storeItemOptions, stockChanges, stockCounts, variantId, limit),
     recordStockChange: async (command: {

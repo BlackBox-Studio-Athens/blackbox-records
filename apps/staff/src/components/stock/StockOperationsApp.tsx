@@ -322,7 +322,7 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
                 >
                   <span className="flex items-center justify-between gap-3">
                     <span className="text-sm capitalize text-white/80">
-                      {variant.storeItemSlug.replaceAll('-', ' ')}
+                      {variant.displayName ?? variant.storeItemSlug.replaceAll('-', ' ')}
                     </span>
                     <ArrowRight className="size-4 text-white/35 transition group-hover:translate-x-1 group-hover:text-white/80" />
                   </span>
@@ -356,7 +356,7 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
                 <CardTitle className="font-display text-4xl uppercase tracking-[0.06em]">Current Stock</CardTitle>
                 <CardDescription>
                   {selectedStockDetail
-                    ? selectedStockDetail.storeItemSlug.replaceAll('-', ' ')
+                    ? (selectedStockDetail.displayName ?? selectedStockDetail.storeItemSlug.replaceAll('-', ' '))
                     : 'Choose an item to see its stock.'}
                 </CardDescription>
               </div>

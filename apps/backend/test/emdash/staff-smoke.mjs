@@ -23,7 +23,7 @@ const options = {
 let worker = await unstable_dev(fileURLToPath(new URL('dist/server/entry.mjs', root)), options);
 try {
   const base = 'http://127.0.0.1:8799';
-  const privatePaths = ['/stock/', '/orders/', '/items/'];
+  const privatePaths = ['/stock/', '/orders/', '/items/', '/items/new/'];
   for (const path of [...privatePaths]) {
     const response = await fetch(base + path);
     assert.equal(response.status, 200, path);

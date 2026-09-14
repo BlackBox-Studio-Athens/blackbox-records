@@ -77,6 +77,7 @@ const variantSearchQuerySchema = z
 
 const variantSummarySchema = z
   .object({
+    displayName: z.string().optional(),
     sourceId: z.string(),
     sourceKind: z.enum(['release', 'distro']),
     storeItemSlug: z.string(),
@@ -591,6 +592,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
 }
 
 function toStockDetailResponse(detail: {
+  displayName?: string;
   sourceId: string;
   sourceKind: 'release' | 'distro';
   stock: { revision: number | null; onlineQuantity: number; quantity: number; updatedAt: Date | null };
@@ -598,6 +600,7 @@ function toStockDetailResponse(detail: {
   variantId: string;
 }) {
   return {
+    ...(detail.displayName ? { displayName: detail.displayName } : {}),
     sourceId: detail.sourceId,
     sourceKind: detail.sourceKind,
     stock: toStockStateResponse(detail.stock),

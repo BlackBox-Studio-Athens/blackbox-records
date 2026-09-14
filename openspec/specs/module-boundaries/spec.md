@@ -182,7 +182,7 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **GIVEN** stock operations are built by the `@blackbox/staff` workspace
 - **WHEN** boundary validation runs
 - **THEN** the closed `staff-frontend` module owns `apps/staff/src/**`
-- **AND** it may import only the `@blackbox/api-client/internal` workspace interface
+- **AND** it may import the `@blackbox/api-client/internal` workspace interface and the pure `@blackbox/content-model` root for shared editorial constraints and physical formats
 - **AND** `operator-stock` retains backend ownership without public or staff frontend roots.
 
 ### Requirement: Staff frontend is an independent workspace boundary

@@ -63,6 +63,7 @@ describe('Module boundaries manifest', { timeout: 15_000 }, () => {
     expect(staffFrontend.roots).toEqual(['apps/staff/src/**']);
     expect(staffFrontend.allowedWorkspaceInterfaces).toEqual({
       '@blackbox/api-client': ['./internal'],
+      '@blackbox/content-model': ['.'],
     });
     expect(operatorStock.roots).not.toEqual(expect.arrayContaining([expect.stringContaining('apps/web/')]));
   });

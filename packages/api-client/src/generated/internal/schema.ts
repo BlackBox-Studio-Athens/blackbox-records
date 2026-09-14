@@ -729,6 +729,7 @@ export type components = {
             updatedAt: string | null;
         };
         InternalVariantSummary: {
+            displayName?: string;
             sourceId: string;
             /** @enum {string} */
             sourceKind: "release" | "distro";

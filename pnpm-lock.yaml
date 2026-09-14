@@ -271,6 +271,9 @@ importers:
       '@blackbox/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@blackbox/content-model':
+        specifier: workspace:*
+        version: link:../../packages/content-model
       '@radix-ui/react-slot':
         specifier: ^1.3.3
         version: 1.3.3(@types/react@19.2.18)(react@19.2.8)
