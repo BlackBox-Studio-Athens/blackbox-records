@@ -153,11 +153,21 @@ export async function handlePublicationWorkflow(
           }),
         })
         .parse(await readJson(response.body, 4096));
-      const completed = await completePublication(context.db, {
-        ...input,
-        codeSha: proof.sha,
-        environment: environment.data,
-      });
+      const manifest = await context.bucket.get(`snapshots/${environment.data}/manifest/${input.snapshotSha256}`);
+      if (!manifest || manifest.size > 4 * 1024 * 1024) throw new Error('Missing publication snapshot');
+      const json = await manifest.text();
+      if (createHash('sha256').update(json).digest('hex') !== input.snapshotSha256)
+        throw new Error('Invalid publication snapshot');
+      const snapshot = parseContentSnapshot(json, environment.data, item.requestedRevision);
+      const completed = await completePublication(
+        context.db,
+        {
+          ...input,
+          codeSha: proof.sha,
+          environment: environment.data,
+        },
+        snapshot.records.map((record) => record.revisionId),
+      );
       return completed ? reply(200, { id: input.id, status: 'live' }) : reply(409, { error: 'PUBLICATION_CONFLICT' });
     } catch {
       return reply(503, { error: 'PUBLICATION_UNAVAILABLE' });

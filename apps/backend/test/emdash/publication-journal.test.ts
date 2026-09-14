@@ -168,3 +168,32 @@ test('rejects an older completion after a newer publication becomes Live', async
   expect(await completePublication(env.TEST_CMS_DB, { ...completion, id: ids[0]! })).toBe(false);
   expect((await readPublication(env.TEST_CMS_DB, 'local', ids[0]!))?.status).toBe('pending');
 });
+
+test('completes superseded requests only for revisions covered by the accepted snapshot', async () => {
+  const ids = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()];
+  for (const id of ids)
+    await requestPublication(env.TEST_CMS_DB, {
+      id,
+      environment: 'uat',
+      actorEmail: 'operator@example.com',
+      requestedRevision: id,
+    });
+  const claim = await claimPublicationDispatch(env.TEST_CMS_DB, 'uat', Date.now() + 3_600_000);
+  expect(claim?.id).toBe(ids[2]);
+  const completion = {
+    id: ids[2]!,
+    environment: 'uat' as const,
+    ciRunId: '456',
+    codeSha: 'a'.repeat(40),
+    snapshotSha256: 'b'.repeat(64),
+    deploymentId: crypto.randomUUID(),
+  };
+  await env.TEST_CMS_DB.prepare(
+    'UPDATE _blackbox_publications SET ci_run_id = ?, code_sha = ?, snapshot_sha256 = ? WHERE id = ?',
+  )
+    .bind(completion.ciRunId, completion.codeSha, completion.snapshotSha256, completion.id)
+    .run();
+  expect(await completePublication(env.TEST_CMS_DB, completion, [ids[0]!, ids[2]!])).toBe(true);
+  expect((await readPublication(env.TEST_CMS_DB, 'uat', ids[0]!))?.status).toBe('live');
+  expect((await readPublication(env.TEST_CMS_DB, 'uat', ids[1]!))?.status).toBe('failed');
+});

@@ -260,9 +260,14 @@ export async function failPublicationRun(
 }
 
 // The caller verifies the public deployment first. Older acknowledgements cannot replace a newer Live record.
-export async function completePublication(db: D1Database, input: z.input<typeof publicationCompletionSchema>) {
+export async function completePublication(
+  db: D1Database,
+  input: z.input<typeof publicationCompletionSchema>,
+  coveredRevisions: string[] = [],
+) {
   const value = publicationCompletionSchema.parse(input);
-  const result = await db
+  const revisions = z.array(z.string().min(1).max(128)).max(1000).parse(coveredRevisions);
+  const selected = db
     .prepare(
       `UPDATE _blackbox_publications SET status = 'live', deployment_id = ?
     WHERE id = ? AND environment = ? AND status = 'pending'
@@ -279,7 +284,29 @@ export async function completePublication(db: D1Database, input: z.input<typeof 
       value.codeSha,
       value.snapshotSha256,
       value.environment,
+    );
+  const covered = db
+    .prepare(
+      `UPDATE _blackbox_publications
+    SET status = 'live', deployment_id = ?, ci_run_id = ?, code_sha = ?, snapshot_sha256 = ?
+    WHERE environment = ? AND status IN ('pending', 'failed') AND ci_run_id IS NULL
+    AND requested_revision IN (SELECT value FROM json_each(?))
+    AND rowid < (SELECT rowid FROM _blackbox_publications AS selected WHERE id = ? AND environment = ?
+      AND status = 'live' AND deployment_id = ?
+      AND NOT EXISTS (SELECT 1 FROM _blackbox_publications AS newer
+        WHERE newer.environment = selected.environment AND newer.status = 'live' AND newer.rowid > selected.rowid))`,
     )
-    .run();
+    .bind(
+      value.deploymentId,
+      value.ciRunId,
+      value.codeSha,
+      value.snapshotSha256,
+      value.environment,
+      JSON.stringify(revisions),
+      value.id,
+      value.environment,
+      value.deploymentId,
+    );
+  const [result] = await db.batch([selected, covered]);
   return result.meta.changes === 1;
 }
